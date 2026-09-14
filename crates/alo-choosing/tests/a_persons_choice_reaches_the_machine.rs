@@ -140,6 +140,8 @@ fn a_model_a_provider_and_a_language_all_reach_the_file() {
                         runtime: "Ollama 0.34.0".to_owned(),
                         drove: None,
                         of: None,
+                        loaded_bytes: None,
+                        on_the_gpu_bytes: None,
                     },
                 ),
         )

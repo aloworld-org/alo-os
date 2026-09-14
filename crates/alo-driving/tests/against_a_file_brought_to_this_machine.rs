@@ -61,6 +61,8 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         runtime: format!("Ollama {THE_PINNED_RUNTIME}"),
         drove: None,
         of: None,
+        loaded_bytes: None,
+        on_the_gpu_bytes: None,
     };
     let settings = measuring::said("ALO_DRIVING_SETTINGS").map(PathBuf::from);
     let endpoint = alo_models::ollama::DEFAULT_ENDPOINT;
@@ -99,6 +101,8 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         let counted = MeasuredOn {
             drove: u32::try_from(measured.drove()).ok(),
             of: u32::try_from(measured.how_many()).ok(),
+            loaded_bytes: None,
+            on_the_gpu_bytes: None,
             ..on
         };
         choosing

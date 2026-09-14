@@ -68,6 +68,18 @@ pub struct MeasuredOn {
     /// **How many attempts were made** — ten a round.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub of: Option<u32>,
+
+    /// **What the weights took once loaded**, as the runtime reports it
+    /// (`/api/ps`'s `size`), beside [`on_the_gpu_bytes`](Self::on_the_gpu_bytes).
+    /// A grade earned with part of a model off the graphics processor is a
+    /// different measurement from one earned wholly on it, so where it was
+    /// read, it is written down. Both or neither.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loaded_bytes: Option<u64>,
+
+    /// **How much of that was on the graphics processor** (`size_vram`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on_the_gpu_bytes: Option<u64>,
 }
 
 impl MeasuredOn {
@@ -97,6 +109,22 @@ impl MeasuredOn {
                 "a runtime with no version: the prompt reaches the weights through it, so name \
                  the runtime and the release that served the run",
             );
+        }
+        match (self.loaded_bytes, self.on_the_gpu_bytes) {
+            (None, None) => {}
+            (Some(loaded), Some(on_the_gpu)) if loaded > 0 && on_the_gpu <= loaded => {}
+            (Some(_), Some(_)) => {
+                return Some(
+                    "a residency that cannot be: more on the graphics processor than was loaded, \
+                     or nothing loaded at all",
+                );
+            }
+            (Some(_), None) | (None, Some(_)) => {
+                return Some(
+                    "half a residency: say what was loaded and how much of it was on the graphics \
+                     processor, or neither",
+                );
+            }
         }
         match (self.drove, self.of) {
             (None, None) => None,
@@ -194,6 +222,8 @@ mod tests {
             runtime: "Ollama 0.34.0".to_owned(),
             drove: Some(8),
             of: Some(20),
+            loaded_bytes: None,
+            on_the_gpu_bytes: None,
         }
     }
 
@@ -203,6 +233,8 @@ mod tests {
         let neither = MeasuredOn {
             drove: None,
             of: None,
+            loaded_bytes: None,
+            on_the_gpu_bytes: None,
             ..sound()
         };
         assert_eq!(neither.what_is_wrong_with_it(), None);

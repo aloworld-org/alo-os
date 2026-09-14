@@ -91,6 +91,8 @@ impl Unmeasured {
             runtime: self.runtime.clone(),
             drove: None,
             of: None,
+            loaded_bytes: None,
+            on_the_gpu_bytes: None,
         }
     }
 

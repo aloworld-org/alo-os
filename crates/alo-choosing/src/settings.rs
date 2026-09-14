@@ -301,6 +301,8 @@ mod tests {
                     runtime: "Ollama 0.34.0".to_owned(),
                     drove: None,
                     of: None,
+                    loaded_bytes: None,
+                    on_the_gpu_bytes: None,
                 },
             ))
             .unwrap();

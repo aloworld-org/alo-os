@@ -62,7 +62,11 @@ use crate::who_asked::WhoAsked;
 #[derive(Debug, PartialEq)]
 pub enum Warn {
     /// Nobody has been warned about this: put it in front of the person.
-    Say(WarnedOnce),
+    ///
+    /// Boxed, because the warning carries the weights it is about — and a
+    /// measurement's machine beside their grade — which makes it many times the
+    /// size of the two empty answers beside it.
+    Say(Box<WarnedOnce>),
     /// It has been said, and nobody asked again. **Nothing is shown.**
     SaidAlready,
     /// The weights fit in this machine's memory. There is nothing to warn
@@ -75,7 +79,7 @@ impl Warn {
     #[must_use]
     pub fn to_say(&self) -> Option<&WarnedOnce> {
         match self {
-            Self::Say(warned) => Some(warned),
+            Self::Say(warned) => Some(warned.as_ref()),
             Self::SaidAlready | Self::Fits => None,
         }
     }
@@ -165,7 +169,7 @@ impl Warning {
         if !said_before {
             self.remember(too_large);
         }
-        Warn::Say(WarnedOnce::about(weights.clone(), cost))
+        Warn::Say(Box::new(WarnedOnce::about(weights.clone(), cost)))
     }
 
     /// Keep one more, forgetting the oldest if the memory is full — bounded

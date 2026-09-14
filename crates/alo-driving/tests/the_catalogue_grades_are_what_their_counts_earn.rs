@@ -46,7 +46,7 @@ fn every_grade_the_catalogue_ships_is_what_its_counts_earn() {
     let mut checked = 0;
     for entry in &shipped.models {
         // Both ways a model is asked, each held to its own counts (ADR 0032).
-        let graded = [
+        let mut graded = vec![
             (Some(entry.drives_verbs), entry.measured.as_ref(), "freely"),
             (
                 entry.drives_verbs_in_the_envelope,
@@ -54,6 +54,14 @@ fn every_grade_the_catalogue_ships_is_what_its_counts_earn() {
                 "in the envelope",
             ),
         ];
+        // And every other quantisation graded beside the entry (task 13).
+        for also in &entry.also_at {
+            graded.push((
+                Some(also.drives_verbs_in_the_envelope),
+                Some(&also.measured_in_the_envelope),
+                "in the envelope, at another quantisation",
+            ));
+        }
         for (grade, measured, asked) in graded {
             let (Some(grade), Some(measured)) = (grade, measured) else {
                 continue;
@@ -71,7 +79,7 @@ fn every_grade_the_catalogue_ships_is_what_its_counts_earn() {
             checked += 1;
         }
     }
-    assert!(checked >= 13, "only {checked} grades were checked");
+    assert!(checked >= 14, "only {checked} grades were checked");
 }
 
 /// **And the check refuses what it exists to refuse.**

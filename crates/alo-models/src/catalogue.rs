@@ -26,8 +26,8 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 
 use crate::{
-    chat_template::ChatTemplate, costing::GIGABYTE, driving::Driving, measured_on::MeasuredOn,
-    requantised::Requantised, unmeasured::Unmeasured,
+    also_at::AlsoAt, chat_template::ChatTemplate, costing::GIGABYTE, driving::Driving,
+    measured_on::MeasuredOn, requantised::Requantised, unmeasured::Unmeasured,
 };
 
 /// Bytes per parameter at which a stated size stops being a quantised
@@ -277,6 +277,12 @@ pub struct Model {
     /// earned.
     #[serde(default)]
     pub measured_in_the_envelope: Option<MeasuredOn>,
+    /// **The same weights at other quantisations, each graded on its own** —
+    /// [`crate::AlsoAt`]. Empty on every entry nobody measured at more than one.
+    /// Never read by the recommendation, and never a way to change which file
+    /// this entry names.
+    #[serde(default)]
+    pub also_at: Vec<AlsoAt>,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -544,6 +550,11 @@ impl Catalogue {
                     }
                 }
                 (true | false, None) => {}
+            }
+            for also in &model.also_at {
+                if let Some(what) = also.what_is_wrong_with_it(model.quantised_at()) {
+                    return Err(invalid(what));
+                }
             }
             // A template is configuration of a file, so it needs a file, and it
             // is the publisher's or it is not carried.

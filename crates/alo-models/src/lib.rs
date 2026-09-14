@@ -32,6 +32,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod address;
+pub mod also_at;
 pub mod brought;
 pub mod catalogue;
 pub mod chat_template;
@@ -58,6 +59,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use also_at::AlsoAt;
 pub use brought::Brought;
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, OnCpu};
 pub use chat_template::ChatTemplate;

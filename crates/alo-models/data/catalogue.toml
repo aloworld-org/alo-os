@@ -465,6 +465,27 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 35
 of = 40
+loaded_bytes = 5_345_399_272
+on_the_gpu_bytes = 4_583_210_351
+
+# Task 13: the same weights at five bits, in the envelope, forty attempts, with
+# 1.4 GB of them off the graphics processor. Six bits (`qwen2.5:7b-instruct-q6_K`,
+# 6,254,199,200 bytes) was not fetched: loaded it would put some 2.4 GB of weights
+# beside a machine already using swap, which is a grade against swap.
+[[model.also_at]]
+quantisation = "Q5_K_M"
+artefact = "qwen2.5:7b-instruct-q5_K_M"
+download_bytes = 5_444_831_648
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_at.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 18
+of = 40
+loaded_bytes = 5_959_592_178
+on_the_gpu_bytes = 4_563_287_407
 
 [[model]]
 id = "phi-3-mini-instruct"

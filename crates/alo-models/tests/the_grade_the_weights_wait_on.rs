@@ -346,6 +346,8 @@ fn the_check_catches_a_finding_that_has_stopped_being_true() {
         runtime: "Ollama 0.34.0".to_owned(),
         drove: None,
         of: None,
+        loaded_bytes: None,
+        on_the_gpu_bytes: None,
     };
     let graded: Vec<Said> = unmeasured
         .iter()

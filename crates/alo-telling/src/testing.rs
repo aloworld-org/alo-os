@@ -112,7 +112,7 @@ pub(crate) fn a_warning_about(id: &str, bytes_on_disk: u64, machine_gb: f32) -> 
         machine_gb,
         WhoAsked::ThePerson,
     ) {
-        crate::warning::Warn::Say(warned) => warned,
+        crate::warning::Warn::Say(warned) => *warned,
         crate::warning::Warn::SaidAlready | crate::warning::Warn::Fits => {
             unreachable!("a fresh session has warned nobody, and these weights do not fit")
         }

@@ -302,7 +302,8 @@ exercise asking for something the protocol never needs.
 
 ### 13. The same weights at a higher quantisation
 
-**Status:** ready. **Depends on:** 12.
+**Status:** **Done, 2026-09-14.** **Depends on:** 12.
+**Report:** `docs/autonomy/updates/qwen-2-5-7b-at-five-bits.md`.
 
 The catalogue grades `qwen2.5-7b-instruct` at `Q4_K_M`. A model five in forty
 short of the bar at four bits may clear it at five or six, and the image's
