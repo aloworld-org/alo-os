@@ -35,6 +35,28 @@
 //! which a test holds to the kernel's per-thread read count. A refusal
 //! leaves the set as it was, the way it leaves the disk as it was.
 //!
+//! # Kept or forgotten in hand and on the disk, in one call
+//!
+//! [`InHand::keep`] and [`InHand::forget`] are [`crate::Indexed::keep`] and
+//! [`crate::Indexed::forget`] on the list this set was read from — the
+//! index written and the folder put on the list, or the index file removed
+//! and the folder taken off it — and then, in hand, what the disk's change
+//! means: a kept folder's index at the end of the set, or in its place if
+//! it was already there; a forgotten folder gone from the set, its place
+//! and its entries with it. The second is the one that matters: task 6
+//! promised that the words of a folder a person asked to have forgotten
+//! are off the disk before anything else, and a set that went on answering
+//! about that folder from memory would be keeping what the person asked to
+//! have gone for as long as the caller held it. A refusal — a folder never
+//! indexed, one not named from the root, an index file that could not be
+//! written or removed — leaves the set as it was, as it leaves the disk;
+//! the one refusal in which the disk did change, an index file removed and
+//! then the list not written, leaves the set holding for that folder what
+//! the disk now holds, which is no index, and none of its words. Neither
+//! call reads any other folder's index file, which a test holds to the
+//! kernel's per-thread read count. The list's order is the order folders
+//! were asked for, and nothing here changes it.
+//!
 //! # Nothing ranks, and this is not a verb
 //!
 //! The answers are in the list's order and each folder's in its index's
@@ -178,6 +200,87 @@ impl InHand {
         *place = Ok(fresh);
         place.as_ref().map_err(NotIndexed::clone)
     }
+
+    /// This index kept, in hand and on the disk: [`Indexed::keep`] on the
+    /// list this set was read from — the index written to its file, and
+    /// its folder put on the list if it was not there already — and then
+    /// the index held in this set, in its place if the folder was already
+    /// held, or at the end of the set, where the list now has it.
+    ///
+    /// No other folder's index file is read, and nothing is read that
+    /// [`Indexed::keep`] does not read.
+    ///
+    /// # Errors
+    ///
+    /// Whatever [`Indexed::keep`] refuses with — a folder not named from
+    /// the root, an index file that could not be written, or a list that
+    /// could not be. In every one the set is as it was, as the list is:
+    /// an index written whose folder the list could not be made to name
+    /// is nothing's, on the disk and in hand alike.
+    pub fn keep(&mut self, index: &Index) -> Result<(), NotIndexed> {
+        let already = self.place_of(&index.of);
+        self.indexed.keep(index)?;
+        let held = Ok(index.clone());
+        match already.and_then(|place| self.held.get_mut(place)) {
+            Some(place) => *place = held,
+            None => self.held.push(held),
+        }
+        Ok(())
+    }
+
+    /// This folder forgotten, in hand and on the disk: [`Indexed::forget`]
+    /// on the list this set was read from — its index file removed, and
+    /// the folder taken off the list — and then the folder gone from this
+    /// set, its place and its entries with it, so that the next
+    /// [`Self::answer`] has no folder for it and nothing of its words is
+    /// held.
+    ///
+    /// No other folder's index file is read, and nothing is read that
+    /// [`Indexed::forget`] does not read.
+    ///
+    /// # Errors
+    ///
+    /// Whatever [`Indexed::forget`] refuses with. For a folder not named
+    /// from the root, one not on the list, or an index file that could not
+    /// be removed, the set is as it was, as the disk is. For
+    /// [`NotIndexed::ListNotKept`] — the index file removed and then the
+    /// list not written — the disk did change: the list still names the
+    /// folder and its index is gone, and the set holds for that folder what
+    /// the disk now holds, the refusal [`Indexed::index_of`] now gives, in
+    /// its place and with none of its words. The words the person asked to
+    /// have gone are gone from hand as they are from the disk, whichever
+    /// half of the change the disk refused.
+    pub fn forget(&mut self, folder: &Path) -> Result<(), NotIndexed> {
+        let Some(place) = self.place_of(folder) else {
+            // Not held, so refused by the list — never indexed, or not
+            // named from the root — with nothing in hand to change.
+            return self.indexed.forget(folder);
+        };
+        match self.indexed.forget(folder) {
+            Ok(()) => {
+                // The place and whatever it held — the index with its
+                // entries, or a refusal — dropped here, which is the point.
+                drop(self.held.remove(place));
+                Ok(())
+            }
+            Err(why @ NotIndexed::ListNotKept { .. }) => {
+                let now_on_the_disk =
+                    Index::read_from(&self.indexed.where_index_of(folder), folder);
+                if let Some(held) = self.held.get_mut(place) {
+                    *held = now_on_the_disk;
+                }
+                Err(why)
+            }
+            Err(why) => Err(why),
+        }
+    }
+
+    /// Where this folder is in the set, if it is held.
+    fn place_of(&self, folder: &Path) -> Option<usize> {
+        self.folders()
+            .iter()
+            .position(|listed| listed.as_path() == folder)
+    }
 }
 
 /// That this folder is named from the root.
@@ -277,6 +380,59 @@ mod tests {
             in_hand.answer(&Query::named("")).unwrap_err(),
             NotAsked::Nothing
         );
+    }
+
+    /// A folder not held — never indexed, or not named from the root — is
+    /// refused by `forget` through the set the way the list refuses it,
+    /// and the set is as it was: every place still there, and nothing on
+    /// the disk touched.
+    #[test]
+    fn forgetting_a_folder_not_held_is_refused_and_the_set_is_as_it_was() {
+        let list = a_list_of("forget", &["/home/ada/Documents", "/home/ada/Pictures"]);
+        let mut in_hand = list.in_hand();
+        let as_it_was = in_hand.clone();
+        assert!(matches!(
+            in_hand.forget(Path::new("/home/ada/Music")).unwrap_err(),
+            NotIndexed::NeverIndexed { at } if at == Path::new("/home/ada/Music")
+        ));
+        assert!(matches!(
+            in_hand.forget(Path::new("Documents")).unwrap_err(),
+            NotIndexed::NotAbsolute { at } if at == Path::new("Documents")
+        ));
+        assert_eq!(in_hand, as_it_was);
+        assert_eq!(in_hand.folders(), list.folders());
+        assert_eq!(in_hand.each().count(), 2);
+    }
+
+    /// An index of a folder not named from the root is refused by `keep`
+    /// through the set the way the list refuses it: nothing is written, the
+    /// set holds no place for it, and the list is as it was.
+    #[test]
+    fn keeping_an_index_of_a_folder_not_named_from_the_root_is_refused() {
+        let list = a_list_of("keep", &["/home/ada/Documents"]);
+        let mut in_hand = list.in_hand();
+        let as_it_was = in_hand.clone();
+        let sideways = Index {
+            of: PathBuf::from("Documents"),
+            made: None,
+            covered: crate::covered::Covered {
+                whole: true,
+                most: 0,
+                unread: Vec::new(),
+                elsewhere: Vec::new(),
+                not_entered: Vec::new(),
+                unnamed: 0,
+            },
+            entries: Vec::new(),
+            opened: 0,
+        };
+        assert!(matches!(
+            in_hand.keep(&sideways).unwrap_err(),
+            NotIndexed::NotAbsolute { at } if at == Path::new("Documents")
+        ));
+        assert_eq!(in_hand, as_it_was);
+        assert_eq!(in_hand.each().count(), 1);
+        assert!(!list.where_index_of(Path::new("Documents")).exists());
     }
 
     /// An empty list is an empty set, which answers with no folders and no

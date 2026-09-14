@@ -58,7 +58,11 @@
 //! [`Indexed::in_hand`], in `in_hand.rs`, is the same reads made once: an
 //! [`crate::InHand`] holds every index on the list, or the refusal that
 //! stood where one would be, and answers from memory in the same shape.
-//! Nothing decides when to read again but the caller.
+//! Nothing decides when to read again but the caller. [`crate::InHand::keep`]
+//! and [`crate::InHand::forget`] are [`Indexed::keep`] and
+//! [`Indexed::forget`] through that set, so that a folder a person asked
+//! to have forgotten is gone from hand as it is from the disk; the two
+//! here stay as they are for a caller that holds nothing in hand.
 //!
 //! # The list is not a grant
 //!

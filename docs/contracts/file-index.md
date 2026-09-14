@@ -106,6 +106,26 @@ caller's lifetime: nothing caches across processes, nothing is written to
 the disk that `Indexed` would not write, and nothing decides when to read
 again but the caller.
 
+**A folder kept or forgotten in hand and on the disk, in one call.**
+`InHand::keep` and `InHand::forget` are `Indexed::keep` and
+`Indexed::forget` on the list the set was read from — the index written and
+its folder put on the list, or the index file removed and the folder taken
+off it, in that order, exactly as `Indexed` does them — and then, in hand,
+what the disk's change means: a kept folder's index at the end of the set,
+or in its place if the folder was already held; a forgotten folder gone
+from the set, its place and its entries with it, so that the next answer
+has no folder for it and none of its words is held. A person who asked for
+a folder to be forgotten has its words gone from hand as they are from the
+disk, without the caller having to drop its set. A refusal — a folder
+never indexed, one not named from the root, an index file that could not
+be written or removed — leaves the set as it was, as it leaves the disk;
+the one refusal in which the disk did change, an index file removed and
+then the list not written, leaves the set holding for that folder what the
+disk now holds: the folder still named, no index, and none of its words.
+Neither call reads any other folder's index file, and neither reads or
+writes anything `Indexed::keep` and `Indexed::forget` do not. The list's
+order is the order folders were asked for, and nothing changes it.
+
 **Nothing watches.** When an index is brought up to date is the caller's
 decision and nobody else's: there is no `inotify`, no thread and no timer in
 `alo-finding`, and a test reads its shipped source to say so. A crate that

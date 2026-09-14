@@ -102,6 +102,19 @@
 //! thousand files and times both forms, and the report publishes the
 //! numbers with the machine named.
 //!
+//! # A folder kept or forgotten in hand and on the disk, in one call
+//!
+//! [`InHand::keep`] and [`InHand::forget`] are [`Indexed::keep`] and
+//! [`Indexed::forget`] on the list the set was read from, and then in hand
+//! what the disk's change means: a kept folder's index at the end of the
+//! set, or in its place if it was already there; a forgotten folder gone
+//! from the set, its place and its entries with it, so that a forgotten
+//! folder's words leave memory as they leave the disk without the caller
+//! having to remember to drop its set. A refusal leaves the set as it was,
+//! as it leaves the disk, and neither call reads any other folder's index
+//! file. The list's order is the order folders were asked for, and nothing
+//! here changes it.
+//!
 //! # An agent asks the same index, under a grant
 //!
 //! `search_files` is the verb — declared in [`verbs`] in the shape
@@ -143,6 +156,7 @@
 //! | [`Indexed::answer`], [`Everywhere`], [`OfFolder`] | One query over every indexed folder: one answer or one named refusal per folder, in the list's order |
 //! | [`Held`], [`Unsearched`] | An answer held apart from the index it came from |
 //! | [`Indexed::in_hand`], [`InHand`], [`InHand::answer`], [`InHand::again`] | The list's indexes read once and held, asked many times from memory, one brought up to date by its name |
+//! | [`InHand::keep`], [`InHand::forget`] | A folder kept or forgotten through the held set: on the disk and the list as `Indexed` does it, and in hand what that means |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
@@ -190,6 +204,10 @@
 //!     assert_eq!(from_memory.answers.len(), indexed.folders().len());
 //! }
 //! in_hand.again(&index.of, SystemTime::now())?;
+//! // Forgotten through the set: off the disk, off the list, and out of
+//! // hand — its words with it — in one call.
+//! in_hand.forget(&index.of)?;
+//! assert!(in_hand.index_of(&index.of).is_err());
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 

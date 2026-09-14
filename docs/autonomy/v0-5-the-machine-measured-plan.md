@@ -445,7 +445,24 @@ read — three of the loops this plan has been removing one by one.
 
 ### 10. A folder kept or forgotten in hand and on the disk in one call
 
-**Status:** ready. **Depends on:** 6, 9.
+**Status:** done. **Depends on:** 6, 9.
+
+**Done, 2026-09-14.** Report:
+[`updates/a-folder-kept-or-forgotten-in-hand-and-on-the-disk.md`](updates/a-folder-kept-or-forgotten-in-hand-and-on-the-disk.md).
+`crates/alo-finding`: `InHand::keep` and `InHand::forget` are
+`Indexed::keep` and `Indexed::forget` on the list the set was read from,
+and then in hand what the disk's change means — a kept folder's index at
+the end of the set or in its place if it was already held, a forgotten
+folder's place gone with everything it held, so the next answer has no
+folder for it and a test holding the set's own account of itself to a word
+in that folder alone finds it gone. Both cost exactly the reads the disk's
+own call costs, checked by the per-thread read count with every other
+index file torn after the set was read. Every refusal leaves the set as it
+was, as it leaves the disk, but the one in which the disk changed — the
+index file removed and then the list not written — where the set holds the
+disk's own refusal in that place and none of the words, decided in the
+report. The order is the list's, a forgotten folder kept again is last,
+and the disk forms, the verb and the list-is-not-a-grant are unchanged.
 
 Task 9 gave a file manager the indexes in hand, and `InHand::again` keeps
 one folder's place in the set true to the disk when the person asks for it
@@ -483,3 +500,50 @@ remember to drop its held set every time it forgot a folder.
   still not a grant, and `Indexed::answer`, `Indexed::keep` and
   `Indexed::forget` stay as they are for a caller that holds nothing in
   hand.
+
+### 11. An index made whole for a folder larger than one walk
+
+**Status:** ready. **Depends on:** 3, 7.
+
+`alo_files::MOST_WALKED` is twenty thousand: the most things one walk
+looks at, so that a verb over a granted folder is bounded in time and
+memory whatever the folder holds. Task 3 borrowed that walk for the index
+and was honest about the bound — an index of a bigger folder says it is
+not `whole`, names in `Covered::not_entered` the folders the walk had
+found and not yet entered, and every answer says they were not searched.
+Honest, and not enough: a person's photo library, a source tree with its
+dependencies, or a Documents folder a decade old is more than twenty
+thousand things, and for them *search your own files* is a search box
+that will never find the rest, with no way to ask it to. `Index::again`
+does not help, because it walks the same folder under the same bound and
+stops in the same place.
+
+- **Acceptance:** `alo-finding` makes an index **whole** for a folder
+  larger than one walk's bound — `Index::of` walking on from each folder
+  in `not_entered` until nothing is left unentered, or a name the report
+  argues for — with every entry's `below` spelled from the folder the
+  person named, so an answer says where a thing is the way it does for a
+  small folder; `Covered::whole` is true at the end, `not_entered` is
+  empty, and `Covered::most` still says what one walk's bound is; a test
+  builds a folder of more than the bound, in subfolders, and gets one
+  index with every file in it, timed and the number in the report **with
+  the machine named**; `Index::again` on that folder reads only what
+  changed, checked by `Index::opened`; and an index that still cannot be
+  whole — a subfolder the machine would not read — says so in
+  `Covered::unread` exactly as today, so that *nothing matched* is never
+  said about a folder nobody looked at. An index file written by task 3
+  for a folder that was cut short still reads, and is made whole by
+  `Index::again`.
+- **Constraint:** the walk is still `alo-files`' and `alo-files` is not
+  edited: walking on is that walker asked again from a folder it named,
+  under its own bound each time, never a second walker and never a wider
+  bound — and nothing is walked that is not below the folder the person
+  named. A link is still never followed, another filesystem is still noted
+  and not entered. The index's format is unchanged and `format` is still
+  `1`; if a field has to be added it is added the way `made` was, so a
+  reader from before still reads. Nothing here opens a socket, reads a
+  clock or watches a folder, and the shipped-source test keeps saying so.
+  The verb is unchanged, the list is still not a grant. If a whole index
+  of a very large folder turns out to need more memory than a person's
+  machine should give a search, the honest deliverable is that number in
+  the report and a bound argued for there, not a quiet partial index.
