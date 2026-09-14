@@ -1907,7 +1907,14 @@ sorted the same way v0.01 now is.
       built, since a bootc image rolls back with one command (ADR 0011). What
       is ours is the policy around it, and *undo what the agent did*, which is
       the one agent capability the base rather than our code provides
-- [ ] Installer
+- [ ] **Installer** — download, click, reboot (ADR 0023). **On the critical
+      path since 2026-09-14** (ADR 0033): the certified laptop is installed
+      this way and no other, so every on-the-machine box in v0.01 waits on
+      it. `docs/autonomy/v0-5-the-installer-plan.md`, six tasks: the image
+      published from GitHub and signed; the boot environment that installs,
+      tested in a VM; the installer program with typed consent and a tested
+      bail-out; alongside Windows and back again; a GitHub Release; and the
+      laptop, firmware to the daemon
 - [ ] Accessibility: EN 301 549 conformance on the shell
 - [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded
   - [x] **The code.**
