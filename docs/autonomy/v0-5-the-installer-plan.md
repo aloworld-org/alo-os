@@ -111,24 +111,40 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
   `unsafe`. Nothing here runs on the laptop; the machine every test uses is
   a virtual one with a Windows the test installed.
 
-### 4. Alongside Windows, and back again
+### 4. Alongside Windows, switching between them easily, and back again
 
 **Status:** ready. **Depends on:** 3.
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
-and on the certified laptop the only mode. And ADR 0023's constraint: *a
-tested bail-out that leaves Windows bootable at every step until the final,
-named point of no return* — which, alongside Windows, is nothing destroyed.
+and on the certified laptop the only mode. **The owner's words on 2026-09-14:
+*by the time we test, run the two operating systems and switch from one to
+the other easily.*** Two systems on one disk that a person has to reach a
+firmware key to choose between are not that; switching is a thing each
+system offers from inside itself. And ADR 0023's constraint: *a tested
+bail-out that leaves Windows bootable at every step until the final, named
+point of no return* — which, alongside Windows, is nothing destroyed.
 
 - **Acceptance:** after task 2's environment has installed alo OS beside a
-  Windows in a VM, the firmware's boot menu offers both, Windows boots
-  exactly as before (the same hash test), alo OS boots, and which is the
-  default is a choice the installer made explicit and recorded; *remove alo
-  OS* exists as a documented, tested road back — the partition freed, the
-  boot entry gone, Windows as it was — because a person who can install from
-  a download must be able to uninstall from one; and the whole journey is
-  recorded in `docs/booting.md` as the steps a person takes, in order, with
-  what they see at each.
+  Windows in a VM, the firmware's boot menu offers both **on every start,
+  with a short countdown and the last-chosen system preselected**, so a
+  person who touches nothing gets what they had and a person who wants the
+  other has one keypress; **from inside Windows** the installer, left in
+  place as a small program after installing, offers *Restart into alo OS* —
+  one click, a confirmation, and the next boot is alo OS, done through the
+  firmware's next-boot entry rather than by changing the default, so the
+  choice is for one restart and the default is untouched; **from inside alo
+  OS** *Restart into Windows* is a setting and a verb an agent may ask under
+  a grant, done the same way, with the person's confirmation as any verb has;
+  which system is the **default** is the person's choice, made once in the
+  installer and changeable from either side, and both sides show the same
+  answer; Windows boots exactly as before (the same hash test), alo OS boots,
+  and a test in the VM walks Windows → alo OS → Windows → alo OS through the
+  in-system switches alone, never the firmware menu; *remove alo OS* exists
+  as a documented, tested road back — the partition freed, the boot entry
+  gone, Windows as it was — because a person who can install from a download
+  must be able to uninstall from one; and the whole journey is recorded in
+  `docs/booting.md` as the steps a person takes, in order, with what they
+  see at each.
 - **Constraint:** replacing Windows is not built here. It is an explicit,
   twice-confirmed mode ADR 0023 allows, and it waits for a task of its own
   after the alongside road has been certified.
