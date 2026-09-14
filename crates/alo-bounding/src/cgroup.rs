@@ -44,12 +44,22 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 use crate::failing::NotBounded;
 
 /// Where the unified control group hierarchy is mounted.
 const WHERE_CGROUPS_ARE: &str = "/sys/fs/cgroup";
+
+/// How long a control group is given to empty before not being empty is an
+/// error. See [`Cgroup::removed`] for why the two are told apart by waiting.
+const LONG_ENOUGH_TO_EMPTY: Duration = Duration::from_secs(2);
+
+/// How long to wait between asking again, which is short enough that the
+/// ordinary case — already empty, or empty a moment later — costs nothing
+/// measurable.
+const A_MOMENT: Duration = Duration::from_millis(20);
 
 /// The file a process's number is written into to put it in a cgroup.
 pub(crate) const THE_PROCESSES: &str = "cgroup.procs";
@@ -176,12 +186,37 @@ impl Cgroup {
     /// Separate from dropping the value on purpose: removing a cgroup can fail,
     /// and a `Drop` that swallowed the failure would leave a machine slowly
     /// filling with the remains of turns and nothing saying so.
+    ///
+    /// # Empty, and empty *yet*
+    ///
+    /// A process leaves its control group when it is reaped rather than when it
+    /// exits, and those are not the same moment. Between them the kernel
+    /// answers `EBUSY`, which there means *not empty yet* and not *not empty* —
+    /// a difference only visible in time. So this waits for the group to empty,
+    /// up to [`LONG_ENOUGH_TO_EMPTY`], before saying the machine could not take
+    /// it away. On 2026-09-14 a turn's own teardown was refused this way under
+    /// three build lanes at once, and a workspace that was green twice over was
+    /// reported as a broken change.
+    ///
+    /// It waits; it never gives up quietly. A group still holding something
+    /// after that is a group holding something, and it is still an error.
     pub fn removed(self) -> Result<(), NotBounded> {
-        fs::remove_dir(&self.at).map_err(|why| NotBounded::Cgroup {
-            what: "cannot take away the control group at",
-            path: self.at.display().to_string(),
-            why,
-        })
+        let mut waited = Duration::ZERO;
+        loop {
+            let why = match fs::remove_dir(&self.at) {
+                Ok(()) => return Ok(()),
+                Err(why) => why,
+            };
+            if why.kind() != std::io::ErrorKind::ResourceBusy || waited >= LONG_ENOUGH_TO_EMPTY {
+                return Err(NotBounded::Cgroup {
+                    what: "cannot take away the control group at",
+                    path: self.at.display().to_string(),
+                    why,
+                });
+            }
+            std::thread::sleep(A_MOMENT);
+            waited += A_MOMENT;
+        }
     }
 }
 
@@ -224,6 +259,54 @@ mod tests {
     fn an_ordinary_name_is_a_name() {
         assert!(is_a_name("alo-turn_1"));
         assert!(is_a_name("t"));
+    }
+
+    /// **Only *not empty yet* is waited for.** A group that cannot be taken
+    /// away for any other reason is an error at once — a teardown that paused
+    /// two seconds over every real failure would turn a broken machine into a
+    /// slow one, and the waiting is for the gap between a process exiting and
+    /// being reaped, not for anything else.
+    #[test]
+    fn a_refusal_that_is_not_the_group_still_emptying_is_not_waited_for() {
+        let at = std::env::temp_dir().join(format!("alo-not-empty-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&at);
+        let made = fs::create_dir_all(at.join("something-in-it"));
+        assert!(
+            made.is_ok(),
+            "a directory to stand in for a group that is not empty: {made:?}"
+        );
+
+        let began = std::time::Instant::now();
+        let refused = Cgroup { at: at.clone() }.removed();
+        let took = began.elapsed();
+
+        let _ = fs::remove_dir_all(&at);
+        assert!(
+            refused.is_err(),
+            "a directory with something in it came away"
+        );
+        assert!(
+            took < LONG_ENOUGH_TO_EMPTY,
+            "waited {took:?} over a refusal that was never going to change"
+        );
+    }
+
+    /// And a group that is already empty comes away without waiting at all,
+    /// which is the ordinary case and must stay free.
+    #[test]
+    fn an_empty_group_comes_away_at_once() {
+        let at = std::env::temp_dir().join(format!("alo-empty-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&at);
+        let made = fs::create_dir_all(&at);
+        assert!(
+            made.is_ok(),
+            "a directory to stand in for an empty group: {made:?}"
+        );
+
+        let began = std::time::Instant::now();
+        let went = Cgroup { at }.removed();
+        assert!(went.is_ok(), "an empty group did not come away: {went:?}");
+        assert!(began.elapsed() < LONG_ENOUGH_TO_EMPTY);
     }
 
     /// The refusal reaches the caller as a value with the name in it, rather
