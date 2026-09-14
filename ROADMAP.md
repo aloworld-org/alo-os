@@ -237,9 +237,15 @@ compositor is not required for, which is why it runs unbroken.
         models **and** uses one. 96 tests, several of them against a real
         socket rather than a mock
   - [ ] **On the machine.**
-        it has never been run against a real Ollama — on any machine, with or
-        without a card, because a CPU-only box is the one this has to work on
-        first. *This line was ticked outright until the two boxes existed,
+        Since 2026-09-13 it **has** been run against the real pinned runtime —
+        Ollama 0.34.0 on the Mac lane's Apple M3 — and the first request alo OS
+        sent it was refused: the `modelfile` field a brought file was handed
+        over with is gone from that version's create API, and the road is now
+        the one the runtime accepts, walked end to end with a 4.7 GB file
+        (`updates/the-pinned-runtime-and-what-alo-os-sends-it.md`). A Mac is not
+        the certified machine and this box stays open; but *never run against a
+        real Ollama* stopped being true, and the fixture it exposed as a guess
+        is fixed. *This line was ticked outright until the two boxes existed,
         while its own last sentence said law 3's "on real hardware" was owed —
         a tick and its own footnote contradicting each other, which is exactly
         what the parent box is now not allowed to do*
@@ -288,12 +294,18 @@ compositor is not required for, which is why it runs unbroken.
         first so the exercise that loads the weights is not graded for the
         disk, and stops rather than scoring when a runtime fails — a model
         blamed for a machine is the one way a grade is worse than no grade.
-        **Five entries have a measured grade because of it**, and they are
-        every entry a machine with no graphics card can run: `phi-3-mini-
-        instruct` since item 23a, and `llama-3.2-3b-instruct`,
-        `qwen2.5-3b-instruct`, `gemma-2-2b-instruct` and
-        `smollm2-1.7b-instruct` since 23c. A hundred attempts between them,
-        three of which a machine would have acted on, `rarely` five times
+        **Every entry a machine with 8 GB can hold now has a measured grade**,
+        on two machines: five small ones on the development PC (items 23a and
+        23c, `rarely` five times) and, since 2026-09-13, every 7B-class entry
+        the Mac lane's Apple M3 can load — Qwen 2.5 7B, Mistral 7B, Llama 3.1
+        8B, plus Qwen3 4B and 8B added for their tool-call training — each
+        graded both asked freely and held to the protocol's envelope
+        (ADR 0032), with machine, runtime, digest and counts beside it. The
+        four entries over 8 GB say *too large for the measuring machine* rather
+        than nothing. **None clears the bar.** The closest is Qwen 2.5 7B at
+        four bits in the envelope, 35 of 40 against a bar of 36; five bits did
+        worse. So the catalogue gives no local model the agent, and says so in
+        one sentence a person reads. `v0-5-the-models-measured-plan.md`
   - [ ] **On the machine.**
         **Seven of the twelve entries have still never been run against**,
         because a measurement needs those weights on a disk and every one of
@@ -1698,14 +1710,19 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**Three lines here already have code**, which is why a tick appears in a list
-that is otherwise untouched: *Making it yours* (`alo-appearance`), *Language*
-(`alo-strings`) and *Run a model we never catalogued* (`alo-models`). The first
-two were reached early because v0.01 work ran through them — appearance carries
-the accent set, and every crate's English moved onto the strings layer. The
-third was taken on its own, because a catalogue with nothing beside it had
-quietly become the only way a model could reach the machine, and that is a
-walled garden nobody decided on. Nothing else in v0.5 is started.
+**Eight lines here have code**, and each carries the two boxes the section
+above describes. Three were reached early because v0.01 work ran through them
+or beside it — *Making it yours* (`alo-appearance`), *Language*
+(`alo-strings`), *Run a model we never catalogued* (`alo-models`). Five were
+built between 2026-09-13 and 2026-09-14 under ADR 0028, while v0.01 waited on
+a machine: *The plain way to do what the agent does*, *"Where is that file?"*,
+*"Why is it slow?" and "what is filling my disk?"*, *One GPU box serves the
+office* and *Zero inference egress over a working day* — by
+`docs/autonomy/v0-5-the-local-network-plan.md` and
+`docs/autonomy/v0-5-the-machine-measured-plan.md`, with a report per task in
+`docs/autonomy/updates/`. A sixth, *Machines find each other*, is most of the
+way and says below exactly what is not. **No on-the-machine box in this
+section is ticked**, and none can be until the certified machine exists.
 
 Unlike v0.01, this list is **not** ordered by what was built. It is a plan, and
 it is grouped by subject so it can be read; when work begins here it will be
@@ -1777,6 +1794,20 @@ sorted the same way v0.01 now is.
       answer to a ★ line elsewhere in this file, and all three were missing until
       the rule was applied to `docs/features.md`. **No surface is left out
       because an agent can do it instead**
+  - [x] **The code.**
+        All three answers exist and none needs an agent: `alo-finding` searches
+        by name, kind (read from the bytes), date and contents from an index on
+        the machine; `alo-measuring` reads what is running from `/proc` with
+        every number named for the file it came from, and what is filling a
+        folder as a tree of sizes true to the byte. Each is reachable by a
+        caller with no agent and no grant — held by a test, because a person
+        searching their own files is not asking anybody — and the same three
+        are read verbs an agent asks under a grant.
+        `v0-5-the-machine-measured-plan.md` tasks 1–5;
+        `updates/the-three-measurements-are-verbs-and-not-the-only-road.md`
+  - [ ] **On the machine.**
+        the file manager's search box and the two windows are the desktop
+        lane's, and nothing here has run on a certified machine
 - [ ] **Capture**: screenshots, annotation, screen recording with audio, screen
       sharing — and an indicator whenever screen, camera or microphone is in use
 - [ ] ★ **Divide the screen**: halves and quarters by drag or keyboard, splits
@@ -1879,7 +1910,41 @@ sorted the same way v0.01 now is.
 - [ ] Installer
 - [ ] Accessibility: EN 301 549 conformance on the shell
 - [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded
+  - [x] **The code.**
+        `alo-finding` — an index a person owns, in a file under their own
+        directory, that answers by name, kind, date and contents from the index
+        alone and never by walking again; brought up to date by its folder's
+        name reading only what changed; one search over every indexed folder,
+        each answer saying which folder and how old, and listing what it did
+        **not** search beside what it found so an empty answer is *nothing
+        matched* and never *nothing was looked at*; timed at ten thousand
+        files. Contents are never sent anywhere — a test reads the crate's
+        shipped source for a socket. The agent's road is the `find` verb,
+        a read under a grant over the folder whose index is searched, and the
+        person's road needs neither. One known limit, open as task 11: a
+        folder larger than the walker's bound is indexed only to the bound,
+        and says so. `v0-5-the-machine-measured-plan.md` tasks 3–10
+  - [ ] **On the machine.**
+        never on a certified machine, and the surface that shows an answer is
+        the desktop lane's
 - [ ] ★ **"Why is it slow?"** and **"what is filling my disk?"**
+  - [x] **The code.**
+        `alo-measuring` — every process with its memory, its share of the
+        processor since last asked, its bytes read, written, sent and
+        received, each number read from the kernel and named for the `/proc`
+        file it came from so a person can check it; asked twice it is a rate
+        over the interval the caller passed in; a process that ended between
+        readings is gone rather than zero. And a folder as a tree of sizes,
+        each node the sum of its children plus its own files to the byte, a
+        hard link counted once, a symlink never followed, an unreadable folder
+        a node that says so, the root stopping at every mount. Nothing here
+        signals, stops or deletes anything: it measures, and the person's next
+        act is theirs. `v0-5-the-machine-measured-plan.md` tasks 1, 2 and 5;
+        `updates/what-is-running-is-read-from-the-kernel.md`,
+        `updates/what-is-filling-the-disk-is-a-tree-of-sizes.md`
+  - [ ] **On the machine.**
+        the window is the desktop lane's; measured under WSL, never on a
+        certified machine
 - [ ] ★ **Printers, solved** — found, set up, and fixed when they stop
 - [ ] ★ **"I can't open this file"** — converted, or plainly explained
 - [ ] ★ **The grant enforced by the kernel** (ADR 0013) — Landlock, seccomp and an
@@ -1995,15 +2060,62 @@ sorted the same way v0.01 now is.
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
+  - [ ] **The code.** *Most of it, and not whole.* `alo-nearby` — a machine
+        advertises presence and nothing else over DNS-SD, with an identity that
+        is a file rather than a serial so a reinstall is a new machine; pairing
+        is made only by two people confirming on their own machines and is
+        enumerated, expiring and revoked in one action; a pairing leaves each
+        side a key and every message carries a proof made with it, checked
+        against the pairing at the moment it arrives (ADR 0031); a proposal
+        crosses the wire to the machine discovery measured and both people see
+        the same code; the daemon binds the port presence advertises. **Not
+        yet:** the person's door to propose, confirm and revoke, and a pairing
+        that outlives a restart — task 12 of
+        `v0-5-the-local-network-plan.md`, open — so the half is not ticked.
+        Tasks 1, 2, 6, 7, 9, 10 there, with a report each
+  - [ ] **On the machine.**
+        two physical machines on one office network, which nothing here has
+        had; every test puts both sides on one host
 - [ ] **One GPU box serves the office** — shared local inference over a pairing.
       **Still egress, and the indicator still fires** (ADR 0003): the pairing is
       what makes it wanted, not what makes it silent
+  - [x] **The code.**
+        A question to a paired machine goes through the same door a provider
+        does — the departure made before anything is sent, the indicator shown
+        it while it happens, the answer naming the machine by the name the
+        person gave it — and an unpaired machine offering inference is refused
+        however convenient, so it is never a fallback. A verb arriving from a
+        paired machine is evaluated against the **receiving** machine's grants,
+        shown to the receiving machine's person, recorded there with the origin
+        named, and refused even where the asking machine's person granted it
+        (ADR 0003's sharpest line, five tests). A verb crossing between two
+        machines is proven at the door (ADR 0031), and the daemon answers a
+        paired machine's question with this machine's own model and writes
+        *answered for another machine* with the origin named. Tasks 3, 4, 8
+        and 11 of `v0-5-the-local-network-plan.md`;
+        `updates/the-machine-down-the-corridor-is-still-an-egress.md`,
+        `updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
+  - [ ] **On the machine.**
+        a machine with a GPU and one without, in one building — owed to two
+        machines and the certified one
 - [ ] A self-hosted workspace on the network is discovered, not configured
 - [ ] **Zero inference egress over a working day**, measured and published —
       *with a local model*, which is the claim `docs/features.md` makes and the
       only one that is true. A machine using the office GPU box or a hosted
       provider has non-zero inference egress by design, shown on the indicator,
       and the published test says which machine it measured
+  - [x] **The code.**
+        `alo-asking`'s `a_day_that_never_left.rs` measures the day on one
+        machine, and task 5 of `v0-5-the-local-network-plan.md` measures it
+        across two with **no route off the local network** — the unreachability
+        enforced in the test rather than assumed, a public address really
+        unreachable where it is measured, nothing on the road addressing a
+        single packet off-network, and a question bound for the internet told
+        once and truthfully. The published test names the machine: the
+        development PC under WSL.
+        `updates/an-office-that-cannot-connect-still-has-working-ai.md`
+  - [ ] **On the machine.**
+        the day itself, on the certified machine, with a person working it
 
 **Exit gate.** A person works a full day on alo OS — mail, documents, a video
 call, printing something, driving one installed application through its agent —
