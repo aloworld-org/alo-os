@@ -68,6 +68,35 @@ const THE_WORKER: &str = "ALO_KERNEL_LOOP_WORKER";
 /// splitting one.
 const AT_MOST: Duration = Duration::from_secs(90 * 60);
 
+/// Stop a worker and everything it started, and wait for it.
+///
+/// **`Child::kill` kills the wrapper and nothing else.** On Windows the
+/// worker is an npm-shipped `claude.cmd`, so what was spawned is `cmd.exe`,
+/// whose child is the real `claude.exe`, whose children are the `wsl.exe`
+/// bridges its Bash tool opens. Killing `cmd.exe` orphans all of them: on
+/// 2026-09-14 both lanes stopped a worker at the deadline, and two `claude.exe`
+/// processes went on running `cargo` inside WSL as root for an hour — holding
+/// the checkout the loop believed it had freed, keeping the distribution alive
+/// through `wsl --shutdown`, and holding the virtual disk so it could not be
+/// compacted. `taskkill /T` is the one Windows tool that takes a tree.
+///
+/// Elsewhere the worker is the process that was spawned, and killing it is
+/// killing the worker.
+fn stopped_with_everything_it_started(child: &mut std::process::Child) {
+    #[cfg(windows)]
+    {
+        drop(
+            Command::new("taskkill")
+                .args(["/T", "/F", "/PID", &child.id().to_string()])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status(),
+        );
+    }
+    drop(child.kill());
+    drop(child.wait());
+}
+
 /// How often it is checked on.
 const LOOKING_EVERY: Duration = Duration::from_secs(5);
 
@@ -185,8 +214,7 @@ fn told(at: &Path, saying: &str) -> Result<Duration, (String, Duration)> {
     match child.stdin.take() {
         Some(mut asking) => {
             if let Err(why) = asking.write_all(saying.as_bytes()) {
-                drop(child.kill());
-                drop(child.wait());
+                stopped_with_everything_it_started(&mut child);
                 return Err((
                     format!("the worker `{program}` could not be told what to do: {why}"),
                     nothing,
@@ -194,8 +222,7 @@ fn told(at: &Path, saying: &str) -> Result<Duration, (String, Duration)> {
             }
         }
         None => {
-            drop(child.kill());
-            drop(child.wait());
+            stopped_with_everything_it_started(&mut child);
             return Err((
                 format!("the worker `{program}` has no stdin to be told anything on"),
                 nothing,
@@ -223,13 +250,13 @@ fn told(at: &Path, saying: &str) -> Result<Duration, (String, Duration)> {
         if Instant::now() >= until {
             // Killed rather than left: it holds this checkout, and a second
             // iteration beside it would be two editors on one working tree.
-            let _ = child.kill();
-            let _ = child.wait();
+            // The whole tree of it, not the wrapper — see the helper.
+            stopped_with_everything_it_started(&mut child);
             return Err((
                 format!(
-                    "the worker `{program}` was still running after {} minutes and was stopped. \
-                     Whatever it had written is still in the working tree; nothing was published \
-                     and nothing was discarded.",
+                    "the worker `{program}` was still running after {} minutes and was stopped, \
+                     with everything it had started. Whatever it had written is still in the \
+                     working tree; nothing was published and nothing was discarded.",
                     AT_MOST.as_secs() / 60
                 ),
                 began.elapsed(),
