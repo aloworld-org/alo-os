@@ -322,6 +322,13 @@ impl Weights {
     /// before grades named machines — is kept and shown, and does not give the
     /// agent: it is a claim, and this is the one question here that decides
     /// whether somebody's files are handed to a model.
+    ///
+    /// **The same rule as [`crate::Model::can_be_the_agent`]**: the enveloped
+    /// grade where one was measured and the free grade only where none was.
+    /// Weights somebody brought carry one grade, earned by asking freely —
+    /// `alo-driving`'s measurement of a brought file asks that way and the
+    /// settings contract has no second grade to hold — so for them the free
+    /// grade is the only measurement there is, and it is what decides.
     #[must_use]
     pub fn can_be_the_agent(&self) -> bool {
         self.drives_verbs.clears_the_bar() && self.grade_is_placed()

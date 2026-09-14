@@ -352,7 +352,7 @@ keeps reading the free grade *until the agent turn asks that way*. Today only
 
 ### 15. The recommendation reads the grade for the way turns ask
 
-**Status:** ready — **unblocked 2026-09-14.** **Depends on:** 14.
+**Status:** **Done, 2026-09-14.** **Depends on:** 14.
 
 Lane A landed the wiring this waited on: `e99be94`, *an agent's next request
 is asked of the pinned runtime in the envelope* — `alo-agentd`'s `doing`,

@@ -801,11 +801,38 @@ pub const UNMEASURED_NOT_PUBLISHED: Word = Word::saying(
      says there is nothing to fetch and run, which is why nobody could measure it.",
 );
 
+// ---------------------------------------------------------------------------
+// How the grade that decides was earned (task 15, ADR 0032 decision 5)
+// ---------------------------------------------------------------------------
+
+/// The grade that decides was measured the way an agent turn asks.
+pub const GRADED_IN_THE_ENVELOPE: Word = Word::saying(
+    "models.graded.in-the-envelope",
+    "measured the way an agent turn asks: held to the shape of the request it must answer with",
+)
+.noting(
+    "Shown beside a model's grade. \"Agent turn\" is one exchange in which an agent asks a model \
+     for its next instruction. The line says which way of asking the grade is about, not whether \
+     the grade is good; the grade is shown beside it.",
+);
+
+/// The grade that decides was measured by asking freely.
+pub const GRADED_FREELY: Word = Word::saying(
+    "models.graded.freely",
+    "measured by asking freely, which is not the way an agent turn asks: nobody has measured it \
+     that way",
+)
+.noting(
+    "Shown beside a model's grade when no measurement was made the way an agent turn asks. It says \
+     what the grade is about and that the other measurement is missing — not that the model would \
+     do better or worse if it were made.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 54] = [
+pub const EVERY_WORD: [Word; 56] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -860,6 +887,8 @@ pub const EVERY_WORD: [Word; 54] = [
     UNMEASURED_TOO_LARGE,
     UNMEASURED_RUNTIME_REFUSED,
     UNMEASURED_NOT_PUBLISHED,
+    GRADED_IN_THE_ENVELOPE,
+    GRADED_FREELY,
 ];
 
 /// Why this crate's own list could not be declared.

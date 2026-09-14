@@ -272,9 +272,10 @@ pub struct Model {
     /// measurement, never written over [`drives_verbs`](Model::drives_verbs)
     /// ([ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)).
     ///
-    /// **Not read by the recommendation.** [`Catalogue::agent_for_cpu`] reads
-    /// the grade for the way turns actually ask, and until the agent turn asks a
-    /// local model in the envelope that is `drives_verbs`. Present only beside
+    /// **The grade the recommendation reads** where it is present: an agent turn
+    /// asks a local model in the envelope, so [`Model::grade_for_the_turn`] is
+    /// this grade, and [`drives_verbs`](Model::drives_verbs) is what a person is
+    /// shown as history. Present only beside
     /// [`measured_in_the_envelope`](Model::measured_in_the_envelope), with the
     /// counts, and never as `not-measured`.
     #[serde(default)]
@@ -318,12 +319,14 @@ impl Model {
     /// Whether this model may be given the agent at all.
     ///
     /// Only a model measured driving the verbs dependably
-    /// ([`Driving::clears_the_bar`]). Whether it also *runs* on a particular
+    /// ([`Driving::clears_the_bar`]) **the way an agent turn asks**:
+    /// [`Model::grade_for_the_turn`], the enveloped grade where there is one and
+    /// the free grade only where there is not. Whether it also *runs* on a particular
     /// machine, and whether its licence lets an organisation rely on it, are
     /// the other two questions — [`Catalogue::agent_for_cpu`] asks all three.
     #[must_use]
     pub fn can_be_the_agent(&self) -> bool {
-        self.drives_verbs.clears_the_bar()
+        self.grade_for_the_turn().0.clears_the_bar()
     }
 
     /// **The quantisation and the artefact it names, or neither.**
@@ -1451,19 +1454,64 @@ of = 20
         assert!(refused.to_string().contains("no counts"), "{refused}");
     }
 
-    /// **The recommendation does not read the envelope's grade** until turns ask
-    /// that way: a model that clears the bar only in the envelope is not given
-    /// the agent by a machine whose turns do not hold it there.
+    /// An entry graded freely and in the envelope, as a curator writes both.
+    fn graded_both_ways(free: &str, enveloped: &str) -> String {
+        graded_with(free, A_MACHINE).replacen(
+            "upstream = ",
+            &format!("drives_verbs_in_the_envelope = \"{enveloped}\"\nupstream = "),
+            1,
+        ) + IN_THE_ENVELOPE.trim().split_once("\n\n").unwrap().1
+    }
+
+    /// **The recommendation reads the enveloped grade for an entry that has
+    /// one**, now that an agent turn asks a local model that way (ADR 0032,
+    /// decision 5): a model that clears the bar in the envelope is given the
+    /// agent, and one that clears it only freely is not.
     #[test]
     fn the_recommendation_reads_the_grade_for_the_way_turns_ask() {
-        let text = graded_with("rarely", A_MACHINE).replacen(
-            "upstream = ",
-            "drives_verbs_in_the_envelope = \"reliably\"\nupstream = ",
-            1,
-        ) + IN_THE_ENVELOPE.trim().split_once("\n\n").unwrap().1;
-        let read = Catalogue::parse(&text).unwrap();
-        assert!(!read.models.first().unwrap().can_be_the_agent());
-        assert!(read.agent_for_cpu(64.0).is_err());
+        let read = Catalogue::parse(&graded_both_ways("rarely", "reliably")).unwrap();
+        let model = read.models.first().unwrap();
+        assert_eq!(
+            model.grade_for_the_turn(),
+            (Driving::Reliably, crate::AskedTheWay::InTheEnvelope)
+        );
+        assert!(model.can_be_the_agent());
+        assert_eq!(read.agent_for_cpu(64.0).unwrap().id, model.id);
+        assert_eq!(
+            model.drives_verbs,
+            Driving::Rarely,
+            "the free grade is kept"
+        );
+
+        let only_freely = Catalogue::parse(&graded_both_ways("reliably", "sometimes")).unwrap();
+        let model = only_freely.models.first().unwrap();
+        assert_eq!(
+            model.grade_for_the_turn(),
+            (Driving::Sometimes, crate::AskedTheWay::InTheEnvelope)
+        );
+        assert!(!model.can_be_the_agent());
+        assert!(matches!(
+            only_freely.agent_for_cpu(64.0),
+            Err(crate::NoAgentHere::NoneClearsTheBar { .. })
+        ));
+    }
+
+    /// **And the free grade only where none was measured in the envelope** —
+    /// the only measurement there is, never a grade assumed for the other way.
+    #[test]
+    fn the_free_grade_decides_only_where_no_enveloped_grade_was_measured() {
+        let read = Catalogue::parse(&graded_with("reliably", A_MACHINE)).unwrap();
+        let model = read.models.first().unwrap();
+        assert_eq!(model.drives_verbs_in_the_envelope, None);
+        assert_eq!(
+            model.grade_for_the_turn(),
+            (Driving::Reliably, crate::AskedTheWay::Freely)
+        );
+        assert!(model.can_be_the_agent());
+        assert_eq!(read.agent_for_cpu(64.0).unwrap().id, model.id);
+
+        let rarely = Catalogue::parse(&graded_with("rarely", A_MACHINE)).unwrap();
+        assert!(!rarely.models.first().unwrap().can_be_the_agent());
     }
 
     /// **Every grade the catalogue ships names the machine it was earned on.**

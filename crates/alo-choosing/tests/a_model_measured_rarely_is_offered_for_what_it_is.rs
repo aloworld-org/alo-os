@@ -21,7 +21,9 @@
 )]
 
 use alo_choosing::{Chosen, Which};
-use alo_models::{Catalogue, Driving, InferenceSource, NoAgentHere, WhyUnmeasured, words};
+use alo_models::{
+    AskedTheWay, Catalogue, Driving, InferenceSource, NoAgentHere, WhyUnmeasured, words,
+};
 use alo_strings::Strings;
 
 /// The vocabulary a machine actually holds.
@@ -136,4 +138,47 @@ fn an_entry_with_no_grade_says_why_in_words_the_machine_holds() {
             entry.id
         );
     }
+}
+
+/// **The offer names which way the grade that decides was earned** (task 15).
+///
+/// An agent turn asks a local model in the envelope, so an entry measured that
+/// way is offered by that grade, and says so; an entry measured only freely is
+/// offered by its free grade, and says that nobody measured it the way a turn
+/// asks. Both grades stay on the entry.
+#[test]
+fn an_offer_says_which_way_the_grade_that_decides_was_earned() {
+    let strings = what_this_machine_can_say();
+    let shipped = Catalogue::built_in().unwrap();
+
+    let entry = shipped.get(MEASURED_RARELY).unwrap();
+    assert_eq!(
+        entry.drives_verbs,
+        Driving::Rarely,
+        "the free grade is kept"
+    );
+    let (grade, asked) = entry.grade_for_the_turn();
+    assert_eq!(
+        (grade, asked),
+        (Driving::Sometimes, AskedTheWay::InTheEnvelope)
+    );
+    assert!(!entry.can_be_the_agent());
+    let said = asked.said(&strings);
+    assert!(said.text().contains("the way an agent turn asks"), "{said}");
+    assert!(!said.text().contains("models.graded"), "{said}");
+
+    // Every measured entry the catalogue ships today was also measured in the
+    // envelope, so none is offered by its free grade; the sentence for one that
+    // is must still reach a person as words.
+    assert!(
+        shipped
+            .models
+            .iter()
+            .filter(|model| model.drives_verbs.has_been_measured())
+            .all(|model| model.grade_for_the_turn().1 == AskedTheWay::InTheEnvelope)
+    );
+    let freely = AskedTheWay::Freely;
+    let said = freely.said(&strings);
+    assert!(said.text().contains("nobody has measured it"), "{said}");
+    assert!(!said.text().contains("models.graded"), "{said}");
 }

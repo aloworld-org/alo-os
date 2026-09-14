@@ -159,7 +159,8 @@ impl Catalogue {
     /// (ADR 0007). It must be **usable** without somebody reading a licence
     /// first, which is [`Model::safe_default_for_business`] and is conservative
     /// on purpose. And it must have been **measured driving the verbs**, which
-    /// is [`crate::Driving::clears_the_bar`].
+    /// is [`crate::Driving::clears_the_bar`] read off [`Model::grade_for_the_turn`]
+    /// — the grade for the way an agent turn asks.
     ///
     /// Among those, comfortable before workable and then larger before smaller,
     /// which is the ordering this method had before the bar existed: a model
@@ -178,7 +179,7 @@ impl Catalogue {
         let to_choose_from = choices.len();
         let measured = choices
             .iter()
-            .filter(|model| model.drives_verbs.has_been_measured())
+            .filter(|model| model.grade_for_the_turn().0.has_been_measured())
             .count();
         choices
             .into_iter()

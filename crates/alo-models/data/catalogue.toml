@@ -417,9 +417,10 @@ runtime = "Ollama 0.34.0"
 # three doors, the same weights drove **35 of 40 — `sometimes`**, two and a half
 # points under the bar; and on 2026-09-14, through `alo-asking`'s door for it
 # (task 14), **71 of 80 — `sometimes` again, one attempt short of the 72 the bar
-# needs**. The eighty are the grade below, as the larger sample of one method. That grade is `drives_verbs_in_the_envelope`, kept apart
-# from the free one, and the recommendation does not read it until an agent turn
-# asks a local model that way.
+# needs**. The eighty are the grade below, as the larger sample of one method.
+# That grade is `drives_verbs_in_the_envelope`, kept apart from the free one, and
+# since task 15 it is **the grade the recommendation reads**: an agent turn asks a
+# local model in the envelope (`e99be94`), so the free grade is history.
 #
 # **The rule that measurement came from:** a grade from one round that lands
 # within one attempt of a line — four, five or six; eight, nine or ten — owes a
@@ -482,7 +483,8 @@ instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce
 # catalogue to clear the bar. It sits beside the 71 of 80 above, which stays the
 # entry's own envelope grade: the two differ only in the instructions, and
 # `instructions` is the SHA-256 that tells them apart. The recommendation reads
-# neither (ADR 0032, decision 5; ADR 0034, decision 4).
+# the 71, not this: an agent turn is shown the agent's own words, not these
+# instructions (ADR 0034, decision 4).
 [[model.also_under]]
 drives_verbs_in_the_envelope = "reliably"
 
