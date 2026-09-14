@@ -238,7 +238,8 @@ measurement is the same one; only the room is missing.
 
 ### 10. Every entry this machine can hold, asked in the envelope
 
-**Status:** ready. **Depends on:** 7.
+**Status:** **Done, 2026-09-14.** **Depends on:** 7.
+**Report:** `docs/autonomy/updates/every-entry-this-machine-holds-asked-in-the-envelope.md`.
 
 ADR 0032 took Qwen 2.5 7B from 40% to 87.5% by holding it to the protocol's
 envelope. Four entries have an envelope grade; the six small entries graded on

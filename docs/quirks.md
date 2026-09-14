@@ -3238,6 +3238,15 @@ the crate is not the measuring lane's. The fixture wants to wait for the group's
 removing it. `tools/kernel-loop` already runs a failing gate twice for this kind
 of transient; the Mac lane's publish script does not, so it refuses a tree this
 flakes on and is run again.
+
+**It cascades.** A `home` group left behind in the session scope makes the next
+run of `alo-agentd`'s boundary tests fail four at once — *"cannot make a control
+group at /sys/fs/cgroup/user.slice/user-501.slice/session-4.scope/home …
+AlreadyExists"* — with two pins (`alo-agentd-gone-<pid>`, `alo-agentd-test-<pid>`)
+left by processes that no longer exist. On the Mac lane's VM, before every gate
+run, a tidy step removes only debris whose process is gone (a pin whose pid is
+not running, a group with no processes in it) and says what it removed; nothing
+a live fixture holds is touched.
 **Date:** 2026-09-14.
 
 ### The pinned runtime orders a JSON schema's keys alphabetically

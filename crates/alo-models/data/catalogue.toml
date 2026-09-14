@@ -478,6 +478,7 @@ min_vram_gb = 4.0
 min_ram_gb = 6.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct"
 licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
 
@@ -485,6 +486,13 @@ licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 0
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
 
@@ -595,6 +603,7 @@ min_vram_gb = 3.0
 min_ram_gb = 5.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct"
 
 [model.licence]
@@ -609,6 +618,13 @@ runtime = "Ollama 0.33.3"
 drove = 0
 of = 20
 
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 3
+of = 20
+
 [[model]]
 id = "qwen2.5-3b-instruct"
 name = "Qwen2.5 3B Instruct"
@@ -621,6 +637,7 @@ min_vram_gb = 3.0
 min_ram_gb = 5.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct"
 
 [model.licence]
@@ -635,6 +652,13 @@ runtime = "Ollama 0.33.3"
 drove = 1
 of = 20
 
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+
 [[model]]
 id = "gemma-2-2b-instruct"
 name = "Gemma 2 2B Instruct"
@@ -647,6 +671,7 @@ min_vram_gb = 2.5
 min_ram_gb = 4.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/google/gemma-2-2b-it"
 
 [model.licence]
@@ -661,6 +686,13 @@ runtime = "Ollama 0.33.3"
 drove = 2
 of = 20
 
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+
 [[model]]
 id = "smollm2-1.7b-instruct"
 name = "SmolLM2 1.7B Instruct"
@@ -673,6 +705,7 @@ min_vram_gb = 2.0
 min_ram_gb = 3.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -682,6 +715,14 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 0
 of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+
 
 # ── trained for tool calls, rather than chosen for being small ──────────────
 #
@@ -712,6 +753,7 @@ min_vram_gb = 2.5
 min_ram_gb = 4.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/Qwen/Qwen3-1.7B"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -720,6 +762,13 @@ machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, n
 date = "2026-09-11"
 runtime = "Ollama 0.33.3"
 drove = 3
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 1
 of = 20
 
 [[model]]
@@ -734,6 +783,7 @@ min_vram_gb = 2.5
 min_ram_gb = 4.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/ibm-granite/granite-3.2-2b-instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -742,4 +792,11 @@ machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, n
 date = "2026-09-11"
 runtime = "Ollama 0.33.3"
 drove = 1
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
 of = 20
