@@ -193,3 +193,49 @@ observations fill.
   the sign-in screen is the desktop lane's and is not in the image yet.
 - **Constraint:** nothing is ticked from this repository. A loop that
   reaches this task launches nothing and says so.
+
+### 7. Replace Windows — the road with no way back
+
+**Status:** ready. **Depends on:** 4.
+
+[ADR 0023](../decisions/0023-installed-from-the-machine-it-replaces.md) §4:
+Windows is *either retained alongside (default where disk allows) or replaced
+(explicit choice, twice confirmed)*. Task 4 built the first. This is the
+second, and it is the only task in this repository that destroys somebody's
+data on purpose.
+
+It depends on task 4 rather than on the laptop's certification because it
+reuses all of it — the checks, the staging, the boot entry, the environment
+that pulls and installs. What is new is the one thing that cannot be undone,
+and it is written as its own task so that nobody adds it to another one as a
+flag.
+
+- **Acceptance:** *Replace Windows* is a mode a person chooses in the
+  installer, never a default, never preselected, and never reachable by
+  clicking past a screen: it asks twice, and the second time the person
+  **types the name of the disk and the word that names what is lost**, in
+  their own language, with the sentence saying what will be destroyed —
+  Windows, the applications on it, and every file on that volume — in the
+  vocabulary rather than in English written into the program; before anything
+  is written it says, from what it read rather than from assumption, how much
+  is on the Windows volume and the date of the newest file there, because
+  *20 GB of documents last touched this morning* is what makes a person stop;
+  it refuses outright, with a reason, when there is a BitLocker volume it
+  cannot confirm is unlocked and backed up, when the machine has one disk and
+  no recovery media exists, and when the person's answer does not match; the
+  whole-disk install then runs through task 2's environment — `bootc install`
+  over the whole disk rather than beside it — and the machine boots to alo OS
+  with no boot entry for anything else; and a test in a virtual machine with
+  a real Windows and known files on it walks the refusals one at a time and
+  then the accepted road once, checking after each refusal that Windows still
+  boots and the files are byte-for-byte what they were.
+- **Constraint:** **the point of no return is one place in the code, named,
+  and everything before it is reversible** — the same shape ADR 0023 asks of
+  the alongside road, with the difference that after it there is no bail-out
+  and the program says so in the sentence that precedes it. No telemetry, no
+  "are you sure?" checkbox, no timer that proceeds on silence. This task
+  never runs on the certified laptop: ADR 0033 §2 keeps that machine on the
+  alongside road, and the evidence ledger records certification made that
+  way. Recovery media is named as the thing a person needs if they change
+  their mind afterwards, honestly, because after this there is no Windows to
+  run a program from.
