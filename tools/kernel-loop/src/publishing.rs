@@ -25,7 +25,9 @@
 //! is followed by [`crate::evidence`], which runs the test behind each
 //! acceptance criterion on its own and refuses a task whose evidence is not part
 //! of the change it is publishing. **Passing existing tests is never taken as
-//! completed implementation.**
+//! completed implementation.** After a rebase the gates run again every time,
+//! and the evidence runs again when what arrived touched a crate the task is in
+//! ([`Evidence::after_a_rebase`] says why not otherwise).
 //!
 //! # The second gate is the one that matters
 //!
@@ -76,12 +78,20 @@ const TIMES: u8 = 6;
 /// saying *a failed gate publishes nothing* is evidence about the program a
 /// person actually runs.
 pub trait Steps {
-    /// Every gate, and then this task's acceptance evidence. `which` names the
-    /// tree being checked, for the log.
+    /// Every gate, and then — when `evidence` says to — this task's acceptance
+    /// evidence. `which` names the tree being checked, for the log.
     ///
     /// # Errors
     /// A sentence naming the gate or the piece of evidence that did not pass.
-    fn check(&mut self, which: &str) -> Result<(), String>;
+    fn check(&mut self, which: &str, evidence: Evidence) -> Result<(), String>;
+
+    /// Whether what arrived on `origin/main`, since this checkout's commit was
+    /// based, changed any crate this task's own files are in. Asked after a
+    /// fetch and before the rebase, while the two can still be told apart.
+    ///
+    /// # Errors
+    /// Whatever `git` said.
+    fn arrivals_touch_the_task(&mut self) -> Result<bool, String>;
 
     /// Stage exactly the files the task named, and nothing else.
     ///
@@ -125,6 +135,51 @@ pub trait Steps {
     fn note(&mut self, said: &str);
 }
 
+/// Whether a check runs the task's acceptance evidence as well as the gates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Evidence {
+    /// Run every piece of evidence the handoff names, one at a time.
+    Run,
+
+    /// The evidence already stood up on this task's tree, and nothing that
+    /// arrived since touched a crate it is in, so it is not run again. **The
+    /// gates still are**, on the combined tree, every time.
+    AlreadyStood,
+}
+
+impl Evidence {
+    /// After a rebase: run the evidence again only when what arrived touched the
+    /// task's own crates.
+    ///
+    /// **Why it is not simply run every time.** The nine gates are the rule for
+    /// a combined tree, and they always run. Evidence is different: it proves
+    /// the task's own acceptance, and some of it is slow — on 2026-09-15 the
+    /// machine-keeps-itself plan's third task carried two virtual-machine tests
+    /// of about twenty minutes. Re-running them after every lost race made each
+    /// retry longer than the time between other lanes' pushes, so the task lost
+    /// the race again every time, while nothing it had proved could have
+    /// changed. A crate the arrivals did touch is re-proved, because that is
+    /// where a combination can change what a test finds.
+    #[must_use]
+    pub const fn after_a_rebase(touched: bool) -> Self {
+        if touched {
+            Self::Run
+        } else {
+            Self::AlreadyStood
+        }
+    }
+}
+
+/// Whether any of the files that arrived are in a crate this task's own files
+/// are in.
+#[must_use]
+pub fn touches(arrived: &[String], ours: &[String]) -> bool {
+    let theirs = gates::every_crate_among(arrived);
+    gates::every_crate_among(ours)
+        .iter()
+        .any(|crate_named| theirs.contains(crate_named))
+}
+
 /// One task, all the way onto `main` — or nowhere at all.
 ///
 /// # Errors
@@ -136,7 +191,7 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
     // Nothing is staged before this returns `Ok`. A failure here leaves a tree
     // the supervisor has not touched, which is what makes the work recoverable
     // by reading it rather than by finding it.
-    steps.check("this task's tree")?;
+    steps.check("this task's tree", Evidence::Run)?;
 
     steps.stage()?;
     let sha = steps.commit()?;
@@ -147,10 +202,11 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
             steps.note(&format!(
                 "main advanced; rebasing and gating the combined tree (attempt {attempt})"
             ));
+            let touched = steps.arrivals_touch_the_task()?;
             steps.rebase()?;
-            // **The combination is checked before it is pushed, every time.** A
+            // **The combination is gated before it is pushed, every time.** A
             // failure here leaves the rebased commit local and unpublished.
-            steps.check("the combined tree")?;
+            steps.check("the combined tree", Evidence::after_a_rebase(touched))?;
         }
 
         match steps.push() {
@@ -206,19 +262,33 @@ impl<'a> OnThisMachine<'a> {
 }
 
 impl Steps for OnThisMachine<'_> {
-    fn check(&mut self, which: &str) -> Result<(), String> {
+    fn check(&mut self, which: &str, evidence: Evidence) -> Result<(), String> {
         journal::note(
             self.ours,
             &format!("checking {which}; the report is {}", self.task.report),
         );
         let passed = gates::all_of_them(self.at, &self.task.files)?;
         journal::note(self.ours, &format!("{which} passed: {}", passed.join("; ")));
+        if evidence == Evidence::AlreadyStood {
+            journal::note(
+                self.ours,
+                "the evidence already stood up on this task's tree, and nothing that arrived \
+                 touched a crate this task is in, so it was not run again",
+            );
+            return Ok(());
+        }
         let stood = evidence::stands_up(self.at, &self.task.files, &self.task.evidence)?;
         journal::note(
             self.ours,
             &format!("the evidence stood up: {}", stood.join("; ")),
         );
         Ok(())
+    }
+
+    fn arrivals_touch_the_task(&mut self) -> Result<bool, String> {
+        let arrived = repository::git(self.at, &["diff", "--name-only", "HEAD...origin/main"])?;
+        let arrived: Vec<String> = arrived.lines().map(str::to_owned).collect();
+        Ok(touches(&arrived, &self.task.files))
     }
 
     fn stage(&mut self) -> Result<(), String> {
@@ -276,6 +346,10 @@ mod tests {
         /// What `advanced` answers, one call at a time, then `false`.
         advancing: Vec<bool>,
 
+        /// What `arrivals_touch_the_task` answers, one call at a time, then
+        /// `false`.
+        arrivals: Vec<bool>,
+
         /// How many pushes lose a race before one goes through.
         pushes_refused: u8,
     }
@@ -293,12 +367,24 @@ mod tests {
     }
 
     impl Steps for Recording {
-        fn check(&mut self, which: &str) -> Result<(), String> {
-            self.did.push(format!("check {which}"));
+        fn check(&mut self, which: &str, evidence: Evidence) -> Result<(), String> {
+            self.did.push(match evidence {
+                Evidence::Run => format!("check {which}"),
+                Evidence::AlreadyStood => format!("check {which}, gates only"),
+            });
             if self.refusing == Some("check") || self.refusing == Some(which) {
                 return Err(format!("`{which}` did not pass"));
             }
             Ok(())
+        }
+
+        fn arrivals_touch_the_task(&mut self) -> Result<bool, String> {
+            self.did.push("arrivals".to_owned());
+            Ok(if self.arrivals.is_empty() {
+                false
+            } else {
+                self.arrivals.remove(0)
+            })
         }
 
         fn stage(&mut self) -> Result<(), String> {
@@ -380,8 +466,9 @@ mod tests {
                 "stage",
                 "commit",
                 "advanced",
+                "arrivals",
                 "rebase",
-                "check the combined tree",
+                "check the combined tree, gates only",
             ]
         );
     }
@@ -403,7 +490,7 @@ mod tests {
             !steps
                 .did
                 .iter()
-                .any(|what| what == "check the combined tree")
+                .any(|what| what.starts_with("check the combined tree"))
         );
     }
 
@@ -429,12 +516,94 @@ mod tests {
                 "push",
                 "advanced",
                 "advanced",
+                "arrivals",
                 "rebase",
-                "check the combined tree",
+                "check the combined tree, gates only",
                 "push",
                 "put_away",
             ]
         );
+    }
+
+    /// **What arrived touching the task's own crates re-proves its evidence** on
+    /// the combined tree, after the gates, before the push.
+    #[test]
+    fn arrivals_in_the_tasks_crates_run_its_evidence_again() {
+        let mut steps = Recording {
+            advancing: vec![false, true, true],
+            arrivals: vec![true],
+            pushes_refused: 1,
+            ..Recording::default()
+        };
+        gated_and_pushed(&mut steps).unwrap();
+
+        assert_eq!(
+            steps.did,
+            [
+                "check this task's tree",
+                "stage",
+                "commit",
+                "advanced",
+                "push",
+                "advanced",
+                "advanced",
+                "arrivals",
+                "rebase",
+                "check the combined tree",
+                "push",
+                "put_away"
+            ]
+        );
+    }
+
+    /// **The gates are never skipped**, whatever arrived: only the evidence
+    /// that already stood up on untouched crates is.
+    #[test]
+    fn a_combined_tree_is_gated_whether_or_not_its_evidence_runs_again() {
+        for touched in [false, true] {
+            let mut steps = Recording {
+                advancing: vec![true],
+                arrivals: vec![touched],
+                ..Recording::default()
+            };
+            gated_and_pushed(&mut steps).unwrap();
+            assert!(
+                steps
+                    .did
+                    .iter()
+                    .any(|what| what.starts_with("check the combined tree")),
+                "a combined tree was pushed ungated when arrivals touched the task: {touched}"
+            );
+        }
+    }
+
+    /// Which arrivals count as touching a task: a file in a crate the task's own
+    /// files are in, and nothing else.
+    #[test]
+    fn arrivals_touch_a_task_only_through_a_crate_it_is_in() {
+        let ours = [
+            "crates/alo-keeping-up/src/before.rs".to_owned(),
+            "crates/alo-updating/tests/going_back.rs".to_owned(),
+            "docs/autonomy/updates/back-to-yesterdays-machine.md".to_owned(),
+        ];
+
+        assert!(touches(
+            &["crates/alo-updating/src/lib.rs".to_owned()],
+            &ours
+        ));
+        assert!(!touches(
+            &[
+                "crates/alo-portals/src/settings.rs".to_owned(),
+                "Cargo.lock".to_owned(),
+                "docs/autonomy/updates/back-to-yesterdays-machine.md".to_owned(),
+            ],
+            &ours
+        ));
+        assert!(!touches(&[], &ours));
+        assert!(!touches(
+            &["crates/alo-updating/src/lib.rs".to_owned()],
+            &["docs/quirks.md".to_owned()]
+        ));
     }
 
     /// **A refused push with an unmoved remote stops at once** rather than

@@ -267,7 +267,7 @@ fn forget_what_was_built_of(at: &Path, touched: &[String]) {
 /// document, an image file, a plan — belongs to no crate and is skipped. The
 /// directory name is the crate name in this repository, which `Cargo.toml`'s
 /// `members` glob is what makes true.
-fn every_crate_among(touched: &[String]) -> Vec<String> {
+pub(crate) fn every_crate_among(touched: &[String]) -> Vec<String> {
     let mut named: Vec<String> = Vec::new();
     for path in touched {
         let path = path.replace('\\', "/");

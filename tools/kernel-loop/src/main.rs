@@ -716,7 +716,7 @@ fn verify(at: &Path, ours: &Path) -> ExitCode {
     };
 
     let mut steps = publishing::OnThisMachine::publishing(at, ours, &waiting);
-    match publishing::Steps::check(&mut steps, "this task's tree") {
+    match publishing::Steps::check(&mut steps, "this task's tree", publishing::Evidence::Run) {
         Ok(()) => {
             println!(
                 "alo-kernel-loop: every gate passed and the evidence for `{}` stood up. Nothing \
