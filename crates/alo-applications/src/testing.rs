@@ -129,9 +129,12 @@ pub(crate) fn german() -> Language {
     Language::written("de").unwrap()
 }
 
-/// This crate's vocabulary and the capability model's, in one.
+/// This crate's vocabulary, the capability model's, and `alo-opening`'s — whose
+/// names for kinds of file and findings about them this crate's answers to
+/// *what opens this* carry — in one.
 fn everything() -> Vocabulary {
     let mut vocabulary = application_words().unwrap();
     alo_capability::declare_into(&mut vocabulary).unwrap();
+    alo_opening::declare_into(&mut vocabulary).unwrap();
     vocabulary
 }

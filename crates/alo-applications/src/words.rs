@@ -228,10 +228,179 @@ pub const WHOLE_SCREEN: Word =
     Word::saying("applications.where.whole-screen", "across the whole screen")
         .noting(COMPLETES_THE_SENTENCE);
 
+// ---------------------------------------------------------------------------
+// What opens what — [`crate::Opener`] and [`crate::NothingOpens`].
+// ---------------------------------------------------------------------------
+
+/// What a translator has to know about `{what}`.
+const A_KIND: &str = "{what} is a kind of file, like \"a PDF document\" or \"an OpenDocument \
+                      spreadsheet\", and it arrives already translated, with its article: write the \
+                      sentence so the phrase can sit where your language puts it.";
+
+/// The person chose this application for the kind.
+pub const OPENS_CHOSEN: Word = Word::saying(
+    "applications.opens.chosen",
+    "{application} opens {what}, because you chose it for that",
+)
+.noting(
+    "{application} is the identifier this machine knows an application by, like \
+     org.gnome.Papers, and is never translated. {what} is a kind of file, already translated, \
+     like \"a PDF document\". \"You chose\" is literal: the person picked this in Settings.",
+);
+
+/// The application declares the kind, and the person chose nothing for it.
+pub const OPENS_DECLARED: Word = Word::saying(
+    "applications.opens.declared",
+    "{application} opens {what}, because it says it can and you have not chosen an application \
+     for it",
+)
+.noting(
+    "{application} is the identifier this machine knows an application by, like \
+     org.gnome.Papers, and is never translated. {what} is a kind of file, already translated, \
+     like \"a PDF document\". The second half tells the person this is not their choice, and that \
+     they can make one.",
+);
+
+/// The application declares the kind, and what the person chose is gone.
+pub const OPENS_DECLARED_INSTEAD: Word = Word::saying(
+    "applications.opens.declared-instead",
+    "{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no \
+     longer installed",
+)
+.noting(
+    "{application} and {chosen} are identifiers this machine knows applications by, like \
+     org.gnome.Papers, and neither is translated. {what} is a kind of file, already translated, \
+     like \"a PDF document\". The person's choice is kept and used again if they reinstall what \
+     they chose.",
+);
+
+/// Nothing installed opens the kind, and the person chose nothing.
+pub const NOTHING_OPENS: Word = Word::saying(
+    "applications.opens.nothing",
+    "nothing on this machine opens {what} — no application installed says it can, and you have \
+     not chosen one",
+)
+.noting(A_KIND);
+
+/// Nothing installed opens the kind, and what the person chose is gone.
+pub const NOTHING_OPENS_CHOICE_NOT_INSTALLED: Word = Word::saying(
+    "applications.opens.nothing-choice-not-installed",
+    "nothing on this machine opens {what} — {chosen}, which you chose for it, is no longer \
+     installed, and no other application installed says it can",
+)
+.noting(
+    "{chosen} is the identifier this machine knows an application by, like org.kde.okular, and \
+     is never translated. {what} is a kind of file, already translated, like \"a PDF document\".",
+);
+
+// ---------------------------------------------------------------------------
+// The person's own file, `what-opens-what.toml` — [`crate::FileNotRead`] and
+// [`crate::FileNotWritten`]. Each names the file, and each says what opens a
+// file instead.
+// ---------------------------------------------------------------------------
+
+/// The disk would not give the file up.
+pub const KEPT_NOT_READ: Word = Word::saying(
+    "applications.kept.not-read",
+    "your choices of what opens each kind of file, at {path}, could not be read, so each kind \
+     opens in the application that says it can",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A disk or a permission rather than \
+     anything a person typed.",
+);
+
+/// The file is there and is not these settings.
+pub const KEPT_NOT_UNDERSTOOD: Word = Word::saying(
+    "applications.kept.not-understood",
+    "your choices of what opens each kind of file, at {path}, are not settings alo OS can read, so \
+     nothing in the file has been used and each kind opens in the application that says it can",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. The important clause is that \
+     nothing in the file was used: alo OS did not take the half it understood. Said of a kind of \
+     file alo OS does not know, an application named by something that is not an identifier, or \
+     a file with no format number at the top. \"alo OS\" is the product's name and is never \
+     translated.",
+);
+
+/// The file stopped being settings at a line.
+pub const KEPT_NOT_UNDERSTOOD_AT: Word = Word::saying(
+    "applications.kept.not-understood-at",
+    "your choices of what opens each kind of file, at {path}, stop making sense at line {line}, so \
+     nothing in the file has been used and each kind opens in the application that says it can",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. {line} is a plain whole number, \
+     counted from one the way a text editor counts lines.",
+);
+
+/// The file says it is a shape this alo OS does not read.
+pub const KEPT_ANOTHER_FORMAT: Word = Word::saying(
+    "applications.kept.another-format",
+    "your choices of what opens each kind of file, at {path}, were written for a different alo OS \
+     than this one, so nothing in the file has been used and each kind opens in the application \
+     that says it can",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. Most often a newer alo OS wrote the \
+     file; reading it part-way would open files in applications the person did not choose.",
+);
+
+/// The file names something that is not one of these settings.
+pub const KEPT_UNKNOWN_KEY: Word = Word::saying(
+    "applications.kept.unknown-key",
+    "your choices of what opens each kind of file, at {path}, say {key}, which is not something \
+     alo OS can change about what opens what, so nothing in the file has been used",
+)
+.noting(
+    "{path} is a file on this machine and {key} is a word as it was typed into it; neither is \
+     translated. The key is named because it is what a person has to find in the file to fix it.",
+);
+
+/// The disk would not take the changed file.
+pub const KEPT_NOT_WRITTEN: Word = Word::saying(
+    "applications.kept.not-written",
+    "your choices of what opens each kind of file, at {path}, could not be written, so nothing \
+     about what opens what has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A full disk or a folder the person \
+     cannot write. The second clause is what they act on: the file is exactly as it was.",
+);
+
+/// The change could not be written as a file this alo OS reads back.
+pub const KEPT_NOT_EXPRESSIBLE: Word = Word::saying(
+    "applications.kept.not-expressible",
+    "this alo OS could not write that change into your choices of what opens each kind of file, \
+     at {path}, in a form it can read back again, so nothing about what opens what has been \
+     changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A fault in alo OS rather than \
+     anything the person did, said plainly: the change was refused before the file was touched.",
+);
+
+/// The file a change would replace is there and did not read, so it was kept.
+pub const KEPT_NOT_REPLACED: Word = Word::saying(
+    "applications.kept.not-replaced",
+    "your choices of what opens each kind of file, at {path}, could not be read, so that change \
+     has not been written over them and nothing about what opens what has been changed — correct \
+     the file, or put these choices back as alo OS ships them",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. Said when a person changes what \
+     opens a kind of file in Settings while the file, most often one they edited by hand, does not \
+     read: alo OS keeps their file rather than replacing it. The last clause gives the two ways on \
+     — mend the file in an editor, or deliberately put this section back as it ships. \"alo OS\" \
+     is the product's name and is never translated.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: what
 /// it could not reach, what could not join the list, how one is shown, the four
-/// verbs, and the arrangements one of them offers.
-pub const EVERY_WORD: [Word; 20] = [
+/// verbs, the arrangements one of them offers, what opens what, and what is said
+/// about the person's own file of those choices.
+pub const EVERY_WORD: [Word; 33] = [
     NOT_INSTALLED,
     NO_IDENTIFIER,
     NOT_AN_IDENTIFIER,
@@ -252,6 +421,19 @@ pub const EVERY_WORD: [Word; 20] = [
     LEFT_HALF,
     RIGHT_HALF,
     WHOLE_SCREEN,
+    OPENS_CHOSEN,
+    OPENS_DECLARED,
+    OPENS_DECLARED_INSTEAD,
+    NOTHING_OPENS,
+    NOTHING_OPENS_CHOICE_NOT_INSTALLED,
+    KEPT_NOT_READ,
+    KEPT_NOT_UNDERSTOOD,
+    KEPT_NOT_UNDERSTOOD_AT,
+    KEPT_ANOTHER_FORMAT,
+    KEPT_UNKNOWN_KEY,
+    KEPT_NOT_WRITTEN,
+    KEPT_NOT_EXPRESSIBLE,
+    KEPT_NOT_REPLACED,
 ];
 
 /// Why this crate's own words could not be declared.

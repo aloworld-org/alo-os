@@ -108,9 +108,15 @@ name = "alo-applications"
 version = "0.0.1"
 dependencies = [
  "alo-capability",
+ "alo-kept",
+ "alo-opening",
  "alo-record",
+ "alo-saying",
  "alo-strings",
+ "serde",
+ "serde_json",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
@@ -551,7 +557,9 @@ dependencies = [
 name = "alo-portals"
 version = "0.0.1"
 dependencies = [
+ "alo-applications",
  "alo-capability",
+ "alo-opening",
  "alo-saying",
  "alo-strings",
  "serde_json",

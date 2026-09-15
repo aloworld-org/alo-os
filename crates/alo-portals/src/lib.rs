@@ -57,12 +57,13 @@
 //! | [`not_a_request`] | Why what arrived was never a request |
 //! | [`judging`] | A request judged against the grants, and what allowed it |
 //! | [`refused`] | Why a request was refused, and what a person is told |
+//! | [`open_with`] | An open-with request, answered from what opens what |
 //! | [`words`] | Every string this crate can say |
 //!
 //! # What is not here
 //!
-//! **No D-Bus, no socket and no dialog.** Task 1 of the applications plan
-//! decides; task 5 serves `org.freedesktop.portal.*` from these decisions, and
+//! **No D-Bus, no socket and no dialog.** Tasks 1 and 4 of the applications
+//! plan decide; task 5 serves `org.freedesktop.portal.*` from these decisions, and
 //! the file chooser a portal opens is the desktop lane's. **No grant is made
 //! here**: making one is a person's act, and nothing in this crate holds a
 //! `&mut Grants`. **No v1 portal** — USB, global shortcuts, launchers, remote
@@ -73,6 +74,7 @@
 
 pub mod judging;
 pub mod not_a_request;
+pub mod open_with;
 pub mod portal;
 pub mod refused;
 pub mod request;
@@ -80,6 +82,7 @@ pub mod words;
 
 pub use judging::Allowed;
 pub use not_a_request::NotARequest;
+pub use open_with::{NotOpened, OpensWith};
 pub use portal::{Over, Portal};
 pub use refused::Refused;
 pub use request::{LONGEST_IDENTIFIER, Request};

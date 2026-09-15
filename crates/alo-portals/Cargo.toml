@@ -13,6 +13,12 @@ repository.workspace = true
 # ends are ruled on in one crate and never restated here.
 alo-capability = { path = "../alo-capability" }
 
+# What opens what. An open-with request is answered from
+# `alo_applications::WhatOpensWhat` and nowhere else, so which application opens
+# a kind of file is decided in one crate, from the person's choice or the
+# applications' declarations, and never restated here.
+alo-applications = { path = "../alo-applications" }
+
 # Everything a person reads: what each portal lets an application do, and why a
 # request was refused.
 alo-strings = { path = "../alo-strings" }
@@ -22,6 +28,9 @@ alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# What a file is, named in the open-with test's assertions about what opens it.
+alo-opening = { path = "../alo-opening" }
+
 # The machine's one vocabulary, so the acceptance test can ask whether what
 # this crate says is collected beside everybody else's.
 alo-saying = { path = "../alo-saying" }

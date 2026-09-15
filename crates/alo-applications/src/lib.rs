@@ -53,30 +53,68 @@
 //! is worded where it is made, so what somebody was told is what is written
 //! down.
 //!
+//! # What opens what
+//!
+//! `docs/features.md`, v0.5: *file associations — what opens what, changeable
+//! by a person.* [`WhatOpensWhat`] answers *which application opens this file*
+//! from the file's own bytes: the application the person chose for its kind
+//! ([`Chosen`], kept in their own `what-opens-what.toml` by [`keeping`]), or
+//! where they chose none, the first installed application that declares it
+//! ([`Declared`]) — and says which of the two it was ([`Because`]). A kind
+//! nothing opens is a sentence ([`NothingOpens`]), never a fallback to some
+//! application that will show a person noise.
+//!
+//! | | |
+//! |---|---|
+//! | [`what_opens`] | The answer, in order: chosen, declared, nothing |
+//! | [`opener`] | An application and the reason it is the one |
+//! | [`nothing_opens`] | Why nothing opens a file |
+//! | [`chosen`] | What the person chose, and only a person changes |
+//! | [`declared`] | What the applications say they open, first declared first |
+//! | [`media_types`] | A desktop entry's media types, as kinds |
+//! | [`spelled`] | How a kind is written in the person's file |
+//! | [`keeping`], [`unkept`] | `what-opens-what.toml`, and what a person is told about it |
+//!
 //! # What this crate does not do
 //!
-//! **It opens, focuses and closes nothing.** That is the acting half: Wayland,
-//! D-Bus and the portal backend (ADR 0005), which need a Linux host and are not
-//! this crate's. What is here is everything that can be decided and tested on
-//! any machine, so that when the acting half is written it is an implementation
-//! of a settled model rather than a place where the model gets decided by
-//! accident.
+//! **It opens, focuses and closes nothing**, and an answer to *what opens this*
+//! launches nothing either: it is a name and a reason. That is the acting half:
+//! Wayland, D-Bus and the portal backend (ADR 0005), which need a Linux host and
+//! are not this crate's. What is here is everything that can be decided and
+//! tested on any machine, so that when the acting half is written it is an
+//! implementation of a settled model rather than a place where the model gets
+//! decided by accident.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod application;
+pub mod chosen;
+pub mod declared;
 pub mod installed;
+pub mod keeping;
+pub mod media_types;
+pub mod nothing_opens;
+pub mod opener;
 pub mod reaching;
 pub mod refusing;
+pub mod spelled;
+pub mod unkept;
 pub mod verbs;
+pub mod what_opens;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use application::Application;
+pub use chosen::Chosen;
+pub use declared::Declared;
 pub use installed::Installed;
+pub use nothing_opens::NothingOpens;
+pub use opener::{Because, Opener};
 pub use reaching::Reaching;
 pub use refusing::{NotAnApplication, NotInstalled};
+pub use unkept::{FileNotRead, FileNotWritten};
 pub use verbs::{Declaring, application_verbs, declare_into};
+pub use what_opens::WhatOpensWhat;
 pub use words::{EVERY_WORD, Word, WordsError, application_words};

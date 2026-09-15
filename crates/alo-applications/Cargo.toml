@@ -1,7 +1,7 @@
 [package]
 name = "alo-applications"
 version = "0.0.1"
-description = "What an agent may do to applications, and the list it is checked against."
+description = "What an agent may do to applications, the list it is checked against, and which application opens which kind of file."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -9,7 +9,17 @@ repository.workspace = true
 
 [dependencies]
 alo-capability = { path = "../alo-capability" }
+# The rule a person's choices of what opens what are kept by, in
+# `what-opens-what.toml`: only the difference, refused whole when wrong, written
+# whole or not at all (ADR 0038).
+alo-kept = { path = "../alo-kept" }
+# What a file is, from its own bytes. Borrowed rather than written again: a
+# second reader here would be a second opinion on this machine about what a
+# file is, and `alo-opening` already tells a Word document from a spreadsheet,
+# which is the difference an association exists for.
+alo-opening = { path = "../alo-opening" }
 alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
 thiserror = { workspace = true }
 
 [lints]
@@ -17,3 +27,11 @@ workspace = true
 
 [dev-dependencies]
 alo-record = { path = "../alo-record" }
+# The machine's one vocabulary, so the acceptance test can ask whether what
+# this crate says about what opens what is collected beside everybody else's.
+alo-saying = { path = "../alo-saying" }
+# Shows in `chosen.rs`'s tests what a choice is written as, without a file.
+serde_json = { workspace = true }
+# Reads the text of `what-opens-what.toml` in `keeping.rs`'s tests, to hold the
+# list of keys to what a change writes.
+toml = { workspace = true }

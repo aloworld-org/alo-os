@@ -177,7 +177,23 @@ where a person's other secrets are, under the same lock, and nowhere else.
 
 ### 4. What opens what, changeable by a person
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15.** `alo_applications::WhatOpensWhat` answers
+*what opens this* from a file's bytes, read with `alo_opening::decide` and no
+name handed over: the person's choice for the kind (`Chosen`, kept in their own
+`what-opens-what.toml` by `alo_applications::keeping` under ADR 0038's rule),
+or where they chose none, the first installed application declaring it
+(`Declared`, from desktop-entry media types; a later declaration never moves
+ahead). The `Opener` says which it was (`Because`), including a choice passed
+over because it is not installed. A kind nothing opens, and a file that is a
+program, empty, damaged or unrecognised, is `NothingOpens` with a sentence —
+never a fallback. `alo_portals::open_with::answered` judges the file's grant
+before reading it, takes the opener from `WhatOpensWhat` alone, and judges the
+opener's grant (ADR 0040's row). `docs/contracts/person-settings.md` gains the
+file's section, held by `crates/alo-applications/tests/the_contract_describes_this_file.rs`.
+Tests: `crates/alo-applications/tests/what_opens_what.rs` and
+`crates/alo-portals/tests/open_with_is_answered_from_what_opens_what.rs`.
+Report: `docs/autonomy/updates/what-opens-what-changeable-by-a-person.md`.
+**Depends on:** 1.
 
 *File associations — what opens what, changeable by a person.* And the portal
 that asks it: *open-with and default applications*. `alo-applications` knows

@@ -71,7 +71,7 @@ and it is written whole to `<file>.new`, read back off the disk as the same
 value, and only then renamed over the old one. Which files, and their keys, are
 sections of this contract as those crates gain them.
 
-Since 2026-09-15 there are three, each read and written by the crate that
+Since 2026-09-15 there are four, each read and written by the crate that
 declares its shape, at a path that crate is handed, and by nobody else:
 
 | File | Kept by | `format` | Keys besides `format` |
@@ -79,6 +79,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `appearance.toml` | `alo_appearance::keeping` | `1` | `background`, `displays`, `lock`, `following`, `text`, `accent` |
 | `dock.toml` | `alo_dock::keeping` | `1` | `edge` |
 | `shortcuts.toml` | `alo_shortcuts::keeping` | `1` | `changed` — one `[[changed]]` table per action, with `action` and, unless the person wants no shortcut for it, `chord` |
+| `what-opens-what.toml` | `alo_applications::keeping` | `1` | `kinds` — a table from a kind of file to the identifier of the application the person chose to open it |
 
 A file that did not read is answered, by each crate's `keeping::at_sign_in`,
 with what the release ships and the refusal beside it — naming the file, and the
@@ -86,7 +87,8 @@ key when a key was what was wrong. Nothing watches these files: a hand edit is
 read at the next sign-in. Each has a section of its own below —
 [`appearance.toml`](#appearancetoml--how-this-persons-machine-looks),
 [`dock.toml`](#docktoml--which-edge-the-dock-is-on) and
-[`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed) — with its
+[`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed) and
+[`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file) — with its
 keys, its `format`, what a missing file means and what a file that does not
 read is told, each held to the crate that keeps it by a test in that crate
 (`tests/the_contract_describes_this_file.rs`).
@@ -1008,6 +1010,122 @@ and does not read is refused (`shortcuts.kept.not-replaced`) with the file byte
 for byte as it was — so a person's hand-moved shortcut with a typo in it is not
 lost to the next shortcut they change in Settings.
 `alo_shortcuts::keeping::put_back_as_shipped` is the one door that replaces
+such a file, and it writes `format = 1` alone.
+
+## `what-opens-what.toml` — which application opens each kind of file
+
+Kept by `alo_applications::keeping`, beside the other three, at the path the
+crate is handed. It holds `alo_applications::Chosen`: the application the person
+chose for each kind of file they chose one for, and nothing for a kind they did
+not. `docs/features.md`, v0.5: *file associations — what opens what, changeable
+by a person.*
+
+A kind with no entry opens in the first installed application that declares it
+in its desktop entry; an entry wins over every declaration. What answers *what
+opens this file* is `alo_applications::WhatOpensWhat`, and it says which of the
+two it was. **Only a person's choice is written here**: no application declares
+itself into this file, no agent verb names it, and the open-with portal
+(`alo_portals::open_with`) reads it and never writes it.
+
+### Keys
+
+Besides `format`, and optional:
+
+| Key | Meaning |
+|---|---|
+| `kinds` | A table from a kind of file to the identifier of the application chosen to open it. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+
+### What alo OS writes
+
+A person who chose Okular for PDF documents and Papers for PNG images:
+
+```toml
+format = 1
+
+[kinds]
+pdf = "org.kde.okular"
+png-image = "org.gnome.Papers"
+```
+
+### Values
+
+Each key of `[kinds]` is a kind of file, as `alo_applications::spelled` writes
+it — the kind a file is read as from its own bytes, never its extension:
+`pdf`, `word-document`, `excel-workbook`, `powerpoint-presentation`,
+`opendocument-text`, `opendocument-spreadsheet`, `opendocument-presentation`,
+`older-word-document`, `older-excel-workbook`, `older-powerpoint-presentation`,
+`rich-text`, `text`, `text-in-an-older-character-set`, `png-image`,
+`jpeg-image`, `gif-image`, `webp-image` or `zip-archive`. A kind is matched
+exactly. A program, an empty file and bytes of no kind alo OS recognises are
+not kinds, and nothing is ever chosen to open them.
+
+Each value is an application's identifier, as this machine knows it — never the
+name it calls itself, because two applications can share a name and no two
+share an identifier. An identifier has no spaces, no control characters and no
+folder separators in it. **An application chosen and since uninstalled is kept**
+and used again if it is reinstalled; until then the kind opens in what the
+applications declare, and the answer says that the choice is not installed.
+
+### What a missing file means
+
+**The person has chosen nothing**: every kind opens in the first installed
+application that declares it, and a kind no application declares is opened by
+nothing — said as a sentence (`applications.opens.nothing`), never handed to a
+text editor. Not an error, and nothing is written until the person chooses.
+
+### A file that does not read
+
+**Refused whole**, and every kind opens in what the applications declare;
+`alo_applications::keeping::at_sign_in` answers with no choices and the refusal
+beside it. The sentences name the file, and are the same five reasons, under
+`applications.kept.`: `not-read`, `not-understood`, `not-understood-at` naming
+the line, `another-format`, and `unknown-key` naming the key.
+
+```toml refused
+format = 1
+default = "org.gnome.TextEditor"
+
+[kinds]
+pdf = "org.kde.okular"
+```
+
+Refused — `applications.kept.unknown-key`, naming `default` — so there is no
+application that opens everything, and Okular is not used for PDFs either.
+
+```toml refused
+format = 1
+
+[kinds]
+docx = "org.libreoffice.LibreOffice.writer"
+```
+
+Refused — `applications.kept.not-understood`. A kind is named as alo OS reads
+it, and an extension is not a kind.
+
+```toml refused
+format = 1
+
+[kinds]
+pdf = "/usr/bin/okular"
+```
+
+Refused — `applications.kept.not-understood`. An application is named by its
+identifier, never by a program's path.
+
+### Writing it
+
+As `appearance.toml`: whole, read back before it counts, and renamed over the
+old file (`applications.kept.not-expressible`, `applications.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`applications.kept.not-replaced`) with the file
+byte for byte as it was.
+`alo_applications::keeping::put_back_as_shipped` is the one door that replaces
 such a file, and it writes `format = 1` alone.
 
 ## A Settings surface, from sign-in to the next change
