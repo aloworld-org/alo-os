@@ -38,7 +38,15 @@ done.
 
 ### 1. The image is published from GitHub, signed, and pinned
 
-**Status:** ready — the repository's half. The owner's first publish happened on
+**Status:** **Done, 2026-09-15** (`updates/the-published-image-pinned-by-digest.md`).
+The signed digest below is pinned in `image/pinned.toml`, which `crates/alo-image`
+reads and holds to the recipe's release, the committed key and `docs/booting.md`
+(its registry, tag, digest, and the verify-then-install invocation);
+`.github/workflows/image.yml` pushes a candidate on request, never signs, and
+records why it is not yet the road. What stays the owner's: making the `ghcr.io`
+package public, so an installer pulls without an account.
+
+The owner's first publish happened on
 2026-09-15 under [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md):
 
 | | |

@@ -21,6 +21,7 @@ use crate::description::Description;
 use crate::disk::TheDisk;
 use crate::logins::Declared;
 use crate::making::Made;
+use crate::pinned::{THE_PIN, ThePin};
 use crate::refusing::NotAnImage;
 use crate::runtime::TheRuntime;
 use crate::service::Service;
@@ -111,6 +112,10 @@ pub struct Image {
     disk: TheDisk,
     /// What the document beside it tells a person to do with that disk.
     document: TheDocument,
+    /// The published release an installer pulls.
+    pin: ThePin,
+    /// The text of the key file the pin names, as it is in the repository.
+    key: String,
 }
 
 impl Image {
@@ -151,6 +156,12 @@ impl Image {
         let disk = TheDisk::read(&recipe);
         let document = TheDocument::read(&text(&root.join(THE_DOCUMENT))?);
 
+        // Read strictly, unlike the recipe: a pin that is not one is not an
+        // image with something wrong in it, and `crate::pinned` says why.
+        let at = root.join(THE_PIN);
+        let pin = ThePin::read(&text(&at)?).map_err(|why| NotAnImage::NotPinned { at, why })?;
+        let key = text(&root.join(pin.key()))?;
+
         Ok(Self {
             loader,
             agent,
@@ -166,6 +177,8 @@ impl Image {
             version,
             disk,
             document,
+            pin,
+            key,
         })
     }
 
@@ -282,6 +295,21 @@ impl Image {
     #[must_use]
     pub const fn document(&self) -> &TheDocument {
         &self.document
+    }
+
+    /// The published release an installer pulls, as `image/pinned.toml` pins it.
+    #[must_use]
+    pub const fn pin(&self) -> &ThePin {
+        &self.pin
+    }
+
+    /// The text of the key file the pin names.
+    ///
+    /// Only read, never trusted here: `crate::publishing` asks whether it is one
+    /// public key and nothing else.
+    #[must_use]
+    pub fn key(&self) -> &str {
+        &self.key
     }
 }
 

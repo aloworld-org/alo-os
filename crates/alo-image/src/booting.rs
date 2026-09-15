@@ -7,13 +7,16 @@
 //! nobody can follow is not a disk, and a document nothing holds to the recipe
 //! is how the firmware sentence stays where it was while the image moved.
 //!
-//! # A document with four facts in it
+//! # A document with seven facts in it
 //!
 //! The interesting half of the document is prose and stays prose. What is read
 //! here is the indented block of `key: value` lines near the top — the tool, the
-//! firmware, the virtual machine generation and the disk's filename — plus the
-//! headings the document promises and the commands it gives. `crate::checking`
-//! is what compares them with the recipe.
+//! firmware, the virtual machine generation and the disk's filename — and the
+//! one under *Installing the published image* — the registry, the tag and the
+//! digest — plus the headings the document promises and the commands it gives,
+//! each joined across its continued lines. `crate::checking` compares the first
+//! block with the recipe, and `crate::publishing` the second with
+//! `image/pinned.toml`.
 //!
 //! # Read leniently, judged strictly
 //!
@@ -36,12 +39,33 @@ pub const THE_GENERATION: &str = "generation";
 /// The fact naming the file the disk is written to.
 pub const THE_DISK: &str = "disk";
 
-/// The four facts this document states, and the only keys read out of it.
+/// The fact naming the registry a published image is pulled from.
+pub const THE_REGISTRY: &str = "registry";
+
+/// The fact naming the published release's tag.
+pub const THE_TAG: &str = "tag";
+
+/// The fact naming the digest that release is pulled by.
+pub const THE_DIGEST: &str = "digest";
+
+/// The facts this document states, and the only keys read out of it: four
+/// about the disk, three about the published image.
 ///
 /// A fixed set rather than every `key: value` line, because ordinary prose is
 /// full of colons and a reader that took them all would read a sentence as a
 /// promise.
-const THE_FACTS: [&str; 4] = [THE_TOOL, THE_FIRMWARE, THE_GENERATION, THE_DISK];
+const THE_FACTS: [&str; 7] = [
+    THE_TOOL,
+    THE_FIRMWARE,
+    THE_GENERATION,
+    THE_DISK,
+    THE_REGISTRY,
+    THE_TAG,
+    THE_DIGEST,
+];
+
+/// What ends a command line that carries on onto the next.
+const CONTINUED: char = '\\';
 
 /// What an indented block looks like in Markdown, which is where both the facts
 /// and the commands are.
@@ -58,6 +82,9 @@ pub struct TheDocument {
     /// Every section, by its heading, as text.
     sections: BTreeMap<String, String>,
     /// Every indented line that is not a fact, which is where the commands are.
+    lines: Vec<String>,
+    /// Those lines joined into the commands a person types, in the order the
+    /// document gives them.
     commands: Vec<String>,
 }
 
@@ -67,6 +94,7 @@ impl TheDocument {
     pub fn read(document: &str) -> Self {
         let mut read = Self::default();
         let mut heading = String::new();
+        let mut typing: Option<String> = None;
 
         for line in document.lines() {
             if let Some(said) = line.strip_prefix(A_HEADING) {
@@ -81,13 +109,35 @@ impl TheDocument {
             read.sections.entry(heading.clone()).or_default().push('\n');
 
             if !line.starts_with(INDENTED) {
+                typing = None;
                 continue;
             }
             match stated(line.trim()) {
-                Some((fact, said)) => read.facts.entry(fact).or_default().push(said),
-                None => read.commands.push(line.trim().to_owned()),
+                Some((fact, said)) => {
+                    typing = None;
+                    read.facts.entry(fact).or_default().push(said);
+                }
+                None => {
+                    let said = line.trim();
+                    read.lines.push(said.to_owned());
+                    let part = said.trim_end_matches(CONTINUED).trim_end();
+                    match typing.take() {
+                        Some(mut command) => {
+                            command.push(' ');
+                            command.push_str(part);
+                            typing = Some(command);
+                        }
+                        None => typing = Some(part.to_owned()),
+                    }
+                    if !said.ends_with(CONTINUED)
+                        && let Some(command) = typing.take()
+                    {
+                        read.commands.push(command);
+                    }
+                }
             }
         }
+        read.commands.extend(typing);
 
         read
     }
@@ -137,7 +187,19 @@ impl TheDocument {
     /// whole task exists to stop shipping.
     #[must_use]
     pub fn gives_the_command(&self, tool: &str) -> bool {
-        self.commands.iter().any(|command| command.contains(tool))
+        self.lines.iter().any(|line| line.contains(tool))
+    }
+
+    /// Every command this document gives, with its continued lines joined, in
+    /// the order a person would type them.
+    ///
+    /// One command is one entry however many lines it was written across: a
+    /// `podman run` on one line and the image it runs on the next are still one
+    /// thing somebody types, and a check that looked at them a line at a time
+    /// could not ask what that one thing pulls.
+    #[must_use]
+    pub fn commands(&self) -> &[String] {
+        &self.commands
     }
 }
 
@@ -212,6 +274,30 @@ mod tests {
             "      bootc install to-disk --via-loopback /output/alo-os.raw",
         ]);
         assert!(given.gives_the_command("bootc install to-disk"));
+    }
+
+    /// **A command written across lines is one command**, and the commands come
+    /// back in the order a person types them.
+    #[test]
+    fn a_command_across_lines_is_one_command() {
+        let read = saying(&[
+            "    cosign verify --key image/signing/alo-os.pub \\",
+            "      registry@sha256:abc",
+            "",
+            "    podman run --rm \\",
+            "      registry@sha256:abc \\",
+            "      bootc install to-disk /output/alo-os.raw",
+            "    registry: somewhere",
+        ]);
+
+        assert_eq!(
+            read.commands(),
+            [
+                "cosign verify --key image/signing/alo-os.pub registry@sha256:abc",
+                "podman run --rm registry@sha256:abc bootc install to-disk /output/alo-os.raw",
+            ]
+        );
+        assert_eq!(read.says(THE_REGISTRY), Some("somewhere"));
     }
 
     /// **A section is what is under its own heading**, so a word in the wrong

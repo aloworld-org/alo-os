@@ -88,7 +88,7 @@ impl TheVersion {
 }
 
 /// Whether this is `MAJOR.MINOR.PATCH` and nothing else.
-fn is_a_release(version: &str) -> bool {
+pub(crate) fn is_a_release(version: &str) -> bool {
     let parts: Vec<&str> = version.split('.').collect();
     parts.len() == 3
         && parts

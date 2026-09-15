@@ -153,6 +153,54 @@ pub enum NotDescribed {
     },
 }
 
+/// Why `image/pinned.toml` is not a pin at all.
+///
+/// Refused at reading rather than reported as a [`Wrong`](crate::Wrong), which
+/// is `crate::pinned`'s argument: a digest that is not a digest is not a pin
+/// with something wrong with it, and an installer handed one would pull
+/// whatever it could make of it.
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum NotPinned {
+    /// A missing key, a key nobody declared, or a value of the wrong kind.
+    #[error(
+        "the pin is not `registry`, `version`, `digest`, `revision`, `key` and an optional `next`: {why}"
+    )]
+    NotToml {
+        /// What the reader said about it.
+        why: String,
+    },
+    /// A version, or a next release, that is not `MAJOR.MINOR.PATCH`.
+    #[error(
+        "the pin names `{stated}` as a release — a release is three numbers, and a word that names whichever build came last is not one"
+    )]
+    NotARelease {
+        /// What the file said.
+        stated: String,
+    },
+    /// A digest that is not `sha256:` and 64 lowercase hexadecimal characters.
+    #[error(
+        "the pin's digest is `{stated}`, and a digest is `sha256:` and 64 lowercase hexadecimal characters — anything else is a name that can be moved"
+    )]
+    NotADigest {
+        /// What the file said.
+        stated: String,
+    },
+    /// A revision that is not a whole commit name.
+    #[error("the pin's revision is `{stated}`, and a revision is a whole 40-character commit name")]
+    NotARevision {
+        /// What the file said.
+        stated: String,
+    },
+    /// A key path that is absolute or climbs out of the image's directory.
+    #[error(
+        "the pin names its key at `{stated}`, which is not a path beneath the image's directory — a pin must not point verification at a file somebody else placed"
+    )]
+    KeyOutsideTheImage {
+        /// What the file said.
+        stated: String,
+    },
+}
+
 /// Why a directory is not an image this crate can check.
 #[derive(Debug, Error)]
 pub enum NotAnImage {
@@ -201,6 +249,14 @@ pub enum NotAnImage {
         at: PathBuf,
         /// Why.
         why: NotDescribed,
+    },
+    /// A pin that would not read.
+    #[error("{at}: {why}")]
+    NotPinned {
+        /// The file.
+        at: PathBuf,
+        /// Why.
+        why: NotPinned,
     },
 }
 

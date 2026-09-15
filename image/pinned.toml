@@ -1,0 +1,31 @@
+# The one alo OS image an installer pulls, pinned by content.
+#
+# ADR 0033 §3 publishes the image to a registry and pins, here, the digest an
+# installer pulls; ADR 0036 says who may make a digest worth pinning — a person
+# holding the private half of the key whose public half is `key` below, signing
+# **by digest**, never an agent and never the build loop. A digest lands in this
+# file only once that signature verifies against that key.
+#
+# Two layers, and both are kept: the digest is what an installer already
+# released will pull, so a stolen key cannot redirect it; the signature is what
+# a boot environment checks before it writes anything, so a registry that
+# changed the bytes cannot get past it.
+#
+# `crates/alo-image` reads this file and holds it to `image/Containerfile`'s
+# `org.opencontainers.image.version`, to `docs/booting.md`, and to the key. It is
+# not copied into the image: it names the image, so it cannot be inside it.
+#
+# Release 0.0.1: built from 2501af53d459d7d75e08c2ecaf61d3e8430a2d50, pushed and
+# signed by the owner on 2026-09-15 (cosign 3.1.3, no transparency log), and
+# verified against `signing/alo-os.pub`; a different key was refused.
+#
+# The next release is declared as `next = "MAJOR.MINOR.PATCH"` in the same
+# change that moves the recipe's label to it, and removed in the change that
+# pins its digest. Until then the recipe names a candidate, and an installer
+# still pulls what is pinned.
+
+registry = "ghcr.io/aloworld-org/alo-os"
+version = "0.0.1"
+digest = "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c"
+revision = "2501af53d459d7d75e08c2ecaf61d3e8430a2d50"
+key = "signing/alo-os.pub"

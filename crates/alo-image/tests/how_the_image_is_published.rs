@@ -8,12 +8,12 @@
 //! holds the key the image is signed with, which is ADR 0036 — accepted by the
 //! owner on 2026-09-15.
 //!
-//! So this file holds four things: the recipe names one release; the decision
-//! about the key was made by the owner; only the public half of that key is in
-//! the repository; and the plan hands the next worker the digest the owner
-//! signed without calling the pin done. The last is the one that matters most to
-//! a loop that selects from the plan: a pin written against anything but the
-//! signed digest is a pin nobody can verify.
+//! So this file holds what the plan's first task accepts: the recipe names one
+//! release; the decision about the key was made by the owner; only the public
+//! half of that key is in the repository; the digest the owner signed is pinned
+//! in `image/pinned.toml` and the image agrees with it; the workflow pushes a
+//! candidate, never signs, and says why it is not yet the road; and the plan
+//! marks the task done with the digest it pinned.
 
 #![expect(
     clippy::panic,
@@ -22,7 +22,10 @@
 
 use std::path::Path;
 
-use alo_image::{Image, THE_IMAGE, THE_VERSION_LABEL};
+use alo_image::{
+    Image, THE_IMAGE, THE_REGISTRY, THE_VERSION_LABEL, THE_WORKFLOW, TheWorkflow,
+    everything_wrong_with,
+};
 
 /// The decision about who holds the signing key.
 const THE_DECISION: &str = concat!(
@@ -175,40 +178,86 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
 const THE_SIGNED_DIGEST: &str =
     "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
 
-/// **The plan hands the next worker the signed publish, and does not call the
-/// pin done before it is written.**
+/// **The digest an installer pulls is the one the owner signed, pinned in one
+/// file the crate reads, and the image agrees with it.**
 ///
-/// Once the owner has pushed and signed, task 1 is the repository's half and is
-/// ready — but only if it carries the digest that was signed and the release it
-/// was signed for, so a worker pins exactly that rather than whatever the tag
-/// points at by the time it looks. It is not marked done here: pinning is
-/// still the task.
+/// The pin names the registry ADR 0033 decided, the release the recipe names,
+/// the signed digest, and the committed public key; and nothing the crate checks
+/// — the recipe, the key, `docs/booting.md` — disagrees with it.
 #[test]
-fn the_plan_hands_over_the_signed_digest_and_does_not_call_the_pin_done() {
+fn the_signed_digest_is_pinned_and_the_image_agrees_with_it() {
+    let image = match Image::at(Path::new(THE_IMAGE)) {
+        Ok(image) => image,
+        Err(why) => panic!("the image this repository ships did not read: {why}"),
+    };
+    let pin = image.pin();
+
+    assert_eq!(pin.registry(), THE_REGISTRY);
+    assert_eq!(pin.registry(), "ghcr.io/aloworld-org/alo-os");
+    assert_eq!(pin.digest(), THE_SIGNED_DIGEST);
+    assert_eq!(Some(pin.version()), image.version().said());
+    assert_eq!(
+        pin.next(),
+        None,
+        "a candidate is declared with nothing to build"
+    );
+    assert_eq!(
+        Path::new(THE_IMAGE).join(pin.key()),
+        Path::new(THE_PUBLIC_KEY),
+        "the pin names a key other than the one ADR 0036 committed"
+    );
+
+    let wrong = everything_wrong_with(&image);
+    assert!(wrong.is_empty(), "{wrong:?}");
+}
+
+/// **The workflow is written, pushes a candidate, and never signs**, with the
+/// reason it is not yet the road recorded in it (the plan's acceptance; ADR 0036
+/// as the owner accepted it).
+#[test]
+fn the_workflow_pushes_a_candidate_never_signs_and_says_why_it_waits() {
+    let workflow = TheWorkflow::read(&text(THE_WORKFLOW));
+
+    assert!(
+        !workflow.signs(),
+        "the workflow signs, and only the owner signs"
+    );
+    assert!(
+        workflow.runs_only_when_asked(),
+        "the workflow runs on {:?}, and it runs only when a person asks",
+        workflow.triggers()
+    );
+    assert!(workflow.builds_only_from_main());
+    assert!(workflow.pushes_to(THE_REGISTRY));
+    assert!(
+        workflow.looks_before_it_pushes(),
+        "the workflow could push over a published release"
+    );
+    assert!(workflow.says_why_it_is_not_yet_the_road());
+}
+
+/// **The plan marks the publish done, and still carries what was signed.**
+///
+/// A task finished and not marked is a task the loop selects again; one marked
+/// without the digest it pinned is one nobody can check.
+#[test]
+fn the_plan_marks_the_publish_done_with_the_digest_it_pinned() {
     let task = the_first_task();
 
     assert!(
         task.starts_with("The image is published from GitHub, signed, and pinned"),
         "{task}"
     );
-    assert!(
-        !task.contains("**Done"),
-        "task 1 is marked done before the digest is pinned in the repository"
-    );
     let Some(status) = task.lines().find(|line| line.starts_with("**Status:**")) else {
         panic!("task 1 has no status");
     };
-    assert!(status.contains("ready"), "{status}");
+    assert!(status.contains("**Done, 2026-09-15**"), "{status}");
     assert!(
         task.contains(THE_SIGNED_DIGEST),
         "task 1 does not carry the digest the owner signed"
     );
     assert!(
-        task.contains("`0.0.1`"),
-        "task 1 does not name the release that was signed"
-    );
-    assert!(
-        task.contains("ADR 0036"),
-        "task 1 does not name the decision the publish followed"
+        task.contains("image/pinned.toml"),
+        "task 1 does not name the file the digest is pinned in"
     );
 }

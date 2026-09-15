@@ -864,6 +864,98 @@ pub enum Wrong {
         /// Everything the recipe gave the label, or `-` where it gave nothing.
         stated: String,
     },
+    /// The pin names a registry alo OS is not published to.
+    #[error(
+        "`image/pinned.toml` pins an image in `{pinned}` — ADR 0033 publishes alo OS to \
+         `ghcr.io/aloworld-org/alo-os` and nowhere else, and an installer pulling from another \
+         repository is pulling somebody else's bytes"
+    )]
+    ThePinIsNotTheDecidedRegistry {
+        /// The registry the pin names.
+        pinned: String,
+    },
+    /// The pin and the recipe name different releases.
+    #[error(
+        "the recipe names release `{recipe}` and `image/pinned.toml` pins `{pinned}`{next} — ADR \
+         0033 holds the digest an installer pulls against the release the recipe names, so the \
+         two agree, or the recipe's newer release is declared in the pin as `next` until the \
+         owner signs its digest (ADR 0036)"
+    )]
+    ThePinIsNotTheRecipesRelease {
+        /// The release the recipe names, or `-` where it names none.
+        recipe: String,
+        /// The release the pin says was signed.
+        pinned: String,
+        /// `, declaring `x` next`, or nothing where no next release is declared.
+        next: String,
+    },
+    /// The pin declares a next release that does not come after the signed one.
+    #[error(
+        "`image/pinned.toml` pins `{pinned}` and declares `{next}` as the next release — a next \
+         release comes after the one that was signed, or it is a release that already exists \
+         being built again under the same name"
+    )]
+    TheNextReleaseDoesNotFollowThePin {
+        /// The release the pin says was signed.
+        pinned: String,
+        /// The release declared next.
+        next: String,
+    },
+    /// The key the pin names is not one public key.
+    #[error(
+        "`image/pinned.toml` names `{key}` as the key its release was signed with, and that file \
+         is not exactly one PEM public key — ADR 0036 commits the public half so a puller can \
+         verify before writing, and never the private half"
+    )]
+    ThePinsKeyIsNotOnePublicKey {
+        /// The key path the pin names.
+        key: String,
+    },
+    /// The document states a published fact that is not what is pinned.
+    #[error(
+        "`docs/booting.md` states `{fact}: {said}` and `image/pinned.toml` pins `{pinned}` — a \
+         person installing from the registry follows the document, and a document naming another \
+         release is one that pulls something nobody signed"
+    )]
+    TheDocumentDoesNotSayWhatIsPinned {
+        /// The fact.
+        fact: String,
+        /// What the document says, or `-` where it says nothing.
+        said: String,
+        /// What the pin says.
+        pinned: String,
+    },
+    /// The document gives no `bootc install` that pulls the pinned digest.
+    #[error(
+        "`docs/booting.md` never runs `bootc install` on `{reference}` — ADR 0023 installs the \
+         same signed image the registry holds, and a document that installs something else, or \
+         nothing, has not said how"
+    )]
+    TheDocumentDoesNotInstallWhatIsPinned {
+        /// The reference the pin gives.
+        reference: String,
+    },
+    /// The document pulls from the registry by a name rather than the digest.
+    #[error(
+        "`docs/booting.md` gives `{command}`, which names the registry by something other than \
+         the pinned digest — a tag can be moved after the owner signed, and a digest cannot"
+    )]
+    TheDocumentPullsByAName {
+        /// The command.
+        command: String,
+    },
+    /// The document fetches or writes the image before verifying its signature.
+    #[error(
+        "`docs/booting.md` does not verify `{reference}` against `{key}` before anything else \
+         touches it — ADR 0023 §3 verifies signatures before writing, and a verification after \
+         the install is a report on what already happened"
+    )]
+    TheDocumentWritesBeforeItVerifies {
+        /// The reference the pin gives.
+        reference: String,
+        /// The key, as a path in this repository.
+        key: String,
+    },
 }
 
 #[cfg(test)]
@@ -898,6 +990,23 @@ mod tests {
             }
             .to_string()
             .contains("ADR 0033")
+        );
+        assert!(
+            Wrong::ThePinIsNotTheRecipesRelease {
+                recipe: "0.0.2".to_owned(),
+                pinned: "0.0.1".to_owned(),
+                next: String::new(),
+            }
+            .to_string()
+            .contains("ADR 0036")
+        );
+        assert!(
+            Wrong::TheDocumentWritesBeforeItVerifies {
+                reference: "ghcr.io/aloworld-org/alo-os@sha256:0".to_owned(),
+                key: "image/signing/alo-os.pub".to_owned(),
+            }
+            .to_string()
+            .contains("ADR 0023")
         );
     }
 

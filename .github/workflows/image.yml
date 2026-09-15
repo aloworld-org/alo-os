@@ -1,0 +1,81 @@
+# Build `image/Containerfile` at a commit of main and push it to the registry as
+# a candidate. Never sign it.
+#
+# Why this is not yet the road, 2026-09-15. The image carries the model's
+# weights — 4.5 GB of them — on top of a bootc base, a Rust toolchain build
+# stage and the model runtime, and a GitHub-hosted runner's disk does not hold
+# the build: the disk written from it measured 9.6 GB on 2026-09-12
+# (`docs/booting.md`), the build stages need room beside the result, and a
+# standard runner has roughly 14 GB free before anything is installed. Until a runner
+# can hold it, alo OS is built and pushed by the machine that built it (ADR 0033
+# §3), and this file is what that road becomes when a runner can. It runs only
+# when somebody asks it to, so it is never a red run nobody asked for.
+#
+# What it may never do, and `crates/alo-image` (`workflow.rs`) holds it to each:
+#
+# - sign. ADR 0036, as the owner accepted it: a machine builds and pushes, only
+#   the owner signs, by digest, with a private half that never touches a machine
+#   an agent or a workflow runs on. An unsigned push is a candidate, not a
+#   publish — nothing pins it, and no installer writes it to a disk;
+# - run unless a person asks it to, or from anything but main;
+# - push a release whose tag already exists. A published tag never moves, so a
+#   candidate for a version already in the registry is refused before it is
+#   built;
+# - push anywhere but `ghcr.io/aloworld-org/alo-os`.
+#
+# What it hands over is the digest the push reported. The owner signs that
+# digest, verifies it against `image/signing/alo-os.pub`, and only then is it
+# pinned in `image/pinned.toml`.
+
+name: Image candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  candidate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    env:
+      REGISTRY: ghcr.io/aloworld-org/alo-os
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the release the recipe names
+        run: |
+          count=$(grep -c '^LABEL org.opencontainers.image.version=' image/Containerfile)
+          if [ "$count" != "1" ]; then
+            echo "the recipe names $count releases; it must name exactly one" >&2
+            exit 1
+          fi
+          version=$(sed -n 's/^LABEL org.opencontainers.image.version="\([0-9]*\.[0-9]*\.[0-9]*\)"$/\1/p' image/Containerfile)
+          if [ -z "$version" ]; then
+            echo "the recipe's release is not MAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Log in to the registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Refuse a release that is already published
+        run: |
+          if skopeo inspect --raw "docker://$REGISTRY:$VERSION" > /dev/null 2>&1; then
+            echo "$REGISTRY:$VERSION is already published, and a published tag never moves" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          podman build -f image/Containerfile \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            -t "$REGISTRY:$VERSION" .
+
+      - name: Push the candidate
+        run: |
+          podman push --digestfile digest "$REGISTRY:$VERSION"
+          echo "candidate $REGISTRY:$VERSION at $(cat digest), built from ${{ github.sha }}; unsigned, and not a release until the owner signs that digest"

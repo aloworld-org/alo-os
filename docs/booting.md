@@ -82,6 +82,68 @@ And for Hyper-V, one conversion:
     qemu-img convert -f raw -O vhdx -o subformat=dynamic \
       alo-os.raw alo-os.vhdx
 
+## Installing the published image
+
+Everything above builds the image on the machine that writes the disk. A
+machine that did not build it — the installer's boot environment, or anybody
+following this page — installs the **published** release instead, from the
+registry updates will come from
+([ADR 0023](decisions/0023-installed-from-the-machine-it-replaces.md),
+[ADR 0033](decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md)
+§3), and it installs it by digest:
+
+    registry: ghcr.io/aloworld-org/alo-os
+    tag: 0.0.1
+    digest: sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c
+
+Those three are `image/pinned.toml`, the one file the digest is written in, and
+`crates/alo-image` holds this document to it the way it holds the four disk
+facts to the recipe. The tag is how a person reads the release; the digest is
+what is pulled, because a tag is a name somebody can move after the owner
+signed and a digest is the bytes themselves.
+
+**Verify first, and write nothing if it fails.** Release `0.0.1` was signed by
+the owner, by digest, with the key whose public half is committed at
+`image/signing/alo-os.pub`
+([ADR 0036](decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md)),
+and without an upload to a public transparency log — so verification needs this
+repository and the registry, and nothing else. From the root of a checkout, with
+`cosign` installed:
+
+    cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true \
+      ghcr.io/aloworld-org/alo-os@sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c
+
+`--insecure-ignore-tlog=true` is the flag for *there is no log entry to check*,
+which is true of every alo OS signature by decision rather than by accident; the
+key is still checked. On 2026-09-15 a different key was refused (*Found: 0, Expected 1*), and
+anything but a pass here is the end of the procedure.
+
+Then pull that digest into podman's store and install it, the same way as the
+local build above — the image in the `podman run` is the only thing that
+changed:
+
+    podman pull ghcr.io/aloworld-org/alo-os@sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c
+
+    truncate -s 20G alo-os.raw
+
+    podman run --rm --privileged --pid=host \
+      --security-opt label=type:unconfined_t \
+      -v /var/lib/containers:/var/lib/containers \
+      -v .:/output \
+      ghcr.io/aloworld-org/alo-os@sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c \
+      bootc install to-disk --via-loopback --wipe \
+        --filesystem ext4 /output/alo-os.raw
+
+It writes a file, not a disk. The installer's boot environment will run this
+same invocation against the one disk a person named, and nothing in this
+repository points it at a real one.
+
+**Today a pull needs a login.** The `alo-os` package on `ghcr.io` is private
+until the owner makes it public, so until then `podman login ghcr.io` (and
+`cosign login ghcr.io`) with an account that can read it comes first. That is
+said here rather than worked around: an installer pulls without an account,
+and it cannot until the package is public.
+
 ## Attaching it to Hyper-V
 
 alo OS is installed for UEFI, so it is a **generation 2** virtual machine, and
