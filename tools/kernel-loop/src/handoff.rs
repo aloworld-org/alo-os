@@ -358,7 +358,7 @@ impl Handed {
             };
             let (key, value) = (key.trim(), value.trim());
             match key {
-                "task" => task = value.to_owned(),
+                "task" => task = without_its_number(value).to_owned(),
                 "report" => report = value.to_owned(),
                 "subject" => subject = value.to_owned(),
                 "files" | "body" | "evidence" => {}
@@ -414,6 +414,69 @@ impl Handed {
             self.subject.clone()
         } else {
             format!("{}\n\n{}", self.subject, self.body)
+        }
+    }
+}
+
+/// A task's name with the number a worker put in front of it taken off.
+///
+/// The plan's heading is `### 6. One person's folder…` and the name the loop
+/// compares is what follows the number. Workers keep writing the number too —
+/// `1. The sign-in screen` on 2026-09-14, `Task 6 — One person's folder…` on
+/// 2026-09-15 — and each time finished, gated work was parked because the
+/// names differed by a prefix nobody would read as a different task. Only a
+/// prefix of that shape is removed: an optional `Task`, digits, then a
+/// separator (`.`, `:`, `—`, `–` or `-`) and a space. A title that merely
+/// begins with a number and no separator is left as written.
+fn without_its_number(named: &str) -> &str {
+    let rest = named.strip_prefix("Task ").unwrap_or(named);
+    let digits = rest.len() - rest.trim_start_matches(|c: char| c.is_ascii_digit()).len();
+    if digits == 0 {
+        return named;
+    }
+    let after = rest.get(digits..).unwrap_or_default();
+    for separator in [". ", ": ", " — ", " – ", " - "] {
+        if let Some(title) = after.strip_prefix(separator) {
+            let title = title.trim_start();
+            if !title.is_empty() {
+                return title;
+            }
+        }
+    }
+    named
+}
+
+#[cfg(test)]
+mod its_number {
+    use super::without_its_number;
+
+    /// **The number a worker wrote in front of a task's name is not part of
+    /// it**, in every shape a worker has written it so far.
+    #[test]
+    fn a_numbered_name_is_the_plans_name() {
+        let plans = "One person's folder, from sign-in to the next change";
+        for written in [
+            "Task 6 — One person's folder, from sign-in to the next change",
+            "6. One person's folder, from sign-in to the next change",
+            "Task 6: One person's folder, from sign-in to the next change",
+            "6 - One person's folder, from sign-in to the next change",
+            plans,
+        ] {
+            assert_eq!(without_its_number(written), plans, "{written}");
+        }
+    }
+
+    /// And a name that only begins with a number is left alone, so a title
+    /// like *24 hours without egress* is never shortened into another task's.
+    #[test]
+    fn a_title_that_begins_with_a_number_keeps_it() {
+        for written in [
+            "24 hours without egress",
+            "Task 7",
+            "6.",
+            "Task force review",
+        ] {
+            assert_eq!(without_its_number(written), written, "{written}");
         }
     }
 }
