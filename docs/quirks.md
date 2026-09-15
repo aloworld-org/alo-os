@@ -709,7 +709,7 @@ cable measure is still owed to two machines.
 measured on 2026-09-15 by probes run before the code and by
 `crates/alo-bounding/tests/a_private_ipv4_departure_is_held_to_its_network.rs` and
 `crates/alo-agentd/src/a_paired_machine_on_two_networks_with_one_address.rs`.
-**Behaviour:** ADR 0042 holds a paired machine's IPv4 departure to the interface of
+**Behaviour:** ADR 0044 holds a paired machine's IPv4 departure to the interface of
 the network it was found on, which rests on what the kernel does with a socket held
 to an interface — and on one place it does not do what the IPv6 half does:
 

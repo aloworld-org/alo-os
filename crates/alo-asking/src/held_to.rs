@@ -1,7 +1,7 @@
 //! A question to a machine found on one network, dialled from a socket held to
 //! that network's interface.
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! `192.168.1.20` on the wired network and `192.168.1.20` on the Wi-Fi are two
 //! machines whenever two routers hand out the same private range, and a socket
 //! that is not held to an interface leaves by whatever the route says at the

@@ -1140,7 +1140,7 @@ exactly the network this release just made to work.
 ### 25. A private IPv4 address on two networks is still one destination the kernel bounds
 
 **Status:** **Done, 2026-09-15.** Decided first in
-[ADR 0042](../decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
+[ADR 0044](../decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
 **a paired machine's IPv4 departure is held to the interface of the network it was
 found on, and checked against the interface the socket is held to** — deciding by
 the route is not buildable in an LSM hook and is not what the person was shown, and
@@ -1237,7 +1237,7 @@ studio on the cable is measured against somebody else on the Wi-Fi, and refused 
   address on two networks, one of them proposing, are told apart end to end — the
   proposal measured against the machine that sent it and the other machine asked
   nothing — tested with network namespaces joined by `veth` pairs.
-- **Constraint:** ADR 0003 and ADR 0042 as they stand: discovery reveals presence
+- **Constraint:** ADR 0003 and ADR 0044 as they stand: discovery reveals presence
   only, nothing is kept between measurements, and there is still no setting — no
   network chosen by a person or an agent. What crosses the wire is unchanged. What
   reality does that the specification does not say goes in `docs/quirks.md`. Nothing

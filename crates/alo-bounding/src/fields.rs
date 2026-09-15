@@ -106,7 +106,7 @@ mod tests {
         // beside `msg_name`.
         assert_eq!(offsets.at(Field::SockBoundInterface), 28);
         assert_eq!(offsets.at(Field::MessageNameLength), 8);
-        // The one an IPv4 destination held to an interface needs (ADR 0042):
+        // The one an IPv4 destination held to an interface needs (ADR 0044):
         // whether a message carries control messages, eight bytes wide.
         assert_eq!(offsets.at(Field::MessageControlLength), 48);
         assert_eq!(offsets.each().count(), Field::ALL.len());

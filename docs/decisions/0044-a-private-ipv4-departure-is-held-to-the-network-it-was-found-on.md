@@ -1,4 +1,4 @@
-# ADR 0042 — A private IPv4 departure is held to the network it was found on
+# ADR 0044 — A private IPv4 departure is held to the network it was found on
 
 **Status:** accepted, 2026-09-15, as task 25 of
 `docs/autonomy/v0-5-the-local-network-plan.md`, which requires the decision to be

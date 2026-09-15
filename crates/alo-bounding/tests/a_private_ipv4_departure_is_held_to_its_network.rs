@@ -2,7 +2,7 @@
 //! network**, decided by the kernel on a running machine with the real programme
 //! loaded.
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! `192.168.1.20` on the wired network and `192.168.1.20` on the Wi-Fi are two
 //! machines whenever two routers hand out the same range. A paired machine found
 //! on one of them is dialled from a socket held to that interface, and the
@@ -363,7 +363,7 @@ fn shown_on_the_other_network_the_cable_is_the_one_refused() {
 /// **A provider's departure is unchanged**: held to no interface, the address is
 /// reached however the socket is held — by the route, on either network, and by
 /// a datagram carrying a control message — exactly as every IPv4 departure was
-/// before ADR 0042.
+/// before ADR 0044.
 #[test]
 fn a_departure_held_to_no_interface_is_reached_as_it_always_was() {
     let attempts = [

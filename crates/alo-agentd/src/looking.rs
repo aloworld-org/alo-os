@@ -63,7 +63,7 @@
 //!
 //! # And an IPv4 address is heard on the network it answered on
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! Two networks can hand out the same private range, so `192.168.1.20` heard on
 //! the wired network and on the Wi-Fi are two machines. A look on an IPv4
 //! network is therefore asked from a socket **held to that network's
@@ -182,7 +182,7 @@ fn heard_on(networks: &[Network], at: SocketAddr, workspaces_too: bool) -> Vec<A
 /// What one network heard when asked at the group on `port`.
 ///
 /// An IPv4 network is asked from a socket held to its interface, and every
-/// machine that answered is written down on that interface (ADR 0042); a
+/// machine that answered is written down on that interface (ADR 0044); a
 /// link-local network is asked from its own scoped address, whose answers carry
 /// their interface already (ADR 0041). Nothing at all when the socket cannot be
 /// made — *nothing found*, for [`around_at`]'s reason.

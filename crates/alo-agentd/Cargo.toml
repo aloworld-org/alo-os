@@ -19,7 +19,7 @@ repository.workspace = true
 # it, is a crate.
 rustix = { workspace = true }
 # A look on one IPv4 network is asked from a socket held to that network's
-# interface, so an answer counted as heard there arrived there (ADR 0042).
+# interface, so an answer counted as heard there arrived there (ADR 0044).
 # Reached only from `looking.rs`.
 socket2 = { workspace = true }
 thiserror = { workspace = true }

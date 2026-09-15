@@ -37,7 +37,7 @@
 /// which is what kind of file it was handed — then the two a link-local
 /// destination needs to be decided on its interface (ADR 0041), and last the
 /// one that says whether a message carries control messages, which can move an
-/// IPv4 datagram off the interface its socket is held to (ADR 0042).
+/// IPv4 datagram off the interface its socket is held to (ADR 0044).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -124,7 +124,7 @@ pub enum Field {
     /// `struct msghdr`'s `msg_controllen` — how many bytes of control messages
     /// a message carries, and zero for one that carries none.
     ///
-    /// Read for one reason (ADR 0042): an IPv4 datagram's `IP_PKTINFO` names
+    /// Read for one reason (ADR 0044): an IPv4 datagram's `IP_PKTINFO` names
     /// the interface it leaves by **ahead of** the one its socket is held to,
     /// and the kernel does not check the two agree — so a message carrying
     /// control messages is decided as a message held to no interface. The bytes

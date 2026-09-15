@@ -482,7 +482,7 @@ mod tests {
         }
     }
 
-    /// A boundary written before ADR 0042, which knows how to bound a request
+    /// A boundary written before ADR 0044, which knows how to bound a request
     /// and not how to hold one to an interface.
     #[derive(Debug)]
     struct HoldingNothing;
@@ -541,7 +541,7 @@ mod tests {
     /// the departure to that network's interface, and dialled from a socket held
     /// there** — loopback, interface one, in a test — and the departure is kept
     /// and named exactly as it always was. A machine dialled by its address alone
-    /// still goes through the door it always did (ADR 0042).
+    /// still goes through the door it always did (ADR 0044).
     #[test]
     fn a_machine_found_on_one_network_is_bounded_and_dialled_on_that_network() {
         let pairings = paired_with_the_studio(&[MayAskIts::Models]);

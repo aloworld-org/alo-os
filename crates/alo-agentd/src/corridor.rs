@@ -165,7 +165,7 @@ pub(crate) fn put_down_the_corridor(
             now,
         )
         // An IPv4 address is a machine on the network it answered on, and the
-        // question is held to that network (ADR 0042). A link-local address
+        // question is held to that network (ADR 0044). A link-local address
         // carries its own interface in the address, as ADR 0041 has it.
         .map(|paired| paired.on_the_network(held_to(&found)))
     };
@@ -192,7 +192,7 @@ pub(crate) fn put_down_the_corridor(
 }
 
 /// The interface a question to `found` is held to: the network an IPv4 address
-/// answered on (ADR 0042), and none for an IPv6 address — a link-local one
+/// answered on (ADR 0044), and none for an IPv6 address — a link-local one
 /// carries its interface in the address itself (ADR 0041), and a global one
 /// names its own network.
 fn held_to(found: &alo_nearby::Found) -> Option<std::num::NonZeroU32> {
@@ -588,7 +588,7 @@ mod tests {
     /// **A machine found at an IPv4 address is asked on the network it answered
     /// on, and a machine found over IPv6 is not held this way** — a link-local
     /// address carries its own interface, and a global one names its network
-    /// (ADR 0042).
+    /// (ADR 0044).
     #[test]
     fn a_question_is_held_to_the_network_an_ipv4_address_answered_on() {
         use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};

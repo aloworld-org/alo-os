@@ -4,7 +4,7 @@
 //! kernel.
 //!
 //! *One GPU box serves the office — it is still egress, and the indicator still
-//! fires.* [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md)
+//! fires.* [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md)
 //! holds a paired machine's IPv4 departure to the interface of the network it
 //! was found on. The rules are each tested with no kernel in them
 //! (`alo_bounding_map::Departure::permits`, `crate::bounding`,

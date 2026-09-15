@@ -312,7 +312,7 @@ machine is found on those too:
   machine heard at an IPv4 address on one network is written down with that
   network's interface (never spelled in the address), and a question from a turn to
   it connects from a socket held to that interface under a departure holding the
-  address, the port **and the interface** (ADR 0042) — so the same address on
+  address, the port **and the interface** (ADR 0044) — so the same address on
   another network, and a socket held to none, are refused. A provider's departure
   holds no interface and is decided as it always was. What crosses the wire, and
   what the indicator and the record say, is unchanged.

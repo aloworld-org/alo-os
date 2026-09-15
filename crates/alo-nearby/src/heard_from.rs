@@ -33,7 +33,7 @@
 //!
 //! # A private IPv4 address is on the network it was heard on
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! An IPv4 address can be dialled with no interface, so it has no scope — but
 //! `192.168.1.20` is a different machine on each of two networks whose routers
 //! hand out the same range. So an IPv4 address **heard on one network keeps
@@ -92,7 +92,7 @@ impl HeardFrom {
     /// The same address, heard on the network behind the interface the kernel
     /// numbers `interface`.
     ///
-    /// Kept for an IPv4 address, and only for one (ADR 0042): a link-local IPv6
+    /// Kept for an IPv4 address, and only for one (ADR 0044): a link-local IPv6
     /// address already carries the interface its datagram arrived on, and a
     /// global one names its own network. An `interface` of zero is *no network
     /// said*, which is what the address was before.
@@ -143,7 +143,7 @@ impl HeardFrom {
 
     /// The kernel's index for the interface this address was heard on, in
     /// either family, or `None` where nobody said — which is what a question to
-    /// it is held to (ADR 0041 for a link-local address, ADR 0042 for an IPv4
+    /// it is held to (ADR 0041 for a link-local address, ADR 0044 for an IPv4
     /// one).
     #[must_use]
     pub const fn interface(&self) -> Option<u32> {
@@ -285,7 +285,7 @@ mod tests {
     /// **An IPv4 address heard on a network keeps that network's interface**,
     /// so the same private address heard on two networks is two addresses — and
     /// it is still spelled, dialled and compared with a bare address as the
-    /// address it is (ADR 0042).
+    /// address it is (ADR 0044).
     #[test]
     fn an_ipv4_address_heard_on_a_network_keeps_its_interface() {
         let studio = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 20));

@@ -392,7 +392,7 @@ pub(crate) fn put(
 
 /// **Put the question from a socket held to an interface**, where `to` says
 /// one: [`put`] in every other respect, for a paired machine found on one
-/// network (ADR 0042, `crate::held_to`).
+/// network (ADR 0044, `crate::held_to`).
 ///
 /// # Errors
 /// [`WentWrong`], as [`put`] answers it — and a connection the kernel refused
@@ -455,7 +455,7 @@ pub(crate) fn put_held_to_a_grammar(
 }
 
 /// Where a request may connect: the addresses registered for it, and the
-/// interface its socket is held to where it is held to one (ADR 0042).
+/// interface its socket is held to where it is held to one (ADR 0044).
 pub(crate) type Where<'a> = (&'a [SocketAddr], Option<std::num::NonZeroU32>);
 
 /// The one road both of them take: this address, these bytes, that long.

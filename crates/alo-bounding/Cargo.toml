@@ -39,7 +39,7 @@ rustix = { workspace = true, features = ["thread"] }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 rustix = { workspace = true, features = ["thread"] }
 # A socket held to an interface, and a datagram carrying `IP_PKTINFO`: the two
-# roads an IPv4 departure is decided on (ADR 0042), neither of which `std` can
+# roads an IPv4 departure is decided on (ADR 0044), neither of which `std` can
 # make.
 socket2 = { workspace = true }
 

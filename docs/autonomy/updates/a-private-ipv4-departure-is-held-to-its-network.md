@@ -25,7 +25,7 @@ a hosted provider is unchanged. What the indicator and the record say is unchang
 
 ## Decision
 
-[ADR 0042](../../decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md),
+[ADR 0044](../../decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md),
 written before the code as the plan requires. Three options:
 
 - **A — hold the departure to the interface the machine was found on, and check it
@@ -94,7 +94,7 @@ touch none of `departure.rs`, `field.rs`, `departing.rs`, `fields.rs` or the fix
   `lib.rs`, `Cargo.toml`;
   `crates/alo-agentd/src/a_paired_machine_on_two_networks_with_one_address.rs` (new).
 - `Cargo.toml`, `Cargo.lock` — `socket2`.
-- `docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md`
+- `docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md`
   (new), `docs/contracts/local-network-wire.md` (one additive line), `docs/quirks.md`
   (one entry), the plan (task 25 done, task 26 written).
 
@@ -102,7 +102,7 @@ touch none of `departure.rs`, `field.rs`, `departing.rs`, `fields.rs` or the fix
 
 | Criterion | Test |
 |---|---|
-| The decision is in an ADR before it is code, with the options and what each costs a provider | ADR 0042 |
+| The decision is in an ADR before it is code, with the options and what each costs a provider | ADR 0044 |
 | A question from a turn to a paired machine at a private IPv4 address is reached on the network it was found on | `alo-agentd` `a_paired_machine_on_two_networks_with_one_address::tests::a_question_to_a_paired_machine_at_a_private_address_reaches_only_the_network_it_was_found_on` |
 | …and refused with `EACCES` on another network carrying the same address, on a real kernel under `Waited::on_this_kernel()`, two interfaces in a namespace of their own, a listener that would have answered on either | `alo-bounding` `a_private_ipv4_departure_is_held_to_its_network::a_private_ipv4_departure_reaches_its_network_and_not_the_same_address_on_another` and `…::shown_on_the_other_network_the_cable_is_the_one_refused` |
 | A provider's departure is unchanged | `alo-bounding` `a_private_ipv4_departure_is_held_to_its_network::a_departure_held_to_no_interface_is_reached_as_it_always_was`; `alo-bounding-map` `departure::tests::an_ipv4_departure_held_to_no_interface_permits_what_it_always_did` |
@@ -138,13 +138,25 @@ Not run here, by instruction: the whole workspace suite (the supervisor runs it)
 Not measured: two physical machines on two physical networks; every network here
 is `veth` in namespaces.
 
+## Numbering
+
+The decision was first written as ADR 0042. The software lane published its own
+ADR 0042 (installing an application) and then 0043 (the terminal) while this task
+was being gated, and `alo-citing`'s
+`every_decision_this_repository_points_at_exists` refused two files claiming one
+number. This decision is the later of the two to reach `main`, so it is the one
+renumbered: it is **ADR 0044**, and every citation this task wrote — rustdoc,
+comments, `Cargo.toml` notes, the plan, the wire contract, `docs/quirks.md` and this
+report — follows the rename. The installing ADR and the citations of it are
+untouched.
+
 ## Remaining limitations
 
 - A turn running with `CAP_NET_RAW` could move a connected socket to another
   interface; alo OS runs none.
 - The interface is held, not the network behind it: a Wi-Fi interface that moves to
   another access point's same-numbered range without going down is the same
-  interface. Named in ADR 0042.
+  interface. Named in ADR 0044.
 - A connection that **arrives** from a private IPv4 address is still measured from a
   socket held to nothing — written as task 26.
 

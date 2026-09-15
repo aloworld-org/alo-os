@@ -33,7 +33,7 @@
 //!
 //! # An IPv4 destination is also decided on the interface its socket is held to
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! `192.168.1.20` can be a different machine on each of two networks, and a
 //! `sockaddr_in` has no scope to say which. What does say it is the socket: one
 //! held to an interface (`SO_BINDTOIFINDEX`, `SO_BINDTODEVICE`) leaves by it
@@ -217,7 +217,7 @@ pub fn decide_departure(socket: u64, where_to: u64, length: i32) -> i32 {
 /// interface as [`decide_departure`]'s does — this module's own documentation
 /// has the order. An IPv4 destination, named or joined, is on the interface the
 /// socket is held to, **unless the message carries control messages**, when it
-/// is on none: `IP_PKTINFO` can send it by another (ADR 0042).
+/// is on none: `IP_PKTINFO` can send it by another (ADR 0044).
 ///
 /// # The answers, and where they come from
 ///
@@ -316,7 +316,7 @@ fn may_go(granted: Bounds, going: Destination) -> bool {
 /// cannot be read.
 ///
 /// `held_to` is asked only where the socket decides: a link-local address whose
-/// `sockaddr` names no scope (ADR 0041), and an IPv4 address (ADR 0042). A
+/// `sockaddr` names no scope (ADR 0041), and an IPv4 address (ADR 0044). A
 /// global IPv6 address reads nothing more of the kernel than it did before
 /// either.
 fn destination_named_at(
@@ -363,7 +363,7 @@ fn interface_held_to(sock: u64, fields: &NetworkFields) -> Option<u32> {
 /// where the `connect` that joined it put the scope; one held to none names no
 /// network and is refused by the check rather than here. An IPv4 peer is on the
 /// interface `held_to` answers, which is the socket's — or none, for a message
-/// whose control messages could move it (ADR 0042).
+/// whose control messages could move it (ADR 0044).
 fn peer_of(
     sock: u64,
     family: Family,

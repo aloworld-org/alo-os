@@ -245,7 +245,7 @@ impl Turning<'_, '_> {
             // shown is this machine's words, built from this machine's verbs,
             // because the request it answers with is carried out here. A machine
             // found on one network is asked, and bounded, on that network alone
-            // (ADR 0042).
+            // (ADR 0044).
             Answers::PairedMachine(corridor) => {
                 let to = registering(corridor.where_it_would_connect());
                 self.put_off_this_machine(&to, corridor.held_to(), &agent, now, |indicator| {

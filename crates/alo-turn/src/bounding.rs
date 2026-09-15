@@ -162,7 +162,7 @@ pub trait Bounding {
     /// Carry out one network request inside a boundary reaching **only these
     /// addresses, on the interface the kernel numbers `interface`**.
     ///
-    /// ADR 0042. A paired machine found at a private IPv4 address on one network
+    /// ADR 0044. A paired machine found at a private IPv4 address on one network
     /// is asked from a socket held to that network's interface, and the boundary
     /// is shown the address **on that interface**: the same address on another
     /// network — which is another machine whenever two routers hand out the same
@@ -282,7 +282,7 @@ mod tests {
 
     /// **A boundary that does not know how to hold a request to an interface
     /// refuses it**, and runs nothing — rather than bounding the request with no
-    /// interface, which would permit the address on every network (ADR 0042).
+    /// interface, which would permit the address on every network (ADR 0044).
     #[test]
     fn a_boundary_that_cannot_hold_a_request_to_an_interface_refuses_it_and_runs_nothing() {
         #[derive(Debug)]

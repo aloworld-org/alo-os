@@ -118,7 +118,7 @@ pub struct DownTheCorridor<'a> {
     /// This machine, which the proof names as the sender.
     here: MachineId,
     /// The interface of the network the machine was found on, where a question
-    /// to it is held to that network (ADR 0042), and `None` where it is dialled
+    /// to it is held to that network (ADR 0044), and `None` where it is dialled
     /// by its address alone.
     held_to: Option<NonZeroU32>,
 }
@@ -168,7 +168,7 @@ impl<'a> DownTheCorridor<'a> {
     /// `interface` — so a question to it connects from a socket held to that
     /// interface, and is registered as a departure held to it.
     ///
-    /// [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
+    /// [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
     /// a private IPv4 address is a different machine on each network that hands
     /// it out, and what discovery measured is the address **on the network it
     /// answered on**. `None` is a machine dialled by its address alone, as every

@@ -178,7 +178,7 @@ impl Bounding for ByTheKernel {
     }
 
     /// The same, with every IPv4 address held to the interface the kernel
-    /// numbers `interface` (ADR 0042): a paired machine found at a private
+    /// numbers `interface` (ADR 0044): a paired machine found at a private
     /// address on one network is permitted there, and the same address on
     /// another network — or by a socket held to no interface — is refused.
     ///
@@ -219,7 +219,7 @@ impl ByTheKernel {
 }
 
 /// The addresses a request registers, as the map holds destinations — each
-/// IPv4 one held to `held_to` where that names an interface (ADR 0042).
+/// IPv4 one held to `held_to` where that names an interface (ADR 0044).
 ///
 /// # Errors
 /// [`NoBoundary`] when there are more than one entry holds, and when one of them
@@ -266,7 +266,7 @@ fn departures_of(
 /// **An IPv4 address carries the interface its socket will be held to**, where
 /// there is one: a paired machine found at `192.168.1.20` on the cable is
 /// registered on the cable's interface, and a provider's address — held to
-/// none — is registered as it always was (ADR 0042).
+/// none — is registered as it always was (ADR 0044).
 fn as_a_departure(
     address: std::net::SocketAddr,
     held_to: Option<std::num::NonZeroU32>,
@@ -398,7 +398,7 @@ mod tests {
     /// **A paired machine found at a private IPv4 address is registered on the
     /// interface of the network it was found on, and nowhere else** — and a
     /// provider's address, held to none, is registered as it always was (ADR
-    /// 0042).
+    /// 0044).
     #[expect(
         clippy::panic,
         reason = "in a test, a panic on an unexpected refusal is the failure being reported"

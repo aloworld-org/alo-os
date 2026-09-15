@@ -50,7 +50,7 @@
 //!
 //! # An IPv4 departure may be held to the interface it leaves by
 //!
-//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
 //! `192.168.1.20` on the wired network and `192.168.1.20` on the Wi-Fi are two
 //! machines whenever two routers hand out the same private range. The kernel
 //! dials an IPv4 address with no interface named, so there is no scope to read
@@ -164,7 +164,7 @@ impl Departure {
     ///
     /// **The interface is kept only where it can decide something**
     /// ([`keeps_its_interface`]): an address that needs one, and every IPv4
-    /// address, whose interface is the one its socket is held to (ADR 0042).
+    /// address, whose interface is the one its socket is held to (ADR 0044).
     /// It is dropped everywhere else, so the daemon, which hands in whatever
     /// scope a resolved address carried, and the programme, which hands in
     /// whatever scope a `sockaddr_in6` carried, make the same value of the same
@@ -251,7 +251,7 @@ impl Departure {
     /// The same destination, always. And one more, for one family: **an IPv4
     /// departure held to no interface permits the same address and port on any
     /// interface**, because that is what every IPv4 departure permitted before
-    /// ADR 0042 and what a provider's still must — its address is on no one
+    /// ADR 0044 and what a provider's still must — its address is on no one
     /// network, and the route decides. An IPv4 departure held to an interface
     /// permits that interface and nothing else, which is the whole of what
     /// holding it is for.
@@ -340,7 +340,7 @@ pub const fn needs_an_interface(family: Family, address: u128) -> bool {
 /// Every address that [`needs_an_interface`], and **every IPv4 address**: the
 /// kernel dials one with no interface named, but a socket held to an interface
 /// leaves by it, and a paired machine found on one network is dialled that way
-/// (ADR 0042). The private ranges are not singled out, and deliberately: a
+/// (ADR 0044). The private ranges are not singled out, and deliberately: a
 /// public address on an office network and a carrier's shared range are the
 /// same question, and a departure held to nothing still permits any interface
 /// ([`Departure::permits`]), so keeping the interface narrows only a departure
@@ -444,7 +444,7 @@ impl Departures {
     /// address with no interface — even if the same nothing was written into
     /// the entry: [`Departure::names_its_network`] says why. Each destination
     /// shown is asked [`Departure::permits`], which is where an IPv4 departure
-    /// held to an interface is held to it (ADR 0042).
+    /// held to an interface is held to it (ADR 0044).
     #[must_use]
     pub fn holds(&self, where_to: Departure) -> bool {
         where_to.names_its_network() && self.each().any(|shown| shown.permits(where_to))
@@ -678,7 +678,7 @@ mod tests {
             assert_eq!(scoped, Departure::of(Family::Six, address, 443));
             assert!(scoped.names_its_network());
         }
-        // No IPv4 address needs an interface to be dialled — but since ADR 0042
+        // No IPv4 address needs an interface to be dialled — but since ADR 0044
         // one keeps the interface its socket is held to, which the tests below
         // hold.
         assert!(!needs_an_interface(Family::Four, 0xa9fe_0001));
@@ -724,7 +724,7 @@ mod tests {
     /// **A private IPv4 departure held to the interface it was found on is
     /// permitted there and refused on another network carrying the same
     /// address** — and refused on a socket held to no interface, which leaves by
-    /// whatever the route says at the moment (ADR 0042).
+    /// whatever the route says at the moment (ADR 0044).
     #[test]
     fn an_ipv4_departure_held_to_an_interface_is_permitted_there_and_nowhere_else() {
         let on_the_cable = Departure::on(Family::Four, THE_STUDIO_OVER_IPV4, 7_610, THE_CABLE);
