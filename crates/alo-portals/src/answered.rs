@@ -95,8 +95,17 @@ impl Answered {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
     /// The Secret portal handed the application its own secret.
+    ///
+    /// Kept before the secret is written to what the application handed over.
+    /// If that write then fails, an [`Unanswered::NotWritten`] for the same
+    /// application follows it, and the response is `2`.
     SecretHandedOver(Allowed),
-    /// The file was opened in the application that opens its kind.
+    /// The file is opened in the application that opens its kind.
+    ///
+    /// Kept before that application is asked to open it, so no file is opened
+    /// on a request the record does not hold. If it then does not open it, an
+    /// [`Unanswered::NotOpened`] for the same application follows, and the
+    /// response is `2`.
     Opened(OpensWith),
     /// The application read the person's appearance settings.
     AppearanceRead(Allowed),
@@ -173,7 +182,11 @@ impl Outcome {
 
 /// Why a request could not be answered with what it asked for, where neither
 /// the grants nor *what opens what* are the reason.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Written into the answers file by its kebab-case name, `not-identified`, and
+/// `{"not-opened":{"opener":…}}` for the one that names an application.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Unanswered {
     /// The caller is not a sandboxed application, so nothing could say which
     /// application it is.

@@ -23,6 +23,9 @@
 //! - **a caller in another process that is still there is named**, for all
 //!   three portals and the signal —
 //!   [`on_the_bus::a_caller_in_another_process_that_is_still_there_is_named`];
+//! - **and a caller gone is kept on the disk, read back after the backend has
+//!   stopped** (task 8) —
+//!   [`on_the_bus::a_caller_gone_is_read_back_from_the_disk_after_the_backend_stops`];
 //! - **the contract says how the process is held, and the quirks which bus
 //!   daemons hand over a descriptor** —
 //!   [`the_contract_and_the_quirks_say_how_a_caller_is_held`].
@@ -75,8 +78,9 @@ mod on_the_bus {
     use alo_capability::{Applicant, Facility, Grant, Grants, Reach};
     use alo_keyring_fixture::AKeyringOfOurOwn;
     use alo_portals::{
-        Allowed, Answered, Appearance, Applications, Backend, KeepsSecrets, Kept, NotKept, Outcome,
-        Portal, Request, Sandboxes, Served, TheMachine, TimeOfDay, Unanswered,
+        Allowed, Answered, AnswersFile, Appearance, Applications, Backend, KeepsSecrets, Kept,
+        KeptAnswer, KeptOutcome, NotKept, NotRecorded, Outcome, Portal, Recording, Request,
+        Sandboxes, Served, TheMachine, TimeOfDay, Unanswered,
     };
     use rustix::fs::{CWD, FileType, Mode, mknodat};
     use zbus::zvariant::{Fd, Value};
@@ -198,13 +202,28 @@ mod on_the_bus {
         }
     }
 
+    /// Every answer kept in memory and, beside it, in an answers file on the
+    /// disk, so what a stopped backend left behind can be read back.
+    struct InMemoryAndOnTheDisk {
+        memory: Arc<Kept>,
+        disk: AnswersFile,
+    }
+
+    impl Recording for InMemoryAndOnTheDisk {
+        fn keep(&self, answered: Answered) -> Result<(), NotRecorded> {
+            self.disk.keep(answered.clone())?;
+            self.memory.keep(answered)
+        }
+    }
+
     /// The backend on a bus of its own, and where callers' sandboxes are laid out.
     struct Serving {
         bus: AKeyringOfOurOwn,
         machine: Arc<ThisMachine>,
         record: Arc<Kept>,
+        answers: PathBuf,
         processes: PathBuf,
-        _served: Served,
+        served: Option<Served>,
     }
 
     impl Serving {
@@ -231,11 +250,15 @@ mod on_the_bus {
                 time: RwLock::new(TimeOfDay::checked(12, 0).unwrap()),
             });
             let record = Arc::new(Kept::nothing());
+            let answers = processes.with_file_name("portal-answers.jsonl");
             let served = Backend::answering_from(
                 machine.clone(),
                 Arc::new(NoKeyring),
                 Sandboxes::under(&processes),
-                record.clone(),
+                Arc::new(InMemoryAndOnTheDisk {
+                    memory: record.clone(),
+                    disk: AnswersFile::opened(&answers).unwrap(),
+                }),
             )
             .serve_on(&bus.address())
             .expect("the portals are served on the test's bus");
@@ -243,9 +266,15 @@ mod on_the_bus {
                 bus,
                 machine,
                 record,
+                answers,
                 processes,
-                _served: served,
+                served: Some(served),
             }
+        }
+
+        /// Stop the backend, and wait until it has.
+        fn stopped(&mut self) {
+            drop(self.served.take());
         }
 
         /// This binary, run again as a caller asking `asking`, waiting for its
@@ -472,6 +501,51 @@ mod on_the_bus {
                 .any(|answer| matches!(answer.outcome(), Outcome::AppearanceSent(_))),
             "a change was sent for a process that was gone: {answers:?}"
         );
+    }
+
+    /// **A caller gone by the time its sandbox is read is kept on the disk, and
+    /// read back after the backend has stopped** — for a request and for a
+    /// change that was not sent — as not identified and naming nobody, exactly
+    /// as it was answered.
+    #[test]
+    fn a_caller_gone_is_read_back_from_the_disk_after_the_backend_stops() {
+        let mut serving = Serving::started("held-kept");
+        let mut caller = serving.a_caller("secret");
+        caller.sandboxed_behind_a_pipe();
+        caller.go();
+        caller.gone_while_its_sandbox_is_read();
+        not_identified(&serving.recorded(Portal::Secret, 1));
+
+        let mut listening = serving.a_caller("listening");
+        listening.sandboxed_behind_a_pipe();
+        listening.go();
+        listening.until_connected();
+        serving.evening();
+        listening.gone_while_its_sandbox_is_read();
+        not_identified(&serving.recorded(Portal::Settings, 1));
+        serving.stopped();
+
+        let read = AnswersFile::read_back(&serving.answers).unwrap();
+        assert!(read.unreadable.is_empty(), "{read:?}");
+        let given: Vec<KeptAnswer> = serving
+            .record
+            .everything()
+            .iter()
+            .map(KeptAnswer::from)
+            .collect();
+        assert_eq!(read.answers, given);
+        let portals: Vec<Portal> = read.answers.iter().map(KeptAnswer::portal).collect();
+        assert_eq!(portals, [Portal::Secret, Portal::Settings]);
+        for answer in &read.answers {
+            assert_eq!(answer.application(), None, "{answer:?}");
+            assert_eq!(
+                answer.outcome(),
+                &KeptOutcome::Unanswered {
+                    why: Unanswered::NotIdentified
+                },
+                "{answer:?}"
+            );
+        }
     }
 
     /// **A caller in another process that is still there when its sandbox has

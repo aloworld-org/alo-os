@@ -11,8 +11,11 @@
 //! 3. asks `crate::open_with::answered`, which judges the file's grant **before
 //!    the file is read**, reads its kind from its bytes, and judges the grant
 //!    over the application that opens it;
-//! 4. asks that application to open the file (`crate::opening`), and says `0`
-//!    only when it did.
+//! 4. records the answer, [`Outcome::Opened`] — and **only once the record has
+//!    kept it** asks that application to open the file (`crate::opening`). A
+//!    record that would not keep it is a `2`, and nothing is opened;
+//! 5. says `0` only when the application opened it. When it did not, that is
+//!    recorded after the answer as [`Unanswered::NotOpened`], and is a `2`.
 //!
 //! **`OpenURI` and `OpenDirectory` are answered `2`**, recorded as
 //! [`Unanswered::NotDecidedHere`]. Nothing on this machine decides what opens a
@@ -36,8 +39,8 @@ use zbus::message::Header;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue};
 
 use crate::answered::{Outcome, Unanswered};
-use crate::asked::Asked;
-use crate::open_with::{NotOpened, answered};
+use crate::asked::{Asked, REFUSED};
+use crate::open_with::{NotOpened, OpensWith, answered};
 use crate::opening::opened_in;
 use crate::portal::Portal;
 use crate::serving::Backend;
@@ -83,8 +86,24 @@ impl OpenUriPortal {
             Portal::OpenWith,
         )
         .await?;
-        let outcome = self.answer(connection, asked.application(), fd).await;
-        asked.answered(connection, &self.backend, outcome).await
+        let (opens, path) = match self.answer(asked.application(), fd) {
+            Ok(allowed) => allowed,
+            Err(outcome) => return asked.answered(connection, &self.backend, *outcome).await,
+        };
+        let opener = opens.opener().application().identifier().to_owned();
+        let Ok(response) = asked.recorded(&self.backend, Outcome::Opened(opens)) else {
+            return asked.responded(connection, REFUSED).await;
+        };
+        if opened_in(connection, &opener, &path).await {
+            return asked.responded(connection, response).await;
+        }
+        // The answer was kept and the file not opened; what follows it says
+        // so, and the response is the refusal either way.
+        let _ = asked.recorded(
+            &self.backend,
+            Outcome::Unanswered(Unanswered::NotOpened { opener }),
+        );
+        asked.responded(connection, REFUSED).await
     }
 
     /// The folder a file is in, which nothing here decides what opens.
@@ -124,48 +143,47 @@ impl OpenUriPortal {
             .await
     }
 
-    /// What `application` is answered with for the file behind `fd`.
-    async fn answer(
+    /// What opens the file behind `fd` for `application`, and the path it is
+    /// opened at — or the outcome `application` is answered with instead.
+    fn answer(
         &self,
-        connection: &zbus::Connection,
         application: Option<&str>,
         fd: OwnedFd,
-    ) -> Outcome {
+    ) -> Result<(OpensWith, PathBuf), Box<Outcome>> {
         let Some(application) = application else {
-            return Outcome::Unanswered(Unanswered::NotIdentified);
+            return Err(Box::new(Outcome::Unanswered(Unanswered::NotIdentified)));
         };
         let handed = File::from(std::os::fd::OwnedFd::from(fd));
         if !handed.metadata().is_ok_and(|about| about.is_file()) {
-            return Outcome::Unanswered(Unanswered::NotAFile);
+            return Err(Box::new(Outcome::Unanswered(Unanswered::NotAFile)));
         }
         let named = PathBuf::from(format!("/proc/self/fd/{}", handed.as_raw_fd()));
         let (Ok(path), Ok(mut file)) = (std::fs::read_link(&named), File::open(&named)) else {
-            return Outcome::Unanswered(Unanswered::NotAFile);
+            return Err(Box::new(Outcome::Unanswered(Unanswered::NotAFile)));
         };
         let Some(grants) = self.backend.machine().grants() else {
-            return Outcome::Unanswered(Unanswered::GrantsUnread);
+            return Err(Box::new(Outcome::Unanswered(Unanswered::GrantsUnread)));
         };
         let Some(applications) = self.backend.machine().applications() else {
-            return Outcome::Unanswered(Unanswered::ApplicationsUnread);
+            return Err(Box::new(Outcome::Unanswered(
+                Unanswered::ApplicationsUnread,
+            )));
         };
-        let opens = match answered(
+        answered(
             application,
             &path,
             &mut file,
             &applications.what_opens(),
             &grants,
             SystemTime::now(),
-        ) {
-            Ok(opens) => opens,
-            Err(NotOpened::NotARequest(not)) => return Outcome::NotARequest(not),
-            Err(NotOpened::Refused(refused)) => return Outcome::Refused(refused),
-            Err(NotOpened::NothingOpens(nothing)) => return Outcome::NothingOpens(nothing),
-        };
-        let opener = opens.opener().application().identifier().to_owned();
-        if opened_in(connection, &opener, &path).await {
-            Outcome::Opened(opens)
-        } else {
-            Outcome::Unanswered(Unanswered::NotOpened { opener })
-        }
+        )
+        .map(|opens| (opens, path))
+        .map_err(|not| {
+            Box::new(match not {
+                NotOpened::NotARequest(not) => Outcome::NotARequest(not),
+                NotOpened::Refused(refused) => Outcome::Refused(refused),
+                NotOpened::NothingOpens(nothing) => Outcome::NothingOpens(nothing),
+            })
+        })
     }
 }

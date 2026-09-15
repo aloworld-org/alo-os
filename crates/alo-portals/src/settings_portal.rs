@@ -36,6 +36,11 @@
 //! ([`appearance_settings::allowed`]); only an allowed caller's answer reads the
 //! person's settings ([`appearance_settings::read`]). Every answer, and every
 //! refusal with its application named, is recorded before the reply is sent.
+//!
+//! **An answer the record did not keep is not sent.** The caller receives
+//! `org.freedesktop.portal.Error.Failed` instead — never a value, and never the
+//! empty dictionary `ReadAll` gives for a namespace nobody answers, because
+//! that too is an answer.
 
 use std::collections::HashMap;
 use std::time::SystemTime;
@@ -45,6 +50,7 @@ use zbus::zvariant::{OwnedValue, Structure, Value as OnTheBus};
 
 use crate::answered::{Answered, Outcome, Unanswered};
 use crate::appearance_settings::{self, Setting, THE_NAMESPACE, Value, Values};
+use crate::asked::NOT_RECORDED;
 use crate::caller::{application_of, named};
 use crate::portal::Portal;
 use crate::serving::Backend;
@@ -84,7 +90,7 @@ impl SettingsPortal {
         namespaces: Vec<String>,
     ) -> Result<HashMap<String, HashMap<String, OwnedValue>>, SettingError> {
         if !appearance_settings::asked_of(&namespaces) {
-            self.unknown(connection, &header).await;
+            self.unknown(connection, &header).await?;
             return Ok(HashMap::new());
         }
         let values = self.answered(connection, &header).await?;
@@ -145,7 +151,7 @@ impl SettingsPortal {
         key: &str,
     ) -> Result<OwnedValue, SettingError> {
         let Some(setting) = Setting::named(namespace, key) else {
-            self.unknown(connection, header).await;
+            self.unknown(connection, header).await?;
             return Err(SettingError::NotFound(NOT_FOUND.to_owned()));
         };
         let values = self.answered(connection, header).await?;
@@ -172,24 +178,31 @@ impl SettingsPortal {
                 });
         match answer {
             Ok((allowed, values)) => {
-                self.keep(application.as_deref(), Outcome::AppearanceRead(allowed));
+                self.keep(application.as_deref(), Outcome::AppearanceRead(allowed))?;
                 Ok(values)
             }
             Err(outcome) => {
                 let error = error_for(&outcome);
-                self.keep(application.as_deref(), *outcome);
+                self.keep(application.as_deref(), *outcome)?;
                 Err(error)
             }
         }
     }
 
     /// Record a request for a setting this machine does not answer.
-    async fn unknown(&self, connection: &zbus::Connection, header: &Header<'_>) {
+    ///
+    /// # Errors
+    /// [`SettingError::Failed`] when the record did not keep it.
+    async fn unknown(
+        &self,
+        connection: &zbus::Connection,
+        header: &Header<'_>,
+    ) -> Result<(), SettingError> {
         let application = self.application(connection, header).await;
         self.keep(
             application.as_deref(),
             Outcome::Unanswered(Unanswered::NoSuchSetting),
-        );
+        )
     }
 
     /// The application the sender's sandbox names, if it has one.
@@ -203,13 +216,20 @@ impl SettingsPortal {
     }
 
     /// Write this answer into the record.
-    fn keep(&self, application: Option<&str>, outcome: Outcome) {
-        self.backend.record().keep(Answered::new(
-            SystemTime::now(),
-            named(application),
-            Portal::Settings,
-            outcome,
-        ));
+    ///
+    /// # Errors
+    /// [`SettingError::Failed`] when the record did not keep it, which the
+    /// caller receives in place of the answer.
+    fn keep(&self, application: Option<&str>, outcome: Outcome) -> Result<(), SettingError> {
+        self.backend
+            .record()
+            .keep(Answered::new(
+                SystemTime::now(),
+                named(application),
+                Portal::Settings,
+                outcome,
+            ))
+            .map_err(|_| SettingError::Failed(NOT_RECORDED.to_owned()))
     }
 }
 

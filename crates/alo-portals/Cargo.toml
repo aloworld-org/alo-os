@@ -30,8 +30,15 @@ alo-appearance = { path = "../alo-appearance" }
 alo-strings = { path = "../alo-strings" }
 
 # The one derive this crate rents, for the error its own string list can return
-# to whoever is fixing that list.
+# to whoever is fixing that list, and for why an answer could not be kept.
 thiserror = { workspace = true }
+
+# The answers file: one JSON line per answer, the notation the agent's record
+# file (`docs/contracts/record-file.md`) is already written in, so whoever reads
+# both reads one. Both are workspace dependencies already, so this adds no
+# crate to the tree.
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 # The bus the backend answers on. Already in the workspace for the keyring
 # (`alo-secrets`), at the same version and with the same runtime, so this adds
@@ -40,10 +47,14 @@ thiserror = { workspace = true }
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
+[target.'cfg(unix)'.dependencies]
 # The process behind a request, held by a descriptor (`pidfd_open`) rather than
 # named by a number that can be given to another process while its sandbox is
-# read. Already a workspace dependency (`alo-agentd`, `alo-accounts`) with the
-# `process` feature this needs, so it adds no crate to the tree.
+# read — Linux's — and, on any Unix, the two questions the answers file asks
+# before it is believed: which user this process runs as, and the flag that
+# refuses to open a symbolic link. Already a workspace dependency
+# (`alo-agentd`, `alo-accounts`, `alo-remembering`) with the features this
+# needs, so it adds no crate to the tree.
 rustix = { workspace = true }
 
 [dev-dependencies]
@@ -53,10 +64,6 @@ alo-opening = { path = "../alo-opening" }
 # The machine's one vocabulary, so the acceptance test can ask whether what
 # this crate says is collected beside everybody else's.
 alo-saying = { path = "../alo-saying" }
-
-# For showing that judging a hundred requests leaves the grants byte for byte
-# where they were.
-serde_json = { workspace = true }
 
 # A real bus for the backend test to serve on and call through, started with no
 # service activation — the one fixture that does, rather than a second that

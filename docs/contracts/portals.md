@@ -75,7 +75,15 @@ on that path, sent to the caller.
 
 Every request that reaches the backend, including every refusal, is recorded
 before its response is sent. The record names the application whenever the
-sandbox named one.
+sandbox named one. On a machine it is kept in
+`/var/lib/alo/portal-answers.jsonl`, and stays after the backend stops;
+`docs/contracts/portal-answers-file.md` is its shape.
+
+**An answer that cannot be recorded is not sent.** When the record cannot keep
+an answer, the application receives the refusal instead: response `2`, or
+`org.freedesktop.portal.Error.Failed` on the Settings portal. No secret is
+written, no file is opened, and no `SettingChanged` is sent. A secret is written,
+and a file handed to its opener, only after the answer has been recorded.
 
 ## Answered
 

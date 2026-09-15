@@ -362,7 +362,27 @@ has to name the process that sent the request and no other.
 
 ### 8. What an application was answered is kept after the backend stops
 
-**Status:** ready. **Depends on:** 5, 7.
+**Status:** **Done, 2026-09-15.** Decided the second way: `alo-portals` keeps its
+own file, `/var/lib/alo/portal-answers.jsonl` (`alo_portals::THE_ANSWERS`), and
+`alo-record` is not touched. `alo_portals::AnswersFile` is a `Recording` that
+appends one synced JSON line per answer (`KeptAnswer`: time, application or
+nobody, portal, `KeptOutcome`) after a `{"format":1}` line. It opens and reads
+the file under `alo-remembering`'s rules: not a link, a regular file, root's or
+this login's, not writable by others, made `0600`, and the folder never made.
+A file in a newer format or with no format line is refused and left as it was.
+A torn last line is ended before the next answer, and reported by number when
+read back. `Recording::keep` now returns `Result<(), NotRecorded>`, and every
+door treats a failure as a refusal: response `2`, or `Error.Failed` on Settings,
+with no secret written, no file opened and no `SettingChanged` sent. A secret is
+buffered and written, and a file handed to its opener, only after its answer is
+kept. A failed delivery then follows the answer as `not-written` or
+`not-opened`. `docs/contracts/portal-answers-file.md` is the format, and
+`docs/contracts/portals.md` says what an unrecorded answer gets. Tests:
+`crates/alo-portals/tests/what_an_application_was_answered_is_kept.rs`, and
+`on_the_bus::a_caller_gone_is_read_back_from_the_disk_after_the_backend_stops`
+in `a_caller_is_named_by_the_process_the_bus_holds.rs`. Report:
+`docs/autonomy/updates/portal-answers-kept-after-the-backend-stops.md`.
+**Depends on:** 5, 7.
 
 Every answer and refusal the portal backend gives is written to a
 `Recording` before the application hears it. The only `Recording` is
@@ -389,3 +409,35 @@ agent column, and `alo-record` is lane A's.
   agreement. No new crate in the tree. Nothing here starts the backend in a
   session: that is image work and not this plan's. A record that cannot be
   written refuses the request rather than answering it unrecorded.
+
+### 9. What applications were answered is kept as long as the machine's record, and no longer
+
+**Status:** ready. **Depends on:** 8.
+
+Task 8 made the portal answers file durable, and it only grows. The agent's
+record does not only grow: `[record].keeping` in the machine description
+(`docs/contracts/machine-description.md`) is the organisation's retention rule
+(ADR 0004), `"forever"` or `{ for-days = n }`, and `alo-keeping` shortens the
+record under it and says so in its first line (`since`, `under`). An
+application's requests are as much a record of what happened on a staff
+member's machine as an agent's verbs. If one file is kept for ninety days and
+the other forever, the organisation's rule holds for half of what the machine
+recorded.
+
+- **Acceptance:** the answers file is shortened under the same
+  `[record].keeping` rule the agent's record is, read through `alo-keeping`'s
+  public `Keeping` rather than restated. A shortening removes only answers
+  older than the rule allows, and never a line that did not read. It writes
+  `since` and `under` into the format line, as the record file does, so a
+  shortened file never reads as one where nothing happened before its first
+  answer. It replaces the file whole or not at all, and the backend answers
+  nothing while it is replaced. `docs/contracts/portal-answers-file.md` gains the
+  two fields additively, and `format` stays `1`. Tests: an answer past the rule
+  is gone after a shortening and one inside it is not; `"forever"` removes
+  nothing; a torn line survives; a file shortened twice still says it was; and a
+  shortening that cannot write leaves the file as it was.
+- **Constraint:** no edit to `alo-keeping` or `alo-record` without their
+  owner's written agreement. If `Keeping` cannot be used without one, the
+  deliverable is the proposal in the report. Nothing here starts the backend in
+  a session or decides when a shortening runs on a machine: that is the session
+  and image work this plan does not own.

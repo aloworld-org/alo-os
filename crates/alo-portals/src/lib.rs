@@ -59,7 +59,12 @@
 //! | [`refused`] | Why a request was refused, and what a person is told |
 //! | [`open_with`] | An open-with request, answered from what opens what |
 //! | [`answered`] | What the backend answered a request with, as the record keeps it |
-//! | [`recording`] | Where every answer is written |
+//! | [`recording`] | Where every answer is written, and why an answer that is not kept is not sent |
+//! | [`not_recorded`] | Why an answer could not be kept |
+//! | [`kept_answer`] | One answer, as a line of the answers file |
+//! | [`kept_outcome`] | What a request was answered with, as the answers file keeps it |
+//! | `answers_file` | The answers, kept on the disk after the backend stops — Unix only |
+//! | `believed_file` | Who may have written the answers file — Unix only |
 //! | [`the_machine`] | The grants, what opens what and how the machine looks, read at every request |
 //! | [`appearance_settings`] | The appearance settings an application may read, and who may |
 //! | [`keeping_secrets`] | The keyring the Secret portal is answered from |
@@ -92,11 +97,18 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod answered;
+#[cfg(unix)]
+pub mod answers_file;
 pub mod appearance_settings;
+#[cfg(unix)]
+mod believed_file;
 pub mod handle;
 pub mod judging;
 pub mod keeping_secrets;
+pub mod kept_answer;
+pub mod kept_outcome;
 pub mod not_a_request;
+pub mod not_recorded;
 pub mod open_with;
 pub mod portal;
 pub mod recording;
@@ -126,13 +138,18 @@ mod settings_portal;
 pub mod watching_appearance;
 
 pub use answered::{Answered, Outcome, Unanswered};
+#[cfg(unix)]
+pub use answers_file::{AnswersFile, ReadBack, THE_ANSWERS, THE_ANSWERS_FORMAT};
 pub use appearance_settings::{Setting, THE_NAMESPACE, Value, Values};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 #[cfg(target_os = "linux")]
 pub use held_process::HeldProcess;
 pub use judging::Allowed;
 pub use keeping_secrets::{KeepsSecrets, NotKept};
+pub use kept_answer::KeptAnswer;
+pub use kept_outcome::{KeptOutcome, NothingOpensAs, RefusedAs};
 pub use not_a_request::NotARequest;
+pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
 pub use portal::{Over, Portal};
 pub use recording::{Kept, Recording};

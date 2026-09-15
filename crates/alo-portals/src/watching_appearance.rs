@@ -21,7 +21,8 @@
 //!
 //! Every signal is recorded as [`Outcome::AppearanceSent`] with its application
 //! named **before** it is sent, as every answer the backend gives is: an
-//! application is never sent something the record does not hold. A connection
+//! application is never sent something the record does not hold, and a signal
+//! the record did not keep is not sent. A connection
 //! that was sent nothing is not recorded: it asked for nothing, and a record of
 //! every program on the bus at every change would bury the requests that were
 //! refused.
@@ -103,7 +104,8 @@ async fn sent_to_whoever_may_read(bus: &zbus::Connection, backend: &Backend, cha
         }
         let caller = caller_of(bus, &connection, backend).await;
         if caller == Sandboxed::Gone {
-            backend.record().keep(Answered::new(
+            // Nothing is sent to it whether or not this is kept.
+            let _ = backend.record().keep(Answered::new(
                 SystemTime::now(),
                 None,
                 Portal::Settings,
@@ -119,13 +121,15 @@ async fn sent_to_whoever_may_read(bus: &zbus::Connection, backend: &Backend, cha
         ) else {
             continue;
         };
-        backend.record().keep(Answered::new(
+        let kept = backend.record().keep(Answered::new(
             SystemTime::now(),
             named(application.as_deref()),
             Portal::Settings,
             Outcome::AppearanceSent(allowed),
         ));
-        send(bus, &connection, changed).await;
+        if kept.is_ok() {
+            send(bus, &connection, changed).await;
+        }
     }
 }
 

@@ -218,14 +218,18 @@ pub const SECRET_HANDED_OVER: Word = Word::saying(
      translated. The secret is the one the keyring keeps for that application alone.",
 );
 
-/// A file was opened in the application that opens its kind.
+/// A file is opened in the application that opens its kind.
+///
+/// Written down before that application is asked, so it says the file was
+/// handed to it; when it then does not open it, [`NOT_OPENED`] follows.
 pub const OPENED_IN: Word = Word::saying(
     "portals.answered.opened-in",
-    "{application} had a file it was granted opened in {opener}",
+    "{application} had a file it was granted handed to {opener} to open",
 )
 .noting(
     "{application} and {opener} are identifiers of applications, like org.gnome.Geary and \
-     org.gnome.Papers, and are never translated.",
+     org.gnome.Papers, and are never translated. When {opener} did not open it, a separate \
+     line saying so follows this one.",
 );
 
 /// The caller is not a sandboxed application.

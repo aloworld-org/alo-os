@@ -1,0 +1,142 @@
+# Contract — the portal answers file
+
+**Status:** v0.5, contract. Additive changes only; a break requires versioning
+and a deprecation period. See `CLAUDE.md`, "Contracts outlive code".
+**Owner:** `crates/alo-portals` (`answers_file`, `kept_answer`, `kept_outcome`).
+**Decisions:** [ADR 0001](../decisions/0001-the-capability-model.md) §7 (every
+execution and every refusal leaves a record),
+[ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md) part 2 (no
+refusal calls an application an agent). **Held by:**
+`crates/alo-portals/tests/what_an_application_was_answered_is_kept.rs`, which
+fails when a name the file writes is missing here.
+
+This is the file the portal backend (`docs/contracts/portals.md`) writes every
+answer it gives an application into — what was handed over and, as carefully,
+what was refused — so that a person can read later what their applications
+asked for and were told, after the backend that answered has stopped.
+
+It is **not** the agent's record (`docs/contracts/record-file.md`). That file is
+*what an agent did*, and every entry in it names an agent or nobody. An
+application is not an agent, so its requests are kept here, beside it, in the
+same notation.
+
+## Where it is
+
+`/var/lib/alo/portal-answers.jsonl`, beside the agent's record, in the folder
+the image makes for what happened on this machine.
+
+It is held to the rules `alo-remembering` holds the grants and pairings files
+to. Before a byte is read or added:
+
+- the path is **not a symbolic link**, and is never followed;
+- it is **a regular file**, never a pipe, a device or a folder;
+- it belongs to **root or to the login reading it**, and **nobody else can
+  write it** (group- or world-writable is refused);
+- a file the backend makes is made **`0600`**, and **the folder is never
+  made**.
+
+A file refused on any of these is neither read nor added to, and the backend
+answers no request while its record is refused (see *An answer that is not kept
+is not sent*).
+
+## The shape
+
+The first line says what the file is. Every line after it is one answer, in the
+order given. Every line is compact JSON with no newline inside it.
+
+```
+{"format":1}
+{"at":{"secs_since_epoch":1760000000,"nanos_since_epoch":0},"application":"org.gnome.Fractal","portal":"secret","answer":"secret-handed-over","against":[3]}
+{"at":{"secs_since_epoch":1760000004,"nanos_since_epoch":0},"application":"org.example.Stranger","portal":"secret","answer":"refused","why":"nothing-granted"}
+{"at":{"secs_since_epoch":1760000009,"nanos_since_epoch":0},"portal":"open-with","answer":"unanswered","why":"not-identified"}
+```
+
+The file is **appended to and never rewritten**, for the agent's record's
+reasons: keeping an answer does not read the file, a write the machine
+interrupts costs the answer being written and nothing before it, and a reader
+needs a JSON parser and nothing else. **Each answer is synced before the
+application hears anything.**
+
+## The first line
+
+| Field | Meaning |
+|---|---|
+| `format` | Which shape the file is in. Required. `1` today. |
+
+A file whose first line is not a format line is not an answers file and is never
+added to. A file whose `format` is higher than the reader knows is refused, not
+added to.
+
+## An answer
+
+| Field | Meaning |
+|---|---|
+| `at` | When it was answered, as seconds and nanoseconds since the Unix epoch. |
+| `application` | The application's identifier, as its sandbox named it. **Absent** — not present and empty — when no application was named: a program with no sandbox, or a caller whose process was gone before it could be named. No name is ever invented. |
+| `portal` | The portal asked. |
+| `answer` | What it was answered with, and the fields beside it depend on it. |
+
+### `portal`
+
+`file-chooser`, `open-with`, `notifications`, `print`, `screenshot`,
+`screen-capture`, `camera`, `microphone`, `clipboard`, `trash`, `wallpaper`,
+`settings`, `inhibit`, `network-monitor`, `power-profile-monitor`, `secret`.
+
+### `answer`
+
+| `answer` | Meaning | Fields beside it |
+|---|---|---|
+| `secret-handed-over` | The application was handed its own secret. | `against`: the grant handles it was allowed by. |
+| `opened` | The file was handed to the application that opens its kind. | `opener`: that application's identifier; `chosen`: `true` when it was the person's choice rather than a declaration; `against`: the grants over the file and over the opener. |
+| `appearance-read` | The application read the appearance settings. | `against` |
+| `appearance-sent` | The application was sent appearance settings that changed. | `against` |
+| `refused` | The grants refused it. | `why`: `nothing-granted` (the application holds no grant at all), `never-granted` (nothing it holds has ever covered this), or `lapsed` (a grant covered it and has expired). |
+| `not-a-request` | What arrived was never a well-formed request. | `why`: `no-application`, `not-an-identifier`, `needs-a-path`, `not-over-a-path`, `not-a-full-path`, or `could-lead-elsewhere`. |
+| `nothing-opens` | Nothing on this machine opens the file. | `why`: `{"no-application":{}}`, or `{"no-application":{"chosen":ID}}` when the person's choice is not installed; `the-file` (a program, empty, damaged, password-protected or unrecognised); or `unreadable`. |
+| `unanswered` | It could not be answered with what it asked for, and neither the grants nor *what opens what* were the reason. | `why`: `not-identified`, `not-a-token`, `grants-unread`, `applications-unread`, `keyring-unavailable`, `not-written`, `not-a-file`, `not-decided-here`, `no-such-setting`, `appearance-unread`, or `{"not-opened":{"opener":ID}}`. |
+
+`against` holds the handles a person revokes grants by, as the grants file
+writes them (`docs/contracts/grants-file.md`).
+
+**Every answer is an identity, never a sentence.** The file says the same thing
+on a Greek machine as on a German one; whatever shows it to a person words it in
+their language.
+
+### Two lines for one request
+
+An answer is kept **before** it is carried out, so two answers can follow each
+other for one request:
+
+- `secret-handed-over` followed by `unanswered` / `not-written`, for the same
+  application: the secret was allowed, and the application stopped listening
+  before it could be written. The response was `2`.
+- `opened` followed by `unanswered` / `not-opened`, for the same application:
+  the file was allowed and handed to its opener, which did not open it. The
+  response was `2`.
+
+## An answer that is not kept is not sent
+
+When an answer cannot be written — the disk is full, the file was refused — the
+application is **not** sent it. It is sent the portal's refusal instead (`2`, or
+`org.freedesktop.portal.Error.Failed` on the Settings portal), no secret is
+written, no file is opened, and no `SettingChanged` is sent. That refusal is the
+one thing the backend says that this file does not hold: saying *no* while the
+record cannot be written is what keeps every *yes* in it.
+
+## Reading it
+
+A line that does not read — one the machine stopped in the middle of, or one
+naming an `application` that is not an identifier — is reported by its line
+number, counting the format line as line 1, alongside every line that did read,
+and never in place of them. A backend that starts over a file ending in the
+middle of a line ends that line before its first answer, so the torn line stays
+one line and the next answer is whole.
+
+A reader that does not recognise a field inside an answer ignores it.
+
+## Versioning
+
+`format` is `1`. Anything that would stop this version reading the file
+correctly raises it; anything additive does not. A new `answer`, a new `why` or
+a new portal is additive: an older reader reports that line as one it could not
+read, with its number, beside everything it could.

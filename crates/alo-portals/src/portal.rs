@@ -29,7 +29,14 @@ use alo_strings::{Filling, Said, Strings};
 use crate::words;
 
 /// One portal this machine offers an application.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+///
+/// Written into the answers file by its kebab-case name — `open-with`,
+/// `secret`, `power-profile-monitor` — which `docs/contracts/portal-answers-file.md`
+/// lists and which never changes once written.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "kebab-case")]
 pub enum Portal {
     /// The file chooser, and the documents it hands over.
     FileChooser,

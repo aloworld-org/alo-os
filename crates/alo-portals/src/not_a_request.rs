@@ -15,7 +15,10 @@ use crate::words;
 ///
 /// No `Display`, for `alo_capability::GrantError`'s reason: the one road to
 /// words is [`NotARequest::said`], which takes the strings the reader reads.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Written into the answers file by its kebab-case name, `not-an-identifier`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum NotARequest {
     /// No application was named.
     NoApplication,
