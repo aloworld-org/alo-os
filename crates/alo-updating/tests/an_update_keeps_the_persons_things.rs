@@ -84,9 +84,28 @@ const BEFORE_PASSED: &str = "alo-update-test: before the update: passed";
 /// What the second half prints.
 const AFTER_PASSED: &str = "alo-update-test: after the restart: passed";
 
-/// How long both boots, the update and the checks may take together, under
-/// emulation.
-const THE_WHOLE_MACHINE: Duration = Duration::from_secs(100 * 60);
+/// How long the machine may take, from being started to powering itself off
+/// after both halves: both boots, the update and the checks, under emulation.
+///
+/// Sized from what was measured rather than guessed. The whole test, image
+/// builds included, took 949 s and 1050 s on the machine that runs this lane,
+/// with no hardware virtualisation (`docs/quirks.md`). Thirty minutes is about
+/// twice that, which is generous without letting a machine that will never boot
+/// hold the gate for most of two hours, as it did on 2026-09-15.
+const THE_BOOT_DEADLINE: Duration = Duration::from_secs(30 * 60);
+
+/// How every failure begins that is the virtual machine's rather than the
+/// work's: it stopped before both halves had run, and so said nothing about
+/// the update.
+///
+/// `tools/kernel-loop` reads a refusal for these words and runs the gates again
+/// instead of sending a worker to repair work that nothing was wrong with. Keep
+/// the two in step.
+const DID_NOT_BOOT: &str = "the virtual machine did not finish booting";
+
+/// What systemd prints when PID 1 has stopped for good. Nothing more will start
+/// on that machine however long it is waited on, so the wait ends there.
+const PID_ONE_FROZE: &str = "Freezing execution";
 
 /// Where the guest half keeps what it needs across the restart.
 const THE_TESTS_OWN: &str = "/var/lib/alo-update-test";
@@ -340,7 +359,7 @@ fn an_update_applied_in_a_virtual_machine_keeps_every_named_thing_byte_for_byte(
         .stdin(Stdio::null())
         .spawn()
         .unwrap();
-    let ended = waited(&mut machine, THE_WHOLE_MACHINE);
+    let ended = waited(&mut machine, THE_BOOT_DEADLINE, &console);
     drop(registry);
 
     let said = std::fs::read_to_string(&console).unwrap_or_default();
@@ -353,9 +372,22 @@ fn an_update_applied_in_a_virtual_machine_keeps_every_named_thing_byte_for_byte(
         .rev()
         .collect::<Vec<_>>()
         .join("\n");
+    // The machine's failures first, so that a machine which never reached the
+    // test is never reported as a test that failed.
+    assert!(
+        !said.contains(PID_ONE_FROZE),
+        "{DID_NOT_BOOT}: systemd froze while the machine was starting, and nothing after \
+         it ran:\n{the_end_of_it}"
+    );
+    let both_halves_ran = said.contains(BEFORE_PASSED) && said.contains(AFTER_PASSED);
+    assert!(
+        ended || both_halves_ran,
+        "{DID_NOT_BOOT} within {THE_BOOT_DEADLINE:?}:\n{the_end_of_it}"
+    );
     assert!(
         ended,
-        "the machine was still running after {THE_WHOLE_MACHINE:?}:\n{the_end_of_it}"
+        "the machine passed both halves and did not power itself off within \
+         {THE_BOOT_DEADLINE:?}:\n{the_end_of_it}"
     );
     assert!(
         said.contains(BEFORE_PASSED),
@@ -453,12 +485,19 @@ fn run(command: &mut Command) {
     );
 }
 
-/// Wait for a process to end, up to `longest`; stop it if it has not.
-fn waited(child: &mut Child, longest: Duration) -> bool {
+/// Wait for the machine to power itself off, up to `longest`; stop it if it has
+/// not.
+///
+/// A machine whose console says PID 1 froze is stopped at once rather than
+/// waited on to the deadline, and the caller reports it by that line.
+fn waited(child: &mut Child, longest: Duration, console: &Path) -> bool {
     let started = Instant::now();
     while started.elapsed() < longest {
         if child.try_wait().unwrap().is_some() {
             return true;
+        }
+        if std::fs::read_to_string(console).is_ok_and(|said| said.contains(PID_ONE_FROZE)) {
+            break;
         }
         std::thread::sleep(Duration::from_secs(5));
     }
