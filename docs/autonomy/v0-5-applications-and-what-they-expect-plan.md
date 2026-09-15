@@ -35,7 +35,34 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. A portal request is a grant, and is refused like one
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** blocked — waits on
+`docs/decisions/0040-what-an-applications-grant-is-over.md`, proposed
+2026-09-15. **Depends on:** nothing.
+
+**Decided rather than built, 2026-09-15.** The first worker found that the
+acceptance below cannot be met without editing `alo-capability`, and this plan
+never edits it. Four facts from `main` block it:
+
+- `Reach` is a folder, a file or an application. Eleven of the fifteen v0.5
+  portals ask about none of those: the camera, the microphone, the screen, the
+  person's notifications, and so on.
+- A camera as its `/dev/videoN` path can come to mean another camera after a
+  replug.
+- Grants live inside `Agent`, so declining the agent (ADR 0009) would end every
+  application's grants.
+- A `Grantee` and its refusals speak of an agent, and tell a person to pick a
+  folder.
+
+ADR 0040 sets out three options, what each costs, and recommends that
+`alo-capability`, through the lane that owns it, learns a closed list of what a
+portal may reach, a grantee that is an agent or an application, and application
+grants that outlive declining the agent. The task is ready again once three
+things happen: the owner answers, the capability change is made by the crate's
+owner or moved into this plan in writing, and the grants file moves to a new
+format. `crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`
+holds the ADR in place: it fails if `crates/alo-portals` appears while the
+decision is still *proposed*. Report:
+`docs/autonomy/updates/portal-grants-decided-before-they-are-built.md`.
 
 *Applications install sandboxed and reach the system through the XDG Desktop
 Portal interfaces… each portal request is a grant in the sense of ADR 0001.*
