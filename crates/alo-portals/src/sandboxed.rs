@@ -7,10 +7,19 @@
 //! it starts, read-only to the application, naming it under `[Application]`.
 //! `xdg-desktop-portal` identifies applications the same way.
 //!
-//! [`Sandboxes::application_of`] reads that file through the process's own root,
-//! `/proc/<pid>/root/.flatpak-info`, for the process the bus says sent the
+//! `Sandboxes::application_of` (Linux) reads that file through the process's own
+//! root, `/proc/<pid>/root/.flatpak-info`, for the process the bus says sent the
 //! request. The bus says it, not the caller: the backend asks
 //! `GetConnectionCredentials` of the bus daemon, which read it from the socket.
+//!
+//! # Named by the process, never by a number
+//!
+//! The process is handed in **held** — `HeldProcess`, a process descriptor —
+//! never as a bare number, and what its root says counts only if the process
+//! held is still alive once the file has been read. A process that ended while
+//! its sandbox was read may have had its number given to another process, whose
+//! root was read in its place: that caller is [`Sandboxed::Gone`], never named.
+//! `crate::caller` says how the process is held for each kind of bus daemon.
 //!
 //! # A process with no sandbox is nobody
 //!
@@ -61,10 +70,31 @@ impl Sandboxes {
         }
     }
 
-    /// The identifier the sandbox of process `process` names, or [`None`] for a
-    /// process with no sandbox, or one whose file says no application.
+    /// What the sandbox of the process `held` names, read through its number
+    /// and counted only if the process held is still alive afterwards.
+    #[cfg(target_os = "linux")]
     #[must_use]
-    pub fn application_of(&self, process: u32) -> Option<String> {
+    pub fn application_of(&self, held: &crate::HeldProcess) -> Sandboxed {
+        let named = self.named_by_number(held.number());
+        if !held.is_still_alive() {
+            return Sandboxed::Gone;
+        }
+        named.map_or(Sandboxed::Nobody, Sandboxed::Named)
+    }
+
+    /// The identifier the sandbox under process number `process` names, or
+    /// [`None`] for no sandbox, or one whose file says no application.
+    ///
+    /// Private, and only ever reached through a held process: a number on its
+    /// own names whichever process has it now.
+    #[cfg_attr(
+        not(any(test, target_os = "linux")),
+        expect(
+            dead_code,
+            reason = "read only through a held process, which is Linux's"
+        )
+    )]
+    fn named_by_number(&self, process: u32) -> Option<String> {
         let info = self
             .processes
             .join(process.to_string())
@@ -74,7 +104,42 @@ impl Sandboxes {
     }
 }
 
+/// Which application a caller is, as its sandbox says.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Sandboxed {
+    /// The sandbox of the caller's process names this application, and the
+    /// process was still the one held once it had been read.
+    Named(String),
+    /// Nothing names an application: a program with no sandbox, a sandbox
+    /// that names none, or a bus that would not say which process is behind
+    /// the connection.
+    Nobody,
+    /// The process behind the connection ended while it was being identified,
+    /// or the bus no longer says it is the connection's, so whatever was read
+    /// may have been another process's.
+    Gone,
+}
+
+impl Sandboxed {
+    /// The application named, and nothing for a caller nobody named or one
+    /// that was gone.
+    #[must_use]
+    pub fn into_application(self) -> Option<String> {
+        match self {
+            Self::Named(application) => Some(application),
+            Self::Nobody | Self::Gone => None,
+        }
+    }
+}
+
 /// The file's text, when it is there, is text, and is not too long to be one.
+#[cfg_attr(
+    not(any(test, target_os = "linux")),
+    expect(
+        dead_code,
+        reason = "read only through a held process, which is Linux's"
+    )
+)]
 fn read_bounded(at: &Path) -> Option<String> {
     let file = std::fs::File::open(at).ok()?;
     let mut text = String::new();
@@ -86,6 +151,13 @@ fn read_bounded(at: &Path) -> Option<String> {
 ///
 /// A runtime's sandbox names itself under `[Runtime]`, and is not an
 /// application.
+#[cfg_attr(
+    not(any(test, target_os = "linux")),
+    expect(
+        dead_code,
+        reason = "read only through a held process, which is Linux's"
+    )
+)]
 fn named_in(info: &str) -> Option<&str> {
     let mut in_application = false;
     for line in info.lines().map(str::trim) {
@@ -136,7 +208,7 @@ mod tests {
         }
     }
 
-    /// **A process is found by its number, through its own root**, and a
+    /// **A process's root is found under its number**, and a
     /// process with no sandbox, or a file too long to be Flatpak's, is nobody.
     #[test]
     fn a_process_is_read_through_its_own_root() {
@@ -155,11 +227,11 @@ mod tests {
 
         let sandboxes = Sandboxes::under(&processes);
         assert_eq!(
-            sandboxes.application_of(41).as_deref(),
+            sandboxes.named_by_number(41).as_deref(),
             Some("org.gnome.Fractal")
         );
-        assert_eq!(sandboxes.application_of(42), None);
-        assert_eq!(sandboxes.application_of(43), None);
+        assert_eq!(sandboxes.named_by_number(42), None);
+        assert_eq!(sandboxes.named_by_number(43), None);
         std::fs::remove_dir_all(&processes).unwrap();
     }
 }

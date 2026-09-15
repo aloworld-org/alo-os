@@ -32,6 +32,26 @@ sandbox, for `name` under `[Application]`. A program outside a sandbox has no
 such file, is answered with the refusal response, and is recorded as a caller
 that could not be named.
 
+The process is **held by a process descriptor (a pidfd), never by its number**,
+because a number is given to another process once the first has ended:
+
+- When the bus daemon's `GetConnectionCredentials` answer carries `ProcessFD`,
+  that descriptor is the process held. It was taken from the socket, so it is
+  the connection's. A `ProcessID` beside it that names a different process is
+  refused.
+- When it carries only `ProcessID`, a descriptor is opened for that number
+  (`pidfd_open`) before anything is read. After the sandbox has been read, the
+  bus is asked again and must still give the connection the same number.
+- Either way, `.flatpak-info` counts only if the process held is still alive
+  once the file has been read.
+
+A caller whose process cannot be held, ends while its sandbox is read, or is no
+longer the connection's is **not identified**: it gets the same refusal as a
+program with no sandbox, and the record names nobody. The same rule decides who
+is sent `SettingChanged`: a connection whose process was gone is sent nothing,
+and that is recorded as not identified. `docs/quirks.md` records which bus
+daemons give `ProcessFD`.
+
 ## How an answer arrives
 
 The Settings portal asks nobody anything, so it answers in the method's reply

@@ -40,6 +40,12 @@ thiserror = { workspace = true }
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
+# The process behind a request, held by a descriptor (`pidfd_open`) rather than
+# named by a number that can be given to another process while its sandbox is
+# read. Already a workspace dependency (`alo-agentd`, `alo-accounts`) with the
+# `process` feature this needs, so it adds no crate to the tree.
+rustix = { workspace = true }
+
 [dev-dependencies]
 # What a file is, named in the open-with test's assertions about what opens it.
 alo-opening = { path = "../alo-opening" }
@@ -59,6 +65,9 @@ serde_json = { workspace = true }
 # integration tests, which link this crate's one library, ever cross.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+# A named pipe in place of a caller's `.flatpak-info`, so a test can end the
+# caller at the exact moment its sandbox is being read.
+rustix = { workspace = true }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
 [lints]

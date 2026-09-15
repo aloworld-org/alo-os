@@ -64,6 +64,7 @@
 //! | [`appearance_settings`] | The appearance settings an application may read, and who may |
 //! | [`keeping_secrets`] | The keyring the Secret portal is answered from |
 //! | [`sandboxed`] | Which application is asking, as its sandbox says |
+//! | `held_process` | The process asking, held by a descriptor rather than a number — Linux only |
 //! | [`handle`] | Where a request's answer is sent |
 //! | `serving` | The backend on a session bus — Linux only |
 //! | `watching_appearance` | `SettingChanged`, sent to whoever may read it — Linux only |
@@ -110,6 +111,8 @@ mod asked;
 #[cfg(target_os = "linux")]
 mod caller;
 #[cfg(target_os = "linux")]
+pub mod held_process;
+#[cfg(target_os = "linux")]
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
@@ -125,6 +128,8 @@ pub mod watching_appearance;
 pub use answered::{Answered, Outcome, Unanswered};
 pub use appearance_settings::{Setting, THE_NAMESPACE, Value, Values};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
+#[cfg(target_os = "linux")]
+pub use held_process::HeldProcess;
 pub use judging::Allowed;
 pub use keeping_secrets::{KeepsSecrets, NotKept};
 pub use not_a_request::NotARequest;
@@ -133,7 +138,7 @@ pub use portal::{Over, Portal};
 pub use recording::{Kept, Recording};
 pub use refused::Refused;
 pub use request::{LONGEST_IDENTIFIER, Request};
-pub use sandboxed::Sandboxes;
+pub use sandboxed::{Sandboxed, Sandboxes};
 #[cfg(target_os = "linux")]
 pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
 pub use the_machine::{Appearance, Applications, TheMachine, TimeOfDay};

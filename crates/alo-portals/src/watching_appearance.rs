@@ -21,9 +21,16 @@
 //!
 //! Every signal is recorded as [`Outcome::AppearanceSent`] with its application
 //! named **before** it is sent, as every answer the backend gives is: an
-//! application is never sent something the record does not hold. A connection that was sent nothing is not recorded: it
-//! asked for nothing, and a record of every program on the bus at every change
-//! would bury the requests that were refused.
+//! application is never sent something the record does not hold. A connection
+//! that was sent nothing is not recorded: it asked for nothing, and a record of
+//! every program on the bus at every change would bury the requests that were
+//! refused.
+//!
+//! **Except a connection whose process was gone** before it could be named
+//! ([`Sandboxed::Gone`]). What was read for it may have been another process's
+//! sandbox, under a number that had been given away, and that is exactly the
+//! refusal a person reading the record needs to find. It is recorded as
+//! [`Unanswered::NotIdentified`], naming nobody, and sent nothing.
 
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, SystemTime};
@@ -32,11 +39,12 @@ use zbus::fdo;
 use zbus::names::{BusName, OwnedBusName, UniqueName};
 use zbus::object_server::SignalEmitter;
 
-use crate::answered::{Answered, Outcome};
+use crate::answered::{Answered, Outcome, Unanswered};
 use crate::appearance_settings::{self, THE_NAMESPACE, Values};
-use crate::caller::{application_of, named};
+use crate::caller::{caller_of, named};
 use crate::handle::THE_PORTALS_OBJECT;
 use crate::portal::Portal;
+use crate::sandboxed::Sandboxed;
 use crate::serving::Backend;
 use crate::settings_portal::{SettingsPortal, written};
 
@@ -93,7 +101,17 @@ async fn sent_to_whoever_may_read(bus: &zbus::Connection, backend: &Backend, cha
         if ours.is_some_and(|ours| ours.as_str() == connection.as_str()) {
             continue;
         }
-        let application = application_of(bus, &connection, backend).await;
+        let caller = caller_of(bus, &connection, backend).await;
+        if caller == Sandboxed::Gone {
+            backend.record().keep(Answered::new(
+                SystemTime::now(),
+                None,
+                Portal::Settings,
+                Outcome::Unanswered(Unanswered::NotIdentified),
+            ));
+            continue;
+        }
+        let application = caller.into_application();
         let Ok(allowed) = appearance_settings::allowed(
             application.as_deref(),
             backend.machine(),

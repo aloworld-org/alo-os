@@ -309,7 +309,27 @@ without a dialog.
 
 ### 7. An application is named by the process the bus holds, never by a number that can be reused
 
-**Status:** ready. **Depends on:** 5.
+**Status:** **Done, 2026-09-15.** `alo_portals::HeldProcess` holds a process by
+a pidfd. `HeldProcess::given` takes the `ProcessFD` a bus sends, and a
+`ProcessID` beside it must agree. `HeldProcess::opened_for` opens one with
+`rustix::process::pidfd_open` when the bus sends only a number.
+`HeldProcess::is_still_alive` reads the descriptor's `Pid:` in
+`/proc/self/fdinfo`. `Sandboxes::application_of` now takes a held process and
+returns `Sandboxed`: `Named`, `Nobody` or `Gone`. What `.flatpak-info` says
+counts only if the process is still alive after the file is read. When the bus
+sent no descriptor, `crate::caller` also asks the bus again whether the
+connection still has the same number. A `Gone` caller is
+`Unanswered::NotIdentified` for every portal. For `SettingChanged`, a connection
+whose process is gone is sent nothing and is recorded as not identified (the one
+connection the watcher records without sending). `docs/contracts/portals.md`'s
+*Who is asking* and `docs/quirks.md` (*`dbus-daemon` 1.14.10 names a caller's
+process only by its number*) say so. The test is
+`crates/alo-portals/tests/a_caller_is_named_by_the_process_the_bus_holds.rs`:
+the caller is another process, its `.flatpak-info` is a named pipe, and the
+caller is killed and reaped while the backend waits on the pipe. With the checks
+removed, the same test names the gone caller `org.gnome.Fractal` and answers it.
+Report: `docs/autonomy/updates/callers-held-by-process-descriptor.md`.
+**Depends on:** 5.
 
 Task 5's report left one window open. The backend asks the bus for the process
 behind a request (`GetConnectionCredentials`), gets a process **number**, and
@@ -339,3 +359,33 @@ has to name the process that sent the request and no other.
   so and the task stops at the ADR that decides it. Nothing here changes
   what a grant covers or who is judged, only that the caller judged is the
   caller that asked. Linux, gated in the virtual machine like task 5.
+
+### 8. What an application was answered is kept after the backend stops
+
+**Status:** ready. **Depends on:** 5, 7.
+
+Every answer and refusal the portal backend gives is written to a
+`Recording` before the application hears it. The only `Recording` is
+`alo_portals::Kept`, which is in memory. Task 5's report left this open: when
+the backend stops, what applications were refused is gone, and *every execution
+and every refusal leaves a record* is a promise about what a person can read
+later, not about a process's memory. The record file (`alo-record`) has no kind
+of entry for an application. ADR 0040 part 2 rules out writing one under the
+agent column, and `alo-record` is lane A's.
+
+- **Acceptance:** the backend's answers are kept durably and read back in the
+  order given, each with its time, the application named (or nobody, for a
+  caller not identified), the portal and the outcome. A backend started again
+  over the same record finds what the last one wrote. Every refusal kind task
+  5–7's tests produce — not granted, not identified, a caller gone — is written
+  and read back, and a test shows that an answer the record could not keep is
+  never sent to the application. Where it is kept is decided first. Either
+  `alo-record` gains an additive application kind, which needs that lane's
+  owner, so this task's deliverable is then the ADR with the options and a
+  recommendation. Or `alo-portals` keeps its own file under the rules
+  `alo-remembering` follows for the person's other kept files, with its format
+  in `docs/contracts/`. The report says which, and why.
+- **Constraint:** no edit to `alo-record` without its owner's written
+  agreement. No new crate in the tree. Nothing here starts the backend in a
+  session: that is image work and not this plan's. A record that cannot be
+  written refuses the request rather than answering it unrecorded.

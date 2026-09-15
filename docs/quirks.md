@@ -3743,3 +3743,26 @@ prompt in 190 seconds. Probe for acceleration by starting QEMU with
 `-accel kvm`, never by looking for the device. Nothing measured under emulation
 is a timing for alo OS on a real machine.
 **Date:** 2026-09-15.
+
+### `dbus-daemon` 1.14.10 names a caller's process only by its number
+**Version:** `dbus-daemon` 1.14.10 (Ubuntu 24.04 aarch64, the Mac lane's Lima VM),
+kernel `7.0.0-31-generic`. 2026-09-15.
+**Behaviour:** the D-Bus specification added `ProcessFD`, a process descriptor
+for the connection's process, to `GetConnectionCredentials` in its revision 0.42
+(2023-08-21). This daemon does not send it. Asked about a client connection, it
+answers `ProcessID`, `UnixUserID`, `UnixGroupIDs` and `LinuxSecurityLabel`, and no
+`ProcessFD`. A backend that reads `/proc/<pid>/…` for that number is reading
+about whichever process has the number when it reads. If the caller has ended
+and been reaped by then, that may be a different process.
+**Our response:** `alo-portals` holds the caller by a descriptor either way
+(`crate::caller`, `HeldProcess`). It uses `ProcessFD` when a daemon sends one.
+Otherwise it opens a descriptor for the number, checks after reading the sandbox
+that the process is still alive, and asks the bus again that the connection
+still has the same number. A caller that fails any of these is not identified.
+`crates/alo-portals/tests/a_caller_is_named_by_the_process_the_bus_holds.rs`
+reproduces the caller ending while its sandbox is read. One window is left open
+with a daemon like this one: the caller ends and its number is reused before the
+descriptor is opened, **and** the daemon has not yet noticed the closed socket
+when it is asked again. Only a daemon that sends `ProcessFD` closes that window.
+Which other daemons and versions send it was not measured here.
+**Date:** 2026-09-15.
