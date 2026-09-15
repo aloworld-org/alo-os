@@ -87,6 +87,31 @@ rather than a habit.
 
 **Status:** ready. **Depends on:** 1.
 
+**Done, 2026-09-15.** The doing is a new crate, `crates/alo-updating`, so
+`alo-keeping-up` still names no process, file or clock. `alo-keeping-up` adds
+the decisions: `Deployments` reads `bootc status` and refuses half a digest;
+`Source` is a repository with no tag inside it; and `Staging::of` produces one
+instruction, `switch --enforce-container-sigpolicy <source>@<digest>`, plus
+`--apply` only when the person asked to restart now. That instruction is
+refused when the machine moved on since the offer, when that build is already
+waiting, or when no build can be named. `Since` compares the build last known
+with the build booted. `alo-updating::apply` reads the status at the moment of
+choosing and runs exactly those arguments with no shell. `running` and
+`deployments` ask the base every time. `after_a_restart` writes the new
+additive `alo_record::Happened::Updated { from, to }`, with no agent, at the
+first start on a different build, and writes it before
+`/var/lib/alo/last-known-build` advances. **Measured** by
+`tests/an_update_keeps_the_persons_things.rs` in a QEMU/TCG virtual machine
+built on the pinned base, in 949 s. The run wrote settings, appearance,
+grants, pairings, the record, a file index, the indexed-folder list and two of
+the person's files; staged the second build; restarted; and found all of them
+byte for byte, with one `updated` entry and none on the next start. Found on
+the way (`docs/quirks.md`): `bootc install` reads the policy of the image it
+installs. For the installer lane: the shipped image needs a signed
+`policy.json` before `apply` stages anything, and a unit calling
+`after_a_restart` at boot. Report:
+`docs/autonomy/updates/an-update-applied-and-the-same-machine-afterwards.md`.
+
 **What the machine that runs this lane can do, measured 2026-09-15.** It is a
 VMware guest running Windows Server 2022, with Ubuntu 24.04 in WSL2 on kernel
 `6.18.33.2`. **It has no hardware virtualisation**: `/dev/kvm` exists, but

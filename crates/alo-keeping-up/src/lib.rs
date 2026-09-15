@@ -31,14 +31,26 @@
 //!   There is no member meaning *never*, because a machine that can be left
 //!   unpatched by a checkbox is a fleet's worst liability, and none meaning
 //!   *by itself*, because the choice is *when*, never *whether to be told*.
+//! - **What applying one is.** [`Deployments`] is what the base reports it has
+//!   on the disk — the build booted, the one staged and the one before — so
+//!   *what am I running* is the machine's answer rather than anything
+//!   remembered. [`Staging`] is the one instruction the base is given, decided
+//!   as a value against a [`Source`] and the deployments as they are *now*:
+//!   the offered build by digest, the signature policy enforced, no argument
+//!   naming a path, and a restart only when the person asked for one.
+//!   [`NotStaged`] is every refusal before anything runs.
+//! - **What changed across a restart.** [`Since`] compares the build last known
+//!   with the build booted, and an update is exactly a different one — from
+//!   which, to which — with nothing invented when nothing was known.
 //!
 //! # What is not here
 //!
 //! **No clock, no scheduler and no fetching.** Nothing in this crate reads the
 //! time, starts a thread, opens a socket or writes a file; its dependency list
-//! is four crates long and a test reads it. When to check, and the doing of an
-//! update, are later tasks that build on these types — deciding them here would
-//! be deciding them before the decisions that constrain them.
+//! is four crates long and a test reads it. **The doing of an update is
+//! `alo-updating`'s**: it runs the base with the arguments [`Staging`] wrote,
+//! reads the status [`Deployments`] parses, and keeps the fact [`Since`]
+//! compares. When to check is a later task that builds on these types.
 //!
 //! **Not the place updates come from.** [`a_check_at`] takes a
 //! [`alo_egress::Destination`]; which one is the installer plan's registry, and
@@ -55,8 +67,12 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod checking;
+pub mod deployments;
 pub mod digest;
 pub mod never;
+pub mod since;
+pub mod source;
+pub mod staging;
 pub mod standing;
 pub mod when;
 pub mod words;
@@ -65,8 +81,12 @@ pub mod words;
 mod testing;
 
 pub use checking::{NotACheck, Offered, a_check_at};
+pub use deployments::{Deployments, NotRunningABuild};
 pub use digest::{Digest, NotADigest};
 pub use never::{Cause, Disturbance, Forbidden, THE_RULE, TheRule};
+pub use since::Since;
+pub use source::{NotASource, Source};
+pub use staging::{NotStaged, Staging};
 pub use standing::{Ready, Running, Standing};
 pub use when::WhenItApplies;
 pub use words::{EVERY_WORD, WordsError, declare_into, keeping_up_words};

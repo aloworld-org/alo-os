@@ -70,6 +70,13 @@ impl Ready {
     pub fn offered(&self) -> &Digest {
         &self.offered
     }
+
+    /// An update between two builds, for this crate's own unit tests, which
+    /// cannot make an indicator. Not compiled into the crate.
+    #[cfg(test)]
+    pub(crate) fn for_a_test(running: Digest, offered: Digest) -> Self {
+        Self { running, offered }
+    }
 }
 
 /// Where this machine stands.

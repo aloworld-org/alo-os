@@ -38,6 +38,7 @@ members = [
   "crates/alo-kept",
   "crates/alo-keeping",
   "crates/alo-keeping-up",
+  "crates/alo-updating",
   "crates/alo-measuring",
   "crates/alo-models",
   "crates/alo-nearby",

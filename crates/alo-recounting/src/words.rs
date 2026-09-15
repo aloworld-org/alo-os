@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Twenty-two, and they divide in three. Fifteen are **what became of one entry** —
+//! Twenty-three, and they divide in three. Sixteen are **what became of one entry** —
 //! the short clause read at the head of a line, before the sentence the machine
 //! generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Fifteen clauses, and none of them is a category
+//! # Sixteen clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -232,6 +232,17 @@ pub const LEFT_ON_ITS_OWN: Word = Word::saying(
      reassuringly.",
 );
 
+/// This machine updated.
+pub const UPDATED: Word = Word::saying(
+    "recounting.outcome.updated",
+    "this machine started on an updated version of its system, after the person restarted it",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. An update had been \
+     prepared, and this line is the first start after it: the machine is now running the updated \
+     alo OS. No assistant was involved, and nothing the person kept was changed by it.",
+);
+
 // ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
@@ -351,7 +362,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 22] = [
+pub const EVERY_WORD: [Word; 23] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -367,6 +378,7 @@ pub const EVERY_WORD: [Word; 22] = [
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
+    UPDATED,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -381,7 +393,7 @@ pub const EVERY_WORD: [Word; 22] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 15] = [
+pub const EVERY_OUTCOME: [Word; 16] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -397,6 +409,7 @@ pub const EVERY_OUTCOME: [Word; 15] = [
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
+    UPDATED,
 ];
 
 /// What an account says about itself, rather than about one entry.

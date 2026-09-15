@@ -26,6 +26,7 @@
 //! | [`Happened::Left`] | Something left this machine (law 1) |
 //! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |
 //! | [`Happened::LeftOnItsOwn`] | alo OS reached the network with nobody having asked (★ *no telemetry*) |
+//! | [`Happened::Updated`] | This machine started on a different build of its system than the one it ran before |
 //!
 //! # The two with nobody in them
 //!

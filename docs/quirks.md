@@ -3818,3 +3818,25 @@ descriptor is opened, **and** the daemon has not yet noticed the closed socket
 when it is asked again. Only a daemon that sends `ProcessFD` closes that window.
 Which other daemons and versions send it was not measured here.
 **Date:** 2026-09-15.
+
+### `bootc install` reads the signature policy of the image it is installing
+**Version:** bootc 1.15.1, in `quay.io/fedora/fedora-bootc:42@sha256:077182b6…`
+(the base `image/Containerfile` pins), podman 4.9.3 in WSL Ubuntu 24.04.
+2026-09-15.
+**Behaviour:** `bootc switch --enforce-container-sigpolicy` refuses to stage
+anything unless `/etc/containers/policy.json` refuses by default. But an image
+that ships such a policy can no longer be installed with the documented
+`podman run … <image> bootc install to-disk`. The installer runs *inside* that
+image, opens it from the local store under the image's own policy, and stops
+before writing a byte: *Fetching manifest: … containers-storage:[…]
+localhost/…@sha256:… is rejected by policy*. Nothing says the store is covered
+by the policy the image carries for its updates.
+**Our response:** the virtual-machine test in
+`crates/alo-updating/tests/an_update_keeps_the_persons_things.rs` gives its
+images a `containers-storage` scope that accepts anything, beside the default
+refusal and the one registry it trusts. For the shipped image this is the
+installer lane's decision, and it is named in
+`docs/autonomy/updates/an-update-applied-and-the-same-machine-afterwards.md`.
+The signed policy for `ghcr.io/aloworld-org/alo-os` and the way the installer
+opens the image have to be decided together.
+**Date:** 2026-09-15.

@@ -96,6 +96,8 @@ pub enum Outcome {
     HeldBack,
     /// alo OS reached the network with nobody having asked (★ *no telemetry*).
     LeftOnItsOwn,
+    /// This machine started on a different build of its system: it updated.
+    Updated,
 }
 
 impl Outcome {
@@ -119,6 +121,7 @@ impl Outcome {
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
+            Happened::Updated { .. } => Self::Updated,
         }
     }
 
@@ -142,6 +145,7 @@ impl Outcome {
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,
+            Self::Updated => words::UPDATED,
         }
     }
 

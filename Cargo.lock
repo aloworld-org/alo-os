@@ -839,6 +839,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-updating"
+version = "0.0.1"
+dependencies = [
+ "alo-egress",
+ "alo-keeping",
+ "alo-keeping-up",
+ "alo-record",
+ "alo-saying",
+ "alo-strings",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "android-activity"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

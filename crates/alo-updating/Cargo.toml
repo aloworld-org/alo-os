@@ -1,0 +1,33 @@
+[package]
+name = "alo-updating"
+version = "0.0.1"
+description = "Applying an update through the base, reading which build is running, and writing down that the machine updated."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What an update is and what the base may be told — every decision here is
+# that crate's, and this one only carries it out.
+alo-keeping-up = { path = "../alo-keeping-up" }
+# The entry saying the machine updated.
+alo-record = { path = "../alo-record" }
+# Where that entry is written.
+alo-keeping = { path = "../alo-keeping" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+# The base's status answer is JSON.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# Nothing else: no HTTP client and no container library. The base fetches and
+# stages the build itself (ADR 0011); this crate runs one program with the
+# arguments `alo_keeping_up::Staging` decided, and reads what it answers.
+
+[dev-dependencies]
+alo-egress = { path = "../alo-egress" }
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

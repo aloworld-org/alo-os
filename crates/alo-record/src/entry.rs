@@ -317,6 +317,27 @@ impl Entry {
         )
     }
 
+    /// This machine started on build `to`, having been running build `from`.
+    ///
+    /// Both are content digests as the base reports them. They go through
+    /// [`Line`] like every other string the record keeps; which text is a
+    /// digest is decided by `alo-keeping-up`, which this crate does not
+    /// depend on. See [`Happened::Updated`] for why it names no agent and when
+    /// it is written.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn updated(from: &str, to: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::Updated {
+                from: Line::of(from),
+                to: Line::of(to),
+            },
+        )
+    }
+
     /// The person opened `workspace`, which answered at `answers_at` when the
     /// link was looked at.
     ///
@@ -790,6 +811,36 @@ mod tests {
             written.contains(
                 r#""workspace-opened":{"workspace":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","answers_at":"192.168.1.20:8443"}"#
             ),
+            "{written}"
+        );
+        assert!(!written.contains("agent"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **The machine updating is written with both builds and no agent**, is
+    /// not a departure, and reads back as it was written.
+    #[test]
+    fn an_update_is_recorded_from_one_build_to_another_with_nobody_behind_it() {
+        let from = format!("sha256:{}", "aa".repeat(32));
+        let to = format!("sha256:{}", "bb".repeat(32));
+        let entry = Entry::updated(&from, &to, noon());
+        assert_eq!(entry.at(), noon());
+        assert_eq!(entry.agent(), None);
+        assert_eq!(entry.origin(), None);
+        assert_eq!(entry.what(), None);
+        assert!(!entry.happened().ran());
+        assert!(!entry.happened().was_stopped());
+        assert!(!entry.happened().caused_egress());
+        assert_eq!(entry.happened().errand(), None);
+        assert_eq!(entry.happened().destination(), None);
+        assert!(matches!(
+            entry.happened(),
+            Happened::Updated { from: was, to: now } if was.is(&from) && now.is(&to)
+        ));
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(
+            written.contains(&format!(r#""updated":{{"from":"{from}","to":"{to}"}}"#)),
             "{written}"
         );
         assert!(!written.contains("agent"), "{written}");

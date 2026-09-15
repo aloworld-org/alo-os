@@ -107,8 +107,80 @@ pub const NEVER_INTERRUPTS: Word = Word::saying(
      from their work: covering it, taking the keyboard, or asking something they did not start.",
 );
 
+// ---------------------------------------------------------------------------
+// Applying it — `crate::Staging`, `crate::NotStaged`, `crate::Deployments`.
+// ---------------------------------------------------------------------------
+
+/// The update is waiting for the person's next restart.
+pub const WAITING_FOR_THE_RESTART: Word = Word::saying(
+    "keeping-up.waiting-for-the-restart",
+    "The update will apply the next time you restart. Your files and settings stay as they are",
+)
+.noting(
+    "Said once the person has chosen to apply an update at their next restart and the machine has \
+     prepared it. Nothing happens until the person restarts. The second sentence is a promise the \
+     machine keeps: an update never changes the person's own files, settings or history.",
+);
+
+/// The update was not prepared because the machine changed since it was found.
+pub const CHANGED_SINCE_IT_WAS_FOUND: Word = Word::saying(
+    "keeping-up.changed-since-it-was-found",
+    "This machine changed after the update was found, so nothing was changed. Check for the \
+     update again",
+)
+.noting(
+    "Said when the person chose to apply an update, but the system running on the machine is no \
+     longer the one the update was found for — for example because another update was applied in \
+     the meantime. The machine is exactly as it was, and checking again finds the right update.",
+);
+
+/// The update the person chose is already waiting.
+pub const ALREADY_WAITING: Word = Word::saying(
+    "keeping-up.already-waiting",
+    "This update is already waiting for your next restart",
+)
+.noting(
+    "Said when the person chooses to apply an update that the machine has already prepared. \
+     Nothing is done twice.",
+);
+
+/// Which version of its system the machine runs could not be read.
+pub const RUNNING_NOT_KNOWN: Word = Word::saying(
+    "keeping-up.running-not-known",
+    "Which version of its system this machine is running could not be read, so nothing was \
+     changed",
+)
+.noting(
+    "Said when the machine could not find out which version of alo OS it is running, so it could \
+     not safely prepare or record an update. The machine is exactly as it was.",
+);
+
+/// The update could not be prepared.
+pub const NOT_PREPARED: Word = Word::saying(
+    "keeping-up.not-prepared",
+    "The update could not be prepared, so nothing was changed. The next restart starts this \
+     machine as it is now",
+)
+.noting(
+    "Said when the machine tried to prepare an update the person chose and could not — the \
+     download failed, or what arrived was not a genuine alo OS. The important half is that the \
+     machine is unchanged and will start normally.",
+);
+
+/// Whether the machine updated could not be written down.
+pub const NOT_WRITTEN_DOWN: Word = Word::saying(
+    "keeping-up.not-written-down",
+    "This machine could not write down whether it started on an updated version of its system. \
+     Nothing else was changed",
+)
+.noting(
+    "Said when the machine starts and cannot keep, in its own history, the fact that it has just \
+     been updated — for example because the place that fact is kept could not be read or written. \
+     The machine itself is working; what is missing is the line in its history.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 8] = [
+pub const EVERY_WORD: [Word; 14] = [
     READY,
     UP_TO_DATE,
     ANSWER_NOT_UNDERSTOOD,
@@ -117,6 +189,12 @@ pub const EVERY_WORD: [Word; 8] = [
     NEVER_RESTARTS,
     NEVER_CLOSES_AN_APPLICATION,
     NEVER_INTERRUPTS,
+    WAITING_FOR_THE_RESTART,
+    CHANGED_SINCE_IT_WAS_FOUND,
+    ALREADY_WAITING,
+    RUNNING_NOT_KNOWN,
+    NOT_PREPARED,
+    NOT_WRITTEN_DOWN,
 ];
 
 /// Why this crate's own words could not be declared.

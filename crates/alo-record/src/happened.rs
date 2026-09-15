@@ -422,6 +422,35 @@ pub enum Happened {
         /// Where it reached.
         destination: Destination,
     },
+    /// This machine started on a different build of its system than the one it
+    /// was running before — it updated, from one build to another.
+    ///
+    /// Written by `alo-updating` at the first start on the new build, because
+    /// that is the one moment it is true: an update staged and never restarted
+    /// into has not happened to the machine, and a record written at staging
+    /// would say the machine changed when it had not.
+    ///
+    /// **There is no agent here and no field for one.** The person chose when
+    /// the update applied, and the base did the rest; no grant was asked, and a
+    /// name in the `agent` position would be an authority the record invented,
+    /// for the reason [`Happened::LeftOnItsOwn`] gives.
+    ///
+    /// **It is not egress.** Fetching the build left the machine and is its own
+    /// errand on the indicator; the machine starting on it reached nothing.
+    ///
+    /// `from` and `to` are the two builds by content digest, `sha256:` and all,
+    /// as the base reported them — for whoever reviews the record. A person is
+    /// told that their machine updated and never shown either.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    Updated {
+        /// The build the machine was running before.
+        from: Line,
+        /// The build it started on.
+        to: Line,
+    },
 }
 
 impl Happened {
@@ -452,6 +481,7 @@ impl Happened {
             Self::LeftOnItsOwn { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
@@ -478,6 +508,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -505,6 +536,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -560,6 +592,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -590,6 +623,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::AnsweredForAnotherMachine { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -608,6 +642,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -628,6 +663,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -654,6 +690,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
@@ -679,6 +716,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::Updated { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
