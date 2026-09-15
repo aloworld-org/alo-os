@@ -113,6 +113,48 @@ test passes; this is Unix-socket development evidence, not physical input testin
 
 ## Hardware and firmware
 
+### OVMF without SMM saves its variables onto a FAT disk when its flash is SMM-only
+**Version:** OVMF 2025.11-3ubuntu7 (`/usr/share/OVMF/OVMF_CODE_4M.fd`, the build
+without Secure Boot and without SMM) with `OVMF_VARS_4M.fd`, under QEMU 10.2.1
+(`1:10.2.1+ds-1ubuntu3.2`), KVM, in WSL Ubuntu on Windows 11 Pro 10.0.26200.
+2026-09-15.
+**Behaviour:** `crates/alo-installing/tests/installed_in_a_virtual_machine.rs`
+started the boot environment's refusal with that firmware on the machine the
+Secure Boot test uses — `-machine q35,smm=on` and
+`-global driver=cfi.pflash01,property=secure,value=on`, which lets only code
+running in System Management Mode write the variable flash. This build has no
+SMM code, so none of its writes to the flash take, and it falls back to keeping
+its variables in a file, `NvVars`, in the root of the first FAT file system it
+finds. On the test's first disk that is the staged `ALO-INSTALL` partition. The
+refusal said *so nothing was changed*, correctly about alo OS, and the first
+disk changed at three mebibytes of that partition: its boot sector and FATs, and
+the cluster holding `NvVars`.
+
+Measured with the firmware alone, no kernel, 45 seconds, on a 700 MiB disk with a
+100 MiB data partition and a 590 MiB `ALO-INSTALL` FAT holding one file:
+
+| firmware | machine | disk bytes changed | variable flash bytes changed | root of the FAT |
+|---|---|---|---|---|
+| `OVMF_CODE_4M.fd` | `q35` | 0 | 6176 | `EFI` |
+| `OVMF_CODE_4M.fd` | `q35,smm=on`, secure flash | 967 (MiB 101: 10, MiB 102: 957) | **0** | `EFI`, `NvVars` (1523 bytes) |
+| `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.ms.fd` | `q35,smm=on`, secure flash | 0 | — | `EFI` |
+
+The second row is the whole of it: the flash refused every write, and the disk
+received them. Neither alo OS nor a real laptop is involved — a laptop's firmware
+has a variable store it can write, and the same firmware on a machine that lets
+it write its flash (row 1) or the SMM build on the SMM machine (row 3) writes
+nothing to any disk.
+**Our response:** the test names a firmware and its machine as one value
+(`Firmware` in that file): SMM and SMM-only flash for the Secure Boot build, a
+plain `q35` for the build without it. The refusal test asserts, besides the
+whole first disk being byte-for-byte unchanged, that the firmware's own variable
+flash *did* change — so a machine that can no longer write its flash fails as
+that, rather than as a write to a disk. `a_firmware_is_given_only_flash_it_can_write`
+holds the pairing in the suite. Anyone starting OVMF by hand: never give
+`OVMF_CODE_4M.fd` (or any build without `SMM` in its description) flash with
+`secure=on`.
+**Date:** 2026-09-15.
+
 ### Windows names an NVMe disk by its bus, and puts an identifier where the serial number is
 **Version:** Windows 11 Pro 10.0.26200, `Get-Disk` from Windows PowerShell 5.1, on
 the development machine (a Dell with an SK hynix PVC10 512 GB NVMe disk), read by

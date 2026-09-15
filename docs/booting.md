@@ -301,11 +301,18 @@ is not the owner's and watches it refuse. Both are run by name:
     cargo test -p alo-installing --test installed_in_a_virtual_machine \
       -- --include-ignored --test-threads 1
 
-**Neither passes yet** (2026-09-15). With Secure Boot on, the firmware stops
-with a page fault as it starts the staged loader, before Linux; and the refusal,
-which is started without Secure Boot, refuses correctly and leaves the second
-disk untouched but changes the first disk. Both are written up, with what was
-ruled out, in `docs/autonomy/updates/the-boot-environment-that-installs.md`.
+**The install does not pass yet** (2026-09-15). With Secure Boot on, the firmware
+stops with a page fault as it starts the staged loader, before Linux; it is written
+up in `docs/autonomy/updates/the-boot-environment-that-installs.md`.
+
+**The refusal passes.** It is started without Secure Boot and refuses, with the
+second disk untouched and the first disk byte-for-byte unchanged. It once changed
+the first disk, and the writer was the virtual machine's firmware, not the
+environment: the firmware without SMM, given flash only SMM may write, saved its
+variables as `NvVars` on the staged FAT (`docs/quirks.md`, *OVMF without SMM saves
+its variables onto a FAT disk when its flash is SMM-only*;
+`docs/autonomy/updates/a-refusal-writes-nothing.md`). When starting OVMF by hand,
+keep a firmware and its machine together the way the test's `Firmware` does.
 
 **Nobody has watched it in Hyper-V yet**: the account the tests ran under on
 2026-09-15 is not allowed to manage Hyper-V, and the gates run in Linux. By

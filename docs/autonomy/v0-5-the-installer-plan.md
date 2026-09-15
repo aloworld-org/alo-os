@@ -337,7 +337,15 @@ flag.
 
 ### 8. A refusal writes nothing the installer does not own
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-15** (`updates/a-refusal-writes-nothing.md`). The first
+experiment found it: the writer was the test's virtual machine. OVMF's build
+without SMM was started with flash only SMM code may write, so its variable writes
+never took and it saved them as `NvVars` onto the first FAT it found, the staged
+`ALO-INSTALL` partition (`docs/quirks.md`, *OVMF without SMM saves its variables
+onto a FAT disk when its flash is SMM-only*). It was neither alo OS nor a
+laptop's firmware, so the plan's third outcome applies: the machine is fixed, the
+test holds that **the whole first disk** is unchanged, and it also holds that the
+firmware wrote its own flash. The sentence is unchanged. **Depends on:** 2.
 
 Split from task 2 on 2026-09-15. The not-genuine refusal said *this download is
 not a genuine alo OS, so nothing was changed*, wrote nothing to the second disk —

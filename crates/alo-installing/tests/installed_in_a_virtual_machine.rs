@@ -80,6 +80,55 @@ const PLAIN_FIRMWARE: &str = "/usr/share/OVMF/OVMF_CODE_4M.fd";
 /// Its variables.
 const PLAIN_VARIABLES: &str = "/usr/share/OVMF/OVMF_VARS_4M.fd";
 
+/// A firmware, together with the only machine it is started in.
+///
+/// **One value, so the two cannot be mismatched.** The firmware without Secure
+/// Boot is not built for System Management Mode; started on a machine whose
+/// variable flash only SMM code may write, it cannot keep its variables there and
+/// saves them instead as a file, `NvVars`, on the first FAT it finds — which here
+/// is the staged installer's partition. That write is what made the refusal
+/// change the first disk on 2026-09-15 (`docs/quirks.md`, *OVMF without SMM
+/// saves its variables onto a FAT disk*), and it is the machine's, never alo OS's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Firmware {
+    /// Secure Boot enforced, under Microsoft's certificates, built for SMM.
+    SecureBoot,
+    /// Without Secure Boot, and without SMM, for starting a kernel directly.
+    Plain,
+}
+
+impl Firmware {
+    /// The firmware's code.
+    fn code(self) -> &'static str {
+        match self {
+            Self::SecureBoot => SECURE_FIRMWARE,
+            Self::Plain => PLAIN_FIRMWARE,
+        }
+    }
+
+    /// The variables it starts from.
+    fn variables(self) -> &'static str {
+        match self {
+            Self::SecureBoot => MICROSOFT_VARIABLES,
+            Self::Plain => PLAIN_VARIABLES,
+        }
+    }
+
+    /// The machine it is started in: SMM, with flash only SMM may write, for
+    /// the firmware built for it, and an ordinary q35 for the one that is not.
+    fn machine(self) -> &'static [&'static str] {
+        match self {
+            Self::SecureBoot => &[
+                "-machine",
+                "q35,smm=on",
+                "-global",
+                "driver=cfi.pflash01,property=secure,value=on",
+            ],
+            Self::Plain => &["-machine", "q35"],
+        }
+    }
+}
+
 /// How large the second disk is. The release is about ten gigabytes installed.
 const THE_SECOND_DISK: u64 = 24 * 1024 * 1024 * 1024;
 
@@ -478,45 +527,38 @@ fn the_first_disk_is_unchanged(disk: &Path, was: &AsItWas, when: &str) {
     );
 }
 
-/// Firmware variables of this test's own, copied from the ones given.
-fn variables(from: &str, called: &str) -> PathBuf {
+/// Firmware variables of this test's own, copied from the firmware's.
+fn variables(firmware: Firmware, called: &str) -> PathBuf {
     let at = work().join(called);
-    std::fs::copy(from, &at).expect("the firmware variables can be copied");
+    std::fs::copy(firmware.variables(), &at).expect("the firmware variables can be copied");
     at
 }
 
 /// The arguments every machine here starts with.
-fn a_machine(firmware: &str, variables: &Path, serial: &Path) -> Vec<String> {
-    [
-        "-accel",
-        "kvm",
-        "-cpu",
-        "host",
-        "-smp",
-        "4",
-        "-m",
-        "3072",
-        "-machine",
-        "q35,smm=on",
-        "-global",
-        "driver=cfi.pflash01,property=secure,value=on",
-        "-nic",
-        "user,model=virtio-net-pci",
-        "-display",
-        "none",
-        "-no-reboot",
-    ]
-    .iter()
-    .map(|argument| (*argument).to_owned())
-    .chain([
-        "-drive".to_owned(),
-        format!("if=pflash,format=raw,unit=0,readonly=on,file={firmware}"),
-        "-drive".to_owned(),
-        format!("if=pflash,format=raw,unit=1,file={}", variables.display()),
-        "-serial".to_owned(),
-        format!("file:{}", serial.display()),
-    ])
-    .collect()
+fn a_machine(firmware: Firmware, variables: &Path, serial: &Path) -> Vec<String> {
+    ["-accel", "kvm", "-cpu", "host", "-smp", "4", "-m", "3072"]
+        .iter()
+        .chain(firmware.machine())
+        .chain(&[
+            "-nic",
+            "user,model=virtio-net-pci",
+            "-display",
+            "none",
+            "-no-reboot",
+        ])
+        .map(|argument| (*argument).to_owned())
+        .chain([
+            "-drive".to_owned(),
+            format!(
+                "if=pflash,format=raw,unit=0,readonly=on,file={}",
+                firmware.code()
+            ),
+            "-drive".to_owned(),
+            format!("if=pflash,format=raw,unit=1,file={}", variables.display()),
+            "-serial".to_owned(),
+            format!("file:{}", serial.display()),
+        ])
+        .collect()
 }
 
 /// A disk attached with a serial number, so the machine names it by its own
@@ -639,8 +681,8 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
     // The install, started the way a firmware starts it.
     let serial = work().join("installing.log");
     drop(std::fs::remove_file(&serial));
-    let vars = variables(MICROSOFT_VARIABLES, "installing-vars.fd");
-    let mut arguments = a_machine(SECURE_FIRMWARE, &vars, &serial);
+    let vars = variables(Firmware::SecureBoot, "installing-vars.fd");
+    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
     arguments.extend(a_disk(&windows, "alo-windows", Some(1)));
     arguments.extend(a_disk(&target, "alo-target", None));
     powered_off(started(&arguments), Duration::from_secs(60 * 60), &serial);
@@ -687,8 +729,8 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
     // The installed disk, started on its own, with the sign-in stood in for.
     let serial = work().join("installed.log");
     drop(std::fs::remove_file(&serial));
-    let vars = variables(MICROSOFT_VARIABLES, "installed-vars.fd");
-    let mut arguments = a_machine(SECURE_FIRMWARE, &vars, &serial);
+    let vars = variables(Firmware::SecureBoot, "installed-vars.fd");
+    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
     arguments.extend(a_disk(&target, "alo-target", Some(1)));
     arguments.extend(a_disk(&windows, "alo-windows", None));
     arguments.extend(a_credential(
@@ -858,8 +900,8 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
 
     let serial = work().join("refusing.log");
     drop(std::fs::remove_file(&serial));
-    let vars = variables(PLAIN_VARIABLES, "refusing-vars.fd");
-    let mut arguments = a_machine(PLAIN_FIRMWARE, &vars, &serial);
+    let vars = variables(Firmware::Plain, "refusing-vars.fd");
+    let mut arguments = a_machine(Firmware::Plain, &vars, &serial);
     arguments.extend([
         "-kernel".to_owned(),
         environment
@@ -930,5 +972,43 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
         0,
         "the second disk was written"
     );
+    // The firmware kept what it keeps in its own flash. Were it unable to, it
+    // would save it onto the first FAT it found, and the check below would be
+    // measuring the machine rather than alo OS.
+    assert_ne!(
+        hashed(&vars),
+        hashed(Path::new(Firmware::Plain.variables())),
+        "the firmware wrote nothing to its own variable flash, so it had nowhere to keep \
+         its variables but a disk"
+    );
     the_first_disk_is_unchanged(&windows, &before, "while the environment refused");
+}
+
+/// **Each firmware starts only in the machine it was built for**: SMM and flash
+/// only SMM may write for the Secure Boot build, and neither for the build
+/// without it — which, given that flash, saves its variables onto a disk.
+#[test]
+fn a_firmware_is_given_only_flash_it_can_write() {
+    let secure = Firmware::SecureBoot.machine().join(" ");
+    assert!(secure.contains("smm=on") && secure.contains("property=secure,value=on"));
+    let plain = Firmware::Plain.machine().join(" ");
+    assert!(!plain.contains("smm=on"), "{plain}");
+    assert!(!plain.contains("secure"), "{plain}");
+    for firmware in [Firmware::SecureBoot, Firmware::Plain] {
+        let started = a_machine(firmware, Path::new("vars.fd"), Path::new("serial.log"));
+        assert_eq!(
+            started
+                .iter()
+                .filter(|argument| *argument == "-machine")
+                .count(),
+            1,
+            "{started:?}"
+        );
+        assert!(
+            started
+                .iter()
+                .any(|argument| argument.ends_with(&format!("file={}", firmware.code()))),
+            "{started:?}"
+        );
+    }
 }
