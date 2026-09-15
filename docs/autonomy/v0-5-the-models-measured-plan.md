@@ -501,9 +501,15 @@ the words are worth 80 of 80 against 71 of 80 on the same weights.
 
 ### 19. The catalogue reads the grade for the words a turn shows
 
-**Status:** blocked — on task 19 of `v0-5-the-local-network-plan.md`, where a
-turn composes what it shows a model from `alo-instructing`. **Depends on:** 18,
-20.
+**Status:** **Done, 2026-09-15.** **Depends on:** 18, 20.
+**Report:** `docs/autonomy/updates/the-catalogue-reads-the-grade-a-turn-earns.md`.
+Lane A landed the wiring this waited on — `Turning::asking_for_the_next_request`
+builds what it shows a model with `alo_instructing::shown_to_a_turn` — so the
+condition ADR 0037 decision 3 names is met. **Two entries are now given the
+agent**: `qwen2.5-7b-instruct` (80 of 80) and `qwen3-8b` (20 of 20), and a
+16 GB machine is given the second. No entry lost a grade it appeared to have,
+because task 20 had measured every entry this machine can hold the same way
+first.
 
 ADR 0037 decision 4. Once a turn is shown the product's own words, the grade
 that says whether a model may be given the agent is the one earned under those

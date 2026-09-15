@@ -806,9 +806,10 @@ pub const UNMEASURED_NOT_PUBLISHED: Word = Word::saying(
 // ---------------------------------------------------------------------------
 
 /// The grade that decides was measured the way an agent turn asks.
-pub const GRADED_IN_THE_ENVELOPE: Word = Word::saying(
-    "models.graded.in-the-envelope",
-    "measured the way an agent turn asks: held to the shape of the request it must answer with",
+pub const GRADED_AS_A_TURN_ASKS: Word = Word::saying(
+    "models.graded.as-a-turn-asks",
+    "measured the way an agent turn asks: shown the words this machine shows a model, and held to \
+     the shape of the request it must answer with",
 )
 .noting(
     "Shown beside a model's grade. \"Agent turn\" is one exchange in which an agent asks a model \
@@ -816,16 +817,16 @@ pub const GRADED_IN_THE_ENVELOPE: Word = Word::saying(
      the grade is good; the grade is shown beside it.",
 );
 
-/// The grade that decides was measured by asking freely.
-pub const GRADED_FREELY: Word = Word::saying(
-    "models.graded.freely",
-    "measured by asking freely, which is not the way an agent turn asks: nobody has measured it \
-     that way",
+/// Nothing was measured the way an agent turn asks.
+pub const GRADED_ANOTHER_WAY: Word = Word::saying(
+    "models.graded.another-way",
+    "not measured the way an agent turn asks: it was measured another way, or not at all, and \
+     neither says what this machine would get",
 )
 .noting(
-    "Shown beside a model's grade when no measurement was made the way an agent turn asks. It says \
-     what the grade is about and that the other measurement is missing — not that the model would \
-     do better or worse if it were made.",
+    "Shown beside a model that has no grade for the way an agent turn asks a model — because the \
+     measurements it has were made by asking differently, or because nobody measured it. It says \
+     what is missing, not that the model would do badly if it were measured.",
 );
 
 /// Every string this crate can say, in the order this file declares them.
@@ -887,8 +888,8 @@ pub const EVERY_WORD: [Word; 56] = [
     UNMEASURED_TOO_LARGE,
     UNMEASURED_RUNTIME_REFUSED,
     UNMEASURED_NOT_PUBLISHED,
-    GRADED_IN_THE_ENVELOPE,
-    GRADED_FREELY,
+    GRADED_AS_A_TURN_ASKS,
+    GRADED_ANOTHER_WAY,
 ];
 
 /// Why this crate's own list could not be declared.

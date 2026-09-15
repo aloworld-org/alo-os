@@ -110,10 +110,23 @@ fn right_answer(named: &str) -> String {
 /// A catalogue of one model, stating the grade it was given.
 fn catalogue_of(grade: &str) -> Catalogue {
     // A grade names the machine it was earned on, or the catalogue refuses it.
+    // Since ADR 0037 the grade a machine reads is the one earned **the way a
+    // turn asks** — held to the envelope, under the words this machine shows a
+    // model — so a fixture graded only the first way would be a fixture nobody
+    // is offered.
     let measured = if grade == "not-measured" {
-        ""
+        String::new()
     } else {
-        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20, instructions = \"d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce\" }\n"
+        format!(
+            "measured = {{ machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", \
+             runtime = \"Ollama 0.34.0\", drove = 10, of = 20, instructions = \
+             \"d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce\" }}\n\
+             drives_verbs_in_the_envelope = \"{grade}\"\n\
+             measured_in_the_envelope = {{ machine = \"a test fixture, 16 GB\", \
+             date = \"2026-09-15\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20, \
+             instructions = \"{}\" }}\n",
+            alo_models::THE_WORDS_A_TURN_SHOWS
+        )
     };
     Catalogue::parse(&format!(
         "[[model]]\n\
@@ -291,16 +304,32 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// **Task 11 made it nine of nine**: `qwen3-4b` and `qwen3-8b`, added for their
 /// publisher's tool-call training and measured the day they were added. Qwen3 8B
 /// is the first `sometimes` a 16 GB machine could choose; `sometimes` is not the
-/// bar, so the refusal is the same sentence.
+/// bar, so the refusal was the same sentence.
+///
+/// **And tasks 19 and 20 ended it.** A turn now shows a model the words this
+/// machine wrote (ADR 0037), the catalogue reads the grade earned under them,
+/// and two entries clear the bar that way: `qwen2.5-7b-instruct` at 80 of 80 and
+/// `qwen3-8b` at 20 of 20. So a 16 GB machine is **given** an agent, and the
+/// sentence this test was written for is now read by a machine that cannot hold
+/// either — which is what it always meant. Both state `min_ram_gb = 10`; eight
+/// gigabytes is where it still applies: five entries fit there, whose licences let
+/// an organisation rely on them, and all five were measured.
 #[test]
-fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
+fn the_catalogue_we_ship_now_gives_a_machine_with_room_an_agent() {
     let shipped = Catalogue::built_in().unwrap();
-    let refused = shipped.agent_for_cpu(16.0).unwrap_err();
+    let given = shipped.agent_for_cpu(16.0).unwrap();
+    assert_eq!(given.id, "qwen3-8b");
+    assert_eq!(
+        given.grade_for_the_turn(),
+        (Driving::Reliably, alo_models::AskedTheWay::AsATurnAsks)
+    );
+
+    let refused = shipped.agent_for_cpu(8.0).unwrap_err();
     assert_eq!(
         refused,
         NoAgentHere::NoneClearsTheBar {
-            to_choose_from: 9,
-            measured: 9,
+            to_choose_from: 5,
+            measured: 5,
         }
     );
 

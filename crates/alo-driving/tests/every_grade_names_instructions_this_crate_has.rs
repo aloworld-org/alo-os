@@ -102,3 +102,35 @@ fn the_grades_written_before_the_second_instructions_name_the_first() {
         }
     }
 }
+
+/// **The digest the catalogue decides by is the digest of the words a turn is
+/// shown** (task 19, ADR 0037 decision 4).
+///
+/// `alo-models` writes `THE_WORDS_A_TURN_SHOWS` out rather than computing it, so
+/// that the catalogue can say which grade decides without depending on the verb
+/// registry. This crate has both the constant and the text, so this is where the
+/// two are held to each other: change the text and this fails, rather than the
+/// catalogue quietly deciding by a digest nothing earns.
+#[test]
+fn the_digest_the_catalogue_decides_by_is_the_one_a_turn_is_shown() {
+    assert_eq!(
+        alo_models::THE_WORDS_A_TURN_SHOWS,
+        Instructions::SHOWN_TO_A_TURN.digest(),
+        "the words a turn shows have changed; every grade earned under them names text that no \
+         longer exists, and the catalogue is deciding by a digest nothing has"
+    );
+    assert_eq!(
+        Instructions::of_digest(alo_models::THE_WORDS_A_TURN_SHOWS),
+        Some(Instructions::SHOWN_TO_A_TURN)
+    );
+
+    // And at least one shipped entry is decided by it, so the constant is not
+    // matching nothing at all.
+    let shipped = Catalogue::built_in().unwrap();
+    assert!(
+        shipped
+            .models
+            .iter()
+            .any(|entry| entry.grade_for_the_turn().1 == alo_models::AskedTheWay::AsATurnAsks)
+    );
+}

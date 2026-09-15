@@ -324,10 +324,13 @@ impl Model {
     ///
     /// Only a model measured driving the verbs dependably
     /// ([`Driving::clears_the_bar`]) **the way an agent turn asks**:
-    /// [`Model::grade_for_the_turn`], the enveloped grade where there is one and
-    /// the free grade only where there is not. Whether it also *runs* on a particular
-    /// machine, and whether its licence lets an organisation rely on it, are
-    /// the other two questions — [`Catalogue::agent_for_cpu`] asks all three.
+    /// [`Model::grade_for_the_turn`], which is the grade earned in the envelope
+    /// under the words this machine shows a model, and nothing else. An entry
+    /// measured only another way has no grade here and is not given the agent
+    /// on the strength of one (ADR 0037, decision 4). Whether it also *runs* on
+    /// a particular machine, and whether its licence lets an organisation rely
+    /// on it, are the other two questions — [`Catalogue::agent_for_cpu`] asks
+    /// all three.
     #[must_use]
     pub fn can_be_the_agent(&self) -> bool {
         self.grade_for_the_turn().0.clears_the_bar()
@@ -1461,17 +1464,34 @@ of = 20
         ) + IN_THE_ENVELOPE.trim().split_once("\n\n").unwrap().1
     }
 
-    /// **The recommendation reads the enveloped grade for an entry that has
-    /// one**, now that an agent turn asks a local model that way (ADR 0032,
-    /// decision 5): a model that clears the bar in the envelope is given the
-    /// agent, and one that clears it only freely is not.
+    /// The same, with the **envelope** grade earned under the words a turn
+    /// shows — the only way of asking that decides anything (ADR 0037, decision
+    /// 4). The free grade keeps the instructions it was earned under, because
+    /// two grades under one digest would be a fixture agreeing with itself.
+    fn graded_as_a_turn_asks(free: &str, enveloped: &str) -> String {
+        graded_with(free, A_MACHINE).replacen(
+            "upstream = ",
+            &format!("drives_verbs_in_the_envelope = \"{enveloped}\"\nupstream = "),
+            1,
+        ) + &IN_THE_ENVELOPE
+            .trim()
+            .split_once("\n\n")
+            .unwrap()
+            .1
+            .replace(A_DIGEST, crate::THE_WORDS_A_TURN_SHOWS)
+    }
+
+    /// **The recommendation reads the grade earned under the words a turn
+    /// shows**, now that a turn shows them (ADR 0037, decision 4): a model that
+    /// clears the bar that way is given the agent, and one that clears it only
+    /// under other instructions is not.
     #[test]
-    fn the_recommendation_reads_the_grade_for_the_way_turns_ask() {
-        let read = Catalogue::parse(&graded_both_ways("rarely", "reliably")).unwrap();
+    fn the_recommendation_reads_the_grade_for_the_words_a_turn_shows() {
+        let read = Catalogue::parse(&graded_as_a_turn_asks("rarely", "reliably")).unwrap();
         let model = read.models.first().unwrap();
         assert_eq!(
             model.grade_for_the_turn(),
-            (Driving::Reliably, crate::AskedTheWay::InTheEnvelope)
+            (Driving::Reliably, crate::AskedTheWay::AsATurnAsks)
         );
         assert!(model.can_be_the_agent());
         assert_eq!(read.agent_for_cpu(64.0).unwrap().id, model.id);
@@ -1481,35 +1501,48 @@ of = 20
             "the free grade is kept"
         );
 
-        let only_freely = Catalogue::parse(&graded_both_ways("reliably", "sometimes")).unwrap();
-        let model = only_freely.models.first().unwrap();
+        let short = Catalogue::parse(&graded_as_a_turn_asks("reliably", "sometimes")).unwrap();
+        let model = short.models.first().unwrap();
         assert_eq!(
             model.grade_for_the_turn(),
-            (Driving::Sometimes, crate::AskedTheWay::InTheEnvelope)
+            (Driving::Sometimes, crate::AskedTheWay::AsATurnAsks)
         );
         assert!(!model.can_be_the_agent());
         assert!(matches!(
-            only_freely.agent_for_cpu(64.0),
+            short.agent_for_cpu(64.0),
             Err(crate::NoAgentHere::NoneClearsTheBar { .. })
         ));
     }
 
-    /// **And the free grade only where none was measured in the envelope** —
-    /// the only measurement there is, never a grade assumed for the other way.
+    /// **A grade earned another way decides nothing** — not the enveloped grade
+    /// under the first instructions, and not the free grade, however well
+    /// either did. An entry with neither has no grade for the turn, and the
+    /// recommendation says nothing was measured rather than picking one.
     #[test]
-    fn the_free_grade_decides_only_where_no_enveloped_grade_was_measured() {
-        let read = Catalogue::parse(&graded_with("reliably", A_MACHINE)).unwrap();
-        let model = read.models.first().unwrap();
-        assert_eq!(model.drives_verbs_in_the_envelope, None);
-        assert_eq!(
-            model.grade_for_the_turn(),
-            (Driving::Reliably, crate::AskedTheWay::Freely)
-        );
-        assert!(model.can_be_the_agent());
-        assert_eq!(read.agent_for_cpu(64.0).unwrap().id, model.id);
-
-        let rarely = Catalogue::parse(&graded_with("rarely", A_MACHINE)).unwrap();
-        assert!(!rarely.models.first().unwrap().can_be_the_agent());
+    fn a_grade_earned_another_way_does_not_give_an_entry_the_agent() {
+        for catalogue in [
+            graded_both_ways("reliably", "reliably"),
+            graded_with("reliably", A_MACHINE),
+        ] {
+            let read = Catalogue::parse(&catalogue).unwrap();
+            let model = read.models.first().unwrap();
+            assert_eq!(
+                model.grade_for_the_turn(),
+                (Driving::NotMeasured, crate::AskedTheWay::NotTheWayATurnAsks)
+            );
+            assert!(!model.can_be_the_agent());
+            assert!(
+                matches!(
+                    read.agent_for_cpu(64.0),
+                    Err(crate::NoAgentHere::NoneMeasured { .. })
+                ),
+                "an entry measured another way has not been measured the way a turn asks"
+            );
+            assert!(
+                model.drives_verbs.has_been_measured(),
+                "and every grade it did earn is still there"
+            );
+        }
     }
 
     /// **Every grade the catalogue ships names the machine it was earned on.**

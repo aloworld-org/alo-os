@@ -160,7 +160,8 @@ impl Catalogue {
     /// first, which is [`Model::safe_default_for_business`] and is conservative
     /// on purpose. And it must have been **measured driving the verbs**, which
     /// is [`crate::Driving::clears_the_bar`] read off [`Model::grade_for_the_turn`]
-    /// — the grade for the way an agent turn asks.
+    /// — the grade for the way an agent turn asks, which since ADR 0037 means
+    /// held to the envelope **and** shown the words this machine shows a model.
     ///
     /// Among those, comfortable before workable and then larger before smaller,
     /// which is the ordering this method had before the bar existed: a model
@@ -225,11 +226,22 @@ mod tests {
         let mut text = String::new();
         for (id, parameters_b, on_cpu, commercial, driving) in entries {
             // A grade names the machine it was earned on, or the catalogue
-            // refuses it.
+            // refuses it — and since ADR 0037 the grade this method reads is
+            // the one earned **the way a turn asks**, so a fixture measured
+            // only the first way would be a fixture nobody is offered.
             let measured = if *driving == "not-measured" {
-                ""
+                String::new()
             } else {
-                "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20, instructions = \"d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce\" }\n"
+                format!(
+                    "measured = {{ machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", \
+                     runtime = \"Ollama 0.34.0\", drove = 10, of = 20, instructions = \
+                     \"d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce\" }}\n\
+                     drives_verbs_in_the_envelope = \"{driving}\"\n\
+                     measured_in_the_envelope = {{ machine = \"a test fixture, 16 GB\", \
+                     date = \"2026-09-15\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20, \
+                     instructions = \"{}\" }}\n",
+                    crate::THE_WORDS_A_TURN_SHOWS
+                )
             };
             let gigabytes = f64::from(*parameters_b) * 0.62;
             let (bytes, vram, ram) = (

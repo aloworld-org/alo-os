@@ -117,3 +117,31 @@ pulling a model toward `propose` for reads as hard as the first pulled it toward
 or 4. And a turn that must ask in a person's own language would need the verbs'
 sentences translated and a grade per language; that is a new set of instructions
 and a new column of grades, not an edit to these.
+
+## Since it was accepted
+
+**2026-09-15, the same day.** Decision 3 said no grade moves until a turn is
+composed from `alo-instructing`, and named the wiring as a task for the lane that
+owns `alo-turn`. That lane landed it: `Turning::asking_for_the_next_request` now
+builds what it shows a model with `alo_instructing::shown_to_a_turn`, and its
+tests read the request off the socket and find these words.
+
+So decision 4 is in force. `Model::grade_for_the_turn` reads the grade earned in
+the envelope, under `Instructions::SHOWN_TO_A_TURN`, through the pinned runtime,
+and an entry measured only another way has **no grade for the turn** — its
+`can_be_the_agent` is false whatever else it earned. Every other grade stays in
+the entry and is read by nobody.
+
+Two consequences worth writing down, because both are what the decision was for:
+
+- **Two entries now clear the bar and may be given the agent**:
+  `qwen2.5-7b-instruct` at 80 of 80 (task 16) and `qwen3-8b` at 20 of 20 (task
+  20). A machine with 16 GB is given the second, by the ordering
+  `Catalogue::agent_for_cpu` already had. Before this, no machine was given any
+  model, and the sentence a person read was that nothing measured here clears
+  the bar.
+- **Nothing lost a grade it appeared to have.** That is task 20's doing rather
+  than this decision's: every entry an 8 GB machine can hold had already been
+  measured under these words, so the rule could be applied without twelve entries
+  falling silently to *not measured*. A decision of this shape taken before that
+  measurement would have been a decision to blank the catalogue.

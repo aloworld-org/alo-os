@@ -478,9 +478,12 @@ runtime = "Ollama 0.34.0"
 # points under the bar; and on 2026-09-14, through `alo-asking`'s door for it
 # (task 14), **71 of 80 — `sometimes` again, one attempt short of the 72 the bar
 # needs**. The eighty are the grade below, as the larger sample of one method.
-# That grade is `drives_verbs_in_the_envelope`, kept apart from the free one, and
-# since task 15 it is **the grade the recommendation reads**: an agent turn asks a
-# local model in the envelope (`e99be94`), so the free grade is history.
+# That grade is `drives_verbs_in_the_envelope`, kept apart from the free one. It
+# was **the grade the recommendation read** from task 15 until task 19, when the
+# turn began showing a model the words this machine wrote and the grade earned
+# under *those* became the one that decides ([ADR 0037](../../../docs/decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md),
+# decision 4). Both are history now, and both stay here: the 71 below is what
+# this entry earned when a turn asked another way.
 #
 # **The rule that measurement came from:** a grade from one round that lands
 # within one attempt of a line — four, five or six; eight, nine or ten — owes a
@@ -542,9 +545,10 @@ instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce
 # through `read` alone. **80 of 80, `reliably`**, the first local grade in this
 # catalogue to clear the bar. It sits beside the 71 of 80 above, which stays the
 # entry's own envelope grade: the two differ only in the instructions, and
-# `instructions` is the SHA-256 that tells them apart. The recommendation reads
-# the 71, not this: an agent turn is shown the agent's own words, not these
-# instructions (ADR 0034, decision 4).
+# `instructions` is the SHA-256 that tells them apart. **This is the grade that
+# decides**, since task 19: a turn is shown exactly these words
+# (`alo_instructing::shown_to_a_turn`), so this entry clears the bar and a
+# machine with room for it may be given it as the agent.
 [[model.also_under]]
 drives_verbs_in_the_envelope = "reliably"
 

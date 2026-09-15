@@ -35,6 +35,11 @@ use alo_telling::{Warning, WhoAsked, words as telling};
 /// The memory of the machine this walk is on.
 const SIXTEEN_GIGABYTES: f32 = 16.0;
 
+/// A machine that can hold no entry which clears the bar — since task 19 the
+/// two that do both state `min_ram_gb = 10`, so the refusal a person reads is
+/// a statement about memory rather than about the catalogue.
+const EIGHT_GIGABYTES: f32 = 8.0;
+
 /// One situation, and the lines a person reads in it, in order: the word each
 /// line is, and its English exactly.
 type Situation = (&'static str, &'static [(Word, &'static str)]);
@@ -42,7 +47,7 @@ type Situation = (&'static str, &'static [(Word, &'static str)]);
 /// **Every line a person reads, in the order they meet it.**
 const THE_TABLE: [Situation; 5] = [
     (
-        "The model the catalogue recommends",
+        "The model the catalogue recommends, on a machine with room for none that clear the bar",
         &[
             (
                 models::NONE_CLEARS_THE_BAR,
@@ -199,7 +204,7 @@ fn a_file_brought(what: &str, bytes: u64, grade: Option<Driving>) -> Weights {
 fn what_a_person_reads(strings: &Strings) -> Vec<(&'static str, Vec<Said>)> {
     let shipped = Catalogue::built_in().unwrap();
     let recommended = shipped
-        .agent_for_cpu(SIXTEEN_GIGABYTES)
+        .agent_for_cpu(EIGHT_GIGABYTES)
         .map(|_| Vec::new())
         .unwrap_or_else(|refused| refused.lines(strings).to_vec());
 
@@ -231,6 +236,23 @@ fn what_a_person_reads(strings: &Strings) -> Vec<(&'static str, Vec<Said>)> {
             theirs.lines(strings, SIXTEEN_GIGABYTES).to_vec(),
         ),
     ]
+}
+
+/// **A machine with room reads no refusal, because it is given a model** (task
+/// 19). The first row of the table is what a person meets when nothing that
+/// clears the bar fits; where something does, there is nothing to read and an
+/// entry to run.
+#[test]
+fn a_machine_with_room_is_given_a_model_rather_than_a_sentence() {
+    let shipped = Catalogue::built_in().unwrap();
+    // Since task 19 two entries clear the bar in the words a turn shows, so a
+    // machine with room for one is given it.
+    let given = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap();
+    assert!(given.can_be_the_agent());
+    assert!(
+        shipped.agent_for_cpu(EIGHT_GIGABYTES).is_err(),
+        "and a machine that cannot hold either is still told so"
+    );
 }
 
 /// **The sequence a person reads is the table**, word for word and in order.
