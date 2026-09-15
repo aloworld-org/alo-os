@@ -298,16 +298,24 @@ fn every_crate_among(touched: &[String]) -> Vec<String> {
 /// - the distribution did not answer at all —
 ///   `Wsl/Service/0x8007274c`, a connection that timed out before `bash` ran.
 ///
-/// Neither says anything about the change, and a second run cannot tell them
-/// apart from a real break, which is why the retry above is not enough on its
-/// own.
+/// And a third on 2026-09-15, in the evidence rather than the gates: the
+/// update test's virtual machine, booted under emulation, froze in systemd
+/// before the test inside it ran. The machine is a test fixture, so its failure
+/// to start says nothing about the update. The test says so in words of its
+/// own, *the virtual machine did not finish booting*, and
+/// `crates/alo-updating/tests/an_update_keeps_the_persons_things.rs` holds
+/// them.
+///
+/// None of these says anything about the change, and a second run cannot tell
+/// them apart from a real break, which is why the retry above is not enough on
+/// its own.
 ///
 /// Deliberately narrow: it looks for the machine's own words and nothing
 /// resembling them. `no space left on device` is **not** here, because
 /// `crate::where_it_builds` measures that before a gate runs and says so in its
 /// own sentence.
 pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
-    const NOT_THE_WORK: [(&str, &str); 4] = [
+    const NOT_THE_WORK: [(&str, &str); 5] = [
         (
             "Cannot allocate memory",
             "the compiler ran out of memory on this machine",
@@ -319,6 +327,10 @@ pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static
         (
             "Wsl/Service/",
             "the distribution the gates run in did not answer",
+        ),
+        (
+            "the virtual machine did not finish booting",
+            "a virtual machine a test boots did not finish starting on this machine",
         ),
         (
             "memory allocation of",
@@ -904,6 +916,41 @@ mod tests {
             the_machine_rather_than_the_work(no_distribution),
             Some("the distribution the gates run in did not answer")
         );
+    }
+
+    /// **A virtual machine that never started is not the update it was booted to
+    /// test.** The refusal is what the update test's evidence printed on
+    /// 2026-09-15, shortened, when systemd froze in the first boot under
+    /// emulation.
+    #[test]
+    fn a_virtual_machine_that_did_not_boot_is_the_machine_rather_than_the_work() {
+        let froze = "thread 'an_update_applied_in_a_virtual_machine_keeps_every_named_thing_\
+                     byte_for_byte' panicked at crates/alo-updating/tests/an_update_keeps_the_\
+                     persons_things.rs:377:5:\nthe virtual machine did not finish booting: \
+                     systemd froze while the machine was starting, and nothing after it ran:\n\
+                     [  141.582882] systemd[1]: Freezing execution.\n\
+                     test result: FAILED. 0 passed; 1 failed; 0 ignored";
+        assert_eq!(
+            the_machine_rather_than_the_work(froze),
+            Some("a virtual machine a test boots did not finish starting on this machine")
+        );
+
+        let deadline = "the virtual machine did not finish booting within 1800s:\n\
+                        [   69.726222] systemd[1]: Detected architecture x86-64.";
+        assert!(the_machine_rather_than_the_work(deadline).is_some());
+
+        // The test's own failures, once the machine did start, stay the work's.
+        for said in [
+            "the machine did not pass before the update:\nalo-update-test: panicked",
+            "the machine passed both halves and did not power itself off within 1800s",
+            "the machine did not pass after the restart:\nassertion `left == right` failed",
+        ] {
+            assert_eq!(
+                the_machine_rather_than_the_work(said),
+                None,
+                "a refusal about the update was excused as the machine: {said}"
+            );
+        }
     }
 
     /// And the half that matters more: a real break is still a real break, so
