@@ -3379,6 +3379,46 @@ language. Asking in twenty-four languages needs the verbs' sentences translated
 work this crate can hide, and `Instructions` is where a second set would go.
 **Date:** 2026-09-14.
 
+### The small model answers in the language it was asked in, except where it drifts
+**Version:** `qwen2.5:7b-instruct-q4_K_M` under Ollama 0.34.0 on an Apple M3 with
+8 GB unified memory, 2026-09-16; `alo-instructing` as of the access plan's task 5.
+**Behaviour:** asked the same question — *where is the invoice from Northstar?* —
+in each of the 24 official languages, with the clause naming the language to
+answer in, the model answered **23 of 24 in the language it was asked in**. The
+exception is **Croatian**, where it begins in Croatian and drifts into Russian
+mid-sentence: *«Preporučljivo je контактiranje службе поддержки Northstar-a ili
+provjeriti вашу электронную почту»*. In an earlier run of the same question it
+answered Croatian in Croatian and instead produced a stray Cyrillic letter inside
+Latin words in Estonian and Slovak (`prieponе`), so the drift is not fixed to one
+language. **Answering in a language is not answering well**: the Finnish and
+Estonian answers are fluent and untrue — Northstar becomes a navigation network —
+and one Slovene answer was Python code for finding a file.
+**Our response:** recorded per language in the access plan's task 5 report, as
+*answers in it*, *answers in another language* or *does not answer*, and not
+smoothed. No larger model is run to improve it (the owner's rule of 2026-09-15):
+what a bigger model would do is not what this machine does. The clause names the
+language in its own word for itself — *Hrvatski*, not *Croatian* — which is what
+this model was asked under.
+**Date:** 2026-09-16.
+
+### A language reader small enough to ship is wrong about its neighbours
+**Version:** `alo_instructing::the_language_of` as first written, 2026-09-16.
+**Behaviour:** the reader decides a language from the script and from short words
+a language's neighbours do not use, because a request is one sentence and nothing
+may leave the machine to read it. On the 24 requests it is written for it reads
+**24 of 24**; on the 24 paragraphs the model answered with it reads **20**,
+taking Finnish for Swedish, Swedish for Danish, and Slovak for nothing at all.
+Its first version was worse in a way worth keeping: it read *any* Cyrillic letter
+as Bulgarian, so an Estonian answer containing one stray Cyrillic character was
+Bulgarian to it. It now asks that 40% of the letters be in that script.
+**Our response:** the reader answers `None` where it cannot tell, and the clause
+is then left out rather than a guess being put in front of a model — a model
+answers in the language of the question by itself more often than not. Where the
+report's numbers and the reader disagree, the report says both: what the model
+did, read by a person, and what the reader scored. Nothing in the product decides
+anything important on this reader; it chooses one sentence in a prompt.
+**Date:** 2026-09-16.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

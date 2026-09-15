@@ -108,7 +108,7 @@ builds what the report will be generated from.
 
 ### 5. The agent answers in the language it was asked in
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-16.** **Depends on:** nothing.
 
 ★ *Being able to say "wo ist die Rechnung von Northstar?" and get an answer is the
 thing a cloud assistant does badly for smaller languages.*

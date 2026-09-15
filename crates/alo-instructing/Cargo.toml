@@ -12,6 +12,10 @@ repository.workspace = true
 # has, in the words the verb itself declared, so this crate reads a registry and
 # declares nothing of its own.
 alo-capability = { path = "../alo-capability" }
+# The 24 languages, and what each is called in its own. This crate reads that
+# list and never adds to it: which languages alo OS carries is `alo-strings`'
+# question, and the answering-language clause names one of them to a model.
+alo-strings = { path = "../alo-strings" }
 # The digest a grade names its instructions by (ADR 0034): SHA-256 of their
 # text, from the primitives the workspace already trusts rather than a second
 # hashing crate.
@@ -27,6 +31,11 @@ workspace = true
 [dev-dependencies]
 alo-applications = { path = "../alo-applications" }
 alo-files = { path = "../alo-files" }
-# One `Word`, for the verb an adapter might add to a registry. Nothing in the
-# crate itself declares a string.
-alo-strings = { path = "../alo-strings" }
+# What the access plan's task 5 measures with: the one crate in this workspace
+# that speaks to anything, the runtime behind it, and the rule that keeps the
+# measurement on this machine. Dev-dependencies, because the crate itself asks
+# nothing — `nothing_behind_these_words.rs` holds that over the list above.
+alo-answering = { path = "../alo-answering" }
+alo-asking = { path = "../alo-asking" }
+alo-capability = { path = "../alo-capability" }
+alo-models = { path = "../alo-models" }

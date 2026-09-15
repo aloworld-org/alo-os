@@ -9,7 +9,12 @@
 //! builds no request.
 //!
 //! A dependency added above would be asked, here, why the words a model is
-//! shown need it.
+//! shown need it. `alo-strings` answers it: since the access plan's task 5 the
+//! words name the language a request was written in, in that language's own
+//! word for itself, and the 24 languages and their names are that crate's and
+//! never a second list here. It opens nothing either — it is the vocabulary,
+//! and `nothing_in_this_crate_reaches_anything` below still holds over this
+//! crate's own source.
 
 #![expect(
     clippy::unwrap_used,
@@ -20,7 +25,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// What the shipped crate carries, and the whole of it.
-const WHAT_IT_CARRIES: [&str; 2] = ["alo-capability", "ring"];
+const WHAT_IT_CARRIES: [&str; 3] = ["alo-capability", "alo-strings", "ring"];
 
 /// What would let this crate reach anything but its caller.
 const A_WAY_OFF_THE_WORDS: [&str; 12] = [
