@@ -19,7 +19,7 @@ alo-capability = { path = "../alo-capability" }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-# The five crates that declare the verbs alo OS ships. They are the measurement
+# The six crates that declare the verbs alo OS ships. They are the measurement
 # rather than the method, so they are here and not above: this crate checks
 # whatever list it is handed, and the test is what hands it the real one.
 alo-applications = { path = "../alo-applications" }
@@ -27,6 +27,7 @@ alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-measuring = { path = "../alo-measuring" }
 alo-printing = { path = "../alo-printing" }
+alo-software = { path = "../alo-software" }
 
 [lints]
 workspace = true

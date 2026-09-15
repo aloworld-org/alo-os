@@ -180,15 +180,23 @@ fn a_check_for_an_update_is_on_the_indicator_while_it_happens() {
 /// updates would be the indicator saying something untrue.
 #[test]
 fn an_answer_heard_during_any_other_errand_is_refused() {
-    for errand in [Errand::SigningIn, Errand::FetchingAModel] {
+    let others = [
+        Errand::SigningIn,
+        Errand::FetchingAModel,
+        Errand::InstallingAnApplication,
+        Errand::CheckingForApplicationUpdates,
+        Errand::UpdatingAnApplication,
+    ];
+    for errand in others {
         let mut indicator = Indicator::default();
         let underway = indicator.beginning_on_its_own(OnItsOwn::for_(errand, updates()), noon());
         let refused = Offered::heard(&underway, build("bb")).unwrap_err();
         assert_eq!(refused.during(), errand);
     }
     // Every errand there is was considered: the one that may hear an answer,
-    // and the two above that may not.
-    assert_eq!(Errand::EVERY.len(), 3);
+    // and the others above that may not — an application's update check among
+    // them, because an application's update is not this system's.
+    assert_eq!(Errand::EVERY.len(), others.len() + 1);
 }
 
 /// **An update never restarts the machine** — and the person may, because

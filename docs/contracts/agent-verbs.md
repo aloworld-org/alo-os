@@ -616,6 +616,34 @@ application, and a verb with no grant needs a written reason in an ADR — and
 measurement verbs are not: `alo-turn` offers the verbs it has an executor for,
 and adding this one is an edit there.
 
+## The installing verb
+
+`docs/features.md` promises *install applications* at v0.5. What an agent may
+ask for is one verb, declared in `alo-software`'s `src/verbs.rs` with a
+`pub fn declare_into`.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `install_application` | change | `application` (application), `source` (name, at most 64) | install {application} from {source} |
+
+**It is a change, and it requires no grant** — the one verb in this contract
+that does not, with its reason in ADR 0042 and in the declaration: there is
+nothing on the machine for a grant to be over, the application arrives granted
+nothing, and the approval of the sentence naming the application and the place
+installs once.
+
+**The place is checked when it runs, not when it is proposed.** A `source` not
+set up on the machine, outside the organisation's bound, or set up without
+signature checking is refused at the moment of installation, in words, whatever
+was approved; and the installation goes on the egress indicator as
+*alo OS is installing an application from* the place's host.
+
+**Updating, removing and listing applications are not verbs.** An agent only
+proposes an installation; a person updates and removes applications themselves.
+
+**Declared and carried out, and not yet offered by a turn**, for the reason the
+printing verb is not.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |
@@ -624,6 +652,7 @@ and adding this one is an edit there.
 | **Applications** | Open, focus, arrange, close — over granted applications | `alo-agentd`, as the person |
 | **Measurements** | Search the index, what is running, what is filling — over the granted folder each reads | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Printing** | Print a granted document on this machine's printer | `alo-agentd`, as the person; declared, not yet offered by a turn |
+| **Software** | Propose installing an application from a place this machine installs from | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
@@ -751,7 +780,7 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
 puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
-`alo-finding`, `alo-measuring` and `alo-printing` all do exactly that, and it is a rule rather
+`alo-finding`, `alo-measuring`, `alo-printing` and `alo-software` all do exactly that, and it is a rule rather
 than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and

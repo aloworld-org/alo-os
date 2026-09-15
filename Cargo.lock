@@ -189,6 +189,7 @@ dependencies = [
  "alo-finding",
  "alo-measuring",
  "alo-printing",
+ "alo-software",
  "thiserror 2.0.20",
 ]
 
@@ -704,6 +705,7 @@ dependencies = [
  "alo-sessiond",
  "alo-setting-up",
  "alo-shortcuts",
+ "alo-software",
  "alo-strings",
  "alo-telling",
  "alo-turn",
@@ -796,6 +798,18 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.20",
  "toml",
+]
+
+[[package]]
+name = "alo-software"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "alo-capability",
+ "alo-egress",
+ "alo-granted",
+ "alo-strings",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

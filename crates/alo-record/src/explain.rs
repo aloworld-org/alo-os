@@ -55,7 +55,7 @@ pub enum Only {
     Egress,
     /// What alo OS did with nobody having asked it to (★ *no telemetry*).
     ///
-    /// The three reasons on [`alo_egress::Errand`] and nothing else, because
+    /// The reasons on [`alo_egress::Errand`] and nothing else, because
     /// there is nothing else — this is the question somebody puts to the record
     /// having just read that promise, and a promise nobody can check afterwards
     /// is a sentence.

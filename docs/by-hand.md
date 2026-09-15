@@ -162,6 +162,17 @@ and a person needs no grant and no approval to print their own document: the
 grant and the approval are what an agent needs, because it is the agent
 choosing to put a document on paper — or across the network to a printer.
 
+### install_application
+
+**By hand:** a person installs an application themselves from Software in
+Settings, choosing it and the place it comes from — `sandboxed, from Flathub or a
+repository the organisation runs`, installed the same way whoever asks.
+The verb installs through the same steps, under the same
+line on the egress indicator, from the same places under the same rule, and the
+application arrives granted nothing either way. A person needs no approval to
+install an application for themselves: the approval is what an agent needs,
+because it is the agent choosing what arrives on somebody's machine.
+
 ## What this document does not do
 
 It does not say the plain way is **built**. Every entry above names a promise

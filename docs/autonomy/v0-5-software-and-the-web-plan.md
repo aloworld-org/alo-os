@@ -41,7 +41,16 @@ or install anything unsandboxed (v1, and deliberate). Before writing the next ta
 
 ### 1. Installing, updating and removing an application
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-software` on
+`docs/decisions/0042-installing-an-application-is-an-errand-and-an-agent-only-proposes-it.md`;
+the report is `docs/autonomy/updates/installing-updating-and-removing-an-application.md`.
+`alo_egress::Errand` gained installing, checking for application updates and
+updating (ADR 0042 part 1, the change named there); removing reaches no network
+and puts nothing on the indicator (part 2); `install_application` is a change
+needing no grant, with its reason (part 3). Reading an organisation's list of
+permitted places out of the machine description is task 8. What is not yet
+shown is the rented tool on a machine: no machine this task ran on has it, and
+the report says what the on-machine acceptance is. **Depends on:** nothing.
 
 - **Acceptance:** `alo-software` installs an application from the sources a person or
   an organisation enabled — Flathub, or a repository the organisation runs — through
@@ -156,3 +165,21 @@ or install anything unsandboxed (v1, and deliberate). Before writing the next ta
   produces the exact sequence a person meets, recorded as a table and held by one test;
   no sentence names Flatpak, Flathub by its tooling, AT-SPI, D-Bus or a browser engine.
 - **Constraint:** nothing here re-decides what the sentences describe.
+
+### 8. An organisation's permitted places, read from the machine's description
+
+**Status:** ready. **Depends on:** 1.
+
+*The organisation bounds; the person chooses* (ADR 0016), for where applications come from.
+
+- **Acceptance:** `/etc/alo/agentd.toml` carries an optional section naming the places an
+  organisation permits applications to come from, documented in
+  `docs/contracts/machine-description.md` with the `format` rule `[questions]` follows (an
+  older service must refuse a description whose software bound it cannot enforce, never
+  ignore it); `alo-agentd` reads it into `alo_software::Bound` with who set it decided by
+  who owns the file, exactly as `[questions]`; its absence is `Bound::Nobodys` and never
+  a permissive list; and a test installs from a place the file does not name and finds it
+  refused in the words naming the organisation, beside the same install on a machine with
+  no section.
+- **Constraint:** nothing here edits what `alo-software` decides; a section that does not
+  hold stops the service, as `[questions]` does.

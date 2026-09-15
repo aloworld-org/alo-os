@@ -1,0 +1,38 @@
+[package]
+name = "alo-software"
+version = "0.0.1"
+description = "Installing, updating and removing a sandboxed application, from the places a person or their organisation enabled."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What an application is and what it is known by: the identifier a grant is
+# over, checked by the rules an `application` argument is checked by. Read,
+# never widened here.
+alo-applications = { path = "../alo-applications" }
+
+# The one list of grants, so removing an application ends what it held in the
+# same act, and the one verb an agent proposes an installation through. Nothing
+# here makes a grant: there is no call in this crate that could.
+alo-capability = { path = "../alo-capability" }
+
+# Installing, looking for updates and updating all leave the machine, so each is
+# an `alo_egress::Errand` and nothing here reaches the rented tool for them
+# without the `Underway` that proves the line is on the indicator.
+alo-egress = { path = "../alo-egress" }
+
+# Everything a person reads here.
+alo-strings = { path = "../alo-strings" }
+
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The list a person sees, read before and after an installation to show nothing
+# new arrived on it, and after a removal to show what the application held is
+# gone from it.
+alo-granted = { path = "../alo-granted" }
+
+[lints]
+workspace = true

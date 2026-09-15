@@ -148,7 +148,7 @@ pub const IS_SENDING: Word = Word::saying(
 // What alo OS is doing itself — [`crate::Errand`], and the promise beside it.
 //
 // The other kind of egress: no agent, and so no sentence with an {agent} in
-// it. Three reasons and no more, on the same indicator as an agent's egress,
+// it. Six reasons and no more, on the same indicator as an agent's egress,
 // because *no telemetry* is only checkable by somebody who can see what the
 // machine does when nobody has asked it to.
 //
@@ -191,7 +191,43 @@ pub const ALO_IS_CHECKING_FOR_AN_UPDATE: Word = Word::saying(
      OS\" is never translated.",
 );
 
-/// The promise that goes with the list of three.
+/// Fetching an application a person chose.
+pub const ALO_IS_INSTALLING_AN_APPLICATION: Word = Word::saying(
+    "egress.itself.installing-an-application",
+    "alo OS is installing an application from {destination}",
+)
+.noting(
+    "Shown while an application somebody chose is being fetched from a place this machine installs \
+     applications from — one their organisation runs, or a public one. Somebody asked for this, so \
+     it should read as ordinary. {destination} is that place and arrives already in the reader's \
+     language; \"alo OS\" is never translated.",
+);
+
+/// Asking a place applications come from whether it has newer versions.
+pub const ALO_IS_CHECKING_FOR_APPLICATION_UPDATES: Word = Word::saying(
+    "egress.itself.checking-for-application-updates",
+    "alo OS is checking for application updates at {destination}",
+)
+.noting(
+    "Checking, not installing: this line is about asking whether newer versions of applications \
+     exist, and nothing about the machine or the person is sent with the question. It is a \
+     different line from the one about updating alo OS itself, because an application's update is \
+     not the system's. {destination} arrives already in the reader's language; \"alo OS\" is never \
+     translated.",
+);
+
+/// Fetching a newer version of an application.
+pub const ALO_IS_UPDATING_AN_APPLICATION: Word = Word::saying(
+    "egress.itself.updating-an-application",
+    "alo OS is updating an application from {destination}",
+)
+.noting(
+    "Shown while a newer version of an application the person chose to update is being fetched. \
+     It only happens while that application is closed. {destination} arrives already in the \
+     reader's language; \"alo OS\" is never translated.",
+);
+
+/// The promise that goes with the list of reasons.
 pub const ALO_REACHES_NOTHING_ELSE: Word = Word::saying(
     "egress.itself.nothing-else",
     "alo OS reaches the network for these reasons and no others, and never to say anything about \
@@ -302,7 +338,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 17] = [
+pub const EVERY_WORD: [Word; 20] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -312,6 +348,9 @@ pub const EVERY_WORD: [Word; 17] = [
     ALO_IS_SIGNING_YOU_IN,
     ALO_IS_FETCHING_A_MODEL,
     ALO_IS_CHECKING_FOR_AN_UPDATE,
+    ALO_IS_INSTALLING_AN_APPLICATION,
+    ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
+    ALO_IS_UPDATING_AN_APPLICATION,
     ALO_REACHES_NOTHING_ELSE,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
@@ -441,6 +480,9 @@ mod tests {
             ALO_IS_SIGNING_YOU_IN,
             ALO_IS_FETCHING_A_MODEL,
             ALO_IS_CHECKING_FOR_AN_UPDATE,
+            ALO_IS_INSTALLING_AN_APPLICATION,
+            ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
+            ALO_IS_UPDATING_AN_APPLICATION,
             ALO_REACHES_NOTHING_ELSE,
             A_PAIRED_MACHINE,
             A_PROVIDER,
@@ -463,6 +505,9 @@ mod tests {
             ALO_IS_SIGNING_YOU_IN,
             ALO_IS_FETCHING_A_MODEL,
             ALO_IS_CHECKING_FOR_AN_UPDATE,
+            ALO_IS_INSTALLING_AN_APPLICATION,
+            ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
+            ALO_IS_UPDATING_AN_APPLICATION,
         ] {
             assert!(word.says().contains("{destination}"), "{}", word.named());
             // No agent caused these, so no line about one may name an agent.

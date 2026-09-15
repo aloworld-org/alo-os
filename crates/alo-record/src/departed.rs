@@ -422,7 +422,7 @@ mod tests {
         assert_eq!(Entry::left_on_its_own(&underway).at(), noon() + hour());
     }
 
-    /// **Every reason there is can be recorded, and there are only three.** A
+    /// **Every reason there is can be recorded, and there are no others.** A
     /// reason that could happen and could not be written down would be the hole
     /// in the *no telemetry* promise that the closed list exists to prevent.
     #[test]

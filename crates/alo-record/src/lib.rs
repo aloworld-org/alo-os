@@ -39,7 +39,7 @@
 //! already gave one crate earlier.
 //!
 //! They are not the same absence twice. The machine's own errand reached the
-//! network and says which of three reasons it was ([`Happened::errand`]); the
+//! network and says which of its reasons it was ([`Happened::errand`]); the
 //! grants not being read again reached nothing at all, and answers neither
 //! question. It is the person's act failing rather than the machine's
 //! succeeding.

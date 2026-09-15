@@ -403,7 +403,7 @@ pub enum Happened {
         /// Why it was not permitted, in the policy's own words.
         refused: Line,
     },
-    /// alo OS reached the network on its own, for one of the three reasons
+    /// alo OS reached the network on its own, for one of the reasons
     /// there are (★ *no telemetry*).
     ///
     /// **There is no agent here and no field for one**, which is this
@@ -417,7 +417,7 @@ pub enum Happened {
     /// by nothing else, so there is no policy that could have said no and no
     /// held-back entry it could have written.
     LeftOnItsOwn {
-        /// Which of the three reasons it was.
+        /// Which of the reasons it was.
         errand: Errand,
         /// Where it reached.
         destination: Destination,
@@ -702,7 +702,7 @@ impl Happened {
     /// answers [`Happened::errand`] instead. The two lists are kept apart for
     /// the reason `alo-egress` keeps [`alo_egress::Underway`] and
     /// [`alo_egress::Departing`] apart: an agent's reasons are open to any verb
-    /// that needs one, and the machine's own are a closed list of three that
+    /// that needs one, and the machine's own are a closed list that
     /// nothing may quietly extend.
     #[must_use]
     pub fn why_it_was_leaving(&self) -> Option<Why> {
@@ -997,8 +997,8 @@ mod tests {
 
     /// **Two reasons, two lists.** An errand has an [`Errand`] and no [`Why`],
     /// because an agent's reasons are open to whatever verb needs one and the
-    /// machine's own are a closed list of three — a single field would be a
-    /// place for a fourth reason to arrive without anybody editing that list.
+    /// machine's own are a closed list — a single field would be a
+    /// place for another reason to arrive without anybody editing that list.
     #[test]
     fn why_an_agent_was_leaving_and_why_the_machine_was_are_two_questions() {
         let errand = fetching_a_model();

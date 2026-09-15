@@ -52,6 +52,7 @@ alo-recounting = { path = "../alo-recounting" }
 alo-sessiond = { path = "../alo-sessiond" }
 alo-setting-up = { path = "../alo-setting-up" }
 alo-shortcuts = { path = "../alo-shortcuts" }
+alo-software = { path = "../alo-software" }
 alo-telling = { path = "../alo-telling" }
 alo-turn = { path = "../alo-turn" }
 

@@ -203,7 +203,7 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
         ));
     }
     let lines = indicator.showing().len();
-    assert_eq!(lines, 12);
+    assert_eq!(lines, 3 * destinations.len() + Errand::EVERY.len());
 
     // A screen tall enough for all of them, so none gives way to the count.
     let mut labels = WindowControlLabels::new().unwrap();

@@ -72,7 +72,7 @@ impl OnItsOwn {
     /// The line a person reads at the moment it happens.
     ///
     /// One sentence per reason, whole, with the preposition inside it — item
-    /// 9h's decision about the three an agent causes, kept for these three.
+    /// 9h's decision about the three an agent causes, kept for these six.
     /// English wants *at* before an identity service and *from* before a
     /// catalogue, and a language that inflects the place needs the whole
     /// sentence in front of it to choose.
@@ -111,7 +111,7 @@ mod tests {
         Destination::at("models.alo.example").unwrap()
     }
 
-    /// Each of the three says what alo OS is doing and where, in a sentence a
+    /// Each of the six says what alo OS is doing and where, in a sentence a
     /// person can act on. *Something is happening* would be a diagnostic.
     #[test]
     fn the_line_a_person_reads_says_what_the_machine_is_doing_and_where() {
@@ -140,6 +140,26 @@ mod tests {
             .text(),
             "alo OS is checking for an update at updates.alo.example"
         );
+        let applications = || Destination::at("apps.example.org").unwrap();
+        for (errand, line) in [
+            (
+                Errand::InstallingAnApplication,
+                "alo OS is installing an application from apps.example.org",
+            ),
+            (
+                Errand::CheckingForApplicationUpdates,
+                "alo OS is checking for application updates at apps.example.org",
+            ),
+            (
+                Errand::UpdatingAnApplication,
+                "alo OS is updating an application from apps.example.org",
+            ),
+        ] {
+            assert_eq!(
+                OnItsOwn::for_(errand, applications()).said(&strings).text(),
+                line
+            );
+        }
     }
 
     /// **There is no agent, and the type has no room for one.** An errand

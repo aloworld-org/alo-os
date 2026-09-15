@@ -1,8 +1,8 @@
 //! The check itself, run against the verbs this machine really ships.
 //!
-//! Everything in the crate is the method. This is the measurement: the fourteen
-//! verbs `alo-files`, `alo-applications`, `alo-finding`, `alo-measuring` and
-//! `alo-printing` declare, the real `docs/by-hand.md`, the real `docs/features.md` and this
+//! Everything in the crate is the method. This is the measurement: the fifteen
+//! verbs `alo-files`, `alo-applications`, `alo-finding`, `alo-measuring`,
+//! `alo-printing` and `alo-software` declare, the real `docs/by-hand.md`, the real `docs/features.md` and this
 //! workspace's own member list — read off the disk this test is running on, so
 //! a verb added tomorrow with nothing said about it fails here rather than in
 //! somebody's reading a release from now.
@@ -41,12 +41,13 @@ const THE_DOCUMENT: &str = "docs/by-hand.md";
 /// Written here rather than in the crate, because this is the measurement: the
 /// crate checks whatever list it is handed, and a crate declaring verbs that is
 /// missing from this array is what [`Finding::AVerbListNobodyHandedIn`] is for.
-const WHO_DECLARES_THEM: [&str; 5] = [
+const WHO_DECLARES_THEM: [&str; 6] = [
     "alo-files",
     "alo-applications",
     "alo-finding",
     "alo-measuring",
     "alo-printing",
+    "alo-software",
 ];
 
 /// This repository, from the crate this test is in.
@@ -73,6 +74,7 @@ fn what_this_machine_ships() -> Verbs {
     alo_finding::verbs::declare_into(&mut verbs).expect("the search verb declares");
     alo_measuring::verbs::declare_into(&mut verbs).expect("the two measuring verbs declare");
     alo_printing::verbs::declare_into(&mut verbs).expect("the printing verb declares");
+    alo_software::verbs::declare_into(&mut verbs).expect("the installing verb declares");
     verbs
 }
 

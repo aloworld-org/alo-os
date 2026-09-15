@@ -396,7 +396,7 @@ fn the_no_telemetry_promise_is_read_by_somebody_who_does_not_read_english() {
 
     // Every reason on the list has a line of its own, so the promise is about
     // something a person can also check one line at a time.
-    assert_eq!(Errand::EVERY.len(), 3);
+    assert_eq!(Errand::EVERY.len(), 6);
     for errand in Errand::EVERY {
         assert!(
             words::EVERY_WORD.contains(&errand.word()),

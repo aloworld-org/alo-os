@@ -81,9 +81,13 @@ impl Offered {
     pub fn heard(during: &Underway, digest: Digest) -> Result<Self, NotACheck> {
         match during.errand() {
             Errand::CheckingForAnUpdate => Ok(Self { digest }),
-            other @ (Errand::SigningIn | Errand::FetchingAModel) => {
-                Err(NotACheck { during: other })
-            }
+            // An application's update check is its own errand, and an answer
+            // heard during it is about an application rather than this system.
+            other @ (Errand::SigningIn
+            | Errand::FetchingAModel
+            | Errand::InstallingAnApplication
+            | Errand::CheckingForApplicationUpdates
+            | Errand::UpdatingAnApplication) => Err(NotACheck { during: other }),
         }
     }
 
