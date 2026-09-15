@@ -15,3 +15,6 @@ Thumbs.db
 # loop rather than about the repository, and a committed lock file would be a
 # lock two checkouts fought over while it meant nothing to either.
 /.kernel-loop
+
+# The private half of the image signing key never enters the repository (ADR 0036).
+*.key

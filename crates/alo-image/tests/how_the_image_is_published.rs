@@ -5,13 +5,14 @@
 //! the digest the installer pulls. Two things have to be true before that pin
 //! can be written, and neither is a worker's to invent: the recipe names the
 //! release it builds, which is a line in `image/Containerfile`, and somebody
-//! holds the key the image is signed with, which is ADR 0036 — proposed, and
-//! the owner's.
+//! holds the key the image is signed with, which is ADR 0036 — accepted by the
+//! owner on 2026-09-15.
 //!
-//! So this file holds three things: the recipe names one release; the decision
-//! about the key is recorded, and recorded as waiting; and the plan does not
-//! call the publish done while it waits. The last is the one that matters most
-//! to a loop that selects from the plan: a task marked done over a missing key
+//! So this file holds four things: the recipe names one release; the decision
+//! about the key was made by the owner; only the public half of that key is in
+//! the repository; and the plan does not call the publish done while the first
+//! signed push is still to come. The last is the one that matters most to a
+//! loop that selects from the plan: a task marked done over a missing signature
 //! is a pin nobody can verify.
 
 #![expect(
@@ -76,15 +77,14 @@ fn the_recipe_names_the_one_release_a_pin_is_held_against() {
     );
 }
 
-/// **Who holds the signing key is a recorded decision, and it is recorded as
-/// the owner's to make.**
+/// **Who holds the signing key is a recorded decision, and the owner made it.**
 ///
 /// It names the registry, the tool and all three roads; it recommends the key a
-/// person holds; it says no agent holds or publishes with it; and its status is
-/// proposed — a worker writing *accepted* here would be a worker deciding the
-/// root of trust for every installed machine.
+/// person holds; it says no agent holds or publishes with it; and its status
+/// says it was accepted **by the owner**, option A — the root of trust for
+/// every installed machine is not a worker's to accept.
 #[test]
-fn the_decision_on_who_holds_the_signing_key_is_recorded_and_waits_on_the_owner() {
+fn the_decision_on_who_holds_the_signing_key_was_made_by_the_owner() {
     let decision = text(THE_DECISION);
 
     let Some(status) = decision
@@ -93,8 +93,8 @@ fn the_decision_on_who_holds_the_signing_key_is_recorded_and_waits_on_the_owner(
     else {
         panic!("ADR 0036 records no status");
     };
-    assert!(status.contains("proposed"), "{status}");
-    assert!(status.contains("owner"), "{status}");
+    assert!(status.contains("accepted by the owner"), "{status}");
+    assert!(status.contains("**A**"), "{status}");
 
     for named in [
         "ghcr.io/aloworld-org/alo-os",
@@ -126,6 +126,49 @@ fn the_decision_on_who_holds_the_signing_key_is_recorded_and_waits_on_the_owner(
         recommended.contains("by digest"),
         "the recommendation does not sign by digest"
     );
+}
+
+/// The public half of the owner's key, where ADR 0036 says it is.
+const THE_PUBLIC_KEY: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../image/signing/alo-os.pub"
+);
+
+/// **Only the public half of the key is in the repository, and it is one.**
+///
+/// A PEM public key and nothing else — so a puller has something to verify
+/// against — and, just as much, no private key anywhere under `image/signing/`:
+/// a private half committed here would hand the root of trust for every
+/// installed machine to anybody who can read the repository.
+#[test]
+fn the_public_half_is_committed_and_the_private_half_is_not() {
+    let key = text(THE_PUBLIC_KEY);
+    let key = key.trim();
+    assert!(key.starts_with("-----BEGIN PUBLIC KEY-----"), "{key}");
+    assert!(key.ends_with("-----END PUBLIC KEY-----"), "{key}");
+    assert_eq!(
+        key.matches("-----BEGIN").count(),
+        1,
+        "the public key file holds more than one block"
+    );
+
+    let Some(signing) = Path::new(THE_PUBLIC_KEY).parent() else {
+        panic!("the public key has no folder");
+    };
+    let entries = std::fs::read_dir(signing)
+        .unwrap_or_else(|why| panic!("{} did not list: {why}", signing.display()));
+    for entry in entries.flatten() {
+        let named = entry.file_name().to_string_lossy().into_owned();
+        assert!(
+            !named.ends_with(".key"),
+            "`{named}` is in image/signing/ — a private key must never be in the repository"
+        );
+        let written = std::fs::read_to_string(entry.path()).unwrap_or_default();
+        assert!(
+            !written.contains("PRIVATE KEY"),
+            "`{named}` holds a private key — it must never be in the repository"
+        );
+    }
 }
 
 /// **The plan does not call the publish done while it waits**, and says what

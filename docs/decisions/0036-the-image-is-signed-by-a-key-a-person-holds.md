@@ -1,9 +1,11 @@
 # ADR 0036 — The image is signed by a key a person holds, and published by that person
 
-**Status:** proposed — accepted or rejected by the owner. Task 1 of
-`docs/autonomy/v0-5-the-installer-plan.md` waits on it, and on the first
-publish it describes.
-**Date:** 2026-09-14
+**Status:** accepted by the owner, 2026-09-15 — option **A**. The owner generated
+the key pair with `cosign generate-key-pair` on a machine they control, holds the
+private half and its password, and the public half is committed at
+`image/signing/alo-os.pub`. Task 1 of `docs/autonomy/v0-5-the-installer-plan.md`
+now waits only on the first publish it describes.
+**Date:** 2026-09-14, accepted 2026-09-15
 **Context:** [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md)
 (*our own image, our own registry, our own signing key*),
 [ADR 0023](0023-installed-from-the-machine-it-replaces.md) §3 (the boot

@@ -38,8 +38,11 @@ done.
 
 ### 1. The image is published from GitHub, signed, and pinned
 
-**Status:** blocked — on [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md)
-and on the owner's first publish; no worker can finish it before both.
+**Status:** blocked — on the owner's first publish.
+[ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md) was
+accepted on 2026-09-15 and the public half of the owner's key is at
+`image/signing/alo-os.pub`; what is still missing is a pushed image and its
+signed digest, which no worker can produce.
 **Depends on:** the owner.
 
 **What the first worker found, 2026-09-14** (`updates/who-signs-the-image.md`):
@@ -55,9 +58,9 @@ that names none, two, or a word that moves.
 **When it unblocks**, the owner does the five steps in ADR 0036 — build at a
 published commit, push, sign the digest, verify with the committed public half,
 hand over the version and digest — and this task is then the repository's
-half, which is the acceptance below with a real digest to pin. A worker that
-reaches this task while ADR 0036 is still proposed, or with no digest handed
-over, launches nothing and says so.
+half, which is the acceptance below with a real digest to pin. The key is
+settled (accepted 2026-09-15); a worker that reaches this task with no digest
+handed over launches nothing and says so.
 
 ADR 0023: *the installer's reboot environment pulls the same signed, versioned
 image CI built, from the same registry updates come from.* Today the image is
