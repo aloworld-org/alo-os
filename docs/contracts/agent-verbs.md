@@ -577,6 +577,45 @@ executor and adding to the offered list is one edit there, and it has not been
 made. Until it is, an agent on a shipped machine cannot reach these — which is
 the honest state of a verb that exists and is not on the list a machine offers.
 
+## The printing verb
+
+`docs/features.md` promises printing at v0.5, and ★ *Printers, solved*. What an
+agent may ask for is one verb, declared in `alo-printing`'s `src/verbs.rs` with a
+`pub fn declare_into`.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `print_document` | change | `document` (path) | print {document} on this machine's printer |
+
+**It is a change**, because paper comes out of a machine in the room, and **it
+requires a grant over the document**, because a file nobody granted is not one
+an agent may send anywhere.
+
+**A printer across the network makes it an egress.** A document sent to a
+printer on the office network has left this machine, so carrying the verb out
+takes the `alo_egress::Departing` the indicator hands out for an agent *sending
+something* to that printer's address, under the agent the call was authorised
+for — and refuses without one. A printer on a cable, or at this machine's own
+address, is not a departure. An organisation whose policy lets nothing leave
+therefore lets no agent print across the network; a person printing their own
+document is not an agent's egress and is not stopped by it.
+
+**It takes no argument naming a printer.** v0.5 is one printer that works, and
+the verb prints on the one the printing service keeps as this machine's. A
+printer argument would be machinery — a queue name — in a sentence a person
+approves.
+
+**Finding and setting up a printer are not verbs.** A printer is a place
+documents can go, and adding one is a person choosing that place: no call an
+agent can make adds one. The agent *finds it, sets it up* half of the feature
+line waits on a verb shape for a device — a grant covers a path or an
+application, and a verb with no grant needs a written reason in an ADR — and
+`alo-printing`'s report names it as owed rather than folding it in here.
+
+**Declared and carried out, and not yet offered by a turn**, for the reason the
+measurement verbs are not: `alo-turn` offers the verbs it has an executor for,
+and adding this one is an edit there.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |
@@ -584,6 +623,7 @@ the honest state of a verb that exists and is not on the list a machine offers.
 | **Files** | List, read, find, rename, move, archive — within granted paths | `alo-agentd`, as the person |
 | **Applications** | Open, focus, arrange, close — over granted applications | `alo-agentd`, as the person |
 | **Measurements** | Search the index, what is running, what is filling — over the granted folder each reads | `alo-agentd`, as the person; declared, not yet offered by a turn |
+| **Printing** | Print a granted document on this machine's printer | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
@@ -711,7 +751,7 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
 puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
-`alo-finding` and `alo-measuring` all do exactly that, and it is a rule rather
+`alo-finding`, `alo-measuring` and `alo-printing` all do exactly that, and it is a rule rather
 than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and

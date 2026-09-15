@@ -126,6 +126,27 @@ never misled about the result.
 
 **Status:** ready. **Depends on:** 1.
 
+**Done, 2026-09-14.** `crates/alo-printing` talks to the rented printing service
+(CUPS) in its own protocol, over its own socket or an address on this machine:
+`ipp.rs` and `http.rs` are every byte it sends, and nothing starts a program.
+`find` lists network (DNS-SD, IPP) and cable (USB, IPP-over-USB) printers and
+adds nothing. `set_up` adds the one a person chose, driverless only, under a
+derived queue, and makes it the printer this machine prints on. A printer that
+needs its maker's program is refused in a sentence. `Stopped` is out of paper,
+jammed, out of ink, refused the job, or `NotAnswering { tried }`, read from
+`printer-state-reasons`; anything else is *not answering*, with no code.
+`print_document` is a change under a grant over the document. `print` refuses a
+printer across the network unless it holds the `alo_egress::Departing` for that
+exact egress (`Why::Sending`, the printer's host, the authorised agent). The
+plan named `Errand`, but that is egress with no agent behind it; the report
+explains the choice. 28 strings collected by `alo-saying`; CUPS added to its
+list of rented names; the verb is answered in `docs/by-hand.md` and the
+contract. Report: `docs/autonomy/updates/printers-found-set-up-and-said-what-is-wrong.md`.
+Owed: whether cupsd accepts `everywhere` itself, rather than only through
+`lpadmin` (unmeasured, and the first thing to check on a machine); a real printer
+on a certified machine; CUPS in the image; and the agent finding and setting up a
+printer (no grant covers a device yet).
+
 ★ *Printers, solved — found, set up, and fixed when they stop.* The star is on
 the last clause. Finding a printer is a solved problem everywhere; **saying
 what is wrong in a sentence a person can act on** is solved nowhere, and it is

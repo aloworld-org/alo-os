@@ -1,0 +1,35 @@
+[package]
+name = "alo-printing"
+version = "0.0.1"
+description = "What a printer is, how one is found and set up without a person choosing a driver, and what is wrong with it when it stops."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Printing is a verb, and what an executor takes is the call a person approved.
+alo-capability = { path = "../alo-capability" }
+# A document crossing the network to a printer is a document leaving this
+# machine, and the only proof that was shown is a `Departing`.
+alo-egress = { path = "../alo-egress" }
+# What a file is, from its bytes, before anything is sent to a printer — so a
+# program named as a PDF is refused here and never reaches paper.
+alo-opening = { path = "../alo-opening" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+# Nothing else, and the absence is the argument: no HTTP client, no IPP crate,
+# no process runner. This machine's printing service is rented and is spoken to
+# in its own protocol over its own socket, and the few hundred lines that speak
+# it are in `ipp.rs` and `http.rs` where somebody can read all of them.
+
+[dev-dependencies]
+# The machine's one vocabulary. A dev-dependency and not a dependency, in the
+# direction every crate here takes: a crate that says something is collected by
+# `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

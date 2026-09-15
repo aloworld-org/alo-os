@@ -152,6 +152,16 @@ list is the same because it is a list of facts.
 not a number in Settings*. The tree the verb answers with is the tree the window
 draws.
 
+### print_document
+
+**By hand:** a person opens the document and prints it from the print dialogue,
+on the printer they set up in Settings — `Printing. Unglamorous, and it decides
+public-sector deals`, and the printers pane of `Settings, as one place`. The verb
+prints on the same printer the dialogue does, through the same printing service,
+and a person needs no grant and no approval to print their own document: the
+grant and the approval are what an agent needs, because it is the agent
+choosing to put a document on paper — or across the network to a printer.
+
 ## What this document does not do
 
 It does not say the plain way is **built**. Every entry above names a promise

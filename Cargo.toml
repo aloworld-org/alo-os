@@ -40,6 +40,7 @@ members = [
   "crates/alo-models",
   "crates/alo-nearby",
   "crates/alo-opening",
+  "crates/alo-printing",
   "crates/alo-overlay",
   "crates/alo-picking",
   "crates/alo-protocol",

@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 33] = [
+pub const EVERY_LIST: [&str; 34] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -103,6 +103,7 @@ pub const EVERY_LIST: [&str; 33] = [
     "alo-opening",
     "alo-overlay",
     "alo-picking",
+    "alo-printing",
     "alo-protocol",
     "alo-recounting",
     "alo-sessiond",
@@ -214,6 +215,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-opening", alo_opening::declare_into)?;
     declare(&mut vocabulary, "alo-overlay", alo_overlay::declare_into)?;
     declare(&mut vocabulary, "alo-picking", alo_picking::declare_into)?;
+    declare(&mut vocabulary, "alo-printing", alo_printing::declare_into)?;
     declare(&mut vocabulary, "alo-protocol", alo_protocol::declare_into)?;
     declare(
         &mut vocabulary,
@@ -265,7 +267,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 33] = [
+    const ONE_STRING_EACH: [(&str, &str); 34] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -292,6 +294,7 @@ mod tests {
         ("alo-opening", "opening.cannot.damaged"),
         ("alo-overlay", "overlay.at-rest.nothing-chosen"),
         ("alo-picking", "picking.the-whole-machine"),
+        ("alo-printing", "printing.stopped.jammed"),
         ("alo-protocol", "protocol.too-long"),
         ("alo-recounting", "recounting.nothing-to-tell"),
         ("alo-sessiond", "signing-in.not-opened"),
@@ -367,6 +370,7 @@ mod tests {
             alo_opening::opening_words().unwrap().how_many(),
             alo_overlay::overlay_words().unwrap().how_many(),
             alo_picking::picking_words().unwrap().how_many(),
+            alo_printing::printing_words().unwrap().how_many(),
             alo_protocol::protocol_words().unwrap().how_many(),
             alo_recounting::recounting_words().unwrap().how_many(),
             alo_sessiond::sessiond_words().unwrap().how_many(),
