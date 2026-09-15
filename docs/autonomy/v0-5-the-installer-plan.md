@@ -38,12 +38,22 @@ done.
 
 ### 1. The image is published from GitHub, signed, and pinned
 
-**Status:** blocked — on the owner's first publish.
-[ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md) was
-accepted on 2026-09-15 and the public half of the owner's key is at
-`image/signing/alo-os.pub`; what is still missing is a pushed image and its
-signed digest, which no worker can produce.
-**Depends on:** the owner.
+**Status:** ready — the repository's half. The owner's first publish happened on
+2026-09-15 under [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md):
+
+| | |
+|---|---|
+| Release | `0.0.1` (`org.opencontainers.image.version`) |
+| Built from | `2501af53d459d7d75e08c2ecaf61d3e8430a2d50` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.1` |
+| Digest | `sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c` |
+| Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
+| Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
+
+What remains is the acceptance below with this digest to pin. The package on
+`ghcr.io` is still private until the owner makes it public, so a pull today
+needs a login; that is named in the report, not worked around.
+**Depends on:** nothing.
 
 **What the first worker found, 2026-09-14** (`updates/who-signs-the-image.md`):
 the machine that builds the image has no `cosign`, no login to `ghcr.io` and

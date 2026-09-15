@@ -10,10 +10,10 @@
 //!
 //! So this file holds four things: the recipe names one release; the decision
 //! about the key was made by the owner; only the public half of that key is in
-//! the repository; and the plan does not call the publish done while the first
-//! signed push is still to come. The last is the one that matters most to a
-//! loop that selects from the plan: a task marked done over a missing signature
-//! is a pin nobody can verify.
+//! the repository; and the plan hands the next worker the digest the owner
+//! signed without calling the pin done. The last is the one that matters most to
+//! a loop that selects from the plan: a pin written against anything but the
+//! signed digest is a pin nobody can verify.
 
 #![expect(
     clippy::panic,
@@ -171,11 +171,20 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
     }
 }
 
-/// **The plan does not call the publish done while it waits**, and says what
-/// it waits on — so the loop that selects from the plan neither selects it
-/// again as ready nor reads it as finished.
+/// The digest the owner signed on 2026-09-15, for release `0.0.1`.
+const THE_SIGNED_DIGEST: &str =
+    "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
+
+/// **The plan hands the next worker the signed publish, and does not call the
+/// pin done before it is written.**
+///
+/// Once the owner has pushed and signed, task 1 is the repository's half and is
+/// ready — but only if it carries the digest that was signed and the release it
+/// was signed for, so a worker pins exactly that rather than whatever the tag
+/// points at by the time it looks. It is not marked done here: pinning is
+/// still the task.
 #[test]
-fn the_plan_does_not_mark_the_publish_done_while_it_waits() {
+fn the_plan_hands_over_the_signed_digest_and_does_not_call_the_pin_done() {
     let task = the_first_task();
 
     assert!(
@@ -184,18 +193,22 @@ fn the_plan_does_not_mark_the_publish_done_while_it_waits() {
     );
     assert!(
         !task.contains("**Done"),
-        "task 1 is marked done while nothing has been pushed or signed"
+        "task 1 is marked done before the digest is pinned in the repository"
     );
     let Some(status) = task.lines().find(|line| line.starts_with("**Status:**")) else {
         panic!("task 1 has no status");
     };
-    assert!(status.contains("blocked"), "{status}");
+    assert!(status.contains("ready"), "{status}");
     assert!(
-        task.contains("ADR 0036"),
-        "task 1 does not name what it waits on"
+        task.contains(THE_SIGNED_DIGEST),
+        "task 1 does not carry the digest the owner signed"
     );
     assert!(
-        task.contains("launches nothing and says so"),
-        "task 1 does not tell the next worker what to do while it waits"
+        task.contains("`0.0.1`"),
+        "task 1 does not name the release that was signed"
+    );
+    assert!(
+        task.contains("ADR 0036"),
+        "task 1 does not name the decision the publish followed"
     );
 }
