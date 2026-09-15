@@ -57,6 +57,14 @@
 //! be answering about two different files whenever somebody could replace the
 //! one in between. `O_NOFOLLOW` is how a kernel is asked for both answers at
 //! once, and the standard library has no spelling for it either.
+//!
+//! # And the fourth and fifth: a shared port, and the kernel's interfaces
+//!
+//! `a_shared_datagram_socket_on` sets `SO_REUSEADDR`, which `std` cannot. And
+//! `a_route_dump`, `told_when_networks_change` and `emptied` are the kernel's
+//! routing socket, which `std` has no spelling for at all: which interfaces this
+//! machine has, and when that changes, so discovery is joined on every network
+//! the machine is on. The bytes are `crate::route_messages`'s to read.
 
 use std::os::fd::BorrowedFd;
 use std::os::unix::net::UnixStream;
@@ -152,6 +160,116 @@ pub(crate) fn a_shared_datagram_socket_on(
         &std::net::SocketAddr::from((std::net::Ipv4Addr::UNSPECIFIED, port)),
     )?;
     Ok(std::net::UdpSocket::from(socket))
+}
+
+/// Put one request on the kernel's routing socket and read everything it
+/// answers, until `ended` says a datagram was the last.
+///
+/// The fifth thing the standard library will not do here: it has no netlink
+/// socket, and `crate::route_messages` needs one to ask which interfaces this
+/// machine has. What the bytes mean is that file's; this one opens the socket,
+/// sends, and reads. A kernel that says nothing for two seconds is an error
+/// rather than a hang, and so is a dump that goes on past a thousand datagrams.
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error`.
+pub(crate) fn a_route_dump(
+    request: &[u8],
+    ended: impl Fn(&[u8]) -> bool,
+) -> Result<Vec<u8>, std::io::Error> {
+    use rustix::net::netlink::SocketAddrNetlink;
+
+    let socket = rustix::net::socket(
+        rustix::net::AddressFamily::NETLINK,
+        rustix::net::SocketType::DGRAM,
+        // `NETLINK_ROUTE` is protocol zero, which is how `None` is spelt.
+        None,
+    )?;
+    rustix::net::sockopt::set_socket_timeout(
+        &socket,
+        rustix::net::sockopt::Timeout::Recv,
+        Some(Duration::from_secs(2)),
+    )?;
+    rustix::net::sendto(
+        &socket,
+        request,
+        rustix::net::SendFlags::empty(),
+        &SocketAddrNetlink::new(0, 0),
+    )?;
+    let mut answered = Vec::new();
+    let mut datagram = vec![0_u8; 32_768];
+    for _ in 0..1_000 {
+        let (read, _) = rustix::net::recv(
+            &socket,
+            datagram.as_mut_slice(),
+            rustix::net::RecvFlags::empty(),
+        )?;
+        let said = datagram
+            .get(..read)
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData))?;
+        answered.extend_from_slice(said);
+        if ended(said) {
+            return Ok(answered);
+        }
+    }
+    Err(std::io::Error::from(std::io::ErrorKind::InvalidData))
+}
+
+/// A socket the kernel writes to whenever a link, or an IPv4 address on one,
+/// appears, changes or goes.
+///
+/// Subscribed to `RTMGRP_LINK` and `RTMGRP_IPV4_IFADDR` and nothing else, and
+/// not blocking, so `crate::joining` can wait on it beside everything else the
+/// service waits on and empty it without sleeping. What arrived is not read for
+/// its meaning: it is the signal to ask the kernel again.
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error`.
+pub(crate) fn told_when_networks_change() -> Result<std::os::fd::OwnedFd, std::io::Error> {
+    use rustix::net::netlink::SocketAddrNetlink;
+
+    /// `RTMGRP_LINK`.
+    const LINKS: u32 = 0x1;
+    /// `RTMGRP_IPV4_IFADDR`.
+    const IPV4_ADDRESSES: u32 = 0x10;
+
+    let socket = rustix::net::socket_with(
+        rustix::net::AddressFamily::NETLINK,
+        rustix::net::SocketType::DGRAM,
+        rustix::net::SocketFlags::NONBLOCK | rustix::net::SocketFlags::CLOEXEC,
+        // `NETLINK_ROUTE` is protocol zero, which is how `None` is spelt.
+        None,
+    )?;
+    rustix::net::bind(&socket, &SocketAddrNetlink::new(0, LINKS | IPV4_ADDRESSES))?;
+    Ok(socket)
+}
+
+/// Read everything waiting on `socket` without sleeping, and say whether
+/// anything was.
+///
+/// # Errors
+///
+/// Whatever the machine said other than that nothing more is waiting — which
+/// includes the kernel saying it dropped messages because nobody read them in
+/// time, and that is still a reason to ask again rather than to stop.
+pub(crate) fn emptied(socket: BorrowedFd<'_>) -> Result<bool, std::io::Error> {
+    let mut datagram = [0_u8; 8_192];
+    let mut anything = false;
+    loop {
+        match rustix::net::recv(
+            socket,
+            datagram.as_mut_slice(),
+            rustix::net::RecvFlags::DONTWAIT,
+        ) {
+            Ok((0, _)) => return Ok(anything),
+            Ok(_) | Err(rustix::io::Errno::NOBUFS) => anything = true,
+            Err(rustix::io::Errno::AGAIN) => return Ok(anything),
+            Err(rustix::io::Errno::INTR) => {}
+            Err(why) => return Err(std::io::Error::from(why)),
+        }
+    }
 }
 
 /// Hand this path to a group, leaving its owner alone.

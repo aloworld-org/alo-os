@@ -517,6 +517,107 @@ mod tests {
         ));
     }
 
+    /// Two networks, as `crate::looking` hears them on a machine on both: each
+    /// network's window, made one answer by `alo_nearby::Around::heard_on_each`.
+    #[derive(Debug)]
+    struct TwoNetworks(alo_nearby::Around);
+
+    impl TwoNetworks {
+        /// The studio's presence and its workspace heard on each network from
+        /// the address given, and `also` heard on the second network beside it.
+        fn hearing(wired: Ipv4Addr, wireless: Ipv4Addr, also: &[(Vec<u8>, Ipv4Addr)]) -> Self {
+            let heard_from = |packets: &[(Vec<u8>, Ipv4Addr)]| {
+                let mut window = alo_nearby::Around::default();
+                for (packet, from) in packets {
+                    let from = std::net::IpAddr::from(*from);
+                    if let Ok(found) = alo_nearby::reading::a_machine_in(packet, from) {
+                        window.machines.push(found);
+                    } else {
+                        window
+                            .workspaces
+                            .push(alo_nearby::reading::a_workspace_in(packet, from).unwrap());
+                    }
+                }
+                window
+            };
+            let presence = advertising::about(&Presence::of(the_studio(), 7_610)).unwrap();
+            let workspace = a_workspace_of(the_studio(), 8_443);
+            let mut second = vec![(presence.clone(), wireless), (workspace.clone(), wireless)];
+            second.extend(also.iter().cloned());
+            Self(alo_nearby::Around::heard_on_each([
+                heard_from(&[(presence, wired), (workspace, wired)]),
+                heard_from(&second),
+            ]))
+        }
+    }
+
+    impl LookingFor for TwoNetworks {
+        fn look_for(&self, _machine: &MachineId) -> Option<alo_nearby::Found> {
+            None
+        }
+
+        fn look_around(&self) -> alo_nearby::Around {
+            self.0.clone()
+        }
+    }
+
+    /// The wired network's studio.
+    const WIRED: Ipv4Addr = Ipv4Addr::new(10, 61, 1, 2);
+    /// The wireless network's studio.
+    const WIRELESS: Ipv4Addr = Ipv4Addr::new(10, 61, 2, 2);
+
+    /// **A workspace heard from one address on each of two networks is one
+    /// workspace, and is opened** — at the address on the network it was heard
+    /// on first, written down, and under the name its paired host was given,
+    /// because that machine answered from the same address on each network.
+    #[test]
+    fn a_workspace_heard_on_each_of_two_networks_is_opened_under_its_name() {
+        let network = TheNetwork::on(reception());
+        let (on_reception, _) =
+            paired_between(reception(), the_studio(), &[MayAskIts::Models], noon());
+        network.locked().pairings_mut().keep(on_reception);
+        network
+            .names()
+            .named(
+                &the_studio(),
+                Some(MachineName::checked("the studio machine").unwrap()),
+                network.locked().pairings(),
+                noon(),
+            )
+            .unwrap();
+
+        let (said, record) = the_person_says(
+            &opening(the_studio().as_str()),
+            &network,
+            &TwoNetworks::hearing(WIRED, WIRELESS, &[]),
+        );
+
+        let opened = said.opened_workspace().unwrap();
+        assert_eq!(opened.answers_at(), "10.61.1.2:8443");
+        assert_eq!(opened.called(), Some("the studio machine"));
+        assert_eq!(record.len(), 1, "{record:?}");
+    }
+
+    /// **Two claims on one of the two networks are still refused**, as they
+    /// were on one network: a second address on the wireless network claiming
+    /// the same workspace is a claim nobody can tell apart, and nothing is
+    /// opened or written down.
+    #[test]
+    fn two_claims_on_one_of_two_networks_are_still_not_opened() {
+        let network = TheNetwork::on(reception());
+        let impostor = a_workspace_of(the_studio(), 8_443);
+        let (said, record) = the_person_says(
+            &opening(the_studio().as_str()),
+            &network,
+            &TwoNetworks::hearing(WIRED, WIRELESS, &[(impostor, Ipv4Addr::new(10, 61, 2, 66))]),
+        );
+        assert_eq!(
+            said.refusal().unwrap().text(),
+            saying(A_WORKSPACE_ANSWERED_FROM_MORE_THAN_ONE_PLACE)
+        );
+        assert!(record.is_empty(), "a refusal was written down");
+    }
+
     /// **An agent sending it is refused in the words an agent approving
     /// something gets**, the link is not asked, and nothing is opened.
     #[test]

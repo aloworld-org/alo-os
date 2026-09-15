@@ -56,10 +56,12 @@
 //! the closed list its host may say — which workspace, where it answers, and
 //! the version — and [`FoundWorkspace`] is one heard, made only by reading an
 //! advertisement ([`reading::a_workspace_in`]) and paired with nothing.
-//! [`Looking::around`] hears machines and workspaces in one window. Finding a
-//! workspace confers nothing: nothing here connects to one. An alo machine that
-//! hosts a workspace answers for it through the same [`Answering`] its presence
-//! is answered by ([`Answering::hosting_a_workspace_at`]) — under its own
+//! [`Looking::around`] hears machines and workspaces in one window, and
+//! [`Around::heard_on_each`] makes one answer of a window on each network a
+//! machine is on — a machine heard on two is one machine with an address on
+//! each. Finding a workspace confers nothing: nothing here connects to one. An
+//! alo machine that hosts a workspace answers for it through the same
+//! [`Answering`] its presence is answered by ([`Answering::hosting_a_workspace_at`]) — under its own
 //! identity, because a port is all hosting takes — and says nothing more about
 //! itself for doing so.
 //!
@@ -126,6 +128,7 @@ mod confirming;
 pub mod crossing;
 mod deliberating;
 mod dialling;
+mod heard_on_each;
 mod hexing;
 pub mod http;
 pub mod keeping;

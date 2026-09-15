@@ -240,6 +240,29 @@ own and invents no identity; it is installed with that file. The answer to the
 both questions is answered with two packets, one each. Hosting a workspace pairs
 nothing and grants nothing.
 
+## A machine on more than one network
+
+Added 2026-09-15, additively. A machine is found on **every** network it is on,
+not on whichever one the kernel would pick:
+
+- `alo-agentd` joins the discovery group `224.0.0.251` on every interface that is
+  up and running, carries multicast, has an IPv4 address and is not loopback, and
+  joins again when the kernel says a network appeared. An interface that cannot
+  be joined is a line in the service log; the others are still joined.
+- **What is said on each network is the same bytes** — the same identity, the same
+  port `7610`, and the same workspace answer. Presence never differs by network,
+  and an answer to a question goes back to whoever asked, from the address on
+  their network.
+- A machine looking asks on each network it is on, from that network's own
+  address, and a machine heard on two networks is **one machine with the address
+  it answered from on each** (`alo_nearby::Found::also_at`). A workspace heard
+  from one address on each of two networks is likewise one workspace; a workspace
+  heard from two addresses on the **same** network is still two claims, and
+  `open-workspace` still refuses it.
+- There is no setting: no list of networks to advertise on, and no interface a
+  person or an agent chooses (ADR 0003). A reader of this wire needs to change
+  nothing; a responder on a machine with several networks answers on each.
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

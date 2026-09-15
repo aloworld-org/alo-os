@@ -37,11 +37,24 @@
 //! questions — who is here, and which workspaces — asked at once on the link,
 //! and everything that answered in the one window. Again nothing is kept, so
 //! the list is the network at the moment it was asked about.
+//!
+//! # And on every network this machine is on
+//!
+//! A question to the discovery group is asked on **each** network this machine
+//! is on at the moment of asking (`crate::networks`), from that network's own
+//! address, rather than once by the default route — so a docked laptop looks on
+//! the wired network and the Wi-Fi both, and a machine heard on two of them is
+//! one machine with the address it answered from on each
+//! (`alo_nearby::Around::heard_on_each`). The networks are read again at every
+//! look, for the same reason nothing else here is kept.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::Duration;
 
 use alo_nearby::{Around, Found, Looking, MachineId};
+
+use crate::networks::{Network, discovery_networks};
+use crate::route_messages::reported_by_the_kernel;
 
 /// Somewhere a machine can be looked for by its identity, at the moment.
 ///
@@ -69,23 +82,13 @@ pub trait LookingFor: std::fmt::Debug {
 /// bind or a question that cannot be sent is *nothing found*.
 #[must_use]
 pub fn around_at(at: SocketAddr) -> Around {
-    let here: IpAddr = if at.ip().is_loopback() {
-        Ipv4Addr::LOCALHOST.into()
-    } else {
-        Ipv4Addr::UNSPECIFIED.into()
-    };
-    let Ok(socket) = UdpSocket::bind((here, 0)) else {
-        return Around::default();
-    };
-    let looking = Looking::from(socket);
-    if looking.ask(at).is_err() || looking.ask_for_workspaces(at).is_err() {
-        return Around::default();
-    }
-    looking.around(WHILE_LOOKING).unwrap_or_default()
+    heard_at(at, true)
 }
 
 /// Ask who is here at `at`, and answer with the machine named `machine` if
-/// it answered, at the address it answered from.
+/// it answered, at the address it answered from — on a machine on several
+/// networks, the address on the first network it was heard on, with the others
+/// beside it.
 ///
 /// `None` when nothing answered by that name, nothing could be asked, or the
 /// socket would not bind — every one of which the caller reads as *not
@@ -93,19 +96,78 @@ pub fn around_at(at: SocketAddr) -> Around {
 /// anything is sent, which is the whole of what the measurement is for.
 #[must_use]
 pub fn found_by_name(machine: &MachineId, at: SocketAddr) -> Option<Found> {
-    let here: IpAddr = if at.ip().is_loopback() {
-        Ipv4Addr::LOCALHOST.into()
-    } else {
-        Ipv4Addr::UNSPECIFIED.into()
-    };
-    let socket = UdpSocket::bind((here, 0)).ok()?;
-    let looking = Looking::from(socket);
-    looking.ask(at).ok()?;
-    looking
-        .found(WHILE_LOOKING)
-        .unwrap_or_default()
+    heard_at(at, false)
+        .machines
         .into_iter()
         .find(|found| found.machine == *machine)
+}
+
+/// Where a look at `at` is asked from: every network this machine is on for
+/// the discovery group, and one socket otherwise.
+///
+/// **A question to the group leaves on each network**, from a socket bound to
+/// that network's own address — which on Linux is what sends a multicast
+/// datagram out of the interface that owns the address rather than by the
+/// default route (`docs/quirks.md`). What each network heard is its own window,
+/// all of them at once, and [`Around::heard_on_each`] makes one answer of them:
+/// a machine heard on two networks is one machine with an address on each.
+///
+/// A question to one address — a test's socket, or loopback — is one socket and
+/// one window, as it always was: a unicast datagram leaves by the route to it.
+/// A machine whose networks cannot be read is looked for on none, and the
+/// service log says why: that is *nothing found*, which is true of a machine
+/// that cannot say where it is.
+fn heard_at(at: SocketAddr, workspaces_too: bool) -> Around {
+    if !at.ip().is_multicast() {
+        let here: IpAddr = if at.ip().is_loopback() {
+            Ipv4Addr::LOCALHOST.into()
+        } else {
+            Ipv4Addr::UNSPECIFIED.into()
+        };
+        return heard_from(here, at, workspaces_too);
+    }
+    let networks = match reported_by_the_kernel() {
+        Ok(reported) => discovery_networks(&reported),
+        Err(why) => {
+            eprintln!(
+                "alo-agentd: this machine's networks could not be read ({why}); nothing was asked"
+            );
+            return Around::default();
+        }
+    };
+    Around::heard_on_each(heard_on(&networks, at, workspaces_too))
+}
+
+/// What each of `networks` heard when asked at `at`, in the same order, each
+/// asked at once and heard for [`WHILE_LOOKING`].
+fn heard_on(networks: &[Network], at: SocketAddr, workspaces_too: bool) -> Vec<Around> {
+    std::thread::scope(|scope| {
+        let asking: Vec<_> = networks
+            .iter()
+            .map(|network| {
+                scope.spawn(move || heard_from(network.address().into(), at, workspaces_too))
+            })
+            .collect();
+        asking
+            .into_iter()
+            .map(|asked| asked.join().unwrap_or_default())
+            .collect()
+    })
+}
+
+/// Ask at `at` from a socket bound to `here`, and hear for [`WHILE_LOOKING`].
+///
+/// Nothing at all when the socket will not bind or a question will not send —
+/// *nothing found*, for [`around_at`]'s reason.
+fn heard_from(here: IpAddr, at: SocketAddr, workspaces_too: bool) -> Around {
+    let Ok(socket) = UdpSocket::bind((here, 0)) else {
+        return Around::default();
+    };
+    let looking = Looking::from(socket);
+    if looking.ask(at).is_err() || (workspaces_too && looking.ask_for_workspaces(at).is_err()) {
+        return Around::default();
+    }
+    looking.around(WHILE_LOOKING).unwrap_or_default()
 }
 
 /// How long this machine waits for the machine that proposed to say it

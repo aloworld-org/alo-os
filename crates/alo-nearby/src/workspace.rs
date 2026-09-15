@@ -119,6 +119,10 @@ pub struct FoundWorkspace {
     /// The address its answer came from — measured, never advertised, for
     /// [`crate::Found::address`]'s reason.
     address: IpAddr,
+    /// Where else the same workspace answered from in the same look, one
+    /// address for each further network it was heard on alone
+    /// ([`crate::Around::heard_on_each`]).
+    also_at: Vec<IpAddr>,
     /// The version it speaks, which is the one version this crate reads.
     version: &'static str,
     /// What finding it means for this machine, which is nothing.
@@ -136,6 +140,7 @@ impl FoundWorkspace {
             host,
             port,
             address,
+            also_at: Vec::new(),
             version: VERSION,
             standing: Standing::NotPaired,
         }
@@ -157,6 +162,19 @@ impl FoundWorkspace {
     #[must_use]
     pub const fn address(&self) -> IpAddr {
         self.address
+    }
+
+    /// Every address it answered from in the look it was found in: the one
+    /// heard first, then one for each further network it was heard on alone.
+    pub fn addresses(&self) -> impl Iterator<Item = IpAddr> + '_ {
+        std::iter::once(self.address).chain(self.also_at.iter().copied())
+    }
+
+    /// The same workspace, also heard from `address` on another network.
+    pub(crate) fn also_heard_at(&mut self, address: IpAddr) {
+        if self.addresses().all(|already| already != address) {
+            self.also_at.push(address);
+        }
     }
 
     /// The version of this protocol it speaks.

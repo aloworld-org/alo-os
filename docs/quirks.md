@@ -515,6 +515,55 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by
+`crates/alo-agentd/tests/a_machine_on_two_networks.rs`.
+**Behaviour:** RFC 6762 says a responder answers on every link it is on and
+says nothing about how a process arranges that. Four things are true of Linux
+that decided how `alo-agentd` does:
+
+- **`IP_ADD_MEMBERSHIP` with `INADDR_ANY` joins one interface**, the one the
+  route to the group picks — which is what `std`'s `join_multicast_v4(group,
+  UNSPECIFIED)` asks for. A machine on a wired network and on Wi-Fi was a member
+  on one of them, and a question arriving on the other was dropped before any
+  socket saw it. Measured: with the studio joined on the wired `veth` only, a
+  question from reception on the second `veth` got no answer, while the same
+  question on the first did. Joining again with each interface's own address
+  (`crate::joining`) makes the machine a member on each; joining twice on one
+  interface answers `EADDRINUSE`, which is read as *already joined*.
+- **A datagram to a multicast group leaves by the interface that owns the
+  socket's bound source address** when no `IP_MULTICAST_IF` is set — the
+  kernel's route lookup has a documented special case for exactly this
+  (`net/ipv4/route.c`, *"direct multicasts … via necessary interface without
+  fiddling with IP_MULTICAST_IF"*). So `crate::looking` binds one socket per
+  network to that network's address and needs no socket option `std` lacks.
+  Measured: reception's answers on each `veth` came back from the studio's
+  address on that same network. (That a socket bound to `0.0.0.0` sends by the
+  default route instead is the kernel's documented behaviour, not measured here.)
+- **`IP_MULTICAST_ALL` is on by default**, so a socket bound to `0.0.0.0:5353`
+  receives the group's traffic on every interface where *any* socket on the
+  machine has joined — another mDNS responder's membership can make this daemon
+  hear a network it never joined. That is harmless (the answer is the same bytes
+  on every network) and is why the test above runs with no other responder in
+  its namespaces, so that what it measures is this daemon's own joins.
+- **The kernel says when a network changes**, on a routing socket bound to
+  `RTMGRP_LINK | RTMGRP_IPV4_IFADDR`, and a membership goes with its interface.
+  Several notifications arrive for one change (the link, then its address,
+  then the link running), and the first can come before the interface is
+  joinable, so the service asks the interfaces again on each notification
+  rather than reading its content, and the test asks again until the second
+  network is joined.
+
+**Our response:** discovery is joined on every interface that is up and running,
+carries multicast, has an IPv4 address and is not loopback, read from the
+kernel's routing messages (`crate::route_messages`, parsed without `unsafe`),
+and joined again whenever the kernel says a network changed. The two-network
+test makes its networks inside a user namespace with `unshare --map-root-user
+--net`, so it touches nothing on the host and takes no kernel-wide lock. What a
+second physical machine on a real office network hears is still owed to two
+machines.
+
 ### The Linux kernel — an office with no route out can be made on a development machine, and `OutNoRoutes` counts every packet that tried to leave it, once each
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3
 (`unshare`), iproute2 6.19.0 (`ip`), rustix 1.1.4 and ureq 3.4.0, measured on

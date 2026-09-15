@@ -946,7 +946,31 @@ find the workspace.
 
 ### 22. A machine on two networks is found on each of them
 
-**Status:** ready. **Depends on:** 1, 10, 21.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-agentd` (`networks.rs` —
+`discovery_networks`, a pure function of the interfaces the kernel reports: up and
+running, multicast, an IPv4 address, not loopback; `joined_on`, where a network that
+will not join is a line and the others are joined; `route_messages.rs` — the
+kernel's `RTM_GETLINK`/`RTM_GETADDR` answers read without `unsafe`, refusing a
+message cut short; `joining.rs` — `Joining`, the group joined on every network at
+start and again whenever the kernel's routing socket says a network changed;
+`unix.rs` — the routing socket; `Wire::bound` joins through `Joining`,
+`Wire::networks_waiting_on`, `networks_changed` and `joined`, waited on by
+`serving.rs`; `looking.rs` — a look at the group asks from each network's own
+address and merges what each heard; `listing_workspaces::drawn` names a host only
+where it answered from the same address on every network) and `crates/alo-nearby`
+(`heard_on_each.rs` — `Around::heard_on_each`: a machine heard on two networks is
+one `Found` with `also_at`, a workspace heard alone on each network is one
+`FoundWorkspace`, and two claims on one network stay two, so task 18's refusal
+holds; `proposals.rs` judges a proposal against every measured address). **An
+interface appearing after start is followed through the kernel's notification**,
+not read at the next start — a laptop docked after boot would otherwise be absent
+from the wired network all day. Tested on a real kernel by
+`crates/alo-agentd/tests/a_machine_on_two_networks.rs` (two `veth` networks
+between two user-namespaced network namespaces, touching no kernel-global state).
+Contract: `docs/contracts/local-network-wire.md` (*A machine on more than one
+network*, new, additive). `docs/quirks.md` records the kernel's behaviour. The
+report is `docs/autonomy/updates/a-machine-on-two-networks-is-found-on-each.md`.
+**Depends on:** 1, 10, 21.
 
 *Machines find each other with zero configuration.* A machine in an office is often
 on more than one network at once — a docked laptop on the wired LAN and on Wi-Fi, a
@@ -979,3 +1003,40 @@ network is left typing an address, which is the step the promise removes.
   (read again at the next start, or followed through the kernel's own notification)
   with the reason. What reality does that the specification does not say goes in
   `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 23. Two machines with no IPv4 address between them still find each other
+
+**Status:** ready. **Depends on:** 1, 22.
+
+*Machines find each other with zero configuration — no addresses typed.* Since task
+22 discovery is joined and asked on every network a machine is on — every network
+**with an IPv4 address**. A network without one is not rare where configuration is
+absent: two machines joined by one cable with no DHCP server between them, an office
+switch whose router is down for the afternoon, or a network run IPv6-only. Every one
+of those still gives each interface an IPv6 link-local address with nobody
+configuring it, and mDNS has a group for exactly that (`ff02::fb`, RFC 6762 §3). An
+alo machine answers on none of them, so the two machines on the one cable are
+strangers to each other, and the person is left typing an address — which is the
+step the promise removes, and a typed address is what ADR 0003 says nothing dials.
+
+- **Acceptance:** `alo-nearby` asks and answers over IPv6 as it does over IPv4, with
+  the same closed advertisement and the same refusals (a packet saying more than
+  presence is refused whichever family carried it), tested; `alo-agentd` joins
+  `ff02::fb` on every interface that is up, multicast-capable and carries an IPv6
+  link-local address, and not on loopback — the enumeration a pure function of what
+  the kernel reports, one test each for down, no multicast, no link-local address and
+  loopback — with an interface that cannot be joined a line in the service log and
+  never a stopped service, tested; a found machine's address carries the interface
+  it was heard on where the address is link-local (a scope id), because a link-local
+  address without one names no network and cannot be dialled, tested; a machine
+  heard over IPv4 and IPv6 on one network is one machine with an address in each
+  family, tested; what is said is the same identity, port and workspace answer in
+  both families, tested byte for byte; and two machines whose shared network has no
+  IPv4 address find each other and pair through task 12's request end to end, tested
+  with two network namespaces joined by a `veth` pair carrying link-local IPv6 only.
+- **Constraint:** ADR 0003 throughout: discovery reveals presence only, and there is
+  still no setting — no "IPv6 on/off", no family chosen by a person or an agent.
+  Which address a pairing dials when both families answered is decided in the crate
+  and written up with the reason. `docs/contracts/local-network-wire.md` gains the
+  IPv6 group and the scope rule additively. What reality does that the specification
+  does not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

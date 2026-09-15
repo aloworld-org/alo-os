@@ -323,10 +323,9 @@ impl Proposals {
         if proposal.asked() != &self.here {
             return Err(NotProposed::ForAnotherMachine);
         }
-        let Some(seen) = found
-            .iter()
-            .find(|seen| seen.machine == *proposal.asking() && seen.address == from)
-        else {
+        let Some(seen) = found.iter().find(|seen| {
+            seen.machine == *proposal.asking() && seen.addresses().any(|at| at == from)
+        }) else {
             return Err(NotProposed::NotFromWhereItWasFound);
         };
         if self.with(proposal.asking()).is_some() {

@@ -37,6 +37,15 @@
 //! ([`Wire::hosting`]). It adds an answer to the question for workspaces under
 //! this machine's own identity, and changes nothing this machine says about
 //! itself.
+//!
+//! # On every network the machine is on
+//!
+//! The discovery socket is joined to the group on each interface that is up,
+//! carries multicast and has an IPv4 address ([`crate::networks`]), and joined
+//! again when the kernel says a network appeared ([`crate::joining`]). Which
+//! networks is not a setting either — it is what the machine is plugged into —
+//! and what is said on each is the same bytes, because there is one
+//! [`Answering`] and it answers whoever asked.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::num::NonZeroU16;
@@ -47,6 +56,8 @@ use alo_nearby::http::{self, WHILE_THE_WIRE_ANSWERS};
 use alo_nearby::{Answering, MachineId, NotNearby, Presence, THE_ADDRESS, THE_PORT};
 
 use crate::hosting::Hosted;
+use crate::joining::Joining;
+use crate::networks::Network;
 use crate::refusing::NotBound;
 use crate::unhosted::Unhosted;
 use crate::what_is_advertised::Advertising;
@@ -79,6 +90,10 @@ pub struct Wire {
     discovery: UdpSocket,
     /// This machine, answering that it exists at the port above.
     answering: Answering,
+    /// The discovery group, joined on every network this machine is on — on a
+    /// machine that bound its own sockets, and nothing on sockets a test
+    /// handed in.
+    joining: Option<Joining>,
     /// Why a workspace installed on this machine is not advertised, when the
     /// start refused its file — kept so the person can be told, and never
     /// found out again by reading the file.
@@ -108,13 +123,17 @@ impl Wire {
     ///
     /// The listener on every interface at [`THE_WIRE_PORT`]; the discovery
     /// socket on every interface at `alo_nearby::THE_PORT`, shared with any
-    /// other responder on the machine and joined to `alo_nearby::THE_ADDRESS`,
-    /// which is what makes a question on the link reach it.
+    /// other responder on the machine and joined to `alo_nearby::THE_ADDRESS`
+    /// **on every network this machine is on** ([`crate::joining`]), which is
+    /// what makes a question on each of those links reach it. A network that
+    /// will not join is a line in the service log and the others are joined; a
+    /// network that appears later is joined when the kernel says so
+    /// ([`Wire::networks_changed`]).
     ///
     /// # Errors
     ///
-    /// [`NotBound::NoWire`] when either socket will not bind or the group will
-    /// not join, and nothing is listening.
+    /// [`NotBound::NoWire`] when either socket will not bind, and nothing is
+    /// listening.
     pub fn bound(here: MachineId) -> Result<Self, NotBound> {
         let listener =
             TcpListener::bind((Ipv4Addr::UNSPECIFIED, THE_WIRE_PORT)).map_err(|why| {
@@ -128,13 +147,11 @@ impl Wire {
                 what: "the socket discovery is answered on",
                 why,
             })?;
-        discovery
-            .join_multicast_v4(&THE_ADDRESS, &Ipv4Addr::UNSPECIFIED)
-            .map_err(|why| NotBound::NoWire {
-                what: "the discovery group",
-                why,
-            })?;
+        let joining = Joining::on_every_network(&discovery, &mut |line| {
+            eprintln!("alo-agentd: {line}");
+        });
         let mut wire = Self::on(listener, discovery, here, THE_PORT)?;
+        wire.joining = Some(joining);
         wire.looks_at = SocketAddr::new(THE_ADDRESS.into(), THE_PORT);
         Ok(wire)
     }
@@ -171,6 +188,7 @@ impl Wire {
             listener,
             discovery: waiting_on,
             answering: Answering::on(discovery, Presence::of(here, port)),
+            joining: None,
             unhosted: None,
             asking_at,
             looks_at: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), asking_at),
@@ -266,6 +284,38 @@ impl Wire {
         self.discovery.as_fd()
     }
 
+    /// What to wait on for the kernel saying one of this machine's networks
+    /// appeared, changed or went — nothing on sockets a test handed in, or
+    /// where the kernel would not say.
+    #[must_use]
+    pub fn networks_waiting_on(&self) -> Option<BorrowedFd<'_>> {
+        self.joining.as_ref().and_then(Joining::waiting_on)
+    }
+
+    /// The kernel said a network changed: join discovery on every network
+    /// this machine is on now that it is not yet joined on.
+    ///
+    /// What is advertised does not move — the same identity, port and
+    /// workspace answer on every network — so this changes where this machine
+    /// is heard and nothing it says. A failure is a line in the service log.
+    pub fn networks_changed(&self) {
+        if let Some(joining) = &self.joining {
+            joining.changed(&self.discovery, &mut |line| {
+                eprintln!("alo-agentd: {line}");
+            });
+        }
+    }
+
+    /// The networks discovery is joined on now, in the kernel's order — empty
+    /// on sockets a test handed in.
+    #[must_use]
+    pub fn joined(&self) -> Vec<Network> {
+        self.joining
+            .as_ref()
+            .map(Joining::joined)
+            .unwrap_or_default()
+    }
+
     /// Accept one connection and read what it carries.
     ///
     /// Called once the listener has said somebody is there, so the accept
@@ -340,6 +390,7 @@ impl std::fmt::Debug for Wire {
             .field("port", &self.port())
             .field("asking_at", &self.asking_at)
             .field("hosts", &self.hosts())
+            .field("joined", &self.joined())
             .finish_non_exhaustive()
     }
 }

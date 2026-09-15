@@ -61,7 +61,9 @@
 //! across a local turn is still a replay.
 //!
 //! Discovery is answered in every state, because presence never says what a
-//! machine is doing.
+//! machine is doing — and on every network the machine is on, which is
+//! followed in every state too: when the kernel says a network appeared, the
+//! wire joins discovery on it (`crate::joining`).
 //!
 //! **And the person's door pairs from any state.** The four requests about a
 //! pairing (`crate::pairing`) are answered against the lock and the wire
@@ -509,7 +511,7 @@ impl<'a> Serving<'a> {
         surface: &mut dyn Surface,
     ) -> Result<Next, NotServed> {
         let the_network_has_the_machine = matches!(holding, Holding::TheNetwork { .. });
-        let (stopped, person, agent, knocked, on_the_port, asked_who_is_here) = {
+        let (stopped, person, agent, knocked, on_the_port, asked_who_is_here, networks_changed) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
                 held.person.as_ref().map(Line::waiting_on),
@@ -517,6 +519,7 @@ impl<'a> Serving<'a> {
                 Some(self.knocking.waiting_on()),
                 the_network_has_the_machine.then(|| self.wire.waiting_on()),
                 Some(self.wire.discovery_waiting_on()),
+                self.wire.networks_waiting_on(),
             ];
             let [
                 stopped,
@@ -525,6 +528,7 @@ impl<'a> Serving<'a> {
                 knocked,
                 on_the_port,
                 asked_who_is_here,
+                networks_changed,
             ] = ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
             (
                 stopped,
@@ -533,6 +537,7 @@ impl<'a> Serving<'a> {
                 knocked,
                 on_the_port,
                 asked_who_is_here,
+                networks_changed,
             )
         };
 
@@ -661,6 +666,13 @@ impl<'a> Serving<'a> {
             };
             hearing::heard(knocked, doorway, granted.holding_mut(), &mut judging, now)?;
             served.heard = served.heard.saturating_add(1);
+        }
+
+        if networks_changed {
+            // A network appeared, changed or went: discovery is joined on
+            // every network the machine is on now. Nothing it says moves, and
+            // a network that will not join is a line in the log, not a stop.
+            self.wire.networks_changed();
         }
 
         if asked_who_is_here {

@@ -114,6 +114,15 @@ pub struct Found {
     /// dials this, so the next hop is what discovery measured rather than what
     /// somebody typed.
     pub address: IpAddr,
+    /// Where else the same machine answered from in the same look: one address
+    /// for each further network it was heard on, in the order the networks
+    /// were asked, and empty for a machine heard on one.
+    ///
+    /// Measured as [`address`](Self::address) is. A machine on two networks is
+    /// one machine with an address on each ([`crate::Around::heard_on_each`]),
+    /// and [`address`](Self::address) stays the one heard first, which is what
+    /// dials it.
+    pub also_at: Vec<IpAddr>,
     /// What that means for this machine, which is nothing.
     pub standing: Standing,
 }
@@ -145,8 +154,15 @@ impl Found {
             machine,
             port,
             address,
+            also_at: Vec::new(),
             standing: Standing::NotPaired,
         }
+    }
+
+    /// Every address the machine answered from in the look it was found in:
+    /// the one heard first, then one for each further network.
+    pub fn addresses(&self) -> impl Iterator<Item = IpAddr> + '_ {
+        std::iter::once(self.address).chain(self.also_at.iter().copied())
     }
 
     /// Where the machine answers: the address it was heard from and the port

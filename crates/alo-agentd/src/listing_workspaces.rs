@@ -19,7 +19,9 @@
 //!    then the names' (the order `crate::pairing`'s list takes): the name the
 //!    person gave the machine whose identity the workspace was advertised
 //!    under — only if this machine is paired with that machine now **and** that
-//!    machine answered from the same address in the same window. An
+//!    machine answered from the same address in the same window — on a machine
+//!    on several networks, from the same address on every network the
+//!    workspace was heard on. An
 //!    advertisement is not proven, and anything on the network can claim a
 //!    named machine's identity; a claim made from somewhere that machine did
 //!    not answer is shown by its identity, never under the name.
@@ -82,10 +84,14 @@ pub fn drawn(
     now: SystemTime,
 ) -> FoundWorkspace {
     let host = workspace.host();
-    let answered_there = around
-        .machines
-        .iter()
-        .any(|machine| machine.machine == *host && machine.address == workspace.address());
+    // On every network the workspace was heard on, from the address it was
+    // heard from there — one network or several.
+    let answered_there = around.machines.iter().any(|machine| {
+        machine.machine == *host
+            && workspace
+                .addresses()
+                .all(|heard| machine.addresses().any(|answered| answered == heard))
+    });
     let called = (answered_there && shared.pairings().paired_with(host, now))
         .then(|| network.names().called(host))
         .flatten();

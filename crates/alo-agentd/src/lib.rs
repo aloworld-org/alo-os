@@ -202,6 +202,8 @@ pub mod holding;
 #[cfg(target_os = "linux")]
 pub mod hosting;
 #[cfg(target_os = "linux")]
+pub mod joining;
+#[cfg(target_os = "linux")]
 pub mod keeping_names;
 #[cfg(target_os = "linux")]
 pub mod keeping_pairings;
@@ -224,6 +226,8 @@ pub mod naming_machines;
 #[cfg(target_os = "linux")]
 pub mod network;
 #[cfg(target_os = "linux")]
+pub mod networks;
+#[cfg(target_os = "linux")]
 pub mod opening_workspaces;
 #[cfg(target_os = "linux")]
 pub mod pairing;
@@ -239,6 +243,8 @@ pub mod reaching;
 pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod rereading;
+#[cfg(target_os = "linux")]
+pub mod route_messages;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
@@ -296,6 +302,8 @@ pub use holding::Holding;
 #[cfg(target_os = "linux")]
 pub use hosting::{Hosted, THE_HOSTED_WORKSPACE, advertised, hosted_at};
 #[cfg(target_os = "linux")]
+pub use joining::Joining;
+#[cfg(target_os = "linux")]
 pub use keeping_names::TheNamesFile;
 #[cfg(target_os = "linux")]
 pub use keeping_pairings::ThePairingsFile;
@@ -313,6 +321,8 @@ pub use looking::{LookingFor, WHILE_LOOKING, around_at, found_at, found_by_name}
 pub use names::{KeepingNames, NothingKeepsNames, TheNames};
 #[cfg(target_os = "linux")]
 pub use network::{KeepingPairings, NothingKeepsPairings, Shared, TheNetwork};
+#[cfg(target_os = "linux")]
+pub use networks::{Interface, Network, discovery_networks};
 #[cfg(target_os = "linux")]
 pub use pairing::Nearby;
 #[cfg(target_os = "linux")]
