@@ -29,8 +29,9 @@
 //! responder does. The `SRV`'s host name is read past and never used: where a
 //! machine or a workspace answers is the address its answer came from.
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 
+use crate::heard_from::HeardFrom;
 use crate::machine::MachineId;
 use crate::presence::{Found, SERVICE, VERSION, VERSION_KEY};
 use crate::refusing::NotNearby;
@@ -53,8 +54,26 @@ const WITHOUT_THE_FLUSH_BIT: u16 = 0x7fff;
 /// [`NotNearby::SaysNothingAboutWhichMachine`] for one that never named an
 /// instance.
 pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
+    a_machine_heard(packet, SocketAddr::new(from, 0))
+}
+
+/// One machine, read out of an answer that arrived from `from` — the socket
+/// address the kernel reported, which for a link-local IPv6 address carries
+/// the interface it was heard on ([`HeardFrom`]).
+///
+/// The same packet is read the same way whichever family carried it: the
+/// closed list and every refusal are the packet's, and the family is only
+/// where it came from.
+///
+/// # Errors
+///
+/// [`NotNearby::NamesNoNetwork`] for an answer from a link-local address with
+/// no interface beside it, which no machine could be reached at; and every
+/// refusal [`a_machine_in`] gives.
+pub fn a_machine_heard(packet: &[u8], from: SocketAddr) -> Result<Found, NotNearby> {
+    let from = measured(from)?;
     let (machine, port) = an_instance_in(packet, SERVICE, NotNearby::NotAnAloMachine)?;
-    Ok(Found::seen(machine, port, from))
+    Ok(Found::heard(machine, port, from))
 }
 
 /// One workspace, read out of an answer its host sent from `from`.
@@ -71,8 +90,32 @@ pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
 /// the refusals [`a_machine_in`] gives for a packet that is not well formed or
 /// never says which one it is about.
 pub fn a_workspace_in(packet: &[u8], from: IpAddr) -> Result<FoundWorkspace, NotNearby> {
+    a_workspace_heard(packet, SocketAddr::new(from, 0))
+}
+
+/// One workspace, read out of an answer that arrived from `from`, as
+/// [`a_machine_heard`] reads a machine.
+///
+/// # Errors
+///
+/// [`NotNearby::NamesNoNetwork`] as [`a_machine_heard`], and every refusal
+/// [`a_workspace_in`] gives.
+pub fn a_workspace_heard(packet: &[u8], from: SocketAddr) -> Result<FoundWorkspace, NotNearby> {
+    let from = measured(from)?;
     let (host, port) = an_instance_in(packet, WORKSPACE_SERVICE, NotNearby::NotAWorkspace)?;
     Ok(FoundWorkspace::heard(host, port, from))
+}
+
+/// Where an answer came from, or the refusal of a link-local address that says
+/// no interface — checked before the packet, because an answer nothing could
+/// reach is not worth reading.
+fn measured(from: SocketAddr) -> Result<HeardFrom, NotNearby> {
+    let heard = HeardFrom::of(from);
+    if heard.names_a_network() {
+        Ok(heard)
+    } else {
+        Err(NotNearby::NamesNoNetwork(heard.ip().to_string()))
+    }
 }
 
 /// The identity and port an answer about `service` carries, or why it is not
@@ -607,5 +650,90 @@ mod tests {
         .unwrap();
 
         packet
+    }
+
+    /// A link-local address on the interface the kernel numbers `scope`.
+    fn link_local(scope: u32) -> std::net::SocketAddr {
+        std::net::SocketAddr::V6(std::net::SocketAddrV6::new(
+            "fe80::a406:e5ff:fe4b:ac9e".parse().unwrap(),
+            5_353,
+            0,
+            scope,
+        ))
+    }
+
+    /// **An answer over IPv6 is read as an answer over IPv4 is**: the same
+    /// machine and the same workspace out of the same bytes, at the address it
+    /// came from — and a link-local one with the interface it was heard on.
+    #[test]
+    fn an_answer_over_ipv6_is_read_as_one_over_ipv4_with_its_interface() {
+        use super::{a_machine_heard, a_workspace_heard};
+
+        let packet = about(&Presence::of(an_identity(), 7_610)).unwrap();
+        let over_ipv4 = a_machine_in(&packet, here()).unwrap();
+        let over_ipv6 = a_machine_heard(&packet, link_local(3)).unwrap();
+        assert_eq!(over_ipv6.machine, over_ipv4.machine);
+        assert_eq!(over_ipv6.port, over_ipv4.port);
+        assert_eq!(over_ipv6.address.scope(), Some(3));
+        assert_eq!(
+            over_ipv6.where_it_answers().to_string(),
+            "[fe80::a406:e5ff:fe4b:ac9e%3]:7610"
+        );
+
+        let workspace = about_a_workspace(&WorkspacePresence::of(an_identity(), 8_443)).unwrap();
+        let heard = a_workspace_heard(&workspace, link_local(3)).unwrap();
+        assert_eq!(heard.host(), &an_identity());
+        assert_eq!(
+            heard.where_it_answers().to_string(),
+            "[fe80::a406:e5ff:fe4b:ac9e%3]:8443"
+        );
+    }
+
+    /// **A packet saying more than presence is refused whichever family carried
+    /// it** — by the same refusal, with the same key named.
+    #[test]
+    fn saying_more_than_presence_is_refused_over_ipv6_as_over_ipv4() {
+        use super::{a_machine_heard, a_workspace_heard};
+
+        for saying in ["who=disan", "models=mistral-7b", "org=axon", "paired=2"] {
+            let packet = an_advertisement_also_saying(saying);
+            let over_ipv4 = a_machine_in(&packet, here()).unwrap_err();
+            let over_ipv6 = a_machine_heard(&packet, link_local(3)).unwrap_err();
+            let global: std::net::SocketAddr = "[2001:db8::7]:5353".parse().unwrap();
+            let over_global_ipv6 = a_machine_heard(&packet, global).unwrap_err();
+            assert_eq!(over_ipv6, over_ipv4, "{saying}");
+            assert_eq!(over_global_ipv6, over_ipv4, "{saying}");
+        }
+        let packet = a_workspace_advertisement_saying(&["v=1", "org=axon"], "x.local");
+        assert_eq!(
+            a_workspace_heard(&packet, link_local(3)).unwrap_err(),
+            NotNearby::SaysMoreThanPresence("org".to_owned())
+        );
+    }
+
+    /// **An answer from a link-local address that says no interface is
+    /// refused**, machine or workspace, even when the packet itself is a
+    /// perfect advertisement: it names no network and nothing could reach it.
+    #[test]
+    fn an_answer_from_a_link_local_address_with_no_interface_is_refused() {
+        use super::{a_machine_heard, a_workspace_heard};
+
+        let packet = about(&Presence::of(an_identity(), 7_610)).unwrap();
+        let refused = a_machine_heard(&packet, link_local(0)).unwrap_err();
+        assert_eq!(
+            refused,
+            NotNearby::NamesNoNetwork("fe80::a406:e5ff:fe4b:ac9e".to_owned())
+        );
+        assert!(refused.is_about_a_stranger());
+        assert!(matches!(
+            a_machine_in(&packet, "fe80::1".parse().unwrap()).unwrap_err(),
+            NotNearby::NamesNoNetwork(_)
+        ));
+
+        let workspace = about_a_workspace(&WorkspacePresence::of(an_identity(), 8_443)).unwrap();
+        assert!(matches!(
+            a_workspace_heard(&workspace, link_local(0)).unwrap_err(),
+            NotNearby::NamesNoNetwork(_)
+        ));
     }
 }

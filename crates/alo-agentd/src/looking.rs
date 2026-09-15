@@ -47,13 +47,32 @@
 //! one machine with the address it answered from on each
 //! (`alo_nearby::Around::heard_on_each`). The networks are read again at every
 //! look, for the same reason nothing else here is kept.
+//!
+//! # And in both families
+//!
+//! Each network with an IPv6 link-local address is asked as well, at `ff02::fb`
+//! on its interface from that link-local address — so two machines on a cable
+//! with no IPv4 address between them are still heard — and every IPv4 network
+//! is asked before any IPv6 one is handed to the merge. A machine heard in both
+//! families is one machine with an address in each, **written down at its IPv4
+//! address**, which is the one a pairing dials when both answered: it is the
+//! address that machine was reached at before a second family was asked, it
+//! needs no interface beside it to be dialled, and it is the same address the
+//! machine's own person sees for it. Where only IPv6 answered, the link-local
+//! address is dialled with the interface it was heard on.
+//!
+//! **A proposal's measurement follows its connection's family.** The asking
+//! machine is asked at the address its connection came from — with the
+//! interface, for a link-local one ([`found_at`]) — because a link-local
+//! address without its interface names no network and a datagram to it would
+//! go nowhere.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6, UdpSocket};
 use std::time::Duration;
 
-use alo_nearby::{Around, Found, Looking, MachineId};
+use alo_nearby::{Around, Found, HeardFrom, Looking, MachineId, THE_IPV6_ADDRESS};
 
-use crate::networks::{Network, discovery_networks};
+use crate::networks::{Network, every_discovery_network};
 use crate::route_messages::reported_by_the_kernel;
 
 /// Somewhere a machine can be looked for by its identity, at the moment.
@@ -119,15 +138,10 @@ pub fn found_by_name(machine: &MachineId, at: SocketAddr) -> Option<Found> {
 /// that cannot say where it is.
 fn heard_at(at: SocketAddr, workspaces_too: bool) -> Around {
     if !at.ip().is_multicast() {
-        let here: IpAddr = if at.ip().is_loopback() {
-            Ipv4Addr::LOCALHOST.into()
-        } else {
-            Ipv4Addr::UNSPECIFIED.into()
-        };
-        return heard_from(here, at, workspaces_too);
+        return heard_from(asked_from(at), at, workspaces_too);
     }
     let networks = match reported_by_the_kernel() {
-        Ok(reported) => discovery_networks(&reported),
+        Ok(reported) => every_discovery_network(&reported),
         Err(why) => {
             eprintln!(
                 "alo-agentd: this machine's networks could not be read ({why}); nothing was asked"
@@ -138,14 +152,15 @@ fn heard_at(at: SocketAddr, workspaces_too: bool) -> Around {
     Around::heard_on_each(heard_on(&networks, at, workspaces_too))
 }
 
-/// What each of `networks` heard when asked at `at`, in the same order, each
-/// asked at once and heard for [`WHILE_LOOKING`].
+/// What each of `networks` heard when asked at the group `at` names, in the
+/// same order, each asked at once and heard for [`WHILE_LOOKING`].
 fn heard_on(networks: &[Network], at: SocketAddr, workspaces_too: bool) -> Vec<Around> {
     std::thread::scope(|scope| {
         let asking: Vec<_> = networks
             .iter()
             .map(|network| {
-                scope.spawn(move || heard_from(network.address().into(), at, workspaces_too))
+                let (here, there) = asked_on(network, at.port());
+                scope.spawn(move || heard_from(here, there, workspaces_too))
             })
             .collect();
         asking
@@ -155,12 +170,46 @@ fn heard_on(networks: &[Network], at: SocketAddr, workspaces_too: bool) -> Vec<A
     })
 }
 
+/// Where a question on `network` leaves from and goes to: from the network's
+/// IPv4 address to `224.0.0.251`, or from its link-local address to `ff02::fb`
+/// on its interface — both at `port`.
+fn asked_on(network: &Network, port: u16) -> (SocketAddr, SocketAddr) {
+    match network.address() {
+        IpAddr::V4(address) => (
+            SocketAddr::new(address.into(), 0),
+            SocketAddr::new(alo_nearby::THE_ADDRESS.into(), port),
+        ),
+        IpAddr::V6(address) => (
+            SocketAddr::V6(SocketAddrV6::new(address, 0, 0, network.index())),
+            SocketAddr::V6(SocketAddrV6::new(
+                THE_IPV6_ADDRESS,
+                port,
+                0,
+                network.index(),
+            )),
+        ),
+    }
+}
+
+/// Where a question to one address leaves from: loopback for loopback, and any
+/// address otherwise — in that address's family.
+const fn asked_from(at: SocketAddr) -> SocketAddr {
+    let loopback = at.ip().is_loopback();
+    let here = match (at, loopback) {
+        (SocketAddr::V4(_), true) => IpAddr::V4(Ipv4Addr::LOCALHOST),
+        (SocketAddr::V4(_), false) => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+        (SocketAddr::V6(_), true) => IpAddr::V6(Ipv6Addr::LOCALHOST),
+        (SocketAddr::V6(_), false) => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+    };
+    SocketAddr::new(here, 0)
+}
+
 /// Ask at `at` from a socket bound to `here`, and hear for [`WHILE_LOOKING`].
 ///
 /// Nothing at all when the socket will not bind or a question will not send —
 /// *nothing found*, for [`around_at`]'s reason.
-fn heard_from(here: IpAddr, at: SocketAddr, workspaces_too: bool) -> Around {
-    let Ok(socket) = UdpSocket::bind((here, 0)) else {
+fn heard_from(here: SocketAddr, at: SocketAddr, workspaces_too: bool) -> Around {
+    let Ok(socket) = UdpSocket::bind(here) else {
         return Around::default();
     };
     let looking = Looking::from(socket);
@@ -181,22 +230,25 @@ pub const WHILE_LOOKING: Duration = Duration::from_secs(2);
 /// Ask the machine at `from` whether it exists, at the port its discovery
 /// answers on, and answer with what was found.
 ///
-/// Empty when nothing answered or nothing could be asked, which the caller
-/// reads as *not found*: a proposal from a machine this one cannot find is
+/// `from` is the address the connection came from, with the interface for a
+/// link-local one, and the question goes to it in its own family. Empty when
+/// nothing answered or nothing could be asked — which includes a link-local
+/// address with no interface, which names no network to ask on — and the caller
+/// reads that as *not found*: a proposal from a machine this one cannot find is
 /// refused by `alo_nearby::Proposals::arrived`, and refusing it is the whole
 /// of what this measurement is for.
 #[must_use]
-pub fn found_at(from: IpAddr, asking_at: u16) -> Vec<Found> {
-    let here: IpAddr = if from.is_loopback() {
-        Ipv4Addr::LOCALHOST.into()
-    } else {
-        Ipv4Addr::UNSPECIFIED.into()
-    };
-    let Ok(socket) = UdpSocket::bind((here, 0)) else {
+pub fn found_at(from: impl Into<HeardFrom>, asking_at: u16) -> Vec<Found> {
+    let from = from.into();
+    if !from.names_a_network() {
+        return Vec::new();
+    }
+    let at = from.at(asking_at);
+    let Ok(socket) = UdpSocket::bind(asked_from(at)) else {
         return Vec::new();
     };
     let looking = Looking::from(socket);
-    if looking.ask(SocketAddr::new(from, asking_at)).is_err() {
+    if looking.ask(at).is_err() {
         return Vec::new();
     }
     looking.found(WHILE_LOOKING).unwrap_or_default()
@@ -233,6 +285,20 @@ mod tests {
         let one = found.iter().find(|one| one.machine == reception()).unwrap();
         assert_eq!(one.address, at.ip());
         assert_eq!(one.port, 7_610);
+    }
+
+    /// **A proposal from a link-local address that says no interface is
+    /// measured nowhere**: the address names no network, nothing is asked, and
+    /// the machine is not found — so its proposal is refused.
+    #[test]
+    fn a_link_local_address_with_no_interface_is_looked_for_nowhere() {
+        let unscoped: std::net::IpAddr = "fe80::a406:e5ff:fe4b:ac9e".parse().unwrap();
+        let started = std::time::Instant::now();
+        assert!(found_at(unscoped, alo_nearby::THE_PORT).is_empty());
+        assert!(
+            started.elapsed() < super::WHILE_LOOKING,
+            "a question was asked and waited on"
+        );
     }
 
     /// **A machine that does not answer is not found**, and nothing is

@@ -4,8 +4,8 @@
 //! The standard library cannot list a machine's interfaces, and `getifaddrs` has
 //! no safe spelling. The kernel's routing socket answers the same question with
 //! plain bytes: one request for every link — its index, name and `IFF_*` flags —
-//! and one for every IPv4 address with the index of the link it is on. This
-//! file writes the two requests and reads the answers; `crate::unix` is the only
+//! and one for every address, IPv4 and IPv6, with the index of the link it is
+//! on. This file writes the two requests and reads the answers; `crate::unix` is the only
 //! file that puts them on a socket, and `crate::networks` decides what is
 //! joined. Reading is a function of bytes, so a message the kernel never sent in
 //! a test is still a test.
@@ -19,8 +19,17 @@
 //! length. An address for an interface no link message named is stepped over:
 //! the two answers are separate dumps, and an interface that appeared between
 //! them is picked up by the next look.
+//!
+//! **An IPv6 address the kernel is still checking is not an address yet.** A
+//! link-local address is *tentative* for a second or two after its interface
+//! comes up, while duplicate address detection runs (RFC 4862 §5.4), and nothing
+//! can be bound to it until that ends; one whose check failed never can be. Both
+//! are stepped over, by the flags in the message's header or — where the kernel
+//! sends it — its `IFA_FLAGS` attribute, which carries all of them. When the
+//! check ends the kernel says so on the routing socket, and the address is read
+//! then.
 
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::networks::Interface;
 
@@ -38,14 +47,25 @@ const NLMSG_ERROR: u16 = 2;
 const NLMSG_DONE: u16 = 3;
 /// `NLM_F_REQUEST | NLM_F_DUMP`.
 const A_DUMP: u16 = 0x1 | 0x300;
+/// `AF_UNSPEC`: every family.
+const AF_UNSPEC: u8 = 0;
 /// `AF_INET`.
 const AF_INET: u8 = 2;
+/// `AF_INET6`.
+const AF_INET6: u8 = 10;
 /// `IFLA_IFNAME`: a link's name.
 const IFLA_IFNAME: u16 = 3;
 /// `IFA_ADDRESS`: an address, or on a point-to-point link the far end's.
 const IFA_ADDRESS: u16 = 1;
 /// `IFA_LOCAL`: the local address, where it differs from `IFA_ADDRESS`.
 const IFA_LOCAL: u16 = 2;
+/// `IFA_FLAGS`: an address's flags, all thirty-two bits of them.
+const IFA_FLAGS: u16 = 8;
+/// `IFA_F_DADFAILED`: duplicate address detection found somebody else holding
+/// the address.
+const IFA_F_DADFAILED: u32 = 0x08;
+/// `IFA_F_TENTATIVE`: duplicate address detection has not finished.
+const IFA_F_TENTATIVE: u32 = 0x40;
 
 /// The length of a message header.
 const HEADER: usize = 16;
@@ -60,10 +80,10 @@ pub fn every_link() -> Vec<u8> {
     a_request(RTM_GETLINK, &[0; LINK])
 }
 
-/// The request for every IPv4 address on this machine.
+/// The request for every address on this machine, in every family.
 #[must_use]
 pub fn every_address() -> Vec<u8> {
-    a_request(RTM_GETADDR, &[AF_INET, 0, 0, 0, 0, 0, 0, 0])
+    a_request(RTM_GETADDR, &[AF_UNSPEC, 0, 0, 0, 0, 0, 0, 0])
 }
 
 /// A dump request of `kind`, carrying `body`.
@@ -136,6 +156,7 @@ pub fn interfaces_in(links: &[u8], addresses: &[u8]) -> Result<Vec<Interface>, N
             name,
             flags,
             addresses: Vec::new(),
+            ipv6: Vec::new(),
         });
     }
     for (kind, body) in messages(addresses)? {
@@ -144,29 +165,40 @@ pub fn interfaces_in(links: &[u8], addresses: &[u8]) -> Result<Vec<Interface>, N
             continue;
         }
         let fixed = body.get(..ADDRESS).ok_or(NotReported::CutShort)?;
-        if fixed.first() != Some(&AF_INET) {
+        let family = fixed.first().copied();
+        if family != Some(AF_INET) && family != Some(AF_INET6) {
             continue;
         }
         let index = four(fixed, 4)?;
+        let mut flags = fixed.get(2).copied().map_or(0, u32::from);
         let mut address = None;
         let mut local = None;
+        let mut ipv6 = None;
         for (attribute, value) in attributes(body.get(ADDRESS..).unwrap_or_default())? {
-            let Ok(octets) = <[u8; 4]>::try_from(value) else {
-                continue;
-            };
-            match attribute {
-                IFA_ADDRESS => address = Some(Ipv4Addr::from(octets)),
-                IFA_LOCAL => local = Some(Ipv4Addr::from(octets)),
+            match (attribute, value.len()) {
+                (IFA_FLAGS, 4) => flags = four(value, 0)?,
+                (IFA_ADDRESS, 16) => {
+                    ipv6 = <[u8; 16]>::try_from(value).ok().map(Ipv6Addr::from);
+                }
+                (IFA_ADDRESS, 4) => address = four_octets(value),
+                (IFA_LOCAL, 4) => local = four_octets(value),
                 _ => {}
             }
         }
-        if let (Some(interface), Some(at)) = (
-            interfaces
-                .iter_mut()
-                .find(|interface| interface.index == index),
-            local.or(address),
-        ) {
-            interface.addresses.push(at);
+        let Some(interface) = interfaces
+            .iter_mut()
+            .find(|interface| interface.index == index)
+        else {
+            continue;
+        };
+        if family == Some(AF_INET) {
+            if let Some(at) = local.or(address) {
+                interface.addresses.push(at);
+            }
+        } else if let Some(at) = ipv6
+            && flags & (IFA_F_TENTATIVE | IFA_F_DADFAILED) == 0
+        {
+            interface.ipv6.push(at);
         }
     }
     Ok(interfaces)
@@ -256,6 +288,11 @@ fn four(said: &[u8], at: usize) -> Result<u32, NotReported> {
         .ok_or(NotReported::CutShort)
 }
 
+/// Four bytes as an IPv4 address, when they are four.
+fn four_octets(said: &[u8]) -> Option<Ipv4Addr> {
+    <[u8; 4]>::try_from(said).ok().map(Ipv4Addr::from)
+}
+
 /// `length` rounded up to the four bytes every message and attribute is padded
 /// to.
 const fn aligned(length: usize) -> usize {
@@ -316,6 +353,61 @@ mod tests {
         a_message(RTM_NEWADDR, &body)
     }
 
+    /// An IPv6 address message, with `flags` in its header and `attributes`
+    /// after it.
+    fn an_ipv6_address(index: u32, flags: u8, attributes: &[(u16, Vec<u8>)]) -> Vec<u8> {
+        let mut body = vec![AF_INET6, 64, flags, 0];
+        body.extend_from_slice(&index.to_ne_bytes());
+        for (kind, value) in attributes {
+            body.extend(an_attribute(*kind, value));
+        }
+        a_message(RTM_NEWADDR, &body)
+    }
+
+    /// **An IPv6 address is read onto its interface once the kernel has
+    /// finished checking it** — one still tentative, or one whose check failed,
+    /// is stepped over, whether the kernel says so in the header's flags or in
+    /// `IFA_FLAGS`, which outranks the header; and the request asks for every
+    /// family.
+    #[test]
+    fn an_ipv6_address_is_read_once_the_kernel_has_finished_checking_it() {
+        let joinable = IFF_UP | IFF_RUNNING | IFF_MULTICAST;
+        let links = [a_link(2, "cable0", joinable), the_end()].concat();
+        let usable = Ipv6Addr::new(0xfe80, 0, 0, 0, 0xa406, 0xe5ff, 0xfe4b, 0xac9e);
+        let tentative = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
+        let failed = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 2);
+        let checked_since = Ipv6Addr::new(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7);
+        let octets = |address: Ipv6Addr| address.octets().to_vec();
+        let addresses = [
+            an_ipv6_address(2, 0x80, &[(IFA_ADDRESS, octets(usable))]),
+            an_ipv6_address(2, 0x40, &[(IFA_ADDRESS, octets(tentative))]),
+            an_ipv6_address(
+                2,
+                0,
+                &[
+                    (IFA_ADDRESS, octets(failed)),
+                    (IFA_FLAGS, 0x08_u32.to_ne_bytes().to_vec()),
+                ],
+            ),
+            an_ipv6_address(
+                2,
+                0x40,
+                &[
+                    (IFA_ADDRESS, octets(checked_since)),
+                    (IFA_FLAGS, 0x200_u32.to_ne_bytes().to_vec()),
+                ],
+            ),
+            the_end(),
+        ]
+        .concat();
+
+        let interfaces = interfaces_in(&links, &addresses).unwrap();
+        let cable = interfaces.first().unwrap();
+        assert!(cable.addresses.is_empty(), "{cable:?}");
+        assert_eq!(cable.ipv6, vec![usable, checked_since]);
+        assert_eq!(every_address().get(HEADER), Some(&AF_UNSPEC));
+    }
+
     /// The end of a dump.
     fn the_end() -> Vec<u8> {
         a_message(NLMSG_DONE, &0_i32.to_ne_bytes())
@@ -357,18 +449,21 @@ mod tests {
                     name: "lo".to_owned(),
                     flags: IFF_UP | IFF_RUNNING | IFF_LOOPBACK,
                     addresses: vec![Ipv4Addr::LOCALHOST],
+                    ipv6: Vec::new(),
                 },
                 Interface {
                     index: 2,
                     name: "eth0".to_owned(),
                     flags: joinable,
                     addresses: vec![Ipv4Addr::new(10, 61, 1, 1)],
+                    ipv6: Vec::new(),
                 },
                 Interface {
                     index: 3,
                     name: "wlan0".to_owned(),
                     flags: joinable,
                     addresses: vec![Ipv4Addr::new(10, 61, 2, 1)],
+                    ipv6: Vec::new(),
                 },
             ]
         );

@@ -263,6 +263,47 @@ not on whichever one the kernel would pick:
   person or an agent chooses (ADR 0003). A reader of this wire needs to change
   nothing; a responder on a machine with several networks answers on each.
 
+## A network with no IPv4 address
+
+Added 2026-09-15, additively. Two machines on one cable with no DHCP server, an
+office whose router is down, and a network run IPv6-only have no IPv4 address in
+common, and each interface on them still has an IPv6 link-local address. An alo
+machine is found on those too:
+
+- **The IPv6 group.** `alo-agentd` answers discovery on a second socket, IPv6
+  only, at port `5353`, joined to **`ff02::fb`** (RFC 6762 §3) on every interface
+  that is up and running, carries multicast, has an IPv6 link-local address
+  (`fe80::/10`) the kernel has finished checking, and is not loopback — and again
+  whenever the kernel says an address appeared. A machine looking asks `ff02::fb`
+  on each such interface, from that interface's own link-local address. An
+  interface that cannot be joined is a line in the service log; a kernel with no
+  IPv6 in it is a line in the log and a machine discovered over IPv4 alone.
+- **The same bytes in both families.** The question, the machine's answer (its
+  identity and port `7610`) and the workspace answer are byte for byte what they
+  are over IPv4, and a packet saying more than presence is refused whichever
+  family carried it. An answer still carries no address record.
+- **The scope rule.** A link-local address names no network by itself — every
+  interface has one in `fe80::/10` — so an address measured off a link-local
+  answer or connection is kept **with the interface it was heard on** (its scope
+  id, RFC 4007 §11: `fe80::a406:e5ff:fe4b:ac9e%3`), and that is how it is dialled
+  (`alo_nearby::HeardFrom`). An answer from a link-local address with no scope is
+  refused (`alo_nearby::NotNearby::NamesNoNetwork`, nothing sent back) rather
+  than written down, and a proposal from one is measured nowhere and so refused
+  as not found. A scope is local to the machine that measured it and never
+  crosses the wire.
+- **The port in both families.** The port `7610` is one listener accepting IPv6
+  and IPv4 (an IPv4 peer is read as its IPv4 address, never as `::ffff:a.b.c.d`),
+  so a proposal, a confirmation, a verb and a question arrive over link-local
+  exactly as over IPv4, and a proposal's measurement is made in the family and on
+  the interface its connection came from.
+- **One machine in both families.** A machine heard over IPv4 and over IPv6 on
+  one network is one machine with an address in each (`alo_nearby::Found::also_at`),
+  and a workspace likewise. **Where both answered, the IPv4 address is the one
+  written first and so the one a pairing dials**; where only IPv6 answered, the
+  scoped link-local address is.
+- There is still no setting: no *IPv6 on/off*, and no family chosen by a person or
+  an agent (ADR 0003). A request naming one is refused on either door.
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

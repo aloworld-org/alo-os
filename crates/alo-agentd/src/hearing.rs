@@ -32,7 +32,7 @@
 //! would age. A confirmation needs no such measurement and gets none.
 
 use std::io::Write as _;
-use std::net::IpAddr;
+
 use std::time::SystemTime;
 
 use alo_asking::THE_QUESTION_PATH;
@@ -40,7 +40,9 @@ use alo_capability::Grants;
 use alo_corridor::{Doorway, Naming, THE_CHANGE_PATH, THE_OUTCOME_PATH, THE_READ_PATH};
 use alo_egress::EgressPolicy;
 use alo_nearby::http::{self, Message};
-use alo_nearby::{NotNearby, Pairing, Surface, THE_CONFIRMATION_PATH, THE_PROPOSAL_PATH};
+use alo_nearby::{
+    HeardFrom, NotNearby, Pairing, Surface, THE_CONFIRMATION_PATH, THE_PROPOSAL_PATH,
+};
 
 use crate::looking::found_at;
 use crate::network::TheNetwork;
@@ -171,7 +173,7 @@ pub fn heard(
 /// a pairing kept written down.
 fn on_the_pairing_wire(
     stream: std::net::TcpStream,
-    from: IpAddr,
+    from: HeardFrom,
     message: &Message,
     doorway: &mut Doorway<'_, '_>,
     judging: &mut Judging<'_>,
@@ -184,7 +186,7 @@ fn on_the_pairing_wire(
     } else {
         Vec::new()
     };
-    let arrived = alo_nearby::Arrived::carried(stream, from, message);
+    let arrived = alo_nearby::Arrived::carried(stream, from.ip(), message);
     let heard = {
         let mut shared = judging.network.locked();
         let (proposals, pairings) = shared.both();
@@ -248,14 +250,14 @@ fn a_pairing_was_kept(
 /// A read, a change or an outcome, handed to `alo-corridor` under the lock.
 fn on_the_verb_wire(
     stream: std::net::TcpStream,
-    from: IpAddr,
+    from: HeardFrom,
     message: &Message,
     doorway: &mut Doorway<'_, '_>,
     grants: &mut Grants,
     judging: &mut Judging<'_>,
     now: SystemTime,
 ) -> Result<Heard, NotServed> {
-    let arrived = alo_corridor::Arrived::carried(stream, from, message);
+    let arrived = alo_corridor::Arrived::carried(stream, from.ip(), message);
     let heard = {
         let shared = judging.network.locked();
         arrived.considered(

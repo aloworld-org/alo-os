@@ -46,17 +46,28 @@
 //! networks is not a setting either — it is what the machine is plugged into —
 //! and what is said on each is the same bytes, because there is one
 //! [`Answering`] and it answers whoever asked.
+//!
+//! # In both families
+//!
+//! A network nobody configured often has no IPv4 address on it, and every
+//! interface on it still has an IPv6 link-local one. So the machine answers
+//! discovery on a second socket, IPv6 only, joined at `ff02::fb` on every
+//! interface with a link-local address — an [`Answering`] holding **the same
+//! presence and the same workspace** as the IPv4 one, so the same bytes answer
+//! in both families — and the port is one listener that accepts both families.
+//! A kernel with no IPv6 in it is a line in the service log and a machine
+//! discovered over IPv4 as before, never a machine that will not start.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
+use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::num::NonZeroU16;
-use std::os::fd::{AsFd as _, BorrowedFd};
+use std::os::fd::{AsFd, BorrowedFd};
 
 use alo_corridor::AT_MOST_A_VERB;
 use alo_nearby::http::{self, WHILE_THE_WIRE_ANSWERS};
-use alo_nearby::{Answering, MachineId, NotNearby, Presence, THE_ADDRESS, THE_PORT};
+use alo_nearby::{Answering, HeardFrom, MachineId, NotNearby, Presence, THE_ADDRESS, THE_PORT};
 
 use crate::hosting::Hosted;
-use crate::joining::Joining;
+use crate::joining::{DiscoverySockets, Joining};
 use crate::networks::Network;
 use crate::refusing::NotBound;
 use crate::unhosted::Unhosted;
@@ -90,6 +101,12 @@ pub struct Wire {
     discovery: UdpSocket,
     /// This machine, answering that it exists at the port above.
     answering: Answering,
+    /// The socket discovery questions arrive on over IPv6, as something to wait
+    /// on — where this machine could open one.
+    discovery_ipv6: Option<UdpSocket>,
+    /// The same machine answering over IPv6: the same presence and the same
+    /// workspace as [`answering`](Self::answering), on the IPv6 socket.
+    answering_ipv6: Option<Answering>,
     /// The discovery group, joined on every network this machine is on — on a
     /// machine that bound its own sockets, and nothing on sockets a test
     /// handed in.
@@ -112,8 +129,10 @@ pub struct Wire {
 pub struct Knocked {
     /// The connection, to write the reply on.
     pub stream: TcpStream,
-    /// The address it came from, measured off the connection.
-    pub from: IpAddr,
+    /// The address it came from, measured off the connection — with the
+    /// interface, for a link-local IPv6 address, and as IPv4 for an IPv4 peer
+    /// the listener accepted in both families.
+    pub from: HeardFrom,
     /// What it carried, or why it could not be read as a message at all.
     pub message: Result<http::Message, NotNearby>,
 }
@@ -121,39 +140,93 @@ pub struct Knocked {
 impl Wire {
     /// Bind the port and the discovery socket on this machine.
     ///
-    /// The listener on every interface at [`THE_WIRE_PORT`]; the discovery
-    /// socket on every interface at `alo_nearby::THE_PORT`, shared with any
-    /// other responder on the machine and joined to `alo_nearby::THE_ADDRESS`
-    /// **on every network this machine is on** ([`crate::joining`]), which is
-    /// what makes a question on each of those links reach it. A network that
-    /// will not join is a line in the service log and the others are joined; a
-    /// network that appears later is joined when the kernel says so
-    /// ([`Wire::networks_changed`]).
+    /// The listener on every interface at [`THE_WIRE_PORT`], in both families;
+    /// the discovery socket on every interface at `alo_nearby::THE_PORT`, shared
+    /// with any other responder on the machine and joined to
+    /// `alo_nearby::THE_ADDRESS` **on every network this machine is on**
+    /// ([`crate::joining`]), which is what makes a question on each of those
+    /// links reach it; and a second discovery socket over IPv6, joined to
+    /// `alo_nearby::THE_IPV6_ADDRESS` on every interface with a link-local
+    /// address. A network that will not join is a line in the service log and
+    /// the others are joined; a network that appears later is joined when the
+    /// kernel says so ([`Wire::networks_changed`]); a machine that cannot listen
+    /// over IPv6 at all is a line in the log and answers over IPv4.
     ///
     /// # Errors
     ///
-    /// [`NotBound::NoWire`] when either socket will not bind, and nothing is
-    /// listening.
+    /// [`NotBound::NoWire`] when the port or the IPv4 discovery socket will not
+    /// bind, and nothing is listening.
     pub fn bound(here: MachineId) -> Result<Self, NotBound> {
-        let listener =
-            TcpListener::bind((Ipv4Addr::UNSPECIFIED, THE_WIRE_PORT)).map_err(|why| {
-                NotBound::NoWire {
-                    what: "the port presence advertises",
-                    why,
-                }
-            })?;
+        let said = |line: &str| eprintln!("alo-agentd: {line}");
+        let listener = match crate::unix::a_listener_in_both_families_on(THE_WIRE_PORT) {
+            Ok(listener) => listener,
+            Err(why) => {
+                said(&format!(
+                    "the port presence advertises could not be bound over IPv6 ({why}); it is bound over IPv4 alone, and a machine on a network with no IPv4 address cannot reach this one"
+                ));
+                TcpListener::bind((Ipv4Addr::UNSPECIFIED, THE_WIRE_PORT)).map_err(|why| {
+                    NotBound::NoWire {
+                        what: "the port presence advertises",
+                        why,
+                    }
+                })?
+            }
+        };
         let discovery =
             crate::unix::a_shared_datagram_socket_on(THE_PORT).map_err(|why| NotBound::NoWire {
                 what: "the socket discovery is answered on",
                 why,
             })?;
-        let joining = Joining::on_every_network(&discovery, &mut |line| {
-            eprintln!("alo-agentd: {line}");
-        });
+        let discovery_ipv6 = match crate::unix::a_shared_ipv6_datagram_socket_on(THE_PORT) {
+            Ok(socket) => Some(socket),
+            Err(why) => {
+                said(&format!(
+                    "discovery could not listen over IPv6 ({why}); this machine is found over IPv4 alone, and not on a network with no IPv4 address"
+                ));
+                None
+            }
+        };
+        let joining = Joining::on_every_network(
+            DiscoverySockets {
+                ipv4: &discovery,
+                ipv6: discovery_ipv6.as_ref(),
+            },
+            &mut |line| said(line),
+        );
         let mut wire = Self::on(listener, discovery, here, THE_PORT)?;
+        if let Some(socket) = discovery_ipv6 {
+            wire = wire.answering_over_ipv6_on(socket)?;
+        }
         wire.joining = Some(joining);
         wire.looks_at = SocketAddr::new(THE_ADDRESS.into(), THE_PORT);
         Ok(wire)
+    }
+
+    /// The same machine, also answering discovery over IPv6 on `socket` with
+    /// the presence and the workspace it answers with over IPv4 — so what is
+    /// said is the same bytes in both families.
+    ///
+    /// [`Wire::bound`] hands in the machine's own socket; a test on one host
+    /// hands in one of its own, as it does to [`Wire::on`].
+    ///
+    /// # Errors
+    ///
+    /// [`NotBound::NoWire`] when the socket cannot be waited on beside the
+    /// others.
+    pub fn answering_over_ipv6_on(self, socket: UdpSocket) -> Result<Self, NotBound> {
+        let waiting_on = socket.try_clone().map_err(|why| NotBound::NoWire {
+            what: "the socket discovery is answered on over IPv6",
+            why,
+        })?;
+        let mut answering = Answering::on(socket, self.answering.presence().clone());
+        if let Some(port) = self.hosts().and_then(NonZeroU16::new) {
+            answering = answering.hosting_a_workspace_at(port);
+        }
+        Ok(Self {
+            discovery_ipv6: Some(waiting_on),
+            answering_ipv6: Some(answering),
+            ..self
+        })
     }
 
     /// This machine on sockets somebody else bound.
@@ -188,6 +261,8 @@ impl Wire {
             listener,
             discovery: waiting_on,
             answering: Answering::on(discovery, Presence::of(here, port)),
+            discovery_ipv6: None,
+            answering_ipv6: None,
             joining: None,
             unhosted: None,
             asking_at,
@@ -229,6 +304,9 @@ impl Wire {
         match hosted {
             Hosted::At(port) => Self {
                 answering: self.answering.hosting_a_workspace_at(port),
+                answering_ipv6: self
+                    .answering_ipv6
+                    .map(|answering| answering.hosting_a_workspace_at(port)),
                 ..self
             },
             Hosted::Refused(why) => Self {
@@ -284,6 +362,13 @@ impl Wire {
         self.discovery.as_fd()
     }
 
+    /// What to wait on for a discovery question over IPv6 — nothing where this
+    /// machine answers over IPv4 alone.
+    #[must_use]
+    pub fn discovery_ipv6_waiting_on(&self) -> Option<BorrowedFd<'_>> {
+        self.discovery_ipv6.as_ref().map(AsFd::as_fd)
+    }
+
     /// What to wait on for the kernel saying one of this machine's networks
     /// appeared, changed or went — nothing on sockets a test handed in, or
     /// where the kernel would not say.
@@ -300,7 +385,11 @@ impl Wire {
     /// is heard and nothing it says. A failure is a line in the service log.
     pub fn networks_changed(&self) {
         if let Some(joining) = &self.joining {
-            joining.changed(&self.discovery, &mut |line| {
+            let sockets = DiscoverySockets {
+                ipv4: &self.discovery,
+                ipv6: self.discovery_ipv6.as_ref(),
+            };
+            joining.changed(sockets, &mut |line| {
                 eprintln!("alo-agentd: {line}");
             });
         }
@@ -346,7 +435,7 @@ impl Wire {
         let message = http::read_message_of_at_most(&stream, AT_MOST_A_VERB);
         Ok(Knocked {
             stream,
-            from: who.ip(),
+            from: HeardFrom::of(who),
             message,
         })
     }
@@ -365,6 +454,19 @@ impl Wire {
     /// As [`Answering::answer_one`].
     pub fn answer_discovery(&self) -> Result<Option<SocketAddr>, NotNearby> {
         self.answering.answer_one()
+    }
+
+    /// Answer one discovery question that arrived over IPv6, if what arrived
+    /// was one — with the same presence and workspace as over IPv4. Nothing at
+    /// all on a machine that answers over IPv4 alone.
+    ///
+    /// # Errors
+    ///
+    /// As [`Answering::answer_one`].
+    pub fn answer_discovery_over_ipv6(&self) -> Result<Option<SocketAddr>, NotNearby> {
+        self.answering_ipv6
+            .as_ref()
+            .map_or(Ok(None), Answering::answer_one)
     }
 }
 
@@ -448,7 +550,7 @@ mod tests {
             .write_all(alo_nearby::http::a_request("/somewhere", "h", "one line\n").as_bytes())
             .unwrap();
         let knocked = wire.accept_one().unwrap();
-        assert!(knocked.from.is_loopback());
+        assert!(knocked.from.ip().is_loopback());
         let message = knocked.message.unwrap();
         assert_eq!(message.first, "POST /somewhere HTTP/1.1");
         assert_eq!(message.body, "one line\n");

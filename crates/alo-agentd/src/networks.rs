@@ -28,13 +28,29 @@
 //! - **Not loopback**, by the flag and by the address: a question on loopback
 //!   reaches this machine only, which is not a network.
 //!
+//! # And over IPv6, where there is no IPv4 address at all
+//!
+//! A network nobody configured often has no IPv4 address on it — two machines
+//! on one cable with no DHCP server, an office whose router is down, a network
+//! run IPv6-only — and every interface on one still gives itself an IPv6
+//! link-local address. So [`link_local_networks`] is the same rule with the
+//! address rule changed: up and running, multicast, not loopback, and **an IPv6
+//! link-local address** (`fe80::/10`) the kernel has finished checking, the
+//! first of which is the one questions leave from. Discovery is joined there at
+//! `ff02::fb` on that interface ([`alo_nearby::THE_IPV6_ADDRESS`]). An interface
+//! with both is two networks — one per family — and what is said on each is the
+//! same bytes. [`every_discovery_network`] is both lists, **every IPv4 network
+//! first**: a machine heard in both families is written down at the address
+//! heard first, which is the one a pairing dials, and an IPv4 address keeps
+//! dialling what it dialled before a second family was asked.
+//!
 //! # And there is no setting
 //!
 //! Nothing here takes a list of networks from a person, an agent or a file (ADR
 //! 0003): a list of networks to advertise on is the trusted-network switch by
 //! another name. What the machine is plugged into is the whole of the input.
 
-use std::net::Ipv4Addr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 /// `IFF_UP`: the interface is administratively up.
 pub const IFF_UP: u32 = 0x1;
@@ -56,10 +72,15 @@ pub struct Interface {
     pub flags: u32,
     /// Its IPv4 addresses, in the order the kernel listed them.
     pub addresses: Vec<Ipv4Addr>,
+    /// Its IPv6 addresses that can be used now — not ones the kernel is still
+    /// checking nobody else holds, nor ones that check failed — in the order
+    /// the kernel listed them.
+    pub ipv6: Vec<Ipv6Addr>,
 }
 
 /// One network discovery is joined and asked on: an interface, and the address
-/// it is joined and asked from.
+/// it is joined and asked from — an IPv4 address, or an IPv6 link-local one, so
+/// an interface with both is two networks.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Network {
     /// The kernel's index for the interface.
@@ -67,7 +88,7 @@ pub struct Network {
     /// The interface's name.
     name: String,
     /// The address the group is joined at, and questions leave from.
-    address: Ipv4Addr,
+    address: IpAddr,
 }
 
 impl Network {
@@ -85,7 +106,7 @@ impl Network {
 
     /// The address the group is joined at, and questions leave from.
     #[must_use]
-    pub const fn address(&self) -> Ipv4Addr {
+    pub const fn address(&self) -> IpAddr {
         self.address
     }
 }
@@ -97,10 +118,7 @@ impl Network {
 pub fn discovery_networks(reported: &[Interface]) -> Vec<Network> {
     reported
         .iter()
-        .filter(|interface| {
-            let has = |flag: u32| interface.flags & flag == flag;
-            has(IFF_UP) && has(IFF_RUNNING) && has(IFF_MULTICAST) && !has(IFF_LOOPBACK)
-        })
+        .filter(|interface| carries_discovery(interface))
         .filter_map(|interface| {
             let address = interface
                 .addresses
@@ -110,10 +128,55 @@ pub fn discovery_networks(reported: &[Interface]) -> Vec<Network> {
             Some(Network {
                 index: interface.index,
                 name: interface.name.clone(),
-                address,
+                address: address.into(),
             })
         })
         .collect()
+}
+
+/// Every network discovery joins and asks on over IPv6, out of what the kernel
+/// reports: each interface that is up and running, carries multicast, has an
+/// IPv6 link-local address, and is not loopback — in the order the kernel
+/// reported them.
+///
+/// Link-local and nothing else: `ff02::fb` is a link-local group, a question to
+/// it is asked on one interface from that interface's own link-local address,
+/// and that address is the one every interface has with nobody configuring it.
+#[must_use]
+pub fn link_local_networks(reported: &[Interface]) -> Vec<Network> {
+    reported
+        .iter()
+        .filter(|interface| carries_discovery(interface))
+        .filter_map(|interface| {
+            let address = interface.ipv6.iter().copied().find(is_link_local)?;
+            Some(Network {
+                index: interface.index,
+                name: interface.name.clone(),
+                address: address.into(),
+            })
+        })
+        .collect()
+}
+
+/// Every network discovery joins and asks on, in both families: every IPv4
+/// network, then every IPv6 link-local one — see this module's documentation
+/// for why in that order.
+#[must_use]
+pub fn every_discovery_network(reported: &[Interface]) -> Vec<Network> {
+    let mut networks = discovery_networks(reported);
+    networks.extend(link_local_networks(reported));
+    networks
+}
+
+/// Up and running, carrying multicast, and not loopback.
+fn carries_discovery(interface: &Interface) -> bool {
+    let has = |flag: u32| interface.flags & flag == flag;
+    has(IFF_UP) && has(IFF_RUNNING) && has(IFF_MULTICAST) && !has(IFF_LOOPBACK)
+}
+
+/// Whether `address` is in `fe80::/10`.
+const fn is_link_local(address: &Ipv6Addr) -> bool {
+    address.segments()[0] & 0xffc0 == 0xfe80
 }
 
 /// Join each of `networks` with `join`, and answer with the ones that joined.
@@ -149,7 +212,7 @@ pub fn joined_on(
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
-    use std::net::Ipv4Addr;
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
     use super::*;
 
@@ -163,8 +226,26 @@ mod tests {
             name: name.to_owned(),
             flags,
             addresses: address.into_iter().collect(),
+            ipv6: Vec::new(),
         }
     }
+
+    /// An interface with these flags and these IPv6 addresses, and no IPv4.
+    fn an_ipv6_interface(index: u32, name: &str, flags: u32, ipv6: &[Ipv6Addr]) -> Interface {
+        Interface {
+            index,
+            name: name.to_owned(),
+            flags,
+            addresses: Vec::new(),
+            ipv6: ipv6.to_vec(),
+        }
+    }
+
+    /// The link-local address the wired interface gave itself.
+    const WIRED_LINK_LOCAL: Ipv6Addr =
+        Ipv6Addr::new(0xfe80, 0, 0, 0, 0xa406, 0xe5ff, 0xfe4b, 0xac9e);
+    /// A global IPv6 address, which is not link-local.
+    const GLOBAL: Ipv6Addr = Ipv6Addr::new(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7);
 
     /// The wired network's address.
     const WIRED: Ipv4Addr = Ipv4Addr::new(10, 61, 1, 1);
@@ -184,7 +265,10 @@ mod tests {
                 .iter()
                 .map(|network| (network.index(), network.name(), network.address()))
                 .collect::<Vec<_>>(),
-            vec![(2, "eth0", WIRED), (3, "wlan0", WIRELESS)]
+            vec![
+                (2, "eth0", IpAddr::from(WIRED)),
+                (3, "wlan0", IpAddr::from(WIRELESS))
+            ]
         );
     }
 
@@ -235,7 +319,146 @@ mod tests {
         let mut interface = an_interface(2, "eth0", JOINABLE, Some(Ipv4Addr::UNSPECIFIED));
         interface.addresses.extend([WIRED, WIRELESS]);
         let networks = discovery_networks(&[interface]);
-        assert_eq!(networks.first().unwrap().address(), WIRED);
+        assert_eq!(networks.first().unwrap().address(), IpAddr::from(WIRED));
+    }
+
+    /// **Over IPv6, every interface that is up, carries multicast and has a
+    /// link-local address is joined** — one with no IPv4 address at all, the
+    /// cable between two machines with no DHCP server — at the first link-local
+    /// address, past a global one listed before it.
+    #[test]
+    fn every_interface_with_a_link_local_address_is_joined_over_ipv6() {
+        let networks = link_local_networks(&[
+            an_ipv6_interface(2, "eth0", JOINABLE, &[GLOBAL, WIRED_LINK_LOCAL]),
+            an_ipv6_interface(
+                3,
+                "wlan0",
+                JOINABLE,
+                &[Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 9)],
+            ),
+        ]);
+        assert_eq!(
+            networks
+                .iter()
+                .map(|network| (network.index(), network.name(), network.address()))
+                .collect::<Vec<_>>(),
+            vec![
+                (2, "eth0", IpAddr::from(WIRED_LINK_LOCAL)),
+                (
+                    3,
+                    "wlan0",
+                    IpAddr::from(Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 9))
+                )
+            ]
+        );
+        assert!(
+            discovery_networks(&[an_ipv6_interface(2, "eth0", JOINABLE, &[WIRED_LINK_LOCAL])])
+                .is_empty()
+        );
+    }
+
+    /// **Over IPv6, an interface that is down is not joined**, switched off or
+    /// with nothing at the other end.
+    #[test]
+    fn an_interface_that_is_down_is_not_joined_over_ipv6() {
+        let networks = link_local_networks(&[
+            an_ipv6_interface(2, "eth0", IFF_MULTICAST, &[WIRED_LINK_LOCAL]),
+            an_ipv6_interface(3, "eth1", IFF_UP | IFF_MULTICAST, &[WIRED_LINK_LOCAL]),
+        ]);
+        assert!(networks.is_empty(), "{networks:?}");
+    }
+
+    /// **Over IPv6, an interface without multicast is not joined.**
+    #[test]
+    fn an_interface_without_multicast_is_not_joined_over_ipv6() {
+        let networks = link_local_networks(&[an_ipv6_interface(
+            4,
+            "tun0",
+            IFF_UP | IFF_RUNNING,
+            &[WIRED_LINK_LOCAL],
+        )]);
+        assert!(networks.is_empty(), "{networks:?}");
+    }
+
+    /// **Over IPv6, an interface without a link-local address is not joined** —
+    /// not one with no IPv6 address, and not one whose only address is global,
+    /// because the group is link-local and a question to it leaves from the
+    /// interface's own link-local address.
+    #[test]
+    fn an_interface_without_a_link_local_address_is_not_joined_over_ipv6() {
+        let networks = link_local_networks(&[
+            an_ipv6_interface(2, "eth0", JOINABLE, &[]),
+            an_ipv6_interface(3, "eth1", JOINABLE, &[GLOBAL, Ipv6Addr::UNSPECIFIED]),
+            an_interface(5, "eth2", JOINABLE, Some(WIRED)),
+        ]);
+        assert!(networks.is_empty(), "{networks:?}");
+    }
+
+    /// **Over IPv6, loopback is not joined**, by its flag — whatever address
+    /// it carries.
+    #[test]
+    fn loopback_is_not_joined_over_ipv6() {
+        let networks = link_local_networks(&[an_ipv6_interface(
+            1,
+            "lo",
+            JOINABLE | IFF_LOOPBACK,
+            &[Ipv6Addr::LOCALHOST, WIRED_LINK_LOCAL],
+        )]);
+        assert!(networks.is_empty(), "{networks:?}");
+    }
+
+    /// **An interface with both families is two networks, every IPv4 one
+    /// first**, so a machine heard in both is dialled where it was before IPv6
+    /// was asked.
+    #[test]
+    fn an_interface_with_both_families_is_two_networks_ipv4_first() {
+        let mut both = an_interface(2, "eth0", JOINABLE, Some(WIRED));
+        both.ipv6.push(WIRED_LINK_LOCAL);
+        let networks = every_discovery_network(&[
+            an_ipv6_interface(
+                3,
+                "cable0",
+                JOINABLE,
+                &[Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 3)],
+            ),
+            both,
+        ]);
+        assert_eq!(
+            networks
+                .iter()
+                .map(|network| (network.name(), network.address().is_ipv4()))
+                .collect::<Vec<_>>(),
+            vec![("eth0", true), ("cable0", false), ("eth0", false)]
+        );
+    }
+
+    /// **A network over IPv6 that cannot be joined is a line in the service
+    /// log too**, naming the interface and its address, and the others are
+    /// joined.
+    #[test]
+    fn a_network_over_ipv6_that_cannot_be_joined_is_a_line_and_the_others_are_joined() {
+        let mut both = an_interface(2, "eth0", JOINABLE, Some(WIRED));
+        both.ipv6.push(WIRED_LINK_LOCAL);
+        let mut lines = Vec::new();
+        let joined = joined_on(
+            every_discovery_network(&[both]),
+            |network| {
+                if network.address().is_ipv6() {
+                    Err(std::io::Error::from(std::io::ErrorKind::AddrNotAvailable))
+                } else {
+                    Ok(())
+                }
+            },
+            |line| lines.push(line.to_owned()),
+        );
+        assert_eq!(joined.len(), 1, "{joined:?}");
+        assert!(joined.first().unwrap().address().is_ipv4());
+        assert_eq!(lines.len(), 1, "{lines:?}");
+        let line = lines.first().unwrap();
+        assert!(
+            line.contains("eth0") && line.contains("fe80::a406"),
+            "{line}"
+        );
     }
 
     /// **A network that cannot be joined is a line in the service log, and the
@@ -301,8 +524,9 @@ mod no_door_chooses_a_network {
     };
     use crate::wire::Wire;
 
-    /// **No request on either door names, chooses or turns off a network to
-    /// discover or advertise on.** Requests shaped as though one could — on the
+    /// **No request on either door names, chooses or turns off a network — or a
+    /// family, IPv4 or IPv6 — to discover, advertise or pair on.** Requests
+    /// shaped as though one could — on the
     /// person's door and on the agent's — are refused, nothing is written
     /// down, and what the machine advertises is what it was.
     #[test]
@@ -314,6 +538,10 @@ mod no_door_chooses_a_network {
             r#"{"networks":{}}"#,
             r#"{"advertised":{"interface":"wlan0"}}"#,
             r#"{"workspaces":{"interface":"eth0"}}"#,
+            r#"{"ipv6":{"off":true}}"#,
+            r#"{"discover-on":{"family":"ipv4"}}"#,
+            r#"{"advertised":{"family":"ipv6"}}"#,
+            r#"{"pair":{"machine":"aaaabbbbccccddddeeeeffff00001111","may":["models"],"seconds":60,"family":"ipv4"}}"#,
         ];
         let quiet = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         let wire = Wire::on(

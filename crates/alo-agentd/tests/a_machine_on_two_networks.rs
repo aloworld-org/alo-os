@@ -116,6 +116,28 @@ fn a_machine_on_two_networks_is_found_on_each_of_them() {
     }
 }
 
+/// The IPv4 addresses among `addresses`, in order.
+///
+/// Each `veth` here also gives itself an IPv6 link-local address, and since
+/// discovery is asked and answered over those too (task 23, tested in
+/// `crate::two_machines_with_no_ipv4`), a machine is heard on each network in
+/// both families. What this test holds is the IPv4 half, which is the half
+/// task 22 is about.
+fn ipv4(addresses: impl Iterator<Item = alo_nearby::HeardFrom>) -> Vec<IpAddr> {
+    addresses
+        .map(|address| address.ip())
+        .filter(IpAddr::is_ipv4)
+        .collect()
+}
+
+/// How many IPv4 networks `wire` has joined discovery on.
+fn ipv4_networks(wire: &Wire) -> usize {
+    wire.joined()
+        .iter()
+        .filter(|network| network.address().is_ipv4())
+        .count()
+}
+
 /// Refuse to run unless this is the binary re-run as `which`.
 fn must_be(which: &str) {
     assert_eq!(
@@ -251,7 +273,7 @@ fn reception_inside_its_own_network() {
     );
     let before = found_by_name(&the_studio(), the_group()).expect("the studio is found");
     assert_eq!(
-        before.addresses().collect::<Vec<_>>(),
+        ipv4(before.addresses()),
         vec![IpAddr::from(STUDIO_WIRED)],
         "{before:?}"
     );
@@ -270,13 +292,24 @@ fn reception_inside_its_own_network() {
     assert_eq!(machine.machine, the_studio());
     assert_eq!(machine.port, THE_WIRE_PORT);
     assert_eq!(
-        machine.addresses().collect::<BTreeSet<_>>(),
+        ipv4(machine.addresses())
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
         both,
         "{machine:?}"
     );
-    assert_eq!(machine.also_at.len(), 1, "{machine:?}");
+    assert_eq!(
+        ipv4(machine.also_at.iter().copied()).len(),
+        1,
+        "{machine:?}"
+    );
     let by_name = found_by_name(&the_studio(), the_group()).unwrap();
-    assert_eq!(by_name.addresses().collect::<BTreeSet<_>>(), both);
+    assert_eq!(
+        ipv4(by_name.addresses())
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        both
+    );
     println!("one machine, an address on each network");
 
     assert_eq!(around.workspaces.len(), 1, "{around:?}");
@@ -284,7 +317,9 @@ fn reception_inside_its_own_network() {
     assert_eq!(workspace.host(), &the_studio());
     assert_eq!(workspace.port(), WORKSPACE);
     assert_eq!(
-        workspace.addresses().collect::<BTreeSet<_>>(),
+        ipv4(workspace.addresses())
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
         both,
         "{workspace:?}"
     );
@@ -366,8 +401,8 @@ fn the_studio_inside_its_own_network() {
     }
     let wire = Wire::bound(the_studio()).unwrap().hosting(hosted);
     let with_one = told(&wire);
-    assert_eq!(wire.joined().len(), 1, "{:?}", wire.joined());
-    println!("bound on {}", wire.joined().len());
+    assert_eq!(ipv4_networks(&wire), 1, "{:?}", wire.joined());
+    println!("bound on {}", ipv4_networks(&wire));
 
     std::thread::scope(|scope| {
         scope.spawn(|| while wire.answer_discovery().is_ok() {});
@@ -391,12 +426,12 @@ fn the_studio_inside_its_own_network() {
             std::thread::sleep(Duration::from_millis(20));
         }
         let until = Instant::now() + Duration::from_secs(10);
-        while wire.joined().len() < 2 {
+        while ipv4_networks(&wire) < 2 {
             assert!(Instant::now() < until, "joined on {:?}", wire.joined());
             wire.networks_changed();
             std::thread::sleep(Duration::from_millis(20));
         }
-        println!("joined on {}", wire.joined().len());
+        println!("joined on {}", ipv4_networks(&wire));
 
         // 5. Reception is done looking.
         while lines.next().is_some() {}

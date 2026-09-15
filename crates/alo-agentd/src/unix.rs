@@ -60,7 +60,9 @@
 //!
 //! # And the fourth and fifth: a shared port, and the kernel's interfaces
 //!
-//! `a_shared_datagram_socket_on` sets `SO_REUSEADDR`, which `std` cannot. And
+//! `a_shared_datagram_socket_on` sets `SO_REUSEADDR`, which `std` cannot, and
+//! its IPv6 twin and `a_listener_in_both_families_on` set `IPV6_V6ONLY` one
+//! way and the other, which `std` cannot either. And
 //! `a_route_dump`, `told_when_networks_change` and `emptied` are the kernel's
 //! routing socket, which `std` has no spelling for at all: which interfaces this
 //! machine has, and when that changes, so discovery is joined on every network
@@ -162,6 +164,85 @@ pub(crate) fn a_shared_datagram_socket_on(
     Ok(std::net::UdpSocket::from(socket))
 }
 
+/// A datagram socket on every interface at `port` over IPv6 only, shared with
+/// whatever else on this machine is bound there.
+///
+/// [`a_shared_datagram_socket_on`]'s twin for `ff02::fb`, for the same reason
+/// and one more `std` cannot set: `IPV6_V6ONLY`, so this socket hears IPv6 and
+/// the other hears IPv4 whatever `net.ipv6.bindv6only` says, and no question is
+/// heard — or answered — twice.
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error` — including a kernel with
+/// IPv6 left out of it, which the caller reads as *discovery over IPv4 only*.
+pub(crate) fn a_shared_ipv6_datagram_socket_on(
+    port: u16,
+) -> Result<std::net::UdpSocket, std::io::Error> {
+    let socket = rustix::net::socket(
+        rustix::net::AddressFamily::INET6,
+        rustix::net::SocketType::DGRAM,
+        None,
+    )?;
+    rustix::net::sockopt::set_ipv6_v6only(&socket, true)?;
+    rustix::net::sockopt::set_socket_reuseaddr(&socket, true)?;
+    rustix::net::bind(
+        &socket,
+        &std::net::SocketAddr::from((std::net::Ipv6Addr::UNSPECIFIED, port)),
+    )?;
+    Ok(std::net::UdpSocket::from(socket))
+}
+
+/// A listener at `port` on every interface in **both** families: IPv6, and
+/// IPv4 arriving as IPv4-mapped IPv6 addresses.
+///
+/// `std` binds one family per listener and cannot clear `IPV6_V6ONLY`, and the
+/// wire's port is one listener waited on by one service — so a machine on a
+/// network with no IPv4 address is reached on the same socket as one with. The
+/// option is cleared explicitly rather than left to `net.ipv6.bindv6only`, so
+/// what a machine accepts does not depend on a sysctl. An IPv4 peer's address
+/// is read back as IPv4 by whoever accepts (`alo_nearby::HeardFrom::of`).
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error` — including a kernel with
+/// IPv6 left out of it, where the caller binds IPv4 alone.
+pub(crate) fn a_listener_in_both_families_on(
+    port: u16,
+) -> Result<std::net::TcpListener, std::io::Error> {
+    /// As many connections as wait to be accepted as `std` lets wait.
+    const WAITING: i32 = 128;
+    let socket = rustix::net::socket(
+        rustix::net::AddressFamily::INET6,
+        rustix::net::SocketType::STREAM,
+        None,
+    )?;
+    rustix::net::sockopt::set_ipv6_v6only(&socket, false)?;
+    rustix::net::sockopt::set_socket_reuseaddr(&socket, true)?;
+    rustix::net::bind(
+        &socket,
+        &std::net::SocketAddr::from((std::net::Ipv6Addr::UNSPECIFIED, port)),
+    )?;
+    rustix::net::listen(&socket, WAITING)?;
+    Ok(std::net::TcpListener::from(socket))
+}
+
+/// Shut `socket` for sending, so the next answer on it fails — how a test
+/// stands in for a discovery socket the machine has stopped letting speak.
+///
+/// # Errors
+///
+/// Whatever the machine said other than that the socket has no peer, which a
+/// datagram socket never has and which the kernel says while shutting it
+/// anyway.
+#[cfg(test)]
+pub(crate) fn stopped_sending(socket: &std::net::UdpSocket) -> Result<(), std::io::Error> {
+    match rustix::net::shutdown(socket, rustix::net::Shutdown::Write) {
+        Ok(()) | Err(rustix::io::Errno::NOTCONN) => Ok(()),
+        Err(why) => Err(std::io::Error::from(why)),
+    }
+}
+
 /// Put one request on the kernel's routing socket and read everything it
 /// answers, until `ended` says a datagram was the last.
 ///
@@ -216,10 +297,13 @@ pub(crate) fn a_route_dump(
     Err(std::io::Error::from(std::io::ErrorKind::InvalidData))
 }
 
-/// A socket the kernel writes to whenever a link, or an IPv4 address on one,
-/// appears, changes or goes.
+/// A socket the kernel writes to whenever a link, or an address on one in
+/// either family, appears, changes or goes.
 ///
-/// Subscribed to `RTMGRP_LINK` and `RTMGRP_IPV4_IFADDR` and nothing else, and
+/// Subscribed to `RTMGRP_LINK`, `RTMGRP_IPV4_IFADDR` and `RTMGRP_IPV6_IFADDR`
+/// and nothing else — the last being how a link-local address the kernel has
+/// finished checking is heard about, a second or two after its link came up —
+/// and
 /// not blocking, so `crate::joining` can wait on it beside everything else the
 /// service waits on and empty it without sleeping. What arrived is not read for
 /// its meaning: it is the signal to ask the kernel again.
@@ -234,6 +318,8 @@ pub(crate) fn told_when_networks_change() -> Result<std::os::fd::OwnedFd, std::i
     const LINKS: u32 = 0x1;
     /// `RTMGRP_IPV4_IFADDR`.
     const IPV4_ADDRESSES: u32 = 0x10;
+    /// `RTMGRP_IPV6_IFADDR`.
+    const IPV6_ADDRESSES: u32 = 0x100;
 
     let socket = rustix::net::socket_with(
         rustix::net::AddressFamily::NETLINK,
@@ -242,7 +328,10 @@ pub(crate) fn told_when_networks_change() -> Result<std::os::fd::OwnedFd, std::i
         // `NETLINK_ROUTE` is protocol zero, which is how `None` is spelt.
         None,
     )?;
-    rustix::net::bind(&socket, &SocketAddrNetlink::new(0, LINKS | IPV4_ADDRESSES))?;
+    rustix::net::bind(
+        &socket,
+        &SocketAddrNetlink::new(0, LINKS | IPV4_ADDRESSES | IPV6_ADDRESSES),
+    )?;
     Ok(socket)
 }
 

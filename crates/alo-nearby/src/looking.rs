@@ -32,19 +32,29 @@
 //! not shown by any test here**, and is owed to two machines. The report says
 //! so rather than implying otherwise.
 
-use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 use crate::advertising::{a_question, a_question_for_workspaces};
 use crate::presence::Found;
-use crate::reading::{a_machine_in, a_workspace_in};
+use crate::reading::{a_machine_heard, a_workspace_heard};
 use crate::refusing::{NotNearby, because};
 use crate::workspace::FoundWorkspace;
 
 /// The address every machine on a link listens to for this kind of question.
 pub const THE_ADDRESS: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);
 
-/// The port it listens on.
+/// The address every machine on a link listens to for the same question over
+/// IPv6: `ff02::fb`, link-local in scope (RFC 6762 §3), so a question to it is
+/// asked on one interface — the one named beside it — and never routed.
+///
+/// What a network with no IPv4 address on it still has: every interface gives
+/// itself a link-local IPv6 address with nobody configuring it, and this group
+/// is asked and answered over those. The packets are the same bytes as over
+/// [`THE_ADDRESS`], and so are the refusals.
+pub const THE_IPV6_ADDRESS: Ipv6Addr = Ipv6Addr::new(0xff02, 0, 0, 0, 0, 0, 0, 0xfb);
+
+/// The port it listens on, in either family.
 pub const THE_PORT: u16 = 5353;
 
 /// The most bytes one datagram is read into.
@@ -145,7 +155,7 @@ impl Looking {
             let Some(said) = heard.get(..how_many) else {
                 continue;
             };
-            if let Ok(found) = a_machine_in(said, who.ip()) {
+            if let Ok(found) = a_machine_heard(said, who) {
                 if !around
                     .machines
                     .iter()
@@ -153,7 +163,7 @@ impl Looking {
                 {
                     around.machines.push(found);
                 }
-            } else if let Ok(found) = a_workspace_in(said, who.ip())
+            } else if let Ok(found) = a_workspace_heard(said, who)
                 && !around.workspaces.contains(&found)
             {
                 around.workspaces.push(found);

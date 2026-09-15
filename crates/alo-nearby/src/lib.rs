@@ -59,7 +59,12 @@
 //! [`Looking::around`] hears machines and workspaces in one window, and
 //! [`Around::heard_on_each`] makes one answer of a window on each network a
 //! machine is on — a machine heard on two is one machine with an address on
-//! each. Finding a workspace confers nothing: nothing here connects to one. An
+//! each, and a machine heard over IPv4 and over IPv6 on one network is one
+//! machine with an address in each family. Discovery is asked and answered over
+//! IPv6 link-local ([`THE_IPV6_ADDRESS`]) exactly as over IPv4, so two machines
+//! on a network nobody gave an IPv4 address still find each other; a link-local
+//! address is kept with the interface it was heard on ([`HeardFrom`]), because
+//! without it the address names no network. Finding a workspace confers nothing: nothing here connects to one. An
 //! alo machine that hosts a workspace answers for it through the same
 //! [`Answering`] its presence is answered by ([`Answering::hosting_a_workspace_at`]) — under its own
 //! identity, because a port is all hosting takes — and says nothing more about
@@ -128,6 +133,7 @@ mod confirming;
 pub mod crossing;
 mod deliberating;
 mod dialling;
+mod heard_from;
 mod heard_on_each;
 mod hexing;
 pub mod http;
@@ -156,9 +162,10 @@ mod workspace;
 pub use answering::Answering;
 pub use confirming::Confirmation;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
+pub use heard_from::HeardFrom;
 pub use keeping::{NotWrittenDown, THE_PAIRINGS_FORMAT};
 pub use keying::{Code, Keying, Offer};
-pub use looking::{Around, Looking, THE_ADDRESS, THE_PORT};
+pub use looking::{Around, Looking, THE_ADDRESS, THE_IPV6_ADDRESS, THE_PORT};
 pub use machine::MachineId;
 pub use origin::Origin;
 pub use pairing::{NotPaired, Pairing, Pairings};

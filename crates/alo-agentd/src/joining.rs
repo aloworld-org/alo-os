@@ -12,7 +12,7 @@
 //! Wi-Fi all day and silently absent from the wired network it was plugged into —
 //! the very failure a machine on two networks has — until somebody restarted a
 //! service they have never heard of. So the kernel's own notification is
-//! followed: [`Joining`] holds a routing socket subscribed to links and IPv4
+//! followed: [`Joining`] holds a routing socket subscribed to links and their
 //! addresses (`crate::unix::told_when_networks_change`), the service waits on it
 //! beside everything else, and when it speaks the interfaces are asked again and
 //! every network not yet joined is joined. Nothing wakes on an interval: a
@@ -26,15 +26,35 @@
 //! A routing socket that will not open at start is a line in the service log and
 //! a machine joined on the networks it had at start — found where it was, and
 //! told so, rather than a stopped service.
+//!
+//! # And over IPv6, on the same notification
+//!
+//! Where the machine could open an IPv6 discovery socket, every IPv6 link-local
+//! network (`crate::networks::link_local_networks`) is joined at `ff02::fb` on
+//! its interface beside the IPv4 ones, by the same following: a link-local
+//! address is usable a second or two after its link comes up, and the kernel
+//! says so on the same routing socket, subscribed to IPv6 addresses too. Where it
+//! could not — a kernel built without IPv6 — the IPv6 networks are not
+//! considered at all rather than failing to join once per notification.
 
-use std::net::{Ipv4Addr, UdpSocket};
+use std::net::{IpAddr, UdpSocket};
 use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::sync::{Mutex, PoisonError};
 
-use alo_nearby::THE_ADDRESS;
+use alo_nearby::{THE_ADDRESS, THE_IPV6_ADDRESS};
 
-use crate::networks::{Network, discovery_networks, joined_on};
+use crate::networks::{Network, discovery_networks, every_discovery_network, joined_on};
 use crate::route_messages::reported_by_the_kernel;
+
+/// The sockets discovery is answered on: one per family, the IPv6 one where
+/// this machine could open it.
+#[derive(Debug, Clone, Copy)]
+pub struct DiscoverySockets<'a> {
+    /// The socket joined at `224.0.0.251`.
+    pub ipv4: &'a UdpSocket,
+    /// The socket joined at `ff02::fb`, where there is one.
+    pub ipv6: Option<&'a UdpSocket>,
+}
 
 /// The discovery group, joined on every network this machine is on.
 #[derive(Debug)]
@@ -47,12 +67,13 @@ pub struct Joining {
 
 impl Joining {
     /// Join `discovery` to the group on every network this machine is on now,
-    /// and listen for the kernel saying that changed.
+    /// in each family it has a socket for, and listen for the kernel saying
+    /// that changed.
     ///
     /// Every failure on the way — the kernel's interfaces unreadable, one
     /// network refusing the join, the routing socket refusing to open — is a
     /// line handed to `said` and never a refusal to start.
-    pub fn on_every_network(discovery: &UdpSocket, said: &mut dyn FnMut(&str)) -> Self {
+    pub fn on_every_network(discovery: DiscoverySockets<'_>, said: &mut dyn FnMut(&str)) -> Self {
         let told = match crate::unix::told_when_networks_change() {
             Ok(told) => Some(told),
             Err(why) => {
@@ -76,7 +97,8 @@ impl Joining {
         self.told.as_ref().map(AsFd::as_fd)
     }
 
-    /// The networks the group is joined on now, in the kernel's order.
+    /// The networks the group is joined on now: the IPv4 ones in the kernel's
+    /// order, then the IPv6 ones.
     #[must_use]
     pub fn joined(&self) -> Vec<Network> {
         self.joined
@@ -87,7 +109,7 @@ impl Joining {
 
     /// The kernel said a network changed: read what it said, ask the
     /// interfaces again, and join every network not yet joined.
-    pub fn changed(&self, discovery: &UdpSocket, said: &mut dyn FnMut(&str)) {
+    pub fn changed(&self, discovery: DiscoverySockets<'_>, said: &mut dyn FnMut(&str)) {
         if let Some(told) = &self.told
             && let Err(why) = crate::unix::emptied(told.as_fd())
         {
@@ -100,7 +122,7 @@ impl Joining {
 
     /// Ask the interfaces, forget networks that went, and join the ones that
     /// are new.
-    fn follow(&self, discovery: &UdpSocket, said: &mut dyn FnMut(&str)) {
+    fn follow(&self, discovery: DiscoverySockets<'_>, said: &mut dyn FnMut(&str)) {
         let reported = match reported_by_the_kernel() {
             Ok(reported) => reported,
             Err(why) => {
@@ -110,7 +132,11 @@ impl Joining {
                 return;
             }
         };
-        let now = discovery_networks(&reported);
+        let now = if discovery.ipv6.is_some() {
+            every_discovery_network(&reported)
+        } else {
+            discovery_networks(&reported)
+        };
         let mut joined = self.joined.lock().unwrap_or_else(PoisonError::into_inner);
         joined.retain(|network| now.contains(network));
         let new = now
@@ -119,16 +145,22 @@ impl Joining {
             .collect();
         let newly = joined_on(new, |network| join(discovery, network), said);
         joined.extend(newly);
+        joined.sort_by_key(|network| network.address().is_ipv6());
     }
 }
 
-/// Join `discovery` to the group on `network`, at its address.
+/// Join the group of `network`'s family on `network`: at its IPv4 address, or
+/// at `ff02::fb` on its interface.
 ///
 /// Already joined is joined: an interface the kernel kept the membership on
 /// across a change this file did not see is not a network that failed.
-fn join(discovery: &UdpSocket, network: &Network) -> Result<(), std::io::Error> {
-    let address: Ipv4Addr = network.address();
-    match discovery.join_multicast_v4(&THE_ADDRESS, &address) {
+fn join(discovery: DiscoverySockets<'_>, network: &Network) -> Result<(), std::io::Error> {
+    let joined = match (network.address(), discovery.ipv6) {
+        (IpAddr::V4(address), _) => discovery.ipv4.join_multicast_v4(&THE_ADDRESS, &address),
+        (IpAddr::V6(_), Some(ipv6)) => ipv6.join_multicast_v6(&THE_IPV6_ADDRESS, network.index()),
+        (IpAddr::V6(_), None) => Err(std::io::Error::from(std::io::ErrorKind::Unsupported)),
+    };
+    match joined {
         Err(why) if why.kind() == std::io::ErrorKind::AddrInUse => Ok(()),
         joined => joined,
     }

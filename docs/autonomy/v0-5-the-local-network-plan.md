@@ -1006,7 +1006,32 @@ network is left typing an address, which is the step the promise removes.
 
 ### 23. Two machines with no IPv4 address between them still find each other
 
-**Status:** ready. **Depends on:** 1, 22.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-nearby` (`heard_from.rs` —
+`HeardFrom`, a measured address with the interface a link-local one was heard on,
+without which a link-local address names no network; `reading::a_machine_heard` and
+`a_workspace_heard`, refusing an answer from a link-local address with no scope as
+`NotNearby::NamesNoNetwork`; `THE_IPV6_ADDRESS`; `Found` and `FoundWorkspace` carry
+`HeardFrom`, so `where_it_answers` is scoped) and `crates/alo-agentd`
+(`networks.rs` — `link_local_networks` and `every_discovery_network`, every IPv4
+network first; `route_messages.rs` — every family asked, a tentative or failed
+IPv6 address stepped over; `joining.rs` — `ff02::fb` joined on its interface beside
+IPv4, following `RTMGRP_IPV6_IFADDR`; `unix.rs` — the IPv6 discovery socket with
+`IPV6_V6ONLY` set and the port's listener in both families; `wire.rs` — a second
+`Answering` holding the same presence and workspace, `Knocked::from` a `HeardFrom`;
+`looking.rs` — each link-local network asked from its own address, a proposal
+measured in its connection's family and scope; and `answering_discovery.rs` —
+**discovery answered on a thread beside the service**, because a daemon waiting on
+its own person's proposal could not answer the asked machine's measurement of it,
+so two real daemons could never pair). **When both families answered, a pairing
+dials the IPv4 address**, decided in `crate::looking` and written up in the report.
+Tested on a real kernel by `crates/alo-nearby/tests/asked_and_answered_over_ipv6.rs`
+and `crates/alo-agentd/src/two_machines_with_no_ipv4.rs` (two daemons, each running
+the whole service, on one `veth` with link-local IPv6 only, pairing through task
+12's request; then IPv4 added to the same cable). Contract:
+`docs/contracts/local-network-wire.md` (*A network with no IPv4 address*, new,
+additive). `docs/quirks.md` records the kernel's behaviour. The report is
+`docs/autonomy/updates/two-machines-with-no-ipv4-still-find-each-other.md`.
+**Depends on:** 1, 22.
 
 *Machines find each other with zero configuration — no addresses typed.* Since task
 22 discovery is joined and asked on every network a machine is on — every network
@@ -1040,3 +1065,38 @@ step the promise removes, and a typed address is what ADR 0003 says nothing dial
   and written up with the reason. `docs/contracts/local-network-wire.md` gains the
   IPv6 group and the scope rule additively. What reality does that the specification
   does not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 24. A paired machine reached over IPv6 link-local is still a departure the kernel bounds and the indicator shows
+
+**Status:** ready. **Depends on:** 3, 14, 23.
+
+*One GPU box serves the office — it is still egress, and the indicator still fires.*
+Since task 23 a paired machine on a network with no IPv4 address is found, paired
+with and dialled at a **scoped link-local IPv6 address** (`fe80::…%3`). A question
+put to it from a turn leaves under the turn's kernel boundary (ADR 0020) and under
+the egress indicator — both of which were built and tested with IPv4 destinations.
+`alo-bounding-map`'s `Departure` has an IPv6 shape and `alo-bounding-kernel` reads a
+`sockaddr_in6`, but a departure is an address and a port with **no interface**, and
+nothing has yet shown that a link-local destination is permitted when it was shown,
+refused when it was not — including the same link-local address on **another**
+interface — and named by the indicator in words a person can read. A departure
+whose check does not match what the dial actually does is law 1 failing quietly on
+exactly the network this release just made to work.
+
+- **Acceptance:** a question to a paired machine at a scoped link-local address,
+  from a turn bounded by the real programme, is reached when that departure was
+  registered and refused with `EACCES` when it was not, tested on a real kernel
+  under `alo_bounding::Waited::on_this_kernel()`; how a departure treats the scope —
+  matched, or deliberately not, with the reason — is decided in the crate that
+  holds the shape and tested both ways (the registered interface, and the same
+  address on an interface nobody showed); the indicator and the record name the
+  paired machine and its link-local destination exactly as they name an IPv4 one,
+  tested; and a question from a turn to a paired machine found **only** over IPv6
+  still leaves nothing that escapes the indicator, tested end to end.
+- **Constraint:** ADR 0003, ADR 0007 and ADR 0020 as they stand: no departure is
+  widened to a prefix, an interface or "the local network", and loopback stays the
+  only unchecked destination. Editing `alo-bounding`, `alo-bounding-map` or
+  `alo-bounding-kernel` is coordinated with the lane that owns them first (ADR
+  0028); if the shape of a departure has to change, that is an ADR before it is
+  code. What reality does that the specification does not say goes in
+  `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

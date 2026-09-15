@@ -118,6 +118,17 @@ pub enum NotNearby {
     #[error("what arrived on the pairing wire is not a message: {0}")]
     NotAMessage(String),
 
+    /// An answer came from a link-local IPv6 address with no interface beside
+    /// it.
+    ///
+    /// Every interface has an address in `fe80::/10`, so one without the
+    /// interface it was heard on names no network and can be dialled on none
+    /// (`crate::heard_from`). The kernel always says which interface; an answer
+    /// that arrived without one is not written down as a machine nothing could
+    /// reach.
+    #[error("an answer came from the link-local address {0} without saying which network")]
+    NamesNoNetwork(String),
+
     /// A name this machine was about to write into a packet cannot be written.
     ///
     /// A label over sixty-three characters or a name over two hundred and
@@ -184,6 +195,7 @@ impl NotNearby {
                 | Self::NotAProposal(_)
                 | Self::NotAConfirmation(_)
                 | Self::NotAMessage(_)
+                | Self::NamesNoNetwork(_)
         )
     }
 }

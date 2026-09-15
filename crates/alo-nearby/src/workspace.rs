@@ -43,8 +43,9 @@
 //! let _ = FoundWorkspace::heard(MachineId::made().unwrap(), typed.port(), typed.ip());
 //! ```
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 
+use crate::heard_from::HeardFrom;
 use crate::machine::MachineId;
 use crate::presence::{Standing, VERSION};
 
@@ -117,12 +118,13 @@ pub struct FoundWorkspace {
     /// The port it advertised.
     port: u16,
     /// The address its answer came from — measured, never advertised, for
-    /// [`crate::Found::address`]'s reason.
-    address: IpAddr,
+    /// [`crate::Found::address`]'s reason, with the interface for a link-local
+    /// one.
+    address: HeardFrom,
     /// Where else the same workspace answered from in the same look, one
     /// address for each further network it was heard on alone
     /// ([`crate::Around::heard_on_each`]).
-    also_at: Vec<IpAddr>,
+    also_at: Vec<HeardFrom>,
     /// The version it speaks, which is the one version this crate reads.
     version: &'static str,
     /// What finding it means for this machine, which is nothing.
@@ -135,7 +137,7 @@ impl FoundWorkspace {
     ///
     /// Crate-private: see this module's documentation. Only reading an
     /// advertisement makes one.
-    pub(crate) const fn heard(host: MachineId, port: u16, address: IpAddr) -> Self {
+    pub(crate) const fn heard(host: MachineId, port: u16, address: HeardFrom) -> Self {
         Self {
             host,
             port,
@@ -160,18 +162,18 @@ impl FoundWorkspace {
 
     /// The address its answer came from.
     #[must_use]
-    pub const fn address(&self) -> IpAddr {
+    pub const fn address(&self) -> HeardFrom {
         self.address
     }
 
     /// Every address it answered from in the look it was found in: the one
     /// heard first, then one for each further network it was heard on alone.
-    pub fn addresses(&self) -> impl Iterator<Item = IpAddr> + '_ {
+    pub fn addresses(&self) -> impl Iterator<Item = HeardFrom> + '_ {
         std::iter::once(self.address).chain(self.also_at.iter().copied())
     }
 
     /// The same workspace, also heard from `address` on another network.
-    pub(crate) fn also_heard_at(&mut self, address: IpAddr) {
+    pub(crate) fn also_heard_at(&mut self, address: HeardFrom) {
         if self.addresses().all(|already| already != address) {
             self.also_at.push(address);
         }
@@ -196,7 +198,7 @@ impl FoundWorkspace {
     /// crate or because it was found.
     #[must_use]
     pub const fn where_it_answers(&self) -> SocketAddr {
-        SocketAddr::new(self.address, self.port)
+        self.address.at(self.port)
     }
 }
 
@@ -240,8 +242,11 @@ mod tests {
     /// answers where it was heard from.
     #[test]
     fn a_workspace_that_has_been_found_is_not_paired_with() {
-        let found =
-            FoundWorkspace::heard(a_host(), 8_443, std::net::Ipv4Addr::new(10, 0, 0, 7).into());
+        let found = FoundWorkspace::heard(
+            a_host(),
+            8_443,
+            std::net::IpAddr::from(std::net::Ipv4Addr::new(10, 0, 0, 7)).into(),
+        );
         assert_eq!(found.standing(), Standing::NotPaired);
         assert_eq!(found.version(), VERSION);
         assert_eq!(found.where_it_answers().to_string(), "10.0.0.7:8443");

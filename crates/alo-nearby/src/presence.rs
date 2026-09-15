@@ -25,6 +25,7 @@
 
 use std::net::{IpAddr, SocketAddr};
 
+use crate::heard_from::HeardFrom;
 use crate::machine::MachineId;
 
 /// The service this machine answers to on a local network.
@@ -112,8 +113,9 @@ pub struct Found {
     /// (`advertising.rs` says why), and the one true address a machine can be
     /// reached at is the one it was heard from. What dials the machine later
     /// dials this, so the next hop is what discovery measured rather than what
-    /// somebody typed.
-    pub address: IpAddr,
+    /// somebody typed. A link-local IPv6 address carries the interface it was
+    /// heard on ([`HeardFrom`]), because without it the address names no network.
+    pub address: HeardFrom,
     /// Where else the same machine answered from in the same look: one address
     /// for each further network it was heard on, in the order the networks
     /// were asked, and empty for a machine heard on one.
@@ -122,7 +124,7 @@ pub struct Found {
     /// one machine with an address on each ([`crate::Around::heard_on_each`]),
     /// and [`address`](Self::address) stays the one heard first, which is what
     /// dials it.
-    pub also_at: Vec<IpAddr>,
+    pub also_at: Vec<HeardFrom>,
     /// What that means for this machine, which is nothing.
     pub standing: Standing,
 }
@@ -148,8 +150,20 @@ pub enum Standing {
 impl Found {
     /// A machine seen on the network, heard from `address`, which is not
     /// paired with this one, because seeing it pairs nothing.
+    ///
+    /// For an address that names its own network — IPv4, or IPv6 that is not
+    /// link-local. A machine heard over a link-local address is [`Found::heard`],
+    /// with the interface it was heard on.
     #[must_use]
     pub const fn seen(machine: MachineId, port: u16, address: IpAddr) -> Self {
+        Self::heard(machine, port, HeardFrom::named(address))
+    }
+
+    /// A machine heard from `address`, measured with the interface it arrived
+    /// on where that address is link-local — not paired with this one, because
+    /// hearing it pairs nothing.
+    #[must_use]
+    pub const fn heard(machine: MachineId, port: u16, address: HeardFrom) -> Self {
         Self {
             machine,
             port,
@@ -160,20 +174,20 @@ impl Found {
     }
 
     /// Every address the machine answered from in the look it was found in:
-    /// the one heard first, then one for each further network.
-    pub fn addresses(&self) -> impl Iterator<Item = IpAddr> + '_ {
+    /// the one heard first, then one for each further network or family.
+    pub fn addresses(&self) -> impl Iterator<Item = HeardFrom> + '_ {
         std::iter::once(self.address).chain(self.also_at.iter().copied())
     }
 
     /// Where the machine answers: the address it was heard from and the port
-    /// it advertised.
+    /// it advertised — with the interface, for a link-local address.
     ///
     /// The one thing a `Found` says about reaching a machine, and the thing
     /// nothing in this crate dials — what dials it is the corridor, under a
     /// pairing two people made.
     #[must_use]
     pub const fn where_it_answers(&self) -> SocketAddr {
-        SocketAddr::new(self.address, self.port)
+        self.address.at(self.port)
     }
 }
 

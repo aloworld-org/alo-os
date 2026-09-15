@@ -21,11 +21,17 @@
 //! Nothing in a turn blocks. A read answers, a proposal comes straight back as
 //! a number and a sentence, an approval runs and answers. What blocks is
 //! **waiting for somebody to say something**, and that is one call — `poll` —
-//! over the socket, the connections, the port, the discovery socket and the
-//! end a stop arrives on (`crate::unix::ready`).
+//! over the socket, the connections, the port, the kernel's word that a network
+//! changed and the end a stop arrives on (`crate::unix::ready`).
 //!
-//! So there are no threads here, no channels, no lock around the machine, and
-//! nothing shared between two things that run at once. The machine is a local
+//! So there are no threads here that touch the machine, no channels, no lock
+//! around the machine, and nothing of the machine shared between two things that
+//! run at once. **The one thread beside this loop answers discovery and nothing
+//! else** (`crate::answering_discovery`): it holds no grant, no record and no
+//! connection, it says the same bytes whatever the loop is doing, and it exists
+//! because the loop is legitimately busy — waiting on the other machine's reply
+//! to its own person's proposal — at the very moment that machine asks whether
+//! this one exists. The machine is a local
 //! variable that one loop owns. That is worth saying plainly, because the
 //! obvious shape for *two connections at once* is a thread each and a mutex,
 //! and it would have put the capability model behind a lock in the one service
@@ -140,6 +146,7 @@ use alo_turn::{Machine, Shortened, Turning};
 
 use crate::ageing::Ageing;
 use crate::answering::what_a_person_said;
+use crate::answering_discovery::{self, Answered};
 use crate::corridor::Corridor;
 use crate::doing::what_an_agent_said;
 use crate::hearing::{self, Judging};
@@ -344,6 +351,27 @@ impl<'a> Serving<'a> {
                 named: self.terms.for_agent.trim().to_owned(),
             });
         }
+        // Discovery is answered beside the rounds for as long as they run, so a
+        // machine waiting on its own proposal is still found by the machine it
+        // proposed to (`crate::answering_discovery`).
+        let (served, answered) = answering_discovery::beside(self.wire, |discovery| {
+            self.serving(discovery, machine, granted, questions, surface)
+        })?;
+        served.map(|served| Served {
+            found: answered,
+            ..served
+        })
+    }
+
+    /// The service's rounds, with discovery answered beside them.
+    fn serving(
+        &self,
+        discovery: &Answered,
+        machine: &mut Machine<'_>,
+        granted: &mut WhatIsGranted<'_>,
+        questions: &mut Questions,
+        surface: &mut dyn Surface,
+    ) -> Result<Served, NotServed> {
         let strings = machine.strings();
         let mut held = Held::default();
         let mut served = Served::default();
@@ -384,6 +412,7 @@ impl<'a> Serving<'a> {
                     strings,
                     &mut served,
                     ageing.before(now),
+                    discovery,
                     surface,
                 )? == Next::Stopped
                 {
@@ -434,6 +463,7 @@ impl<'a> Serving<'a> {
                     strings,
                     &mut served,
                     None,
+                    discovery,
                     surface,
                 ) {
                     Ok(Next::GoOn) => {}
@@ -472,7 +502,8 @@ impl<'a> Serving<'a> {
     /// Wait until something has happened, and deal with all of it.
     ///
     /// The order is the person, then the agent, then the door, then the port,
-    /// then discovery: somebody already connected is answered before somebody
+    /// then the networks — and before any of them, discovery having stopped
+    /// being answered beside the loop, which ends it: somebody already connected is answered before somebody
     /// new is let in, and the person is answered before the agent because an
     /// approval that has already arrived should not wait behind the next thing
     /// an agent thought of.
@@ -508,17 +539,18 @@ impl<'a> Serving<'a> {
         strings: &Strings,
         served: &mut Served,
         for_at_most: Option<Duration>,
+        discovery: &Answered,
         surface: &mut dyn Surface,
     ) -> Result<Next, NotServed> {
         let the_network_has_the_machine = matches!(holding, Holding::TheNetwork { .. });
-        let (stopped, person, agent, knocked, on_the_port, asked_who_is_here, networks_changed) = {
+        let (stopped, person, agent, knocked, on_the_port, discovery_failed, networks_changed) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
                 held.person.as_ref().map(Line::waiting_on),
                 held.agent.as_ref().map(Line::waiting_on),
                 Some(self.knocking.waiting_on()),
                 the_network_has_the_machine.then(|| self.wire.waiting_on()),
-                Some(self.wire.discovery_waiting_on()),
+                Some(discovery.failed_waiting_on()),
                 self.wire.networks_waiting_on(),
             ];
             let [
@@ -527,7 +559,7 @@ impl<'a> Serving<'a> {
                 agent,
                 knocked,
                 on_the_port,
-                asked_who_is_here,
+                discovery_failed,
                 networks_changed,
             ] = ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
             (
@@ -536,13 +568,18 @@ impl<'a> Serving<'a> {
                 agent,
                 knocked,
                 on_the_port,
-                asked_who_is_here,
+                discovery_failed,
                 networks_changed,
             )
         };
 
         if stopped {
             return Ok(Next::Stopped);
+        }
+        if discovery_failed {
+            // A discovery socket that will not read or answer is the
+            // machine's, and ends the service as it always did.
+            return Err(discovery.why());
         }
         let now = this_moment();
 
@@ -673,20 +710,6 @@ impl<'a> Serving<'a> {
             // every network the machine is on now. Nothing it says moves, and
             // a network that will not join is a line in the log, not a stop.
             self.wire.networks_changed();
-        }
-
-        if asked_who_is_here {
-            // A question that was not one for this service — a printer's, or
-            // this machine's own answer coming back round — is nothing to
-            // count; a socket that will not read is the machine's.
-            if self
-                .wire
-                .answer_discovery()
-                .map_err(NotServed::TheWire)?
-                .is_some()
-            {
-                served.found = served.found.saturating_add(1);
-            }
         }
 
         Ok(Next::GoOn)

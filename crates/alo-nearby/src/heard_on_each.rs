@@ -10,14 +10,26 @@
 //!
 //! # The rule, for machines
 //!
-//! One [`Found`] per identity. The first network it was heard on gives its
-//! [`Found::address`] and its port; each further network that heard the same
+//! One [`Found`](crate::Found) per identity. The first network it was heard on gives its
+//! [`Found::address`](crate::Found::address) and its port; each further network that heard the same
 //! identity at the same port adds the address it answered from there to
-//! [`Found::also_at`]. A further network that heard the identity at a
+//! [`Found::also_at`](crate::Found::also_at). A further network that heard the identity at a
 //! *different* port is stepped over, which is the rule one window already
 //! keeps — within one window the first answer for an identity is the one kept —
 //! and nothing on this machine dials a machine because it was found, so which
 //! claim is written down first decides nothing about reaching it.
+//!
+//! # And a network heard in two families
+//!
+//! A network with IPv4 and IPv6 on it is asked twice — once at `224.0.0.251`,
+//! once at `ff02::fb` on the interface — and each is a window of its own, so the
+//! same rule makes **a machine heard over IPv4 and over IPv6 on one network one
+//! machine with an address in each family**. Addresses are compared with the
+//! interface a link-local one was heard on ([`crate::HeardFrom`]): `fe80::1` on
+//! the wired network and `fe80::1` on the wireless one are two addresses. Which
+//! one [`Found::address`](crate::Found::address) is — and so which a pairing dials — is whichever
+//! window the caller hands in first; `alo-agentd` hands in every IPv4 network
+//! before any IPv6 one, and says why.
 //!
 //! # And for workspaces, where two claims are a refusal
 //!
@@ -155,7 +167,7 @@ mod tests {
                 Found::seen(the_studio(), 7_610, wired(2)),
                 Found::seen(reception(), 7_610, wired(3)),
             ],
-            vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2))],
+            vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2).into())],
         );
         assert_eq!(Around::heard_on_each([one_network.clone()]), one_network);
 
@@ -165,6 +177,67 @@ mod tests {
         ]);
         assert_eq!(heard.machines.len(), 2, "{heard:?}");
         assert!(heard.machines.iter().all(|found| found.also_at.is_empty()));
+    }
+
+    /// A link-local address on the interface numbered `scope`.
+    fn link_local(last: u16, scope: u32) -> crate::HeardFrom {
+        crate::HeardFrom::of(std::net::SocketAddr::V6(std::net::SocketAddrV6::new(
+            std::net::Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, last),
+            5_353,
+            0,
+            scope,
+        )))
+    }
+
+    /// **A machine heard over IPv4 and over IPv6 on one network is one machine
+    /// with an address in each family**, the link-local one with its interface;
+    /// the same address heard again in the same family adds nothing, and the
+    /// same link-local address on another interface is another address.
+    #[test]
+    fn a_machine_heard_in_both_families_is_one_machine_with_an_address_in_each() {
+        let heard = Around::heard_on_each([
+            a_window(vec![Found::seen(the_studio(), 7_610, wired(2))], vec![]),
+            a_window(
+                vec![Found::heard(the_studio(), 7_610, link_local(2, 3))],
+                vec![],
+            ),
+            a_window(
+                vec![Found::heard(the_studio(), 7_610, link_local(2, 3))],
+                vec![],
+            ),
+            a_window(
+                vec![Found::heard(the_studio(), 7_610, link_local(2, 4))],
+                vec![],
+            ),
+        ]);
+        assert_eq!(heard.machines.len(), 1, "{heard:?}");
+        let one = heard.machines.first().unwrap();
+        assert_eq!(one.address, wired(2));
+        assert_eq!(
+            one.addresses().collect::<Vec<_>>(),
+            vec![wired(2).into(), link_local(2, 3), link_local(2, 4)]
+        );
+        assert_eq!(
+            one.where_it_answers(),
+            std::net::SocketAddr::new(wired(2), 7_610),
+            "the first window heard is what is dialled"
+        );
+
+        let workspaces = Around::heard_on_each([
+            a_window(
+                vec![],
+                vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2).into())],
+            ),
+            a_window(
+                vec![],
+                vec![FoundWorkspace::heard(the_studio(), 8_443, link_local(2, 3))],
+            ),
+        ]);
+        assert_eq!(workspaces.workspaces.len(), 1, "{workspaces:?}");
+        assert_eq!(
+            workspaces.workspaces.first().unwrap().addresses().count(),
+            2
+        );
     }
 
     /// **The same identity at a different port on the other network is not
@@ -188,11 +261,15 @@ mod tests {
         let heard = Around::heard_on_each([
             a_window(
                 vec![],
-                vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2))],
+                vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2).into())],
             ),
             a_window(
                 vec![],
-                vec![FoundWorkspace::heard(the_studio(), 8_443, wireless(2))],
+                vec![FoundWorkspace::heard(
+                    the_studio(),
+                    8_443,
+                    wireless(2).into(),
+                )],
             ),
         ]);
         assert_eq!(heard.workspaces.len(), 1, "{heard:?}");
@@ -213,13 +290,17 @@ mod tests {
             a_window(
                 vec![],
                 vec![
-                    FoundWorkspace::heard(the_studio(), 8_443, wired(2)),
-                    FoundWorkspace::heard(the_studio(), 8_443, wired(66)),
+                    FoundWorkspace::heard(the_studio(), 8_443, wired(2).into()),
+                    FoundWorkspace::heard(the_studio(), 8_443, wired(66).into()),
                 ],
             ),
             a_window(
                 vec![],
-                vec![FoundWorkspace::heard(the_studio(), 8_443, wireless(2))],
+                vec![FoundWorkspace::heard(
+                    the_studio(),
+                    8_443,
+                    wireless(2).into(),
+                )],
             ),
         ]);
         let places: Vec<_> = heard
@@ -237,13 +318,13 @@ mod tests {
         let heard = Around::heard_on_each([
             a_window(
                 vec![],
-                vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2))],
+                vec![FoundWorkspace::heard(the_studio(), 8_443, wired(2).into())],
             ),
             a_window(
                 vec![],
                 vec![
-                    FoundWorkspace::heard(the_studio(), 8_443, wireless(2)),
-                    FoundWorkspace::heard(the_studio(), 8_443, wireless(66)),
+                    FoundWorkspace::heard(the_studio(), 8_443, wireless(2).into()),
+                    FoundWorkspace::heard(the_studio(), 8_443, wireless(66).into()),
                 ],
             ),
         ]);

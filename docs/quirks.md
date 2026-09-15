@@ -515,6 +515,52 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by
+`crates/alo-nearby/tests/asked_and_answered_over_ipv6.rs` and
+`crates/alo-agentd/src/two_machines_with_no_ipv4.rs`.
+**Behaviour:** RFC 6762 §3 gives mDNS an IPv6 group, `ff02::fb`, and RFC 4007 says
+a link-local address needs a zone. What that means on Linux, for discovery on a
+network with no IPv4 address:
+
+- **The WSL2 kernel's first network namespace has IPv6 switched off**
+  (`net.ipv6.conf.all.disable_ipv6 = 1`: no `::1`, no link-local addresses), and a
+  network namespace made with `unshare --net` starts with it **on** — a `veth`
+  brought up inside one had an `fe80::/64` address within a couple of seconds.
+  Measured. So a test that needs IPv6 cannot assume the host has it, and the
+  IPv6 tests here run inside a namespace of their own rather than on the host.
+- **The scope is the interface a datagram arrived on, and it is what makes the
+  address reachable.** A question sent to `ff02::fb` with `sin6_scope_id` naming
+  one end of a `veth` left on that interface, and the answer's source came back
+  as a link-local address with the **asking** interface's index as its scope;
+  dialling that scoped address reached the other machine and paired. Measured.
+  The same address with no scope names no interface, and a datagram or connection
+  to it has nowhere to go (the kernel's documented behaviour; not measured here —
+  `alo-nearby` refuses such an answer before anything would try).
+- **A new link-local address is *tentative* while duplicate address detection
+  runs** (`IFA_F_TENTATIVE`, RFC 4862 §5.4), and nothing can be bound to it until
+  that ends; the kernel reports the flag in the address dump and sends
+  `RTM_NEWADDR` again to `RTMGRP_IPV6_IFADDR` when it clears (documented kernel
+  behaviour). The tests wait for the flag to clear before binding. The flags byte
+  in `ifaddrmsg` holds only the low eight flags; `IFA_FLAGS` carries all of them
+  where the kernel sends it.
+- **A listener bound to `[::]` with `IPV6_V6ONLY` cleared accepts IPv4 as well**,
+  and reports an IPv4 peer as `::ffff:a.b.c.d`; whether it is cleared by default
+  is `net.ipv6.bindv6only` (documented kernel behaviour, not measured here).
+
+**Our response:** `alo-agentd` joins `ff02::fb` on every interface that is up and
+running, carries multicast, has a link-local address the kernel has finished
+checking and is not loopback (`crate::networks::link_local_networks`, addresses
+read without tentative or failed ones in `crate::route_messages`), follows
+`RTMGRP_IPV6_IFADDR` so an address that finishes its check is joined then, opens
+the IPv6 discovery socket with `IPV6_V6ONLY` set and the port's listener with it
+cleared — both explicitly, never left to a sysctl — and reads a peer's address
+back through `alo_nearby::HeardFrom`, which keeps a link-local address's scope and
+turns a mapped IPv4 address back into IPv4. A kernel with no IPv6 is a line in the
+service log and discovery over IPv4 alone. What two physical machines on a cable
+with no DHCP server hear is still owed to two machines.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

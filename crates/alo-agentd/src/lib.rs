@@ -182,6 +182,8 @@ pub mod ageing;
 #[cfg(target_os = "linux")]
 pub mod answering;
 #[cfg(target_os = "linux")]
+mod answering_discovery;
+#[cfg(target_os = "linux")]
 pub mod bounding;
 #[cfg(target_os = "linux")]
 pub mod caller;
@@ -267,6 +269,8 @@ pub mod terms;
 pub mod the_runtime;
 #[cfg(target_os = "linux")]
 pub mod trusting;
+#[cfg(all(test, target_os = "linux"))]
+mod two_machines_with_no_ipv4;
 #[cfg(target_os = "linux")]
 pub mod unhosted;
 #[cfg(target_os = "linux")]
@@ -302,7 +306,7 @@ pub use holding::Holding;
 #[cfg(target_os = "linux")]
 pub use hosting::{Hosted, THE_HOSTED_WORKSPACE, advertised, hosted_at};
 #[cfg(target_os = "linux")]
-pub use joining::Joining;
+pub use joining::{DiscoverySockets, Joining};
 #[cfg(target_os = "linux")]
 pub use keeping_names::TheNamesFile;
 #[cfg(target_os = "linux")]
@@ -322,7 +326,9 @@ pub use names::{KeepingNames, NothingKeepsNames, TheNames};
 #[cfg(target_os = "linux")]
 pub use network::{KeepingPairings, NothingKeepsPairings, Shared, TheNetwork};
 #[cfg(target_os = "linux")]
-pub use networks::{Interface, Network, discovery_networks};
+pub use networks::{
+    Interface, Network, discovery_networks, every_discovery_network, link_local_networks,
+};
 #[cfg(target_os = "linux")]
 pub use pairing::Nearby;
 #[cfg(target_os = "linux")]
