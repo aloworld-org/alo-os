@@ -533,6 +533,14 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
             "docs/autonomy/v0-5-the-machine-keeps-itself-plan.md",
             "docs/autonomy/v0-5-documents-and-paper-plan.md",
             "docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md",
+            "docs/autonomy/v0-5-the-session-and-the-displays-plan.md",
+            "docs/autonomy/v0-5-hands-on-the-desktop-plan.md",
+            "docs/autonomy/v0-5-capture-and-the-room-plan.md",
+            "docs/autonomy/v0-5-devices-and-media-plan.md",
+            "docs/autonomy/v0-5-access-and-language-plan.md",
+            "docs/autonomy/v0-5-software-and-the-web-plan.md",
+            "docs/autonomy/v0-5-the-broker-and-the-disk-plan.md",
+            "docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md",
         ] {
             let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../..")

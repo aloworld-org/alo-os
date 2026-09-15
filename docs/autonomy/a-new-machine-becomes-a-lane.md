@@ -27,6 +27,43 @@ runs **the machine keeps itself** as well, since spare PC two had not started
 it, and still owns `alo-printing` and `alo-opening` for when documents and
 paper unblocks. Nobody else takes `alo-keeping-up`.
 
+## Every v0.5 plan, and who has it — as of 2026-09-15
+
+| Plan | Machine | Crates it owns |
+|---|---|---|
+| `v0-5-the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
+| `v0-5-the-installer-plan.md` | this PC (`alo-os-shell` checkout) | `alo-installer`, `image/`, `alo-image`, `.github/workflows/` |
+| `v0-5-where-a-persons-settings-are-kept-plan.md` | this PC, lane B (`alo-os-b`), when a slot frees | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
+| `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
+| `v0-5-the-machine-keeps-itself-plan.md` | **third PC** (`admin.disan`) | `alo-keeping-up` |
+| `v0-5-documents-and-paper-plan.md` | third PC, when the owner's documents arrive | `alo-printing`, `alo-opening` |
+| `v0-5-the-shell-plan.md` (tasks 6–14) | this PC, lane A's slot, after the local network and settings plans empty — the one owner of `alo-shell` | `alo-shell`, `tools/graphics-check` |
+| `v0-5-access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
+| `v0-5-models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
+| `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
+| `v0-5-the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
+| `v0-5-capture-and-the-room-plan.md` | **spare PC two**, first — its task 1 unblocks two other plans | `alo-capturing`, `alo-in-use` (new) |
+| `v0-5-the-session-and-the-displays-plan.md` | spare PC two, second | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
+| `v0-5-hands-on-the-desktop-plan.md` | spare PC two, third | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
+| `v0-5-devices-and-media-plan.md` | spare PC two, fourth — or whichever machine empties first | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power` (new) |
+
+**Why this division.** The Mac holds the small model and runs no virtual machine
+well, so it takes the plans that need a model and no hardware: access and language
+(the agent answering in each language is measured on the small model) and models a
+person adapts. The third PC has the memory for two loops and already runs a virtual
+machine, so its second loop takes software and the broker, whose tests use virtual
+disks. This PC stays on the installer, which is the critical path, and inherits the
+shell plan because it already gates the compositor. Capture goes first on spare PC
+two because its task 1 is what the session plan's notifications and the devices
+plan's camera wait on. **If spare PC two is not started, its four plans are the queue
+for whichever machine empties its own list first.**
+
+The eight plans written on 2026-09-15 own **new crates only** (plus one clause of
+`alo-instructing`, whose plan had finished), so any of them can go to any free
+machine without meeting a lane. The one exception is the shell plan: exactly one
+machine may hold it at a time. **Assigning a plan means editing its row here in the
+same commit that starts the lane**, so that the table is always the truth.
+
 No two of those touch one crate, and none of them touches `alo-shell`,
 `alo-nearby`, `alo-asking`, `alo-agentd`, `image/` or `alo-image`, which have
 lanes on them. **Two lanes in one crate corrupted a task on 2026-09-11; that is

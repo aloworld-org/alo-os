@@ -215,12 +215,13 @@ no window.
 
 ### 6. One place for settings
 
-**Status:** blocked — on the keeping that
+**Status:** ready — the keeping that
 [ADR 0038](../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
-describes landing in crates this plan does not edit. That decision was
-**accepted on 2026-09-15**, option B, and the keeping is
-`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, a lane of its
-own; this task unblocks when that plan's tasks 2 and 3 have landed. Three of
+describes has landed: `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`'s
+tasks 2 and 3 were published on 2026-09-15 (appearance, the dock and shortcuts
+each keep their own file; a pairing is revoked from the one list the way a grant
+is), and its task 6 walked one person's folder from sign-in to the next change.
+What blocked this task until then, kept for the record: three of
 the seven sections —
 appearance, the dock and shortcuts — have no file any crate reads or writes, so
 *reading and writing the same file its crate already owns* has nothing to read
@@ -260,7 +261,11 @@ them has ever been shown.
 **Status:** blocked — on crates that do not exist yet: one that measures the
 battery and the network's state and says each in the vocabulary, one that
 owns the volume, and a regional way of writing a time (the finding task 4 made
-for dates). **Depends on:** 5.
+for dates). Since 2026-09-15 each has a plan: the battery is `alo-power` and the
+volume `alo-sound` (`v0-5-devices-and-media-plan.md`), a time written regionally
+is `alo-formats` (`v0-5-access-and-language-plan.md`), and the network's state
+is read from the network monitor portal `alo-portals` names. It unblocks when
+those have landed. **Depends on:** 5.
 
 The half of task 5's acceptance that could not be drawn without deciding it
 here. `docs/features.md`, v0.5: *Status area: clock, battery, network, volume,
@@ -278,4 +283,113 @@ egress indicator grows from it; nothing else is in it.
 - **Constraint:** the same as task 5's. The status area shows; it never
   decides, and it adds no number of its own. Brightness waits for the display
   work that owns it.
+
+---
+
+**Tasks 8 to 14 were added on 2026-09-15**, when the rest of v0.5 was planned.
+Eight plans decide what a person sees in crates of their own and never draw;
+this plan is still the one owner of `crates/alo-shell`, so every surface those
+plans need is drawn here, from their decisions. Each task below waits, by its
+status, on the named tasks of another plan — a task that runs ahead of its
+decision would be the drawing crate deciding, which is what this plan exists to
+refuse.
+
+### 8. The lock screen, drawn
+
+**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 1.
+**Depends on:** 1.
+
+- **Acceptance:** the lock screen draws exactly what `alo-locking` allows — the
+  time, the lock image, the battery, that the machine is locked, and the egress
+  indicator's line without its destination — and a test holds, from a raster, that
+  nothing else is drawn; unlocking reuses task 1's sign-in composition and never a
+  second one; the agent overlay's key does nothing while locked, with a test.
+- **Constraint:** nothing decided here. No notification preview, no media controls
+  that show a title, no *emergency* shortcut that reaches the desktop.
+
+### 9. Several displays, and a background and a dock on each
+
+**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` tasks 3 and
+4. **Depends on:** 5.
+
+- **Acceptance:** the compositor lays out outputs as `alo-displays` arranges them,
+  at the scale it names, restores an arrangement when a known set of displays is
+  plugged in, and moves windows off an unplugged display to where that crate says;
+  each display draws its own background and its own dock on the edge `alo-dock`
+  names for it; night light is applied per display as decided; and a test with two
+  nested outputs holds each clause.
+- **Constraint:** the arrangement is `alo-displays`' and is never adjusted here.
+
+### 10. Dividing the screen, virtual desktops and gestures, drawn
+
+**Status:** blocked — on `v0-5-hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5.
+**Depends on:** 5.
+
+- **Acceptance:** dragging a window shows the half or quarter `alo-dividing`
+  proposes before it is committed and commits it on release; a boundary between
+  shares resizes both; divisions and desktops are drawn per display as decided and
+  restored as remembered; swipes switch desktops as `alo-desktops` decides; and the
+  egress indicator, the approval surface and the overlay are on every desktop, held
+  by a raster test on two desktops.
+- **Constraint:** v0.01's `window_tiling` yields to the division; there are never
+  two tiling decisions in one compositor.
+
+### 11. Notifications, the capture tools and the in-use indicator, drawn
+
+**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 6 and
+`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. **Depends on:** 5.
+
+- **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
+  locked, shared or recorded; the region selection and the annotation marks of
+  `alo-capturing` are drawn with blur destructive in what is saved; the in-use
+  indicator of `alo-in-use` is drawn in the status area beside — and never as — the
+  egress indicator, with mark, word and position, and stopping a recording or a
+  share is one action on it; and a raster test holds that the in-use indicator is
+  drawn whenever the camera, the microphone or the screen is in use, including by
+  alo OS itself.
+- **Constraint:** no dismiss, no hide, no *don't show again* on the in-use
+  indicator.
+
+### 12. The accessibility tree, the magnifier and keyboard-only operation
+
+**Status:** blocked — on `v0-5-access-and-language-plan.md` tasks 1, 2 and 3.
+**Depends on:** 1, 2, 3, 4, 5.
+
+- **Acceptance:** the shell exposes every surface's role, name and state to AT-SPI
+  as `alo-access` decides them, and a test reads the exposed tree over the bus for
+  each surface the shell draws; the magnifier and high contrast apply as decided;
+  focus is always visible, never trapped, and every action has the keyboard road
+  `alo-access` lists, with a test that walks them; and the approval surface is
+  exposed as the sentence, then two answers, nothing preselected.
+- **Constraint:** the tree is the rented AT-SPI's protocol; no reader of our own.
+
+### 13. The recovery and rollback screen
+
+**Status:** blocked — on `v0-5-the-machine-keeps-itself-plan.md` task 3.
+**Depends on:** 1.
+
+`ROADMAP.md` v0.5: *Recovery and rollback screen — reachable when the workspace is
+not.*
+
+- **Acceptance:** a screen reachable before sign-in and when the desktop cannot
+  start draws `alo-keeping-up`'s decisions — what is running, what it replaced, and
+  *go back to yesterday's machine* when a rollback is possible — and says why when it
+  is not, in its words; it is operable by keyboard alone; it touches nothing a person
+  owns; and a test starts the shell with the desktop made to fail and finds the
+  screen.
+- **Constraint:** nothing decided here; a rollback is `alo-keeping-up`'s act carried
+  out through the broker (`v0-5-the-broker-and-the-disk-plan.md`).
+
+### 14. Every new surface, walked
+
+**Status:** blocked — on tasks 8 to 13. **Depends on:** 8, 9, 10, 11, 12, 13.
+
+- **Acceptance:** one walk through the nested compositor — sign in, dock a second
+  display, divide the screen, take a screenshot with a blur, receive a notification,
+  lock, unlock by keyboard with the screen reader on — produces a raster at each step
+  and the exact sequence of spoken and shown text, recorded in the report and held by
+  one test; every sentence drawn is the vocabulary's, and none is written in this
+  crate.
+- **Constraint:** measured under a nested compositor; the certified machine has seen
+  none of it and the report says so.
 
