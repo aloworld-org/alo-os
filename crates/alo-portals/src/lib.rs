@@ -64,6 +64,8 @@
 //! | [`kept_answer`] | One answer, as a line of the answers file |
 //! | [`kept_outcome`] | What a request was answered with, as the answers file keeps it |
 //! | `answers_file` | The answers, kept on the disk after the backend stops — Unix only |
+//! | `answers_head` | The answers file's first line: its format, and where a shortening left it starting — Unix only |
+//! | `shortening` | The answers file shortened under the machine's record rule, and no further — Unix only |
 //! | `believed_file` | Who may have written the answers file — Unix only |
 //! | [`the_machine`] | The grants, what opens what and how the machine looks, read at every request |
 //! | [`appearance_settings`] | The appearance settings an application may read, and who may |
@@ -99,6 +101,8 @@
 pub mod answered;
 #[cfg(unix)]
 pub mod answers_file;
+#[cfg(unix)]
+mod answers_head;
 pub mod appearance_settings;
 #[cfg(unix)]
 mod believed_file;
@@ -115,6 +119,8 @@ pub mod recording;
 pub mod refused;
 pub mod request;
 pub mod sandboxed;
+#[cfg(unix)]
+pub mod shortening;
 pub mod the_machine;
 pub mod words;
 
@@ -139,7 +145,9 @@ pub mod watching_appearance;
 
 pub use answered::{Answered, Outcome, Unanswered};
 #[cfg(unix)]
-pub use answers_file::{AnswersFile, ReadBack, THE_ANSWERS, THE_ANSWERS_FORMAT};
+pub use answers_file::{AnswersFile, ReadBack, THE_ANSWERS};
+#[cfg(unix)]
+pub use answers_head::THE_ANSWERS_FORMAT;
 pub use appearance_settings::{Setting, THE_NAMESPACE, Value, Values};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 #[cfg(target_os = "linux")]
@@ -158,5 +166,7 @@ pub use request::{LONGEST_IDENTIFIER, Request};
 pub use sandboxed::{Sandboxed, Sandboxes};
 #[cfg(target_os = "linux")]
 pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
+#[cfg(unix)]
+pub use shortening::Shortened;
 pub use the_machine::{Appearance, Applications, TheMachine, TimeOfDay};
 pub use words::{EVERY_WORD, WordsError, declare_into, portal_words};

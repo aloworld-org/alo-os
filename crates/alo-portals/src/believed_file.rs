@@ -53,6 +53,32 @@ pub(crate) fn opened_to_add_to(at: &Path) -> Result<File, NotRecorded> {
     })
 }
 
+/// A new file at `at`, made `0600` for reading and appending, to be renamed
+/// over the answers file once it holds everything it replaces it with.
+///
+/// Made **new**: whatever is at `at` — a shortening the machine interrupted, or
+/// a link somebody put there — is refused rather than written through, and the
+/// caller removes an interrupted one first.
+///
+/// # Errors
+/// [`NotRecorded::ALink`], and [`NotRecorded::NotWritten`] for everything else
+/// the machine said, something already at `at` among them.
+pub(crate) fn made_to_replace(at: &Path) -> Result<File, NotRecorded> {
+    let mut options = OpenOptions::new();
+    options
+        .read(true)
+        .append(true)
+        .create_new(true)
+        .mode(OURS_ALONE)
+        .custom_flags(refusing_links_and_waits());
+    believed_open(at, &options, Missing::IsAFailure, |why| {
+        NotRecorded::NotWritten {
+            at: at.to_owned(),
+            why,
+        }
+    })
+}
+
 /// The file at `at`, opened to be read, and believed.
 ///
 /// # Errors

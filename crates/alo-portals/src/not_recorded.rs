@@ -68,6 +68,16 @@ pub enum NotRecorded {
         format: u64,
     },
 
+    /// The file at the path is no longer the file this backend has open — it
+    /// was moved, removed or replaced underneath — so it is not shortened:
+    /// renaming over it would remove a file nobody asked this backend to
+    /// shorten.
+    #[error("{at} is no longer the file this backend keeps answers in, so it is not shortened")]
+    Replaced {
+        /// The path.
+        at: PathBuf,
+    },
+
     /// The machine would not read the file.
     #[error("{at} could not be read: {why}")]
     NotRead {

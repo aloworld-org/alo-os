@@ -412,7 +412,25 @@ agent column, and `alo-record` is lane A's.
 
 ### 9. What applications were answered is kept as long as the machine's record, and no longer
 
-**Status:** ready. **Depends on:** 8.
+**Status:** **Done, 2026-09-15.** `alo_portals::AnswersFile::shortened(keeping,
+now)` shortens the answers file under `alo_keeping::Keeping`, asking it
+`oldest_kept` and `keeps` and restating neither; it returns `Shortened`
+(removed, kept, since). Only an answer that reads and is older than the rule
+goes. A line that did not read stays byte for byte in its place, a torn last
+line is ended and stays, and a file that would lose nothing is not rewritten.
+The first line (`crate::answers_head`) gains `since` — the later of the rule's
+edge and any earlier `since` — and `under`, with `format` still `1`, and
+`ReadBack` reads both back. The shortened file is written new beside the file
+(`portal-answers.jsonl.shortening`, `0600`, never through a link), synced, and
+renamed over it. It then becomes the file answers are appended to. The file's
+lock is held from the first read to the rename, so no answer is kept or sent
+meanwhile. A path that no longer holds the open file is `NotRecorded::Replaced`,
+and every refusal leaves the file as it was. `docs/contracts/portal-answers-file.md`
+gains the two fields and *Shortening it*. `alo-keeping` and `alo-record` are
+not edited. Test:
+`crates/alo-portals/tests/what_applications_were_answered_is_kept_as_long_as_the_record.rs`.
+Report: `docs/autonomy/updates/portal-answers-kept-as-long-as-the-record.md`.
+**Depends on:** 8.
 
 Task 8 made the portal answers file durable, and it only grows. The agent's
 record does not only grow: `[record].keeping` in the machine description
@@ -441,3 +459,31 @@ recorded.
   deliverable is the proposal in the report. Nothing here starts the backend in
   a session or decides when a shortening runs on a machine: that is the session
   and image work this plan does not own.
+
+### 10. What applications were answered reads back in the person's language
+
+**Status:** ready. **Depends on:** 8, 9.
+
+The answers file holds identities, never sentences
+(`docs/contracts/portal-answers-file.md`), so a person asking *what did my
+applications ask for, and what were they told* still has nobody to answer them
+in words. `alo_portals::Outcome::said` words an answer while the backend holds
+it, but `KeptAnswer` and `ReadBack`, which are what survives the backend
+stopping, say nothing. Neither does a file shortened under task 9, whose `since`
+is the difference between *no application asked anything in March* and *this
+file does not reach March*. `alo-keeping`'s `Head::said` is that sentence for
+the agent's record.
+
+- **Acceptance:** `KeptAnswer` is worded through `alo-strings` in the language
+  the person reads: the application or *an application that could not be
+  named*, the portal's sentence from task 1, and what it was answered with,
+  reusing the words `Outcome::said` already uses rather than a second set. A
+  test words an answer of every `KeptOutcome` kind and finds no key shown in
+  place of a sentence. `ReadBack` says whether the file is whole or shortened,
+  and from when, with the moment kept as a moment rather than written into the
+  sentence. Lines that did not read are said as a count beside everything that
+  did, never dropped. Every new string is declared in `alo_portals::words` and
+  collected by `alo-saying`, tested as the existing words are.
+- **Constraint:** nothing here draws a list, starts the backend in a session,
+  or decides who may read the file. No edit to `alo-keeping`, `alo-record` or
+  `alo-granted`. No new dependency.

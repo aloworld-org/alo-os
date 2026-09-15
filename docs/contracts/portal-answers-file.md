@@ -2,13 +2,16 @@
 
 **Status:** v0.5, contract. Additive changes only; a break requires versioning
 and a deprecation period. See `CLAUDE.md`, "Contracts outlive code".
-**Owner:** `crates/alo-portals` (`answers_file`, `kept_answer`, `kept_outcome`).
+**Owner:** `crates/alo-portals` (`answers_file`, `answers_head`, `kept_answer`,
+`kept_outcome`, `shortening`).
 **Decisions:** [ADR 0001](../decisions/0001-the-capability-model.md) §7 (every
 execution and every refusal leaves a record),
 [ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md) part 2 (no
 refusal calls an application an agent). **Held by:**
 `crates/alo-portals/tests/what_an_application_was_answered_is_kept.rs`, which
-fails when a name the file writes is missing here.
+fails when a name the file writes is missing here, and
+`crates/alo-portals/tests/what_applications_were_answered_is_kept_as_long_as_the_record.rs`,
+which holds *Shortening it*.
 
 This is the file the portal backend (`docs/contracts/portals.md`) writes every
 answer it gives an application into — what was handed over and, as carefully,
@@ -51,7 +54,8 @@ order given. Every line is compact JSON with no newline inside it.
 {"at":{"secs_since_epoch":1760000009,"nanos_since_epoch":0},"portal":"open-with","answer":"unanswered","why":"not-identified"}
 ```
 
-The file is **appended to and never rewritten**, for the agent's record's
+The file is **appended to and never otherwise rewritten** — the one exception is
+a shortening (*Shortening it*, below) — for the agent's record's
 reasons: keeping an answer does not read the file, a write the machine
 interrupts costs the answer being written and nothing before it, and a reader
 needs a JSON parser and nothing else. **Each answer is synced before the
@@ -62,10 +66,24 @@ application hears anything.**
 | Field | Meaning |
 |---|---|
 | `format` | Which shape the file is in. Required. `1` today. |
+| `since` | The moment the file now starts at. Present only once a shortening has removed something. |
+| `under` | The retention rule that removed it: `"forever"`, or `{"for-days":n}`. |
+
+```
+{"format":1,"since":{"secs_since_epoch":1759395200,"nanos_since_epoch":0},"under":{"for-days":7}}
+```
 
 A file whose first line is not a format line is not an answers file and is never
 added to. A file whose `format` is higher than the reader knows is refused, not
 added to.
+
+`since` and `under` are the agent's record's two fields
+(`docs/contracts/record-file.md`), in the same notation, and were added to this
+file without raising `format`: a reader that does not know them ignores them.
+**`since` cannot age out**, because no shortening walks the first line, so a
+file shortened twice still says it was — and a file whose first answers have
+aged out never reads as one for a machine where nothing was asked before its
+first answer.
 
 ## An answer
 
@@ -122,6 +140,41 @@ application is **not** sent it. It is sent the portal's refusal instead (`2`, or
 written, no file is opened, and no `SettingChanged` is sent. That refusal is the
 one thing the backend says that this file does not hold: saying *no* while the
 record cannot be written is what keeps every *yes* in it.
+
+## Shortening it
+
+The file is kept **as long as the machine's record, and no longer**: it is
+shortened under the same `[record].keeping` rule in the machine description
+(`docs/contracts/machine-description.md`) that the agent's record is shortened
+under, read as `alo_keeping::Keeping`. When a shortening runs is the session's
+decision, not this file's.
+
+- **It takes the rule and a moment, and nothing else.** No answer, application
+  or portal can be named for removal.
+- **What goes is every answer that reads and is older than the rule keeps** —
+  an answer at the rule's own edge stays, and an answer dated after the moment
+  the shortening runs at stays, because a clock put back is never a way to
+  remove more.
+- **A line that does not read is never removed.** It stays byte for byte, in
+  its place, because nobody can say how old it is. A torn last line is ended
+  with a newline and stays one line. *This differs from the agent's record*,
+  which refuses to shorten at all around an unreadable line: here the rule
+  holds over every answer that reads, and the unreadable line is kept anyway.
+- **A file that would lose nothing is not rewritten**, first line included:
+  `"forever"`, and a rule nothing is old enough for yet, touch nothing.
+- **`since` moves to the rule's edge, and never back**: the later of the edge
+  and any `since` already there. `under` names the rule of the last shortening
+  that removed anything.
+- **Whole or not at all.** The shortened file is written beside the file as
+  `portal-answers.jsonl.shortening`, made `0600` and never through a link,
+  synced, and renamed over the file. A machine that stops partway leaves the
+  file exactly as it was; the next shortening removes what was left beside it.
+  A file whose path no longer holds the file the backend has open, or whose
+  first line is refused, is not shortened.
+- **Nothing is answered while it is replaced.** The backend keeps each answer
+  before sending it, under the same lock a shortening holds from its first
+  read to the rename, so no application is answered — and no answer is kept
+  into the file renamed away — while the file is replaced.
 
 ## Reading it
 

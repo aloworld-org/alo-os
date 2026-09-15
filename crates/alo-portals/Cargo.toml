@@ -25,6 +25,13 @@ alo-applications = { path = "../alo-applications" }
 # and never restated here. A workspace crate, so it adds nothing to the tree.
 alo-appearance = { path = "../alo-appearance" }
 
+# How long what happened on this machine is kept. The answers file is shortened
+# under the machine's `[record].keeping` rule, read as `alo_keeping::Keeping`
+# and asked `oldest_kept` and `keeps`, so what the organisation set for the
+# agent's record and what it holds for applications' requests is one rule,
+# never restated here. A workspace crate, so it adds nothing to the tree.
+alo-keeping = { path = "../alo-keeping" }
+
 # Everything a person reads: what each portal lets an application do, and why a
 # request was refused.
 alo-strings = { path = "../alo-strings" }

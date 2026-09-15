@@ -24,6 +24,12 @@
 //! is not a format line, or names a format newer than this, is refused rather
 //! than added to.
 //!
+//! # Kept as long as the machine's record, and no longer
+//!
+//! The one exception to *never rewritten* is [`AnswersFile::shortened`]
+//! (`crate::shortening`), under the same `[record].keeping` rule the agent's
+//! record is shortened under. It says so in the first line (`crate::answers_head`).
+//!
 //! # Who may have written it
 //!
 //! `crate::believed_file`: not a link, a regular file, root's or this login's,
@@ -33,10 +39,12 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
+use std::time::SystemTime;
 
-use serde::Deserialize;
+use alo_keeping::Keeping;
 
 use crate::answered::Answered;
+use crate::answers_head::AnswersHead;
 use crate::believed_file::{opened_to_add_to, opened_to_read};
 use crate::kept_answer::KeptAnswer;
 use crate::not_recorded::NotRecorded;
@@ -46,9 +54,6 @@ use crate::recording::Recording;
 /// image makes for what happened on this machine, beside the agent's record.
 pub const THE_ANSWERS: &str = "/var/lib/alo/portal-answers.jsonl";
 
-/// The format this backend writes, and the newest it adds to.
-pub const THE_ANSWERS_FORMAT: u64 = 1;
-
 /// The longest first line read looking for the format. A format line is a
 /// dozen bytes; anything this long is not one.
 const LONGEST_HEAD: u64 = 4096;
@@ -57,18 +62,22 @@ const LONGEST_HEAD: u64 = 4096;
 #[derive(Debug)]
 pub struct AnswersFile {
     /// Where it is, for what a refusal names.
-    at: PathBuf,
+    pub(crate) at: PathBuf,
     /// The file, and whether the last write may have left half a line.
-    open: Mutex<Open>,
+    ///
+    /// Held by every answer while it is written and by a shortening for the
+    /// whole of its replacing the file, so no answer is kept — and so none is
+    /// sent — while the file is replaced.
+    pub(crate) open: Mutex<Open>,
 }
 
 /// The file as it is held between answers.
 #[derive(Debug)]
-struct Open {
+pub(crate) struct Open {
     /// The file, opened to append.
-    file: File,
+    pub(crate) file: File,
     /// Whether the file may end in the middle of a line.
-    torn: bool,
+    pub(crate) torn: bool,
 }
 
 /// Every answer read back off the disk, oldest first.
@@ -79,13 +88,12 @@ pub struct ReadBack {
     /// The number of each line that did not read, counting the format line as
     /// line 1 — reported beside what did, never in place of it.
     pub unreadable: Vec<usize>,
-}
-
-/// The first line: which format the file is in.
-#[derive(Deserialize)]
-struct Head {
-    /// The format.
-    format: u64,
+    /// The moment the file now starts at, once a shortening has removed
+    /// anything — so an answer missing from before it is not read as a request
+    /// nobody made. [`None`] for a file nothing has been removed from.
+    pub since: Option<SystemTime>,
+    /// The rule the last shortening that removed anything was under.
+    pub under: Option<Keeping>,
 }
 
 impl AnswersFile {
@@ -106,7 +114,12 @@ impl AnswersFile {
         };
         let length = file.metadata().map_err(not_read)?.len();
         let torn = if length == 0 {
-            let head = format!("{{\"format\":{THE_ANSWERS_FORMAT}}}\n");
+            let head = AnswersHead::new()
+                .line()
+                .map_err(|why| NotRecorded::NotWritten {
+                    at: at.to_owned(),
+                    why: why.to_string(),
+                })?;
             file.write_all(head.as_bytes())
                 .and_then(|()| file.sync_data())
                 .map_err(|why| NotRecorded::NotWritten {
@@ -119,7 +132,7 @@ impl AnswersFile {
             BufReader::new((&file).take(LONGEST_HEAD))
                 .read_line(&mut first)
                 .map_err(not_read)?;
-            formatted(at, &first)?;
+            AnswersHead::read(at, &first)?;
             file.seek(SeekFrom::End(-1)).map_err(not_read)?;
             let mut last = [0_u8; 1];
             file.read_exact(&mut last).map_err(not_read)?;
@@ -149,10 +162,12 @@ impl AnswersFile {
             })?;
         let mut lines = bytes.split(|byte| *byte == b'\n');
         let first = lines.next().and_then(|line| std::str::from_utf8(line).ok());
-        formatted(at, first.unwrap_or_default())?;
+        let head = AnswersHead::read(at, first.unwrap_or_default())?;
         let mut read = ReadBack {
             answers: Vec::new(),
             unreadable: Vec::new(),
+            since: head.since(),
+            under: head.under(),
         };
         for (number, line) in lines.enumerate() {
             if line.is_empty() {
@@ -201,21 +216,4 @@ impl Recording for AnswersFile {
         open.torn = false;
         Ok(())
     }
-}
-
-/// Whether `first` is a format line for a format this backend adds to.
-fn formatted(at: &Path, first: &str) -> Result<(), NotRecorded> {
-    let Ok(head) = serde_json::from_str::<Head>(first.trim_end_matches('\n')) else {
-        return Err(NotRecorded::NotAnAnswersFile { at: at.to_owned() });
-    };
-    if head.format > THE_ANSWERS_FORMAT {
-        return Err(NotRecorded::ANewerFormat {
-            at: at.to_owned(),
-            format: head.format,
-        });
-    }
-    if head.format == 0 {
-        return Err(NotRecorded::NotAnAnswersFile { at: at.to_owned() });
-    }
-    Ok(())
 }

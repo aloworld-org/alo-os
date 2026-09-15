@@ -573,6 +573,7 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-capability",
+ "alo-keeping",
  "alo-keyring-fixture",
  "alo-opening",
  "alo-saying",

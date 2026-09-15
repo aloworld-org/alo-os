@@ -451,11 +451,13 @@ fn nothing_in_the_portal_sets_an_association_or_picks_an_opener_itself() {
             .collect::<Vec<_>>()
             .join("\n");
         for word in changing {
-            assert!(
-                !code.contains(word),
-                "{} reaches for `{word}`",
-                path.display()
-            );
+            // `alo_applications::keeping` is reached as `keeping::` however it
+            // is imported; `alo_keeping::`, the retention rule the answers file
+            // is shortened under, is another crate whose name ends the same.
+            let reached = code
+                .match_indices(word)
+                .any(|(at, _)| code.as_bytes().get(at.wrapping_sub(1)) != Some(&b'_'));
+            assert!(!reached, "{} reaches for `{word}`", path.display());
         }
         read += 1;
     }
