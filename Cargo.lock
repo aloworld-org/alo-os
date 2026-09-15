@@ -445,6 +445,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-keeping-up"
+version = "0.0.1"
+dependencies = [
+ "alo-egress",
+ "alo-saying",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-kept"
 version = "0.0.1"
 dependencies = [
@@ -637,6 +649,7 @@ dependencies = [
  "alo-greeting",
  "alo-indicator",
  "alo-keeping",
+ "alo-keeping-up",
  "alo-measuring",
  "alo-models",
  "alo-nearby",

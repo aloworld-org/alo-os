@@ -1,0 +1,32 @@
+[package]
+name = "alo-keeping-up"
+version = "0.0.1"
+description = "What an update is, and what it may never do to the person using the machine."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# A check for an update leaves this machine, and the only proof that it was
+# shown on the indicator is an `Underway` for `Errand::CheckingForAnUpdate`.
+alo-egress = { path = "../alo-egress" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+# Nothing else, and the absence is the argument: no HTTP client, no timer, no
+# runtime, no disk. This crate decides what an update is and what it may do; it
+# never fetches one, schedules one or writes one, and a test in
+# `tests/what_an_update_may_never_do.rs` reads this list to hold it to that.
+
+[dev-dependencies]
+# The machine's one vocabulary, in the direction every crate here takes: a
+# crate that says something is collected by `alo-saying`, and never reaches
+# for it.
+alo-saying = { path = "../alo-saying" }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

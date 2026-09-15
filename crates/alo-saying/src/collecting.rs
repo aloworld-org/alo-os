@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 34] = [
+pub const EVERY_LIST: [&str; 35] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -97,6 +97,7 @@ pub const EVERY_LIST: [&str; 34] = [
     "alo-greeting",
     "alo-indicator",
     "alo-keeping",
+    "alo-keeping-up",
     "alo-measuring",
     "alo-models",
     "alo-nearby",
@@ -203,6 +204,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-keeping", alo_keeping::declare_into)?;
     declare(
         &mut vocabulary,
+        "alo-keeping-up",
+        alo_keeping_up::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
         "alo-measuring",
         alo_measuring::declare_into,
     )?;
@@ -267,7 +273,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 34] = [
+    const ONE_STRING_EACH: [(&str, &str); 35] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -288,6 +294,7 @@ mod tests {
         ("alo-greeting", "greeting.make-an-account"),
         ("alo-indicator", "indicator.nothing-is-leaving"),
         ("alo-keeping", "keeping.forever"),
+        ("alo-keeping-up", "keeping-up.ready"),
         ("alo-measuring", "measuring.not-on-this-host"),
         ("alo-models", "models.source.this-machine"),
         ("alo-nearby", "nearby.may.ask-its-models"),
@@ -364,6 +371,7 @@ mod tests {
             alo_greeting::greeting_words().unwrap().how_many(),
             alo_indicator::indicator_words().unwrap().how_many(),
             alo_keeping::keeping_words().unwrap().how_many(),
+            alo_keeping_up::keeping_up_words().unwrap().how_many(),
             alo_measuring::measuring_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
             alo_nearby::nearby_words().unwrap().how_many(),

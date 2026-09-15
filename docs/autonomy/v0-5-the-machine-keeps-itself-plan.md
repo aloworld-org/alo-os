@@ -42,6 +42,24 @@ rather than a guess.
 
 **Status:** ready. **Depends on:** nothing.
 
+**Done, 2026-09-14.** `crates/alo-keeping-up`: `Digest` is a whole, lowercase
+`sha256:` image digest, refused otherwise and read back through the same check;
+`Running` is the build reported running, `Offered` the build offered, and
+`Standing::between` answers `UpToDate` or `Ready { running, offered }` — differ,
+not newer, and no priority, severity or deadline anywhere. `a_check_at` is
+`Errand::CheckingForAnUpdate`, and `Offered::heard` takes the `Underway` only the
+indicator makes, refusing one for any other errand (`NotACheck`). `THE_RULE`
+refuses `Cause::AnUpdate` for each `Disturbance` — restarting the machine,
+closing an application, interrupting the person — and allows `Cause::ThePerson`;
+there is no third cause. `WhenItApplies` is `AtTheNextRestart` (the default) or
+`NowBecauseThePersonAsked`, with no *never* and no *by itself*. Eight sentences,
+collected by `alo-saying`, none naming the machinery. The crate depends on
+`alo-egress`, `alo-strings`, `serde` and `thiserror` alone, and a test reads its
+manifest and source for a clock, a thread, a socket or a file. The registry it
+will check against is still the installer plan's task 1, and `a_check_at` takes
+the place as an argument rather than guessing it. Report:
+`docs/autonomy/updates/what-an-update-is-and-may-never-do.md`.
+
 *Updates that never interrupt.* Every operating system says this and most mean
 *we will interrupt you later instead*. The promise is only keepable if what an
 update may do is decided before anything downloads, and the decision is a type

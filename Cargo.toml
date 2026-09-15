@@ -36,6 +36,7 @@ members = [
   "crates/alo-keyring-fixture",
   "crates/alo-kept",
   "crates/alo-keeping",
+  "crates/alo-keeping-up",
   "crates/alo-measuring",
   "crates/alo-models",
   "crates/alo-nearby",
