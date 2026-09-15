@@ -125,7 +125,12 @@ two code paths in a compositor would not be one list.
 
 ### 4. What a person may edit, and what they are told when it did not read
 
-**Status:** ready. **Depends on:** 2, 3.
+**Status:** **Done, 2026-09-15** — `docs/contracts/person-settings.md` has a
+section per file, held to each crate by its `tests/the_contract_describes_this_file.rs`;
+`alo-choosing`'s `tests/no_english_outside_the_vocabulary.rs` reads all five
+crates' shipped source; see
+`docs/autonomy/updates/what-a-person-may-edit-and-what-they-are-told.md`.
+**Depends on:** 2, 3.
 
 These files are in a person's own folder, which means a person will open one in
 an editor, and a portal will one day read one. Both of those need the shape
@@ -143,3 +148,34 @@ written down, and the moment a file does not read needs a sentence.
 - **Constraint:** nothing here changes what the sections describe. The contract
   follows the crates; where they disagree the crate is right and the document
   is wrong, and it is the document that changes.
+
+### 5. A file that did not read is not written over by the next click
+
+**Status:** ready. **Depends on:** 2, 4.
+
+ADR 0038, clause 3: *Settings does not write over a file that did not read*
+except when the person puts that section back as shipped, *so a hand-edit with
+a typo is never lost silently to the next click.* Task 4 wrote the contract from
+the crates and found that none of the three holds it: `keeping::keep` replaces
+whatever is at the path, so a surface that draws the release's appearance after
+`at_sign_in` refused the file, and then saves the person's next change, throws
+away the edit they were about to fix. `alo_choosing::Choosing` already refuses
+to open settings that do not read for exactly this reason; the three files
+beside it do not. The contract's three *Writing it* sections say so today.
+
+- **Acceptance:** `alo-kept` carries the rule in type, so the three crates
+  cannot each forget it: a write is refused, in the owning crate's words and
+  naming the file, when the file it would replace is there and does not read —
+  held by a test per crate against a real file whose bytes are unchanged
+  afterwards; putting the section back as shipped is a distinct, deliberate
+  door that does replace such a file, and is the only one; a file that is not
+  there, or that reads, is written exactly as today; every new sentence is in
+  the vocabulary with a translator's note and collected by `alo-saying`; and
+  the three *Writing it* sections of `docs/contracts/person-settings.md` say
+  what the crates then do, held by each crate's
+  `tests/the_contract_describes_this_file.rs`.
+- **Constraint:** no crate learns the folder, and nothing watches a file. The
+  check is made at the moment of the write, against the file as it is then —
+  never against what was read at sign-in, which a hand edit since may have
+  fixed. Nothing here is reachable by an agent: these are a person's own
+  settings, written from Settings.

@@ -83,8 +83,13 @@ declares its shape, at a path that crate is handed, and by nobody else:
 A file that did not read is answered, by each crate's `keeping::at_sign_in`,
 with what the release ships and the refusal beside it — naming the file, and the
 key when a key was what was wrong. Nothing watches these files: a hand edit is
-read at the next sign-in. The full shape of each value is a section of this
-contract still to be written.
+read at the next sign-in. Each has a section of its own below —
+[`appearance.toml`](#appearancetoml--how-this-persons-machine-looks),
+[`dock.toml`](#docktoml--which-edge-the-dock-is-on) and
+[`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed) — with its
+keys, its `format`, what a missing file means and what a file that does not
+read is told, each held to the crate that keeps it by a test in that crate
+(`tests/the_contract_describes_this_file.rs`).
 
 ## What a missing file means
 
@@ -144,15 +149,24 @@ in a different shape, and since format 2 it is here: `[[provider]]` below.
 **There is no credential in this file, and there is nowhere to put one.** A
 provider's key lives in a keyring under a name **derived** from the provider's
 own name, so the file has no field to paste one into, and a file that invents
-one is refused naming the key. See `[[provider]]`.
+one is refused whole, naming the file. See `[[provider]]`.
 
 **A file that is there and wrong is refused whole**, and nothing in it is
 honoured — not the half that parsed. Taking what read and dropping what did not
 would be the machine choosing the rest of somebody's settings for them, quietly,
 in the release that renamed a key.
 
-**A key nobody declared is refused**, naming it. A newer alo OS may add keys;
-what says so is `format`, and a typo is not an addition.
+**A key nobody declared is refused**, and the person is told which file —
+`choosing.settings.not-understood` — **without the key being repeated back**.
+That is the one place this file answers differently from the files beside it
+(below), and it is deliberate: a key nobody declared is exactly where a pasted
+credential lands, TOML accepts one as a bare name, and a refusal that quoted it
+would carry it into every log line and support bundle that formatted the
+refusal. What survives, for whoever reads the log, is the parser's sentence
+with every quoted run that is not one of this format's own words replaced by
+`…`, and the line and column it stopped at (`crates/alo-choosing/src/unreadable.rs`).
+A newer alo OS may add keys; what says so is `format`, and a typo is not an
+addition.
 
 ## `format`
 
@@ -359,8 +373,8 @@ Format 2. An array of tables, so a person who has added none simply has no
 single most reliable way for a credential to end up in a text file in somebody's
 home directory is for the file to have a field called `key`. So it has none: the
 keyring name is derived as `provider/<name>`, and a file that invents a `key` is
-refused naming it — the person is told, rather than left with a credential on
-their disk that alo OS quietly read.
+refused whole, naming the file and never the value — the person is told, rather
+than left with a credential on their disk that alo OS quietly read.
 
 ```toml
 format = 3
@@ -580,3 +594,390 @@ been asked, and put setup in front of them again at every sign-in. Neither is a
 key an older release may quietly not know about, so neither is additive in the
 sense above — and both older shapes are still read, which is what the rule is
 really protecting.
+
+## `appearance.toml` — how this person's machine looks
+
+Kept by `alo_appearance::keeping`, in the person's folder beside this file, at
+the path the crate is handed. It holds `alo_appearance::Changes` — what the
+person changed about the background, the lock screen, light and dark, the size
+of the text and the accent — and nothing the release ships, so a release that
+improves a wallpaper reaches every machine whose owner never changed theirs.
+
+### Keys
+
+Besides `format`, and each of them optional: a key that is not there is a
+setting the person has not changed.
+
+| Key | Meaning |
+|---|---|
+| `background` | What is behind the windows on every display the person has not singled out. |
+| `displays` | The displays the person singled out, oldest first, each with its own background. |
+| `lock` | What the lock screen shows. |
+| `following` | What decides light and dark: one of the two always, or the clock. |
+| `text` | How big the text is, as a whole-number percentage. |
+| `accent` | Which of the five accents the shell follows. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `dock.toml` moving to another says nothing about
+this one.
+
+### What alo OS writes
+
+Every setting changed, exactly as `alo_appearance::keeping::keep` writes it:
+
+```toml
+format = 1
+
+accent = "Moss"
+displays = [["HDMI-1", { Colour = "#102A43" }], ["eDP-1", { Picture = { fitting = "Fill", of = { File = "/home/ada/harbour.jpg" } } }]]
+text = 150
+
+[background.Rotating]
+fitting = "Fit"
+folder = "/home/ada/Pictures"
+
+[background.Rotating.every]
+nanos = 0
+secs = 600
+
+[following.TheClock.dark_from]
+hour = 18
+minute = 0
+
+[following.TheClock.light_from]
+hour = 7
+minute = 30
+
+[lock.Its.Picture]
+fitting = "Fill"
+
+[lock.Its.Picture.of]
+Shipped = "alo"
+```
+
+A file typed by hand need not be laid out that way — TOML's inline tables and
+its `[section]` tables say the same thing — and this reads too:
+
+```toml
+format = 1
+accent = "Rose"
+text = 125
+lock = "TheDesktop"
+
+[following]
+Always = "Dark"
+```
+
+### Values
+
+The names inside a value are the crate's own and are matched exactly, capitals
+included: `"Dark"` reads and `"dark"` does not.
+
+- **A background** is one of three, named by what it is:
+  - `{ Picture = { of = …, fitting = … } }` — `of` is `{ Shipped = "<name>" }`,
+    a wallpaper that came with alo OS asked for by name and never by a path, or
+    `{ File = "<whole path>" }`, the person's own picture from the top of the
+    disk. A relative path is refused, because where it leads would depend on
+    where the shell was started.
+  - `{ Rotating = { folder = "<whole path>", every = { secs = …, nanos = … }, fitting = … } }`
+    — a folder of pictures taking turns. `every` is how long each stays up, and
+    anything under sixty seconds is refused: quicker than that is a flicker.
+  - `{ Colour = "#RRGGBB" }` — a hash and six hexadecimal digits, as `#102A43`.
+- **`fitting`** is how a picture meets the edges of a screen: `"Fill"`,
+  `"Fit"`, `"Stretch"`, `"Centre"` or `"Tile"`.
+- **`displays`** is a list of pairs, `["<display name>", <background>]`. The
+  name is whatever the shell calls the screen, matched exactly — an empty name,
+  or one that begins or ends with a space, is refused. A display that is renamed
+  by a driver loses its exception and shows `background`, which is the right way
+  round to fail. **A display named twice is read as its last entry.**
+- **`lock`** is `"TheDesktop"` — the same background as the desktop — or
+  `{ Its = <background> }`.
+- **`following`** is `{ Always = "Light" }`, `{ Always = "Dark" }`, or
+  `{ TheClock = { dark_from = { hour = …, minute = … }, light_from = { hour = …, minute = … } } }`.
+  An hour runs from 0 to 23 and a minute from 0 to 59, on a twenty-four hour
+  clock whatever the region writes; the two times must differ.
+- **`text`** is from 75 to 300. 200 is what EN 301 549 requires a machine to
+  reach.
+- **`accent`** is `"Verdigris"`, `"Indigo"`, `"Violet"`, `"Moss"` or `"Rose"`.
+  Terracotta is how the machine says alo is present or acting (ADR 0010), and a
+  file that asks for it as an accent does not read.
+
+A table inside a value has exactly its own keys: a picture, a folder, a
+schedule or a time of day with a key that is not its own does not read.
+
+### What a missing file means
+
+**The person has changed nothing**, and the machine looks the way the release
+ships it. It is not an error, and nothing is written to make one: the first byte
+is written by the first change somebody makes. A person who puts everything back
+is kept as `format = 1` and nothing else.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured** — not the accent on the line
+above the typo. `alo_appearance::keeping::at_sign_in` answers with the release's
+appearance and the refusal beside it, for Settings to say in that section. Every
+sentence names the file, and each is in the vocabulary with a note for its
+translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `appearance.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `appearance.kept.not-understood` |
+| Not TOML, from a line on | `appearance.kept.not-understood-at`, naming the line |
+| Another `format` | `appearance.kept.another-format` |
+| A key at the top of the file that is not on the list | `appearance.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+accent = "Rose"
+wallpaper = "harbour"
+```
+
+Refused — `appearance.kept.unknown-key`, naming `wallpaper` — and the machine
+draws the release's accent rather than rose. Only a key **at the top of the
+file** is named: a wrong key inside a value is a value this shape does not take.
+
+```toml refused
+format = 1
+
+[lock.Its.Picture]
+fitting = "Fill"
+size = "large"
+
+[lock.Its.Picture.of]
+Shipped = "alo"
+```
+
+Refused — `appearance.kept.not-understood`.
+
+```toml refused
+format = 1
+accent = "Terracotta"
+```
+
+Refused — `appearance.kept.not-understood`.
+
+```toml refused
+format = 1
+text = 50
+```
+
+Refused — `appearance.kept.not-understood`.
+
+```toml refused
+format = 1
+accent =
+```
+
+Refused — `appearance.kept.not-understood-at`, naming line 2.
+
+```toml refused
+format = 2
+accent = "Rose"
+```
+
+Refused — `appearance.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+A refusal quotes nothing the file says except the key at the top of it: a line
+is a number, and a value is never repeated back.
+
+### Writing it
+
+`alo_appearance::keeping::keep` writes the whole of the person's changes: to
+`appearance.toml.new` beside the file, read back off the disk as the same
+changes, and only then renamed over the old one — created `0600` in a folder
+created `0700` where the machine has modes. A change that would not read back
+is refused before the file is touched (`appearance.kept.not-expressible`), and
+a disk that will not take it leaves the file as it was
+(`appearance.kept.not-written`); both say nothing has been changed.
+
+**The writer does not read the file it replaces.** ADR 0038 says Settings does
+not write over a file that did not read unless the person puts that section
+back as shipped; that rule is not yet held by the crate, and until it is, a
+surface that writes after `at_sign_in` refused the file replaces the file.
+
+## `dock.toml` — which edge the dock is on
+
+Kept by `alo_dock::keeping`, beside `appearance.toml`, at the path the crate is
+handed. It holds `alo_dock::Changes`.
+
+### Keys
+
+Besides `format`, and optional:
+
+| Key | Meaning |
+|---|---|
+| `edge` | Which edge of the screen the dock sits on: `"Bottom"`, `"Left"`, `"Right"` or `"Top"`. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+
+### What alo OS writes
+
+```toml
+format = 1
+
+edge = "Left"
+```
+
+### What a missing file means
+
+**The person has changed nothing**: the dock is where the release puts it. Not
+an error, and nothing is written until the person moves it.
+
+### A file that does not read
+
+**Refused whole**, and the dock is where the release puts it;
+`alo_dock::keeping::at_sign_in` answers with the release's dock and the refusal
+beside it. The sentences name the file, and are the same five reasons
+`appearance.toml` has, under `dock.kept.`: `not-read`, `not-understood`,
+`not-understood-at` naming the line, `another-format`, and `unknown-key` naming
+the key.
+
+```toml refused
+format = 1
+edge = "Left"
+size = 48
+```
+
+Refused — `dock.kept.unknown-key`, naming `size` — and the dock is not moved to
+the left.
+
+```toml refused
+format = 1
+edge = "left"
+```
+
+Refused — `dock.kept.not-understood`. The edge's name is matched exactly.
+
+### Writing it
+
+As `appearance.toml`: whole, read back before it counts, and renamed over the
+old file (`dock.kept.not-expressible`, `dock.kept.not-written`). The writer does
+not yet refuse to replace a file that did not read.
+
+## `shortcuts.toml` — the shortcuts this person changed
+
+Kept by `alo_shortcuts::keeping`, beside the other two, at the path the crate is
+handed. It holds `alo_shortcuts::Changes`: one entry per action the person
+moved or cleared, and nothing for an action still on the release's shortcut.
+
+### Keys
+
+Besides `format`, and optional:
+
+| Key | Meaning |
+|---|---|
+| `changed` | One `[[changed]]` table per action the person changed, in the order they changed them. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+
+### What alo OS writes
+
+A person who moved the agent, cleared the launcher and moved the next window:
+
+```toml
+format = 1
+
+[[changed]]
+action = "TheAgent"
+
+[changed.chord]
+key = "Space"
+modifiers = ["Ctrl", "Alt"]
+
+[[changed]]
+action = "Launcher"
+
+[[changed]]
+action = "NextWindow"
+
+[changed.chord]
+key = "J"
+modifiers = ["Super"]
+```
+
+### Values
+
+Each `[[changed]]` has exactly two keys:
+
+- **`action`** — `"TheAgent"`, `"Launcher"`, `"CloseWindow"`,
+  `"MinimiseWindow"`, `"MaximiseWindow"`, `"SnapLeft"`, `"SnapRight"`,
+  `"NextWindow"`, `"PreviousWindow"`, `"NextApplication"` or
+  `"PreviousApplication"`. **An action named twice is read as its last entry.**
+- **`chord`** — `{ modifiers = [...], key = "..." }`, or no `chord` at all,
+  which is the person wanting **no** shortcut for that action rather than the
+  release's.
+  - `modifiers` is a list of `"Super"`, `"Ctrl"`, `"Alt"` and `"Shift"`, in any
+    order; the same one twice is the same chord.
+  - `key` is `"A"` to `"Z"`, `"Digit0"` to `"Digit9"`, `"F1"` to `"F12"`,
+    `"Comma"`, `"Period"`, `"Slash"`, `"Minus"`, `"Equals"`, `"Space"`,
+    `"Tab"`, `"Enter"`, `"Escape"`, `"Backspace"`, `"Delete"`, `"Insert"`,
+    `"Home"`, `"End"`, `"PageUp"`, `"PageDown"`, `"Left"`, `"Right"`, `"Up"`,
+    `"Down"` or `"Print"`.
+  - A chord with **nothing held**, with **only Shift** held, or that is
+    **Ctrl+C, Ctrl+X or Ctrl+V** — which the clipboard is worked by — does not
+    read.
+
+**A clash does not refuse the file.** A chord the person gave to an action that
+the release, or another of their own entries, also has is read, and is reported
+by `alo_shortcuts::Shortcuts::clashes` where the person can see it: their
+binding beats one the release shipped, and two of their own on one chord fire
+nothing.
+
+### What a missing file means
+
+**The person has changed nothing**: every shortcut is the release's. Not an
+error, and nothing is written until they change one.
+
+### A file that does not read
+
+**Refused whole**, and every shortcut is the one the release ships;
+`alo_shortcuts::keeping::at_sign_in` answers with the release's shortcuts and
+the refusal beside it. The sentences name the file, and are the same five
+reasons, under `shortcuts.kept.`: `not-read`, `not-understood`,
+`not-understood-at` naming the line, `another-format`, and `unknown-key` naming
+the key.
+
+```toml refused
+format = 1
+bindings = []
+```
+
+Refused — `shortcuts.kept.unknown-key`, naming `bindings`.
+
+```toml refused
+format = 1
+
+[[changed]]
+action = "CloseWindow"
+
+[changed.chord]
+key = "C"
+modifiers = ["Ctrl"]
+```
+
+Refused — `shortcuts.kept.not-understood` — so Ctrl+C is not taken from the
+clipboard, and nothing else in the file is honoured either.
+
+```toml refused
+format = 1
+
+[[changed]]
+action = "Launch"
+```
+
+Refused — `shortcuts.kept.not-understood`. An action's name is matched exactly.
+
+### Writing it
+
+As `appearance.toml`: whole, read back before it counts, and renamed over the
+old file (`shortcuts.kept.not-expressible`, `shortcuts.kept.not-written`). The
+writer does not yet refuse to replace a file that did not read.

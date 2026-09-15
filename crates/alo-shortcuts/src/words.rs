@@ -69,7 +69,11 @@ pub const LAUNCHER: Word = Word::saying("shortcuts.action.launcher", "Open the l
     .noting("The launcher is where a person finds and starts an application.");
 
 /// What [`crate::Action::CloseWindow`] does.
-pub const CLOSE_WINDOW: Word = Word::saying("shortcuts.action.close-window", "Close the window");
+pub const CLOSE_WINDOW: Word = Word::saying("shortcuts.action.close-window", "Close the window")
+    .noting(
+        "The window that has the keyboard is closed — one window, not the application, which may \
+         have others open. See the note on shortcuts.action.next-window.",
+    );
 
 /// What [`crate::Action::MinimiseWindow`] does.
 pub const MINIMISE_WINDOW: Word =
@@ -637,5 +641,20 @@ mod tests {
             HOME.note()
                 .is_some_and(|note| note.contains("not the person's home folder")),
         );
+    }
+
+    /// **And so does every other word.** *Close the window* went without one
+    /// until the settings plan's fourth task counted: a row in a list is short
+    /// enough that a translator has nothing but the note to tell a window from
+    /// an application.
+    #[test]
+    fn every_word_carries_a_note() {
+        for word in EVERY_WORD {
+            assert!(
+                word.note().is_some_and(|note| !note.trim().is_empty()),
+                "{}",
+                word.named()
+            );
+        }
     }
 }
