@@ -3652,3 +3652,21 @@ real runtime for `mistral-7b-instruct` (it answered by that id) and
 `a_catalogue_entry_fetched_answers_by_its_catalogue_id`. The one request that
 failed cost a manifest lookup at `registry.ollama.ai`, 2026-09-14 01:32:21 UTC.
 **Date:** 2026-09-14.
+
+### WSL on a VMware guest shows `/dev/kvm` and has no KVM behind it
+**Version:** WSL 2.7.14, kernel `6.18.33.2-microsoft-standard-WSL2`, Ubuntu 24.04,
+QEMU 8.2.2, in a VMware 7,1 guest running Windows Server 2022 (build 20348).
+2026-09-15.
+**Behaviour:** `/dev/kvm` is present (`crw-rw---- root kvm 10, 232`), so a check
+that only tests for the device reports that virtual machines can be accelerated.
+They cannot: `qemu-system-x86_64 -accel kvm -cpu host` fails with *Could not
+access KVM kernel module: No such device*, and `/proc/cpuinfo` has no `vmx` or
+`svm` flag. WSL's nested virtualisation needs Windows 11, and this host is not.
+The node appeared after the distribution was restarted with the virtualisation
+packages installed, and it had not been there before.
+**Our response:** a virtual machine on this box runs under `-accel tcg`. It
+works, and it is slow: Fedora Cloud 42 with 3 CPUs and 4 GB reached its login
+prompt in 190 seconds. Probe for acceleration by starting QEMU with
+`-accel kvm`, never by looking for the device. Nothing measured under emulation
+is a timing for alo OS on a real machine.
+**Date:** 2026-09-15.

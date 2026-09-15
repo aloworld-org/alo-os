@@ -87,6 +87,20 @@ rather than a habit.
 
 **Status:** ready. **Depends on:** 1.
 
+**What the machine that runs this lane can do, measured 2026-09-15.** It is a
+VMware guest running Windows Server 2022, with Ubuntu 24.04 in WSL2 on kernel
+`6.18.33.2`. **It has no hardware virtualisation**: `/dev/kvm` exists, but
+`qemu-system-x86_64 -accel kvm` answers *failed to initialize kvm: No such
+device*, and `/proc/cpuinfo` has no `vmx` flag (`docs/quirks.md`). **Software
+emulation works**: QEMU 8.2.2 with `-accel tcg`, 3 CPUs and 4 GB booted Fedora
+Cloud 42 to its login prompt in **190 seconds**. So the virtual-machine tests
+this task and task 3 ask for can run here, slowly; budget minutes per boot, not
+seconds. `podman` 4.9.3 is installed in the WSL box. The owner's signed release
+0.0.1 at `ghcr.io/aloworld-org/alo-os` is reachable from it with `skopeo
+inspect`. The installer plan's task 1 is still writing the repository's pin for
+that release, so read the digest from the pin once it lands rather than from
+this note.
+
 The mechanism is `bootc`'s: a new image is staged as a second deployment and
 the machine boots into it. What is ours is that the person's own things
 survive it, and that the machine can say what changed.
