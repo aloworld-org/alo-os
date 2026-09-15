@@ -80,8 +80,10 @@ disappointment.
 
 ### 2. `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost
 
-**Status:** blocked — on `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
-(proposed, 2026-09-14). **Depends on:** 1.
+**Status:** blocked — `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
+was accepted on 2026-09-15 (option A), and the task now waits on the two things
+it still lists: the pinned engine on the gate machine, and three real office
+documents from the owner with their provenance. **Depends on:** 1.
 
 **Decided rather than built, 2026-09-14.** The first worker found that the code
 could not be written without choosing things that are not a worker's to choose:

@@ -20,6 +20,13 @@ reason they do not collide.
 | Spare PC two | `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | `alo-keeping-up` (new) |
 | The laptop | `docs/autonomy/v0-5-documents-and-paper-plan.md` | `alo-printing` (new), `alo-opening` (new) |
 
+**Reassigned 2026-09-15.** The machine that ran documents and paper
+(`C:\dev\alo-os`, `admin.disan`) published tasks 1 and 3 and stopped with every
+remaining task blocked on three real office documents from the owner. It now
+runs **the machine keeps itself** as well, since spare PC two had not started
+it, and still owns `alo-printing` and `alo-opening` for when documents and
+paper unblocks. Nobody else takes `alo-keeping-up`.
+
 No two of those touch one crate, and none of them touches `alo-shell`,
 `alo-nearby`, `alo-asking`, `alo-agentd`, `image/` or `alo-image`, which have
 lanes on them. **Two lanes in one crate corrupted a task on 2026-09-11; that is
