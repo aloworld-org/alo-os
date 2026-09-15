@@ -30,6 +30,13 @@
 //! about the machine that sent it, and this daemon measures it when the
 //! proposal arrives ([`crate::looking`]) rather than keeping a list that
 //! would age. A confirmation needs no such measurement and gets none.
+//!
+//! **The measurement is made on the network the proposal arrived on**
+//! ([`crate::arrived_on`]): on a machine on two networks whose routers hand out
+//! the same private range, a proposal from `192.168.1.20` on the cable measured
+//! by the route can be answered by somebody else at `192.168.1.20` on the
+//! Wi-Fi. A connection whose arriving network cannot be read is measured
+//! nowhere, and its proposal is refused as *not found*.
 
 use std::io::Write as _;
 
@@ -44,6 +51,7 @@ use alo_nearby::{
     HeardFrom, NotNearby, Pairing, Surface, THE_CONFIRMATION_PATH, THE_PROPOSAL_PATH,
 };
 
+use crate::arrived_on::the_network_it_arrived_on;
 use crate::looking::found_at;
 use crate::network::TheNetwork;
 use crate::questioned::{self, Questioned};
@@ -180,9 +188,12 @@ fn on_the_pairing_wire(
     now: SystemTime,
 ) -> Result<Heard, NotServed> {
     // Measured before the lock is taken, because it waits on the network
-    // and nothing on this machine changes while it does.
+    // and nothing on this machine changes while it does — and measured on the
+    // network the connection arrived on, so the machine asked *who are you* is
+    // the one that connected rather than whoever the route reaches at the same
+    // private address (`crate::arrived_on`).
     let found = if message.first.contains(THE_PROPOSAL_PATH) {
-        found_at(from, judging.asking_at)
+        found_at(from, the_network_it_arrived_on(&stream), judging.asking_at)
     } else {
         Vec::new()
     };

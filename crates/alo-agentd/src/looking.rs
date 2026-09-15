@@ -72,11 +72,16 @@
 //! is written down on that interface (`alo_nearby::HeardFrom::on_the_network`).
 //! A question to it is then held to the same interface (`crate::corridor`).
 //!
-//! **A proposal's measurement follows its connection's family.** The asking
-//! machine is asked at the address its connection came from — with the
-//! interface, for a link-local one ([`found_at`]) — because a link-local
-//! address without its interface names no network and a datagram to it would
-//! go nowhere.
+//! **A proposal's measurement follows its connection's family, and the network
+//! its connection arrived on.** The asking machine is asked at the address its
+//! connection came from — with the interface, for a link-local one
+//! ([`found_at`]) — because a link-local address without its interface names no
+//! network and a datagram to it would go nowhere; and an IPv4 connection is
+//! measured from a socket **held to the network it arrived on**
+//! (`crate::arrived_on`), for the reason above: `192.168.1.20` on the cable and
+//! `192.168.1.20` on the Wi-Fi are two machines, and the one that connected is
+//! the one the proposal is judged against. A connection whose arriving network
+//! could not be read is measured nowhere.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6, UdpSocket};
 use std::num::NonZeroU32;
@@ -84,6 +89,7 @@ use std::time::Duration;
 
 use alo_nearby::{Around, Found, HeardFrom, Looking, MachineId, THE_IPV6_ADDRESS};
 
+use crate::arrived_on::ArrivedOn;
 use crate::networks::{Network, every_discovery_network};
 use crate::route_messages::reported_by_the_kernel;
 
@@ -284,27 +290,53 @@ pub const WHILE_LOOKING: Duration = Duration::from_secs(2);
 /// answers on, and answer with what was found.
 ///
 /// `from` is the address the connection came from, with the interface for a
-/// link-local one, and the question goes to it in its own family. Empty when
-/// nothing answered or nothing could be asked — which includes a link-local
-/// address with no interface, which names no network to ask on — and the caller
-/// reads that as *not found*: a proposal from a machine this one cannot find is
-/// refused by `alo_nearby::Proposals::arrived`, and refusing it is the whole
-/// of what this measurement is for.
+/// link-local one, and the question goes to it in its own family. `arrived` is
+/// the network the connection came in on (`crate::arrived_on`), and it is what
+/// the question is **held to**: an IPv4 connection that arrived on the cable is
+/// measured on the cable, so the machine that answers is the one that
+/// connected, and not somebody else at the same private address on the Wi-Fi
+/// (ADR 0044). Everything found is written down on that network
+/// ([`HeardFrom::on_the_network`]), which is what a question to it is then held
+/// to in turn.
+///
+/// Empty when nothing answered or nothing could be asked — which includes a
+/// link-local address with no interface, which names no network to ask on, and
+/// a connection whose arriving network could not be read
+/// ([`ArrivedOn::NothingCouldSay`]), which is **measured nowhere** rather than
+/// measured by the route. The caller reads all of those as *not found*: a
+/// proposal from a machine this one cannot find is refused by
+/// `alo_nearby::Proposals::arrived`, and refusing it is the whole of what this
+/// measurement is for.
 #[must_use]
-pub fn found_at(from: impl Into<HeardFrom>, asking_at: u16) -> Vec<Found> {
+pub fn found_at(from: impl Into<HeardFrom>, arrived: ArrivedOn, asking_at: u16) -> Vec<Found> {
     let from = from.into();
     if !from.names_a_network() {
         return Vec::new();
     }
     let at = from.at(asking_at);
-    let Ok(socket) = UdpSocket::bind(asked_from(at)) else {
+    let here = asked_from(at);
+    let socket = match arrived {
+        ArrivedOn::NothingCouldSay => return Vec::new(),
+        ArrivedOn::ItsOwnNetwork => UdpSocket::bind(here),
+        ArrivedOn::TheNetwork(interface) => held_to(interface.get(), here),
+    };
+    let Ok(socket) = socket else {
         return Vec::new();
     };
     let looking = Looking::from(socket);
     if looking.ask(at).is_err() {
         return Vec::new();
     }
-    looking.found(WHILE_LOOKING).unwrap_or_default()
+    let mut found = looking.found(WHILE_LOOKING).unwrap_or_default();
+    if let ArrivedOn::TheNetwork(interface) = arrived {
+        for one in &mut found {
+            one.address = one.address.on_the_network(interface.get());
+            for also in &mut one.also_at {
+                *also = also.on_the_network(interface.get());
+            }
+        }
+    }
+    found
 }
 
 #[cfg(test)]
@@ -318,6 +350,7 @@ mod tests {
     use alo_nearby::{Answering, MachineId, Presence};
 
     use super::found_at;
+    use crate::arrived_on::ArrivedOn;
 
     /// The machine that proposed, for these tests.
     fn reception() -> MachineId {
@@ -333,7 +366,7 @@ mod tests {
         let answering = Answering::on(socket, Presence::of(reception(), 7_610));
         let answered = std::thread::spawn(move || answering.answer_one());
 
-        let found = found_at(at.ip(), at.port());
+        let found = found_at(at.ip(), ArrivedOn::ItsOwnNetwork, at.port());
         assert!(answered.join().unwrap().unwrap().is_some());
         let one = found.iter().find(|one| one.machine == reception()).unwrap();
         assert_eq!(one.address, at.ip());
@@ -347,11 +380,62 @@ mod tests {
     fn a_link_local_address_with_no_interface_is_looked_for_nowhere() {
         let unscoped: std::net::IpAddr = "fe80::a406:e5ff:fe4b:ac9e".parse().unwrap();
         let started = std::time::Instant::now();
-        assert!(found_at(unscoped, alo_nearby::THE_PORT).is_empty());
+        assert!(found_at(unscoped, ArrivedOn::ItsOwnNetwork, alo_nearby::THE_PORT).is_empty());
         assert!(
             started.elapsed() < super::WHILE_LOOKING,
             "a question was asked and waited on"
         );
+    }
+
+    /// **A connection whose arriving network could not be read is measured
+    /// nowhere**: nothing is asked at all, so the machine that would have
+    /// answered never hears the question, and its proposal is refused as *not
+    /// found* rather than judged against whoever the route reaches (ADR 0044).
+    #[test]
+    fn a_connection_whose_network_could_not_be_read_is_measured_nowhere() {
+        let socket = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        socket
+            .set_read_timeout(Some(std::time::Duration::from_millis(250)))
+            .unwrap();
+        let at = socket.local_addr().unwrap();
+        let answering = Answering::on(socket, Presence::of(reception(), 7_610));
+        let asked = std::thread::spawn(move || answering.answer_one());
+
+        let started = std::time::Instant::now();
+        assert!(found_at(at.ip(), ArrivedOn::NothingCouldSay, at.port()).is_empty());
+        assert!(
+            started.elapsed() < super::WHILE_LOOKING,
+            "a question was asked and waited on"
+        );
+        assert!(
+            asked.join().unwrap().is_err(),
+            "a machine measured nowhere was asked anyway"
+        );
+    }
+
+    /// **What a measurement on one network found is written down on that
+    /// network**, so a question to the machine it found is held there in turn
+    /// (ADR 0044) — asked here on loopback, which is the one network a test on
+    /// one machine has.
+    #[test]
+    fn what_was_measured_on_a_network_is_written_down_on_it() {
+        let loopback = crate::route_messages::reported_by_the_kernel()
+            .unwrap()
+            .into_iter()
+            .find(|interface| interface.addresses.contains(&Ipv4Addr::LOCALHOST))
+            .unwrap();
+        let held_to = std::num::NonZeroU32::new(loopback.index).unwrap();
+
+        let socket = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let at = socket.local_addr().unwrap();
+        let answering = Answering::on(socket, Presence::of(reception(), 7_610));
+        let answered = std::thread::spawn(move || answering.answer_one());
+
+        let found = found_at(at.ip(), ArrivedOn::TheNetwork(held_to), at.port());
+        assert!(answered.join().unwrap().unwrap().is_some());
+        let one = found.iter().find(|one| one.machine == reception()).unwrap();
+        assert_eq!(one.address, at.ip());
+        assert_eq!(one.address.interface(), Some(loopback.index));
     }
 
     /// **A machine that does not answer is not found**, and nothing is
@@ -360,7 +444,7 @@ mod tests {
     fn a_machine_that_does_not_answer_is_not_found() {
         let quiet = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         let at = quiet.local_addr().unwrap();
-        assert!(found_at(at.ip(), at.port()).is_empty());
+        assert!(found_at(at.ip(), ArrivedOn::ItsOwnNetwork, at.port()).is_empty());
     }
 
     /// **A machine looked for by its identity is found only if it is the one

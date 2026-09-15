@@ -760,6 +760,46 @@ interface; no process in a turn can move it afterwards, because `alo-agentd` hol
 no capability (ADR 0018). **What is not closed:** a turn running as root could move a
 connected socket to another interface; alo OS runs no turn as root.
 
+### The Linux kernel — an unheld TCP listener answers every handshake by the route, and the address a connection was made to is the address that was dialled
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`veth`), Python 3 for the probe; measured on
+2026-09-16 by a probe run before the code and by
+`crates/alo-agentd/src/a_proposal_measured_on_the_network_it_arrived_on.rs`.
+**Behaviour:** a namespace with two `veth` cables, `10.66.0.1/24` on one and
+`10.66.0.3/24` on the other — two routers handing out one private range — with a
+machine at `10.66.0.2` at each far end, and one `TcpListener` on `0.0.0.0:7610`
+held to no interface:
+
+- **A connection completes only from the network the route points at.** With
+  `10.66.0.2/32` routed over the first cable, the machine at the far end of that
+  cable connected to **both** `10.66.0.1` and `10.66.0.3`; the machine at the far
+  end of the other cable timed out on both. Measured. The kernel's source says
+  why: for an unheld listener `ireq->ir_iif` is zero, so the route lookup for the
+  SYN-ACK (`inet_csk_route_req`) is unconstrained and the reply leaves by the
+  route, to the wrong machine.
+- **`getsockname` on the accepted connection is the address that was dialled**,
+  not one belonging to the interface the packet arrived on: the connection made
+  to `10.66.0.3` over the first cable was accepted with local address
+  `10.66.0.3`. That is Linux's weak host model.
+- **An established connection follows the main table when it changes.** Moving
+  `10.66.0.2/32` to the other cable while a connection was open sent that
+  connection's next reply out of the other cable, and the machine that had
+  connected never received it. Measured — the end-to-end test therefore moves
+  only where *questions* go, with an `ip rule ipproto udp` and a table of its own.
+
+**Our response:** `crate::arrived_on` reads the network a connection arrived on
+from the interface that owns the accepted socket's local address, and refuses —
+[`ArrivedOn::NothingCouldSay`], measured nowhere, *not found* — when two
+interfaces own it or none does. While the wire listens on one socket held to
+nothing, the first measurement is what makes that reading exact: the only
+connections that complete arrived on the route's network. **What is not closed:**
+on two networks carrying one private range, a machine on the network the route
+does not point at cannot reach this one's port at all, and the weak host model
+would misattribute its connection if it could. Both are the wire's listener, not
+the measurement: the task after this one gives it one listener per IPv4 network
+held to that network's interface, and takes the interface from the listener that
+accepted rather than from the address dialled.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

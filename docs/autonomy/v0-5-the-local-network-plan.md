@@ -1211,7 +1211,28 @@ needs no interface to be dialled, so there is no scope to read.
 
 ### 26. A proposal from a private IPv4 address is measured on the network it arrived on
 
-**Status:** ready. **Depends on:** 7, 22, 25.
+**Status:** **Done, 2026-09-16.** The reading is decided in `crates/alo-agentd`
+(`arrived_on.rs`), which is the crate that measures: **the network a connection
+arrived on is the interface that owns the accepting socket's local address**,
+read with `getsockname` against the interfaces the kernel reports at that moment
+— an address two interfaces own, or none does, is `ArrivedOn::NothingCouldSay`
+and is measured nowhere. `IP_PKTINFO` read back from the accepted socket was
+rejected because reading it needs `recvmsg` in `crate::wire`'s one reader or an
+`IP_PKTOPTIONS` `getsockopt` no safe crate spells, and the route was rejected as
+ADR 0044 rejected it. `looking.rs` takes the reading and holds the measuring
+socket to it (`found_at`), writing everything found down on that interface
+(`alo_nearby::HeardFrom::on_the_network`); `hearing.rs` reads it off the
+connection for a proposal and for nothing else. Tested with no kernel in it by
+`arrived_on.rs` and `looking.rs`, and end to end on a real kernel by
+`crates/alo-agentd/src/a_proposal_measured_on_the_network_it_arrived_on.rs`: two
+`veth` cables in a user namespace, a machine at `10.66.0.2` at each far end and
+**both answering discovery as the studio**, the studio proposing over the cable
+while questions route to the other network — measured on the cable, judged
+against the machine that sent it, somebody else asked nothing, and the same
+measurement held to nothing reaching somebody else instead. `docs/quirks.md`
+records what the kernel does. The report is
+`docs/autonomy/updates/a-proposal-measured-on-the-network-it-arrived-on.md`.
+**Depends on:** 7, 22, 25.
 
 *Machines find each other with zero configuration, and trust none of them for it.*
 Task 7 refuses a proposal, a confirmation or a verb from an address discovery has
@@ -1242,3 +1263,47 @@ studio on the cable is measured against somebody else on the Wi-Fi, and refused 
   network chosen by a person or an agent. What crosses the wire is unchanged. What
   reality does that the specification does not say goes in `docs/quirks.md`. Nothing
   in `alo-shell`, nothing in `image/`.
+
+### 27. A machine on two networks with one private range is reachable on both
+
+**Status:** ready. **Depends on:** 25, 26.
+
+*Machines find each other with zero configuration, and trust none of them for it.*
+Task 26 measured what the kernel really does with the port this machine advertises,
+and found something task 26 did not fix: `crate::wire` binds **one** listener held
+to no interface, and an unheld TCP listener answers every handshake by the route
+(`docs/quirks.md`, measured 2026-09-16 — for an unheld listener `ireq->ir_iif` is
+zero, so `inet_csk_route_req` looks the SYN-ACK's route up unconstrained). So on a
+machine on two networks that hand out the same private range — the commonest office
+and the commonest home — **only the machine on the network the route points at can
+reach this one's port at all**: the studio on the cable proposes and its handshake
+never completes, because the reply left by the Wi-Fi. The same measurement showed
+the second half: `getsockname` on an accepted connection is the address that was
+*dialled*, not one belonging to the interface the packet arrived on (Linux's weak
+host model), so once a connection from off the route can complete, task 26's
+reading would attribute it to the wrong network. The two are one task: hold the
+listeners, and take the interface from the listener that accepted.
+
+- **Acceptance:** the wire listens on **one IPv4 listener per IPv4 network this
+  machine is on, each held to that network's interface** (`SO_BINDTOIFINDEX`, as
+  `crate::looking::held_to` already holds a datagram socket), beside one IPv6-only
+  listener held to nothing — measured: two held listeners on `0.0.0.0` coexist and
+  an unheld one beside them is refused `EADDRINUSE`, so this replaces the single
+  dual-stack listener rather than joining it, and loopback is one of the networks
+  listened on so a connection to `127.0.0.1` is answered as it is today; the
+  listeners follow the kernel's network events as discovery's joins do
+  (`crate::joining`, `Wire::networks_changed`), a network that will not bind is a
+  line in the service log and the others are still bound, tested; `Wire::accept_one`
+  answers with the interface of the listener that accepted, and
+  `crate::hearing` measures a proposal on **that** rather than on the address it
+  was dialled at (`crate::arrived_on` gains the reading and keeps the old one only
+  where there is no held listener), tested; and end to end on a real kernel with two
+  `veth` cables carrying one private range, **the machine on the network the route
+  does not point at proposes and is paired**, while a machine at the same address on
+  the other network is asked nothing — which is the thing that cannot happen today.
+- **Constraint:** ADR 0003, ADR 0020 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, no widening of a departure,
+  and what crosses the wire is unchanged. The port stays the constant it is
+  (task 1): which interfaces are listened on is what the machine is plugged into,
+  never a list anybody writes down. What reality does that the specification does
+  not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

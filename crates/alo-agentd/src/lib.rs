@@ -181,12 +181,16 @@
 mod a_paired_machine_on_two_networks_with_one_address;
 #[cfg(all(test, target_os = "linux"))]
 mod a_paired_machine_over_link_local;
+#[cfg(all(test, target_os = "linux"))]
+mod a_proposal_measured_on_the_network_it_arrived_on;
 #[cfg(target_os = "linux")]
 pub mod ageing;
 #[cfg(target_os = "linux")]
 pub mod answering;
 #[cfg(target_os = "linux")]
 mod answering_discovery;
+#[cfg(target_os = "linux")]
+pub mod arrived_on;
 #[cfg(target_os = "linux")]
 pub mod bounding;
 #[cfg(target_os = "linux")]
@@ -293,6 +297,8 @@ mod testing;
 pub use ageing::{Ageing, EVERY};
 #[cfg(target_os = "linux")]
 pub use answering::what_a_person_said;
+#[cfg(target_os = "linux")]
+pub use arrived_on::{ArrivedOn, the_network_it_arrived_on, the_network_of};
 #[cfg(target_os = "linux")]
 pub use bounding::ByTheKernel;
 #[cfg(target_os = "linux")]
