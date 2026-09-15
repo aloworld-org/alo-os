@@ -114,6 +114,28 @@ an installer pulls, so a stolen key cannot redirect an installer that has
 already been released; **the signature** is what lets the boot environment
 refuse bytes the registry changed, before anything is written.
 
+## As the owner accepted it, 2026-09-15
+
+Two decisions the owner made when accepting A, and they sharpen what
+*publishes* means above rather than change it:
+
+1. **A machine builds and pushes; only the owner signs.** The build of
+   `image/Containerfile` at a published commit of `main`, and its push to
+   `ghcr.io/aloworld-org/alo-os` under the owner's GitHub account, are done by a
+   machine — the road *What it costs* already names for a workflow, taken before
+   there is a workflow. **An unsigned push is a candidate, not a publish:**
+   nothing pins it, the boot environment refuses it, and no installer can write
+   it to a disk. A release exists only once the owner has signed its digest with
+   the private half and the signature verifies against
+   `image/signing/alo-os.pub`. The private half still never touches a machine an
+   agent runs on, and no agent ever runs the signing command.
+2. **A person installing alo OS never sees a key.** The public half travels
+   inside the installer and the image, and verifying a signature is something
+   the installer does, not a step a person is shown, asked about or able to
+   skip. What a person does is download, click, and restart (ADR 0023). A key,
+   a password or a signature is the publisher's concern and appears in no
+   sentence an installer or the setup a person meets can say.
+
 ## What it costs, and what follows
 
 - **Task 1 has a person's half and a repository's half, in that order.** The

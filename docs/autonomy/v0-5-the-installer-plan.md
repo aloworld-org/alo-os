@@ -131,7 +131,13 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
   through Windows' own programs and documented APIs behind safe wrappers; a
   raw IOCTL this crate would have to write itself is a finding, not a line of
   `unsafe`. Nothing here runs on the laptop; the machine every test uses is
-  a virtual one with a Windows the test installed.
+  a virtual one with a Windows the test installed. **A person never sees a
+  key** (ADR 0036, as the owner accepted it): the public half ships inside the
+  installer, the signature is checked without being shown or offered as a
+  choice, and no screen, prompt or sentence names a key, a password or a
+  signature — a person downloads, clicks and restarts. A failed check is said
+  as *this download is not a genuine alo OS, so nothing was changed*, and there
+  is no way past it.
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
