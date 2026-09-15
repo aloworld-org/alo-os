@@ -100,6 +100,10 @@ const THE_PORTALS_PROMISED: &str = "- [v0.5] Portals: file chooser and documents
                                     wallpaper, settings, inhibit (no sleep mid-presentation), \
                                     network and power-profile monitors";
 
+/// The v0.5 line that promises the Secret portal, on its own.
+const THE_SECRET_PORTAL_PROMISED: &str = "- [v0.5] **Secret storage** — one keyring behind the Secret \
+                                          portal, so applications stop inventing credential storage";
+
 /// The v1 portal line, which names what this crate must not.
 const THE_LATER_PORTALS: &str = "- [v1] Portals: USB devices, global shortcuts an application \
                                  registers, dynamic launchers, remote desktop";
@@ -114,6 +118,13 @@ fn the_portals_are_the_closed_list_the_promise_names() {
         "the v0.5 portal line of docs/features.md is no longer the one Portal was built from"
     );
     assert!(
+        features
+            .lines()
+            .any(|line| line == THE_SECRET_PORTAL_PROMISED),
+        "the Secret portal's line of docs/features.md is no longer the one Portal::Secret was \
+         built from"
+    );
+    assert!(
         features.lines().any(|line| line == THE_LATER_PORTALS),
         "the v1 portal line of docs/features.md moved, so what must be absent is unknown"
     );
@@ -122,7 +133,8 @@ fn the_portals_are_the_closed_list_the_promise_names() {
     // says "network and power-profile monitors", so the two monitors are found
     // by their first word.
     let mut from = 0;
-    for portal in Portal::EVERY {
+    let (secret, the_portal_line) = Portal::EVERY.split_last().expect("there are portals");
+    for portal in the_portal_line {
         let name = portal.promised_as();
         let looked_for = name.strip_suffix(" monitor").unwrap_or(name);
         let at = THE_PORTALS_PROMISED[from..]
@@ -130,7 +142,16 @@ fn the_portals_are_the_closed_list_the_promise_names() {
             .unwrap_or_else(|| panic!("`{name}` is not in the promise after where it should be"));
         from += at + looked_for.len();
     }
-    assert_eq!(Portal::EVERY.len(), 15);
+    assert_eq!(the_portal_line.len(), 15);
+    // And the sixteenth is the Secret portal, promised on the line after.
+    assert_eq!(*secret, Portal::Secret);
+    assert!(
+        THE_SECRET_PORTAL_PROMISED
+            .to_lowercase()
+            .contains(secret.promised_as()),
+        "`{}` is not what the Secret portal's line promises",
+        secret.promised_as()
+    );
 
     // And each has its sentence in the vocabulary the machine collects.
     let strings = in_english();
@@ -373,7 +394,7 @@ fn an_application_granted_nothing_is_refused_before_any_dialog() {
             Request::over(stranger, portal, Path::new("/home/anna/Invoices/march.pdf")).unwrap(),
         );
     }
-    assert_eq!(requests.len(), 15);
+    assert_eq!(requests.len(), Portal::EVERY.len());
 
     for request in &requests {
         assert_eq!(

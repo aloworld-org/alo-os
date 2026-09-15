@@ -128,6 +128,17 @@ pub const POWER_PROFILE_MONITOR: Word = Word::saying(
     "Lets an application know the power profile, so it can use less power while you are saving it",
 );
 
+/// The Secret portal.
+pub const SECRET: Word = Word::saying(
+    "portals.portal.secret",
+    "Lets an application keep its own passwords in your keyring, and read back only its own",
+)
+.noting(
+    "The keyring is the one place on the machine where a person's passwords are kept, locked with \
+     their sign-in. An application reaches the passwords it stored and never another \
+     application's.",
+);
+
 // ---------------------------------------------------------------------------
 // A request judged and refused — [`crate::Refused`].
 // ---------------------------------------------------------------------------
@@ -188,7 +199,7 @@ pub const COULD_LEAD_ELSEWHERE: Word = Word::saying(
 .noting("\"..\" is how a path says \"the folder above\" and is never translated.");
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 22] = [
+pub const EVERY_WORD: [Word; 23] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -204,6 +215,7 @@ pub const EVERY_WORD: [Word; 22] = [
     INHIBIT,
     NETWORK_MONITOR,
     POWER_PROFILE_MONITOR,
+    SECRET,
     NOTHING_GRANTED,
     NO_APPLICATION,
     NOT_AN_IDENTIFIER,

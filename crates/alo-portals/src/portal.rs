@@ -3,7 +3,9 @@
 //! `docs/features.md`, v0.5: *Portals: file chooser and documents, open-with
 //! and default applications, notifications, print, screenshot, screen capture,
 //! camera, microphone, clipboard, trash, wallpaper, settings, inhibit, network
-//! and power-profile monitors.* Fifteen, and [`Portal`] is those fifteen.
+//! and power-profile monitors.* Fifteen — and a sixteenth on a line of its own,
+//! *secret storage — one keyring behind the Secret portal*. [`Portal`] is those
+//! sixteen.
 //!
 //! # Closed, and the v1 portals are absent
 //!
@@ -16,9 +18,10 @@
 //! # What each is over
 //!
 //! Four are about a file a person granted: the file chooser, open-with,
-//! print and trash. The other eleven are about something this machine has that
-//! is not a path, and each is exactly one [`Facility`] — ADR 0040's table,
-//! written as a `match` the compiler holds to every portal.
+//! print and trash. The other twelve are about something this machine has that
+//! is not a path, and each is exactly one [`Facility`] — ADR 0040's table and
+//! its amendment for the Secret portal, written as a `match` the compiler holds
+//! to every portal.
 
 use alo_capability::Facility;
 use alo_strings::{Filling, Said, Strings};
@@ -58,6 +61,8 @@ pub enum Portal {
     NetworkMonitor,
     /// The power profile.
     PowerProfileMonitor,
+    /// The application's own passwords, in the person's one keyring.
+    Secret,
 }
 
 /// What a request to a portal is about.
@@ -70,8 +75,9 @@ pub enum Over {
 }
 
 impl Portal {
-    /// Every portal, in the order `docs/features.md` promises them.
-    pub const EVERY: [Self; 15] = [
+    /// Every portal, in the order `docs/features.md` promises them: the
+    /// fifteen of its portal line, then the Secret portal from the line after.
+    pub const EVERY: [Self; 16] = [
         Self::FileChooser,
         Self::OpenWith,
         Self::Notifications,
@@ -87,6 +93,7 @@ impl Portal {
         Self::Inhibit,
         Self::NetworkMonitor,
         Self::PowerProfileMonitor,
+        Self::Secret,
     ];
 
     /// What a request to this portal is about.
@@ -109,6 +116,7 @@ impl Portal {
             Self::Inhibit => Over::Facility(Facility::Sleep),
             Self::NetworkMonitor => Over::Facility(Facility::NetworkState),
             Self::PowerProfileMonitor => Over::Facility(Facility::PowerProfile),
+            Self::Secret => Over::Facility(Facility::Secrets),
         }
     }
 
@@ -134,6 +142,7 @@ impl Portal {
             Self::Inhibit => "inhibit",
             Self::NetworkMonitor => "network monitor",
             Self::PowerProfileMonitor => "power-profile monitor",
+            Self::Secret => "secret storage",
         }
     }
 
@@ -156,6 +165,7 @@ impl Portal {
             Self::Inhibit => words::INHIBIT,
             Self::NetworkMonitor => words::NETWORK_MONITOR,
             Self::PowerProfileMonitor => words::POWER_PROFILE_MONITOR,
+            Self::Secret => words::SECRET,
         }
     }
 
@@ -192,13 +202,13 @@ mod tests {
         assert_eq!(distinct, Facility::EVERY.into_iter().collect());
     }
 
-    /// Fifteen portals, each with its own sentence and its own promised name.
+    /// Sixteen portals, each with its own sentence and its own promised name.
     #[test]
     fn every_portal_has_its_own_words() {
         let words: BTreeSet<&str> = Portal::EVERY.iter().map(|p| p.word().named()).collect();
         let names: BTreeSet<&str> = Portal::EVERY.iter().map(|p| p.promised_as()).collect();
-        assert_eq!(words.len(), 15);
-        assert_eq!(names.len(), 15);
+        assert_eq!(words.len(), 16);
+        assert_eq!(names.len(), 16);
 
         let strings = Strings::of(crate::portal_words().unwrap());
         for portal in Portal::EVERY {

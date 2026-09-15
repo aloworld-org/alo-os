@@ -15,12 +15,21 @@
 //! # How it is isolated, and every part of that is deliberate
 //!
 //! - **Its own bus.** A `dbus-daemon` on a socket in a temporary directory.
-//! - **No service activation.** The generated bus configuration has **no
-//!   `<servicedir>`**, so the bus cannot start anything on demand. Without that,
-//!   `org.freedesktop.secrets.service` — which the package installs — would let
-//!   the bus launch a keyring daemon *with the bus's own environment*, outside
-//!   every isolation below, and a test could pass against the wrong store
-//!   without anybody noticing.
+//! - **No service activation, on every bus it starts.** Each bus is started
+//!   from a configuration this fixture writes, which names **no `<servicedir>`
+//!   and no `<standard_session_servicedirs/>`**, so the bus cannot start
+//!   anything on demand. Without that, `org.freedesktop.secrets.service` —
+//!   which the package installs — lets the bus launch the machine's keyring
+//!   *with the bus's own environment*, outside every isolation below.
+//!
+//!   It used to be done for most fixtures by starting `dbus-daemon --session`
+//!   with an empty `XDG_DATA_DIRS`, and that did not hold: `--session` adds the
+//!   compiled-in `/usr/share/dbus-1/services` and whatever `XDG_DATA_HOME`
+//!   names, so a slow fixture keyring lost its name to the machine's
+//!   (`docs/quirks.md`, 2026-09-13). One keyring on the bus is now a property
+//!   of the configuration, and
+//!   `alo-secrets/tests/one_keyring_behind_the_secret_portal.rs` holds it with a
+//!   decoy activation file in both places the old way read.
 //! - **Its own storage.** `XDG_DATA_HOME` in the same temporary directory, so
 //!   the keyring files are written there and **no existing user's keyring is
 //!   read, written or unlocked**.
@@ -78,12 +87,12 @@ pub struct AKeyringOfOurOwn {
     /// The daemon serving `org.freedesktop.secrets` on it.
     keyring: Option<Child>,
 
-    /// The bus's configuration file, when this fixture was started with one.
+    /// The bus's configuration file.
     ///
-    /// Only the refusal tests need it: a bus started from a config can have its
-    /// policy rewritten and reloaded, which is how a **real** access denial is
-    /// produced rather than simulated.
-    config: Option<PathBuf>,
+    /// Every bus is started from one, so that no bus this fixture makes can
+    /// activate a service; the refusal tests also rewrite and reload it, which
+    /// is how a **real** access denial is produced rather than simulated.
+    config: PathBuf,
 }
 
 impl AKeyringOfOurOwn {
@@ -95,20 +104,20 @@ impl AKeyringOfOurOwn {
     /// machine in the world, including the ones with no Secret Service at all.
     #[must_use]
     pub fn started(what: &str) -> Self {
-        Self::start(what, false, true)
+        Self::start(what, true)
     }
 
-    /// One whose bus is started from a configuration file, so its policy can be
-    /// rewritten and reloaded while it runs.
+    /// One whose bus's policy can be rewritten and reloaded while it runs.
     ///
-    /// Everything else is identical to [`Self::started`] — same isolation, same
-    /// synthetic password, still never `--replace`.
+    /// Since every bus is started from a configuration file this is
+    /// [`Self::started`] under the name the refusal tests read best by — same
+    /// isolation, same synthetic password, still never `--replace`.
     ///
     /// # Panics
     /// As [`Self::started`].
     #[must_use]
     pub fn started_where_the_bus_can_refuse(what: &str) -> Self {
-        Self::start(what, true, true)
+        Self::start(what, true)
     }
 
     /// A real bus with **no Secret Service on it at all**.
@@ -124,12 +133,12 @@ impl AKeyringOfOurOwn {
     /// When `dbus-daemon` is not installed, or its socket never appears.
     #[must_use]
     pub fn a_bus_with_no_keyring_on_it(what: &str) -> Self {
-        Self::start(what, false, false)
+        Self::start(what, false)
     }
 
-    /// The three of them, which differ in how the bus is told where to listen
-    /// and whether anything is put on it.
-    fn start(what: &str, from_a_config: bool, serving: bool) -> Self {
+    /// The three of them, which differ only in whether anything is put on the
+    /// bus.
+    fn start(what: &str, serving: bool) -> Self {
         // Only characters a D-Bus address may carry unescaped: the socket
         // under this directory becomes one, and `(` from a thread id is exactly
         // what `dbus-daemon` refuses.
@@ -146,36 +155,21 @@ impl AKeyringOfOurOwn {
         .expect("a directory of ours can be made private");
 
         let at = place.join("bus");
-        // **No service activation.** A session bus finds what it may start in
-        // `XDG_DATA_DIRS`, and the package installs
-        // `org.freedesktop.secrets.service` into the machine's. Pointing the
-        // bus at an empty directory of ours means the only Secret Service on it
-        // is the one started below, with the isolation below — rather than one
-        // the bus launched with its own environment, which a test could pass
-        // against without anybody noticing.
-        let nothing_to_activate = place.join("empty");
-        std::fs::create_dir_all(&nothing_to_activate).expect("a directory can be made");
+        // **No service activation.** The configuration names no service
+        // directory, so the only Secret Service on this bus is the one started
+        // below, with the isolation below — never one the bus launched with its
+        // own environment, which a test could pass against without anybody
+        // noticing. Not `--session`: that reads the machine's directories
+        // whatever the environment says.
+        let config = place.join("bus.conf");
+        std::fs::write(&config, policy_allowing_everything(&at))
+            .expect("a configuration can be written");
 
-        let config = from_a_config.then(|| {
-            let config = place.join("bus.conf");
-            std::fs::write(&config, policy_allowing_everything(&at))
-                .expect("a configuration can be written");
-            config
-        });
-
-        let mut starting = Command::new("dbus-daemon");
-        if let Some(config) = config.as_ref() {
-            starting.arg("--config-file").arg(config);
-        } else {
-            starting
-                .arg("--session")
-                .arg("--address")
-                .arg(format!("unix:path={}", at.display()));
-        }
-        let bus = starting
+        let bus = Command::new("dbus-daemon")
+            .arg("--config-file")
+            .arg(&config)
             .arg("--nofork")
             .arg("--nopidfile")
-            .env("XDG_DATA_DIRS", &nothing_to_activate)
             .stdout(Stdio::null())
             .stderr(Stdio::from(
                 std::fs::File::create(place.join("bus.err")).expect("a log can be made"),
@@ -245,6 +239,16 @@ impl AKeyringOfOurOwn {
         TheBus::at(&self.place.join("bus"), ours).expect("the fixture's own bus is usable")
     }
 
+    /// The process serving `org.freedesktop.secrets` for this fixture, or
+    /// [`None`] on a bus that was started with no keyring.
+    ///
+    /// For a test that asks the bus *who* owns the name, and needs to know the
+    /// answer should be this fixture's own daemon and nobody else.
+    #[must_use]
+    pub fn keyring_process(&self) -> Option<u32> {
+        self.keyring.as_ref().map(Child::id)
+    }
+
     /// The address of that bus, for a client built by hand.
     #[must_use]
     pub fn address(&self) -> String {
@@ -307,8 +311,9 @@ impl AKeyringOfOurOwn {
 
 /// A session bus that allows what a session bus normally allows.
 ///
-/// No `<servicedir>`, so this bus can start nothing on demand — the same
-/// isolation `XDG_DATA_DIRS` gives the other constructor, said outright.
+/// No `<servicedir>` and no `<standard_session_servicedirs/>`, so this bus can
+/// start nothing on demand, whatever the machine has installed and whatever the
+/// environment names.
 fn policy_allowing_everything(at: &std::path::Path) -> String {
     format!(
         r#"<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
@@ -363,15 +368,13 @@ impl AKeyringOfOurOwn {
     /// the distinction the four refusal states exist to make.
     ///
     /// # Panics
-    /// When the fixture was not started by
-    /// [`Self::started_where_the_bus_can_refuse`], or the bus will not reload.
+    /// When the configuration cannot be rewritten, or the bus will not reload.
     pub fn stop_letting_anyone_reach_the_keyring(&self) {
-        let config = self
-            .config
-            .as_ref()
-            .expect("this fixture was started without a configuration to rewrite");
-        std::fs::write(config, policy_refusing_the_secrets(&self.place.join("bus")))
-            .expect("the configuration can be rewritten");
+        std::fs::write(
+            &self.config,
+            policy_refusing_the_secrets(&self.place.join("bus")),
+        )
+        .expect("the configuration can be rewritten");
 
         // Reloading is asked of the bus over its own connection, which the new
         // policy still permits — the deny names the secrets service alone.

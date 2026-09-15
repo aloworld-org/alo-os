@@ -3414,6 +3414,18 @@ the race and the isolation merely looks as though it holds.
 which makes the machine match what the fixture assumes. The fixture itself should
 start its bus from a configuration naming no service directories, as its
 `from_a_config` path already does; that is the owner's change.
+**Then, on 2026-09-15:** made, by task 3 of
+`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`. Every bus the
+fixture starts is started from its own configuration, which names no
+`<servicedir>` and no `<standard_session_servicedirs/>`; `--session` is no
+longer used. `crates/alo-secrets/tests/one_keyring_behind_the_secret_portal.rs`
+puts a decoy `org.freedesktop.secrets.service` under both `XDG_DATA_HOME` and
+`XDG_DATA_DIRS`, shows a plain `--session` bus lists it, and finds the fixture's
+bus lists nothing it could activate, with one owner of the name and that owner
+the fixture's own keyring. Put back to `--session`, the same test fails naming
+`org.freedesktop.secrets` among the activatable names. The `dpkg-divert` on the
+Mac's VM is no longer needed for the fixture and is left in place; removing it
+is the machine owner's call.
 **Date:** 2026-09-13.
 
 ### Teuken's GGUF carries no chat template, and the runtime says so and answers anyway

@@ -28,10 +28,12 @@ use crate::refusing::NotStored;
 
 /// What every item alo OS keeps is filed under, so that a search cannot match
 /// somebody else's entry that happens to share a name.
-const OURS: &str = "xdg:schema";
+pub(crate) const FILED_UNDER: &str = "xdg:schema";
 
-/// The value of [`OURS`], which is this product's own reverse-domain name.
-const ALO: &str = "dev.alo.Provider";
+/// The value of [`FILED_UNDER`] for a provider's key, which is this product's
+/// own reverse-domain name. An application's secrets are filed under schemas
+/// of their own (`crate::application`), so neither search matches the other.
+pub(crate) const PROVIDERS: &str = "dev.alo.Provider";
 
 /// What the reference itself is filed under.
 const REFERRED_TO_AS: &str = "reference";
@@ -97,7 +99,7 @@ impl TheKeyring {
     /// [`NotStored::Unavailable`] when it stops answering.
     pub fn look_up(&self, named: &SecretRef) -> Result<Secret, NotStored> {
         let mut asked = HashMap::new();
-        asked.insert(OURS, ALO);
+        asked.insert(FILED_UNDER, PROVIDERS);
         asked.insert(REFERRED_TO_AS, named.as_str());
 
         let found = self.service.search_items(asked).map_err(as_not_stored)?;
@@ -119,6 +121,12 @@ impl TheKeyring {
         // is not logged, not returned on the error path, and not kept.
         let said = std::str::from_utf8(&held).map_err(|_| NotStored::Missing)?;
         Secret::typed(said).map_err(|_| NotStored::Missing)
+    }
+
+    /// The service, for the other door onto the same keyring: an
+    /// application's own secrets (`crate::application`).
+    pub(crate) const fn service(&self) -> &SecretService<'static> {
+        &self.service
     }
 }
 
@@ -151,7 +159,7 @@ fn anybody_is_serving(connection: &zbus::blocking::Connection) -> bool {
 /// A keyring's own message is not in anybody's language and may quote what it
 /// was asked about. `alo_choosing::NotToml` is the same argument one file to the
 /// left, and `41c9f1e` is the day it stopped being theoretical.
-fn as_not_stored(why: secret_service::Error) -> NotStored {
+pub(crate) fn as_not_stored(why: secret_service::Error) -> NotStored {
     // Asked first, because a refusal is not one of `secret_service`'s own
     // variants and would otherwise fall through to the last arm below.
     if is_a_refusal(&why) {

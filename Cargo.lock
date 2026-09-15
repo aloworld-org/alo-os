@@ -688,9 +688,13 @@ dependencies = [
 name = "alo-secrets"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
+ "alo-granted",
  "alo-keyring-fixture",
  "alo-models",
+ "alo-portals",
  "alo-strings",
+ "getrandom 0.3.4",
  "rustix 1.1.4",
  "secret-service",
  "zbus",

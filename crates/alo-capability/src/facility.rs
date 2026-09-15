@@ -5,7 +5,9 @@
 //! part 1. A [`crate::Reach`] was a folder, a file or an application, and eleven
 //! of the fifteen v0.5 portals ask about none of those: the camera, the
 //! microphone, the screen, the person's notifications, and so on. This is the
-//! closed list of them.
+//! closed list of them — and of the twelfth, [`Facility::Secrets`], which the
+//! Secret portal asks for and which was added under the ADR's own rule that the
+//! list grows additively (ADR 0040, amendment of 2026-09-15).
 //!
 //! # A camera grant is a grant to *the camera*
 //!
@@ -55,11 +57,14 @@ pub enum Facility {
     NetworkState,
     /// The power profile.
     PowerProfile,
+    /// The application's own secrets in the person's one keyring, and no one
+    /// else's — the Secret portal's reach, added after ADR 0040's first eleven.
+    Secrets,
 }
 
 impl Facility {
     /// Every facility, in the order this file declares them.
-    pub const EVERY: [Self; 11] = [
+    pub const EVERY: [Self; 12] = [
         Self::Camera,
         Self::Microphone,
         Self::ScreenOnce,
@@ -71,6 +76,7 @@ impl Facility {
         Self::Sleep,
         Self::NetworkState,
         Self::PowerProfile,
+        Self::Secrets,
     ];
 
     /// The name this facility is written down by, in the grants file and
@@ -92,6 +98,7 @@ impl Facility {
             Self::Sleep => "sleep",
             Self::NetworkState => "network-state",
             Self::PowerProfile => "power-profile",
+            Self::Secrets => "secrets",
         }
     }
 
@@ -119,6 +126,7 @@ impl Facility {
             Self::Sleep => words::SLEEP,
             Self::NetworkState => words::THE_NETWORK_STATE,
             Self::PowerProfile => words::THE_POWER_PROFILE,
+            Self::Secrets => words::ITS_OWN_SECRETS,
         }
     }
 
@@ -163,7 +171,7 @@ mod tests {
         assert_eq!(Facility::by_name("usb"), None);
     }
 
-    /// Eleven, each with its own name and its own words.
+    /// Twelve, each with its own name and its own words.
     #[test]
     fn every_facility_is_named_and_said_once() {
         let names: BTreeSet<&str> = Facility::EVERY.iter().map(|one| one.named()).collect();
@@ -180,6 +188,10 @@ mod tests {
             assert!(!said.is_a_bug(), "{said}");
         }
         assert_eq!(Facility::Camera.said(&strings).text(), "the camera");
+        assert_eq!(
+            Facility::Secrets.said(&strings).text(),
+            "a place for its own passwords in your keyring"
+        );
     }
 
     /// And translated like everything else here.

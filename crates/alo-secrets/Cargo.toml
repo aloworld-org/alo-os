@@ -1,7 +1,7 @@
 [package]
 name = "alo-secrets"
 version = "0.0.1"
-description = "Where a provider's key is kept, and where the bus that keeps it is."
+description = "Where a provider's key is kept, where the bus that keeps it is, and an application's own secrets in the same keyring behind the Secret portal."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -24,6 +24,18 @@ rustix = { workspace = true }
 # a key, because `Secret` is what it hands back.
 alo-models = { path = "../alo-models" }
 alo-strings = { path = "../alo-strings" }
+
+# What an application's request to the Secret portal is and how it is judged.
+# The keyring never decides whether an application may reach its secrets: it
+# hands the request and the machine's grants to `alo_portals::Request::judged`,
+# which is `alo-capability`'s answer, and files everything under the application
+# that answer names.
+alo-capability = { path = "../alo-capability" }
+alo-portals = { path = "../alo-portals" }
+
+# The kernel's randomness, for the one secret the Secret portal hands an
+# application. The workspace's one door to the generator, with no fallback.
+getrandom = { workspace = true }
 
 # The Secret Service, spoken over a connection **we** made. ADR 0022's amendment
 # of 2026-09-08 chose this over `libsecret` for one measured reason: no libsecret
@@ -56,6 +68,10 @@ rustix = { workspace = true }
 # that there is one fixture rather than two drifting apart. **Dev only**: it is
 # never published and a `--package` release build compiles none of it.
 alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+
+# The one list a person revokes from, so the keyring's revocation test revokes
+# the way a person does rather than by reaching into the grants.
+alo-granted = { path = "../alo-granted" }
 secret-service = { version = "5.2", default-features = false, features = [
   "crypto-rust",
   "rt-async-io",

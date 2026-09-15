@@ -140,7 +140,20 @@ rows a person cannot tell from an agent's except by the name.
 
 ### 3. One keyring behind the Secret portal
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15.** `alo-capability` gained a twelfth facility,
+`secrets`, and `alo-portals` a sixteenth portal, `Portal::Secret`, held to its
+own line of `docs/features.md` (ADR 0040, amendment of 2026-09-15; the grants
+file names it `secrets`). `alo-secrets`' `TheKeyring::for_the_application`
+refuses any other portal, judges the request with `Request::judged`, and hands
+back an `ItsOwn` that does one thing — keep, read, forget, or the portal's
+one secret — filed under the allowed application's identifier in the person's
+default collection, apart from the provider keys. The keyring fixture starts
+every bus from a configuration naming no service directory, closing the
+2026-09-13 activation race for itself. Revoking ends an application's reach at
+its next request and does not delete what it kept.
+`crates/alo-secrets/tests/one_keyring_behind_the_secret_portal.rs` holds each
+clause. Report: `docs/autonomy/updates/one-keyring-behind-the-secret-portal.md`.
+**Depends on:** 1.
 
 *Secret storage — one keyring behind the Secret portal, so applications stop
 inventing credential storage.* `alo-secrets` keeps a provider's key today and

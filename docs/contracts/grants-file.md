@@ -85,6 +85,7 @@ that grants one to an agent is refused.
 | `sleep` | Keeping the machine awake |
 | `network-state` | Whether the machine is connected, and how |
 | `power-profile` | The power profile |
+| `secrets` | A place for the application's own passwords in the person's keyring (added 2026-09-15) |
 
 The list is closed. Adding a facility is additive; renaming or removing one
 needs a new format.

@@ -52,7 +52,7 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`portal`] | The fifteen v0.5 portals, closed, and what each is over |
+//! | [`portal`] | The sixteen v0.5 portals, closed, and what each is over |
 //! | [`request`] | A request: which application, which portal, what for |
 //! | [`not_a_request`] | Why what arrived was never a request |
 //! | [`judging`] | A request judged against the grants, and what allowed it |

@@ -193,3 +193,27 @@ enforces that.
 - Once C is built, the closed list in part 1 is a public surface, because
   third-party portal clients and the grants file will depend on it. Adding to it
   is additive; renaming anything in it needs versioning.
+
+## Amendment, 2026-09-15 — the Secret portal's facility
+
+Written by task 3 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`
+(*one keyring behind the Secret portal*), under this decision's own rule that the
+closed list in part 1 grows additively. Nothing above changes.
+
+`docs/features.md` promises the Secret portal on its own line — *secret storage,
+one keyring behind the Secret portal* — rather than in the portal line the table
+above was drawn from, so the table did not have a row for it. Its request is for
+something that is not a path either:
+
+| Portal | What a request is for | A `Reach` today |
+|---|---|---|
+| secret storage | a place for the application's own passwords in the person's keyring | **none** |
+
+So the list gains a twelfth facility, `secrets`, granted only to an application
+like the other eleven and written into the grants file by that name. It is a
+grant to *the application's own* secrets: the keyring files what an application
+stores under the identifier its grant names, and nothing an application can ask
+reaches a secret filed under another identifier or the daemon's own provider
+keys. Revoking the grant ends the application's reach at its next request; the
+passwords it kept stay in the person's keyring, as a folder stays on the disk
+when a grant to it is revoked.

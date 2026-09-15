@@ -1,4 +1,5 @@
-//! Where a provider's key is kept, and where the bus that keeps it is.
+//! Where a provider's key is kept, where the bus that keeps it is, and an
+//! application's own secrets in the same keyring behind the Secret portal.
 //!
 //! [ADR 0022](../../../docs/decisions/0022-where-a-providers-key-is-kept.md),
 //! accepted 2026-09-08: a provider's key lives in the **Secret Service**, and
@@ -70,12 +71,30 @@
 //! turn is reachable from inside it, whoever opened it:
 //! `alo-bounding`'s `a_connection_made_before_the_boundary_stays_usable_inside_it`.
 
+//!
+//! # One keyring behind the Secret portal
+//!
+//! `docs/features.md`, v0.5: *secret storage — one keyring behind the Secret
+//! portal.* [`TheKeyring::for_the_application`] is the second door onto the
+//! same keyring: an application's request to the Secret portal, judged against
+//! the machine's grants by `alo-portals`, and — only when allowed — an
+//! [`ItsOwn`] that keeps and reads that application's secrets and nobody
+//! else's. `application.rs` says how they are filed and why.
+
 #![cfg(target_os = "linux")]
 
+mod application;
 mod bus;
+mod kept_secret;
 mod refusing;
 mod store;
+mod withheld;
 
+pub use application::{
+    AN_APPLICATIONS, ItsOwn, LARGEST_SECRET, LONGEST_NAME, PORTAL_SECRET_LENGTH, THE_PORTALS,
+};
 pub use bus::{TheBus, WHERE_SESSIONS_ARE};
+pub use kept_secret::KeptSecret;
 pub use refusing::NotStored;
 pub use store::TheKeyring;
+pub use withheld::Withheld;

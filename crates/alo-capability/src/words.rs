@@ -251,6 +251,18 @@ pub const THE_POWER_PROFILE: Word =
     Word::saying("capability.facility.power-profile", "the power profile")
         .noting("Whether the machine is saving power, balanced, or running at full performance.");
 
+/// The application's own secrets in the person's keyring.
+pub const ITS_OWN_SECRETS: Word = Word::saying(
+    "capability.facility.secrets",
+    "a place for its own passwords in your keyring",
+)
+.noting(
+    "Read after \"has been granted\", with an application as the one granted. The application \
+     keeps and reads back only the passwords and keys it stored itself — never anybody else's, \
+     and never the machine's own. \"Keyring\" is where a person's passwords are kept, locked \
+     with their sign-in.",
+);
+
 // ---------------------------------------------------------------------------
 // What the grants say when they refuse — [`crate::NotGranted`] and
 // [`crate::NotAuthorised`].
@@ -554,7 +566,7 @@ pub const HAS_NO_AGENT: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 50] = [
+pub const EVERY_WORD: [Word; 51] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -578,6 +590,7 @@ pub const EVERY_WORD: [Word; 50] = [
     SLEEP,
     THE_NETWORK_STATE,
     THE_POWER_PROFILE,
+    ITS_OWN_SECRETS,
     HAS_EXPIRED,
     NEVER_GRANTED,
     NO_AGENT,
