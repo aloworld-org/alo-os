@@ -80,7 +80,26 @@ disappointment.
 
 ### 2. `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — on `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
+(proposed, 2026-09-14). **Depends on:** 1.
+
+**Decided rather than built, 2026-09-14.** The first worker found that the code
+could not be written without choosing things that are not a worker's to choose:
+nothing in this product starts a program, and `alo-bounding` documents why; a
+converter started from a turn is not known to stay inside the turn's kernel
+boundary; a document's linked pictures would be fetched by the engine; the image
+pins no converter; the gate machine has none, and installing one there is shared
+maintenance; and no machine the loop runs on can make a real Office file. ADR
+0039 sets out three shapes (a converting service of our own with no network and
+no files, the verb starting the engine inside the turn, or the person's own
+office application), what each costs, and recommends the first. It also decides
+the copy (a PDF), the verb, and how *lost nothing* is told from *did not check*.
+It lists the three things that must happen before this task is ready again:
+the owner's answer, the pinned engine on the gate machine in an idle handoff,
+and three real documents with their provenance.
+`crates/alo-opening/tests/converting_waits_on_its_decision.rs` holds the ADR in
+place and fails if a converter is built while it still says *proposed*. Report:
+`docs/autonomy/updates/converting-office-documents-decided-before-it-is-built.md`.
 
 `ROADMAP.md`: *`.docx`, `.xlsx`, `.pptx` open.* They are the formats a person
 is actually sent, and the reason a sovereign desktop gets returned. The engine
