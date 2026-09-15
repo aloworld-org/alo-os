@@ -160,6 +160,24 @@ may be done to.
 
 There is no grant to `/`.
 
+### And no agent reaches a terminal
+
+A terminal is the whole machine by another road: whatever is typed into it runs.
+So an agent is never granted one, and no call from an agent may name one
+([ADR 0043](../decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md)).
+`alo_capability::A_PERSONS_OWN` is the closed list of those applications, and
+three refusals hold it, additively and for an agent only:
+
+- `Grant::checked_for` refuses the grant with `GrantError::APersonsOwn`;
+- `Grants::permitting` refuses the ask with `NotGranted::Never`, whatever the
+  list holds — a grant written into the grants file by hand permits nothing;
+- `Call::permitting` refuses a call naming one in **any** argument with
+  `NotGranted::Never`, including a verb that declared `Requires::Nothing`.
+
+An adapter author needs to do nothing to inherit this, and cannot opt out of
+it: a verb that takes an application is refused over a terminal before its own
+grant is asked about. An application may still be allowed one through a portal.
+
 ### A machine may have no agent at all, and then there is no list
 
 ADR 0009 gives setup a fourth answer — *not at all* — and it is not a mode an

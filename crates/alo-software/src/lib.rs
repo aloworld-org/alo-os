@@ -95,8 +95,18 @@
 //! reads its answer. **Not here:** reading an organisation's rule about which
 //! places are permitted out of the machine's description; [`Bound`] is the
 //! value that rule becomes, and `alo-agentd` reads that file. Nor the surface a
-//! person installs from, which is the shell's, nor the fresh machine's own
-//! applications, which are the next task in the plan.
+//! person installs from, which is the shell's.
+//!
+//! # What a fresh machine has
+//!
+//! [`Shipped`] is the decided list — a web browser, a file manager and what
+//! opens its archives, a text editor, an image viewer, a document viewer and a
+//! terminal — read from `shipped.toml` beside this crate's manifest, which the
+//! installer plan reads too. Each is a [`Pinned`] upstream application whose
+//! [`Pinned::wanted`] goes through the same two steps as any other, so a
+//! person updates and removes it the same way, the browser included. The
+//! terminal is a person's own: `alo_capability` refuses an agent any grant over
+//! it and any call naming it (ADR 0043).
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -108,6 +118,8 @@ pub mod installing;
 pub mod refusing;
 pub mod removing;
 pub mod rented;
+pub mod role;
+pub mod shipped;
 pub mod shown;
 pub mod source;
 pub mod tool;
@@ -124,6 +136,8 @@ pub use installing::{Installed, Wanted, install, installing};
 pub use refusing::NotDone;
 pub use removing::{Removed, remove};
 pub use rented::TheRentedTool;
+pub use role::Role;
+pub use shipped::{NotShipped, Pinned, Shipped};
 pub use shown::{NotShown, Stopped};
 pub use source::{Configured, Source, SourceName};
 pub use tool::{Failed, Tool};

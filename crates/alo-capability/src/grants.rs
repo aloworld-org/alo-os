@@ -46,6 +46,7 @@ use std::time::SystemTime;
 use serde::{Deserialize, Serialize};
 
 use crate::grant::{Grant, Grantee};
+use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
 
@@ -297,6 +298,17 @@ impl Grants {
         now: SystemTime,
     ) -> Result<GrantId, NotGranted> {
         if grantee.is_an_application() {
+            return Err(NotGranted::Never {
+                agent: grantee.as_str().to_owned(),
+                wanted: ask.clone(),
+            });
+        }
+        // A terminal is a person's own (ADR 0043). Refused before the list is
+        // read, so a grant that reached the list without `Grant::checked_for` —
+        // written into the grants file by hand — permits nothing.
+        if let Ask::Application(identifier) = ask
+            && is_a_persons_own(identifier)
+        {
             return Err(NotGranted::Never {
                 agent: grantee.as_str().to_owned(),
                 wanted: ask.clone(),
@@ -632,6 +644,51 @@ mod tests {
             grants.permitting(&cheese.grantee(), &march(), noon()),
             Err(NotGranted::Never { .. })
         ));
+    }
+
+    /// ADR 0043: **a grant over a terminal that reached the list without being
+    /// checked permits an agent nothing** — written into the grants file by
+    /// hand, and read back — while the same list still answers for the text
+    /// editor beside it, and for an application allowed the terminal.
+    #[test]
+    fn a_terminal_written_into_the_list_by_hand_permits_an_agent_nothing() {
+        let by_hand = |grantee: Grantee, identifier: &str| Grant {
+            grantee,
+            reach: Reach::Application(identifier.to_owned()),
+            granted_at: noon(),
+            expires: noon() + hour(),
+        };
+        let alo = Grantee::named("@alo");
+        let mail = crate::Applicant::named("org.example.Mail");
+        let held = vec![
+            Held {
+                id: GrantId(0),
+                grant: by_hand(alo.clone(), "app.devsuite.Ptyxis"),
+            },
+            Held {
+                id: GrantId(1),
+                grant: by_hand(alo.clone(), "org.gnome.TextEditor"),
+            },
+            Held {
+                id: GrantId(2),
+                grant: by_hand(mail.grantee(), "app.devsuite.Ptyxis"),
+            },
+        ];
+        let grants = Grants::remembered(held, 3).unwrap();
+
+        let terminal = Ask::application("app.devsuite.Ptyxis");
+        assert_eq!(
+            grants.permitting(&alo, &terminal, noon()),
+            Err(NotGranted::Never {
+                agent: "@alo".to_owned(),
+                wanted: terminal.clone(),
+            })
+        );
+        assert_eq!(
+            grants.permitting(&alo, &Ask::application("org.gnome.TextEditor"), noon()),
+            Ok(GrantId(1))
+        );
+        assert!(grants.allowing(&mail, &terminal, noon()).is_ok());
     }
 
     /// The list a person reads: what is granted, to whom, and until when.

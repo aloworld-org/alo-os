@@ -70,25 +70,22 @@ the report says what the on-machine acceptance is. **Depends on:** nothing.
 
 ### 2. What a fresh machine has, so it is not helpless
 
-**Status:** ready — `docs/decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md`
-was accepted on 2026-09-16, option C, and **this plan makes its additive change to
-`alo-capability`** (`persons_own.rs`, `GrantError::APersonsOwn`, the three refusals)
-and nothing else in that crate. Take the held branch
-`held/software-task-2-awaits-capability`, rebase it onto current `main`, pass all nine
-gates, and publish. **Depends on:** 1.
-
-**Built, then held back, 2026-09-15.** A worker built the decided list
-(`crates/alo-software/shipped.toml`, read by `alo_software::Shipped`) and the
-terminal refusal the acceptance below asks for. It put the refusal in
-`alo-capability`, as three additive checks on a grant and a call, and marked its
-own ADR accepted. The header above says this plan reads `alo-capability` and
-never edits it, ADR 0040 gives capability changes to the applications plan, and
-another lane is working in that crate. So the supervising machine kept the whole
-result unpublished, on its local branch
-`held/software-task-2-awaits-capability`, and published the decision as
-proposed. **For the owner:** whether ADR 0043's option C is the rule, and which
-lane makes the `alo-capability` change. Once that change is on `main`, this task
-is the list and its tests, taken from the held branch.
+**Status:** **Done, 2026-09-15.** The decided list is
+`crates/alo-software/shipped.toml`, read and held by `alo_software::Shipped` —
+Firefox, Dolphin with Ark for archives, GNOME Text Editor, Loupe, Papers and
+Ptyxis, each at its identifier, release and licence on the place a fresh machine
+installs from — and the installer plan reads that same file
+(`alo_software::shipped::WHERE_IT_IS`) rather than a copy in `image/`. Each goes
+through task 1's two steps, so a person updates and removes any of them, the
+browser included. The terminal is a person's own: on
+`docs/decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md` (accepted
+2026-09-16, option C) this plan made **that ADR's additive change to
+`alo-capability` and nothing else in that crate** — `persons_own.rs`,
+`GrantError::APersonsOwn` with its word, and the three refusals — taken from the
+held branch `held/software-task-2-awaits-capability` and rebased onto current
+`main`. The rented tool on a machine is still outstanding, as it is for task 1;
+the report says what that acceptance is. The report is
+`docs/autonomy/updates/what-a-fresh-machine-has.md`. **Depends on:** 1.
 
 - **Acceptance:** a decided list — a web browser, a file manager with trash and archives
   that open, a text editor, an image viewer, a document viewer, a terminal — each a

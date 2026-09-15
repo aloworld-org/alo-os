@@ -37,6 +37,7 @@ use serde::Serialize;
 use crate::arg::{ArgError, Given, Value};
 use crate::grant::Grantee;
 use crate::grants::{GrantId, Grants};
+use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
 use crate::verb::{Effect, Requires, Verb};
@@ -308,6 +309,12 @@ impl Call {
     /// That is the honest answer to *against which grant*: none, for the reason
     /// its author wrote down.
     ///
+    /// **Except over a terminal** (ADR 0043, [`crate::persons_own`]). A call
+    /// that names an application that is a person's own in *any* argument is
+    /// refused first, whether or not its verb requires a grant over that
+    /// argument — so `install_application` cannot name one, and neither can a
+    /// verb written later that forgot to require the grant.
+    ///
     /// # Errors
     /// The first refusal, in the grants' own terms — because a person reading
     /// one needs to know about the grant rather than about the verb: that it
@@ -318,6 +325,15 @@ impl Call {
         grantee: &Grantee,
         now: SystemTime,
     ) -> Result<Vec<GrantId>, NotGranted> {
+        if let Some(identifier) = self.values.values().find_map(|value| match value {
+            Value::Application(identifier) if is_a_persons_own(identifier) => Some(identifier),
+            _ => None,
+        }) {
+            return Err(NotGranted::Never {
+                agent: grantee.as_str().to_owned(),
+                wanted: Ask::Application(identifier.clone()),
+            });
+        }
         self.asks
             .iter()
             .map(|ask| grants.permitting(grantee, ask, now))
@@ -434,6 +450,52 @@ mod tests {
         let both = granting(&["/home/anna/Invoices", "/home/anna/Archive"]);
         assert!(call.permitted_by(&both, &files(), noon()));
         assert!(call.refusal(&both, &files(), noon()).is_none());
+    }
+
+    /// ADR 0043: **a call that names a terminal is refused, even from a verb
+    /// that requires no grant** — the shape `install_application` has — while
+    /// the same verb naming a text editor is permitted with no grant, for the
+    /// reason its author wrote down.
+    #[test]
+    fn a_call_naming_a_terminal_is_refused_whatever_its_verb_requires() {
+        use crate::{Arg, Effect, Requires, Takes, Verb, Verbs};
+        let setting_up = Verb::checked(
+            "set_up_application",
+            Word::saying("testing.setup.purpose", "set up an application"),
+            Effect::Change,
+            vec![Arg::taking(
+                "application",
+                Word::saying("testing.setup.application", "the application"),
+                Takes::Application,
+            )],
+            Requires::nothing_because("the application is not here yet and is granted nothing"),
+            Word::saying("testing.setup.sentence", "set up {application}"),
+        )
+        .unwrap();
+        let mut verbs = Verbs::default();
+        verbs.declare(setting_up).unwrap();
+        let naming = |identifier: &str| {
+            verbs
+                .call(
+                    "set_up_application",
+                    &[("application", Given::text(identifier))],
+                )
+                .unwrap()
+        };
+        let grants = granting(&["/home/anna/Invoices"]);
+
+        let terminal = naming("app.devsuite.Ptyxis");
+        assert_eq!(
+            terminal.permitting(&grants, &files(), noon()),
+            Err(NotGranted::Never {
+                agent: "@files".to_owned(),
+                wanted: Ask::application("app.devsuite.Ptyxis"),
+            })
+        );
+        assert_eq!(
+            naming("org.gnome.TextEditor").permitting(&grants, &files(), noon()),
+            Ok(Vec::new())
+        );
     }
 
     /// A permitted call says which grants permitted it, one for each thing it

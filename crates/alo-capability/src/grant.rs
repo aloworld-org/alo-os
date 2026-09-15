@@ -16,6 +16,8 @@
 //!   an application and never to an agent ([`GrantError::NotForAnAgent`]).
 //!   What an agent sees of the person's machine is offered at the moment they
 //!   ask it, never watched, and a grant to the camera would be the opposite;
+//! - a terminal is granted to an agent never ([`GrantError::APersonsOwn`],
+//!   ADR 0043), because whatever is typed into one runs;
 //! - **it ends.** [`Grant::checked`] takes how long it lasts and refuses zero,
 //!   and there is no variant meaning "for ever". A grant that outlives the
 //!   reason it was made is the failure this crate exists to make impossible,
@@ -32,6 +34,7 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::grantee::Grantee;
 use crate::path::{is_a_root, is_usable};
+use crate::persons_own::is_a_persons_own;
 use crate::reach::{Ask, Reach};
 use crate::words;
 
@@ -72,6 +75,14 @@ pub enum GrantError {
     /// it needs at the moment it is asked, and a durable grant to the camera
     /// would be a background reader by another name.
     NotForAnAgent,
+    /// A grant to an agent over an application that is a person's own — a
+    /// terminal ([`crate::persons_own`], ADR 0043).
+    ///
+    /// Whatever is typed into a terminal runs, so a grant over one is a grant
+    /// to the whole machine by another road, and it is refused for the same
+    /// reason [`GrantError::TheWholeMachine`] is. An application may still be
+    /// allowed one; only an agent is refused.
+    APersonsOwn,
 }
 
 impl GrantError {
@@ -88,6 +99,7 @@ impl GrantError {
             Self::NoTime => words::GRANT_NO_TIME,
             Self::NoEnd => words::GRANT_NO_END,
             Self::NotForAnAgent => words::NOT_FOR_AN_AGENT,
+            Self::APersonsOwn => words::PERSONS_OWN,
         }
     }
 
@@ -167,6 +179,12 @@ impl Grant {
         }
         let grantee = grantee.clone();
         let reach = checked_reach(reach)?;
+        if let Reach::Application(identifier) = &reach
+            && !grantee.is_an_application()
+            && is_a_persons_own(identifier)
+        {
+            return Err(GrantError::APersonsOwn);
+        }
         if lasting.is_zero() {
             return Err(GrantError::NoTime);
         }
@@ -340,6 +358,39 @@ mod tests {
         assert_eq!(
             Grant::checked("@files", Reach::Folder("".into()), noon(), hour()).unwrap_err(),
             GrantError::NothingNamed
+        );
+    }
+
+    /// ADR 0043: **there is no grant to an agent over a terminal**, for the
+    /// reason there is none to `/` — and beside the refusal, the two grants that
+    /// are still made: an agent's over a text editor, and an application's over
+    /// the terminal a person chose to open something in.
+    #[test]
+    fn there_is_no_grant_to_an_agent_over_a_terminal() {
+        for terminal in crate::A_PERSONS_OWN {
+            let reach = Reach::Application(format!("  {terminal} "));
+            assert_eq!(
+                Grant::checked("@alo", reach.clone(), noon(), hour()).unwrap_err(),
+                GrantError::APersonsOwn,
+                "{terminal}"
+            );
+            let mail = crate::Applicant::named("org.example.Mail").grantee();
+            assert!(Grant::checked_for(&mail, reach, noon(), hour()).is_ok());
+        }
+        assert!(
+            Grant::checked(
+                "@alo",
+                Reach::Application("org.gnome.TextEditor".to_owned()),
+                noon(),
+                hour()
+            )
+            .is_ok()
+        );
+        assert!(
+            GrantError::APersonsOwn
+                .said(&in_english())
+                .text()
+                .contains("no agent can be granted one")
         );
     }
 

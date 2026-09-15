@@ -26,6 +26,11 @@ alo-egress = { path = "../alo-egress" }
 # Everything a person reads here.
 alo-strings = { path = "../alo-strings" }
 
+# The list of what a fresh machine ships is data beside this manifest
+# (`shipped.toml`), read the way the rest of this workspace reads its files.
+serde = { workspace = true }
+toml = { workspace = true }
+
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -33,6 +38,17 @@ thiserror = { workspace = true }
 # new arrived on it, and after a removal to show what the application held is
 # gone from it.
 alo-granted = { path = "../alo-granted" }
+
+# Every verb alo OS ships, on one list as a daemon is handed them, so the test
+# that no verb reaches the terminal is asked of all of them and not of the ones
+# this crate declares.
+alo-files = { path = "../alo-files" }
+alo-finding = { path = "../alo-finding" }
+alo-measuring = { path = "../alo-measuring" }
+alo-printing = { path = "../alo-printing" }
+# The workspace read for which crates declare verbs, so that list cannot drift
+# from the one handed to the terminal's check.
+alo-by-hand = { path = "../alo-by-hand" }
 
 [lints]
 workspace = true

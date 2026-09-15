@@ -825,11 +825,18 @@ name = "alo-software"
 version = "0.0.1"
 dependencies = [
  "alo-applications",
+ "alo-by-hand",
  "alo-capability",
  "alo-egress",
+ "alo-files",
+ "alo-finding",
  "alo-granted",
+ "alo-measuring",
+ "alo-printing",
  "alo-strings",
+ "serde",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]

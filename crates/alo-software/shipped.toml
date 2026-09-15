@@ -1,0 +1,87 @@
+# What a fresh machine has, so it is not helpless.
+#
+# `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2. The decided list:
+# one application for each thing a person needs before they have installed
+# anything, each a pinned upstream application named by the identifier its
+# source knows it by and the version it was decided at.
+#
+# This file is data, and it is read in two places:
+#
+# - `alo_software::Shipped::decided`, which refuses it unless every role is here
+#   exactly once, every identifier and source is one the rented tool could be
+#   handed, and the terminal is one no agent can be granted (ADR 0043);
+# - the installer plan (`docs/autonomy/v0-5-the-installer-plan.md`), which names
+#   the fresh machine's applications to the image from this file rather than
+#   copying the list into `image/`.
+#
+# Each is installed the way a person installs one — from `source`, through the
+# rented tool, arriving granted nothing — so updating and removing it is no
+# different from any other application. There is no key meaning "kept": a
+# person may remove any of these, the browser included, and a key this reader
+# does not know is refused rather than ignored.
+#
+# Nothing here is patched or rebranded. `version` is the upstream's own release
+# as its source listed it on the date the list was decided (2026-09-15); a newer
+# release reaches a machine as an offered update, like any application's.
+# Why each was chosen, and what else was considered, is in
+# `docs/autonomy/updates/what-a-fresh-machine-has.md`.
+
+format = 1
+
+# Engine diversity, a published enterprise policy that turns telemetry off
+# (task 3), maintained and published by its own developer.
+[[application]]
+role = "web-browser"
+identifier = "org.mozilla.firefox"
+source = "flathub"
+version = "156.0"
+licence = "MPL-2.0"
+
+# Trash, and published by its own developer. GNOME's Files is not published to
+# the place a fresh machine installs from.
+[[application]]
+role = "file-manager"
+identifier = "org.kde.dolphin"
+source = "flathub"
+version = "26.04.3"
+licence = "GPL-2.0-or-later"
+
+# The archives a file manager hands on: from the same developer and release as
+# the file manager.
+[[application]]
+role = "archives"
+identifier = "org.kde.ark"
+source = "flathub"
+version = "26.04.3"
+licence = "GPL-2.0-or-later"
+
+[[application]]
+role = "text-editor"
+identifier = "org.gnome.TextEditor"
+source = "flathub"
+version = "50.1"
+licence = "GPL-3.0-or-later"
+
+# Decodes each image in a separate sandboxed process.
+[[application]]
+role = "image-viewer"
+identifier = "org.gnome.Loupe"
+source = "flathub"
+version = "50.0"
+licence = "GPL-3.0-or-later"
+
+[[application]]
+role = "document-viewer"
+identifier = "org.gnome.Papers"
+source = "flathub"
+version = "50.2"
+licence = "GPL-2.0-or-later"
+
+# A person's, and never an agent's (ADR 0043). Its own published permissions let
+# it start a shell on the machine itself, which is what a terminal is for.
+[[application]]
+role = "terminal"
+identifier = "app.devsuite.Ptyxis"
+source = "flathub"
+version = "50.1"
+licence = "GPL-3.0-or-later"

@@ -34,7 +34,9 @@
 //!   not a value this type can hold.
 //!
 //! There is no grant to `/`, and [`GrantError::TheWholeMachine`] is what
-//! happens to code that tries.
+//! happens to code that tries. Nor is there a grant to an agent over a terminal
+//! — the whole machine by another road — and [`persons_own`] is where that is
+//! decided (ADR 0043).
 //!
 //! # A machine with no agent
 //!
@@ -171,6 +173,7 @@ pub mod grantee;
 pub mod grants;
 pub mod offered;
 pub mod path;
+pub mod persons_own;
 pub mod proposal;
 pub mod reach;
 pub mod refusing;
@@ -196,6 +199,7 @@ pub use grant::{Grant, GrantError};
 pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use offered::Offered;
+pub use persons_own::{A_PERSONS_OWN, is_a_persons_own};
 pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
 pub use refusing::NotGranted;

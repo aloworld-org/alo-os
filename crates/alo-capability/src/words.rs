@@ -150,6 +150,17 @@ pub const NOT_FOR_AN_AGENT: Word = Word::saying(
      watched in the background.",
 );
 
+/// A grant to an agent over a terminal, which ADR 0043 does not allow.
+pub const PERSONS_OWN: Word = Word::saying(
+    "capability.grant.a-persons-own",
+    "a terminal is yours alone — whatever is typed into it runs, so no agent can be granted one",
+)
+.noting(
+    "An agent is an AI assistant, not a person. A terminal is the window a person types commands \
+     into. This is a rule of alo OS, the same one as there being no grant to the whole machine, \
+     and not something a person can change in a setting.",
+);
+
 // ---------------------------------------------------------------------------
 // What a grant is over — [`crate::Reach`], and the applications half of
 // [`crate::Ask`].
@@ -566,7 +577,7 @@ pub const HAS_NO_AGENT: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 51] = [
+pub const EVERY_WORD: [Word; 52] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -576,6 +587,7 @@ pub const EVERY_WORD: [Word; 51] = [
     GRANT_NO_TIME,
     GRANT_NO_END,
     NOT_FOR_AN_AGENT,
+    PERSONS_OWN,
     A_FOLDER,
     A_FILE,
     AN_APPLICATION,
@@ -765,6 +777,7 @@ mod tests {
             NEVER_GRANTED,
             NO_AGENT,
             NOT_FOR_AN_AGENT,
+            PERSONS_OWN,
             APPLICATION_LAPSED,
             APPLICATION_NEVER_GRANTED,
             CHANGE_WAITS,
