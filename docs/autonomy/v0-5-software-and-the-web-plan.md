@@ -70,7 +70,22 @@ the report says what the on-machine acceptance is. **Depends on:** nothing.
 
 ### 2. What a fresh machine has, so it is not helpless
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — on
+`docs/decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md`
+(proposed, 2026-09-15). **Depends on:** 1.
+
+**Built, then held back, 2026-09-15.** A worker built the decided list
+(`crates/alo-software/shipped.toml`, read by `alo_software::Shipped`) and the
+terminal refusal the acceptance below asks for. It put the refusal in
+`alo-capability`, as three additive checks on a grant and a call, and marked its
+own ADR accepted. The header above says this plan reads `alo-capability` and
+never edits it, ADR 0040 gives capability changes to the applications plan, and
+another lane is working in that crate. So the supervising machine kept the whole
+result unpublished, on its local branch
+`held/software-task-2-awaits-capability`, and published the decision as
+proposed. **For the owner:** whether ADR 0043's option C is the rule, and which
+lane makes the `alo-capability` change. Once that change is on `main`, this task
+is the list and its tests, taken from the held branch.
 
 - **Acceptance:** a decided list — a web browser, a file manager with trash and archives
   that open, a text editor, an image viewer, a document viewer, a terminal — each a
