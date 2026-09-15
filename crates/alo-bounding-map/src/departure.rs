@@ -48,10 +48,32 @@
 //! thing a departure can describe; so it is refused whether or not somebody
 //! registered the same address with no interface beside it.
 //!
+//! # An IPv4 departure may be held to the interface it leaves by
+//!
+//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! `192.168.1.20` on the wired network and `192.168.1.20` on the Wi-Fi are two
+//! machines whenever two routers hand out the same private range. The kernel
+//! dials an IPv4 address with no interface named, so there is no scope to read
+//! — but a socket **held to an interface** (`SO_BINDTOIFINDEX`) leaves by that
+//! interface and no other, and that is how the daemon dials a paired machine
+//! found on one network. So an IPv4 departure keeps whatever interface it is
+//! given, and the programme gives it the one the socket is held to:
+//!
+//! - **held to an interface**, it is permitted only where the socket is held to
+//!   that same interface ([`Departure::permits`]) — not on another, and not on a
+//!   socket held to none, which leaves by whatever the route says at the moment;
+//! - **held to none** — every provider's, and every IPv4 departure written before
+//!   this — it is permitted however the socket is held, exactly as before: the
+//!   route decides, and that is unchanged.
+//!
+//! An IPv6 address that is not link-local still keeps no interface: it names its
+//! own network, and ADR 0041's rule for it is untouched.
+//!
 //! The interface travels in the top half of the word that already carried the
 //! family and the port, which had been zeroes since the shape was written. The
 //! map is not a byte wider, so [`WORDS`] and the kernel's own entry size are
-//! unchanged, and an IPv4 destination reads back exactly as it did before.
+//! unchanged, and an IPv4 destination held to no interface reads back exactly
+//! as it did before.
 
 /// One of the two ways an address is written.
 ///
@@ -119,8 +141,9 @@ pub struct Departure {
     /// would make *nowhere* a place somebody could arrange to be shown.
     family: u16,
 
-    /// The interface the address is on, as the kernel numbers interfaces, for
-    /// an address that needs one — and zero for every address that does not.
+    /// The interface the address is on, as the kernel numbers interfaces: for
+    /// an address that needs one, and for an IPv4 address held to one — and
+    /// zero for every other.
     interface: u32,
 }
 
@@ -139,11 +162,13 @@ impl Departure {
     /// A destination somebody was shown, on the interface the kernel numbers
     /// `interface`.
     ///
-    /// **The interface is kept only where the address needs one**
-    /// ([`needs_an_interface`]) and is dropped everywhere else, so the daemon,
-    /// which hands in whatever scope a resolved address carried, and the
-    /// programme, which hands in whatever scope a `sockaddr_in6` carried, make
-    /// the same value of the same destination.
+    /// **The interface is kept only where it can decide something**
+    /// ([`keeps_its_interface`]): an address that needs one, and every IPv4
+    /// address, whose interface is the one its socket is held to (ADR 0042).
+    /// It is dropped everywhere else, so the daemon, which hands in whatever
+    /// scope a resolved address carried, and the programme, which hands in
+    /// whatever scope a `sockaddr_in6` carried, make the same value of the same
+    /// destination.
     ///
     /// ```
     /// use alo_bounding_map::{Departure, Departures, Family};
@@ -171,7 +196,7 @@ impl Departure {
             address,
             port,
             family: family.number(),
-            interface: if needs_an_interface(family, address) {
+            interface: if keeps_its_interface(family, address) {
                 interface
             } else {
                 0
@@ -199,8 +224,9 @@ impl Departure {
     }
 
     /// The interface the address is on, or zero for an address that names its
-    /// own network — and for a link-local one nobody said the interface of,
-    /// which [`Departure::names_its_network`] answers for.
+    /// own network and an IPv4 address held to none — and for a link-local one
+    /// nobody said the interface of, which [`Departure::names_its_network`]
+    /// answers for.
     #[must_use]
     pub const fn interface(&self) -> u32 {
         self.interface
@@ -218,6 +244,41 @@ impl Departure {
             Some(family) => !needs_an_interface(family, self.address) || self.interface != 0,
             None => false,
         }
+    }
+
+    /// Whether being shown this destination permits going to `where_to`.
+    ///
+    /// The same destination, always. And one more, for one family: **an IPv4
+    /// departure held to no interface permits the same address and port on any
+    /// interface**, because that is what every IPv4 departure permitted before
+    /// ADR 0042 and what a provider's still must — its address is on no one
+    /// network, and the route decides. An IPv4 departure held to an interface
+    /// permits that interface and nothing else, which is the whole of what
+    /// holding it is for.
+    ///
+    /// ```
+    /// use alo_bounding_map::{Departure, Family};
+    ///
+    /// let studio = 0xc0a8_0114; // 192.168.1.20
+    /// let on_the_cable = Departure::on(Family::Four, studio, 7_610, 3);
+    /// assert!(on_the_cable.permits(on_the_cable));
+    /// // The same address on the Wi-Fi is another machine.
+    /// assert!(!on_the_cable.permits(Departure::on(Family::Four, studio, 7_610, 4)));
+    /// // And a socket held to nothing goes wherever the route says.
+    /// assert!(!on_the_cable.permits(Departure::of(Family::Four, studio, 7_610)));
+    ///
+    /// // A provider's departure is held to nothing and permits what it did.
+    /// let provider = Departure::of(Family::Four, 0x0102_0304, 443);
+    /// assert!(provider.permits(Departure::on(Family::Four, 0x0102_0304, 443, 4)));
+    /// ```
+    #[must_use]
+    pub const fn permits(&self, where_to: Departure) -> bool {
+        let same_place = self.address == where_to.address
+            && self.port == where_to.port
+            && self.family == where_to.family;
+        same_place
+            && (self.interface == where_to.interface
+                || (self.family == Family::INET && self.interface == 0))
     }
 
     /// The value as the map holds it: the address in two words, then the
@@ -271,6 +332,24 @@ pub const fn needs_an_interface(family: Family, address: u128) -> bool {
             let scope = (address >> 112) & 0x0f;
             link_local || (multicast && (scope == 1 || scope == 2))
         }
+    }
+}
+
+/// Whether a departure to this address keeps the interface it is given.
+///
+/// Every address that [`needs_an_interface`], and **every IPv4 address**: the
+/// kernel dials one with no interface named, but a socket held to an interface
+/// leaves by it, and a paired machine found on one network is dialled that way
+/// (ADR 0042). The private ranges are not singled out, and deliberately: a
+/// public address on an office network and a carrier's shared range are the
+/// same question, and a departure held to nothing still permits any interface
+/// ([`Departure::permits`]), so keeping the interface narrows only a departure
+/// somebody held.
+#[must_use]
+pub const fn keeps_its_interface(family: Family, address: u128) -> bool {
+    match family {
+        Family::Four => true,
+        Family::Six => needs_an_interface(family, address),
     }
 }
 
@@ -363,10 +442,12 @@ impl Departures {
     ///
     /// Never for a destination that does not name its network — a link-local
     /// address with no interface — even if the same nothing was written into
-    /// the entry: [`Departure::names_its_network`] says why.
+    /// the entry: [`Departure::names_its_network`] says why. Each destination
+    /// shown is asked [`Departure::permits`], which is where an IPv4 departure
+    /// held to an interface is held to it (ADR 0042).
     #[must_use]
     pub fn holds(&self, where_to: Departure) -> bool {
-        where_to.names_its_network() && self.each().any(|shown| shown == where_to)
+        where_to.names_its_network() && self.each().any(|shown| shown.permits(where_to))
     }
 
     /// The destinations, and nothing beyond the count.
@@ -597,9 +678,11 @@ mod tests {
             assert_eq!(scoped, Departure::of(Family::Six, address, 443));
             assert!(scoped.names_its_network());
         }
-        let four = Departure::on(Family::Four, 0xa9fe_0001, 443, THE_CABLE);
-        assert_eq!(four, Departure::of(Family::Four, 0xa9fe_0001, 443));
+        // No IPv4 address needs an interface to be dialled — but since ADR 0042
+        // one keeps the interface its socket is held to, which the tests below
+        // hold.
         assert!(!needs_an_interface(Family::Four, 0xa9fe_0001));
+        assert!(Departure::of(Family::Four, 0xa9fe_0001, 443).names_its_network());
 
         // The edges of `fe80::/10`, which is ten bits and not sixteen.
         assert!(needs_an_interface(Family::Six, 0xfebf_u128 << 112));
@@ -631,6 +714,107 @@ mod tests {
         assert_eq!(
             frankfurt.words(),
             [0, 0x0102_0304, (u64::from(Family::INET) << 16) | 443]
+        );
+    }
+
+    /// The studio's private IPv4 address, `192.168.1.20`, which the Wi-Fi's
+    /// router hands out too.
+    const THE_STUDIO_OVER_IPV4: u128 = 0xc0a8_0114;
+
+    /// **A private IPv4 departure held to the interface it was found on is
+    /// permitted there and refused on another network carrying the same
+    /// address** — and refused on a socket held to no interface, which leaves by
+    /// whatever the route says at the moment (ADR 0042).
+    #[test]
+    fn an_ipv4_departure_held_to_an_interface_is_permitted_there_and_nowhere_else() {
+        let on_the_cable = Departure::on(Family::Four, THE_STUDIO_OVER_IPV4, 7_610, THE_CABLE);
+        assert_eq!(on_the_cable.interface(), THE_CABLE);
+        assert!(on_the_cable.names_its_network());
+        let shown = Departures::of(&[on_the_cable]).expect("one is not too many");
+
+        assert!(shown.holds(on_the_cable));
+        assert!(
+            !shown.holds(Departure::on(
+                Family::Four,
+                THE_STUDIO_OVER_IPV4,
+                7_610,
+                ELSEWHERE
+            )),
+            "an IPv4 departure held to one interface was permitted on another"
+        );
+        assert!(
+            !shown.holds(Departure::of(Family::Four, THE_STUDIO_OVER_IPV4, 7_610)),
+            "an IPv4 departure held to an interface was permitted where the route chooses"
+        );
+        assert!(!shown.holds(Departure::on(
+            Family::Four,
+            THE_STUDIO_OVER_IPV4,
+            80,
+            THE_CABLE
+        )));
+        assert!(!shown.holds(Departure::on(
+            Family::Four,
+            THE_STUDIO_OVER_IPV4 + 1,
+            7_610,
+            THE_CABLE
+        )));
+        // And the IPv6 address holding the same numbers is not it either.
+        assert!(!shown.holds(Departure::on(
+            Family::Six,
+            THE_STUDIO_OVER_IPV4,
+            7_610,
+            THE_CABLE
+        )));
+    }
+
+    /// **A provider's departure is unchanged**: held to no interface, it permits
+    /// the address and port however the socket is held — the route decides, as
+    /// it did — and its words are the words it always had.
+    #[test]
+    fn an_ipv4_departure_held_to_no_interface_permits_what_it_always_did() {
+        let frankfurt = Departure::of(Family::Four, 0x0102_0304, 443);
+        let shown = Departures::of(&[frankfurt]).expect("one is not too many");
+        for interface in [0, THE_CABLE, ELSEWHERE, u32::MAX] {
+            assert!(
+                shown.holds(Departure::on(Family::Four, 0x0102_0304, 443, interface)),
+                "{interface}"
+            );
+        }
+        assert!(!shown.holds(Departure::on(Family::Four, 0x0102_0304, 80, THE_CABLE)));
+        assert_eq!(
+            frankfurt.words(),
+            [0, 0x0102_0304, (u64::from(Family::INET) << 16) | 443]
+        );
+
+        // Held to nothing is IPv4's alone: a link-local IPv6 departure with no
+        // interface still permits nothing (ADR 0041).
+        let unscoped = Departure::of(Family::Six, THE_STUDIO, 7_610);
+        assert!(!unscoped.permits(Departure::on(Family::Six, THE_STUDIO, 7_610, THE_CABLE)));
+        assert!(!keeps_its_interface(
+            Family::Six,
+            (0x2001_0db8_u128 << 96) | 1
+        ));
+        assert!(keeps_its_interface(Family::Four, THE_STUDIO_OVER_IPV4));
+    }
+
+    /// **The interface an IPv4 departure is held to survives the map**, in the
+    /// bits ADR 0041 put a link-local interface in.
+    #[test]
+    fn an_ipv4_interface_survives_the_map() {
+        let on_the_cable = Departure::on(Family::Four, THE_STUDIO_OVER_IPV4, 7_610, THE_CABLE);
+        let shown = Departures::of(&[on_the_cable]).expect("one is not too many");
+        let read = Departures::of_words(shown.words());
+        assert_eq!(read, shown);
+        assert!(read.holds(on_the_cable));
+        assert!(!read.holds(Departure::on(
+            Family::Four,
+            THE_STUDIO_OVER_IPV4,
+            7_610,
+            ELSEWHERE
+        )));
+        assert_eq!(
+            on_the_cable.words()[2],
+            (u64::from(THE_CABLE) << 32) | (u64::from(Family::INET) << 16) | 7_610
         );
     }
 }

@@ -79,11 +79,11 @@ static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 /// attached, so nothing here is compiled against a kernel version. `Field` is
 /// the agreement about which slot is which.
 ///
-/// Eighteen slots for sixteen fields. The spare ones are read back by
+/// Nineteen slots for seventeen fields. The spare ones are read back by
 /// `the_boundary_decides_and_forgets` and held at zero, because an array this
 /// program can already reach is exactly where a counter would sit.
 #[map(name = "FIELDS")]
-static FIELDS: Array<u32> = Array::with_max_entries(18, 0);
+static FIELDS: Array<u32> = Array::with_max_entries(19, 0);
 
 /// Every open of every file, on this machine, from now until the program is
 /// detached.

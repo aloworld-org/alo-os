@@ -1139,7 +1139,43 @@ exactly the network this release just made to work.
 
 ### 25. A private IPv4 address on two networks is still one destination the kernel bounds
 
-**Status:** ready. **Depends on:** 22, 24.
+**Status:** **Done, 2026-09-15.** Decided first in
+[ADR 0042](../decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
+**a paired machine's IPv4 departure is held to the interface of the network it was
+found on, and checked against the interface the socket is held to** — deciding by
+the route is not buildable in an LSM hook and is not what the person was shown, and
+deliberately not is law 1 failing on the commonest network there is. Built in
+`crates/alo-bounding-map` (`departure.rs` — `keeps_its_interface`, every IPv4
+address keeping the interface it is given, and `Departure::permits`: held to an
+interface, that interface; held to none — a provider's — any, as before),
+`crates/alo-bounding-kernel` (`departing.rs` — `skc_bound_dev_if` read for every IPv4
+destination, named or joined, and **a message carrying control messages decided as
+held to no interface**, because on IPv4 `IP_PKTINFO` sends a datagram past the
+socket's interface and the kernel does not check; the offsets map nineteen slots for
+seventeen fields), `crates/alo-bounding` (`msg_controllen` found and width-checked,
+the fixture), `crates/alo-nearby` (`HeardFrom::on_the_network` and
+`HeardFrom::interface`, never spelled in the address), `crates/alo-agentd`
+(`looking.rs` — each IPv4 network asked from a socket held to its interface and what
+it heard written down on it; `corridor.rs` — the question held to that interface;
+`bounding.rs` — `carrying_out_a_departure_on`), `crates/alo-asking` (`held_to.rs` —
+the corridor dialled from a socket held with `SO_BINDTOIFINDEX`, through a connector
+and transport of its own; `DownTheCorridor::on_the_network`) and `crates/alo-turn`
+(`Bounding::carrying_out_a_departure_on`, refusing by default and never falling back
+to an unheld registration). `socket2` joins the workspace for the one socket option
+nothing else could set without `unsafe`. Tested on a real kernel by
+`crates/alo-bounding/tests/a_private_ipv4_departure_is_held_to_its_network.rs` (two
+`veth` cables in a namespace of their own, a machine at `10.64.0.20` at the far end of
+each counting every byte: reached on the network shown and refused with `EACCES` on
+the other by a held connection, a datagram, a joined socket, the route and
+`IP_PKTINFO`; a provider's departure reached by all of them) and
+`crates/alo-agentd/src/a_paired_machine_on_two_networks_with_one_address.rs` (the
+studio found on the cable alone, asked from a turn bounded by the real programme,
+shown and recorded by its name, while somebody else at the same address on the
+network the route prefers counts nothing; a mutation removing the corridor's hold
+sends the question to them). `docs/contracts/local-network-wire.md` gains one
+additive line; `docs/quirks.md` records the kernel's behaviour. The report is
+`docs/autonomy/updates/a-private-ipv4-departure-is-held-to-its-network.md`.
+**Depends on:** 22, 24.
 
 *One GPU box serves the office — it is still egress, and the indicator still fires.*
 Since task 22 a machine on two networks is found on each, and since task 24 a
@@ -1170,5 +1206,39 @@ needs no interface to be dialled, so there is no scope to read.
   stays the only unchecked destination, and there is still no setting — no network
   chosen by a person or an agent. Editing `alo-bounding`, `alo-bounding-map` or
   `alo-bounding-kernel` is coordinated with the lane that owns them (ADR 0028). What
+  reality does that the specification does not say goes in `docs/quirks.md`. Nothing
+  in `alo-shell`, nothing in `image/`.
+
+### 26. A proposal from a private IPv4 address is measured on the network it arrived on
+
+**Status:** ready. **Depends on:** 7, 22, 25.
+
+*Machines find each other with zero configuration, and trust none of them for it.*
+Task 7 refuses a proposal, a confirmation or a verb from an address discovery has
+not just measured, and the measurement is made at the moment: the machine at the
+connection's source address is asked who it is (`crate::looking::found_at`). Since
+task 25 a machine this one **dials** at a private IPv4 address is held to the network
+it was found on — but a connection that **arrives** from `192.168.1.20` is still
+measured from a socket held to nothing, so the question *who are you* leaves by
+whatever the route says. On a machine on two networks that hand out the same range,
+the answer can come from the other network's `192.168.1.20`: the proposal from the
+studio on the cable is measured against somebody else on the Wi-Fi, and refused or
+— worse — judged against a machine that did not send it.
+
+- **Acceptance:** how the network a connection arrived on is read — the interface of
+  the accepting socket's local address, an `IP_PKTINFO` read back from the accepted
+  socket, or another reading the kernel really gives, with what each costs where this
+  machine's own address is the same on both networks — is decided in the crate that
+  measures, and written up with the reason; a proposal arriving over IPv4 is measured
+  from a socket held to the interface it arrived on, and what is found is written down
+  on that interface (`alo_nearby::HeardFrom::on_the_network`), tested; a connection
+  whose arriving interface cannot be read is measured nowhere and refused as not
+  found, never measured by the route, tested; and two machines at the same private
+  address on two networks, one of them proposing, are told apart end to end — the
+  proposal measured against the machine that sent it and the other machine asked
+  nothing — tested with network namespaces joined by `veth` pairs.
+- **Constraint:** ADR 0003 and ADR 0042 as they stand: discovery reveals presence
+  only, nothing is kept between measurements, and there is still no setting — no
+  network chosen by a person or an agent. What crosses the wire is unchanged. What
   reality does that the specification does not say goes in `docs/quirks.md`. Nothing
   in `alo-shell`, nothing in `image/`.

@@ -232,7 +232,7 @@ impl Turning<'_, '_> {
                 // boundary permitting these addresses and no others, and asks
                 // no name server anything of its own.
                 let to = registering(hosted.where_it_would_connect());
-                self.put_off_this_machine(&to, &agent, now, |indicator| {
+                self.put_off_this_machine(&to, None, &agent, now, |indicator| {
                     asking.to_a_provider(&question, hosted, indicator, now, &to)
                 })
             }
@@ -243,10 +243,12 @@ impl Turning<'_, '_> {
             // a paired machine is asked for an agent's next request exactly as
             // it is asked a question in words (ADR 0032, decision 4). What it is
             // shown is this machine's words, built from this machine's verbs,
-            // because the request it answers with is carried out here.
+            // because the request it answers with is carried out here. A machine
+            // found on one network is asked, and bounded, on that network alone
+            // (ADR 0042).
             Answers::PairedMachine(corridor) => {
                 let to = registering(corridor.where_it_would_connect());
-                self.put_off_this_machine(&to, &agent, now, |indicator| {
+                self.put_off_this_machine(&to, corridor.held_to(), &agent, now, |indicator| {
                     asking.to_a_paired_machine(&question, corridor, indicator, now, &to)
                 })
             }
@@ -277,7 +279,8 @@ impl Turning<'_, '_> {
     }
 
     /// Put a question that leaves this machine from inside a boundary
-    /// permitting `to` and nothing else, and write down what became of it.
+    /// permitting `to` and nothing else — on the interface `held_to` names, where
+    /// it names one — and write down what became of it.
     ///
     /// One road for a provider and a paired machine, because what law 1 and
     /// ADR 0020 ask of the two is the same: `put` is the one attempt the
@@ -285,6 +288,7 @@ impl Turning<'_, '_> {
     fn put_off_this_machine(
         &mut self,
         to: &[SocketAddr],
+        held_to: Option<std::num::NonZeroU32>,
         agent: &Grantee,
         now: SystemTime,
         put: impl FnOnce(&mut alo_egress::Indicator) -> Result<Asked, NotAsked>,
@@ -294,11 +298,15 @@ impl Turning<'_, '_> {
         // permission is one attempt, and this is that one attempt.
         let mut once = Some(put);
         let mut outcome = None;
-        let bounded = bounding.carrying_out_a_departure(to, &mut || {
+        let mut putting = || {
             if let Some(put) = once.take() {
                 outcome = Some(put(indicator));
             }
-        });
+        };
+        let bounded = match held_to {
+            Some(interface) => bounding.carrying_out_a_departure_on(to, interface, &mut putting),
+            None => bounding.carrying_out_a_departure(to, &mut putting),
+        };
         match (bounded, outcome) {
             (Ok(()), Some(outcome)) => self.what_a_provider_did(outcome, now),
             // A boundary that could not be imposed is ADR 0015's rule rather

@@ -178,6 +178,8 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(all(test, target_os = "linux"))]
+mod a_paired_machine_on_two_networks_with_one_address;
+#[cfg(all(test, target_os = "linux"))]
 mod a_paired_machine_over_link_local;
 #[cfg(target_os = "linux")]
 pub mod ageing;

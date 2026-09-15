@@ -18,6 +18,10 @@ repository.workspace = true
 # so asking the kernel who is on the other end, and which end has something on
 # it, is a crate.
 rustix = { workspace = true }
+# A look on one IPv4 network is asked from a socket held to that network's
+# interface, so an answer counted as heard there arrived there (ADR 0042).
+# Reached only from `looking.rs`.
+socket2 = { workspace = true }
 thiserror = { workspace = true }
 
 # The second rented thing, and `signalling.rs` is the only file that names it.

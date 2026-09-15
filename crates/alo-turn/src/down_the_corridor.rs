@@ -442,4 +442,162 @@ mod tests {
             assert_eq!(record.len(), 0);
         }
     }
+
+    /// A boundary that carries everything out where it stands and writes down
+    /// which door each request came through, and the interface it was held to.
+    #[derive(Debug, Default)]
+    struct WritingDownTheDoor {
+        /// `None` for a request held to no interface, and the interface otherwise.
+        held_to: Vec<Option<u32>>,
+    }
+
+    impl crate::Bounding for WritingDownTheDoor {
+        fn carrying_out(
+            &mut self,
+            _reaching: &alo_files::Reaching,
+            doing: crate::Doing<'_>,
+        ) -> Result<crate::Done, crate::NoBoundary> {
+            Ok(doing.done())
+        }
+
+        fn carrying_out_a_departure(
+            &mut self,
+            _to: &[SocketAddr],
+            doing: &mut dyn FnMut(),
+        ) -> Result<(), crate::NoBoundary> {
+            self.held_to.push(None);
+            doing();
+            Ok(())
+        }
+
+        fn carrying_out_a_departure_on(
+            &mut self,
+            _to: &[SocketAddr],
+            interface: std::num::NonZeroU32,
+            doing: &mut dyn FnMut(),
+        ) -> Result<(), crate::NoBoundary> {
+            self.held_to.push(Some(interface.get()));
+            doing();
+            Ok(())
+        }
+    }
+
+    /// A boundary written before ADR 0042, which knows how to bound a request
+    /// and not how to hold one to an interface.
+    #[derive(Debug)]
+    struct HoldingNothing;
+
+    impl crate::Bounding for HoldingNothing {
+        fn carrying_out(
+            &mut self,
+            _reaching: &alo_files::Reaching,
+            doing: crate::Doing<'_>,
+        ) -> Result<crate::Done, crate::NoBoundary> {
+            Ok(doing.done())
+        }
+
+        fn carrying_out_a_departure(
+            &mut self,
+            _to: &[SocketAddr],
+            doing: &mut dyn FnMut(),
+        ) -> Result<(), crate::NoBoundary> {
+            doing();
+            Ok(())
+        }
+    }
+
+    /// One turn by `@files` on a machine bounded by `bounding`, asking the
+    /// studio through `corridor`.
+    fn asked_through(
+        bounding: &mut dyn crate::Bounding,
+        record: &mut Record,
+        indicator: &mut Indicator,
+        corridor: DownTheCorridor<'_>,
+    ) -> Result<alo_asking::Answer, NoAnswer> {
+        let strings = in_english();
+        let mut machine =
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, bounding, indicator, record)
+                .unwrap();
+        let mut grants = Grants::default();
+        let mut turning = Turning::beginning(
+            Context::at_invocation(noon()),
+            "@files",
+            hour(),
+            &mut grants,
+            &mut machine,
+        )
+        .unwrap();
+        turning.asking(
+            ASKED,
+            THE_MODEL_NAMED,
+            permitted_down_the_corridor(),
+            &Answers::PairedMachine(corridor),
+            &Places::under(&IN_THE_BUILDING),
+            noon(),
+        )
+    }
+
+    /// **A machine found on one network is asked through the door that holds
+    /// the departure to that network's interface, and dialled from a socket held
+    /// there** — loopback, interface one, in a test — and the departure is kept
+    /// and named exactly as it always was. A machine dialled by its address alone
+    /// still goes through the door it always did (ADR 0042).
+    #[test]
+    fn a_machine_found_on_one_network_is_bounded_and_dialled_on_that_network() {
+        let pairings = paired_with_the_studio(&[MayAskIts::Models]);
+        let loopback = std::num::NonZeroU32::new(1);
+
+        let (url, server) = serving(AN_ANSWER, 200);
+        let mut bounding = WritingDownTheDoor::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let corridor = the_corridor(&pairings, at(&url)).on_the_network(loopback);
+        assert_eq!(corridor.held_to(), loopback);
+        let answer = asked_through(&mut bounding, &mut record, &mut indicator, corridor).unwrap();
+        assert!(server.join().unwrap().contains("unpaid"));
+        assert_eq!(answer.text(), "No, not without written consent.");
+        assert_eq!(bounding.held_to, [Some(1)]);
+        assert!(indicator.is_quiet());
+        assert_eq!(departures(&record), 1);
+        assert!(record.everything().any(|entry| matches!(
+            entry.happened(),
+            Happened::Left {
+                destination: Destination::PairedMachine { machine },
+                ..
+            } if machine == CALLED
+        )));
+
+        let (url, server) = serving(AN_ANSWER, 200);
+        let mut bounding = WritingDownTheDoor::default();
+        let mut record = Record::default();
+        let corridor = the_corridor(&pairings, at(&url));
+        assert_eq!(corridor.held_to(), None);
+        asked_through(&mut bounding, &mut record, &mut indicator, corridor).unwrap();
+        assert!(server.join().unwrap().contains("unpaid"));
+        assert_eq!(bounding.held_to, [None]);
+    }
+
+    /// **A boundary that cannot hold a departure to an interface puts no
+    /// question at all** — it does not register the address on every network
+    /// instead — and nothing reaches the machine, nothing is shown and nothing
+    /// is written down as having left.
+    #[test]
+    fn a_boundary_that_cannot_hold_a_departure_to_an_interface_asks_nothing() {
+        let pairings = paired_with_the_studio(&[MayAskIts::Models]);
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let studio = listener.local_addr().unwrap();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let corridor = the_corridor(&pairings, studio).on_the_network(std::num::NonZeroU32::new(1));
+
+        let refused = asked_through(&mut HoldingNothing, &mut record, &mut indicator, corridor);
+        assert!(refused.is_err(), "{refused:?}");
+        assert!(indicator.is_quiet());
+        assert_eq!(departures(&record), 0);
+        listener.set_nonblocking(true).unwrap();
+        assert!(
+            listener.accept().is_err(),
+            "a question the boundary could not hold reached the machine"
+        );
+    }
 }

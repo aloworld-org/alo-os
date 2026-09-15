@@ -703,6 +703,63 @@ interface indexes from `/proc/net/if_inet6`, and the end-to-end test gives the
 control group subtree back whether or not it fails. What two physical machines on a
 cable measure is still owed to two machines.
 
+### The Linux kernel — a socket held to an interface holds an IPv4 connection there, `IP_PKTINFO` sends a datagram past it, and one IPv4 address on two interfaces of one namespace is loopback's
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`, `setpriv`), iproute2 6.19.0 (`veth`, `dummy`), Python 3 for the probes;
+measured on 2026-09-15 by probes run before the code and by
+`crates/alo-bounding/tests/a_private_ipv4_departure_is_held_to_its_network.rs` and
+`crates/alo-agentd/src/a_paired_machine_on_two_networks_with_one_address.rs`.
+**Behaviour:** ADR 0042 holds a paired machine's IPv4 departure to the interface of
+the network it was found on, which rests on what the kernel does with a socket held
+to an interface — and on one place it does not do what the IPv6 half does:
+
+- **Two equal routes to one private range: the first added wins, and a socket held
+  to an interface ignores both.** A namespace with `10.9.0.1/24` on two `veth`
+  cables, each to a namespace of its own at `10.9.0.20`: an unheld `connect` reached
+  the far end of the cable whose address was added first, and one from a socket
+  held (`SO_BINDTODEVICE`) to either cable reached that cable's far end. Measured,
+  and again end to end: with the corridor's hold removed (a mutation run), the
+  question to the studio went by the route to somebody else.
+- **An unprivileged process can hold a socket once, and never move it.** As `nobody`
+  with no capabilities (`setpriv --reuid=65534 --inh-caps=-all --bounding-set=-all`),
+  `SO_BINDTODEVICE` on a fresh socket succeeded and connected there; the same option
+  on a socket already held, after it connected, failed with `EPERM`. As root it
+  succeeded. Measured. The kernel's source says why: since 5.7 an unheld socket
+  needs no `CAP_NET_RAW`, a held one does.
+- **On IPv4, an `IP_PKTINFO` control message sends a datagram out of the interface it
+  names, past the one the socket is held to.** A datagram socket held to the first
+  cable, `sendmsg` to `10.9.0.20` with `IP_PKTINFO` naming the second: the datagram
+  arrived at the second cable's far end, as root and as `nobody`. Measured. An
+  `IP_UNICAST_IF` on an unheld socket did the same, which is its purpose.
+- **On IPv6 the kernel refuses the same thing.** A socket held to one cable,
+  `sendmsg` to a link-local address with `IPV6_PKTINFO` naming the other interface:
+  `EINVAL`, with the address scoped and unscoped, and nothing arrived. Measured —
+  `ip6_datagram_send_ctl` checks the two agree; `ip_cmsg_send` has no such check.
+- **One IPv4 address on two `dummy` interfaces of one namespace is local, and
+  loopback answers it.** `10.64.0.20/24` on two `dummy` interfaces: an unheld
+  connection and one held to the first reached a listener on `0.0.0.0`; one held to
+  the second timed out. Measured. So the kernel test puts each copy of the address at
+  the far end of a `veth` cable in a namespace of its own, where IPv6's link-local
+  test could use two `dummy`s.
+- **`struct msghdr`'s `msg_controllen` is eight bytes and is what the programme is
+  handed at `socket_sendmsg`.** The width is checked against the running kernel's
+  type information when the programme is loaded, and a datagram carrying
+  `IP_PKTINFO` was refused by it — measured; that `____sys_sendmsg` has already
+  copied the control messages into the kernel and kept their length is the kernel's
+  source.
+
+**Our response:** `alo_bounding_map::Departure` keeps an IPv4 departure's interface,
+and `Departure::permits` holds one with an interface to that interface while one with
+none permits any, as before. `alo-bounding-kernel`'s `departing.rs` reads
+`skc_bound_dev_if` for every IPv4 destination, named or joined, and decides a message
+whose `msg_controllen` is not zero as held to no interface — so `IP_PKTINFO` and
+`IP_UNICAST_IF` reach only a departure held to none. `alo-agentd` asks each IPv4
+network from a socket held to its interface and writes what it heard down on it,
+and `alo-asking` dials a paired machine found there from a socket held to the same
+interface; no process in a turn can move it afterwards, because `alo-agentd` holds
+no capability (ADR 0018). **What is not closed:** a turn running as root could move a
+connected socket to another interface; alo OS runs no turn as root.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

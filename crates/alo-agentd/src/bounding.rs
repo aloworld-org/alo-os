@@ -174,16 +174,23 @@ impl Bounding for ByTheKernel {
         to: &[std::net::SocketAddr],
         doing: &mut dyn FnMut(),
     ) -> Result<(), NoBoundary> {
-        let shown = departures_of(to)?;
-        let named = next_name(&mut self.named);
-        self.turns
-            .doing(
-                &mut self.boundary,
-                &named,
-                Bounds::reaching_nothing_but(shown),
-                doing,
-            )
-            .map_err(as_no_boundary)
+        self.departing(departures_of(to, None)?, doing)
+    }
+
+    /// The same, with every IPv4 address held to the interface the kernel
+    /// numbers `interface` (ADR 0042): a paired machine found at a private
+    /// address on one network is permitted there, and the same address on
+    /// another network — or by a socket held to no interface — is refused.
+    ///
+    /// # Errors
+    /// As [`Bounding::carrying_out_a_departure`].
+    fn carrying_out_a_departure_on(
+        &mut self,
+        to: &[std::net::SocketAddr],
+        interface: std::num::NonZeroU32,
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        self.departing(departures_of(to, Some(interface))?, doing)
     }
 
     fn carrying_out(&mut self, reaching: &Reaching, doing: Doing<'_>) -> Result<Done, NoBoundary> {
@@ -196,7 +203,23 @@ impl Bounding for ByTheKernel {
     }
 }
 
-/// The addresses a request registers, as the map holds destinations.
+impl ByTheKernel {
+    /// One request, inside a boundary reaching no file and only `shown`.
+    fn departing(&mut self, shown: Departures, doing: &mut dyn FnMut()) -> Result<(), NoBoundary> {
+        let named = next_name(&mut self.named);
+        self.turns
+            .doing(
+                &mut self.boundary,
+                &named,
+                Bounds::reaching_nothing_but(shown),
+                doing,
+            )
+            .map_err(as_no_boundary)
+    }
+}
+
+/// The addresses a request registers, as the map holds destinations — each
+/// IPv4 one held to `held_to` where that names an interface (ADR 0042).
 ///
 /// # Errors
 /// [`NoBoundary`] when there are more than one entry holds, and when one of them
@@ -204,8 +227,14 @@ impl Bounding for ByTheKernel {
 /// address names no network, the kernel refuses every departure to it, and a
 /// question registered that way would be put inside a boundary that could only
 /// refuse it — so it is not put, and the service log says why.
-fn departures_of(to: &[std::net::SocketAddr]) -> Result<Departures, NoBoundary> {
-    let shown: Vec<Departure> = to.iter().copied().map(as_a_departure).collect();
+fn departures_of(
+    to: &[std::net::SocketAddr],
+    held_to: Option<std::num::NonZeroU32>,
+) -> Result<Departures, NoBoundary> {
+    let shown: Vec<Departure> = to
+        .iter()
+        .map(|address| as_a_departure(*address, held_to))
+        .collect();
     if let Some(nowhere) = to
         .iter()
         .zip(&shown)
@@ -233,11 +262,22 @@ fn departures_of(to: &[std::net::SocketAddr]) -> Result<Departures, NoBoundary> 
 /// `alo_bounding::Departure::on` keeps it only where the address needs one — a
 /// paired machine found at `fe80::…%3` is registered on interface 3 and nowhere
 /// else (ADR 0041).
-fn as_a_departure(address: std::net::SocketAddr) -> Departure {
+///
+/// **An IPv4 address carries the interface its socket will be held to**, where
+/// there is one: a paired machine found at `192.168.1.20` on the cable is
+/// registered on the cable's interface, and a provider's address — held to
+/// none — is registered as it always was (ADR 0042).
+fn as_a_departure(
+    address: std::net::SocketAddr,
+    held_to: Option<std::num::NonZeroU32>,
+) -> Departure {
     match address {
-        std::net::SocketAddr::V4(four) => {
-            Departure::of(Family::Four, u128::from(four.ip().to_bits()), four.port())
-        }
+        std::net::SocketAddr::V4(four) => Departure::on(
+            Family::Four,
+            u128::from(four.ip().to_bits()),
+            four.port(),
+            held_to.map_or(0, std::num::NonZeroU32::get),
+        ),
         std::net::SocketAddr::V6(six) => {
             Departure::on(Family::Six, six.ip().to_bits(), six.port(), six.scope_id())
         }
@@ -309,7 +349,8 @@ mod tests {
 
         let studio = Ipv6Addr::new(0xfe80, 0, 0, 0, 0x0a1b, 0x2c3d, 0x4e5f, 0x6071);
         let on_the_cable = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 3));
-        let shown = departures_of(&[on_the_cable]).unwrap_or_else(|why| panic!("{}", why.why()));
+        let shown =
+            departures_of(&[on_the_cable], None).unwrap_or_else(|why| panic!("{}", why.why()));
 
         assert!(shown.holds(Departure::on(Family::Six, studio.to_bits(), 7_610, 3)));
         assert!(!shown.holds(Departure::on(Family::Six, studio.to_bits(), 7_610, 4)));
@@ -318,8 +359,11 @@ mod tests {
         // An address that names its own network is registered as it always was,
         // whatever scope a resolver left beside it.
         let global = Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1);
-        let shown = departures_of(&[SocketAddr::V6(SocketAddrV6::new(global, 443, 0, 9))])
-            .unwrap_or_else(|why| panic!("{}", why.why()));
+        let shown = departures_of(
+            &[SocketAddr::V6(SocketAddrV6::new(global, 443, 0, 9))],
+            None,
+        )
+        .unwrap_or_else(|why| panic!("{}", why.why()));
         assert!(shown.holds(Departure::of(Family::Six, global.to_bits(), 443)));
     }
 
@@ -336,7 +380,7 @@ mod tests {
 
         let studio = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 0x20);
         let nowhere = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 0));
-        let Err(refused) = departures_of(&[nowhere]) else {
+        let Err(refused) = departures_of(&[nowhere], None) else {
             panic!("a link-local address with no interface was registered");
         };
         assert!(refused.why().contains("fe80::20"), "{}", refused.why());
@@ -345,10 +389,55 @@ mod tests {
 
         // And more addresses than an entry holds is still its own refusal.
         let four = SocketAddr::new(std::net::Ipv4Addr::new(192, 0, 2, 10).into(), 443);
-        let Err(too_many) = departures_of(&[four; 3]) else {
+        let Err(too_many) = departures_of(&[four; 3], None) else {
             panic!("three addresses fitted an entry that holds two");
         };
         assert!(too_many.why().contains("more than one entry holds"));
+    }
+
+    /// **A paired machine found at a private IPv4 address is registered on the
+    /// interface of the network it was found on, and nowhere else** — and a
+    /// provider's address, held to none, is registered as it always was (ADR
+    /// 0042).
+    #[expect(
+        clippy::panic,
+        reason = "in a test, a panic on an unexpected refusal is the failure being reported"
+    )]
+    #[test]
+    fn a_private_ipv4_address_is_registered_on_the_interface_it_was_found_on() {
+        use std::net::{Ipv4Addr, SocketAddr};
+        use std::num::NonZeroU32;
+
+        let studio = Ipv4Addr::new(192, 168, 1, 20);
+        let at = SocketAddr::new(studio.into(), 7_610);
+        let cable = NonZeroU32::new(3).unwrap_or_else(|| panic!("three is not zero"));
+        let shown = departures_of(&[at], Some(cable)).unwrap_or_else(|why| panic!("{}", why.why()));
+        let bits = u128::from(studio.to_bits());
+
+        assert!(shown.holds(Departure::on(Family::Four, bits, 7_610, 3)));
+        assert!(
+            !shown.holds(Departure::on(Family::Four, bits, 7_610, 4)),
+            "the studio's address on another network was registered"
+        );
+        assert!(
+            !shown.holds(Departure::of(Family::Four, bits, 7_610)),
+            "a socket held to no interface was permitted the studio"
+        );
+
+        // Held to nothing, the same address is a provider's departure, unchanged.
+        let provider = departures_of(&[at], None).unwrap_or_else(|why| panic!("{}", why.why()));
+        assert_eq!(
+            provider,
+            Departures::of(&[Departure::of(Family::Four, bits, 7_610)])
+                .unwrap_or_else(|| panic!("one is not too many"))
+        );
+        assert!(provider.holds(Departure::on(Family::Four, bits, 7_610, 4)));
+
+        // An IPv6 address keeps the rule ADR 0041 gave it whatever is held to.
+        let global = std::net::Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1);
+        let six = departures_of(&[SocketAddr::new(global.into(), 443)], Some(cable))
+            .unwrap_or_else(|why| panic!("{}", why.why()));
+        assert!(six.holds(Departure::of(Family::Six, global.to_bits(), 443)));
     }
 
     /// **Every turn is made under a name of its own**, and the name is a count

@@ -39,6 +39,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 ureq = { workspace = true }
+# A question to a paired machine found on one network connects from a socket
+# held to that network's interface (ADR 0042), which `std` cannot make. Reached
+# only from `held_to.rs`.
+socket2 = { workspace = true }
 
 [dev-dependencies]
 # The record is nobody's dependency here — this crate hands back the departure

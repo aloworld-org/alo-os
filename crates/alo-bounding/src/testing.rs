@@ -5,7 +5,7 @@
 //! machine, and a test that read the real one would pass or fail for reasons
 //! belonging to whoever built the kernel rather than to this repository.
 //!
-//! So this builds a small one — the structures with the sixteen members the
+//! So this builds a small one — the structures with the seventeen members the
 //! program looks for, in a layout chosen to be *wrong* in the ways a real
 //! kernel is inconvenient: a device number reached through two names before it
 //! is an integer, a member that is a structure rather than a pointer to one, a
@@ -152,7 +152,7 @@ fn written(kernel: Kernel) -> Vec<u8> {
         &[("f_mode", unsigned_int, 0), ("", unnamed, 16)],
     );
 
-    // The eight the message hook reads. `struct sock` keeps its peer inside a
+    // The nine the message hook reads. `struct sock` keeps its peer inside a
     // **named** member, `__sk_common`, which keeps the address and the port
     // inside unnamed unions holding unnamed structures — the shape Linux 6.18
     // has. The fixture puts `__sk_common` eight bytes in rather than first,
@@ -238,6 +238,7 @@ fn written(kernel: Kernel) -> Vec<u8> {
         &[
             ("msg_name", void_pointer, 0),
             ("msg_namelen", unsigned_int, 8),
+            ("msg_controllen", unsigned_long, 48),
         ],
     );
 

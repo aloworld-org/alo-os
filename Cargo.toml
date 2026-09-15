@@ -89,6 +89,15 @@ serde_json = "1"
 # only from `unix.rs`; see that file for why it is a crate rather than lines of
 # `unsafe`.
 rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
+# The third question the kernel will only be asked through somebody else's
+# crate: which interface a socket is held to, before it connects
+# (`SO_BINDTOIFINDEX`). `rustix` has no spelling for it, `std` has none, and a
+# `setsockopt` of our own is `unsafe`. ADR 0042 is why it is asked at all: a
+# paired machine found at a private IPv4 address on one network is dialled from
+# a socket held to that network's interface, so the kernel can refuse the same
+# address on another. Reached by `alo-asking`, only from `held_to.rs`; by
+# `alo-agentd`, only from `looking.rs`; and by `alo-bounding`'s tests.
+socket2 = { version = "0.6", features = ["all"] }
 # A password is hashed and never kept, and the function that hashes it is
 # rented rather than written: Argon2id through RustCrypto's pure-Rust crate,
 # because a key derivation function this team wrote itself would be the

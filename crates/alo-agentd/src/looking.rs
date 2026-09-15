@@ -61,6 +61,17 @@
 //! machine's own person sees for it. Where only IPv6 answered, the link-local
 //! address is dialled with the interface it was heard on.
 //!
+//! # And an IPv4 address is heard on the network it answered on
+//!
+//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! Two networks can hand out the same private range, so `192.168.1.20` heard on
+//! the wired network and on the Wi-Fi are two machines. A look on an IPv4
+//! network is therefore asked from a socket **held to that network's
+//! interface** — so an answer counted as heard there arrived there, even when
+//! this machine's own address is the same on both — and every machine it heard
+//! is written down on that interface (`alo_nearby::HeardFrom::on_the_network`).
+//! A question to it is then held to the same interface (`crate::corridor`).
+//!
 //! **A proposal's measurement follows its connection's family.** The asking
 //! machine is asked at the address its connection came from — with the
 //! interface, for a link-local one ([`found_at`]) — because a link-local
@@ -68,6 +79,7 @@
 //! go nowhere.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6, UdpSocket};
+use std::num::NonZeroU32;
 use std::time::Duration;
 
 use alo_nearby::{Around, Found, HeardFrom, Looking, MachineId, THE_IPV6_ADDRESS};
@@ -158,16 +170,52 @@ fn heard_on(networks: &[Network], at: SocketAddr, workspaces_too: bool) -> Vec<A
     std::thread::scope(|scope| {
         let asking: Vec<_> = networks
             .iter()
-            .map(|network| {
-                let (here, there) = asked_on(network, at.port());
-                scope.spawn(move || heard_from(here, there, workspaces_too))
-            })
+            .map(|network| scope.spawn(move || heard_on_one(network, at.port(), workspaces_too)))
             .collect();
         asking
             .into_iter()
             .map(|asked| asked.join().unwrap_or_default())
             .collect()
     })
+}
+
+/// What one network heard when asked at the group on `port`.
+///
+/// An IPv4 network is asked from a socket held to its interface, and every
+/// machine that answered is written down on that interface (ADR 0042); a
+/// link-local network is asked from its own scoped address, whose answers carry
+/// their interface already (ADR 0041). Nothing at all when the socket cannot be
+/// made — *nothing found*, for [`around_at`]'s reason.
+fn heard_on_one(network: &Network, port: u16, workspaces_too: bool) -> Around {
+    let (here, there) = asked_on(network, port);
+    if here.is_ipv6() {
+        return heard_from(here, there, workspaces_too);
+    }
+    let Ok(socket) = held_to(network.index(), here) else {
+        return Around::default();
+    };
+    let mut heard = heard_by(socket, there, workspaces_too);
+    for found in &mut heard.machines {
+        found.address = found.address.on_the_network(network.index());
+    }
+    heard
+}
+
+/// A datagram socket bound to `here` and held to the interface the kernel
+/// numbers `interface`, so that it sends and hears on that network alone.
+///
+/// # Errors
+/// What the kernel answered: an interface that went away since the networks
+/// were read, and everything a bind can fail with.
+fn held_to(interface: u32, here: SocketAddr) -> std::io::Result<UdpSocket> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::for_address(here),
+        socket2::Type::DGRAM,
+        None,
+    )?;
+    socket.bind_device_by_index_v4(NonZeroU32::new(interface))?;
+    socket.bind(&here.into())?;
+    Ok(socket.into())
 }
 
 /// Where a question on `network` leaves from and goes to: from the network's
@@ -212,6 +260,11 @@ fn heard_from(here: SocketAddr, at: SocketAddr, workspaces_too: bool) -> Around 
     let Ok(socket) = UdpSocket::bind(here) else {
         return Around::default();
     };
+    heard_by(socket, at, workspaces_too)
+}
+
+/// Ask at `at` from `socket`, and hear for [`WHILE_LOOKING`].
+fn heard_by(socket: UdpSocket, at: SocketAddr, workspaces_too: bool) -> Around {
     let looking = Looking::from(socket);
     if looking.ask(at).is_err() || (workspaces_too && looking.ask_for_workspaces(at).is_err()) {
         return Around::default();

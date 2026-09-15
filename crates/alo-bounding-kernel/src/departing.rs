@@ -30,8 +30,28 @@
 //! `alo_bounding_map::Departures::holds` refuses it whatever was shown.
 //! `alo_bounding_map::Departure::on` decides which addresses need an interface
 //! at all, for the daemon and for this program alike.
+//!
+//! # An IPv4 destination is also decided on the interface its socket is held to
+//!
+//! [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md).
+//! `192.168.1.20` can be a different machine on each of two networks, and a
+//! `sockaddr_in` has no scope to say which. What does say it is the socket: one
+//! held to an interface (`SO_BINDTOIFINDEX`, `SO_BINDTODEVICE`) leaves by it
+//! whatever the route says. So an IPv4 destination carries **the interface the
+//! socket is held to** — zero for a socket held to none — and a departure held
+//! to an interface permits only that one, while a departure held to none (a
+//! provider's) permits any, as it always did.
+//!
+//! **One road around the socket, and it is closed here.** On IPv4 an
+//! `IP_PKTINFO` control message names the interface a datagram leaves by ahead
+//! of the one the socket is held to, and the kernel does not check that the two
+//! agree — IPv6's `IPV6_PKTINFO` is refused by the kernel when they differ,
+//! `docs/quirks.md` records both. So an IPv4 message that carries any control
+//! message is decided as **held to no interface**: permitted where a departure
+//! held to none was shown, and refused by every departure held to one. The
+//! control messages themselves are not read.
 
-use alo_bounding_map::{Bounds, Departure, Family, Field, needs_an_interface};
+use alo_bounding_map::{Bounds, Departure, Family, Field, keeps_its_interface, needs_an_interface};
 
 use crate::deciding::{ALLOWED, REFUSED};
 use crate::kernel;
@@ -195,7 +215,9 @@ pub fn decide_departure(socket: u64, where_to: u64, length: i32) -> i32 {
 /// A link-local peer's interface is the one the socket is held to, which the
 /// `connect` that joined it set; a link-local address a message names takes its
 /// interface as [`decide_departure`]'s does — this module's own documentation
-/// has the order.
+/// has the order. An IPv4 destination, named or joined, is on the interface the
+/// socket is held to, **unless the message carries control messages**, when it
+/// is on none: `IP_PKTINFO` can send it by another (ADR 0042).
 ///
 /// # The answers, and where they come from
 ///
@@ -237,7 +259,20 @@ pub fn decide_message(socket: u64, message: u64) -> i32 {
     let Some(named) = kernel::word_at(message.wrapping_add(fields.message_name)) else {
         return REFUSED;
     };
-    let Some(joined_to) = peer_of(sock, family, &fields) else {
+    let Some(control) = kernel::word_at(message.wrapping_add(fields.message_control_length)) else {
+        return REFUSED;
+    };
+    // Where the socket is held to, for a destination that is decided on it — and
+    // for an IPv4 message carrying control messages, nowhere, because one of
+    // them can name another interface and the kernel would follow it.
+    let held_to = || {
+        if control != 0 && family == Family::Four {
+            Some(0)
+        } else {
+            interface_held_to(sock, &fields)
+        }
+    };
+    let Some(joined_to) = peer_of(sock, family, held_to, &fields) else {
         return REFUSED;
     };
 
@@ -256,7 +291,7 @@ pub fn decide_message(socket: u64, message: u64) -> i32 {
         // `msg_namelen` is an `int`; the kernel has already refused a negative
         // one, and reading it as signed keeps a nonsense one short.
         let length = i64::from(length.cast_signed());
-        match destination_named_at(named, length, || interface_held_to(sock, &fields)) {
+        match destination_named_at(named, length, held_to) {
             // A network socket naming an address that is not a network address
             // is naming one this program cannot check, not one that stays home.
             Some(going @ Destination::Network(_)) if may_go(granted, going) => {}
@@ -280,9 +315,10 @@ fn may_go(granted: Bounds, going: Destination) -> bool {
 /// The destination a `sockaddr` of `length` bytes names, or [`None`] if it
 /// cannot be read.
 ///
-/// `held_to` is asked only for a link-local address whose `sockaddr` names no
-/// scope — the one case the socket decides — so a connection anywhere else
-/// reads nothing more of the kernel than it did before ADR 0041.
+/// `held_to` is asked only where the socket decides: a link-local address whose
+/// `sockaddr` names no scope (ADR 0041), and an IPv4 address (ADR 0042). A
+/// global IPv6 address reads nothing more of the kernel than it did before
+/// either.
 fn destination_named_at(
     where_to: u64,
     length: i64,
@@ -294,10 +330,12 @@ fn destination_named_at(
     };
     let port = u16::from_be(kernel::quarter_word_at(where_to.wrapping_add(PORT_AT))?);
     let address = address_of(family, where_to)?;
-    if !needs_an_interface(family, address) {
+    if !keeps_its_interface(family, address) {
         return Some(Destination::Network(Departure::of(family, address, port)));
     }
-    let named = if length >= INET6_WITH_ITS_SCOPE {
+    // Only an IPv6 address has a scope of its own to name; an IPv4 one is on
+    // whatever interface the socket is held to.
+    let named = if needs_an_interface(family, address) && length >= INET6_WITH_ITS_SCOPE {
         kernel::half_word_at(where_to.wrapping_add(INET6_SCOPE_AT))?
     } else {
         0
@@ -323,8 +361,15 @@ fn interface_held_to(sock: u64, fields: &NetworkFields) -> Option<u32> {
 ///
 /// A link-local peer is on the interface the socket is held to, because that is
 /// where the `connect` that joined it put the scope; one held to none names no
-/// network and is refused by the check rather than here.
-fn peer_of(sock: u64, family: Family, fields: &NetworkFields) -> Option<Option<Destination>> {
+/// network and is refused by the check rather than here. An IPv4 peer is on the
+/// interface `held_to` answers, which is the socket's — or none, for a message
+/// whose control messages could move it (ADR 0042).
+fn peer_of(
+    sock: u64,
+    family: Family,
+    held_to: impl FnOnce() -> Option<u32>,
+    fields: &NetworkFields,
+) -> Option<Option<Destination>> {
     let port = kernel::quarter_word_at(sock.wrapping_add(fields.sock_port))?;
     if port == 0 {
         return Some(None);
@@ -341,8 +386,8 @@ fn peer_of(sock: u64, family: Family, fields: &NetworkFields) -> Option<Option<D
         }
     };
     let port = u16::from_be(port);
-    let departure = if needs_an_interface(family, address) {
-        Departure::on(family, address, port, interface_held_to(sock, fields)?)
+    let departure = if keeps_its_interface(family, address) {
+        Departure::on(family, address, port, held_to()?)
     } else {
         Departure::of(family, address, port)
     };
@@ -407,10 +452,12 @@ struct NetworkFields {
     message_name: u64,
     /// `struct msghdr`'s `msg_namelen`.
     message_name_length: u64,
+    /// `struct msghdr`'s `msg_controllen`.
+    message_control_length: u64,
 }
 
 impl NetworkFields {
-    /// The eight offsets, or [`None`] if the daemon did not put them there.
+    /// The nine offsets, or [`None`] if the daemon did not put them there.
     ///
     /// Several of these are legitimately zero on a real kernel —
     /// `__sk_common` is the first thing in a `struct sock` and the peer's
@@ -428,6 +475,7 @@ impl NetworkFields {
             sock_bound_interface: kernel::offset(Field::SockBoundInterface)?,
             message_name: kernel::offset(Field::MessageName)?,
             message_name_length: kernel::offset(Field::MessageNameLength)?,
+            message_control_length: kernel::offset(Field::MessageControlLength)?,
         })
     }
 }

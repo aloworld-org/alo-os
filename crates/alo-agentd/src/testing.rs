@@ -563,6 +563,17 @@ impl alo_turn::Bounding for NothingIsBounded {
         doing();
         Ok(())
     }
+
+    /// And one held to an interface, for the same reason.
+    fn carrying_out_a_departure_on(
+        &mut self,
+        _to: &[std::net::SocketAddr],
+        _interface: std::num::NonZeroU32,
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), alo_turn::NoBoundary> {
+        doing();
+        Ok(())
+    }
 }
 
 /// The pinned runtime's side of one question, served on a socket of this

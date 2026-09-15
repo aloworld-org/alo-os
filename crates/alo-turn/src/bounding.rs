@@ -47,6 +47,7 @@
 //! caller that honours it.
 
 use std::net::SocketAddr;
+use std::num::NonZeroU32;
 
 use alo_capability::{Grants, Refused};
 use alo_files::{Did, Reaching, Touching};
@@ -157,6 +158,38 @@ pub trait Bounding {
             "this machine has no way to put a boundary around a network request".to_owned(),
         ))
     }
+
+    /// Carry out one network request inside a boundary reaching **only these
+    /// addresses, on the interface the kernel numbers `interface`**.
+    ///
+    /// ADR 0042. A paired machine found at a private IPv4 address on one network
+    /// is asked from a socket held to that network's interface, and the boundary
+    /// is shown the address **on that interface**: the same address on another
+    /// network — which is another machine whenever two routers hand out the same
+    /// range — is refused, and so is a socket held to none, which would leave by
+    /// whatever the route says.
+    ///
+    /// # It refuses by default, and never falls back
+    ///
+    /// For [`carrying_out_a_departure`](Self::carrying_out_a_departure)'s reason,
+    /// and one more: an implementation that does not know how to hold a departure
+    /// to an interface must not register the address with none instead. That
+    /// would permit it on every network this machine is on, which is exactly
+    /// what the person was not shown.
+    ///
+    /// # Errors
+    /// [`NoBoundary`], and the question is not put.
+    fn carrying_out_a_departure_on(
+        &mut self,
+        to: &[SocketAddr],
+        interface: NonZeroU32,
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        let _ = (to, interface, doing);
+        Err(NoBoundary::because(
+            "this machine has no way to hold a network request to one interface".to_owned(),
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -245,5 +278,46 @@ mod tests {
         // One of the six reaches at least one place, always: what would have no
         // boundary at all is a verb that is not on this machine's list.
         assert_eq!(Reaching::of(&touching).unwrap().len(), 1);
+    }
+
+    /// **A boundary that does not know how to hold a request to an interface
+    /// refuses it**, and runs nothing — rather than bounding the request with no
+    /// interface, which would permit the address on every network (ADR 0042).
+    #[test]
+    fn a_boundary_that_cannot_hold_a_request_to_an_interface_refuses_it_and_runs_nothing() {
+        #[derive(Debug)]
+        struct BeforeTheInterface;
+        impl Bounding for BeforeTheInterface {
+            fn carrying_out(
+                &mut self,
+                _reaching: &Reaching,
+                doing: Doing<'_>,
+            ) -> Result<Done, NoBoundary> {
+                Ok(doing.done())
+            }
+            fn carrying_out_a_departure(
+                &mut self,
+                _to: &[SocketAddr],
+                doing: &mut dyn FnMut(),
+            ) -> Result<(), NoBoundary> {
+                doing();
+                Ok(())
+            }
+        }
+
+        let mut ran = false;
+        let refused = BeforeTheInterface
+            .carrying_out_a_departure_on(
+                &["192.168.1.20:7610".parse().unwrap()],
+                NonZeroU32::new(3).unwrap(),
+                &mut || ran = true,
+            )
+            .unwrap_err();
+        assert!(
+            !ran,
+            "a request that could not be held to its interface ran"
+        );
+        assert!(refused.why().contains("one interface"), "{}", refused.why());
+        assert!(!refused.a_thread_is_still_inside());
     }
 }

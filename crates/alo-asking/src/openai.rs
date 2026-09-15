@@ -387,6 +387,25 @@ pub(crate) fn put(
     to: &[SocketAddr],
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
+    put_on((to, None), endpoint, key, question, waiting, vouching)
+}
+
+/// **Put the question from a socket held to an interface**, where `to` says
+/// one: [`put`] in every other respect, for a paired machine found on one
+/// network (ADR 0042, `crate::held_to`).
+///
+/// # Errors
+/// [`WentWrong`], as [`put`] answers it — and a connection the kernel refused
+/// because the boundary was shown the machine on another interface is
+/// *nothing answered*, which is what it is.
+pub(crate) fn put_on(
+    to: Where<'_>,
+    endpoint: &str,
+    key: Option<&Secret>,
+    question: &Question,
+    waiting: Duration,
+    vouching: Option<Vouching<'_>>,
+) -> Result<String, WentWrong> {
     let sent = Sent {
         model: question.of().to_owned(),
         messages: vec![Message {
@@ -432,8 +451,12 @@ pub(crate) fn put_held_to_a_grammar(
         grammar: grammar.to_owned(),
     };
     let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
-    sending(endpoint, key, &body, waiting, to, None)
+    sending(endpoint, key, &body, waiting, (to, None), None)
 }
+
+/// Where a request may connect: the addresses registered for it, and the
+/// interface its socket is held to where it is held to one (ADR 0042).
+pub(crate) type Where<'a> = (&'a [SocketAddr], Option<std::num::NonZeroU32>);
 
 /// The one road both of them take: this address, these bytes, that long.
 fn sending(
@@ -441,7 +464,7 @@ fn sending(
     key: Option<&Secret>,
     body: &[u8],
     waiting: Duration,
-    to: &[SocketAddr],
+    (to, held_to): Where<'_>,
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
     let Some(only_these) = OnlyThese::of(to) else {
@@ -474,7 +497,16 @@ fn sending(
         None => building,
     };
 
-    let agent = Agent::with_parts(building.build(), DefaultConnector::new(), only_these);
+    // A machine found on one network is connected to from a socket held to that
+    // network's interface, and nothing else is (`crate::held_to`).
+    let agent = match held_to {
+        Some(interface) => Agent::with_parts(
+            building.build(),
+            crate::held_to::HeldTo::the_interface(interface),
+            only_these,
+        ),
+        None => Agent::with_parts(building.build(), DefaultConnector::new(), only_these),
+    };
     let request = agent.post(answers_url(endpoint));
     // The key is handed the request rather than the other way round: it cannot
     // be read out of `alo-models`, and this crate never holds it as text it

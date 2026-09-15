@@ -34,8 +34,10 @@
 /// and the filesystem. After those come the six the message hook reads, from
 /// the socket it was handed to the address of whoever is on the other end —
 /// then the one field the read-and-write hook needs that the walk does not,
-/// which is what kind of file it was handed — and last the two a
-/// link-local destination needs to be decided on its interface (ADR 0041).
+/// which is what kind of file it was handed — then the two a link-local
+/// destination needs to be decided on its interface (ADR 0041), and last the
+/// one that says whether a message carries control messages, which can move an
+/// IPv4 datagram off the interface its socket is held to (ADR 0042).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -118,6 +120,16 @@ pub enum Field {
     /// that many bytes of the caller's address and reads a scope only from one
     /// long enough to hold it: past the length is whatever was on the stack.
     MessageNameLength,
+
+    /// `struct msghdr`'s `msg_controllen` — how many bytes of control messages
+    /// a message carries, and zero for one that carries none.
+    ///
+    /// Read for one reason (ADR 0042): an IPv4 datagram's `IP_PKTINFO` names
+    /// the interface it leaves by **ahead of** the one its socket is held to,
+    /// and the kernel does not check the two agree — so a message carrying
+    /// control messages is decided as a message held to no interface. The bytes
+    /// of the control messages are not read.
+    MessageControlLength,
 }
 
 impl Field {
@@ -125,7 +137,7 @@ impl Field {
     ///
     /// The loader walks this, so a field added here is a field looked up rather
     /// than a field silently left at zero.
-    pub const ALL: [Self; 16] = [
+    pub const ALL: [Self; 17] = [
         Self::FilePath,
         Self::PathDentry,
         Self::DentryParent,
@@ -142,6 +154,7 @@ impl Field {
         Self::InodeMode,
         Self::SockBoundInterface,
         Self::MessageNameLength,
+        Self::MessageControlLength,
     ];
 
     /// The slot in the map this field's offset is written into and read out of.
@@ -164,6 +177,7 @@ impl Field {
             Self::InodeMode => 13,
             Self::SockBoundInterface => 14,
             Self::MessageNameLength => 15,
+            Self::MessageControlLength => 16,
         }
     }
 
@@ -182,7 +196,7 @@ impl Field {
             | Self::SockAddress
             | Self::SockAddress6
             | Self::SockBoundInterface => "sock",
-            Self::MessageName | Self::MessageNameLength => "msghdr",
+            Self::MessageName | Self::MessageNameLength | Self::MessageControlLength => "msghdr",
         }
     }
 
@@ -215,6 +229,7 @@ impl Field {
             Self::InodeMode => "i_mode",
             Self::SockBoundInterface => "__sk_common.skc_bound_dev_if",
             Self::MessageNameLength => "msg_namelen",
+            Self::MessageControlLength => "msg_controllen",
         }
     }
 
@@ -237,6 +252,8 @@ impl Field {
             | Self::DentrySuper
             | Self::SocketSock
             | Self::MessageName => 8,
+            // `__kernel_size_t`, which is an `unsigned long`.
+            Self::MessageControlLength => 8,
             // `unsigned long` on the machines alo OS certifies.
             Self::InodeNumber => 8,
             // `dev_t`, which is thirty-two bits and has been since 2.6.
@@ -263,7 +280,7 @@ mod tests {
     /// step through the beginning of a `struct file` and refuse everything.
     #[test]
     fn every_field_is_in_the_list_exactly_once() {
-        assert_eq!(Field::ALL.len(), 16);
+        assert_eq!(Field::ALL.len(), 17);
         for (slot, field) in Field::ALL.iter().enumerate() {
             assert_eq!(field.index() as usize, slot);
         }

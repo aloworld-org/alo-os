@@ -62,6 +62,8 @@ mod reaching;
 
 pub use bound::Place;
 pub use bounds::{Bounds, PLACES, WORDS};
-pub use departure::{DESTINATIONS, Departure, Departures, Family, needs_an_interface};
+pub use departure::{
+    DESTINATIONS, Departure, Departures, Family, keeps_its_interface, needs_an_interface,
+};
 pub use field::Field;
 pub use reaching::{DEPTH, reaches};

@@ -164,6 +164,10 @@ pub(crate) fn put_down_the_corridor(
             None,
             now,
         )
+        // An IPv4 address is a machine on the network it answered on, and the
+        // question is held to that network (ADR 0042). A link-local address
+        // carries its own interface in the address, as ADR 0041 has it.
+        .map(|paired| paired.on_the_network(held_to(&found)))
     };
     let Ok(down_the_corridor) = down_the_corridor else {
         return not_sent(THE_CHOSEN_MACHINE_IS_NOT_PAIRED);
@@ -184,6 +188,20 @@ pub(crate) fn put_down_the_corridor(
             ToAnAgent::answered(answer.text(), &answer.came_from(strings), answer.model())
         }
         Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
+    }
+}
+
+/// The interface a question to `found` is held to: the network an IPv4 address
+/// answered on (ADR 0042), and none for an IPv6 address — a link-local one
+/// carries its interface in the address itself (ADR 0041), and a global one
+/// names its own network.
+fn held_to(found: &alo_nearby::Found) -> Option<std::num::NonZeroU32> {
+    match found.address.ip() {
+        std::net::IpAddr::V4(_) => found
+            .address
+            .interface()
+            .and_then(std::num::NonZeroU32::new),
+        std::net::IpAddr::V6(_) => None,
     }
 }
 
@@ -565,5 +583,32 @@ mod tests {
             );
         });
         assert_eq!(record.len(), 0);
+    }
+
+    /// **A machine found at an IPv4 address is asked on the network it answered
+    /// on, and a machine found over IPv6 is not held this way** — a link-local
+    /// address carries its own interface, and a global one names its network
+    /// (ADR 0042).
+    #[test]
+    fn a_question_is_held_to_the_network_an_ipv4_address_answered_on() {
+        use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
+
+        use alo_nearby::{Found, HeardFrom};
+
+        let on_the_cable = |address: HeardFrom| Found::heard(the_studio(), 7_610, address);
+        let studio = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 20));
+        assert_eq!(
+            held_to(&on_the_cable(HeardFrom::named(studio).on_the_network(3))),
+            std::num::NonZeroU32::new(3)
+        );
+        assert_eq!(held_to(&on_the_cable(HeardFrom::named(studio))), None);
+
+        let link_local = HeardFrom::of(SocketAddr::V6(SocketAddrV6::new(
+            Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 0x20),
+            7_610,
+            0,
+            3,
+        )));
+        assert_eq!(held_to(&on_the_cable(link_local)), None);
     }
 }

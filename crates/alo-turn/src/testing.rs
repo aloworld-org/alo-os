@@ -88,6 +88,17 @@ impl Bounding for NothingIsBounded {
         doing();
         Ok(())
     }
+
+    /// And a network request held to an interface, carried out where it stands.
+    fn carrying_out_a_departure_on(
+        &mut self,
+        _to: &[std::net::SocketAddr],
+        _interface: std::num::NonZeroU32,
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        doing();
+        Ok(())
+    }
 }
 
 /// A machine that cannot put a boundary around anything at all.

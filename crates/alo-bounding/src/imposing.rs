@@ -215,7 +215,7 @@ impl Imposed {
 
     /// The fields this kernel was given, as the kernel now has them.
     ///
-    /// Every slot the map has rather than the sixteen that were filled, because
+    /// Every slot the map has rather than the seventeen that were filled, because
     /// the spare ones are exactly where a counter would sit: a programme that
     /// began keeping a tally of what it had seen would need somewhere to keep
     /// it, and an array it can already reach is the nearest somewhere there is.

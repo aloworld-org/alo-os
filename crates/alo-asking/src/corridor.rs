@@ -61,6 +61,7 @@
 //! named this machine, and for no other reason.
 
 use std::net::SocketAddr;
+use std::num::NonZeroU32;
 use std::time::{Duration, SystemTime};
 
 use alo_answering::WentWrong;
@@ -116,6 +117,10 @@ pub struct DownTheCorridor<'a> {
     pairing: Pairing,
     /// This machine, which the proof names as the sender.
     here: MachineId,
+    /// The interface of the network the machine was found on, where a question
+    /// to it is held to that network (ADR 0042), and `None` where it is dialled
+    /// by its address alone.
+    held_to: Option<NonZeroU32>,
 }
 
 impl<'a> DownTheCorridor<'a> {
@@ -155,7 +160,30 @@ impl<'a> DownTheCorridor<'a> {
             key,
             pairing: pairing.clone(),
             here: here.clone(),
+            held_to: None,
         })
+    }
+
+    /// The same machine, on the network behind the interface the kernel numbers
+    /// `interface` — so a question to it connects from a socket held to that
+    /// interface, and is registered as a departure held to it.
+    ///
+    /// [ADR 0042](../../../docs/decisions/0042-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md):
+    /// a private IPv4 address is a different machine on each network that hands
+    /// it out, and what discovery measured is the address **on the network it
+    /// answered on**. `None` is a machine dialled by its address alone, as every
+    /// one was before.
+    #[must_use]
+    pub const fn on_the_network(mut self, interface: Option<NonZeroU32>) -> Self {
+        self.held_to = interface;
+        self
+    }
+
+    /// The interface a question to this machine is held to, if it is held to
+    /// one — which is what the boundary around the turn must be shown it on.
+    #[must_use]
+    pub const fn held_to(&self) -> Option<NonZeroU32> {
+        self.held_to
     }
 
     /// Where an answer from here came from, in the words the rest of the
@@ -200,12 +228,12 @@ impl<'a> DownTheCorridor<'a> {
         now: SystemTime,
     ) -> Result<String, WentWrong> {
         let vouching = |body: &[u8]| Proof::made(&self.pairing, &self.here, body, now).said();
-        openai::put(
+        openai::put_on(
+            (to, self.held_to),
             &self.endpoint,
             self.key,
             question,
             WHILE_A_MODEL_THINKS,
-            to,
             Some(&vouching),
         )
     }
