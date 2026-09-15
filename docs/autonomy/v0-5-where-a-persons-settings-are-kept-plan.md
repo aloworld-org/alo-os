@@ -97,7 +97,10 @@ crate becomes the reader and writer of the shape it declares.
 
 ### 3. A pairing is revoked the way a grant is
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15** — `alo_changing::Changing::revoked` takes a
+`Row` (a grant's `Seen` or a `SeenPairing`) and answers `Gone` for both; a
+pairing is asked of the daemon over `revoke-pairing`; see
+`docs/autonomy/updates/a-pairing-is-revoked-the-way-a-grant-is.md`. **Depends on:** 1.
 
 `docs/features.md`, ★: what has been granted to what, in **one list, revoked
 the same way**. A grant has a person's road — `alo_changing::Changing::revoked`

@@ -19,6 +19,14 @@ alo-capability = { path = "../alo-capability" }
 # is what keeps this crate from being a second door to revoking by number.
 alo-granted = { path = "../alo-granted" }
 
+# A pairing is named by the machine it is with. `alo_nearby::MachineId` is
+# the one spelling of an identity that has been checked, so a pairing's row
+# cannot name something that is not a machine; and `alo_nearby::Pairing` is
+# what `alo_remembering::pairings_remembered` hands a surface to list. Read,
+# never written: what a pairing is stays that crate's, and who writes the
+# pairings file stays the daemon's.
+alo-nearby = { path = "../alo-nearby" }
+
 # A grant arrives as a pick. `alo_picking::Chosen` is sealed, so a grant made
 # through this crate is a folder a person really stood in and picked — there
 # is no shape here in which anything else could become one.

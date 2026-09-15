@@ -29,8 +29,12 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{Ask, Grantee, Grants};
-use alo_changing::{Changing, Gone, Knocking, Made, NotChanged, Stood, TheDaemonsDoor};
+use alo_changing::{
+    Changing, Gone, Knocking, Made, NotChanged, RevokingPairings, Row, Stood, TheDaemonsDoor,
+    Unpaired,
+};
 use alo_granted::{Listing, Seen};
+use alo_nearby::MachineId;
 use alo_picking::{Chosen, Granting, OnThisDisk, Picker};
 use alo_protocol::{FromAPerson, ToAPerson};
 use alo_strings::Strings;
@@ -123,6 +127,14 @@ impl Knocking for AtTheDoor {
     }
 }
 
+impl RevokingPairings for AtTheDoor {
+    /// Nothing in this file revokes a pairing; a grant's change that reached
+    /// this door would be a grant asking the wrong question, so it fails.
+    fn revoke_pairing(&self, with: &MachineId) -> Unpaired {
+        unreachable!("a grant's change asked to revoke a pairing with {with:?}")
+    }
+}
+
 /// **A grant made through the person's half is on the disk before the knock,
 /// and the knock is sent exactly once.** The change is then read back off the
 /// disk through `alo_remembering::remembered` — the daemon's own road in.
@@ -175,7 +187,7 @@ fn a_revocation_made_through_it_is_off_the_disk_before_its_knock() {
     changing.granted(&for_an_hour(), &picked, noon()).unwrap();
 
     let row = the_row(changing.holding());
-    let gone = changing.revoked(&row, noon()).unwrap();
+    let gone = changing.revoked(&Row::Grant(row.clone()), noon()).unwrap();
 
     assert!(matches!(
         gone,
@@ -367,7 +379,9 @@ fn a_revocation_the_disk_would_not_take_leaves_the_grant_standing() {
     // the loop's checkouts run these tests as root.)
     std::fs::create_dir(folder.join("grants.toml.new")).unwrap();
 
-    let refused = changing.revoked(&row, noon()).unwrap_err();
+    let refused = changing
+        .revoked(&Row::Grant(row.clone()), noon())
+        .unwrap_err();
     assert!(matches!(refused, NotChanged::NotKept(_)), "{refused:?}");
     assert_eq!(
         door.knocks.get(),
@@ -399,13 +413,13 @@ fn a_stale_row_writes_nothing_and_knocks_nobody() {
     changing.granted(&for_an_hour(), &picked, noon()).unwrap();
     let row = the_row(changing.holding());
     assert!(matches!(
-        changing.revoked(&row, noon()).unwrap(),
+        changing.revoked(&Row::Grant(row.clone()), noon()).unwrap(),
         Gone::Revoked { .. }
     ));
 
     let file_before = std::fs::read(&at).unwrap();
     let knocks_before = door.knocks.get();
-    let again = changing.revoked(&row, noon()).unwrap();
+    let again = changing.revoked(&Row::Grant(row.clone()), noon()).unwrap();
 
     assert_eq!(again, Gone::AlreadyGone);
     assert_eq!(

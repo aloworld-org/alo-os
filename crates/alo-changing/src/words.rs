@@ -17,6 +17,16 @@
 //! the change is safe, when it takes effect everywhere, and that there is
 //! nothing more to do — because a machine that leaves a person wondering
 //! whether to do it again is a machine that gets the same change made twice.
+//!
+//! The other four are a pairing's revocation, which the daemon makes rather
+//! than this crate, and each is a moment a person would otherwise be told
+//! something that is not true. [`UNTIL_A_RESTART`] is a pairing taken away
+//! now that comes back after a restart. [`PAIRING_REFUSED`] carries the
+//! daemon's own sentence inside it — its one gap — so a refusal is never
+//! reported as done. [`NOBODY_KEEPS_PAIRINGS`] is no daemon at all: only the
+//! daemon writes the pairings, so nothing was revoked. And
+//! [`PAIRING_NOT_ANSWERED`] is a daemon reached that never said, which is the
+//! one moment the honest sentence is *look again*.
 
 use alo_strings::{Vocabulary, VocabularyError, WordError};
 
@@ -53,8 +63,68 @@ pub const AT_THE_NEXT_SIGN_IN: Word = Word::saying(
      not be left wondering whether to make the change again.",
 );
 
+/// The pairing is revoked for now, and comes back after a restart.
+pub const UNTIL_A_RESTART: Word = Word::saying(
+    "changing.until-a-restart",
+    "The pairing is revoked for now, but this machine could not write that down. After a \
+     restart the pairing will stand again, and it will have to be revoked again",
+)
+.noting(
+    "Shown when a person revoked a pairing with another machine and this machine's agent \
+     service took it away at once but could not save the change to its disk. The other machine \
+     cannot use the pairing now; after this machine restarts it can, until the person revokes it \
+     again. Both halves must survive translation: the first is reassurance, the second is the \
+     one thing the person still has to do.",
+);
+
+/// The daemon refused the revocation, in its own words.
+pub const PAIRING_REFUSED: Word = Word::saying(
+    "changing.pairing-refused",
+    "The pairing was not revoked. This machine's agent service said: {told}",
+)
+.noting(
+    "Shown when a person revoked a pairing with another machine and this machine's agent \
+     service refused. {told} is the service's own sentence, already translated — for example \
+     that nothing is paired with that machine — and is not translated again. The first sentence \
+     matters most: the person must not believe the pairing is gone.",
+);
+
+/// No daemon was running to revoke the pairing, so nothing was revoked.
+pub const NOBODY_KEEPS_PAIRINGS: Word = Word::saying(
+    "changing.nobody-keeps-pairings",
+    "The pairing was not revoked: the service that keeps this machine's pairings is not running, \
+     and nothing else may change them. It stands as it was",
+)
+.noting(
+    "Shown when a person revoked a pairing with another machine and this machine's agent service \
+     was not running. Only that service writes the list of pairings, deliberately, so nothing \
+     else could take the pairing away. The last sentence is the point: the pairing still exists.",
+);
+
+/// The daemon was reached and did not say what became of the revocation.
+pub const PAIRING_NOT_ANSWERED: Word = Word::saying(
+    "changing.pairing-not-answered",
+    "This machine's agent service did not say whether the pairing was revoked. Look at the list \
+     of pairings again before relying on it",
+)
+.noting(
+    "Shown when a person revoked a pairing with another machine and the agent service was \
+     reached but never answered. The pairing may or may not be gone, and the sentence must not \
+     suggest either: the person is asked to look at the list, which says which it is.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 2] = [NOT_KEPT, AT_THE_NEXT_SIGN_IN];
+pub const EVERY_WORD: [Word; 6] = [
+    NOT_KEPT,
+    AT_THE_NEXT_SIGN_IN,
+    UNTIL_A_RESTART,
+    PAIRING_REFUSED,
+    NOBODY_KEEPS_PAIRINGS,
+    PAIRING_NOT_ANSWERED,
+];
+
+/// The name of the gap [`PAIRING_REFUSED`] carries the daemon's sentence in.
+pub const TOLD: &str = "told";
 
 /// Why this crate's own words could not be declared.
 ///
@@ -157,17 +227,21 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **Both sentences are whole.** Each is read at a moment something
-    /// already needs explaining, and a `{}` in front of a person at that
-    /// moment is the worst available rendering of it.
+    /// **Every sentence is whole but the one that carries the daemon's.**
+    /// Each is read at a moment something already needs explaining, and a
+    /// `{}` in front of a person at that moment is the worst available
+    /// rendering of it — so the one gap there is, is named and is the
+    /// daemon's own sentence.
     #[test]
-    fn nothing_here_has_a_gap_in_it() {
+    fn nothing_here_has_a_gap_but_the_daemons_sentence() {
         for word in EVERY_WORD {
-            assert!(
-                word.phrase().unwrap().source().gaps().is_empty(),
-                "{} has a gap in it",
-                word.named()
-            );
+            let phrase = word.phrase().unwrap();
+            let gaps = phrase.source().gaps();
+            if word.named() == PAIRING_REFUSED.named() {
+                assert_eq!(gaps, vec![TOLD.to_owned()], "{}", word.named());
+            } else {
+                assert!(gaps.is_empty(), "{} has a gap in it", word.named());
+            }
         }
     }
 
@@ -216,5 +290,9 @@ mod tests {
         assert!(NOT_KEPT.says().contains("nothing was revoked"));
         assert!(AT_THE_NEXT_SIGN_IN.says().contains("next sign-in"));
         assert!(AT_THE_NEXT_SIGN_IN.says().contains("nothing more to do"));
+        assert!(UNTIL_A_RESTART.says().contains("revoked again"));
+        assert!(PAIRING_REFUSED.says().contains("was not revoked"));
+        assert!(NOBODY_KEEPS_PAIRINGS.says().contains("was not revoked"));
+        assert!(PAIRING_NOT_ANSWERED.says().contains("Look at the list"));
     }
 }

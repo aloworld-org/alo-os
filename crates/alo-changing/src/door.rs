@@ -1,5 +1,11 @@
 //! The real daemon's door: one connection, one line, one answer.
 //!
+//! Three conversations, each that shortest one: the knock after a grant's
+//! file is written, `revoke-pairing` for a row of the one list that is a
+//! pairing, and `pairings` for the rows themselves. The last two exist because
+//! the pairings file is the daemon's alone — the person's side asks, and never
+//! writes it.
+//!
 //! The socket is the one `alo-agentd` binds at `/run/alo/<uid>/agentd.sock`
 //! (ADR 0017), and the conversation is the shortest one the protocol has: the
 //! knock goes out as `alo_protocol::FromAPerson::Granted` — carrying nothing,
@@ -32,10 +38,13 @@ use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use alo_protocol::{FromAPerson, ToAPerson};
+use alo_nearby::MachineId;
+use alo_protocol::{AfterRevoking, FromAPerson, ToAPerson};
 
 use crate::knocking::Knocking;
+use crate::seen_pairing::SeenPairing;
 use crate::stood::Stood;
+use crate::unpairing::{RevokingPairings, Unpaired};
 
 /// How long one write or one read at the door may take before the change is
 /// left for the next sign-in.
@@ -68,20 +77,54 @@ impl TheDaemonsDoor {
         &self.socket
     }
 
-    /// The whole conversation, or [`None`] for every way it can fail to
-    /// happen — which the caller reads as the next sign-in.
-    fn answered(&self) -> Option<Stood> {
-        let stream = UnixStream::connect(&self.socket).ok()?;
-        stream.set_write_timeout(Some(PATIENCE)).ok()?;
-        stream.set_read_timeout(Some(PATIENCE)).ok()?;
+    /// Every pairing the running daemon has, as rows of the one list — or
+    /// [`None`] when no daemon gave that answer, and a surface reads
+    /// `alo_remembering::pairings_remembered` through
+    /// [`SeenPairing::remembered`] instead.
+    ///
+    /// A pairing the daemon names by something that is not a machine identity
+    /// is left out rather than listed: it is not a row anybody could revoke.
+    #[must_use]
+    pub fn pairings(&self) -> Option<Vec<SeenPairing>> {
+        let answer = self.asked(&FromAPerson::Pairings).ok()?;
+        Some(
+            answer
+                .paired()?
+                .iter()
+                .filter_map(SeenPairing::told)
+                .collect(),
+        )
+    }
 
-        let line = FromAPerson::Granted.written().ok()?;
-        (&stream).write_all(line.as_bytes()).ok()?;
-        (&stream).write_all(b"\n").ok()?;
+    /// One line out and one line back.
+    fn asked(&self, request: &FromAPerson) -> Result<ToAPerson, Unheard> {
+        let stream = UnixStream::connect(&self.socket).map_err(|_| Unheard::NobodyThere)?;
+        stream
+            .set_write_timeout(Some(PATIENCE))
+            .map_err(|_| Unheard::NotAnswered)?;
+        stream
+            .set_read_timeout(Some(PATIENCE))
+            .map_err(|_| Unheard::NotAnswered)?;
+
+        let line = request.written().map_err(|_| Unheard::NotAnswered)?;
+        (&stream)
+            .write_all(line.as_bytes())
+            .map_err(|_| Unheard::NotAnswered)?;
+        (&stream)
+            .write_all(b"\n")
+            .map_err(|_| Unheard::NotAnswered)?;
 
         let mut answer = String::new();
-        BufReader::new(&stream).read_line(&mut answer).ok()?;
-        match ToAPerson::read(answer.trim_end()).ok()? {
+        BufReader::new(&stream)
+            .read_line(&mut answer)
+            .map_err(|_| Unheard::NotAnswered)?;
+        ToAPerson::read(answer.trim_end()).map_err(|_| Unheard::NotAnswered)
+    }
+
+    /// The knock, or [`None`] for every way it can fail to happen — which
+    /// the caller reads as the next sign-in.
+    fn answered(&self) -> Option<Stood> {
+        match self.asked(&FromAPerson::Granted).ok()? {
             ToAPerson::Granted { holding } => Some(Stood::Heard { holding }),
             ToAPerson::Refused(wording) => Some(Stood::TurnedAway {
                 told: wording.text().to_owned(),
@@ -101,6 +144,43 @@ impl TheDaemonsDoor {
             | ToAPerson::Workspaces { .. }
             | ToAPerson::WorkspaceOpened(_)
             | ToAPerson::Advertised(_) => None,
+        }
+    }
+}
+
+/// The two ways a conversation fails to be one, told apart because for a
+/// pairing they mean different things: nobody there means nothing was asked;
+/// a door that was reached and never answered means nobody knows.
+enum Unheard {
+    /// The socket would not connect.
+    NobodyThere,
+    /// Connected, and no readable answer came back within the patience.
+    NotAnswered,
+}
+
+impl RevokingPairings for TheDaemonsDoor {
+    /// Ask over `revoke-pairing`, and carry back what the daemon said: its
+    /// outcome, its refusal in its own words, or which way the conversation
+    /// failed — never a guess dressed as an answer.
+    fn revoke_pairing(&self, with: &MachineId) -> Unpaired {
+        let request = FromAPerson::RevokePairing {
+            machine: with.as_str().to_owned(),
+        };
+        match self.asked(&request) {
+            Err(Unheard::NobodyThere) => Unpaired::NobodyThere,
+            Err(Unheard::NotAnswered) => Unpaired::NotAnswered,
+            Ok(ToAPerson::Revoked {
+                became: AfterRevoking::Revoked,
+            }) => Unpaired::Revoked,
+            Ok(ToAPerson::Revoked {
+                became: AfterRevoking::RevokedUntilARestart,
+            }) => Unpaired::RevokedUntilARestart,
+            Ok(ToAPerson::Refused(wording)) => Unpaired::Refused {
+                told: wording.text().to_owned(),
+            },
+            // Any other answer is not one this request can earn, and says
+            // nothing about whether the pairing is gone.
+            Ok(_) => Unpaired::NotAnswered,
         }
     }
 }

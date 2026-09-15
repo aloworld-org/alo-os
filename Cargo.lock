@@ -201,6 +201,7 @@ version = "0.0.1"
 dependencies = [
  "alo-capability",
  "alo-granted",
+ "alo-nearby",
  "alo-picking",
  "alo-protocol",
  "alo-remembering",

@@ -28,6 +28,18 @@
 //! at all), the list in memory, and the daemon, which is never knocked for a
 //! change that did not land ([`NotChanged`]).
 //!
+//! # A pairing is revoked the way a grant is
+//!
+//! `docs/features.md` promises what has been granted to what in **one list,
+//! revoked the same way**, and pairings are on it. [`Changing::revoked`] takes
+//! a [`Row`] — a grant's `alo_granted::Seen` or a [`SeenPairing`] — and both
+//! answer [`Gone`]. A pairing's file is the daemon's alone, so its revocation
+//! is asked over the daemon's existing `revoke-pairing` door and what the
+//! daemon said is carried back: done, done until a restart, or refused in the
+//! daemon's own words — never a refusal reported as done. There is no
+//! *revoke everything*, and no road here from an agent: a revocation is one
+//! row a person chose.
+//!
 //! # A machine with no daemon is not an error
 //!
 //! The knock is a courtesy to a daemon that happens to be running, not a
@@ -65,9 +77,13 @@
 //! | [`changing`] | The composition: applied to a copy, kept whole, then the knock |
 //! | [`outcome`] | What a grant and a revocation each come to |
 //! | [`stood`] | Where the change stands with the running daemon |
+//! | [`row`] | One row of the one list: a grant or a pairing |
+//! | [`seen_pairing`] | A pairing's row, from the daemon's answer or its file |
 //! | [`knocking`] | The daemon's door as the person's side sees it |
+//! | [`unpairing`] | The daemon's pairing door, and what it answers |
+//! | [`the_door`] | Both, as the one door [`Changing`] holds |
 //! | [`door`] | The real socket client, and its patience |
-//! | [`refusing`] | The two ways a change does not happen, in words |
+//! | [`refusing`] | The ways a change does not happen, in words |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
@@ -79,7 +95,11 @@ pub mod door;
 pub mod knocking;
 pub mod outcome;
 pub mod refusing;
+pub mod row;
+pub mod seen_pairing;
 pub mod stood;
+pub mod the_door;
+pub mod unpairing;
 pub mod words;
 
 #[cfg(unix)]
@@ -89,5 +109,9 @@ pub use door::TheDaemonsDoor;
 pub use knocking::Knocking;
 pub use outcome::{Gone, Made};
 pub use refusing::NotChanged;
+pub use row::Row;
+pub use seen_pairing::SeenPairing;
 pub use stood::Stood;
+pub use the_door::Door;
+pub use unpairing::{RevokingPairings, Unpaired};
 pub use words::{Word, WordsError, changing_words, declare_into};
