@@ -63,6 +63,9 @@
 //! | [`not_recorded`] | Why an answer could not be kept |
 //! | [`kept_answer`] | One answer, as a line of the answers file |
 //! | [`kept_outcome`] | What a request was answered with, as the answers file keeps it |
+//! | [`kept_answer_said`] | One kept answer, said in the person's language |
+//! | `kept_outcome_said` | What a kept answer was answered with, in the words the backend answered with |
+//! | `read_back_said` | Everything read back off the answers file, said, with whether it still reaches back — Unix only |
 //! | `answers_file` | The answers, kept on the disk after the backend stops — Unix only |
 //! | `answers_head` | The answers file's first line: its format, and where a shortening left it starting — Unix only |
 //! | `shortening` | The answers file shortened under the machine's record rule, and no further — Unix only |
@@ -110,11 +113,15 @@ pub mod handle;
 pub mod judging;
 pub mod keeping_secrets;
 pub mod kept_answer;
+pub mod kept_answer_said;
 pub mod kept_outcome;
+mod kept_outcome_said;
 pub mod not_a_request;
 pub mod not_recorded;
 pub mod open_with;
 pub mod portal;
+#[cfg(unix)]
+pub mod read_back_said;
 pub mod recording;
 pub mod refused;
 pub mod request;
@@ -155,11 +162,14 @@ pub use held_process::HeldProcess;
 pub use judging::Allowed;
 pub use keeping_secrets::{KeepsSecrets, NotKept};
 pub use kept_answer::KeptAnswer;
+pub use kept_answer_said::AnswerSaid;
 pub use kept_outcome::{KeptOutcome, NothingOpensAs, RefusedAs};
 pub use not_a_request::NotARequest;
 pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
 pub use portal::{Over, Portal};
+#[cfg(unix)]
+pub use read_back_said::ReadBackSaid;
 pub use recording::{Kept, Recording};
 pub use refused::Refused;
 pub use request::{LONGEST_IDENTIFIER, Request};
@@ -169,4 +179,4 @@ pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
 #[cfg(unix)]
 pub use shortening::Shortened;
 pub use the_machine::{Appearance, Applications, TheMachine, TimeOfDay};
-pub use words::{EVERY_WORD, WordsError, declare_into, portal_words};
+pub use words::{CLAUSES, EVERY_WORD, WordsError, declare_into, portal_words};

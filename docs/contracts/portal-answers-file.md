@@ -3,7 +3,8 @@
 **Status:** v0.5, contract. Additive changes only; a break requires versioning
 and a deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 **Owner:** `crates/alo-portals` (`answers_file`, `answers_head`, `kept_answer`,
-`kept_outcome`, `shortening`).
+`kept_answer_said`, `kept_outcome`, `kept_outcome_said`, `read_back_said`,
+`shortening`).
 **Decisions:** [ADR 0001](../decisions/0001-the-capability-model.md) §7 (every
 execution and every refusal leaves a record),
 [ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md) part 2 (no
@@ -11,7 +12,9 @@ refusal calls an application an agent). **Held by:**
 `crates/alo-portals/tests/what_an_application_was_answered_is_kept.rs`, which
 fails when a name the file writes is missing here, and
 `crates/alo-portals/tests/what_applications_were_answered_is_kept_as_long_as_the_record.rs`,
-which holds *Shortening it*.
+which holds *Shortening it*, and
+`crates/alo-portals/tests/what_applications_were_answered_reads_back_in_the_persons_language.rs`,
+which holds *Reading it to a person*.
 
 This is the file the portal backend (`docs/contracts/portals.md`) writes every
 answer it gives an application into — what was handed over and, as carefully,
@@ -186,6 +189,36 @@ middle of a line ends that line before its first answer, so the torn line stays
 one line and the next answer is whole.
 
 A reader that does not recognise a field inside an answer ignores it.
+
+## Reading it to a person
+
+The file holds identities; a person is shown sentences, in the language they
+read, made by `alo-portals` from what the file holds. Nothing here draws the
+list, and nothing here decides who may read the file.
+
+- **`KeptAnswer::said`** gives three sentences and a moment: who asked —
+  *Asked by* the `application`, or by *an application that could not be named*
+  where `application` is absent; what the portal lets an application do; and
+  what it was answered with. The last is said **with the words the backend
+  answered with** — the same keys `Outcome::said` uses, `alo-capability`'s for
+  a refusal of the grants and `alo-applications'` for a file nothing opens —
+  and never a second set.
+- **Where the file keeps less than the answer held**, the same sentence is used
+  with a clause standing in for what is not kept, never a value guessed at:
+  *what it asked for* for the path a refusal of a portal over a file named, and
+  *that kind of file* for the kind nothing opens. A refusal of a portal over a
+  facility loses nothing, and reads back exactly as it was said. Only
+  `the-file` and `unreadable` under `nothing-opens` are said with two sentences
+  of their own, because which of `alo-opening`'s findings it was is not kept.
+- **`ReadBack::said`** says, above the answers, whether the file is whole
+  (*nothing has been removed*) or shortened (*does not go all the way back*),
+  and hands back `since` and the rule `under` it was shortened by (said by
+  `alo-keeping`) beside that sentence. **`since` is a moment, never written into
+  the sentence**: how a date is written belongs to the reader's region, not to
+  their language.
+- **Lines that did not read are said as a count** — *One line …*, *2 lines …*,
+  in the reader's plural forms — beside every answer that did read, never in
+  place of one. Where every line read, there is no such sentence.
 
 ## Versioning
 

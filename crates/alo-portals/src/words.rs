@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Three groups.
+//! The groups, in the order this file declares them.
 //!
 //! **One sentence for each portal** — what it lets an application do, in the
 //! words a person reads beside it wherever this machine lists the portals it
@@ -23,12 +23,54 @@
 //! reads that record reads why an application was answered as it was: a
 //! secret handed over, a file opened, or one of the ways a request on the bus
 //! was answered with the portal's refusal.
+//!
+//! **What applications were answered, read back** — [`crate::KeptAnswer::said`]
+//! and `ReadBack::said`. Most of what the answers file holds is said with the
+//! words above, and with `alo-capability`'s and `alo-applications'` own, so the
+//! backend and the file cannot be two accounts of one answer. These are only
+//! what the file needs and a live answer does not: who asked, where the name
+//! is all the file holds; the clauses standing in for what the file does not
+//! keep (a file's path, a file's kind, `alo-opening`'s finding); whether the
+//! file still reaches all the way back; and how many of its lines did not read.
 
-use alo_strings::{Vocabulary, VocabularyError, WordError};
+use alo_strings::{Key, Plural, PluralError, Vocabulary, VocabularyError, WordError};
 
 /// One string a crate can say — `alo-strings`' type, re-exported because this
 /// crate's files name it as `crate::words::Word`.
 pub use alo_strings::Word;
+
+/// One string this crate can say about a number of things.
+///
+/// Separate from [`Word`] because a countable string is declared and looked up
+/// differently: two English sentences rather than one, and the reader's own
+/// language decides which of *its* forms is shown.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Counted {
+    /// What names it.
+    named: &'static str,
+    /// The gap the number goes in.
+    number: &'static str,
+    /// What it says about one thing.
+    one: &'static str,
+    /// What it says about any other number of things.
+    other: &'static str,
+    /// What a translator needs to know.
+    note: &'static str,
+}
+
+impl Counted {
+    /// What names it.
+    #[must_use]
+    pub fn key(&self) -> Key {
+        Key::unchecked(self.named)
+    }
+
+    /// The name this is declared under.
+    #[must_use]
+    pub const fn named(&self) -> &'static str {
+        self.named
+    }
+}
 
 // ---------------------------------------------------------------------------
 // What each portal lets an application do — [`crate::Portal`].
@@ -330,8 +372,104 @@ pub const APPEARANCE_UNREAD: Word = Word::saying(
     "Your appearance settings could not be read, so the application was not told them",
 );
 
+// ---------------------------------------------------------------------------
+// What applications were answered, read back — [`crate::KeptAnswer::said`] and
+// `ReadBack::said`.
+// ---------------------------------------------------------------------------
+
+/// Which application asked, beside the moment it asked.
+pub const ASKED_BY: Word = Word::saying("portals.read-back.asked-by", "Asked by {application}")
+    .noting(
+        "{application} is the identifier of an application, like org.gnome.Fractal, which is never \
+     translated, or the words for an application that could not be named. The moment it asked is \
+     shown beside this, written the way the reader's region writes dates, and is not part of the \
+     sentence.",
+    );
+
+/// Put where an application's identifier goes, when none was named.
+pub const NOBODY_NAMED: Word = Word::saying(
+    "portals.read-back.nobody-named",
+    "an application that could not be named",
+)
+.noting(
+    "Put into another sentence where an application's identifier would go. A program with no \
+     sandbox, or one that had stopped before it could be named: no name is invented for it.",
+);
+
+/// Put where a refusal names what an application asked for, when that was a
+/// file and the answers file keeps no path.
+pub const WHAT_IT_ASKED_FOR: Word =
+    Word::saying("portals.read-back.what-it-asked-for", "what it asked for").noting(
+        "Put into a sentence refusing an application, where what it asked for would be named. The \
+     record of what applications were answered keeps no file names, so the sentence cannot say \
+     which file.",
+    );
+
+/// Put where a sentence about nothing opening a file names its kind, which the
+/// answers file does not keep.
+pub const THAT_KIND_OF_FILE: Word =
+    Word::saying("portals.read-back.that-kind-of-file", "that kind of file").noting(
+        "Put into the sentence saying nothing on this machine opens a kind of file, where the kind \
+     would be named. The record of what applications were answered keeps no kinds of file.",
+    );
+
+/// The file was not a kind anything opens, read back without saying which.
+pub const NOT_A_KIND_ANYTHING_OPENS: Word = Word::saying(
+    "portals.read-back.not-a-kind-anything-opens",
+    "The file was not a kind anything opens — a program, empty, damaged, protected with a \
+     password or not recognised — so nothing was opened",
+)
+.noting(
+    "Read back from the record of what applications were answered, which keeps that the file was \
+     one of these and not which one. Opening a file never runs a program.",
+);
+
+/// The file would not be read, read back.
+pub const FILE_NOT_READ: Word = Word::saying(
+    "portals.read-back.file-not-read",
+    "The file could not be read, so nothing was opened",
+);
+
+/// The answers file still holds everything it was ever given.
+pub const WHOLE: Word = Word::saying(
+    "portals.read-back.whole",
+    "Nothing has been removed from what applications on this machine were answered",
+)
+.noting(
+    "Shown above the list of what applications asked for and were told, so that a request missing \
+     from it is one that was never made.",
+);
+
+/// The answers file was shortened, and does not reach back to the first answer.
+pub const SHORTENED: Word = Word::saying(
+    "portals.read-back.shortened",
+    "What applications on this machine were answered does not go all the way back — older \
+     answers were removed under how long this machine keeps its record",
+)
+.noting(
+    "Shown above the list, with the moment it now starts at beside it, written the way the \
+     reader's region writes dates, and the rule. Without this sentence, a month in which no \
+     application asked anything and a month the list no longer reaches would read the same.",
+);
+
+/// Lines of the answers file that did not read, counted.
+pub const LINES_NOT_READ: Counted = Counted {
+    named: "portals.read-back.lines-not-read",
+    number: "lines",
+    one: "One line of what applications were answered could not be read, and is kept as it was",
+    other: "{lines} lines of what applications were answered could not be read, and are kept as \
+            they were",
+    note: "Shown beside everything that did read, never in place of it. A line that could not be \
+           read is usually one the machine stopped writing when it lost power; it is kept rather \
+           than removed, because nobody can say what it held.",
+};
+
+/// The words above that are put into another sentence rather than shown on
+/// their own, so they begin as a clause does rather than as a sentence.
+pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 38] = [
+pub const EVERY_WORD: [Word; 46] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -370,6 +508,14 @@ pub const EVERY_WORD: [Word; 38] = [
     APPEARANCE_SENT,
     NO_SUCH_SETTING,
     APPEARANCE_UNREAD,
+    ASKED_BY,
+    NOBODY_NAMED,
+    WHAT_IT_ASKED_FOR,
+    THAT_KIND_OF_FILE,
+    NOT_A_KIND_ANYTHING_OPENS,
+    FILE_NOT_READ,
+    WHOLE,
+    SHORTENED,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -382,6 +528,9 @@ pub enum WordsError {
     /// A word that is not a phrase.
     #[error(transparent)]
     Word(#[from] WordError),
+    /// A countable string that could not be declared.
+    #[error(transparent)]
+    Counting(#[from] PluralError),
     /// A key the vocabulary already has.
     #[error(transparent)]
     List(#[from] VocabularyError),
@@ -408,6 +557,15 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD {
         vocabulary.says(word.phrase()?)?;
     }
+    vocabulary.counts(
+        Plural::counting(
+            LINES_NOT_READ.key(),
+            LINES_NOT_READ.number,
+            LINES_NOT_READ.one,
+            LINES_NOT_READ.other,
+        )?
+        .noting(LINES_NOT_READ.note)?,
+    )?;
     Ok(())
 }
 
@@ -440,7 +598,8 @@ mod tests {
     #[test]
     fn the_whole_list_declares_once() {
         let mut vocabulary = portal_words().unwrap();
-        assert_eq!(vocabulary.how_many(), EVERY_WORD.len());
+        assert_eq!(vocabulary.how_many(), EVERY_WORD.len() + 1);
+        assert_eq!(vocabulary.counted().count(), 1);
         assert!(matches!(
             declare_into(&mut vocabulary),
             Err(WordsError::List(_))
@@ -461,10 +620,17 @@ mod tests {
         }
     }
 
-    /// Each is a sentence a person reads on its own, so it begins like one.
+    /// Each is a sentence a person reads on its own, so it begins like one —
+    /// except the clauses, which are only ever put inside another sentence.
     #[test]
     fn every_string_begins_a_sentence() {
+        let clauses: BTreeSet<&str> = CLAUSES.iter().map(|word| word.named()).collect();
         for word in EVERY_WORD {
+            if clauses.contains(word.named()) {
+                let first = word.says().chars().next().unwrap();
+                assert!(first.is_lowercase(), "{} is a clause", word.named());
+                continue;
+            }
             let first = word.says().chars().next().unwrap();
             assert!(
                 first.is_uppercase() || first == '{',

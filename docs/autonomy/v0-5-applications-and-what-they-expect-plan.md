@@ -465,7 +465,29 @@ recorded.
 
 ### 10. What applications were answered reads back in the person's language
 
-**Status:** ready. **Depends on:** 8, 9.
+**Status:** **Done, 2026-09-15.** `alo_portals::KeptAnswer::said` gives an
+`AnswerSaid`: the moment, kept as a moment, and three sentences — *Asked by*
+the application or by *an application that could not be named*
+(`portals.read-back.asked-by`, `portals.read-back.nobody-named`),
+`Portal::said`, and what it was answered with. The last
+(`crate::kept_outcome_said`) uses the keys `Outcome::said` uses, filled the same
+way: this crate's for what the backend answered, `alo-capability`'s for
+`never-granted` and `lapsed`, and `alo-applications'` for a kind nothing
+opens. Where the file keeps less than the decision held, a clause stands in and
+nothing is guessed: *what it asked for* (a portal over a path) and *that kind
+of file*. A refusal of a facility loses nothing, and reads back byte for byte
+as the backend said it. Only `nothing-opens` / `the-file` and `unreadable`,
+whose `alo-opening` finding is not kept, have sentences of their own.
+`alo_portals::ReadBack::said` gives a `ReadBackSaid`: *nothing has been
+removed* or *does not go all the way back*, `since` as a moment, the rule
+`under` said by `alo-keeping`, every answer said, and the lines that did not
+read counted (`portals.read-back.lines-not-read`, a plural) beside them. Eight
+words and one plural are declared in `alo_portals::words` and collected by
+`alo-saying`. `docs/contracts/portal-answers-file.md` gains *Reading it to a
+person*. Test:
+`crates/alo-portals/tests/what_applications_were_answered_reads_back_in_the_persons_language.rs`.
+Report: `docs/autonomy/updates/portal-answers-read-back-in-the-persons-language.md`.
+**Depends on:** 8, 9.
 
 The answers file holds identities, never sentences
 (`docs/contracts/portal-answers-file.md`), so a person asking *what did my
@@ -490,3 +512,37 @@ the agent's record.
 - **Constraint:** nothing here draws a list, starts the backend in a session,
   or decides who may read the file. No edit to `alo-keeping`, `alo-record` or
   `alo-granted`. No new dependency.
+
+### 11. Whose record of applications' answers it is, decided before anything shows it
+
+**Status:** ready. **Depends on:** 8, 9, 10.
+
+Tasks 8–10 made the answers file durable, shortened under the machine's rule,
+and readable in a person's language. None of them decided whose it is. The
+backend answers on a **session** bus, as the login that session belongs to,
+while `alo_portals::THE_ANSWERS` is one machine-wide path,
+`/var/lib/alo/portal-answers.jsonl`, in a folder the image makes and a login
+does not own, and which on a machine with two people would hold both people's applications' requests
+in one file. `crate::believed_file` accepts a file that is root's or this
+login's, which is true of either answer and decides neither. Task 10 left *who
+may read the file* open on purpose. ADR 0004 says an administrator of a managed
+machine sets the retention rule and never watches a person, and whether *what
+a person's applications asked for* is the organisation's record or the
+person's is not written anywhere.
+
+- **Acceptance:** the decision is made first. Either every login keeps its own
+  answers file, in the person's own state, readable by that person alone and
+  shortened under the machine's `[record].keeping` rule, or the machine keeps
+  one file written by a system service on the sessions' behalf, with each
+  answer carrying whose session it was and each person reading back only their
+  own. Where the choice reads ADR 0004 in a way it does not already say, the
+  deliverable is the ADR with both options, a recommendation and the
+  consequences, and the code waits on it. Once decided: the path, the
+  ownership and the read-back are that decision in code; a test signed in as
+  one login cannot read another login's answers, and one that cannot write the
+  file refuses the request as task 8 does; and
+  `docs/contracts/portal-answers-file.md` says where the file is and who reads
+  it.
+- **Constraint:** no edit to `alo-record`, `alo-keeping` or `alo-sessiond`
+  without their owners' written agreement. Nothing here starts the backend in a
+  session or draws a list. No new dependency.
