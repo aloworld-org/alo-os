@@ -1,8 +1,11 @@
 # ADR 0040 — What an application's grant is over, and where it is kept
 
-**Status:** proposed — written 2026-09-15 by task 1 of
-`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, which waits on
-the owner's answer and is blocked until it comes.
+**Status:** accepted, 2026-09-15 — option **C**, all four parts. Written by
+task 1 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`. The
+additive change to `alo-capability` (parts 1–3) and the grants file's new
+format in `alo-remembering` (part 4) are **moved into that plan's partition in
+writing**: the local-network plan, which owned `alo-capability`, has no
+remaining task that edits it and yields it for this change.
 **Date:** 2026-09-15
 **Context:** [ADR 0001](0001-the-capability-model.md) (grants are enumerated,
 revocable and expiring); [ADR 0005](0005-applications-are-sandboxed-and-ask.md)

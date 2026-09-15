@@ -17,11 +17,16 @@ lane's models plan.
 **Crates this plan owns:** a new `crates/alo-portals` for what a portal
 request is and how it is answered, `crates/alo-granted` for the one list,
 `crates/alo-applications` for what opens what, and `crates/alo-secrets` for
-the keyring behind the Secret portal. **It reads `crates/alo-capability` and
-never edits it** — a portal request is a grant in that crate's sense, and this
-plan uses that sense rather than restating it. Nothing in `crates/alo-shell`,
-nothing in `image/`, nothing in `alo-nearby`, `alo-asking`, `alo-record`,
-`alo-capability`, `alo-turn`, `alo-egress` (lane A's), nothing in
+the keyring behind the Secret portal. **Since 2026-09-15 it also owns the
+change [ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md)
+makes to `crates/alo-capability` and to the grants file in
+`crates/alo-remembering`**, and only that change: a closed list of what an
+application may reach that is not a path, a grantee that is an agent or an
+application, application grants that outlive declining the agent, and the
+grants file's new format. Anything else in those two crates is not this
+plan's. Nothing in `crates/alo-shell`, nothing in `image/`, nothing in
+`alo-nearby`, `alo-asking`, `alo-record`, `alo-turn`, `alo-egress` (lane A's),
+nothing in
 `alo-models`, `alo-driving`, `alo-choosing`, `alo-answering`, `alo-telling`
 (the Mac's), and nothing in `alo-finding` or `alo-measuring` (finished, and
 left alone).
@@ -35,9 +40,12 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. A portal request is a grant, and is refused like one
 
-**Status:** blocked — waits on
-`docs/decisions/0040-what-an-applications-grant-is-over.md`, proposed
-2026-09-15. **Depends on:** nothing.
+**Status:** ready — `docs/decisions/0040-what-an-applications-grant-is-over.md`
+was accepted on 2026-09-15 (option C, all four parts), and the change it makes
+to `alo-capability` and the grants file is this plan's in writing (see the
+header). The acceptance below now includes those four parts, made first and
+additively, before `crates/alo-portals` judges any request with
+`Grants::permitting`. **Depends on:** nothing.
 
 **Decided rather than built, 2026-09-15.** The first worker found that the
 acceptance below cannot be met without editing `alo-capability`, and this plan

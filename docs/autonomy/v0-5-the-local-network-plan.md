@@ -14,6 +14,10 @@ that; it builds it.
 **Crates this plan owns:** a new `crates/alo-nearby` for discovery and
 pairing, with `crates/alo-models`, `crates/alo-egress` and
 `crates/alo-remembering` touched where a paired machine is already modelled.
+**From 2026-09-15, `alo-capability`'s `Reach`, `Ask` and `Grantee`, and the
+grants file's format in `alo-remembering`, are the applications plan's**
+([ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md)): no task
+here edits them, and a task that finds it needs to is a finding, not an edit.
 **Nothing in `crates/alo-shell`**, nothing in `image/` — a machine on the
 network is decidable without a pixel, the way `alo-approving` and
 `alo-overlay` decided their surfaces without drawing one.
