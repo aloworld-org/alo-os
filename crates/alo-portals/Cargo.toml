@@ -19,6 +19,12 @@ alo-capability = { path = "../alo-capability" }
 # applications' declarations, and never restated here.
 alo-applications = { path = "../alo-applications" }
 
+# What the person set for how the machine looks. The Settings portal answers
+# `org.freedesktop.appearance` from `alo_appearance::Appearance`, resolved at the
+# moment of asking, so light and dark and the accent are decided in one crate
+# and never restated here. A workspace crate, so it adds nothing to the tree.
+alo-appearance = { path = "../alo-appearance" }
+
 # Everything a person reads: what each portal lets an application do, and why a
 # request was refused.
 alo-strings = { path = "../alo-strings" }

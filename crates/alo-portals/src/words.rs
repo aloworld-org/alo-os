@@ -291,8 +291,43 @@ pub const NOT_A_TOKEN: Word = Word::saying(
     "A request names itself with letters, digits and underscores, and this one did not",
 );
 
+/// An application read the appearance settings.
+pub const APPEARANCE_READ: Word = Word::saying(
+    "portals.answered.appearance-read",
+    "{application} read your appearance settings, such as light or dark",
+)
+.noting(
+    "{application} is the identifier of an application, like io.gitlab.news_flash.NewsFlash, and \
+     is never translated. Appearance settings are light or dark and the accent colour, nothing \
+     else.",
+);
+
+/// An application was sent appearance settings that changed.
+pub const APPEARANCE_SENT: Word = Word::saying(
+    "portals.answered.appearance-sent",
+    "{application} was told your appearance settings changed, such as from light to dark",
+)
+.noting(
+    "{application} is the identifier of an application, like io.gitlab.news_flash.NewsFlash, and \
+     is never translated. Only an application allowed to read the settings at that moment is told.",
+);
+
+/// A setting that is not shared with applications.
+pub const NO_SUCH_SETTING: Word = Word::saying(
+    "portals.unanswered.no-such-setting",
+    "An application asked for a setting this machine does not share with applications, and was \
+     told there is none",
+)
+.noting("Only appearance settings are shared, and only with an application granted them.");
+
+/// The appearance settings could not be read.
+pub const APPEARANCE_UNREAD: Word = Word::saying(
+    "portals.unanswered.appearance-unread",
+    "Your appearance settings could not be read, so the application was not told them",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 34] = [
+pub const EVERY_WORD: [Word; 38] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -327,6 +362,10 @@ pub const EVERY_WORD: [Word; 34] = [
     NOT_OPENED,
     NOT_DECIDED_HERE,
     NOT_A_TOKEN,
+    APPEARANCE_READ,
+    APPEARANCE_SENT,
+    NO_SUCH_SETTING,
+    APPEARANCE_UNREAD,
 ];
 
 /// Why this crate's own words could not be declared.

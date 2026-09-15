@@ -264,7 +264,24 @@ grants a person made.
 
 ### 6. The Settings portal answers appearance, from what the person set
 
-**Status:** ready. **Depends on:** 5.
+**Status:** **Done, 2026-09-15.** `alo_portals::serving::Backend` now also
+serves `org.freedesktop.portal.Settings` (version 2) — `ReadAll`, `ReadOne`,
+the deprecated `Read`, and `SettingChanged` — for `org.freedesktop.appearance`
+alone. `alo_portals::appearance_settings` decides it without the bus:
+`color-scheme` from `Appearance::scheme_at` and `accent-color` from
+`Appearance::accent_at`, at the time of day `TheMachine::time_of_day` gives, and
+only for an application `allowed` by a grant of the `appearance-settings`
+facility, judged before the person's settings are read. **`contrast` is left
+out**: `alo-appearance` keeps no contrast preference, and no value is invented.
+A refused application, a program with no sandbox, and any other namespace or key
+all receive `org.freedesktop.portal.Error.NotFound`, and every read and refusal
+is recorded with the application named. `crate::watching_appearance` looks every
+second and sends `SettingChanged`, with a destination, only to connections whose
+application may read the value at that moment, recording each before it is
+sent. `docs/contracts/portals.md` moves `settings` to *answered*. Tests:
+`crates/alo-portals/tests/the_settings_portal_answers_appearance.rs`. Report:
+`docs/autonomy/updates/the-settings-portal-answers-appearance.md`.
+**Depends on:** 5.
 
 *Portals: … settings.* An application that follows light and dark, and the
 accent colour, asks `org.freedesktop.portal.Settings`. The request is for a
@@ -289,3 +306,36 @@ without a dialog.
   that value is left out and the report says so. Linux, gated in the virtual
   machine like task 5. `SettingChanged` is sent only to an application that
   could read the value at the moment it changed.
+
+### 7. An application is named by the process the bus holds, never by a number that can be reused
+
+**Status:** ready. **Depends on:** 5.
+
+Task 5's report left one window open. The backend asks the bus for the process
+behind a request (`GetConnectionCredentials`), gets a process **number**, and
+reads `/proc/<pid>/root/.flatpak-info`. Between the bus answering and the file
+being read, the process can exit and its number be given to another process,
+and the request is then judged as whatever application that other process is.
+Task 6 widened the window's use: `SettingChanged` is sent to connections judged
+this way. Every portal answer on this machine rests on this one lookup, so it
+has to name the process that sent the request and no other.
+
+- **Acceptance:** `alo_portals::Sandboxes` identifies a caller through a
+  process descriptor (a pidfd), never a bare number. It takes `ProcessFD` from
+  `GetConnectionCredentials` when the bus gives one. When the bus does not, it
+  opens one for the number the bus gave and checks, after reading
+  `.flatpak-info`, that the process behind the descriptor is still alive and is
+  still the connection's process, so a number reused while the file was read is
+  refused rather than named. A test reproduces the reuse: a caller whose process
+  is gone by the time its sandbox is read is `Unanswered::NotIdentified` and is
+  recorded that way, for `OpenURI`, `Secret` and `Settings` and for a
+  `SettingChanged` that is then not sent. The legitimate path of every existing
+  bus test still passes unchanged. `docs/contracts/portals.md`'s *Who is asking*
+  says how the process is held, and `docs/quirks.md` records which bus daemons
+  give `ProcessFD` (the test VM's `dbus-daemon` 1.14.10 does not).
+- **Constraint:** no `unsafe` and no new crate in the tree. `rustix` is already
+  a workspace dependency (`alo-agentd`, `alo-accounts`), and its `pidfd_open` is
+  safe; if the features it needs would add a crate to the tree, the report says
+  so and the task stops at the ADR that decides it. Nothing here changes
+  what a grant covers or who is judged, only that the caller judged is the
+  caller that asked. Linux, gated in the virtual machine like task 5.

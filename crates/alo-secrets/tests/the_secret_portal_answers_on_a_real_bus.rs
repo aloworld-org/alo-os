@@ -43,8 +43,8 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{Applicant, Facility, Grant, GrantId, Grants, Reach};
 use alo_keyring_fixture::AKeyringOfOurOwn;
 use alo_portals::{
-    Answered, Applications, Backend, Kept, Outcome, Portal, Refused, Request, Sandboxes, Served,
-    TheMachine, Unanswered,
+    Answered, Appearance, Applications, Backend, Kept, Outcome, Portal, Refused, Request,
+    Sandboxes, Served, TheMachine, TimeOfDay, Unanswered,
 };
 use alo_secrets::{PORTAL_SECRET_LENGTH, THE_PORTALS, TheKeyring};
 use zbus::blocking::{Connection, Proxy};
@@ -69,6 +69,14 @@ impl TheMachine for ThisMachine {
 
     fn applications(&self) -> Option<Applications> {
         Some(Applications::default())
+    }
+
+    fn appearance(&self) -> Option<Appearance> {
+        Some(Appearance::shipped())
+    }
+
+    fn time_of_day(&self) -> Option<TimeOfDay> {
+        TimeOfDay::checked(12, 0).ok()
     }
 }
 

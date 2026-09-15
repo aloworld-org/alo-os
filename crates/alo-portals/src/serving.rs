@@ -9,6 +9,7 @@
 //! |---|---|
 //! | `org.freedesktop.portal.Secret` | the person's one keyring (`crate::secret_portal`) |
 //! | `org.freedesktop.portal.OpenURI` | *what opens what* (`crate::open_uri_portal`) |
+//! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and
@@ -18,19 +19,26 @@
 //!
 //! - **Who is asking** — the sandbox of the process the bus says sent it
 //!   ([`Sandboxes`]).
-//! - **What was granted, and what opens what** — read at every request
-//!   ([`TheMachine`]).
+//! - **What was granted, what opens what, and how the machine looks** — read at
+//!   every request ([`TheMachine`]).
 //! - **The keyring** — which judges a Secret request itself ([`KeepsSecrets`]).
 //! - **The record** — every answer, the refusals as carefully as the rest,
 //!   written before the response is sent ([`Recording`]).
+//!
+//! While [`Served`] is held, a thread looks at how the machine looks every
+//! [`crate::watching_appearance::WATCHED_EVERY`] and sends `SettingChanged` to the
+//! applications that may read what moved (`crate::watching_appearance`).
 
 use std::sync::Arc;
+use std::sync::mpsc::{Sender, channel};
+use std::thread::JoinHandle;
 
 use crate::keeping_secrets::KeepsSecrets;
 use crate::open_uri_portal::OpenUriPortal;
 use crate::recording::Recording;
 use crate::sandboxed::Sandboxes;
 use crate::secret_portal::SecretPortal;
+use crate::settings_portal::SettingsPortal;
 use crate::the_machine::TheMachine;
 
 pub use crate::handle::THE_PORTALS_OBJECT;
@@ -87,7 +95,19 @@ impl Backend {
                 },
             )
             .map_err(|_| NotServed::Unreachable)?
-            .serve_at(THE_PORTALS_OBJECT, OpenUriPortal { backend: self })
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                OpenUriPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                SettingsPortal {
+                    backend: self.clone(),
+                },
+            )
             .map_err(|_| NotServed::Unreachable)?
             .name(THE_PORTALS_NAME)
             .map_err(|_| NotServed::Unreachable)?
@@ -96,7 +116,18 @@ impl Backend {
                 zbus::Error::NameTaken => NotServed::NameTaken,
                 _ => NotServed::Unreachable,
             })?;
-        Ok(Served { connection })
+        let (stop, stopped) = channel();
+        let bus = connection.inner().clone();
+        let seen = crate::appearance_settings::read(self.machine()).ok();
+        let watching = std::thread::Builder::new()
+            .name("alo-portals-appearance".to_owned())
+            .spawn(move || crate::watching_appearance::watch(&bus, &self, seen, &stopped))
+            .map_err(|_| NotServed::Unreachable)?;
+        Ok(Served {
+            connection,
+            stop: Some(stop),
+            watching: Some(watching),
+        })
     }
 
     /// The grants and what opens what.
@@ -124,6 +155,22 @@ impl Backend {
 pub struct Served {
     /// The connection the portals are served on; dropping it stops them.
     connection: zbus::blocking::Connection,
+    /// Dropped to stop the thread watching how the machine looks.
+    stop: Option<Sender<()>>,
+    /// That thread, waited for when this is dropped, so nothing is sent on
+    /// the portals' behalf after they stop answering.
+    watching: Option<JoinHandle<()>>,
+}
+
+impl Drop for Served {
+    fn drop(&mut self) {
+        drop(self.stop.take());
+        if let Some(watching) = self.watching.take() {
+            // A watcher that panicked has already stopped, which is all that
+            // is being waited for.
+            let _ = watching.join();
+        }
+    }
 }
 
 impl std::fmt::Debug for Served {

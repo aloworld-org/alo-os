@@ -60,17 +60,20 @@
 //! | [`open_with`] | An open-with request, answered from what opens what |
 //! | [`answered`] | What the backend answered a request with, as the record keeps it |
 //! | [`recording`] | Where every answer is written |
-//! | [`the_machine`] | The grants and what opens what, read at every request |
+//! | [`the_machine`] | The grants, what opens what and how the machine looks, read at every request |
+//! | [`appearance_settings`] | The appearance settings an application may read, and who may |
 //! | [`keeping_secrets`] | The keyring the Secret portal is answered from |
 //! | [`sandboxed`] | Which application is asking, as its sandbox says |
 //! | [`handle`] | Where a request's answer is sent |
 //! | `serving` | The backend on a session bus — Linux only |
+//! | `watching_appearance` | `SettingChanged`, sent to whoever may read it — Linux only |
 //! | [`words`] | Every string this crate can say |
 //!
 //! # The backend on the bus
 //!
-//! On Linux, `serving::Backend::serve_on` answers `org.freedesktop.portal.Secret`
-//! and `org.freedesktop.portal.OpenURI` on a session bus, from the decisions
+//! On Linux, `serving::Backend::serve_on` answers `org.freedesktop.portal.Secret`,
+//! `org.freedesktop.portal.OpenURI` and `org.freedesktop.portal.Settings` on a
+//! session bus, from the decisions
 //! above and nothing else, and registers **no other portal**:
 //! `docs/contracts/portals.md` lists which portals this machine answers and
 //! which it does not yet, and [`Portal::answered_on_the_bus`] is that list in
@@ -88,6 +91,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod answered;
+pub mod appearance_settings;
 pub mod handle;
 pub mod judging;
 pub mod keeping_secrets;
@@ -104,6 +108,8 @@ pub mod words;
 #[cfg(target_os = "linux")]
 mod asked;
 #[cfg(target_os = "linux")]
+mod caller;
+#[cfg(target_os = "linux")]
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
@@ -111,8 +117,13 @@ mod opening;
 mod secret_portal;
 #[cfg(target_os = "linux")]
 pub mod serving;
+#[cfg(target_os = "linux")]
+mod settings_portal;
+#[cfg(target_os = "linux")]
+pub mod watching_appearance;
 
 pub use answered::{Answered, Outcome, Unanswered};
+pub use appearance_settings::{Setting, THE_NAMESPACE, Value, Values};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 pub use judging::Allowed;
 pub use keeping_secrets::{KeepsSecrets, NotKept};
@@ -125,5 +136,5 @@ pub use request::{LONGEST_IDENTIFIER, Request};
 pub use sandboxed::Sandboxes;
 #[cfg(target_os = "linux")]
 pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
-pub use the_machine::{Applications, TheMachine};
+pub use the_machine::{Appearance, Applications, TheMachine, TimeOfDay};
 pub use words::{EVERY_WORD, WordsError, declare_into, portal_words};

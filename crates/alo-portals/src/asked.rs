@@ -20,16 +20,15 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use alo_capability::Applicant;
 use zbus::fdo;
 use zbus::message::Header;
 use zbus::names::{BusName, OwnedUniqueName};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue};
 
 use crate::answered::{Answered, Outcome, Unanswered};
+use crate::caller::{application_of, named};
 use crate::handle::handle_for;
 use crate::portal::Portal;
-use crate::request::identified;
 use crate::serving::Backend;
 
 /// The interface every `Response` is sent on.
@@ -65,7 +64,7 @@ impl Asked {
             .sender()
             .map(|sender| OwnedUniqueName::from(sender.to_owned()))
             .ok_or_else(|| fdo::Error::Failed("a request with no sender".to_owned()))?;
-        let application = application_of(connection, &sender, backend).await;
+        let application = application_of(connection, &sender.as_ref(), backend).await;
         let token = options
             .get("handle_token")
             .map(|token| token.downcast_ref::<&str>().unwrap_or(""));
@@ -124,29 +123,4 @@ impl Asked {
             .await?;
         Ok(self.handle)
     }
-}
-
-/// The application the sandbox of the process behind `sender` names.
-///
-/// The process is the bus daemon's answer, read from the socket — never
-/// anything the sender said. A bus that will not answer is nobody.
-async fn application_of(
-    connection: &zbus::Connection,
-    sender: &OwnedUniqueName,
-    backend: &Backend,
-) -> Option<String> {
-    let bus = fdo::DBusProxy::new(connection).await.ok()?;
-    let credentials = bus
-        .get_connection_credentials(BusName::Unique(sender.as_ref()))
-        .await
-        .ok()?;
-    backend
-        .sandboxes()
-        .application_of(credentials.process_id()?)
-}
-
-/// The applicant the record names, when the sandbox named one that is an
-/// identifier.
-fn named(application: Option<&str>) -> Option<Applicant> {
-    application.and_then(|id| identified(id).ok())
 }

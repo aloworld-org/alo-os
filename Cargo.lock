@@ -557,6 +557,7 @@ dependencies = [
 name = "alo-portals"
 version = "0.0.1"
 dependencies = [
+ "alo-appearance",
  "alo-applications",
  "alo-capability",
  "alo-keyring-fixture",

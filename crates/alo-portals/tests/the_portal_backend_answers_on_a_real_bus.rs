@@ -17,7 +17,8 @@
 //!   file, an opener that does not answer, and a web link —
 //!   [`every_request_no_grant_covers_is_refused_on_the_bus_and_recorded_by_name`];
 //! - **the file chooser and everything that draws is not served: the backend
-//!   declines by not registering** —
+//!   declines by not registering** (the Settings portal, answered since task 6,
+//!   is among those registered, and has its own test) —
 //!   [`only_the_portals_decided_here_are_registered_on_the_bus`];
 //! - **`docs/contracts/` gains the one page describing which portals this
 //!   machine answers and which it does not yet** —
@@ -101,8 +102,8 @@ mod on_the_bus {
     use alo_capability::{Applicant, Grant, Grants, Reach};
     use alo_keyring_fixture::AKeyringOfOurOwn;
     use alo_portals::{
-        Allowed, Answered, Applications, Backend, KeepsSecrets, Kept, NotKept, Outcome, Portal,
-        Refused, Request, Sandboxes, Served, TheMachine, Unanswered,
+        Allowed, Answered, Appearance, Applications, Backend, KeepsSecrets, Kept, NotKept, Outcome,
+        Portal, Refused, Request, Sandboxes, Served, TheMachine, TimeOfDay, Unanswered,
     };
     use zbus::blocking::{Connection, Proxy};
     use zbus::zvariant::{Fd, OwnedObjectPath, OwnedValue, Value};
@@ -141,6 +142,14 @@ mod on_the_bus {
                 declared,
                 chosen: Chosen::untouched(),
             })
+        }
+
+        fn appearance(&self) -> Option<Appearance> {
+            Some(Appearance::shipped())
+        }
+
+        fn time_of_day(&self) -> Option<TimeOfDay> {
+            TimeOfDay::checked(12, 0).ok()
         }
     }
 
@@ -540,7 +549,7 @@ mod on_the_bus {
     }
 
     /// **Only the portals decided here are registered.** The object serves
-    /// `Secret` and `OpenURI` and no other portal, and asking the file chooser
+    /// `Secret`, `OpenURI` and `Settings` and no other portal, and asking the file chooser
     /// is answered by the bus as a portal nothing answers — never with yes.
     #[test]
     fn only_the_portals_decided_here_are_registered_on_the_bus() {

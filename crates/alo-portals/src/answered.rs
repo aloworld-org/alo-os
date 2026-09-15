@@ -98,6 +98,10 @@ pub enum Outcome {
     SecretHandedOver(Allowed),
     /// The file was opened in the application that opens its kind.
     Opened(OpensWith),
+    /// The application read the person's appearance settings.
+    AppearanceRead(Allowed),
+    /// The application was sent the appearance settings that changed.
+    AppearanceSent(Allowed),
     /// The grants refused it.
     Refused(Refused),
     /// What arrived was never a request.
@@ -120,7 +124,10 @@ impl Outcome {
     #[must_use]
     pub const fn response(&self) -> u32 {
         match self {
-            Self::SecretHandedOver(_) | Self::Opened(_) => 0,
+            Self::SecretHandedOver(_)
+            | Self::Opened(_)
+            | Self::AppearanceRead(_)
+            | Self::AppearanceSent(_) => 0,
             Self::Refused(_)
             | Self::NotARequest(_)
             | Self::NothingOpens(_)
@@ -147,6 +154,14 @@ impl Outcome {
                 &words::OPENED_IN.key(),
                 &Filling::of("application", opens.allowed().application().as_str())
                     .and("opener", opens.opener().application().identifier()),
+            ),
+            Self::AppearanceRead(allowed) => strings.say(
+                &words::APPEARANCE_READ.key(),
+                &Filling::of("application", allowed.application().as_str()),
+            ),
+            Self::AppearanceSent(allowed) => strings.say(
+                &words::APPEARANCE_SENT.key(),
+                &Filling::of("application", allowed.application().as_str()),
             ),
             Self::Refused(refused) => refused.said(strings),
             Self::NotARequest(not) => not.said(strings),
@@ -183,6 +198,12 @@ pub enum Unanswered {
     },
     /// A web link or a folder, which nothing on this machine decides yet.
     NotDecidedHere,
+    /// A setting this machine does not share with applications: another
+    /// namespace than appearance, or a key it does not hold.
+    NoSuchSetting,
+    /// The person's appearance settings, or the time of day they are answered
+    /// at, could not be read.
+    AppearanceUnread,
 }
 
 impl Unanswered {
@@ -201,6 +222,8 @@ impl Unanswered {
                 (words::NOT_OPENED, Filling::of("opener", opener.as_str()))
             }
             Self::NotDecidedHere => (words::NOT_DECIDED_HERE, Filling::nothing()),
+            Self::NoSuchSetting => (words::NO_SUCH_SETTING, Filling::nothing()),
+            Self::AppearanceUnread => (words::APPEARANCE_UNREAD, Filling::nothing()),
         };
         strings.say(&word.key(), &filling)
     }
@@ -236,6 +259,8 @@ mod tests {
                 opener: "org.gnome.Papers".to_owned(),
             },
             Unanswered::NotDecidedHere,
+            Unanswered::NoSuchSetting,
+            Unanswered::AppearanceUnread,
         ] {
             let outcome = Outcome::Unanswered(unanswered);
             assert_eq!(outcome.response(), 2, "{outcome:?}");
@@ -270,6 +295,8 @@ mod tests {
             Unanswered::NotWritten,
             Unanswered::NotAFile,
             Unanswered::NotDecidedHere,
+            Unanswered::NoSuchSetting,
+            Unanswered::AppearanceUnread,
         ] {
             let said = unanswered.said(&strings);
             assert!(!said.is_a_bug(), "{unanswered:?}: {said}");
