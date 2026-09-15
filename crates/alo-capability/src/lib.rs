@@ -52,6 +52,22 @@
 //! an AI feature, and somebody who declined an agent may want more than average
 //! to know what left their machine.
 //!
+//! # Applications ask through the same list
+//!
+//! [ADR 0040](../../../docs/decisions/0040-what-an-applications-grant-is-over.md):
+//! an application's portal request is a grant in the sense of ADR 0001, so it
+//! is decided here and not beside here. Four things make that true:
+//!
+//! 1. a [`Reach`] and an [`Ask`] can be over a [`Facility`] — the closed list of
+//!    what this machine has that is not a path, from the camera to the power
+//!    profile — matched exactly, and granted only to an application;
+//! 2. a [`Grantee`] is an agent or an application, and an application asks as
+//!    an [`Applicant`] through [`Grants::allowing`], whose refusal
+//!    ([`NotAllowed`]) never calls it an agent;
+//! 3. declining the agent ends the agents' grants and keeps the applications'
+//!    ([`Agent::declining`], [`Agent::allow`]);
+//! 4. one list holds both, so revoking either is [`Grants::revoke`].
+//!
 //! # Verbs
 //!
 //! A grant is what may be touched; a [`Verb`] is what may be done. [`Verbs`] is
@@ -143,12 +159,15 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod agent;
+pub mod allowing;
 pub mod approval;
 pub mod approvals;
 pub mod arg;
 pub mod authorised;
 pub mod call;
+pub mod facility;
 pub mod grant;
+pub mod grantee;
 pub mod grants;
 pub mod offered;
 pub mod path;
@@ -166,12 +185,15 @@ mod test_calls;
 mod testing;
 
 pub use agent::Agent;
+pub use allowing::NotAllowed;
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};
 pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError};
-pub use grant::{Grant, GrantError, Grantee};
+pub use facility::Facility;
+pub use grant::{Grant, GrantError};
+pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use offered::Offered;
 pub use proposal::{Proposal, ProposalError};

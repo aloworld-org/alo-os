@@ -1,0 +1,34 @@
+[package]
+name = "alo-portals"
+version = "0.0.1"
+description = "What a portal request from an application is, and how it is judged: a grant in the sense of ADR 0001, refused like one."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What decides. A portal request is judged by `Grants::allowing`, against the
+# same list an agent's verb is, so what a grant covers, whose it is and when it
+# ends are ruled on in one crate and never restated here.
+alo-capability = { path = "../alo-capability" }
+
+# Everything a person reads: what each portal lets an application do, and why a
+# request was refused.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, for the error its own string list can return
+# to whoever is fixing that list.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, so the acceptance test can ask whether what
+# this crate says is collected beside everybody else's.
+alo-saying = { path = "../alo-saying" }
+
+# For showing that judging a hundred requests leaves the grants byte for byte
+# where they were.
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

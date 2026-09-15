@@ -40,12 +40,21 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. A portal request is a grant, and is refused like one
 
-**Status:** ready — `docs/decisions/0040-what-an-applications-grant-is-over.md`
-was accepted on 2026-09-15 (option C, all four parts), and the change it makes
-to `alo-capability` and the grants file is this plan's in writing (see the
-header). The acceptance below now includes those four parts, made first and
-additively, before `crates/alo-portals` judges any request with
-`Grants::permitting`. **Depends on:** nothing.
+**Status:** **Done, 2026-09-15.** Built on
+`docs/decisions/0040-what-an-applications-grant-is-over.md` (accepted
+2026-09-15, option C, all four parts). `alo-capability` gained a closed
+`Facility` reach granted only to applications, a `Grantee` that is an agent or
+an application with an `Applicant` door (`Grants::allowing`) whose refusal
+(`NotAllowed`) never calls it an agent, and application grants that survive
+`Agent::declining`. The grants file in `alo-remembering` reads formats 1 and 2
+and writes the lowest that holds the list (`docs/contracts/grants-file.md`).
+`crates/alo-portals` names the fifteen v0.5 portals and judges a request with
+`Grants::allows_anything` and `Grants::allowing`. The waiting test
+`crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs` was retired;
+what it held about the ADR's table and the features line is now held by
+`crates/alo-portals/tests/a_portal_request_is_a_grant.rs`. Report:
+`docs/autonomy/updates/portal-requests-judged-as-grants.md`.
+**Depends on:** nothing.
 
 **Decided rather than built, 2026-09-15.** The first worker found that the
 acceptance below cannot be met without editing `alo-capability`, and this plan
@@ -68,8 +77,8 @@ grants that outlive declining the agent. The task is ready again once three
 things happen: the owner answers, the capability change is made by the crate's
 owner or moved into this plan in writing, and the grants file moves to a new
 format. `crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`
-holds the ADR in place: it fails if `crates/alo-portals` appears while the
-decision is still *proposed*. Report:
+held the ADR in place while it was *proposed* (retired once task 1 was built).
+Report:
 `docs/autonomy/updates/portal-grants-decided-before-they-are-built.md`.
 
 *Applications install sandboxed and reach the system through the XDG Desktop

@@ -44,6 +44,7 @@ alo-nearby = { path = "../alo-nearby" }
 alo-opening = { path = "../alo-opening" }
 alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }
+alo-portals = { path = "../alo-portals" }
 alo-printing = { path = "../alo-printing" }
 alo-protocol = { path = "../alo-protocol" }
 alo-recounting = { path = "../alo-recounting" }

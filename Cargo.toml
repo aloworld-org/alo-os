@@ -44,6 +44,7 @@ members = [
   "crates/alo-printing",
   "crates/alo-overlay",
   "crates/alo-picking",
+  "crates/alo-portals",
   "crates/alo-protocol",
   "crates/alo-reconciling",
   "crates/alo-record",

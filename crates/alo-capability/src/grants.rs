@@ -13,6 +13,11 @@
 //! ever one search and nothing can be permitted by a grant the record cannot
 //! name.
 //!
+//! **A portal** asks the same question for an application
+//! ([`Grants::allowing`], in `crate::allowing`), against the same list, through
+//! the same search — ADR 0040's *one list*. Only the refusal differs, because
+//! an application is not an agent and is not told to pick a folder.
+//!
 //! **The refusal is a value and not a sentence.** Nothing here needs a
 //! vocabulary to decide, and deciding must never depend on one having been
 //! loaded — [`crate::refusing`] is where that is argued out, and where the
@@ -197,7 +202,21 @@ impl Grants {
         self.held.len() != before
     }
 
-    /// Take away everything one agent holds, and say how many that was.
+    /// Take a grant away only if it is an application's, and say whether one
+    /// went.
+    ///
+    /// Crate-private: the one caller is [`crate::Agent::revoke_allowed`], the
+    /// door onto a declined machine's list, which must not become a way to
+    /// touch an agent's grant.
+    pub(crate) fn revoke_an_applications(&mut self, id: GrantId) -> bool {
+        let before = self.held.len();
+        self.held
+            .retain(|held| !(held.id == id && held.grant.grantee.is_an_application()));
+        self.held.len() != before
+    }
+
+    /// Take away everything one agent or application holds, and say how many
+    /// that was.
     ///
     /// "Stop this agent reaching anything" is one action, as ADR 0001 §3
     /// requires, rather than as many actions as the person happens to have
@@ -225,7 +244,7 @@ impl Grants {
             .filter(move |held| held.grant.is_active_at(now))
     }
 
-    /// What one agent holds at this moment.
+    /// What one agent or application holds at this moment.
     pub fn held_by<'a>(
         &'a self,
         grantee: &'a Grantee,
@@ -257,6 +276,11 @@ impl Grants {
     /// is refused: there is no default, no fallback and no path that is
     /// reachable because nobody thought to forbid it.
     ///
+    /// **This is the agent's door.** An application's grantee is refused here
+    /// whatever it holds: an application asks through [`Grants::allowing`],
+    /// whose refusal does not call it an agent, and an agent can never be
+    /// authorised by a grant that was made to an application.
+    ///
     /// It answers with the grant rather than with `true` because a record owes
     /// an answer to *against which grant* (ADR 0001 §7), and this search is the
     /// only moment that answer exists. Deriving it again afterwards would be a
@@ -272,11 +296,55 @@ impl Grants {
         ask: &Ask,
         now: SystemTime,
     ) -> Result<GrantId, NotGranted> {
+        if grantee.is_an_application() {
+            return Err(NotGranted::Never {
+                agent: grantee.as_str().to_owned(),
+                wanted: ask.clone(),
+            });
+        }
+        self.searched(grantee, ask, now)
+            .map_err(|lapsed| why_not(grantee, ask, lapsed))
+    }
+
+    /// The one search both doors make: the grant that permits this grantee this
+    /// ask at this moment, or the expired grant that would have, if there is
+    /// one.
+    ///
+    /// Crate-private because on its own it is half an answer: the other half
+    /// is the refusal each door words in its own way.
+    pub(crate) fn searched(
+        &self,
+        grantee: &Grantee,
+        ask: &Ask,
+        now: SystemTime,
+    ) -> Result<GrantId, Option<&Held>> {
         self.held
             .iter()
             .find(|held| held.grant.is_for(grantee) && held.grant.permits(ask, now))
             .map(|held| held.id)
-            .ok_or_else(|| self.why_not(grantee, ask))
+            .ok_or_else(|| {
+                // An expired grant that *would* have covered this, because that
+                // is the difference between the two things a person can do.
+                self.held
+                    .iter()
+                    .find(|held| held.grant.is_for(grantee) && held.grant.reach.covers(ask))
+            })
+    }
+
+    /// Drop every agent's grant and keep every application's, saying how many
+    /// of the agents' were active at `now`.
+    ///
+    /// Crate-private: the one caller is [`crate::Agent::declining`], which is
+    /// ADR 0009's *grants end* and ADR 0040's *and applications keep theirs*
+    /// in one act.
+    pub(crate) fn ending_every_agents(&mut self, now: SystemTime) -> usize {
+        let ending = self
+            .active_at(now)
+            .filter(|held| !held.grant.grantee.is_an_application())
+            .count();
+        self.held
+            .retain(|held| held.grant.grantee.is_an_application());
+        ending
     }
 
     /// Whether this agent may touch this thing, at this moment.
@@ -295,30 +363,24 @@ impl Grants {
     pub fn refusal(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> Option<NotGranted> {
         self.permitting(grantee, ask, now).err()
     }
+}
 
-    /// The refusal, for an ask no grant permitted.
-    ///
-    /// Private because it is only ever true alongside a failed search: called
-    /// on its own it would say no about something that is in fact granted. It
-    /// looks for an expired grant that *would* have covered this, because that
-    /// is the difference between the two things a person can do about it.
-    fn why_not(&self, grantee: &Grantee, ask: &Ask) -> NotGranted {
-        let agent = grantee.as_str().to_owned();
-        let lapsed = self
-            .held
-            .iter()
-            .find(|held| held.grant.is_for(grantee) && held.grant.reach.covers(ask));
-        match lapsed {
-            Some(held) => NotGranted::Lapsed {
-                agent,
-                reach: held.grant.reach.clone(),
-                wanted: ask.clone(),
-            },
-            None => NotGranted::Never {
-                agent,
-                wanted: ask.clone(),
-            },
-        }
+/// The refusal, for an ask no grant permitted.
+///
+/// Private because it is only ever true alongside a failed search: called on
+/// its own it would say no about something that is in fact granted.
+fn why_not(grantee: &Grantee, ask: &Ask, lapsed: Option<&Held>) -> NotGranted {
+    let agent = grantee.as_str().to_owned();
+    match lapsed {
+        Some(held) => NotGranted::Lapsed {
+            agent,
+            reach: held.grant.reach.clone(),
+            wanted: ask.clone(),
+        },
+        None => NotGranted::Never {
+            agent,
+            wanted: ask.clone(),
+        },
     }
 }
 
@@ -554,6 +616,22 @@ mod tests {
         let words = never.said(&crate::testing::in_english());
         assert!(words.text().contains("has not been granted"), "{words}");
         assert!(words.text().contains("never by asking for one"), "{words}");
+    }
+
+    /// **An application's grant never answers the agent's door**, even for an
+    /// agent of the same name and even when the application's grant covers
+    /// exactly what is asked.
+    #[test]
+    fn an_applications_grant_does_not_answer_for_an_agent() {
+        let mut grants = Grants::default();
+        let cheese = crate::Applicant::named("@files");
+        grants.grant(Grant::checked_for(&cheese.grantee(), invoices(), noon(), hour()).unwrap());
+        assert!(!grants.permits(&files(), &march(), noon()));
+        assert!(!grants.permits(&cheese.grantee(), &march(), noon()));
+        assert!(matches!(
+            grants.permitting(&cheese.grantee(), &march(), noon()),
+            Err(NotGranted::Never { .. })
+        ));
     }
 
     /// The list a person reads: what is granted, to whom, and until when.

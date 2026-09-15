@@ -115,4 +115,4 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 #[cfg(unix)]
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
-pub use written::{THE_FORMAT, read, written};
+pub use written::{THE_FIRST_FORMAT, THE_FORMAT, read, written};

@@ -47,6 +47,21 @@
 //! own (`alo_record::Only::OnItsOwn`), which exists already and is not this
 //! crate's to switch off.
 //!
+//! # Applications keep theirs
+//!
+//! [ADR 0040](../../../docs/decisions/0040-what-an-applications-grant-is-over.md),
+//! part 3. ADR 0009's promise is about **the agent's** reach, and applications
+//! were never part of it: a person who declined the agent still has a good
+//! computer, and a good computer lets a video-call application use the camera.
+//!
+//! So a declined machine is not a machine with no list. It is a machine with no
+//! **agent's** list: [`Agent::Declined`] holds the applications' grants and
+//! nothing else, [`Agent::grants_mut`] still answers `None` — so nothing can be
+//! granted to an agent, because there is no `&mut Grants` to do it with — and
+//! [`Agent::allow`] is the one road on, which refuses a grant to an agent in
+//! either state. [`Agent::declining`] ends every agent's grant and keeps every
+//! application's, with their handles, in one act.
+//!
 //! # There is no `Default`
 //!
 //! A machine has to be **told** which of the two it is. `Default` would be alo
@@ -60,7 +75,9 @@ use std::time::SystemTime;
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
-use crate::grant::Grantee;
+use crate::allowing::NotAllowed;
+use crate::grant::{Grant, Grantee};
+use crate::grantee::Applicant;
 use crate::grants::{GrantId, Grants};
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
@@ -78,11 +95,13 @@ use crate::words;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Agent {
-    /// This machine has an agent, and these are the grants it holds.
+    /// This machine has an agent, and these are the grants it holds — the
+    /// agents' and the applications', on one list.
     Present(Grants),
-    /// The person declined (ADR 0009). There is no list, because there is
-    /// nothing that could be on one.
-    Declined,
+    /// The person declined (ADR 0009). There is no agent's list, because there
+    /// is nothing that could be on one; what is held is the applications'
+    /// grants alone (ADR 0040), and only [`Agent::allow`] adds to it.
+    Declined(Grants),
 }
 
 impl Agent {
@@ -118,7 +137,7 @@ impl Agent {
     /// A machine where the person said *not at all*.
     #[must_use]
     pub fn declined() -> Self {
-        Self::Declined
+        Self::Declined(Grants::default())
     }
 
     /// Whether there is an agent on this machine.
@@ -134,14 +153,16 @@ impl Agent {
 
     /// The grants this machine holds, and `None` where there is no agent.
     ///
-    /// The only road to them. A declined machine has no list rather than an
-    /// empty one, so *nothing is granted* is not a fact something has to keep
-    /// true — it is the shape of the value.
+    /// The only road to an agent's grants. A declined machine has no agent's
+    /// list rather than an empty one, so *nothing is granted to an agent* is
+    /// not a fact something has to keep true — it is the shape of the value.
+    /// What applications hold on such a machine is asked through
+    /// [`Agent::allowing`] and [`Agent::allowed`].
     #[must_use]
     pub fn grants(&self) -> Option<&Grants> {
         match self {
             Self::Present(grants) => Some(grants),
-            Self::Declined => None,
+            Self::Declined(_) => None,
         }
     }
 
@@ -155,31 +176,79 @@ impl Agent {
     pub fn grants_mut(&mut self) -> Option<&mut Grants> {
         match self {
             Self::Present(grants) => Some(grants),
-            Self::Declined => None,
+            Self::Declined(_) => None,
         }
     }
 
-    /// Turn the agent off, and say how many grants a person will see go.
+    /// Every grant this machine holds for an application, on either kind of
+    /// machine — the list a portal is judged against.
+    ///
+    /// On a machine with an agent this is the whole list, agents' rows
+    /// included, because it is one list; on a declined machine it holds
+    /// applications' grants and nothing else. Read-only: an application's
+    /// grant is added through [`Agent::allow`].
+    #[must_use]
+    pub const fn allowed(&self) -> &Grants {
+        match self {
+            Self::Present(grants) | Self::Declined(grants) => grants,
+        }
+    }
+
+    /// Grant an application something, on either kind of machine, and return
+    /// the handle it is revoked by.
+    ///
+    /// [`None`] — and nothing granted — for a grant to an agent. An agent's
+    /// grant is made through [`Agent::grants_mut`], which a declined machine
+    /// does not have, so this cannot become a way round ADR 0009.
+    pub fn allow(&mut self, grant: Grant) -> Option<GrantId> {
+        if !grant.grantee.is_an_application() {
+            return None;
+        }
+        match self {
+            Self::Present(grants) | Self::Declined(grants) => Some(grants.grant(grant)),
+        }
+    }
+
+    /// Take away one application's grant, on either kind of machine, and say
+    /// whether there was one.
+    ///
+    /// Only an application's: an agent's grant is revoked through
+    /// [`Agent::grants_mut`], and a handle naming one answers `false` here and
+    /// changes nothing.
+    pub fn revoke_allowed(&mut self, id: GrantId) -> bool {
+        match self {
+            Self::Present(grants) | Self::Declined(grants) => grants.revoke_an_applications(id),
+        }
+    }
+
+    /// Turn the agent off, and say how many agent's grants a person will see
+    /// go.
     ///
     /// ADR 0009's *turning it off again removes the agent's reach at once —
-    /// grants end*. The list is replaced rather than emptied, so there is no
-    /// moment at which this machine has an agent holding nothing, and the next
-    /// question asked of it is refused by [`NotGranted::NoAgent`].
+    /// grants end*. Every agent's grant goes in the same act that makes the
+    /// machine declined, so there is no moment at which this machine has an
+    /// agent holding nothing, and the next question an agent asks is refused by
+    /// [`NotGranted::NoAgent`]. **Every application's grant stays**, with the
+    /// handle it had (ADR 0040).
     ///
-    /// The count is of grants that were **active** at `now`, because that is
-    /// the list the person has been looking at: expired ones go too, and
-    /// reporting them would be telling somebody they lost something they had
-    /// already lost. Nothing here reads the clock, as everywhere else in this
-    /// crate.
+    /// The count is of agents' grants that were **active** at `now`, because
+    /// that is the list the person has been looking at: expired ones go too,
+    /// and reporting them would be telling somebody they lost something they
+    /// had already lost. Nothing here reads the clock, as everywhere else in
+    /// this crate.
     ///
     /// Turning off a machine that already has no agent takes nothing away and
     /// says so.
     pub fn declining(&mut self, now: SystemTime) -> usize {
-        let ending = self
-            .grants()
-            .map_or(0, |grants| grants.active_at(now).count());
-        *self = Self::Declined;
-        ending
+        match self {
+            Self::Present(grants) => {
+                let mut kept = std::mem::take(grants);
+                let ending = kept.ending_every_agents(now);
+                *self = Self::Declined(kept);
+                ending
+            }
+            Self::Declined(_) => 0,
+        }
     }
 
     /// Turn the agent on, and say whether that changed anything.
@@ -188,16 +257,17 @@ impl Agent {
     /// way to clear them, and one that quietly was would be a second door to
     /// [`Agent::declining`] with an innocent name.
     ///
-    /// A machine that had declined comes back with **nothing granted**. ADR
-    /// 0009 says turning it on later is a setting rather than a reinstall, and
-    /// says grants end when it goes off; both are true at once only if what
-    /// comes back is a machine with an agent, not a machine with March's
-    /// folders in it.
+    /// A machine that had declined comes back with **nothing granted to an
+    /// agent**. ADR 0009 says turning it on later is a setting rather than a
+    /// reinstall, and says grants end when it goes off; both are true at once
+    /// only if what comes back is a machine with an agent, not a machine with
+    /// March's folders in it. The applications' grants were never the agent's,
+    /// and come along unchanged.
     pub fn accepting(&mut self) -> bool {
         match self {
             Self::Present(_) => false,
-            Self::Declined => {
-                *self = Self::present();
+            Self::Declined(grants) => {
+                *self = Self::Present(std::mem::take(grants));
                 true
             }
         }
@@ -222,11 +292,29 @@ impl Agent {
     ) -> Result<GrantId, NotGranted> {
         match self {
             Self::Present(grants) => grants.permitting(grantee, ask, now),
-            Self::Declined => Err(NotGranted::NoAgent {
+            Self::Declined(_) => Err(NotGranted::NoAgent {
                 agent: grantee.as_str().to_owned(),
                 wanted: ask.clone(),
             }),
         }
+    }
+
+    /// Which grant allows this application to reach this thing, at this moment
+    /// — or why none does — on either kind of machine.
+    ///
+    /// [`Grants::allowing`] on [`Agent::allowed`]. Declining the agent is not a
+    /// reason an application is refused, so there is no fourth choice in front
+    /// of this one.
+    ///
+    /// # Errors
+    /// [`NotAllowed`], the grants' own refusal.
+    pub fn allowing(
+        &self,
+        application: &Applicant,
+        ask: &Ask,
+        now: SystemTime,
+    ) -> Result<GrantId, NotAllowed> {
+        self.allowed().allowing(application, ask, now)
     }
 
     /// Whether this agent may touch this thing, at this moment.
@@ -240,7 +328,7 @@ impl Agent {
     pub fn word(&self) -> words::Word {
         match self {
             Self::Present(_) => words::HAS_AN_AGENT,
-            Self::Declined => words::HAS_NO_AGENT,
+            Self::Declined(_) => words::HAS_NO_AGENT,
         }
     }
 
@@ -263,7 +351,7 @@ impl Agent {
 )]
 mod tests {
     use super::*;
-    use crate::grant::Grant;
+    use crate::facility::Facility;
     use crate::reach::Reach;
     use crate::testing::{in_english, translated};
     use std::path::PathBuf;
@@ -416,12 +504,125 @@ mod tests {
         let mut machine = machine;
         machine.declining(noon());
         let written = serde_json::to_string(&machine).unwrap();
-        assert_eq!(written, "\"declined\"");
+        assert!(written.starts_with(r#"{"declined":"#), "{written}");
+        assert!(!written.contains("@files"), "{written}");
 
         let read: Agent = serde_json::from_str(&written).unwrap();
         assert!(!read.has_an_agent());
         assert!(read.grants().is_none());
         assert!(!read.permits(&files(), &march(), noon()));
+    }
+
+    /// A machine where Cheese holds the camera for an hour beside the agent's
+    /// folders, and the handle Cheese's grant is under.
+    fn a_machine_with_an_application() -> (Agent, GrantId) {
+        let mut machine = a_working_machine();
+        let id = machine
+            .allow(
+                Grant::checked_for(
+                    &cheese().grantee(),
+                    Reach::Facility(Facility::Camera),
+                    noon(),
+                    hour(),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        (machine, id)
+    }
+
+    fn cheese() -> Applicant {
+        Applicant::named("org.gnome.Cheese")
+    }
+
+    fn camera() -> Ask {
+        Ask::facility(Facility::Camera)
+    }
+
+    /// **Declining the agent ends the agents' grants and keeps the
+    /// applications'** (ADR 0040, part 3): somebody who turned the agent off
+    /// still has a video-call application that can use the camera.
+    #[test]
+    fn declining_the_agent_keeps_every_applications_grant() {
+        let (mut machine, id) = a_machine_with_an_application();
+        assert_eq!(machine.allowing(&cheese(), &camera(), noon()), Ok(id));
+
+        // One agent's grant was active, and that is the one a person is told
+        // about; Cheese's is not counted, because it does not go.
+        assert_eq!(machine.declining(noon()), 1);
+        assert!(!machine.permits(&files(), &march(), noon()));
+        assert_eq!(machine.allowing(&cheese(), &camera(), noon()), Ok(id));
+        assert_eq!(machine.allowed().len(), 1);
+
+        // And turning the agent on again brings back none of the agent's and
+        // keeps Cheese's, under the same handle.
+        assert!(machine.accepting());
+        assert!(!machine.permits(&files(), &march(), noon()));
+        assert_eq!(machine.allowing(&cheese(), &camera(), noon()), Ok(id));
+    }
+
+    /// **On a declined machine an application can still be granted the
+    /// camera, and an agent still cannot be granted anything** — the second
+    /// by the shape of the value, not by a check somebody could skip.
+    #[test]
+    fn a_declined_machine_grants_applications_and_never_an_agent() {
+        let mut machine = Agent::declined();
+        assert!(machine.grants_mut().is_none());
+
+        let agents = Grant::checked(
+            "@files",
+            Reach::Folder(PathBuf::from("/home/anna/Invoices")),
+            noon(),
+            hour(),
+        )
+        .unwrap();
+        assert_eq!(machine.allow(agents), None);
+        assert!(machine.allowed().is_empty());
+        assert!(!machine.permits(&files(), &march(), noon()));
+
+        let id = machine
+            .allow(
+                Grant::checked_for(
+                    &cheese().grantee(),
+                    Reach::Facility(Facility::Camera),
+                    noon(),
+                    hour(),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(machine.allowing(&cheese(), &camera(), noon()), Ok(id));
+        assert!(!machine.has_an_agent());
+        assert!(machine.grants().is_none());
+
+        // The written-down machine is still declined, and still allows it.
+        let read: Agent = serde_json::from_str(&serde_json::to_string(&machine).unwrap()).unwrap();
+        assert!(!read.has_an_agent());
+        assert_eq!(read.allowing(&cheese(), &camera(), noon()), Ok(id));
+    }
+
+    /// **Revoking an application's grant takes effect at once, on either
+    /// machine, and cannot reach an agent's grant.**
+    #[test]
+    fn an_applications_grant_is_revoked_at_once_and_only_an_applications() {
+        let (mut machine, id) = a_machine_with_an_application();
+        let agents = machine
+            .grants()
+            .unwrap()
+            .active_at(noon())
+            .next()
+            .unwrap()
+            .id;
+        assert!(!machine.revoke_allowed(agents));
+        assert!(machine.permits(&files(), &march(), noon()));
+
+        machine.declining(noon());
+        assert!(machine.revoke_allowed(id));
+        assert!(matches!(
+            machine.allowing(&cheese(), &camera(), noon()),
+            Err(NotAllowed::Never { .. })
+        ));
+        assert!(!machine.revoke_allowed(id));
     }
 
     /// A machine with an agent refuses exactly as it did before: this file adds

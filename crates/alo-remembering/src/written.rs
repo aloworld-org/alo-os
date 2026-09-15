@@ -6,7 +6,7 @@
 //! that should need a notation of its own to read.
 //!
 //! ```toml
-//! format = 1
+//! format = 2
 //! next = 2
 //!
 //! [[grant]]
@@ -15,7 +15,32 @@
 //! folder = "/home/ada/Invoices"
 //! granted = 1760000000
 //! expires = 1760003600
+//!
+//! [[grant]]
+//! handle = 1
+//! applicant = "org.gnome.Cheese"
+//! facility = "camera"
+//! granted = 1760000000
+//! expires = 1760086400
 //! ```
+//!
+//! `docs/contracts/grants-file.md` is the contract.
+//!
+//! # Two formats, and which one is written
+//!
+//! **Format 1** is a list of agents' grants over a folder, a file or an
+//! application. **Format 2** is ADR 0040's: a grant may also be to an
+//! application (`applicant`) and over a facility (`facility`). A format-1
+//! reader refuses a whole file that says `format = 2`, which is the point of
+//! the number — it would otherwise refuse the file anyway, over the first key
+//! it did not know, and say something less useful.
+//!
+//! Both are read. **The lowest format that holds the list is written**: a
+//! machine whose grants are all agents' over paths and applications writes
+//! format 1, byte for byte what it wrote before, so rolling an update back does
+//! not cost the person every folder they granted. Format 2 is written only
+//! when a grant on the list needs it. And a file that says format 1 and names
+//! `applicant` or `facility` is refused: it is a file no alo OS wrote.
 //!
 //! # Every grant is made again on the way in
 //!
@@ -47,13 +72,21 @@
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{Grant, GrantId, Grants, Held, Reach};
+use alo_capability::{Applicant, Facility, Grant, GrantId, Grantee, Grants, Held, Reach};
 use serde::{Deserialize, Serialize};
 
 use crate::refusing::NotRemembered;
 
-/// Which shape of grants file this alo OS writes and reads.
-pub const THE_FORMAT: u32 = 1;
+/// The newest shape of grants file this alo OS writes and reads.
+///
+/// Format 2 adds grants to applications and over facilities (ADR 0040). The
+/// older [`THE_FIRST_FORMAT`] is read as well, and written whenever the list
+/// fits in it.
+pub const THE_FORMAT: u32 = 2;
+
+/// The first shape of grants file, which holds only agents' grants over a
+/// folder, a file or an application.
+pub const THE_FIRST_FORMAT: u32 = 1;
 
 /// The file's shape, as serde sees it.
 #[derive(Debug, Serialize, Deserialize)]
@@ -75,9 +108,14 @@ struct Kept {
 struct KeptGrant {
     /// What the person revokes it by.
     handle: u64,
-    /// The agent it is for, by the name the system knows it by.
-    agent: String,
-    /// A folder and everything in it — one of the three, and exactly one.
+    /// The agent it is for, by the name the system knows it by — this or
+    /// `applicant`, and exactly one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    agent: Option<String>,
+    /// The application it is for, by its identifier. Format 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    applicant: Option<String>,
+    /// A folder and everything in it — one of the four, and exactly one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     folder: Option<PathBuf>,
     /// Exactly one file.
@@ -86,6 +124,10 @@ struct KeptGrant {
     /// One installed application, by its identifier.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     application: Option<String>,
+    /// Something this machine has that is not a path, by
+    /// `alo_capability::Facility::named`. Format 2 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    facility: Option<String>,
     /// When it was made, in seconds since 1970.
     granted: u64,
     /// When it stops, in seconds since 1970.
@@ -95,13 +137,25 @@ struct KeptGrant {
 impl KeptGrant {
     /// What this grant is over, or a refusal naming the handle.
     ///
-    /// Exactly one of the three: none of them is a grant over nothing, and two
+    /// Exactly one of the four: none of them is a grant over nothing, and two
     /// of them is a grant a person believes covers something it does not.
     fn reach(&self) -> Result<Reach, NotRemembered> {
+        let facility = match &self.facility {
+            Some(name) => {
+                Some(
+                    Facility::by_name(name).ok_or_else(|| NotRemembered::NoSuchFacility {
+                        handle: self.handle,
+                        named: name.clone(),
+                    })?,
+                )
+            }
+            None => None,
+        };
         let named = [
             self.folder.clone().map(Reach::Folder),
             self.file.clone().map(Reach::File),
             self.application.clone().map(Reach::Application),
+            facility.map(Reach::Facility),
         ];
         let mut over = None;
         for one in named.into_iter().flatten() {
@@ -117,15 +171,53 @@ impl KeptGrant {
         })
     }
 
+    /// Who this grant is for, or a refusal naming the handle.
+    ///
+    /// Exactly one of `agent` and `applicant`: a grant to nobody grants
+    /// nothing, and a grant to both is a grant a person made to one of them.
+    fn grantee(&self) -> Result<Grantee, NotRemembered> {
+        match (&self.agent, &self.applicant) {
+            (Some(agent), None) => Ok(Grantee::named(agent)),
+            (None, Some(applicant)) => Ok(Applicant::named(applicant).grantee()),
+            (None, None) => Err(NotRemembered::GrantedToNobody {
+                handle: self.handle,
+            }),
+            (Some(_), Some(_)) => Err(NotRemembered::GrantedToTwo {
+                handle: self.handle,
+            }),
+        }
+    }
+
+    /// The first key this line names that its file's format does not have.
+    fn newer_than(&self, format: u32) -> Option<&'static str> {
+        if format >= THE_FORMAT {
+            return None;
+        }
+        if self.applicant.is_some() {
+            Some("applicant")
+        } else if self.facility.is_some() {
+            Some("facility")
+        } else {
+            None
+        }
+    }
+
     /// This line as the grant it means, checked the way a pick is checked.
-    fn as_a_grant(&self) -> Result<Held, NotRemembered> {
+    fn as_a_grant(&self, format: u32) -> Result<Held, NotRemembered> {
+        if let Some(key) = self.newer_than(format) {
+            return Err(NotRemembered::NewerThanItsFormat {
+                handle: self.handle,
+                key,
+            });
+        }
+        let grantee = self.grantee()?;
         let reach = self.reach()?;
         let granted = at_second(self.granted);
         // Saturating rather than checked, because a file saying a grant ended
         // before it began is a file `Grant::checked` refuses in its own words —
         // zero lasts no time — and that is the sentence worth reading.
         let lasting = Duration::from_secs(self.expires.saturating_sub(self.granted));
-        let grant = Grant::checked(&self.agent, reach, granted, lasting).map_err(|why| {
+        let grant = Grant::checked_for(&grantee, reach, granted, lasting).map_err(|why| {
             NotRemembered::NotAGrant {
                 handle: self.handle,
                 said: why.word().says(),
@@ -167,22 +259,26 @@ fn as_seconds(moment: SystemTime, handle: GrantId) -> Result<u64, NotRemembered>
 ///
 /// [`NotRemembered::NotTheShape`] for text that is not this file,
 /// [`NotRemembered::AnotherFormat`] for grants from an alo OS this is not —
-/// answered before any grant is looked at — [`NotRemembered::ReachesNothing`]
-/// and [`NotRemembered::ReachesTwoThings`] for a grant that is not over exactly
-/// one thing, [`NotRemembered::NotAGrant`] for one `alo-capability` would not
-/// make, and [`NotRemembered::NotOneList`] for handles that would collide.
+/// answered before any grant is looked at — [`NotRemembered::NewerThanItsFormat`]
+/// for a format-1 file naming a format-2 key, [`NotRemembered::GrantedToNobody`]
+/// and [`NotRemembered::GrantedToTwo`] for a grant that is not for exactly one
+/// agent or application, [`NotRemembered::ReachesNothing`],
+/// [`NotRemembered::ReachesTwoThings`] and [`NotRemembered::NoSuchFacility`]
+/// for a grant that is not over exactly one thing this machine has,
+/// [`NotRemembered::NotAGrant`] for one `alo-capability` would not make, and
+/// [`NotRemembered::NotOneList`] for handles that would collide.
 pub fn read(text: &str, now: SystemTime) -> Result<Grants, NotRemembered> {
     let kept: Kept = toml::from_str(text).map_err(|why| NotRemembered::NotTheShape {
         why: why.to_string(),
     })?;
-    if kept.format != THE_FORMAT {
+    if !(THE_FIRST_FORMAT..=THE_FORMAT).contains(&kept.format) {
         return Err(NotRemembered::AnotherFormat {
             format: kept.format,
         });
     }
     let mut held = Vec::with_capacity(kept.grants.len());
     for one in &kept.grants {
-        held.push(one.as_a_grant()?);
+        held.push(one.as_a_grant(kept.format)?);
     }
     let mut grants = Grants::remembered(held, kept.next)?;
     // Before anybody has it. An expired grant that came back and was filtered
@@ -211,23 +307,43 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
         if expires <= granted {
             continue;
         }
-        let (folder, file, application) = match &held.grant.reach {
-            Reach::Folder(path) => (Some(path.clone()), None, None),
-            Reach::File(path) => (None, Some(path.clone()), None),
-            Reach::Application(id) => (None, None, Some(id.clone())),
+        let (mut folder, mut file, mut application, mut facility) = (None, None, None, None);
+        match &held.grant.reach {
+            Reach::Folder(path) => folder = Some(path.clone()),
+            Reach::File(path) => file = Some(path.clone()),
+            Reach::Application(id) => application = Some(id.clone()),
+            Reach::Facility(one) => facility = Some(one.named().to_owned()),
+        }
+        let name = held.grant.grantee.as_str().to_owned();
+        let (agent, applicant) = if held.grant.grantee.is_an_application() {
+            (None, Some(name))
+        } else {
+            (Some(name), None)
         };
         lines.push(KeptGrant {
             handle: held.id.as_u64(),
-            agent: held.grant.grantee.as_str().to_owned(),
+            agent,
+            applicant,
             folder,
             file,
             application,
+            facility,
             granted,
             expires,
         });
     }
+    // The lowest format that holds what is written, so a machine with no
+    // application's grant writes exactly what it wrote before format 2.
+    let format = if lines
+        .iter()
+        .any(|line| line.newer_than(THE_FIRST_FORMAT).is_some())
+    {
+        THE_FORMAT
+    } else {
+        THE_FIRST_FORMAT
+    };
     let kept = Kept {
-        format: THE_FORMAT,
+        format,
         next: grants.next_handle().as_u64(),
         grants: lines,
     };
@@ -244,7 +360,7 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
 mod tests {
     use super::*;
     use crate::testing::{HERS, an_hour as hour, noon};
-    use alo_capability::{Ask, Grantee};
+    use alo_capability::Ask;
 
     /// A machine on which one folder has been granted for an hour.
     fn one_folder_granted() -> Grants {
@@ -366,13 +482,164 @@ mod tests {
     /// grant in the file is looked at.
     #[test]
     fn grants_from_an_alo_os_this_is_not_are_refused() {
-        let newer = written(&one_folder_granted(), noon())
-            .unwrap()
-            .replace("format = 1", "format = 2");
-        assert!(matches!(
-            read(&newer, noon()),
-            Err(NotRemembered::AnotherFormat { format: 2 })
+        for (format, refused) in [("format = 3", 3), ("format = 0", 0)] {
+            let other = written(&one_folder_granted(), noon())
+                .unwrap()
+                .replace("format = 1", format);
+            assert!(matches!(
+                read(&other, noon()),
+                Err(NotRemembered::AnotherFormat { format }) if format == refused
+            ));
+        }
+        // And the refusal says which formats this alo OS does read.
+        let said = NotRemembered::AnotherFormat { format: 3 }.to_string();
+        assert!(said.contains("formats 1 to 2"), "{said}");
+    }
+
+    /// The camera granted to Cheese beside a folder granted to the agent.
+    fn an_applications_grant_beside_an_agents() -> Grants {
+        let mut grants = one_folder_granted();
+        grants.grant(
+            Grant::checked_for(
+                &Applicant::named("org.gnome.Cheese").grantee(),
+                Reach::Facility(Facility::Camera),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        );
+        grants
+    }
+
+    /// **An application's grant over a facility is kept as itself, in format
+    /// 2**, and reads back allowing what it allowed and nothing an agent could
+    /// use.
+    #[test]
+    fn an_applications_grant_over_a_facility_is_kept_in_format_two() {
+        let text = written(&an_applications_grant_beside_an_agents(), noon()).unwrap();
+        assert!(text.contains("format = 2"), "{text}");
+        assert!(text.contains(r#"applicant = "org.gnome.Cheese""#), "{text}");
+        assert!(text.contains(r#"facility = "camera""#), "{text}");
+
+        let read = read(&text, noon()).unwrap();
+        let cheese = Applicant::named("org.gnome.Cheese");
+        let camera = Ask::facility(Facility::Camera);
+        assert!(read.allowing(&cheese, &camera, noon()).is_ok());
+        assert!(!read.permits(&Grantee::named("org.gnome.Cheese"), &camera, noon()));
+        assert!(
+            read.allowing(&cheese, &Ask::facility(Facility::Microphone), noon())
+                .is_err()
+        );
+        assert!(read.permits(
+            &Grantee::named(HERS),
+            &Ask::path("/home/ada/Invoices/march.pdf"),
+            noon()
         ));
+        // Written again, it is the same file.
+        assert_eq!(written(&read, noon()).unwrap(), text);
+    }
+
+    /// **A list that fits in format 1 is written as format 1**, so rolling an
+    /// update back does not cost a person the folders they granted.
+    #[test]
+    fn a_list_with_no_applications_grant_is_written_as_it_was_before() {
+        let text = written(&one_folder_granted(), noon()).unwrap();
+        assert!(text.contains("format = 1"), "{text}");
+        assert!(!text.contains("applicant"), "{text}");
+        assert!(!text.contains("facility"), "{text}");
+
+        // And once the application's grant has expired, the file goes back.
+        let mut grants = one_folder_granted();
+        grants.grant(
+            Grant::checked_for(
+                &Applicant::named("org.gnome.Cheese").grantee(),
+                Reach::Facility(Facility::Camera),
+                noon(),
+                Duration::from_secs(60),
+            )
+            .unwrap(),
+        );
+        let later = noon() + Duration::from_secs(120);
+        assert!(written(&grants, later).unwrap().contains("format = 1"));
+    }
+
+    /// **A format-1 file naming a format-2 key is refused**, because no alo OS
+    /// wrote it.
+    #[test]
+    fn a_first_format_file_naming_a_later_key_is_refused() {
+        let text = written(&an_applications_grant_beside_an_agents(), noon())
+            .unwrap()
+            .replace("format = 2", "format = 1");
+        let refused = read(&text, noon()).unwrap_err();
+        assert!(
+            matches!(
+                refused,
+                NotRemembered::NewerThanItsFormat {
+                    handle: 1,
+                    key: "applicant"
+                }
+            ),
+            "{refused}"
+        );
+    }
+
+    /// **A grant for nobody, and a grant for both an agent and an
+    /// application, are both refused.**
+    #[test]
+    fn a_grant_must_be_for_exactly_one_grantee() {
+        let text = written(&an_applications_grant_beside_an_agents(), noon()).unwrap();
+        let nobody = text.replace("applicant = \"org.gnome.Cheese\"\n", "");
+        assert!(matches!(
+            read(&nobody, noon()),
+            Err(NotRemembered::GrantedToNobody { handle: 1 })
+        ));
+        let both = text.replace(
+            "applicant = \"org.gnome.Cheese\"",
+            "agent = \"@files\"\napplicant = \"org.gnome.Cheese\"",
+        );
+        assert!(matches!(
+            read(&both, noon()),
+            Err(NotRemembered::GrantedToTwo { handle: 1 })
+        ));
+    }
+
+    /// **A facility this machine does not have is refused by name**, and the
+    /// v1 ones are not on the list.
+    #[test]
+    fn a_facility_this_machine_does_not_have_is_refused() {
+        let text = written(&an_applications_grant_beside_an_agents(), noon()).unwrap();
+        for unknown in ["usb", "Camera", "/dev/video0", "remote-desktop"] {
+            let edited = text.replace(
+                "facility = \"camera\"",
+                &format!("facility = \"{unknown}\""),
+            );
+            let refused = read(&edited, noon()).unwrap_err();
+            assert!(
+                matches!(&refused, NotRemembered::NoSuchFacility { handle: 1, named } if named == unknown),
+                "{refused}"
+            );
+        }
+    }
+
+    /// **A hand-edit cannot give an agent the camera**: the file is read
+    /// through `Grant::checked_for`, which refuses it in its own words.
+    #[test]
+    fn a_file_cannot_grant_an_agent_a_facility() {
+        let text = written(&an_applications_grant_beside_an_agents(), noon())
+            .unwrap()
+            .replace(
+                "applicant = \"org.gnome.Cheese\"",
+                "agent = \"org.gnome.Cheese\"",
+            );
+        let refused = read(&text, noon()).unwrap_err();
+        assert!(
+            matches!(refused, NotRemembered::NotAGrant { handle: 1, .. }),
+            "{refused}"
+        );
+        assert!(
+            refused.to_string().contains("only to applications"),
+            "{refused}"
+        );
     }
 
     /// **A hand-edited grant to the whole machine is refused**, in the words of

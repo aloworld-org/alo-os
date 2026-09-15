@@ -1,17 +1,19 @@
 //! What a grant covers, and what a verb asks to touch.
 //!
 //! Two types facing each other. [`Reach`] is the person's side: the folder they
-//! picked, the document they offered, the application they allowed. [`Ask`] is
-//! the agent's side: the one thing a verb wants to act on, right now. The whole
-//! question this crate answers is whether some [`Reach`] a person made covers
-//! the [`Ask`] a verb arrived with.
+//! picked, the document they offered, the application they allowed, the camera
+//! they let a video-call application use. [`Ask`] is the other side: the one
+//! thing a verb — or an application's portal request — wants to act on, right
+//! now. The whole question this crate answers is whether some [`Reach`] a
+//! person made covers the [`Ask`] that arrived.
 //!
 //! Keeping them apart is what stops reach being widened by use. There is no
 //! method here that turns an [`Ask`] into a [`Reach`]; a grant is made by
 //! picking a folder and by nothing else.
 //!
 //! **Identities are matched exactly.** A folder is compared component by
-//! component and an application by its identifier, with no case folding.
+//! component, an application by its identifier and a [`Facility`] by what it
+//! is, with no case folding.
 //! Matching loosely means matching *more* than the person picked, and on this
 //! side of the system every widening is a security bug. Names people type are
 //! compared kindly elsewhere in alo OS; names the system enumerates are not.
@@ -37,6 +39,7 @@ use std::path::{Path, PathBuf};
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
+use crate::facility::Facility;
 use crate::path::{is_exactly, is_inside};
 use crate::words;
 
@@ -53,9 +56,13 @@ pub enum Reach {
     File(PathBuf),
     /// One installed application, by the identifier the system knows it by.
     Application(String),
+    /// Something this machine has that is not a path — the camera, the
+    /// screen, the person's notifications (ADR 0040). Granted to an
+    /// application and never to an agent; see [`crate::GrantError::NotForAnAgent`].
+    Facility(Facility),
 }
 
-/// What a verb is asking to touch.
+/// What a verb or a portal request is asking to touch.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Ask {
@@ -64,6 +71,8 @@ pub enum Ask {
     Path(PathBuf),
     /// An installed application, by its identifier.
     Application(String),
+    /// Something this machine has that is not a path.
+    Facility(Facility),
 }
 
 impl Ask {
@@ -79,12 +88,19 @@ impl Ask {
         Self::Application(id.trim().to_owned())
     }
 
+    /// A question about this facility.
+    #[must_use]
+    pub const fn facility(facility: Facility) -> Self {
+        Self::Facility(facility)
+    }
+
     /// What was asked for as a clause, carrying where its words came from.
     ///
     /// [`None`] for a path: it is a name off the person's own disk, there is
     /// nothing in it anybody could have translated, and a translation of it
     /// would be a different path. An application is introduced by a word,
-    /// because an identifier on its own reads like a typing mistake.
+    /// because an identifier on its own reads like a typing mistake, and a
+    /// facility is nothing but words.
     ///
     /// **Anything putting this inside another sentence wants
     /// [`fills`](Self::fills)**, which is this and the path together in one
@@ -97,6 +113,7 @@ impl Ask {
                 &words::AN_APPLICATION.key(),
                 &Filling::of("application", id.clone()),
             )),
+            Self::Facility(facility) => Some(facility.said(strings)),
         }
     }
 
@@ -132,6 +149,7 @@ impl Ask {
         match self {
             Self::Path(path) => path.display().to_string(),
             Self::Application(id) => id.clone(),
+            Self::Facility(facility) => facility.named().to_owned(),
         }
     }
 }
@@ -140,8 +158,10 @@ impl Reach {
     /// Whether this reach covers what is being asked for.
     ///
     /// A folder covers itself and everything under it; a file covers itself
-    /// alone; an application covers no path at all. A grant to a folder is not
-    /// a grant to an application that happens to live in it, which is why the
+    /// alone; an application covers no path at all; a facility covers itself
+    /// and nothing else. A grant to a folder is not a grant to an application
+    /// that happens to live in it, and a grant to the camera is not a grant to
+    /// the device node the camera happens to have today, which is why the
     /// mismatched pairs answer `false` rather than being clever.
     #[must_use]
     pub fn covers(&self, ask: &Ask) -> bool {
@@ -149,8 +169,10 @@ impl Reach {
             (Self::Folder(folder), Ask::Path(path)) => is_inside(folder, path),
             (Self::File(file), Ask::Path(path)) => is_exactly(file, path),
             (Self::Application(granted), Ask::Application(wanted)) => granted == wanted,
-            (Self::Folder(_) | Self::File(_), Ask::Application(_))
-            | (Self::Application(_), Ask::Path(_)) => false,
+            (Self::Facility(granted), Ask::Facility(wanted)) => granted == wanted,
+            (Self::Folder(_) | Self::File(_), Ask::Application(_) | Ask::Facility(_))
+            | (Self::Application(_), Ask::Path(_) | Ask::Facility(_))
+            | (Self::Facility(_), Ask::Path(_) | Ask::Application(_)) => false,
         }
     }
 
@@ -159,7 +181,7 @@ impl Reach {
     pub fn as_path(&self) -> Option<&Path> {
         match self {
             Self::Folder(path) | Self::File(path) => Some(path),
-            Self::Application(_) => None,
+            Self::Application(_) | Self::Facility(_) => None,
         }
     }
 
@@ -175,7 +197,7 @@ impl Reach {
 
     /// What is granted, as a clause carrying where its words came from.
     ///
-    /// Always a word, unlike [`Ask::said`]: every one of the three kinds is
+    /// Always a word, unlike [`Ask::said`]: every one of the four kinds is
     /// introduced by one, because a bare path in a list of grants would not say
     /// whether the folder or only the file was granted.
     ///
@@ -198,12 +220,17 @@ impl Reach {
                 words::AN_APPLICATION,
                 Filling::of("application", id.clone()),
             ),
+            Self::Facility(facility) => return facility.said(strings),
         };
         strings.say(&word.key(), &filling)
     }
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 mod tests {
     use super::*;
     use crate::testing::{in_english, translated};
@@ -248,6 +275,44 @@ mod tests {
         let app = Reach::Application("org.blender.Blender".to_owned());
         assert!(!app.covers(&Ask::path("/home/anna/Invoices/march.pdf")));
         assert!(app.as_path().is_none());
+    }
+
+    /// **A facility covers itself and nothing else** — not another facility,
+    /// not the device node it has today, and not an application.
+    #[test]
+    fn a_facility_covers_itself_and_nothing_else() {
+        let camera = Reach::Facility(Facility::Camera);
+        assert!(camera.covers(&Ask::facility(Facility::Camera)));
+        assert!(!camera.covers(&Ask::facility(Facility::Microphone)));
+        assert!(!camera.covers(&Ask::path("/dev/video0")));
+        assert!(!camera.covers(&Ask::application("camera")));
+        assert!(camera.as_path().is_none());
+
+        let once = Reach::Facility(Facility::ScreenOnce);
+        assert!(!once.covers(&Ask::facility(Facility::ScreenContinuously)));
+
+        // And nothing of another kind covers a facility.
+        assert!(!folder().covers(&Ask::facility(Facility::Camera)));
+        assert!(!Reach::Folder(PathBuf::from("/dev")).covers(&Ask::facility(Facility::Camera)));
+        assert!(!Reach::Application("camera".to_owned()).covers(&Ask::facility(Facility::Camera)));
+    }
+
+    /// A facility is words on both sides, and survives being written down.
+    #[test]
+    fn a_facility_reads_as_words_and_survives_being_written_down() {
+        let strings = in_english();
+        assert_eq!(
+            Reach::Facility(Facility::Microphone).shown(&strings),
+            "the microphone"
+        );
+        assert_eq!(
+            Ask::facility(Facility::Microphone).shown(&strings),
+            "the microphone"
+        );
+        let written = serde_json::to_string(&Reach::Facility(Facility::ScreenOnce)).unwrap();
+        assert_eq!(written, r#"{"facility":"screen-once"}"#);
+        let read: Reach = serde_json::from_str(&written).unwrap();
+        assert_eq!(read, Reach::Facility(Facility::ScreenOnce));
     }
 
     #[test]

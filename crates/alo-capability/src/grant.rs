@@ -7,10 +7,15 @@
 //! The properties a grant has to have are enforced here, at construction,
 //! because a check somewhere else is a check somebody can forget to call:
 //!
-//! - it names one agent — a grant to nobody grants nothing;
+//! - it names one agent or one application — a grant to nobody grants
+//!   nothing;
 //! - its path is a full path with no `..` in it, so it means the same thing
 //!   wherever it is read;
 //! - it is not the whole machine ([`GrantError::TheWholeMachine`]);
+//! - a [`Facility`](crate::Facility) — the camera, the screen — is granted to
+//!   an application and never to an agent ([`GrantError::NotForAnAgent`]).
+//!   What an agent sees of the person's machine is offered at the moment they
+//!   ask it, never watched, and a grant to the camera would be the opposite;
 //! - **it ends.** [`Grant::checked`] takes how long it lasts and refuses zero,
 //!   and there is no variant meaning "for ever". A grant that outlives the
 //!   reason it was made is the failure this crate exists to make impossible,
@@ -25,31 +30,10 @@ use std::time::{Duration, SystemTime};
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
+pub use crate::grantee::Grantee;
 use crate::path::{is_a_root, is_usable};
 use crate::reach::{Ask, Reach};
 use crate::words;
-
-/// Who a grant is for: one agent, by the name the system knows it by.
-///
-/// Compared exactly, like every other identity in this crate. Two agents whose
-/// names differ only in case are two agents, and letting one answer for the
-/// other would be a widening nobody asked for.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Grantee(String);
-
-impl Grantee {
-    /// The agent known by this name.
-    #[must_use]
-    pub fn named(name: &str) -> Self {
-        Self(name.trim().to_owned())
-    }
-
-    /// The name, as the system knows it.
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
 
 /// Why a grant could not be made.
 ///
@@ -66,6 +50,8 @@ impl Grantee {
 pub enum GrantError {
     /// No agent was named.
     Anonymous,
+    /// No application was named.
+    NoApplicationNamed,
     /// The folder, file or application was empty.
     NothingNamed,
     /// A grant to `/`, or to any other spelling of the whole machine.
@@ -79,6 +65,13 @@ pub enum GrantError {
     NoTime,
     /// A grant so long it has no end this machine can represent.
     NoEnd,
+    /// A grant to an agent over something that is not a path — the camera,
+    /// the screen, the person's notifications.
+    ///
+    /// Those are granted to applications (ADR 0040). An agent is offered what
+    /// it needs at the moment it is asked, and a durable grant to the camera
+    /// would be a background reader by another name.
+    NotForAnAgent,
 }
 
 impl GrantError {
@@ -87,12 +80,14 @@ impl GrantError {
     pub fn word(self) -> words::Word {
         match self {
             Self::Anonymous => words::ANONYMOUS,
+            Self::NoApplicationNamed => words::NO_APPLICATION_NAMED,
             Self::NothingNamed => words::NOTHING_NAMED,
             Self::TheWholeMachine => words::THE_WHOLE_MACHINE,
             Self::NotAFullPath => words::GRANT_NOT_A_FULL_PATH,
             Self::CouldLeadElsewhere => words::GRANT_COULD_LEAD_ELSEWHERE,
             Self::NoTime => words::GRANT_NO_TIME,
             Self::NoEnd => words::GRANT_NO_END,
+            Self::NotForAnAgent => words::NOT_FOR_AN_AGENT,
         }
     }
 
@@ -113,7 +108,7 @@ impl GrantError {
 /// Tuesday — still expiring at the moment it was always going to expire.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Grant {
-    /// The agent this grant is for.
+    /// The agent or application this grant is for.
     pub grantee: Grantee,
     /// What it covers.
     pub reach: Reach,
@@ -125,7 +120,8 @@ pub struct Grant {
 }
 
 impl Grant {
-    /// Make a grant, checking everything that has to be true of one.
+    /// Make a grant to the agent of this name, checking everything that has
+    /// to be true of one.
     ///
     /// `from` is the moment it starts, normally now; `lasting` is how long it
     /// runs for. The pair is the argument rather than an end time because
@@ -140,10 +136,36 @@ impl Grant {
         from: SystemTime,
         lasting: Duration,
     ) -> Result<Self, GrantError> {
-        let grantee = Grantee::named(grantee);
+        Self::checked_for(&Grantee::named(grantee), reach, from, lasting)
+    }
+
+    /// Make a grant to this grantee — an agent or an application — checking
+    /// everything that has to be true of one.
+    ///
+    /// [`Grant::checked`] is this for an agent. An application's grant is made
+    /// here with [`crate::Applicant::grantee`], and is held to every rule an
+    /// agent's is, with one more for the agent: a [`crate::Facility`] is never
+    /// granted to one.
+    ///
+    /// # Errors
+    /// [`GrantError`], saying what to fix.
+    pub fn checked_for(
+        grantee: &Grantee,
+        reach: Reach,
+        from: SystemTime,
+        lasting: Duration,
+    ) -> Result<Self, GrantError> {
         if grantee.as_str().is_empty() {
-            return Err(GrantError::Anonymous);
+            return Err(if grantee.is_an_application() {
+                GrantError::NoApplicationNamed
+            } else {
+                GrantError::Anonymous
+            });
         }
+        if matches!(reach, Reach::Facility(_)) && !grantee.is_an_application() {
+            return Err(GrantError::NotForAnAgent);
+        }
+        let grantee = grantee.clone();
         let reach = checked_reach(reach)?;
         if lasting.is_zero() {
             return Err(GrantError::NoTime);
@@ -176,7 +198,7 @@ impl Grant {
             .filter(|d| !d.is_zero())
     }
 
-    /// Whether this grant is for that agent.
+    /// Whether this grant is for that grantee.
     #[must_use]
     pub fn is_for(&self, grantee: &Grantee) -> bool {
         &self.grantee == grantee
@@ -219,6 +241,9 @@ fn checked_reach(reach: Reach) -> Result<Reach, GrantError> {
             }
             return Ok(Reach::Application(id.trim().to_owned()));
         }
+        // A facility is one of a closed list, so there is nothing in it to be
+        // empty, relative or the whole machine.
+        Reach::Facility(_) => {}
     }
     Ok(reach)
 }
@@ -339,6 +364,75 @@ mod tests {
         let read: Grant = serde_json::from_str(&written).unwrap();
         assert_eq!(read, grant);
         assert!(!read.is_active_at(noon() + hour()));
+    }
+
+    /// **An application's grant is held to every rule an agent's is**, and
+    /// may be over what an agent's may not.
+    #[test]
+    fn an_application_is_granted_under_the_same_rules() {
+        let cheese = crate::Applicant::named("org.gnome.Cheese").grantee();
+        let camera = Grant::checked_for(
+            &cheese,
+            Reach::Facility(crate::Facility::Camera),
+            noon(),
+            hour(),
+        )
+        .unwrap();
+        assert!(camera.is_for(&cheese));
+        assert!(!camera.is_for(&Grantee::named("org.gnome.Cheese")));
+        assert!(camera.permits(&Ask::facility(crate::Facility::Camera), noon()));
+        assert!(!camera.permits(&Ask::facility(crate::Facility::Camera), noon() + hour()));
+
+        for (reach, lasting, refused) in [
+            (
+                Reach::Folder("/".into()),
+                hour(),
+                GrantError::TheWholeMachine,
+            ),
+            (invoices(), Duration::ZERO, GrantError::NoTime),
+            (invoices(), Duration::MAX, GrantError::NoEnd),
+            (
+                Reach::Folder("/home/anna/../root".into()),
+                hour(),
+                GrantError::CouldLeadElsewhere,
+            ),
+        ] {
+            assert_eq!(
+                Grant::checked_for(&cheese, reach, noon(), lasting).unwrap_err(),
+                refused
+            );
+        }
+        assert_eq!(
+            Grant::checked_for(
+                &crate::Applicant::named("  ").grantee(),
+                invoices(),
+                noon(),
+                hour()
+            )
+            .unwrap_err(),
+            GrantError::NoApplicationNamed
+        );
+    }
+
+    /// **An agent is never granted the camera, the screen or anything else
+    /// that is not a path.** Context is offered, never watched.
+    #[test]
+    fn an_agent_is_never_granted_a_facility() {
+        for facility in crate::Facility::EVERY {
+            assert_eq!(
+                Grant::checked("@files", Reach::Facility(facility), noon(), hour()).unwrap_err(),
+                GrantError::NotForAnAgent,
+                "{facility:?}"
+            );
+        }
+        let said = GrantError::NotForAnAgent.said(&in_english());
+        assert!(said.text().contains("only to applications"), "{said}");
+        assert!(
+            !GrantError::NoApplicationNamed
+                .said(&in_english())
+                .text()
+                .contains("agent")
+        );
     }
 
     /// The errors say what to do, not what went wrong.

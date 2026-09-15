@@ -546,6 +546,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-portals"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-saying",
+ "alo-strings",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-printing"
 version = "0.0.1"
 dependencies = [
@@ -656,6 +667,7 @@ dependencies = [
  "alo-opening",
  "alo-overlay",
  "alo-picking",
+ "alo-portals",
  "alo-printing",
  "alo-protocol",
  "alo-recounting",

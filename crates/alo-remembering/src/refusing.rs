@@ -96,7 +96,8 @@ pub enum NotRemembered {
     /// Refused rather than guessed at, before any grant in the file is looked
     /// at — the machine description's rule, kept for its reason.
     #[error(
-        "these grants say format {format}, and this alo OS reads only format {}",
+        "these grants say format {format}, and this alo OS reads formats {} to {}",
+        crate::THE_FIRST_FORMAT,
         crate::THE_FORMAT
     )]
     AnotherFormat {
@@ -104,14 +105,66 @@ pub enum NotRemembered {
         format: u32,
     },
 
+    /// A grant in a format-1 file naming a key only format 2 has.
+    ///
+    /// No alo OS wrote that file: one that knew the key would have written the
+    /// number that goes with it. Refused rather than read as format 2, because
+    /// the number is what says which rules the rest of the file was written
+    /// under.
+    #[error(
+        "the grant kept under handle {handle} names `{key}`, which a format 1 file does not have \
+         — no alo OS wrote this, so say `format = 2` if the grant is meant"
+    )]
+    NewerThanItsFormat {
+        /// Which grant it is.
+        handle: u64,
+        /// The key.
+        key: &'static str,
+    },
+
+    /// A grant that is for nobody.
+    #[error(
+        "the grant kept under handle {handle} is for nobody — a grant names exactly one of `agent` \
+         or `applicant`"
+    )]
+    GrantedToNobody {
+        /// Which grant it is.
+        handle: u64,
+    },
+
+    /// A grant that names both an agent and an application.
+    ///
+    /// Refused rather than resolved: whichever were taken, the other is
+    /// somebody a person believes holds a grant and does not.
+    #[error(
+        "the grant kept under handle {handle} names both `agent` and `applicant`, and a grant is \
+         for exactly one of them"
+    )]
+    GrantedToTwo {
+        /// Which grant it is.
+        handle: u64,
+    },
+
+    /// A grant over a facility this alo OS does not have.
+    #[error(
+        "the grant kept under handle {handle} is over `{named}`, which is not a facility this \
+         machine has — the list is in docs/contracts/grants-file.md"
+    )]
+    NoSuchFacility {
+        /// Which grant it is.
+        handle: u64,
+        /// What the file called it.
+        named: String,
+    },
+
     /// A grant that is over nothing.
     ///
-    /// Every grant names exactly one of a folder, a file or an application,
-    /// because that is what [`alo_capability::Reach`] is. One naming none of
-    /// them would be a grant with nothing to be a grant over.
+    /// Every grant names exactly one of a folder, a file, an application or a
+    /// facility, because that is what [`alo_capability::Reach`] is. One naming
+    /// none of them would be a grant with nothing to be a grant over.
     #[error(
         "the grant kept under handle {handle} is over nothing — a grant names exactly one of \
-         `folder`, `file` or `application`"
+         `folder`, `file`, `application` or `facility`"
     )]
     ReachesNothing {
         /// Which grant it is.
@@ -124,8 +177,8 @@ pub enum NotRemembered {
     /// of them was taken, the other is a thing a person believes they granted
     /// and did not.
     #[error(
-        "the grant kept under handle {handle} names more than one of `folder`, `file` and \
-         `application`, and a grant is over exactly one thing"
+        "the grant kept under handle {handle} names more than one of `folder`, `file`, \
+         `application` and `facility`, and a grant is over exactly one thing"
     )]
     ReachesTwoThings {
         /// Which grant it is.

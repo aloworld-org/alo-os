@@ -95,6 +95,12 @@ pub const ANONYMOUS: Word = Word::saying(
     "say which agent this grant is for — a grant to nobody reaches nothing",
 );
 
+/// A grant naming no application.
+pub const NO_APPLICATION_NAMED: Word = Word::saying(
+    "capability.grant.no-application-named",
+    "say which application this grant is for — a grant to no application reaches nothing",
+);
+
 /// A grant over nothing at all.
 pub const NOTHING_NAMED: Word = Word::saying(
     "capability.grant.nothing-named",
@@ -132,6 +138,18 @@ pub const GRANT_NO_END: Word = Word::saying(
     "a grant has to end — choose how long this one should last",
 );
 
+/// A grant to an agent over something that is not a path (ADR 0040).
+pub const NOT_FOR_AN_AGENT: Word = Word::saying(
+    "capability.grant.not-for-an-agent",
+    "the camera, the microphone, the screen and the like are granted only to applications — an \
+     agent is offered what it needs at the moment you ask it",
+)
+.noting(
+    "An agent is an AI assistant, not a person. The second half is a rule of alo OS rather than \
+     an apology: what an agent sees is offered to it when a person asks it something, and never \
+     watched in the background.",
+);
+
 // ---------------------------------------------------------------------------
 // What a grant is over — [`crate::Reach`], and the applications half of
 // [`crate::Ask`].
@@ -162,6 +180,76 @@ pub const AN_APPLICATION: Word = Word::saying(
     "{application} is the identifier the system knows an application by, like \
      org.blender.Blender. It is never translated.",
 );
+
+// ---------------------------------------------------------------------------
+// What this machine has that is not a path — [`crate::Facility`], ADR 0040.
+//
+// Clauses, like the three above: each is what a grant is over in a person's
+// list, and what goes inside a refusal. Lowercase, because none is ever read on
+// its own.
+// ---------------------------------------------------------------------------
+
+/// The camera.
+pub const THE_CAMERA: Word = Word::saying("capability.facility.camera", "the camera").noting(
+    "What an application may be granted: whichever camera the machine has. A clause that goes \
+     inside another sentence, so it stays lowercase.",
+);
+
+/// The microphone.
+pub const THE_MICROPHONE: Word = Word::saying("capability.facility.microphone", "the microphone");
+
+/// One picture of the screen.
+pub const THE_SCREEN_ONCE: Word = Word::saying(
+    "capability.facility.screen-once",
+    "one picture of the screen",
+)
+.noting("A screenshot, taken once — a different grant from recording or sharing the screen.");
+
+/// The screen, continuously.
+pub const THE_SCREEN_CONTINUOUSLY: Word = Word::saying(
+    "capability.facility.screen-continuously",
+    "the screen, continuously",
+)
+.noting("Recording the screen or sharing it in a call — a different grant from one picture of it.");
+
+/// Showing the person notifications.
+pub const NOTIFICATIONS: Word = Word::saying(
+    "capability.facility.notifications",
+    "sending you notifications",
+);
+
+/// What the person copied.
+pub const THE_CLIPBOARD: Word = Word::saying("capability.facility.clipboard", "what you copied")
+    .noting("The clipboard: whatever the person last copied.");
+
+/// The desktop background.
+pub const THE_DESKTOP_BACKGROUND: Word = Word::saying(
+    "capability.facility.desktop-background",
+    "the desktop background",
+);
+
+/// The person's appearance settings.
+pub const APPEARANCE_SETTINGS: Word = Word::saying(
+    "capability.facility.appearance-settings",
+    "your appearance settings",
+)
+.noting("Light or dark, the accent colour and contrast — what an application reads to match them.");
+
+/// Whether the machine sleeps.
+pub const SLEEP: Word = Word::saying("capability.facility.sleep", "keeping the machine awake")
+    .noting("Stopping the machine from sleeping, for example during a presentation.");
+
+/// The state of the network.
+pub const THE_NETWORK_STATE: Word = Word::saying(
+    "capability.facility.network-state",
+    "the state of the network",
+)
+.noting("Whether the machine is connected, and how — never what is sent over it.");
+
+/// The power profile.
+pub const THE_POWER_PROFILE: Word =
+    Word::saying("capability.facility.power-profile", "the power profile")
+        .noting("Whether the machine is saving power, balanced, or running at full performance.");
 
 // ---------------------------------------------------------------------------
 // What the grants say when they refuse — [`crate::NotGranted`] and
@@ -207,6 +295,30 @@ pub const NO_AGENT: Word = Word::saying(
      it read like one: they chose to run alo OS without an agent, and there is no grants panel \
      for them to go to. {agent} is never translated; {wanted} arrives already in the reader's \
      language.",
+);
+
+/// An application's grant that covered it and has run out (ADR 0040).
+pub const APPLICATION_LAPSED: Word = Word::saying(
+    "capability.refused.application-expired",
+    "{application} was granted {reach} and that has expired — grant it again to let {application} \
+     use {wanted}",
+)
+.noting(
+    "{application} is the identifier of an application, like org.gnome.Cheese, and is never \
+     translated. It is an application, not an agent and not a person. {reach} and {wanted} arrive \
+     already in the reader's language.",
+);
+
+/// Nothing granted to an application has ever covered it (ADR 0040).
+pub const APPLICATION_NEVER_GRANTED: Word = Word::saying(
+    "capability.refused.application-never-granted",
+    "{application} has not been granted {wanted} — an application reaches only what you grant it, \
+     never what it asks for",
+)
+.noting(
+    "{application} is the identifier of an application, like org.gnome.Cheese, and is never \
+     translated. The second half is the rule: asking is not granting. {wanted} arrives already in \
+     the reader's language.",
 );
 
 /// A change offered where only a read may go.
@@ -442,20 +554,35 @@ pub const HAS_NO_AGENT: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 50] = [
     ANONYMOUS,
+    NO_APPLICATION_NAMED,
     NOTHING_NAMED,
     THE_WHOLE_MACHINE,
     GRANT_NOT_A_FULL_PATH,
     GRANT_COULD_LEAD_ELSEWHERE,
     GRANT_NO_TIME,
     GRANT_NO_END,
+    NOT_FOR_AN_AGENT,
     A_FOLDER,
     A_FILE,
     AN_APPLICATION,
+    THE_CAMERA,
+    THE_MICROPHONE,
+    THE_SCREEN_ONCE,
+    THE_SCREEN_CONTINUOUSLY,
+    NOTIFICATIONS,
+    THE_CLIPBOARD,
+    THE_DESKTOP_BACKGROUND,
+    APPEARANCE_SETTINGS,
+    SLEEP,
+    THE_NETWORK_STATE,
+    THE_POWER_PROFILE,
     HAS_EXPIRED,
     NEVER_GRANTED,
     NO_AGENT,
+    APPLICATION_LAPSED,
+    APPLICATION_NEVER_GRANTED,
     CHANGE_WAITS,
     WANTED_NUMBER,
     WANTED_TEXT,
@@ -599,6 +726,19 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
+    /// **No sentence an application reads calls it an agent** (ADR 0040).
+    #[test]
+    fn what_an_application_is_told_never_calls_it_an_agent() {
+        for word in [
+            NO_APPLICATION_NAMED,
+            APPLICATION_LAPSED,
+            APPLICATION_NEVER_GRANTED,
+        ] {
+            assert!(!word.says().contains("agent"), "{}", word.named());
+            assert!(!word.says().contains("folder"), "{}", word.named());
+        }
+    }
+
     /// The sentences that carry something off the machine — a name, an
     /// identifier, a number, a list of options — say so, because a translator
     /// with no product in front of them cannot tell a gap that is a word from
@@ -611,6 +751,9 @@ mod tests {
             HAS_EXPIRED,
             NEVER_GRANTED,
             NO_AGENT,
+            NOT_FOR_AN_AGENT,
+            APPLICATION_LAPSED,
+            APPLICATION_NEVER_GRANTED,
             CHANGE_WAITS,
             NOT_ON_THE_LIST,
             NO_SUCH_VERB,
