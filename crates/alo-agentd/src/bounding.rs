@@ -174,13 +174,7 @@ impl Bounding for ByTheKernel {
         to: &[std::net::SocketAddr],
         doing: &mut dyn FnMut(),
     ) -> Result<(), NoBoundary> {
-        let shown: Vec<Departure> = to.iter().copied().map(as_a_departure).collect();
-        let Some(shown) = Departures::of(&shown) else {
-            return Err(NoBoundary::because(format!(
-                "a request naming {} addresses is more than one entry holds",
-                to.len()
-            )));
-        };
+        let shown = departures_of(to)?;
         let named = next_name(&mut self.named);
         self.turns
             .doing(
@@ -202,17 +196,51 @@ impl Bounding for ByTheKernel {
     }
 }
 
+/// The addresses a request registers, as the map holds destinations.
+///
+/// # Errors
+/// [`NoBoundary`] when there are more than one entry holds, and when one of them
+/// is a link-local address with no interface beside it (ADR 0041): such an
+/// address names no network, the kernel refuses every departure to it, and a
+/// question registered that way would be put inside a boundary that could only
+/// refuse it — so it is not put, and the service log says why.
+fn departures_of(to: &[std::net::SocketAddr]) -> Result<Departures, NoBoundary> {
+    let shown: Vec<Departure> = to.iter().copied().map(as_a_departure).collect();
+    if let Some(nowhere) = to
+        .iter()
+        .zip(&shown)
+        .find_map(|(address, shown)| (!shown.names_its_network()).then_some(address))
+    {
+        return Err(NoBoundary::because(format!(
+            "{nowhere} is a link-local address with no interface, which names no network"
+        )));
+    }
+    Departures::of(&shown).ok_or_else(|| {
+        NoBoundary::because(format!(
+            "a request naming {} addresses is more than one entry holds",
+            to.len()
+        ))
+    })
+}
+
 /// One address, as the map holds a destination.
 ///
 /// The two families are kept apart rather than folded together: `::ffff:1.2.3.4`
 /// and `1.2.3.4` are different destinations, and a shape that could not tell
 /// them apart would let one stand for the other.
+///
+/// **An IPv6 address carries the interface it was resolved on**, and
+/// `alo_bounding::Departure::on` keeps it only where the address needs one — a
+/// paired machine found at `fe80::…%3` is registered on interface 3 and nowhere
+/// else (ADR 0041).
 fn as_a_departure(address: std::net::SocketAddr) -> Departure {
     match address {
         std::net::SocketAddr::V4(four) => {
             Departure::of(Family::Four, u128::from(four.ip().to_bits()), four.port())
         }
-        std::net::SocketAddr::V6(six) => Departure::of(Family::Six, six.ip().to_bits(), six.port()),
+        std::net::SocketAddr::V6(six) => {
+            Departure::on(Family::Six, six.ip().to_bits(), six.port(), six.scope_id())
+        }
     }
 }
 
@@ -266,6 +294,61 @@ mod tests {
 
         assert!(crossed.a_thread_is_still_inside());
         assert!(crossed.why().contains("could not be brought back"));
+    }
+
+    /// **A paired machine found at a link-local address is registered on the
+    /// interface it was found on, and nowhere else** — the same address on
+    /// another interface is another machine (ADR 0041).
+    #[expect(
+        clippy::panic,
+        reason = "in a test, a panic on an unexpected refusal is the failure being reported"
+    )]
+    #[test]
+    fn a_link_local_address_is_registered_on_its_interface() {
+        use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
+
+        let studio = Ipv6Addr::new(0xfe80, 0, 0, 0, 0x0a1b, 0x2c3d, 0x4e5f, 0x6071);
+        let on_the_cable = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 3));
+        let shown = departures_of(&[on_the_cable]).unwrap_or_else(|why| panic!("{}", why.why()));
+
+        assert!(shown.holds(Departure::on(Family::Six, studio.to_bits(), 7_610, 3)));
+        assert!(!shown.holds(Departure::on(Family::Six, studio.to_bits(), 7_610, 4)));
+        assert!(!shown.holds(Departure::of(Family::Six, studio.to_bits(), 7_610)));
+
+        // An address that names its own network is registered as it always was,
+        // whatever scope a resolver left beside it.
+        let global = Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1);
+        let shown = departures_of(&[SocketAddr::V6(SocketAddrV6::new(global, 443, 0, 9))])
+            .unwrap_or_else(|why| panic!("{}", why.why()));
+        assert!(shown.holds(Departure::of(Family::Six, global.to_bits(), 443)));
+    }
+
+    /// **A link-local address with no interface is not registered, and the
+    /// question is not put**, with the address named for whoever looks after the
+    /// machine — rather than a boundary entered that could only refuse it.
+    #[expect(
+        clippy::panic,
+        reason = "in a test, a panic on an unexpected registration is the failure being reported"
+    )]
+    #[test]
+    fn a_link_local_address_with_no_interface_is_refused_before_a_boundary() {
+        use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
+
+        let studio = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 0x20);
+        let nowhere = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 0));
+        let Err(refused) = departures_of(&[nowhere]) else {
+            panic!("a link-local address with no interface was registered");
+        };
+        assert!(refused.why().contains("fe80::20"), "{}", refused.why());
+        assert!(refused.why().contains("no interface"), "{}", refused.why());
+        assert!(!refused.a_thread_is_still_inside());
+
+        // And more addresses than an entry holds is still its own refusal.
+        let four = SocketAddr::new(std::net::Ipv4Addr::new(192, 0, 2, 10).into(), 443);
+        let Err(too_many) = departures_of(&[four; 3]) else {
+            panic!("three addresses fitted an entry that holds two");
+        };
+        assert!(too_many.why().contains("more than one entry holds"));
     }
 
     /// **Every turn is made under a name of its own**, and the name is a count

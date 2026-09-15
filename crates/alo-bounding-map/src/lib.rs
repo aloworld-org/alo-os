@@ -12,6 +12,7 @@
 //! | [`Place`] | One thing on a disk, named the way the kernel names it |
 //! | [`Bounds`] | Everywhere one turn may reach, which is the value of one entry |
 //! | [`reaches`] | Whether an opened file is a granted place or lies under one |
+//! | [`Departure`] | Somewhere on a network one turn may connect to, with the interface a link-local address is on |
 //! | [`Field`] | Where in the kernel's own structures the program has to look |
 //!
 //! # Why a crate rather than a struct copied twice
@@ -61,6 +62,6 @@ mod reaching;
 
 pub use bound::Place;
 pub use bounds::{Bounds, PLACES, WORDS};
-pub use departure::{DESTINATIONS, Departure, Departures, Family};
+pub use departure::{DESTINATIONS, Departure, Departures, Family, needs_an_interface};
 pub use field::Field;
 pub use reaching::{DEPTH, reaches};

@@ -561,6 +561,67 @@ turns a mapped IPv4 address back into IPv4. A kernel with no IPv6 is a line in t
 service log and discovery over IPv4 alone. What two physical machines on a cable
 with no DHCP server hear is still owed to two machines.
 
+### The Linux kernel — a link-local destination takes its interface from the address or else from the socket, the same link-local address on two interfaces is two destinations, and `/sys/class/net` answers for another namespace
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`),
+iproute2 6.19.0 (`dummy`, `veth`), `http` 1.5.0 and `ureq` 3.4.0; measured on
+2026-09-15 by `crates/alo-bounding/tests/a_link_local_departure_names_its_interface.rs`
+and `crates/alo-agentd/src/a_paired_machine_over_link_local.rs`.
+**Behaviour:** RFC 4007 says a link-local address needs a zone; ADR 0041 made the
+zone part of a departure, and to decide one the programme has to take the interface
+from where the kernel does:
+
+- **The same link-local address on two interfaces is two reachable places.** Two
+  `dummy` interfaces in one namespace, each given `fe80::a1/64` with `nodad`: a
+  connection to `fe80::a1%<first>` and one to `fe80::a1%<second>` were both accepted
+  by one listener on `[::]`, and a datagram to either was sent. Measured — and
+  measured again as the reason for the decision: with the interface dropped from the
+  departure (a mutation run of the test), a turn shown the first interface reached
+  the second by all four roads.
+- **Where a scope is read from.** `connect(2)` and `sendto(2)` take the interface
+  from `sin6_scope_id` when it is not zero; with it zero, from the interface the
+  socket is held to (`sk_bound_dev_if`), which a scoped `connect` and a `bind` to a
+  scoped link-local address set. Measured for the three a Rust program can make: a
+  scoped `connect` and the writes after it, a scoped `sendto`, and a `sendto` naming
+  no scope from a socket bound to `fe80::a1%<interface>` — each reached or refused
+  by the interface it named or was held to. That the kernel reads a scope only from
+  an address of the full `sizeof(struct sockaddr_in6)`, twenty-eight bytes, and
+  that `IPV6_UNICAST_IF`, `IPV6_MULTICAST_IF` and an `IPV6_PKTINFO` control message
+  choose an interface only when neither of those did, is the kernel's source
+  (`tcp_v6_connect`, `udpv6_sendmsg`), not measured: `std` always passes twenty-eight
+  bytes and sets none of the three.
+- **`/sys/class/net/<name>` answers for the namespace `sysfs` was mounted in.** Inside
+  `unshare --net`, with `/sys` inherited, the interfaces the namespace made were not
+  there, and `/proc/net/if_inet6` — which answers for the reader's namespace — listed
+  them with their indexes. Measured. A `dummy` interface also carries no
+  `IFF_MULTICAST` (the driver's source, not measured), so
+  `crate::networks::link_local_networks` rightly never lists one.
+- **A zone inside brackets is a valid authority to `http`, and `ureq` dials the
+  address it was handed.** `http://[fe80::…%3]:7611/v1/chat/completions` parsed, and
+  the question reached the studio at the registered scoped address through
+  `alo_asking`'s resolver of registered addresses. Measured end to end. `std`'s
+  `(host, port).to_socket_addrs()` does not parse a `%` itself and hands such a host
+  to the system resolver (the standard library's source).
+- **A threaded `home` group left by a test that panicked makes its parent "domain
+  threaded"** and the next `Turns::of_this_service` from that scope fails with
+  `EEXIST` — measured once while building the end-to-end test, on
+  `/sys/fs/cgroup/init.scope/home`, removed by hand once `cgroup.threads` read
+  empty. The same cascade *A boundary fixture takes a control group away while its
+  process is still leaving* records.
+
+**Our response:** `alo_bounding_map::Departure::on` keeps an interface exactly where
+`needs_an_interface` (the kernel's `__ipv6_addr_needs_scope_id`) says an address
+needs one, and `Departures::holds` refuses a destination that needs one and has
+none. `alo-bounding-kernel`'s `departing.rs` reads `sin6_scope_id` only when the
+caller's length is twenty-eight bytes or more, else `skc_bound_dev_if` — both
+offsets for the socket side read out of the running kernel's type information — and
+for a joined socket's peer reads `skc_bound_dev_if`; a destination that names no
+interface either way is refused. `alo-agentd` registers a scoped address on its
+interface and refuses to register a link-local one with none. `alo-turn` parses a
+scoped literal itself rather than handing it to the resolver. The tests read
+interface indexes from `/proc/net/if_inet6`, and the end-to-end test gives the
+control group subtree back whether or not it fails. What two physical machines on a
+cable measure is still owed to two machines.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

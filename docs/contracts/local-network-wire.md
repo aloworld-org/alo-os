@@ -301,6 +301,13 @@ machine is found on those too:
   and a workspace likewise. **Where both answered, the IPv4 address is the one
   written first and so the one a pairing dials**; where only IPv6 answered, the
   scoped link-local address is.
+- **A scoped address is a departure on its interface.** A question from a turn to
+  a paired machine at a scoped link-local address leaves under a departure holding
+  the address, the port **and the interface** (ADR 0041), so the kernel permits it
+  on the interface it was found on and refuses the same address on any other; a
+  link-local address with no interface is not registered and the question is not
+  put. The indicator and the record name the machine as over IPv4, by the name its
+  person gave it, with no address.
 - There is still no setting: no *IPv6 on/off*, and no family chosen by a person or
   an agent (ADR 0003). A request naming one is refused on either door.
 

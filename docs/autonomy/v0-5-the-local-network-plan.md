@@ -1072,7 +1072,39 @@ step the promise removes, and a typed address is what ADR 0003 says nothing dial
 
 ### 24. A paired machine reached over IPv6 link-local is still a departure the kernel bounds and the indicator shows
 
-**Status:** ready. **Depends on:** 3, 14, 23.
+**Status:** **Done, 2026-09-15.** Decided first in
+[ADR 0041](../decisions/0041-a-link-local-departure-names-its-interface.md): **a
+departure to an address that needs an interface carries it, and one with no
+interface is nowhere** — matching the address and port alone would have widened a
+link-local departure to every link. Built in `crates/alo-bounding-map`
+(`departure.rs` — `Departure::on`, `needs_an_interface` (the kernel's own
+`__ipv6_addr_needs_scope_id`), `Departure::interface` and `names_its_network`, the
+interface packed into bits that were zero so the map is not a byte wider;
+`Departures::holds` refuses a destination that names no network; `field.rs` —
+`SockBoundInterface` and `MessageNameLength`), `crates/alo-bounding-kernel`
+(`departing.rs`, split out of `deciding.rs` — the interface read from the
+`sockaddr_in6` scope when the caller's length carries one, else from the socket's
+`skc_bound_dev_if`, for `connect`, `sendto` and a joined socket's peer; the
+offsets map eighteen slots for sixteen fields), `crates/alo-bounding` (the two
+offsets found and width-checked, the fixture), `crates/alo-agentd` (`bounding.rs` —
+a scoped address registered on its interface, an unscoped link-local one refused
+before a boundary with the address named in the service log) and `crates/alo-turn`
+(`asking.rs` — a scoped literal registered as written rather than handed to the
+resolver). **The indicator and the record name a paired machine by its name in both
+families and print no address**, decided in the ADR. Tested on a real kernel by
+`crates/alo-bounding/tests/a_link_local_departure_names_its_interface.rs` (the same
+link-local address on two interfaces in a namespace of its own, every road the
+kernel takes an interface from — refused on the one nobody showed, and a mutation
+that drops the interface makes every refusal a reach) and
+`crates/alo-agentd/src/a_paired_machine_over_link_local.rs` (a studio found only
+over IPv6 on a `veth` cable, asked from a turn bounded by the real programme,
+shown and recorded; the studio's address on another interface refused with
+`EACCES` and counted as never arriving; then IPv4 added and the departure recorded
+over it the same value). `docs/contracts/local-network-wire.md` gains one additive
+line; `docs/quirks.md` records the kernel's behaviour. The report is
+`docs/autonomy/updates/a-paired-machine-over-link-local-is-a-bounded-departure.md`.
+**Depends on:** 3, 14, 23.
+
 
 *One GPU box serves the office — it is still egress, and the indicator still fires.*
 Since task 23 a paired machine on a network with no IPv4 address is found, paired
@@ -1104,3 +1136,39 @@ exactly the network this release just made to work.
   0028); if the shape of a departure has to change, that is an ADR before it is
   code. What reality does that the specification does not say goes in
   `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 25. A private IPv4 address on two networks is still one destination the kernel bounds
+
+**Status:** ready. **Depends on:** 22, 24.
+
+*One GPU box serves the office — it is still egress, and the indicator still fires.*
+Since task 22 a machine on two networks is found on each, and since task 24 a
+link-local departure carries the interface it leaves by (ADR 0041). An IPv4
+departure still does not, and ADR 0041 names why that is a limitation rather than a
+decision: `192.168.1.20` on the wired network and `192.168.1.20` on the Wi-Fi are
+two machines whenever two routers hand out the same private range, which is most
+offices and most homes. A turn shown the studio at `192.168.1.20` on one network is
+today permitted the same address on the other — through a route that changed while
+the question was open, or a socket held to the other interface — and the kernel
+dials either without complaint, because unlike a link-local address an IPv4 address
+needs no interface to be dialled, so there is no scope to read.
+
+- **Acceptance:** how an IPv4 departure to a paired machine is held to the network
+  it was found on is decided — held to the interface by the daemon and checked by the
+  kernel against the socket's `skc_bound_dev_if`, decided by the route the kernel
+  would take, or deliberately not, with the reason — **in an ADR before it is code**,
+  with the options and what each costs a question that is not to a paired machine
+  (a provider, whose address is not on any one network); if built, a question from a
+  turn to a paired machine at a private IPv4 address is reached on the network it was
+  found on and refused with `EACCES` on another network carrying the same address,
+  tested on a real kernel under `alo_bounding::Waited::on_this_kernel()` with two
+  interfaces in a namespace of their own carrying the same IPv4 address and a
+  listener that would have answered on either; a provider's departure is unchanged,
+  tested; and what the indicator and the record name is unchanged in shape, tested.
+- **Constraint:** ADR 0003, ADR 0007, ADR 0020 and ADR 0041 as they stand: no
+  departure is widened to a prefix, an interface or "the local network", loopback
+  stays the only unchecked destination, and there is still no setting — no network
+  chosen by a person or an agent. Editing `alo-bounding`, `alo-bounding-map` or
+  `alo-bounding-kernel` is coordinated with the lane that owns them (ADR 0028). What
+  reality does that the specification does not say goes in `docs/quirks.md`. Nothing
+  in `alo-shell`, nothing in `image/`.

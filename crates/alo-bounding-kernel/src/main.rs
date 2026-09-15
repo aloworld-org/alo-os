@@ -10,6 +10,7 @@
 //! |---|---|
 //! | [`kernel`] | The only file here that talks to the kernel, and the only one with `unsafe` in it |
 //! | [`deciding`] | What happens on an open, in ordinary Rust |
+//! | [`departing`] | What happens when a turn connects or sends, in ordinary Rust |
 //!
 //! # Why this is its own package
 //!
@@ -62,6 +63,7 @@
 #![warn(missing_docs)]
 
 mod deciding;
+mod departing;
 mod kernel;
 
 /// What a BPF program does when something has gone wrong, which is nothing.

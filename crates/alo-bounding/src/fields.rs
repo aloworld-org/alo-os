@@ -1,6 +1,6 @@
-//! The fourteen offsets, found in this kernel and checked before they are used.
+//! The sixteen offsets, found in this kernel and checked before they are used.
 //!
-//! [`Field`] says which fourteen and how wide each should be; `btf.rs` says where
+//! [`Field`] says which sixteen and how wide each should be; `btf.rs` says where
 //! this kernel keeps them. This file is the meeting of the two, and the two
 //! refusals that come out of it.
 //!
@@ -75,12 +75,12 @@ mod tests {
     use super::*;
     use crate::testing;
 
-    /// The ordinary case, against the fixture: fourteen fields, each at the offset
+    /// The ordinary case, against the fixture: sixteen fields, each at the offset
     /// the type information gives.
     #[test]
     fn every_field_is_found_where_this_kernel_keeps_it() {
         let types = Types::read(testing::some_type_information()).expect("the fixture reads");
-        let offsets = Offsets::found(&types).expect("the fixture has all fourteen");
+        let offsets = Offsets::found(&types).expect("the fixture has all sixteen");
         assert_eq!(offsets.at(Field::FilePath), 16);
         assert_eq!(offsets.at(Field::PathDentry), 8);
         assert_eq!(offsets.at(Field::DentryParent), 24);
@@ -101,6 +101,11 @@ mod tests {
         // an inode on the real kernel as it does here, so zero once more —
         // and two bytes wide, which the width check holds it to.
         assert_eq!(offsets.at(Field::InodeMode), 0);
+        // The two a link-local destination is decided with (ADR 0041): an
+        // `int` inside `__sk_common`, measured as a sum again, and the length
+        // beside `msg_name`.
+        assert_eq!(offsets.at(Field::SockBoundInterface), 28);
+        assert_eq!(offsets.at(Field::MessageNameLength), 8);
         assert_eq!(offsets.each().count(), Field::ALL.len());
     }
 

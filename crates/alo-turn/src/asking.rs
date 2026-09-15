@@ -455,10 +455,20 @@ fn after_it_left(why: NotKept) -> NoAnswer {
 ///
 /// An address that cannot be resolved yields none, and a request with nowhere
 /// to go is refused by the door rather than sent somewhere nobody registered.
+///
+/// **A link-local address keeps the interface it was found on.** A paired
+/// machine heard only over IPv6 is dialled at `fe80::…%3`, and the `%3` is
+/// read here as the number it is rather than handed to the system resolver,
+/// whose reading of a scope is its own: the interface is what the kernel
+/// checks the departure on (ADR 0041), so it is decided by the address the
+/// door was given and nothing else.
 fn registering(where_to: Option<(String, u16)>) -> Vec<SocketAddr> {
     let Some((host, port)) = where_to else {
         return Vec::new();
     };
+    if let Ok(scoped) = format!("[{host}]:{port}").parse::<std::net::SocketAddrV6>() {
+        return vec![SocketAddr::V6(scoped)];
+    }
     (host.as_str(), port)
         .to_socket_addrs()
         .into_iter()
@@ -1045,5 +1055,53 @@ mod tests {
                 .is_ok()
         );
         assert!(grants.is_empty(), "asking a question granted something");
+    }
+
+    /// **A paired machine found only over IPv6 is registered at its link-local
+    /// address with the interface it was found on** — read out of the address the
+    /// corridor was given, not handed to a resolver — because that interface is
+    /// what the kernel checks the departure on (ADR 0041). And a machine found
+    /// over IPv4 is registered exactly as it was before.
+    #[test]
+    fn a_paired_machine_at_a_link_local_address_is_registered_with_its_interface() {
+        use std::net::{Ipv6Addr, SocketAddrV6};
+
+        use alo_asking::DownTheCorridor;
+        use alo_nearby::MayAskIts;
+
+        use crate::testing::{paired_with_the_studio, the_studio, this_machine};
+
+        let pairings = paired_with_the_studio(&[MayAskIts::Models]);
+        let studio = Ipv6Addr::new(0xfe80, 0, 0, 0, 0x0a1b, 0x2c3d, 0x4e5f, 0x6071);
+        let on_the_cable = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 3));
+        let corridor = |at: SocketAddr| {
+            DownTheCorridor::paired(
+                &pairings,
+                &this_machine(),
+                &the_studio(),
+                "the studio machine",
+                at,
+                None,
+                noon(),
+            )
+            .unwrap()
+        };
+
+        assert_eq!(
+            registering(corridor(on_the_cable).where_it_would_connect()),
+            vec![on_the_cable]
+        );
+        let over_ipv4: SocketAddr = "192.168.1.20:7610".parse().unwrap();
+        assert_eq!(
+            registering(corridor(over_ipv4).where_it_would_connect()),
+            vec![over_ipv4]
+        );
+        // A link-local address with no interface is registered as what it is,
+        // and the boundary refuses it by name rather than this guessing one.
+        let unscoped = SocketAddr::V6(SocketAddrV6::new(studio, 7_610, 0, 0));
+        assert_eq!(
+            registering(corridor(unscoped).where_it_would_connect()),
+            vec![unscoped]
+        );
     }
 }

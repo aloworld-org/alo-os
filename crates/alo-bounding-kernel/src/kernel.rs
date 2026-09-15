@@ -58,7 +58,7 @@ use aya_ebpf::{
 
 use alo_bounding_map::{Bounds, Field, WORDS};
 
-use crate::deciding;
+use crate::{deciding, departing};
 
 /// Which turn may reach where: the cgroup a turn runs in, against the places it
 /// was granted.
@@ -79,11 +79,11 @@ static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 /// attached, so nothing here is compiled against a kernel version. `Field` is
 /// the agreement about which slot is which.
 ///
-/// Sixteen slots for fourteen fields. The spare ones are read back by
+/// Eighteen slots for sixteen fields. The spare ones are read back by
 /// `the_boundary_decides_and_forgets` and held at zero, because an array this
 /// program can already reach is exactly where a counter would sit.
 #[map(name = "FIELDS")]
-static FIELDS: Array<u32> = Array::with_max_entries(16, 0);
+static FIELDS: Array<u32> = Array::with_max_entries(18, 0);
 
 /// Every open of every file, on this machine, from now until the program is
 /// detached.
@@ -176,22 +176,26 @@ pub fn inode_link(ctx: LsmContext) -> i32 {
 /// Every connection made on this machine, until the program is detached.
 ///
 /// `socket_connect(struct socket *sock, struct sockaddr *address, int addrlen)`
-/// — three arguments, so the previous module's decision is the fourth. The
-/// socket itself is handed over and is not read: what decides is **where the
-/// connection is going**, and that is the address.
+/// — three arguments, so the previous module's decision is the fourth. What
+/// decides is **where the connection is going**, and that is the address — with
+/// its length, because a scope is read only from an address long enough to
+/// carry one, and the socket, because a link-local address that names no scope
+/// leaves by the interface the socket is held to (ADR 0041).
 ///
 /// This is the other half of law 1. The four hooks before it are about what a
 /// turn reaches on a disk; this is about what it reaches off the machine, and
-/// [`crate::deciding::decide_departure`] argues what may and may not be decided
+/// [`crate::departing::decide_departure`] argues what may and may not be decided
 /// here.
 #[lsm(hook = "socket_connect")]
 pub fn socket_connect(ctx: LsmContext) -> i32 {
+    let socket: u64 = ctx.arg(0);
     let where_to: u64 = ctx.arg(1);
+    let length: i32 = ctx.arg(2);
     let already: i32 = ctx.arg(3);
     if already != 0 {
         return already;
     }
-    deciding::decide_departure(where_to)
+    departing::decide_departure(socket, where_to, length)
 }
 
 /// Every message sent on every socket on this machine, until the program is
@@ -209,7 +213,7 @@ pub fn socket_connect(ctx: LsmContext) -> i32 {
 /// actually leave — and it is asked of the **sending thread's** control group,
 /// so a socket the daemon opened outside any turn is still the turn's to
 /// answer for the moment a turn writes on it.
-/// [`crate::deciding::decide_message`] says what may be decided here and what
+/// [`crate::departing::decide_message`] says what may be decided here and what
 /// may not.
 #[lsm(hook = "socket_sendmsg")]
 pub fn socket_sendmsg(ctx: LsmContext) -> i32 {
@@ -219,7 +223,7 @@ pub fn socket_sendmsg(ctx: LsmContext) -> i32 {
     if already != 0 {
         return already;
     }
-    deciding::decide_message(socket, message)
+    departing::decide_message(socket, message)
 }
 
 /// Every read and every write of every file, on this machine, until the

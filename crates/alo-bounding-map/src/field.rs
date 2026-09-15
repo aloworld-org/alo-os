@@ -33,8 +33,9 @@
 /// to the directory entry, and from there upwards and sideways into the inode
 /// and the filesystem. After those come the six the message hook reads, from
 /// the socket it was handed to the address of whoever is on the other end —
-/// and last the one field the read-and-write hook needs that the walk does
-/// not, which is what kind of file it was handed.
+/// then the one field the read-and-write hook needs that the walk does not,
+/// which is what kind of file it was handed — and last the two a
+/// link-local destination needs to be decided on its interface (ADR 0041).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -99,6 +100,24 @@ pub enum Field {
     /// which kind it was handed so as to leave a socket to the hook that can
     /// decide about it, and the kind is in the mode.
     InodeMode,
+
+    /// `struct sock`'s `__sk_common.skc_bound_dev_if` — the interface a socket
+    /// is held to, as the kernel numbers interfaces, and zero for one held to
+    /// none.
+    ///
+    /// Where a link-local destination's interface is when the address itself
+    /// does not say it: a `connect` with a scope sets it, and a socket bound to
+    /// an interface or to a scoped link-local address has it already. ADR 0041
+    /// is why a link-local departure is decided with it.
+    SockBoundInterface,
+
+    /// `struct msghdr`'s `msg_namelen` — how many bytes of the address a
+    /// message names are really there.
+    ///
+    /// Read before an IPv6 address's scope is, because the kernel copies only
+    /// that many bytes of the caller's address and reads a scope only from one
+    /// long enough to hold it: past the length is whatever was on the stack.
+    MessageNameLength,
 }
 
 impl Field {
@@ -106,7 +125,7 @@ impl Field {
     ///
     /// The loader walks this, so a field added here is a field looked up rather
     /// than a field silently left at zero.
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 16] = [
         Self::FilePath,
         Self::PathDentry,
         Self::DentryParent,
@@ -121,6 +140,8 @@ impl Field {
         Self::SockAddress6,
         Self::MessageName,
         Self::InodeMode,
+        Self::SockBoundInterface,
+        Self::MessageNameLength,
     ];
 
     /// The slot in the map this field's offset is written into and read out of.
@@ -141,6 +162,8 @@ impl Field {
             Self::SockAddress6 => 11,
             Self::MessageName => 12,
             Self::InodeMode => 13,
+            Self::SockBoundInterface => 14,
+            Self::MessageNameLength => 15,
         }
     }
 
@@ -154,8 +177,12 @@ impl Field {
             Self::InodeNumber | Self::InodeMode => "inode",
             Self::SuperDevice => "super_block",
             Self::SocketSock => "socket",
-            Self::SockFamily | Self::SockPort | Self::SockAddress | Self::SockAddress6 => "sock",
-            Self::MessageName => "msghdr",
+            Self::SockFamily
+            | Self::SockPort
+            | Self::SockAddress
+            | Self::SockAddress6
+            | Self::SockBoundInterface => "sock",
+            Self::MessageName | Self::MessageNameLength => "msghdr",
         }
     }
 
@@ -186,6 +213,8 @@ impl Field {
             Self::SockAddress6 => "__sk_common.skc_v6_daddr",
             Self::MessageName => "msg_name",
             Self::InodeMode => "i_mode",
+            Self::SockBoundInterface => "__sk_common.skc_bound_dev_if",
+            Self::MessageNameLength => "msg_namelen",
         }
     }
 
@@ -216,6 +245,8 @@ impl Field {
             // there is and in the socket that remembers them — and so is a
             // mode, which is `umode_t`, an `unsigned short`.
             Self::SockFamily | Self::SockPort | Self::InodeMode => 2,
+            // An `int` each: an interface index, and a length.
+            Self::SockBoundInterface | Self::MessageNameLength => 4,
             // A `__be32`, and a `struct in6_addr`.
             Self::SockAddress => 4,
             Self::SockAddress6 => 16,
@@ -232,7 +263,7 @@ mod tests {
     /// step through the beginning of a `struct file` and refuse everything.
     #[test]
     fn every_field_is_in_the_list_exactly_once() {
-        assert_eq!(Field::ALL.len(), 14);
+        assert_eq!(Field::ALL.len(), 16);
         for (slot, field) in Field::ALL.iter().enumerate() {
             assert_eq!(field.index() as usize, slot);
         }

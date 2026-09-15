@@ -27,6 +27,31 @@
 //! kept rather than inferred, because `::1.2.3.4` and `1.2.3.4` are different
 //! destinations and a shape that could not tell them apart would let one stand
 //! for the other.
+//!
+//! # A link-local address is a destination only with its interface
+//!
+//! [ADR 0041](../../../docs/decisions/0041-a-link-local-departure-names-its-interface.md).
+//! `fe80::1` is not one machine: it is one machine **on each link** this machine
+//! is on, and a turn that could reach it on any of them would have been shown
+//! one place and permitted several. So a departure keeps the interface an
+//! address that needs one is on — `fe80::/10`, and multicast scoped to an
+//! interface or a link, which is the kernel's own `__ipv6_addr_needs_scope_id`
+//! — and [`Departure::on`] is the one door both halves go through, so that the
+//! daemon and the programme cannot disagree about which addresses carry one.
+//! Every other address carries none, whatever the caller handed in: a scope on
+//! a global address is ignored by the kernel, and a check that compared it would
+//! refuse a connection the kernel was always going to make to the same place.
+//!
+//! **A link-local address with no interface is a destination nothing holds**
+//! ([`Departure::names_its_network`]). The kernel will not dial one; a datagram
+//! to one leaves by whichever interface a socket option chose, which is not a
+//! thing a departure can describe; so it is refused whether or not somebody
+//! registered the same address with no interface beside it.
+//!
+//! The interface travels in the top half of the word that already carried the
+//! family and the port, which had been zeroes since the shape was written. The
+//! map is not a byte wider, so [`WORDS`] and the kernel's own entry size are
+//! unchanged, and an IPv4 destination reads back exactly as it did before.
 
 /// One of the two ways an address is written.
 ///
@@ -93,16 +118,64 @@ pub struct Departure {
     /// destination. A value that had to carry a real family to mean *nowhere*
     /// would make *nowhere* a place somebody could arrange to be shown.
     family: u16,
+
+    /// The interface the address is on, as the kernel numbers interfaces, for
+    /// an address that needs one — and zero for every address that does not.
+    interface: u32,
 }
 
 impl Departure {
-    /// A destination somebody was shown.
+    /// A destination somebody was shown, on no particular interface.
+    ///
+    /// Right for every address that names its own network. For one that does
+    /// not — a link-local one — this is a destination nothing holds, because
+    /// such an address is only somewhere once its interface is said:
+    /// [`Departure::on`] is the door for it.
     #[must_use]
     pub const fn of(family: Family, address: u128, port: u16) -> Self {
+        Self::on(family, address, port, 0)
+    }
+
+    /// A destination somebody was shown, on the interface the kernel numbers
+    /// `interface`.
+    ///
+    /// **The interface is kept only where the address needs one**
+    /// ([`needs_an_interface`]) and is dropped everywhere else, so the daemon,
+    /// which hands in whatever scope a resolved address carried, and the
+    /// programme, which hands in whatever scope a `sockaddr_in6` carried, make
+    /// the same value of the same destination.
+    ///
+    /// ```
+    /// use alo_bounding_map::{Departure, Departures, Family};
+    ///
+    /// let studio = (0xfe80_u128 << 112) | 0x20;
+    /// let on_the_cable = Departure::on(Family::Six, studio, 7_610, 3);
+    /// let shown = Departures::of(&[on_the_cable]).expect("one is not too many");
+    ///
+    /// assert!(shown.holds(on_the_cable));
+    /// // The same address on another interface is another machine.
+    /// assert!(!shown.holds(Departure::on(Family::Six, studio, 7_610, 4)));
+    /// // And with no interface at all it is nowhere.
+    /// assert!(!shown.holds(Departure::of(Family::Six, studio, 7_610)));
+    ///
+    /// // A global address carries no interface, whatever was handed in.
+    /// let global = (0x2001_0db8_u128 << 96) | 1;
+    /// assert_eq!(
+    ///     Departure::on(Family::Six, global, 443, 9),
+    ///     Departure::of(Family::Six, global, 443)
+    /// );
+    /// ```
+    #[must_use]
+    pub const fn on(family: Family, address: u128, port: u16, interface: u32) -> Self {
         Self {
             address,
             port,
             family: family.number(),
+            interface: if needs_an_interface(family, address) {
+                interface
+            } else {
+                0
+            },
         }
     }
 
@@ -125,8 +198,31 @@ impl Departure {
         Family::of(self.family)
     }
 
-    /// The value as the map holds it: the address in two words, then the family
-    /// and the port packed into a third.
+    /// The interface the address is on, or zero for an address that names its
+    /// own network — and for a link-local one nobody said the interface of,
+    /// which [`Departure::names_its_network`] answers for.
+    #[must_use]
+    pub const fn interface(&self) -> u32 {
+        self.interface
+    }
+
+    /// Whether this destination is somewhere: every address is, except one
+    /// that needs an interface and was given none.
+    ///
+    /// Such an address could be on any of a machine's links, so it is refused
+    /// as a destination rather than matched against one — [`Departures::holds`]
+    /// answers false for it whatever was shown.
+    #[must_use]
+    pub const fn names_its_network(&self) -> bool {
+        match self.family() {
+            Some(family) => !needs_an_interface(family, self.address) || self.interface != 0,
+            None => false,
+        }
+    }
+
+    /// The value as the map holds it: the address in two words, then the
+    /// interface, the family and the port packed into a third — thirty-two,
+    /// sixteen and sixteen bits, from the top.
     ///
     /// The order is the only thing keeping two separately compiled programs
     /// talking about the same destination, so it is decided here and nowhere
@@ -136,7 +232,7 @@ impl Departure {
         [
             (self.address >> 64) as u64,
             self.address as u64,
-            ((self.family as u64) << 16) | self.port as u64,
+            ((self.interface as u64) << 32) | ((self.family as u64) << 16) | self.port as u64,
         ]
     }
 
@@ -153,6 +249,27 @@ impl Departure {
             address: ((high as u128) << 64) | low as u128,
             port: both as u16,
             family: (both >> 16) as u16,
+            interface: (both >> 32) as u32,
+        }
+    }
+}
+
+/// Whether an address is only somewhere once the interface it is on is said.
+///
+/// The kernel's own rule, `__ipv6_addr_needs_scope_id`, written once for both
+/// halves: an IPv6 **link-local** unicast address (`fe80::/10`), and an IPv6
+/// **multicast** address whose scope is one interface (`ff01::/16` and its
+/// flagged forms) or one link (`ff02::/16`). No IPv4 address is — the kernel
+/// dials none of them by interface — and nor is any other IPv6 address.
+#[must_use]
+pub const fn needs_an_interface(family: Family, address: u128) -> bool {
+    match family {
+        Family::Four => false,
+        Family::Six => {
+            let link_local = address >> 118 == 0x3fa;
+            let multicast = address >> 120 == 0xff;
+            let scope = (address >> 112) & 0x0f;
+            link_local || (multicast && (scope == 1 || scope == 2))
         }
     }
 }
@@ -182,6 +299,7 @@ const NOWHERE: Departure = Departure {
     address: 0,
     port: 0,
     family: 0,
+    interface: 0,
 };
 
 /// Everywhere one turn may connect to.
@@ -242,9 +360,13 @@ impl Departures {
     }
 
     /// Whether this is a destination the person was shown.
+    ///
+    /// Never for a destination that does not name its network — a link-local
+    /// address with no interface — even if the same nothing was written into
+    /// the entry: [`Departure::names_its_network`] says why.
     #[must_use]
     pub fn holds(&self, where_to: Departure) -> bool {
-        self.each().any(|shown| shown == where_to)
+        where_to.names_its_network() && self.each().any(|shown| shown == where_to)
     }
 
     /// The destinations, and nothing beyond the count.
@@ -401,5 +523,114 @@ mod tests {
         words[3] = (777_u64 << 16) | 443;
         let read = Departures::of_words(words);
         assert!(!read.holds(Departure::of(Family::Four, 0x0102_0304, 443)));
+    }
+
+    /// The studio's link-local address, as reception measured it.
+    const THE_STUDIO: u128 = (0xfe80_u128 << 112) | 0x0a1b_2c3d_4e5f_6071;
+
+    /// The interface the studio was heard on.
+    const THE_CABLE: u32 = 3;
+
+    /// Another interface on the same machine, where nobody was shown anything.
+    const ELSEWHERE: u32 = 4;
+
+    /// **A link-local departure is permitted on the interface it was shown on,
+    /// and refused on any other** — the same address on another link is
+    /// another machine, and a departure widened to every link would have shown
+    /// one place and permitted several.
+    #[test]
+    fn a_link_local_departure_is_held_on_its_interface_and_no_other() {
+        let on_the_cable = Departure::on(Family::Six, THE_STUDIO, 7_610, THE_CABLE);
+        let shown = Departures::of(&[on_the_cable]).expect("one is not too many");
+
+        assert!(shown.holds(Departure::on(Family::Six, THE_STUDIO, 7_610, THE_CABLE)));
+        assert!(
+            !shown.holds(Departure::on(Family::Six, THE_STUDIO, 7_610, ELSEWHERE)),
+            "a link-local departure shown on one interface was permitted on another"
+        );
+        assert!(!shown.holds(Departure::on(Family::Six, THE_STUDIO, 80, THE_CABLE)));
+
+        // And the other way round: shown elsewhere, refused on the cable.
+        let shown_elsewhere =
+            Departures::of(&[Departure::on(Family::Six, THE_STUDIO, 7_610, ELSEWHERE)])
+                .expect("one is not too many");
+        assert!(shown_elsewhere.holds(Departure::on(Family::Six, THE_STUDIO, 7_610, ELSEWHERE)));
+        assert!(!shown_elsewhere.holds(on_the_cable));
+    }
+
+    /// **A link-local address with no interface is nowhere**: refused as a
+    /// destination, and refused even where the same nothing was written into
+    /// the entry — because the interface it would leave by is whatever a socket
+    /// option chose, which no departure describes.
+    #[test]
+    fn a_link_local_address_with_no_interface_is_held_by_nothing() {
+        let nowhere = Departure::of(Family::Six, THE_STUDIO, 7_610);
+        assert!(!nowhere.names_its_network());
+        assert_eq!(nowhere.interface(), 0);
+
+        let shown_nowhere = Departures::of(&[nowhere]).expect("one is not too many");
+        assert!(!shown_nowhere.holds(nowhere));
+        let shown_on_the_cable =
+            Departures::of(&[Departure::on(Family::Six, THE_STUDIO, 7_610, THE_CABLE)])
+                .expect("one is not too many");
+        assert!(!shown_on_the_cable.holds(nowhere));
+
+        // Multicast scoped to a link or to one interface needs one too.
+        let link_multicast = (0xff02_u128 << 112) | 0xfb;
+        let interface_multicast = (0xff01_u128 << 112) | 1;
+        assert!(!Departure::of(Family::Six, link_multicast, 5_353).names_its_network());
+        assert!(!Departure::of(Family::Six, interface_multicast, 5_353).names_its_network());
+        assert!(Departure::on(Family::Six, link_multicast, 5_353, THE_CABLE).names_its_network());
+    }
+
+    /// **An address that names its own network carries no interface**, whatever
+    /// the caller handed in — so a scope on a global address, which the kernel
+    /// ignores, cannot make one destination two.
+    #[test]
+    fn an_address_that_names_its_own_network_keeps_no_interface() {
+        let global = (0x2001_0db8_u128 << 96) | 1;
+        let site_multicast = (0xff05_u128 << 112) | 1;
+        let loopback = 1;
+        for address in [global, site_multicast, loopback] {
+            let scoped = Departure::on(Family::Six, address, 443, ELSEWHERE);
+            assert_eq!(scoped.interface(), 0, "{address:x}");
+            assert_eq!(scoped, Departure::of(Family::Six, address, 443));
+            assert!(scoped.names_its_network());
+        }
+        let four = Departure::on(Family::Four, 0xa9fe_0001, 443, THE_CABLE);
+        assert_eq!(four, Departure::of(Family::Four, 0xa9fe_0001, 443));
+        assert!(!needs_an_interface(Family::Four, 0xa9fe_0001));
+
+        // The edges of `fe80::/10`, which is ten bits and not sixteen.
+        assert!(needs_an_interface(Family::Six, 0xfebf_u128 << 112));
+        assert!(!needs_an_interface(Family::Six, 0xfec0_u128 << 112));
+        assert!(!needs_an_interface(Family::Six, 0xfe7f_u128 << 112));
+    }
+
+    /// **The interface survives the map, and an IPv4 destination's words are
+    /// what they always were** — it travels in bits that were zero, so nothing
+    /// written before this shape reads back differently.
+    #[test]
+    fn an_interface_survives_the_map_and_an_ipv4_destination_is_unchanged() {
+        let on_the_cable = Departure::on(Family::Six, THE_STUDIO, 7_610, THE_CABLE);
+        let shown = Departures::of(&[
+            on_the_cable,
+            Departure::on(Family::Six, THE_STUDIO, 7_610, u32::MAX),
+        ])
+        .expect("two is not too many");
+        let read = Departures::of_words(shown.words());
+        assert_eq!(read, shown);
+        assert!(read.holds(on_the_cable));
+        assert!(read.holds(Departure::on(Family::Six, THE_STUDIO, 7_610, u32::MAX)));
+        assert_eq!(
+            on_the_cable.words()[2],
+            (u64::from(THE_CABLE) << 32) | (u64::from(Family::INET6) << 16) | 7_610
+        );
+
+        let frankfurt = Departure::of(Family::Four, 0x0102_0304, 443);
+        assert_eq!(
+            frankfurt.words(),
+            [0, 0x0102_0304, (u64::from(Family::INET) << 16) | 443]
+        );
     }
 }
