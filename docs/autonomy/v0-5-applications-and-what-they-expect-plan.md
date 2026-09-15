@@ -217,7 +217,27 @@ application opens this kind of file*, as a setting the person owns.
 
 ### 5. The portal backend speaks D-Bus, and only for what was decided
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4.
+**Status:** **Done, 2026-09-15.** `alo_portals::serving::Backend::serve_on` owns
+`org.freedesktop.portal.Desktop` on a session bus and serves, at
+`/org/freedesktop/portal/desktop`, `org.freedesktop.portal.Secret` (version 1)
+and `org.freedesktop.portal.OpenURI` (version 3), and registers no other portal.
+The caller's application is read from its sandbox. The bus names the process
+(`GetConnectionCredentials`), and `alo_portals::Sandboxes` reads
+`/proc/<pid>/root/.flatpak-info`. A program with no sandbox is refused as
+unidentified. `RetrieveSecret` writes the application's own portal secret through
+`alo_portals::KeepsSecrets`, which `alo_secrets::TheKeyring` implements with task
+3's door. `OpenFile` resolves the handle, is answered by `open_with::answered`,
+and opens the file in its opener through D-Bus activation
+(`org.freedesktop.Application.Open`). The response is `0` only when the opener
+answered. `OpenURI` and `OpenDirectory` are answered `2`, because nothing decides
+them yet. Every answer, and every refusal with its application named, is written
+to `alo_portals::Recording` before the response is sent.
+`docs/contracts/portals.md` lists what is answered and what is not yet, and is
+held to `Portal::answered_on_the_bus`. Tests:
+`crates/alo-portals/tests/the_portal_backend_answers_on_a_real_bus.rs` and
+`crates/alo-secrets/tests/the_secret_portal_answers_on_a_real_bus.rs`. Report:
+`docs/autonomy/updates/the-portal-backend-on-the-session-bus.md`.
+**Depends on:** 1, 2, 3, 4.
 
 The contract every Linux application already speaks is
 `org.freedesktop.portal.*` on the session bus. This is the backend that
@@ -241,3 +261,31 @@ grants a person made.
   dialog, the honest deliverable is its absence from the list and a sentence
   saying so — never a backend that answers *yes* to keep an application from
   asking again.
+
+### 6. The Settings portal answers appearance, from what the person set
+
+**Status:** ready. **Depends on:** 5.
+
+*Portals: … settings.* An application that follows light and dark, and the
+accent colour, asks `org.freedesktop.portal.Settings`. The request is for a
+facility ADR 0040 already names, `appearance settings`. The answer is already
+decided by `alo-appearance`, which resolves what the release ships against what
+the person changed. Nothing is drawn, so the backend task 5 built can answer it
+without a dialog.
+
+- **Acceptance:** the backend serves `org.freedesktop.portal.Settings` —
+  `ReadAll`, `ReadOne` and the `SettingChanged` signal — for the
+  `org.freedesktop.appearance` namespace only (`color-scheme`, `accent-color`,
+  `contrast`), read through `alo-appearance`'s public API and never restated.
+  An application granted the `appearance settings` facility receives the
+  person's values on a private bus a test starts, with a real client. An
+  application not granted it receives the D-Bus error the specification gives
+  for an unreadable namespace, and nothing else. That refusal is recorded with
+  the application named, as task 5's are. Any other namespace is answered as
+  unknown, never with a value. `docs/contracts/portals.md` moves `settings`
+  from *not answered yet* to *answered*, in the same change.
+- **Constraint:** no new dependency, and no edit to `alo-appearance`, which
+  another plan owns. If its public API cannot answer a value without an edit,
+  that value is left out and the report says so. Linux, gated in the virtual
+  machine like task 5. `SettingChanged` is sent only to an application that
+  could read the value at the moment it changed.

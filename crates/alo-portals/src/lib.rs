@@ -58,13 +58,28 @@
 //! | [`judging`] | A request judged against the grants, and what allowed it |
 //! | [`refused`] | Why a request was refused, and what a person is told |
 //! | [`open_with`] | An open-with request, answered from what opens what |
+//! | [`answered`] | What the backend answered a request with, as the record keeps it |
+//! | [`recording`] | Where every answer is written |
+//! | [`the_machine`] | The grants and what opens what, read at every request |
+//! | [`keeping_secrets`] | The keyring the Secret portal is answered from |
+//! | [`sandboxed`] | Which application is asking, as its sandbox says |
+//! | [`handle`] | Where a request's answer is sent |
+//! | `serving` | The backend on a session bus — Linux only |
 //! | [`words`] | Every string this crate can say |
+//!
+//! # The backend on the bus
+//!
+//! On Linux, `serving::Backend::serve_on` answers `org.freedesktop.portal.Secret`
+//! and `org.freedesktop.portal.OpenURI` on a session bus, from the decisions
+//! above and nothing else, and registers **no other portal**:
+//! `docs/contracts/portals.md` lists which portals this machine answers and
+//! which it does not yet, and [`Portal::answered_on_the_bus`] is that list in
+//! code.
 //!
 //! # What is not here
 //!
-//! **No D-Bus, no socket and no dialog.** Tasks 1 and 4 of the applications
-//! plan decide; task 5 serves `org.freedesktop.portal.*` from these decisions, and
-//! the file chooser a portal opens is the desktop lane's. **No grant is made
+//! **No dialog.** A portal whose answer needs one — the file chooser above all,
+//! which is the desktop lane's — is not served, rather than answered yes. **No grant is made
 //! here**: making one is a person's act, and nothing in this crate holds a
 //! `&mut Grants`. **No v1 portal** — USB, global shortcuts, launchers, remote
 //! desktop — is listed, refused or otherwise: a portal this machine does not
@@ -72,18 +87,43 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answered;
+pub mod handle;
 pub mod judging;
+pub mod keeping_secrets;
 pub mod not_a_request;
 pub mod open_with;
 pub mod portal;
+pub mod recording;
 pub mod refused;
 pub mod request;
+pub mod sandboxed;
+pub mod the_machine;
 pub mod words;
 
+#[cfg(target_os = "linux")]
+mod asked;
+#[cfg(target_os = "linux")]
+mod open_uri_portal;
+#[cfg(target_os = "linux")]
+mod opening;
+#[cfg(target_os = "linux")]
+mod secret_portal;
+#[cfg(target_os = "linux")]
+pub mod serving;
+
+pub use answered::{Answered, Outcome, Unanswered};
+pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 pub use judging::Allowed;
+pub use keeping_secrets::{KeepsSecrets, NotKept};
 pub use not_a_request::NotARequest;
 pub use open_with::{NotOpened, OpensWith};
 pub use portal::{Over, Portal};
+pub use recording::{Kept, Recording};
 pub use refused::Refused;
 pub use request::{LONGEST_IDENTIFIER, Request};
+pub use sandboxed::Sandboxes;
+#[cfg(target_os = "linux")]
+pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
+pub use the_machine::{Applications, TheMachine};
 pub use words::{EVERY_WORD, WordsError, declare_into, portal_words};

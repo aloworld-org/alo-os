@@ -559,11 +559,13 @@ version = "0.0.1"
 dependencies = [
  "alo-applications",
  "alo-capability",
+ "alo-keyring-fixture",
  "alo-opening",
  "alo-saying",
  "alo-strings",
  "serde_json",
  "thiserror 2.0.20",
+ "zbus",
 ]
 
 [[package]]

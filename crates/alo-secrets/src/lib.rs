@@ -84,6 +84,7 @@
 #![cfg(target_os = "linux")]
 
 mod application;
+mod behind_the_portal;
 mod bus;
 mod kept_secret;
 mod refusing;

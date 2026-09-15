@@ -118,7 +118,7 @@ impl Request {
 }
 
 /// An application's identifier, checked at the boundary.
-fn identified(id: &str) -> Result<Applicant, NotARequest> {
+pub(crate) fn identified(id: &str) -> Result<Applicant, NotARequest> {
     let id = id.trim();
     if id.is_empty() {
         return Err(NotARequest::NoApplication);

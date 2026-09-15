@@ -27,6 +27,13 @@ alo-strings = { path = "../alo-strings" }
 # to whoever is fixing that list.
 thiserror = { workspace = true }
 
+# The bus the backend answers on. Already in the workspace for the keyring
+# (`alo-secrets`), at the same version and with the same runtime, so this adds
+# no crate to the tree. Linux only: the portals are a Linux session bus's, and
+# a file handed over the bus is a Unix descriptor.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
 [dev-dependencies]
 # What a file is, named in the open-with test's assertions about what opens it.
 alo-opening = { path = "../alo-opening" }
@@ -38,6 +45,15 @@ alo-saying = { path = "../alo-saying" }
 # For showing that judging a hundred requests leaves the grants byte for byte
 # where they were.
 serde_json = { workspace = true }
+
+# A real bus for the backend test to serve on and call through, started with no
+# service activation — the one fixture that does, rather than a second that
+# drifts from it. It depends on `alo-secrets`, which depends on this crate: a
+# cycle Cargo allows through dev-dependencies, and one that only the
+# integration tests, which link this crate's one library, ever cross.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
 [lints]
 workspace = true

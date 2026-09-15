@@ -17,6 +17,12 @@
 //! is not one, a path where there should be none, a relative path. They are
 //! read in the record by whoever is looking at what an application tried, and
 //! each names what a well-formed request would have carried.
+//!
+//! **What the portal backend answered** — [`crate::Outcome`]. Each is written
+//! into the record of what applications asked (`crate::recording`), so whoever
+//! reads that record reads why an application was answered as it was: a
+//! secret handed over, a file opened, or one of the ways a request on the bus
+//! was answered with the portal's refusal.
 
 use alo_strings::{Vocabulary, VocabularyError, WordError};
 
@@ -198,8 +204,95 @@ pub const COULD_LEAD_ELSEWHERE: Word = Word::saying(
 )
 .noting("\"..\" is how a path says \"the folder above\" and is never translated.");
 
+// ---------------------------------------------------------------------------
+// What the portal backend answered — [`crate::Outcome`] and [`crate::Unanswered`].
+// ---------------------------------------------------------------------------
+
+/// An application was handed its own secret.
+pub const SECRET_HANDED_OVER: Word = Word::saying(
+    "portals.answered.secret-handed-over",
+    "{application} was given its own secret from your keyring",
+)
+.noting(
+    "{application} is the identifier of an application, like org.gnome.Fractal, and is never \
+     translated. The secret is the one the keyring keeps for that application alone.",
+);
+
+/// A file was opened in the application that opens its kind.
+pub const OPENED_IN: Word = Word::saying(
+    "portals.answered.opened-in",
+    "{application} had a file it was granted opened in {opener}",
+)
+.noting(
+    "{application} and {opener} are identifiers of applications, like org.gnome.Geary and \
+     org.gnome.Papers, and are never translated.",
+);
+
+/// The caller is not a sandboxed application.
+pub const NOT_IDENTIFIED: Word = Word::saying(
+    "portals.unanswered.not-identified",
+    "A request came from a program that is not a sandboxed application, so no application could \
+     be named and it was refused",
+)
+.noting(
+    "Applications on alo OS are sandboxed, and the sandbox is what says which application is \
+     asking. A program running outside one cannot be told apart from any other.",
+);
+
+/// The grants could not be read.
+pub const GRANTS_UNREAD: Word = Word::saying(
+    "portals.unanswered.grants-unread",
+    "The grants on this machine could not be read, so the request was refused",
+);
+
+/// What is installed, declared or chosen could not be read.
+pub const APPLICATIONS_UNREAD: Word = Word::saying(
+    "portals.unanswered.applications-unread",
+    "Which application opens a kind of file could not be read, so nothing was opened",
+);
+
+/// The keyring would not answer.
+pub const KEYRING_UNAVAILABLE: Word = Word::saying(
+    "portals.unanswered.keyring-unavailable",
+    "Your keyring could not be reached or is locked, so the application was not given its secret",
+)
+.noting("The keyring is never unlocked on an application's behalf.");
+
+/// The secret could not be handed over.
+pub const NOT_WRITTEN: Word = Word::saying(
+    "portals.unanswered.not-written",
+    "The application stopped listening before its secret could be handed over",
+);
+
+/// What was handed over is not a file.
+pub const NOT_A_FILE: Word = Word::saying(
+    "portals.unanswered.not-a-file",
+    "An application can ask for a file to be opened, and what it handed over was not a file",
+);
+
+/// The opener did not open the file.
+pub const NOT_OPENED: Word = Word::saying(
+    "portals.unanswered.not-opened",
+    "{opener} did not open the file when it was asked to, so nothing was opened",
+)
+.noting(
+    "{opener} is the identifier of an application, like org.gnome.Papers, and is never translated.",
+);
+
+/// A link or a folder, which nothing here decides yet.
+pub const NOT_DECIDED_HERE: Word = Word::saying(
+    "portals.unanswered.not-decided-here",
+    "This machine does not yet decide what opens a web link or a folder, so nothing was opened",
+);
+
+/// A request whose handle token is not one.
+pub const NOT_A_TOKEN: Word = Word::saying(
+    "portals.unanswered.not-a-token",
+    "A request names itself with letters, digits and underscores, and this one did not",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 34] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -223,6 +316,17 @@ pub const EVERY_WORD: [Word; 23] = [
     NOT_OVER_A_PATH,
     NOT_A_FULL_PATH,
     COULD_LEAD_ELSEWHERE,
+    SECRET_HANDED_OVER,
+    OPENED_IN,
+    NOT_IDENTIFIED,
+    GRANTS_UNREAD,
+    APPLICATIONS_UNREAD,
+    KEYRING_UNAVAILABLE,
+    NOT_WRITTEN,
+    NOT_A_FILE,
+    NOT_OPENED,
+    NOT_DECIDED_HERE,
+    NOT_A_TOKEN,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -320,7 +424,7 @@ mod tests {
         for word in EVERY_WORD {
             let first = word.says().chars().next().unwrap();
             assert!(
-                first.is_uppercase() || word.named() == NOTHING_GRANTED.named(),
+                first.is_uppercase() || first == '{',
                 "{} does not begin a sentence",
                 word.named()
             );
