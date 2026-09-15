@@ -1176,6 +1176,58 @@ than a reason to fork Ollama.
 **Upstream:** not reported.
 **Date:** 2026-09-11
 
+### bootc 1.15.1 — `install to-disk` from outside its own container runs six more programs than it names
+**Version:** bootc 1.15.1, bootupd 0.2.31, podman 5.x and skopeo 1.22.2, all
+from the pinned base `quay.io/fedora/fedora-bootc:42@sha256:077182…`.
+**Behaviour:** `bootc install to-disk --help` says it *must be invoked inside of
+the container, which will be installed*, and offers `--source-imgref` for the
+other case. The boot environment is that other case — an initramfs with no
+container store and too little memory to hold a 6.6 GB image — and with
+`--source-imgref registry:…` the tool does pull straight onto the new disk.
+What it needs of the system it runs on is not written anywhere, and each gap is
+found only after the disk has been partitioned, one error at a time. Booted in a
+virtual machine on 2026-09-15, in order:
+
+1. `Failed to find ostree/prepare-root.conf in /usr/lib or /etc` — it reads the
+   **host's** `/usr/lib/ostree/prepare-root.conf`, not the image's;
+2. `Creating imgstorage: Initializing images: No such file or directory`, then
+   `could not find a working conmon binary`, then `could not find "netavark"` —
+   it initialises a container store on the new disk by running `podman`, which
+   needs `conmon`, `crun` and `netavark` even to list images;
+3. `Creating importer: skopeo spawn error: No such file or directory` with
+   `skopeo` present — the pull runs `skopeo` through `setpriv --reuid nobody`,
+   so `setpriv` and a name service that knows `nobody` (systemd's, in an
+   initramfs whose `/etc/passwd` holds only root) are both needed;
+4. after twelve minutes of pulling, `Installing bootloader: Probing bootupd
+   --filesystem support: No such file or directory` — the boot loader's
+   installer is run inside the new deployment through `bwrap`.
+
+**Our response:** `image/installing/alo-installing.conf` lists every one of them
+for the base's own dracut; nothing was patched. The list is what was measured,
+not what was read in a source tree, and a future base that needs another
+program will say so the same way.
+**Upstream:** not reported; `--source-imgref` outside a container is documented
+as supported and its requirements are not.
+**Date:** 2026-09-15
+
+### cosign 3.1.3 — a signature is a referrer, not a `.sig` tag
+**Version:** cosign 3.1.3, as the owner signed release 0.0.1 with
+`--use-signing-config=false --tlog-upload=false`; `ghcr.io`, 2026-09-15.
+**Behaviour:** the registry holds no `sha256-<digest>.sig` tag for the release
+(the manifest request answers 404). The signature is a Sigstore bundle
+(`application/vnd.dev.sigstore.bundle.v0.3+json`) attached as an OCI referrer,
+listed under the fallback tag `sha256-<digest>`. The `sigstoreSigned` policy in
+`containers-policy.json(5)` — the way podman, skopeo and `bootc
+--enforce-container-sigpolicy` verify — reads the `.sig` attachment, so it has
+nothing to verify here. Fedora 42 does not package cosign.
+**Our response:** the boot environment carries upstream's own cosign 3.1.3
+binary, pinned by sha256 and checked before the environment is built
+(`image/installing/Containerfile`), runs the same `cosign verify` as
+`docs/booting.md`, and then pulls by the same digest. Container signature
+policy is left as the base ships it.
+**Upstream:** not reported; the bundle format is cosign 3's documented default.
+**Date:** 2026-09-15
+
 <!--
 ### <Engine> <version> — <one-line summary>
 **Behaviour:** what it does, versus what is documented

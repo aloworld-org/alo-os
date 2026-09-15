@@ -19,6 +19,7 @@ use crate::asserted::Asserted;
 use crate::booting::TheDocument;
 use crate::description::Description;
 use crate::disk::TheDisk;
+use crate::installing::{THE_ENVIRONMENT, TheEnvironment};
 use crate::logins::Declared;
 use crate::making::Made;
 use crate::pinned::{THE_PIN, ThePin};
@@ -116,6 +117,8 @@ pub struct Image {
     pin: ThePin,
     /// The text of the key file the pin names, as it is in the repository.
     key: String,
+    /// What the boot environment's recipe says, beside this image's.
+    environment: TheEnvironment,
 }
 
 impl Image {
@@ -162,6 +165,10 @@ impl Image {
         let pin = ThePin::read(&text(&at)?).map_err(|why| NotAnImage::NotPinned { at, why })?;
         let key = text(&root.join(pin.key()))?;
 
+        // The environment the installer restarts into, read beside the recipe
+        // it has to agree with.
+        let environment = TheEnvironment::read(&text(&root.join(THE_ENVIRONMENT))?, &recipe);
+
         Ok(Self {
             loader,
             agent,
@@ -179,6 +186,7 @@ impl Image {
             document,
             pin,
             key,
+            environment,
         })
     }
 
@@ -310,6 +318,12 @@ impl Image {
     #[must_use]
     pub fn key(&self) -> &str {
         &self.key
+    }
+
+    /// What the boot environment's recipe says, beside this image's.
+    #[must_use]
+    pub const fn environment(&self) -> &TheEnvironment {
+        &self.environment
     }
 }
 

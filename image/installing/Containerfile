@@ -1,0 +1,147 @@
+# The boot environment that installs alo OS — the installer's reboot half.
+#
+# ADR 0023 §2–3: the program a person downloads stages *a minimal boot
+# environment and a UEFI boot entry*, restarts, and that environment pulls alo
+# OS from the registry, *verifying signatures before writing*. This recipe builds
+# that environment, and what it produces is not an image anybody runs: it is a
+# directory of files for a FAT partition.
+#
+#     EFI/BOOT/BOOTX64.EFI            the base's own signed shim
+#     EFI/BOOT/grubx64.efi            the base's own signed loader
+#     EFI/BOOT/mmx64.efi              the base's own key manager, which shim expects beside it
+#     EFI/BOOT/grub.cfg               image/installing/grub.cfg
+#     EFI/alo-installing/vmlinuz      the base's own signed kernel
+#     EFI/alo-installing/initramfs.img
+#
+# Build it from the root of the repository:
+#
+#     podman build -f image/installing/Containerfile \
+#       --output type=local,dest=alo-installing .
+#
+# **It is not a second operating system.** A kernel and an initramfs, both made
+# from THE_BASE below by the base's own tools; in the initramfs, the programs
+# `bootc install` runs, the checker for the owner's signature, the network
+# manager, and `alo-installing` — one unit, no login and no shell anybody is
+# offered. `crates/alo-installing`'s tests hold `alo-installing.conf` to every
+# program that crate runs.
+#
+# **Secure Boot is respected, never switched off** (ADR 0033 §4): the shim, the
+# loader and the kernel are the base's own signed files, copied and never
+# rebuilt. The initramfs is ours and is not signed, which is what the base's own
+# loader already accepts from every Fedora machine's `/boot`.
+#
+# **What it installs and whose signature it accepts are built in.** The pin and
+# the public key are copied from this repository; nothing about either can
+# arrive over the network, and `crates/alo-image` holds this file to both.
+
+# The versions, in one place. The base, the builder, the compiler and its target
+# are the operating system's own — `crates/alo-image` fails a build of this
+# repository where any of the four differs from `image/Containerfile`, because an
+# environment on another base would be installing with a tool nobody pinned.
+ARG THE_BASE=quay.io/fedora/fedora-bootc:42@sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3
+ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
+ARG THE_STABLE=1.97.0
+ARG THE_TARGET=x86_64-unknown-linux-musl
+# The checker for the owner's signature (ADR 0036). Fedora 42 does not package
+# it, so it is upstream's own release artefact, pinned the way the model runtime
+# is: an exact version, and the digest of the one file that version published,
+# checked before anything runs it. The version is the one the owner verified
+# release 0.0.1 with, on 2026-09-15.
+ARG THE_CHECKER=3.1.3
+ARG THE_CHECKERS_SHA256=4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71
+
+# ---------------------------------------------------------------------------
+# The one program of ours
+# ---------------------------------------------------------------------------
+#
+# Statically linked against musl for `image/Containerfile`'s reason: what is
+# copied into the environment depends on nothing in it. No nightly and no BPF
+# linker — `alo-installing` reaches neither.
+FROM ${THE_BUILDER} AS built
+
+ARG THE_STABLE
+ARG THE_TARGET
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends \
+      ca-certificates curl gcc libc6-dev musl-tools \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV PATH=/root/.cargo/bin:${PATH}
+ENV RUSTUP_HOME=/root/.rustup
+ENV CARGO_HOME=/root/.cargo
+
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
+      | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE} \
+ && rustup target add ${THE_TARGET}
+
+COPY . /alo-os
+WORKDIR /alo-os
+
+RUN cargo build --release --target ${THE_TARGET} --package alo-installing
+
+# ---------------------------------------------------------------------------
+# The checker, fetched pinned and checked before it is trusted
+# ---------------------------------------------------------------------------
+FROM ${THE_BUILDER} AS checker
+
+ARG THE_CHECKER
+ARG THE_CHECKERS_SHA256
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
+      --output /cosign \
+      https://github.com/sigstore/cosign/releases/download/v${THE_CHECKER}/cosign-linux-amd64 \
+ && echo "${THE_CHECKERS_SHA256}  /cosign" | sha256sum --check - \
+ && chmod 0755 /cosign
+
+# ---------------------------------------------------------------------------
+# The environment, made by the base's own tools
+# ---------------------------------------------------------------------------
+FROM ${THE_BASE} AS environment
+
+ARG THE_TARGET
+
+COPY --from=checker /cosign /usr/bin/cosign
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-installing /usr/bin/alo-installing
+
+# What it installs, and the one key it accepts, at the paths
+# `alo_installing::WHERE_IT_IS` reads them from — the same relative paths they
+# have beside this directory.
+COPY image/pinned.toml /usr/lib/alo/installing/pinned.toml
+COPY image/signing/alo-os.pub /usr/lib/alo/installing/signing/alo-os.pub
+
+COPY image/installing/alo-installing.target /usr/lib/systemd/system/alo-installing.target
+COPY image/installing/alo-installing.service /usr/lib/systemd/system/alo-installing.service
+COPY image/installing/alo-installing.conf /etc/dracut.conf.d/alo-installing.conf
+COPY image/installing/grub.cfg /environment/EFI/BOOT/grub.cfg
+
+# One kernel, asserted rather than assumed: a base carrying two would make the
+# choice of which one boots a directory listing's order.
+RUN chmod 0755 /usr/bin/cosign /usr/bin/alo-installing \
+ && chmod 0644 /usr/lib/alo/installing/pinned.toml \
+               /usr/lib/alo/installing/signing/alo-os.pub \
+               /usr/lib/systemd/system/alo-installing.target \
+               /usr/lib/systemd/system/alo-installing.service \
+               /etc/dracut.conf.d/alo-installing.conf \
+               /environment/EFI/BOOT/grub.cfg \
+ && test "$(ls /usr/lib/modules | wc -l)" = 1 \
+ && kernel="$(ls /usr/lib/modules)" \
+ && mkdir -p /environment/EFI/alo-installing \
+ && dracut --no-hostonly --reproducible --force --kver "${kernel}" \
+      /environment/EFI/alo-installing/initramfs.img \
+ && cp "/usr/lib/modules/${kernel}/vmlinuz" /environment/EFI/alo-installing/vmlinuz \
+ && cp /usr/lib/bootupd/updates/EFI/fedora/shimx64.efi /environment/EFI/BOOT/BOOTX64.EFI \
+ && cp /usr/lib/bootupd/updates/EFI/fedora/grubx64.efi /environment/EFI/BOOT/grubx64.efi \
+ && cp /usr/lib/bootupd/updates/EFI/fedora/mmx64.efi /environment/EFI/BOOT/mmx64.efi
+
+# ---------------------------------------------------------------------------
+# What leaves the build: the files for the partition, and nothing else
+# ---------------------------------------------------------------------------
+FROM scratch
+COPY --from=environment /environment/ /

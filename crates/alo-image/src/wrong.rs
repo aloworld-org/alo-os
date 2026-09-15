@@ -956,6 +956,44 @@ pub enum Wrong {
         /// The key, as a path in this repository.
         key: String,
     },
+    /// The boot environment is built on another base or by another toolchain.
+    #[error(
+        "`image/installing/Containerfile` gives `{argument}` as `{environment}` and \
+         `image/Containerfile` gives it as `{image}` — the environment writes the disk with the \
+         tool inside its base, and `docs/booting.md` pins that tool by the image's base digest, \
+         so an environment built any other way installs with a tool nobody pinned"
+    )]
+    TheEnvironmentIsNotBuiltLikeTheImage {
+        /// The build argument.
+        argument: String,
+        /// What the environment's recipe gives it, or `-`.
+        environment: String,
+        /// What the image's recipe gives it, or `-`.
+        image: String,
+    },
+    /// The boot environment does not carry this repository's pin or its key.
+    #[error(
+        "`image/installing/Containerfile` does not copy `{file}` to `{landing}` — the environment \
+         installs the release this repository pins and accepts only the key the pin names \
+         (ADR 0023 §3, ADR 0036), and a recipe carrying any other file is an installer trusting \
+         something nothing here holds to anything"
+    )]
+    TheEnvironmentDoesNotCarry {
+        /// The file of this repository it should carry.
+        file: String,
+        /// Where it should land.
+        landing: String,
+    },
+    /// The signature checker is not pinned, or not checked before it is used.
+    #[error(
+        "the boot environment's signature checker (version `{version}`) is not one exact release \
+         whose whole sha256 is checked in its own stage before it is copied aboard — the program \
+         that decides a download is genuine cannot itself arrive unverified"
+    )]
+    TheCheckerArrivesUnverified {
+        /// The version the recipe names, or `-`.
+        version: String,
+    },
 }
 
 #[cfg(test)]

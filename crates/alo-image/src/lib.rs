@@ -87,6 +87,8 @@ mod checking;
 mod description;
 mod disk;
 mod image;
+mod installing;
+mod installs;
 mod logins;
 mod making;
 mod pinned;
@@ -110,6 +112,9 @@ pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
 pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER, THE_SERVER};
+pub use installing::{
+    ABOARD, SHARED, THE_CHECKER_ABOARD, THE_ENVIRONMENT, THE_PIN_ABOARD, TheEnvironment,
+};
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};
 pub use pinned::{THE_PIN, THE_REGISTRY, ThePin};

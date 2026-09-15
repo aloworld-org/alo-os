@@ -1,0 +1,21 @@
+[Unit]
+# The whole of what the boot environment starts. The loader's command line
+# names this target with `rd.systemd.unit=`, in place of the initramfs's usual
+# goal of finding a root file system and switching to it: there is no root to
+# switch to, and waiting for one would be a machine that sits silent and then
+# offers an emergency shell.
+Description=alo OS installer
+
+# The ordinary early start — devices, the log, udev naming the disks by their
+# own identity — and nothing that mounts a root.
+Requires=basic.target
+After=basic.target
+
+# The command line read (which is what turns `ip=dhcp` into a connection) and
+# the network manager started. The installer waits for a connection itself, and
+# says that it is waiting, rather than this target holding the screen blank
+# until one arrives.
+Wants=dracut-cmdline.service nm-initrd.service
+
+Requires=alo-installing.service
+AllowIsolate=yes

@@ -1,0 +1,9 @@
+# What a build of the boot environment must not carry into the builder. Every
+# `target` is gigabytes of some platform's artefacts — the workspace's, and the
+# kernel half's beside it — `.git` is the history, and `.kernel-loop` is the
+# supervisor's own state. None of them is compiled, and all of them would be
+# copied on every build.
+target
+**/target
+.git
+.kernel-loop

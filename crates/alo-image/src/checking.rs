@@ -160,6 +160,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_document_says_what_the_recipe_does(image, &mut wrong);
     the_image_names_the_release_it_is(image, &mut wrong);
     crate::publishing::everything_wrong_with_the_publish(image, &mut wrong);
+    crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
     wrong
 }
 

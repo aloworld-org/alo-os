@@ -1,0 +1,42 @@
+[package]
+name = "alo-installing"
+version = "0.0.1"
+description = "The installer's reboot half: the boot environment that checks a download is a genuine alo OS and writes it onto the one disk a person chose."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What is installed, and the key it must be signed with, as the one file that
+# pins them says it. Reading `image/pinned.toml` through the crate that already
+# holds it to the recipe and to `docs/booting.md` is one answer rather than a
+# second parser of the digest in the program that pulls it — and a second
+# parser is exactly where a pin and what is pulled would drift apart.
+alo-image = { path = "../alo-image" }
+
+# Every sentence the person watching the console reads.
+alo-strings = { path = "../alo-strings" }
+
+# Two things arrive as JSON and nothing else: what the disk lister says about
+# the disks, and what the signature checker says it verified.
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, in the direction every crate takes: a crate that
+# says something is collected by `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+# The test that boots the environment in a virtual machine makes a key that is
+# not the owner's, to show that a download signed by anybody else writes
+# nothing. The workspace already rents its primitives from here (ADR 0031).
+ring = { workspace = true }
+
+[[bin]]
+name = "alo-installing"
+path = "src/main.rs"
+
+[lints]
+workspace = true

@@ -100,9 +100,38 @@ built by hand under WSL and lives nowhere a laptop can pull it from.
   what is pushed is exactly what the recipe builds. Nothing here changes what
   the image contains. A push that cannot be verified is not a publish.
 
-### 2. The boot environment that installs, tested in a virtual machine
+### 2. The boot environment that installs: written, and its refusals held
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15**, for the part of the original acceptance that is
+proven, and **split** for the rest. Three workers in a row reached the 90-minute
+deadline on this task, and the supervisor's rule is that such a task is a phase,
+not a task (`tools/kernel-loop/src/worker.rs`). What is done: the environment's
+recipe in `image/installing/`, the program inside it (`crates/alo-installing`)
+with every refusal decided in `sequence.rs` and tested against a scripted machine
+(no choice, two choices, a path, a disk that never appears, the installer's own
+disk, a disk holding Windows, a disk in use or read-only, no network, not genuine,
+a damaged environment — each saying *so nothing was changed* in words
+`alo-saying` collects), `crates/alo-image` holding that recipe to the image's base,
+pin and key, and `docs/booting.md` saying honestly that neither virtual-machine
+test passes yet. **What is not done moved to two tasks of its own:** task 8 (the
+refusal road must write nothing the installer does not own) and task 9 (with
+Secure Boot on, the staged loader must start). The two virtual-machine tests stay
+in `crates/alo-installing/tests/installed_in_a_virtual_machine.rs`, ignored in the
+suite, and are those tasks' acceptance. Report:
+`updates/the-boot-environment-that-installs.md`. **Depends on:** 1.
+
+**What the second worker found, 2026-09-15**
+(`updates/the-boot-environment-that-installs.md`): the environment, its recipe,
+the program inside it (`crates/alo-installing`) and its refusal tests are
+written and gate; the two virtual-machine tests that are this task's acceptance
+**do not pass**. Under Secure Boot (OVMF with Microsoft's certificates) the
+firmware page-faults starting the staged shim/loader, before Linux; and the
+not-genuine refusal says the right words and writes nothing to the second disk
+but changes the first disk — located to three mebibytes inside the staged
+`ALO-INSTALL` FAT itself, Windows' partitions untouched, cause not yet known
+(the report lists what was ruled out and the next two experiments). The next
+worker starts from those two, not
+from the code. This machine's account cannot manage Hyper-V, so the VM is QEMU.
 
 ADR 0023 §2–3: *a minimal boot environment and a UEFI boot entry*, which runs
 `bootc install`, *pulling alo OS from the registry over HTTPS, verifying
@@ -159,7 +188,7 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** ready. **Depends on:** 3.
+**Status:** ready. **Depends on:** 3, 8, 9.
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -218,8 +247,8 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — on tasks 1–5, and on the owner at the laptop; nothing in
-this repository can tick it. **Depends on:** 4, 5.
+**Status:** blocked — on tasks 1–5, 8 and 9, and on the owner at the laptop;
+nothing in this repository can tick it. **Depends on:** 4, 5.
 
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their
@@ -285,3 +314,59 @@ flag.
   way. Recovery media is named as the thing a person needs if they change
   their mind afterwards, honestly, because after this there is no Windows to
   run a program from.
+
+### 8. A refusal writes nothing the installer does not own
+
+**Status:** ready. **Depends on:** 2.
+
+Split from task 2 on 2026-09-15. The not-genuine refusal said *this download is
+not a genuine alo OS, so nothing was changed*, wrote nothing to the second disk —
+and the first disk's contents changed, at three mebibytes, all inside the staged
+`ALO-INSTALL` FAT partition (its first two mebibytes and one cluster about 218 MiB
+in); Windows' partitions and the partition table were untouched. A sentence that
+says *nothing was changed* while a disk changed is the most serious finding the
+installer has had, whoever did the writing.
+
+- **Acceptance:** the cause is found and written into `docs/quirks.md` with its
+  evidence, starting from the report's two experiments in order — (1) the
+  diagnostic *installer's own disk* boot run with the test's exact machine flags
+  (`q35,smm=on`, `-global cfi.pflash01.secure=on`, 4 CPUs, 3 GB), which tests
+  whether the firmware's FAT driver writes to a FAT it enumerates; (2) if not, the
+  not-genuine road with no appended initramfs archive. **If the writer is the
+  firmware**, a real laptop's firmware does it too: the test's assertion becomes
+  *Windows' partitions and the partition table are byte-for-byte unchanged, and the
+  installer's own partition changes only as a firmware booting from it changes it*,
+  with the evidence that it is the firmware, and the sentence stays true because
+  alo OS changed nothing. **If the writer is ours** — the environment, `cosign`, a
+  unit, a generator — it is stopped, and the test holds that the whole first disk
+  is unchanged. Either way
+  `a_release_signed_by_another_key_writes_nothing_and_says_so` passes when run
+  (`--include-ignored`), and the run is pasted into the report.
+- **Constraint:** the sentence *so nothing was changed* is not reworded to fit a
+  change. If something of ours writes, the code changes, not the words.
+
+### 9. With Secure Boot on, the staged loader starts
+
+**Status:** ready. **Depends on:** 2.
+
+Split from task 2 on 2026-09-15. Under QEMU q35 with OVMF's Secure Boot build and
+Microsoft's enrolled certificates, the firmware page-faults (`#PF`, a write to a
+present page, `W:1 P:1`) starting the staged loader from the installer's
+partition, before Linux, and hangs.
+
+- **Acceptance:** the fault is located and written into `docs/quirks.md` with its
+  evidence, starting from the report's steps in order — boot the same partition
+  with OVMF's build without Secure Boot, to separate *the files* from *Secure
+  Boot*; then shim alone with a trivial second stage, to separate shim from the
+  loader; and if it is this OVMF build's memory protection rather than the files,
+  show it with a second firmware build and name both versions. Then
+  `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+  passes **with Secure Boot on** — the staged loader starts, the environment
+  pulls the pinned release, verifies it, installs onto the second disk with the
+  first disk's Windows partitions unchanged, and the second disk boots to
+  `alo-agentd` — and the run is pasted into the report. If the only way through is
+  a different signed shim or loader than the base ships, that is a decision record
+  first, because what the laptop's firmware trusts is ADR 0033 §4's.
+- **Constraint:** Secure Boot is never switched off to make the test pass (ADR
+  0033 §4). A person is never told to disable it. No shim or loader is patched or
+  built by us (ADR 0011).

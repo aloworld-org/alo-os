@@ -1,0 +1,24 @@
+[Unit]
+# The one program the boot environment runs.
+Description=alo OS installer: checks the download is genuine and writes the chosen disk
+
+# The initramfs's own early start, not an installed system's.
+DefaultDependencies=no
+After=basic.target nm-initrd.service
+Wants=nm-initrd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/alo-installing
+
+# The machine's log. What a person reads is written by alo-installing itself to
+# every console the kernel has, in the vocabulary; what the tools it runs print
+# goes here, because it names the machinery and a person was never meant to
+# read it.
+StandardOutput=journal
+StandardError=journal
+
+# The checker keeps a cache under its home. The initramfs has no home for root,
+# so it is given a directory that exists for as long as the service runs.
+RuntimeDirectory=alo-installing
+Environment=HOME=/run/alo-installing

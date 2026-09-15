@@ -138,11 +138,118 @@ It writes a file, not a disk. The installer's boot environment will run this
 same invocation against the one disk a person named, and nothing in this
 repository points it at a real one.
 
-**Today a pull needs a login.** The `alo-os` package on `ghcr.io` is private
-until the owner makes it public, so until then `podman login ghcr.io` (and
-`cosign login ghcr.io`) with an account that can read it comes first. That is
-said here rather than worked around: an installer pulls without an account,
-and it cannot until the package is public.
+**Whether a pull needs a login is not yet shown here.** This page said until
+2026-09-15 that the package was private, so `podman login ghcr.io` (and
+`cosign login ghcr.io`) came first. The boot environment below holds no account
+of any kind, so an installer can only work once the package is public; that the
+environment has pulled and installed the release is **not** yet measured (see
+`docs/autonomy/updates/the-boot-environment-that-installs.md`).
+
+## The boot environment that installs
+
+Everything above is run by a person at a Linux machine. The installer a person
+downloads cannot ask that of anybody: it restarts the machine into a small
+environment that does the same thing on its own, and says on the screen what it
+is doing ([ADR 0023](decisions/0023-installed-from-the-machine-it-replaces.md)
+§2–3). That environment is built from `image/installing/Containerfile`, and the
+program inside it is `crates/alo-installing`.
+
+It is a kernel and an initramfs, both made from the image's own pinned base by
+the base's own tools, and the base's signed shim and loader beside them — so a
+machine with Secure Boot on starts it without anybody changing a setting
+([ADR 0033](decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md)
+§4). It is not a second operating system: one program runs, nobody is offered a
+login or a shell, and it ships only what installing needs.
+
+### Building it
+
+From the root of the repository:
+
+    podman build -f image/installing/Containerfile \
+      --output type=local,dest=alo-installing .
+
+What lands in `alo-installing/` is the content of a FAT partition, and nothing
+else:
+
+    EFI/BOOT/BOOTX64.EFI              the signed shim
+    EFI/BOOT/grubx64.efi              the signed loader
+    EFI/BOOT/mmx64.efi                the shim's key manager
+    EFI/BOOT/grub.cfg                 the one entry
+    EFI/alo-installing/vmlinuz        the signed kernel
+    EFI/alo-installing/initramfs.img  the environment
+
+### What the program that stages it must do
+
+The installer plan's task 3 writes these files; this is what the environment
+needs of it, and the environment refuses rather than guesses when it is not
+done:
+
+1. **A FAT partition labelled `ALO-INSTALL`** holding the files above. The label
+   is how the environment recognises the disk it is running from, and it refuses
+   to install over that disk.
+2. **The chosen disk, in `EFI/BOOT/chosen.cfg`**, one line:
+   `set alo_installing_to=` followed by the disk's own name as Linux lists it
+   under `/dev/disk/by-id/` — never `sda`, which names whichever disk answered
+   first. With no such file the environment says *no disk was chosen* and
+   writes nothing.
+3. **A boot entry for `\EFI\BOOT\BOOTX64.EFI` on that partition, reached once**,
+   through the firmware's next-boot choice rather than by changing the default.
+   The environment restarts the machine when it has installed, and a restart
+   that landed back in it would install again.
+4. **A wired connection.** The environment brings up a network cable and
+   nothing else; a machine with only Wi-Fi reaches *alo OS could not be
+   downloaded* and nothing is changed. Carrying a wireless network across the
+   restart is the staging program's problem to solve, and is not solved yet.
+
+### What it does, in order
+
+It says each step on every console before it begins:
+
+1. reads which disk was chosen from its kernel command line;
+2. waits for that disk to appear, by its own name;
+3. refuses a disk that is part of a disk, is not connected, holds this
+   installer, holds partitions Windows makes, or is in use;
+4. waits for the network, then checks that the pinned release is signed by the
+   key in this repository — the same check as `cosign verify` above, with the
+   same key and the same digest, and the checker's answer must name that
+   digest;
+5. writes the chosen disk with `bootc install to-disk`, pulling the release by
+   digest straight into the new disk, and says every minute that it is still
+   going;
+6. says alo OS is installed, and restarts.
+
+Every refusal before step 5 ends with *so nothing was changed* and *you can turn
+this computer off or restart it now*, and the environment does not restart by
+itself after one. A release whose signature does not verify is said as *this
+download is not a genuine alo OS, so nothing was changed*.
+
+### Watching it in a virtual machine
+
+`crates/alo-installing/tests/installed_in_a_virtual_machine.rs` does all of this
+on Linux with QEMU and OVMF: it builds the recipe, lays out a first disk the way
+Windows does with the environment staged beside it, attaches an empty second
+disk, and starts the machine with Secure Boot on under Microsoft's certificates.
+It hashes the first disk before and after, then starts the second disk on its
+own and reads what is running. A second test gives the environment a key that
+is not the owner's and watches it refuse. Both are run by name:
+
+    cargo test -p alo-installing --test installed_in_a_virtual_machine \
+      -- --include-ignored --test-threads 1
+
+**Neither passes yet** (2026-09-15). With Secure Boot on, the firmware stops
+with a page fault as it starts the staged loader, before Linux; and the refusal,
+which is started without Secure Boot, refuses correctly and leaves the second
+disk untouched but changes the first disk. Both are written up, with what was
+ruled out, in `docs/autonomy/updates/the-boot-environment-that-installs.md`.
+
+**Nobody has watched it in Hyper-V yet**: the account the tests ran under on
+2026-09-15 is not allowed to manage Hyper-V, and the gates run in Linux. By
+hand, the same shape is a generation 2 machine with Secure Boot
+under the *Microsoft UEFI Certificate Authority* template, a first disk holding
+the `ALO-INSTALL` partition as its boot device, a second empty disk of at least
+24 GB, and a network adapter on a switch with a route out. On Hyper-V's SCSI
+disks the name under `/dev/disk/by-id/` is the disk's `scsi-` or `wwn-` name,
+and that is what `chosen.cfg` must hold.
 
 ## Attaching it to Hyper-V
 
