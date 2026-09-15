@@ -222,14 +222,29 @@ whose publisher wrote one elsewhere is a decision with a name on it.
 
 ### 9. The four entries the measuring machine could not hold
 
-**Status:** blocked — on a machine with more memory than 8 GB, or on this one
-with the GPU's share of memory raised (`sudo sysctl iogpu.wired_limit_mb=6800`,
-which needs the owner's password). **Depends on:** 2, 8 for Teuken.
+**Status:** blocked — for `mixtral-8x7b-instruct` alone, on a machine with the
+48 GB its own entry states. **Depends on:** 2, 8 for Teuken.
+**Report:** `docs/autonomy/updates/the-nine-billion-entries-tried-on-this-machine.md`.
 
-`gemma-2-9b-instruct`, `eurollm-9b-instruct` and `mixtral-8x7b-instruct` carry
-`too-large-for-the-measuring-machine`. (`teuken-7b-instruct` was graded on
-2026-09-14 by task 8, once it carried its publisher's template.) The
-measurement is the same one; only the room is missing.
+**Two thirds of it is answered, on 2026-09-15, and the answer was free.** The
+development VM's 4 GiB was the memory: with it stopped, this machine **loads**
+both nine-billion entries. Neither can answer with them. EuroLLM sits at 6.49 GB
+with 1.9 GB off the graphics processor and answers a nineteen-token question in
+168 seconds, but not one of `alo-driving`'s own prompts — which carry every verb
+the machine has — inside the 300 seconds `alo-models` waits, in three runs.
+Gemma sits at 7.45 GB with 3.3 GB off and does not answer the nineteen-token
+question inside 300 seconds either. So both keep
+`too-large-for-the-measuring-machine`, whose own words are *does not have the
+memory to run the model inside the time `alo-models` waits* — now from an
+attempt rather than from subtracting this machine's memory from `min_ram_gb`.
+
+What is left is `mixtral-8x7b-instruct`: 26.4 GB of weights, three times this
+whole machine, and no setting reaches it. It was **not** attempted, deliberately
+— 26 GB of somebody's connection to watch arithmetic happen — and that is stated
+in its entry rather than dressed up as a measurement. Raising the GPU's share
+(`sudo sysctl iogpu.wired_limit_mb=6144`, the owner's password) would buy about a
+gigabyte of residency and is worth trying for the two nine-billion entries; it
+cannot touch Mixtral.
 
 - **Acceptance:** each is graded with the machine beside it, or keeps its reason
   with a machine that actually tried named in it.

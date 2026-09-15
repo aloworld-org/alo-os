@@ -252,10 +252,22 @@ model, which is why it is the one named. The upload's own Hugging Face metadata 
 states `license: apache-2.0`, the model's own licence, and attaches no terms \
 beyond it. Read 2026-09-11."""
 
+# **Tried, on 2026-09-15, and the reason is now an attempt rather than a
+# subtraction.** With the development VM stopped, this machine holds the file:
+# `Ollama::fetch` fetched it by this entry's id and it answered *"I'm ready to
+# help with your question or instruction."* Loaded it is 6,494,638,568 bytes with
+# 4,608,848,035 of them on the graphics processor — 1.9 GB of a nine-billion
+# model resident nowhere fast. A nineteen-token question held to the envelope came
+# back in **168 seconds**; the fixed set's own prompt, which carries every verb
+# this machine has, did not come back at all inside the **300 seconds**
+# `alo-models` waits, in three runs — asked freely, asked in the envelope, and
+# asked in the envelope under the instructions a turn shows. So the entry keeps
+# its reason, which says exactly this: not that the file will not load, but that
+# the machine cannot answer with it inside the time a person is waiting.
 [model.unmeasured]
 because = "too-large-for-the-measuring-machine"
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
-date = "2026-09-13"
+date = "2026-09-15"
 runtime = "Ollama 0.34.0"
 
 # openGPT-X publishes this model twice, under two different licences: the
@@ -437,6 +449,12 @@ drives_verbs = "not-measured"
 upstream = "https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+# **Not tried, and deliberately.** 26.4 GB of weights cannot be placed in 8 GiB
+# of unified memory by any setting: the two nine-billion entries were tried on
+# 2026-09-15 and could not answer with 1.9 and 3.3 GB adrift, and this file is
+# three times the whole machine. Fetching it to watch it fail would cost 26 GB of
+# somebody's connection to learn arithmetic. The reason is the machine's, and the
+# 48 GB this entry's own `min_ram_gb` states is what would lift it.
 [model.unmeasured]
 because = "too-large-for-the-measuring-machine"
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -755,10 +773,18 @@ Prohibited Use Policy, which bind anyone the model or its derivatives are passed
 on to — so the terms must travel with any distribution, and the use restrictions \
 apply to outputs as well as weights."""
 
+# **Tried, on 2026-09-15, and further from answering than EuroLLM was.** With the
+# development VM stopped this machine loads it — `Ollama::fetch` fetched it by
+# this entry's id and it answered *"ready."* — at 7,451,579,511 bytes with only
+# 4,125,160,897 of them on the graphics processor, 3.3 GB adrift. A nineteen-token
+# question held to the envelope did **not** come back inside 300 seconds, where
+# EuroLLM's came back in 168, so no fixed set was put to it at all. The reason
+# stands, now from an attempt rather than from comparing `min_ram_gb` with what
+# this machine has.
 [model.unmeasured]
 because = "too-large-for-the-measuring-machine"
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
-date = "2026-09-13"
+date = "2026-09-15"
 runtime = "Ollama 0.34.0"
 
 # ── small enough for a machine with no graphics card (ADR 0007) ─────────────

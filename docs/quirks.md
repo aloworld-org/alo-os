@@ -2965,6 +2965,31 @@ and the measurement that would settle the cause is a packet capture of that firs
 request, which nobody has made.
 **Date:** 2026-09-14.
 
+### A nine-billion model loads on 8 GB and still cannot answer a real request
+**Version:** Ollama 0.34.0 on an Apple M3 with 8 GiB, macOS 26.5.2, 2026-09-15,
+with the development VM stopped: `eurollm-9b-instruct` (5.58 GB file) and
+`gemma-2-9b-instruct` (5.76 GB).
+**Behaviour:** both load and both answer. EuroLLM sits at 6,494,638,568 bytes
+with 4,608,848,035 on the graphics processor; Gemma at 7,451,579,511 with
+4,125,160,897. **Loading is not the limit — the prompt is.** A nineteen-token
+question held to the envelope came back from EuroLLM in 168 seconds and from
+Gemma not at all inside 300. `alo-driving`'s own prompt carries every verb the
+machine declares, about 1,500 tokens, and EuroLLM did not answer one inside the
+300 seconds `alo-models` waits in any of three runs — asked freely, asked in the
+envelope, and asked in the envelope under the instructions a turn shows. So the
+cost that decides is prompt evaluation against weights that are 1.9 GB (EuroLLM)
+and 3.3 GB (Gemma) adrift of the processor, not the size of the file.
+**Our response:** both entries keep `too-large-for-the-measuring-machine`, whose
+own words are *does not have the memory to run the model inside the time
+`alo-models` waits for an answer* — which is now what was measured rather than
+what was inferred from `min_ram_gb`. The wait is not lengthened and the prompt is
+not shortened: the prompt is what a real turn sends, and a person waiting five
+minutes for one request has already been failed. What would lift it is memory —
+these two want the 12 GB their entries state — and `iogpu.wired_limit_mb`, left
+at its default here, would buy about a gigabyte of residency on this machine but
+needs the owner's password and cannot be set by an agent.
+**Date:** 2026-09-15.
+
 ### An 8B model on this 8 GB machine can take longer than the five minutes the product waits
 **Version:** Ollama 0.34.0 on an Apple M3 with 8 GB, macOS 26.5.2, 2026-09-14,
 measuring `llama-3.1-8b-instruct` (5.7–6.2 GB loaded, about 1 GB of it off the
