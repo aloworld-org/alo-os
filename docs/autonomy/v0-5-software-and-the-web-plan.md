@@ -70,9 +70,12 @@ the report says what the on-machine acceptance is. **Depends on:** nothing.
 
 ### 2. What a fresh machine has, so it is not helpless
 
-**Status:** blocked — on
-`docs/decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md`
-(proposed, 2026-09-15). **Depends on:** 1.
+**Status:** ready — `docs/decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md`
+was accepted on 2026-09-16, option C, and **this plan makes its additive change to
+`alo-capability`** (`persons_own.rs`, `GrantError::APersonsOwn`, the three refusals)
+and nothing else in that crate. Take the held branch
+`held/software-task-2-awaits-capability`, rebase it onto current `main`, pass all nine
+gates, and publish. **Depends on:** 1.
 
 **Built, then held back, 2026-09-15.** A worker built the decided list
 (`crates/alo-software/shipped.toml`, read by `alo_software::Shipped`) and the

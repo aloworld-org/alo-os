@@ -34,6 +34,20 @@ crate's own tests by hand (`cargo test -p alo-installer`) and pastes the
 result into the report; a handoff whose report has no such paste is not
 done.
 
+**A test that makes disks cleans them up, and a build that makes an image names
+or removes it.** On 2026-09-15 this plan's virtual-machine work filled this PC's
+C: drive from 33 GB free to nothing in about an hour: every rebuild of the boot
+environment left an unnamed image of 1.3–1.7 GB in the container store, and the
+tests left multi-gigabyte copies of Windows-shaped disks behind. The distribution
+crashed with the drive full, and a lane's gates failed with an I/O error. So,
+from then on: every virtual-machine test writes its disks under Cargo's
+`CARGO_TARGET_TMPDIR` and **removes them when it finishes, pass or fail**, keeping
+only the logs it names in its report; a worker that builds an image **tags it or
+removes it** before it hands over, and runs `podman image prune -f` when it is
+done; nothing is left in `/root` or `/tmp` between runs; and a worker checks that
+at least 15 GB is free on the drive the distribution's disk lives on before it
+starts a virtual machine, and says so and stops if not.
+
 ## Tasks
 
 ### 1. The image is published from GitHub, signed, and pinned

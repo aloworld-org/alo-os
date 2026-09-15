@@ -24,7 +24,10 @@ makes to `crates/alo-capability` and to the grants file in
 application may reach that is not a path, a grantee that is an agent or an
 application, application grants that outlive declining the agent, and the
 grants file's new format. Anything else in those two crates is not this
-plan's. Nothing in `crates/alo-shell`, nothing in `image/`, nothing in
+plan's — and since 2026-09-16 ADR 0043's change (a closed list of a person's own
+applications, `GrantError::APersonsOwn`, and three refusals) is the software
+plan's, so this plan does not edit `alo-capability` while that lands. Nothing in
+`crates/alo-shell`, nothing in `image/`, nothing in
 `alo-nearby`, `alo-asking`, `alo-record`, `alo-turn`, `alo-egress` (lane A's),
 nothing in
 `alo-models`, `alo-driving`, `alo-choosing`, `alo-answering`, `alo-telling`

@@ -1,6 +1,14 @@
 # ADR 0043 — The terminal is a person's, and never an agent's
 
-**Status:** proposed, 2026-09-15. Written by task 2 of
+**Status:** accepted, 2026-09-16 — option **C**, and **the software plan makes
+the additive change to `alo-capability`** described in part 2, and only that
+change: `persons_own.rs`, `GrantError::APersonsOwn` with its word, and the three
+refusals with their tests. The applications plan has not edited `alo-capability`
+since its ADR 0040 work landed, is on tasks that do not touch it, and keeps
+`Reach`, `Ask` and `Grantee`. The held branch's change may be published once it
+passes all nine gates on current `main`. What follows is the record as proposed.
+
+Written by task 2 of
 `docs/autonomy/v0-5-software-and-the-web-plan.md` (*What a fresh machine has, so
 it is not helpless*), which cannot be finished until it is answered. The worker
 that wrote it built the change in part 2 and marked this record accepted, moving
