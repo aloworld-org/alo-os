@@ -99,7 +99,8 @@ impl TheDaemonsDoor {
             | ToAPerson::ChosenToAnswer { .. }
             | ToAPerson::MachineNamed { .. }
             | ToAPerson::Workspaces { .. }
-            | ToAPerson::WorkspaceOpened(_) => None,
+            | ToAPerson::WorkspaceOpened(_)
+            | ToAPerson::Advertised(_) => None,
         }
     }
 }

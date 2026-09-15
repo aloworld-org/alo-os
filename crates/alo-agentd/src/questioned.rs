@@ -802,6 +802,7 @@ region = \"the EU\"
                 &Nearby {
                     network: &network,
                     looking: &NobodyIsNearby,
+                    advertising: &crate::testing::nothing_is_advertised(),
                 },
                 &strings,
                 noon(),

@@ -516,6 +516,17 @@ impl crate::looking::LookingFor for NobodyIsNearby {
     }
 }
 
+/// Reception, telling the network it exists at the wire's port and hosting no
+/// workspace — for the tests on the person's door that are not about what a
+/// machine advertises.
+pub(crate) fn nothing_is_advertised() -> crate::what_is_advertised::Advertising {
+    crate::what_is_advertised::Advertising::of(
+        reception(),
+        crate::wire::THE_WIRE_PORT,
+        crate::hosting::Hosted::Nothing,
+    )
+}
+
 /// A machine where nobody has chosen anything to answer questions.
 pub(crate) fn nothing_has_been_chosen() -> Questions {
     Questions::of_a_session(

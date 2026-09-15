@@ -70,6 +70,7 @@ use std::os::unix::fs::MetadataExt as _;
 use std::path::Path;
 
 use crate::refusing::NotHosting;
+use crate::unhosted::Unhosted;
 use crate::unix::{NotOpened, open_not_a_link};
 use crate::wire::THE_WIRE_PORT;
 
@@ -130,18 +131,51 @@ pub fn hosted_at(at: &Path) -> Result<Option<NonZeroU16>, NotHosting> {
     the_port_in(at, &text).map(Some)
 }
 
+/// What the start read about the workspace this machine hosts.
+///
+/// Kept by [`crate::wire::Wire`] for the life of the service, so what the
+/// person is told this machine advertises is what it really does advertise —
+/// never the file read again ([`crate::what_is_advertised`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Hosted {
+    /// No file: a machine hosting no workspace.
+    Nothing,
+    /// Root's file, saying this port.
+    At(NonZeroU16),
+    /// A file that is there and was refused, so nothing is advertised — kept
+    /// as what the person can act on rather than as the refusal, which names
+    /// the path.
+    Refused(Unhosted),
+}
+
+impl Hosted {
+    /// The port a workspace is advertised at, when one is.
+    #[must_use]
+    pub const fn port(self) -> Option<NonZeroU16> {
+        match self {
+            Self::At(port) => Some(port),
+            Self::Nothing | Self::Refused(_) => None,
+        }
+    }
+}
+
 /// What this machine advertises about a workspace, from the file at `at`: the
-/// port it says, or nothing — when there is no file, and when there is one that
-/// is refused, which is handed to `told` first.
+/// port it says, or nothing — when there is no file, and when there is one
+/// that is refused, which is handed to `told` first and kept as
+/// [`Hosted::Refused`].
 ///
 /// The one decision `src/main.rs` makes with [`hosted_at`], written here so it
 /// is tested: **a refusal advertises no workspace**, and does not stop the
 /// service.
-pub fn advertised(at: &Path, told: impl FnOnce(&NotHosting)) -> Option<NonZeroU16> {
-    hosted_at(at).unwrap_or_else(|refused| {
-        told(&refused);
-        None
-    })
+pub fn advertised(at: &Path, told: impl FnOnce(&NotHosting)) -> Hosted {
+    match hosted_at(at) {
+        Ok(Some(port)) => Hosted::At(port),
+        Ok(None) => Hosted::Nothing,
+        Err(refused) => {
+            told(&refused);
+            Hosted::Refused(Unhosted::of(&refused))
+        }
+    }
 }
 
 /// Whether a file with this owner and mode is one to believe about what this

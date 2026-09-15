@@ -1,14 +1,14 @@
 //! What the daemon says back to the person's shell.
 //!
-//! Eleven answers to eleven requests: what a change did once they approved it,
+//! Fourteen answers to fourteen requests: what a change did once they approved it,
 //! that a change they declined is written down, everything still waiting for
 //! them, how much is granted after the machine read its list again, the four
 //! about pairing — the proposal waiting with its code, what became of a
 //! confirmation, what became of a revocation, and everything paired and
 //! waiting — the machine now chosen to answer their questions, a machine named
 //! or its name taken away, the workspaces on the network and the one they
-//! opened, and, for any of them, the refusal in the
-//! language they read.
+//! opened, what their own machine says about itself on the network, and, for
+//! any of them, the refusal in the language they read.
 //!
 //! Wherever a paired machine is named here — on the list, chosen to answer,
 //! named — its identity comes with the name the person gave it beside it,
@@ -42,6 +42,7 @@ use alo_capability::Waiting;
 use alo_files::Answer;
 use alo_strings::{Said, Strings};
 
+use crate::advertised::Advertised;
 use crate::done::Done;
 use crate::frame;
 use crate::pairing::{AfterConfirming, AfterNaming, AfterRevoking, Paired, WaitingToPair};
@@ -120,9 +121,28 @@ pub enum ToAPerson {
     /// The workspace they opened, at the one address it answered from when
     /// the daemon looked — for their session to hand to the workspace client.
     WorkspaceOpened(FoundWorkspace),
+    /// What their machine says about itself on the local network: its
+    /// identity, the port its presence names, and the workspace it hosts, that
+    /// it hosts none, or why one installed is not advertised.
+    Advertised(Advertised),
 }
 
 impl ToAPerson {
+    /// What this machine says about itself on the local network.
+    #[must_use]
+    pub const fn advertised(advertised: Advertised) -> Self {
+        Self::Advertised(advertised)
+    }
+
+    /// What this machine says about itself, when that is what they asked.
+    #[must_use]
+    pub const fn advertisement(&self) -> Option<&Advertised> {
+        match self {
+            Self::Advertised(advertised) => Some(advertised),
+            _ => None,
+        }
+    }
+
     /// The workspace they opened, at the address measured at that moment.
     #[must_use]
     pub const fn workspace_opened(workspace: FoundWorkspace) -> Self {
@@ -369,6 +389,7 @@ impl ToAPerson {
             }),
             Told::Workspaces { found } => Ok(Self::Workspaces { found }),
             Told::WorkspaceOpened(workspace) => Ok(Self::WorkspaceOpened(workspace)),
+            Told::Advertised(advertised) => Ok(Self::Advertised(advertised)),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -446,6 +467,7 @@ impl From<ToAPerson> for Told {
             },
             ToAPerson::Workspaces { found } => Self::Workspaces { found },
             ToAPerson::WorkspaceOpened(workspace) => Self::WorkspaceOpened(workspace),
+            ToAPerson::Advertised(advertised) => Self::Advertised(advertised),
         }
     }
 }
@@ -622,6 +644,31 @@ mod tests {
             Err(NotUnderstood::NotAnAnswerForAnAgent)
         );
         assert!(ToAPerson::Declined.opened_workspace().is_none());
+    }
+
+    /// **What this machine advertises comes back to the person — never to an
+    /// agent — as the identity, the presence's port and the workspace**, and
+    /// nothing else.
+    #[test]
+    fn what_this_machine_advertises_is_told_to_the_person_and_not_to_an_agent() {
+        let advertised = Advertised::of(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            7_610,
+            crate::HostedWorkspace::hosts(std::num::NonZeroU16::new(8_443).unwrap()),
+        );
+        let told = ToAPerson::advertised(advertised.clone());
+        assert_eq!(told.advertisement(), Some(&advertised));
+        let written = told.written().unwrap();
+        assert_eq!(
+            written,
+            r#"{"format":1,"tells":{"advertised":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","port":7610,"workspace":{"hosts":{"port":8443}}}}}"#
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+        assert!(ToAPerson::Declined.advertisement().is_none());
     }
 
     /// **What a shell draws is the number and the sentence**, one for each

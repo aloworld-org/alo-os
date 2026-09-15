@@ -548,10 +548,13 @@ impl<'a> Serving<'a> {
             // evidence, and there is nothing to say to a caller about it.
             let mut nothing_written_down = false;
             // What the four requests about a pairing are answered against:
-            // the one lock, and the link this wire is bound to.
+            // the one lock, and the link this wire is bound to — and what this
+            // wire tells that link about the machine, as it holds it now.
+            let advertising = self.wire.advertising();
             let nearby = Nearby {
                 network: self.network,
                 looking: self.wire,
+                advertising: &advertising,
             };
             let answered = held.person.as_mut().map(|line| {
                 one_message(

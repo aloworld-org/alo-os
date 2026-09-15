@@ -129,6 +129,7 @@
 //! `docs/contracts/daemon-protocol.md` is the public surface: what a message
 //! looks like, when [`FORMAT`] rises, and what may be added without raising it.
 
+mod advertised;
 mod agent;
 mod answered;
 mod argument;
@@ -150,6 +151,7 @@ mod wording;
 pub mod words;
 mod workspaces;
 
+pub use advertised::{Advertised, HostedWorkspace};
 pub use agent::FromAnAgent;
 pub use answered::Answered;
 pub use argument::Argument;

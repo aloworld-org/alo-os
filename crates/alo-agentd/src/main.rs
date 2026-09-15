@@ -158,7 +158,9 @@ mod running {
         // port or the socket could not be bound.
         // And the workspace this machine hosts, if root installed one: read
         // once, here, and a file that cannot be believed advertises nothing
-        // rather than stopping a machine the person can still be served at.
+        // rather than stopping a machine the person can still be served at —
+        // kept on the wire as what the person can act on, so their door can
+        // tell them why without the file being read again.
         let hosted = alo_agentd::advertised(Path::new(THE_HOSTED_WORKSPACE), |why| {
             eprintln!("alo-agentd: {why}");
         });

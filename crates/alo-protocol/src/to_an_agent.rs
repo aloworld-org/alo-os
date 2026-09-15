@@ -137,7 +137,8 @@ impl ToAnAgent {
             | Told::ChosenToAnswer { .. }
             | Told::MachineNamed { .. }
             | Told::Workspaces { .. }
-            | Told::WorkspaceOpened(_) => Err(NotUnderstood::NotAnAnswerForAnAgent),
+            | Told::WorkspaceOpened(_)
+            | Told::Advertised(_) => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

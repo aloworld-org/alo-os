@@ -204,6 +204,7 @@ mod tests {
             &Nearby {
                 network,
                 looking: &NobodyIsNearby,
+                advertising: &crate::testing::nothing_is_advertised(),
             },
             strings,
             now,

@@ -77,7 +77,8 @@ pub fn answered_to(
         | FromAPerson::NameMachine { .. }
         | FromAPerson::ClearMachineName { .. }
         | FromAPerson::Workspaces
-        | FromAPerson::OpenWorkspace { .. } => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::OpenWorkspace { .. }
+        | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();
@@ -266,6 +267,7 @@ mod tests {
             &crate::pairing::Nearby {
                 network,
                 looking: &NobodyIsNearby,
+                advertising: &crate::testing::nothing_is_advertised(),
             },
             strings,
             noon(),

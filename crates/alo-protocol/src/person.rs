@@ -1,6 +1,6 @@
 //! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Eleven requests. Two of them are the same act — answering a change that was
+//! Fourteen requests. Two of them are the same act — answering a change that was
 //! put to them in one sentence — and ADR 0001 §5 says a person approves a
 //! sentence rather than a session, so there is nothing here that approves more
 //! than one thing, nothing that approves everything from an agent, and nothing
@@ -67,6 +67,18 @@
 //! own account, and nothing here is a pairing or a sign-in (ADR 0003). An agent
 //! sending it is refused in the words an approval gets: an agent that could
 //! open a workspace would be choosing where the person's session connects.
+//!
+//! # What this machine says about itself is the person's to be shown, and to change nothing
+//!
+//! `advertised` asks what this machine tells everything on the local network at
+//! the moment — its identity, the port its presence names, and the workspace it
+//! hosts, that it hosts none, or why one installed is not advertised — and
+//! carries nothing: **no port and no path**, because the answer describes the
+//! service that is running and there is no request that changes what it says
+//! (ADR 0003 — no *advertise as*, no *discovery off*). An agent asking is refused
+//! in the words an approval gets: what a machine tells the office is the person's
+//! to check, and an agent that could read it would be reading the network in
+//! their name.
 //!
 //! # A number is not a handle
 //!
@@ -212,6 +224,11 @@ pub enum FromAPerson {
         /// Which workspace, by the identity it was found by.
         machine: String,
     },
+    /// What this machine says about itself on the local network at the moment.
+    ///
+    /// Carries nothing — no port, no path — and changes nothing: see this
+    /// file's header.
+    Advertised,
 }
 
 impl FromAPerson {
@@ -244,6 +261,7 @@ impl FromAPerson {
             Asked::ClearMachineName { machine } => Ok(Self::ClearMachineName { machine }),
             Asked::Workspaces {} => Ok(Self::Workspaces),
             Asked::OpenWorkspace { machine } => Ok(Self::OpenWorkspace { machine }),
+            Asked::Advertised {} => Ok(Self::Advertised),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -278,7 +296,8 @@ impl FromAPerson {
             | Self::NameMachine { .. }
             | Self::ClearMachineName { .. }
             | Self::Workspaces
-            | Self::OpenWorkspace { .. } => None,
+            | Self::OpenWorkspace { .. }
+            | Self::Advertised => None,
         }
     }
 
@@ -357,6 +376,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::ClearMachineName { machine } => Self::ClearMachineName { machine },
             FromAPerson::Workspaces => Self::Workspaces {},
             FromAPerson::OpenWorkspace { machine } => Self::OpenWorkspace { machine },
+            FromAPerson::Advertised => Self::Advertised {},
         }
     }
 }
@@ -647,6 +667,7 @@ mod tests {
             FromAPerson::OpenWorkspace {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
             },
+            FromAPerson::Advertised,
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);
@@ -690,6 +711,52 @@ mod tests {
             r#"{"format":1,"asks":{"open-workspace":{"answers_at":"192.168.1.20:8443"}}}"#,
             r#"{"format":1,"asks":{"open-workspace":{"url":"https://mail.axon.example"}}}"#,
             r#"{"format":1,"asks":{"open-workspace":{}}}"#,
+        ] {
+            assert_eq!(
+                FromAPerson::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+            assert_eq!(
+                crate::FromAnAgent::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+        }
+    }
+
+    /// **Asking what this machine advertises is the person's, carries nothing,
+    /// and an agent asking is refused in the words an approval gets.**
+    #[test]
+    fn asking_what_this_machine_advertises_is_a_persons_and_refused_to_an_agent() {
+        let line = r#"{"format":1,"asks":{"advertised":{}}}"#;
+        let asked = FromAPerson::read(line).unwrap();
+        assert_eq!(asked, FromAPerson::Advertised);
+        assert_eq!(asked.number(), None);
+        assert!(!asked.is_yes());
+        assert!(!asked.is_a_question_about_the_turn());
+        assert!(!asked.is_about_a_pairing());
+        assert!(!asked.is_about_a_name());
+        assert_eq!(
+            crate::FromAnAgent::read(line),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+    }
+
+    /// **A request carrying a port or a path is not a request**: there is no
+    /// field on `advertised` for either, and no request that says what this
+    /// machine advertises — every shape is refused as unreadable on both doors,
+    /// so there is no *advertise as* and no *discovery off* arriving by the
+    /// back door.
+    #[test]
+    fn asking_what_is_advertised_with_a_port_or_a_path_is_not_a_request() {
+        for message in [
+            r#"{"format":1,"asks":{"advertised":{"port":8443}}}"#,
+            r#"{"format":1,"asks":{"advertised":{"path":"/etc/alo/workspace.toml"}}}"#,
+            r#"{"format":1,"asks":{"advertised":{"workspace":{"port":8443}}}}"#,
+            r#"{"format":1,"asks":{"advertised":{"discovery":false}}}"#,
+            r#"{"format":1,"asks":{"advertise":{"port":8443}}}"#,
+            r#"{"format":1,"asks":{"advertise-as":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}}"#,
         ] {
             assert_eq!(
                 FromAPerson::read(message),

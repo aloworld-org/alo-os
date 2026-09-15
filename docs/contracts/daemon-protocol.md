@@ -397,6 +397,49 @@ workspace would be choosing where the person's session connects. Anything this
 machine or its agents do *with* a workspace on another alo machine is a different
 act, under a pairing permitting `workspace`, and is not this request.
 
+### `advertised` — what this machine says about itself on the network
+
+```json
+{"advertised":{}}
+```
+
+Added 2026-09-15, additively. The person asks what their own machine tells
+everything on the local network at the moment (`docs/contracts/local-network-wire.md`):
+its presence, and the workspace it answers for where root installed one
+(`docs/contracts/hosted-workspace-file.md`). It **carries nothing** — in particular
+no port and no path — and a message carrying either is not a request. There is no
+request on either door that changes what a machine advertises: no *advertise as*,
+no *discovery off*, no setting (ADR 0003).
+
+**It is a read of the service that is running.** The answer is what the daemon's
+wire holds — the identity and port its responder answers with, the workspace port
+it was given at start, and why the workspace file was refused if it was — and
+**never the file read again**: a file changed since the service started is not what
+the network is being told, and it is read at the next start. Nothing is advertised
+that was not, and nothing is written in the record. An agent asking is refused in
+the same words as an agent trying to approve something.
+
+What comes back is `advertised`, with exactly three fields:
+
+```json
+{"advertised":{"machine":"aaaabbbbccccddddeeeeffff00001111","port":7610,"workspace":{"hosts":{"port":8443}}}}
+{"advertised":{"machine":"aaaabbbbccccddddeeeeffff00001111","port":7610,"workspace":{"hosts-none":{}}}}
+{"advertised":{"machine":"aaaabbbbccccddddeeeeffff00001111","port":7610,"workspace":{"not-advertised":{"text":"this machine is not telling the network about a workspace, because what says one is installed here was not set up by the system alone — …","came_from":"the-source"}}}}
+```
+
+`machine` is the identity the presence is advertised under and `port` the port it
+names. `workspace` is one of three: `hosts`, with the port a workspace is advertised
+at under this machine's identity; `hosts-none`, when no workspace file is installed;
+or `not-advertised`, when one is and was refused, so no workspace is advertised —
+carrying a sentence in the person's language. The eleven ways the file can be
+refused reach the person as **three** sentences, grouped by what they can do: the
+file could have been written by something other than the system (a link, not a
+file, not root's, writable by others); it could not be read; or it does not name one
+usable port (not TOML, another key, no port, not a number, outside 1–65535, the
+wire's own port). **None names a path, an owner or a mode** — those stay in the
+service log, for whoever installed the server. There is no field for an address, a
+hostname, a name, a model or a pairing, because the advertisement carries none.
+
 ## What comes back
 
 ```json

@@ -901,7 +901,21 @@ its identity did not say.
 
 ### 21. The person sees what their machine says about itself on the network
 
-**Status:** ready. **Depends on:** 1, 20.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-protocol` (`advertised.rs` —
+`advertised` as `FromAPerson::Advertised`, carrying nothing and refused on the
+agent's door; the answer `advertised` as `ToAPerson::Advertised` of `Advertised`:
+`machine`, `port`, and `HostedWorkspace` — `hosts`, `hosts-none` or
+`not-advertised` with a `Wording`), `crates/alo-agentd` (`unhosted.rs` — the eleven
+`NotHosting` arms grouped into three a person can act on, each one sentence in
+`words.rs` naming no path, owner or mode; `hosting::Hosted`, which `advertised` now
+returns and `Wire::hosting` takes, so the wire keeps why a file was refused;
+`Wire::advertising`; `what_is_advertised.rs`, answering from the wire's
+`Advertising` handed in on `Nearby`, reading no file and writing no record) and
+`crates/alo-changing/src/door.rs` (the one arm its exhaustive match needed).
+Contracts: `daemon-protocol.md` (`advertised`, new) and `hosted-workspace-file.md`,
+additively. The report is
+`docs/autonomy/updates/the-person-sees-what-their-machine-says-on-the-network.md`.
+**Depends on:** 1, 20.
 
 Since task 20 an alo machine can say two things on the local network: that it exists,
 under its identity and the wire's port, and — where root installed a workspace
@@ -929,3 +943,39 @@ find the workspace.
   is what `Wire` holds, never the file re-read: the answer describes the service that
   is running. `docs/contracts/daemon-protocol.md` gains the shape additively. Nothing
   in `alo-shell`, nothing in `image/`.
+
+### 22. A machine on two networks is found on each of them
+
+**Status:** ready. **Depends on:** 1, 10, 21.
+
+*Machines find each other with zero configuration.* A machine in an office is often
+on more than one network at once — a docked laptop on the wired LAN and on Wi-Fi, a
+GPU box with two ports. `alo-agentd`'s `Wire::bound` joins the multicast group with
+`join_multicast_v4(&THE_ADDRESS, &Ipv4Addr::UNSPECIFIED)`, which asks the kernel to
+choose **one** interface, and the questions `crate::looking` sends leave by the
+default route. So a machine on two networks is found on whichever one the kernel
+picked and silently absent from the other, and its person cannot tell — the answer
+task 21 gives says what the machine advertises, not where. A colleague on the other
+network is left typing an address, which is the step the promise removes.
+
+- **Acceptance:** the daemon joins the discovery group on **every** interface that is
+  up, multicast-capable and carries an IPv4 address, and not on loopback — tested
+  with the enumeration a pure function of the interfaces the kernel reports, one
+  test each for an interface that is down, one without multicast, one without an
+  address and loopback; an interface that cannot be joined is a line in the service
+  log and the others are still joined, never a stopped service, tested; what is
+  advertised on each network is the same bytes — the same identity, the same port,
+  the same workspace answer — so presence never differs by network, tested; the
+  person's `looking` asks on each joined interface and a machine heard on two of
+  them is one machine with the address it answered from on each, tested with two
+  interfaces a test can hold on one host (a network namespace pair, or `veth`, run
+  under `alo_bounding::Waited::on_this_kernel()` if it touches kernel-global state);
+  and `advertised` (task 21) is unchanged in shape, because what is said is the
+  same on every network — tested by the answer read back byte for byte.
+- **Constraint:** ADR 0003: discovery reveals presence only, and there is still no
+  setting — no "discover on", no interface chosen by a person or an agent, because a
+  list of networks to advertise on is the trusted-network switch by another name.
+  An interface appearing or going after start is decided in the crate and written up
+  (read again at the next start, or followed through the kernel's own notification)
+  with the reason. What reality does that the specification does not say goes in
+  `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

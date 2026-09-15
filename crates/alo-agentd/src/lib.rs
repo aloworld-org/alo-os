@@ -262,7 +262,11 @@ pub mod the_runtime;
 #[cfg(target_os = "linux")]
 pub mod trusting;
 #[cfg(target_os = "linux")]
+pub mod unhosted;
+#[cfg(target_os = "linux")]
 pub mod unix;
+#[cfg(target_os = "linux")]
+pub mod what_is_advertised;
 #[cfg(target_os = "linux")]
 pub mod wire;
 #[cfg(target_os = "linux")]
@@ -290,7 +294,7 @@ pub use hearing::{Heard, Judging, NOT_A_MESSAGE, NOT_FOR_THIS_WIRE};
 #[cfg(target_os = "linux")]
 pub use holding::Holding;
 #[cfg(target_os = "linux")]
-pub use hosting::{THE_HOSTED_WORKSPACE, advertised, hosted_at};
+pub use hosting::{Hosted, THE_HOSTED_WORKSPACE, advertised, hosted_at};
 #[cfg(target_os = "linux")]
 pub use keeping_names::TheNamesFile;
 #[cfg(target_os = "linux")]
@@ -345,6 +349,10 @@ pub use stopping::{Stop, Waking};
 pub use surface::{AtThePersonsDoor, NobodyToShowItTo};
 #[cfg(target_os = "linux")]
 pub use terms::{NoNameYet, Terms};
+#[cfg(target_os = "linux")]
+pub use unhosted::Unhosted;
+#[cfg(target_os = "linux")]
+pub use what_is_advertised::Advertising;
 #[cfg(target_os = "linux")]
 pub use wire::{Knocked, THE_IDENTITY, THE_WIRE_PORT, Wire};
 #[cfg(target_os = "linux")]

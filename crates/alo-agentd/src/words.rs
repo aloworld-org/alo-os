@@ -409,8 +409,51 @@ pub const A_WORKSPACE_ANSWERED_FROM_MORE_THAN_ONE_PLACE: Word = Word::saying(
      own server. Nothing was contacted.",
 );
 
+/// A workspace installed on this machine that is not advertised, because what
+/// says it is installed could not be trusted as the system's own.
+pub const A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS: Word = Word::saying(
+    "agentd.a-workspace-here-is-not-the-systems",
+    "this machine is not telling the network about a workspace, because what says one is installed here was not set up by the system alone — reinstall the workspace server, or ask whoever looks after this machine",
+)
+.noting(
+    "Shown where a person checks what their machine says about itself on the local network. A \
+     \"workspace\" is the shared mail, files, chat and documents an office runs on its own server; \
+     this machine has one installed, but the setting naming it could have been written by \
+     something other than the system itself, so alo OS does not announce it. Colleagues will not \
+     find the workspace until it is reinstalled.",
+);
+
+/// A workspace installed on this machine that is not advertised, because what
+/// says it is installed could not be read.
+pub const A_WORKSPACE_HERE_COULD_NOT_BE_READ: Word = Word::saying(
+    "agentd.a-workspace-here-could-not-be-read",
+    "this machine is not telling the network about a workspace, because what says one is installed here could not be read — restart the machine, and if this stays, reinstall the workspace server",
+)
+.noting(
+    "Shown where a person checks what their machine says about itself on the local network. A \
+     \"workspace\" is the shared mail, files, chat and documents an office runs on its own server; \
+     the setting naming it could not be read when alo OS started, so it is not announced and \
+     colleagues will not find it.",
+);
+
+/// A workspace installed on this machine that is not advertised, because what
+/// says it is installed does not name a port it can be reached on.
+pub const A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT: Word = Word::saying(
+    "agentd.a-workspace-here-names-no-usable-port",
+    "this machine is not telling the network about a workspace, because what says one is installed here does not say where it can be reached — reinstall or update the workspace server",
+)
+.noting(
+    "Shown where a person checks what their machine says about itself on the local network. A \
+     \"workspace\" is the shared mail, files, chat and documents an office runs on its own server; \
+     the setting naming it is there but does not give one usable place to reach it, so alo OS \
+     does not announce a guess and colleagues will not find it.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 27] = [
+pub const EVERY_WORD: [Word; 30] = [
+    A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,
+    A_WORKSPACE_HERE_COULD_NOT_BE_READ,
+    A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT,
     THAT_IS_NOT_A_WORKSPACE,
     NO_SUCH_WORKSPACE_ON_THE_NETWORK,
     A_WORKSPACE_ANSWERED_FROM_MORE_THAN_ONE_PLACE,

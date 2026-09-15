@@ -111,6 +111,7 @@ use crate::opening_workspaces;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
+use crate::what_is_advertised;
 
 /// Read one line as something the person said, and answer it.
 ///
@@ -169,6 +170,7 @@ pub fn what_a_person_said(
         Ok(FromAPerson::OpenWorkspace { machine }) => {
             opening_workspaces::opened(&machine, nearby, holding, strings, now)
         }
+        Ok(FromAPerson::Advertised) => Ok(what_is_advertised::told(nearby.advertising, strings)),
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -250,7 +252,8 @@ fn answered_to(
         | FromAPerson::NameMachine { .. }
         | FromAPerson::ClearMachineName { .. }
         | FromAPerson::Workspaces
-        | FromAPerson::OpenWorkspace { .. } => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::OpenWorkspace { .. }
+        | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
                 Ok(answer) => ToAPerson::did(&answer),
@@ -329,6 +332,7 @@ mod tests {
             &Nearby {
                 network: &network,
                 looking: &NobodyIsNearby,
+                advertising: &crate::testing::nothing_is_advertised(),
             },
             strings,
             noon(),
@@ -353,6 +357,7 @@ mod tests {
             &Nearby {
                 network: &network,
                 looking: &NobodyIsNearby,
+                advertising: &crate::testing::nothing_is_advertised(),
             },
             strings,
             noon(),

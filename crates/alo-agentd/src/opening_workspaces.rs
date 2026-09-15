@@ -243,7 +243,11 @@ mod tests {
                     &a_message(line),
                     &mut Holding::Nobody(machine),
                     &mut WhatIsGranted::of(&mut grants, &NothingIsRemembered),
-                    &Nearby { network, looking },
+                    &Nearby {
+                        network,
+                        looking,
+                        advertising: &crate::testing::nothing_is_advertised(),
+                    },
                     strings,
                     noon(),
                 )

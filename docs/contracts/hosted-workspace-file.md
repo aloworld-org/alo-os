@@ -78,6 +78,12 @@ from 1 to 65535, and not `7610`.
   log naming the file and what to change, and **the machine advertises no
   workspace**. `alo-agentd` still starts and serves the person: a wrong workspace
   file is not a reason to stop, and it is never a reason to advertise a guess.
+- **The person is told either way** (added 2026-09-15, additively): the person's
+  door answers `advertised` (`docs/contracts/daemon-protocol.md`) with the port
+  the running service advertises, `hosts-none` for no file, or — for a refused
+  file — one of three sentences in the person's language saying no workspace is
+  advertised and what to do, naming no path, owner or mode. It is what the
+  service read at start: asking reads nothing again.
 
 ## Versioning
 

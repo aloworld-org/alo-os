@@ -126,7 +126,11 @@ impl FromAnAgent {
             // Opening a workspace is the person's own act under their own
             // account (ADR 0003): an agent that could send it would be an agent
             // choosing where the person's session connects.
-            | Asked::OpenWorkspace { .. } => Err(NotUnderstood::NotForAnAgent),
+            | Asked::OpenWorkspace { .. }
+            // What this machine tells the network is the person's to check: an
+            // agent told it would be an agent reading, in the person's name,
+            // what their machine says about itself.
+            | Asked::Advertised {} => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

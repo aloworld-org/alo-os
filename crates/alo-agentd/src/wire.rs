@@ -46,7 +46,10 @@ use alo_corridor::AT_MOST_A_VERB;
 use alo_nearby::http::{self, WHILE_THE_WIRE_ANSWERS};
 use alo_nearby::{Answering, MachineId, NotNearby, Presence, THE_ADDRESS, THE_PORT};
 
+use crate::hosting::Hosted;
 use crate::refusing::NotBound;
+use crate::unhosted::Unhosted;
+use crate::what_is_advertised::Advertising;
 
 /// The port a machine answers proposals, verbs and questions on.
 ///
@@ -76,6 +79,10 @@ pub struct Wire {
     discovery: UdpSocket,
     /// This machine, answering that it exists at the port above.
     answering: Answering,
+    /// Why a workspace installed on this machine is not advertised, when the
+    /// start refused its file — kept so the person can be told, and never
+    /// found out again by reading the file.
+    unhosted: Option<Unhosted>,
     /// Where an asking machine's own discovery answers, for looking one up
     /// when its proposal arrives ([`crate::looking`]).
     asking_at: u16,
@@ -164,6 +171,7 @@ impl Wire {
             listener,
             discovery: waiting_on,
             answering: Answering::on(discovery, Presence::of(here, port)),
+            unhosted: None,
             asking_at,
             looks_at: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), asking_at),
         })
@@ -189,23 +197,47 @@ impl Wire {
     }
 
     /// The same machine, also answering discovery for the workspace it hosts
-    /// at `workspace` — or for none, when there is none.
+    /// at the port the start read — or for none, when there is none or its
+    /// file was refused, which is kept so the person can be told why.
     ///
-    /// A port and nothing else: the workspace is advertised under this
-    /// machine's own identity, the one it was bound with
+    /// A port and nothing else reaches the responder: the workspace is
+    /// advertised under this machine's own identity, the one it was bound with
     /// (`alo_nearby::Answering::hosting_a_workspace_at`). Taken by value before
     /// the service is handed a borrow of the wire, so nothing the service does
-    /// can change what is advertised; `src/main.rs` reads the port from
-    /// [`crate::hosting`]'s file once, at start.
+    /// can change what is advertised; `src/main.rs` reads the file once, at
+    /// start, through [`crate::hosting::advertised`].
     #[must_use]
-    pub fn hosting(self, workspace: Option<NonZeroU16>) -> Self {
-        match workspace {
-            Some(port) => Self {
+    pub fn hosting(self, hosted: Hosted) -> Self {
+        match hosted {
+            Hosted::At(port) => Self {
                 answering: self.answering.hosting_a_workspace_at(port),
                 ..self
             },
-            None => self,
+            Hosted::Refused(why) => Self {
+                unhosted: Some(why),
+                ..self
+            },
+            Hosted::Nothing => self,
         }
+    }
+
+    /// What this machine advertises on the local network, as the running
+    /// service holds it: its identity, the port its presence names, and the
+    /// workspace it answers for, that it answers for none, or why one
+    /// installed is not advertised.
+    ///
+    /// Read off what [`Answering`] answers with and what the start kept — no
+    /// file is read, and nothing about what is advertised moves.
+    #[must_use]
+    pub fn advertising(&self) -> Advertising {
+        let workspace = match (self.answering.workspace(), self.unhosted) {
+            (Some(workspace), _) => {
+                NonZeroU16::new(workspace.port()).map_or(Hosted::Nothing, Hosted::At)
+            }
+            (None, Some(why)) => Hosted::Refused(why),
+            (None, None) => Hosted::Nothing,
+        };
+        Advertising::of(self.here().clone(), self.port(), workspace)
     }
 
     /// The port of the workspace this machine answers for, if it hosts one.
@@ -501,6 +533,7 @@ mod a_hosted_workspace {
                     &Nearby {
                         network,
                         looking: wire,
+                        advertising: &wire.advertising(),
                     },
                     strings,
                     noon(),

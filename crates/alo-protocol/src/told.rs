@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Fifteen answers, and there is no sixteenth. It is [`crate::asked`]'s shape from
+//! Sixteen answers, and there is no seventeenth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -40,6 +40,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::advertised::Advertised;
 use crate::done::Done;
 use crate::pairing::{AfterConfirming, AfterNaming, AfterRevoking, Paired, WaitingToPair};
 use crate::standing::Standing;
@@ -165,6 +166,14 @@ pub(crate) enum Told {
     /// true. The person's session hands this address to the workspace client;
     /// the daemon dialled nothing.
     WorkspaceOpened(FoundWorkspace),
+    /// What this machine says about itself on the local network.
+    ///
+    /// The answer to `advertised`: this machine's identity, the port its
+    /// presence names, and the workspace it hosts, that it hosts none, or why a
+    /// workspace installed is not advertised — what the service that is running
+    /// holds, never a file read again. Nothing the advertisement does not carry
+    /// has a field.
+    Advertised(Advertised),
 }
 
 #[cfg(test)]
@@ -240,6 +249,11 @@ mod tests {
                 "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
                 "192.168.1.20:8443".parse().unwrap(),
                 "1",
+            )),
+            Told::Advertised(Advertised::of(
+                "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+                7_610,
+                crate::advertised::HostedWorkspace::none(),
             )),
         ]
     }

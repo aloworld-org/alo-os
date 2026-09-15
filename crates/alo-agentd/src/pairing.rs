@@ -65,6 +65,7 @@ use alo_strings::{Filling, Strings};
 use crate::holding::Holding;
 use crate::looking::LookingFor;
 use crate::network::TheNetwork;
+use crate::what_is_advertised::Advertising;
 use crate::words::{
     NO_SUCH_MACHINE_ON_THE_NETWORK, NOT_SOMETHING_A_PAIRING_MAY_PERMIT,
     NOTHING_IS_PAIRED_WITH_THAT_MACHINE, THAT_IS_NOT_A_MACHINE, THE_CODE_DOES_NOT_MATCH,
@@ -82,6 +83,9 @@ pub struct Nearby<'a> {
     pub network: &'a TheNetwork,
     /// Where a machine is looked for by its identity, at the moment.
     pub looking: &'a dyn LookingFor,
+    /// What this machine tells the network about itself, as the running
+    /// service holds it ([`crate::what_is_advertised`]).
+    pub advertising: &'a Advertising,
 }
 
 /// The four things a person can send about a pairing.
@@ -146,7 +150,8 @@ impl AboutAPairing {
             | FromAPerson::NameMachine { .. }
             | FromAPerson::ClearMachineName { .. }
             | FromAPerson::Workspaces
-            | FromAPerson::OpenWorkspace { .. } => None,
+            | FromAPerson::OpenWorkspace { .. }
+            | FromAPerson::Advertised => None,
         }
     }
 }
@@ -496,7 +501,11 @@ mod tests {
             let about = AboutAPairing::of(&asked).unwrap();
             answered_to(
                 about,
-                &Nearby { network, looking },
+                &Nearby {
+                    network,
+                    looking,
+                    advertising: &crate::testing::nothing_is_advertised(),
+                },
                 &mut Holding::Nobody(machine),
                 strings,
                 now,
