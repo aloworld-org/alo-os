@@ -298,6 +298,17 @@ supervisor runs it).
 - A second run after a killed one refuses *already started* and does not clean up;
   removing alo OS, and what an interrupted start left, is task 4's *remove alo OS*.
 
+## Second pass: the gate that refused the first handoff
+
+The supervisor's clippy gate refused the first handoff twice with the same
+error: `alo-installer` was added to `alo-saying`'s `EVERY_LIST`, and to the
+test's `ONE_STRING_EACH`, but both arrays still said 38. Both now say 39, and
+nothing else changed. Checked again in WSL, the way the supervisor runs it:
+`cargo fmt --all --check`, `cargo clippy --workspace --all-targets -D warnings`,
+`cargo doc` with warnings denied for both crates, and `cargo test -p alo-saying
+-p alo-installer` all passed. Every test named in the evidence was checked
+against `cargo test -- --list`.
+
 ## Proposed updates for the integration owner
 
 - **CHANGELOG:** the change description above.
