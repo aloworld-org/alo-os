@@ -46,7 +46,7 @@ cd C:\dev\alo-os\tools\kernel-loop
 cargo build --release
 cd C:\dev\alo-os
 $env:ALO_LOOP_PLAN = "docs/autonomy/v0-5-applications-and-what-they-expect-plan.md"
-$env:ALO_KERNEL_LOOP_WORKER = "$env:APPDATA\npm\claude.cmd"
+$env:ALO_KERNEL_LOOP_WORKER = "$env:APPDATA\npm\claude.cmd --dangerously-skip-permissions -p"
 .\tools\kernel-loop\target\release\alo-kernel-loop.exe run
 ```
 
