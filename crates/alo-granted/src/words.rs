@@ -6,7 +6,7 @@
 //! where the list would be when the machine holds nothing — a sentence rather
 //! than an empty list, because an empty list beside a settings heading reads as
 //! a screen that failed to load. [`ONE_GRANT`] is the clause a row is made of:
-//! who may reach what, with the *what* arriving already worded by
+//! who has been granted what, with the *what* arriving already worded by
 //! `alo-capability`, which is the crate that decides what a grant covers.
 //!
 //! **Two are what revoking comes back as.** [`REVOKED`] says it has already
@@ -16,6 +16,20 @@
 //! refusal: a row from a list that has moved on lands on nothing, and a
 //! machine that said nothing about that would leave somebody believing they
 //! revoked a grant that was never the one they meant.
+//!
+//! # One set of words for agents and applications
+//!
+//! The plan's second applications task puts an application's grants on this
+//! list *as rows a person cannot tell from an agent's except by the name*. So
+//! none of the four is worded for one kind: the row's gap is `{who}`, not
+//! `{agent}`, and the sentences speak of *a grant* rather than of an agent's
+//! reach. A row that said *agent* above a video-call application's camera would
+//! be a machine telling somebody the AI has their camera.
+//!
+//! The row reads *has been granted* — the phrase `alo-capability`'s own refusal
+//! of an application (*has not been granted the camera*) is built on — because
+//! the *what* is sometimes a folder and sometimes *sending you notifications*,
+//! and only a verb of granting reads right in front of both.
 //!
 //! # Why the row is a clause and the other three are sentences
 //!
@@ -39,28 +53,34 @@ pub use alo_strings::Word;
 /// What stands where the list would be, when nothing is granted.
 pub const NOTHING_GRANTED: Word = Word::saying(
     "granted.nothing-granted",
-    "Nothing is granted right now. No agent can reach any folder, file or application on this \
-     machine, and there is nothing here to revoke",
+    "Nothing is granted right now. No agent and no application has been granted anything on \
+     this machine, and there is nothing here to revoke",
 )
 .noting(
     "Shown where the list of grants would be, when the machine holds none — the state every \
      machine starts in, and the state after the last grant is revoked or expires. An agent is an \
-     AI assistant such as @files, not a person. It deliberately does not tell anybody to go and \
+     AI assistant such as @files, not a person; an application is a program such as a video-call \
+     application. Both are on this one list. It deliberately does not tell anybody to go and \
      grant something: the list of grants is where somebody checks and takes away, and an \
      instruction to grant would read as the machine asking for reach. The overlay's \
      overlay.at-rest.nothing-granted is a different sentence for a different place — a status \
      line that does instruct — and the two are not interchangeable.",
 );
 
-/// One row of the list: who may reach what.
-pub const ONE_GRANT: Word = Word::saying("granted.one-grant", "{agent} can reach {what}").noting(
-    "One row in the list of grants, read inside the list under its heading — a lowercase clause, \
-     never announced on its own. {agent} is the agent's own name, such as @files: an AI \
-     assistant, not a person, and the name is not translated. {what} arrives already translated \
-     — for example \"the folder /home/anna/Invoices and everything in it\" — worded by the part \
-     of the system that decides what a grant covers. When it was granted and when it expires are \
-     shown beside the row by whoever displays it, so this clause must not try to say them.",
-);
+/// One row of the list: who has been granted what.
+pub const ONE_GRANT: Word = Word::saying("granted.one-grant", "{who} has been granted {what}")
+    .noting(
+        "One row in the list of grants, read inside the list under its heading — a lowercase \
+         clause, never announced on its own. {who} is the name the system knows the grantee by: \
+         an agent such as @files (an AI assistant, not a person) or an application such as \
+         org.gnome.Cheese. The name is not translated, and the clause must read the same for \
+         both kinds, because the list deliberately does not sort people's grants into agents \
+         and applications. {what} arrives already translated — for example \"/home/anna/Invoices \
+         and everything in it\", \"the camera\" or \"sending you notifications\" — worded by \
+         the part of the system that decides what a grant covers. When it was granted and when \
+         it expires are shown beside the row by whoever displays it, so this clause must not \
+         try to say them.",
+    );
 
 // ---------------------------------------------------------------------------
 // What revoking comes back as — [`crate::Revoked`].
@@ -69,15 +89,15 @@ pub const ONE_GRANT: Word = Word::saying("granted.one-grant", "{agent} can reach
 /// The grant was revoked, and it has already stopped.
 pub const REVOKED: Word = Word::saying(
     "granted.revoked",
-    "The grant was revoked. It has already stopped: the next thing the agent asks is refused, \
+    "The grant was revoked. It has already stopped: the next thing asked under it is refused, \
      with nothing to wait for",
 )
 .noting(
-    "Shown after a person revokes a grant from the list. The agent is an AI assistant such as \
-     @files, not a person. The second sentence is the point and must survive translation: \
-     revocation takes effect on the very next question the machine is asked, not at the next \
-     sign-in or restart, and a person revoking something worrying needs to know that there is \
-     nothing further to do.",
+    "Shown after a person revokes a grant from the list — a grant to an agent (an AI assistant \
+     such as @files, not a person) or to an application; the sentence is the same for both. The \
+     second sentence is the point and must survive translation: revocation takes effect on the \
+     very next question the machine is asked, not at the next sign-in or restart, and a person \
+     revoking something worrying needs to know that there is nothing further to do.",
 );
 
 /// The row was stale: that grant is no longer held.
@@ -97,8 +117,9 @@ pub const ALREADY_GONE: Word = Word::saying(
 /// Every string this crate can say, in the order this file declares them.
 pub const EVERY_WORD: [Word; 4] = [NOTHING_GRANTED, ONE_GRANT, REVOKED, ALREADY_GONE];
 
-/// The gap in [`ONE_GRANT`] that carries the agent's name.
-pub const AGENT: &str = "agent";
+/// The gap in [`ONE_GRANT`] that carries the name of whoever holds the grant —
+/// an agent's or an application's, worded the same.
+pub const WHO: &str = "who";
 
 /// The gap in [`ONE_GRANT`] that carries what the grant covers.
 pub const WHAT: &str = "what";
@@ -216,12 +237,7 @@ mod tests {
         for word in EVERY_WORD {
             let gaps = word.phrase().unwrap().source().gaps().to_vec();
             if word.named() == ONE_GRANT.named() {
-                assert_eq!(
-                    gaps,
-                    [AGENT.to_owned(), WHAT.to_owned()],
-                    "{}",
-                    word.named()
-                );
+                assert_eq!(gaps, [WHO.to_owned(), WHAT.to_owned()], "{}", word.named());
             } else {
                 assert!(gaps.is_empty(), "{} has a gap in it", word.named());
             }
@@ -308,5 +324,25 @@ mod tests {
     #[test]
     fn the_revocation_says_it_has_already_stopped() {
         assert!(REVOKED.says().contains("already stopped"));
+    }
+
+    /// **No word is worded for one kind of grantee.** The row names nobody's
+    /// kind, and a sentence that speaks of agents speaks of applications in
+    /// the same breath — a list that said *agent* above an application's
+    /// camera would tell somebody the AI has their camera.
+    #[test]
+    fn no_word_is_worded_for_only_one_kind_of_grantee() {
+        let row = ONE_GRANT.says().to_ascii_lowercase();
+        assert!(!row.contains("agent"), "{row}");
+        assert!(!row.contains("application"), "{row}");
+        for word in EVERY_WORD {
+            let says = word.says().to_ascii_lowercase();
+            assert_eq!(
+                says.contains("agent"),
+                says.contains("application"),
+                "{} speaks of one kind of grantee and not the other",
+                word.named()
+            );
+        }
     }
 }

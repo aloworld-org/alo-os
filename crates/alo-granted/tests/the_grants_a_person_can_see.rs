@@ -124,7 +124,7 @@ fn a_kept_list_read_back_off_a_disk_is_the_list_a_person_sees() {
     assert!(!said.is_a_bug(), "{said}");
     assert_eq!(
         said.text(),
-        "@files can reach /home/anna/Invoices and everything in it"
+        "@files has been granted /home/anna/Invoices and everything in it"
     );
 }
 

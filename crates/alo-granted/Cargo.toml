@@ -29,6 +29,15 @@ thiserror = { workspace = true }
 # it is collected at all.
 alo-saying = { path = "../alo-saying" }
 
+# The portal a revoked application's request is judged by, so *takes effect at
+# the next portal request* is shown against the real decision, with a request
+# in flight, rather than against a stand-in for it.
+alo-portals = { path = "../alo-portals" }
+
+# The grants file's own text, so the mixed list a test reads is the list a
+# machine keeps — format 2, with an application's grant on it.
+alo-remembering = { path = "../alo-remembering" }
+
 # For showing that reading the list a hundred times leaves the grants byte for
 # byte where they were, and that a refused revocation changed nothing.
 serde_json = { workspace = true }

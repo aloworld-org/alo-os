@@ -22,7 +22,7 @@
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{Grant, Grants, Reach};
+use alo_capability::{Applicant, Facility, Grant, Grants, Reach};
 use alo_strings::{Language, Strings, Translation, Vocabulary};
 
 use crate::words::{Word, declare_into};
@@ -87,4 +87,24 @@ pub(crate) fn grants_of_one_folder() -> Grants {
         .unwrap(),
     );
     grants
+}
+
+/// The same machine, with the camera granted to `org.gnome.Cheese` at noon for
+/// an hour after the folder — an agent's row and an application's, on one
+/// list.
+pub(crate) fn grants_of_a_folder_and_a_camera() -> Grants {
+    let mut grants = grants_of_one_folder();
+    grants.grant(camera_for_cheese());
+    grants
+}
+
+/// The camera, granted to `org.gnome.Cheese` at noon for an hour.
+pub(crate) fn camera_for_cheese() -> Grant {
+    Grant::checked_for(
+        &Applicant::named("org.gnome.Cheese").grantee(),
+        Reach::Facility(Facility::Camera),
+        noon(),
+        hour(),
+    )
+    .unwrap()
 }

@@ -22,6 +22,19 @@
 //! this repository: what the person is shown and what the daemon enforces
 //! must not be able to disagree about when something was true.
 //!
+//! # Agents and applications, in one order
+//!
+//! `alo_capability::Grants` holds an agent's grants and an application's on
+//! one list, in the order they were made (ADR 0040), so a listing is both
+//! kinds interleaved in that order and never two lists joined. On a machine
+//! whose person declined the agent the list is `alo_capability::Agent::allowed`
+//! — the applications' grants alone — and it is handed here the same way.
+//!
+//! **Only what is granted appears.** A row is a grant, so an application that
+//! asked through a portal and was refused, or whose last grant expired or was
+//! revoked, has no row: an empty row under an application's name is a row a
+//! person would reason about, and there is nothing in it to reason about.
+//!
 //! # *Nothing granted* is a sentence
 //!
 //! An empty list beside a settings heading reads as a screen that failed to
@@ -120,8 +133,11 @@ impl Listing {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{grants_of_one_folder, hour, in_english, noon, translated};
-    use alo_capability::{Grant, Reach};
+    use crate::testing::{
+        camera_for_cheese, grants_of_a_folder_and_a_camera, grants_of_one_folder, hour, in_english,
+        noon, translated,
+    };
+    use alo_capability::{Applicant, Facility, Grant, Reach};
 
     /// **A machine where nothing is granted says so in a sentence**, rather
     /// than standing an empty list where reassurance belongs.
@@ -216,5 +232,63 @@ mod tests {
             .unwrap();
         assert!(said.is_translated());
         assert!(said.text().starts_with("Zurzeit"), "{said}");
+    }
+
+    /// **Agents' and applications' rows come in one order**: the order the
+    /// grants were made, interleaved, never grouped by kind.
+    #[test]
+    fn agents_and_applications_share_one_order() {
+        let mut grants = grants_of_a_folder_and_a_camera();
+        grants.grant(
+            Grant::checked(
+                "@blender",
+                Reach::Application("org.blender.Blender".to_owned()),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        );
+        let listing = Listing::of(&grants, noon());
+        let named: Vec<&str> = listing.rows().iter().map(Seen::to).collect();
+        assert_eq!(named, ["@files", "org.gnome.Cheese", "@blender"]);
+    }
+
+    /// **An application granted nothing has no row.** Not one that asked and
+    /// was refused, not one whose grant expired, and not one whose grant was
+    /// revoked — and a machine holding only such applications says *nothing
+    /// granted*.
+    #[test]
+    fn an_application_granted_nothing_does_not_appear() {
+        let mut grants = Grants::default();
+        let id = grants.grant(camera_for_cheese());
+        let stranger = Applicant::named("org.example.Stranger");
+        assert!(
+            grants
+                .allowing(
+                    &stranger,
+                    &alo_capability::Ask::facility(Facility::Camera),
+                    noon()
+                )
+                .is_err()
+        );
+
+        let named = |listing: &Listing| -> Vec<String> {
+            listing
+                .rows()
+                .iter()
+                .map(|row| row.to().to_owned())
+                .collect()
+        };
+        assert_eq!(named(&Listing::of(&grants, noon())), ["org.gnome.Cheese"]);
+
+        // Expired: no row, and the empty sentence.
+        let expired = Listing::of(&grants, noon() + hour());
+        assert!(expired.is_nothing_granted());
+
+        // Revoked: no row, and the empty sentence.
+        assert!(grants.revoke(id));
+        let revoked = Listing::of(&grants, noon());
+        assert!(revoked.is_nothing_granted());
+        assert!(revoked.said(&in_english()).is_some());
     }
 }

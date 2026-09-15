@@ -107,7 +107,16 @@ allowed, recorded, and revocable.
 
 ### 2. One list of what has been granted to what
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15.** `alo-granted`'s rows are one shape for
+both kinds: a `Seen` keeps the grantee's name and nothing about its kind, is
+worded by one clause (`granted.one-grant`, now *{who} has been granted
+{what}*), and is revoked by the one `Seen::revoke`; `Seen::revoke_on` is the
+same action on a declined machine, where only applications' grants are held.
+The list's four sentences no longer speak of agents alone.
+`crates/alo-granted/tests/applications_on_the_one_list.rs` holds each clause,
+including a revocation with a portal request in flight on another thread.
+Report: `docs/autonomy/updates/one-list-of-grants-for-agents-and-applications.md`.
+**Depends on:** 1.
 
 *★ One list — agents and applications in the same place, revoked the same
 way.* The star is on the word *one*. `alo-granted` already derives the list a

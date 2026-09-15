@@ -10,13 +10,20 @@
 //! person to look at, so *see what is granted* was the one clause of the
 //! promise with no surface behind it.
 //!
+//! **It is one list.** An application's grants (ADR 0005, ADR 0040) sit on the
+//! same `alo_capability::Grants` an agent's do, so they are rows here beside an
+//! agent's, in one order, in one shape — who, what, until when — and revoked by
+//! the one [`Seen::revoke`]. A row does not say which kind of grantee it is; the
+//! name does.
+//!
 //! This crate is that surface's model, and deliberately nothing more:
 //!
 //! - [`Listing`] — what a surface would show, derived from the machine's own
 //!   [`alo_capability::Grants`] at one moment and from nothing else, with the
 //!   *nothing granted* state a sentence rather than an empty list;
-//! - [`Seen`] — one row: who may reach what, since when, and for how much
-//!   longer, with no constructor a caller can reach;
+//! - [`Seen`] — one row: who has been granted what, since when, and for how
+//!   much longer — an agent or an application, in the same shape — with no
+//!   constructor a caller can reach;
 //! - [`Revoked`] — what revoking a row comes back as: done and already
 //!   stopped, or a stale row that changed nothing at all.
 //!
@@ -107,9 +114,10 @@
 //! before anybody can see them.
 //!
 //! **It does not make grants.** There is no method here that adds one, and
-//! there could not be: making a grant is a person picking a folder
-//! (ADR 0001 §3, `alo-picking`), and a surface that could both show and make
-//! would be one bug away from showing what it made.
+//! there could not be: making a grant is a person's act — picking a folder
+//! (ADR 0001 §3, `alo-picking`), or allowing an application something
+//! (`alo_capability::Agent::allow`) — and a surface that could both show and
+//! make would be one bug away from showing what it made.
 //!
 //! # Nothing here says anything in English by itself
 //!
