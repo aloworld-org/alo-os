@@ -194,7 +194,31 @@ have never heard of.
 
 ### 4. Undo what the agent did
 
-**Status:** ready. **Depends on:** 3.
+**Status:** blocked — waits on the owner's answer to ADR 0044. **Depends on:** 3.
+
+**Not done; decided as far as a worker may, 2026-09-15.** The road this task
+names does not exist on the machine we install: `crates/alo-installing` formats
+the disk `ext4`, which has no subvolume and no snapshot, and the base's rollback
+swaps `/usr` and leaves a person's home alone (task 3). Measured in the pinned
+base: `bootc 1.15.1` accepts `--filesystem btrfs` and `btrfs-progs 6.19.1` is
+there, so a snapshot is a configuration away — but the filesystem is the
+installer plan's, the snapshot at turn start is lane A's `alo-turn`, the
+privilege is the broker plan's, our own copy contradicts ADR 0011 and this
+task's constraint, and undoing nothing narrows a ★ line. So the work handed
+over is the decision:
+`docs/decisions/0044-what-undoing-rewinds-to.md`, **proposed**, recommending a
+btrfs home subvolume with a read-only snapshot either side of a changing turn
+(option A), with *nothing can be undone yet, said honestly* (option D) as the
+fallback and our own copy (B) and inverses from the record (C) rejected. It
+also settles what holds under every option: which entries can never be undone
+and the sentence why, that an undo is the person's with no agent verb, that it
+never overwrites a later change, and that the record gains an additive `undone`
+kind carrying a copy of what it undid. **No code is built**, and
+`crates/alo-keeping-up/tests/undoing_is_decided_before_it_is_built.rs` fails if
+an `Undone` entry or a file about undoing appears while the ADR says
+*proposed*. When it is accepted, change this status to ready and split the task
+as the ADR's consequences say. Report:
+`docs/autonomy/updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md`.
 
 ★ and the sharpest of the four. `ROADMAP.md`: *the one agent capability the
 base rather than our code provides.* An agent acted under a grant, a person
