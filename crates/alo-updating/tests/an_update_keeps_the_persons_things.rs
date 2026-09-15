@@ -103,6 +103,19 @@ const THE_BOOT_DEADLINE: Duration = Duration::from_secs(30 * 60);
 /// the two in step.
 const DID_NOT_BOOT: &str = "the virtual machine did not finish booting";
 
+/// The generator the test's images mask, because under emulation it can hold
+/// systemd's generators past their deadline and freeze the machine.
+///
+/// It probes for a hypervisor socket to offer SSH over it, which loads the
+/// vsock modules. On this lane's emulated machine that took over a minute, while
+/// PID 1 gives all its generators 45 seconds together and freezes when they run
+/// over (`docs/quirks.md`, *systemd freezes the machine when its generators run
+/// past 45 seconds*). Nothing this test measures reaches the machine over SSH.
+/// A symlink to `/dev/null` under `/etc/systemd/system-generators/` is how
+/// `systemd.generator(7)` says a generator is masked. This is the test's own
+/// image only; the image alo OS ships is not changed.
+const THE_SLOW_GENERATOR: &str = "systemd-ssh-generator";
+
 /// What systemd prints when PID 1 has stopped for good. Nothing more will start
 /// on that machine however long it is waited on, so the wait ends there.
 const PID_ONE_FROZE: &str = "Freezing execution";
@@ -248,7 +261,9 @@ fn an_update_applied_in_a_virtual_machine_keeps_every_named_thing_byte_for_byte(
              RUN chmod 0755 /usr/libexec/alo-update-test \
               && systemctl enable alo-update-test.service \
               && mkdir -p /usr/share/alo-update-test \
-              && echo one > /usr/share/alo-update-test/build\n"
+              && echo one > /usr/share/alo-update-test/build \
+              && mkdir -p /etc/systemd/system-generators \
+              && ln -s /dev/null /etc/systemd/system-generators/{THE_SLOW_GENERATOR}\n"
         ),
     )
     .unwrap();

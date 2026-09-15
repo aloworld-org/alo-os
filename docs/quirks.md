@@ -3840,3 +3840,66 @@ installer lane's decision, and it is named in
 The signed policy for `ghcr.io/aloworld-org/alo-os` and the way the installer
 opens the image have to be decided together.
 **Date:** 2026-09-15.
+
+### systemd freezes the machine when its generators run past 45 seconds
+**Version:** systemd 257.13-1.fc42, in the base `image/Containerfile` pins
+(`quay.io/fedora/fedora-bootc:42`), booted by
+`crates/alo-updating/tests/an_update_keeps_the_persons_things.rs` under QEMU 8.2.2
+`-accel tcg` with 3 CPUs, on the lane machine with no hardware virtualisation (the
+entry *WSL on a VMware guest shows `/dev/kvm` and has no KVM behind it*). 2026-09-15.
+**Behaviour:** the first boot froze and stayed frozen. The console, with the
+kernel's timestamps:
+
+```
+[   69.723629] systemd[1]: systemd 257.13-1.fc42 running in system mode (…)
+[   76.147140] systemd[1]: bpf-restrict-fs: LSM BPF program attached
+[   79.728676] zram_generator::config[612]: No configuration found.
+[  121.317082] systemd[1]: Failed to fork off sandboxing environment for executing generators: Protocol error
+[  141.425104] NET: Registered PF_VSOCK protocol family
+[!!!!!!] Failed to start up manager.
+[  141.582882] systemd[1]: Freezing execution.
+[  164.914420] systemd-ssh-generator[598]: Failed to query local AF_VSOCK CID: Cannot assign requested address
+```
+
+**It is not a unit's sandboxing option.** No `PrivateDevices=`, `ProtectKernel*=`
+or `SystemCallFilter=` is involved, and no unit had started. It is PID 1's
+deadline for its generators, read from systemd's own source at `v257.9`:
+
+1. `manager_run_generators` (`src/core/manager.c`) forks a child, `(sd-gens)`,
+   with `FORK_WAIT | FORK_NEW_MOUNTNS`: the "sandboxing environment" in the
+   message. It runs every generator through `execute_directories(…,
+   DEFAULT_TIMEOUT_USEC, …)`.
+2. `do_execute` (`src/shared/exec-util.c`) arms `alarm()` for that timeout and
+   relies on `SIGALRM`'s default action to end the child. Fedora builds systemd
+   with `-Ddefault-timeout-sec=45` (`systemd.spec`, `f42`), so all generators
+   together get **45 seconds**.
+3. The parent's wait sees a child killed by a signal and returns `-EPROTO`
+   (`src/basic/process-util.c`), printed as *Protocol error*. That branch falls
+   back to running the generators unsandboxed only for a privilege error or
+   `-EINVAL`, so it returns the error instead. `manager_startup` fails, and
+   `main.c` says *Failed to start up manager* and freezes.
+
+The timestamps agree. The generators started with the manager's early setup at
+about 76 s, and the failure came at 121.3 s, 45 s later. What was still running
+was `systemd-ssh-generator`. It probes for a hypervisor socket to offer SSH over
+it, which loads the vsock modules, and under emulation that took until 141 s
+(*Registered PF_VSOCK protocol family*). It finished at 164.9 s, long after its
+parent was gone. The same test on the same tree booted and passed an hour
+earlier, and again (1050 s) when re-run on its own, so under emulation this
+depends on how busy the host is.
+**Real hardware or only emulation:** the deadline is compiled into systemd, so
+the mechanism exists on every machine this base boots. Reaching it takes
+generators that together run longer than 45 seconds. Under hardware
+virtualisation or on bare metal they take milliseconds, and loading a module
+does not take a minute. So in practice this is a fault of emulating a CPU in
+software. It has not been measured on the certified machine, and a boot there
+that took seconds in its generators would be worth writing down.
+**Our response:** nothing in the product changes. The shipped image keeps its
+generators and its sandboxing. The update test's own images mask
+`systemd-ssh-generator` with a symlink to `/dev/null` under
+`/etc/systemd/system-generators/`, as `systemd.generator(7)` documents, because
+nothing the test measures uses SSH. The test also stops waiting as soon as the
+console says *Freezing execution*, and fails with *the virtual machine did not
+finish booting*, a phrase `tools/kernel-loop` treats as the machine's rather than
+the work's.
+**Date:** 2026-09-15.
