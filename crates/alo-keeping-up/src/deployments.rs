@@ -8,13 +8,16 @@
 //! **what am I running** is answered by the machine rather than remembered by
 //! anything of ours.
 //!
-//! # Read in the base's own shape, and only the three digests out of it
+//! # Read in the base's own shape, and only three digests and one flag out of it
 //!
 //! The base answers with a document about a host, and nearly all of it is the
 //! base's business: which transport, which ostree checksum, which boot order.
 //! What this machine decides anything by is three digests, so those are the
-//! only fields read; everything else in the answer is ignored rather than
-//! mirrored, and a field the base adds tomorrow changes nothing here.
+//! only fields read, with `rollbackQueued` beside them: whether the base will
+//! start the build before at the next restart, because asking it to go back a
+//! second time would turn it round again. Everything else in the answer is
+//! ignored rather than mirrored, and a field the base adds tomorrow changes
+//! nothing here.
 //!
 //! **A digest in the answer goes through [`Digest`]'s own check.** An answer
 //! naming half a hash is refused whole, rather than read as a machine with
@@ -44,6 +47,9 @@ pub struct Deployments {
     staged: Option<Digest>,
     /// The build before, when there is one.
     rollback: Option<Digest>,
+    /// Whether the base will start the build before at the next restart,
+    /// rather than the one booted.
+    going_back: bool,
 }
 
 /// The machine reports no build it booted from an image.
@@ -64,6 +70,7 @@ impl Deployments {
             booted,
             staged,
             rollback,
+            going_back: false,
         }
     }
 
@@ -88,6 +95,22 @@ impl Deployments {
     #[must_use]
     pub fn rollback(&self) -> Option<&Digest> {
         self.rollback.as_ref()
+    }
+
+    /// The same builds, with the base set to start the build before at the
+    /// next restart — as it reports once going back has been asked for.
+    #[must_use]
+    pub fn going_back_at_the_next_restart(self) -> Self {
+        Self {
+            going_back: true,
+            ..self
+        }
+    }
+
+    /// Whether the base will start the build before at the next restart.
+    #[must_use]
+    pub fn is_going_back(&self) -> bool {
+        self.going_back
     }
 }
 
@@ -123,6 +146,9 @@ struct Status {
     /// The deployment before.
     #[serde(default)]
     rollback: Option<Entry>,
+    /// Whether the deployment before starts next.
+    #[serde(default, rename = "rollbackQueued")]
+    rollback_queued: bool,
 }
 
 /// One deployment in the base's document.
@@ -155,6 +181,7 @@ impl<'de> Deserialize<'de> for Deployments {
             booted: host.status.booted.and_then(Entry::digest),
             staged: host.status.staged.and_then(Entry::digest),
             rollback: host.status.rollback.and_then(Entry::digest),
+            going_back: host.status.rollback_queued,
         })
     }
 }
@@ -175,6 +202,10 @@ mod tests {
     /// What `bootc status --format json` answers on a machine with a build
     /// booted and one waiting, trimmed of nothing the base would send.
     fn an_answer(booted: &str, staged: &str, rollback: &str) -> String {
+        an_answer_queued(booted, staged, rollback, false)
+    }
+
+    fn an_answer_queued(booted: &str, staged: &str, rollback: &str, queued: bool) -> String {
         format!(
             r#"{{"apiVersion":"org.containers.bootc/v1","kind":"BootcHost","metadata":{{"name":"host"}},
             "spec":{{"image":{{"image":"ghcr.io/aloworld-org/alo-os","transport":"registry"}},"bootOrder":"default"}},
@@ -182,7 +213,7 @@ mod tests {
               "staged":{staged},
               "booted":{booted},
               "rollback":{rollback},
-              "rollbackQueued":false,"type":"bootcHost"}}}}"#
+              "rollbackQueued":{queued},"type":"bootcHost"}}}}"#
         )
     }
 
@@ -207,6 +238,21 @@ mod tests {
         );
         assert_eq!(deployments.staged().unwrap().as_str(), whole("bb"));
         assert_eq!(deployments.rollback(), None);
+    }
+
+    /// **Whether the base will start the build before next is read**, and is
+    /// false when the base does not say.
+    #[test]
+    fn whether_the_machine_goes_back_at_the_next_restart_is_read_from_the_answer() {
+        let queued = an_answer_queued(&entry(&whole("bb")), "null", &entry(&whole("aa")), true);
+        let deployments: Deployments = serde_json::from_str(&queued).unwrap();
+        assert!(deployments.is_going_back());
+        assert_eq!(deployments.rollback().unwrap().as_str(), whole("aa"));
+        let not: Deployments =
+            serde_json::from_str(&an_answer(&entry(&whole("bb")), "null", "null")).unwrap();
+        assert!(!not.is_going_back());
+        let silent: Deployments = serde_json::from_str(r#"{"status":{"booted":null}}"#).unwrap();
+        assert!(!silent.is_going_back());
     }
 
     /// **A booted deployment with no image is refused, not given a name.**

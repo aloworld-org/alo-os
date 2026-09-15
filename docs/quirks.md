@@ -3984,3 +3984,30 @@ console says *Freezing execution*, and fails with *the virtual machine did not
 finish booting*, a phrase `tools/kernel-loop` treats as the machine's rather than
 the work's.
 **Date:** 2026-09-15.
+
+### Going back to the build before does not bring back `/etc` as it is now
+**Version:** bootc 1.15.1, in `quay.io/fedora/fedora-bootc:42@sha256:077182b6…`
+(the base `image/Containerfile` pins), booted by
+`crates/alo-updating/tests/back_to_yesterdays_machine.rs` under QEMU 8.2.2
+`-accel tcg`. 2026-09-15.
+**Behaviour:** `bootc rollback` reorders the deployments the base already has;
+it makes no new one, so no `/etc` merge happens. Each deployment keeps its own
+`/etc`, and the earlier build starts with the `/etc` it had when the update
+replaced it. A file written under `/etc/alo/` on the newer build was **not
+there** after going back, while every file under `/var` — the person's home,
+`/var/lib/alo`'s grants, pairings, record and the last-known build — was byte
+for byte as it was. `bootc rollback --help` says the same in its own words. So
+accounts and passwords (`/etc/passwd`, `/etc/shadow`), `/etc/alo/accounts.toml`
+and whole-machine configuration changed since the update do not come back with
+the earlier build; they stay with the newer one, and going forward again brings
+them back.
+**Our response:** nothing is patched (ADR 0011). The sentence a person approves
+before going back, `keeping-up.going-back.offered`, says that their files and
+their own settings stay as they are and that accounts, passwords and settings
+for the whole machine changed since the update go back to how they were. The
+test holds the measurement, so if a later base carries `/etc` across a return,
+the test fails and the sentence is changed to match. What alo OS itself must
+never keep under `/etc` for this reason is the person's own data — which is
+already the case: grants, pairings, the record and the indexes live under
+`/var`.
+**Date:** 2026-09-15.

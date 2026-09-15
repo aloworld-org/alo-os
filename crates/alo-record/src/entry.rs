@@ -338,6 +338,25 @@ impl Entry {
         )
     }
 
+    /// This machine started on build `to`, the one it ran before, having been
+    /// running build `from` — because the person asked it to go back.
+    ///
+    /// Both are content digests as the base reports them, through [`Line`].
+    /// See [`Happened::RolledBack`] for how it is told apart from an update and
+    /// why it names no agent.
+    ///
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn rolled_back(from: &str, to: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::RolledBack {
+                from: Line::of(from),
+                to: Line::of(to),
+            },
+        )
+    }
+
     /// The person opened `workspace`, which answered at `answers_at` when the
     /// link was looked at.
     ///
@@ -841,6 +860,37 @@ mod tests {
         let written = serde_json::to_string(&entry).unwrap();
         assert!(
             written.contains(&format!(r#""updated":{{"from":"{from}","to":"{to}"}}"#)),
+            "{written}"
+        );
+        assert!(!written.contains("agent"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **The machine going back is written with both builds and no agent**, is
+    /// not an update and not a departure, and reads back as it was written.
+    #[test]
+    fn going_back_is_recorded_from_one_build_to_the_one_before_with_nobody_behind_it() {
+        let from = format!("sha256:{}", "bb".repeat(32));
+        let to = format!("sha256:{}", "aa".repeat(32));
+        let entry = Entry::rolled_back(&from, &to, noon());
+        assert_eq!(entry.at(), noon());
+        assert_eq!(entry.agent(), None);
+        assert_eq!(entry.origin(), None);
+        assert_eq!(entry.what(), None);
+        assert!(!entry.happened().ran());
+        assert!(!entry.happened().was_stopped());
+        assert!(!entry.happened().caused_egress());
+        assert_eq!(entry.happened().errand(), None);
+        assert_eq!(entry.happened().destination(), None);
+        assert!(matches!(
+            entry.happened(),
+            Happened::RolledBack { from: was, to: now } if was.is(&from) && now.is(&to)
+        ));
+        assert_ne!(entry, Entry::updated(&from, &to, noon()));
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(
+            written.contains(&format!(r#""rolled-back":{{"from":"{from}","to":"{to}"}}"#)),
             "{written}"
         );
         assert!(!written.contains("agent"), "{written}");

@@ -42,6 +42,14 @@
 //! - **What changed across a restart.** [`Since`] compares the build last known
 //!   with the build booted, and an update is exactly a different one — from
 //!   which, to which — with nothing invented when nothing was known.
+//! - **Going back to the build before.** [`Before`] names it — what it was,
+//!   and whether the base still keeps it — from the deployments and the
+//!   record's last [`Changed`]. [`GoingBack::offered`] decides whether going
+//!   back can be offered at all, so a return that cannot be done says so
+//!   ([`CannotGoBack`]) instead of being offered and failing halfway; its
+//!   sentence is what the person approves. [`Returning`] is the one
+//!   instruction, checked against the machine as it is when they approved, and
+//!   [`Since::RolledBack`] is the first start on the build they chose.
 //!
 //! # What is not here
 //!
@@ -66,10 +74,13 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod before;
 pub mod checking;
 pub mod deployments;
 pub mod digest;
+pub mod going_back;
 pub mod never;
+pub mod returning;
 pub mod since;
 pub mod source;
 pub mod staging;
@@ -80,10 +91,13 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use before::{Before, Changed};
 pub use checking::{NotACheck, Offered, a_check_at};
 pub use deployments::{Deployments, NotRunningABuild};
 pub use digest::{Digest, NotADigest};
+pub use going_back::{CannotGoBack, GoingBack};
 pub use never::{Cause, Disturbance, Forbidden, THE_RULE, TheRule};
+pub use returning::Returning;
 pub use since::Since;
 pub use source::{NotASource, Source};
 pub use staging::{NotStaged, Staging};

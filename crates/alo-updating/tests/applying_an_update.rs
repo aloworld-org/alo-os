@@ -24,8 +24,8 @@ use alo_record::{Entry, Happened};
 use alo_saying::everything_this_machine_can_say;
 use alo_strings::Strings;
 use alo_updating::{
-    Base, NotAnswered, NotApplied, NotRead, NotRecorded, after_a_restart, apply, deployments,
-    running,
+    AcrossRestarts, Base, NotAnswered, NotApplied, NotRead, NotRecorded, after_a_restart, apply,
+    deployments, running,
 };
 
 /// A stand-in for the base: answers its status from what it is holding, and a
@@ -301,23 +301,23 @@ fn the_running_build_is_the_bases_answer_at_the_moment_it_is_asked() {
 fn the_record_says_the_machine_updated_from_which_build_to_which_with_no_agent() {
     let folder = a_folder("record");
     let record_at = folder.join("record.jsonl");
-    let last_known_at = folder.join("last-known-build");
+    let kept = AcrossRestarts::in_folder(&folder);
     let mut record = Writing::opening(&record_at).unwrap();
     let base = TheBaseStandingIn::running(&build("aa"), None);
 
-    let first = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap();
+    let first = after_a_restart(&base, &kept, &mut record, noon()).unwrap();
     assert_eq!(first, Since::FirstKnown(digest("aa")));
     assert!(
         entries(&record_at).is_empty(),
         "the first start wrote an update"
     );
 
-    let again = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap();
+    let again = after_a_restart(&base, &kept, &mut record, noon()).unwrap();
     assert_eq!(again, Since::Unchanged(digest("aa")));
     assert!(entries(&record_at).is_empty());
 
     base.now_running(&build("bb"));
-    let updated = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap();
+    let updated = after_a_restart(&base, &kept, &mut record, noon()).unwrap();
     assert_eq!(
         updated,
         Since::Updated {
@@ -340,7 +340,7 @@ fn the_record_says_the_machine_updated_from_which_build_to_which_with_no_agent()
     );
 
     assert_eq!(
-        after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap(),
+        after_a_restart(&base, &kept, &mut record, noon()).unwrap(),
         Since::Unchanged(digest("bb"))
     );
     assert_eq!(
@@ -358,12 +358,13 @@ fn the_record_says_the_machine_updated_from_which_build_to_which_with_no_agent()
 fn a_last_known_build_that_cannot_be_read_is_refused_and_not_written_over() {
     let folder = a_folder("unreadable");
     let record_at = folder.join("record.jsonl");
-    let last_known_at = folder.join("last-known-build");
+    let kept = AcrossRestarts::in_folder(&folder);
+    let last_known_at = kept.last_known().to_path_buf();
     std::fs::write(&last_known_at, "sha256:beef\n").unwrap();
     let mut record = Writing::opening(&record_at).unwrap();
     let base = TheBaseStandingIn::running(&build("bb"), None);
 
-    let refused = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap_err();
+    let refused = after_a_restart(&base, &kept, &mut record, noon()).unwrap_err();
     assert!(
         matches!(refused, NotRecorded::LastKnownNotRead { .. }),
         "{refused:?}"
@@ -385,7 +386,8 @@ fn a_last_known_build_that_cannot_be_read_is_refused_and_not_written_over() {
 fn an_update_whose_build_could_not_be_kept_is_written_again_rather_than_lost() {
     let folder = a_folder("order");
     let record_at = folder.join("record.jsonl");
-    let last_known_at = folder.join("last-known-build");
+    let kept = AcrossRestarts::in_folder(&folder);
+    let last_known_at = kept.last_known().to_path_buf();
     std::fs::write(&last_known_at, format!("{}\n", build("aa"))).unwrap();
     let mut record = Writing::opening(&record_at).unwrap();
     let base = TheBaseStandingIn::running(&build("bb"), None);
@@ -393,7 +395,7 @@ fn an_update_whose_build_could_not_be_kept_is_written_again_rather_than_lost() {
     // A folder where the new value would be written makes keeping it fail.
     let beside = folder.join("last-known-build.new");
     std::fs::create_dir(&beside).unwrap();
-    let refused = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap_err();
+    let refused = after_a_restart(&base, &kept, &mut record, noon()).unwrap_err();
     assert!(
         matches!(refused, NotRecorded::LastKnownNotKept { .. }),
         "{refused:?}"
@@ -409,11 +411,11 @@ fn an_update_whose_build_could_not_be_kept_is_written_again_rather_than_lost() {
     );
 
     std::fs::remove_dir(&beside).unwrap();
-    let since = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap();
+    let since = after_a_restart(&base, &kept, &mut record, noon()).unwrap();
     assert!(matches!(since, Since::Updated { .. }), "{since:?}");
     assert_eq!(entries(&record_at).len(), 2);
     assert_eq!(
-        after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap(),
+        after_a_restart(&base, &kept, &mut record, noon()).unwrap(),
         Since::Unchanged(digest("bb"))
     );
     let _ = std::fs::remove_dir_all(&folder);
@@ -424,10 +426,11 @@ fn an_update_whose_build_could_not_be_kept_is_written_again_rather_than_lost() {
 fn a_base_that_cannot_be_asked_writes_nothing_down() {
     let folder = a_folder("no-base");
     let record_at = folder.join("record.jsonl");
-    let last_known_at = folder.join("last-known-build");
+    let kept = AcrossRestarts::in_folder(&folder);
+    let last_known_at = kept.last_known().to_path_buf();
     let mut record = Writing::opening(&record_at).unwrap();
     let base = alo_updating::TheBase::at(&folder.join("no-bootc-here"));
-    let refused = after_a_restart(&base, &last_known_at, &mut record, noon()).unwrap_err();
+    let refused = after_a_restart(&base, &kept, &mut record, noon()).unwrap_err();
     assert!(
         matches!(refused, NotRecorded::NotRead(NotRead::NotAnswered(_))),
         "{refused:?}"

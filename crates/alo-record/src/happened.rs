@@ -451,6 +451,29 @@ pub enum Happened {
         /// The build it started on.
         to: Line,
     },
+    /// This machine went back to the build it ran before, because the person
+    /// asked it to — it rolled back, from one build to the other.
+    ///
+    /// Written by `alo-updating` at the first start on the earlier build, for
+    /// the reason [`Happened::Updated`] gives: a return asked for and never
+    /// restarted into has not happened to the machine.
+    ///
+    /// **Told apart from an update by what the person asked, not by guessing
+    /// from the builds.** Both are a different build starting; this one is
+    /// written only when the build starting is the one the person chose to go
+    /// back to, which the machine noted before it told the base anything.
+    ///
+    /// **No agent, and not egress**, for the reasons [`Happened::Updated`]
+    /// gives — going back fetches nothing at all, since the earlier build was
+    /// still on the disk.
+    ///
+    /// Additive, and `format` stays `1`.
+    RolledBack {
+        /// The build the machine was running before it went back.
+        from: Line,
+        /// The earlier build it started on.
+        to: Line,
+    },
 }
 
 impl Happened {
@@ -482,6 +505,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
@@ -509,6 +533,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -537,6 +562,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -593,6 +619,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -624,6 +651,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -643,6 +671,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -664,6 +693,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -691,6 +721,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
@@ -717,6 +748,7 @@ impl Happened {
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
             | Self::Updated { .. }
+            | Self::RolledBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,

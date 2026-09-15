@@ -98,6 +98,8 @@ pub enum Outcome {
     LeftOnItsOwn,
     /// This machine started on a different build of its system: it updated.
     Updated,
+    /// This machine went back to the build of its system it ran before.
+    RolledBack,
 }
 
 impl Outcome {
@@ -122,6 +124,7 @@ impl Outcome {
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
             Happened::Updated { .. } => Self::Updated,
+            Happened::RolledBack { .. } => Self::RolledBack,
         }
     }
 
@@ -146,6 +149,7 @@ impl Outcome {
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,
             Self::Updated => words::UPDATED,
+            Self::RolledBack => words::ROLLED_BACK,
         }
     }
 

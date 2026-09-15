@@ -1,7 +1,7 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Three groups: where the machine stands, when an update applies, and the
-//! promise an update keeps. Every sentence is about the person's machine and
+//! Where the machine stands, when an update applies, the promise an update
+//! keeps, applying one, and going back to the version before. Every sentence is about the person's machine and
 //! what they choose, never about what is underneath it.
 //!
 //! # Nothing a person reads names the machinery
@@ -179,8 +179,126 @@ pub const NOT_WRITTEN_DOWN: Word = Word::saying(
      The machine itself is working; what is missing is the line in its history.",
 );
 
+// ---------------------------------------------------------------------------
+// Going back — `crate::GoingBack`, `crate::CannotGoBack`, `crate::Returning`.
+// ---------------------------------------------------------------------------
+
+/// Going back is offered.
+pub const GOING_BACK_OFFERED: Word = Word::saying(
+    "keeping-up.going-back.offered",
+    "This machine can go back to the version of its system it ran before its last update. Your \
+     files and your own settings stay as they are. Accounts, passwords and settings for the whole \
+     machine that changed since that update go back to how they were",
+)
+.noting(
+    "The sentence a person approves before their machine returns to the earlier version of alo OS. \
+     Every part of it is a promise the machine keeps and must survive translation: the person's own \
+     files and personal settings are not touched, but changes made since the update to user \
+     accounts, passwords and settings that apply to everyone on the machine do not come back with \
+     it.",
+);
+
+/// Going back is offered, and sets aside an update that is waiting.
+pub const GOING_BACK_SETS_ASIDE_AN_UPDATE: Word = Word::saying(
+    "keeping-up.going-back.sets-aside-an-update",
+    "This machine can go back to the version of its system it ran before its last update. Your \
+     files and your own settings stay as they are. Accounts, passwords and settings for the whole \
+     machine that changed since that update go back to how they were. The update waiting for \
+     your next restart will not apply",
+)
+.noting(
+    "The same sentence as the offer to go back, said when the person had also chosen a newer update \
+     that is waiting for their next restart. Going back cancels that waiting update, and the last \
+     sentence tells them so before they approve.",
+);
+
+/// The choice to go back at the next restart.
+pub const GO_BACK_AT_THE_NEXT_RESTART: Word = Word::saying(
+    "keeping-up.going-back.at-the-next-restart",
+    "Go back the next time I restart",
+)
+.noting(
+    "One of two choices once going back to the earlier version is offered, written as the person \
+     speaking. Nothing happens until the person restarts the machine themselves.",
+);
+
+/// The choice to restart now and go back.
+pub const RESTART_AND_GO_BACK_NOW: Word = Word::saying(
+    "keeping-up.going-back.now",
+    "Restart now and go back, which closes the applications that are open",
+)
+.noting(
+    "The other of the two choices, written as an instruction the person gives. It says that open \
+     applications close, because restarting closes them.",
+);
+
+/// Going back is waiting for the person's next restart.
+pub const GOING_BACK_AT_THE_RESTART: Word = Word::saying(
+    "keeping-up.going-back.waiting-for-the-restart",
+    "This machine will go back to the version it ran before the next time you restart. Your files \
+     stay as they are",
+)
+.noting(
+    "Said once the person has chosen to go back and the machine has prepared it. Nothing happens \
+     until the person restarts.",
+);
+
+/// There is nothing to go back to.
+pub const NOTHING_TO_GO_BACK_TO: Word = Word::saying(
+    "keeping-up.going-back.nothing-before",
+    "This machine has no earlier version of its system to go back to",
+)
+.noting(
+    "Said instead of offering to go back, when this machine has only ever run the version it runs \
+     now — for example before its first update.",
+);
+
+/// The version before is no longer kept.
+pub const NO_LONGER_KEPT: Word = Word::saying(
+    "keeping-up.going-back.no-longer-kept",
+    "The version of its system this machine ran before is no longer kept on it, so it cannot go \
+     back to it",
+)
+.noting(
+    "Said instead of offering to go back, when the machine knows which version it ran before but no \
+     longer has a copy of it. It is said before anything is offered, so nothing is started that \
+     could fail halfway.",
+);
+
+/// Going back is already waiting.
+pub const ALREADY_GOING_BACK: Word = Word::saying(
+    "keeping-up.going-back.already-waiting",
+    "This machine will already go back to the version it ran before the next time you restart",
+)
+.noting(
+    "Said when the person chooses to go back and has already chosen it. Nothing is done twice.",
+);
+
+/// The machine changed after going back was offered.
+pub const CHANGED_SINCE_GOING_BACK_WAS_OFFERED: Word = Word::saying(
+    "keeping-up.going-back.changed-since-it-was-offered",
+    "This machine changed after going back was offered, so nothing was changed. Look again at \
+     what it can go back to",
+)
+.noting(
+    "Said when the person approved going back, but the machine is no longer as it was when that was \
+     offered — for example an update was prepared in the meantime. What they approved would not be \
+     what happens, so nothing is done.",
+);
+
+/// Going back could not be prepared.
+pub const GOING_BACK_NOT_PREPARED: Word = Word::saying(
+    "keeping-up.going-back.not-prepared",
+    "Going back could not be prepared, so nothing was changed. The next restart starts this \
+     machine as it is now",
+)
+.noting(
+    "Said when the person chose to go back and the machine could not prepare it. The important half \
+     is that the machine is unchanged and will start normally.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 24] = [
     READY,
     UP_TO_DATE,
     ANSWER_NOT_UNDERSTOOD,
@@ -195,6 +313,16 @@ pub const EVERY_WORD: [Word; 14] = [
     RUNNING_NOT_KNOWN,
     NOT_PREPARED,
     NOT_WRITTEN_DOWN,
+    GOING_BACK_OFFERED,
+    GOING_BACK_SETS_ASIDE_AN_UPDATE,
+    GO_BACK_AT_THE_NEXT_RESTART,
+    RESTART_AND_GO_BACK_NOW,
+    GOING_BACK_AT_THE_RESTART,
+    NOTHING_TO_GO_BACK_TO,
+    NO_LONGER_KEPT,
+    ALREADY_GOING_BACK,
+    CHANGED_SINCE_GOING_BACK_WAS_OFFERED,
+    GOING_BACK_NOT_PREPARED,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -295,6 +423,10 @@ mod tests {
                 "pull",
                 "sha256",
                 "reboot",
+                "rollback",
+                "roll back",
+                "rolled back",
+                "snapshot",
                 "urgent",
                 "critical",
                 "required",

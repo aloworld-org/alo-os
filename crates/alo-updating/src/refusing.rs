@@ -1,4 +1,4 @@
-//! Every way applying an update, reading what runs, or writing down that the
+//! Every way applying an update, going back, reading what runs, or writing down that the
 //! machine updated can fail — each with the sentence a person reads, and what
 //! the machine said kept beside it for whoever administers it.
 //!
@@ -8,7 +8,7 @@
 //! never a sentence on a screen.
 
 use alo_keeping::NotKept;
-use alo_keeping_up::{NotStaged, words};
+use alo_keeping_up::{CannotGoBack, NotStaged, words};
 use alo_strings::{Filling, Said, Strings};
 
 /// The base's program did not answer.
@@ -82,8 +82,47 @@ pub enum NotRecorded {
         /// What the machine said.
         why: String,
     },
+    /// The build the person chose to go back to could not be read, so whether
+    /// this start is a return cannot be told.
+    ///
+    /// Refused rather than read as *no return chosen*, which would write a
+    /// return into the record as an update.
+    GoingBackNotRead {
+        /// Where it is kept.
+        path: String,
+        /// What was wrong with it.
+        why: String,
+    },
+    /// The note of a return that is done could not be cleared. The entry and
+    /// the last known build were already kept.
+    GoingBackNotCleared {
+        /// Where it is kept.
+        path: String,
+        /// What the machine said.
+        why: String,
+    },
     /// The record would not take the entry.
     NotKept(NotKept),
+}
+
+/// Going back was not set, and the next restart starts the build running now.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NotGoneBack {
+    /// What is running could not be read, so nothing was decided.
+    NotRead(NotRead),
+    /// Refused before anything ran: the machine is not as the offer described,
+    /// or going back is already set.
+    Refused(CannotGoBack),
+    /// The build to go back to could not be noted, so the base was told
+    /// nothing — without the note the return would be recorded as an update.
+    NotNoted {
+        /// Where it is kept.
+        path: String,
+        /// What the machine said.
+        why: String,
+    },
+    /// The base was told and refused, or failed.
+    TheBaseDidNotSetIt(NotAnswered),
 }
 
 impl NotRead {
@@ -119,8 +158,25 @@ impl NotRecorded {
         match self {
             Self::NotRead(not_read) => not_read.said(strings),
             Self::NotKept(not_kept) => not_kept.said(strings),
-            Self::LastKnownNotRead { .. } | Self::LastKnownNotKept { .. } => {
+            Self::LastKnownNotRead { .. }
+            | Self::LastKnownNotKept { .. }
+            | Self::GoingBackNotRead { .. }
+            | Self::GoingBackNotCleared { .. } => {
                 strings.say(&words::NOT_WRITTEN_DOWN.key(), &Filling::nothing())
+            }
+        }
+    }
+}
+
+impl NotGoneBack {
+    /// What a person reads, in the vocabulary.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::NotRead(not_read) => not_read.said(strings),
+            Self::Refused(refused) => refused.said(strings),
+            Self::NotNoted { .. } | Self::TheBaseDidNotSetIt(_) => {
+                strings.say(&words::GOING_BACK_NOT_PREPARED.key(), &Filling::nothing())
             }
         }
     }

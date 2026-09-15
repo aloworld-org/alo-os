@@ -243,6 +243,19 @@ pub const UPDATED: Word = Word::saying(
      alo OS. No assistant was involved, and nothing the person kept was changed by it.",
 );
 
+/// This machine went back to the version it ran before.
+pub const ROLLED_BACK: Word = Word::saying(
+    "recounting.outcome.rolled-back",
+    "this machine went back to the version of its system it ran before, as the person asked, \
+     after they restarted it",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person chose to return \
+     their machine to the earlier version of alo OS it was running before its last update, and this \
+     line is the first start on that earlier version. No assistant was involved, and the person's \
+     own files were not changed by it.",
+);
+
 // ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
@@ -362,7 +375,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 24] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -379,6 +392,7 @@ pub const EVERY_WORD: [Word; 23] = [
     HELD_BACK,
     LEFT_ON_ITS_OWN,
     UPDATED,
+    ROLLED_BACK,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -393,7 +407,7 @@ pub const EVERY_WORD: [Word; 23] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 16] = [
+pub const EVERY_OUTCOME: [Word; 17] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -410,6 +424,7 @@ pub const EVERY_OUTCOME: [Word; 16] = [
     HELD_BACK,
     LEFT_ON_ITS_OWN,
     UPDATED,
+    ROLLED_BACK,
 ];
 
 /// What an account says about itself, rather than about one entry.

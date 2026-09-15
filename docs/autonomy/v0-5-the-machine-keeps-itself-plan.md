@@ -148,6 +148,30 @@ survive it, and that the machine can say what changed.
 
 **Status:** ready. **Depends on:** 2.
 
+**Done, 2026-09-15.** `alo-keeping-up` decides, still with no clock, file or
+process: `Deployments` reads `rollbackQueued`; `Before::of` names the build
+before from the base's kept deployment and the record's last `Changed`, and
+says whether it is still on the disk; `GoingBack::offered` refuses before
+anything is offered — `NothingBefore`, `NoLongerKept`, `AlreadyGoingBack`,
+`NotRunningABuild` — and its sentence is what the person approves, including
+that an update waiting will not apply; `Returning::of` is the one instruction,
+`rollback` plus `--apply` only for *restart now*, refused
+(`ChangedSinceItWasOffered`) when the machine is no longer what was offered;
+`Since::RolledBack` is a return told apart from an update by what the person
+chose. `alo-updating` does it: `yesterday` adds *when it was replaced* from the
+record; `go_back` notes the chosen build under `/var/lib/alo/going-back-to`
+before telling the base, and `after_a_restart` writes the new additive
+`alo_record::Happened::RolledBack { from, to }`, no agent, at the first start on
+it. Ten sentences, collected by `alo-saying`. **Measured** by
+`tests/back_to_yesterdays_machine.rs` in a QEMU/TCG virtual machine on the
+pinned base, in 1587 s: update, restart, the build before named and kept, going
+back set and a second request refused, restart, the first build running, every
+named thing and a file written after the update byte for byte, one `rolled-back`
+entry. **Found** (`docs/quirks.md`): going back does not bring `/etc` as it is
+now — accounts, passwords and whole-machine settings changed since the update
+stay with the newer build, which the sentence says. Report:
+`docs/autonomy/updates/back-to-yesterdays-machine.md`.
+
 *Atomic updates with rollback.* The base keeps the previous deployment and
 rolls back with one command; that is the inheritance. What is missing is
 everything a person needs for it to be a promise rather than a command they

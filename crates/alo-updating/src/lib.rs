@@ -4,7 +4,7 @@
 //! this crate carries it out, and does nothing it did not decide. The mechanism
 //! is the base's — ADR 0011: a new build is staged as a second deployment and
 //! the machine boots into it at the next restart — and the base is rented and
-//! unmodified. What is ours is three things around it.
+//! unmodified. What is ours is what surrounds it.
 //!
 //! # What is here
 //!
@@ -18,6 +18,13 @@
 //!   at each start, writes `alo_record::Happened::Updated` from which build to
 //!   which, with no agent behind it, when a different build booted than the one
 //!   last known ([`last_known`]).
+//! - **Yesterday's machine** — [`yesterday()`] names the build before, when it
+//!   was replaced and whether it is still on the disk, and decides whether going
+//!   back can be offered, so a return that cannot be done says so first.
+//! - **Going back, because the person approved it** — [`go_back`] reads the
+//!   machine now, notes the build chosen ([`AcrossRestarts`]), and runs the
+//!   base's one instruction; [`after_a_restart`] writes
+//!   `alo_record::Happened::RolledBack` at the first start on it.
 //!
 //! # What an update never touches
 //!
@@ -29,6 +36,16 @@
 //! writes each of those by name in a virtual machine, applies an update,
 //! restarts, and finds every one byte for byte.
 //!
+//! # What going back does not carry
+//!
+//! Going back never touches `/var`: the person's files, their settings, the
+//! grants, the pairings, the record and the indexes are exactly as they were,
+//! measured in `tests/back_to_yesterdays_machine.rs`. **`/etc` is the base's
+//! per build**, and going back starts the earlier build with the copy of `/etc`
+//! it had (`docs/quirks.md`): accounts, passwords and whole-machine
+//! configuration changed since the update stay with the newer build. The same
+//! test measures that too, and the sentence the person approves says it.
+//!
 //! # What is not here
 //!
 //! **No clock, no schedule and no check for an update.** Whether one is offered
@@ -37,15 +54,22 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod across_restarts;
 pub mod applying;
+pub mod going_back;
 pub mod last_known;
+mod one_build;
 pub mod refusing;
 pub mod restarted;
 pub mod status;
 pub mod the_base;
+pub mod yesterday;
 
+pub use across_restarts::{AcrossRestarts, THE_BUILD_TO_GO_BACK_TO, THE_LAST_KNOWN_BUILD};
 pub use applying::apply;
-pub use refusing::{NotAnswered, NotApplied, NotRead, NotRecorded};
-pub use restarted::{THE_LAST_KNOWN_BUILD, after_a_restart};
+pub use going_back::go_back;
+pub use refusing::{NotAnswered, NotApplied, NotGoneBack, NotRead, NotRecorded};
+pub use restarted::after_a_restart;
 pub use status::{THE_STATUS, deployments, running};
 pub use the_base::{Base, THE_PROGRAM, TheBase};
+pub use yesterday::{Yesterday, yesterday};

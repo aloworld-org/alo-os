@@ -65,12 +65,12 @@ Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
 `not-bounded`, `left`,
-`held-back`, `left-on-its-own`, `updated` — and the fields under it depend on
+`held-back`, `left-on-its-own`, `updated`, `rolled-back` — and the fields under it depend on
 that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
-**Every entry names whose authority it was under, except five.** `agent` is
+**Every entry names whose authority it was under, except six.** `agent` is
 present on all of them but these:
 
 - `left-on-its-own`, which is alo OS reaching the network with nobody having
@@ -103,6 +103,14 @@ present on all of them but these:
   when it applied and no grant was asked, so no agent is named; and it is not a
   departure — fetching the build was its own errand, and starting on it reached
   nothing.
+- `rolled-back`, added 2026-09-15 and additive, which is this machine starting
+  on the build it ran before because the person asked it to go back: `from` is
+  the build it left and `to` the earlier one, spelt as `updated` spells them. It
+  is written at the first start on the earlier build, and only when that build
+  is the one the person chose to go back to — which the machine notes before the
+  base is told anything — so a return is never recorded as an update, nor an
+  update as a return. No agent is named and it is not a departure: the earlier
+  build was still on the disk, and nothing was fetched.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
@@ -111,7 +119,7 @@ pairing rather than any agent, and a person opened a workspace no agent could
 open, so a name there would be an authority the
 record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
-with nobody's authority looks for the entries with no `agent`; the five are
+with nobody's authority looks for the entries with no `agent`; the six are
 told apart by their tags, and only the first of them reached the network.
 
 **`not-bounded` is the machine's own refusal**, added 2026-09-12 and additive.
