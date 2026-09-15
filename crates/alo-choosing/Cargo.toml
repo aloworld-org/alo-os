@@ -44,5 +44,14 @@ thiserror = { workspace = true }
 # something is collected by `alo-saying`, and never reaches for it.
 alo-saying = { path = "../alo-saying" }
 
+# The three crates that keep a file beside `settings.toml`, walked together with
+# this one in `one_persons_folder_from_sign_in_to_the_next_change.rs`: the folder
+# worked out here and handed to each as a path, the way a session does. Dev-
+# dependencies, and in this direction only — none of them may depend on this
+# crate to find its own file (ADR 0038).
+alo-appearance = { path = "../alo-appearance" }
+alo-dock = { path = "../alo-dock" }
+alo-shortcuts = { path = "../alo-shortcuts" }
+
 [lints]
 workspace = true

@@ -187,7 +187,12 @@ beside it do not. The contract's three *Writing it* sections say so today.
 
 ### 6. One person's folder, from sign-in to the next change
 
-**Status:** ready. **Depends on:** 1, 2, 3, 5.
+**Status:** **Done, 2026-09-15** — `crates/alo-choosing/tests/one_persons_folder_from_sign_in_to_the_next_change.rs`
+walks the folder with each of the three files broken in turn, and
+`docs/contracts/person-settings.md` has *A Settings surface, from sign-in to the
+next change*, held by that test; see
+`docs/autonomy/updates/one-persons-folder-from-sign-in-to-the-next-change.md`.
+**Depends on:** 1, 2, 3, 5.
 
 Every clause above is held crate by crate. What no test yet holds is the path a
 session actually takes through all of them at once, which is the road the shell
@@ -215,3 +220,32 @@ here or by a person.
 - **Constraint:** nothing in `crates/alo-shell`, no new public surface unless
   the walk finds one missing (and then it is named in the report as what the
   shell plan waited on), nothing on the machine, and no watcher.
+
+### 7. A session with no folder says so in Settings
+
+**Status:** ready. **Depends on:** 6.
+
+Task 6's walk found the one moment on the road that has no words. A login with
+no home directory — or a session whose `$XDG_CONFIG_HOME` is relative and whose
+`$HOME` is unset — gets `None` from `alo_choosing::where_the_folder_is`. The
+contract's section for the shell says every section is then drawn as the release
+ships it and nothing is written, and that is right; but a person who changes the
+dock in that session watches it move and finds it back at the next sign-in, with
+no sentence anywhere that told them it would not be kept. *Nothing leaves
+silently* has a twin here: nothing is forgotten silently either.
+
+- **Acceptance:** `alo-choosing` declares the sentence a Settings surface says in
+  a session with no folder — that changes made now are drawn and will not be kept
+  past this sign-in, and why (no home directory to keep them in) — in the
+  vocabulary with a translator's note and collected by `alo-saying`; a value the
+  surface holds (not a bare `Option`) answers either the folder or that refusal,
+  so a surface cannot reach a keeper's path without having met the case; a test
+  per way the folder is missing (no `$HOME`; a relative `$XDG_CONFIG_HOME` and no
+  `$HOME`; a relative `$HOME`) answers the refusal and writes nothing anywhere;
+  the contract's *A Settings surface, from sign-in to the next change* names the
+  call and the sentence, held by task 6's walk; and the no-English test still
+  reads all five crates' shipped source clean.
+- **Constraint:** no keeper learns about the folder or the environment, nothing
+  in `crates/alo-shell`, nothing is written to a place the session made up (no
+  `/tmp` fallback — a folder that belongs to nobody is the thing the contract
+  refuses), and no new file in the person's folder.

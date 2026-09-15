@@ -1009,3 +1009,44 @@ for byte as it was — so a person's hand-moved shortcut with a typo in it is no
 lost to the next shortcut they change in Settings.
 `alo_shortcuts::keeping::put_back_as_shipped` is the one door that replaces
 such a file, and it writes `format = 1` alone.
+
+## A Settings surface, from sign-in to the next change
+
+For the shell: the calls a Settings surface makes for each of the three
+sections kept beside `settings.toml`, in the order a session makes them. None
+of them is new — this is the road the sections above describe, walked once,
+all three files at a time, by
+`crates/alo-choosing/tests/one_persons_folder_from_sign_in_to_the_next_change.rs`,
+which holds this section to exactly the calls it makes.
+
+**Once, at sign-in**, the session asks `alo_choosing::where_the_folder_is`,
+handing it `$XDG_CONFIG_HOME` and `$HOME` as the session has them. No folder
+is a login with no home directory: every section is drawn as the release ships
+it and nothing is written. Otherwise each section's path is that folder joined
+with the file name its own crate declares, and that path is all the crate is
+handed.
+
+| Section | Its path, inside the folder | Drawn at sign-in | A change | Put back as shipped |
+|---|---|---|---|---|
+| Appearance | `alo_appearance::keeping::THE_FILE` | `alo_appearance::keeping::at_sign_in` | `alo_appearance::keeping::keep` | `alo_appearance::keeping::put_back_as_shipped` |
+| Dock | `alo_dock::keeping::THE_FILE` | `alo_dock::keeping::at_sign_in` | `alo_dock::keeping::keep` | `alo_dock::keeping::put_back_as_shipped` |
+| Shortcuts | `alo_shortcuts::keeping::THE_FILE` | `alo_shortcuts::keeping::at_sign_in` | `alo_shortcuts::keeping::keep` | `alo_shortcuts::keeping::put_back_as_shipped` |
+
+- **Drawn at sign-in** answers what the section draws and, when its file did
+  not read, the refusal beside it. That section is drawn as the release ships
+  it and says the refusal's `said` in the section — naming the file, and the
+  key when a key was what was wrong. One file that did not read says nothing
+  about the other two, which are drawn as the person left them.
+- **A change** is the drawn value changed and its `changes()` handed whole to
+  the section's change call — never a fragment of the file. When it is
+  refused, the section says the refusal's `said`, and when `did_not_read`
+  answers, what is wrong with the file as well; the file is byte for byte as it
+  was, and the section goes on drawing what it drew before the change, because
+  that is what the file still says. A change in one section is written whether
+  or not another section's file reads.
+- **Put back as shipped** is what a section whose file did not read offers,
+  and is the one call that replaces such a file. Afterwards the section is
+  drawn as the release ships it and the next change is written as any other.
+- **Nothing watches the folder.** A change made in Settings is drawn at once,
+  because Settings and the compositor are one process; a file edited by hand is
+  read at the next sign-in, by the same call.

@@ -216,8 +216,11 @@ name = "alo-choosing"
 version = "0.0.1"
 dependencies = [
  "alo-answering",
+ "alo-appearance",
+ "alo-dock",
  "alo-models",
  "alo-saying",
+ "alo-shortcuts",
  "alo-strings",
  "serde",
  "thiserror 2.0.20",
