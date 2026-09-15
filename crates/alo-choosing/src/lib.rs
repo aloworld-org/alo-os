@@ -138,7 +138,7 @@ mod written;
 pub use choosing::Choosing;
 pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
 pub use paired::{AMachine, NotPairedToAnswer, WHAT_THAT_MACHINE_CHOSE, WhoMayBeAsked};
-pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
+pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is, where_the_folder_is};
 pub use refusing::NotSet;
 pub use settings::{Settings, Unresolved};
 pub use setup::Setup;

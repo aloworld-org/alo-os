@@ -40,7 +40,9 @@ is ADR 0004's and is deliberately left open. Before writing the next task,
 
 ### 1. What keeping one of these files means
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-15** — `crates/alo-kept` holds the rule in type and
+`alo_choosing::where_the_folder_is` hands out the folder; see
+`docs/autonomy/updates/how-a-file-in-a-persons-folder-is-kept.md`. **Depends on:** nothing.
 
 Four small files written by four different crates will go wrong in the same
 four ways, and a rule invented separately in each is four chances to get it

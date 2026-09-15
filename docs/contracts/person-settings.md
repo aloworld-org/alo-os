@@ -52,6 +52,25 @@ says so rather than reading somewhere under `/`. A file invented there would
 belong to nobody, and on a shared machine it would be somebody else's answer to
 *where do my questions go*.
 
+### The folder, and the files beside this one
+
+`$XDG_CONFIG_HOME/alo/` (or `$HOME/.config/alo/`) is **the person's folder**,
+and `settings.toml` is one file in it.
+[ADR 0038](../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
+puts a person's other settings beside it, one file per crate that owns the
+shape. `alo_choosing::where_the_folder_is` works the folder out by exactly the
+rule above, and whoever starts a session hands each of those crates the path it
+keeps at, so none of them reads an environment.
+
+Every file in the folder other than this one is kept by one rule, held in type
+by `crates/alo-kept`: it begins `format = N` with a number of its own; it holds
+only what the person changed; no file means they changed nothing; a file that is
+there and wrong — not TOML, no `format`, another format, a key not on the list,
+or a value the shape refuses — is refused whole and nothing in it is honoured;
+and it is written whole to `<file>.new`, read back off the disk as the same
+value, and only then renamed over the old one. Which files, and their keys, are
+sections of this contract as those crates gain them.
+
 ## What a missing file means
 
 **Nothing has been chosen**, which is the ordinary state of a machine nobody

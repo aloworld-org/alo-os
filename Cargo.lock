@@ -437,6 +437,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-kept"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "alo-keyring-fixture"
 version = "0.0.1"
 dependencies = [

@@ -69,14 +69,31 @@ const DOT_CONFIG: &str = ".config";
 /// has been chosen* rather than reading somewhere it made up.
 #[must_use]
 pub fn where_it_is(config_home: Option<&OsStr>, home: Option<&OsStr>) -> Option<PathBuf> {
-    let under = |directory: &Path| directory.join(THE_FOLDER).join(THE_SETTINGS);
+    where_the_folder_is(config_home, home).map(|folder| folder.join(THE_SETTINGS))
+}
+
+/// The folder this person's settings are kept in, given what their session
+/// says — by the same rule as [`where_it_is`], because it is the same folder.
+///
+/// [ADR 0038](../../../docs/decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
+/// puts every file a person's settings are kept in here, one per crate that
+/// owns a shape: `settings.toml` is this crate's, and `appearance.toml`,
+/// `dock.toml` and `shortcuts.toml` sit beside it. **This is how those crates
+/// learn nothing about an environment**: whoever starts a session asks this
+/// once and hands each of them the path it keeps at, so none of them reads a
+/// variable or depends on this crate to find its own file.
+///
+/// [`None`] exactly when [`where_it_is`] is: a login with no home directory
+/// has no folder for any of them.
+#[must_use]
+pub fn where_the_folder_is(config_home: Option<&OsStr>, home: Option<&OsStr>) -> Option<PathBuf> {
     if let Some(config) = config_home.map(Path::new)
         && config.has_root()
     {
-        return Some(under(config));
+        return Some(config.join(THE_FOLDER));
     }
     match home.map(Path::new) {
-        Some(home) if home.has_root() => Some(under(&home.join(DOT_CONFIG))),
+        Some(home) if home.has_root() => Some(home.join(DOT_CONFIG).join(THE_FOLDER)),
         Some(_) | None => None,
     }
 }
@@ -149,6 +166,48 @@ mod tests {
         assert_eq!(where_it_is(None, None), None);
         assert_eq!(where_it_is(Some(said("config")), None), None);
         assert_eq!(where_it_is(None, Some(said("ada"))), None);
+    }
+
+    /// **The folder is worked out on its own, by the same rule**, for every
+    /// session the file's rule was tested against: it is the file's parent
+    /// whenever there is a file, and nothing whenever there is not.
+    #[test]
+    fn the_folder_is_the_one_the_settings_are_in_for_every_session() {
+        let sessions: [(Option<&str>, Option<&str>); 7] = [
+            (Some("/home/ada/.config"), Some("/home/ada")),
+            (None, Some("/home/ada")),
+            (Some(""), Some("/home/ada")),
+            (Some("config"), Some("/home/ada")),
+            (None, None),
+            (Some("config"), None),
+            (None, Some("ada")),
+        ];
+        for (config_home, home) in sessions {
+            let folder = where_the_folder_is(config_home.map(said), home.map(said));
+            let file = where_it_is(config_home.map(said), home.map(said));
+            assert_eq!(
+                file.as_deref().and_then(Path::parent).map(Path::to_owned),
+                folder,
+                "{config_home:?} {home:?}"
+            );
+            assert_eq!(file.is_some(), folder.is_some(), "{config_home:?} {home:?}");
+        }
+        assert_eq!(
+            as_written(where_the_folder_is(
+                Some(said("/home/ada/.config")),
+                Some(said("/home/ada"))
+            ))
+            .as_deref(),
+            Some("/home/ada/.config/alo")
+        );
+        assert_eq!(
+            as_written(where_the_folder_is(
+                Some(said("config")),
+                Some(said("/home/ada"))
+            ))
+            .as_deref(),
+            Some("/home/ada/.config/alo")
+        );
     }
 
     /// The two names are one string each: they are in the contract a settings

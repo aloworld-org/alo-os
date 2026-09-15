@@ -1,0 +1,30 @@
+[package]
+name = "alo-kept"
+version = "0.0.1"
+description = "How a file in a person's own folder is kept: only the difference, under a format of its own, refused whole when wrong, and written whole or not at all."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The shape each owning crate declares travels both ways through `serde`, so
+# the reader and the writer cannot disagree about a key.
+serde = { workspace = true }
+
+# The files are typed by people as often as they are written by Settings, so
+# they are TOML for `alo-choosing`'s reason: a comment is how somebody
+# remembers why they chose what they chose.
+toml = { workspace = true }
+
+# Deliberately absent: `alo-strings`. Nothing here is said to a person. A
+# refusal is handed to the crate that owns the file, which says it in its own
+# words — so this crate has no vocabulary for `alo-saying` to collect, and a
+# sentence composed here would be a second account of a moment somebody else
+# already describes.
+#
+# Deliberately absent too: `alo-choosing`. The folder is worked out there and
+# handed to whoever keeps a file; a crate that keeps one is handed the path.
+
+[lints]
+workspace = true
