@@ -201,7 +201,72 @@ done:
    downloaded* and nothing is changed. Carrying a wireless network across the
    restart is the staging program's problem to solve, and is not solved yet.
 
-### What it does, in order
+### The program that stages it: `alo-installer`, on Windows
+
+`crates/alo-installer` is that program — what a person downloads and runs on the
+Windows the computer came with. It runs Windows' own tools and nothing else
+(the storage cmdlets of Windows PowerShell, `bcdedit`, `whoami`, `shutdown`),
+each an enumerated program with typed arguments, and never writes to a disk
+directly. In order, saying each step before it begins:
+
+1. **It asks for an administrator's rights** before anything else, and without
+   them says so and stops.
+2. **It holds the environment beside it to the release.** The download is the
+   program and, beside it, the `alo-installing/` directory the recipe above
+   builds, with one more file in it: `alo-installing.sha256`, the SHA-256 of
+   every file, as `sha256sum` writes them. The SHA-256 of *that list* is compiled
+   into the program by the release that builds it (`ALO_INSTALLER_ENVIRONMENT_SHA256`,
+   the installer plan's task 5), and each file is read once, compared, and those
+   same bytes are what is written. A program built without the variable — any
+   build that is not a release — says *this download is not a genuine alo OS, so
+   nothing was changed*.
+3. **It checks the computer, with reads alone, and says everything it found:**
+   UEFI or BIOS, Secure Boot, TPM, BitLocker on the Windows volume, its free
+   space, memory, and every disk. A question Windows did not answer is said as
+   *could not be found out* and is never read as *off*.
+4. **It refuses**, each time with *so nothing was changed*: a BIOS computer;
+   **Secure Boot on, or not known** — said with the reason and no suggestion
+   ([ADR 0033](decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md)
+   §4); disks it could not read; a Windows disk that is not GPT; an entry named
+   alo OS or an area labelled `ALO-INSTALL` that an earlier start left; BitLocker
+   part way through encrypting or decrypting; less than 17 GB free on the Windows
+   volume (the 1 GB area and 16 GB Windows keeps); and **no empty disk of at
+   least 24 GB beside the one Windows is on** — the environment replaces one
+   whole disk, and putting alo OS on the Windows disk itself is the installer
+   plan's task 4.
+5. **It says exactly what will happen** — Windows made 1 GB smaller, a 1 GB area
+   made in that space, an entry named alo OS added, one restart into the
+   installer, which replaces the disk named — and that nothing has changed yet.
+6. **It takes a typed consent: the name of the disk alo OS replaces**, as it was
+   shown. Nothing typed stops; anything but exactly an offered disk's name is
+   refused.
+7. **It prepares the computer:** shrinks the Windows partition by exactly the
+   area; makes the area where that freed; formats it FAT32 labelled `ALO-INSTALL`
+   after checking it is still where it was made; writes the environment and
+   `EFI/BOOT/chosen.cfg` and reads every file back; copies `{bootmgr}` into an
+   entry named alo OS pointing at `\EFI\BOOT\BOOTX64.EFI` on the area, listed
+   last; takes the area's letter away; and, last, makes the entry the firmware's
+   next start (`bcdedit /set {fwbootmgr} bootsequence`), which never changes the
+   default. **A step that fails puts back every change before it**, newest
+   first, and says so; if putting back fails too, it says exactly what remains
+   rather than that nothing was changed.
+8. **It restarts.**
+
+**The chosen disk's name** is made from what Windows reports: `nvme-eui.` and the
+disk's identifier for an NVMe disk (never its model — `quirks.md` says why),
+`ata-<model>_<serial>` for SATA, and `wwn-0x<identifier>` for SAS and SCSI,
+which is what a Hyper-V generation 2 machine's disks are. Any other bus, USB
+above all, is not offered. Every name carries an identifier, so a wrong one
+names no disk and the environment refuses it as not connected.
+
+**What has been measured, 2026-09-15:** every decision against a scripted
+Windows (`crates/alo-installer/tests/the_installer_checks_consents_and_stages.rs`),
+and the checks — reads only — against the development machine's own Windows 11
+(`tests/reading_this_windows.rs`). **Not yet:** the installer run on a Windows in
+a virtual machine and walked to each step, killed there, and Windows shown still
+starting; that is the installer plan's task 10.
+
+### What the environment does, in order
 
 It says each step on every console before it begins:
 

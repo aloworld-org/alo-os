@@ -96,6 +96,7 @@ pub const EVERY_LIST: [&str; 38] = [
     "alo-granted",
     "alo-greeting",
     "alo-indicator",
+    "alo-installer",
     "alo-installing",
     "alo-keeping",
     "alo-keeping-up",
@@ -206,6 +207,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     )?;
     declare(
         &mut vocabulary,
+        "alo-installer",
+        alo_installer::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
         "alo-installing",
         alo_installing::declare_into,
     )?;
@@ -303,6 +309,7 @@ mod tests {
         ("alo-granted", "granted.nothing-granted"),
         ("alo-greeting", "greeting.make-an-account"),
         ("alo-indicator", "indicator.nothing-is-leaving"),
+        ("alo-installer", "installer.not-genuine"),
         ("alo-installing", "installing.not-genuine"),
         ("alo-keeping", "keeping.forever"),
         ("alo-keeping-up", "keeping-up.ready"),
@@ -383,6 +390,7 @@ mod tests {
             alo_granted::granted_words().unwrap().how_many(),
             alo_greeting::greeting_words().unwrap().how_many(),
             alo_indicator::indicator_words().unwrap().how_many(),
+            alo_installer::installer_words().unwrap().how_many(),
             alo_installing::installing_words().unwrap().how_many(),
             alo_keeping::keeping_words().unwrap().how_many(),
             alo_keeping_up::keeping_up_words().unwrap().how_many(),

@@ -113,6 +113,45 @@ test passes; this is Unix-socket development evidence, not physical input testin
 
 ## Hardware and firmware
 
+### Windows names an NVMe disk by its bus, and puts an identifier where the serial number is
+**Version:** Windows 11 Pro 10.0.26200, `Get-Disk` from Windows PowerShell 5.1, on
+the development machine (a Dell with an SK hynix PVC10 512 GB NVMe disk), read by
+`crates/alo-installer/tests/reading_this_windows.rs` on 2026-09-15.
+**Behaviour:** the installer has to tell the boot environment which disk to write
+by the name Linux gives it under `/dev/disk/by-id/`, and it only has what Windows
+reports. For this disk Windows reports `FriendlyName` as `NVMe PVC10 SK hynix
+512GB` — its own bus name in front of the model — `SerialNumber` as
+`FD5B_42CE_BC8F_9D54_ACE4_2E00_5113_F94B.`, which is not a serial number but a
+128-bit identifier in groups of four ending in a full stop, and `UniqueId` as
+`eui.ACE42E005113F94B`. A name made from the model and serial the way udev makes
+`nvme-<model>_<serial>` would name no disk.
+**Our response:** `crates/alo-installer/src/naming.rs` names an NVMe disk only by
+its identifier, `nvme-eui.` and the grouped identifier joined and lower-cased (or
+the `eui.` unique identifier when there are no groups), and never by its model.
+Every name carries an identifier, so a wrong one names no disk and the environment
+refuses with *not connected, so nothing was changed*. **Not yet seen from the Linux
+side**: which of the two identifiers the kernel's `wwid` is for this disk (it
+prefers an NGUID to an EUI-64) is unmeasured until the environment runs on a
+machine with an NVMe disk.
+**Date:** 2026-09-15
+
+### `Get-Tpm` without an administrator answers with a sentence, not an error
+**Version:** Windows 11 Pro 10.0.26200, Windows PowerShell 5.1, unelevated, on the
+development machine, 2026-09-15.
+**Behaviour:** `Get-Tpm` with `$ErrorActionPreference = 'Stop'` does not throw. It
+returns the string *Administrator privilege is required to execute this command.*
+as its output object, so `$tpm.TpmPresent` is `$null` and `[bool]` of it is
+`false` — the first run of the installer's checks on this machine said *this
+computer has no security chip (TPM)* about a computer whose TPM it had not been
+allowed to ask about. `Get-PartitionSupportedSize` (*Access to a CIM resource was
+not available*), `Get-BitLockerVolume` and `Confirm-SecureBootUEFI` do throw.
+**Our response:** the installer's TPM script throws unless the answer has a
+`TpmPresent` property, so an unelevated answer is *could not be found out*; the
+installer also asks for an administrator's rights before any check, and
+`reading_this_windows.rs` holds every one of these reads to *not known* when
+unelevated.
+**Date:** 2026-09-15
+
 ### A machine without a boundary runs no turn, and a development machine is no exception
 **Version:** `alo-agentd` and `alo-bounding` from 2026-09-12, measured on
 `6.18.33.2-microsoft-standard-WSL2` by

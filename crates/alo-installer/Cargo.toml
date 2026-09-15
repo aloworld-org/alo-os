@@ -1,0 +1,41 @@
+[package]
+name = "alo-installer"
+version = "0.0.1"
+description = "The program a person downloads and runs on Windows: it checks the machine, says what will happen, takes a typed consent, stages the environment that installs alo OS, and restarts."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The environment this program stages, and the three facts it owes it: the
+# label its area carries, the disk name it will accept, and the partition types
+# it refuses a disk for. Named from the crate that refuses them rather than
+# spelled a second time here, so the two halves of the installer cannot come to
+# disagree about which disk is safe.
+alo-installing = { path = "../alo-installing" }
+
+# Every sentence the person reads.
+alo-strings = { path = "../alo-strings" }
+
+# What Windows' own tools say comes back as JSON, and nothing else is parsed.
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# SHA-256, for holding the staged environment to the list this release was
+# built with. Rented rather than written, as ADR 0031 decides for every
+# primitive in this workspace; reached only from `environment.rs`.
+ring = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, in the direction every crate takes: a crate that
+# says something is collected by `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[[bin]]
+name = "alo-installer"
+path = "src/main.rs"
+
+[lints]
+workspace = true

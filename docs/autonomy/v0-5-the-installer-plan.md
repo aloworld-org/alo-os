@@ -156,7 +156,27 @@ after the reboot and before alo OS exists on the disk.
 
 ### 3. The installer program: check, say, consent, stage, reboot
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-15**, for the program and every decision in it, and
+**split** for the one part of the acceptance no machine this repository has can
+run: the walk in a Hyper-V VM with a real Windows in it, killed at each step, is
+task 10. What is done (`updates/the-windows-installer-program.md`):
+`crates/alo-installer`, a Windows program that asks for an administrator's
+rights; holds the environment beside it to the list its release was built with;
+reads UEFI, Secure Boot, TPM, BitLocker, free space, memory and every disk from
+Windows' own tools and says each, *could not be found out* never read as *off*;
+**refuses Secure Boot on (or not known) with the reason and no suggestion**; says
+exactly what will happen; takes the name of the disk as a typed consent; shrinks
+Windows by exactly the 1 GB area through `Resize-Partition`, makes and formats
+the area, writes the environment and `chosen.cfg` and reads them back, adds an
+entry named alo OS with `bcdedit`, makes it the next start once, and restarts —
+putting back every change, newest first, when any step fails, and saying exactly
+what remains when putting back fails too. Every refusal and every step's failure
+is tested against a scripted Windows, and the checks were run, reads only, against
+the development machine's own Windows 11, which found two things the design had
+wrong (`docs/quirks.md`). **What it does not do, and says so:** install onto the
+disk Windows is on — the environment of task 2 replaces one whole empty disk, so
+a one-disk laptop is refused with *no empty disk … beside the one Windows is on*
+until task 4 puts alo OS beside Windows on the same disk. **Depends on:** 2.
 
 ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 `crates/alo-installer` — that a person downloads and runs.
@@ -188,7 +208,7 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** ready. **Depends on:** 3, 8, 9.
+**Status:** ready. **Depends on:** 3, 8, 9, 10.
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -247,7 +267,7 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — on tasks 1–5, 8 and 9, and on the owner at the laptop;
+**Status:** blocked — on tasks 1–5, 8, 9 and 10, and on the owner at the laptop;
 nothing in this repository can tick it. **Depends on:** 4, 5.
 
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
@@ -370,3 +390,40 @@ partition, before Linux, and hangs.
 - **Constraint:** Secure Boot is never switched off to make the test pass (ADR
   0033 §4). A person is never told to disable it. No shim or loader is patched or
   built by us (ADR 0011).
+
+### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
+
+**Status:** ready. **Depends on:** 3.
+
+Split from task 3 on 2026-09-15. `crates/alo-installer` is written and every
+decision in it is tested against a scripted Windows; its checks have been run,
+reads only, on a real Windows 11. What no test has yet done is let it change a
+real Windows: the account the tests run under on the development machine cannot
+manage Hyper-V (task 2's report), and nothing in this repository installs a
+Windows into a virtual machine. Task 3's report names the three things the
+scripted machine cannot show, which this task is for: that the storage cmdlets
+and `bcdedit` do what `crates/alo-installer/src/program.rs` asks of them on a
+Windows that is really running; that the NVMe, SATA and Hyper-V SCSI names
+`naming.rs` makes are the names the environment finds under `/dev/disk/by-id/`;
+and that a copy of `{bootmgr}` with a `device` and `path` is an entry the
+firmware starts.
+
+- **Acceptance:** a test in `crates/alo-installer/tests/`, ignored in the suite
+  and run by name, starts a Hyper-V generation 2 VM (or QEMU with OVMF, if
+  Hyper-V is still out of reach, saying which) holding a Windows the test
+  installed unattended, with a second empty disk; it copies a release build of
+  the installer and a built environment into the guest and runs it elevated,
+  typing the second disk's name; and for **each** step of
+  `crates/alo-installer/src/staging.rs` — after the shrink, after the area is
+  made, after it is prepared, after the copy, after the entry, after its letter
+  is taken, and after the next start is set — kills the installer there,
+  restarts the VM, and shows Windows starts to its desktop session, with the
+  Windows partition's files byte-for-byte what they were. Then it runs the whole
+  road once, and shows the firmware starts the environment on the next restart
+  and the environment finds the disk by the name the installer wrote. The run is
+  pasted into the report. Whatever reality says differently from `program.rs`
+  or `naming.rs` goes into `docs/quirks.md` and the code, in the same change.
+- **Constraint:** nothing here runs on the laptop, or on the development
+  machine's own disks; every destructive step is in a virtual machine the test
+  made. Secure Boot is off in that VM only because the shipped installer refuses
+  it on (ADR 0033 §4), and the report says so.
