@@ -113,8 +113,8 @@ fn every_sentence_about_a_file_names_which_file() {
             .collect();
         assert_eq!(
             kept.len(),
-            7,
-            "{area}: read, not understood, at a line, another format, a key, not written, not expressible"
+            8,
+            "{area}: read, not understood, at a line, another format, a key, not written, not expressible, not replaced"
         );
         for phrase in kept {
             assert!(phrase.source().has("path"), "{}", phrase.key());

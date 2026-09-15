@@ -151,7 +151,12 @@ written down, and the moment a file does not read needs a sentence.
 
 ### 5. A file that did not read is not written over by the next click
 
-**Status:** ready. **Depends on:** 2, 4.
+**Status:** **Done, 2026-09-15** — `alo_kept::keep` asks the file as it is
+immediately before the rename and refuses `Unwritten::OverAFileThatDidNotRead`;
+`alo_kept::put_back_as_shipped` (and each crate's `keeping::put_back_as_shipped`)
+is the one door that replaces such a file; see
+`docs/autonomy/updates/a-file-that-did-not-read-is-not-written-over.md`.
+**Depends on:** 2, 4.
 
 ADR 0038, clause 3: *Settings does not write over a file that did not read*
 except when the person puts that section back as shipped, *so a hand-edit with
@@ -179,3 +184,34 @@ beside it do not. The contract's three *Writing it* sections say so today.
   never against what was read at sign-in, which a hand edit since may have
   fixed. Nothing here is reachable by an agent: these are a person's own
   settings, written from Settings.
+
+### 6. One person's folder, from sign-in to the next change
+
+**Status:** ready. **Depends on:** 1, 2, 3, 5.
+
+Every clause above is held crate by crate. What no test yet holds is the path a
+session actually takes through all of them at once, which is the road the shell
+plan's task 6 will call: the folder worked out by `alo_choosing`, a path handed
+to each of the three keepers, each section drawn at sign-in with its refusal
+beside it, a change written, a broken file kept rather than replaced, a section
+put back as shipped, and a pairing and a grant revoked from the one list. A
+break between two crates that each pass their own suite — a file name two
+crates disagree on, a folder one of them makes with the wrong mode — is found
+here or by a person.
+
+- **Acceptance:** one integration test, in a crate this plan owns and without
+  giving `alo-appearance`, `alo-dock` or `alo-shortcuts` a dependency on
+  `alo-choosing`, walks a person's folder under a temporary `$HOME` handed to
+  `alo_choosing::where_the_folder_is` (never read from the environment): the
+  three files are written beside `settings.toml` under their own `THE_FILE`
+  names and read back at a second sign-in as what was written; a hand edit that
+  breaks one file leaves the other two drawn as the person left them and that
+  one drawn as shipped, with its sentence naming the file; the next change to
+  the broken section is refused and the file's bytes are unchanged while a
+  change to another section is written; putting the broken section back as
+  shipped lets the next change through; and `docs/contracts/person-settings.md`
+  names, in one short section for the shell, the calls a Settings surface makes
+  for each section — held by the same test reading that section.
+- **Constraint:** nothing in `crates/alo-shell`, no new public surface unless
+  the walk finds one missing (and then it is named in the report as what the
+  shell plan waited on), nothing on the machine, and no watcher.

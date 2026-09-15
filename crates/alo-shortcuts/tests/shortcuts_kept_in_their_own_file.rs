@@ -220,6 +220,7 @@ fn every_word_these_refusals_say_is_in_the_collected_vocabulary() {
         words::KEPT_UNKNOWN_KEY,
         words::KEPT_NOT_WRITTEN,
         words::KEPT_NOT_EXPRESSIBLE,
+        words::KEPT_NOT_REPLACED,
     ] {
         assert!(
             vocabulary.phrase(&word.key()).is_some(),
@@ -244,4 +245,84 @@ fn the_header_says_this_crate_keeps_its_own_file() {
         assert!(!header.contains(stale), "the header still says {stale:?}");
     }
     assert!(header.contains("[`keeping`]"));
+}
+
+/// **A change is not written over a file that did not read.** ADR 0038, clause
+/// 3: a person's hand edit with one mistake in it, refused at sign-in, is still
+/// there byte for byte after the next change they make in Settings — which is
+/// refused naming the file, and says what is wrong with it. Not even putting
+/// every setting back through `keep` writes over it.
+#[test]
+fn a_change_is_not_written_over_a_file_that_did_not_read() {
+    let folder = a_folder_of_our_own("not-written-over");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(&at, "format = 1\nbindings = []\n").unwrap();
+    let before = std::fs::read(&at).unwrap();
+    let (drawn, at_sign_in) = keeping::at_sign_in(&at);
+    assert_eq!(drawn, Shortcuts::shipped());
+
+    let refused = keeping::keep(&at, &moved_and_cleared()).unwrap_err();
+    assert_eq!(refused.word(), words::KEPT_NOT_REPLACED);
+    assert_eq!(refused.at(), at.as_path());
+    assert_eq!(refused.did_not_read(), at_sign_in);
+    assert_eq!(refused.did_not_read().unwrap().key(), Some("bindings"));
+    let said = refused.said(&Strings::of(shortcut_words().unwrap()));
+    assert!(said.text().contains(&at.display().to_string()), "{said}");
+    assert!(said.unfilled().is_empty(), "{said}");
+
+    assert_eq!(
+        keeping::keep(&at, &Changes::none()).unwrap_err().word(),
+        words::KEPT_NOT_REPLACED
+    );
+    assert_eq!(
+        std::fs::read(&at).unwrap(),
+        before,
+        "the person's edit is gone"
+    );
+    assert!(!at.with_file_name(format!("{THE_FILE}.new")).exists());
+}
+
+/// **The file is asked as it is at the write, never as it was at sign-in**: a
+/// file refused at sign-in and mended in an editor since takes the next change,
+/// exactly as a file that was always fine does.
+#[test]
+fn a_file_mended_since_sign_in_takes_the_next_change() {
+    let folder = a_folder_of_our_own("mended-since");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(&at, "format = 1\nbindings = []\n").unwrap();
+    assert!(keeping::at_sign_in(&at).1.is_some());
+
+    std::fs::write(&at, "format = 1\n").unwrap();
+    keeping::keep(&at, &moved_and_cleared()).unwrap();
+    assert_eq!(keeping::read(&at).unwrap(), moved_and_cleared());
+}
+
+/// **Putting the section back as shipped is the one door that replaces a file
+/// that did not read**: it writes the format line alone, the file then reads as
+/// a person who has changed nothing, and the next change is written as ever.
+#[test]
+fn putting_back_as_shipped_replaces_a_file_that_did_not_read() {
+    let folder = a_folder_of_our_own("put-back");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(&at, "format = 1\nbindings = []\n").unwrap();
+
+    keeping::put_back_as_shipped(&at).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&at).unwrap(),
+        format!("format = {FORMAT}\n")
+    );
+    assert_eq!(keeping::at_sign_in(&at), (Shortcuts::shipped(), None));
+
+    keeping::keep(&at, &moved_and_cleared()).unwrap();
+    assert_eq!(keeping::read(&at).unwrap(), moved_and_cleared());
+
+    let relative = Path::new("alo").join(THE_FILE);
+    assert_eq!(
+        keeping::put_back_as_shipped(&relative).unwrap_err().word(),
+        words::KEPT_NOT_EXPRESSIBLE
+    );
+    assert!(!relative.exists());
 }

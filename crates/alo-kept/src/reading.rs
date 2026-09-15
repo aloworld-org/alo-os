@@ -26,16 +26,24 @@ use crate::writing::THE_FORMAT_KEY;
 /// anything is opened. A file that is not there is not an error: it is
 /// [`Kept::untouched`].
 pub fn read<K: Kept>(at: &Path) -> Result<K, K::NotRead> {
+    as_it_is(at).map_err(|why| K::not_read(at, why))
+}
+
+/// The file at `at` as it is on the disk this moment, or why it did not read.
+///
+/// The one reading of a file there is: [`read`] says its refusal in the owning
+/// crate's words, and `crate::replacing` asks it again at the moment of a write.
+pub(crate) fn as_it_is<K: Kept>(at: &Path) -> Result<K, Unread> {
     if !at.has_root() {
-        return Err(K::not_read(at, Unread::NotWhereItBelongs));
+        return Err(Unread::NotWhereItBelongs);
     }
     let bytes = match std::fs::read(at) {
         Ok(bytes) => bytes,
         Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(K::untouched()),
-        Err(why) => return Err(K::not_read(at, Unread::Disk(why.kind()))),
+        Err(why) => return Err(Unread::Disk(why.kind())),
     };
-    let text = std::str::from_utf8(&bytes).map_err(|_| K::not_read(at, Unread::NotText))?;
-    read_text(text, at)
+    let text = std::str::from_utf8(&bytes).map_err(|_| Unread::NotText)?;
+    from_text(text)
 }
 
 /// This text, read as the file at `at` would be.

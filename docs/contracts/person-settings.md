@@ -795,10 +795,26 @@ is refused before the file is touched (`appearance.kept.not-expressible`), and
 a disk that will not take it leaves the file as it was
 (`appearance.kept.not-written`); both say nothing has been changed.
 
-**The writer does not read the file it replaces.** ADR 0038 says Settings does
-not write over a file that did not read unless the person puts that section
-back as shipped; that rule is not yet held by the crate, and until it is, a
-surface that writes after `at_sign_in` refused the file replaces the file.
+**A file that does not read is not written over.** ADR 0038 says Settings
+does not write over a file that did not read unless the person puts that
+section back as shipped, so a hand edit with one typo in it is never lost to
+the next click. `keep` asks the file as it is **at the moment of the write** —
+after the new text is staged and read back, immediately before the rename —
+and when it is there and does not read, for any of the reasons in the table
+above, the change is refused (`appearance.kept.not-replaced`): the file is left
+byte for byte as it was, the sentence names it and tells the person to correct
+it or put appearance back as shipped, and
+`alo_appearance::FileNotWritten::did_not_read` says what is wrong with it. It is
+never asked of what was read at sign-in: a file mended in an editor since then
+takes the next change. A file that is not there, or that reads, is written as
+above.
+
+**Putting appearance back as shipped is the one door that replaces such a
+file.** `alo_appearance::keeping::put_back_as_shipped` takes no changes and
+writes `format = 1` alone, whatever is at the path — the same whole write, read
+back before it counts — so afterwards the file reads as a person who has
+changed nothing. It is the person's deliberate act in Settings; nothing else,
+and nothing an agent can reach, writes over a file that did not read.
 
 ## `dock.toml` — which edge the dock is on
 
@@ -858,8 +874,13 @@ Refused — `dock.kept.not-understood`. The edge's name is matched exactly.
 ### Writing it
 
 As `appearance.toml`: whole, read back before it counts, and renamed over the
-old file (`dock.kept.not-expressible`, `dock.kept.not-written`). The writer does
-not yet refuse to replace a file that did not read.
+old file (`dock.kept.not-expressible`, `dock.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`dock.kept.not-replaced`) with the file byte for
+byte as it was. `alo_dock::keeping::put_back_as_shipped` is the one door that
+replaces such a file, and it writes `format = 1` alone.
 
 ## `shortcuts.toml` — the shortcuts this person changed
 
@@ -979,5 +1000,12 @@ Refused — `shortcuts.kept.not-understood`. An action's name is matched exactly
 ### Writing it
 
 As `appearance.toml`: whole, read back before it counts, and renamed over the
-old file (`shortcuts.kept.not-expressible`, `shortcuts.kept.not-written`). The
-writer does not yet refuse to replace a file that did not read.
+old file (`shortcuts.kept.not-expressible`, `shortcuts.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`shortcuts.kept.not-replaced`) with the file byte
+for byte as it was — so a person's hand-moved shortcut with a typo in it is not
+lost to the next shortcut they change in Settings.
+`alo_shortcuts::keeping::put_back_as_shipped` is the one door that replaces
+such a file, and it writes `format = 1` alone.

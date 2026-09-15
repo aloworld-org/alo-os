@@ -32,6 +32,14 @@
 //!    renames it over the old file. Every refusal happens before the rename, so
 //!    a write that fails leaves the file as it was.
 //!
+//! And one consequence of the third, from ADR 0038: **a file that did not read
+//! is not written over by the next change.** [`keep`] asks the file as it is at
+//! the moment of the write, and refuses with
+//! [`Unwritten::OverAFileThatDidNotRead`] when it is there and does not read —
+//! so a hand edit with one typo in it is still there for the person to fix.
+//! [`put_back_as_shipped`] is the one door that replaces such a file, and it
+//! can only put the release's settings there.
+//!
 //! # What is not here
 //!
 //! **Where the folder is.** `alo_choosing::where_the_folder_is` works that out
@@ -56,6 +64,7 @@
 mod disk;
 mod kept;
 mod reading;
+mod replacing;
 #[cfg(test)]
 mod testing;
 mod unread;
@@ -66,4 +75,4 @@ pub use kept::Kept;
 pub use reading::{read, read_text};
 pub use unread::Unread;
 pub use unwritten::Unwritten;
-pub use writing::{THE_FORMAT_KEY, keep, text_of};
+pub use writing::{THE_FORMAT_KEY, keep, put_back_as_shipped, text_of};

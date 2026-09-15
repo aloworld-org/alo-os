@@ -280,3 +280,50 @@ fn a_missing_file_is_a_person_who_changed_nothing() {
     assert_eq!(keeping::at_sign_in(&at), (Dock::shipped(), None));
     assert!(!at.exists(), "reading wrote nothing");
 }
+
+/// **The section's *Writing it* says what the writer does with a file that did
+/// not read, and the crate does it**: the sentence it names is the one a change
+/// over the section's first refused example is refused with, that file's bytes
+/// are unchanged, and the door it names for putting the section back replaces
+/// the file with the `format` line alone.
+#[test]
+fn the_contract_says_a_file_that_did_not_read_is_not_written_over() {
+    let writing = the_part("Writing it");
+    assert!(
+        writing.contains("A file that does not read is not written over"),
+        "{writing}"
+    );
+    assert!(
+        !writing.contains("not yet"),
+        "the section still describes a rule the crate does not hold: {writing}"
+    );
+    let named = code_span_beginning(&writing, "dock.kept.not-replaced")
+        .expect("the section names the sentence a change over a broken file is refused with");
+    assert!(
+        writing.contains("alo_dock::keeping::put_back_as_shipped"),
+        "the section does not name the one door that replaces such a file"
+    );
+    assert!(
+        writing.contains(&format!("`format = {FORMAT}`")),
+        "{writing}"
+    );
+
+    let refused = fences(&the_section())
+        .into_iter()
+        .find(|fence| fence.info == "toml refused")
+        .expect("the section shows a file that does not read");
+    let (at, read) = read_from_a_file("not-written-over", &refused.text);
+    assert!(read.is_err());
+    let before = std::fs::read(&at).unwrap();
+
+    let why = keeping::keep(&at, &everything_changed()).unwrap_err();
+    assert_eq!(why.word().named(), named);
+    assert_eq!(std::fs::read(&at).unwrap(), before);
+
+    keeping::put_back_as_shipped(&at).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&at).unwrap(),
+        format!("format = {FORMAT}\n")
+    );
+    assert_eq!(keeping::read(&at).unwrap(), Changes::untouched());
+}

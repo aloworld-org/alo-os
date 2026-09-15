@@ -18,6 +18,7 @@ use std::path::Path;
 use crate::disk;
 use crate::kept::Kept;
 use crate::reading::from_text;
+use crate::replacing::Over;
 use crate::unwritten::Unwritten;
 
 /// The key every kept file begins with.
@@ -77,16 +78,44 @@ pub fn text_of<K: Kept>(value: &K) -> Result<String, Unwritten> {
 ///
 /// [`Kept::not_written`], in the owning crate's words, for every refusal
 /// [`text_of`] makes, for a relative `at`, for bytes the disk hands back that
-/// are not the same value, and for every step the disk refuses. The file at
-/// `at` is as it was in all of them.
+/// are not the same value, for every step the disk refuses, and
+/// [`Unwritten::OverAFileThatDidNotRead`] when the file at `at` is there and
+/// does not read at the moment of the write. The file at `at` is as it was in
+/// all of them.
 pub fn keep<K: Kept>(at: &Path, value: &K) -> Result<(), K::NotWritten> {
+    written(at, value, Over::WhatReads)
+}
+
+/// The person who has changed nothing, kept as the whole of the file at `at` —
+/// **whatever is there now, including a file that did not read.**
+///
+/// The one door that writes over such a file, and the deliberate act ADR 0038
+/// names: *put this section back as shipped*. It takes no value, so nothing but
+/// [`Kept::untouched`] can reach a broken file through it. What it writes is the
+/// format line alone, which reads as the release's settings.
+///
+/// # Errors
+///
+/// [`Kept::not_written`], in the owning crate's words, for a relative `at` and
+/// every step the disk refuses. The file at `at` is as it was in all of them.
+pub fn put_back_as_shipped<K: Kept>(at: &Path) -> Result<(), K::NotWritten> {
+    written(at, &K::untouched(), Over::Anything)
+}
+
+/// This value written whole to `at`, over whatever `over` allows.
+fn written<K: Kept>(at: &Path, value: &K, over: Over) -> Result<(), K::NotWritten> {
     if !at.has_root() {
         return Err(K::not_written(at, Unwritten::NotWhereItBelongs));
     }
     let text = text_of(value).map_err(|why| K::not_written(at, why))?;
-    disk::kept(at, &text, |on_disk| match std::str::from_utf8(on_disk) {
-        Ok(back) if back == text => reads_back_as(value, back),
-        Ok(_) | Err(_) => Err(Unwritten::ReadBackAsSomethingElse),
+    disk::kept(at, &text, |on_disk| {
+        match std::str::from_utf8(on_disk) {
+            Ok(back) if back == text => reads_back_as(value, back)?,
+            Ok(_) | Err(_) => return Err(Unwritten::ReadBackAsSomethingElse),
+        }
+        // Last, immediately before the rename: the file as it is at the moment
+        // of the write, not as it was at sign-in or before the text was staged.
+        over.allows::<K>(at)
     })
     .map_err(|why| K::not_written(at, why))
 }

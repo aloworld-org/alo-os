@@ -118,11 +118,29 @@ impl FileNotWritten {
         &self.why
     }
 
-    /// The string this crate declares for this refusal: the disk, or alo OS.
+    /// The file that was not written over because it did not read, and why it
+    /// did not — asked at the moment of the write, so it is the file as it was
+    /// then. `None` for every other refusal.
+    ///
+    /// For a surface that says, beside [`Self::said`], what is wrong with the
+    /// file, so the person knows what to mend.
+    #[must_use]
+    pub fn did_not_read(&self) -> Option<FileNotRead> {
+        match &self.why {
+            Unwritten::OverAFileThatDidNotRead(why) => {
+                Some(FileNotRead::new(&self.at, why.clone()))
+            }
+            _ => None,
+        }
+    }
+
+    /// The string this crate declares for this refusal: the disk, a file that
+    /// did not read and was kept, or alo OS.
     #[must_use]
     pub const fn word(&self) -> Word {
         match &self.why {
             Unwritten::Disk(_) => words::KEPT_NOT_WRITTEN,
+            Unwritten::OverAFileThatDidNotRead(_) => words::KEPT_NOT_REPLACED,
             Unwritten::NotWhereItBelongs
             | Unwritten::NotExpressible { .. }
             | Unwritten::NotOnlyTheDifference
@@ -228,12 +246,36 @@ mod tests {
                 Unwritten::ReadBackRefused(Unread::NoFormat),
                 words::KEPT_NOT_EXPRESSIBLE,
             ),
+            (
+                Unwritten::OverAFileThatDidNotRead(Unread::NoFormat),
+                words::KEPT_NOT_REPLACED,
+            ),
         ] {
             let refused = FileNotWritten::new(&the_file(), why.clone());
             assert_eq!(refused.word(), word, "{why:?}");
             let said = refused.said(&strings);
             assert!(said.unfilled().is_empty(), "{why:?}: {said}");
             assert!(said.text().contains("has been changed"), "{said}");
+            assert_eq!(
+                refused.did_not_read().is_some(),
+                word == words::KEPT_NOT_REPLACED,
+                "{why:?}"
+            );
         }
+    }
+
+    /// **A file kept because it did not read says why it did not**, with the
+    /// same file and the same reason a reading of it would have given.
+    #[test]
+    fn a_file_kept_because_it_did_not_read_says_why() {
+        let why = Unread::UnknownKey {
+            key: "wallpaper".to_owned(),
+        };
+        let refused =
+            FileNotWritten::new(&the_file(), Unwritten::OverAFileThatDidNotRead(why.clone()));
+        assert_eq!(
+            refused.did_not_read(),
+            Some(FileNotRead::new(&the_file(), why))
+        );
     }
 }

@@ -9,6 +9,10 @@
 //! crate's words ([`FileNotRead`]), and the dock is where the release puts it.
 //! A write is whole or not at all, and read back before it counts.
 //!
+//! **A file that did not read is not written over by the next change** — a hand
+//! edit with one mistake in it stays for the person to mend — and
+//! [`put_back_as_shipped`] is the one door that replaces it.
+//!
 //! **This crate does not know where the folder is.** It is handed the path, by
 //! whoever starts the session, so that there is one answer to *where is a
 //! person's folder* and it is not in a crate about a dock.
@@ -75,9 +79,32 @@ pub fn read(at: &Path) -> Result<Changes, FileNotRead> {
 /// # Errors
 ///
 /// [`FileNotWritten`] when the file was not replaced — by the disk, or because
-/// the text would not have read back as these changes. The file is as it was.
+/// the text would not have read back as these changes, or because the file is
+/// there and does not read ([`FileNotWritten::did_not_read`]). The file is as it
+/// was.
+///
+/// **A file that does not read is not written over.** It is asked as it is at
+/// this moment, not as it was at sign-in, and a person's hand edit with one
+/// mistake in it is kept for them to mend; [`put_back_as_shipped`] is the one
+/// way to replace it.
 pub fn keep(at: &Path, changes: &Changes) -> Result<(), FileNotWritten> {
     alo_kept::keep(at, changes)
+}
+
+/// Put this section back as alo OS ships it: the file at `at` replaced by the
+/// format line alone, **whatever is there now — including a file that did not
+/// read.**
+///
+/// The one door that writes over such a file, for the person's deliberate act
+/// in Settings. It takes no changes, so nothing but the release's dock can
+/// reach a broken file through it; afterwards the file reads as
+/// [`Changes::untouched`].
+///
+/// # Errors
+///
+/// [`FileNotWritten`] when the disk would not take it. The file is as it was.
+pub fn put_back_as_shipped(at: &Path) -> Result<(), FileNotWritten> {
+    alo_kept::put_back_as_shipped::<Changes>(at)
 }
 
 /// The dock a session draws when a person signs in, from the file at `at`.

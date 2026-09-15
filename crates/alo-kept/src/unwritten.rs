@@ -33,6 +33,14 @@ pub enum Unwritten {
     /// The text written for the value does not read back at all.
     ReadBackRefused(Unread),
 
+    /// The file the value would replace is there and does not read, so it was
+    /// not written over: it may be a person's hand edit with one mistake in it,
+    /// and the next change they make in Settings must not be what throws it
+    /// away. Asked of the file as it is at the moment of the write, never of
+    /// what was read at sign-in. Only [`crate::put_back_as_shipped`] replaces
+    /// such a file.
+    OverAFileThatDidNotRead(Unread),
+
     /// The disk refused a step of the write: the folder, the sibling file, the
     /// sync or the rename. The file is as it was.
     Disk(std::io::ErrorKind),

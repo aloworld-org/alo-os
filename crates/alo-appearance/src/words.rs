@@ -430,10 +430,25 @@ pub const KEPT_NOT_EXPRESSIBLE: Word = Word::saying(
      anything the person did, said plainly: the change was refused before the file was touched.",
 );
 
+/// The file a change would replace is there and did not read, so it was kept.
+pub const KEPT_NOT_REPLACED: Word = Word::saying(
+    "appearance.kept.not-replaced",
+    "your appearance settings at {path} could not be read, so that change has not been written over them and \
+     nothing about how this machine looks has been changed — correct the file, or put appearance back as alo OS ships it",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. Said when a person changes \
+     something in Settings while the file, most often one they edited by hand, does not read: alo \
+     OS keeps their file rather than replacing it, so a typing mistake in it is not lost. The last \
+     clause gives the two ways on — mend the file in an editor, or deliberately put this section \
+     back as it ships, which does replace the file. \"alo OS\" is the product's name and is never \
+     translated.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// colours the system is built out of, the five a person can choose, the
 /// refusals, file by file, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 36] = [
     NAVY,
     TERRACOTTA,
     CREAM,
@@ -469,6 +484,7 @@ pub const EVERY_WORD: [Word; 35] = [
     KEPT_UNKNOWN_KEY,
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
+    KEPT_NOT_REPLACED,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -618,6 +634,7 @@ mod tests {
             (KEPT_UNKNOWN_KEY, "key"),
             (KEPT_NOT_WRITTEN, "path"),
             (KEPT_NOT_EXPRESSIBLE, "path"),
+            (KEPT_NOT_REPLACED, "path"),
         ] {
             let phrase = word.phrase().unwrap();
             assert!(phrase.source().has(gap), "{} wants {gap}", word.named());
