@@ -222,8 +222,11 @@ whose publisher wrote one elsewhere is a decision with a name on it.
 
 ### 9. The four entries the measuring machine could not hold
 
-**Status:** blocked — for `mixtral-8x7b-instruct` alone, on a machine with the
-48 GB its own entry states. **Depends on:** 2, 8 for Teuken.
+**Status:** blocked — **not pursued, by the owner's decision of 2026-09-15**:
+*testing is done on the small model; once a small model works, the larger ones
+are not run.* Mixtral is not attempted on any machine, and neither is raising
+the GPU's share for the nine-billion entries. The entries keep the reasons
+below. **Depends on:** 2, 8 for Teuken.
 **Report:** `docs/autonomy/updates/the-nine-billion-entries-tried-on-this-machine.md`.
 
 **Two thirds of it is answered, on 2026-09-15, and the answer was free.** The
