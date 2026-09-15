@@ -25,6 +25,13 @@ wording; tick anything *on the machine*; edit a crate another lane owns.
 beside it is a claim. Before writing the next task, `git pull` and read the
 plan as published — numbers are a shared space.
 
+**Finished, 2026-09-15.** Nineteen tasks done; task 9 is not pursued, by the
+owner's decision recorded in it. The catalogue now says of every model an 8 GB
+machine can hold whether it drives the verbs **the way this machine asks**, two
+entries clear that bar, and a machine with room is given one as its agent. The
+lane stops here rather than choosing what to do next: the plans are assigned so
+that five machines working one branch do not collide.
+
 ## Tasks
 
 ### 1. One catalogue entry, graded on a machine that can hold it
