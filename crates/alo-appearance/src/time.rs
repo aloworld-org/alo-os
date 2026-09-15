@@ -116,6 +116,7 @@ impl fmt::Display for TimeOfDay {
 
 /// A time of day as a settings file holds it.
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Written {
     /// The hour, 0 to 23.
     hour: u8,

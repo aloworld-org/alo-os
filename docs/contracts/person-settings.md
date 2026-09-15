@@ -71,6 +71,21 @@ and it is written whole to `<file>.new`, read back off the disk as the same
 value, and only then renamed over the old one. Which files, and their keys, are
 sections of this contract as those crates gain them.
 
+Since 2026-09-15 there are three, each read and written by the crate that
+declares its shape, at a path that crate is handed, and by nobody else:
+
+| File | Kept by | `format` | Keys besides `format` |
+|---|---|---|---|
+| `appearance.toml` | `alo_appearance::keeping` | `1` | `background`, `displays`, `lock`, `following`, `text`, `accent` |
+| `dock.toml` | `alo_dock::keeping` | `1` | `edge` |
+| `shortcuts.toml` | `alo_shortcuts::keeping` | `1` | `changed` — one `[[changed]]` table per action, with `action` and, unless the person wants no shortcut for it, `chord` |
+
+A file that did not read is answered, by each crate's `keeping::at_sign_in`,
+with what the release ships and the refusal beside it — naming the file, and the
+key when a key was what was wrong. Nothing watches these files: a hand edit is
+read at the next sign-in. The full shape of each value is a section of this
+contract still to be written.
+
 ## What a missing file means
 
 **Nothing has been chosen**, which is the ordinary state of a machine nobody

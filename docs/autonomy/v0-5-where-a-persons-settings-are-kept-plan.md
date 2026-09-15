@@ -68,7 +68,10 @@ wrong. The rule is decided once, here, and the crates in task 2 follow it.
 
 ### 2. Appearance, the dock and shortcuts, each keeping its own
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-15** — `alo_appearance::keeping`, `alo_dock::keeping`
+and `alo_shortcuts::keeping` read and write their own file at a path they are
+handed; see `docs/autonomy/updates/appearance-dock-and-shortcuts-keep-their-own-files.md`.
+**Depends on:** 1.
 
 Three crates, one shape each, one file each. The header sentence every one of
 them carries — *who writes it is the shell's* — stops being true here, and each

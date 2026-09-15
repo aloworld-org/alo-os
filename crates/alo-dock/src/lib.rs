@@ -23,6 +23,8 @@
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
 //! | [`words`] | Every string this crate can say, and the English beside each |
+//! | [`keeping`] | `dock.toml` in the person's own folder, read and written here |
+//! | [`unkept`] | What a person is told when that file did not read, or was not written |
 //!
 //! ```
 //! use alo_appearance::TextScale;
@@ -107,11 +109,12 @@
 //! names drawn and where*, and *where is the status area*; doing any of it is
 //! the compositor's, and the compositor does not exist yet.
 //!
-//! **It does not read anything.** The screen, the text size and which way the
-//! person reads are all passed in — the rule `alo-capability` set in item 1 and
+//! **It does not read anything but its own file.** The screen, the text size
+//! and which way the person reads are all passed in — the rule `alo-capability` set in item 1 and
 //! `alo-appearance` kept — so a settings panel previewing a change asks exactly
 //! the question the compositor asks, and neither has to wait for anything to
-//! find out.
+//! find out. The one file it reads and writes is `dock.toml` ([`keeping`]), at a
+//! path it is handed and at no other.
 //!
 //! **It is not a capability.** There is no connection between this crate and
 //! `alo-capability`, and that is not an omission: a person moving their own dock
@@ -121,12 +124,13 @@
 //! # Nothing here says anything in English by itself
 //!
 //! Every string a person reads — the four edge names, the three things that can
-//! become of the names, and the two refusals — is declared in [`words`] and
+//! become of the names, the two refusals and the seven sentences about the
+//! person's own file — is declared in [`words`] and
 //! answered through `alo-strings`. No type in this crate has a `Display` that
 //! would put English on a screen: what replaces it is `said`, which answers with
 //! an `alo_strings::Said` that says whether anybody translated it. Nothing here
-//! deserialises a screen, so there is no key-writing refusal of the kind
-//! `alo-appearance` needed for its settings file.
+//! deserialises a screen, and an edge reads back by name, so there is no
+//! key-writing refusal of the kind `alo-appearance` needed inside its file.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -134,6 +138,7 @@ pub mod along;
 pub mod changes;
 pub mod dock;
 pub mod edge;
+pub mod keeping;
 pub mod labels;
 pub mod layout;
 pub mod measures;
@@ -141,6 +146,7 @@ pub mod room;
 pub mod screen;
 pub mod shipped;
 pub mod status;
+pub mod unkept;
 pub mod words;
 
 #[cfg(test)]
@@ -156,4 +162,5 @@ pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;
 pub use status::{End, StatusArea};
+pub use unkept::{FileNotRead, FileNotWritten};
 pub use words::{Word, WordsError, declare_into, dock_words};

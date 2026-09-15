@@ -135,6 +135,7 @@ impl Schedule {
 
 /// A schedule as a settings file holds it.
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Written {
     /// When it turns dark.
     dark_from: TimeOfDay,

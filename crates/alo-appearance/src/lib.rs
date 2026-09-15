@@ -29,6 +29,8 @@
 //! | [`appearance`] | The two resolved, and every question asked of them |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //! | [`unreadable`] | What a settings file that did not read says, where nobody can be asked for words |
+//! | [`keeping`] | `appearance.toml` in the person's own folder, read and written here |
+//! | [`unkept`] | What a person is told when that file did not read, or was not written |
 //!
 //! ```
 //! use alo_appearance::{
@@ -86,10 +88,11 @@
 //! this hour* and *how big is the text*; doing any of it is the compositor's,
 //! and the compositor does not exist yet.
 //!
-//! **It does not read the clock or the disk.** A schedule is answered at a time
-//! of day that is passed in, and a rotating folder is answered by *how many
-//! pictures it holds* and *how long it has been running* rather than by going
-//! and looking. That is the rule `alo-capability` set in item 1 and it is here
+//! **It does not read the clock, or any disk but its own file.** A schedule is
+//! answered at a time of day that is passed in, and a rotating folder is
+//! answered by *how many pictures it holds* and *how long it has been running*
+//! rather than by going and looking. The one file it reads and writes is
+//! `appearance.toml` ([`keeping`]), at a path it is handed and at no other. That is the rule `alo-capability` set in item 1 and it is here
 //! for the same reason: the answer is testable without a wait, and the settings
 //! panel and the compositor cannot disagree about it.
 //!
@@ -113,14 +116,10 @@
 //! [`contrast`] says why it is not optional: terracotta on the reading ground
 //! measures 2.87:1, under what either a word or a shape needs.
 //!
-//! **Where the settings file is written, and when.** [`changes::Changes`] is
-//! serde, as `alo-shortcuts` is: which file it lives in and who writes it is the
-//! shell's, and the shell does not exist yet.
-//!
 //! # Nothing here says anything in English by itself
 //!
-//! Every string a person reads — the eleven colour names and the seventeen
-//! refusals — is declared in [`words`] and answered through `alo-strings`. No
+//! Every string a person reads — the eleven colour names, the seventeen
+//! refusals and the seven sentences about the person's own file — is declared in [`words`] and answered through `alo-strings`. No
 //! type in this crate has a `Display` that would put English on a screen: what
 //! replaces it is `said`, which answers with an `alo_strings::Said` that says
 //! whether anybody translated it.
@@ -148,6 +147,7 @@ pub mod changes;
 pub mod colour;
 pub mod contrast;
 pub mod display;
+pub mod keeping;
 pub mod lock;
 pub mod picture;
 pub mod rotating;
@@ -156,6 +156,7 @@ pub mod shipped;
 pub mod text;
 pub mod time;
 pub mod token;
+pub mod unkept;
 pub mod unreadable;
 pub mod words;
 
@@ -177,5 +178,6 @@ pub use shipped::{Shipped, THE_WALLPAPER};
 pub use text::{TextError, TextScale};
 pub use time::{TimeError, TimeOfDay};
 pub use token::Token;
+pub use unkept::{FileNotRead, FileNotWritten};
 pub use unreadable::NotRead;
 pub use words::{Word, WordsError, appearance_words, declare_into};

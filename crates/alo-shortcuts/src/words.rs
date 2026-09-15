@@ -319,10 +319,96 @@ pub const CLASH: Word = Word::saying(
      to a row, so this sentence deliberately does not list them.",
 );
 
+// ---------------------------------------------------------------------------
+// The person's own file, `shortcuts.toml` — [`crate::FileNotRead`] and
+// [`crate::FileNotWritten`]. Each names the file, because a sentence that does
+// not is one a person cannot act on, and each says what the keys do instead.
+// ---------------------------------------------------------------------------
+
+/// The disk would not give the file up.
+pub const KEPT_NOT_READ: Word = Word::saying(
+    "shortcuts.kept.not-read",
+    "your shortcut settings at {path} could not be read, so every shortcut is the one alo OS \
+     ships",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A disk or a permission rather than \
+     anything a person typed. \"alo OS\" is the product's name and is never translated.",
+);
+
+/// The file is there and is not shortcut settings.
+pub const KEPT_NOT_UNDERSTOOD: Word = Word::saying(
+    "shortcuts.kept.not-understood",
+    "your shortcut settings at {path} are not settings alo OS can read, so nothing in the file has \
+     been used and every shortcut is the one alo OS ships",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. The important clause is that \
+     nothing in the file was used: alo OS did not take the half it understood. Said of a key or \
+     an action that does not exist, a combination that cannot be a shortcut, or a file with no \
+     format number at the top.",
+);
+
+/// The file stopped being settings at a line.
+pub const KEPT_NOT_UNDERSTOOD_AT: Word = Word::saying(
+    "shortcuts.kept.not-understood-at",
+    "your shortcut settings at {path} stop making sense at line {line}, so nothing in the file has \
+     been used and every shortcut is the one alo OS ships",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. {line} is a plain whole number, \
+     counted from one the way a text editor counts lines.",
+);
+
+/// The file says it is a shape this alo OS does not read.
+pub const KEPT_ANOTHER_FORMAT: Word = Word::saying(
+    "shortcuts.kept.another-format",
+    "your shortcut settings at {path} were written for a different alo OS than this one, so \
+     nothing in the file has been used and every shortcut is the one alo OS ships",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. Most often a newer alo OS wrote \
+     the file; reading it part-way would make keys do things the person did not choose.",
+);
+
+/// The file names something that is not a shortcut setting.
+pub const KEPT_UNKNOWN_KEY: Word = Word::saying(
+    "shortcuts.kept.unknown-key",
+    "your shortcut settings at {path} say {key}, which is not something alo OS can change about \
+     shortcuts, so nothing in the file has been used",
+)
+.noting(
+    "{path} is a file on this machine and {key} is a word as it was typed into it; neither is \
+     translated. {key} is a name in the file, not a key on the keyboard — it is named because it \
+     is what a person has to find in the file to fix it.",
+);
+
+/// The disk would not take the changed file.
+pub const KEPT_NOT_WRITTEN: Word = Word::saying(
+    "shortcuts.kept.not-written",
+    "your shortcut settings at {path} could not be written, so no shortcut has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A full disk or a folder the person \
+     cannot write. The second clause is what they act on: the file is exactly as it was.",
+);
+
+/// The change could not be written as a file this alo OS reads back.
+pub const KEPT_NOT_EXPRESSIBLE: Word = Word::saying(
+    "shortcuts.kept.not-expressible",
+    "this alo OS could not write that change into shortcut settings at {path} it can read back \
+     again, so no shortcut has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A fault in alo OS rather than \
+     anything the person did, said plainly: the change was refused before the file was touched.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: what
 /// the shortcuts do, what is held down, the keys that print a word, why a
-/// combination was refused, and what one chord wanted twice says.
-pub const EVERY_WORD: [Word; 38] = [
+/// combination was refused, what one chord wanted twice says, and then what is
+/// said about the person's own file.
+pub const EVERY_WORD: [Word; 45] = [
     THE_AGENT,
     LAUNCHER,
     CLOSE_WINDOW,
@@ -361,6 +447,13 @@ pub const EVERY_WORD: [Word; 38] = [
     THE_CLIPBOARD_PASTES,
     TAKEN,
     CLASH,
+    KEPT_NOT_READ,
+    KEPT_NOT_UNDERSTOOD,
+    KEPT_NOT_UNDERSTOOD_AT,
+    KEPT_ANOTHER_FORMAT,
+    KEPT_UNKNOWN_KEY,
+    KEPT_NOT_WRITTEN,
+    KEPT_NOT_EXPRESSIBLE,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -480,6 +573,13 @@ mod tests {
             (SHIFT_IS_NOT_ENOUGH, "key"),
             (TAKEN, "chord"),
             (CLASH, "chord"),
+            (KEPT_NOT_READ, "path"),
+            (KEPT_NOT_UNDERSTOOD, "path"),
+            (KEPT_NOT_UNDERSTOOD_AT, "line"),
+            (KEPT_ANOTHER_FORMAT, "path"),
+            (KEPT_UNKNOWN_KEY, "key"),
+            (KEPT_NOT_WRITTEN, "path"),
+            (KEPT_NOT_EXPRESSIBLE, "path"),
         ] {
             let phrase = word.phrase().unwrap();
             assert!(phrase.source().has(gap), "{}", word.named());

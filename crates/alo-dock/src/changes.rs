@@ -4,7 +4,8 @@
 //! `alo-shortcuts`' shape and `alo-appearance`'s, for the third time and for the
 //! same reason: the defaults live in the running release and this file holds the
 //! difference, so a release that moves a default reaches every machine that
-//! never touched it and no machine that did. An untouched machine writes `{}`.
+//! never touched it and no machine that did. An untouched machine has no
+//! `dock.toml` at all ([`crate::keeping`]).
 //!
 //! **There is one thing to change at v0.01, and that is not a mistake.** *The
 //! dock's size*, *whether it hides when a window needs the room* and *one dock
@@ -41,7 +42,7 @@ impl Changes {
     }
 
     /// Whether nothing has been changed at all, which is what a fresh machine
-    /// writes to its settings file.
+    /// has, and what a missing file reads as.
     #[must_use]
     pub const fn is_untouched(&self) -> bool {
         self.edge.is_none()
@@ -75,7 +76,7 @@ impl Changes {
 }
 
 /// Changes as a settings file holds them: anything untouched is absent rather
-/// than present and null, so an untouched machine writes `{}`.
+/// than present and null, so an untouched machine writes no keys at all.
 #[derive(Default, Serialize, Deserialize)]
 struct Written {
     /// The edge, if it was moved.

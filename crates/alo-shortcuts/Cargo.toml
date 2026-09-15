@@ -8,12 +8,18 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# The rule `shortcuts.toml` is kept by: only the difference, refused whole when
+# wrong, written whole or not at all (ADR 0038).
+alo-kept = { path = "../alo-kept" }
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+# Reads the text of `shortcuts.toml` in `keeping.rs`'s tests, to see what went
+# under which key.
+toml = { workspace = true }
 
 [lints]
 workspace = true

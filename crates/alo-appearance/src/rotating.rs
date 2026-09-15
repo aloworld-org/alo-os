@@ -126,7 +126,11 @@ impl From<Every> for Duration {
 }
 
 /// A folder whose pictures take turns.
+///
+/// Reads back through [`Rotating::folder`], so a hand-edited file cannot name a
+/// folder wherever the shell happened to be started from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Written", into = "Written")]
 pub struct Rotating {
     /// Where the pictures are.
     folder: PathBuf,
@@ -191,6 +195,39 @@ impl Rotating {
         // turn this into a panic in the middle of drawing a screen.
         let turns = running.as_secs() / self.every.long().as_secs().max(1);
         usize::try_from(turns % holding).ok()
+    }
+}
+
+/// A rotating background as a settings file holds it, before anything has been
+/// checked.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Written {
+    /// Where the pictures are.
+    folder: PathBuf,
+    /// How often the picture changes.
+    every: Every,
+    /// How each of them meets the edges.
+    fitting: Fitting,
+}
+
+impl TryFrom<Written> for Rotating {
+    type Error = NotRead;
+
+    fn try_from(written: Written) -> Result<Self, Self::Error> {
+        Self::folder(written.folder, written.every)
+            .map(|rotating| rotating.fitted(written.fitting))
+            .map_err(|refused| NotRead::about(refused.word()))
+    }
+}
+
+impl From<Rotating> for Written {
+    fn from(rotating: Rotating) -> Self {
+        Self {
+            folder: rotating.folder,
+            every: rotating.every,
+            fitting: rotating.fitting,
+        }
     }
 }
 
@@ -333,6 +370,22 @@ mod tests {
             refused
                 .to_string()
                 .contains("appearance.rotating.too-quick"),
+            "{refused}"
+        );
+    }
+
+    /// **A file cannot name a folder from wherever the shell was started**:
+    /// refused on the way in, with the key of the refusal a panel would say.
+    #[test]
+    fn a_file_cannot_name_a_relative_folder() {
+        let refused = serde_json::from_str::<Rotating>(
+            r#"{"folder":"Pictures","every":{"secs":600,"nanos":0},"fitting":"Fill"}"#,
+        )
+        .unwrap_err();
+        assert!(
+            refused
+                .to_string()
+                .contains("appearance.rotating.not-a-whole-path"),
             "{refused}"
         );
     }

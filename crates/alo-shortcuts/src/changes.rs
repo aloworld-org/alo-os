@@ -18,7 +18,11 @@ use crate::action::Action;
 use crate::chord::Chord;
 
 /// One action a person moved or cleared.
+///
+/// A key it does not have is refused rather than ignored: a hand-edited
+/// `chrod` would otherwise read as a person wanting no shortcut at all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Changed {
     /// What was changed.
     pub action: Action,
@@ -28,9 +32,9 @@ pub struct Changed {
 
 /// Everything a person has changed, in the order they changed it.
 ///
-/// This is what a settings file holds and nothing else, so a file written by an
-/// older release still says exactly what its owner decided, however much the
-/// defaults have moved since.
+/// This is what `shortcuts.toml` holds and nothing else ([`crate::keeping`]),
+/// so a file written by an older release still says exactly what its owner
+/// decided, however much the defaults have moved since.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Vec<Changed>", into = "Vec<Changed>")]
 pub struct Changes {

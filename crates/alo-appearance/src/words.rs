@@ -346,10 +346,94 @@ pub const NO_SUCH_MINUTE: Word = Word::saying(
 )
 .noting("{minute} is the number that was given. 0 to 59 is not translated.");
 
+// ---------------------------------------------------------------------------
+// The person's own file, `appearance.toml` — [`crate::FileNotRead`] and
+// [`crate::FileNotWritten`]. Each names the file, because a sentence that does
+// not is one a person cannot act on, and each says what the machine did instead.
+// ---------------------------------------------------------------------------
+
+/// The disk would not give the file up.
+pub const KEPT_NOT_READ: Word = Word::saying(
+    "appearance.kept.not-read",
+    "your appearance settings at {path} could not be read, so this machine looks the way alo OS \
+     ships it",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A disk or a permission rather than \
+     anything a person typed. \"alo OS\" is the product's name and is never translated.",
+);
+
+/// The file is there and is not appearance settings.
+pub const KEPT_NOT_UNDERSTOOD: Word = Word::saying(
+    "appearance.kept.not-understood",
+    "your appearance settings at {path} are not settings alo OS can read, so nothing in the file \
+     has been used and this machine looks the way alo OS ships it",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. The important clause is that \
+     nothing in the file was used: alo OS did not take the half it understood. Said of a value \
+     that is not one of the choices, or a file with no format number at the top.",
+);
+
+/// The file stopped being settings at a line.
+pub const KEPT_NOT_UNDERSTOOD_AT: Word = Word::saying(
+    "appearance.kept.not-understood-at",
+    "your appearance settings at {path} stop making sense at line {line}, so nothing in the file \
+     has been used and this machine looks the way alo OS ships it",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. {line} is a plain whole number, \
+     counted from one the way a text editor counts lines.",
+);
+
+/// The file says it is a shape this alo OS does not read.
+pub const KEPT_ANOTHER_FORMAT: Word = Word::saying(
+    "appearance.kept.another-format",
+    "your appearance settings at {path} were written for a different alo OS than this one, so \
+     nothing in the file has been used and this machine looks the way alo OS ships it",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. Most often a newer alo OS wrote \
+     the file; reading it part-way would draw something the person did not choose.",
+);
+
+/// The file names something that is not an appearance setting.
+pub const KEPT_UNKNOWN_KEY: Word = Word::saying(
+    "appearance.kept.unknown-key",
+    "your appearance settings at {path} say {key}, which is not something alo OS can change about \
+     how this machine looks, so nothing in the file has been used",
+)
+.noting(
+    "{path} is a file on this machine and {key} is a word as it was typed into it; neither is \
+     translated. The key is named because it is what a person has to find in the file to fix it.",
+);
+
+/// The disk would not take the changed file.
+pub const KEPT_NOT_WRITTEN: Word = Word::saying(
+    "appearance.kept.not-written",
+    "your appearance settings at {path} could not be written, so nothing about how this machine \
+     looks has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A full disk or a folder the person \
+     cannot write. The second clause is what they act on: the file is exactly as it was.",
+);
+
+/// The change could not be written as a file this alo OS reads back.
+pub const KEPT_NOT_EXPRESSIBLE: Word = Word::saying(
+    "appearance.kept.not-expressible",
+    "this alo OS could not write that change into appearance settings at {path} it can read back \
+     again, so nothing about how this machine looks has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A fault in alo OS rather than \
+     anything the person did, said plainly: the change was refused before the file was touched.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
-/// colours the system is built out of, the five a person can choose, and then
-/// the refusals, file by file.
-pub const EVERY_WORD: [Word; 28] = [
+/// colours the system is built out of, the five a person can choose, the
+/// refusals, file by file, and then what is said about the person's own file.
+pub const EVERY_WORD: [Word; 35] = [
     NAVY,
     TERRACOTTA,
     CREAM,
@@ -378,6 +462,13 @@ pub const EVERY_WORD: [Word; 28] = [
     TOO_LARGE,
     NO_SUCH_HOUR,
     NO_SUCH_MINUTE,
+    KEPT_NOT_READ,
+    KEPT_NOT_UNDERSTOOD,
+    KEPT_NOT_UNDERSTOOD_AT,
+    KEPT_ANOTHER_FORMAT,
+    KEPT_UNKNOWN_KEY,
+    KEPT_NOT_WRITTEN,
+    KEPT_NOT_EXPRESSIBLE,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -520,6 +611,13 @@ mod tests {
             (TOO_LARGE, "percent"),
             (NO_SUCH_HOUR, "hour"),
             (NO_SUCH_MINUTE, "minute"),
+            (KEPT_NOT_READ, "path"),
+            (KEPT_NOT_UNDERSTOOD, "path"),
+            (KEPT_NOT_UNDERSTOOD_AT, "line"),
+            (KEPT_ANOTHER_FORMAT, "path"),
+            (KEPT_UNKNOWN_KEY, "key"),
+            (KEPT_NOT_WRITTEN, "path"),
+            (KEPT_NOT_EXPRESSIBLE, "path"),
         ] {
             let phrase = word.phrase().unwrap();
             assert!(phrase.source().has(gap), "{} wants {gap}", word.named());

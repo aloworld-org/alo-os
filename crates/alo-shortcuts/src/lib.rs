@@ -27,6 +27,8 @@
 //! | [`shortcuts`] | The two resolved, and every question asked of them |
 //! | [`clash`] | Two actions wanting the same keys |
 //! | [`words`] | Every string this crate can say, and the English beside each |
+//! | [`keeping`] | `shortcuts.toml` in the person's own folder, read and written here |
+//! | [`unkept`] | What a person is told when that file did not read, or was not written |
 //!
 //! ```
 //! use alo_shortcuts::{Action, Chord, Key, Modifier, Modifiers, Shortcuts, shortcut_words};
@@ -79,15 +81,17 @@
 //! against the person's Latin layout is a lookup that belongs where the keyboard
 //! is read.
 //!
-//! **It does not press anything.** Nothing here has a side effect, reads a
-//! clock, or knows what a window is. It answers *what does this chord do* and
-//! *what does this action answer to*; doing it is the compositor's, and it does
-//! not exist yet.
+//! **It does not press anything.** Nothing here reads a clock or knows what a
+//! window is, and the one side effect it has is keeping its own file,
+//! `shortcuts.toml` ([`keeping`]), at a path it is handed and at no other. It
+//! answers *what does this chord do* and *what does this action answer to*;
+//! doing it is the compositor's.
 //!
 //! # Nothing here says anything in English by itself
 //!
 //! Every string a person reads — the row for each action, what each key and
-//! each modifier is called, the three refusals, and what a clash says — is
+//! each modifier is called, the three refusals, what a clash says, and the
+//! seven sentences about the person's own file — is
 //! declared in [`words`] and answered through `alo-strings`. No type in this
 //! crate has a `Display` that would put English on a screen: what replaces it
 //! is `said`, which answers with a `alo_strings::Said` that says whether
@@ -117,10 +121,12 @@ pub mod changes;
 pub mod chord;
 pub mod clash;
 pub mod defaults;
+pub mod keeping;
 pub mod key;
 pub mod modifier;
 pub mod refusing;
 pub mod shortcuts;
+pub mod unkept;
 pub mod words;
 
 #[cfg(test)]
@@ -135,4 +141,5 @@ pub use key::Key;
 pub use modifier::{Modifier, Modifiers};
 pub use refusing::{ChordError, Clipboard};
 pub use shortcuts::{Binding, Shortcuts};
+pub use unkept::{FileNotRead, FileNotWritten};
 pub use words::{Word, WordsError, declare_into, shortcut_words};

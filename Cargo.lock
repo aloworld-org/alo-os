@@ -95,6 +95,7 @@ dependencies = [
 name = "alo-appearance"
 version = "0.0.1"
 dependencies = [
+ "alo-kept",
  "alo-strings",
  "serde",
  "serde_json",
@@ -285,10 +286,12 @@ name = "alo-dock"
 version = "0.0.1"
 dependencies = [
  "alo-appearance",
+ "alo-kept",
  "alo-strings",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
@@ -710,10 +713,12 @@ dependencies = [
 name = "alo-shortcuts"
 version = "0.0.1"
 dependencies = [
+ "alo-kept",
  "alo-strings",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]

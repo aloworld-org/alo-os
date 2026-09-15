@@ -18,6 +18,7 @@ use std::path::{Component, Path, PathBuf};
 use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
+use crate::unreadable::NotRead;
 use crate::words;
 
 /// Why a picture cannot be used as a background.
@@ -91,7 +92,12 @@ pub enum Fitting {
 }
 
 /// One picture, and how it is shown.
+///
+/// Reads back through [`Picture::shipped`] or [`Picture::file`], so a
+/// hand-edited file cannot name a path as a wallpaper alo OS shipped, or a
+/// picture wherever the shell happened to be started from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Written", into = "Written")]
 pub struct Picture {
     /// Which picture.
     of: Of,
@@ -171,6 +177,41 @@ impl Picture {
     #[must_use]
     pub fn fitting(&self) -> Fitting {
         self.fitting
+    }
+}
+
+/// A picture as a settings file holds it, before anything has been checked.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Written {
+    /// Which picture.
+    of: Of,
+    /// How it meets the edges.
+    fitting: Fitting,
+}
+
+impl TryFrom<Written> for Picture {
+    type Error = NotRead;
+
+    /// Through the same two doors a settings panel uses, so what a file can
+    /// hold is exactly what a person could have chosen.
+    fn try_from(written: Written) -> Result<Self, Self::Error> {
+        let checked = match written.of {
+            Of::Shipped(name) => Self::shipped(&name),
+            Of::File(path) => Self::file(path),
+        };
+        checked
+            .map(|picture| picture.fitted(written.fitting))
+            .map_err(|refused| NotRead::about(refused.word()))
+    }
+}
+
+impl From<Picture> for Written {
+    fn from(picture: Picture) -> Self {
+        Self {
+            of: picture.of,
+            fitting: picture.fitting,
+        }
     }
 }
 
@@ -273,6 +314,39 @@ mod tests {
             .said(&strings);
         assert!(said.text().starts_with("../../etc/shadow ist ein Pfad"));
         assert!(said.is_translated());
+    }
+
+    /// **A file cannot dress a path up as a shipped wallpaper**, or hand over a
+    /// picture named from wherever the shell was started: both are refused on
+    /// the way in with the key of the refusal a panel would have said.
+    #[test]
+    fn a_file_cannot_ask_for_what_a_panel_would_refuse() {
+        let dressed = serde_json::from_str::<Picture>(
+            r#"{"of":{"Shipped":"../../etc/shadow"},"fitting":"Fill"}"#,
+        )
+        .unwrap_err();
+        assert!(
+            dressed
+                .to_string()
+                .contains("appearance.picture.name-is-a-path"),
+            "{dressed}"
+        );
+        let relative =
+            serde_json::from_str::<Picture>(r#"{"of":{"File":"harbour.jpg"},"fitting":"Fill"}"#)
+                .unwrap_err();
+        assert!(
+            relative
+                .to_string()
+                .contains("appearance.picture.not-a-whole-path"),
+            "{relative}"
+        );
+        assert!(
+            serde_json::from_str::<Picture>(
+                r#"{"of":{"Shipped":"alo"},"fitting":"Fill","fiting":"Fit"}"#
+            )
+            .is_err(),
+            "a key the picture does not have is refused rather than ignored"
+        );
     }
 
     /// A picture survives a settings file unchanged.

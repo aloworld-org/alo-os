@@ -158,6 +158,7 @@ impl fmt::Debug for Chord {
 
 /// A chord as it sits in a settings file, before anything has been checked.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Parts {
     /// What was held down.
     modifiers: Modifiers,

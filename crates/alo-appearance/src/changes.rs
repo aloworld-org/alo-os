@@ -43,8 +43,8 @@ pub enum Setting {
 
 /// Everything a person has changed about how their machine looks.
 ///
-/// This is what a settings file holds and nothing else: an untouched machine
-/// writes an empty one.
+/// This is what `appearance.toml` holds and nothing else ([`crate::keeping`]):
+/// an untouched machine has no file at all.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Written", into = "Written")]
 pub struct Changes {
@@ -71,7 +71,7 @@ impl Changes {
     }
 
     /// Whether nothing has been changed at all, which is what a fresh machine
-    /// writes to its settings file.
+    /// has, and what a missing file reads as.
     #[must_use]
     pub fn is_untouched(&self) -> bool {
         self.background.is_none()
@@ -199,7 +199,7 @@ impl Changes {
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
-/// than present and null, so an untouched machine writes `{}`.
+/// than present and null, so an untouched machine writes no keys at all.
 #[derive(Default, Serialize, Deserialize)]
 struct Written {
     /// The background, everywhere.
