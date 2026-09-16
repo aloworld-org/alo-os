@@ -1,0 +1,31 @@
+[package]
+name = "alo-access"
+version = "0.0.1"
+description = "What each accessibility setting is, and what it changes."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The values two of these settings change: the palette a shell draws with, the
+# size text is drawn at, and the contrast arithmetic a palette is held to. This
+# crate decides accessibility and never colour, so it reads that crate's tokens
+# and hands back values in its types.
+alo-appearance = { path = "../alo-appearance" }
+# The sentences a person reads about each setting. Hardcoded English is a bug
+# (CLAUDE.md), and a setting nobody can find in their own language is the bug
+# this crate exists to prevent.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+# The file a person's settings are kept in (ADR 0038), in the shape every other
+# settings file in this repository is written in.
+toml = { workspace = true }
+
+[lints]
+workspace = true
+
+# The scheme a palette is asked for, in a test that reads one.
+[dev-dependencies]
+alo-appearance = { path = "../alo-appearance" }

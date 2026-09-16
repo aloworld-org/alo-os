@@ -38,7 +38,7 @@ not run*). Before writing the next task, `git pull` and read the plan as publish
 
 ### 1. What each accessibility setting changes
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-16.** **Depends on:** nothing.
 
 - **Acceptance:** `alo-access` holds a closed list of settings — screen reader on,
   magnifier on and its factor, high contrast, larger text, reduced motion, sticky

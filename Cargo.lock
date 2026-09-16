@@ -27,6 +27,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-access"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-accounts"
 version = "0.0.1"
 dependencies = [
@@ -721,6 +732,7 @@ dependencies = [
 name = "alo-saying"
 version = "0.0.1"
 dependencies = [
+ "alo-access",
  "alo-accounts",
  "alo-answering",
  "alo-appearance",
