@@ -622,14 +622,37 @@ rather than assumes it.
 
 ### 13. With Secure Boot on, the install onto the second disk finishes and boots to the agent service
 
-**Status:** scheduled — **for a machine with at least 15 GB free on the drive
-the distribution's disk lives on**, and either hardware virtualisation or a
-worker limit that holds one emulated run (about fifty minutes) beside building
-the environment. **Depends on:** 12.
+**Status:** ready — on the third PC, with the emulated run already done outside
+any worker's limit (below), so the worker starts from its serial line. It was
+scheduled for a machine with at least 15 GB free and either hardware
+virtualisation or a worker limit that holds one emulated run beside building the
+environment. **Depends on:** 12.
 
 Split from task 12 on 2026-09-16. The bootloader's sandbox now pivots in the
 environment (task 12); nothing after that step has yet been seen to run, so the
 next failure, if there is one, is this task's to read from the serial line.
+
+**The run, measured on the third PC on 2026-09-16, by the supervisor rather than
+a worker.** Under emulation, with Secure Boot on and 159 GB free before it began,
+`the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+went further than any run before it. The installer's root was mounted, the
+download was checked as genuine, and `bootc` said *Deploying container
+image...done (3 minutes)*, with no `bwrap` error. Then it said **`error: Installing
+to disk: No such file or directory (os error 2)`**, and the environment said its
+own sentence that the chosen disk may hold part of alo OS. So task 12's change
+holds, and the next failure is something the install looks for after deploying
+and does not find from inside the bound root — the likely places are the firmware
+and EFI paths, but that is for this task to show from a run, not to assume. The
+whole console is kept on that machine as `C:\dev\setup\task13-install-run.log`.
+
+**And a defect the run showed in the test itself.** After an install that fails,
+the environment waits for a person to turn the computer off, and never powers off
+by itself. The test waits for power-off for
+`processor.allowing(Duration::from_secs(60 * 60))`, which under emulation is
+several hours, so it sat for 71 minutes after the failure was already on the
+serial line until the supervisor stopped the machine. The test should end as soon
+as the environment says the install could not be finished, and report that line,
+the way `alo-updating`'s test ends on *Freezing execution*.
 
 - **Acceptance:**
   `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
