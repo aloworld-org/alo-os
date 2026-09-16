@@ -56,7 +56,7 @@ not run*). Before writing the next task, `git pull` and read the plan as publish
 
 ### 2. The screen reader and the tree it reads
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-16.** **Depends on:** 1.
 
 The agent reads applications through AT-SPI (`docs/contracts/app-adapters.md`'s
 fallback). A screen reader reads the same tree. If the tree is good enough for one it

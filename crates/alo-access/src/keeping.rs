@@ -135,13 +135,15 @@ mod tests {
 
     /// A folder of this test's own.
     fn a_folder() -> std::path::PathBuf {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        // Counted rather than clocked: two folders named in the same
+        // nanosecond are one folder, and a test sharing a folder with another
+        // fails for a reason that has nothing to do with what it tests.
+        static NEXT: AtomicU32 = AtomicU32::new(0);
         let path = std::env::temp_dir().join(format!(
-            "alo-access-{}-{:?}",
+            "alo-access-unit-{}-{}",
             std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
+            NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir_all(&path).unwrap();
         path

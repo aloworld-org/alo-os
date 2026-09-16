@@ -20,15 +20,16 @@ use alo_access::keeping::{at_sign_in, keep_for_this_machine};
 use alo_access::{Magnification, Setting, TurnedOn, WhatItChanges};
 use alo_appearance::Scheme;
 
-/// A folder of this test's own.
+/// A folder of this test's own, named by a counter rather than by the clock:
+/// two folders named in the same nanosecond are one folder, and a test that
+/// shares a folder with another test is a test that fails for no reason.
 fn a_folder() -> std::path::PathBuf {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    static NEXT: AtomicU32 = AtomicU32::new(0);
     let path = std::env::temp_dir().join(format!(
-        "alo-access-test-{}-{:?}",
+        "alo-access-test-{}-{}",
         std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
+        NEXT.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::create_dir_all(&path).unwrap();
     path

@@ -93,8 +93,139 @@ pub const FOCUS_ALWAYS_VISIBLE: Word = Word::saying(
      would act on. Ordinarily it appears once somebody uses the keyboard; this draws it always.",
 );
 
+/// The screen where somebody signs in.
+pub const SIGN_IN: Word = Word::saying("access.sign-in", "signing in")
+    .noting("The screen where somebody signs in. Read aloud as the name of the whole screen.");
+
+/// A list of the people who have an account on this machine.
+pub const WHO_IS_SIGNING_IN: Word = Word::saying("access.who-is-signing-in", "who is signing in")
+    .noting("A list of the people who have an account on this machine.");
+
+/// Where a password is typed.
+pub const THE_PASSWORD: Word = Word::saying(
+    "access.the-password",
+    "password",
+)
+.noting(
+    "Where a password is typed. Never read back, and a reader says only that it is a password field.",
+);
+
+/// The button that signs the chosen person in.
+pub const SIGN_IN_NOW: Word = Word::saying("access.sign-in-now", "sign in")
+    .noting("The button that signs the chosen person in.");
+
+/// The button at the sign-in screen that opens the settings in this crate, before anybody has an account.
+pub const ACCESS_SETTINGS: Word = Word::saying(
+    "access.settings-here",
+    "settings for seeing, hearing and typing",
+)
+.noting(
+    "The button at the sign-in screen that opens the settings in this crate, before anybody has an account. Somebody who needs one of those settings to use the machine must be able to reach it from here.",
+);
+
+/// The whole working area, read as the name of a window.
+pub const THE_DESKTOP: Word = Word::saying("access.the-desktop", "the desktop")
+    .noting("The whole working area, read as the name of a window.");
+
+/// A list of what is open, which a person moves through with the keyboard.
+pub const THE_WINDOWS_OPEN: Word =
+    Word::saying("access.the-windows-open", "the windows that are open")
+        .noting("A list of what is open, which a person moves through with the keyboard.");
+
+/// The strip of applications a person starts things from.
+pub const THE_DOCK: Word = Word::saying("access.the-dock", "the dock")
+    .noting("The strip of applications a person starts things from.");
+
+/// One entry in the dock.
+pub const AN_APPLICATION: Word = Word::saying("access.an-application", "an application")
+    .noting("One entry in the dock. The application's own name is read after this.");
+
+/// The strip that shows what is running, what the agent is doing and what is leaving the machine.
+pub const THE_STATUS_AREA: Word = Word::saying(
+    "access.the-status-area",
+    "what this machine is doing",
+)
+.noting(
+    "The strip that shows what is running, what the agent is doing and what is leaving the machine.",
+);
+
+/// Announced the moment it changes, not found by looking.
+pub const SOMETHING_IS_LEAVING: Word = Word::saying(
+    "access.something-is-leaving",
+    "something is leaving this machine",
+)
+.noting(
+    "Announced the moment it changes, not found by looking. This is the indicator that makes the first law visible, so a person who cannot see the screen is told in words.",
+);
+
+/// Announced when it changes.
+pub const THE_AGENT_IS_WORKING: Word =
+    Word::saying("access.the-agent-is-working", "the agent is working")
+        .noting("Announced when it changes. The agent is the assistant that acts on this machine.");
+
+/// The name of the surface where a change waits for one approval.
+pub const SOMETHING_IS_ASKED: Word = Word::saying(
+    "access.something-is-asked",
+    "the machine is asking you something",
+)
+.noting(
+    "The name of the surface where a change waits for one approval. Read before the sentence itself.",
+);
+
+/// The sentence describing the change, written by the turn that asked.
+pub const WHAT_THE_TURN_WROTE: Word = Word::saying(
+    "access.what-the-turn-wrote",
+    "what will happen if you approve",
+)
+.noting(
+    "The sentence describing the change, written by the turn that asked. It is what the person approves, so it is read whole and never summarised.",
+);
+
+/// The answer that changes nothing.
+pub const SAY_NO: Word = Word::saying("access.say-no", "no")
+    .noting("The answer that changes nothing. Read first, and nothing is chosen for the person.");
+
+/// The answer that carries the change out, once.
+pub const APPROVE_IT: Word = Word::saying("access.approve-it", "approve")
+    .noting("The answer that carries the change out, once.");
+
+/// The window listing what has happened on this machine.
+pub const THE_RECORD: Word = Word::saying("access.the-record", "the record")
+    .noting("The window listing what has happened on this machine.");
+
+/// The list itself.
+pub const WHAT_HAPPENED: Word =
+    Word::saying("access.what-happened", "what has happened").noting("The list itself.");
+
+/// One entry in the record.
+pub const ONE_THING_THAT_HAPPENED: Word =
+    Word::saying("access.one-thing-that-happened", "one thing that happened")
+        .noting("One entry in the record. What it says is read after this.");
+
+/// The settings window.
+pub const SETTINGS: Word =
+    Word::saying("access.settings", "settings").noting("The settings window.");
+
+/// The list of settings.
+pub const WHAT_CAN_BE_CHANGED: Word =
+    Word::saying("access.what-can-be-changed", "what can be changed")
+        .noting("The list of settings.");
+
+/// One setting, which is on or off.
+pub const A_SETTING: Word = Word::saying("access.a-setting", "a setting")
+    .noting("One setting, which is on or off. Which it is now is read after the name.");
+
+/// The button that closes a window.
+pub const CLOSE_THIS_WINDOW: Word = Word::saying("access.close-this-window", "close this window")
+    .noting("The button that closes a window.");
+
+/// The button that moves a window to one side of the screen.
+pub const ARRANGE_THIS_WINDOW: Word =
+    Word::saying("access.arrange-this-window", "move this window")
+        .noting("The button that moves a window to one side of the screen.");
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 9] = [
+pub const EVERY_WORD: [Word; 33] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -104,6 +235,30 @@ pub const EVERY_WORD: [Word; 9] = [
     SLOW_KEYS,
     BOUNCE_KEYS,
     FOCUS_ALWAYS_VISIBLE,
+    SIGN_IN,
+    WHO_IS_SIGNING_IN,
+    THE_PASSWORD,
+    SIGN_IN_NOW,
+    ACCESS_SETTINGS,
+    THE_DESKTOP,
+    THE_WINDOWS_OPEN,
+    THE_DOCK,
+    AN_APPLICATION,
+    THE_STATUS_AREA,
+    SOMETHING_IS_LEAVING,
+    THE_AGENT_IS_WORKING,
+    SOMETHING_IS_ASKED,
+    WHAT_THE_TURN_WROTE,
+    SAY_NO,
+    APPROVE_IT,
+    THE_RECORD,
+    WHAT_HAPPENED,
+    ONE_THING_THAT_HAPPENED,
+    SETTINGS,
+    WHAT_CAN_BE_CHANGED,
+    A_SETTING,
+    CLOSE_THIS_WINDOW,
+    ARRANGE_THIS_WINDOW,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -151,7 +306,11 @@ mod tests {
     #[test]
     fn every_setting_says_what_it_does_in_words_of_its_own() {
         let vocabulary = access_words().unwrap();
-        assert_eq!(EVERY_WORD.len(), Setting::ALL.len());
+        assert_eq!(
+            EVERY_WORD.len(),
+            Setting::ALL.len() + crate::tree::EVERY_NAME_A_READER_SAYS,
+            "a word was added to this crate and to neither list it belongs to"
+        );
         for setting in Setting::ALL {
             let word = setting.word();
             assert!(
