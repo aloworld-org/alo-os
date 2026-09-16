@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 42] = [
+pub const EVERY_LIST: [&str; 43] = [
     "alo-access",
     "alo-accounts",
     "alo-answering",
@@ -305,7 +305,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 42] = [
+    const ONE_STRING_EACH: [(&str, &str); 43] = [
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
