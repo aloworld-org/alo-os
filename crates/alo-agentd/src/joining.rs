@@ -25,10 +25,30 @@
 //! every network not yet joined is joined. Nothing wakes on an interval: a
 //! machine whose networks do not change costs nothing for following them.
 //!
-//! A network that **goes** needs nothing done: the kernel drops a membership
-//! with the interface it was on, and forgetting it here means the same interface
-//! coming back — a cable pulled and plugged in again, an interface recreated with
-//! a new index — is joined again rather than assumed joined.
+//! # A network that goes is left, and a membership is never assumed
+//!
+//! A network that **goes** is left, and not only forgotten. Measured on this
+//! kernel (`docs/quirks.md`): a link set down keeps its interface in the group,
+//! but a link **deleted** — a cable re-laid, a USB adapter pulled, the far end's
+//! namespace ending — takes the interface's membership with it and leaves the
+//! **socket's** behind, at an interface number nothing has. A second join at that
+//! number is refused `EADDRINUSE` before the kernel looks for the interface at
+//! all. So a socket that only forgot would, on an interface given that number
+//! again, count itself joined while no interface was in the group — a machine
+//! nobody on that cable ever finds — and would carry one more dead membership
+//! for every cable pulled.
+//!
+//! For the same reason a join refused `EADDRINUSE` is **taken afresh** — left
+//! and joined again — rather than read as *already joined*: this file joins only
+//! networks it does not hold, so a membership the socket holds there anyway is
+//! one it did not see go, and whether an interface is behind it is exactly what
+//! the refusal does not say. The two halves overlap on purpose: leaving is what
+//! keeps dead memberships from piling up, and taking a join afresh is what
+//! covers a cable deleted and re-laid between two readings of the interfaces,
+//! where nothing was seen to go and so nothing was left.
+//! `crate::two_machines_with_no_ipv4_find_each_other_again` is the measurement:
+//! with both halves removed, a cable re-laid at the numbers it first had is
+//! never found; with either one alone, it is.
 //!
 //! A routing socket that will not open at start is a line in the service log and
 //! a machine joined on the networks it had at start — found where it was, and
@@ -156,7 +176,12 @@ impl Joining {
         };
         let now = link_local_networks(&reported);
         let mut joined = self.joined.lock().unwrap_or_else(PoisonError::into_inner);
-        joined.retain(|network| now.contains(network));
+        let (kept, gone): (Vec<_>, Vec<_>) =
+            joined.drain(..).partition(|network| now.contains(network));
+        *joined = kept;
+        for network in &gone {
+            left(discovery, network);
+        }
         let new = now
             .into_iter()
             .filter(|network| !joined.contains(network))
@@ -168,11 +193,145 @@ impl Joining {
 
 /// Join `discovery` at `ff02::fb` on `network`'s interface.
 ///
-/// Already joined is joined: an interface the kernel kept the membership on
-/// across a change this file did not see is not a network that failed.
+/// A membership the socket already holds there is **taken afresh** — left, and
+/// joined again — because this is called only for a network this file does not
+/// hold, and such a membership may be one a deleted interface with the same
+/// number left behind, with no interface in the group behind it. Where the
+/// interface did keep it, leaving and joining again costs one report on the
+/// link.
+///
+/// # Errors
+/// What the kernel answered the join with — the second one, where there were
+/// two: an interface that went since the networks were read, and everything a
+/// join can fail with.
 fn join(discovery: &UdpSocket, network: &Network) -> Result<(), std::io::Error> {
     match discovery.join_multicast_v6(&THE_IPV6_ADDRESS, network.index()) {
-        Err(why) if why.kind() == std::io::ErrorKind::AddrInUse => Ok(()),
+        Err(why) if why.kind() == std::io::ErrorKind::AddrInUse => {
+            left(discovery, network);
+            discovery.join_multicast_v6(&THE_IPV6_ADDRESS, network.index())
+        }
         joined => joined,
+    }
+}
+
+/// Leave `ff02::fb` on `network`'s interface, whether or not the interface is
+/// still there.
+///
+/// Nothing is said when the kernel refuses: its one refusal is that the socket
+/// held no membership there, and then there was nothing to leave.
+fn left(discovery: &UdpSocket, network: &Network) {
+    drop(discovery.leave_multicast_v6(&THE_IPV6_ADDRESS, network.index()));
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use std::net::{Ipv4Addr, Ipv6Addr, UdpSocket};
+
+    use alo_nearby::THE_IPV6_ADDRESS;
+
+    use super::{join, left};
+    use crate::networks::{
+        IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface, Network, link_local_networks,
+    };
+    use crate::route_messages::reported_by_the_kernel;
+
+    /// A network numbered `index`, as `crate::networks` reads one.
+    fn numbered(index: u32) -> Network {
+        link_local_networks(&[Interface {
+            index,
+            name: format!("if{index}"),
+            flags: IFF_UP | IFF_RUNNING | IFF_MULTICAST,
+            addresses: Vec::new(),
+            ipv6: vec!["fe80::1".parse().unwrap()],
+        }])
+        .into_iter()
+        .next()
+        .unwrap()
+    }
+
+    /// This machine's loopback interface as a network a socket can be joined
+    /// on — the one interface every test host has.
+    fn loopback() -> Network {
+        numbered(
+            reported_by_the_kernel()
+                .unwrap()
+                .into_iter()
+                .find(|interface| interface.addresses.contains(&Ipv4Addr::LOCALHOST))
+                .unwrap()
+                .index,
+        )
+    }
+
+    /// Whether the interface numbered `index` is in `ff02::fb`, as
+    /// `/proc/net/igmp6` lists it.
+    fn in_the_group(index: u32) -> bool {
+        std::fs::read_to_string("/proc/net/igmp6")
+            .unwrap()
+            .lines()
+            .map(|line| line.split_whitespace().collect::<Vec<_>>())
+            .any(|words| {
+                words.first() == Some(&index.to_string().as_str())
+                    && words.get(2) == Some(&"ff0200000000000000000000000000fb")
+            })
+    }
+
+    /// **A membership the socket already holds is still held after joining again**:
+    /// the join succeeds, and the socket and the interface are both still in
+    /// the group afterwards.
+    #[test]
+    fn a_membership_the_socket_already_holds_is_still_held_after_joining_again() {
+        let network = loopback();
+        let socket = UdpSocket::bind((Ipv6Addr::UNSPECIFIED, 0)).unwrap();
+        socket
+            .join_multicast_v6(&THE_IPV6_ADDRESS, network.index())
+            .unwrap();
+
+        join(&socket, &network).unwrap();
+        assert!(in_the_group(network.index()));
+        assert_eq!(
+            socket
+                .join_multicast_v6(&THE_IPV6_ADDRESS, network.index())
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::AddrInUse,
+            "a membership taken afresh is not held"
+        );
+    }
+
+    /// **A network that went is left**: the socket holds no membership there
+    /// afterwards, so an interface given that number again is joined for real.
+    #[test]
+    fn a_network_that_went_is_left() {
+        let network = loopback();
+        let socket = UdpSocket::bind((Ipv6Addr::UNSPECIFIED, 0)).unwrap();
+        join(&socket, &network).unwrap();
+
+        left(&socket, &network);
+        socket
+            .join_multicast_v6(&THE_IPV6_ADDRESS, network.index())
+            .unwrap();
+    }
+
+    /// **Leaving a network never joined is nothing**, and joining it afterwards
+    /// is an ordinary join.
+    #[test]
+    fn leaving_a_network_never_joined_is_nothing() {
+        let network = loopback();
+        let socket = UdpSocket::bind((Ipv6Addr::UNSPECIFIED, 0)).unwrap();
+        left(&socket, &network);
+        join(&socket, &network).unwrap();
+    }
+
+    /// **A join at a number no interface has is refused**, never counted as
+    /// joined — the refusal `crate::networks::joined_on` turns into a line in
+    /// the service log.
+    #[test]
+    fn a_join_where_no_interface_is_is_refused() {
+        let socket = UdpSocket::bind((Ipv6Addr::UNSPECIFIED, 0)).unwrap();
+        assert!(join(&socket, &numbered(999_999)).is_err());
     }
 }

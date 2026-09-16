@@ -1482,7 +1482,30 @@ reports as *it only works if I reboot after docking*.
 
 ### 30. Two machines with no IPv4 address between them find each other again when the cable comes back
 
-**Status:** ready. **Depends on:** 23, 29.
+**Status:** **Done, 2026-09-16.** Measured on a real kernel by
+`crates/alo-agentd/src/two_machines_with_no_ipv4_find_each_other_again.rs` — two
+daemons, each serving as `src/main.rs` does, on one `veth` carrying link-local IPv6
+only: each finds the other with its interface and they pair; the studio's link set
+down leaves neither found by the other, a proposal refused before anything is
+sent, and both doors answering; set up again, each finds the other on the same
+interface with no restart; the cable deleted leaves neither found; re-laid, each
+finds the other at the new address **with the new interface**, a connection to the
+old index is refused by the kernel and a measurement there finds nothing; a
+proposal to the paired machine then pairs, measured on the new interface; and the
+cable deleted again and re-laid **at the numbers it first had** is found again.
+What the studio answers is the same bytes throughout. **The test found a bug, fixed
+in the same change:** a link deleted leaves the socket's IPv6 membership behind at
+its number, a join there answers `EADDRINUSE`, and `crate::joining` read that as
+*already joined* — so a cable re-laid at that number was never found.
+`joining.rs` now leaves `ff02::fb` on a network that goes and takes a refused join
+afresh; with both removed the fixture fails at its last step, with either alone it
+passes. **The far end's namespace is not ended**, because the studio's namespace is
+the studio's service, which the criterion keeps running: the cable is deleted
+instead, which is what a namespace ending does to a `veth` (task 29). Contract:
+`docs/contracts/local-network-wire.md` (*A cable with no IPv4 address, pulled and
+plugged in again*, new, additive). `docs/quirks.md` records the kernel's behaviour.
+The report is `docs/autonomy/updates/a-link-local-cable-pulled-and-plugged-in-again.md`.
+**Depends on:** 23, 29.
 
 *Machines find each other with zero configuration — no addresses typed.* Task 29
 measured a cable pulled and plugged in again over **IPv4**. Over IPv6 link-local
@@ -1514,3 +1537,43 @@ at an index that no longer exists.
   person or an agent, no trusted-network setting, what crosses the wire unchanged.
   No interval and no polling — the kernel's notification is the only thing that
   wakes any of it. Nothing in `alo-shell`, nothing in `image/`.
+
+### 31. A cable deleted and re-laid between two readings is still joined, over IPv4 as well
+
+**Status:** ready. **Depends on:** 28, 29, 30.
+
+*Machines find each other with zero configuration.* Task 30 found that a link
+deleted leaves a socket's multicast membership behind at the interface's number,
+and that a join there answers `EADDRINUSE` whether or not any interface is in the
+group — and fixed it for the IPv6 group in `crate::joining`. **The IPv4 side has
+the same shape and nothing has measured it.** `crate::responding` holds one
+datagram socket per network, joined to `224.0.0.251` on that network, and matches a
+responder to its network by the interface's **index** alone (`answer_on` retains a
+responder whose index is still reported); `crate::listeners` matches by index in the
+same way. So a cable deleted and re-laid at the same number **between two readings
+of the interfaces** — two routing messages the service reads in one round, which is
+what a dock re-enumerating or a namespace being rebuilt looks like — keeps the old
+responder, held to that number, whose membership belonged to the interface that
+went. The machine answers a question it never receives, and is not found on that
+network until the service restarts. The join helper beside it
+(`responding.rs`, `join_multicast_v4` refused `EADDRINUSE` read as joined) is the
+same assumption task 30 removed.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does over
+  a `veth` carrying IPv4, with a far end that asks who is here: the cable deleted
+  and re-laid at the same interface number **before the service reads the
+  interfaces again** — decided in the test how that ordering is made certain rather
+  than hoped for, and written up — is found by the far end's first question after
+  the service has followed the kernel, tested, and the port is reached there,
+  tested; the same with the cable deleted and re-laid at a new number, tested; how
+  a responder and a listener tell a re-laid interface from the one that went (the
+  interface's own identity as the kernel reports it, a membership taken afresh, or
+  another reading the kernel really gives) is decided in the crate and written up
+  with the reason; a join refused `EADDRINUSE` on a socket that did not join there
+  is never counted as joined without the interface being in the group, tested; and
+  what is said is the same bytes throughout, byte for byte.
+- **Constraint:** ADR 0003 and ADR 0044 as they stand: no network chosen by a
+  person or an agent, no trusted-network setting, what crosses the wire unchanged.
+  No interval and no polling — the kernel's notification is the only thing that
+  wakes any of it. What reality does that the specification does not say goes in
+  `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

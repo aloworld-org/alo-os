@@ -407,6 +407,26 @@ reader of it can rely on while a machine's networks come and go.
   that network, and the port is listened on there the next time the kernel says
   the network changed and it is free.
 
+## A cable with no IPv4 address, pulled and plugged in again
+
+Added 2026-09-16, additively. Nothing on this wire changes; this says what a
+reader of it can rely on when the network that comes and goes carries IPv6
+link-local addresses only.
+
+- **Pulled — its link set down, or the cable gone altogether — the two machines
+  are not found by each other**, a proposal to the other machine is refused before
+  anything is sent, and both services go on answering their person's door.
+- **Plugged in again, each finds the other with no restart**, at the link-local
+  address it answers from now and **with the interface it was heard on now**. A
+  cable re-laid is a new interface, usually with a new number, and a link-local
+  address is written down with the new one — including where the new interface
+  happens to have the number an old one had.
+- **Nothing is dialled at an interface that is gone.** No address is kept: a
+  proposal after the cable comes back is measured at that moment, on the
+  interface the machine was heard on, and the machine asked measures the
+  proposer at the address its connection came from.
+- **What is said is the same bytes before and after.**
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

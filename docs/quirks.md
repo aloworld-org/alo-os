@@ -1051,6 +1051,44 @@ readers take each other's messages). The responders now say when they move
 on it beside them and takes the responders again. Nothing wakes on an interval.
 **Date:** 2026-09-16.
 
+### The Linux kernel — an IPv6 membership outlives a deleted interface on the socket that joined it, and a join there then says `EADDRINUSE`
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`); measured on 2026-09-16 by
+`crates/alo-agentd/src/two_machines_with_no_ipv4_find_each_other_again.rs`.
+**Behaviour:** RFC 3493 says `IPV6_JOIN_GROUP` joins a group on an interface, and
+nothing about what becomes of the membership when the interface goes. On a cable
+carrying link-local IPv6 only, between two machines each running the service, with
+a probe socket of the studio's own joined to `ff02::fb` beside the service's:
+
+- **A link set down keeps the membership, on the socket and on the interface.**
+  With the studio's end set down, a second join from the probe at that interface's
+  number answers `EADDRINUSE`, and `/proc/net/igmp6` still lists the interface in
+  `ff02::fb`. Reception's end, whose carrier went, stops being reported running,
+  so the service no longer counts it among its networks. Set up again, both ends
+  come back at the same index and the same link-local address.
+- **A link deleted takes the interface's membership and leaves the socket's.**
+  With the cable deleted, `/proc/net/igmp6` lists `ff02::fb` on no interface at
+  that number — and a join from the probe at that number **still answers
+  `EADDRINUSE`**, because the kernel checks the socket's own list of memberships
+  before it looks for the interface. The socket holds it until it leaves it or
+  closes.
+- **So an interface given that number again is not in the group, and a join says
+  it is.** `ip link add … index N` in a namespace gives a re-laid cable the number
+  it had. Measured: with `crate::joining` reading `EADDRINUSE` as *already joined*
+  and not leaving a network that went, the re-laid cable was counted joined on both
+  machines and reception never found the studio.
+- **A cable re-laid without a number is a new index at each end and a new
+  link-local address** (a `veth` takes a random MAC), and a TCP connection to the
+  old scoped address is refused by the kernel before anything is sent.
+
+**Our response:** `crate::joining` leaves `ff02::fb` on a network that is no longer
+reported, and a join refused `EADDRINUSE` is left and joined again rather than
+assumed; with both removed the fixture fails at its last step, and with either one
+alone it passes. A proposal is never dialled at a kept address: the machine is
+looked for at the moment (`crate::looking`), so after a re-lay it is found and
+dialled with the new interface.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

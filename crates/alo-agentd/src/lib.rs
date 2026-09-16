@@ -291,6 +291,8 @@ pub mod told_of_a_move;
 pub mod trusting;
 #[cfg(all(test, target_os = "linux"))]
 mod two_machines_with_no_ipv4;
+#[cfg(all(test, target_os = "linux"))]
+mod two_machines_with_no_ipv4_find_each_other_again;
 #[cfg(target_os = "linux")]
 pub mod unhosted;
 #[cfg(target_os = "linux")]
