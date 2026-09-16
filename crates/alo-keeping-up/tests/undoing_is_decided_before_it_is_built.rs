@@ -6,7 +6,7 @@
 //! machine this repository installs is formatted `ext4`, which has no snapshot
 //! at all, and every road to one runs through another lane's crate or an
 //! accepted decision.
-//! [ADR 0044](../../../docs/decisions/0044-what-undoing-rewinds-to.md) sets
+//! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) sets
 //! the roads out with what each costs and recommends one, and nothing is built
 //! until it is answered.
 //!
@@ -40,10 +40,10 @@ use std::{
 };
 
 /// The decision's number, as `docs/decisions/README.md` says one is cited.
-const THE_NUMBER: &str = "0044";
+const THE_NUMBER: &str = "0045";
 
 /// The decision's file, relative to the repository.
-const THE_DECISION: &str = "docs/decisions/0044-what-undoing-rewinds-to.md";
+const THE_DECISION: &str = "docs/decisions/0045-what-undoing-rewinds-to.md";
 
 /// Where every decision lives.
 const THE_DECISIONS: &str = "docs/decisions";

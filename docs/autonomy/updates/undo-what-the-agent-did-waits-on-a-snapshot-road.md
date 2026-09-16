@@ -6,15 +6,15 @@
 **Responsible contributor:** the machine-keeps-itself worker, in `C:\dev\alo-os`
 **Status:** ready for integration **as a decision**. Task 4 itself is **not
 done** and is marked *blocked* in the plan: its code waits on the owner's
-answer to ADR 0044.
+answer to ADR 0045.
 
 ## What changed
 
 | Path | What |
 |---|---|
-| `docs/decisions/0044-what-undoing-rewinds-to.md` | New, **proposed**. The roads to undo, what each costs, a recommendation, and what holds under every road |
+| `docs/decisions/0045-what-undoing-rewinds-to.md` | New, **proposed**. The roads to undo, what each costs, a recommendation, and what holds under every road |
 | `crates/alo-keeping-up/tests/undoing_is_decided_before_it_is_built.rs` | New. Holds the ADR to existing once, standing, being named by the plan and setting out four costed roads — and holds the code to waiting while it is proposed |
-| `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | Task 4's status is *blocked — waits on the owner's answer to ADR 0044*, with what was found and what was decided |
+| `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | Task 4's status is *blocked — waits on the owner's answer to ADR 0045*, with what was found and what was decided |
 | `docs/autonomy/updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md` | This report |
 
 No product code changed. No record kind, no answer about undoing and no sentence
@@ -84,11 +84,11 @@ Every way forward runs through something a worker may not choose alone:
 
 The standing instructions for this lane say that when the only way forward runs
 through contradicting an ADR, narrowing a promise or another lane's partition,
-the decision itself is the work. ADR 0044 is that work.
+the decision itself is the work. ADR 0045 is that work.
 
 ## Decisions
 
-**Recommended in ADR 0044 (for the owner):** option A — install with `btrfs`,
+**Recommended in ADR 0045 (for the owner):** option A — install with `btrfs`,
 make each person's home its own subvolume, and bracket every changing turn with
 two read-only snapshots kept outside every grant; undo learns what changed from
 the two snapshots with the base's tools, refuses if the home no longer matches
@@ -96,7 +96,7 @@ the *after* snapshot on those paths, and restores from *before*. Option D
 (nothing can be undone yet, said honestly) is the fallback; B (our copy) and C
 (inverses) are set out and argued against.
 
-**Settled in ADR 0044 under every option, so the next worker does not reopen
+**Settled in ADR 0045 under every option, so the next worker does not reopen
 them:**
 
 - which entries can never be undone and the reason a person is told — *it left
@@ -118,7 +118,7 @@ them:**
 *never, and why* answers are true under every option, and could be built today.
 They were not, because they are half of task 4's acceptance, and handing over
 half a task as though it were the task is the one thing this lane may not do.
-ADR 0044's recommendation says they are built first once it is accepted.
+ADR 0045's recommendation says they are built first once it is accepted.
 
 **Why the plan says *blocked* and not *Done*.** The loop steps over a blocked
 task and re-selects an unmarked one; marking it done would claim an undo that
@@ -129,8 +129,8 @@ sentences include *this can be undone* and *this cannot*.
 
 | Plan's criterion | State |
 |---|---|
-| For a verb the record says ran, `alo-keeping-up` answers whether it can be undone, and says plainly when it cannot | **Decided** (ADR 0044, point 1), **not built** |
-| What can be undone is undone through the mechanism that made it undoable, never by guessing inverses | **Not buildable on the shipped machine** — the decision is ADR 0044 |
+| For a verb the record says ran, `alo-keeping-up` answers whether it can be undone, and says plainly when it cannot | **Decided** (ADR 0045, point 1), **not built** |
+| What can be undone is undone through the mechanism that made it undoable, never by guessing inverses | **Not buildable on the shipped machine** — the decision is ADR 0045 |
 | Undoing is recorded, naming the entry it undid | **Decided** (point 4), **not built** |
 | Undoing requires the person's approval | **Decided** (point 2), **not built** |
 | *(this handover)* the decision exists, is named by the plan, sets out costed roads, and the code waits on it | **Built and tested** |
@@ -150,7 +150,7 @@ every crate reaches `ring` and Windows has no C compiler. Build directory
   a status line naming no status, a plan without the pointer, a road without a
   cost, an `Undone` entry and an `undoing.rs` beside a proposed decision) and
   requires it refused.
-- `cargo test -p alo-citing` — 31 tests pass: every citation of ADR 0044
+- `cargo test -p alo-citing` — 31 tests pass: every citation of ADR 0045
   resolves, and the decision is cited the way the convention requires.
 - `cargo test plan::` in `tools/kernel-loop` (its own manifest, build directory
   `/root/alo-builds/kernel-loop-gates`) — 12 pass, including
@@ -163,7 +163,7 @@ machine — nothing here touches the machine.
 ## Remaining limitations
 
 - The measurements option A needs before anything is built are listed in
-  ADR 0044 and not taken: whether `bootc install to-disk --filesystem btrfs`
+  ADR 0045 and not taken: whether `bootc install to-disk --filesystem btrfs`
   makes subvolumes of its own, which capability a snapshot needs on the pinned
   kernel, and whether an update and a return leave a home subvolume alone.
   Taking them means loop-mounting a disk in the shared WSL box, which
@@ -175,9 +175,9 @@ machine — nothing here touches the machine.
 - **CHANGELOG.md:** the user-readable description above, under *decided, not
   yet built*.
 - **ROADMAP.md:** under ★ *Undo what the agent did*, a sub-line: *the road is a
-  decision — ADR 0044, proposed 2026-09-15; the shipped disk (ext4) has no
+  decision — ADR 0045, proposed 2026-09-15; the shipped disk (ext4) has no
   snapshot*. Nothing ticked.
 - **QUEUE.md / STATE.md:** machine-keeps-itself plan task 4 **blocked on
-  ADR 0044**, not done; task 5 waits with it. Owner's question: accept option A
+  ADR 0045**, not done; task 5 waits with it. Owner's question: accept option A
   (and which lanes carry the installer argument, the home subvolume, the
   bracket and the broker's verb), or D.

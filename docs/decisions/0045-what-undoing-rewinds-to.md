@@ -1,4 +1,4 @@
-# ADR 0044 — What undoing rewinds to
+# ADR 0045 — What undoing rewinds to
 
 **Status:** proposed — the owner decides. Written by task 4 of
 `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (*Undo what the agent

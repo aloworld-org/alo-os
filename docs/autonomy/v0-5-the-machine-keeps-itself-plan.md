@@ -194,7 +194,7 @@ have never heard of.
 
 ### 4. Undo what the agent did
 
-**Status:** blocked — waits on the owner's answer to ADR 0044. **Depends on:** 3.
+**Status:** blocked — waits on the owner's answer to ADR 0045. **Depends on:** 3.
 
 **Not done; decided as far as a worker may, 2026-09-15.** The road this task
 names does not exist on the machine we install: `crates/alo-installing` formats
@@ -206,7 +206,7 @@ installer plan's, the snapshot at turn start is lane A's `alo-turn`, the
 privilege is the broker plan's, our own copy contradicts ADR 0011 and this
 task's constraint, and undoing nothing narrows a ★ line. So the work handed
 over is the decision:
-`docs/decisions/0044-what-undoing-rewinds-to.md`, **proposed**, recommending a
+`docs/decisions/0045-what-undoing-rewinds-to.md`, **proposed**, recommending a
 btrfs home subvolume with a read-only snapshot either side of a changing turn
 (option A), with *nothing can be undone yet, said honestly* (option D) as the
 fallback and our own copy (B) and inverses from the record (C) rejected. It
