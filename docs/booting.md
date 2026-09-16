@@ -320,8 +320,15 @@ That disk may now hold part of alo OS; nothing else on this computer was
 changed.* **The serial line now says why**, in the installer's own words:
 *Installing bootloader: Probing bootupd --filesystem support* and *bwrap:
 pivot_root: Invalid argument* (`docs/quirks.md`, *in the boot environment, the
-image deploys and the bootloader's probe dies in `bwrap`'s `pivot_root`*). Making
-that step work is the installer plan's task 12. Written up in
+image deploys and the bootloader's probe dies in `bwrap`'s `pivot_root`*). **The
+cause is located** from a boot of the environment's own initramfs: the
+environment runs from the kernel's initial root, which has no mount above it, and
+`pivot_root(2)` refuses exactly that. So the installer's unit now runs under the
+environment bound again at `/run/alo/installing/root`
+(`image/installing/run-alo-installing-root.mount`, taken as the unit's
+`RootDirectory=`), where the same `bwrap` pivots and starts `bootupctl`. Whether
+the install then finishes and the disk boots to `alo-agentd` is the installer
+plan's task 13, not yet run. Written up in
 `docs/autonomy/updates/with-secure-boot-on-the-staged-loader-starts.md` and
 `docs/autonomy/updates/the-boot-environment-says-why-an-install-stopped.md`.
 

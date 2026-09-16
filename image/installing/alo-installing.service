@@ -7,8 +7,15 @@ DefaultDependencies=no
 After=basic.target nm-initrd.service
 Wants=nm-initrd.service
 
+# Its root: the environment bound onto a mount of its own, because the
+# installer's sandbox cannot pivot from the initramfs's initial root
+# (`run-alo-installing-root.mount`).
+Requires=run-alo-installing-root.mount
+After=run-alo-installing-root.mount
+
 [Service]
 Type=oneshot
+RootDirectory=/run/alo/installing/root
 ExecStart=/usr/bin/alo-installing
 
 # The machine's log. What a person reads is written by alo-installing itself to

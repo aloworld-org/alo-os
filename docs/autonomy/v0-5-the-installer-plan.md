@@ -547,8 +547,9 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** ready. **Depends on:** 2, 12 — its acceptance boots a virtual-machine
-install, and none finishes until task 12's bootloader fault is answered.
+**Status:** ready. **Depends on:** 2, 13 — its acceptance boots a virtual-machine
+install, and none has yet been seen to finish: task 12 answered the bootloader's
+sandbox fault, and task 13 runs the install.
 
 Added 2026-09-16 by [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md),
 accepted that day: ★ *undo what the agent did* rewinds from the base's own
@@ -577,7 +578,31 @@ this task comes before task 6.
 
 ### 12. With Secure Boot on, the install finishes and boots
 
-**Status:** ready. **Depends on:** 9.
+**Status:** **Done, 2026-09-16**, for the part this task ends at since its split
+(`updates/the-installers-sandbox-pivots-under-its-own-root.md`): the reason
+`bwrap` cannot `pivot_root` is located from a run and written into
+`docs/quirks.md`, and the environment is changed, by configuration only, so the
+installer runs where the base's own sandboxing works — shown in a boot of the
+environment's own initramfs. **The install that finishes and boots with Secure
+Boot on is task 13**, below. **Depends on:** 9.
+
+**What the run found.** The environment runs from the kernel's initial root
+file system — it never switches root, because there is no root to switch to —
+and `pivot_root(2)` refuses any caller whose root is that absolute root. Booting
+the base's kernel with an initramfs made from `alo-installing.conf` by the base's
+own `dracut`, the same `bwrap` line `bootc` runs said *bwrap: pivot_root: Invalid
+argument* from a unit on that root (`/proc/self/mountinfo`: `1 1 0:2 / /`, its own
+parent), and started `bootupctl` from a unit whose root is the environment bound
+again (`122 110 0:2 / /`). `image/installing/run-alo-installing-root.mount` binds
+it (`rbind,rslave`) and `alo-installing.service` takes it as `RootDirectory=`;
+`crates/alo-installing/tests/what_the_environment_carries.rs` refuses the unit on
+the initramfs's root again, a plain or shared bind, and a root bound elsewhere.
+
+**Split, 2026-09-16.** The acceptance's install run did not fit the machine that
+took this task: the drive holding the distribution's disk had 5.4 GB free, under
+this plan's 15 GB, and one emulated run is most of an hour on top of building the
+environment. The plan's own rule is to say so and stop rather than start the run,
+and *a task that cannot finish inside the worker's limit is a phase*.
 
 Split from task 9 on 2026-09-16, when the environment first said why the install
 stopped: the image deploys, then `bootc install` fails *Installing bootloader:
@@ -590,15 +615,32 @@ rather than assumes it.
   located and written into `docs/quirks.md` with its evidence, from a run rather
   than from reading; the environment is changed so the installer runs where the
   base's own sandboxing works — configuring how the environment starts, never
-  patching `bootc`, `bootupd` or `bwrap` (ADR 0011); and
+  patching `bootc`, `bootupd` or `bwrap` (ADR 0011). *(The install run that was
+  also here is task 13.)*
+- **Constraint:** Secure Boot is never switched off to make the test pass (ADR 0033
+  §4). No shim, loader or installer is patched or built by us (ADR 0011).
+
+### 13. With Secure Boot on, the install onto the second disk finishes and boots to the agent service
+
+**Status:** scheduled — **for a machine with at least 15 GB free on the drive
+the distribution's disk lives on**, and either hardware virtualisation or a
+worker limit that holds one emulated run (about fifty minutes) beside building
+the environment. **Depends on:** 12.
+
+Split from task 12 on 2026-09-16. The bootloader's sandbox now pivots in the
+environment (task 12); nothing after that step has yet been seen to run, so the
+next failure, if there is one, is this task's to read from the serial line.
+
+- **Acceptance:**
   `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
   passes **with Secure Boot on** — the staged loader starts, the environment pulls
   the pinned release, verifies it, installs onto the second disk with the first
   disk's Windows partitions unchanged, and the second disk boots to `alo-agentd` —
-  with the run pasted into the report.
+  with the run pasted into the report. Whatever stops it next goes into
+  `docs/quirks.md` with its console, and is changed by configuring the
+  environment, not by patching an engine.
 - **Constraint:** Secure Boot is never switched off to make the test pass (ADR 0033
-  §4). No shim, loader or installer is patched or built by us (ADR 0011). Each
-  emulated run takes most of an hour and leaves large disks behind, so a worker
+  §4). No shim, loader or installer is patched or built by us (ADR 0011). A worker
   checks for 15 GB free before every run and removes the run's disks and images
   when it ends, pass or fail. If a single run cannot fit inside the worker's limit,
   that is a finding for the plan, not a reason to leave a run behind.

@@ -1,0 +1,26 @@
+[Unit]
+# The whole environment again, bound onto a directory, so the installer can be
+# given a root that is a mount of its own.
+#
+# The initramfs is the kernel's initial root file system, and the environment
+# never switches out of it: there is no root to switch to. The initial root has
+# no mount above it, and `pivot_root(2)` refuses a caller whose root has none
+# (*EINVAL*). `bootc install` runs the boot loader's installer inside `bwrap`,
+# and `bwrap` always pivots — so run from the initial root, every install
+# stopped at the boot loader (`docs/quirks.md`, *the bootloader's probe dies in
+# `bwrap`'s `pivot_root`*). `alo-installing.service` takes this mount as its
+# root (`RootDirectory=`), which systemd moves onto `/` in the service's own
+# namespace: the same files, on a mount that has one above it, where the base's
+# own sandboxing works unchanged. Configuration, not a patch to anything (ADR 0011).
+Description=alo OS installer: the environment, as a root the installer's sandbox can pivot from
+DefaultDependencies=no
+Before=alo-installing.service
+
+[Mount]
+What=/
+Where=/run/alo/installing/root
+Type=none
+# Every mount under `/` comes too — the devices, the kernel's own file systems,
+# `/run` with the log's and the network manager's sockets. Slave, so nothing the
+# installer mounts under its root spreads back into the environment's.
+Options=rbind,rslave

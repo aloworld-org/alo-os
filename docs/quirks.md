@@ -738,17 +738,52 @@ deployment through `bwrap`, and `bwrap`'s `pivot_root(2)` answering `EINVAL`. Th
 2026-09-15 entry above met the same step as *No such file or directory*, before
 `bwrap` and `bootupctl` were carried; carrying them moved the failure one call
 further, to here.
-**Not yet located**, and not assumed: `pivot_root(2)` documents `EINVAL` for a
-caller whose current root is the initial RAM filesystem, and `alo-installing`
-runs from the initramfs's root without switching out of it — which fits, and is
-a reading, not a measurement. Finding it from a run, and changing how the
-environment starts rather than patching `bootc`, `bootupd` or `bwrap` (ADR 0011),
-is the installer plan's task 12.
-**Our response:** none to the engines. The environment now notes the last lines
-any failing program complained of on the machine's serial lines and its log —
-never on the screen, whose sentences name no machinery (`docs/features.md`) — so
-the next failure is read from the console rather than found by elimination.
-**Upstream:** not reported; not yet known to be theirs.
+**Located from a run, 2026-09-16:** the installer runs from the kernel's initial
+root file system, and `pivot_root(2)` refuses any caller whose root mount has no
+mount above it. `bootc` 1.15.1 starts the probe as `bwrap --bind <root> / --proc
+/proc --dev-bind /dev /dev --tmpfs … bootupctl backend install --help` (the
+arguments are in its binary beside *Running bootupctl via bwrap in*), and
+`bwrap` 0.10.0 always pivots. The kernel's `do_pivot_root` answers `EINVAL` when
+the current root is the *absolute root*, a mount that is its own parent — and the
+environment never switches out of the initramfs, because there is no root to
+switch to. The pinned kernel has no option that changes this (its `config`
+names none). Measured by booting the base's own kernel with an initramfs made by
+the base's own `dracut` from `image/installing/alo-installing.conf` plus two
+diagnostic units, run one after the other, each printing `/proc/self/mountinfo`
+and then running that same `bwrap` line (QEMU q35, direct kernel boot, TCG, no
+disks attached):
+
+```
+ALO-DIAG-bare-BEGIN                       (a unit on the initramfs's own root)
+1 1 0:2 / / rw shared:1 - rootfs rootfs rw,size=1401480k,…
+bwrap: pivot_root: Invalid argument
+ALO-DIAG-bare-END
+ALO-DIAG-rooted-BEGIN                     (RootDirectory=/run/alo/installing/root)
+122 110 0:2 / / rw shared:44 master:1 - rootfs rootfs rw,size=1401480k,…
+Usage: bootupctl backend install [OPTIONS] <DEST_ROOT>
+ALO-DIAG-rooted-END
+```
+
+Mount `1`'s parent is `1`: the absolute root, and `bwrap` is refused. Mount
+`122`'s parent is `110`: the same files, bound onto a directory and moved onto
+`/` by systemd in the unit's own namespace, and the same `bwrap` pivots and
+starts `bootupctl`. Secure Boot plays no part in this: the refusal is the
+kernel's, whatever started it.
+**Our response:** none to the engines (ADR 0011). The environment binds itself
+again, whole and with its mounts, at `/run/alo/installing/root`
+(`image/installing/run-alo-installing-root.mount`, `Options=rbind,rslave`), and
+`alo-installing.service` takes that as its root (`RootDirectory=`), requiring and
+waiting for the mount. `crates/alo-installing/tests/what_the_environment_carries.rs`
+holds both units to that and refuses the service back on the initramfs's root,
+a plain `bind`, a shared bind, and a root bound anywhere else. Earlier, the
+environment began noting the last lines any failing program complained of on the
+machine's serial lines and its log — never on the screen, whose sentences name
+no machinery (`docs/features.md`) — which is how this was read from the console
+rather than found by elimination. Whether the install then finishes and the disk
+boots to `alo-agentd` with Secure Boot on is the installer plan's task 13: not
+yet run, because one emulated run needs a machine with room for its disks.
+**Upstream:** not theirs. The kernel documents the refusal, and `bwrap` needs a
+root it can pivot from.
 **Date:** 2026-09-16.
 
 ### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on

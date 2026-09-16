@@ -22,7 +22,9 @@
 # from THE_BASE below by the base's own tools; in the initramfs, the programs
 # `bootc install` runs, the checker for the owner's signature, the network
 # manager, and `alo-installing` — one unit, no login and no shell anybody is
-# offered. `crates/alo-installing`'s tests hold `alo-installing.conf` to every
+# offered. That unit runs under a root of its own, the environment bound again
+# (`run-alo-installing-root.mount`), because the sandbox `bootc install` starts
+# the boot loader's installer in cannot pivot from the initramfs's own root. `crates/alo-installing`'s tests hold `alo-installing.conf` to every
 # program that crate runs.
 #
 # **Secure Boot is respected, never switched off** (ADR 0033 §4): the shim, the
@@ -118,6 +120,8 @@ COPY image/signing/alo-os.pub /usr/lib/alo/installing/signing/alo-os.pub
 
 COPY image/installing/alo-installing.target /usr/lib/systemd/system/alo-installing.target
 COPY image/installing/alo-installing.service /usr/lib/systemd/system/alo-installing.service
+COPY image/installing/run-alo-installing-root.mount /usr/lib/systemd/system/run-alo-installing-root.mount
+COPY image/installing/run-alo-installing-root.mount /usr/lib/systemd/system/run-alo-installing-root.mount
 COPY image/installing/alo-installing.conf /etc/dracut.conf.d/alo-installing.conf
 COPY image/installing/grub.cfg /environment/EFI/BOOT/grub.cfg
 
@@ -128,6 +132,7 @@ RUN chmod 0755 /usr/bin/cosign /usr/bin/alo-installing \
                /usr/lib/alo/installing/signing/alo-os.pub \
                /usr/lib/systemd/system/alo-installing.target \
                /usr/lib/systemd/system/alo-installing.service \
+               /usr/lib/systemd/system/run-alo-installing-root.mount \
                /etc/dracut.conf.d/alo-installing.conf \
                /environment/EFI/BOOT/grub.cfg \
  && test "$(ls /usr/lib/modules | wc -l)" = 1 \
