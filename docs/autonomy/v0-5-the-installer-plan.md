@@ -222,7 +222,10 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** ready. **Depends on:** 3, 8, 9, 10.
+**Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason,
+and after 9 and 10. It installs beside a real Windows in a virtual machine and
+walks the switching both ways, which is the largest disk of the three.
+**Depends on:** 3, 8, 9, 10.
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -389,7 +392,14 @@ installer has had, whoever did the writing.
 
 ### 9. With Secure Boot on, the staged loader starts
 
-**Status:** ready. **Depends on:** 2.
+**Status:** scheduled — **for a machine with 50 GB free**, which the development PC
+is not. Measured there on 2026-09-16: one run of this task left 12 GB of virtual
+disks and 11 GB of container images and took the drive from 20 GB free to 0.4 GB,
+twice in one night, crashing the distribution and failing another lane's gates
+both times. The rule added to this plan's header did not prevent it, because a
+rule in a document is not a bound on a running test. So this task waits for a
+machine that can hold it, and the lane on the development PC steps over it rather
+than filling the disk again. **Depends on:** 2.
 
 Split from task 2 on 2026-09-15. Under QEMU q35 with OVMF's Secure Boot build and
 Microsoft's enrolled certificates, the firmware page-faults (`#PF`, a write to a
@@ -415,7 +425,9 @@ partition, before Linux, and hangs.
 
 ### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
 
-**Status:** ready. **Depends on:** 3.
+**Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason: a
+real Windows in a virtual machine is tens of gigabytes of disk per run, and the
+development PC has about 25 GB at its best. **Depends on:** 3.
 
 Split from task 3 on 2026-09-15. `crates/alo-installer` is written and every
 decision in it is tested against a scripted Windows; its checks have been run,
