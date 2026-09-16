@@ -452,6 +452,24 @@ takes this task starts from a measurement rather than from the fault:
   its own sentences and not the installer's. Making it say them is the first step
   for whoever takes this task, and is worth doing for its own sake — the person
   watching has no other window.
+- **And now it says why — measured on the third PC, 2026-09-16.** With the
+  environment passing the installer's own lines through, the same run under Secure
+  Boot said: *Deploying container image...done (3 minutes)*, then *error:
+  Installing to disk: Installing bootloader: Probing bootupd --filesystem support:
+  Subprocess failed* and *bwrap: pivot_root: Invalid argument*, and then the
+  environment's own sentence that the chosen disk may hold part of alo OS and
+  nothing else on the computer changed. So the image deploys, and the install
+  stops at the bootloader: `bootc` probes `bootupd` inside a `bwrap` sandbox, and
+  `pivot_root` is refused where the environment runs it. The worker that measured
+  this reached the supervisor's ninety-minute limit before handing over, so the
+  work is in the tree and this task was split rather than given longer.
+
+**Split again, 2026-09-16.** A task that cannot finish inside the worker's limit
+is a phase (`tools/kernel-loop/src/worker.rs`), and one emulated install takes
+most of that limit on its own. **This task ends** at the environment saying the
+installer's own failure, the fault written into `docs/quirks.md` with the run's
+console as evidence, and the refusal tests passing. **The install that finishes
+and boots to `alo-agentd` with Secure Boot on is task 12**, below.
 
 Split from task 2 on 2026-09-15. Under QEMU q35 with OVMF's Secure Boot build and
 Microsoft's enrolled certificates, the firmware page-faults (`#PF`, a write to a
@@ -516,7 +534,8 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** ready. **Depends on:** 2.
+**Status:** ready. **Depends on:** 2, 12 — its acceptance boots a virtual-machine
+install, and none finishes until task 12's bootloader fault is answered.
 
 Added 2026-09-16 by [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md),
 accepted that day: ★ *undo what the agent did* rewinds from the base's own
@@ -542,3 +561,31 @@ this task comes before task 6.
   takes. Nothing here decides what a snapshot is for; that is ADR 0045's. A machine
   already installed on ext4 is not converted and not silently left claiming undo:
   it answers *not yet on this machine*.
+
+### 12. With Secure Boot on, the install finishes and boots
+
+**Status:** ready. **Depends on:** 9.
+
+Split from task 9 on 2026-09-16, when the environment first said why the install
+stopped: the image deploys, then `bootc install` fails *Installing bootloader:
+Probing bootupd --filesystem support* with *bwrap: pivot_root: Invalid argument*.
+`pivot_root` is refused for a process whose root is the initial RAM filesystem,
+which is where the environment may be running the installer — the task finds out
+rather than assumes it.
+
+- **Acceptance:** the reason `bwrap` cannot `pivot_root` in the environment is
+  located and written into `docs/quirks.md` with its evidence, from a run rather
+  than from reading; the environment is changed so the installer runs where the
+  base's own sandboxing works — configuring how the environment starts, never
+  patching `bootc`, `bootupd` or `bwrap` (ADR 0011); and
+  `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+  passes **with Secure Boot on** — the staged loader starts, the environment pulls
+  the pinned release, verifies it, installs onto the second disk with the first
+  disk's Windows partitions unchanged, and the second disk boots to `alo-agentd` —
+  with the run pasted into the report.
+- **Constraint:** Secure Boot is never switched off to make the test pass (ADR 0033
+  §4). No shim, loader or installer is patched or built by us (ADR 0011). Each
+  emulated run takes most of an hour and leaves large disks behind, so a worker
+  checks for 15 GB free before every run and removes the run's disks and images
+  when it ends, pass or fail. If a single run cannot fit inside the worker's limit,
+  that is a finding for the plan, not a reason to leave a run behind.
