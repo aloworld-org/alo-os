@@ -208,7 +208,24 @@ machine carries them out. The report is
 
 ### 6. The accessibility fallback, for applications without an adapter
 
-**Status:** ready. **Depends on:** 5.
+**Status:** **Done, 2026-09-16.** Built in `crates/alo-adapters`, beside the
+adapters and not as one: `accessible.read_window` (a read over a granted
+application) and `accessible.activate_control` (a change naming a kind of control
+from a closed list of seven, the name it shows and the application, approved as
+*press the button named “Sign in” in org.example.Mail*). Both reach only a granted,
+installed application **with no adapter of its own** (`fallback_reach.rs`), identify
+an application by its sandbox through `alo_portals::Sandboxes` and never by the name
+it gives itself, and walk its windows at that moment and keep nothing
+(`walking.rs`); a press finds its control again then, and refuses none, more than
+one, a window too large to be sure, a greyed-out control and one that cannot be
+pressed, in words. **A password field is never asked for its text** — held against
+GTK 3's own `gtk-builder-tool` on at-spi2's own bus, read off a monitor of that bus —
+and nothing is ever asked about position (`AccessibilityTree` has no such
+question). The read is a read, as ADR 0001 §5 makes every read; *approved like any
+change* binds the press, and the report says why. What is not shown is a GTK 4 or Qt
+application on a certified machine's Wayland session; the report says what that
+acceptance is. The report is `docs/autonomy/updates/the-accessibility-fallback.md`.
+**Depends on:** 5.
 
 - **Acceptance:** an application with no adapter is readable and operable through its
   accessibility tree — the agent may **read** what a window shows and **activate** a

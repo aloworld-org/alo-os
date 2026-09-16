@@ -42,15 +42,34 @@
 //! applications. The report says what *would* need a change: declaring an
 //! adapter from a file at run time, whose words are not `'static`.
 //!
+//! # For an application with no adapter: the accessibility fallback
+//!
+//! Task 6. `docs/features.md`: *any application with no adapter is still
+//! readable and operable through its AT-SPI tree*. Two verbs
+//! ([`mod@fallback_verbs`]): `accessible.read_window`, a read of what an
+//! application's windows show, and `accessible.activate_control`, a change that
+//! presses one control named by its kind and the name it shows. Both reach only a
+//! granted application with no adapter of its own ([`ReadingWindows`],
+//! [`Activating`]); both walk the application's tree at that moment and keep
+//! nothing ([`walking`]); **neither ever asks a password field for its
+//! contents**, and neither can ask where anything is on the screen
+//! ([`AccessibilityTree`] has no such question). A control with no name and an
+//! area an application draws itself are said in words ([`Limit`]). On Linux the
+//! tree is the session's own (`AccessibleSession`).
+//!
 //! # What is not here
 //!
-//! The accessibility fallback (task 6) and the application's automation API are
-//! declared mechanisms this machine does not carry out yet, and are refused
-//! when loaded rather than offered. No turn offers adapter verbs yet: that is
+//! An adapter declaring the `api` or `accessibility` mechanism is refused when
+//! loaded: the fallback is not an adapter, and a verb the machine cannot carry
+//! out is never offered. No turn offers adapter or fallback verbs yet: that is
 //! `alo-agentd`'s wiring, as for printing and installing.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+#[cfg(target_os = "linux")]
+pub mod accessibility_bus;
+pub mod accessibility_tree;
+pub mod activating;
 pub mod adapter;
 pub mod adapter_arg;
 pub mod adapter_verb;
@@ -59,31 +78,54 @@ pub mod becoming_code;
 pub mod bus_names;
 pub mod delivering;
 pub mod driving;
+mod fallback_reach;
+pub mod fallback_verbs;
+pub mod fallback_words;
 pub mod file_address;
 pub mod invocation;
 pub mod loading;
 pub mod mechanism;
 pub mod message;
 pub mod not_loaded;
+mod not_pressed;
+mod not_walked;
+pub mod pressable;
+pub mod reading_windows;
+pub mod role;
 #[cfg(target_os = "linux")]
 pub mod session_bus;
+pub mod shown;
+pub mod states;
 pub mod text_editor;
 pub mod verbs;
+pub mod walking;
+#[cfg(target_os = "linux")]
+mod whose_connection;
 pub mod words;
 
+#[cfg(target_os = "linux")]
+pub use accessibility_bus::AccessibleSession;
+pub use accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
+pub use activating::{Activating, PRESSING, Pressed};
 pub use adapter::Adapter;
 pub use adapter_arg::{AdapterArg, Kind, Offer};
 pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches};
 pub use adapters::Adapters;
 pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
+pub use fallback_verbs::{ACTIVATE_CONTROL, READ_WINDOW, fallback_verbs};
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
 pub use mechanism::Mechanism;
 pub use message::{Argument, Message};
 pub use not_loaded::NotLoaded;
+pub use pressable::Pressable;
+pub use reading_windows::{ReadingWindows, WindowsRead};
+pub use role::Role;
 #[cfg(target_os = "linux")]
 pub use session_bus::SessionBus;
+pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};
+pub use states::States;
 pub use text_editor::TEXT_EDITOR;
 pub use verbs::{adapter_verbs, declare_into, shipped_adapters};
 pub use words::{EVERY_WORD, WordsError, adapter_words};

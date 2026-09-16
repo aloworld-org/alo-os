@@ -10,10 +10,11 @@
 //!
 //! In order, with the first refusal the answer:
 //!
-//! 1. **the adapter**: a name an agent can be called by, an application
-//!    identifier, not a person's own application (ADR 0043), at least one
-//!    release, a mechanism this machine carries out and never screenshots and
-//!    synthetic input, and at least one verb;
+//! 1. **the adapter**: a name an agent can be called by and not the accessibility
+//!    fallback's (`accessible`), an application identifier, not a person's own
+//!    application (ADR 0043), at least one release, a mechanism this machine
+//!    carries out and never screenshots and synthetic input, and at least one
+//!    verb;
 //! 2. **each verb**: how a person does it by hand (ADR 0009); every word it is
 //!    declared with among the adapter's words; no argument that is a script, a
 //!    command or free text; a well-formed method that is not named for running
@@ -91,6 +92,9 @@ fn the_adapter(adapter: &Adapter) -> Result<(), NotLoaded> {
     let named = || adapter.name.to_owned();
     if !is_a_name(adapter.name) {
         return Err(NotLoaded::NotAName { name: named() });
+    }
+    if adapter.name == crate::fallback_verbs::PREFIX {
+        return Err(NotLoaded::TheFallbacksName);
     }
     if Application::identified(adapter.application).is_err()
         || adapter.application.trim() != adapter.application

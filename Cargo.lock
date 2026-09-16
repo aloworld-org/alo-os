@@ -64,6 +64,7 @@ version = "0.0.1"
 dependencies = [
  "alo-applications",
  "alo-capability",
+ "alo-portals",
  "alo-record",
  "alo-software",
  "alo-strings",

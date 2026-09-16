@@ -136,6 +136,46 @@ same words. **An application that does not answer is recorded as having run** �
 something was sent under the approval — and the person is told that whether it
 happened is not known.
 
+## The accessibility fallback, for an application with no adapter
+
+*Added 2026-09-16 with `crates/alo-adapters`. Additive: nothing above changed.*
+
+The fallback is not an adapter and is not declared by anyone: it is two verbs this
+machine ships, and they reach an application only when it has **no** adapter. An
+application with an adapter is reached through its adapter's verbs alone, because
+an adapter is a narrower list someone reviewed, and pressing any control in its
+windows would make that list decorative. The name `accessible` is the fallback's,
+and an adapter of that name is refused when loaded.
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.read_window` | read | `application` | *read what {application} shows in its windows* |
+| `accessible.activate_control` | change | `application`; `kind`, one of `button`, `check_box`, `radio_button`, `switch`, `menu_item`, `tab`, `link`; `name`, one name of up to 200 characters | *press the {kind} named “{name}” in {application}* |
+
+Both require a grant over the application. What an adapter author, or anyone
+building on the fallback, can rely on:
+
+- **the tree is read at the moment of the call, for that call.** Nothing is
+  subscribed to, no event is registered, and the connection to the tree ends
+  with the turn. A control is looked for again when it is pressed, in the window
+  as it is then; nothing read earlier is used to find it;
+- **an application is identified by its sandbox, never by its own name.** The
+  process behind the application's connection is held and its sandbox read, as a
+  portal caller is; a program nothing identifies is never a granted application;
+- **a password field's contents are never asked for**, and never appear in what
+  is read — only that there is a password field, and its name;
+- **nothing is found or pressed by position.** No position, size or picture is
+  asked for. A control with no name, an area the application draws itself, and a
+  part of a window another program shows are each said in words;
+- **nothing is guessed.** A press is refused when no control of that kind and name
+  is showing, when more than one is, when the window is too large to read whole,
+  when the control is greyed out, and when it offers no way to be pressed from
+  outside the application. An application that does not answer the press is
+  recorded as having run and the person is told whether it was pressed is not
+  known, as for an adapter;
+- **reading is bounded**: at most 2,000 things, 48 levels deep, and 4,000
+  characters of any one text, with the answer saying when not everything was read.
+
 ## Rules for adapter authors
 
 1. **Be honest about `effect`.** Anything that modifies a document, a file or

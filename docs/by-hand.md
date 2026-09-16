@@ -201,6 +201,23 @@ text editor and an image viewer, so a fresh machine is not helpless`. The adapte
 activates the same action the menu item does, named in the adapter and never by
 the agent.
 
+### accessible.read_window
+
+**By hand:** a person looks at the application's window, or has the screen reader
+read it aloud — `the AT-SPI tree the agent uses is the one a screen reader uses`.
+The verb reads the same tree the screen reader does, at the moment it is asked,
+and a person needs no grant to look at their own window: the grant is what an
+agent needs, because it is the agent choosing to read what an application shows.
+
+### accessible.activate_control
+
+**By hand:** a person presses the control in the application's window, with the
+pointer or from the keyboard — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb presses the same control through the action a
+screen reader's *activate* sends, and a person needs no approval to press a
+button in front of them: the approval is what an agent needs, because it is the
+agent choosing to press it.
+
 ## What this document does not do
 
 It does not say the plain way is **built**. Every entry above names a promise

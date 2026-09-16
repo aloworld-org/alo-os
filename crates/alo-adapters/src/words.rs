@@ -1,9 +1,10 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Two groups: what a person is told when an approved adapter verb could not be
-//! carried out, and — declared by each adapter beside its own verbs, and put
-//! into the vocabulary here — the words every loaded adapter's verbs are made
-//! of ([`crate::text_editor::WORDS`]).
+//! Three groups: what a person is told when an approved adapter verb could not
+//! be carried out; everything the accessibility fallback says
+//! ([`crate::fallback_words`]); and — declared by each adapter beside its own
+//! verbs, and put into the vocabulary here — the words every loaded adapter's
+//! verbs are made of ([`crate::text_editor::WORDS`]).
 //!
 //! # Nothing a person reads names the machinery
 //!
@@ -18,7 +19,7 @@ use alo_strings::{Vocabulary, VocabularyError, WordError};
 /// crate's files name it as `crate::words::Word`.
 pub use alo_strings::Word;
 
-use crate::text_editor;
+use crate::{fallback_words, text_editor};
 
 /// The gap holding an application's identifier.
 pub const APPLICATION: &str = "application";
@@ -128,7 +129,11 @@ pub fn adapter_words() -> Result<Vocabulary, WordsError> {
 /// [`WordsError::List`] if the vocabulary already holds one of these keys —
 /// nothing is replaced.
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
-    for word in EVERY_WORD.iter().chain(text_editor::WORDS.iter()) {
+    for word in EVERY_WORD
+        .iter()
+        .chain(text_editor::WORDS.iter())
+        .chain(fallback_words::EVERY_WORD.iter())
+    {
         vocabulary.says(word.phrase()?)?;
     }
     Ok(())
@@ -148,6 +153,7 @@ mod tests {
         EVERY_WORD
             .iter()
             .chain(text_editor::WORDS.iter())
+            .chain(fallback_words::EVERY_WORD.iter())
             .copied()
             .collect()
     }

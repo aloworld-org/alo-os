@@ -19,6 +19,11 @@ pub enum NotLoaded {
         /// The name as declared.
         name: String,
     },
+    /// The name the accessibility fallback's verbs are declared under.
+    #[error(
+        "accessible is the name the accessibility fallback's verbs are declared under — call the adapter after its application instead"
+    )]
+    TheFallbacksName,
     /// An application identifier no verb could ever name.
     #[error("{application} is not an application identifier this machine could have installed")]
     NotAnApplication {

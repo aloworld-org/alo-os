@@ -25,6 +25,12 @@ thiserror = { workspace = true }
 # a Linux session's.
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+# Which installed application holds a connection to the accessibility tree, as
+# its sandbox says: the process behind the connection held by a descriptor, and
+# its `.flatpak-info` read through it — `alo-portals`' own answer to the same
+# question about a portal caller, read and never restated here. Linux only, as
+# the accessibility bus is.
+alo-portals = { path = "../alo-portals" }
 
 [dev-dependencies]
 # The record, for the guarantee no single crate can show on its own: every
@@ -35,7 +41,8 @@ alo-record = { path = "../alo-record" }
 alo-software = { path = "../alo-software" }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-# The stand-in application on the private bus the integration test starts.
+# The stand-in application on the private bus the integration test starts, and
+# the monitor the accessibility fallback's test watches that bus with.
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
 [lints]

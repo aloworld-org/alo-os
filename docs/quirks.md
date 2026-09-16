@@ -643,7 +643,47 @@ Applications driven through adapters (`docs/contracts/app-adapters.md`) change
 their automation surfaces between versions, sometimes silently. This is where
 that gets recorded: which version, what changed, and what the adapter now does.
 
-_(no entries yet)_
+### GTK 3.24.41 — a hidden entry answers *what is your text?* with one bullet per character
+**Mechanism:** accessibility
+**Behaviour:** a `GtkEntry` with `visibility` off is exposed as a password field
+(`ATSPI_ROLE_PASSWORD_TEXT`), and asked `org.a11y.atspi.Text.GetText(0, -1)` it
+answers with its invisible character repeated — `●●●●●●●●●●●●●●●●●●●●●●●●●●●●`
+for a 28-character password. The password is not sent, **its length is**. Nothing
+in the accessibility specification requires a toolkit to withhold even that much,
+and a toolkit or an application that exposes its own widgets can answer with the
+text itself.
+**Our response:** the fallback never asks a password field for its text at all
+(`crates/alo-adapters/src/walking.rs`), and drops any text handed back beside one
+(`crates/alo-adapters/src/shown.rs`). `the_accessibility_fallback_on_a_real_application.rs`
+holds it against this GTK, reading the bus rather than the crate: no `Text` or
+`EditableText` call reaches the field, and no answer carries the password. What a
+toolkit *would* have answered is therefore never the question.
+**Date:** 2026-09-16, seen on Ubuntu 24.04's `libgtk-3-0t64` under WSL.
+
+### GTK 4.14 — no accessibility tree on the Broadway display
+**Mechanism:** accessibility
+**Behaviour:** GTK 4 chooses its accessibility back end by display: AT-SPI is
+connected on X11 and Wayland, and on Broadway it silently falls back to a back end
+that publishes nothing. `gtk4-builder-tool preview` on Broadway never appears in
+the registry. GTK 3 connects its bridge regardless of the display.
+**Our response:** the fallback's real-application test shows its windows with
+GTK 3's `gtk-builder-tool` on Broadway, because Broadway needs no screen on a
+build machine. The wire the fallback speaks is at-spi2's, the same for both
+toolkits. A GTK 4 application on a certified machine, on its Wayland display, is
+the on-machine acceptance in `docs/autonomy/updates/the-accessibility-fallback.md`.
+**Date:** 2026-09-16.
+
+### GTK 3.24.41 — an accessible object does not exist until something walked to it
+**Mechanism:** accessibility
+**Behaviour:** GTK 3's bridge creates an object's path the first time an answer
+names it. Asking `/org/a11y/atspi/accessible/4` directly on a fresh window fails
+with `UnknownObject`, and the numbers a window's objects get depend on the order
+they were first reached — the header bar's buttons first if they were walked
+first.
+**Our response:** the fallback never keeps or guesses an object path: every read
+and every press walks from the application's root through `GetChildAtIndex`, in
+that moment, and a thing that vanishes mid-walk is left out rather than retried.
+**Date:** 2026-09-16.
 
 <!--
 ### <Application> <version> — <one-line summary>

@@ -1,6 +1,10 @@
 //! The adapters alo OS ships, and the verbs they put on the machine's list.
 //!
-//! One today: GNOME Text Editor ([`crate::text_editor`]), the reference adapter
+//! Beside them, [`declare_into`] puts the accessibility fallback's two verbs
+//! ([`mod@crate::fallback_verbs`]) on the list, so they are held to ADR 0009 by the
+//! same check.
+//!
+//! One adapter today: GNOME Text Editor ([`crate::text_editor`]), the reference adapter
 //! the plan asks for. `docs/contracts/agent-verbs.md` asks a crate declaring
 //! verbs to hand them over through a `pub fn declare_into` in `src/verbs.rs`,
 //! because `alo-by-hand` walks the workspace for exactly that — an adapter's
@@ -31,16 +35,18 @@ pub fn shipped_adapters() -> Result<Adapters, NotLoaded> {
 /// [`NotLoaded`], as [`shipped_adapters`].
 pub fn adapter_verbs() -> Result<Verbs, NotLoaded> {
     let mut verbs = Verbs::default();
-    declare_into(&mut verbs)?;
+    shipped_adapters()?.declare_into(&mut verbs)?;
     Ok(verbs)
 }
 
-/// Put the shipped adapters' verbs on an existing list.
+/// Put every verb this crate declares on an existing list: the shipped
+/// adapters', and the accessibility fallback's two.
 ///
 /// # Errors
 /// [`NotLoaded::Taken`] if the list already has a verb of one of these names.
 pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
-    shipped_adapters()?.declare_into(verbs)
+    shipped_adapters()?.declare_into(verbs)?;
+    crate::fallback_verbs::declare_into(verbs)
 }
 
 #[cfg(test)]

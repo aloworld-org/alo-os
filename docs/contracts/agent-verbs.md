@@ -710,6 +710,7 @@ printing verb is not.
 | **Software** | Propose installing an application from a place this machine installs from | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
+| **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), and press one control named by its kind and the name it shows (`accessible.activate_control`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
 
 ## A turn, and the order the steps happen in
