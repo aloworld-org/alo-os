@@ -284,8 +284,12 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — on tasks 1–5, 8, 9 and 10, and on the owner at the laptop;
-nothing in this repository can tick it. **Depends on:** 4, 5.
+**Status:** blocked — on tasks 1–5, 8, 9, 10 **and 11**, and on the owner at the
+laptop; nothing in this repository can tick it. Task 11 is not optional before
+this one: a filesystem is chosen at install and cannot be converted, so a laptop
+installed before it lands could never undo what an agent did without being
+reinstalled ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), accepted
+2026-09-16). **Depends on:** 4, 5.
 
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their
@@ -461,3 +465,32 @@ firmware starts.
   machine's own disks; every destructive step is in a virtual machine the test
   made. Secure Boot is off in that VM only because the shipped installer refuses
   it on (ADR 0033 §4), and the report says so.
+
+### 11. The disk alo OS is installed onto can hold an undo
+
+**Status:** ready. **Depends on:** 2.
+
+Added 2026-09-16 by [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md),
+accepted that day: ★ *undo what the agent did* rewinds from the base's own
+snapshot, and a snapshot needs a filesystem that has them. `crates/alo-installing`
+installs with `--filesystem ext4`, which has no subvolume and no snapshot, and
+**a filesystem is chosen at install and cannot be converted afterwards**. So a
+machine installed today can never undo without being reinstalled — and the
+certified laptop must not be the first machine in that position, which is why
+this task comes before task 6.
+
+- **Acceptance:** `bootc install to-disk` names **btrfs**, and what it makes is
+  measured rather than assumed — which subvolumes the base creates of its own
+  accord, where a person's home lands, and what capability taking a snapshot needs
+  on the pinned kernel — each written into `docs/quirks.md` with the command that
+  showed it; a virtual-machine install then boots to `alo-agentd`, takes a
+  read-only snapshot of the home subvolume and removes it, with the whole run in
+  the report; **an update and a return to the build before leave the home
+  subvolume and `/var/lib/alo` untouched**, held by a test that writes known files,
+  updates, rolls back and finds them; and `crates/alo-image` holds the installer to
+  naming one filesystem, so a second one cannot appear in a later change unnoticed.
+- **Constraint:** the base is rented and unmodified (ADR 0011) — no partitioning,
+  no mkfs and no subvolume layout of ours beyond the arguments `bootc install`
+  takes. Nothing here decides what a snapshot is for; that is ADR 0045's. A machine
+  already installed on ext4 is not converted and not silently left claiming undo:
+  it answers *not yet on this machine*.

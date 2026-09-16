@@ -194,7 +194,20 @@ have never heard of.
 
 ### 4. Undo what the agent did
 
-**Status:** blocked — waits on the owner's answer to ADR 0045. **Depends on:** 3.
+**Status:** ready — [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) was
+accepted on 2026-09-16, option A (the base's snapshot on btrfs, a subvolume per
+home, a snapshot either side of a changing turn), with six terms the owner added:
+undo reaches back seven days or fifty changing turns, whichever ends first; disk
+pressure removes the oldest first and the record says which turns lost their undo;
+a machine too full to snapshot still runs the turn and records that it cannot be
+undone; `alo-measuring` counts what undo is holding, by name; only a turn that
+changes files is bracketed; and the installer's move to btrfs lands **before the
+certified laptop is installed**. Build points 1 to 5 of the decision here, with
+every change verb answering *not yet on this machine* until the bracket exists on
+it. The filesystem itself is the installer plan's task 11, the home subvolume the
+accounts work's, the bracket lane A's `alo-turn`, and the privilege to snapshot
+the broker plan's — each named in the decision, none of them this plan's to edit.
+**Depends on:** 3.
 
 **Not done; decided as far as a worker may, 2026-09-15.** The road this task
 names does not exist on the machine we install: `crates/alo-installing` formats

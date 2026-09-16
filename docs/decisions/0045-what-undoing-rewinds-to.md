@@ -1,6 +1,8 @@
 # ADR 0045 — What undoing rewinds to
 
-**Status:** proposed — the owner decides. Written by task 4 of
+**Status:** accepted, 2026-09-16 — option **A**, with the six terms under *As the
+owner accepted it*, which are part of the decision rather than commentary on it.
+Written by task 4 of
 `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (*Undo what the agent
 did*), which cannot be built until it is answered. Nothing is built in the
 change that adds this: the record has no entry for an undo, `alo-keeping-up`
@@ -221,6 +223,44 @@ and one `undone` entry — is written last, when all of them exist.
 
 If the owner cannot change the filesystem at v0.5, **D is the honest fallback
 and B is not**: B builds the thing the plan forbids to avoid saying *not yet*.
+
+## As the owner accepted it, 2026-09-16
+
+Option A, and six terms. The owner's question was the right one — *if the system
+takes snapshots every turn, will the machines not get fuller with them?* A
+snapshot costs nothing when it is taken and everything a person later changes or
+deletes, so unbounded snapshots are a disk that fills quietly. The development PC
+filled three times in one night for a different reason, and the machine a person
+owns gets rules rather than the same lesson.
+
+1. **Snapshots expire.** Undo reaches back a bounded window — **the last seven
+   days or the last fifty changing turns, whichever ends first** — and what falls
+   outside it is removed by the machine. The window is one value in
+   `alo-keeping-up`, read from the person's settings where they change it, and a
+   test holds that nothing keeps a snapshot beyond it.
+2. **Disk pressure wins over undo, and is said.** Below a named amount of free
+   space the oldest snapshots go first, and the record says those turns can no
+   longer be undone. **The machine never fills a disk to preserve an undo**, and
+   what a person is told names the turns that lost it rather than a number.
+3. **A machine too full to snapshot still runs the turn.** The bracket is
+   attempted; when there is no room it is not taken, the turn proceeds, and the
+   record says plainly that this one cannot be undone. A verb that refused to run
+   for want of an undo would be a machine that stopped working to protect a
+   feature.
+4. **What is filling the disk counts snapshots, by name.** `alo-measuring`'s
+   answer includes what undo is holding, as its own line, because an answer that
+   hid it would send a person hunting for space the machine itself was keeping.
+5. **Only a turn that changes files is bracketed.** Reading, searching, asking a
+   question and every refused call take no snapshot, held by a test.
+6. **The filesystem is chosen at install and cannot be converted**, so the
+   installer's change to `btrfs` lands **before the certified laptop is
+   installed** (ADR 0033). A machine installed on `ext4` keeps working and
+   answers *not yet on this machine* for every undo, honestly, until it is
+   reinstalled — and the laptop must not be the first machine in that position.
+
+Until the bracket exists on a machine, points 1 to 5 of *What holds whichever
+option is taken* are built and every change verb answers *not yet on this
+machine*, which is true rather than a stub.
 
 ## Consequences if it is accepted
 
