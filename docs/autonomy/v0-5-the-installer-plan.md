@@ -414,8 +414,11 @@ installer has had, whoever did the writing.
 
 ### 9. With Secure Boot on, the staged loader starts
 
-**Status:** scheduled — **for a machine with 50 GB free**, which the development PC
-is not. Measured there on 2026-09-16: one run of this task left 12 GB of virtual
+**Status:** ready — taken on 2026-09-16 by the third PC, whose lane has the disk.
+It was scheduled for a machine with 50 GB free, which the development PC is not.
+The supervisor there clears the idle lane's build directory before this task's
+virtual machines start, and every run checks for 15 GB free first. Measured on
+the development PC on 2026-09-16: one run of this task left 12 GB of virtual
 disks and 11 GB of container images and took the drive from 20 GB free to 0.4 GB,
 twice in one night, crashing the distribution and failing another lane's gates
 both times. The rule added to this plan's header did not prevent it, because a
