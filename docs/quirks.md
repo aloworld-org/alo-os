@@ -694,6 +694,63 @@ the Windows program's staged path to the same variable — the two halves of the
 choice cannot drift apart again without a test saying so.
 **Date:** 2026-09-16.
 
+### bootc 1.15.1 — in the boot environment, the image deploys and the bootloader's probe dies in `bwrap`'s `pivot_root`
+**Version:** bootc 1.15.1 and bootupd 0.2.31 as
+`quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships them, and the `bwrap` the
+base ships, inside `image/installing/`'s initramfs; kernel
+`6.19.14-101.fc42.x86_64`; QEMU q35 with Fedora's `edk2-ovmf-20250812-21.fc42`,
+**Secure Boot enabled**, processor emulated (TCG — this host's `/dev/kvm` has
+nothing behind it, see *WSL on a VMware guest shows `/dev/kvm`*); 3 GB of memory;
+release `0.0.1` pulled by its pinned digest. 2026-09-16.
+**Behaviour:** `bootc install to-disk --source-imgref registry:…` partitions the
+chosen disk, makes its filesystem and deploys the release, and then fails
+installing the bootloader. Until this run the environment said only its own
+sentence, so *why* was on no screen and in no log anybody could reach. With the
+installer's complaint noted on the serial line (`TheMachine::note`), the run's
+console — `crates/alo-installing/tests/installed_in_a_virtual_machine.rs`,
+`the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`,
+its `installing.log` — says, in order:
+
+```
+[    0.000000] secureboot: Secure boot enabled
+alo OS is being installed on this computer. Each step is written here as it happens
+Reading which disk you chose before the restart
+Looking for the disk you chose: virtio-alo-target
+Checking that virtio-alo-target is safe to install onto
+Connecting to the internet
+Checking over the internet that this download is a genuine alo OS
+This is a genuine alo OS
+Installing alo OS onto virtio-alo-target. Everything that was on that disk is being replaced. …
+[   67.591114]  vdb: vdb1 vdb2 vdb3
+[   70.670731] EXT4-fs (vdb3): mounted filesystem c7c658c1-… r/w with ordered data mode.
+Still installing alo OS. Leave the computer on            (37 times, one a minute)
+/usr/bin/bootc: mke2fs 1.47.2 (1-Jan-2025)
+/usr/bin/bootc: Deploying container image...done (3 minutes)
+/usr/bin/bootc: error: Installing to disk: Installing bootloader: Probing bootupd --filesystem support: Subprocess failed: ExitStatus(unix_wait_status(256))
+/usr/bin/bootc: bwrap: pivot_root: Invalid argument
+alo OS could not be installed onto virtio-alo-target. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
+You can turn this computer off or restart it now
+```
+
+So the Secure Boot chain, the choice, the signature and the deploy all work; what
+stops the install is `bootupctl`'s probe, which bootc runs inside the new
+deployment through `bwrap`, and `bwrap`'s `pivot_root(2)` answering `EINVAL`. The
+2026-09-15 entry above met the same step as *No such file or directory*, before
+`bwrap` and `bootupctl` were carried; carrying them moved the failure one call
+further, to here.
+**Not yet located**, and not assumed: `pivot_root(2)` documents `EINVAL` for a
+caller whose current root is the initial RAM filesystem, and `alo-installing`
+runs from the initramfs's root without switching out of it — which fits, and is
+a reading, not a measurement. Finding it from a run, and changing how the
+environment starts rather than patching `bootc`, `bootupd` or `bwrap` (ADR 0011),
+is the installer plan's task 12.
+**Our response:** none to the engines. The environment now notes the last lines
+any failing program complained of on the machine's serial lines and its log —
+never on the screen, whose sentences name no machinery (`docs/features.md`) — so
+the next failure is read from the console rather than found by elimination.
+**Upstream:** not reported; not yet known to be theirs.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

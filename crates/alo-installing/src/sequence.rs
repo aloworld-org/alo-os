@@ -20,6 +20,12 @@
 //!
 //! **The disk named is the only disk touched.** Steps 2–4 read; step 5 writes the
 //! one path step 1 produced. There is no step that looks for a disk to use.
+//!
+//! **Why a program failed is kept, and kept off the screen.** When the check or
+//! the write fails, what it complained of is noted line by line on the machine's
+//! log and its serial lines (`TheMachine::note`), so the reason exists
+//! somewhere a person helping, or a test, can read it. The person watching is
+//! told in the vocabulary, which never names the machinery.
 
 use alo_strings::{Filling, Strings, Word};
 
@@ -88,9 +94,17 @@ fn installing(
             );
             let still = strings.say(&words::STILL_INSTALLING.key(), &Filling::nothing());
             let disk = writing.disk().clone();
-            match machine.run(&Program::Writing(writing), &still, STILL_EVERY) {
+            let program = Program::Writing(writing);
+            match machine.run(&program, &still, STILL_EVERY) {
                 Ok(ran) if ran.succeeded => Ended::Installed(disk),
-                Ok(_) | Err(_) => Ended::NotInstalled(disk),
+                Ok(ran) => {
+                    noted(machine, &program, &ran.complained);
+                    Ended::NotInstalled(disk)
+                }
+                Err(why) => {
+                    noted(machine, &program, &why.to_string());
+                    Ended::NotInstalled(disk)
+                }
             }
         }
     }
@@ -159,13 +173,38 @@ fn before_writing(
     let ran = machine
         .run(&Program::Verifying(verifying.clone()), &asking, STILL_EVERY)
         .map_err(|_| Refusal::Damaged)?;
-    match verifying.answer(&ran) {
+    let answer = verifying.answer(&ran);
+    if answer != Verified::Genuine && !ran.succeeded {
+        noted(machine, &Program::Verifying(verifying), &ran.complained);
+    }
+    match answer {
         Verified::Genuine => say(machine, strings, words::GENUINE, &Filling::nothing()),
         Verified::NotGenuine => return Err(Refusal::NotGenuine),
         Verified::NotReachable => return Err(Refusal::NotReachable),
     }
 
     Ok(Writing::of(environment.pin(), disk))
+}
+
+/// What a program that failed complained of, a line at a time, where a
+/// technician or a test reads it and never where the person does.
+///
+/// Every line is prefixed with the program's path, so a serial line that holds
+/// the environment's own sentences as well says which of it is the machinery's.
+/// A failure that complained of nothing is noted as that, rather than left as a
+/// silence nobody can tell from a lost line.
+fn noted(machine: &mut impl TheMachine, program: &Program, complained: &str) {
+    let mut lines = complained
+        .lines()
+        .map(str::trim_end)
+        .filter(|line| !line.is_empty())
+        .peekable();
+    if lines.peek().is_none() {
+        machine.note(&format!("{}: failed, and said nothing", program.path()));
+    }
+    for line in lines {
+        machine.note(&format!("{}: {line}", program.path()));
+    }
 }
 
 /// One sentence, looked up and put in front of the person.

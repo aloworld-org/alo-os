@@ -41,6 +41,7 @@
 //! entry reached once, through the firmware's next-boot choice, so that the
 //! restart this environment ends with never lands back in it.
 
+mod complaint;
 mod console;
 mod disk;
 mod disks;
@@ -56,7 +57,8 @@ mod verifying;
 mod words;
 mod writing;
 
-pub use console::{ACTIVE, every_console};
+pub use complaint::{Complaint, THE_LAST_LINES};
+pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk};
 pub use disks::{ANOTHER_SYSTEMS, Disks, THIS_INSTALLER, Unsuitable};
 pub use ended::{Ended, Refusal};

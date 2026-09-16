@@ -414,7 +414,20 @@ installer has had, whoever did the writing.
 
 ### 9. With Secure Boot on, the staged loader starts
 
-**Status:** ready — taken on 2026-09-16 by the third PC, whose lane has the disk.
+**Status:** **Done, 2026-09-16**, for the part this task ends at since its split
+(`updates/the-boot-environment-says-why-an-install-stopped.md`): the environment
+notes the last lines a failing program complained of on the machine's serial
+lines and its log, never on the screen; the `bwrap` `pivot_root` failure is in
+`docs/quirks.md` with the run's console as its evidence; the refusal tests pass —
+the scripted ones, and both refusals in a virtual machine run by name, the
+not-genuine one now also finding the checker's own complaint on the serial line;
+and every virtual-machine test removes the disks it made, pass or fail. **Found on
+the way:** the test of Secure Boot's refusal could never have passed, because the
+stager copied the built environment whatever it was handed, so the changed loader
+was never staged; it copies what it is handed now, and the firmware refuses the
+changed loader (*Access Denied*). The install that finishes is task 12.
+
+*Before it was done:* taken on 2026-09-16 by the third PC, whose lane has the disk.
 It was scheduled for a machine with 50 GB free, which the development PC is not.
 The supervisor there clears the idle lane's build directory before this task's
 virtual machines start, and every run checks for 15 GB free first. Measured on

@@ -68,6 +68,8 @@ struct Scripted {
     answers: VecDeque<std::io::Result<Ran>>,
     /// Every sentence said, in order.
     said: Vec<String>,
+    /// Every line of the machinery's noted, in order.
+    noted: Vec<String>,
     /// Every program run, in order.
     ran: Vec<Program>,
     /// How many times the long write was said to be still going.
@@ -91,6 +93,7 @@ impl Scripted {
             ],
             answers: VecDeque::new(),
             said: Vec::new(),
+            noted: Vec::new(),
             ran: Vec::new(),
             stills: 0,
             connects: true,
@@ -122,6 +125,10 @@ impl TheMachine for Scripted {
             said.text()
         );
         self.said.push(said.text().to_owned());
+    }
+
+    fn note(&mut self, line: &str) {
+        self.noted.push(line.to_owned());
     }
 
     fn command_line(&mut self) -> std::io::Result<String> {
@@ -287,6 +294,11 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         Some("/dev/disk/by-id/virtio-alo-target")
     );
     assert_eq!(machine.ran[4], Program::Restarting);
+    assert_eq!(
+        machine.noted,
+        Vec::<String>::new(),
+        "an install that succeeded notes nothing"
+    );
 }
 
 /// **A release whose signature does not verify writes nothing and says so** —
@@ -314,6 +326,28 @@ fn a_release_whose_signature_does_not_verify_writes_nothing_and_says_so() {
             .any(|line| line == word("installing.genuine").says()),
         "a download that is not genuine was never called genuine"
     );
+    assert_eq!(
+        machine.noted,
+        [
+            "/usr/bin/cosign: Error: no matching signatures: error verifying bundle: failed to verify \
+          signature"
+        ],
+        "why the check failed is kept where a technician reads it"
+    );
+    the_machinery_is_never_on_the_screen(&machine);
+}
+
+/// **No line a program complained of is ever a sentence on the screen.**
+fn the_machinery_is_never_on_the_screen(machine: &Scripted) {
+    for noted in &machine.noted {
+        let (_, complaint) = noted
+            .split_once(": ")
+            .unwrap_or_else(|| panic!("a note names its program: {noted}"));
+        assert!(
+            !machine.said.iter().any(|said| said.contains(complaint)),
+            "the screen said the machinery's words: {complaint}"
+        );
+    }
 }
 
 /// **A check that succeeds about some other release is not a pass**, and
@@ -532,9 +566,23 @@ fn a_damaged_environment_refuses_before_reading_anything() {
 #[test]
 fn a_write_that_does_not_finish_is_said_plainly_and_never_restarts() {
     let environment = the_environment();
-    for answer in [
-        failed("error: Installing to disk: Creating ostree deployment: No space left on device"),
-        Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+    for (answer, noted) in [
+        (
+            failed(
+                "Copying blob sha256:0a1b\n\nerror: Installing to disk: Creating ostree deployment: \
+                 No space left on device\n",
+            ),
+            vec![
+                "/usr/bin/bootc: Copying blob sha256:0a1b",
+                "/usr/bin/bootc: error: Installing to disk: Creating ostree deployment: No space \
+                 left on device",
+            ],
+        ),
+        (failed(""), vec!["/usr/bin/bootc: failed, and said nothing"]),
+        (
+            Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+            vec!["/usr/bin/bootc: entity not found"],
+        ),
     ] {
         let mut machine = Scripted::choosing("virtio-alo-target")
             .answering(succeeded(THE_DISKS))
@@ -556,6 +604,8 @@ fn a_write_that_does_not_finish_is_said_plainly_and_never_restarts() {
         );
         assert!(!last_two[0].contains("nothing was changed"));
         assert_eq!(last_two[1], word("installing.restart-when-ready").says());
+        assert_eq!(machine.noted, noted, "why the write stopped is kept");
+        the_machinery_is_never_on_the_screen(&machine);
     }
 }
 

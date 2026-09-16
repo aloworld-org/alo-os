@@ -314,12 +314,25 @@ and keeps it in its work directory.
 firmware starts the staged shim and loader with **Secure Boot enabled**, the
 loader hands over the disk the person chose, the environment says every step,
 the signature of the pinned release verifies — *this is a genuine alo OS* — and
-`bootc install` begins. It then ends without installing, and the environment says
-*alo OS could not be installed onto <disk>. That disk may now hold part of alo
-OS; nothing else on this computer was changed.* Why is not yet known: the
-environment does not put the installer's own words on the console, so the next
-step is to make it say them. Written up in
-`docs/autonomy/updates/with-secure-boot-on-the-staged-loader-starts.md`.
+`bootc install` begins and deploys the release. It then fails installing the
+bootloader, and the environment says *alo OS could not be installed onto <disk>.
+That disk may now hold part of alo OS; nothing else on this computer was
+changed.* **The serial line now says why**, in the installer's own words:
+*Installing bootloader: Probing bootupd --filesystem support* and *bwrap:
+pivot_root: Invalid argument* (`docs/quirks.md`, *in the boot environment, the
+image deploys and the bootloader's probe dies in `bwrap`'s `pivot_root`*). Making
+that step work is the installer plan's task 12. Written up in
+`docs/autonomy/updates/with-secure-boot-on-the-staged-loader-starts.md` and
+`docs/autonomy/updates/the-boot-environment-says-why-an-install-stopped.md`.
+
+**Why a program failed goes to the serial lines, never the screen.** When the
+signature check or the install fails, the environment writes the last lines that
+program complained of to the machine's log and to every console the kernel lists
+that is not a virtual terminal — `ttyS0`, `hvc0` — each line prefixed with the
+program's path. The screen keeps only the sentences a person reads, which never
+name the machinery. A machine with no serial line keeps the lines only in the
+environment's journal, which lives in memory and is gone at the restart. Every virtual-machine test removes the disks it
+made when it ends, pass or fail, and keeps its serial logs.
 
 **The refusal passes.** It is started without Secure Boot and refuses, with the
 second disk untouched and the first disk byte-for-byte unchanged. It once changed

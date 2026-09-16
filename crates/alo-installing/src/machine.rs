@@ -3,7 +3,7 @@
 //! The sequence in `crate::sequence` is where every decision is, and it is
 //! tested against a machine that is a list of answers. What a real machine adds
 //! — reading `/proc/cmdline`, waiting for udev, starting a program, writing to a
-//! console — is here as five methods, and `crate::running` is those five on
+//! console — is here as six methods, and `crate::running` is those six on
 //! Linux and nothing else.
 
 use std::time::Duration;
@@ -31,6 +31,11 @@ pub const BEFORE_RESTARTING: Duration = Duration::from_secs(10);
 pub trait TheMachine {
     /// Put one sentence in front of the person, and in the machine's log.
     fn say(&mut self, said: &Said);
+
+    /// Keep one line of the machinery's own words where a technician or a test
+    /// reads them — the machine's log and its serial lines — and **never on the
+    /// screen** a person watches (`crate::console`).
+    fn note(&mut self, line: &str);
 
     /// The kernel command line this environment was started with.
     ///

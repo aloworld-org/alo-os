@@ -21,12 +21,19 @@
 //!
 //! # What it needs, and what it costs
 //!
-//! Linux with `/dev/kvm`, `qemu-system-x86_64`, the firmware without Secure Boot
+//! Linux with `qemu-system-x86_64`, the firmware without Secure Boot
 //! (`/usr/share/OVMF`, for the refusal, which starts a kernel directly),
 //! `podman` (root) and `sfdisk`, and the network: the recipe is built, the
 //! Secure Boot firmware is taken out of the pinned base, and the release is
 //! pulled from `ghcr.io`. The install measured about twelve minutes
-//! on 2026-09-15; the whole test, with a cached build, about twenty. It is
+//! on 2026-09-15 with hardware virtualisation; the whole test, with a cached
+//! build, about twenty.
+//!
+//! **Hardware virtualisation is used where it works, and asked rather than
+//! assumed** ([`Processor`]): a host can show `/dev/kvm` with nothing behind it
+//! (`docs/quirks.md`, *WSL on a VMware guest shows `/dev/kvm` and has no KVM
+//! behind it*). Without it the machines run emulated, every deadline here is
+//! [`EMULATION_IS_SLOWER`] times as long, and nothing measured is a timing. It is
 //! `#[ignore]`d so the workspace suite never starts a virtual machine, and is
 //! run by name. A machine missing any of the above **fails** with the list of
 //! what it is missing — a test that passed because it could not run would be
@@ -198,6 +205,46 @@ fn work() -> PathBuf {
     at
 }
 
+/// **What a test made, removed when the test ends — pass or fail.**
+///
+/// The installer plan's rule since 2026-09-15, when these disks filled the
+/// development PC's drive: a virtual-machine test removes its disks when it
+/// finishes, keeping only the serial logs its report names. A guard rather
+/// than a last line, because a test that fails ends at its `panic!`, and the
+/// unwinding that follows still drops what the test holds.
+struct Leftovers {
+    /// The directory the names are in.
+    at: PathBuf,
+    /// Files and directories, removed whichever each turns out to be.
+    names: Vec<&'static str>,
+}
+
+impl Leftovers {
+    /// These names, in the work directory.
+    fn in_the_work_directory(names: &[&'static str]) -> Self {
+        Self::in_directory(work(), names)
+    }
+
+    /// These names, in `at`.
+    fn in_directory(at: PathBuf, names: &[&'static str]) -> Self {
+        Self {
+            at,
+            names: names.to_vec(),
+        }
+    }
+}
+
+impl Drop for Leftovers {
+    fn drop(&mut self) {
+        for name in &self.names {
+            let path = self.at.join(name);
+            // Either may not exist: the test may have ended before making it.
+            drop(std::fs::remove_dir_all(&path));
+            drop(std::fs::remove_file(&path));
+        }
+    }
+}
+
 /// The English of a word by its key, with the chosen disk in its gap.
 fn english(named: &str) -> String {
     EVERY_WORD
@@ -241,7 +288,9 @@ fn what_is_missing() -> Vec<String> {
     // The Secure Boot firmware is not among these: it is taken out of the
     // pinned base by `the_firmware_is_taken_from_the_base`, not packaged by the
     // host.
-    for file in ["/dev/kvm", PLAIN_FIRMWARE, PLAIN_VARIABLES] {
+    // Not `/dev/kvm`: it can be there with nothing behind it, and a machine
+    // without it runs emulated (`Processor`).
+    for file in [PLAIN_FIRMWARE, PLAIN_VARIABLES] {
         if !Path::new(file).exists() {
             missing.push(file.to_owned());
         }
@@ -383,6 +432,7 @@ fn staged(environment: &Path) -> PathBuf {
     .expect("the choice can be written");
 
     let work = work();
+    let copied = inside_the_stager(&work, environment);
     let partition = work.join("staged.img");
     drop(std::fs::remove_file(&partition));
     let volume = format!("{}:/work", work.display());
@@ -423,7 +473,7 @@ fn staged(environment: &Path) -> PathBuf {
         // `var/mnt`, which a container of it does not have.
         vec!["mkdir", "-p", "/tmp/staged"],
         vec!["mount", "-o", "loop", "/work/staged.img", "/tmp/staged"],
-        vec!["cp", "-r", "/work/environment/.", "/tmp/staged/"],
+        vec!["cp", "-r", &copied, "/tmp/staged/"],
         vec!["umount", "/tmp/staged"],
     ] {
         let mut arguments = vec!["exec", stager];
@@ -432,6 +482,37 @@ fn staged(environment: &Path) -> PathBuf {
     }
     ran("podman", &["rm", "--force", stager]);
     partition
+}
+
+/// **The environment the stager copies is the one it was handed**, as the
+/// stager's container sees it: the work directory is mounted at `/work`.
+///
+/// Until 2026-09-16 the copy named `/work/environment` whatever it was handed,
+/// so the loader with one byte changed was never staged — the genuine loader
+/// was, the firmware rightly started it, and the test of Secure Boot's refusal
+/// could never have passed. A directory outside the work directory is not in
+/// the container at all, and is refused rather than silently swapped for
+/// another.
+fn inside_the_stager(work: &Path, environment: &Path) -> String {
+    let within = environment.strip_prefix(work).unwrap_or_else(|_| {
+        panic!(
+            "{} is not in the work directory {}, which is all the stager can see",
+            environment.display(),
+            work.display()
+        )
+    });
+    assert!(
+        within
+            .components()
+            .all(|part| matches!(part, std::path::Component::Normal(_))),
+        "{} is not a plain directory inside the work directory",
+        environment.display()
+    );
+    assert!(
+        within.components().next().is_some(),
+        "the work directory itself is not an environment"
+    );
+    format!("/work/{}/.", within.display())
 }
 
 /// A byte generator nobody can mistake for a file system, the same every run.
@@ -611,10 +692,93 @@ fn variables(firmware: Firmware, called: &str) -> PathBuf {
     at
 }
 
+/// How much longer everything takes when the processor is emulated.
+///
+/// Measured on 2026-09-15 by the update tests' lane: a Fedora machine that
+/// starts in seconds with hardware virtualisation took 190 seconds to its login
+/// prompt emulated. Eight times is that ratio, with room for a busy host.
+const EMULATION_IS_SLOWER: u32 = 8;
+
+/// How the machines' processor is provided.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Processor {
+    /// Hardware virtualisation, which the host has been seen to start.
+    Hardware,
+    /// Emulated in software, because the host could not start the other.
+    Emulated,
+}
+
+impl Processor {
+    /// This host's, found by **starting** a machine with hardware
+    /// virtualisation and seeing whether it stays up — never by looking for
+    /// `/dev/kvm`, which can be there with nothing behind it.
+    fn of_this_host() -> Self {
+        static FOUND: std::sync::OnceLock<Processor> = std::sync::OnceLock::new();
+        *FOUND.get_or_init(|| {
+            let Ok(mut probe) = Command::new("qemu-system-x86_64")
+                .args([
+                    "-accel",
+                    "kvm",
+                    "-machine",
+                    "none",
+                    "-nodefaults",
+                    "-display",
+                    "none",
+                    "-monitor",
+                    "none",
+                    "-S",
+                ])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+            else {
+                return Self::Emulated;
+            };
+            // A host without it refuses at once; one with it sits paused, as
+            // `-S` asks, until it is stopped.
+            let began = Instant::now();
+            while began.elapsed() < Duration::from_secs(5) {
+                if probe.try_wait().ok().flatten().is_some() {
+                    return Self::Emulated;
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            drop(probe.kill());
+            drop(probe.wait());
+            Self::Hardware
+        })
+    }
+
+    /// The arguments that say so.
+    fn arguments(self) -> [&'static str; 4] {
+        match self {
+            Self::Hardware => ["-accel", "kvm", "-cpu", "host"],
+            Self::Emulated => ["-accel", "tcg", "-cpu", "max"],
+        }
+    }
+
+    /// A deadline measured with hardware virtualisation, as long as it is on
+    /// this processor.
+    fn allowing(self, measured: Duration) -> Duration {
+        match self {
+            Self::Hardware => measured,
+            Self::Emulated => measured * EMULATION_IS_SLOWER,
+        }
+    }
+}
+
 /// The arguments every machine here starts with.
-fn a_machine(firmware: Firmware, variables: &Path, serial: &Path) -> Vec<String> {
-    ["-accel", "kvm", "-cpu", "host", "-smp", "4", "-m", "3072"]
+fn a_machine(
+    processor: Processor,
+    firmware: Firmware,
+    variables: &Path,
+    serial: &Path,
+) -> Vec<String> {
+    processor
+        .arguments()
         .iter()
+        .chain(&["-smp", "4", "-m", "3072"])
         .chain(firmware.machine())
         .chain(&[
             "-nic",
@@ -748,7 +912,17 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
     let _one = ONE_MACHINE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _made = Leftovers::in_the_work_directory(&[
+        "environment",
+        "staged.img",
+        "windows.raw",
+        "windows.before",
+        "target.raw",
+        "installing-vars.fd",
+        "installed-vars.fd",
+    ]);
     the_machine_can_run_this();
+    let processor = Processor::of_this_host();
     the_firmware_is_taken_from_the_base();
 
     let environment = the_environment_built();
@@ -760,10 +934,14 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
     let serial = work().join("installing.log");
     drop(std::fs::remove_file(&serial));
     let vars = variables(Firmware::SecureBoot, "installing-vars.fd");
-    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
     arguments.extend(a_disk(&windows, "alo-windows", Some(1)));
     arguments.extend(a_disk(&target, "alo-target", None));
-    powered_off(started(&arguments), Duration::from_secs(60 * 60), &serial);
+    powered_off(
+        started(&arguments),
+        processor.allowing(Duration::from_secs(60 * 60)),
+        &serial,
+    );
 
     let told = said(&serial);
     assert!(
@@ -808,7 +986,7 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
     let serial = work().join("installed.log");
     drop(std::fs::remove_file(&serial));
     let vars = variables(Firmware::SecureBoot, "installed-vars.fd");
-    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
     arguments.extend(a_disk(&target, "alo-target", Some(1)));
     arguments.extend(a_disk(&windows, "alo-windows", None));
     arguments.extend(a_credential(
@@ -828,7 +1006,11 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         "systemd.unit-dropin.multi-user.target~alo-vm-watching",
         "[Unit]\nWants=user@1000.service alo-vm-watching.service\n",
     ));
-    powered_off(started(&arguments), Duration::from_secs(20 * 60), &serial);
+    powered_off(
+        started(&arguments),
+        processor.allowing(Duration::from_secs(20 * 60)),
+        &serial,
+    );
 
     let told = said(&serial);
     for unit in ["alo-boundaryd.service", "alo-agentd.service"] {
@@ -865,7 +1047,16 @@ fn a_loader_the_firmware_does_not_trust_is_refused() {
     let _one = ONE_MACHINE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _made = Leftovers::in_the_work_directory(&[
+        "environment",
+        "environment-tampered",
+        "staged.img",
+        "windows.raw",
+        "windows.before",
+        "refused-loader-vars.fd",
+    ]);
     the_machine_can_run_this();
+    let processor = Processor::of_this_host();
     the_firmware_is_taken_from_the_base();
 
     let environment = the_environment_built();
@@ -891,7 +1082,7 @@ fn a_loader_the_firmware_does_not_trust_is_refused() {
     let serial = work().join("refused-loader.log");
     drop(std::fs::remove_file(&serial));
     let vars = variables(Firmware::SecureBoot, "refused-loader-vars.fd");
-    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
     arguments.extend(a_disk(&windows, "alo-windows", Some(1)));
     let mut machine = started(&arguments);
 
@@ -900,7 +1091,7 @@ fn a_loader_the_firmware_does_not_trust_is_refused() {
     // off.
     let began = Instant::now();
     while !said(&serial).contains("Access Denied") {
-        if began.elapsed() > Duration::from_secs(5 * 60)
+        if began.elapsed() > processor.allowing(Duration::from_secs(5 * 60))
             || machine
                 .try_wait()
                 .expect("the machine can be asked")
@@ -1016,7 +1207,17 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
     let _one = ONE_MACHINE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _made = Leftovers::in_the_work_directory(&[
+        "environment",
+        "staged.img",
+        "windows.raw",
+        "windows.before",
+        "target.raw",
+        "initramfs-with-another-key.img",
+        "refusing-vars.fd",
+    ]);
     the_machine_can_run_this();
+    let processor = Processor::of_this_host();
 
     let environment = the_environment_built();
     let windows = the_windows_disk(&staged(&environment));
@@ -1068,7 +1269,7 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
     let serial = work().join("refusing.log");
     drop(std::fs::remove_file(&serial));
     let vars = variables(Firmware::Plain, "refusing-vars.fd");
-    let mut arguments = a_machine(Firmware::Plain, &vars, &serial);
+    let mut arguments = a_machine(processor, Firmware::Plain, &vars, &serial);
     arguments.extend([
         "-kernel".to_owned(),
         environment
@@ -1089,7 +1290,7 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
     let last = english("installing.restart-when-ready");
     let began = Instant::now();
     while !said(&serial).contains(&last) {
-        if began.elapsed() > Duration::from_secs(15 * 60)
+        if began.elapsed() > processor.allowing(Duration::from_secs(15 * 60))
             || machine
                 .try_wait()
                 .expect("the machine can be asked")
@@ -1121,6 +1322,14 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
     assert!(
         told.contains("This download is not a genuine alo OS, so nothing was changed"),
         "the refusal is not said in the plan's words"
+    );
+    // Why the check refused is on the serial line in the checker's own words,
+    // named as the checker's — kept where a technician reads it, not lost.
+    assert!(
+        told.lines()
+            .any(|line| line.trim().starts_with("/usr/bin/cosign: ")),
+        "the serial line does not say why the check refused:\n{}",
+        &told[told.len().saturating_sub(4000)..]
     );
     for never in [
         "installing.genuine",
@@ -1162,7 +1371,12 @@ fn a_firmware_is_given_only_flash_it_can_write() {
     assert!(!plain.contains("smm=on"), "{plain}");
     assert!(!plain.contains("secure"), "{plain}");
     for firmware in [Firmware::SecureBoot, Firmware::Plain] {
-        let started = a_machine(firmware, Path::new("vars.fd"), Path::new("serial.log"));
+        let started = a_machine(
+            Processor::Emulated,
+            firmware,
+            Path::new("vars.fd"),
+            Path::new("serial.log"),
+        );
         assert_eq!(
             started
                 .iter()
@@ -1176,6 +1390,92 @@ fn a_firmware_is_given_only_flash_it_can_write() {
                 .iter()
                 .any(|argument| argument.ends_with(&format!("file={}", firmware.code().display()))),
             "{started:?}"
+        );
+    }
+}
+
+/// **An emulated processor is said as one, and is given the time it needs**:
+/// never hardware virtualisation's arguments, and every deadline longer.
+#[test]
+fn an_emulated_processor_is_never_asked_for_hardware_and_waits_longer() {
+    let emulated = Processor::Emulated.arguments().join(" ");
+    assert_eq!(emulated, "-accel tcg -cpu max");
+    assert_eq!(
+        Processor::Hardware.arguments().join(" "),
+        "-accel kvm -cpu host"
+    );
+    let an_hour = Duration::from_secs(60 * 60);
+    assert_eq!(Processor::Hardware.allowing(an_hour), an_hour);
+    assert!(Processor::Emulated.allowing(an_hour) > an_hour);
+    let started = a_machine(
+        Processor::Emulated,
+        Firmware::SecureBoot,
+        Path::new("vars.fd"),
+        Path::new("serial.log"),
+    );
+    assert!(
+        !started.iter().any(|argument| argument == "kvm"),
+        "{started:?}"
+    );
+}
+
+/// **What a test made is gone when it ends, and gone when it fails**: files and
+/// directories alike, a name never made is no error, and what the guard was not
+/// given — a serial log a report names — is left where it is.
+#[test]
+fn what_a_test_made_is_removed_pass_or_fail() {
+    let at = Path::new(env!("CARGO_TARGET_TMPDIR")).join("alo-installing-leftovers");
+    drop(std::fs::remove_dir_all(&at));
+    std::fs::create_dir_all(at.join("environment/EFI")).expect("a directory can be made");
+    for file in ["windows.raw", "environment/EFI/grub.cfg", "installing.log"] {
+        std::fs::write(at.join(file), b"made").expect("a file can be made");
+    }
+
+    drop(Leftovers::in_directory(
+        at.clone(),
+        &["windows.raw", "environment", "never-made.raw"],
+    ));
+    assert!(!at.join("windows.raw").exists());
+    assert!(!at.join("environment").exists());
+    assert!(at.join("installing.log").is_file(), "a log was removed");
+
+    std::fs::write(at.join("target.raw"), b"made").expect("a file can be made");
+    let failed = std::panic::catch_unwind(|| {
+        let _made = Leftovers::in_directory(at.clone(), &["target.raw"]);
+        panic!("the test failed");
+    });
+    assert!(failed.is_err());
+    assert!(
+        !at.join("target.raw").exists(),
+        "a failed test left its disk behind"
+    );
+    drop(std::fs::remove_dir_all(&at));
+}
+
+/// **The stager copies the environment it was handed, and nothing else**: a
+/// changed copy beside the built one is the changed copy inside the container,
+/// and a directory the container cannot see is refused rather than swapped for
+/// the one it can.
+#[test]
+fn the_stager_copies_the_environment_it_was_handed() {
+    let work = Path::new("/build/tmp/alo-installing-vm");
+    assert_eq!(
+        inside_the_stager(work, &work.join("environment")),
+        "/work/environment/."
+    );
+    assert_eq!(
+        inside_the_stager(work, &work.join("environment-tampered")),
+        "/work/environment-tampered/."
+    );
+    for outside in [
+        PathBuf::from("/elsewhere/environment-tampered"),
+        work.join("../environment"),
+        work.to_path_buf(),
+    ] {
+        assert!(
+            std::panic::catch_unwind(|| inside_the_stager(work, &outside)).is_err(),
+            "{} was staged as if the stager could see it",
+            outside.display()
         );
     }
 }
