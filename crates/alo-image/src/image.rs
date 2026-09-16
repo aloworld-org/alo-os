@@ -17,6 +17,7 @@ use std::path::Path;
 use crate::accounts::TheStore;
 use crate::asserted::Asserted;
 use crate::booting::TheDocument;
+use crate::converter::{THE_CONVERTER, THE_CONVERTERS_SOCKET, TheConverter};
 use crate::description::Description;
 use crate::disk::TheDisk;
 use crate::installing::{THE_ENVIRONMENT, TheEnvironment};
@@ -122,6 +123,8 @@ pub struct Image {
     environment: TheEnvironment,
     /// What the notes of the Release a person downloads from say.
     notes: TheNotes,
+    /// What the recipe and the two units say about converting (ADR 0039).
+    converter: TheConverter,
 }
 
 impl Image {
@@ -177,6 +180,14 @@ impl Image {
         // image at all.
         let notes = TheNotes::read(&text(&root.join(THE_NOTES))?);
 
+        // The converting service and its socket, read beside the recipe that
+        // pins the engine inside it.
+        let converter = TheConverter::read(
+            &recipe,
+            unit(root, THE_CONVERTER)?,
+            unit(root, THE_CONVERTERS_SOCKET)?,
+        );
+
         Ok(Self {
             loader,
             agent,
@@ -196,6 +207,7 @@ impl Image {
             key,
             environment,
             notes,
+            converter,
         })
     }
 
@@ -344,9 +356,21 @@ impl Image {
     pub const fn notes(&self) -> &TheNotes {
         &self.notes
     }
+
+    /// What the recipe and the two units say about converting (ADR 0039).
+    #[must_use]
+    pub const fn converter(&self) -> &TheConverter {
+        &self.converter
+    }
 }
 
-/// One unit file, read as a service.
+/// A unit this image ships, read without being held to a service's shape.
+fn unit(root: &Path, called: &str) -> Result<Unit, NotAnImage> {
+    let at = root.join(UNITS).join(called);
+    Unit::read(&text(&at)?).map_err(|why| NotAnImage::NotAUnit { at, why })
+}
+
+/// One service this image ships, read.
 fn service(root: &Path, called: &str) -> Result<Service, NotAnImage> {
     let at = root.join(UNITS).join(called);
     let unit = Unit::read(&text(&at)?).map_err(|why| NotAnImage::NotAUnit {

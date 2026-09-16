@@ -30,6 +30,7 @@ alo-changing = { path = "../alo-changing" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }
+alo-converting = { path = "../alo-converting" }
 alo-corridor = { path = "../alo-corridor" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }

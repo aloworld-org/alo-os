@@ -1,0 +1,28 @@
+[Unit]
+# Where a document is handed in to be converted (ADR 0039).
+#
+# The service behind it is started the first time something knocks, and not at
+# boot: a machine nobody sends a document to runs no converter at all.
+Description=alo OS document converting: where a document is handed in
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md
+
+[Socket]
+# The path `crates/alo-converting` knocks at, held to it by `crates/alo-image`.
+# A Unix socket and nothing else: there is no address form, so there is no way
+# to point converting at another machine.
+ListenStream=/run/alo-convertd/socket
+
+# Who may hand a document in: the person's own processes, which are in the
+# agent's group — the shell a person opens a document from, and `alo-agentd`
+# carrying out `convert_document` as that person. Nobody else can connect.
+SocketUser=root
+SocketGroup=alo-agent
+SocketMode=0660
+
+# One service for every connection, which answers one at a time and hands its
+# listening socket on standard input: `alo-convertd` forbids `unsafe`, and a
+# descriptor `std` already owns is the one it can take.
+Accept=no
+
+[Install]
+WantedBy=sockets.target

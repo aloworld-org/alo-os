@@ -381,6 +381,7 @@ fn every_verb_this_machine_ships() -> Verbs {
         declaring,
         [
             "alo-applications",
+            "alo-converting",
             "alo-files",
             "alo-finding",
             "alo-measuring",
@@ -391,6 +392,7 @@ fn every_verb_this_machine_ships() -> Verbs {
     );
 
     let mut verbs = Verbs::default();
+    alo_converting::verbs::declare_into(&mut verbs).unwrap();
     alo_files::declare_into(&mut verbs).unwrap();
     alo_applications::declare_into(&mut verbs).unwrap();
     alo_finding::verbs::declare_into(&mut verbs).unwrap();

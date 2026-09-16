@@ -47,7 +47,7 @@
 use std::time::SystemTime;
 
 use alo_capability::{Authorised, Call, Grantee, Proposal, Refused};
-use alo_strings::Strings;
+use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::happened::{Happened, Stopped};
@@ -69,6 +69,14 @@ pub struct Entry {
     /// turn reads back exactly as it was written.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     origin: Option<Line>,
+    /// What the person was told the execution came to, in the words they were
+    /// told it in — what a converted copy could not carry, for one (ADR 0039).
+    ///
+    /// Absent, not present and empty, when nothing was told beyond the call
+    /// itself, so a record written before there was such a thing reads back
+    /// exactly as it was written.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    told: Vec<Line>,
 }
 
 impl Entry {
@@ -84,6 +92,7 @@ impl Entry {
             at,
             happened,
             origin: None,
+            told: Vec::new(),
         }
     }
 
@@ -104,6 +113,21 @@ impl Entry {
     #[must_use]
     pub fn from_another_machine(mut self, machine: &str) -> Self {
         self.origin = Some(Line::of(machine));
+        self
+    }
+
+    /// This entry, with what the person was told it came to.
+    ///
+    /// ADR 0039 §6: a conversion is recorded *with what the copy could not
+    /// carry*, which is not the call and not the grant, and is exactly what the
+    /// person was told. So it is kept as they were told it — the same sentences,
+    /// each through [`Line`] — and it is a stamp rather than a field of
+    /// [`Happened::Ran`], for [`Entry::from_another_machine`]'s reason: it adds
+    /// what was said and cannot change what happened.
+    #[must_use]
+    pub fn telling(mut self, said: &[Said]) -> Self {
+        self.told
+            .extend(said.iter().map(|said| Line::of(said.text())));
         self
     }
 
@@ -458,6 +482,13 @@ impl Entry {
         self.happened.what()
     }
 
+    /// What the person was told the execution came to, in order — empty when
+    /// nothing was told beyond the call.
+    #[must_use]
+    pub fn told(&self) -> &[Line] {
+        &self.told
+    }
+
     /// Which machine this was caused from, when it was caused from another one
     /// — `None` for everything caused on this machine.
     ///
@@ -787,6 +818,29 @@ mod tests {
                 .origin()
                 .is_some_and(|origin| origin.is("the reception machine"))
         );
+    }
+
+    /// **What a person was told is kept as they were told it, survives being
+    /// written down, and is absent when nothing was told** — and it changes
+    /// nothing about what happened.
+    #[test]
+    fn what_the_person_was_told_is_kept_and_absent_otherwise() {
+        let grants = granting(&["/home/anna/Invoices"]);
+        let authorised = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
+        let strings = in_english();
+        let plain = Entry::ran(&authorised, &strings);
+        assert!(plain.told().is_empty());
+        let written = serde_json::to_string(&plain).unwrap();
+        assert!(!written.contains("told"), "{written}");
+
+        let key = alo_strings::Key::named("capability.grant.anonymous").unwrap();
+        let said = strings.say(&key, &alo_strings::Filling::nothing());
+        let told = Entry::ran(&authorised, &strings).telling(&[said.clone(), said]);
+        assert_eq!(told.told().len(), 2);
+        assert_eq!(told.happened(), plain.happened());
+        let written = serde_json::to_string(&told).unwrap();
+        assert!(written.contains("\"told\""), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).ok(), Some(told));
     }
 
     /// The name a person gave a machine is data and goes through [`Line`]: one

@@ -23,6 +23,7 @@ members = [
   "crates/alo-clipboard",
   "crates/alo-collected",
   "crates/alo-context",
+  "crates/alo-converting",
   "crates/alo-corridor",
   "crates/alo-dock",
   "crates/alo-driving",
@@ -130,6 +131,14 @@ signal-hook = { version = "0.4", default-features = false }
 # store names a brought file by — and by `alo-driving`, only from
 # `instructions.rs`, the digest a grade names its instructions by (ADR 0034).
 ring = "0.17"
+# What is inside a document a person was sent, read so that what its converted
+# copy could not carry is said by name (ADR 0039 §5): a zip entry decompressed
+# by a pure-Rust inflater that forbids `unsafe`, and XML read by the reader
+# already in `Cargo.lock`. Reached only by `alo-converting`, and only from
+# `zip.rs` and `xml.rs`; each entry is capped there so a compression bomb is a
+# refusal rather than a machine out of memory.
+miniz_oxide = "0.8"
+quick-xml = "0.41"
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is
 # a rule that survives until the reviewer is busy.

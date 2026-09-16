@@ -1,0 +1,50 @@
+[package]
+name = "alo-converting"
+version = "0.0.1"
+description = "A .docx, .xlsx or .pptx a person was sent, converted on this machine into a PDF copy by an engine that can reach nothing, with what the copy could not carry said by name."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+# The converting service (ADR 0039, option A): started by systemd, never by
+# `alo-agentd`, handed its listening socket on standard input, and the only
+# thing on the machine that starts the engine. A thin `main` over `serving.rs`.
+name = "alo-convertd"
+path = "src/bin/alo-convertd.rs"
+
+[dependencies]
+# Converting is a verb, carried out from the call a person approved.
+alo-capability = { path = "../alo-capability" }
+# The last question before a file is opened — where each path really leads,
+# asked of the grants again — is `alo-files`' and is not asked a second way here.
+alo-files = { path = "../alo-files" }
+# What a file is, from its bytes, before anything is converted, and what this
+# machine can do with it once the service answers.
+alo-opening = { path = "../alo-opening" }
+# What the record keeps about a conversion, with what the copy could not carry
+# (ADR 0039 §6).
+alo-record = { path = "../alo-record" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+# Reading inside a document (ADR 0039 §5), in `zip.rs` and `xml.rs` only.
+miniz_oxide = { workspace = true }
+quick-xml = { workspace = true }
+
+# Handing the service two descriptors rather than two paths, opening the
+# original so that no link on the way is followed, and creating the copy so that
+# nothing is replaced: `sendmsg` with `SCM_RIGHTS`, `openat2` and `openat` with
+# `O_EXCL`. `std` spells none of them on a stable compiler, and `unsafe` is
+# forbidden, so it is the crate the workspace already rents for the kernel — in
+# `passing.rs` and `opening.rs` and nowhere else.
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, which is what a shell really holds.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

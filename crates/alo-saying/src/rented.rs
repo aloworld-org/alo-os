@@ -103,7 +103,7 @@ impl Rented {
 /// is missing from it today is deliberate rather than forgotten: `aya` and
 /// `libbpf` belong to a decision (ADR 0015) that has not been built, and a name
 /// on this list before the thing exists would be a rule nobody could check.
-pub const EVERYTHING_WE_RENT: [Rented; 18] = [
+pub const EVERYTHING_WE_RENT: [Rented; 19] = [
     Rented::we_rent(
         "Ollama",
         "the model runtime a question put to this machine is answered by (ADR 0006)",
@@ -129,6 +129,10 @@ pub const EVERYTHING_WE_RENT: [Rented; 18] = [
     Rented::we_rent(
         "CUPS",
         "the printing service that finds printers, keeps them set up and turns a document into what a printer takes (ADR 0011)",
+    ),
+    Rented::we_rent(
+        "LibreOffice",
+        "the office engine a document someone was sent is converted into a PDF copy with, inside a service that can reach nothing (ADR 0039)",
     ),
     Rented::we_rent(
         "rustix",

@@ -641,6 +641,51 @@ pub enum Wrong {
         /// What the unit sets the switch to, or `-` where it sets nothing.
         said: String,
     },
+    /// The office engine is not one exact release, checked by digest.
+    #[error(
+        "the recipe pins the converting engine as `{version}` without a whole digest it checks \
+         before unpacking — ADR 0039 rents it the way ADR 0006 rents the runtime, and a release \
+         that is not one exact version checked by digest is a different engine reading strangers' \
+         documents on two builds of one image"
+    )]
+    TheConverterArrivesUnverified {
+        /// The version the recipe names, or `-` where it names none.
+        version: String,
+    },
+    /// Part of converting is not on the image.
+    #[error(
+        "{what} is not on the image as the converting service needs it — ADR 0039's service and \
+         the engine it starts are both aboard, or the three formats people are sent do not open"
+    )]
+    TheConverterIsNotAboard {
+        /// What is missing.
+        what: String,
+    },
+    /// The converting service could reach something ADR 0039 says it cannot.
+    #[error(
+        "{converter} says `{setting}` is `{says}` — ADR 0039's service reads documents from \
+         strangers with no network, no address family but Unix, no view of any home folder, a \
+         login of its own and nothing held, so a picture a document links from a server is \
+         reported as not fetched rather than fetched"
+    )]
+    TheConverterMayReach {
+        /// The converting service's unit.
+        converter: String,
+        /// The setting that says otherwise.
+        setting: String,
+        /// What it says, or `-` where it says nothing.
+        says: String,
+    },
+    /// The converting service is not reached where the verb knocks.
+    #[error(
+        "the converting socket listens on `{listens}`, or does not hand itself to the service on \
+         standard input — `crates/alo-converting` knocks at one Unix socket on this machine, and \
+         there is no address form on purpose"
+    )]
+    TheConverterListensElsewhere {
+        /// What the socket unit listens on.
+        listens: String,
+    },
     /// The opener would run as somebody `logind` will not open a session for.
     ///
     /// ADR 0024 measured it twice, on two systemds: `CreateSession` answers

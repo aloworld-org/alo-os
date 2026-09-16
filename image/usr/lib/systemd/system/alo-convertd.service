@@ -1,0 +1,58 @@
+[Unit]
+# The one thing on this machine that converts a document someone was sent into
+# a PDF copy (ADR 0039, option A).
+#
+# It is handed two open files — the document, read-only, and an empty copy the
+# person's own process created — and never a path. It runs the rented engine
+# with a fixed argument list from a closed set of three, reads what the copy
+# could not carry out of both files, and writes the copy. Named for what it
+# does: a person never learns the name of the engine inside it.
+Description=alo OS document converting: a document someone was sent, copied into a PDF on this machine
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md
+Requires=alo-convertd.socket
+After=alo-convertd.socket
+
+[Service]
+Type=exec
+ExecStart=/usr/libexec/alo-convertd
+
+# The listening socket arrives on standard input, and what the service says
+# about itself goes to the journal — never back down a socket.
+StandardInput=socket
+StandardOutput=journal
+StandardError=journal
+
+# A login of its own, and never the person's or the agent's: a process that
+# reads documents from strangers is the last one to lend either any authority.
+# 60992 for the reason the other numbers in `sysusers.d/alo.conf` give.
+User=alo-convert
+Group=alo-convert
+
+# It holds nothing and can gain nothing.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# **It reaches nothing off this machine, and that is structural rather than a
+# filter.** No network namespace but its own empty one, and no address family
+# but Unix: a picture a document links from a server, a remote template, an
+# engine that wanted to check for updates — none of them has anywhere to go, so
+# each is reported as not fetched instead (law 1).
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+
+# **It has no view of any home folder.** The files it works on arrive open; it
+# could not open a person's document by name if it tried, which is the grant
+# staying where the kernel enforces it (ADR 0013). Everything else on the system
+# is read-only to it, and its scratch folder is a /tmp of its own, gone with it.
+ProtectHome=yes
+ProtectSystem=strict
+PrivateTmp=yes
+PrivateDevices=yes
+
+# Deliberately not restarted by a supervisor: a service that stopped is started
+# again by the next document handed to its socket.
+
+[Install]
+# Nothing: the socket is what is enabled, and it starts this.

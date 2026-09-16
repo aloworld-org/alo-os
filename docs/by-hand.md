@@ -162,6 +162,18 @@ and a person needs no grant and no approval to print their own document: the
 grant and the approval are what an agent needs, because it is the agent
 choosing to put a document on paper — or across the network to a printer.
 
+### convert_document
+
+**By hand:** a person opens the document they were sent from the file manager,
+and the shell opens a converted copy of it, saying what the copy could not carry
+— `The documents people are actually sent open`, and, for a file that cannot be,
+`the system converts it where it can`. The verb converts through the same
+service on this machine, into a copy in a folder, with the same list of what was
+lost; nothing is sent anywhere else either way. A person needs no grant and no
+approval to convert their own document: the grant and the approval are what an
+agent needs, because it is the agent choosing to read a document and write a new
+file beside it.
+
 ### install_application
 
 **By hand:** a person installs an application themselves from Software in

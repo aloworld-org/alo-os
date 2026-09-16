@@ -149,6 +149,24 @@ spelt `machine:` and its identity. A question a paired machine put to this
 machine's models carries its origin inside `answered-for-another-machine`, as
 it did before, and a reader asking what other machines caused here reads both.
 
+**`told` is what the person was told an execution came to**, added 2026-09-16
+and additive. ADR 0039 records a conversion *with what the copy could not
+carry*, which is neither the call nor the grant, so an entry may carry `told`, a
+list of strings: the sentences the person read, in order and in their language,
+each one line as every string here is. It is absent — not present and empty —
+when nothing was told beyond the call, so a record written before it existed
+reads back byte for byte. It never changes what happened: an entry that ran
+and lost something is still `ran`, and what was lost is what it was told.
+
+**`told` is what the person was told an execution came to**, added 2026-09-16
+and additive. ADR 0039 records a conversion *with what the copy could not
+carry*, which is neither the call nor the grant, so an entry may carry `told`, a
+list of strings: the sentences the person read, in order and in their language,
+each one line as every string here is. It is absent — not present and empty —
+when nothing was told beyond the call, so a record written before it existed
+reads back byte for byte. It never changes what happened: an entry that ran
+with losses is still `ran`, and what was lost is what it was told.
+
 ## Versioning
 
 `format` is `1`. Anything that would stop this version reading a record

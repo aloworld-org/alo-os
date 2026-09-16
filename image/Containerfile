@@ -34,6 +34,17 @@ ARG THE_TARGET=x86_64-unknown-linux-musl
 # never a different runtime on a certified machine.
 ARG THE_RUNTIME=0.34.0
 ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d57c0804
+# The office engine a document someone was sent is converted with (ADR 0039):
+# one exact release and the digest of the one artefact it published for this
+# base's package format, checked below before anything is unpacked, for the
+# runtime's reason. The machine this repository is gated on carries the same
+# release from the same publisher, in its own distribution's package format;
+# the report that pinned it gives both digests. Which program this is appears
+# nowhere a person reads — `crates/alo-converting/src/engine.rs` is the one
+# file that names it, and it runs only inside `alo-convertd.service`, which can
+# reach nothing.
+ARG THE_CONVERTER=26.2.6
+ARG THE_CONVERTER_SHA256=9833c61bfbec0905c6da54f82ef56123818661c9fec99706d9afece3ad7e9988
 # The weights a machine arrives with (ADR 0025, ADR 0007), declared here because
 # **they ride on the image** rather than being fetched when somebody sets the
 # machine up: a machine that fetches at setup has not arrived ready when it is
@@ -126,11 +137,39 @@ RUN cargo install bpf-linker --version ${THE_LINKER} --locked \
 COPY . /alo-os
 WORKDIR /alo-os
 
-# The three processes this repository has, and nothing else: the rest of the
+# The four processes this repository has, and nothing else: the rest of the
 # workspace is libraries they reach, and a `--workspace` build here would
-# compile every test target into an image that runs none of them.
+# compile every test target into an image that runs none of them. The fourth is
+# the converting service, which is the binary `alo-converting` builds.
 RUN cargo build --release --target ${THE_TARGET} \
-      --package alo-agentd --package alo-boundaryd --package alo-sessiond
+      --package alo-agentd --package alo-boundaryd --package alo-sessiond \
+      --package alo-converting
+
+# ---------------------------------------------------------------------------
+# The office engine, fetched pinned and checked before it is trusted
+# ---------------------------------------------------------------------------
+#
+# ADR 0039, option A: a rented engine, unmodified (ADR 0011), run only by a
+# service of our own with no network and no files. A stage of its own for the
+# runtime stage's reason. What leaves it is the publisher's own packages for
+# this base, unpacked from the one archive whose digest is pinned above — never
+# a package a mirror happened to serve.
+FROM ${THE_BUILDER} AS converter
+
+ARG THE_CONVERTER
+ARG THE_CONVERTER_SHA256
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
+      --output /converter.tar.gz \
+      https://download.documentfoundation.org/libreoffice/stable/${THE_CONVERTER}/rpm/x86_64/LibreOffice_${THE_CONVERTER}_Linux_x86-64_rpm.tar.gz \
+ && echo "${THE_CONVERTER_SHA256}  /converter.tar.gz" | sha256sum --check - \
+ && mkdir /converter \
+ && tar --extract --gzip --file /converter.tar.gz --directory /converter --strip-components 2 --wildcards '*/RPMS/*.rpm'
 
 # ---------------------------------------------------------------------------
 # The model runtime, fetched pinned and checked before it is trusted
@@ -270,6 +309,26 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-a
 # a session (ADR 0024).
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec/alo-sessiond
 
+# The converting service is in libexec for the same reason (ADR 0039): systemd
+# starts it when something knocks on its socket, and nobody runs it by hand.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec/alo-convertd
+
+# The office engine, from the checked packages, installed by the base's own
+# package manager so its libraries come from the base rather than from us.
+#
+# `/opt` on this base is a link into `/var`, which a bootc machine does not
+# update from the image after it is installed; the engine installs under `/opt`,
+# so the link is replaced with a real directory first and the engine is part of
+# the read-only image like everything else here. **Unmeasured until this recipe
+# is built** — `docs/quirks.md` is where the measurement goes.
+COPY --from=converter /converter/ /tmp/alo-converter/
+RUN rm -f /opt \
+ && mkdir -p /opt \
+ && dnf install --assumeyes --setopt=install_weak_deps=False /tmp/alo-converter/*.rpm \
+ && dnf clean all \
+ && rm -rf /tmp/alo-converter \
+ && test -x /opt/libreoffice26.2/program/soffice
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
@@ -338,17 +397,19 @@ COPY image/etc/alo/ /etc/alo/
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
-               /usr/bin/alo-agentd /usr/bin/ollama \
+               /usr/libexec/alo-convertd /usr/bin/alo-agentd /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/systemd/system/alo-sessiond.service \
                /usr/lib/systemd/system/alo-modeld.service \
+               /usr/lib/systemd/system/alo-convertd.socket \
+               /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
-                     alo-modeld.service \
+                     alo-modeld.service alo-convertd.socket \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
@@ -371,4 +432,6 @@ RUN systemd-sysusers \
  && test "$(getent group alo-greeter | cut -d: -f3)" = 60990 \
  && test "$(id -u alo-model)" = 60991 \
  && test "$(getent group alo-model | cut -d: -f3)" = 60991 \
+ && test "$(id -u alo-convert)" = 60992 \
+ && test "$(getent group alo-convert | cut -d: -f3)" = 60992 \
  && id -nG alo | tr ' ' '\n' | grep -qx alo-agent

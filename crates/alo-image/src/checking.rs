@@ -162,6 +162,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     crate::publishing::everything_wrong_with_the_publish(image, &mut wrong);
     crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
     crate::released::everything_wrong_with_the_notes(image, &mut wrong);
+    crate::converts::everything_wrong_with_the_converter(image, &mut wrong);
     wrong
 }
 
@@ -1451,7 +1452,8 @@ mod tests {
     /// rather than picked: 60991 used to be free and is the model service's, and
     /// a description naming *it* is caught by a different sentence —
     /// [`Wrong::TheServerIsSomebodyElse`], which says the truer thing, that the
-    /// process holding the model would be the agent.
+    /// process holding the model would be the agent. 60992 was the next free one
+    /// until the converting service took it (ADR 0039).
     #[test]
     fn a_description_whose_agent_is_no_login_is_caught() {
         let root = a_copy_of_the_image("no-agent-login");
@@ -1459,7 +1461,7 @@ mod tests {
             &root,
             THE_DESCRIPTION_FILE,
             "agent = 60989",
-            "agent = 60992",
+            "agent = 60993",
         );
 
         let wrong = everything_wrong_with(&image_at(&root));

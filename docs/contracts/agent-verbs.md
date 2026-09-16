@@ -634,6 +634,42 @@ application, and a verb with no grant needs a written reason in an ADR — and
 measurement verbs are not: `alo-turn` offers the verbs it has an executor for,
 and adding this one is an edit there.
 
+## The converting verb
+
+`docs/features.md` promises at v0.5 that *the documents people are actually sent
+open: `.docx`, `.xlsx`, `.pptx`*. [ADR 0039](../decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md)
+decides how. What an agent may ask for is one verb, declared in
+`alo-converting`'s `src/verbs.rs` with a `pub fn declare_into`.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `convert_document` | change | `file` (path), `into` (path) | convert {file} into a PDF copy in {into}, leaving the original as it is |
+
+**It is a change, and it requires grants over both arguments**: it reads the
+document and writes a new file. `into` is the folder the copy goes in; the copy
+is named after the document, ending in `.pdf`, and the model never chooses that
+name. **The grants are asked once more about the copy's own path** before it is
+created, so a grant over the folder alone (`Reach::File`) is not a grant over
+what goes inside it.
+
+**The copy is never the original.** The document is opened read-only; the copy
+is created with `O_EXCL`, and a name already in the folder is refused — nothing
+is replaced and nothing is quietly renamed. A copy the conversion did not finish
+is removed.
+
+**It answers with what the copy could not carry, by name**: a font substituted,
+a field fixed at its value, macros, linked content not fetched, comments,
+tracked changes — or that nothing was lost, which is said only when both the
+document and the copy were checked. A document or a copy that could not be
+checked is a refusal, and no copy is kept.
+
+**Nothing leaves the machine.** The verb hands two open descriptors to
+`alo-convertd` over a Unix socket; the service has no network and no view of any
+home folder. There is no remote form, fallback or setting.
+
+**Declared and carried out, and not yet offered by a turn**, for the reason the
+printing verb is not.
+
 ## The installing verb
 
 `docs/features.md` promises *install applications* at v0.5. What an agent may
@@ -670,6 +706,7 @@ printing verb is not.
 | **Applications** | Open, focus, arrange, close — over granted applications | `alo-agentd`, as the person |
 | **Measurements** | Search the index, what is running, what is filling — over the granted folder each reads | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Printing** | Print a granted document on this machine's printer | `alo-agentd`, as the person; declared, not yet offered by a turn |
+| **Converting** | Convert a granted document into a PDF copy in a granted folder, saying what the copy could not carry | `alo-agentd`, as the person, through `alo-convertd`; declared, not yet offered by a turn |
 | **Software** | Propose installing an application from a place this machine installs from | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |

@@ -23,6 +23,7 @@
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
 //! | [`TheWeights`] | The weights a machine arrives with, and whether the catalogue measured them |
+//! | [`TheConverter`] | The converting service and the office engine inside it, pinned and reaching nothing (ADR 0039) |
 //! | [`TheVersion`] | Which release the recipe says it builds, which a published image is pinned against |
 //! | [`ThePin`], [`THE_REGISTRY`] | The published release an installer pulls, by digest, and the key it was signed with |
 //! | [`TheWorkflow`] | The workflow that pushes a candidate, and the things it may never do |
@@ -87,6 +88,8 @@ mod accounts;
 mod asserted;
 mod booting;
 mod checking;
+mod converter;
+mod converts;
 mod description;
 mod disk;
 mod image;
@@ -116,6 +119,7 @@ pub use accounts::{TheStore, where_a_sign_in_looks};
 pub use asserted::Asserted;
 pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
+pub use converter::{THE_CONVERTER, THE_CONVERTERS_BINARY, THE_CONVERTERS_SOCKET, TheConverter};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
 pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER, THE_SERVER};

@@ -55,6 +55,7 @@ alo-granted = { path = "../alo-granted" }
 # Every verb alo OS ships, on one list as a daemon is handed them, so the test
 # that no verb reaches the terminal is asked of all of them and not of the ones
 # this crate declares.
+alo-converting = { path = "../alo-converting" }
 alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-measuring = { path = "../alo-measuring" }

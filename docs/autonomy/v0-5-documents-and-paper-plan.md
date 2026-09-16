@@ -93,6 +93,28 @@ digest the image pins, in the lane's own distribution, and paste the version int
 the report. A conversion test that skips itself where the engine is missing is
 refused (the decision's own rule). **Depends on:** 1.
 
+**Done, 2026-09-16.** `crates/alo-converting`: `convert_document(file, into)`, a
+change with grants over both, carried out by `convert` — the copy's own path
+asked of the grants again, the document opened read-only following no link, its
+kind decided from its bytes, the copy created with `O_EXCL` under the document's
+name ending `.pdf`, and both handed as descriptors to `alo-convertd`, which
+inventories the original, runs the pinned engine (LibreOffice 26.2.6, one file
+names it) in a scratch folder of its own, inventories the PDF and only then
+writes it. `Carried` is `Everything` or `NotEverything` with each `NotCarried` by
+name — a font substituted, a field fixed, macros, linked content not fetched,
+comments, tracked changes; an inventory that cannot complete is a refusal and
+the copy is removed. Tested through the real service and engine against the
+owner's three documents, with the refusals beside them. The image pins the
+engine by digest and ships `alo-convertd.socket` and `.service` (no network,
+Unix only, no home folders, a login of its own, 60992), held by `alo-image`.
+`alo-record` gained an additive `told` stamp for what the copy lost. 37 strings
+collected by `alo-saying`; the engine added to its rented list; the verb in the
+contract and `docs/by-hand.md`. Report:
+`docs/autonomy/updates/office-documents-converted-and-what-the-copy-lost.md`.
+Owed: the image built and booted (the `/opt` link and the service's sandbox are
+unmeasured on the base), the shell's window for the copy, and older Office and
+OpenDocument files.
+
 **Decided rather than built, 2026-09-14.** The first worker found that the code
 could not be written without choosing things that are not a worker's to choose:
 nothing in this product starts a program, and `alo-bounding` documents why; a
