@@ -178,6 +178,8 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(all(test, target_os = "linux"))]
+mod a_discovery_answer_leaves_on_the_network_it_arrived_on;
+#[cfg(all(test, target_os = "linux"))]
 mod a_machine_reachable_on_both_networks;
 #[cfg(all(test, target_os = "linux"))]
 mod a_paired_machine_on_two_networks_with_one_address;
@@ -258,6 +260,8 @@ pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod rereading;
 #[cfg(target_os = "linux")]
+pub mod responding;
+#[cfg(target_os = "linux")]
 pub mod route_messages;
 #[cfg(target_os = "linux")]
 pub mod serving;
@@ -320,7 +324,7 @@ pub use holding::Holding;
 #[cfg(target_os = "linux")]
 pub use hosting::{Hosted, THE_HOSTED_WORKSPACE, advertised, hosted_at};
 #[cfg(target_os = "linux")]
-pub use joining::{DiscoverySockets, Joining};
+pub use joining::Joining;
 #[cfg(target_os = "linux")]
 pub use keeping_names::TheNamesFile;
 #[cfg(target_os = "linux")]

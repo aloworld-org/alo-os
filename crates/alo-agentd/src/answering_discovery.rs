@@ -22,7 +22,8 @@
 //!
 //! # And how it ends
 //!
-//! The thread sleeps in one `poll` on both discovery sockets and the far end of
+//! The thread sleeps in one `poll` on every socket discovery is answered on —
+//! one per network and one over IPv6 (`crate::responding`) — and the far end of
 //! a pair of sockets the service holds the near end of. The service ending —
 //! stopped, or failed — drops the near end, the hangup wakes the thread, and it
 //! answers what is already waiting and returns before the service does.
@@ -40,7 +41,7 @@ use std::sync::{Mutex, PoisonError};
 use alo_nearby::NotNearby;
 
 use crate::refusing::NotServed;
-use crate::unix::ready;
+use crate::unix::ready_and;
 use crate::wire::Wire;
 
 /// What the service holds of discovery answered beside it: what to wait on for
@@ -114,44 +115,34 @@ pub(crate) fn beside<T>(
     Ok((served, answered.answered.load(Ordering::Relaxed)))
 }
 
-/// One family's way of answering a discovery question on a wire.
-type Answer = fn(&Wire) -> Result<Option<std::net::SocketAddr>, NotNearby>;
-
-/// Answer every discovery question on `wire`, in both families, until `ended`
-/// hangs up or a socket fails.
+/// Answer every discovery question on `wire`, on every network it is answered
+/// on and in both families, until `ended` hangs up or a socket fails.
+///
+/// The responders are taken again at the top of every round
+/// ([`Wire::responding`]), because a machine plugged in or unplugged while the
+/// service runs answers on a different set of sockets from the one the last
+/// round waited on (`crate::responding`).
 fn answer_until_ended(wire: &Wire, answered: &Answered, ended: &UnixStream) {
     loop {
-        let waiting_on = [
-            Some(ended.as_fd()),
-            Some(wire.discovery_waiting_on()),
-            wire.discovery_ipv6_waiting_on(),
-        ];
-        let [stop, over_ipv4, over_ipv6] = match ready(&waiting_on, None) {
+        let responding = wire.responding();
+        let waiting_on = responding.waiting_on();
+        let ([stop], asked) = match ready_and(&[Some(ended.as_fd())], &waiting_on, None) {
             Ok(ready) => ready,
             Err(why) => {
                 answered.stopped_because(NotNearby::TheNetwork(why.to_string()));
                 return;
             }
         };
-        let answering: [(bool, Answer); 2] = [
-            (over_ipv4, Wire::answer_discovery),
-            (over_ipv6, Wire::answer_discovery_over_ipv6),
-        ];
-        for (asked, answer) in answering {
-            if !asked {
-                continue;
+        // A question that was not one for this service — a printer's, or this
+        // machine's own answer coming back round — is nothing to count.
+        match responding.answer_one(&asked) {
+            Ok(Some(_)) => {
+                answered.answered.fetch_add(1, Ordering::Relaxed);
             }
-            // A question that was not one for this service — a printer's, or
-            // this machine's own answer coming back round — is nothing to count.
-            match answer(wire) {
-                Ok(Some(_)) => {
-                    answered.answered.fetch_add(1, Ordering::Relaxed);
-                }
-                Ok(None) => {}
-                Err(why) => {
-                    answered.stopped_because(why);
-                    return;
-                }
+            Ok(None) => {}
+            Err(why) => {
+                answered.stopped_because(why);
+                return;
             }
         }
         if stop {

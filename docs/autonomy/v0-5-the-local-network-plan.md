@@ -1344,7 +1344,42 @@ listeners, and take the interface from the listener that accepted.
 
 ### 28. A discovery answer leaves on the network the question arrived on
 
-**Status:** ready. **Depends on:** 22, 26, 27.
+**Status:** **Done, 2026-09-16.** Built in `crates/alo-agentd` (`responding.rs`,
+new — `Responders`, one datagram socket per network the kernel reports, each held
+to that network's interface with `SO_BINDTOIFINDEX` set before the bind and joined
+to the group on the networks that carry multicast, with **no unheld socket beside
+them**; loopback is answered on and never joined, as `crate::listeners` has it;
+`Responding`, a handle onto each for one round, so nothing is locked while a round
+waits; the responders follow the kernel's network events as the listeners and the
+joins do, and a network that will not take a socket is a line in the service log;
+**a network the kernel numbers zero, and a machine that cannot read its own
+interfaces at all, are answered on no network rather than by the route**, which is
+where this deliberately differs from `crate::listeners` and the module says why;
+`wire.rs` — `Wire::responding`, `Wire::answered_on`, one presence and one workspace
+held by `Responders` so a network answered on later says what the ones at start
+say, and `networks_changed` moving the responders too; `joining.rs` — the IPv4
+joins moved out to the socket that is held on each network, leaving the IPv6 group
+and the kernel's notification; `answering_discovery.rs` — one round waiting on
+every responder). **The reading was chosen rather than `IP_PKTINFO`** because no
+crate in this workspace parses a `cmsghdr` safely and `CLAUDE.md` forbids `unsafe`;
+the cost is written up in `responding.rs` and in the report. Measured on this
+kernel and recorded in `docs/quirks.md`: held datagram sockets on one port coexist,
+an unheld one beside them **also** binds (where TCP refuses it), a question is
+delivered only to the socket held to the interface it arrived on, that socket's
+answer leaves by that interface against the route, and an unheld socket in the same
+place answers by the route and is heard by nobody. Tested on a real kernel by
+`crates/alo-agentd/src/a_discovery_answer_leaves_on_the_network_it_arrived_on.rs`
+(two `veth` cables carrying `10.68.0.0/24`, a machine at `10.68.0.2` at each far
+end, the route pointing at the network the studio is **not** on, and **no policy
+rule at all**: the studio asks who is here and hears the answer while the machine
+at the same address on the other network hears nothing, then the studio proposes
+by identity — which needs reception found first — and the two machines pair, while
+somebody else is asked nothing, connected to never and sent nothing). A mutation
+run with the hold removed fails it. Contract:
+`docs/contracts/local-network-wire.md` (*A discovery answer leaves on the network
+the question arrived on*, new, additive). The report is
+`docs/autonomy/updates/a-discovery-answer-held-to-its-network.md`.
+**Depends on:** 22, 26, 27.
 
 *Machines find each other with zero configuration.* Task 27 made a machine on two
 networks with one private range **reachable** on both — the port is one held
@@ -1383,3 +1418,38 @@ with code.
   the sentence additively if anything about it is observable at all. What reality
   does that the specification does not say goes in `docs/quirks.md`. Nothing in
   `alo-shell`, nothing in `image/`.
+
+### 29. A cable pulled is a network this machine is no longer found on, and one plugged in is found at once
+
+**Status:** ready. **Depends on:** 22, 27, 28.
+
+*Machines find each other with zero configuration.* Three sets of sockets on this
+machine now follow the kernel's network notifications — the discovery joins
+(`crate::joining`), the port's listeners (`crate::listeners`) and discovery's
+responders (`crate::responding`) — and `Wire::networks_changed` moves all three
+when the service's round says the routing socket spoke. **What no test on a real
+kernel has measured is a network that *goes*.** `tests/a_machine_on_two_networks.rs`
+measures a network appearing, for the joins alone and before the listeners and the
+responders existed; every other rule is tested by handing a list to
+`listen_on`/`answer_on` rather than by pulling a cable. So a machine undocked at
+lunchtime is, as far as this repository can show, still saying it is on a network
+it is not on — and the socket held to an interface that has gone is the thing that
+cannot be bound again when the cable comes back, which is exactly the bug a person
+reports as *it only works if I reboot after docking*.
+
+- **Acceptance:** on a real kernel, one machine on two `veth` cables serving as
+  `src/main.rs` does, with a machine at the far end of each: with both cables up it
+  is found and reachable on both, tested; **a cable pulled** — the far end's
+  namespace ended, or the link set down — leaves the machine found and reachable on
+  the other cable and on nothing at the first, with the service still running and
+  the person's door still answering, tested; **the same cable plugged in again** is
+  listened on, joined and answered on again without the service restarting, and the
+  machine at its far end finds and reaches this one, tested — which is the half a
+  socket held to a gone interface would fail; what is said is unchanged across all
+  of it, byte for byte; and a failure on the way is a line in the service log and
+  never a stopped service, tested.
+- **Constraint:** ADR 0003 as it stands: no network chosen by a person or an agent,
+  no trusted-network setting, and what crosses the wire is unchanged. No interval
+  and no polling — the kernel's notification is the only thing that wakes any of
+  it. Nothing in `alo-shell`, nothing in `image/`. What reality does that the
+  specification does not say goes in `docs/quirks.md`.

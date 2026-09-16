@@ -354,11 +354,38 @@ the port is bound once per network:
   two machines that found each other on a network the route does not point at
   pair, rather than sending the confirmation to whoever the route reaches at the
   same address.
-- **What is not yet held:** a discovery *answer* leaves from the socket this
-  machine answers *who is here* on, which is held to no network, so on a machine on
-  two networks carrying one private range it goes by the route. A responder on such
-  a machine may therefore be reachable on its port and still not be found on one of
-  its networks. This is written down in `docs/quirks.md` and is the next task's.
+- **And a discovery answer leaves on the network its question arrived on**, which
+  is the section below: being reachable on a network and being *found* on it are
+  two halves, and this section is the first.
+
+## A discovery answer leaves on the network the question arrived on
+
+Added 2026-09-16, additively. The same two networks that could not reach this
+machine's port could not find it either: the socket it answered *who is here* on
+was held to no network, so its answer to `192.168.1.20` on the cable left by the
+route — to somebody else at that address, or to nobody.
+
+- **Discovery is answered on one datagram socket per network this machine is on**,
+  each held to that network's interface (`SO_BINDTOIFINDEX`) and joined to
+  `224.0.0.251` on the networks that carry multicast. Which networks is what the
+  kernel reports — the same rule the port is listened on by, loopback included —
+  and they follow the kernel's network notifications. A network that will not take
+  a socket is a line in the service log and the others still answer.
+- **An answer to a question that arrived on one network leaves on that network.**
+  A machine asking on the cable is answered on the cable, whatever this machine's
+  route says, and nobody else is sent anything.
+- **A question whose network this machine cannot read is answered on no network**
+  rather than by the route: an interface the kernel numbers zero, and a machine
+  that cannot read its own interfaces at all, answer nobody and say so in the
+  service log. Silence rather than an answer sent to a machine that did not ask.
+- **Over IPv6 nothing changes.** A question over IPv6 discovery comes from a
+  link-local address carrying the interface it was heard on, and the kernel answers
+  back out of that one; the IPv6 socket is one, held to nothing, as before.
+- **What is said is unchanged, byte for byte, on every network and in both
+  families**: the same identity, the same port and the same workspace answer. A
+  machine that said something different on one network would be two machines to
+  whoever asked on both. Nothing a reader of this wire sends or reads changes, and
+  which interfaces are answered on is still no setting (ADR 0003).
 
 ## Versioning
 

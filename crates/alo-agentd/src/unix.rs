@@ -60,7 +60,8 @@
 //!
 //! # And the fourth and fifth: a shared port, and the kernel's interfaces
 //!
-//! `a_shared_datagram_socket_on` sets `SO_REUSEADDR`, which `std` cannot, and
+//! `a_shared_datagram_socket_on` — which only a test makes now — sets
+//! `SO_REUSEADDR`, which `std` cannot, and
 //! its IPv6 twin and `an_ipv6_only_listener_on` set `IPV6_V6ONLY`, which `std`
 //! cannot either. And
 //! `a_route_dump`, `told_when_networks_change` and `emptied` are the kernel's
@@ -145,9 +146,16 @@ pub fn who(connection: &UnixStream) -> Result<Caller, NotACaller> {
 /// the others can, and this is alo OS setting it for the same reason.
 /// Joining the group is `std`'s and is done by the caller.
 ///
+/// **Only a test makes one now.** Since `crate::responding` the machine answers
+/// IPv4 discovery on one socket per network, each held to that network's
+/// interface, so that an answer leaves on the network its question arrived on;
+/// a socket held to nothing is what the fixtures' *other* machines answer on,
+/// which is the thing they are there to be.
+///
 /// # Errors
 ///
 /// Whatever the machine said, as a `std::io::Error`.
+#[cfg(test)]
 pub(crate) fn a_shared_datagram_socket_on(
     port: u16,
 ) -> Result<std::net::UdpSocket, std::io::Error> {
@@ -460,6 +468,12 @@ pub(crate) enum NotOpened {
 /// `InvalidInput` again for a length of time no `timespec` can hold, which is
 /// centuries and is a caller that has worked one out wrongly rather than a
 /// machine that meant it.
+///
+/// **Only a test waits on a fixed list alone now.** The service waits on its
+/// doors and on a list whose length it does not know until it asks — the port's
+/// listeners, and the sockets discovery is answered on — which is
+/// [`ready_and`].
+#[cfg(test)]
 pub(crate) fn ready<const N: usize>(
     waiting_on: &[Option<BorrowedFd<'_>>; N],
     for_at_most: Option<Duration>,

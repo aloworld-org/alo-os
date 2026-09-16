@@ -947,15 +947,65 @@ takes the network a connection arrived on from the listener that accepted it, so
 address of this machine's is read and the weak host model cannot misattribute a
 connection. A machine whose interfaces cannot be read binds one listener held to
 nothing, says so, and reads a connection's network the old way.
-**What is not closed:** **a discovery answer still leaves by the route.** The
-socket `crate::wire` answers *who is here* on is one socket held to no network, so
-on a machine on two networks carrying one private range its unicast answer to
-`192.168.1.20` goes to whichever of the two the route picks. A machine on the
-other network therefore still does not find this one, even though it can now reach
-its port. Task 28 of `docs/autonomy/v0-5-the-local-network-plan.md` is that hold;
-until it is built, the end-to-end test above keeps discovery's answers on the cable
-with an `ip rule ipproto udp` and a table of its own, so that what it measures is
-the handshake.
+**What was not closed then, and is now:** a discovery answer left by the route as
+well, because the socket `crate::wire` answered *who is here* on was one socket
+held to no network. The entry below is that hold, and it is why
+`crates/alo-agentd/src/a_machine_reachable_on_both_networks.rs` still carries an
+`ip rule ipproto udp` and a table of its own — it was written while discovery had
+no hold, so that what it measured was the handshake, and it is left as it is
+rather than rewritten. The fixture with **no rule at all** is
+`crates/alo-agentd/src/a_discovery_answer_leaves_on_the_network_it_arrived_on.rs`.
+**Date:** 2026-09-16.
+
+### The Linux kernel — held datagram sockets on one port coexist, a question is delivered only to the socket held to the interface it arrived on, and the answer leaves by that interface
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`veth`), socket2 0.6, Python 3 for the probe;
+measured on 2026-09-16 by a probe run before the code and by
+`crates/alo-agentd/src/responding.rs` and
+`crates/alo-agentd/src/a_discovery_answer_leaves_on_the_network_it_arrived_on.rs`.
+**Behaviour:** the entries above hold the *port* to the network a connection
+arrived on. Discovery is datagrams, and its answer is sent rather than routed by a
+handshake the kernel completes, so it needed its own measurement. A namespace with
+two `veth` cables carrying `10.67.0.0/24`, a machine at `10.67.0.2` at each far
+end, the route to that address pointing at the cable the asking machine is **not**
+on, and one datagram socket per interface bound to `0.0.0.0:5399` with
+`SO_BINDTOIFINDEX` set before the bind:
+
+- **Three held datagram sockets at one port coexist**, held to `lo`, to the first
+  cable and to the second. Measured — for UDP the bind-conflict check treats a
+  different `sk_bound_dev_if` as a different binding, as it does for TCP.
+- **A socket held to *nothing* at the same port binds beside them**, which is
+  where UDP differs from TCP: `SO_REUSEADDR` is enough, and nothing refuses it.
+  Measured. So held sockets do not *displace* an unheld one the way held listeners
+  do — the machine has to stop binding one, which is what `crate::responding`
+  does.
+- **A multicast question that arrived on one cable is delivered to the socket held
+  to that cable and to no other**, and so is a unicast question to that cable's
+  address. Measured, both.
+- **The answer that socket sends leaves by the interface it is held to**, though
+  the route to the asking machine's address points at the other cable: the machine
+  that asked heard it, and the machine at the same address on the other network
+  heard nothing. Measured.
+- **An unheld socket in the same place answers by the route**: it heard the
+  question from the cable perfectly well, and its answer went out the other
+  network — the machine that asked heard nothing. Measured, which is the failure
+  this was built for.
+
+**Our response:** `crate::responding` answers discovery on one datagram socket per
+network the kernel reports — loopback among them, as `crate::listeners` has it —
+each held to that network's interface and joined to the group on the networks that
+carry multicast, and binds **no** unheld socket beside them. The IPv6 socket stays
+held to nothing, because a link-local address carries the interface it was heard on
+in its own scope and the kernel answers back out of that one. A network the kernel
+numbers zero, and a machine whose interfaces cannot be read at all, are answered on
+**no** network rather than by the route — where `crate::listeners` binds one
+listener held to nothing, because an unheld handshake merely fails while an unheld
+answer reaches a machine that did not ask.
+**What is not closed:** `IP_PKTINFO` would name the arriving interface per
+datagram and needs no list of interfaces, but no crate in this workspace parses a
+`cmsghdr` safely and `CLAUDE.md` forbids `unsafe`; so a question arriving on an
+interface this machine cannot enumerate is answered by nobody rather than answered
+exactly.
 **Date:** 2026-09-16.
 
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
