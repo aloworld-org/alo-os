@@ -563,6 +563,7 @@ dependencies = [
  "getrandom 0.3.4",
  "ring",
  "serde",
+ "socket2",
  "thiserror 2.0.20",
  "toml",
 ]

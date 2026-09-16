@@ -291,11 +291,14 @@ machine is found on those too:
   than written down, and a proposal from one is measured nowhere and so refused
   as not found. A scope is local to the machine that measured it and never
   crosses the wire.
-- **The port in both families.** The port `7610` is one listener accepting IPv6
-  and IPv4 (an IPv4 peer is read as its IPv4 address, never as `::ffff:a.b.c.d`),
-  so a proposal, a confirmation, a verb and a question arrive over link-local
-  exactly as over IPv4, and a proposal's measurement is made in the family and on
-  the interface its connection came from.
+- **The port in both families.** The port `7610` is answered in both families (an
+  IPv4 peer is read as its IPv4 address, never as `::ffff:a.b.c.d`), so a
+  proposal, a confirmation, a verb and a question arrive over link-local exactly
+  as over IPv4, and a proposal's measurement is made in the family and on the
+  interface its connection came from. Since 2026-09-16 that is one IPv4 listener
+  per IPv4 network beside one IPv6-only listener rather than one listener in both
+  families — see *The port is answered on every network*, below; nothing a reader
+  of this wire sends or reads changes.
 - **One machine in both families.** A machine heard over IPv4 and over IPv6 on
   one network is one machine with an address in each (`alo_nearby::Found::also_at`),
   and a workspace likewise. **Where both answered, the IPv4 address is the one
@@ -318,6 +321,44 @@ machine is found on those too:
   what the indicator and the record say, is unchanged.
 - There is still no setting: no *IPv6 on/off*, and no family chosen by a person or
   an agent (ADR 0003). A request naming one is refused on either door.
+
+## The port is answered on every network
+
+Added 2026-09-16, additively. A machine on two networks whose routers hand out the
+same private range — the commonest office and the commonest home — was reachable
+on its port only from the network its own route pointed at, because a TCP listener
+held to no interface answers every handshake by the route (`docs/quirks.md`). So
+the port is bound once per network:
+
+- **One IPv4 listener per IPv4 network this machine is on**, each held to that
+  network's interface (`SO_BINDTOIFINDEX`), beside **one IPv6-only listener** held
+  to nothing. Which networks is what the kernel reports — every interface that is
+  up and running and has an IPv4 address, **loopback included**, multicast not
+  asked for — and the listeners follow the kernel's network notifications as the
+  discovery joins do. A network that will not bind is a line in the service log
+  and the others are still bound; a machine whose interfaces cannot be read binds
+  one listener held to nothing and says so.
+- **The port is still `7610` and nothing about it is a setting** (ADR 0003): which
+  interfaces are listened on is what the machine is plugged into, never a list
+  anybody writes down.
+- **What crosses the wire is unchanged.** The framing, the six paths, the proofs
+  and every reply are what they were; a machine speaking this wire sends and reads
+  exactly what it did.
+- **The network a connection arrived on is the listener that accepted it**, not
+  the address it was made to — a machine's own address can belong to an interface
+  the packet did not come in on (Linux's weak host model). A proposal is measured
+  on that network, so `192.168.1.20` on the cable is not judged against
+  `192.168.1.20` on the Wi-Fi.
+- **A proposal and a confirmation are dialled held to the network the other
+  machine was heard on** (ADR 0044), as a question from a turn already was — so
+  two machines that found each other on a network the route does not point at
+  pair, rather than sending the confirmation to whoever the route reaches at the
+  same address.
+- **What is not yet held:** a discovery *answer* leaves from the socket this
+  machine answers *who is here* on, which is held to no network, so on a machine on
+  two networks carrying one private range it goes by the route. A responder on such
+  a machine may therefore be reachable on its port and still not be found on one of
+  its networks. This is written down in `docs/quirks.md` and is the next task's.
 
 ## Versioning
 

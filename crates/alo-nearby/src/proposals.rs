@@ -245,8 +245,12 @@ impl Proposals {
         }
         let deliberating =
             Deliberating::asking(proposal, keying).map_err(NotProposed::NotPaired)?;
-        self.waiting
-            .push(Waiting::begun(deliberating, now, to.where_it_answers()));
+        self.waiting.push(Waiting::begun(
+            deliberating,
+            now,
+            to.where_it_answers(),
+            to.on_the_network(),
+        ));
         self.waiting.last().ok_or(NotProposed::NothingWaiting)
     }
 
@@ -288,12 +292,12 @@ impl Proposals {
                     .is_some_and(|waiting| waiting.on() == Side::TheOneAsking)
             })
             .ok_or(NotProposed::NothingWaiting)?;
-        let (deliberating, since, other_at) = self.waiting.remove(at).into_deliberating();
+        let (deliberating, since, other_at, other_on) = self.waiting.remove(at).into_deliberating();
         let answered = deliberating
             .answered_with(offer)
             .map_err(NotProposed::NotPaired)?;
         self.waiting
-            .insert(at, Waiting::begun(answered, since, other_at));
+            .insert(at, Waiting::begun(answered, since, other_at, other_on));
         self.waiting.get(at).ok_or(NotProposed::NothingWaiting)
     }
 
@@ -333,8 +337,12 @@ impl Proposals {
         }
         let keying = Keying::fresh().map_err(NotProposed::Underneath)?;
         let deliberating = Deliberating::asked(proposal, keying);
-        self.waiting
-            .push(Waiting::begun(deliberating, now, seen.where_it_answers()));
+        self.waiting.push(Waiting::begun(
+            deliberating,
+            now,
+            seen.where_it_answers(),
+            seen.on_the_network(),
+        ));
         self.waiting.last().ok_or(NotProposed::NothingWaiting)
     }
 

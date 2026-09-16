@@ -435,6 +435,7 @@ mod tests {
             Knocked {
                 stream,
                 from: HeardFrom::of(from),
+                arrived,
                 message,
             },
             &mut doorway,

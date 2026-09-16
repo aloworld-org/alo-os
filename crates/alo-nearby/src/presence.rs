@@ -24,6 +24,7 @@
 //! finding a machine moves nothing.
 
 use std::net::{IpAddr, SocketAddr};
+use std::num::NonZeroU32;
 
 use crate::heard_from::HeardFrom;
 use crate::machine::MachineId;
@@ -188,6 +189,26 @@ impl Found {
     #[must_use]
     pub const fn where_it_answers(&self) -> SocketAddr {
         self.address.at(self.port)
+    }
+
+    /// The interface of the network the machine was heard on, where discovery
+    /// measured one — which is what a connection to it is held to.
+    ///
+    /// [ADR 0041](../../../docs/decisions/0041-a-link-local-departure-names-its-interface.md)
+    /// for a link-local address and
+    /// [ADR 0044](../../../docs/decisions/0044-a-private-ipv4-departure-is-held-to-the-network-it-was-found-on.md)
+    /// for a private IPv4 one: `192.168.1.20` on the wired network and
+    /// `192.168.1.20` on the Wi-Fi are two machines, and a socket held to
+    /// nothing reaches whichever the route says at the moment it connects.
+    /// `None` where nobody said — a machine heard at an address that names its
+    /// own network, and every measurement made before there were networks to
+    /// tell apart.
+    #[must_use]
+    pub const fn on_the_network(&self) -> Option<NonZeroU32> {
+        match self.address.interface() {
+            Some(interface) => NonZeroU32::new(interface),
+            None => None,
+        }
     }
 }
 

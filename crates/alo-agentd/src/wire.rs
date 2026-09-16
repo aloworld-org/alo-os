@@ -5,9 +5,10 @@
 //! proposal and a confirmation, `alo-corridor` for a verb and an outcome, and
 //! this crate's own [`crate::questioned`] for a question — and each of them
 //! takes a listener somebody bound or a message somebody read. This is the
-//! somebody: one `TcpListener` on [`THE_WIRE_PORT`], one datagram socket that
-//! answers *who is here* with that port, and one identity kept at
-//! [`THE_IDENTITY`] so that the machine is the same machine after a restart.
+//! somebody: the listeners on [`THE_WIRE_PORT`] ([`crate::listeners`]), one
+//! datagram socket that answers *who is here* with that port, and one identity
+//! kept at [`THE_IDENTITY`] so that the machine is the same machine after a
+//! restart.
 //!
 //! # One reader, and why
 //!
@@ -54,20 +55,32 @@
 //! discovery on a second socket, IPv6 only, joined at `ff02::fb` on every
 //! interface with a link-local address — an [`Answering`] holding **the same
 //! presence and the same workspace** as the IPv4 one, so the same bytes answer
-//! in both families — and the port is one listener that accepts both families.
-//! A kernel with no IPv6 in it is a line in the service log and a machine
-//! discovered over IPv4 as before, never a machine that will not start.
+//! in both families. A kernel with no IPv6 in it is a line in the service log
+//! and a machine discovered over IPv4 as before, never a machine that will not
+//! start.
+//!
+//! # And the port is listened on once per network
+//!
+//! An unheld listener answers every handshake by the route, so on a machine on
+//! two networks that hand out one private range only the machine on the route's
+//! network could reach this one's port at all. So the port is **one IPv4
+//! listener per IPv4 network, each held to that network's interface**, beside
+//! one IPv6-only listener — which is `crate::listeners`', with the reasoning and
+//! the kernel's measured behaviour. What this file takes from it is
+//! [`Knocked::arrived`]: the listener that accepted says which network a
+//! connection arrived on, and `crate::hearing` measures a proposal there.
 
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::num::NonZeroU16;
 use std::os::fd::{AsFd, BorrowedFd};
 
-use alo_corridor::AT_MOST_A_VERB;
-use alo_nearby::http::{self, WHILE_THE_WIRE_ANSWERS};
+use alo_nearby::http::Message;
 use alo_nearby::{Answering, HeardFrom, MachineId, NotNearby, Presence, THE_ADDRESS, THE_PORT};
 
+use crate::arrived_on::ArrivedOn;
 use crate::hosting::Hosted;
 use crate::joining::{DiscoverySockets, Joining};
+use crate::listeners::{Listeners, Listening};
 use crate::networks::Network;
 use crate::refusing::NotBound;
 use crate::unhosted::Unhosted;
@@ -92,8 +105,10 @@ pub const THE_IDENTITY: &str = "/var/lib/alo/machine-id";
 /// The port bound, the socket discovery is answered on, and who this machine
 /// says it is.
 pub struct Wire {
-    /// Where messages arrive.
-    listener: TcpListener,
+    /// Where messages arrive: one listener per network this machine is on, each
+    /// held to that network's interface, and one IPv6-only listener beside them
+    /// ([`crate::listeners`]).
+    listeners: Listeners,
     /// The socket discovery questions arrive on, as something to wait on.
     ///
     /// A second handle onto the socket [`Answering`] owns: the two share one
@@ -131,10 +146,18 @@ pub struct Knocked {
     pub stream: TcpStream,
     /// The address it came from, measured off the connection — with the
     /// interface, for a link-local IPv6 address, and as IPv4 for an IPv4 peer
-    /// the listener accepted in both families.
+    /// an IPv6 listener reported as an IPv4-mapped address.
     pub from: HeardFrom,
+    /// Which of this machine's networks it arrived on: the network of the
+    /// listener that accepted it where that listener is held to one, and what
+    /// the connection itself says where it is not (`crate::arrived_on`).
+    ///
+    /// What a measurement about the machine at the other end is held to, so
+    /// that `192.168.1.20` on the cable is not measured against
+    /// `192.168.1.20` on the Wi-Fi.
+    pub arrived: ArrivedOn,
     /// What it carried, or why it could not be read as a message at all.
-    pub message: Result<http::Message, NotNearby>,
+    pub message: Result<Message, NotNearby>,
 }
 
 impl Wire {
@@ -158,20 +181,7 @@ impl Wire {
     /// bind, and nothing is listening.
     pub fn bound(here: MachineId) -> Result<Self, NotBound> {
         let said = |line: &str| eprintln!("alo-agentd: {line}");
-        let listener = match crate::unix::a_listener_in_both_families_on(THE_WIRE_PORT) {
-            Ok(listener) => listener,
-            Err(why) => {
-                said(&format!(
-                    "the port presence advertises could not be bound over IPv6 ({why}); it is bound over IPv4 alone, and a machine on a network with no IPv4 address cannot reach this one"
-                ));
-                TcpListener::bind((Ipv4Addr::UNSPECIFIED, THE_WIRE_PORT)).map_err(|why| {
-                    NotBound::NoWire {
-                        what: "the port presence advertises",
-                        why,
-                    }
-                })?
-            }
-        };
+        let listeners = Listeners::bound(THE_WIRE_PORT, &mut |line| said(line))?;
         let discovery =
             crate::unix::a_shared_datagram_socket_on(THE_PORT).map_err(|why| NotBound::NoWire {
                 what: "the socket discovery is answered on",
@@ -193,7 +203,7 @@ impl Wire {
             },
             &mut |line| said(line),
         );
-        let mut wire = Self::on(listener, discovery, here, THE_PORT)?;
+        let mut wire = Self::listening_on(listeners, discovery, here, THE_PORT)?;
         if let Some(socket) = discovery_ipv6 {
             wire = wire.answering_over_ipv6_on(socket)?;
         }
@@ -246,19 +256,29 @@ impl Wire {
         here: MachineId,
         asking_at: u16,
     ) -> Result<Self, NotBound> {
-        let port = listener
-            .local_addr()
-            .map_err(|why| NotBound::NoWire {
-                what: "the port presence advertises",
-                why,
-            })?
-            .port();
+        Self::listening_on(Listeners::on(listener)?, discovery, here, asking_at)
+    }
+
+    /// This machine on `listeners` and `discovery`, whether the machine bound
+    /// them or a test handed them in.
+    ///
+    /// # Errors
+    ///
+    /// [`NotBound::NoWire`] when the discovery socket cannot be waited on beside
+    /// the listeners.
+    fn listening_on(
+        listeners: Listeners,
+        discovery: UdpSocket,
+        here: MachineId,
+        asking_at: u16,
+    ) -> Result<Self, NotBound> {
+        let port = listeners.port();
         let waiting_on = discovery.try_clone().map_err(|why| NotBound::NoWire {
             what: "the socket discovery is answered on",
             why,
         })?;
         Ok(Self {
-            listener,
+            listeners,
             discovery: waiting_on,
             answering: Answering::on(discovery, Presence::of(here, port)),
             discovery_ipv6: None,
@@ -350,10 +370,21 @@ impl Wire {
         self.asking_at
     }
 
-    /// What to wait on for a message on the port.
+    /// The listeners as they stand, for one round of the service: what to wait
+    /// on for a message on the port, and what to accept it from.
+    ///
+    /// Taken once a round rather than held, so a listener a network change took
+    /// away closes when the round that was already waiting on it ends.
     #[must_use]
-    pub fn waiting_on(&self) -> BorrowedFd<'_> {
-        self.listener.as_fd()
+    pub fn listening(&self) -> Listening {
+        Listening::of(&self.listeners)
+    }
+
+    /// The networks the port is listened on now — empty on a wire listening
+    /// through a listener somebody handed in.
+    #[must_use]
+    pub fn listened_on(&self) -> Vec<Network> {
+        self.listeners.listened_on()
     }
 
     /// What to wait on for a discovery question.
@@ -384,15 +415,18 @@ impl Wire {
     /// workspace answer on every network — so this changes where this machine
     /// is heard and nothing it says. A failure is a line in the service log.
     pub fn networks_changed(&self) {
+        let said = &mut |line: &str| eprintln!("alo-agentd: {line}");
         if let Some(joining) = &self.joining {
             let sockets = DiscoverySockets {
                 ipv4: &self.discovery,
                 ipv6: self.discovery_ipv6.as_ref(),
             };
-            joining.changed(sockets, &mut |line| {
-                eprintln!("alo-agentd: {line}");
-            });
+            joining.changed(sockets, said);
         }
+        // And the port, for the same reason and on the same notification: a
+        // laptop docked after it started is otherwise unreachable on the wired
+        // network all day (`crate::listeners`).
+        self.listeners.changed(said);
     }
 
     /// The networks discovery is joined on now, in the kernel's order — empty
@@ -405,39 +439,17 @@ impl Wire {
             .unwrap_or_default()
     }
 
-    /// Accept one connection and read what it carries.
+    /// Accept one connection on the listener bound first and read what it
+    /// carries, for a wire on a listener somebody handed in.
     ///
-    /// Called once the listener has said somebody is there, so the accept
-    /// answers at once; the read waits at most `WHILE_THE_WIRE_ANSWERS`, so a
-    /// stranger holding a connection open does not hold this machine. What
-    /// arrived but could not be read as a message is carried in
-    /// [`Knocked::message`] for `crate::hearing` to answer with a word.
+    /// A machine listening on one per network accepts through
+    /// [`listening`](Self::listening), which is told which of them spoke.
     ///
     /// # Errors
     ///
-    /// [`NotNearby::TheNetwork`] when the listener will not accept or the
-    /// connection will not take its timeouts — the machine's, and a reason
-    /// to stop rather than spin.
+    /// As [`Listening::accept_one`].
     pub fn accept_one(&self) -> Result<Knocked, NotNearby> {
-        let (stream, who) = self
-            .listener
-            .accept()
-            .map_err(|why| NotNearby::TheNetwork(why.to_string()))?;
-        stream
-            .set_read_timeout(Some(WHILE_THE_WIRE_ANSWERS))
-            .map_err(|why| NotNearby::TheNetwork(why.to_string()))?;
-        stream
-            .set_write_timeout(Some(WHILE_THE_WIRE_ANSWERS))
-            .map_err(|why| NotNearby::TheNetwork(why.to_string()))?;
-        // Every way the read fails is carried rather than answered here: a
-        // stranger's bytes and a stranger who sent nothing for ten seconds
-        // are both one connection, and neither is a reason to stop serving.
-        let message = http::read_message_of_at_most(&stream, AT_MOST_A_VERB);
-        Ok(Knocked {
-            stream,
-            from: HeardFrom::of(who),
-            message,
-        })
+        self.listening().accept_the_first()
     }
 
     /// Answer one discovery question, if what arrived was one.
@@ -493,6 +505,7 @@ impl std::fmt::Debug for Wire {
             .field("asking_at", &self.asking_at)
             .field("hosts", &self.hosts())
             .field("joined", &self.joined())
+            .field("listened_on", &self.listened_on())
             .finish_non_exhaustive()
     }
 }
@@ -516,18 +529,20 @@ mod tests {
         MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap()
     }
 
-    /// A wire on sockets of this test's own, on this host.
-    fn a_wire() -> Wire {
+    /// A wire on sockets of this test's own, on this host, and where its
+    /// listener is bound.
+    fn a_wire() -> (Wire, std::net::SocketAddr) {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let at = listener.local_addr().unwrap();
         let discovery = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
-        Wire::on(listener, discovery, here(), 0).unwrap()
+        (Wire::on(listener, discovery, here(), 0).unwrap(), at)
     }
 
     /// **Discovery is answered with the port the wire is bound to**, so what
     /// another machine dials is where this one listens.
     #[test]
     fn discovery_is_answered_with_the_port_the_wire_listens_on() {
-        let wire = a_wire();
+        let (wire, _) = a_wire();
         let at = wire.discovery.local_addr().unwrap();
         let looking = Looking::from(UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap());
         looking.ask(at).unwrap();
@@ -542,8 +557,7 @@ mod tests {
     /// that is not a message at all is carried as such rather than dropped.
     #[test]
     fn a_message_is_read_once_and_a_non_message_is_carried_as_one() {
-        let wire = a_wire();
-        let at = wire.listener.local_addr().unwrap();
+        let (wire, at) = a_wire();
 
         let mut client = TcpStream::connect(at).unwrap();
         client
@@ -551,6 +565,11 @@ mod tests {
             .unwrap();
         let knocked = wire.accept_one().unwrap();
         assert!(knocked.from.ip().is_loopback());
+        assert_eq!(
+            knocked.arrived,
+            crate::arrived_on::ArrivedOn::ItsOwnNetwork,
+            "a connection on a listener held to nothing was not read off the connection"
+        );
         let message = knocked.message.unwrap();
         assert_eq!(message.first, "POST /somewhere HTTP/1.1");
         assert_eq!(message.body, "one line\n");

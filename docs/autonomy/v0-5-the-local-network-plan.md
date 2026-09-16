@@ -1266,7 +1266,41 @@ studio on the cable is measured against somebody else on the Wi-Fi, and refused 
 
 ### 27. A machine on two networks with one private range is reachable on both
 
-**Status:** ready. **Depends on:** 25, 26.
+**Status:** **Done, 2026-09-16.** Built in `crates/alo-agentd` (`listeners.rs` —
+`Listeners`, one IPv4 listener per IPv4 network held to that network's interface
+with `SO_BINDTOIFINDEX` set before the bind, beside one IPv6-only listener held to
+nothing; `Listening`, a handle onto each for one round of the service, so nothing
+is locked while a round waits; the listeners follow the kernel's network events as
+`joining` does, a network that will not bind is a line in the service log, and a
+machine that cannot read its own interfaces binds one listener held to nothing and
+says so; `networks.rs` — `listening_networks`, the same rule as discovery's with
+**loopback included** and multicast not asked for, so a connection to `127.0.0.1`
+is answered as it is today; `arrived_on.rs` — `what_a_listener_held_to`, the
+network a connection arrived on taken from the listener that accepted it rather
+than from the address it was dialled at, with the old reading kept for a listener
+held to nothing; `unix.rs` — `an_ipv6_only_listener_on` and `ready_and`, which
+waits on the fixed things and on a list whose length is not known until it is
+asked; `wire.rs` — `Knocked::arrived`, `Wire::listening`, `Wire::listened_on`,
+and `networks_changed` moving the listeners too; `serving.rs` — one round waiting
+on every listener) and `crates/alo-nearby` (`dialling.rs` — **a proposal and a
+confirmation dialled from a socket held to the network the other machine was
+heard on**, without which two machines that found each other on a network the
+route does not point at could propose and never pair; `presence.rs` —
+`Found::on_the_network`; `waiting.rs` — `Waiting::where_the_other_was_heard`).
+Measured on this kernel and recorded in `docs/quirks.md`: two held listeners on
+`0.0.0.0` coexist, an unheld one beside them is refused `EADDRINUSE`, a held
+listener answers its handshakes out of its own interface, and `SO_BINDTOIFINDEX`
+needs no capability. Tested on a real kernel by
+`crates/alo-agentd/src/a_machine_reachable_on_both_networks.rs` (two `veth`
+cables carrying `10.67.0.0/24`, a machine at `10.67.0.2` at each far end, the
+route pointing at the network the studio is **not** on: an unheld listener is
+never reached and a held one is, then the studio proposes over that network and
+the two machines pair, while somebody else at the same address is asked nothing
+and connected to never). Contract: `docs/contracts/local-network-wire.md` (*The
+port is answered on every network*, new, additive). **What is not held yet is a
+discovery answer**, which is task 28. The report is
+`docs/autonomy/updates/a-machine-reachable-on-both-networks.md`.
+**Depends on:** 25, 26.
 
 *Machines find each other with zero configuration, and trust none of them for it.*
 Task 26 measured what the kernel really does with the port this machine advertises,
@@ -1307,3 +1341,45 @@ listeners, and take the interface from the listener that accepted.
   (task 1): which interfaces are listened on is what the machine is plugged into,
   never a list anybody writes down. What reality does that the specification does
   not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 28. A discovery answer leaves on the network the question arrived on
+
+**Status:** ready. **Depends on:** 22, 26, 27.
+
+*Machines find each other with zero configuration.* Task 27 made a machine on two
+networks with one private range **reachable** on both — the port is one held
+listener per network, and the handshake goes back out the interface it came in on.
+What still leaves by the route is the other half of being found: **the answer to
+*who is here*.** `crate::wire` answers discovery on one socket per family, held to
+no network, and `alo_nearby::Answering::answer_one` replies with `send_to` to the
+asking machine's unicast address. On a machine whose two routers hand out
+`192.168.1.0/24`, the answer to the studio at `192.168.1.20` on the cable goes out
+whichever interface the route picks — to somebody else, or to nobody — so the
+studio never finds this machine and cannot propose to it at all. Measured on
+2026-09-16 and written down in `docs/quirks.md`; it is why task 27's end-to-end
+test has to keep discovery's answers on the cable with a policy rule rather than
+with code.
+
+- **Acceptance:** how a discovery answer is held to the network its question
+  arrived on is decided in the crate that answers, and written up with the reason —
+  one datagram socket **per network held to its interface**, each joined to the
+  group on that network (as `crate::looking` already holds a socket for asking and
+  `crate::listeners` for listening), an `IP_PKTINFO` read back with `recvmsg` and
+  answered with `sendmsg`, or another reading the kernel really gives, with what
+  each costs a question that arrived on loopback or over IPv6; an answer to a
+  question that arrived on one network leaves on that network, tested on a real
+  kernel with two `veth` cables carrying one private range and a machine at the
+  same address at each far end — the machine that asked hears the answer and the
+  other hears nothing; a question whose network cannot be read is answered on no
+  network rather than by the route, tested; what is said is unchanged — the same
+  identity, the same port and the same workspace answer, byte for byte, on every
+  network and in both families, tested; a network that will not take a socket is a
+  line in the service log and the others still answer, tested; and **two machines
+  on a network the route does not point at find each other and pair with no policy
+  rule in the fixture**, which is the end-to-end task 27 could not yet write.
+- **Constraint:** ADR 0003 as it stands: discovery reveals presence only, there is
+  still no setting, and no interface is chosen by a person or an agent. What
+  crosses the wire is unchanged, and `docs/contracts/local-network-wire.md` gains
+  the sentence additively if anything about it is observable at all. What reality
+  does that the specification does not say goes in `docs/quirks.md`. Nothing in
+  `alo-shell`, nothing in `image/`.

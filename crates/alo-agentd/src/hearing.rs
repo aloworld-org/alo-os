@@ -37,6 +37,11 @@
 //! by the route can be answered by somebody else at `192.168.1.20` on the
 //! Wi-Fi. A connection whose arriving network cannot be read is measured
 //! nowhere, and its proposal is refused as *not found*.
+//!
+//! Which network that is, is read once where the connection is accepted
+//! ([`crate::wire::Knocked::arrived`]): the listener that accepted it is held to
+//! one network (`crate::listeners`), so the connection arrived there and no
+//! address of this machine's is consulted at all.
 
 use std::io::Write as _;
 
@@ -51,7 +56,7 @@ use alo_nearby::{
     HeardFrom, NotNearby, Pairing, Surface, THE_CONFIRMATION_PATH, THE_PROPOSAL_PATH,
 };
 
-use crate::arrived_on::the_network_it_arrived_on;
+use crate::arrived_on::ArrivedOn;
 use crate::looking::found_at;
 use crate::network::TheNetwork;
 use crate::questioned::{self, Questioned};
@@ -123,6 +128,7 @@ pub fn heard(
     let Knocked {
         mut stream,
         from,
+        arrived,
         message,
     } = knocked;
     let message = match message {
@@ -144,7 +150,7 @@ pub fn heard(
     };
     match path.as_str() {
         THE_PROPOSAL_PATH | THE_CONFIRMATION_PATH => {
-            on_the_pairing_wire(stream, from, &message, doorway, judging, now)
+            on_the_pairing_wire(stream, from, arrived, &message, doorway, judging, now)
         }
         THE_READ_PATH | THE_CHANGE_PATH | THE_OUTCOME_PATH => {
             on_the_verb_wire(stream, from, &message, doorway, grants, judging, now)
@@ -182,6 +188,7 @@ pub fn heard(
 fn on_the_pairing_wire(
     stream: std::net::TcpStream,
     from: HeardFrom,
+    arrived: ArrivedOn,
     message: &Message,
     doorway: &mut Doorway<'_, '_>,
     judging: &mut Judging<'_>,
@@ -193,7 +200,7 @@ fn on_the_pairing_wire(
     // the one that connected rather than whoever the route reaches at the same
     // private address (`crate::arrived_on`).
     let found = if message.first.contains(THE_PROPOSAL_PATH) {
-        found_at(from, the_network_it_arrived_on(&stream), judging.asking_at)
+        found_at(from, arrived, judging.asking_at)
     } else {
         Vec::new()
     };

@@ -27,6 +27,11 @@ ring = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
+# A proposal and a confirmation to a machine found on one network are dialled
+# from a socket held to that network's interface (ADR 0044), which `std` cannot
+# make. Reached only from `dialling.rs`, which is the one file here that opens a
+# connection at all.
+socket2 = { workspace = true }
 
 [dev-dependencies]
 alo-strings = { path = "../alo-strings" }

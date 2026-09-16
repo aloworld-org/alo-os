@@ -61,8 +61,8 @@
 //! # And the fourth and fifth: a shared port, and the kernel's interfaces
 //!
 //! `a_shared_datagram_socket_on` sets `SO_REUSEADDR`, which `std` cannot, and
-//! its IPv6 twin and `a_listener_in_both_families_on` set `IPV6_V6ONLY` one
-//! way and the other, which `std` cannot either. And
+//! its IPv6 twin and `an_ipv6_only_listener_on` set `IPV6_V6ONLY`, which `std`
+//! cannot either. And
 //! `a_route_dump`, `told_when_networks_change` and `emptied` are the kernel's
 //! routing socket, which `std` has no spelling for at all: which interfaces this
 //! machine has, and when that changes, so discovery is joined on every network
@@ -193,36 +193,39 @@ pub(crate) fn a_shared_ipv6_datagram_socket_on(
     Ok(std::net::UdpSocket::from(socket))
 }
 
-/// A listener at `port` on every interface in **both** families: IPv6, and
-/// IPv4 arriving as IPv4-mapped IPv6 addresses.
+/// A listener at `port` on every IPv6 interface and **no IPv4 one**, beside the
+/// IPv4 listeners `crate::listeners` holds to their networks.
 ///
-/// `std` binds one family per listener and cannot clear `IPV6_V6ONLY`, and the
-/// wire's port is one listener waited on by one service — so a machine on a
-/// network with no IPv4 address is reached on the same socket as one with. The
-/// option is cleared explicitly rather than left to `net.ipv6.bindv6only`, so
-/// what a machine accepts does not depend on a sysctl. An IPv4 peer's address
-/// is read back as IPv4 by whoever accepts (`alo_nearby::HeardFrom::of`).
+/// Two listeners on one port coexist only where neither takes the other's
+/// addresses: an IPv6 listener with `IPV6_V6ONLY` cleared binds IPv4 too, and a
+/// held IPv4 listener beside it is then refused `EADDRINUSE`. So the wire binds
+/// this and the held ones, and never one listener in both families.
 ///
 /// # Errors
 ///
 /// Whatever the machine said, as a `std::io::Error` — including a kernel with
-/// IPv6 left out of it, where the caller binds IPv4 alone.
-pub(crate) fn a_listener_in_both_families_on(
-    port: u16,
-) -> Result<std::net::TcpListener, std::io::Error> {
-    /// As many connections as wait to be accepted as `std` lets wait.
-    const WAITING: i32 = 128;
+/// IPv6 left out of it, where the caller listens over IPv4 alone.
+pub(crate) fn an_ipv6_only_listener_on(port: u16) -> Result<std::net::TcpListener, std::io::Error> {
     let socket = rustix::net::socket(
         rustix::net::AddressFamily::INET6,
         rustix::net::SocketType::STREAM,
         None,
     )?;
-    rustix::net::sockopt::set_ipv6_v6only(&socket, false)?;
+    rustix::net::sockopt::set_ipv6_v6only(&socket, true)?;
+    listening(socket, std::net::Ipv6Addr::UNSPECIFIED.into(), port)
+}
+
+/// Bind `socket` at `address` and `port` and listen on it, sharing the port
+/// with a socket in `TIME_WAIT` as every listener here does.
+fn listening(
+    socket: rustix::fd::OwnedFd,
+    address: std::net::IpAddr,
+    port: u16,
+) -> Result<std::net::TcpListener, std::io::Error> {
+    /// As many connections as wait to be accepted as `std` lets wait.
+    const WAITING: i32 = 128;
     rustix::net::sockopt::set_socket_reuseaddr(&socket, true)?;
-    rustix::net::bind(
-        &socket,
-        &std::net::SocketAddr::from((std::net::Ipv6Addr::UNSPECIFIED, port)),
-    )?;
+    rustix::net::bind(&socket, &std::net::SocketAddr::from((address, port)))?;
     rustix::net::listen(&socket, WAITING)?;
     Ok(std::net::TcpListener::from(socket))
 }
@@ -461,6 +464,26 @@ pub(crate) fn ready<const N: usize>(
     waiting_on: &[Option<BorrowedFd<'_>>; N],
     for_at_most: Option<Duration>,
 ) -> Result<[bool; N], std::io::Error> {
+    let (answered, _) = ready_and(waiting_on, &[], for_at_most)?;
+    Ok(answered)
+}
+
+/// [`ready`], and beside the caller's fixed things a list of them whose length
+/// the caller does not know until it asks — the port's listeners, which are one
+/// per network this machine is on (`crate::listeners`) and change as a machine
+/// is plugged in and unplugged.
+///
+/// Answers what each of `waiting_on` said and, beside it, what each of `and_on`
+/// said, in the order they were given.
+///
+/// # Errors
+///
+/// As [`ready`].
+pub(crate) fn ready_and<const N: usize>(
+    waiting_on: &[Option<BorrowedFd<'_>>; N],
+    and_on: &[BorrowedFd<'_>],
+    for_at_most: Option<Duration>,
+) -> Result<([bool; N], Vec<bool>), std::io::Error> {
     let asking: Vec<usize> = waiting_on
         .iter()
         .enumerate()
@@ -469,6 +492,7 @@ pub(crate) fn ready<const N: usize>(
     let mut polling: Vec<PollFd<'_>> = waiting_on
         .iter()
         .flatten()
+        .chain(and_on)
         .map(|fd| PollFd::from_borrowed_fd(*fd, PollFlags::IN))
         .collect();
     if polling.is_empty() {
@@ -492,12 +516,15 @@ pub(crate) fn ready<const N: usize>(
     }
 
     let mut answered = [false; N];
-    for (which, polled) in asking.iter().zip(polling.iter()) {
-        if let Some(said) = answered.get_mut(*which) {
-            *said = !polled.revents().is_empty();
+    let mut polled = polling.iter();
+    for which in &asking {
+        let Some(said) = polled.next() else { break };
+        if let Some(answer) = answered.get_mut(*which) {
+            *answer = !said.revents().is_empty();
         }
     }
-    Ok(answered)
+    let beside = polled.map(|said| !said.revents().is_empty()).collect();
+    Ok((answered, beside))
 }
 
 #[cfg(test)]

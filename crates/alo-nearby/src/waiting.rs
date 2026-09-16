@@ -18,6 +18,7 @@
 //! outside.
 
 use std::net::SocketAddr;
+use std::num::NonZeroU32;
 use std::time::SystemTime;
 
 use crate::confirming::Confirmation;
@@ -41,11 +42,15 @@ pub struct Waiting {
     until: SystemTime,
     /// Where the other machine answers, as discovery measured it.
     other_at: SocketAddr,
+    /// The interface of the network it was heard on, where discovery measured
+    /// one — what a connection to it is held to
+    /// ([`crate::Found::on_the_network`]).
+    other_on: Option<NonZeroU32>,
 }
 
 impl Waiting {
     /// A proposal that began waiting here at `since`, with the other machine
-    /// answering at `other_at`.
+    /// answering at `other_at` on the network `other_on`.
     ///
     /// A clock so near the end of time that the moment it lapses cannot be
     /// represented lapses at once, which is a true answer about a clock that
@@ -54,13 +59,22 @@ impl Waiting {
         deliberating: Deliberating,
         since: SystemTime,
         other_at: SocketAddr,
+        other_on: Option<NonZeroU32>,
     ) -> Self {
         Self {
             deliberating,
             since,
             until: since.checked_add(WHILE_A_PROPOSAL_WAITS).unwrap_or(since),
             other_at,
+            other_on,
         }
+    }
+
+    /// The network the other machine was heard on, where discovery measured
+    /// one: what a confirmation to it is held to.
+    #[must_use]
+    pub const fn where_the_other_was_heard(&self) -> Option<NonZeroU32> {
+        self.other_on
     }
 
     /// What is proposed.
@@ -222,8 +236,10 @@ impl Waiting {
     }
 
     /// The deliberation, for the one transition that has to consume it.
-    pub(crate) fn into_deliberating(self) -> (Deliberating, SystemTime, SocketAddr) {
-        (self.deliberating, self.since, self.other_at)
+    pub(crate) fn into_deliberating(
+        self,
+    ) -> (Deliberating, SystemTime, SocketAddr, Option<NonZeroU32>) {
+        (self.deliberating, self.since, self.other_at, self.other_on)
     }
 }
 
@@ -263,6 +279,7 @@ mod tests {
             Deliberating::asking(proposal.clone(), keying).unwrap(),
             a_moment(),
             there(),
+            None,
         );
         assert_eq!(waiting.proposal(), &proposal);
         assert_eq!(waiting.on(), Side::TheOneAsking);
@@ -283,7 +300,7 @@ mod tests {
     #[test]
     fn on_the_asked_machine_the_sides_are_the_other_way_round() {
         let (_, at_studio) = both_sides();
-        let waiting = Waiting::begun(at_studio, a_moment(), there());
+        let waiting = Waiting::begun(at_studio, a_moment(), there(), None);
         assert_eq!(waiting.on(), Side::TheOneAsked);
         assert_eq!(waiting.here(), &studio());
         assert_eq!(waiting.other(), &reception());
@@ -296,8 +313,8 @@ mod tests {
     #[test]
     fn a_confirmation_holds_only_from_the_other_machine_and_only_once_answered() {
         let (at_reception, at_studio) = both_sides();
-        let at_reception = Waiting::begun(at_reception, a_moment(), there());
-        let at_studio = Waiting::begun(at_studio, a_moment(), there());
+        let at_reception = Waiting::begun(at_reception, a_moment(), there(), None);
+        let at_studio = Waiting::begun(at_studio, a_moment(), there(), None);
 
         let from_studio = at_studio.confirmation().unwrap();
         assert!(at_reception.holds(&from_studio).is_ok());
@@ -309,7 +326,7 @@ mod tests {
         );
         // A stranger's, from some other agreement.
         let (_, elsewhere) = both_sides();
-        let forged = Waiting::begun(elsewhere, a_moment(), there())
+        let forged = Waiting::begun(elsewhere, a_moment(), there(), None)
             .confirmation()
             .unwrap();
         assert_eq!(
@@ -322,6 +339,7 @@ mod tests {
             Deliberating::asking(proposal, keying).unwrap(),
             a_moment(),
             there(),
+            None,
         );
         assert!(unanswered.confirmation().is_none());
         assert_eq!(
@@ -336,7 +354,7 @@ mod tests {
     fn the_two_confirmations_are_kept_apart_and_a_pairing_needs_both() {
         let (at_reception, _) = both_sides();
         let waiting =
-            Waiting::begun(at_reception, a_moment(), there()).confirmed_by_the_person_here();
+            Waiting::begun(at_reception, a_moment(), there(), None).confirmed_by_the_person_here();
         assert!(waiting.confirmed_here());
         assert!(!waiting.confirmed_there());
         assert!(!waiting.is_mutual());

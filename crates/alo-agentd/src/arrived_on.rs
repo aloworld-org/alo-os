@@ -63,14 +63,27 @@
 //!   connection from the network the route does not point at never completes,
 //!   to either address. Measured, in both directions.
 //!
-//! The two together are why the reading here is exact rather than
-//! approximate: while `crate::wire` listens on one socket held to nothing,
-//! **the only connections that complete are the ones that arrived on the
-//! route's network**, and the address they were made to belongs to an
-//! interface of this machine. What that costs is written down for the task
-//! that gives the wire a held listener per network: once a connection can
-//! arrive on a network the route does not point at, the interface must come
-//! from the listener that accepted it, not from the address it was made to.
+//! Those two together are why an unheld listener's reading was exact rather
+//! than approximate while there was one: the only connections that completed
+//! were the ones that arrived on the route's network, and the address they were
+//! made to belonged to an interface of this machine.
+//!
+//! # The listener that accepted says it, where there is a held one
+//!
+//! Since `crate::listeners` the port is listened on with **one IPv4 listener
+//! per IPv4 network, each held to that network's interface**, so a connection
+//! from the network the route does not point at completes — and the reading
+//! above stops being exact the moment it can, because the address that was
+//! dialled belongs to whichever interface owns it and not to the one the packet
+//! came in on. So a connection accepted by a held listener is on **that
+//! listener's** network ([`what_a_listener_held_to`]): the kernel would not have
+//! given the connection to that socket if it had arrived anywhere else, and no
+//! address is read at all.
+//!
+//! [`the_network_it_arrived_on`] stays, and is what a connection accepted by a
+//! listener held to **nothing** is read by — the IPv6-only listener, a listener
+//! a test handed in, and the one unheld listener a machine that could not read
+//! its own interfaces binds.
 //!
 //! # Loopback is one network and needs no holding
 //!
@@ -99,7 +112,7 @@
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::num::NonZeroU32;
 
-use crate::networks::Interface;
+use crate::networks::{Interface, Network};
 use crate::route_messages::reported_by_the_kernel;
 
 /// Which network a connection arrived on, as far as this machine can read it.
@@ -142,6 +155,25 @@ pub fn the_network_it_arrived_on(connection: &TcpStream) -> ArrivedOn {
     the_network_of(here, &reported)
 }
 
+/// What a listener held to `network` says about every connection it accepts:
+/// that network, unless it is loopback.
+///
+/// The kernel hands a held listener only the connections that arrived on the
+/// interface it is held to, so the listener is the measurement and there is
+/// nothing to read off the connection.
+///
+/// Loopback is [`ArrivedOn::ItsOwnNetwork`] for this module's reason: a
+/// connection that arrived there arrived from this machine, nothing can be
+/// confused with it, and a question back to `127.0.0.1` reaches the machine
+/// that asked without being held to anything.
+#[must_use]
+pub fn what_a_listener_held_to(network: &Network) -> ArrivedOn {
+    if network.address().is_loopback() {
+        return ArrivedOn::ItsOwnNetwork;
+    }
+    NonZeroU32::new(network.index()).map_or(ArrivedOn::NothingCouldSay, ArrivedOn::TheNetwork)
+}
+
 /// The network a connection that arrived at `here` on this machine is on, out
 /// of the interfaces `reported`.
 ///
@@ -182,8 +214,10 @@ mod tests {
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6, TcpListener, TcpStream};
     use std::num::NonZeroU32;
 
-    use super::{ArrivedOn, the_network_it_arrived_on, the_network_of};
-    use crate::networks::{IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface};
+    use super::{ArrivedOn, the_network_it_arrived_on, the_network_of, what_a_listener_held_to};
+    use crate::networks::{
+        IFF_LOOPBACK, IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface, listening_networks,
+    };
 
     /// This machine's address on the cable.
     const ON_THE_CABLE: Ipv4Addr = Ipv4Addr::new(10, 65, 0, 1);
@@ -312,6 +346,47 @@ mod tests {
                 &two_networks()
             ),
             ArrivedOn::TheNetwork(NonZeroU32::new(3).unwrap())
+        );
+    }
+
+    /// **A listener held to a network says that network**, and no address is
+    /// read: the kernel gave it the connection, so the connection arrived
+    /// there.
+    #[test]
+    fn a_held_listener_says_its_own_network() {
+        let cable = interface(3, "cable0", &[ON_THE_CABLE]);
+        let network = listening_networks(&[cable]).into_iter().next().unwrap();
+        assert_eq!(
+            what_a_listener_held_to(&network),
+            ArrivedOn::TheNetwork(NonZeroU32::new(3).unwrap())
+        );
+    }
+
+    /// **A listener held to loopback says its own network**: a connection that
+    /// arrived at `127.0.0.1` arrived from this machine, and a question back to
+    /// it is held to nothing.
+    #[test]
+    fn a_listener_held_to_loopback_says_its_own_network() {
+        let loopback = Interface {
+            index: 1,
+            name: "lo".to_owned(),
+            flags: IFF_UP | IFF_RUNNING | IFF_LOOPBACK,
+            addresses: vec![Ipv4Addr::LOCALHOST],
+            ipv6: Vec::new(),
+        };
+        let network = listening_networks(&[loopback]).into_iter().next().unwrap();
+        assert_eq!(what_a_listener_held_to(&network), ArrivedOn::ItsOwnNetwork);
+    }
+
+    /// **A listener held to an interface the kernel numbers zero says
+    /// nothing**, which is no interface and so no network to measure on.
+    #[test]
+    fn a_listener_on_no_interface_at_all_says_nothing() {
+        let nowhere = interface(0, "nowhere", &[ON_THE_CABLE]);
+        let network = listening_networks(&[nowhere]).into_iter().next().unwrap();
+        assert_eq!(
+            what_a_listener_held_to(&network),
+            ArrivedOn::NothingCouldSay
         );
     }
 

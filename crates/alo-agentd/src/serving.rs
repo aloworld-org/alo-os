@@ -162,7 +162,7 @@ use crate::side::Side;
 use crate::stopping::Waking;
 use crate::surface::NobodyToShowItTo;
 use crate::terms::Terms;
-use crate::unix::ready;
+use crate::unix::ready_and;
 use crate::wire::Wire;
 use crate::words::{A_TURN_IS_UNDER_WAY, SOMEBODY_IS_ALREADY_ANSWERING};
 
@@ -543,33 +543,46 @@ impl<'a> Serving<'a> {
         surface: &mut dyn Surface,
     ) -> Result<Next, NotServed> {
         let the_network_has_the_machine = matches!(holding, Holding::TheNetwork { .. });
-        let (stopped, person, agent, knocked, on_the_port, discovery_failed, networks_changed) = {
+        // The port is listened on once per network this machine is on
+        // (`crate::listeners`), so how many things this round waits on is not
+        // known until it asks. The listeners are taken for the length of the
+        // round and let go of at the end of it, so a network that went while
+        // this round waited closes with the round rather than under it.
+        let listening = self.wire.listening();
+        let on_the_ports = if the_network_has_the_machine {
+            listening.waiting_on()
+        } else {
+            Vec::new()
+        };
+        let (stopped, person, agent, knocked, discovery_failed, networks_changed, on_the_port) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
                 held.person.as_ref().map(Line::waiting_on),
                 held.agent.as_ref().map(Line::waiting_on),
                 Some(self.knocking.waiting_on()),
-                the_network_has_the_machine.then(|| self.wire.waiting_on()),
                 Some(discovery.failed_waiting_on()),
                 self.wire.networks_waiting_on(),
             ];
-            let [
-                stopped,
-                person,
-                agent,
-                knocked,
+            let (
+                [
+                    stopped,
+                    person,
+                    agent,
+                    knocked,
+                    discovery_failed,
+                    networks_changed,
+                ],
                 on_the_port,
-                discovery_failed,
-                networks_changed,
-            ] = ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
+            ) = ready_and(&waiting_on, &on_the_ports, for_at_most)
+                .map_err(|why| NotServed::NotWaiting { why })?;
             (
                 stopped,
                 person,
                 agent,
                 knocked,
-                on_the_port,
                 discovery_failed,
                 networks_changed,
+                on_the_port,
             )
         };
 
@@ -679,12 +692,14 @@ impl<'a> Serving<'a> {
             }
         }
 
-        if on_the_port
+        if on_the_port.iter().any(|said| *said)
             && let Holding::TheNetwork {
                 doorway, questions, ..
             } = holding
         {
-            let knocked = self.wire.accept_one().map_err(NotServed::TheWire)?;
+            let knocked = listening
+                .accept_one(&on_the_port)
+                .map_err(NotServed::TheWire)?;
             // A proposal is shown by waiting on the person's door, and there
             // is a person's door to wait on only while a shell is connected;
             // with none, nobody can be shown it and it is refused as such.
@@ -706,9 +721,11 @@ impl<'a> Serving<'a> {
         }
 
         if networks_changed {
-            // A network appeared, changed or went: discovery is joined on
-            // every network the machine is on now. Nothing it says moves, and
-            // a network that will not join is a line in the log, not a stop.
+            // A network appeared, changed or went: discovery is joined and the
+            // port is listened on on every network the machine is on now.
+            // Nothing it says moves, and a network that will not take either is
+            // a line in the log, not a stop.
+            drop(listening);
             self.wire.networks_changed();
         }
 

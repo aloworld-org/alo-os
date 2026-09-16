@@ -30,8 +30,9 @@ use crate::waiting::Waiting;
 
 /// Propose to a machine discovery found, and bring back its answer.
 ///
-/// Dials [`Found::where_it_answers`] and nothing else. What comes back is the
-/// proposal waiting here with the code known, for the surface to show the
+/// Dials [`Found::where_it_answers`] and nothing else, from a socket held to
+/// the network it was found on ([`Found::on_the_network`]). What comes back is
+/// the proposal waiting here with the code known, for the surface to show the
 /// person beside the confirmation.
 ///
 /// `now` is the moment the proposal begins waiting; the dial takes up to
@@ -64,7 +65,12 @@ pub fn propose<'a>(
     let said = format!("{}\n", proposal.said());
     proposals.proposed(proposal, keying, to, now)?;
 
-    let answered = match dialling::put(to.where_it_answers(), THE_PROPOSAL_PATH, &said) {
+    let answered = match dialling::put(
+        to.where_it_answers(),
+        to.on_the_network(),
+        THE_PROPOSAL_PATH,
+        &said,
+    ) {
         Ok(answered) => answered,
         Err(why) => {
             proposals.withdrawn(&to.machine);
@@ -88,9 +94,12 @@ pub fn propose<'a>(
 /// The person here confirmed the proposal with `other`: tell the other
 /// machine, and count it once told.
 ///
-/// Dials [`Waiting::where_the_other_answers`] and nothing else. Answers the
-/// pairing if this was the second of the two confirmations, in which case it
-/// is the caller's to keep.
+/// Dials [`Waiting::where_the_other_answers`] and nothing else, from a socket
+/// held to the network the other machine was heard on
+/// ([`Waiting::where_the_other_was_heard`]) — without which two machines that
+/// found each other on a network the route does not point at could propose and
+/// never pair. Answers the pairing if this was the second of the two
+/// confirmations, in which case it is the caller's to keep.
 ///
 /// # Errors
 ///
@@ -104,13 +113,14 @@ pub fn confirm(
     now: SystemTime,
 ) -> Result<Option<Pairing>, NotProposed> {
     let confirmation = proposals.confirmation_for(other, now)?;
-    let at = proposals
-        .with(other)
-        .map(Waiting::where_the_other_answers)
-        .ok_or(NotProposed::NothingWaiting)?;
+    let waiting = proposals.with(other).ok_or(NotProposed::NothingWaiting)?;
+    let (at, on) = (
+        waiting.where_the_other_answers(),
+        waiting.where_the_other_was_heard(),
+    );
     let said = format!("{}\n", confirmation.said());
     let answered =
-        dialling::put(at, THE_CONFIRMATION_PATH, &said).map_err(NotProposed::Underneath)?;
+        dialling::put(at, on, THE_CONFIRMATION_PATH, &said).map_err(NotProposed::Underneath)?;
     if answered.status != 204 {
         return Err(NotProposed::off_the_wire(&answered.body));
     }

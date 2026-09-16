@@ -888,15 +888,75 @@ held to no interface:
 **Our response:** `crate::arrived_on` reads the network a connection arrived on
 from the interface that owns the accepted socket's local address, and refuses —
 [`ArrivedOn::NothingCouldSay`], measured nowhere, *not found* — when two
-interfaces own it or none does. While the wire listens on one socket held to
-nothing, the first measurement is what makes that reading exact: the only
-connections that complete arrived on the route's network. **What is not closed:**
-on two networks carrying one private range, a machine on the network the route
-does not point at cannot reach this one's port at all, and the weak host model
-would misattribute its connection if it could. Both are the wire's listener, not
-the measurement: the task after this one gives it one listener per IPv4 network
-held to that network's interface, and takes the interface from the listener that
-accepted rather than from the address dialled.
+interfaces own it or none does. While the wire listened on one socket held to
+nothing, the first measurement is what made that reading exact: the only
+connections that completed arrived on the route's network. Since
+`crate::listeners` the wire listens on one held listener per IPv4 network, so a
+connection from the network the route does not point at completes — and the
+reading is taken from the listener that accepted rather than from the address
+dialled, which is the entry below.
+
+### The Linux kernel — two TCP listeners on `0.0.0.0` coexist when they are held to different interfaces, an unheld one beside them is refused, and holding a socket to an interface by index needs no capability
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`veth`), socket2 0.6, Python 3 for the probe;
+measured on 2026-09-16 by a probe run before the code and by
+`crates/alo-agentd/src/listeners.rs` and
+`crates/alo-agentd/src/a_machine_reachable_on_both_networks.rs`.
+**Behaviour:** the entry above says an unheld listener answers every handshake by
+the route, which on two networks carrying one private range makes this machine
+unreachable from the network the route does not point at. Four things decided how
+`crate::listeners` answers it:
+
+- **Two listeners bound to `0.0.0.0` at one port coexist when each is held to a
+  different interface** (`SO_BINDTOIFINDEX` set **before** `bind`). The kernel's
+  bind-conflict check treats a different `sk_bound_dev_if` as a different binding.
+  Measured with `lo` and `eth0`.
+- **A listener at the same port held to *nothing* beside them is refused
+  `EADDRINUSE`.** Measured. So the wire cannot keep its old listener in both
+  families and add held ones beside it — that listener binds IPv4 too. It binds
+  the held ones and one **IPv6-only** listener (`IPV6_V6ONLY` set), which takes no
+  IPv4 address and conflicts with none of them; that combination binds. Measured.
+- **A held listener answers its handshakes out of the interface it is held to.**
+  `inet_csk_route_req` looks the SYN-ACK's route up with `ireq->ir_iif` as the
+  output interface, and `inet_request_bound_dev_if` takes that from the listener's
+  `sk_bound_dev_if`. Measured over two `veth` cables carrying one private range,
+  with the route pointing at the other cable: a connection from the far end of the
+  first cable to an **unheld** listener never completed, and to a listener **held
+  to that cable** completed at once.
+- **`SO_BINDTOIFINDEX` needs no `CAP_NET_RAW`.** Measured as uid 65534 with no
+  capabilities, which is the shape `alo-agentd` runs in (ADR 0018). `SO_BINDTODEVICE`,
+  which names the interface rather than numbering it, is the one that needs it.
+- **`SO_BINDTOIFINDEX` takes an index no interface has.** `sock_bindtoindex_locked`
+  refuses only a negative index; it does not look the device up. Measured: a
+  listener held to interface `99999`, which this host does not have, bound and
+  listened without complaint, and nothing can ever reach it. So an interface that
+  goes between the kernel's report and the bind is **not** a refused bind — it is a
+  listener nobody reaches, let go of at the next notification, when its index is no
+  longer reported. What really refuses a network's bind is somebody else already
+  holding the port there (`EADDRINUSE`), and that is what
+  `listeners::tests::a_network_that_will_not_bind_is_a_line_and_the_others_are_still_bound`
+  arranges. A connection dialled from a socket held to such an index is refused at
+  `connect`, which is what `alo-nearby`'s dialling relies on.
+
+**Our response:** `crate::listeners` binds one IPv4 listener per IPv4 network the
+kernel reports — loopback among them, multicast not asked for — each held to that
+network's interface, beside one IPv6-only listener held to nothing; they follow the
+kernel's network notifications as `crate::joining`'s joins do, and a network that
+will not bind is a line in the service log. `crate::arrived_on::what_a_listener_held_to`
+takes the network a connection arrived on from the listener that accepted it, so no
+address of this machine's is read and the weak host model cannot misattribute a
+connection. A machine whose interfaces cannot be read binds one listener held to
+nothing, says so, and reads a connection's network the old way.
+**What is not closed:** **a discovery answer still leaves by the route.** The
+socket `crate::wire` answers *who is here* on is one socket held to no network, so
+on a machine on two networks carrying one private range its unicast answer to
+`192.168.1.20` goes to whichever of the two the route picks. A machine on the
+other network therefore still does not find this one, even though it can now reach
+its port. Task 28 of `docs/autonomy/v0-5-the-local-network-plan.md` is that hold;
+until it is built, the end-to-end test above keeps discovery's answers on the cable
+with an `ip rule ipproto udp` and a table of its own, so that what it measures is
+the handshake.
+**Date:** 2026-09-16.
 
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,

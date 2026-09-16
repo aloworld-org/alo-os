@@ -44,11 +44,20 @@
 //! heard first, which is the one a pairing dials, and an IPv4 address keeps
 //! dialling what it dialled before a second family was asked.
 //!
+//! # And the networks the port is listened on
+//!
+//! [`listening_networks`] is a third list, for `crate::listeners` rather than for
+//! discovery, and it differs in exactly two places: **loopback is one of them**,
+//! because a connection to `127.0.0.1` is answered and always was, and
+//! **multicast is not asked for**, because a handshake needs none. The rest is
+//! the same rule — up, running, and an IPv4 address to be dialled at.
+//!
 //! # And there is no setting
 //!
 //! Nothing here takes a list of networks from a person, an agent or a file (ADR
-//! 0003): a list of networks to advertise on is the trusted-network switch by
-//! another name. What the machine is plugged into is the whole of the input.
+//! 0003): a list of networks to advertise on, or to listen on, is the
+//! trusted-network switch by another name. What the machine is plugged into is
+//! the whole of the input.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
@@ -149,6 +158,48 @@ pub fn link_local_networks(reported: &[Interface]) -> Vec<Network> {
         .filter(|interface| carries_discovery(interface))
         .filter_map(|interface| {
             let address = interface.ipv6.iter().copied().find(is_link_local)?;
+            Some(Network {
+                index: interface.index,
+                name: interface.name.clone(),
+                address: address.into(),
+            })
+        })
+        .collect()
+}
+
+/// Every network the port presence advertises is listened on, out of what the
+/// kernel reports: each interface that is up and running and has an IPv4
+/// address — **including loopback**, and multicast not asked for.
+///
+/// Two rules differ from [`discovery_networks`], and each for a reason a
+/// listener has and a discovery join does not:
+///
+/// - **Loopback is one of them.** A connection to `127.0.0.1` is answered today
+///   and goes on being answered: the person's own machine reaches its own port,
+///   and every test on one host is a connection to loopback. It is not a network
+///   anybody else is on, which is why discovery is never joined there, but it is
+///   a network a connection arrives on.
+/// - **Multicast is not asked for.** A join needs an interface that carries
+///   multicast; a listener takes the handshake TCP brings it, and a
+///   point-to-point tunnel carries that perfectly well.
+///
+/// The address is the first the kernel lists, and it is what the service log
+/// names the network by; a held listener binds `0.0.0.0` and is held to the
+/// interface, so the address is not what it listens at.
+#[must_use]
+pub fn listening_networks(reported: &[Interface]) -> Vec<Network> {
+    reported
+        .iter()
+        .filter(|interface| {
+            let has = |flag: u32| interface.flags & flag == flag;
+            has(IFF_UP) && has(IFF_RUNNING)
+        })
+        .filter_map(|interface| {
+            let address = interface
+                .addresses
+                .iter()
+                .copied()
+                .find(|address| !address.is_unspecified())?;
             Some(Network {
                 index: interface.index,
                 name: interface.name.clone(),
@@ -269,6 +320,60 @@ mod tests {
                 (2, "eth0", IpAddr::from(WIRED)),
                 (3, "wlan0", IpAddr::from(WIRELESS))
             ]
+        );
+    }
+
+    /// **Every interface that is up and has an IPv4 address is listened on,
+    /// loopback included** — which discovery is never joined on, and which a
+    /// connection to `127.0.0.1` arrives on.
+    #[test]
+    fn every_network_the_machine_is_on_is_listened_on_including_loopback() {
+        let networks = listening_networks(&[
+            an_interface(
+                1,
+                "lo",
+                IFF_UP | IFF_RUNNING | IFF_LOOPBACK,
+                Some(Ipv4Addr::LOCALHOST),
+            ),
+            an_interface(2, "eth0", JOINABLE, Some(WIRED)),
+            an_interface(3, "wlan0", JOINABLE, Some(WIRELESS)),
+        ]);
+        assert_eq!(
+            networks
+                .iter()
+                .map(|network| (network.index(), network.name()))
+                .collect::<Vec<_>>(),
+            vec![(1, "lo"), (2, "eth0"), (3, "wlan0")]
+        );
+    }
+
+    /// **An interface a listener could not be reached through is not listened
+    /// on**: one that is down, one that is up with nothing at the other end,
+    /// and one with no IPv4 address for anybody to dial.
+    #[test]
+    fn an_interface_that_is_down_or_has_no_address_is_not_listened_on() {
+        let networks = listening_networks(&[
+            an_interface(2, "eth0", IFF_RUNNING, Some(WIRED)),
+            an_interface(3, "eth1", IFF_UP, Some(WIRELESS)),
+            an_interface(4, "eth2", IFF_UP | IFF_RUNNING, None),
+            an_interface(5, "eth3", IFF_UP | IFF_RUNNING, Some(Ipv4Addr::UNSPECIFIED)),
+        ]);
+        assert!(networks.is_empty(), "{networks:?}");
+    }
+
+    /// **An interface without multicast is still listened on**: a join needs
+    /// multicast and a handshake does not, so a point-to-point tunnel is a
+    /// network this machine answers on and is not found on.
+    #[test]
+    fn an_interface_without_multicast_is_still_listened_on() {
+        let tunnel = an_interface(4, "tun0", IFF_UP | IFF_RUNNING, Some(WIRED));
+        assert!(discovery_networks(std::slice::from_ref(&tunnel)).is_empty());
+        assert_eq!(
+            listening_networks(&[tunnel])
+                .iter()
+                .map(Network::index)
+                .collect::<Vec<_>>(),
+            vec![4]
         );
     }
 
