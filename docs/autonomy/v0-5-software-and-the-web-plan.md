@@ -218,7 +218,24 @@ report is `docs/autonomy/updates/one-proxy-machine-wide.md`. **Depends on:** not
 
 ### 8. An organisation's permitted places, read from the machine's description
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — on the owner: its acceptance edits `alo-agentd`, which the
+lane table gives to another machine. **Depends on:** 1.
+
+**Built, then held back, 2026-09-16.** A worker built it as the acceptance below
+reads: `/etc/alo/agentd.toml` gains the section, and `alo-agentd` reads it into
+`alo_software::Bound`. That meant new modules in `alo-agentd`
+(`permitted_places.rs`, `installing_under_the_description.rs`) and changes to
+`described.rs`, `describing.rs`, `refusing.rs`, `starting.rs` and
+`lib.rs`, its `what_a_machine_says_about_itself` test, and
+`docs/contracts/machine-description.md`. The acceptance asks for exactly that, but
+the lane rules on this machine name `alo-agentd` as a crate another machine is
+working in, and lane A on the development PC is committing there. Two lanes in one
+crate is the collision the lane table exists to prevent. So the supervising machine
+kept the change unpublished, on its local branch
+`held/software-task-8-edits-alo-agentd`, with the handoff in
+`.kernel-loop/refused/`. **For the owner:** whether this lane may make the
+`alo-agentd` change once lane A is clear of it, or whether lane A takes this
+section of the machine description itself.
 
 *The organisation bounds; the person chooses* (ADR 0016), for where applications come from.
 
