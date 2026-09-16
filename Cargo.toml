@@ -52,6 +52,7 @@ members = [
   "crates/alo-picking",
   "crates/alo-portals",
   "crates/alo-protocol",
+  "crates/alo-proxy",
   "crates/alo-reconciling",
   "crates/alo-record",
   "crates/alo-recounting",

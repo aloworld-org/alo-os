@@ -24,3 +24,10 @@ serde_json = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# The machine's one proxy, for the road-to-a-provider test. **Dev only**: this
+# crate takes whatever way out it is handed (`Trying::taking`) and decides
+# nothing about proxies, so the decision crate is behind the test rather than
+# behind the code — which is also what keeps the dependency going one way.
+alo-proxy = { path = "../alo-proxy" }

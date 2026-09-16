@@ -15,6 +15,20 @@
 //! ([`crate::heard`]), and a translated message would be a signature failure
 //! nothing recognised.
 //!
+//! # The machine's proxy is on this road, because this road leaves the machine
+//!
+//! Installing an application, looking for updates to one and fetching one all
+//! reach the place applications come from, and on a great many company networks
+//! there is no other route out. So the tool is started with the machine's one
+//! proxy on it ([`TheRentedTool::taking`]), decided by `alo_proxy::the_way` for
+//! the road being taken — and a tool started with nothing decided goes straight
+//! out, which is `alo_proxy::Carried::straight` and is what
+//! [`TheRentedTool::on_this_machine`] is.
+//!
+//! The environment is cleared **before** the proxy is put on it, so what the
+//! tool honours is this machine's setting and never something a caller's own
+//! environment happened to carry.
+//!
 //! # A tool that is not there did not answer
 //!
 //! A machine where the program is missing or cannot be started answers every
@@ -24,6 +38,7 @@
 use std::process::{Command, Output, Stdio};
 
 use alo_applications::Application;
+use alo_proxy::Carried;
 
 use crate::asked;
 use crate::heard;
@@ -31,42 +46,104 @@ use crate::source::{Configured, SourceName};
 use crate::tool::{Failed, Tool};
 
 /// The rented tool, at its place on an alo OS machine.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Deliberately not `Clone` and not `PartialEq`: it holds the road out it was
+/// given, and that can hold a credential — `alo_proxy::Carried` says why a
+/// credential that can be copied or compared is a credential somewhere nobody
+/// meant it to be. Its `Debug` is safe because that type's own is.
+#[derive(Debug)]
 pub struct TheRentedTool {
     /// The program started.
     program: String,
+    /// The way out this machine decided for the road the tool is taking.
+    taking: Carried,
 }
 
 impl Default for TheRentedTool {
     fn default() -> Self {
         Self {
             program: asked::THE_TOOL.to_owned(),
+            taking: Carried::straight(),
         }
     }
 }
 
 impl TheRentedTool {
-    /// The tool at its place on an alo OS machine.
+    /// The tool at its place on an alo OS machine, going straight out.
     #[must_use]
     pub fn on_this_machine() -> Self {
         Self::default()
     }
 
+    /// The tool at some other path — a test's.
+    ///
+    /// `alo_updating::TheBase::at` is the same door for the same reason: what a
+    /// program is given can only be shown by starting one, and a machine that
+    /// has no rented tool on it is every machine this repository is written on.
+    #[must_use]
+    pub fn at(program: &str) -> Self {
+        Self {
+            program: program.to_owned(),
+            taking: Carried::straight(),
+        }
+    }
+
+    /// The program this tool is, by path.
+    #[must_use]
+    pub fn program(&self) -> &str {
+        &self.program
+    }
+
+    /// The same tool, taking the way out this machine decided for this road.
+    #[must_use]
+    pub fn taking(mut self, taking: Carried) -> Self {
+        self.taking = taking;
+        self
+    }
+
+    /// The way out it is taking, for a caller that has to show a person where
+    /// this is going — **without the credential**, which is what
+    /// `alo_proxy::Carried::shown` answers.
+    #[must_use]
+    pub fn through(&self) -> &Carried {
+        &self.taking
+    }
+
+    /// The whole environment the tool is started with, and nothing else is.
+    ///
+    /// A list rather than a series of calls, for the reason [`crate::asked`]
+    /// keeps its argument lists apart from this file: it is then testable as a
+    /// list on any machine, including one with no rented tool on it.
+    ///
+    /// **The proxy is last on purpose.** What a caller's own environment
+    /// carried is gone before it is added (`run` in this file clears it), so what
+    /// the tool honours is this machine's setting and nothing else.
+    #[must_use]
+    pub fn environment(&self) -> Vec<(&'static str, String)> {
+        let mut given = vec![
+            ("LC_ALL", "C".to_owned()),
+            ("LANG", "C".to_owned()),
+            ("PATH", "/usr/bin:/bin".to_owned()),
+        ];
+        given.extend(self.taking.variables());
+        given
+    }
+
     /// Start the tool with these arguments and wait for it.
     fn run(&self, arguments: &[String]) -> Result<Output, Failed> {
-        Command::new(&self.program)
+        let mut command = Command::new(&self.program);
+        command
             .args(arguments)
             .env_clear()
-            .env("LC_ALL", "C")
-            .env("LANG", "C")
-            .env("PATH", "/usr/bin:/bin")
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()
-            .map_err(|why| Failed::DidNotAnswer {
-                said: format!("{} could not be started: {why}", self.program),
-            })
+            .stderr(Stdio::piped());
+        for (name, value) in self.environment() {
+            command.env(name, value);
+        }
+        command.output().map_err(|why| Failed::DidNotAnswer {
+            said: format!("{} could not be started: {why}", self.program),
+        })
     }
 
     /// A question whose answer is text: what it printed, or why it failed.
@@ -127,9 +204,7 @@ mod tests {
     /// question fails as *did not answer*, and nothing is guessed.
     #[test]
     fn a_tool_that_is_not_there_did_not_answer() {
-        let missing = TheRentedTool {
-            program: "/nonexistent/alo-software-test/no-such-tool".to_owned(),
-        };
+        let missing = TheRentedTool::at("/nonexistent/alo-software-test/no-such-tool");
         for answer in [
             missing.sources().map(drop),
             missing.installed().map(drop),

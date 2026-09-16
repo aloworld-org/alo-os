@@ -135,7 +135,24 @@ put at — the report says so plainly rather than guessing. The report is
 
 ### 4. One proxy, machine-wide, honoured
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-15.** Built in the new `crates/alo-proxy`, which decides
+and reaches nothing: `setting.rs` is the one setting in its three shapes, `kept.rs`
+is whose it is (ADR 0016, with a person refused in words on a machine an
+organisation manages), `road.rs` is the closed list of every road out and
+`deciding.rs` the one door each takes, `carried.rs` is what a road is then given —
+variables for a program, a proxy for a request, and the one function in the crate
+that turns a password into text — `published.rs` and `portal.rs` are the two ways an
+application already honours a proxy, and `automatic.rs` with `evaluator.rs` is a
+network's own configuration, fetched and evaluated by a **separate program with a
+cleared environment**, with a machine that has none **refusing** rather than going
+straight out. A password is a `WhereThePasswordIs` in the setting and never a
+credential (ADR 0022). The three roads named in the acceptance each ask it in their
+own crate — `alo-software`'s rented tool, `alo-updating`'s base, and `alo-models`'
+`Trying::taking`, which now says *straight out* explicitly so no process environment
+can point alo OS's own road anywhere. What is not here is reading an organisation's
+proxy out of `/etc/alo/agentd.toml`: that file is `alo-agentd`'s, exactly as
+`alo_software::Bound`'s is, and the report says what that section would be. The
+report is `docs/autonomy/updates/one-proxy-machine-wide.md`. **Depends on:** nothing.
 
 *A great many company networks have no other route out.*
 

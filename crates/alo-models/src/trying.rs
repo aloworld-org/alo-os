@@ -105,14 +105,43 @@ pub struct Trying<'a> {
     provider: &'a Provider,
     /// The key, when the provider needs one.
     key: Option<&'a Secret>,
+    /// The way out this machine decided for the road to a provider, which is
+    /// [`None`] for a road going straight out.
+    through: Option<ureq::Proxy>,
 }
 
 impl<'a> Trying<'a> {
     /// This provider, with this key — which is [`None`] for a provider that
     /// needs none, such as a runtime on this machine.
+    ///
+    /// The road out is straight until [`Trying::taking`] says otherwise, and
+    /// **that is explicit rather than inherited**: see that method.
     #[must_use]
     pub fn provider(provider: &'a Provider, key: Option<&'a Secret>) -> Self {
-        Self { provider, key }
+        Self {
+            provider,
+            key,
+            through: None,
+        }
+    }
+
+    /// The same provider, reached the way this machine decided.
+    ///
+    /// `alo_proxy::Carried::for_a_request` is what makes one of these, from the
+    /// machine's one proxy setting and the road being taken. A great many
+    /// company networks have no other route out, so a provider that could not
+    /// be reached through the machine's proxy could not be reached at all.
+    ///
+    /// **Straight out is said rather than left unsaid.** Whatever is passed
+    /// here — including [`None`] — is what the request is configured with, so
+    /// the environment this process happens to be running in cannot point
+    /// alo OS's own road anywhere. That is `alo-secrets`' argument about
+    /// `DBUS_SESSION_BUS_ADDRESS`, one crate over: a road decided by a variable
+    /// is a road nobody chose and nobody can be shown.
+    #[must_use]
+    pub fn taking(mut self, through: Option<ureq::Proxy>) -> Self {
+        self.through = through;
+        self
     }
 
     /// Ask this machine's policy, and then — only then — ask the provider.
@@ -139,6 +168,11 @@ impl<'a> Trying<'a> {
             // client, because "that key was not accepted" and "nothing answered"
             // are different things to tell somebody.
             .http_status_as_error(false)
+            // Said rather than left unsaid, whichever it is. A client left to
+            // work its own proxy out reads the environment of whatever process
+            // it is in, and that is not a setting anybody chose — see
+            // [`Trying::taking`].
+            .proxy(self.through.clone())
             .build();
         let request = match self.key {
             Some(key) => key.carried_by(request),

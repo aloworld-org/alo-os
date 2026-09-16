@@ -572,6 +572,7 @@ dependencies = [
 name = "alo-models"
 version = "0.0.1"
 dependencies = [
+ "alo-proxy",
  "alo-strings",
  "ring",
  "serde",
@@ -677,6 +678,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-proxy"
+version = "0.0.1"
+dependencies = [
+ "alo-egress",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "ureq",
+]
+
+[[package]]
 name = "alo-reconciling"
 version = "0.0.1"
 dependencies = [
@@ -767,6 +780,7 @@ dependencies = [
  "alo-portals",
  "alo-printing",
  "alo-protocol",
+ "alo-proxy",
  "alo-recounting",
  "alo-sessiond",
  "alo-setting-up",
@@ -885,6 +899,7 @@ dependencies = [
  "alo-granted",
  "alo-measuring",
  "alo-printing",
+ "alo-proxy",
  "alo-strings",
  "serde",
  "serde_json",
@@ -941,6 +956,7 @@ dependencies = [
  "alo-egress",
  "alo-keeping",
  "alo-keeping-up",
+ "alo-proxy",
  "alo-record",
  "alo-saying",
  "alo-strings",

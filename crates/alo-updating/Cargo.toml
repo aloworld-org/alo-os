@@ -15,6 +15,10 @@ alo-keeping-up = { path = "../alo-keeping-up" }
 alo-record = { path = "../alo-record" }
 # Where that entry is written.
 alo-keeping = { path = "../alo-keeping" }
+# The one proxy this machine has, on the road the base takes: staging an update
+# pulls a system onto the disk, and on a great many company networks there is no
+# other route out. Read, never decided here.
+alo-proxy = { path = "../alo-proxy" }
 # Every sentence a person reads.
 alo-strings = { path = "../alo-strings" }
 # The base's status answer is JSON.

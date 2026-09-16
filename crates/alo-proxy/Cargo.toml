@@ -1,0 +1,49 @@
+[package]
+name = "alo-proxy"
+version = "0.0.1"
+description = "One proxy, machine-wide, honoured by every road out of this machine and published to applications."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Everything a person reads here: which proxy is set, who set it, and why a
+# road out was refused. Nothing in this crate assembles an English sentence.
+alo-strings = { path = "../alo-strings" }
+
+# The setting is written down and read back — it is machine-wide and outlives
+# the process that set it — and what it holds is *where a password is kept*,
+# never a password.
+serde = { workspace = true }
+
+thiserror = { workspace = true }
+
+# The client this workspace's own roads out are taken with, for **one**
+# function: `Carried::for_a_request`, which turns a way out into the thing a
+# request is configured with. Nothing here opens a connection, and a test in
+# `carried.rs` is what says the only thing this crate does with the client is
+# describe a proxy to it.
+#
+# It is here rather than in each road's own crate because the refusal belongs to
+# whoever owns what an address is — a proxy address the client cannot use is
+# this crate's refusal, in this crate's words, and every road then has no error
+# path of its own to invent.
+ureq = { workspace = true }
+
+# Nothing else, and the absence is the argument. No script engine: alo OS does
+# not evaluate anybody's script in a process of its own, and the one thing that
+# leaves the machine on this crate's account — an automatic configuration — is
+# fetched and evaluated by a separate program that holds no grant
+# (`evaluator.rs`).
+
+[dev-dependencies]
+# The indicator, for the one thing this crate promises that it cannot show on
+# its own: a road that goes through a proxy is still shown as going where it is
+# actually going. **Dev only** — a decision crate that depended on the indicator
+# would be the first step towards the two answers being one value read two ways.
+alo-egress = { path = "../alo-egress" }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

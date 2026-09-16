@@ -23,6 +23,12 @@ alo-capability = { path = "../alo-capability" }
 # without the `Underway` that proves the line is on the indicator.
 alo-egress = { path = "../alo-egress" }
 
+# The one proxy this machine has, on the road the tool takes: installing an
+# application, looking for updates and fetching one all leave the machine, and
+# on a great many company networks there is no other route out. Read, never
+# decided here — `alo_proxy::the_way` decides, and this crate carries.
+alo-proxy = { path = "../alo-proxy" }
+
 # Everything a person reads here.
 alo-strings = { path = "../alo-strings" }
 
