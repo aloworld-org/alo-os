@@ -88,6 +88,34 @@ A Mac runs a lane too, but it cannot gate natively — the supervisor refuses to
 on macOS and drives a Linux machine instead. That is
 `docs/autonomy/LOOP.md`'s bridge, not this document.
 
+### Sizing that machine, so the gates are not the slow part
+
+A lane spends most of its wall-clock inside the nine gates, and on 2026-09-16
+this PC was found to have been running them on under half of itself: the
+`.wslconfig` said `processors=6`, above a comment claiming that was "six of the
+eight cores", on a machine with fourteen. Check the real number rather than the
+one in the file — `nproc` inside the guest against the host's own count —
+because that arithmetic quietly taxes every task the machine ever runs.
+
+Two settings, kept apart on purpose:
+
+- **Cores** (`processors` in `.wslconfig`) go to all but two, leaving the host
+  git, the editor and the supervisors themselves. Cores are cheap: the ones
+  above the job count are used *inside* each `rustc` and by the linker.
+- **Concurrent compiles** (`CARGO_BUILD_JOBS` in the environment a gate runs
+  in) are what set peak memory, and memory is what actually breaks a machine —
+  `Wsl/Service/0x8007274c`, the guest paging, a finished task losing its lane.
+  Pin it, at about half the cores where two lanes share one guest.
+
+Raising the jobs along with the cores raises both, and that is the change that
+ran this machine out of memory before. Raise the cores; pin the jobs.
+
+Install **mold** (`apt install mold`) and give the gates
+`RUSTFLAGS="-C link-arg=-fuse-ld=mold"`. Linking is the serial tail of every
+crate and very nearly the whole of a rebuild that changed one line. Unset
+`RUSTFLAGS` for the two BPF gates: that target is not linked by anything of
+ours, and the flag would be handed to a linker that is not there.
+
 ## The prompt
 
 Paste this whole thing, with the one line marked below replaced by that
