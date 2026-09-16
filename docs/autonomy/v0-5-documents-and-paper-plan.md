@@ -80,7 +80,30 @@ disappointment.
 
 ### 2. `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost
 
-**Status:** ready — both things it waited on are settled.
+**Status:** **Done, 2026-09-16.** `crates/alo-converting`: `convert_document`
+is a change under grants over both the document and where the copy goes, and
+the copy is a PDF. The executor asks the grants again about the copy's own
+path, opens the document read-only with `openat2` and no symlinks (a hard-linked
+document is refused), decides its kind from its bytes with `alo-opening`,
+creates the copy with `O_EXCL`, and passes both descriptors to `alo-convertd`
+over `SCM_RIGHTS`. The service re-decides the kind, inventories the original,
+runs the pinned engine with a fixed argument list and a cleared environment in
+a private scratch folder, inventories the copy, and only then writes it.
+`engine.rs` is the only file that names the engine. What the copy could not
+carry is said by name — a substituted font, a field fixed at its value, macros,
+linked content not fetched, comments, tracked changes — and *lost nothing* is
+its own sentence, reachable only after both files were inventoried; an
+inventory that cannot complete is a refusal and the copy is removed. Tested
+through the real service against the owner's three documents, which lose
+exactly what their `README.md` says they should. The image pins the engine's
+archive by digest and ships the socket and service with no network, `AF_UNIX`
+only and no capabilities. Published 506b6a5 by hand, because the supervisor
+this lane runs under was killed by the machine running out of memory while the
+gates were passing. Owed: the image has not been built or booted, so the
+sandbox is `- [x] The code.` and nothing more. Report:
+`docs/autonomy/updates/office-documents-converted-and-what-the-copy-lost.md`.
+
+What it waited on, and how each was settled:
 `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
 was accepted on 2026-09-15 (option A), and **the owner's three documents arrived
 on 2026-09-16**: `crates/alo-converting/tests/documents/`, saved in Microsoft
