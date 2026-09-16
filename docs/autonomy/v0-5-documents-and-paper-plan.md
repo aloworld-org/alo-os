@@ -80,10 +80,18 @@ disappointment.
 
 ### 2. `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost
 
-**Status:** blocked — `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
-was accepted on 2026-09-15 (option A), and the task now waits on the two things
-it still lists: the pinned engine on the gate machine, and three real office
-documents from the owner with their provenance. **Depends on:** 1.
+**Status:** ready — both things it waited on are settled.
+`docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
+was accepted on 2026-09-15 (option A), and **the owner's three documents arrived
+on 2026-09-16**: `crates/alo-converting/tests/documents/`, saved in Microsoft
+Office 365, with their provenance and what each one proves in the `README.md`
+beside them — Garamond in all three, a Word `DATE` field and an Excel `=NOW()`, a
+picture linked to a path that exists on no other machine, and a comment in each
+file. The third thing the decision lists, **the pinned engine on the machine that
+gates this crate, is this lane's own step**: install it from the release and
+digest the image pins, in the lane's own distribution, and paste the version into
+the report. A conversion test that skips itself where the engine is missing is
+refused (the decision's own rule). **Depends on:** 1.
 
 **Decided rather than built, 2026-09-14.** The first worker found that the code
 could not be written without choosing things that are not a worker's to choose:
