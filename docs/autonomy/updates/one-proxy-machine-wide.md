@@ -1,6 +1,6 @@
 # One proxy, machine-wide, honoured
 
-**Date:** 2026-09-15
+**Date:** 2026-09-15, repaired on the rebase 2026-09-16
 **Workstream:** v0.5 — software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 4)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration.
@@ -219,6 +219,47 @@ run **on its own** rather than as part of a suite:
   (75 + 29 + 1), `-p alo-updating` (9 + 25) — all pass.
 - Each of the nineteen tests in this report's evidence, run by name with
   `--exact`, one `cargo test` invocation each — all pass.
+
+### The third pass, after the rebase refused
+
+The second hand-over was refused on a **compile error that existed in neither
+tree** and only in the two of them together. `alo-in-use` landed on `main` while
+this task was being gated, and it is a crate that declares words, so it added its
+own name to `alo_saying::EVERY_LIST` and to the `ONE_STRING_EACH` beside it and
+raised both counts from 39 to 40. This task added `alo-proxy` to the same two
+lists and raised the same two counts from 39 to 40. Git merged the two names
+without a conflict — they are different lines — and kept one copy of each count.
+Two lists of forty-one entries, both declared as forty:
+
+    error[E0308]: mismatched types
+       --> crates/alo-saying/src/collecting.rs:79:36
+        | expected an array with a size of 40, found one with a size of 41
+
+The fix is the two numbers, and nothing else: `EVERY_LIST` and the test's
+`ONE_STRING_EACH` are now `41`. The supervisor's clippy stopped at the first of
+them because it compiles the library before the tests; `--all-targets` names both
+at once, and is what was run here.
+
+**The fixed size did its job.** A textual merge of two lists cannot be trusted to
+leave a count true, and a `Vec` or a slice here would have compiled, shipped, and
+been caught — if at all — by `the_lists_of_crates_agree` at run time rather than
+by `rustc` in seconds. The length is written into the type on purpose, as that
+constant's own documentation says, and the cost is exactly this: a lane that adds
+a crate to the vocabulary owes the next rebase two digits. Nothing about that
+design was changed to get past it.
+
+- `cargo fmt --all` — clean, and no file but the one above differs from the
+  rebased tree.
+- `cargo clippy --all-targets --workspace -- -D warnings` — clean, zero
+  warnings, on the combined tree.
+- `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` — clean.
+- `cargo test -p alo-proxy` (85 + 4 + 1), `-p alo-saying` (63 + 4 + 1),
+  `-p alo-collected` (8 + 11), `-p alo-software` (75 + 29 + 1), `-p alo-updating`
+  (9 + 25), `-p alo-models` (217 + 55) — all pass.
+- Each of the nineteen tests in this report's evidence, run by name with
+  `--exact`, one `cargo test` invocation each — nineteen passes.
+
+The full workspace suite was again **not** run here; the supervisor runs it.
 
 ## The gate that refused this task once, and why it was not this work
 
