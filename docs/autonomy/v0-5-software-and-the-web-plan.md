@@ -171,7 +171,23 @@ report is `docs/autonomy/updates/one-proxy-machine-wide.md`. **Depends on:** not
 
 ### 5. An adapter, loaded against the contract
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-16.** Built in the new `crates/alo-adapters`. An
+adapter is declared data (`Adapter`, written as Rust constants because a verb's
+words are `alo_strings::Word`s); `load` refuses a verb taking a script, a command
+or free text, a parameter the application interprets, a method named for running
+something, an action an argument chooses, screenshots and synthetic input, a verb
+with no by-hand road, a path outside a grant, and an adapter for a person's own
+application (ADR 0043), and then declares what passes through
+`alo_capability::Verb::checked`. **Registering adapter verbs needed no change to
+`alo-capability`**: a verb is named `adapter.verb`, its grant is over its path
+arguments, and the grant over its application is asked in `Driving::of` before
+anything is sent. The reference adapter is GNOME Text Editor (`text_editor.open_document`,
+`text_editor.new_window`) through `org.freedesktop.Application`, its own interface,
+shown end to end on a real private bus against a service holding its name; the
+application itself on a machine is still outstanding, and the report says what
+that acceptance is. `api` and `accessibility` are declared and refused until this
+machine carries them out. The report is
+`docs/autonomy/updates/an-adapter-loaded-against-the-contract.md`. **Depends on:** 1.
 
 ★ *Installed applications become agents with typed verbs (`@blender`, `@resolve`,
 `@gimp`).*

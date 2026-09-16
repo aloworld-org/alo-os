@@ -380,6 +380,7 @@ fn every_verb_this_machine_ships() -> Verbs {
     assert_eq!(
         declaring,
         [
+            "alo-adapters",
             "alo-applications",
             "alo-converting",
             "alo-files",
@@ -399,6 +400,7 @@ fn every_verb_this_machine_ships() -> Verbs {
     alo_measuring::verbs::declare_into(&mut verbs).unwrap();
     alo_printing::verbs::declare_into(&mut verbs).unwrap();
     alo_software::verbs::declare_into(&mut verbs).unwrap();
+    alo_adapters::verbs::declare_into(&mut verbs).unwrap();
     verbs
 }
 

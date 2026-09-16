@@ -4,6 +4,7 @@ members = [
   "crates/alo-shell",
   "tools/graphics-check",
   "crates/alo-access",
+  "crates/alo-adapters",
   "crates/alo-accounts",
   "crates/alo-agentd",
   "crates/alo-answering",

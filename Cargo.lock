@@ -59,6 +59,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-adapters"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "alo-capability",
+ "alo-record",
+ "alo-software",
+ "alo-strings",
+ "thiserror 2.0.20",
+ "zbus",
+]
+
+[[package]]
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
@@ -203,6 +216,7 @@ version = "0.0.1"
 name = "alo-by-hand"
 version = "0.0.1"
 dependencies = [
+ "alo-adapters",
  "alo-applications",
  "alo-capability",
  "alo-converting",
@@ -771,6 +785,7 @@ version = "0.0.1"
 dependencies = [
  "alo-access",
  "alo-accounts",
+ "alo-adapters",
  "alo-answering",
  "alo-appearance",
  "alo-applications",
@@ -915,6 +930,7 @@ dependencies = [
 name = "alo-software"
 version = "0.0.1"
 dependencies = [
+ "alo-adapters",
  "alo-applications",
  "alo-by-hand",
  "alo-capability",

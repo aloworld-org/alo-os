@@ -29,6 +29,8 @@ alo-finding = { path = "../alo-finding" }
 alo-measuring = { path = "../alo-measuring" }
 alo-printing = { path = "../alo-printing" }
 alo-software = { path = "../alo-software" }
+# The adapters alo OS ships, whose verbs are verbs like any other.
+alo-adapters = { path = "../alo-adapters" }
 
 [lints]
 workspace = true

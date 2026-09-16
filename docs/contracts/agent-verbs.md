@@ -709,7 +709,7 @@ printing verb is not.
 | **Converting** | Convert a granted document into a PDF copy in a granted folder, saying what the copy could not carry | `alo-agentd`, as the person, through `alo-convertd`; declared, not yet offered by a turn |
 | **Software** | Propose installing an application from a place this machine installs from | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
-| **Adapters** | An installed application's own verbs | See `app-adapters.md` |
+| **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
 
 ## A turn, and the order the steps happen in
@@ -835,7 +835,7 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
 puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
-`alo-finding`, `alo-measuring`, `alo-printing` and `alo-software` all do exactly that, and it is a rule rather
+`alo-finding`, `alo-measuring`, `alo-printing`, `alo-software` and `alo-adapters` all do exactly that, and it is a rule rather
 than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and

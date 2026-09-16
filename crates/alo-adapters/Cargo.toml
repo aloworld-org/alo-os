@@ -1,0 +1,42 @@
+[package]
+name = "alo-adapters"
+version = "0.0.1"
+description = "An application adapter, loaded as declared data against docs/contracts/app-adapters.md, and carried out through the application's own interface."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# An adapter's verbs are verbs. They are declared through `Verb::checked`, put
+# on the same `Verbs` every other verb is, proposed, approved and redeemed by
+# the same types — nothing in this crate decides reach or approval itself.
+alo-capability = { path = "../alo-capability" }
+# What an application identifier is, what is installed, and the refusal for an
+# application that is not here — read, never restated.
+alo-applications = { path = "../alo-applications" }
+# Every sentence a person reads here, and every word an adapter declares.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+# The bus an application's own interface is reached on. Already in the
+# workspace for the keyring and the portals, at the same version and with the
+# same runtime, so this adds no crate to the tree. Linux only: a session bus is
+# a Linux session's.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[dev-dependencies]
+# The record, for the guarantee no single crate can show on its own: every
+# execution and every refusal of an adapter's verb is written down.
+alo-record = { path = "../alo-record" }
+# The list of what a fresh machine ships, so the reference adapter is held to
+# being for one of those applications at the release shipped.
+alo-software = { path = "../alo-software" }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# The stand-in application on the private bus the integration test starts.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true

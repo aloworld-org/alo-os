@@ -185,6 +185,22 @@ application arrives granted nothing either way. A person needs no approval to
 install an application for themselves: the approval is what an agent needs,
 because it is the agent choosing what arrives on somebody's machine.
 
+### text_editor.open_document
+
+**By hand:** a person opens the text editor and chooses Open, or opens the file
+from the file manager — `A text editor and an image viewer, so a fresh machine is
+not helpless`. The adapter asks the same application to open the same file
+through the interface the desktop itself uses to hand it a file, and its
+declaration carries the same answer in the person's own words, so a verb with
+none is refused when the adapter is loaded.
+
+### text_editor.new_window
+
+**By hand:** a person opens the text editor's menu and chooses New Window — `A
+text editor and an image viewer, so a fresh machine is not helpless`. The adapter
+activates the same action the menu item does, named in the adapter and never by
+the agent.
+
 ## What this document does not do
 
 It does not say the plain way is **built**. Every entry above names a promise

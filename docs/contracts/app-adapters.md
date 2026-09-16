@@ -61,6 +61,81 @@ And each verb, exactly as in `agent-verbs.md`: `name`, `purpose`, `effect`
 (`read` or `change`), typed `args` with purposes, `requires`, and how its
 approval `sentence` is generated from the validated arguments.
 
+## How this machine loads one
+
+*Added 2026-09-16 with `crates/alo-adapters`. Additive: nothing above changed.*
+
+An adapter is **declared data**, written as Rust constants — `alo_adapters::Adapter`
+— because a verb's words are `alo_strings::Word`s (`agent-verbs.md`, *the words
+are the declaration's*), and a `Word` is known when the adapter is built. Every
+field is something its author writes and a reviewer reads; none of it is code the
+machine runs. `crates/alo-adapters/src/text_editor.rs` is the worked example.
+
+| Field | What it is |
+|---|---|
+| `name` | What the agent is called by: `text_editor` is `@text_editor`. Lower-case words joined by underscores. |
+| `application` | The identifier the machine knows it by. It is also **where every message goes**: an adapter names no destination of its own, so it cannot reach another service. |
+| `releases` | The release series it supports — `50` covers `50.1` and `50.2`. At least one. |
+| `mechanism` | `api`, `accessibility`, `dbus` or `synthetic`. |
+| `words` | Every word its verbs are declared with. A word used and not listed is refused, because it would reach a person as a key. |
+| `verbs` | Each with `name`, `purpose`, `effect`, typed `args`, `reaches`, `sentence`, `by_hand` and `carried_out`. |
+
+A verb is known on the machine's list as `adapter.verb` — `text_editor.open_document`.
+
+**`reaches`** is `Over` the path arguments a grant must cover, or
+`OnlyItsApplication` for a verb that takes no path. Every adapter verb reaches its
+application, and **the grant over the application is asked before anything is
+sent**, again at the moment it would be. The written reason `agent-verbs.md` rule 5
+asks for, for a verb that reaches only its application, is: *an adapter's verb that
+takes no path reaches only its own application, and the grant over that application
+is asked before anything is sent to it.* An agent is offered an adapter's verbs only
+while it holds a grant over the adapter's application.
+
+**`by_hand`** is how a person does the same thing in the application themselves, in
+their own words (ADR 0009). A verb with none is refused. Its verbs are also held to
+`docs/by-hand.md` like every other verb.
+
+**`carried_out`**, for `dbus`, is one method call: the object, the interface, the
+method, and each parameter from a closed list — a file address made from a path
+argument, a literal the author wrote, text from a name or a chosen option, a number
+from a count, an empty parameter list, empty platform data. **Nothing else can go
+into a message**, and nothing a model sends reaches one except through a value the
+capability model validated.
+
+### What is refused when an adapter is loaded
+
+Each refusal is a sentence naming the adapter, the verb and the argument, for the
+author to act on:
+
+- **an argument declared as a script, a command or free text**;
+- **a parameter the application interprets** — declarable, so a declaration can
+  be honest, and never loaded;
+- a method whose interface or name says it runs something (`Eval`, `Execute`,
+  `RunCommand`, a `Scripting` interface…) — a tripwire, not a boundary; review of
+  the declaration is the boundary;
+- **an action chosen by an argument**: `org.freedesktop.Application.ActivateAction`,
+  `org.gtk.Actions.Activate` and `SetState` must name their action as a literal,
+  one verb per action;
+- `synthetic`, whatever else is true; `api` and `accessibility`, until this
+  machine carries them out — a verb the machine cannot carry out is never offered;
+- an application that is a person's own (ADR 0043) — an adapter for the terminal is
+  a command verb by another road;
+- a path argument no grant is required over; an argument that is never sent; a
+  parameter from an argument the verb does not take, or of the wrong kind; a
+  malformed object, interface or method; no release; no verbs; a verb with no
+  by-hand road; a word not declared; a name used twice; and a second adapter for
+  one application;
+- and everything `alo_capability::Verb::checked` refuses of any verb.
+
+### What a person is told when it does not happen
+
+After a person approves, the application may not be there, may not offer what was
+asked (usually another release), may refuse, or may not answer. The first three
+are refusals: nothing was done, the person is told which, and the record keeps the
+same words. **An application that does not answer is recorded as having run** —
+something was sent under the approval — and the person is told that whether it
+happened is not known.
+
 ## Rules for adapter authors
 
 1. **Be honest about `effect`.** Anything that modifies a document, a file or
