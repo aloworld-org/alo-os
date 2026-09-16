@@ -20,9 +20,20 @@ alo-approving = { path = "../alo-approving" }
 # The number a question is answered by, and the grants an approval is checked
 # against again at the moment it runs — handed through, never decided here.
 alo-capability = { path = "../alo-capability" }
+# The person's half of a change to what has been granted to what: one call,
+# `Changing::revoked`, for a grant and a pairing alike. Settings lists and
+# revokes through it and grants nothing — `tests/settings_source.rs` holds it
+# to that.
+alo-changing = { path = "../alo-changing" }
+# The person's own choice of what answers their questions, where their folder
+# is, and the only door that changes the choice.
+alo-choosing = { path = "../alo-choosing" }
 # Where the dock is, and so which corner is the status area the egress
 # indicator is drawn in. Read, never written.
 alo-dock = { path = "../alo-dock" }
+# The list of grants a person sees: rows derived from the machine's own grants,
+# and the words for revoking one. Read, and revoked only through `alo-changing`.
+alo-granted = { path = "../alo-granted" }
 # Everything the sign-in screen does that is not drawing — authenticate, then
 # knock — composed once, there, and called here.
 alo-greeting = { path = "../alo-greeting" }
@@ -34,6 +45,9 @@ alo-indicator = { path = "../alo-indicator" }
 # two desktop windows draw, every number as the kernel or the count gave it.
 # Read, never acted on — `tests/desktop_source.rs` holds the windows to that.
 alo-measuring = { path = "../alo-measuring" }
+# What a pairing permits, and the list Settings reads to show them. Read, never
+# written: the pairings file is the daemon's alone.
+alo-nearby = { path = "../alo-nearby" }
 # The record's own question, asked of the whole record: `Asking::anything()`
 # and nothing narrower, so the record window has no filter that could hide a
 # refusal. Read, never written — `tests/record_source.rs` holds it to that.
@@ -42,6 +56,11 @@ alo-record = { path = "../alo-record" }
 # off the disk and hands the compositor. This crate draws that account and
 # words nothing in it.
 alo-recounting = { path = "../alo-recounting" }
+# The grants and the pairings as the machine kept them, read once when Settings
+# opens. Settings never calls a writer here: `alo-changing` does, for a grant.
+alo-remembering = { path = "../alo-remembering" }
+# The four ways alo OS runs, in the order and the words setup offers them.
+alo-setting-up = { path = "../alo-setting-up" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 # The turn a question was asked inside, borrowed for the length of one call so

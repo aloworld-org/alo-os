@@ -17,8 +17,9 @@ pub(crate) enum NativeScene<'a> {
 }
 
 /// Everything native painted over clients in one frame: the selected scene, the
-/// desktop above it, the record window above that, the approval surface above
-/// the record, and the egress indicator above all of them.
+/// desktop above it, the record window above that, Settings above the record,
+/// the approval surface above Settings, and the egress indicator above all of
+/// them.
 #[derive(Clone, Copy)]
 pub(crate) struct NativeLayers<'a> {
     /// Controls, a reader or the sign-in screen, when one is selected.
@@ -27,6 +28,8 @@ pub(crate) struct NativeLayers<'a> {
     pub(crate) desktop: Option<&'a crate::desktop_raster::DesktopPicture>,
     /// The record window, when the frame carries one.
     pub(crate) record: Option<&'a crate::record_raster::RecordPicture>,
+    /// Settings, when the frame carries it.
+    pub(crate) settings: Option<&'a crate::settings_raster::SettingsPicture>,
     /// The approval surface, when the frame carries one.
     pub(crate) approval: Option<&'a crate::approval_raster::ApprovalPicture>,
     /// The egress indicator, when the frame carries a status area.

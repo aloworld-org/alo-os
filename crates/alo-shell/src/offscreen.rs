@@ -99,6 +99,7 @@ pub fn render_control_scanout(
             scene: controls.map(crate::scene_native::NativeScene::Controls),
             desktop: None,
             record: None,
+            settings: None,
             approval: None,
             status: None,
         },

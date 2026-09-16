@@ -215,7 +215,19 @@ no window.
 
 ### 6. One place for settings
 
-**Status:** ready — the keeping that
+**Status:** **Done, 2026-09-16.** `crates/alo-shell/src/settings_*.rs` and
+`nested_settings.rs`; evidence and decisions in
+`docs/autonomy/updates/one-place-for-settings-drawn-with-every-section-through-its-own-crate.md`.
+The code only — a certified machine has not seen it. Findings in that report:
+no crate declares a heading for a section or a label for *put back as shipped*
+(Delete does it, and the section's own refusal names it); a provider's models
+are not kept in `settings.toml`, so only the provider model a person has chosen
+is offered again; appearance offers the accent alone, because nothing else it
+keeps has words or a road a window can take; nothing opens Settings yet,
+because `alo-shortcuts` declares no action for it; and a session with no folder
+offers no change rather than one it would forget, waiting on the keeping
+plan's task 7 for its sentence.
+Before it was built, the status read: ready — the keeping that
 [ADR 0038](../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
 describes has landed: `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`'s
 tasks 2 and 3 were published on 2026-09-15 (appearance, the dock and shortcuts

@@ -36,6 +36,9 @@ pub(crate) fn paint(
     if let Some(record) = native.record {
         record.validate(size)?;
     }
+    if let Some(settings) = native.settings {
+        settings.validate(size)?;
+    }
     if let Some(approval) = native.approval {
         approval.validate(size)?;
     }
@@ -83,6 +86,11 @@ pub(crate) fn paint(
     // did; below the question and the indicator.
     if let Some(record) = native.record.filter(|record| !record.is_empty()) {
         record.paint(&mut frame)?;
+    }
+    // Above every client, the desktop and the record, so no window covers a
+    // setting being changed; below the question and the indicator.
+    if let Some(settings) = native.settings.filter(|settings| !settings.is_empty()) {
+        settings.paint(&mut frame)?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never

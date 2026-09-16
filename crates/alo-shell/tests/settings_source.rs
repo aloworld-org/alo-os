@@ -1,17 +1,18 @@
-//! The shell keeps no settings of its own, read from the source this crate
+//! The shell keeps no settings of its own, and Settings changes nothing except
+//! through the crate that owns each setting — read from the source this crate
 //! ships.
 //!
 //! The shell plan's *one place for settings* says that **this surface decides
 //! nothing**: every value it writes goes through the crate that owns it, so
-//! that what a person sets and what the machine enforces cannot disagree. Three
-//! of the settings it is to hold — appearance, the dock and shortcuts — have no
-//! file yet, and their own crates once said that file would be the shell's.
-//! ADR 0038 proposes instead that each crate keeps its own, in the person's
-//! folder, and task 6 waits on that decision.
+//! that what a person sets and what the machine enforces cannot disagree.
+//! ADR 0038 decided that each crate keeps its own file in the person's folder,
+//! and rejected a compositor that serialises a `Changes`, names a settings file
+//! or writes one. The first four tests hold the whole shell to that; the last
+//! two hold the Settings files to the rest of the plan's constraint — no words
+//! of their own, no grant, one way to revoke, every write through its keeper,
+//! and no agent's road in.
 //!
-//! What must not happen while it waits is the option that decision rejects
-//! arriving by accident: a compositor that serialises a `Changes`, names a
-//! settings file or writes one. These tests read every shipped file in `src/`
+//! These tests read every shipped file in `src/`
 //! and the manifest's shipped dependencies, so a `toml::to_string` in a drawing
 //! file, a `fs::write` beside it or `XDG_CONFIG_HOME` in a string is a failing
 //! build rather than a review comment.
@@ -299,4 +300,305 @@ fn a_settings_writer_among_the_shipped_dependencies_is_refused() {
     let shipped = the_shipped_dependencies(manifest);
     assert_eq!(shipped, ["alo-appearance", "toml"]);
     assert!(!shipped.iter().any(|named| named == "serde_json"));
+}
+
+/// The files that make up Settings, and each one's code: comments gone, string
+/// literals' contents blanked, unit tests not read.
+fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
+    let mut read = Vec::new();
+    for (named, written) in the_shipped_files() {
+        if named.starts_with("settings_") || named == "nested_settings.rs" {
+            read.push((named, the_code_of(&written)));
+        }
+    }
+    let names: Vec<&str> = read.iter().map(|(named, _)| named.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "nested_settings.rs",
+            "settings_answering.rs",
+            "settings_chord.rs",
+            "settings_granted.rs",
+            "settings_keepers.rs",
+            "settings_kept.rs",
+            "settings_keys.rs",
+            "settings_lines.rs",
+            "settings_paint.rs",
+            "settings_paired.rs",
+            "settings_places.rs",
+            "settings_raster.rs",
+            "settings_seat.rs",
+            "settings_window.rs",
+        ],
+        "a Settings file was added or lost, and this test has to be told"
+    );
+    read
+}
+
+/// The code of a file, line by line: no unit tests, no comments, and string
+/// literals' contents taken out.
+fn the_code_of(written: &str) -> Vec<(usize, String)> {
+    let mut code = Vec::new();
+    let mut inside = false;
+    let mut escaped = false;
+    for (which, line) in written.lines().enumerate() {
+        if line.trim_start().starts_with("#[cfg(test)]") {
+            break;
+        }
+        if !inside && line.trim_start().starts_with("//") {
+            continue;
+        }
+        let (without, _) = without_comment(line, &mut inside, &mut escaped);
+        code.push((which + 1, without));
+    }
+    code
+}
+
+/// Writing words of its own, which only a crate's vocabulary may do.
+const WORDING: [&str; 6] = [
+    "Word::",
+    "Vocabulary",
+    "Key::named",
+    "format!",
+    "push_str",
+    "concat!",
+];
+
+/// Granting, or revoking any way but `alo_changing::Changing::revoked`.
+const GRANTING: [&str; 12] = [
+    "Granting",
+    "alo_picking",
+    ".granted(",
+    ".grant(",
+    ".revoke(",
+    "revoke_on",
+    "revoke_pairing",
+    "revoke_allowed",
+    "pairings_kept",
+    "alo_remembering::kept",
+    "reset_everything",
+    "put_everything_back",
+];
+
+/// Answering setup again, which is asked once.
+const RE_ASKING: [&str; 3] = ["SettingUp", ".answer(", ".setting_up("];
+
+/// An agent's road into Settings.
+const AN_AGENTS_ROAD: [&str; 5] = [
+    "alo_turn",
+    "alo_approving",
+    "alo_context",
+    "alo_overlay",
+    "Turning",
+];
+
+/// The keepers' own doors, which only `settings_keepers.rs` calls.
+const KEEPING: [&str; 3] = [
+    "keeping::keep",
+    "keeping::put_back_as_shipped",
+    "keeping::at_sign_in",
+];
+
+/// What in Settings' code would word something, grant something, revoke by a
+/// road of its own, write a setting around its keeper, or reach an agent: the
+/// line, and what on it would.
+fn what_settings_must_not_do(named: &str, code: &[(usize, String)]) -> Vec<(usize, &'static str)> {
+    let mut found = Vec::new();
+    for (line, text) in code {
+        for word in WORDING
+            .iter()
+            .chain(&GRANTING)
+            .chain(&RE_ASKING)
+            .chain(&AN_AGENTS_ROAD)
+        {
+            if text.contains(word) {
+                found.push((*line, *word));
+            }
+        }
+        if text.contains('"') && !text.trim_start().starts_with("reason = ") {
+            found.push((*line, "a string a person could read"));
+        }
+        if named != "settings_keepers.rs" {
+            for door in KEEPING {
+                if text.contains(door) {
+                    found.push((*line, door));
+                }
+            }
+        }
+        if named != "settings_granted.rs" && text.contains("Changing::of") {
+            found.push((*line, "Changing::of"));
+        }
+        if named != "settings_answering.rs"
+            && (text.contains("answered_by") || text.contains("Choosing::at"))
+        {
+            found.push((*line, "answered_by"));
+        }
+    }
+    found
+}
+
+/// **Settings words nothing, grants nothing, revokes one way, writes only
+/// through each setting's keeper, and has no agent's road into it.** Every
+/// sentence is a crate's; a grant is `alo-picking`'s to make; a grant and a
+/// pairing are revoked with `alo_changing::Changing::revoked` alone; a setting
+/// reaches a disk through the crate that owns it; and no turn, approval or
+/// overlay is named in a Settings file.
+#[test]
+fn settings_words_nothing_grants_nothing_and_changes_only_through_the_owning_crates() {
+    let mut refused = Vec::new();
+    let mut revoking = Vec::new();
+    for (named, code) in the_settings_files() {
+        for (line, what) in what_settings_must_not_do(&named, &code) {
+            refused.push(format!("src/{named}:{line} `{what}`"));
+        }
+        for (line, text) in &code {
+            if text.contains("Changing::of") {
+                revoking.push(format!("src/{named}:{line}"));
+                assert!(
+                    text.contains(".revoked(row, now)"),
+                    "src/{named}:{line} makes a Changing for something other than revoking a row: {text}"
+                );
+            }
+        }
+    }
+    assert!(
+        refused.is_empty(),
+        "Settings does what it must not:\n{}",
+        refused.join("\n")
+    );
+    assert_eq!(
+        revoking.len(),
+        1,
+        "a grant and a pairing are revoked by one call: {revoking:?}"
+    );
+}
+
+/// **Each road is caught in a Settings file, and what only looks like one is
+/// not** — so the test above is a test.
+#[test]
+fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
+    let caught = [
+        (
+            "settings_lines.rs",
+            "let said = format!(\"{name} chosen\");",
+            "format!",
+        ),
+        (
+            "settings_lines.rs",
+            "const CHOSEN: Word = Word::saying(\"x\", \"y\");",
+            "Word::",
+        ),
+        (
+            "settings_window.rs",
+            "let chosen = \"chosen\";",
+            "a string a person could read",
+        ),
+        (
+            "settings_granted.rs",
+            "let granting: Granting = Granting::to(who, lasting);",
+            "Granting",
+        ),
+        (
+            "settings_granted.rs",
+            "changing.granted(&granting, &chosen, now)?;",
+            ".granted(",
+        ),
+        (
+            "settings_granted.rs",
+            "grants.revoke(seen.id());",
+            ".revoke(",
+        ),
+        (
+            "settings_granted.rs",
+            "seen.revoke_on(&mut machine);",
+            "revoke_on",
+        ),
+        (
+            "settings_granted.rs",
+            "daemon.revoke_pairing(seen.machine());",
+            "revoke_pairing",
+        ),
+        (
+            "settings_granted.rs",
+            "alo_remembering::kept(&at, &grants, now)?;",
+            "alo_remembering::kept",
+        ),
+        (
+            "settings_window.rs",
+            "self.appearance.put_everything_back();",
+            "put_everything_back",
+        ),
+        (
+            "settings_answering.rs",
+            "setting_up.answer(&answer)?;",
+            ".answer(",
+        ),
+        (
+            "settings_window.rs",
+            "let turn: alo_turn::Turn;",
+            "alo_turn",
+        ),
+        (
+            "settings_window.rs",
+            "alo_dock::keeping::keep(&at, dock.changes())?;",
+            "keeping::keep",
+        ),
+        (
+            "settings_window.rs",
+            "Changing::of(&mut grants, &at, daemon).revoked(row, now);",
+            "Changing::of",
+        ),
+        (
+            "settings_window.rs",
+            "choosing.answered_by(None)?;",
+            "answered_by",
+        ),
+    ];
+    for (named, line, what) in caught {
+        let found = what_settings_must_not_do(named, &the_code_of(line));
+        assert!(
+            found.iter().any(|(at, road)| *at == 1 && *road == what),
+            "`{line}` in {named} was not caught as `{what}`: {found:?}"
+        );
+    }
+
+    let passed = [
+        (
+            "settings_window.rs",
+            "// format!(\"a comment\") and .revoke( in a comment",
+        ),
+        (
+            "settings_window.rs",
+            "SettingsRow::Granted(row) => self.granted.revoked(row, daemon, now, strings),",
+        ),
+        (
+            "settings_keepers.rs",
+            "alo_dock::keeping::keep(at, drawn.changes())",
+        ),
+        (
+            "settings_granted.rs",
+            "let answered = Changing::of(grants, &self.grants_at, daemon).revoked(row, now);",
+        ),
+        (
+            "settings_answering.rs",
+            "SettingsChoice::NotAtAll => choosing.answered_by(None),",
+        ),
+        ("nested_settings.rs", "    reason = \"one session frame\""),
+        (
+            "settings_lines.rs",
+            "strings.say(&may.word().key(), &Filling::nothing())",
+        ),
+    ];
+    for (named, line) in passed {
+        let found = what_settings_must_not_do(named, &the_code_of(line));
+        assert!(
+            found.is_empty(),
+            "`{line}` in {named} was refused: {found:?}"
+        );
+    }
+    let only_in_a_test =
+        "fn drawn() {}\n#[cfg(test)]\nmod tests {\n    fn f() { let _ = format!(\"x\"); }\n}\n";
+    assert!(
+        what_settings_must_not_do("settings_lines.rs", &the_code_of(only_in_a_test)).is_empty()
+    );
 }

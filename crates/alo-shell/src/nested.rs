@@ -374,6 +374,7 @@ impl Nested {
                 scene: controls,
                 desktop: None,
                 record: None,
+                settings: None,
                 approval: None,
                 status,
             },

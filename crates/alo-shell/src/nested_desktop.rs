@@ -151,6 +151,7 @@ impl Nested {
                 scene: controls.map(NativeScene::Controls),
                 desktop: Some(&pictures.desktop),
                 record: pictures.record.as_ref(),
+                settings: None,
                 approval: pictures.approval.as_ref(),
                 status: Some(&pictures.status),
             },

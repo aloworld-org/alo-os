@@ -42,6 +42,14 @@
 //! (`RunningWindow`) and what is filling the disk (`FillingWindow`) — each
 //! number the one the kernel or the count gave. The dock grants, approves and
 //! revokes nothing, and neither window acts on what it shows.
+//!
+//! Settings (`SettingsWindow`) is drawn here and decided in the crates that own
+//! each setting: what answers questions (`alo-setting-up`, `alo-choosing`),
+//! appearance, the dock and shortcuts (each through its own `keeping`), and
+//! what has been granted to what — grants and pairings in one list, revoked
+//! with `alo-changing`'s one call. Every value it writes goes through the
+//! crate that owns it, a section whose file did not read is never written
+//! over, and nothing is drawn disabled.
 
 #![cfg(target_os = "linux")]
 
@@ -105,6 +113,7 @@ mod nested_reader_frame;
 mod nested_reader_input;
 mod nested_reader_session;
 mod nested_record;
+mod nested_settings;
 mod nested_sign_in;
 mod offscreen;
 mod output_metadata;
@@ -144,6 +153,22 @@ mod seat_input;
 mod server;
 mod session_device;
 mod session_input;
+mod settings_answering;
+mod settings_chord;
+mod settings_granted;
+mod settings_keepers;
+mod settings_kept;
+mod settings_keys;
+mod settings_lines;
+mod settings_paint;
+mod settings_paired;
+mod settings_places;
+mod settings_raster;
+mod settings_seat;
+#[cfg(test)]
+#[path = "../tests/unit_fixtures/settings_testing.rs"]
+mod settings_testing;
+mod settings_window;
 mod shortcut_dispatch;
 mod sign_in_entry;
 mod sign_in_keys;
@@ -242,6 +267,7 @@ pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
 pub use nested_reader_session::NestedReaderSession;
 pub use nested_record::RecordFrame;
+pub use nested_settings::SettingsFrame;
 pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
@@ -258,6 +284,16 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use server::Server;
 pub use session_device::SessionError;
+pub use settings_answering::{SettingsAnswered, SettingsChoice};
+pub use settings_granted::SettingsRevoked;
+pub use settings_kept::SettingsKept;
+pub use settings_keys::SettingsKey;
+pub use settings_places::SettingsPlaces;
+pub use settings_raster::SettingsLook;
+pub use settings_window::{
+    SettingsDid, SettingsDoors, SettingsOpened, SettingsPress, SettingsRow, SettingsSection,
+    SettingsWindow,
+};
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};
 pub use sign_in_keys::SignInKey;

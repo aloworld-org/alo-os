@@ -59,6 +59,11 @@ pub enum RenderError {
     /// with a row cut or the dock missing.
     #[error("the desktop does not fit this output")]
     DesktopScene,
+    /// Settings is open and cannot hold every sentence its focused section has
+    /// to say and the focused row whole on this output, or was laid out for a
+    /// different one. The frame is refused rather than drawn with a row cut.
+    #[error("Settings does not fit this output")]
+    SettingsScene,
     /// The desktop was asked to draw in an accent that is not one a person can
     /// choose — terracotta above all, which means the agent and nothing else.
     #[error("the desktop refused an accent that is not offered")]
