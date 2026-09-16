@@ -4148,3 +4148,27 @@ never keep under `/etc` for this reason is the person's own data — which is
 already the case: grants, pairings, the record and the indexes live under
 `/var`.
 **Date:** 2026-09-15.
+
+### A walk from `/` can wedge for good on WSL's Windows-backed mounts
+**Version:** WSL 2.7.14, kernel `6.18.33.2-microsoft-standard-WSL2`, Ubuntu 24.04 on
+a VMware guest running Windows Server 2022; `alo-measuring`'s
+`naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so` at `f11fa4c`,
+inside `cargo test --workspace` with two lanes gating at once. 2026-09-15.
+**Behaviour:** the test walks `/`, stopping at each mount point, which on this
+machine means it must look at the 9p mounts WSL makes of the Windows side —
+`/mnt/c`, `/mnt/d` and `/usr/lib/wsl/drivers`. One `statx` on such a path stopped
+answering. The thread sat in `p9_client_rpc` (kernel stack: `v9fs_vfs_lookup` →
+`__lookup_slow` → `path_lookupat`) in **uninterruptible** sleep for an hour, writing
+nothing and reading nothing; the test's other thread waited on it. `kill -9` does
+not end a thread in that state, and `cargo test` has no timeout, so **the gate does
+not fail — it never finishes**. Everything else on the same mounts answered
+instantly throughout (`ls /mnt/c`, `stat -f /mnt/c`), so the mount was not down;
+one request was lost.
+**Our response:** `wsl --shutdown`, then start the distribution again; the wedged
+thread goes with it, and the lanes re-run their gates. Nothing else clears it. The
+same tests had passed many times that day on the same machine, so this is a stall
+under load rather than a fault in the test, and the test is unchanged. What it
+costs is the gate run it was in, so a lane whose gates have gone quiet for much
+longer than usual is worth a look: `ps -eo stat,args | grep " D "` finds the
+uninterruptible thread, and `/proc/<tid>/stack` names the filesystem.
+**Date:** 2026-09-15.
