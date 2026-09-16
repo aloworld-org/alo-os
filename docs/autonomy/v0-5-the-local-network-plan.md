@@ -1421,7 +1421,33 @@ with code.
 
 ### 29. A cable pulled is a network this machine is no longer found on, and one plugged in is found at once
 
-**Status:** ready. **Depends on:** 22, 27, 28.
+**Status:** **Done, 2026-09-16.** Measured on a real kernel by
+`crates/alo-agentd/src/a_cable_pulled_and_plugged_in_again.rs` — reception serving
+as `src/main.rs` does over two `veth` cables, the studio at the far end of one and
+a colleague at the far end of the other: both find and reach it; the colleague's
+cable pulled by its namespace ending leaves reception found and reached on the
+studio's cable alone, with the door answering; the same cable laid again — a new
+interface with a new index — is found by the **first** question and reached by the
+first connection, with no restart; the studio's cable set down at reception's end
+is found and reached nowhere while the colleague still is; somebody else holding
+the port on that cable when it comes up is a line in the service log, with
+discovery still answered there and the door and the colleague still answered; and
+once they let go and the cable is re-seated, the studio finds and reaches reception
+again. Every answer either far end heard is the same bytes. **The test found a
+bug, fixed in the same change:** the thread that answers discovery
+(`answering_discovery.rs`) slept on the responders it took at the top of a round,
+so a cable plugged in after that was answered on by a socket nobody waited on until
+somebody on another network asked something. `told_of_a_move.rs` (new) — a pair of
+sockets `Responders` writes one byte into whenever the set moves; `responding.rs` —
+`Responders::moved`, said in `answer_on` when a responder is let go of or added and
+never when nothing changed; `wire.rs` — `Wire::answering_moved`;
+`answering_discovery.rs` — each round empties it, takes the responders, and waits on
+it beside them. A mutation run with the wake removed fails the test at *the
+colleague, again never found reception*. Contract:
+`docs/contracts/local-network-wire.md` (*A cable pulled, and plugged in again*, new,
+additive). `docs/quirks.md` records what the kernel does. The report is
+`docs/autonomy/updates/a-cable-pulled-and-plugged-in-again.md`.
+**Depends on:** 22, 27, 28.
 
 *Machines find each other with zero configuration.* Three sets of sockets on this
 machine now follow the kernel's network notifications — the discovery joins
@@ -1453,3 +1479,38 @@ reports as *it only works if I reboot after docking*.
   and no polling — the kernel's notification is the only thing that wakes any of
   it. Nothing in `alo-shell`, nothing in `image/`. What reality does that the
   specification does not say goes in `docs/quirks.md`.
+
+### 30. Two machines with no IPv4 address between them find each other again when the cable comes back
+
+**Status:** ready. **Depends on:** 23, 29.
+
+*Machines find each other with zero configuration — no addresses typed.* Task 29
+measured a cable pulled and plugged in again over **IPv4**. Over IPv6 link-local
+the same cable is a different thing, and nothing has measured it: a link set down
+loses its link-local address, and one set up again gets it back only after
+duplicate address detection, a second or two later and in a second notification;
+a cable re-laid is a new interface index, and a link-local address is only an
+address together with that index (ADR 0041). The IPv6 discovery socket is held to
+nothing and joined per network by `crate::joining`, which forgets a network that
+is not reported and joins it again, treating `EADDRINUSE` as already joined — so
+the rule is there, and whether the kernel keeps, drops or restores a membership
+across each kind of pull is exactly what nobody has measured. A pairing found over
+link-local (`HeardFrom` with the old index) that is dialled after the cable is
+re-laid is the other half: it must be measured again at the moment, never dialled
+at an index that no longer exists.
+
+- **Acceptance:** on a real kernel, two machines on one `veth` with link-local IPv6
+  only, each serving as `src/main.rs` does (`crate::two_machines_with_no_ipv4` is
+  the fixture to start from): both find each other; the cable pulled — the far
+  end's link set down, and separately the far end's namespace ended and the cable
+  re-laid with a new index — leaves each machine not found by the other and both
+  services running, tested; plugged in again, each finds the other at the new
+  link-local address **with the new interface**, without either service restarting,
+  tested; a proposal to the paired machine after the cable is re-laid is measured
+  on the new interface and not dialled at the old index, tested; what is said is
+  the same bytes throughout; and what the kernel does with an IPv6 membership
+  across a link set down and a link deleted is written into `docs/quirks.md`.
+- **Constraint:** ADR 0003 and ADR 0041 as they stand: no network chosen by a
+  person or an agent, no trusted-network setting, what crosses the wire unchanged.
+  No interval and no polling — the kernel's notification is the only thing that
+  wakes any of it. Nothing in `alo-shell`, nothing in `image/`.

@@ -90,6 +90,7 @@ use crate::listeners::{Listeners, Listening};
 use crate::networks::Network;
 use crate::refusing::NotBound;
 use crate::responding::{Responders, Responding};
+use crate::told_of_a_move::ToldOfAMove;
 use crate::unhosted::Unhosted;
 use crate::what_is_advertised::Advertising;
 
@@ -368,6 +369,19 @@ impl Wire {
     #[must_use]
     pub fn responding(&self) -> Responding {
         Responding::of(&self.responders)
+    }
+
+    /// What the thread answering discovery waits on, and empties, for the
+    /// responders having moved — nothing on a wire answering through a socket
+    /// somebody handed in, whose responders never move.
+    ///
+    /// The service's own thread reads the kernel's notification and moves the
+    /// responders ([`networks_changed`](Self::networks_changed)); this is how the
+    /// other thread, asleep on the sockets it took before, hears of it
+    /// (`crate::told_of_a_move`).
+    #[must_use]
+    pub const fn answering_moved(&self) -> Option<&ToldOfAMove> {
+        self.responders.moved()
     }
 
     /// The networks discovery is answered on now — empty on a wire answering

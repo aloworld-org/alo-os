@@ -387,6 +387,26 @@ route — to somebody else at that address, or to nobody.
   whoever asked on both. Nothing a reader of this wire sends or reads changes, and
   which interfaces are answered on is still no setting (ADR 0003).
 
+## A cable pulled, and plugged in again
+
+Added 2026-09-16, additively. Nothing on this wire changes; this says what a
+reader of it can rely on while a machine's networks come and go.
+
+- **A network this machine is taken off is a network it is no longer found or
+  reached on.** Discovery stops being answered there, the port stops being
+  listened on there and the group is left, when the kernel says the network went —
+  and the machine stays found and reachable on every network it is still on, with
+  the service running and its person's door answering.
+- **A network it is put on again is found and reached at once**, with no restart:
+  the first question asked there after the kernel says the network is up is
+  answered, and the port answers there. A cable re-laid is a new interface to the
+  kernel, and it is treated as one.
+- **What is said is the same bytes before, during and after**, on every network.
+- **A network that will not take the port when it comes back** — somebody else
+  holding it there — is a line in the service log; discovery is still answered on
+  that network, and the port is listened on there the next time the kernel says
+  the network changed and it is free.
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

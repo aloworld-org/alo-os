@@ -1008,6 +1008,49 @@ interface this machine cannot enumerate is answered by nobody rather than answer
 exactly.
 **Date:** 2026-09-16.
 
+### The Linux kernel — a socket held to an interface that has gone stays open and silent, and a cable comes back as a new interface or the same one
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`), socket2 0.6; measured on 2026-09-16 by
+`crates/alo-agentd/src/a_cable_pulled_and_plugged_in_again.rs`.
+**Behaviour:** the entries above say what a socket held to an interface does while
+that interface is there. What happens when a cable is pulled and plugged in again
+while the service runs is not written down anywhere, and it is not one thing:
+
+- **A cable pulled at the far end is an interface that goes.** Ending the last
+  process in the far end's network namespace destroys its `veth`, and the peer in
+  this namespace goes with it — a moment later, not in the same instant, because
+  a namespace is torn down asynchronously. The routing socket says so. **The same
+  cable laid again is a new interface with a new index**, so nothing matched by
+  index survives it.
+- **A cable pulled by its link going down is the same interface.** `ip link set
+  down` keeps the index and the IPv4 address and clears `IFF_UP`; the far end
+  loses its carrier. Set up again, it is the same index. Both changes are said on
+  the routing socket.
+- **A socket held to an interface that has gone stays open, and `poll` says
+  nothing about it** — no error, no hang-up, and no datagram will ever arrive.
+  Measured: discovery's answering thread, asleep on the responders it had taken
+  before the colleague's cable went, stayed asleep on the dead one while the
+  colleague's new cable was answered on by a socket it was not waiting on, and the
+  colleague never heard an answer. So nothing about a gone interface wakes a
+  thread that is not also reading the routing socket.
+- **A TCP listener held to an interface that is down binds**, at the port the
+  service listens at, and a second listener held to that interface at that port is
+  then refused `EADDRINUSE` when the link comes up — which is how the fixture
+  makes a network refuse the service's bind without a bug to make it.
+- **A `veth` set up just before a service starts may not be running yet when the
+  service reads its interfaces**; the service then answers on it only through the
+  notification that follows. Measured: the first run of the fixture, before the
+  fix below, failed at its first step for exactly that reason.
+
+**Our response:** the listeners, the responders and the IPv6 joins already let go
+of a network whose index is no longer reported and bind one that is new. What was
+missing was the thread that answers discovery beside the service: it waits on the
+responders and cannot read the routing socket the service already reads (two
+readers take each other's messages). The responders now say when they move
+(`crate::told_of_a_move`, one byte into a pair of sockets), and that thread waits
+on it beside them and takes the responders again. Nothing wakes on an interval.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

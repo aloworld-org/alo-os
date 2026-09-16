@@ -178,6 +178,8 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(all(test, target_os = "linux"))]
+mod a_cable_pulled_and_plugged_in_again;
+#[cfg(all(test, target_os = "linux"))]
 mod a_discovery_answer_leaves_on_the_network_it_arrived_on;
 #[cfg(all(test, target_os = "linux"))]
 mod a_machine_reachable_on_both_networks;
@@ -283,6 +285,8 @@ pub mod surface;
 pub mod terms;
 #[cfg(target_os = "linux")]
 pub mod the_runtime;
+#[cfg(target_os = "linux")]
+pub mod told_of_a_move;
 #[cfg(target_os = "linux")]
 pub mod trusting;
 #[cfg(all(test, target_os = "linux"))]

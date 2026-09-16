@@ -96,6 +96,16 @@
 //! answer** — a machine found on two of its three networks beats a service that
 //! would not start.
 //!
+//! **And the thread that answers is told.** The responders are waited on by
+//! `crate::answering_discovery`'s thread, not by the service's, and that thread
+//! cannot read the kernel's notification itself — the service already does, and
+//! two readers of one socket take each other's messages. So whenever the set of
+//! responders moves, it says so ([`crate::told_of_a_move`]), and the thread takes
+//! the responders again. Without it, a thread asleep on the sockets it had before
+//! a cable was plugged in never waits on the new one, and a question on that cable
+//! is answered only once somebody on another network happens to ask — measured by
+//! `crate::a_cable_pulled_and_plugged_in_again`, which failed until this was so.
+//!
 //! # Nothing here is a setting, and nothing it says moves
 //!
 //! ADR 0003. Which interfaces are answered on is what the machine is plugged
@@ -113,6 +123,7 @@ use alo_nearby::{Answering, NotNearby, Presence, THE_ADDRESS};
 
 use crate::networks::{Interface, Network, discovery_networks, listening_networks};
 use crate::route_messages::reported_by_the_kernel;
+use crate::told_of_a_move::ToldOfAMove;
 
 /// One socket discovery is answered on, and what it is held to.
 struct Responder {
@@ -164,6 +175,10 @@ pub struct Responders {
     workspace: Option<NonZeroU16>,
     /// Whether [`held`](Self::held) follows the kernel's networks.
     follows: bool,
+    /// Said whenever [`held`](Self::held) moves, so the thread waiting on the
+    /// responders takes them again — and nothing on a machine that follows no
+    /// kernel, or could not make the pair.
+    moved: Option<ToldOfAMove>,
     /// The port every one of them is bound at, which is where discovery asks.
     port: u16,
 }
@@ -180,12 +195,23 @@ impl Responders {
     #[must_use]
     pub fn bound(port: u16, presence: Presence, said: &mut dyn FnMut(&str)) -> Self {
         let reported = reported_by_the_kernel();
+        let moved = match reported.as_ref().map(|_| ToldOfAMove::made()) {
+            Ok(Ok(moved)) => Some(moved),
+            Ok(Err(why)) => {
+                said(&format!(
+                    "the thread answering discovery cannot be told when a network changes ({why}); a network plugged in after start is answered on only once a question arrives on another"
+                ));
+                None
+            }
+            Err(_) => None,
+        };
         let responders = Self {
             held: Mutex::new(Vec::new()),
             fixed: Vec::new(),
             presence,
             workspace: None,
             follows: reported.is_ok(),
+            moved,
             port,
         };
         match reported {
@@ -216,6 +242,7 @@ impl Responders {
             presence,
             workspace: None,
             follows: false,
+            moved: None,
             port,
         };
         let fixed = responders.a_responder_on(socket, None, false)?;
@@ -266,6 +293,7 @@ impl Responders {
             fixed: Vec::new(),
             presence: self.presence.clone(),
             follows: self.follows,
+            moved: None,
             port: self.port,
         };
         let held = {
@@ -276,6 +304,7 @@ impl Responders {
         Self {
             held: Mutex::new(held),
             fixed,
+            moved: self.moved,
             ..told
         }
     }
@@ -332,6 +361,13 @@ impl Responders {
             .collect()
     }
 
+    /// What to wait on, and empty, for the responders having moved — nothing on a
+    /// machine whose responders never move.
+    #[must_use]
+    pub const fn moved(&self) -> Option<&ToldOfAMove> {
+        self.moved.as_ref()
+    }
+
     /// The kernel said a network changed: answer on every network this machine is
     /// on now that is not answered on yet, and let go of the sockets whose
     /// interfaces have gone.
@@ -377,10 +413,12 @@ impl Responders {
     fn answer_on(&self, networks: &[Network], groups: &[Network], said: &mut dyn FnMut(&str)) {
         let on = |responder: &Arc<Responder>| responder.on.as_ref().map(Network::index);
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
+        let before = held.len();
         held.retain(|responder| {
             on(responder)
                 .is_some_and(|index| networks.iter().any(|network| network.index() == index))
         });
+        let mut moved = held.len() != before;
         for network in networks {
             if held
                 .iter()
@@ -389,7 +427,10 @@ impl Responders {
                 continue;
             }
             match self.a_responder(network, groups) {
-                Ok(responder) => held.push(Arc::new(responder)),
+                Ok(responder) => {
+                    held.push(Arc::new(responder));
+                    moved = true;
+                }
                 // A network that will not take a socket is a line, and the others
                 // are still answered on: a machine found on two of its three
                 // networks beats a service that would not start.
@@ -399,6 +440,12 @@ impl Responders {
                     network.address()
                 )),
             }
+        }
+        drop(held);
+        if moved && let Some(Err(why)) = self.moved.as_ref().map(ToldOfAMove::tell) {
+            said(&format!(
+                "the thread answering discovery could not be told the networks changed ({why}); a network plugged in is answered on once a question arrives on another"
+            ));
         }
     }
 
@@ -843,5 +890,88 @@ mod tests {
         );
         responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
         assert_eq!(responders.answered_on(), networks);
+    }
+
+    /// Whether the responders have said they moved, without waiting for it, and
+    /// emptied.
+    fn said_it_moved(responders: &Responders) -> bool {
+        let moved = responders.moved().unwrap();
+        let [said] = crate::unix::ready(&[Some(moved.waiting_on())], Some(Duration::ZERO)).unwrap();
+        moved.heard();
+        said
+    }
+
+    /// **The responders say when they move, and only then**: a network let go of
+    /// and a network answered on each wake the thread waiting on the responders,
+    /// and a notification that changes nothing wakes nobody — a machine whose
+    /// networks do not change costs nothing for following them.
+    #[test]
+    fn the_responders_say_when_they_move_and_only_then() {
+        let port = a_free_port();
+        let responders = Responders::bound(port, presence(), &mut |line| panic!("{line}"));
+        let networks = responders.answered_on();
+        assert!(!networks.is_empty());
+        // Answering on the networks it had at start is a move nobody was
+        // waiting for yet; it is emptied here.
+        said_it_moved(&responders);
+
+        responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
+        assert!(
+            !said_it_moved(&responders),
+            "nothing changed, and the waiting thread was woken"
+        );
+        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        assert!(
+            said_it_moved(&responders),
+            "a network let go of said nothing"
+        );
+        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        assert!(!said_it_moved(&responders));
+        responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
+        assert!(
+            said_it_moved(&responders),
+            "a network answered on said nothing"
+        );
+    }
+
+    /// **A network that will not take a socket is not a move**: nothing was
+    /// added, so nothing is said, and the refusal is the line in the log.
+    #[test]
+    fn a_network_that_will_not_take_a_socket_is_not_a_move() {
+        let responders = Responders::bound(a_free_port(), presence(), &mut |_| {});
+        let before = responders.answered_on();
+        said_it_moved(&responders);
+        let nowhere =
+            listening_networks(&[interface(0, "nowhere", &[Ipv4Addr::new(10, 65, 0, 1)])]);
+        let both: Vec<_> = nowhere.iter().chain(&before).cloned().collect();
+        let mut said = Vec::new();
+        responders.answer_on(&both, &[], &mut |line| said.push(line.to_owned()));
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert!(
+            !said_it_moved(&responders),
+            "a network that took no socket woke the waiting thread"
+        );
+    }
+
+    /// **A socket somebody handed in never moves**, so there is nothing to wait
+    /// on for it.
+    #[test]
+    fn a_socket_handed_in_has_nothing_to_say_about_moving() {
+        let handed = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let responders = Responders::on(handed, presence()).unwrap();
+        assert!(responders.moved().is_none());
+        let hosted = responders.hosting(a_workspace(), &mut |line| panic!("{line}"));
+        assert!(hosted.moved().is_none());
+    }
+
+    /// **Hosting a workspace keeps the responders' voice**: the thread is told of
+    /// moves on the responders that answer, which are the hosting ones.
+    #[test]
+    fn hosting_a_workspace_keeps_saying_when_the_responders_move() {
+        let responders = Responders::bound(a_free_port(), presence(), &mut |_| {})
+            .hosting(a_workspace(), &mut |line| panic!("{line}"));
+        said_it_moved(&responders);
+        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        assert!(said_it_moved(&responders));
     }
 }

@@ -41,6 +41,7 @@ use std::sync::{Mutex, PoisonError};
 use alo_nearby::NotNearby;
 
 use crate::refusing::NotServed;
+use crate::told_of_a_move::ToldOfAMove;
 use crate::unix::ready_and;
 use crate::wire::Wire;
 
@@ -121,12 +122,22 @@ pub(crate) fn beside<T>(
 /// The responders are taken again at the top of every round
 /// ([`Wire::responding`]), because a machine plugged in or unplugged while the
 /// service runs answers on a different set of sockets from the one the last
-/// round waited on (`crate::responding`).
+/// round waited on (`crate::responding`) — and every round also waits on the
+/// responders saying they moved ([`Wire::answering_moved`]), so a cable plugged
+/// in wakes this thread onto its new socket at once rather than whenever a
+/// question next arrives on an old one.
 fn answer_until_ended(wire: &Wire, answered: &Answered, ended: &UnixStream) {
+    let moved = wire.answering_moved();
     loop {
+        // Emptied before the responders are taken, so a move after the taking
+        // leaves something behind and wakes the wait below at once.
+        if let Some(moved) = moved {
+            moved.heard();
+        }
         let responding = wire.responding();
         let waiting_on = responding.waiting_on();
-        let ([stop], asked) = match ready_and(&[Some(ended.as_fd())], &waiting_on, None) {
+        let told = [Some(ended.as_fd()), moved.map(ToldOfAMove::waiting_on)];
+        let ([stop, _], asked) = match ready_and(&told, &waiting_on, None) {
             Ok(ready) => ready,
             Err(why) => {
                 answered.stopped_because(NotNearby::TheNetwork(why.to_string()));
