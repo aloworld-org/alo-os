@@ -901,7 +901,18 @@ fn the_choice_is_what_the_environments_loader_reads() {
     )
     .expect("the environment's loader configuration is in the repository");
     let file = THE_CHOICE.rsplit('/').next().unwrap();
-    assert!(grub.contains(&format!("${{cmdpath}}/{file}")), "{grub}");
+    // `${config_directory}`, the directory the loader read its own configuration
+    // from, and never `${cmdpath}`, which the base's signed loader leaves empty
+    // (`docs/quirks.md`, *Fedora's signed loader leaves `cmdpath` empty*).
+    assert!(
+        grub.contains(&format!("${{config_directory}}/{file}")),
+        "{grub}"
+    );
+    let entry: String = grub
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect();
+    assert!(!entry.contains("${cmdpath}"), "{grub}");
     let variable = alo_installer::THE_CHOICE_BEGINS
         .strip_prefix("set ")
         .unwrap()

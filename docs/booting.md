@@ -296,14 +296,30 @@ Windows does with the environment staged beside it, attaches an empty second
 disk, and starts the machine with Secure Boot on under Microsoft's certificates.
 It hashes the first disk before and after, then starts the second disk on its
 own and reads what is running. A second test gives the environment a key that
-is not the owner's and watches it refuse. Both are run by name:
+is not the owner's and watches it refuse. A third changes one byte of the staged
+loader and watches the firmware refuse *that*, so the first two are known to run
+under a firmware that really enforces Secure Boot. All three are run by name:
 
     cargo test -p alo-installing --test installed_in_a_virtual_machine \
       -- --include-ignored --test-threads 1
 
-**The install does not pass yet** (2026-09-15). With Secure Boot on, the firmware
-stops with a page fault as it starts the staged loader, before Linux; it is written
-up in `docs/autonomy/updates/the-boot-environment-that-installs.md`.
+**The Secure Boot firmware comes out of the pinned base**, not from the host's
+packages: Ubuntu's `ovmf` 2025.11-3ubuntu7 page-faults starting the base's own
+signed loader, and Fedora's `edk2-ovmf-20250812-21.fc42` starts it with Secure
+Boot enabled (`docs/quirks.md`, *EDK II's strict image protection page-faults the
+base's signed loader*). The test installs it into a container of the base once
+and keeps it in its work directory.
+
+**The install does not pass yet** (2026-09-16). What now works, measured: the
+firmware starts the staged shim and loader with **Secure Boot enabled**, the
+loader hands over the disk the person chose, the environment says every step,
+the signature of the pinned release verifies — *this is a genuine alo OS* — and
+`bootc install` begins. It then ends without installing, and the environment says
+*alo OS could not be installed onto <disk>. That disk may now hold part of alo
+OS; nothing else on this computer was changed.* Why is not yet known: the
+environment does not put the installer's own words on the console, so the next
+step is to make it say them. Written up in
+`docs/autonomy/updates/with-secure-boot-on-the-staged-loader-starts.md`.
 
 **The refusal passes.** It is started without Secure Boot and refuses, with the
 second disk untouched and the first disk byte-for-byte unchanged. It once changed

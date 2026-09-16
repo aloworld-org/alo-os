@@ -113,6 +113,72 @@ test passes; this is Unix-socket development evidence, not physical input testin
 
 ## Hardware and firmware
 
+### EDK II's strict image protection page-faults the base's signed loader, and Fedora's own firmware fixes it up
+**Version:** the boot chain `quay.io/fedora/fedora-bootc:42@sha256:077182b6…`
+ships — `shim-x64-15.8-3.x86_64` and `grub2-efi-x64-2.12-32.fc42.x86_64` — under
+QEMU 10.2.1 (`1:10.2.1+ds-1ubuntu3.2`), KVM, `-machine q35,smm=on` with
+`-global driver=cfi.pflash01,property=secure,value=on`, in WSL Ubuntu on Windows
+11 Pro 10.0.26200. Two firmwares: **Ubuntu `ovmf` 2025.11-3ubuntu7**
+(`/usr/share/OVMF/OVMF_CODE_4M.secboot.fd`) and **Fedora
+`edk2-ovmf-20250812-21.fc42`** (`/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd`).
+2026-09-16.
+**Behaviour:** started by Ubuntu's Secure Boot build, the staged loader dies
+before Linux and the machine hangs:
+
+```
+BdsDxe: starting Boot0002 "UEFI Misc Device" from PciRoot(0x0)/Pci(0x3,0x0)
+!!!! X64 Exception Type - 0E(#PF - Page-Fault) ... W:1 P:1 ...
+RIP - 0000000070AB1CA0 ... RDI - 0000000070ACF000, RDX - 0000000070B19000
+!!!! Find image based on IP(0x70AB1CA0) (No PDB) !!!!
+```
+
+A **write** (`W:1`) to a **present** (`P:1`) page. Located by elimination, each
+run booting the same staged partition:
+
+| what was started | firmware | machine | result |
+|---|---|---|---|
+| shim → loader → kernel | Ubuntu `OVMF_CODE_4M.fd` + `OVMF_VARS_4M.fd` | `q35` | boots to `alo-installing` |
+| shim → loader → kernel | Ubuntu `OVMF_CODE_4M.fd` + `OVMF_VARS_4M.fd` | `q35,smm=on`, secure flash | boots to `alo-installing` |
+| shim → loader → kernel | Ubuntu `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.ms.fd` | `q35,smm=on`, secure flash | `#PF` |
+| shim → loader → kernel | Ubuntu `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.ms.fd` | `q35` | `#PF` |
+| shim → loader → kernel | Ubuntu `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.fd` (**no keys, Secure Boot off**) | `q35,smm=on`, secure flash | `#PF` |
+| **shim alone** (`grubx64.efi` removed) | Ubuntu `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.ms.fd` | `q35,smm=on`, secure flash | *Failed to open \\EFI\\BOOT\\grubx64.efi — Not Found*, **no fault** |
+| **the loader alone** (`grubx64.efi` as `BOOTX64.EFI`) | Ubuntu `OVMF_CODE_4M.secboot.fd` + `OVMF_VARS_4M.fd` | `q35,smm=on`, secure flash | `#PF`, byte for byte the same registers |
+| shim → loader → kernel | **Fedora `OVMF_CODE.secboot.fd` + `OVMF_VARS.secboot.fd`** | `q35,smm=on`, secure flash | boots, Secure Boot **enabled** |
+
+So it is neither Secure Boot itself (row 5 faults with no keys enrolled), nor
+the machine's SMM (rows 3 and 4 fault alike, rows 1 and 2 boot alike), nor shim
+(row 6), nor alo OS: it is **the loader, and the firmware build's memory
+protection**. With the image base read back from the registers, the loader is
+writing from its own `.data` into its `mods` section — pages the stricter build
+has marked read-only.
+
+Fedora's firmware says what it is, on the same partition, and carries on:
+
+```
+PageFaultExitBoot: Page fault fixups needed (NX: 0, RW: 1).
+PageFaultExitBoot: The guest OS boot chain is not NX clean.
+PageFaultExitBoot: Applying global page table fixup (shim is older than v16).
+[    0.000000] secureboot: Secure boot enabled
+```
+
+The remedy the message names is **shim 16**, which negotiates memory protection
+with the firmware; Fedora 42 ships shim 15.8, and building our own shim or
+loader is forbidden (ADR 0011).
+**Our response:** the virtual machine the installer is measured in takes its
+Secure Boot firmware **out of the pinned base itself** (`dnf install edk2-ovmf`
+in a container of it), not from whatever the host packages — the firmware built
+for the boot chain the base ships. Secure Boot stays on and is never switched off
+to make a test pass (ADR 0033 §4); that the firmware really enforces it is
+measured by `a_loader_the_firmware_does_not_trust_is_refused`, which changes one
+byte of the staged loader and shows the firmware answering *Access Denied --
+rejected probably by Secure Boot* and starting nothing. **What only the certified
+laptop can answer** is whether its own firmware is as strict as Ubuntu's build;
+that is task 6 of the installer plan, at the machine, and if it is, the way
+through is a base whose shim is 16 or newer, never a patched loader and never
+Secure Boot off.
+**Date:** 2026-09-16.
+
 ### OVMF without SMM saves its variables onto a FAT disk when its flash is SMM-only
 **Version:** OVMF 2025.11-3ubuntu7 (`/usr/share/OVMF/OVMF_CODE_4M.fd`, the build
 without Secure Boot and without SMM) with `OVMF_VARS_4M.fd`, under QEMU 10.2.1
@@ -595,6 +661,38 @@ the accommodation lives in our configuration and the reason lives here.
 
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
+
+### GRUB — the base's signed loader leaves `cmdpath` empty, and sets `config_directory`
+**Version:** `grub2-efi-x64-2.12-32.fc42.x86_64` as
+`quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships it, started by
+`shim-x64-15.8-3`, from a FAT partition's `EFI/BOOT/`, under QEMU with Fedora's
+`edk2-ovmf-20250812-21.fc42` and Secure Boot on. 2026-09-16.
+**Behaviour:** the boot environment's entry is the same file on every machine,
+and the disk the person chose is staged beside it as `chosen.cfg` for the entry
+to source. GRUB's documented variable for *the directory this loader was started
+from* is `cmdpath`, and `image/installing/grub.cfg` used it. It is **empty**.
+Asked in a machine, the loader answers:
+
+```
+ALODIAG cmdpath=[]
+ALODIAG prefix=[(hd0,gpt5)/EFI/fedora]
+ALODIAG config_directory=[(hd0,gpt5)/EFI/BOOT]
+```
+
+Fedora's build has `/EFI/fedora` baked in as its prefix, finds no configuration
+there, falls back to the directory it was itself loaded from — and records that
+fall-back in `config_directory` only. So `[ -f "${cmdpath}/chosen.cfg" ]` tested
+`/chosen.cfg` on the root device, found nothing, and every install refused *no
+disk was chosen for alo OS, so nothing was changed*: correct behaviour on a
+choice that never arrived.
+**Our response:** `image/installing/grub.cfg` sources
+`${config_directory}/chosen.cfg`. `wrong_with_the_entry` in
+`crates/alo-installing/tests/what_the_environment_carries.rs` refuses an entry
+that reads `${cmdpath}` at all, and
+`crates/alo-installer/tests/the_installer_checks_consents_and_stages.rs` holds
+the Windows program's staged path to the same variable — the two halves of the
+choice cannot drift apart again without a test saying so.
+**Date:** 2026-09-16.
 
 ### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,

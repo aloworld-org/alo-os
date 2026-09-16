@@ -423,6 +423,33 @@ rule in a document is not a bound on a running test. So this task waits for a
 machine that can hold it, and the lane on the development PC steps over it rather
 than filling the disk again. **Depends on:** 2.
 
+**Most of it is answered, and published on 2026-09-16**
+(`updates/with-secure-boot-on-the-staged-loader-starts.md`), so whichever machine
+takes this task starts from a measurement rather than from the fault:
+
+- **The fault is the firmware build — not our files, and not Secure Boot.** Nine
+  boots of the same staged partition, one variable at a time: Ubuntu's
+  `ovmf 2025.11-3ubuntu7` page-faults even with no certificates enrolled, while
+  Fedora's `edk2-ovmf-20250812-21.fc42` starts the same signed chain **with
+  Secure Boot enabled**, saying *Page fault fixups needed … the guest OS boot
+  chain is not NX clean … shim is older than v16*. The remedy upstream names is
+  shim 16, which is upstream's to ship and never ours to build (ADR 0011).
+- **So the test takes its firmware out of the pinned base** rather than from
+  whatever the host packages, and a new test changes one byte of the staged
+  loader and finds that firmware refusing it — *Access Denied -- rejected
+  probably by Secure Boot* — with no kernel started and the first disk unchanged.
+  Secure Boot is never switched off (ADR 0033 §4).
+- **And it found what nothing else could have:** the loader's entry read the
+  person's chosen disk from `${cmdpath}`, which the base's own loader leaves
+  **empty** — so no install could ever have succeeded, under any firmware. It now
+  reads `${config_directory}`, with tests in both halves refusing the other.
+- **Where it now stops:** with Secure Boot on, the environment reads the choice,
+  verifies the signature and begins installing; `bootc install` then ends without
+  finishing, and **the console does not say why**, because the environment says
+  its own sentences and not the installer's. Making it say them is the first step
+  for whoever takes this task, and is worth doing for its own sake — the person
+  watching has no other window.
+
 Split from task 2 on 2026-09-15. Under QEMU q35 with OVMF's Secure Boot build and
 Microsoft's enrolled certificates, the firmware page-faults (`#PF`, a write to a
 present page, `W:1 P:1`) starting the staged loader from the installer's

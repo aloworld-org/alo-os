@@ -106,6 +106,20 @@ fn wrong_with_the_entry(entry: &str) -> Vec<&'static str> {
     if !words.contains(&"rd.shell=0") {
         wrong.push("the environment offers a shell");
     }
+    // Where the staged choice is read from. The base's signed loader leaves
+    // `cmdpath` empty and sets only `config_directory`, so an entry that sources
+    // `${cmdpath}/chosen.cfg` reads nothing and every install refuses *no disk
+    // was chosen* (`docs/quirks.md`, *Fedora's signed loader leaves `cmdpath`
+    // empty*).
+    if !lines
+        .iter()
+        .any(|line| line.contains("${config_directory}/chosen.cfg"))
+    {
+        wrong.push("the staged choice is not read from the directory the entry was read from");
+    }
+    if lines.iter().any(|line| line.contains("${cmdpath}")) {
+        wrong.push("the entry reads a directory the base's loader leaves empty");
+    }
     wrong
 }
 
@@ -185,6 +199,9 @@ fn an_entry_that_chooses_a_disk_itself_is_caught() {
         ("rd.systemd.unit=alo-installing.target ", ""),
         ("rd.shell=0 ", ""),
         ("set alo_installing_to=\n", "\n"),
+        // The loader variable that reads nothing: measured empty in a virtual
+        // machine on 2026-09-16.
+        ("${config_directory}/chosen.cfg", "${cmdpath}/chosen.cfg"),
     ] {
         assert!(entry.contains(from), "the entry no longer says {from}");
         assert!(

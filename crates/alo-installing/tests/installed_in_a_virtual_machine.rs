@@ -14,14 +14,18 @@
 //!   comes up with `alo-agentd` running;
 //! - [`a_release_signed_by_another_key_writes_nothing_and_says_so`]: the same
 //!   environment holding a key that is not the owner's refuses, says so on the
-//!   console in the vocabulary's words, and neither disk has a byte changed.
+//!   console in the vocabulary's words, and neither disk has a byte changed;
+//! - [`a_loader_the_firmware_does_not_trust_is_refused`]: the machine the first
+//!   two are measured in really enforces Secure Boot — a staged loader with one
+//!   byte changed never starts.
 //!
 //! # What it needs, and what it costs
 //!
-//! Linux with `/dev/kvm`, `qemu-system-x86_64`, the OVMF firmware with its
-//! Secure Boot build and Microsoft-enrolled variables (`/usr/share/OVMF`),
-//! `podman` (root) and `sfdisk`, and the network: the recipe is built, and the
-//! release is pulled from `ghcr.io`. The install measured about twelve minutes
+//! Linux with `/dev/kvm`, `qemu-system-x86_64`, the firmware without Secure Boot
+//! (`/usr/share/OVMF`, for the refusal, which starts a kernel directly),
+//! `podman` (root) and `sfdisk`, and the network: the recipe is built, the
+//! Secure Boot firmware is taken out of the pinned base, and the release is
+//! pulled from `ghcr.io`. The install measured about twelve minutes
 //! on 2026-09-15; the whole test, with a cached build, about twenty. It is
 //! `#[ignore]`d so the workspace suite never starts a virtual machine, and is
 //! run by name. A machine missing any of the above **fails** with the list of
@@ -67,12 +71,22 @@ static ONE_MACHINE: Mutex<()> = Mutex::new(());
 /// The disk the person chose, as the machine names it.
 const THE_CHOSEN_DISK: &str = "virtio-alo-target";
 
-/// The firmware, with Secure Boot enforced.
-const SECURE_FIRMWARE: &str = "/usr/share/OVMF/OVMF_CODE_4M.secboot.fd";
+/// The firmware with Secure Boot enforced, as the base names the file.
+///
+/// **Taken out of the same pinned base the environment is built from**, rather
+/// than from whatever the host happens to package. The base's own firmware is
+/// the one built for the base's own boot chain: Ubuntu's `ovmf`
+/// 2025.11-3ubuntu7 dies with a page fault starting the base's signed loader,
+/// and Fedora's `edk2-ovmf` starts it (`docs/quirks.md`, *EDK II's strict image
+/// protection page-faults the base's signed loader*). Secure Boot is enforced in
+/// both, and is never switched off (ADR 0033 §4) — which
+/// [`a_loader_the_firmware_does_not_trust_is_refused`] measures rather than
+/// assumes.
+const SECURE_FIRMWARE: &str = "OVMF_CODE.secboot.fd";
 
 /// Its variables, with Microsoft's certificates enrolled — the ones a laptop
 /// ships with.
-const MICROSOFT_VARIABLES: &str = "/usr/share/OVMF/OVMF_VARS_4M.ms.fd";
+const MICROSOFT_VARIABLES: &str = "OVMF_VARS.secboot.fd";
 
 /// The firmware without Secure Boot, for starting a kernel directly.
 const PLAIN_FIRMWARE: &str = "/usr/share/OVMF/OVMF_CODE_4M.fd";
@@ -99,18 +113,18 @@ enum Firmware {
 
 impl Firmware {
     /// The firmware's code.
-    fn code(self) -> &'static str {
+    fn code(self) -> PathBuf {
         match self {
-            Self::SecureBoot => SECURE_FIRMWARE,
-            Self::Plain => PLAIN_FIRMWARE,
+            Self::SecureBoot => the_firmware_directory().join(SECURE_FIRMWARE),
+            Self::Plain => PathBuf::from(PLAIN_FIRMWARE),
         }
     }
 
     /// The variables it starts from.
-    fn variables(self) -> &'static str {
+    fn variables(self) -> PathBuf {
         match self {
-            Self::SecureBoot => MICROSOFT_VARIABLES,
-            Self::Plain => PLAIN_VARIABLES,
+            Self::SecureBoot => the_firmware_directory().join(MICROSOFT_VARIABLES),
+            Self::Plain => PathBuf::from(PLAIN_VARIABLES),
         }
     }
 
@@ -224,13 +238,10 @@ fn what_is_missing() -> Vec<String> {
             missing.push(program.to_owned());
         }
     }
-    for file in [
-        "/dev/kvm",
-        SECURE_FIRMWARE,
-        MICROSOFT_VARIABLES,
-        PLAIN_FIRMWARE,
-        PLAIN_VARIABLES,
-    ] {
+    // The Secure Boot firmware is not among these: it is taken out of the
+    // pinned base by `the_firmware_is_taken_from_the_base`, not packaged by the
+    // host.
+    for file in ["/dev/kvm", PLAIN_FIRMWARE, PLAIN_VARIABLES] {
         if !Path::new(file).exists() {
             missing.push(file.to_owned());
         }
@@ -294,6 +305,72 @@ fn the_base() -> String {
         .expect("the recipe names its base")
         .trim()
         .to_owned()
+}
+
+/// Where the firmware taken out of the base is kept.
+fn the_firmware_directory() -> PathBuf {
+    work().join("firmware")
+}
+
+/// **The Secure Boot firmware, taken out of the base the environment is built
+/// from**, so that the machine these tests use enforces Secure Boot with the
+/// firmware built for the boot chain the base ships.
+///
+/// Done once: the files are kept in the work directory between runs.
+fn the_firmware_is_taken_from_the_base() {
+    let at = the_firmware_directory();
+    if at.join(SECURE_FIRMWARE).is_file() && at.join(MICROSOFT_VARIABLES).is_file() {
+        return;
+    }
+    std::fs::create_dir_all(&at).expect("the firmware directory can be made");
+    let carrier = "alo-installing-vm-firmware";
+    drop(
+        Command::new("podman")
+            .args(["rm", "--force", carrier])
+            .output(),
+    );
+    ran(
+        "podman",
+        &[
+            "run",
+            "--detach",
+            "--name",
+            carrier,
+            "--volume",
+            &format!("{}:/firmware", at.display()),
+            &the_base(),
+            "sleep",
+            "infinity",
+        ],
+    );
+    ran(
+        "podman",
+        &[
+            "exec",
+            carrier,
+            "dnf",
+            "install",
+            "--assumeyes",
+            "edk2-ovmf",
+        ],
+    );
+    for file in [SECURE_FIRMWARE, MICROSOFT_VARIABLES] {
+        ran(
+            "podman",
+            &[
+                "exec",
+                carrier,
+                "cp",
+                "--dereference",
+                &format!("/usr/share/edk2/ovmf/{file}"),
+                &format!("/firmware/{file}"),
+            ],
+        );
+    }
+    ran("podman", &["rm", "--force", carrier]);
+    for file in [SECURE_FIRMWARE, MICROSOFT_VARIABLES] {
+        assert!(at.join(file).is_file(), "the base did not hand over {file}");
+    }
 }
 
 /// A FAT partition holding the environment and the person's choice, as the
@@ -551,7 +628,7 @@ fn a_machine(firmware: Firmware, variables: &Path, serial: &Path) -> Vec<String>
             "-drive".to_owned(),
             format!(
                 "if=pflash,format=raw,unit=0,readonly=on,file={}",
-                firmware.code()
+                firmware.code().display()
             ),
             "-drive".to_owned(),
             format!("if=pflash,format=raw,unit=1,file={}", variables.display()),
@@ -672,6 +749,7 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     the_machine_can_run_this();
+    the_firmware_is_taken_from_the_base();
 
     let environment = the_environment_built();
     let windows = the_windows_disk(&staged(&environment));
@@ -772,6 +850,95 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         );
     }
     the_first_disk_is_unchanged(&windows, &before, "when alo OS booted");
+}
+
+/// **The machine the install is measured in really enforces Secure Boot**: a
+/// staged loader with one byte changed is refused by the firmware, nothing of
+/// ours runs, no kernel starts, and the first disk is unchanged.
+///
+/// Without this, the test above passing would be evidence of a firmware that
+/// starts anything. Secure Boot is never switched off to make a test pass
+/// (ADR 0033 §4), and this is how that is known rather than asserted.
+#[test]
+#[ignore = "boots a virtual machine; run by name"]
+fn a_loader_the_firmware_does_not_trust_is_refused() {
+    let _one = ONE_MACHINE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    the_machine_can_run_this();
+    the_firmware_is_taken_from_the_base();
+
+    let environment = the_environment_built();
+    let tampered = work().join("environment-tampered");
+    drop(std::fs::remove_dir_all(&tampered));
+    ran(
+        "cp",
+        &[
+            "--recursive",
+            &environment.display().to_string(),
+            &tampered.display().to_string(),
+        ],
+    );
+    let loader = tampered.join("EFI/BOOT/BOOTX64.EFI");
+    let mut bytes = std::fs::read(&loader).expect("the staged loader reads");
+    let at = bytes.len() / 2;
+    bytes[at] ^= 0xff;
+    std::fs::write(&loader, &bytes).expect("the changed loader is written");
+
+    let windows = the_windows_disk(&staged(&tampered));
+    let before = as_it_was(&windows);
+
+    let serial = work().join("refused-loader.log");
+    drop(std::fs::remove_file(&serial));
+    let vars = variables(Firmware::SecureBoot, "refused-loader-vars.fd");
+    let mut arguments = a_machine(Firmware::SecureBoot, &vars, &serial);
+    arguments.extend(a_disk(&windows, "alo-windows", Some(1)));
+    let mut machine = started(&arguments);
+
+    // A refused loader leaves the firmware in its own boot menu, which nothing
+    // here answers: the test waits for the refusal and then turns the machine
+    // off.
+    let began = Instant::now();
+    while !said(&serial).contains("Access Denied") {
+        if began.elapsed() > Duration::from_secs(5 * 60)
+            || machine
+                .try_wait()
+                .expect("the machine can be asked")
+                .is_some()
+        {
+            drop(machine.kill());
+            drop(machine.wait());
+            let told = said(&serial);
+            panic!(
+                "the firmware never refused the changed loader; its serial line ends:\n{}",
+                &told[told.len().saturating_sub(4000)..]
+            );
+        }
+        std::thread::sleep(Duration::from_secs(2));
+    }
+    drop(machine.kill());
+    drop(machine.wait());
+
+    let told = said(&serial);
+    assert!(
+        told.contains("rejected probably by Secure Boot"),
+        "the firmware refused the loader for some other reason:\n{told}"
+    );
+    assert!(
+        !told.contains("Linux version"),
+        "a kernel started from a loader the firmware does not trust:\n{told}"
+    );
+    for never in [
+        "installing.starting",
+        "installing.genuine",
+        "installing.installing",
+    ] {
+        assert!(
+            !told.contains(&english(never)),
+            "the console said {never}, so the environment ran"
+        );
+    }
+    the_first_disk_is_unchanged(&windows, &before, "while the firmware refused the loader");
 }
 
 /// A P-256 public key that is not the owner's, as a PEM file.
@@ -977,7 +1144,7 @@ fn a_release_signed_by_another_key_writes_nothing_and_says_so() {
     // measuring the machine rather than alo OS.
     assert_ne!(
         hashed(&vars),
-        hashed(Path::new(Firmware::Plain.variables())),
+        hashed(&Firmware::Plain.variables()),
         "the firmware wrote nothing to its own variable flash, so it had nowhere to keep \
          its variables but a disk"
     );
@@ -1007,7 +1174,7 @@ fn a_firmware_is_given_only_flash_it_can_write() {
         assert!(
             started
                 .iter()
-                .any(|argument| argument.ends_with(&format!("file={}", firmware.code()))),
+                .any(|argument| argument.ends_with(&format!("file={}", firmware.code().display()))),
             "{started:?}"
         );
     }
