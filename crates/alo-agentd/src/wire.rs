@@ -85,6 +85,7 @@ use alo_nearby::{HeardFrom, MachineId, NotNearby, Presence, THE_ADDRESS, THE_POR
 
 use crate::arrived_on::ArrivedOn;
 use crate::hosting::Hosted;
+use crate::interfaces_that_went::Went;
 use crate::joining::Joining;
 use crate::listeners::{Listeners, Listening};
 use crate::networks::Network;
@@ -407,13 +408,17 @@ impl Wire {
     /// is heard and nothing it says. A failure is a line in the service log.
     pub fn networks_changed(&self) {
         let said = &mut |line: &str| eprintln!("alo-agentd: {line}");
-        if let Some(joining) = &self.joining {
-            joining.changed(said);
-        }
+        let went = self
+            .joining
+            .as_ref()
+            .map_or_else(Went::nothing, |joining| joining.changed(said));
         // And where discovery is answered, on the same notification and for the
         // same reason: a machine plugged in after it started is otherwise never
-        // found on the network it was plugged into (`crate::responding`).
-        self.responders.changed(said);
+        // found on the network it was plugged into (`crate::responding`). What
+        // the kernel said went goes with it: an interface deleted and laid again
+        // at its number reads the same as the one that went, and its membership
+        // did not survive.
+        self.responders.changed(&went, said);
         // And the port, for the same reason and on the same notification: a
         // laptop docked after it started is otherwise unreachable on the wired
         // network all day (`crate::listeners`).

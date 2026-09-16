@@ -1540,7 +1540,38 @@ at an index that no longer exists.
 
 ### 31. A cable deleted and re-laid between two readings is still joined, over IPv4 as well
 
-**Status:** ready. **Depends on:** 28, 29, 30.
+**Status:** **Done, 2026-09-16.** Measured on a real kernel by
+`crates/alo-agentd/src/a_cable_re_laid_between_two_readings.rs` — reception serving
+as `src/main.rs` does in a process of its own, a far end on one `veth` carrying
+IPv4. **The ordering is made certain, not hoped for:** the far end stops reception
+with `SIGSTOP`, waits until the kernel reports every thread of it stopped, deletes
+the cable and lays it again, and only then sends `SIGCONT`; *the service has
+followed the kernel* is read from the kernel as reception's end in the discovery
+group, which nothing in its network but the service joins. Re-laid at the same
+numbers, the far end's **first** question is answered and the port is reached;
+re-laid at new numbers, the same. On the far end's side a probe measures the kernel:
+the re-laid interface is not in `224.0.0.251`, a join there is refused `EADDRINUSE`,
+and `crate::responding::joined` takes it afresh with the interface then in the
+group. Every answer is the same bytes. **How a re-laid interface is told from the
+one that went:** the kernel's own `RTM_DELLINK`, read out of what the service
+already reads on its routing socket (`crate::interfaces_that_went`, new;
+`route_messages::links_deleted_in`, new; `unix::emptied` hands each datagram on) —
+chosen over `/proc/net/igmp`, which answers for the interface and not the socket,
+and over taking every membership afresh on every notification, which costs a leave
+and a report per network each time any address changes. Messages lost or unreadable
+are *any interface may have gone*. `crate::responding` lets go of a responder whose
+interface went even where its number is reported again, **leaving its group then
+and there** — a socket closing later would take one user off the re-laid
+interface's new membership — and never reads `EADDRINUSE` as joined;
+`crate::joining` follows the same reading over IPv6; the listeners need nothing, as
+a listener held to a number is reached on whatever interface bears it (measured).
+Mutation runs: without the reading the fixture fails at *reception never followed
+its cable to 40 … not in the discovery group*; with `EADDRINUSE` read as joined it
+fails at the probe. Contract: `docs/contracts/local-network-wire.md` (*A cable
+deleted and laid again before the machine looks*, new, additive). `docs/quirks.md`
+records the kernel. The report is
+`docs/autonomy/updates/a-cable-re-laid-between-two-readings.md`.
+**Depends on:** 28, 29, 30.
 
 *Machines find each other with zero configuration.* Task 30 found that a link
 deleted leaves a socket's multicast membership behind at the interface's number,
@@ -1577,3 +1608,36 @@ same assumption task 30 removed.
   No interval and no polling — the kernel's notification is the only thing that
   wakes any of it. What reality does that the specification does not say goes in
   `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 32. A link-local cable re-laid with the same hardware address between two readings is still joined
+
+**Status:** ready. **Depends on:** 30, 31.
+
+*Machines find each other with zero configuration — no addresses typed.* Task 31
+made every set of sockets that follows the kernel read **what the kernel said
+went** (`crate::interfaces_that_went`), and measured it over IPv4.
+`crate::joining` follows the same reading over IPv6 — a link-local network whose
+interface the kernel said was deleted is left and joined afresh even where the
+same network is reported again — but that half is held only by a unit test on a
+list. Task 30 re-laid a link-local cable at its old numbers **with a new hardware
+address**, so its link-local address changed and the network compared unequal
+anyway: what nobody has measured is the cable that comes back **identical** — the
+same number, the same name and the same `fe80::` address, because the adapter is
+the same adapter (a USB dongle pulled and pushed back in, a `veth` laid again with
+`address` given) — between two readings of the interfaces. Reading the dumps alone,
+that network never went.
+
+- **Acceptance:** on a real kernel, two machines on one `veth` with link-local IPv6
+  only, each serving as `src/main.rs` does (`crate::two_machines_with_no_ipv4_find_each_other_again`
+  is the fixture to start from, and `crate::a_cable_re_laid_between_two_readings`
+  shows how a machine is held still with `SIGSTOP` so the ordering is certain):
+  the cable deleted and laid again at the same numbers **and the same hardware
+  addresses** while the machine that is asked is held still is found by the other's
+  first question once it has followed the kernel, tested; the pairing between them
+  then proposes and pairs on that interface, tested; with `crate::joining`'s reading
+  of what went removed the test fails, and the report says where; and what is said
+  is the same bytes throughout.
+- **Constraint:** ADR 0003 and ADR 0041 as they stand: no network chosen by a
+  person or an agent, no trusted-network setting, what crosses the wire unchanged.
+  No interval and no polling. What reality does that the specification does not say
+  goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

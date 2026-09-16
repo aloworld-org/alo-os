@@ -63,6 +63,15 @@
 //! a second address added — leaves the listener and the connections waiting in
 //! its backlog where they are.
 //!
+//! **And an interface deleted and laid again at the same number needs nothing
+//! either**, which is where the listeners differ from discovery's responders
+//! (`crate::responding`). `SO_BINDTOIFINDEX` is a number the kernel compares with
+//! the interface a handshake arrived on, so a listener held to it is reached on
+//! whatever interface bears that number now, and it joins no group that could
+//! have gone with the old one. Measured by
+//! `crate::a_cable_re_laid_between_two_readings`: the port is reached on a cable
+//! re-laid at its number between two readings with the same listener in place.
+//!
 //! # A machine that cannot read its own networks
 //!
 //! If the kernel will not say which interfaces this machine has, there is

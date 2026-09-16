@@ -54,6 +54,16 @@
 //! a machine joined on the networks it had at start — found where it was, and
 //! told so, rather than a stopped service.
 //!
+//! # And an interface the kernel says went is left, even where its number is back
+//!
+//! A cable deleted and laid again at the same number **between two readings of
+//! the interfaces** is, in both readings, the same network — often down to its
+//! link-local address, where the new interface has the old one's hardware
+//! address. So what the kernel said in the round is read as well
+//! ([`crate::interfaces_that_went`]): a network whose interface it said was
+//! deleted is left and joined afresh whether or not it is reported again, which
+//! is the same rule `crate::responding` follows for the IPv4 group.
+//!
 //! # Over IPv6, on that notification
 //!
 //! Where the machine could open an IPv6 discovery socket, every IPv6 link-local
@@ -71,6 +81,7 @@ use std::sync::{Mutex, PoisonError};
 
 use alo_nearby::THE_IPV6_ADDRESS;
 
+use crate::interfaces_that_went::Went;
 use crate::networks::{Network, joined_on, link_local_networks};
 use crate::route_messages::reported_by_the_kernel;
 
@@ -126,7 +137,7 @@ impl Joining {
             told,
             joined: Mutex::new(Vec::new()),
         };
-        joining.follow(said);
+        joining.follow(&Went::nothing(), said);
         joining
     }
 
@@ -147,21 +158,32 @@ impl Joining {
     }
 
     /// The kernel said a network changed: read what it said, ask the
-    /// interfaces again, and join every network not yet joined.
-    pub fn changed(&self, said: &mut dyn FnMut(&str)) {
-        if let Some(told) = &self.told
-            && let Err(why) = crate::unix::emptied(told.as_fd())
-        {
-            said(&format!(
-                "what the kernel said about a network change could not be read ({why}); the interfaces are asked again anyway"
-            ));
+    /// interfaces again, and join every network not yet joined — and hand back
+    /// the interfaces it said went, which the responders follow too.
+    ///
+    /// What could not be read is [`Went::any_of_them`]: which interfaces went
+    /// is then not known, and nothing is counted joined on that guess.
+    pub fn changed(&self, said: &mut dyn FnMut(&str)) -> Went {
+        let mut went = Went::nothing();
+        if let Some(told) = &self.told {
+            let emptied = crate::unix::emptied(told.as_fd(), &mut |datagram| match datagram {
+                Some(datagram) => went.heard(datagram),
+                None => went.lost(),
+            });
+            if let Err(why) = emptied {
+                said(&format!(
+                    "what the kernel said about a network change could not be read ({why}); the interfaces are asked again anyway, and every membership is taken afresh"
+                ));
+                went.lost();
+            }
         }
-        self.follow(said);
+        self.follow(&went, said);
+        went
     }
 
-    /// Ask the interfaces, forget networks that went, and join the ones that
+    /// Ask the interfaces, leave networks that went, and join the ones that
     /// are new.
-    fn follow(&self, said: &mut dyn FnMut(&str)) {
+    fn follow(&self, went: &Went, said: &mut dyn FnMut(&str)) {
         let reported = match reported_by_the_kernel() {
             Ok(reported) => reported,
             Err(why) => {
@@ -176,8 +198,7 @@ impl Joining {
         };
         let now = link_local_networks(&reported);
         let mut joined = self.joined.lock().unwrap_or_else(PoisonError::into_inner);
-        let (kept, gone): (Vec<_>, Vec<_>) =
-            joined.drain(..).partition(|network| now.contains(network));
+        let (kept, gone) = kept_and_gone(joined.drain(..), &now, went);
         *joined = kept;
         for network in &gone {
             left(discovery, network);
@@ -189,6 +210,17 @@ impl Joining {
         let newly = joined_on(new, |network| join(discovery, network), said);
         joined.extend(newly);
     }
+}
+
+/// Which of the networks `joined` stay joined, and which are left: a network
+/// stays only where it is reported `now` and the kernel did not say its
+/// interface `went`.
+fn kept_and_gone(
+    joined: impl Iterator<Item = Network>,
+    now: &[Network],
+    went: &Went,
+) -> (Vec<Network>, Vec<Network>) {
+    joined.partition(|network| now.contains(network) && !went.includes(network.index()))
 }
 
 /// Join `discovery` at `ff02::fb` on `network`'s interface.
@@ -233,7 +265,8 @@ mod tests {
 
     use alo_nearby::THE_IPV6_ADDRESS;
 
-    use super::{join, left};
+    use super::{join, kept_and_gone, left};
+    use crate::interfaces_that_went::Went;
     use crate::networks::{
         IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface, Network, link_local_networks,
     };
@@ -324,6 +357,27 @@ mod tests {
         let socket = UdpSocket::bind((Ipv6Addr::UNSPECIFIED, 0)).unwrap();
         left(&socket, &network);
         join(&socket, &network).unwrap();
+    }
+
+    /// **A network whose interface the kernel said went is left, even where the
+    /// same network is reported again** — the interface at that number is a new
+    /// one, with nobody in the group — and a network that is not reported is
+    /// left as before, while one that neither went nor moved stays joined.
+    #[test]
+    fn a_network_whose_interface_went_is_left_even_where_it_is_reported_again() {
+        let (forty, forty_one, forty_two) = (numbered(40), numbered(41), numbered(42));
+        let joined = [forty.clone(), forty_one.clone(), forty_two.clone()];
+        let now = [forty.clone(), forty_one.clone()];
+
+        let mut went = Went::nothing();
+        let (kept, gone) = kept_and_gone(joined.clone().into_iter(), &now, &went);
+        assert_eq!(kept, vec![forty.clone(), forty_one.clone()]);
+        assert_eq!(gone, vec![forty_two.clone()]);
+
+        went.lost();
+        let (kept, gone) = kept_and_gone(joined.into_iter(), &now, &went);
+        assert!(kept.is_empty(), "a round that lost messages kept {kept:?}");
+        assert_eq!(gone.len(), 3);
     }
 
     /// **A join at a number no interface has is refused**, never counted as

@@ -180,6 +180,8 @@
 #[cfg(all(test, target_os = "linux"))]
 mod a_cable_pulled_and_plugged_in_again;
 #[cfg(all(test, target_os = "linux"))]
+mod a_cable_re_laid_between_two_readings;
+#[cfg(all(test, target_os = "linux"))]
 mod a_discovery_answer_leaves_on_the_network_it_arrived_on;
 #[cfg(all(test, target_os = "linux"))]
 mod a_machine_reachable_on_both_networks;
@@ -217,6 +219,8 @@ pub mod hearing;
 pub mod holding;
 #[cfg(target_os = "linux")]
 pub mod hosting;
+#[cfg(target_os = "linux")]
+pub mod interfaces_that_went;
 #[cfg(target_os = "linux")]
 pub mod joining;
 #[cfg(target_os = "linux")]

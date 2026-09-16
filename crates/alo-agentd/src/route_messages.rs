@@ -28,6 +28,17 @@
 //! sends it — its `IFA_FLAGS` attribute, which carries all of them. When the
 //! check ends the kernel says so on the routing socket, and the address is read
 //! then.
+//!
+//! # And the kernel saying an interface went
+//!
+//! What the kernel says on the socket `crate::unix` subscribes to link changes
+//! is read for one meaning: **`RTM_DELLINK`, an interface deleted**. A dump
+//! taken afterwards cannot say it — an interface deleted and laid again at the
+//! same number between two dumps is, in both, the same number under the same
+//! name — and that is exactly the interface whose multicast memberships went
+//! with it (`crate::interfaces_that_went`). Only a deletion in the unspecified
+//! family is one: a bridge says `RTM_DELLINK` in `AF_BRIDGE` when a port merely
+//! leaves it, and that interface is still there.
 
 use std::net::{Ipv4Addr, Ipv6Addr};
 
@@ -35,6 +46,8 @@ use crate::networks::Interface;
 
 /// `RTM_NEWLINK`: one link, in a dump or a notification.
 const RTM_NEWLINK: u16 = 16;
+/// `RTM_DELLINK`: one link gone, in a notification.
+const RTM_DELLINK: u16 = 17;
 /// `RTM_GETLINK`: ask for links.
 const RTM_GETLINK: u16 = 18;
 /// `RTM_NEWADDR`: one address, in a dump or a notification.
@@ -122,6 +135,27 @@ pub fn ends_a_dump(datagram: &[u8]) -> Result<bool, NotReported> {
     Ok(messages(datagram)?
         .iter()
         .any(|(kind, _)| *kind == NLMSG_DONE || *kind == NLMSG_ERROR))
+}
+
+/// The index of every interface `datagram` says was deleted, in the order it
+/// says them.
+///
+/// # Errors
+///
+/// [`NotReported::CutShort`] when a message runs past what arrived — and then
+/// which interfaces went is not known.
+pub fn links_deleted_in(datagram: &[u8]) -> Result<Vec<u32>, NotReported> {
+    let mut deleted = Vec::new();
+    for (kind, body) in messages(datagram)? {
+        if kind != RTM_DELLINK {
+            continue;
+        }
+        let fixed = body.get(..LINK).ok_or(NotReported::CutShort)?;
+        if fixed.first() == Some(&AF_UNSPEC) {
+            deleted.push(four(fixed, 4)?);
+        }
+    }
+    Ok(deleted)
 }
 
 /// Every interface in what the kernel answered to [`every_link`] and
@@ -341,6 +375,45 @@ mod tests {
         named.push(0);
         body.extend(an_attribute(IFLA_IFNAME, &named));
         a_message(RTM_NEWLINK, &body)
+    }
+
+    /// A link message of `kind` in `family`, with no attributes.
+    fn a_link_said(kind: u16, family: u8, index: u32) -> Vec<u8> {
+        let mut body = vec![family, 0, 0, 0];
+        body.extend_from_slice(&index.to_ne_bytes());
+        body.extend_from_slice(&[0; 8]);
+        a_message(kind, &body)
+    }
+
+    /// **An interface deleted is read out of what the kernel said**, every one
+    /// of them in one datagram; a link that merely changed is not one, and
+    /// neither is a bridge port leaving its bridge, which the kernel says with
+    /// the same message in its own family while the interface stays.
+    #[test]
+    fn an_interface_deleted_is_read_and_a_link_that_changed_is_not() {
+        /// `AF_BRIDGE`.
+        const AF_BRIDGE: u8 = 7;
+        let said = [
+            a_link_said(RTM_DELLINK, AF_UNSPEC, 40),
+            a_link(41, "cable1", IFF_UP),
+            a_link_said(RTM_DELLINK, AF_BRIDGE, 42),
+            an_address(43, AF_INET, &[(IFA_ADDRESS, [10, 71, 1, 1])]),
+            a_link_said(RTM_DELLINK, AF_UNSPEC, 44),
+        ]
+        .concat();
+        assert_eq!(links_deleted_in(&said), Ok(vec![40, 44]));
+        assert_eq!(links_deleted_in(&[]), Ok(Vec::new()));
+    }
+
+    /// **A deletion cut short is refused**, so nobody reads it as nothing
+    /// having gone.
+    #[test]
+    fn a_deletion_cut_short_is_refused() {
+        let whole = a_link_said(RTM_DELLINK, AF_UNSPEC, 40);
+        let cut = whole.get(..whole.len() - 4).unwrap();
+        assert_eq!(links_deleted_in(cut), Err(NotReported::CutShort));
+        let short_body = a_message(RTM_DELLINK, &[AF_UNSPEC, 0, 0, 0]);
+        assert_eq!(links_deleted_in(&short_body), Err(NotReported::CutShort));
     }
 
     /// An address message.

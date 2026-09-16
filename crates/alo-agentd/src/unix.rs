@@ -346,15 +346,20 @@ pub(crate) fn told_when_networks_change() -> Result<std::os::fd::OwnedFd, std::i
     Ok(socket)
 }
 
-/// Read everything waiting on `socket` without sleeping, and say whether
+/// Read everything waiting on `socket` without sleeping, handing each datagram
+/// to `heard` — and nothing, for messages the kernel dropped — and say whether
 /// anything was.
 ///
 /// # Errors
 ///
-/// Whatever the machine said other than that nothing more is waiting — which
-/// includes the kernel saying it dropped messages because nobody read them in
-/// time, and that is still a reason to ask again rather than to stop.
-pub(crate) fn emptied(socket: BorrowedFd<'_>) -> Result<bool, std::io::Error> {
+/// Whatever the machine said other than that nothing more is waiting. The
+/// kernel saying it dropped messages because nobody read them in time is not
+/// one: it is handed to `heard`, and is still a reason to ask again rather than
+/// to stop.
+pub(crate) fn emptied(
+    socket: BorrowedFd<'_>,
+    heard: &mut dyn FnMut(Option<&[u8]>),
+) -> Result<bool, std::io::Error> {
     let mut datagram = [0_u8; 8_192];
     let mut anything = false;
     loop {
@@ -364,7 +369,14 @@ pub(crate) fn emptied(socket: BorrowedFd<'_>) -> Result<bool, std::io::Error> {
             rustix::net::RecvFlags::DONTWAIT,
         ) {
             Ok((0, _)) => return Ok(anything),
-            Ok(_) | Err(rustix::io::Errno::NOBUFS) => anything = true,
+            Ok((read, _)) => {
+                heard(datagram.get(..read));
+                anything = true;
+            }
+            Err(rustix::io::Errno::NOBUFS) => {
+                heard(None);
+                anything = true;
+            }
             Err(rustix::io::Errno::AGAIN) => return Ok(anything),
             Err(rustix::io::Errno::INTR) => {}
             Err(why) => return Err(std::io::Error::from(why)),

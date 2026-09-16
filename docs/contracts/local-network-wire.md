@@ -427,6 +427,25 @@ link-local addresses only.
   proposer at the address its connection came from.
 - **What is said is the same bytes before and after.**
 
+## A cable deleted and laid again before the machine looks
+
+Added 2026-09-16, additively. Nothing on this wire changes; this says what a
+reader of it can rely on when a network goes and comes back faster than a machine
+reads its interfaces — a dock re-enumerating its adapters, a namespace rebuilt.
+
+- **A cable deleted and laid again is a new network, even at the old interface
+  number.** A machine does not keep answering on the strength of a number it saw
+  before: when the kernel says an interface was deleted, discovery on that network
+  is answered again from the start, and the group joined afresh, whether or not
+  the number is back by the time the machine looks.
+- **The first question asked there once the machine has followed the kernel is
+  answered, and the port answers there**, over IPv4 as over IPv6, with no
+  restart — at the old number and at a new one alike.
+- **Where a machine cannot tell what went** — the kernel's notices were lost or
+  unreadable — it answers every network again from the start once, rather than
+  assume nothing went.
+- **What is said is the same bytes before and after.**
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

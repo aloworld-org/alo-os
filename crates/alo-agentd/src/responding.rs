@@ -106,6 +106,47 @@
 //! is answered only once somebody on another network happens to ask — measured by
 //! `crate::a_cable_pulled_and_plugged_in_again`, which failed until this was so.
 //!
+//! # A number is not an interface
+//!
+//! A responder is matched to what the kernel reports by its interface's
+//! **number**, so an address changing on an interface — a lease renewed — leaves
+//! the socket where it is. But the kernel gives a free number to the next
+//! interface that asks, and a cable deleted and laid again at the same number
+//! **between two readings of the interfaces** reads the same in both. The socket
+//! held to that number is still good — `SO_BINDTOIFINDEX` is a number the kernel
+//! compares with the interface a datagram arrived on — and its membership is not:
+//! the kernel took the deleted interface out of the group and left the socket's
+//! record of the membership behind (`docs/quirks.md`). A responder kept for its
+//! number answers questions that never reach it, and the machine is not found on
+//! that network until the service restarts.
+//!
+//! So a round also reads **what the kernel said went**
+//! ([`crate::interfaces_that_went`]), and a responder whose interface it said was
+//! deleted is let go of **whether or not its number is reported again**; where it
+//! is, the network is answered on by a new socket joined afresh, exactly as a
+//! network plugged in is. Two things make that safe rather than merely likely:
+//!
+//! - **A responder let go of leaves the group then and there**, and does not wait
+//!   for its socket to close. The kernel counts memberships per interface, and a
+//!   socket closing leaves the group on whatever interface has its number *by
+//!   then* — which, a moment after a cable is re-laid, is the new interface the
+//!   new socket has just joined. The thread answering discovery may hold the old
+//!   socket open for the rest of its round, so waiting for the close would take
+//!   the new membership with it.
+//! - **A join refused `EADDRINUSE` is taken afresh** — left, and joined again —
+//!   and never read as joined, as `crate::joining` has it over IPv6: the refusal
+//!   says the socket holds a record at that number, and not that any interface
+//!   is in the group behind it.
+//!
+//! What the kernel said and could not be read is every interface having gone:
+//! every responder is let go of and answered again once, which costs one report
+//! per network on a rare round and never leaves the machine counted joined where
+//! it is not.
+//!
+//! The listeners need none of this (`crate::listeners`): a TCP listener held to a
+//! number is reached on whatever interface bears it, and joins nothing.
+//! `crate::a_cable_re_laid_between_two_readings` is the measurement.
+//!
 //! # Nothing here is a setting, and nothing it says moves
 //!
 //! ADR 0003. Which interfaces are answered on is what the machine is plugged
@@ -121,6 +162,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use alo_nearby::{Answering, NotNearby, Presence, THE_ADDRESS};
 
+use crate::interfaces_that_went::Went;
 use crate::networks::{Interface, Network, discovery_networks, listening_networks};
 use crate::route_messages::reported_by_the_kernel;
 use crate::told_of_a_move::ToldOfAMove;
@@ -139,6 +181,19 @@ struct Responder {
     socket: UdpSocket,
     /// This machine, answering on that socket.
     answering: Answering,
+}
+
+impl Responder {
+    /// Leave the group this responder joined — now, rather than when the last
+    /// handle onto its socket closes, by which time its interface's number may
+    /// belong to an interface a new responder has joined.
+    fn leave(&self) {
+        if self.joined
+            && let Some(IpAddr::V4(address)) = self.on.as_ref().map(Network::address)
+        {
+            left(&self.socket, address);
+        }
+    }
 }
 
 impl std::fmt::Debug for Responder {
@@ -215,7 +270,7 @@ impl Responders {
             port,
         };
         match reported {
-            Ok(reported) => responders.answer_on_what_was(&reported, said),
+            Ok(reported) => responders.answer_on_what_was(&reported, &Went::nothing(), said),
             Err(why) => said(&format!(
                 "this machine's networks could not be read ({why}); discovery is answered on no network at all, so this machine is not found until they can be — an answer held to no network leaves by the route, which on a machine on two networks reaches whoever is at that address on the other one"
             )),
@@ -370,17 +425,19 @@ impl Responders {
 
     /// The kernel said a network changed: answer on every network this machine is
     /// on now that is not answered on yet, and let go of the sockets whose
-    /// interfaces have gone.
+    /// interfaces have gone — those not reported, and those whose interface
+    /// `went` says was deleted, whose number may be reported again on an
+    /// interface nobody joined.
     ///
     /// Nothing this machine says moves — the same identity, port and workspace
     /// answer on every network — so this changes only where it is heard. A
     /// failure is a line in the service log.
-    pub fn changed(&self, said: &mut dyn FnMut(&str)) {
+    pub fn changed(&self, went: &Went, said: &mut dyn FnMut(&str)) {
         if !self.follows {
             return;
         }
         match reported_by_the_kernel() {
-            Ok(reported) => self.answer_on_what_was(&reported, said),
+            Ok(reported) => self.answer_on_what_was(&reported, went, said),
             Err(why) => said(&format!(
                 "this machine's networks could not be read ({why}); discovery stays answered where it was"
             )),
@@ -399,24 +456,37 @@ impl Responders {
 
     /// Answer on every network `reported` says this machine is on, joined to the
     /// group on those that carry one.
-    fn answer_on_what_was(&self, reported: &[Interface], said: &mut dyn FnMut(&str)) {
+    fn answer_on_what_was(&self, reported: &[Interface], went: &Went, said: &mut dyn FnMut(&str)) {
         self.answer_on(
             &listening_networks(reported),
             &discovery_networks(reported),
+            went,
             said,
         );
     }
 
     /// Answer on every one of `networks` not answered on already, joining the
     /// group on those that are also in `groups`, and let go of the sockets whose
-    /// networks are not among them.
-    fn answer_on(&self, networks: &[Network], groups: &[Network], said: &mut dyn FnMut(&str)) {
+    /// networks are not among them or whose interfaces `went` — each leaving its
+    /// group as it is let go of.
+    fn answer_on(
+        &self,
+        networks: &[Network],
+        groups: &[Network],
+        went: &Went,
+        said: &mut dyn FnMut(&str),
+    ) {
         let on = |responder: &Arc<Responder>| responder.on.as_ref().map(Network::index);
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
         let before = held.len();
         held.retain(|responder| {
-            on(responder)
-                .is_some_and(|index| networks.iter().any(|network| network.index() == index))
+            let stays = on(responder).is_some_and(|index| {
+                !went.includes(index) && networks.iter().any(|network| network.index() == index)
+            });
+            if !stays {
+                responder.leave();
+            }
+            stays
         });
         let mut moved = held.len() != before;
         for network in networks {
@@ -597,18 +667,33 @@ fn held_to(port: u16, interface: NonZeroU32) -> Result<UdpSocket, std::io::Error
 /// Join `socket` to the discovery group on the network whose address is
 /// `address`.
 ///
-/// Already joined is joined, as `crate::joining` has it: an interface the kernel
-/// kept the membership on across a change this file did not see is not a network
-/// that failed.
+/// A membership the socket already holds there is **taken afresh** — left, and
+/// joined again — and never read as joined, as `crate::joining` has it over
+/// IPv6: `EADDRINUSE` says the socket holds a record at that interface's number,
+/// and a record an interface deleted and laid again at that number left behind
+/// has no interface in the group behind it.
 ///
 /// # Errors
 ///
-/// What the kernel answered.
-fn joined(socket: &UdpSocket, address: Ipv4Addr) -> Result<(), std::io::Error> {
+/// What the kernel answered the join with — the second one, where there were
+/// two: no interface at that address, and everything a join can fail with.
+pub(crate) fn joined(socket: &UdpSocket, address: Ipv4Addr) -> Result<(), std::io::Error> {
     match socket.join_multicast_v4(&THE_ADDRESS, &address) {
-        Err(why) if why.kind() == std::io::ErrorKind::AddrInUse => Ok(()),
+        Err(why) if why.kind() == std::io::ErrorKind::AddrInUse => {
+            left(socket, address);
+            socket.join_multicast_v4(&THE_ADDRESS, &address)
+        }
         joined => joined,
     }
+}
+
+/// Leave the discovery group on the network whose address is `address`,
+/// whether or not an interface is still there.
+///
+/// Nothing is said when the kernel refuses: its refusal is that the socket held
+/// no membership there, and then there was nothing to leave.
+fn left(socket: &UdpSocket, address: Ipv4Addr) {
+    drop(socket.leave_multicast_v4(&THE_ADDRESS, &address));
 }
 
 #[cfg(test)]
@@ -627,7 +712,8 @@ mod tests {
     };
     use alo_nearby::{MachineId, Presence, WorkspacePresence};
 
-    use super::{Responders, Responding};
+    use super::{Responders, Responding, joined, left};
+    use crate::interfaces_that_went::Went;
     use crate::networks::{
         IFF_LOOPBACK, IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface, Network, listening_networks,
     };
@@ -746,7 +832,9 @@ mod tests {
         let both: Vec<_> = nowhere.iter().chain(&loopback).cloned().collect();
 
         let mut said = Vec::new();
-        responders.answer_on(&both, &[], &mut |line| said.push(line.to_owned()));
+        responders.answer_on(&both, &[], &Went::nothing(), &mut |line| {
+            said.push(line.to_owned())
+        });
         assert_eq!(said.len(), 1, "{said:?}");
         assert!(
             said.first().unwrap().contains("nowhere"),
@@ -775,7 +863,7 @@ mod tests {
     #[test]
     fn a_machine_with_no_networks_answers_on_none() {
         let responders = Responders::bound(a_free_port(), presence(), &mut |_| {});
-        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
         assert!(responders.answered_on().is_empty());
         assert!(Responding::of(&responders).waiting_on().is_empty());
         assert!(
@@ -850,7 +938,9 @@ mod tests {
         let responders = Responders::on(handed, presence()).unwrap();
         assert!(responders.answered_on().is_empty());
         assert!(responders.joined().is_empty());
-        responders.changed(&mut |line| panic!("a handed-in socket followed the kernel: {line}"));
+        responders.changed(&Went::any_of_them(), &mut |line| {
+            panic!("a handed-in socket followed the kernel: {line}")
+        });
         assert_eq!(Responding::of(&responders).waiting_on().len(), 1);
         assert_eq!(
             asked(&responders, &a_question().unwrap(), port),
@@ -883,12 +973,14 @@ mod tests {
         let networks = responders.answered_on();
         assert!(!networks.is_empty());
 
-        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
         assert!(
             responders.answered_on().is_empty(),
             "a network that went is still answered on"
         );
-        responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&networks, &[], &Went::nothing(), &mut |line| {
+            panic!("{line}")
+        });
         assert_eq!(responders.answered_on(), networks);
     }
 
@@ -915,19 +1007,23 @@ mod tests {
         // waiting for yet; it is emptied here.
         said_it_moved(&responders);
 
-        responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&networks, &[], &Went::nothing(), &mut |line| {
+            panic!("{line}")
+        });
         assert!(
             !said_it_moved(&responders),
             "nothing changed, and the waiting thread was woken"
         );
-        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
         assert!(
             said_it_moved(&responders),
             "a network let go of said nothing"
         );
-        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
         assert!(!said_it_moved(&responders));
-        responders.answer_on(&networks, &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&networks, &[], &Went::nothing(), &mut |line| {
+            panic!("{line}")
+        });
         assert!(
             said_it_moved(&responders),
             "a network answered on said nothing"
@@ -945,7 +1041,9 @@ mod tests {
             listening_networks(&[interface(0, "nowhere", &[Ipv4Addr::new(10, 65, 0, 1)])]);
         let both: Vec<_> = nowhere.iter().chain(&before).cloned().collect();
         let mut said = Vec::new();
-        responders.answer_on(&both, &[], &mut |line| said.push(line.to_owned()));
+        responders.answer_on(&both, &[], &Went::nothing(), &mut |line| {
+            said.push(line.to_owned())
+        });
         assert_eq!(said.len(), 1, "{said:?}");
         assert!(
             !said_it_moved(&responders),
@@ -964,6 +1062,195 @@ mod tests {
         assert!(hosted.moved().is_none());
     }
 
+    /// Whether the interface numbered `index` is in the discovery group, as
+    /// `/proc/net/igmp` lists it: a line naming the interface, then one line per
+    /// group, each the address's four bytes as the kernel holds them.
+    fn in_the_group(index: u32) -> bool {
+        let group = format!(
+            "{:08X}",
+            u32::from_ne_bytes(alo_nearby::THE_ADDRESS.octets())
+        );
+        let listed = std::fs::read_to_string("/proc/net/igmp").unwrap();
+        let mut on = None;
+        for line in listed.lines() {
+            if line.starts_with(|first: char| first.is_ascii_digit()) {
+                on = line
+                    .split_whitespace()
+                    .next()
+                    .and_then(|at| at.parse().ok());
+            } else if line.split_whitespace().next() == Some(group.as_str()) && on == Some(index) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// The loopback network, as the kernel on this host reports it.
+    fn loopback() -> Network {
+        listening_networks(&crate::route_messages::reported_by_the_kernel().unwrap())
+            .into_iter()
+            .find(|network| network.address().is_loopback())
+            .unwrap()
+    }
+
+    /// **A join the kernel refuses `EADDRINUSE` is taken afresh and never read as
+    /// joined, and a responder let go of leaves its group then and there.**
+    ///
+    /// On loopback, the one interface every host has, and in one test because
+    /// every step reads the same interface's membership. The refusal for a record
+    /// a deleted interface left behind is measured on a real cable by
+    /// `crate::a_cable_re_laid_between_two_readings`; what is measured here is
+    /// that the refusal is answered with a membership that is really there.
+    #[test]
+    fn a_join_refused_as_already_held_is_taken_afresh_and_a_responder_let_go_of_leaves() {
+        let loopback = loopback();
+        let std::net::IpAddr::V4(address) = loopback.address() else {
+            panic!("{loopback:?}");
+        };
+        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
+        socket
+            .join_multicast_v4(&alo_nearby::THE_ADDRESS, &address)
+            .unwrap();
+
+        joined(&socket, address).unwrap();
+        assert!(in_the_group(loopback.index()));
+        assert_eq!(
+            socket
+                .join_multicast_v4(&alo_nearby::THE_ADDRESS, &address)
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::AddrInUse,
+            "a membership taken afresh is not held"
+        );
+        left(&socket, address);
+        assert!(
+            !in_the_group(loopback.index()),
+            "a membership left is still there"
+        );
+        // Leaving where nothing is held is nothing, and a join afterwards is an
+        // ordinary one.
+        left(&socket, address);
+        joined(&socket, address).unwrap();
+        left(&socket, address);
+
+        // A responder joined on loopback, let go of while a round still holds
+        // its socket open: the group is left at once, not when that round ends.
+        let responders = Responders::bound(a_free_port(), presence(), &mut |_| {});
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
+        let only_loopback = [loopback.clone()];
+        responders.answer_on(
+            &only_loopback,
+            &only_loopback,
+            &Went::nothing(),
+            &mut |line| panic!("{line}"),
+        );
+        assert_eq!(responders.joined(), vec![loopback.clone()]);
+        assert!(in_the_group(loopback.index()));
+        let a_round_still_waiting = Responding::of(&responders);
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
+        assert!(
+            !in_the_group(loopback.index()),
+            "a responder let go of left its membership to the close of a socket a round still held"
+        );
+        drop(a_round_still_waiting);
+    }
+
+    /// **A join where no interface is is refused**, never counted as joined.
+    #[test]
+    fn a_join_where_no_interface_is_is_refused() {
+        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
+        assert!(joined(&socket, Ipv4Addr::new(192, 0, 2, 77)).is_err());
+    }
+
+    /// The kernel's message that the interface numbered `index` was deleted.
+    fn a_deletion_of(index: u32) -> Vec<u8> {
+        let mut message = Vec::new();
+        message.extend_from_slice(&32_u32.to_ne_bytes());
+        message.extend_from_slice(&17_u16.to_ne_bytes());
+        message.extend_from_slice(&[0; 14]);
+        message.extend_from_slice(&index.to_ne_bytes());
+        message.extend_from_slice(&[0; 8]);
+        message
+    }
+
+    /// The descriptor of each socket `responding` waits on, beside the number of
+    /// the interface it is held to, in the order of those numbers.
+    fn descriptors(responders: &Responders, responding: &Responding) -> Vec<(u32, i32)> {
+        use std::os::fd::AsRawFd;
+        let mut held: Vec<_> = responders
+            .answered_on()
+            .iter()
+            .map(Network::index)
+            .zip(responding.waiting_on().iter().map(AsRawFd::as_raw_fd))
+            .collect();
+        held.sort_unstable();
+        held
+    }
+
+    /// The same networks, in the kernel's order, whatever order they were
+    /// answered on in.
+    fn sorted(mut networks: Vec<Network>) -> Vec<u32> {
+        networks.sort_by_key(Network::index);
+        networks.iter().map(Network::index).collect()
+    }
+
+    /// **A responder whose interface the kernel said went is let go of even where
+    /// its number is reported again**, and that network is answered on by a new
+    /// socket — a move the answering thread is told of — while a responder whose
+    /// interface did not go keeps its socket. A round that lost what the kernel
+    /// said answers every network again on new sockets.
+    #[test]
+    fn a_responder_whose_interface_went_is_answered_again_on_a_new_socket() {
+        let port = a_free_port();
+        let responders = Responders::bound(port, presence(), &mut |line| panic!("{line}"));
+        let networks = responders.answered_on();
+        let loopback = loopback();
+        said_it_moved(&responders);
+
+        // The rounds hold the sockets open, so a descriptor let go of is not
+        // handed out again for the new one.
+        let before = Responding::of(&responders);
+        let was = descriptors(&responders, &before);
+        let mut went = Went::nothing();
+        went.heard(&a_deletion_of(loopback.index()));
+        responders.answer_on(&networks, &[], &went, &mut |line| panic!("{line}"));
+        assert_eq!(sorted(responders.answered_on()), sorted(networks.clone()));
+        assert!(
+            said_it_moved(&responders),
+            "a responder answered again said nothing"
+        );
+        let after = Responding::of(&responders);
+        let is = descriptors(&responders, &after);
+        for ((index, was), (_, is)) in was.iter().zip(&is) {
+            if *index == loopback.index() {
+                assert_ne!(
+                    was, is,
+                    "the socket held to an interface that went was kept"
+                );
+            } else {
+                assert_eq!(was, is, "a socket whose interface did not go was replaced");
+            }
+        }
+        drop((before, after));
+        assert_eq!(
+            asked(&responders, &a_question().unwrap(), port),
+            vec![about(&presence()).unwrap()]
+        );
+
+        let before = Responding::of(&responders);
+        let was = descriptors(&responders, &before);
+        responders.answer_on(&networks, &[], &Went::any_of_them(), &mut |line| {
+            panic!("{line}")
+        });
+        assert_eq!(sorted(responders.answered_on()), sorted(networks));
+        assert!(said_it_moved(&responders));
+        let is = descriptors(&responders, &Responding::of(&responders));
+        assert!(
+            was.iter().all(|descriptor| !is.contains(descriptor)),
+            "a round that lost what the kernel said kept a socket: {was:?} {is:?}"
+        );
+    }
+
     /// **Hosting a workspace keeps the responders' voice**: the thread is told of
     /// moves on the responders that answer, which are the hosting ones.
     #[test]
@@ -971,7 +1258,7 @@ mod tests {
         let responders = Responders::bound(a_free_port(), presence(), &mut |_| {})
             .hosting(a_workspace(), &mut |line| panic!("{line}"));
         said_it_moved(&responders);
-        responders.answer_on(&[], &[], &mut |line| panic!("{line}"));
+        responders.answer_on(&[], &[], &Went::nothing(), &mut |line| panic!("{line}"));
         assert!(said_it_moved(&responders));
     }
 }

@@ -1361,6 +1361,55 @@ looked for at the moment (`crate::looking`), so after a re-lay it is found and
 dialled with the new interface.
 **Date:** 2026-09-16.
 
+### The Linux kernel — an IPv4 membership also outlives a deleted interface on the socket that joined it, while a socket held to the number keeps working
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`), procps `kill`; measured on 2026-09-16
+by `crates/alo-agentd/src/a_cable_re_laid_between_two_readings.rs`.
+**Behaviour:** RFC 3376 and `ip(7)` say `IP_ADD_MEMBERSHIP` joins a group on an
+interface, and nothing about the membership when the interface goes. The IPv6 half
+of this is the entry below; over IPv4, on a `veth` whose far end holds a probe
+socket joined to `224.0.0.251` at its own address:
+
+- **A link deleted and laid again at the same number (`ip link add … index N`) is
+  not in the group, and the socket still says it is.** `/proc/net/igmp` lists no
+  `224.0.0.251` on the re-laid interface, and a second join from the probe at that
+  address answers `EADDRINUSE` — the kernel matches the socket's own list of
+  memberships by the interface's number before it asks whether the interface is in
+  the group. Leaving and joining again puts the interface in the group.
+- **A datagram socket and a TCP listener held to that number with
+  `SO_BINDTOIFINDEX` keep working on the re-laid interface.** The binding is a
+  number compared with the interface a packet arrived on; reception's listener,
+  never replaced, was reached on the re-laid cable, and a responder's socket
+  answers there once its membership is taken afresh.
+- **The kernel says so on the routing socket even when nobody reads in time.**
+  With reception held still by `SIGSTOP` across the deletion and re-laying, a
+  dump of the interfaces taken when it goes on shows only the same number under
+  the same name, and the `RTM_DELLINK` queued meanwhile is what the service
+  finds out from: the fixture passes on that message alone.
+- **The kernel counts a group's users per interface, not per socket.** A socket
+  leaving a group — or closing, which leaves every group it joined — takes one
+  user off whatever interface has the number now. A socket that held a dead
+  membership and closes *after* a new socket joined the re-laid interface would
+  take that membership away; leaving the dead one before the new join does not.
+  This one is read from `net/ipv4/igmp.c` (`ip_mc_leave_group`,
+  `ip_mc_drop_socket`) and not measured on its own; the unit test
+  `responding::tests::a_join_refused_as_already_held_is_taken_afresh_and_a_responder_let_go_of_leaves`
+  measures that a responder let go of leaves the group at once, with its socket
+  still open.
+
+**Our response:** `crate::interfaces_that_went` reads `RTM_DELLINK` out of what the
+service already reads, and `crate::responding` lets go of a responder whose
+interface went even where its number is reported again — leaving its group at that
+moment, before a new socket joins — and never reads `EADDRINUSE` as joined. With
+the reading removed, the fixture fails at *reception never followed its cable to
+40 … the interface is not in the discovery group*; with `EADDRINUSE` read as
+joined, it fails at the probe. The listeners are unchanged. `crate::joining` follows
+the same reading over IPv6. Where another process on the same machine had joined
+the same group on the re-laid interface, leaving the dead membership takes one user
+off theirs; nothing on alo OS joins `224.0.0.251` but this service, so it is
+written down rather than worked around.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by
