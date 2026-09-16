@@ -1,10 +1,19 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Four groups: what became of an installation, an update or a removal; why one
-//! was refused; the update a person is offered; and the one verb an agent
-//! proposes an installation through. Every refusal says **what did not happen
+//! Five groups: what became of an installation, an update or a removal; why one
+//! was refused; the update a person is offered; the one verb an agent
+//! proposes an installation through; and what opens a web address, or why one was
+//! not opened. Every refusal says **what did not happen
 //! and what a person does about it**, because *nothing was installed* on its
 //! own leaves somebody holding a question.
+//!
+//! # A web address is never read back to a person
+//!
+//! Not one sentence in the web group has a gap for the address. An address
+//! arrives from any application and is written by whoever wrote the page it came
+//! from, so a sentence that quotes it is a sentence somebody outside this machine
+//! helped compose — and the reason it was refused is a fact about the address,
+//! which a person can act on, rather than the address itself, which they cannot.
 //!
 //! # Nothing a person reads names the machinery
 //!
@@ -27,6 +36,9 @@ pub const APPLICATION: &str = "application";
 
 /// The gap holding the name of a place applications come from.
 pub const SOURCE: &str = "source";
+
+/// The gap holding the identifier of the application a person chose.
+pub const CHOSEN: &str = "chosen";
 
 // ---------------------------------------------------------------------------
 // What became of it.
@@ -261,11 +273,136 @@ pub const VERB_SENTENCE: Word = Word::saying(
      allowed nothing.",
 );
 
+// ---------------------------------------------------------------------------
+// What opens a web address, and why one was not opened.
+// ---------------------------------------------------------------------------
+
+/// The person chose this application to open web addresses.
+pub const OPENS_THE_WEB_CHOSEN: Word = Word::saying(
+    "software.web.opens.chosen",
+    "{application} opens web addresses, because you chose it",
+)
+.noting(
+    "Says which application a web link will open in, when the person has chosen one themselves. \
+     {application} is the application's identifier, like org.mozilla.firefox, and is not \
+     translated.",
+);
+
+/// This machine ships this application for the web, and the person chose none.
+pub const OPENS_THE_WEB_SHIPPED: Word = Word::saying(
+    "software.web.opens.shipped",
+    "{application} opens web addresses. It came with this machine, and you can choose another or \
+     remove it",
+)
+.noting(
+    "Says which application a web link will open in, when the person has not chosen one and so the \
+     application the machine came with answers. The second sentence matters: nothing about it is \
+     fixed. {application} is the application's identifier and is not translated.",
+);
+
+/// The person's choice is not installed, so the shipped application answers.
+pub const OPENS_THE_WEB_INSTEAD: Word = Word::saying(
+    "software.web.opens.instead",
+    "{application} opens web addresses, because {chosen}, which you chose, is not installed. \
+     Install it again, or choose another",
+)
+.noting(
+    "Says which application a web link will open in, when the one the person chose is no longer on \
+     the machine. It says so plainly rather than quietly using something else. {application} and \
+     {chosen} are both identifiers and are not translated.",
+);
+
+/// The person's choice is their own application, which is handed no web address.
+pub const OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN: Word = Word::saying(
+    "software.web.opens.instead-of-a-persons-own",
+    "{application} opens web addresses. {chosen}, which you chose, is yours alone, and a web \
+     address written by somebody else is never handed to it",
+)
+.noting(
+    "Says which application a web link will open in, when the person chose an application that is \
+     theirs alone — a terminal — for it. A web address arrives from whatever page or message \
+     carried it, so it is not handed to an application where whatever arrives runs. {application} \
+     and {chosen} are identifiers and are not translated.",
+);
+
+/// No application on this machine opens web addresses.
+pub const NOTHING_OPENS_THE_WEB: Word = Word::saying(
+    "software.web.nothing-opens",
+    "No application on this machine opens web addresses, so nothing was opened. Install a web \
+     browser, and it opens them",
+)
+.noting(
+    "Said when a web link could not be opened because the machine has no web browser on it — the \
+     person removed the one it came with, which they are allowed to do. Nothing is broken.",
+);
+
+/// The person's choice is gone, and nothing else opens web addresses.
+pub const NOTHING_OPENS_THE_WEB_CHOICE_GONE: Word = Word::saying(
+    "software.web.nothing-opens.choice-gone",
+    "{chosen}, which you chose to open web addresses, is not installed, and nothing else on this \
+     machine opens them. Install it again, or install another web browser",
+)
+.noting(
+    "Said when a web link could not be opened because the application the person chose for web \
+     addresses is gone and the machine has no other web browser. {chosen} is the identifier they \
+     chose and is not translated.",
+);
+
+/// What arrived was not a web address.
+pub const NOT_A_WEB_ADDRESS: Word = Word::saying(
+    "software.web.refused.not-a-web-address",
+    "That is not a web address, so nothing was opened. A web address begins with http:// or \
+     https://",
+)
+.noting(
+    "Said when an application asked this machine to open something as a web address and it was not \
+     one — it named no site, or named something that is not the web at all, such as a file on this \
+     machine. What arrived is deliberately not repeated back: it was written outside this machine. \
+     Leave http:// and https:// exactly as they are.",
+);
+
+/// The web address carries a name and a password in it.
+pub const WEB_CARRIES_A_PASSWORD: Word = Word::saying(
+    "software.web.refused.carries-a-password",
+    "That web address carries a name and a password inside it, so nothing was opened. Open the \
+     site and sign in there instead",
+)
+.noting(
+    "Said when a web address had a name and password written into it, before the site's own name. \
+     Opening it would hand them to the application that opened it and write them into its history, \
+     and an address in that shape is also how one site is made to look like another. The address \
+     is not repeated back.",
+);
+
+/// What asked did not name itself as an application.
+pub const WEB_NOT_AN_APPLICATION: Word = Word::saying(
+    "software.web.refused.not-an-application",
+    "Something asked to open a web address without saying which application it is, so nothing was \
+     opened. An application that cannot name itself cannot be allowed anything either",
+)
+.noting(
+    "Said when a request to open a web address arrived without the name of the application making \
+     it. Everything this machine allows is allowed to a named application, so an unnamed one could \
+     not be answered even in principle.",
+);
+
+/// The asking application holds nothing at all.
+pub const WEB_NOTHING_GRANTED: Word = Word::saying(
+    "software.web.refused.nothing-granted",
+    "{application} has not been allowed anything on this machine, so the web address was not \
+     opened. Allow it the web browser you want it to open addresses in, and it can ask again",
+)
+.noting(
+    "Said when an application asked to have a web address opened before the person had allowed it \
+     anything. {application} is its identifier and is not translated. The person is told exactly \
+     what to allow, because *it was not allowed* on its own leaves them guessing.",
+);
+
 /// Every word that names something, read inside another sentence.
 pub const THE_NAMES: [Word; 3] = [VERB_PURPOSE, VERB_APPLICATION, VERB_SOURCE];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 16] = [
+pub const THE_SENTENCES: [Word; 26] = [
     INSTALLED,
     UPDATE_OFFERED,
     UPDATED,
@@ -282,10 +419,42 @@ pub const THE_SENTENCES: [Word; 16] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    OPENS_THE_WEB_CHOSEN,
+    OPENS_THE_WEB_SHIPPED,
+    OPENS_THE_WEB_INSTEAD,
+    OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
+    NOTHING_OPENS_THE_WEB,
+    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
+    NOT_A_WEB_ADDRESS,
+    WEB_CARRIES_A_PASSWORD,
+    WEB_NOT_AN_APPLICATION,
+    WEB_NOTHING_GRANTED,
+];
+
+/// Every refusal, so that a test can hold each of them to saying what did not
+/// happen **and** what a person does about it.
+pub const THE_REFUSALS: [Word; 17] = [
+    NOT_ENABLED,
+    OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
+    OUTSIDE_THE_BOUND_BY_THIS_PERSON,
+    NOT_VERIFIED,
+    SIGNATURE_NOT_SHOWN,
+    NOT_OFFERED,
+    ALREADY_INSTALLED,
+    NOT_INSTALLED,
+    STILL_OPEN,
+    NOWHERE_TO_REACH,
+    DID_NOT_ANSWER,
+    NOTHING_OPENS_THE_WEB,
+    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
+    NOT_A_WEB_ADDRESS,
+    WEB_CARRIES_A_PASSWORD,
+    WEB_NOT_AN_APPLICATION,
+    WEB_NOTHING_GRANTED,
 ];
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 29] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -305,6 +474,16 @@ pub const EVERY_WORD: [Word; 19] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    OPENS_THE_WEB_CHOSEN,
+    OPENS_THE_WEB_SHIPPED,
+    OPENS_THE_WEB_INSTEAD,
+    OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
+    NOTHING_OPENS_THE_WEB,
+    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
+    NOT_A_WEB_ADDRESS,
+    WEB_CARRIES_A_PASSWORD,
+    WEB_NOT_AN_APPLICATION,
+    WEB_NOTHING_GRANTED,
 ];
 
 /// Why this crate's own words could not be declared.
@@ -373,6 +552,34 @@ mod tests {
         assert_eq!(both, every);
     }
 
+    /// Every refusal is one of the sentences, and each of them is there once.
+    #[test]
+    fn every_refusal_is_one_of_the_sentences() {
+        let sentences: BTreeSet<&str> = THE_SENTENCES.iter().map(Word::named).collect();
+        let refusals: BTreeSet<&str> = THE_REFUSALS.iter().map(Word::named).collect();
+        assert_eq!(refusals.len(), THE_REFUSALS.len());
+        assert!(refusals.is_subset(&sentences));
+    }
+
+    /// **No sentence about the web has a gap for the address**, because an
+    /// address is written outside this machine and a sentence that quotes one is
+    /// a sentence whoever wrote it helped compose.
+    #[test]
+    fn no_sentence_about_the_web_reads_an_address_back() {
+        for word in EVERY_WORD {
+            if !word.named().starts_with("software.web.") {
+                continue;
+            }
+            for gap in word.phrase().unwrap().source().gaps() {
+                assert!(
+                    [APPLICATION, CHOSEN].contains(&gap.as_str()),
+                    "{} has a gap called {gap}",
+                    word.named()
+                );
+            }
+        }
+    }
+
     /// The list declares, and a key already taken is not replaced.
     #[test]
     fn the_list_declares_and_nothing_is_replaced() {
@@ -391,7 +598,7 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
                 assert!(
-                    [APPLICATION, SOURCE].contains(&gap.as_str()),
+                    [APPLICATION, SOURCE, CHOSEN].contains(&gap.as_str()),
                     "{} has a gap called {gap}",
                     word.named()
                 );
@@ -440,19 +647,7 @@ mod tests {
     /// second sentence or clause after the trouble, never the trouble alone.
     #[test]
     fn every_refusal_says_what_to_do_about_it() {
-        for word in [
-            NOT_ENABLED,
-            OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
-            OUTSIDE_THE_BOUND_BY_THIS_PERSON,
-            NOT_VERIFIED,
-            SIGNATURE_NOT_SHOWN,
-            NOT_OFFERED,
-            ALREADY_INSTALLED,
-            NOT_INSTALLED,
-            STILL_OPEN,
-            NOWHERE_TO_REACH,
-            DID_NOT_ANSWER,
-        ] {
+        for word in THE_REFUSALS {
             let said = word.says();
             assert!(
                 said.contains("nothing") || said.contains("not"),

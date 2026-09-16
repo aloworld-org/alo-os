@@ -1,0 +1,7 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "PromptForDownloadLocation": true
+  }
+}

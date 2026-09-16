@@ -107,14 +107,46 @@
 //! person updates and removes it the same way, the browser included. The
 //! terminal is a person's own: `alo_capability` refuses an agent any grant over
 //! it and any call naming it (ADR 0043).
+//!
+//! # The web browser, and what it may take from the machine
+//!
+//! The browser [`Shipped`] names for [`Role::WebBrowser`] is an application like
+//! any other on this machine, and this crate adds three things around it and
+//! nothing else.
+//!
+//! | | |
+//! |---|---|
+//! | [`web_address`] | What a web address is, checked before anything is decided about it |
+//! | [`browsing`] | Which application opens web addresses: the person's choice, or the one this machine ships, and never a guess |
+//! | [`opening_the_web`] | An application's request to open one, judged against the grants in the open-with portal's own order |
+//! | [`browser_settings`], [`browser_configuration`] | The configuration alo OS ships with the browser — three settings, held to being three |
+//!
+//! **It has no grants of its own.** It arrives through [`installing`](mod@installing)
+//! like everything else, which takes nothing that could make one, so it reaches
+//! no folder, no camera and no microphone until a person allows it one. That is
+//! also what makes *downloads go to the folder a person chose* true rather than
+//! claimed: the browser asks where each download goes
+//! ([`Configuration::asks_where_each_download_goes`]), and the folder it is
+//! answered with is one a person picked in that moment.
+//!
+//! **Nothing here sets its home page, its search engine or which road out it
+//! takes.** [`NeverSet`] is that list, with what each would have taken from the
+//! person; [`Setting`] is the three that are set, of which two are
+//! `docs/features.md`'s *no telemetry* carried as far into somebody else's
+//! application as its own maker allows. What could not be turned off is named in
+//! `docs/autonomy/updates/the-web-browser.md` rather than claimed away.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod asked;
 pub mod bound;
+pub mod browser_configuration;
+pub mod browser_settings;
+pub mod browsing;
 pub mod enabled;
 pub mod heard;
 pub mod installing;
+pub mod opening_the_web;
 pub mod refusing;
 pub mod removing;
 pub mod rented;
@@ -125,14 +157,19 @@ pub mod source;
 pub mod tool;
 pub mod updating;
 pub mod verbs;
+pub mod web_address;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use bound::{Bound, SetBy};
+pub use browser_configuration::{Configuration, NotConfigured};
+pub use browser_settings::{NeverSet, Setting};
+pub use browsing::{Because, NothingOpensThem, TheBrowser, WhatOpensWebAddresses};
 pub use enabled::Enabled;
 pub use installing::{Installed, Wanted, install, installing};
+pub use opening_the_web::{NotOpened, Opened, opened};
 pub use refusing::NotDone;
 pub use removing::{Removed, remove};
 pub use rented::TheRentedTool;
@@ -143,4 +180,5 @@ pub use source::{Configured, Source, SourceName};
 pub use tool::{Failed, Tool};
 pub use updating::{Offer, Updated, apply, applying, looking_for_updates, offered};
 pub use verbs::{Declaring, INSTALL_APPLICATION, NotAnInstallation, approved, software_verbs};
+pub use web_address::{NotAWebAddress, WebAddress};
 pub use words::{Word, WordsError, declare_into, software_words};

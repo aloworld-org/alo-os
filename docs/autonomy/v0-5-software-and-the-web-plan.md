@@ -102,7 +102,25 @@ the report says what that acceptance is. The report is
 
 ### 3. The web browser, and what it may take from the machine
 
-**Status:** ready. **Depends on:** 1, 2.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-software` and nowhere else:
+`web_address.rs` is what a web address is, checked at the boundary — `http` and
+`https` only, and a name-and-password in one refused with its own sentence;
+`browsing.rs` is which application opens them (the person's choice, then the one
+`Shipped` names for `Role::WebBrowser`, then nothing — and never a person's own
+application, ADR 0043's reasoning about a value nobody here wrote);
+`opening_the_web.rs` is an application's request judged in the open-with portal's
+own order, asking the grants **before** reading this machine so an application
+holding nothing learns nothing from its refusal; and `browser_settings.rs` with
+`browser_configuration.rs` and `browser.json` are the shipped configuration —
+three settings, telemetry and experiments off and *ask where each download goes*,
+with the ten keys that would take the person's home page, search engine, proxy,
+bookmarks or download folder refused by name. The decision is in this crate and
+not in `alo-portals` because it reads `Shipped`, and a crate cannot read a crate
+that reads it; wiring `OpenURI` to `alo_software::opened` is the applications
+plan's, named in the report. What is not yet shown is the browser on a machine
+reading that configuration, and whether the sandboxed build sees the path it is
+put at — the report says so plainly rather than guessing. The report is
+`docs/autonomy/updates/the-web-browser.md`. **Depends on:** 1, 2.
 
 - **Acceptance:** the browser from task 2 opens web addresses from any application
   through the open-with portal; **it is a sandboxed application like any other**, with
