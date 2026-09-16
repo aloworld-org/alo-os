@@ -308,12 +308,38 @@ fn the_checks_would_notice_the_decision_going_missing_or_the_code_running_ahead(
     );
 
     // A status that no longer stands, one that names nothing, and no status line.
+    // Rewritten on its status line, rather than at the first `proposed`
+    // anywhere in the file: once the decision was accepted the first one was a
+    // word in the body, and this check was handed a decision that still stood
+    // and would have passed for the wrong reason.
+    let withdrawn = decision
+        .lines()
+        .map(|line| {
+            if line.starts_with(STATUS) {
+                format!("{STATUS} withdrawn")
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
     assert!(
-        the_decision_stands(&decision.replacen("proposed", "withdrawn", 1)).is_err(),
+        the_decision_stands(&withdrawn).is_err(),
         "a withdrawn decision was read as standing"
     );
+    let pending = decision
+        .lines()
+        .map(|line| {
+            if line.starts_with(STATUS) {
+                format!("{STATUS} pending")
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
     assert!(
-        status_of(&decision.replacen("proposed", "pending", 1)).is_err(),
+        status_of(&pending).is_err(),
         "a status line naming none of the five statuses was read as one"
     );
     assert!(
