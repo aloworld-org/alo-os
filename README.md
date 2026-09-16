@@ -20,6 +20,28 @@ The claim is narrow and testable:
 > one click, and afterwards explained — and the model that proposed it ran on
 > hardware the customer owns.
 
+## Try it
+
+alo OS is installed from the Windows a computer already runs: download the
+installer from this repository's latest Release, run it, and restart. It reads
+the computer, says what it found, says exactly what it will do, and changes
+nothing until you type the name of a disk.
+
+- **Memory** — 32 GB
+- **Storage** — 1 TB NVMe
+- **Processor** — Intel 8th generation or newer, or Ryzen 3000 or newer
+- **Firmware** — UEFI, TPM 2.0
+- **Arrives with** — Windows 10 or 11 installed
+
+`docs/hardware.md` is where each of those comes from, with the measurement
+behind it.
+
+Windows stays: alo OS goes onto a second, empty disk, and Windows starts
+afterwards exactly as it did before.
+
+This release installs only where Secure Boot is already off; where it is on, the
+installer stops, says why, and changes nothing.
+
 ## What it is not
 
 - **Not a Linux distribution with a web application on it.** The shell is

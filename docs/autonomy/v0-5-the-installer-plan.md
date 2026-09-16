@@ -263,7 +263,25 @@ point of no return* — which, alongside Windows, is nothing destroyed.
 
 ### 5. Released from GitHub, and the page a person downloads from
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-16** (`updates/released-from-github-and-the-page-a-person-downloads-from.md`),
+with **one half of one line decided rather than built**:
+[ADR 0046](../decisions/0046-the-installer-is-signed-by-a-certificate-a-person-holds.md)
+answers *signs the executable* the way ADR 0036 answered it for the image — **a
+machine builds, a person signs** — because Authenticode needs a certificate this
+repository does not have and nothing in it said who should hold one. So
+`.github/workflows/release.yml` runs on a tag `image/pinned.toml` names, builds
+the boot environment and `alo-installer` with that environment's list compiled
+into it, writes `SHA256SUMS`, and creates a **draft** Release whose body is the
+committed `image/release-notes.md`; it never signs and never reaches for a
+secret, and `crates/alo-image` (`releasing.rs`) fails this repository's build if
+it ever does. The notes name the registry, the tag, the pinned digest and the
+Secure Boot state the installer accepts, each held to `image/pinned.toml` and to
+what `alo_installer::decide` really refuses; the README's *Try it* is held to
+`docs/hardware.md`'s table, to *Windows stays*, and to one Secure Boot sentence
+that never advises. **What stays the owner's:** obtain a code-signing
+certificate, and sign `alo-installer.exe` and publish the draft for each Release
+(ADR 0046, *What it costs*) — and accept or amend ADR 0046 itself.
+**Depends on:** 3.
 
 *Install from GitHub or the website.* The installer is a GitHub Release of
 this repository, and the download page says what a person needs to know

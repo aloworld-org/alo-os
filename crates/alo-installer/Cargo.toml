@@ -29,6 +29,13 @@ thiserror = { workspace = true }
 ring = { workspace = true }
 
 [dev-dependencies]
+# What the Release a person downloads from says, so that the Secure Boot state
+# the notes promise can be held to the state `deciding.rs` really accepts. A
+# development dependency only, and in this direction only: `alo-installing`
+# depends on `alo-image`, so this crate is where the two ends can be compared
+# without a cycle, and the rule itself lives once in `alo_image::ACCEPTED`.
+alo-image = { path = "../alo-image" }
+
 # The machine's one vocabulary, in the direction every crate takes: a crate that
 # says something is collected by `alo-saying`, and never reaches for it.
 alo-saying = { path = "../alo-saying" }

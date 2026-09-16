@@ -1,0 +1,125 @@
+# Build the installer a person downloads, and publish it as a draft Release of
+# this repository.
+#
+# The installer plan's task 5: *a workflow builds `alo-installer` for Windows on
+# a tag, signs the executable, and publishes it as a Release asset with a
+# checksum beside it; the Release notes say which image digest it installs and
+# which Secure Boot state it accepts.* This is that workflow, with one step
+# deliberately left to a person, and `crates/alo-image` (`releasing.rs`) holds
+# the shipped file to every rule below.
+#
+# Why it does not sign, 2026-09-16. Authenticode needs a certificate, this
+# repository has none, and nothing in it said who should hold one. ADR 0046
+# answers that the way ADR 0036 answered it for the image: **a machine builds,
+# a person signs.** So this workflow builds, checksums and publishes a **draft**,
+# and the owner signs `alo-installer.exe` with the certificate they hold, puts
+# the signed executable back into the archive, refreshes `SHA256SUMS`, and
+# publishes the draft. A certificate in a repository secret is the thing ADR
+# 0036 rejected for the image and ADR 0046 rejects again here: anybody who can
+# change a workflow that runs on this repository could then sign the program
+# that repartitions somebody's only computer.
+#
+# What it may never do, and `releasing.rs` holds it to each:
+#
+# - sign, or reach for a certificate or a key of any kind;
+# - run on anything but a tag. A Release is made on purpose, by a person
+#   pushing a tag, never by a commit landing;
+# - publish a Release nobody looked at. It is a draft, and the person who signs
+#   the executable is the person who publishes it;
+# - type the notes. They are `image/release-notes.md`, which is held to
+#   `image/pinned.toml` by a test, so the digest in the notes cannot drift from
+#   the digest the installer pulls;
+# - publish an executable without the checksum of every asset beside it;
+# - build the installer without the boot environment it stages compiled into it.
+#   A build with no list has nothing to hold a download to, and says so.
+#
+# The tag is `v` and the pinned release — `v0.0.1` for the release pinned today.
+# A tag naming anything else is refused before anything is built, because the
+# notes, the pin and the environment all name one release and the tag is the
+# only one of the four a person types.
+
+name: Installer release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  environment:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse a tag the pin does not name
+        run: |
+          pinned=$(sed -n 's/^version = "\([0-9]*\.[0-9]*\.[0-9]*\)"$/\1/p' image/pinned.toml)
+          if [ -z "$pinned" ]; then
+            echo "image/pinned.toml states no release" >&2
+            exit 1
+          fi
+          if [ "${GITHUB_REF_NAME}" != "v$pinned" ]; then
+            echo "this tag is ${GITHUB_REF_NAME} and the pinned release is $pinned" >&2
+            exit 1
+          fi
+
+      - name: Build the boot environment the installer stages
+        run: |
+          podman build -f image/installing/Containerfile \
+            --output type=local,dest=alo-installing .
+
+      - name: List every file it is
+        working-directory: alo-installing
+        run: |
+          find EFI -type f | LC_ALL=C sort | xargs sha256sum > alo-installing.sha256
+          cat alo-installing.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alo-installing
+          path: alo-installing
+
+  installer:
+    needs: environment
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: alo-installing
+          path: alo-installing
+
+      - name: Hold this build to that environment
+        shell: pwsh
+        run: |
+          $list = (Get-FileHash -Algorithm SHA256 alo-installing/alo-installing.sha256).Hash.ToLower()
+          "ALO_INSTALLER_ENVIRONMENT_SHA256=$list" >> $env:GITHUB_ENV
+
+      - name: Build the installer
+        run: cargo build --release --locked -p alo-installer
+
+      - name: Put the download together
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path download/alo-installing -Force | Out-Null
+          Copy-Item target/release/alo-installer.exe download/
+          Copy-Item -Recurse alo-installing/* download/alo-installing/
+          Compress-Archive -Path download/* -DestinationPath alo-installer.zip
+
+      - name: Write the checksum beside it
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 alo-installer.zip).Hash.ToLower()
+          "$hash  alo-installer.zip" | Out-File -Encoding ascii SHA256SUMS
+          Get-Content SHA256SUMS
+
+      - name: Publish the draft Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME --draft --title "alo OS $env:GITHUB_REF_NAME" --notes-file image/release-notes.md alo-installer.zip SHA256SUMS

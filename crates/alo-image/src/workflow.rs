@@ -112,6 +112,26 @@ impl TheWorkflow {
         &self.triggers
     }
 
+    /// Every line that is not a comment, trimmed, in order.
+    ///
+    /// For `crate::releasing`, which asks a different workflow a different set
+    /// of questions off the same reading: two readers of GitHub's file format
+    /// in one crate would be the drift this crate exists to catch.
+    #[must_use]
+    pub fn live(&self) -> &[String] {
+        &self.live
+    }
+
+    /// Every comment in it, joined, in order.
+    ///
+    /// Kept apart from [`Self::live`] because the sentence explaining that a
+    /// person signs is exactly the place the word `sign` belongs, and a rule
+    /// that read it would refuse the file for saying why it obeys the rule.
+    #[must_use]
+    pub fn comments(&self) -> &str {
+        &self.comments
+    }
+
     /// Whether it runs only when a person asks it to.
     ///
     /// Not on a push, a tag, a schedule or a pull request: the build does not

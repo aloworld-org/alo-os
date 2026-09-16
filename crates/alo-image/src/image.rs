@@ -22,6 +22,7 @@ use crate::disk::TheDisk;
 use crate::installing::{THE_ENVIRONMENT, TheEnvironment};
 use crate::logins::Declared;
 use crate::making::Made;
+use crate::notes::{THE_NOTES, TheNotes};
 use crate::pinned::{THE_PIN, ThePin};
 use crate::refusing::NotAnImage;
 use crate::runtime::TheRuntime;
@@ -119,6 +120,8 @@ pub struct Image {
     key: String,
     /// What the boot environment's recipe says, beside this image's.
     environment: TheEnvironment,
+    /// What the notes of the Release a person downloads from say.
+    notes: TheNotes,
 }
 
 impl Image {
@@ -169,6 +172,11 @@ impl Image {
         // it has to agree with.
         let environment = TheEnvironment::read(&text(&root.join(THE_ENVIRONMENT))?, &recipe);
 
+        // Read leniently, like the recipe: notes stating nothing are notes
+        // `crate::released` has a sentence about, not a directory that is no
+        // image at all.
+        let notes = TheNotes::read(&text(&root.join(THE_NOTES))?);
+
         Ok(Self {
             loader,
             agent,
@@ -187,6 +195,7 @@ impl Image {
             pin,
             key,
             environment,
+            notes,
         })
     }
 
@@ -324,6 +333,16 @@ impl Image {
     #[must_use]
     pub const fn environment(&self) -> &TheEnvironment {
         &self.environment
+    }
+
+    /// What the notes of the Release a person downloads from say.
+    ///
+    /// Read here rather than beside the README because they are the image's
+    /// own: the digest in them is the digest in the pin, and `crate::released`
+    /// is where the two are compared.
+    #[must_use]
+    pub const fn notes(&self) -> &TheNotes {
+        &self.notes
     }
 }
 

@@ -984,6 +984,95 @@ pub enum Wrong {
         /// Where it should land.
         landing: String,
     },
+    /// The Release's notes state something other than what is pinned.
+    #[error(
+        "`image/release-notes.md` states `{fact}: {said}` and `image/pinned.toml` pins `{pinned}`          — the notes are what a person reads before they download, and notes naming a release          nothing will pull are a person told they are getting bytes that are not the ones the          installer asks the registry for (ADR 0023 §3)"
+    )]
+    TheNotesDoNotSayWhatIsPinned {
+        /// The fact the notes state.
+        fact: String,
+        /// What they state for it, or `-` where they state none or state it twice.
+        said: String,
+        /// What the pin says.
+        pinned: String,
+    },
+    /// The Release's notes name a digest that is not the pinned one.
+    #[error(
+        "`image/release-notes.md` names digest `{digest}` and the installer pulls `{pinned}` — a          digest written anywhere in the notes is one a person will pull by, so notes naming two          are notes nobody can act on (the installer plan's task 5)"
+    )]
+    TheNotesNameAnotherDigest {
+        /// The digest the notes name, or `-` where they name none at all.
+        digest: String,
+        /// The digest the pin holds the installer to.
+        pinned: String,
+    },
+    /// The Release's notes do not say which Secure Boot state the installer
+    /// accepts.
+    #[error(
+        "`image/release-notes.md` states `secure boot: {said}` and this release's installer          accepts `{accepted}` — ADR 0033 §4 refuses the other state and never asks anybody to          change the setting, so notes promising it would be a person restarting a computer that          was never going to install"
+    )]
+    TheNotesDoNotSayWhichSecureBootStateIsAccepted {
+        /// What the notes state, or `-` where they state none or state it twice.
+        said: String,
+        /// What `alo-installer` accepts.
+        accepted: String,
+    },
+    /// The README does not offer the installer at all.
+    #[error(
+        "the README has no `{section}` — the installer plan's task 5 asks for it, and a program          that repartitions a computer is not something a person should have to find in a          workflow file"
+    )]
+    TheReadmeDoesNotOfferTheInstaller {
+        /// The heading it should be under.
+        section: String,
+    },
+    /// The README's *Try it* leaves out something a person needs before they
+    /// download.
+    #[error(
+        "the README's `Try it` does not say what `{named}` has to be — `docs/hardware.md` has a          measurement behind that row, and a list that quietly shrank to the requirements that          are easy to meet is a person running this on a computer it will refuse"
+    )]
+    TheReadmeIsMissingARequirement {
+        /// The row of the hardware document it leaves out.
+        named: String,
+    },
+    /// The README's *Try it* says a computer needs something the hardware
+    /// document does not.
+    #[error(
+        "the README's `Try it` says `{named}` has to be `{said}` and `docs/hardware.md` says          `{document}` — a requirement with no measurement behind it is a preference, and          somebody buys the wrong machine on our word"
+    )]
+    TheReadmeRequiresSomethingElse {
+        /// The requirement the README names.
+        named: String,
+        /// What the README says it has to be.
+        said: String,
+        /// What the document says, or `-` where it says nothing about it.
+        document: String,
+    },
+    /// The README's *Try it* grew.
+    #[error(
+        "the README's `Try it` says more than the four things it is for — what it is, where the          requirements come from, that Windows stays, and Secure Boot. The README's rule since          2026-09-13 is no noise, and this is the section every later task will want one more          sentence in"
+    )]
+    TheReadmeSaysMore,
+    /// The README's *Try it* stopped saying Windows stays.
+    #[error(
+        "the README's `Try it` does not say that Windows stays — ADR 0023 §4 retains it by          default, and it is the one thing a person is afraid of before they run the program"
+    )]
+    TheReadmeDoesNotSayWindowsStays,
+    /// The README's Secure Boot sentence became advice.
+    #[error(
+        "the README's `Try it` says `{paragraph}` — ADR 0033 §4 is absolute: a person is never          asked to switch Secure Boot off, and the sentence says which state this release          installs on and nothing more"
+    )]
+    TheReadmeArguesWithSecureBoot {
+        /// The paragraph as it is written.
+        paragraph: String,
+    },
+    /// The README names Secure Boot in more than one place.
+    #[error(
+        "the README's `Try it` names Secure Boot in {times} paragraphs, and the plan asks for          exactly one — none is a person who restarts a computer this release will refuse, and a          second is where the advice ADR 0033 §4 forbids arrives"
+    )]
+    TheReadmeSaysSecureBootTwice {
+        /// How many paragraphs name it.
+        times: usize,
+    },
     /// The signature checker is not pinned, or not checked before it is used.
     #[error(
         "the boot environment's signature checker (version `{version}`) is not one exact release \

@@ -26,6 +26,9 @@
 //! | [`TheVersion`] | Which release the recipe says it builds, which a published image is pinned against |
 //! | [`ThePin`], [`THE_REGISTRY`] | The published release an installer pulls, by digest, and the key it was signed with |
 //! | [`TheWorkflow`] | The workflow that pushes a candidate, and the things it may never do |
+//! | [`TheRelease`] | The workflow that builds the installer a person downloads, and the things it may never do |
+//! | [`TheNotes`] | What the Release's notes say, held to the pin and to what the installer accepts |
+//! | [`TheTryIt`] | The README's *Try it*, held to `docs/hardware.md` |
 //! | [`TheDisk`], [`TheDocument`] | The disk a machine boots from, as the recipe declares it and as `docs/booting.md` tells a person to make it |
 //!
 //! # Nothing on a machine ever reads this
@@ -91,14 +94,18 @@ mod installing;
 mod installs;
 mod logins;
 mod making;
+mod notes;
 mod pinned;
 mod publishing;
 mod recipe;
 mod refusing;
+mod released;
+mod releasing;
 mod runtime;
 mod service;
 #[cfg(test)]
 mod testing;
+mod trying;
 mod unit;
 mod version;
 mod weights;
@@ -117,12 +124,16 @@ pub use installing::{
 };
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};
+pub use notes::{THE_NOTES, THE_SECURE_BOOT, TheNotes};
 pub use pinned::{THE_PIN, THE_REGISTRY, ThePin};
 pub use refusing::{
     NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade, NotPinned,
 };
+pub use released::{ACCEPTED, everything_wrong_with_the_try_it};
+pub use releasing::{THE_RELEASE, TheRelease};
 pub use runtime::{THE_RUNTIMES_BINARY, THE_RUNTIMES_LIBRARIES, TheRuntime};
 pub use service::{ROOT, Service};
+pub use trying::{Requirement, THE_HARDWARE, THE_README, THE_SECTION, TheTryIt, what_to_buy};
 pub use unit::Unit;
 pub use version::{THE_VERSION_LABEL, TheVersion};
 pub use weights::{THE_WEIGHTS, TheWeights};

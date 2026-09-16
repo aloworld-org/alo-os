@@ -450,6 +450,7 @@ dependencies = [
 name = "alo-installer"
 version = "0.0.1"
 dependencies = [
+ "alo-image",
  "alo-installing",
  "alo-saying",
  "alo-strings",

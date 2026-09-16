@@ -161,6 +161,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_image_names_the_release_it_is(image, &mut wrong);
     crate::publishing::everything_wrong_with_the_publish(image, &mut wrong);
     crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
+    crate::released::everything_wrong_with_the_notes(image, &mut wrong);
     wrong
 }
 
