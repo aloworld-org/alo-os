@@ -1,0 +1,45 @@
+[package]
+name = "alo-in-use"
+version = "0.0.1"
+description = "What is watching or listening right now — every current use of the screen, the camera and the microphone, read from the machine's own media server, and the line shown while it is."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Who is using something, when it is an application: the identifier the machine
+# knows it by and the name a person recognises, in one value that already knows
+# which of the two may be shown and which may be acted on. An indicator that
+# said `org.gnome.Cheese` where a person expects *Cheese* would be a line
+# nobody reads.
+alo-applications = { path = "../alo-applications" }
+# Who is using something, when it is an agent. `Grantee` is the one spelling of
+# an agent's name in this workspace, and ADR 0040 made it say which kind it is —
+# so an application can never arrive here wearing an agent's variant.
+alo-capability = { path = "../alo-capability" }
+# The one palette (ADR 0010). Terracotta means the agent and nothing else, and a
+# second definition of it in this crate would be a second answer to *is the
+# machine acting on my behalf*.
+alo-appearance = { path = "../alo-appearance" }
+# Every sentence this crate can say, declared rather than written into a file.
+alo-strings = { path = "../alo-strings" }
+# The rented media server writes its record of what is open as JSON, and this is
+# what turns it into values. Nothing else here is serialised.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary: this crate's own tests are written against its
+# own list, and the integration test asks the question that list cannot — whether
+# what this crate says is collected at all.
+alo-saying = { path = "../alo-saying" }
+# The other indicator, and the model this one follows. Dev-only on purpose: this
+# crate reads nothing of what is leaving the machine, and the test beside it is
+# what holds *the microphone is on* and *something left this machine* to being
+# two lines that are never drawn as each other.
+alo-egress = { path = "../alo-egress" }
+alo-indicator = { path = "../alo-indicator" }
+
+[lints]
+workspace = true

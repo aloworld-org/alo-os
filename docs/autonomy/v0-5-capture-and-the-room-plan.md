@@ -32,7 +32,24 @@ the next task, `git pull` and read the plan as published.
 
 ### 1. What is watching or listening, right now
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-15.** `crates/alo-in-use`: `InUse::read_from` is the
+only way to a live value, and the only thing it reads is a `Streams` — the
+machine's own media server, reached by `TheMediaServer` through the rented
+server's own record of its graph (`heard.rs`). A use is a running source and who
+is using it is whoever is linked to it, so a camera and a shared screen are told
+apart by the server rather than guessed; nothing an application can write about
+itself reaches alo OS's answer or the agent's. Every use the server answered is
+kept — a source nothing is recorded reading is listed as *something on this
+machine* rather than dropped, and a machine that cannot ask refuses in words
+rather than reading as a quiet room. A `Line` is mark, sentence and position
+before it is a colour, and is terracotta only for the agent (ADR 0010).
+`tests/two_lines_and_neither_is_the_other.rs` holds this indicator and the egress
+one apart. The on-a-machine test is
+`tests/a_stream_through_the_media_server_is_listed.rs`; it opens a stream through
+the rented server with no portal involved, and **skips with a sentence on a host
+with no media server**, which is every host this repository has —
+`docs/autonomy/updates/what-is-watching-or-listening.md` says what is owed on
+hardware. **Depends on:** nothing.
 
 ★ The indicator comes first, before any capture exists, so that nothing can be
 built that captures without it.

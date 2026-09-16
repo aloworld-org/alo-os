@@ -420,6 +420,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-in-use"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-applications",
+ "alo-capability",
+ "alo-egress",
+ "alo-indicator",
+ "alo-saying",
+ "alo-strings",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-indicator"
 version = "0.0.1"
 dependencies = [
@@ -707,6 +722,7 @@ dependencies = [
  "alo-finding",
  "alo-granted",
  "alo-greeting",
+ "alo-in-use",
  "alo-indicator",
  "alo-installer",
  "alo-installing",

@@ -103,7 +103,7 @@ impl Rented {
 /// is missing from it today is deliberate rather than forgotten: `aya` and
 /// `libbpf` belong to a decision (ADR 0015) that has not been built, and a name
 /// on this list before the thing exists would be a rule nobody could check.
-pub const EVERYTHING_WE_RENT: [Rented; 16] = [
+pub const EVERYTHING_WE_RENT: [Rented; 17] = [
     Rented::we_rent(
         "Ollama",
         "the model runtime a question put to this machine is answered by (ADR 0006)",
@@ -143,6 +143,12 @@ pub const EVERYTHING_WE_RENT: [Rented; 16] = [
     Rented::we_rent(
         "serde",
         "what turns alo OS's own files into values and back",
+    ),
+    Rented::we_rent(
+        "PipeWire",
+        "the media server sound and video go through, and whose record of what is open is what \
+         `alo-in-use` reads to say whether the screen, the camera or the microphone is being used \
+         (ADR 0011)",
     ),
 ];
 

@@ -35,6 +35,7 @@ alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-granted = { path = "../alo-granted" }
 alo-greeting = { path = "../alo-greeting" }
+alo-in-use = { path = "../alo-in-use" }
 alo-indicator = { path = "../alo-indicator" }
 alo-installer = { path = "../alo-installer" }
 alo-installing = { path = "../alo-installing" }
