@@ -6,7 +6,8 @@
 //!
 //! - **the initramfs's list** (`alo-installing.conf`) has to carry every program
 //!   this crate runs, at the path it runs it from, and the pin and key where
-//!   `alo_installing::WHERE_IT_IS` reads them;
+//!   `alo_installing::WHERE_IT_IS` reads them, and the programs `bootc install`
+//!   itself finishes with once the image is on the disk;
 //! - **the units** have to start this program, and the target has to be the one
 //!   the loader names, and the service has to run under the environment bound
 //!   again (`run-alo-installing-root.mount`), because the sandbox `bootc
@@ -381,5 +382,63 @@ fn the_roots_unit_is_built_into_the_environment() {
     assert!(
         !alo_image::TheEnvironment::read(&without, &image)
             .copies(&format!("image/installing/{THE_ROOTS_UNIT}"), &landing)
+    );
+}
+
+/// **What `bootc install` finishes with, from the environment rather than from
+/// the image it deployed**: after the boot loader, bootc 1.15.1 trims each file
+/// system it made (`fstrim`), remounts it read-only (`mount`), freezes and thaws
+/// it (`fsfreeze`), and unmounts them all (`umount`) — each started by name, with
+/// nothing said around a failure to start it.
+///
+/// Measured in a virtual machine on 2026-09-16: with `fstrim` missing from the
+/// initramfs, the image deployed and the install then ended *No such file or
+/// directory (os error 2)*, naming no program (`docs/quirks.md`, *`bootc install`
+/// ends "No such file or directory" when the environment lacks `fstrim`*).
+const WHAT_THE_INSTALLER_FINISHES_WITH: [&str; 4] = [
+    "/usr/sbin/fstrim",
+    "/usr/bin/mount",
+    "/usr/sbin/fsfreeze",
+    "/usr/bin/umount",
+];
+
+/// What the list is missing of what the installer finishes with.
+fn missing_for_finishing(list: &str) -> Vec<&'static str> {
+    let installed = installed_by(list);
+    WHAT_THE_INSTALLER_FINISHES_WITH
+        .into_iter()
+        .filter(|program| !installed.iter().any(|item| item == program))
+        .collect()
+}
+
+/// **The initramfs carries what the installer finishes with**, so an install
+/// that has written the image does not end at the step that makes the disk
+/// clean to start.
+#[test]
+fn the_initramfs_carries_what_the_installer_finishes_with() {
+    assert_eq!(
+        missing_for_finishing(&the_recipes("alo-installing.conf")),
+        Vec::<&str>::new()
+    );
+}
+
+/// **A list that dropped one of them is caught**, each on its own — `fstrim`
+/// first, because it is the one the install of 2026-09-16 stopped at.
+#[test]
+fn a_list_missing_what_the_installer_finishes_with_is_caught() {
+    let list = the_recipes("alo-installing.conf");
+    for program in WHAT_THE_INSTALLER_FINISHES_WITH {
+        let dropped = list.replace(&format!(" {program} "), " ");
+        assert_ne!(dropped, list, "the list no longer names {program}");
+        assert_eq!(missing_for_finishing(&dropped), vec![program]);
+    }
+    let commented = list.replace(
+        "install_items+=\" /usr/sbin/fstrim",
+        "# install_items+=\" /usr/sbin/fstrim",
+    );
+    assert_ne!(commented, list);
+    assert_eq!(
+        missing_for_finishing(&commented),
+        vec!["/usr/sbin/fstrim", "/usr/bin/umount"]
     );
 }

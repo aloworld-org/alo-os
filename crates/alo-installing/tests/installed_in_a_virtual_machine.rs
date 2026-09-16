@@ -834,13 +834,58 @@ fn said(serial: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// Wait for a machine to power itself off, or kill it and fail.
-fn powered_off(mut machine: Child, within: Duration, serial: &Path) {
+/// Whether what the serial line has said so far is a machine that will wait for
+/// a person rather than power itself off — `waiting`, said on a line of its own.
+///
+/// An environment that could not install says its refusal, then `waiting`, and
+/// stays on until somebody turns it off. On 2026-09-16 the install test did not
+/// know that and waited out its whole deadline — 71 minutes after the failure
+/// was already on the serial line, and it would have been hours more under
+/// emulation. A sentence quoted inside another line is not the environment
+/// saying it.
+fn waits_for_a_person(told: &str, waiting: &str) -> bool {
+    told.lines().any(|line| line.trim() == waiting)
+}
+
+/// What the installed machine said about why its services are as they are:
+/// their status and their journal, between the markers the watching unit prints.
+///
+/// On 2026-09-16 the first installed disk to boot under Secure Boot reported
+/// `alo-agentd.service` as `failed` and nothing else, because the machine's own
+/// console is not the serial line; the failure says why from now on.
+fn why_it_said(told: &str) -> String {
+    let Some((_, after)) = told.split_once("ALO-WHY-BEGIN") else {
+        return "nothing: the watching unit never reached its account of why".to_owned();
+    };
+    after
+        .split_once("ALO-WHY-END")
+        .map_or(after, |(why, _)| why)
+        .replace('\r', "")
+        .trim()
+        .to_owned()
+}
+
+/// Wait for a machine to power itself off, or kill it and fail — at once, when
+/// it has said `waiting` and so never will ([`waits_for_a_person`]).
+fn powered_off(mut machine: Child, within: Duration, serial: &Path, waiting: Option<&str>) {
     let began = Instant::now();
     loop {
         if let Some(status) = machine.try_wait().expect("the machine can be asked") {
             assert!(status.success(), "the machine ended with {status}");
             return;
+        }
+        if let Some(waiting) = waiting {
+            let told = said(serial);
+            if waits_for_a_person(&told, waiting) {
+                drop(machine.kill());
+                drop(machine.wait());
+                panic!(
+                    "the machine said it could not finish and is waiting for a person, after \
+                     {:?}; its serial line ends:\n{}",
+                    began.elapsed(),
+                    &told[told.len().saturating_sub(4000)..]
+                );
+            }
         }
         if began.elapsed() > within {
             drop(machine.kill());
@@ -941,6 +986,7 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         started(&arguments),
         processor.allowing(Duration::from_secs(60 * 60)),
         &serial,
+        Some(&english("installing.restart-when-ready")),
     );
 
     let told = said(&serial);
@@ -998,6 +1044,11 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
          Type=oneshot\n\
          ExecStartPre=/usr/bin/sleep 30\n\
          ExecStart=/usr/bin/systemctl show --property=Id,ActiveState,SubState alo-boundaryd.service alo-agentd.service\n\
+         ExecStart=-/usr/bin/echo\n\
+         ExecStart=-/usr/bin/echo ALO-WHY-BEGIN\n\
+         ExecStart=-/usr/bin/systemctl status --no-pager --full --lines=0 alo-boundaryd.service alo-agentd.service user@1000.service\n\
+         ExecStart=-/usr/bin/journalctl --boot --no-pager --output=short-monotonic --lines=80 --unit=alo-boundaryd.service --unit=alo-agentd.service --unit=user@1000.service\n\
+         ExecStart=-/usr/bin/echo ALO-WHY-END\n\
          ExecStartPost=/usr/bin/systemctl --no-block poweroff\n\
          StandardOutput=file:/dev/ttyS0\n\
          StandardError=file:/dev/ttyS0\n",
@@ -1010,6 +1061,7 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         started(&arguments),
         processor.allowing(Duration::from_secs(20 * 60)),
         &serial,
+        None,
     );
 
     let told = said(&serial);
@@ -1028,7 +1080,9 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
             block.lines().any(|line| line == "ActiveState=active")
                 && (unit != "alo-agentd.service"
                     || block.lines().any(|line| line == "SubState=running")),
-            "{unit} is not running on the installed machine:\n{block}"
+            "{unit} is not running on the installed machine:\n{block}\n\nwhy, as the machine \
+             said it:\n{}",
+            why_it_said(&told)
         );
     }
     the_first_disk_is_unchanged(&windows, &before, "when alo OS booted");
@@ -1478,4 +1532,53 @@ fn the_stager_copies_the_environment_it_was_handed() {
             outside.display()
         );
     }
+}
+
+/// **An install that could not finish ends the wait when it says so**: the
+/// serial line of 2026-09-16's run, which ended *could not be installed* and
+/// then waited for a person, is a machine waiting; a run still installing, one
+/// that finished, and one that only quotes the sentence inside another line are
+/// not.
+#[test]
+fn an_install_that_could_not_finish_ends_the_wait_when_it_says_so() {
+    let waiting = english("installing.restart-when-ready");
+    let failed = format!(
+        "\r\n{}\r\n\r\n/usr/bin/bootc: Deploying container image...done (3 minutes)\r\n\
+         \r\n/usr/bin/bootc: error: Installing to disk: No such file or directory (os error 2)\r\n\
+         \r\n{}\r\n\r\n{waiting}\r\n[ 2894.875975] EXT4-fs (vdb3): unmounting filesystem.\r\n",
+        english("installing.installing"),
+        english("installing.not-installed"),
+    );
+    assert!(waits_for_a_person(&failed, &waiting));
+
+    let still = format!(
+        "\r\n{}\r\n\r\n{}\r\n",
+        english("installing.installing"),
+        english("installing.still-installing")
+    );
+    assert!(!waits_for_a_person(&still, &waiting));
+    let finished = format!("{still}\r\n{}\r\n", english("installing.installed"));
+    assert!(!waits_for_a_person(&finished, &waiting));
+    let quoted = format!("{still}/usr/bin/bootc: the console said \"{waiting}\"\r\n");
+    assert!(!waits_for_a_person(&quoted, &waiting));
+}
+
+/// **A service that is not running is reported with the machine's own account of
+/// why**: what lies between the watching unit's markers, without the serial
+/// line's carriage returns — the rest of what it said is not the reason — and
+/// saying plainly when the unit never got that far.
+#[test]
+fn a_service_that_is_not_running_is_reported_with_why() {
+    let told = "Id=alo-agentd.service\r\nActiveState=failed\r\nSubState=failed\r\n\r\n\
+                ALO-WHY-BEGIN\r\n\u{d7} alo-agentd.service - alo OS agent service\r\n\
+                [   41.0] alo-agentd[812]: the record's folder is not there\r\n\
+                ALO-WHY-END\r\n[   45.1] reboot: Power down\r\n";
+    let why = why_it_said(told);
+    assert!(why.starts_with('\u{d7}'), "{why}");
+    assert!(why.ends_with("the record's folder is not there"), "{why}");
+    assert!(!why.contains('\r') && !why.contains("ActiveState") && !why.contains("Power down"));
+
+    let cut_short = "Id=alo-agentd.service\nALO-WHY-BEGIN\nthe journal began";
+    assert_eq!(why_it_said(cut_short), "the journal began");
+    assert!(why_it_said("Id=alo-agentd.service\nActiveState=failed\n").starts_with("nothing"));
 }

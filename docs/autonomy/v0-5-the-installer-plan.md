@@ -547,9 +547,9 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** ready. **Depends on:** 2, 13 — its acceptance boots a virtual-machine
-install, and none has yet been seen to finish: task 12 answered the bootloader's
-sandbox fault, and task 13 runs the install.
+**Status:** ready. **Depends on:** 2, 14 — its acceptance boots a virtual-machine
+install to `alo-agentd`: task 13 saw an install finish and the disk boot under
+Secure Boot on 2026-09-16, and `alo-agentd` failed there, which is task 14.
 
 Added 2026-09-16 by [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md),
 accepted that day: ★ *undo what the agent did* rewinds from the base's own
@@ -622,11 +622,27 @@ rather than assumes it.
 
 ### 13. With Secure Boot on, the install onto the second disk finishes and boots to the agent service
 
-**Status:** ready — on the third PC, with the emulated run already done outside
-any worker's limit (below), so the worker starts from its serial line. It was
-scheduled for a machine with at least 15 GB free and either hardware
+**Status:** **Done, 2026-09-16**, for the part this task ends at since its split
+(`updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`):
+**with Secure Boot on, the install onto the second disk finishes, and the second
+disk boots.** The *No such file or directory* was `bootc` starting `fstrim` to
+finish the file systems it made, which nothing put in the initramfs; it is in
+`docs/quirks.md` with both consoles, `alo-installing.conf` carries it, and
+`crates/alo-installing/tests/what_the_environment_carries.rs` refuses a list
+without it or the three programs beside it. The run after the change, emulated,
+said *alo OS is installed* after 46 minutes with the first disk unchanged; the
+installed disk then started through the base's signed shim with Secure Boot on
+and reported `alo-boundaryd` active — and **`alo-agentd` failed**, which is task
+14. The test now ends the moment an install says it could not finish, and prints
+the installed machine's own account of why a service is not running. **Split,
+2026-09-16:** one emulated run is most of an hour, and the worker had spent its
+limit on it. **Depends on:** 12.
+
+*Before it was done:* ready on the third PC, with the emulated run already done
+outside any worker's limit (below), so the worker starts from its serial line. It
+was scheduled for a machine with at least 15 GB free and either hardware
 virtualisation or a worker limit that holds one emulated run beside building the
-environment. **Depends on:** 12.
+environment.
 
 Split from task 12 on 2026-09-16. The bootloader's sandbox now pivots in the
 environment (task 12); nothing after that step has yet been seen to run, so the
@@ -667,3 +683,48 @@ the way `alo-updating`'s test ends on *Freezing execution*.
   checks for 15 GB free before every run and removes the run's disks and images
   when it ends, pass or fail. If a single run cannot fit inside the worker's limit,
   that is a finding for the plan, not a reason to leave a run behind.
+
+### 14. The disk installed under Secure Boot runs the agent service
+
+**Status:** ready — on the third PC, or any machine with 15 GB free that holds one
+emulated install run (about an hour) inside a worker's limit, or has hardware
+virtualisation. **Depends on:** 13.
+
+Split from task 13 on 2026-09-16. With Secure Boot on, the environment installed
+the pinned release onto the second disk (*alo OS is installed*, the first disk
+unchanged), and the installed disk started through the base's own signed shim and
+loader. The test's watching unit, handed over through the firmware tables with a
+drop-in that starts `user@1000.service` the way a sign-in would, then said:
+
+```
+Id=alo-boundaryd.service
+ActiveState=active
+SubState=exited
+
+Id=alo-agentd.service
+ActiveState=failed
+SubState=failed
+```
+
+and nothing more, because the installed machine's console is not the serial line.
+From 2026-09-16 the same unit prints `systemctl status` and the boot's journal for
+`alo-boundaryd`, `alo-agentd` and `user@1000.service` between `ALO-WHY-BEGIN` and
+`ALO-WHY-END`, and the test's failure quotes it — so the next run says why rather
+than that. Whether the fault is the image (its units, `alo` user, tmpfiles, the
+machine description), the test's stand-in for a sign-in, or the boundary on this
+kernel under emulation is this task's to show from that run, not to assume.
+
+- **Acceptance:**
+  `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+  passes **with Secure Boot on** — the whole test, including *the first disk is
+  unchanged when alo OS booted*, which the run of 2026-09-16 never reached — with
+  the run pasted into the report. Why `alo-agentd` failed goes into
+  `docs/quirks.md` with the machine's own account of it. If the fault is in the
+  image, it is fixed there with its own test in the crate that holds that file;
+  if it is the test's stand-in for a sign-in, the stand-in changes and the report
+  says why a real sign-in is not affected.
+- **Constraint:** Secure Boot is never switched off to make the test pass (ADR 0033
+  §4). No shim, loader or installer is patched or built by us (ADR 0011), and
+  nothing on the installed disk is changed by the test to make a service start. A
+  worker checks for 15 GB free before every run and removes the run's disks and
+  images when it ends, pass or fail.

@@ -826,6 +826,74 @@ yet run, because one emulated run needs a machine with room for its disks.
 root it can pivot from.
 **Date:** 2026-09-16.
 
+### bootc 1.15.1 — `bootc install` ends "No such file or directory" when the environment lacks `fstrim`
+**Version:** bootc 1.15.1 as `quay.io/fedora/fedora-bootc:42@sha256:077182b6…`
+ships it, inside `image/installing/`'s initramfs under the bound root of the entry
+above; util-linux 2.40.4-10.fc42; QEMU q35 with Fedora's
+`edk2-ovmf-20250812-21.fc42`, **Secure Boot enabled**, processor emulated (TCG);
+release `0.0.1` pulled by its pinned digest. 2026-09-16.
+**Behaviour:** with the bootloader's sandbox pivoting, the install ran further than
+it ever had, and then ended with an error that names no program and no path. The
+run's console (the installer plan's task 13, kept on the third PC as
+`C:\dev\setup\task13-install-run.log`):
+
+```
+[    0.000000] secureboot: Secure boot enabled
+Installing alo OS onto virtio-alo-target. Everything that was on that disk is being replaced. …
+Still installing alo OS. Leave the computer on            (46 times, one a minute)
+/usr/bin/bootc: mke2fs 1.47.2 (1-Jan-2025)
+/usr/bin/bootc: Deploying container image...done (3 minutes)
+/usr/bin/bootc: error: Installing to disk: No such file or directory (os error 2)
+alo OS could not be installed onto virtio-alo-target. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
+You can turn this computer off or restart it now
+[ 2894.875975] EXT4-fs (vdb3): unmounting filesystem 8c600da7-….
+```
+
+**Located:** bootc attaches a context to every step it names — *Installing
+bootloader*, *Querying for bootupd*, *Writing aleph version*, *Opening deployment
+dir* — and anyhow prints every context in the chain, so an error carrying only the
+outermost one, *Installing to disk* (`install_to_disk`), came from a call inside it
+that adds none. In bootc 1.15.1's `crates/lib/src/install.rs` those are, after the
+deploy: the bound images (none in this release), the image store's labels
+(SELinux is off in the environment), and **`finalize_filesystem`**, which for each
+file system it made runs `Task::new("Trimming root", "fstrim")`, then `mount -o
+remount,ro`, then `fsfreeze -f` and `-u` — and `install_to_disk` then runs `umount
+-R`. `Task::run` starts its program with a bare `cmd.spawn()?`, so a program that is
+not there is exactly `No such file or directory (os error 2)` with nothing around it.
+Of the four, the initramfs's list (`alo-installing.conf`) named `mount` and
+`fsfreeze`; dracut's own `base` module brings `umount`; and **nothing brought
+`fstrim`**: `grep -rlw fstrim /usr/lib/dracut/` in the pinned base finds no module
+that installs it. The ext4 unmount on the console's last line is the kernel
+tearing down the mounts bootc left when it exited, which fits a failure at the
+step before its own `umount`.
+**Our response:** none to the engines (ADR 0011). `alo-installing.conf` carries
+`/usr/sbin/fstrim` and, named rather than left to a dracut module, `/usr/bin/umount`;
+`lsinitrd` of the rebuilt initramfs lists `usr/bin/fstrim`, `usr/bin/mount`,
+`usr/bin/fsfreeze` and `usr/bin/umount`.
+`crates/alo-installing/tests/what_the_environment_carries.rs` holds the list to
+all four (*what the installer finishes with*) and refuses a list without each one.
+With them carried, the same test on the same machine, Secure Boot on, said:
+
+```
+[   71.936408] EXT4-fs (vdb3): mounted filesystem 70b9e529-… r/w with ordered data mode.
+Still installing alo OS. Leave the computer on            (44 times)
+[ 2777.778647] EXT4-fs (vdb3): re-mounted 70b9e529-… ro.
+alo OS is installed. This computer restarts in a few seconds
+[ 2795.317208] EXT4-fs (vdb3): unmounting filesystem 70b9e529-….
+```
+
+— the read-only remount is `finalize_filesystem`'s second step, after `fstrim`, and
+the installed disk then booted with Secure Boot on (the installer plan's task 13
+report,
+`docs/autonomy/updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`).
+The same run found a fault in the test rather than the environment: after a failed
+install the environment waits for a person and never powers off, and the test
+waited out its whole deadline, 71 minutes past the failure; it now ends the moment
+the environment says *You can turn this computer off or restart it now*.
+**Upstream:** a missing program named in the error would have saved a run; bootc's
+`Task` could say which program it could not start. Not filed from here.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by
