@@ -311,7 +311,16 @@ mod tests {
             );
             assert!(record.is_empty());
 
-            let line = said.written().unwrap();
+            // The machine's own port is advertised on purpose, and this machine
+            // picks it: on 2026-09-16 it came up as 42989, which contains the
+            // mode below, and the run failed for a coincidence rather than for a
+            // leak — twice, so the loop read it as the work. It is taken out
+            // before the line is searched, because what this looks for is the
+            // refused file's path, owner and mode, and the port is none of them.
+            let line = said
+                .written()
+                .unwrap()
+                .replace(&format!("\"port\":{}", wire.port()), "\"port\":0");
             let folder = file.parent().unwrap().to_string_lossy().into_owned();
             for leaked in [
                 folder.as_str(),
