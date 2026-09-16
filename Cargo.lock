@@ -207,6 +207,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-capturing"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-capability",
+ "alo-clipboard",
+ "alo-in-use",
+ "alo-portals",
+ "alo-saying",
+ "alo-strings",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-changing"
 version = "0.0.1"
 dependencies = [
@@ -713,6 +728,7 @@ dependencies = [
  "alo-approving",
  "alo-asking",
  "alo-capability",
+ "alo-capturing",
  "alo-changing",
  "alo-choosing",
  "alo-clipboard",

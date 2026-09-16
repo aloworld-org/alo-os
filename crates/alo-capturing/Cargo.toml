@@ -1,0 +1,56 @@
+[package]
+name = "alo-capturing"
+version = "0.0.1"
+description = "A screenshot: the whole screen, one window or a selected region, taken through the rented screen-capture mechanism and written to a file in a folder the person chose or to the clipboard."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What is watching or listening. A capture of alo OS's own announces itself to
+# the machine's media server under the names `alo_in_use::heard` reads, so the
+# screenshot is on the indicator **because it is a stream on the machine's own
+# graph** rather than because this crate says it is. One definition of those
+# names, so an announcement and the reading of it cannot drift.
+alo-in-use = { path = "../alo-in-use" }
+
+# What judges an application's request. A screenshot asked for through the
+# portal is `alo_portals::Request::judged` against the grants and nothing else;
+# no rule about who may photograph a screen is written here.
+alo-portals = { path = "../alo-portals" }
+
+# The grants an application's request is judged against. Named here because
+# `Asked::judged` takes one; nothing in this crate holds a mutable one, and
+# nothing here decides what a grant covers.
+alo-capability = { path = "../alo-capability" }
+
+# Where a screenshot goes when it does not go to a file. A picture on the
+# clipboard is a clipboard payload — `Kind::image_png` and an owner that hands
+# the bytes over — and not a second mechanism of this crate's own.
+alo-clipboard = { path = "../alo-clipboard" }
+
+# Everything a person reads: what happened to the picture, and every way it did
+# not happen.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, for its refusals and for the error its own
+# string list can return to whoever is fixing that list.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary: this crate's own tests are written against its
+# own list, and the integration test asks the question that list cannot —
+# whether what this crate says is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+# The media server's record, written as the server writes it, so the indicator
+# test asks `alo-in-use` the question a machine would ask it.
+serde_json = { workspace = true }
+
+# The one palette (ADR 0010), so the indicator test can say which colour alo
+# OS's own picture of the screen is drawn in — and that it is not the agent's.
+alo-appearance = { path = "../alo-appearance" }
+
+[lints]
+workspace = true

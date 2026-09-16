@@ -68,6 +68,21 @@
 //! even this. Tightening it means comparing the connection's process against
 //! alo OS's own, which is a thing to measure on a machine rather than to assume
 //! in a file.
+//!
+//! # Why the names the record is written in are public
+//!
+//! They are read here and **announced elsewhere**. A capture alo OS takes of
+//! its own screen has to appear on this indicator like anybody else's, and the
+//! only honest way for that to be true is for the capture to open a stream on
+//! the machine's own graph, announcing itself under the same names this file
+//! reads back — `crates/alo-capturing` does exactly that. Two spellings of
+//! `application.id`, one in each crate, would be a drift nobody notices until
+//! the day alo OS's own screenshot is the one use this indicator does not show.
+//!
+//! So the names are declared once, here, where the argument about which of them
+//! may be believed already lives. This file is still the only place that knows
+//! how the server writes things down; what is public is the vocabulary, not a
+//! second reading of it.
 
 use std::collections::BTreeMap;
 
@@ -81,10 +96,10 @@ use crate::used::Used;
 use crate::uses::{Use, UseId};
 
 /// What the record calls a node.
-const A_NODE: &str = "PipeWire:Interface:Node";
+pub const A_NODE: &str = "PipeWire:Interface:Node";
 
 /// What the record calls a link.
-const A_LINK: &str = "PipeWire:Interface:Link";
+pub const A_LINK: &str = "PipeWire:Interface:Link";
 
 /// What the record calls an audio source: the microphone.
 const AN_AUDIO_SOURCE: &str = "Audio/Source";
@@ -94,10 +109,10 @@ const A_VIDEO_SOURCE: &str = "Video/Source";
 
 /// What the record calls a client producing video into the graph: a picture of
 /// the screen, offered to whatever is reading it.
-const VIDEO_INTO_THE_GRAPH: &str = "Stream/Output/Video";
+pub const VIDEO_INTO_THE_GRAPH: &str = "Stream/Output/Video";
 
 /// What the record says the state of a node that is capturing is.
-const RUNNING: &str = "running";
+pub const RUNNING: &str = "running";
 
 /// The property the machine stamps a sandboxed application's identity into.
 ///
@@ -106,13 +121,13 @@ const RUNNING: &str = "running";
 const THE_STAMPED_IDENTITY: &str = "pipewire.access.portal.app_id";
 
 /// The property a client writes its own identifier into.
-const WHAT_IT_CALLS_ITSELF: &str = "application.id";
+pub const WHAT_IT_CALLS_ITSELF: &str = "application.id";
 
 /// The property a client writes its own name into.
 const WHAT_IT_IS_CALLED: &str = "application.name";
 
 /// The name of a node, used as an identifier when a client wrote none.
-const THE_NODE_NAME: &str = "node.name";
+pub const THE_NODE_NAME: &str = "node.name";
 
 /// The identifier alo OS's own components connect under.
 ///

@@ -73,7 +73,29 @@ built that captures without it.
 
 ### 2. A screenshot: the screen, a window, a region — to a file or the clipboard
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-16.** `crates/alo-capturing`: a `Screenshot` is a
+value that **may** be taken — `Screenshot::of` is the constructor, and the lock
+screen and another person's window are refusals of it, so a picture that may not
+be taken is not a value that exists and then declines. `Screenshot::take` is the
+only thing that can reach `Grabs`, the rented screen-capture mechanism, and it is
+told a rectangle and nothing else: not what was captured, not where the picture
+is going. `TheScreenCast` reads one frame **through the machine's own media
+server**, announcing itself under the names `alo_in_use::heard` reads
+(`announcing.rs`), so the screenshot is on task 1's indicator *because it is a
+stream like anybody else's* rather than because this crate says so —
+`tests/a_picture_of_the_screen_is_on_the_indicator.rs` walks that path through
+`InUse::read_from`. `WhereItGoes` has three answers and one of them is *both*,
+which only somebody asking produces; the file is created rather than opened, so
+nothing already in the folder is touched; and its name is the date and the time
+with **no word in it in any language** (`naming.rs`). An application asks through
+`Asked`, and `ForAnApplication` — the only value with a `take` on it for an
+application — can be built only from an allowed `alo_portals::Request::judged`.
+GStreamer joined `alo-saying`'s rented list (17 → 18) beside PipeWire. **What is
+owed on hardware** is the same measurement task 1 owes, and one more: the
+pipeline in `the_screen_cast.rs` is written from the rented tools' documented
+interfaces and has never run against them —
+`docs/autonomy/updates/a-picture-of-the-screen.md` says exactly what to take, in
+order, on a machine that has them. **Depends on:** 1.
 
 - **Acceptance:** `alo-capturing` takes the whole screen, one window or a selected
   region through the rented screen-capture mechanism, and writes it **to a file in a
