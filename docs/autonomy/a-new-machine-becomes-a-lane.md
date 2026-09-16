@@ -36,8 +36,8 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-where-a-persons-settings-are-kept-plan.md` | this PC, lane B (`alo-os-b`), when a slot frees | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
 | `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
 | `v0-5-the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
-| `v0-5-documents-and-paper-plan.md` | third PC, when the owner's documents arrive | `alo-printing`, `alo-opening` |
-| `v0-5-the-shell-plan.md` (tasks 6–14) | **this PC (`alo-os-shell` checkout), from 2026-09-16**, the one owner of `alo-shell` — the graphics libraries its gates need are already here | `alo-shell`, `tools/graphics-check` |
+| `v0-5-documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
+| `v0-5-the-shell-plan.md` (tasks 7–14) | **paused 2026-09-16**, its settings task published and every remaining task blocked on another plan's crates; the next machine to free a lane takes it, and it stays the one owner of `alo-shell` | `alo-shell`, `tools/graphics-check` |
 | `v0-5-access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
 | `v0-5-models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
 | `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
