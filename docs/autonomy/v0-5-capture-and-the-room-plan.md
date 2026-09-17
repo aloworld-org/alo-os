@@ -110,7 +110,7 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 3. Annotation, without opening anything else
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-17.** **Depends on:** 2.
 
 - **Acceptance:** a screenshot can be marked — arrows, rectangles, freehand, text,
   and a blur for what should not be shown — as a closed list of marks this crate

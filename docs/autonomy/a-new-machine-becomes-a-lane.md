@@ -42,10 +42,10 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
 | `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
 | `v0-5-the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
-| `v0-5-capture-and-the-room-plan.md` | **spare PC two**, first — its task 1 unblocks two other plans | `alo-capturing`, `alo-in-use` (new) |
+| `v0-5-capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it | `alo-capturing`, `alo-in-use` |
 | `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
 | `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
-| `v0-5-devices-and-media-plan.md` | spare PC two, fourth — or whichever machine empties first | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power` (new) |
+| `v0-5-devices-and-media-plan.md` | **nobody, as of 2026-09-17** — whichever machine empties first. Spare PC two holds no plan now: the machine that keeps itself was reassigned on 2026-09-15, and capture and the room moved to the Mac on 2026-09-17 | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power` (new) |
 
 **Why this division.** The Mac holds the small model and runs no virtual machine
 well, so it takes the plans that need a model and no hardware: access and language

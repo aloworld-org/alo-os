@@ -240,7 +240,60 @@ pub const EVERY_REFUSAL: [Word; 10] = [
 ];
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 13] = [
+/// The arrow tool.
+pub const AN_ARROW: Word = Word::saying("capturing.mark.arrow", "Arrow").noting(
+    "A tool for marking a screenshot: a line with a point at one end, for showing somebody where \
+     to look.",
+);
+
+/// The rectangle tool.
+pub const A_BOX: Word = Word::saying("capturing.mark.box", "Box").noting(
+    "A tool for marking a screenshot: an outline round part of the picture, drawn over it and \
+     not filled in.",
+);
+
+/// The freehand tool.
+pub const DRAWN_BY_HAND: Word = Word::saying("capturing.mark.freehand", "Draw").noting(
+    "A tool for marking a screenshot: a line that follows the pointer, as if drawn with a pen.",
+);
+
+/// The text tool.
+pub const WORDS_ON_IT: Word = Word::saying("capturing.mark.text", "Add words").noting(
+    "A tool for marking a screenshot: the person types on the picture. What they type is theirs \
+     and is never translated.",
+);
+
+/// The blur tool, which destroys.
+pub const HIDE_WHAT_IS_THERE: Word = Word::saying(
+    "capturing.mark.blur",
+    "Hide this — it cannot be brought back once you save",
+)
+.noting(
+    "A tool for marking a screenshot, and the only one that changes the picture itself. What it \
+     covers is destroyed in the saved file so that nobody can recover it by opening the file in \
+     another program — which is why the sentence says so on the tool rather than in a warning \
+     afterwards. Before saving it can still be taken off. Do not translate it as blurring or \
+     softening, which sound reversible.",
+);
+
+/// **The five tools for marking a screenshot**, as a group of their own.
+///
+/// They are not messages a machine announces; they are what a person picks up.
+/// The group exists so that the test which walks the list cannot be satisfied
+/// by a tool that nothing offers.
+pub const EVERY_TOOL: [Word; 5] = [
+    AN_ARROW,
+    A_BOX,
+    DRAWN_BY_HAND,
+    WORDS_ON_IT,
+    HIDE_WHAT_IS_THERE,
+];
+
+/// Every string this crate can say, in the order this file declares them.
+///
+/// The three groups above are this list, divided by what a person is doing when
+/// they read one: told something, refused something, or picking up a tool.
+pub const EVERY_WORD: [Word; 18] = [
     SAVED,
     COPIED,
     SAVED_AND_COPIED,
@@ -254,6 +307,11 @@ pub const EVERY_WORD: [Word; 13] = [
     NOTHING_READS_THE_SCREEN,
     NO_PICTURE,
     NOTHING_CAME_BACK,
+    AN_ARROW,
+    A_BOX,
+    DRAWN_BY_HAND,
+    WORDS_ON_IT,
+    HIDE_WHAT_IS_THERE,
 ];
 
 /// The area every key in this crate is under.
@@ -345,11 +403,15 @@ mod tests {
         let grouped: BTreeSet<&str> = EVERY_TOLD
             .iter()
             .chain(EVERY_REFUSAL.iter())
+            .chain(EVERY_TOOL.iter())
             .map(|word| word.named())
             .collect();
         let everything: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named()).collect();
         assert_eq!(grouped, everything);
-        assert_eq!(EVERY_TOLD.len() + EVERY_REFUSAL.len(), EVERY_WORD.len());
+        assert_eq!(
+            EVERY_TOLD.len() + EVERY_REFUSAL.len() + EVERY_TOOL.len(),
+            EVERY_WORD.len()
+        );
     }
 
     /// Every one of them is in the area a reader can sort by, which is what
