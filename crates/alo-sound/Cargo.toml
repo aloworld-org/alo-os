@@ -15,5 +15,17 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
 
+[dev-dependencies]
+# The walk through a working day's devices meets all four of this plan's crates,
+# the grant an application holds, the road a file takes, and the machine's own
+# vocabulary — so the test that holds it holds the real ones.
+alo-bluetooth = { path = "../alo-bluetooth" }
+alo-cameras = { path = "../alo-cameras" }
+alo-capability = { path = "../alo-capability" }
+alo-measuring = { path = "../alo-measuring" }
+alo-opening = { path = "../alo-opening" }
+alo-power = { path = "../alo-power" }
+alo-saying = { path = "../alo-saying" }
+
 [lints]
 workspace = true

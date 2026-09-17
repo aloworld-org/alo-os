@@ -27,6 +27,18 @@
 //! `tests/a_bluetooth_pairing_grants_nothing.rs` holds it against the two crates
 //! that own the other meanings, by pairing a device and finding both untouched.
 
+/// **What a person is told about what pairing a device did**, which is said
+/// **once**, when they pair their first one.
+///
+/// Once, because it is a thing to know rather than a thing to be reminded of,
+/// and a machine that said it every time would be a machine asking to be
+/// clicked past. After the first device, the answer is [`None`] and a pairing is
+/// quiet — which is what a pairing that grants nothing should be.
+#[must_use]
+pub fn what_a_person_is_told(devices: &crate::reported::TheDevices) -> Option<crate::words::Word> {
+    (devices.paired().count() == 1).then_some(crate::words::NOT_A_MACHINE)
+}
+
 /// **What a Bluetooth pairing grants on this machine.**
 ///
 /// There is one value, it has no fields, and nothing in this crate returns

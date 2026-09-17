@@ -1109,6 +1109,13 @@ dependencies = [
 name = "alo-sound"
 version = "0.0.1"
 dependencies = [
+ "alo-bluetooth",
+ "alo-cameras",
+ "alo-capability",
+ "alo-measuring",
+ "alo-opening",
+ "alo-power",
+ "alo-saying",
  "alo-strings",
  "serde",
  "serde_json",

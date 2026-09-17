@@ -158,7 +158,17 @@ down past both marks. Written up in
 
 ### 6. Every sentence, and the walk through a working day's devices
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5.
+**Status:** **Done, 2026-09-17.** One walk — pair headphones, take a call, move it
+to them mid-call and back, mute, cover the camera, open a video file, run the
+battery down — held against the table in
+[The walk through a working day's devices](updates/the-walk-through-a-working-days-devices.md),
+which the test reads rather than a copy of. Twelve moments, nine sentences and
+three that say nothing; all thirty sentences of the four crates are in the
+machine's vocabulary with a note, and none names the rented stack. **Step 9 is a
+finding:** a video file reads today as *this machine does not recognise what this
+file is*, because `alo_opening::Kind` has no media kinds — the road ADR 0051's
+amendment chose needs them, and they belong beside task 1's codec list.
+**Depends on:** 1, 2, 3, 4, 5.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — pair Bluetooth headphones, join a call on the laptop's
