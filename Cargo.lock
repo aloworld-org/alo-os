@@ -282,6 +282,7 @@ name = "alo-capturing"
 version = "0.0.1"
 dependencies = [
  "alo-appearance",
+ "alo-applications",
  "alo-capability",
  "alo-clipboard",
  "alo-in-use",

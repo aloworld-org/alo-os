@@ -124,7 +124,11 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 4. Screen recording, with audio, to a file
 
-**Status:** ready. **Depends on:** 1, 2.
+**Status:** blocked — on `v0-5-devices-and-media-plan.md` task 1, the codec
+decision, which is `ready` and which **no machine holds**. This task's own
+constraint puts the encoder and format there, and that plan's constraint says a
+task that records a format it has not settled waits on it. Choosing one here
+would breach both.
 
 - **Acceptance:** a recording of the screen, a window or a region, with the
   microphone, the machine's sound, both or neither, chosen before it starts; it is
@@ -139,7 +143,7 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 5. Sharing the screen in a call
 
-**Status:** ready. **Depends on:** 1, 4.
+**Status:** blocked — behind task 4, and so behind the same codec decision.
 
 - **Acceptance:** a call application asking to share the screen receives exactly
   what the person picked — the whole screen, one window, or nothing — through the
@@ -153,7 +157,10 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 6. An agent and the screen
 
-**Status:** ready. **Depends on:** 1, 2.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2. **Finding:**
+`docs/contracts/agent-verbs.md` lists no verb that captures the screen, so no
+agent can reach it at all today; the road it would have to come down is built
+and refuses everything else, and the verb was **not** added here.
 
 The agent overlay offers *context on invocation* (v0.01) and never harvests. A
 screenshot is the most harvest-shaped thing a machine has.

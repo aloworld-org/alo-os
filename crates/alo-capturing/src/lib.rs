@@ -164,6 +164,7 @@
 pub mod announcing;
 pub mod asked;
 pub mod folder;
+pub mod for_the_agent;
 pub mod grabs;
 pub mod marking;
 pub mod naming;
@@ -189,6 +190,7 @@ mod testing;
 
 pub use asked::{Asked, ForAnApplication};
 pub use folder::Folder;
+pub use for_the_agent::ForTheAgent;
 pub use grabs::{Grabs, NotGrabbed};
 pub use marking::{Mark, Marks};
 pub use on_this_day::OnThisDay;
