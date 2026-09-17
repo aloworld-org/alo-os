@@ -4868,3 +4868,41 @@ costs is the gate run it was in, so a lane whose gates have gone quiet for much
 longer than usual is worth a look: `ps -eo stat,args | grep " D "` finds the
 uninterruptible thread, and `/proc/<tid>/stack` names the filesystem.
 **Date:** 2026-09-15.
+
+### Fixed-length lists of crates break when two lanes each add a crate
+**Version:** `crates/alo-saying/src/collecting.rs` (`EVERY_LIST`, `ONE_STRING_EACH`)
+and `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`
+(`WHO_DECLARES_THEM`), as of 2026-09-16.
+**Behaviour:** each list is a Rust array with its length in its type, such as
+`[&str; 41]`. When two lanes each add a crate in parallel, git merges both new
+entries cleanly, because they are on different lines, and leaves the declared length
+one short. The combined tree then does not compile (`expected an array with a size
+of 41, found one with a size of 42`). Git reports no conflict, and the break appears
+only when the combined tree is gated. It happened five times on 2026-09-16 across the
+two files, each costing a gate run and a hand-fixed count.
+**Our response, and the fix it needs:** the lengths were corrected from the entries
+each time. The lasting fix is for these lists to be slices, `&[&str]`, whose length is
+not written anywhere; the tests beside them already check every entry against the
+workspace, so nothing a fixed length proves is lost. `alo-saying` and `alo-by-hand`
+are not the lane's that found this, so the change is left to their owners.
+**Date:** 2026-09-16.
+
+### Tests leave their folders in /tmp, and enough of them slow a walk of the machine
+**Version:** the workspace test suite as gated on the third PC, 2026-09-16.
+**Behaviour:** tests in several crates make folders under `/tmp` and leave them when
+they finish. Names began `alo-printing-`, `alo-access-unit-`, `alo-keeping-said-`,
+`alo-access-test-`, `alo-keeping-disagrees-`, `alo-remembering-writable-` and
+`alo-agentd-…-naming-door`, among others. After a day of gate runs `/tmp` held 19,632
+entries. `alo-measuring`'s
+`naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so` walks `/`, and
+with that `/tmp` it ran for over forty minutes, busy on the processor, before it was
+stopped. With the old folders removed, the eight tests in its file passed in 23
+seconds. A plain `find / -xdev` over the same 393,000 entries took 3.7 seconds, so it
+is a directory with tens of thousands of direct children that the walk handles
+slowly, not the size of the machine.
+**Our response:** on the third PC, a sweep removes `alo-*` folders in `/tmp` older
+than two hours, every hour, so gates there stay fast. Two things belong to the
+crates' owners: tests that make a folder should remove it, pass or fail, and
+`alo-measuring`'s walk should be measured against a folder with tens of thousands of
+entries, because a person's machine can have one.
+**Date:** 2026-09-16.
