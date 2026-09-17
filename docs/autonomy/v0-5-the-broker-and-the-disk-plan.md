@@ -157,11 +157,39 @@ is. The update half of the acceptance below is task 8's, word for word.
 
 ### 5. Full-disk encryption, decided before it is built
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing. Report:
+`docs/autonomy/updates/full-disk-encryption-decided-before-it-is-built.md`;
+decision: ADR 0054, proposed.
 
-Nothing in this repository decides where the disk's key lives, and the answer decides
+Nothing in this repository decided where the disk's key lives, and the answer decides
 whether a stolen laptop is a stolen disk and whether a forgotten password is a lost
 machine.
+
+**Decided: the chip, with a PIN — and the recovery key is not optional.** ADR 0054
+sets out the three options against a stolen powered-off laptop, an evil maid, a
+forgotten password and a replaced motherboard, and recommends the key sealed to the
+machine's security chip and released when a PIN is typed, falling back to a
+passphrase on a machine whose chip cannot hold one. Measured in the pinned base and
+on a virtual disk: `bootc install to-disk --block-setup tpm2-luks` calls
+`systemd-cryptenroll --tpm2-device=auto` and nothing else — no PIN, no PCRs and **no
+recovery key** — so the flag fails this acceptance by its own words and is not used;
+`systemd-cryptenroll --recovery-key` prints 72 bytes on stdout, its English on
+stderr, and the key it made opened the volume while one character changed did not;
+and the signed-policy road for a boot chain that changes (PCR 11, `systemd-pcrlock`)
+needs a unified kernel image the base does not build, which is why the binding is
+PCR 7 and why an alo OS update cannot lock anybody out. Both measurements are in
+`docs/quirks.md`.
+
+`crates/alo-encrypting` (new, no dependencies at all) holds the shape:
+`TheChip` and `WhatToAskFor` choose the road; `Pin` (six characters, because the
+chip counts wrong answers) and `Passphrase` (twelve, because nothing counts them);
+`RecoveryKey`, read from what the tool printed and **consumed** by
+`RecoveryKey::written_back`; `WrittenDown`, which has no public maker anywhere;
+`THE_ROAD`, whose order puts the typed-back key before anything the person will
+unlock with; and `Enrolment`, whose one constructor takes a `WrittenDown`. What
+holds the acceptance is that last chain, read off the crate's own public surface by
+`tests/no_road_enrols_without_a_recovery_key_the_person_kept.rs` rather than
+asserted about one road a test walked.
 
 - **Acceptance:** a decision record, numbered after `git pull` when it is written, sets
   out the options — the key sealed to the TPM and released at boot with a PIN; a
@@ -176,6 +204,12 @@ machine.
   person to confirm they kept it**.
 - **Constraint:** proposed, and marked so; tasks 6 and 7 wait on it. No encryption is
   enrolled on any real disk by any test; everything is a virtual disk.
+- **What task 6 inherits from 5** (its report has the reasoning):
+  `alo_encrypting::THE_ROAD` is the sequence to turn into commands, in that order, and
+  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` **fails the day
+  ADR 0054 stops saying *proposed***, so a decision accepted and not built is a red
+  suite rather than a forgotten line. The recovery key comes off the tool's **stdout**
+  and its English off stderr, which is how the sentences stay task 7's.
 
 ### 6. Enrolled at install, and recovered
 

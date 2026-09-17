@@ -1,0 +1,21 @@
+[package]
+name = "alo-encrypting"
+version = "0.0.1"
+description = "What full-disk encryption is on this machine: how it is enrolled, where the key that opens it lives, and the key a person writes down to recover it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Nothing. Not one dependency, and the absence is the argument.
+#
+# A crate that holds a recovery key for the length of one screen must not be
+# able to write it anywhere, hand it to anything, or say it in a language it
+# does not own. With no dependency it cannot serialise a secret, cannot open a
+# socket, and cannot run a program; everything it needs is `core` and `alloc`
+# through `std`. `tests/the_key_is_never_kept_on_the_disk_it_recovers.rs` reads
+# this file and refuses a dependency added here without that test being
+# rewritten, which is where the argument would have to be made again.
+
+[lints]
+workspace = true

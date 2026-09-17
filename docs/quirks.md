@@ -702,6 +702,45 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### `bootc` — `--block-setup tpm2-luks` is the chip alone, with no PIN and no recovery key
+**Version:** `bootc 1.15.1` in the pinned base (`quay.io/fedora/fedora-bootc`, local image
+`b035260f985f`), read on 2026-09-17.
+**Behaviour:** the flag is documented as *Bind unlock of filesystem to presence of the
+default tpm2 device*, which reads like the encrypted install alo OS wants and is not.
+Read for everything it names around LUKS, the binary holds exactly three strings:
+`luksFormat`, `systemd-cryptenroll` and `--tpm2-device=auto`. There is no
+`--tpm2-with-pin`, no `--tpm2-pcrs` and no `--recovery-key` anywhere in it. So the disk
+it makes opens for anybody who presses the power button on a machine whose Secure Boot
+is off — which is every machine alo OS can be installed on today (ADR 0033 §4) — and a
+person whose motherboard is replaced has nothing at all to recover it with.
+**Our response:** the flag is not used. ADR 0054 decides the enrolment instead:
+`cryptsetup luksFormat`, `systemd-cryptenroll --recovery-key`, then
+`systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes --tpm2-pcrs=7`, and
+`bootc install to-filesystem --root-mount-spec` onto the opened volume — whose own help
+is what sends anything with LUKS in it to `to-filesystem` in the first place.
+`crates/alo-encrypting` holds the order, and *the recovery key before the way the person
+unlocks* is the part of it that is a decision.
+**Date:** 2026-09-17.
+
+### `systemd-cryptenroll` — the recovery key is on stdout, and the English is not
+**Version:** `systemd-257.13-1.fc42` with `cryptsetup 2.8.4`, in the same base, measured
+on a 64 MiB LUKS2 file on 2026-09-17.
+**Behaviour:** `systemd-cryptenroll --recovery-key` prints two different things to two
+places. **stdout** gets exactly 72 bytes: the key, as eight groups of eight characters
+from the alphabet `cbdefghijklnrtuv` separated by `-`, and a newline. **stderr** gets
+*A secret recovery key has been generated for this volume*, four more lines of English —
+and, when stdout is not a terminal, a blank indented line where the key would be. The
+key opened the volume; one character changed was refused; the passphrase the volume was
+formatted with still opened it. A `systemd-recovery` token appears in the header beside
+the new keyslot.
+**Our response:** whatever enrols encryption reads the key off stdout and says its own
+sentence about it, in the person's own language. The rented tool's English reaches a
+service log and never a screen, which is the only way a machine promising 24 languages
+can use a tool that speaks one. `alo_encrypting::RecoveryKey::as_printed` is what reads
+those bytes and refuses anything that is not them; its unit tests are built on the key
+this measurement produced.
+**Date:** 2026-09-17.
+
 ### GRUB — the base's signed loader leaves `cmdpath` empty, and sets `config_directory`
 **Version:** `grub2-efi-x64-2.12-32.fc42.x86_64` as
 `quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships it, started by
