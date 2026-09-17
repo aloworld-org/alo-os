@@ -1,0 +1,19 @@
+[package]
+name = "alo-sound"
+version = "0.0.1"
+description = "The outputs and inputs this machine has, and which one a person meant."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The sentences a person reads about a device and a mute.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+
+[lints]
+workspace = true

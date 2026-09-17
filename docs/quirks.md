@@ -4928,3 +4928,38 @@ crates' owners: tests that make a folder should remove it, pass or fail, and
 `alo-measuring`'s walk should be measured against a folder with tens of thousands of
 entries, because a person's machine can have one.
 **Date:** 2026-09-16.
+
+### A virtual source made by the media server's own loopback tool cannot be recorded from
+**Version:** PipeWire 1.0.5 with WirePlumber 0.4.17, Ubuntu 24.04 aarch64, 2026-09-17.
+**Behaviour:** `pw-loopback` will publish a node with `media.class =
+Audio/Source/Virtual`, which appears in the graph and in `wpctl status` as an
+ordinary microphone. `pw-record` cannot open it: the stream fails at once with
+`no more input formats`, and the file it writes is a header and no sound. The node
+offers only `F32P` — planar float, fixed at two channels — and no adapter converts
+it for a client that asks for anything else. Adding `audio.format`, `audio.rate`,
+`audio.channels` and `audio.position` to the playback properties changes nothing.
+**Our response:** `alo-sound`'s on-a-machine tests use the **kernel's** loopback
+sound cards (`snd-aloop`) instead, which the media server enumerates as ordinary
+ALSA devices with adapters, and which a recording tool opens like any other
+microphone. A test that must read what a stream carries — which is the only way
+*muted means silence* is a measurement rather than a claim — needs a device the
+rest of the machine treats as real.
+**Date:** 2026-09-17.
+
+### A sound card put in another profile comes back in its default one after a replug
+**Version:** WirePlumber 0.4.17, Ubuntu 24.04 aarch64, 2026-09-17.
+**Behaviour:** a card set to a different profile with `wpctl set-profile` keeps it
+until the card goes away. Unplug it and plug it in again — here, unbinding and
+binding the kernel driver — and it comes back in its **default** profile rather
+than the one that was set, which means **different node names**: `alsa_output.platform-snd_aloop.0.pro-output-0` came back
+as `alsa_output.platform-snd_aloop.0.analog-stereo`. Anything holding the first name
+is holding the name of a device that no longer exists, and a first attempt at
+`alo-sound`'s mid-call test waited ten seconds for a device that was never coming
+back under that name.
+**Our response:** worth knowing beyond a test, because it is the one case where a
+device's identity does **not** survive a replug: the identity is stable across a
+replug of the same card in the same profile, which is what a person's cable does,
+and not across a profile that was set and then lost. A profile alo OS wants kept is
+configured on the session manager rather than set once at runtime. The test picks
+cards offering a single output, which are cards in their ordinary profile.
+**Date:** 2026-09-17.

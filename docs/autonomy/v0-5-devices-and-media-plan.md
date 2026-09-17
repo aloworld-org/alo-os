@@ -62,7 +62,12 @@ terms. That is a decision, not a package list, and it comes first.
 
 ### 2. Sound out and in, and switching mid-call
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** `crates/alo-sound`, with the switch and the mute
+taken on a machine against the kernel's own loopback cards — a call moved to a
+device plugged in mid-call and never dropped, and a muted microphone's stream read
+back and found empty while its volume stood where a person left it. Written up in
+[Sound out and in](updates/sound-out-and-in-and-switching-mid-call.md).
+**Depends on:** nothing.
 
 - **Acceptance:** `alo-sound` holds the outputs and inputs the rented audio server
   reports, by a stable identity that survives a replug, and which one each is in use

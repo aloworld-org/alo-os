@@ -937,6 +937,7 @@ dependencies = [
  "alo-setting-up",
  "alo-shortcuts",
  "alo-software",
+ "alo-sound",
  "alo-strings",
  "alo-telling",
  "alo-turn",
@@ -1055,6 +1056,17 @@ dependencies = [
  "alo-printing",
  "alo-proxy",
  "alo-saying",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
+name = "alo-sound"
+version = "0.0.1"
+dependencies = [
  "alo-strings",
  "serde",
  "serde_json",

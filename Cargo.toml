@@ -73,6 +73,7 @@ members = [
   "crates/alo-secrets",
   "crates/alo-software",
   "crates/alo-sessiond",
+  "crates/alo-sound",
   "crates/alo-strings",
   "crates/alo-telling",
   "crates/alo-turn",
