@@ -393,6 +393,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-conforming"
+version = "0.0.1"
+dependencies = [
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-context"
 version = "0.0.1"
 dependencies = [

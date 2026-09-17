@@ -1,0 +1,14 @@
+[package]
+name = "alo-conforming"
+version = "0.0.1"
+description = "EN 301 549's clauses that apply to this shell, each held to the evidence that meets it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

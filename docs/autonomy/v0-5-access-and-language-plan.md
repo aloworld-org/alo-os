@@ -91,7 +91,21 @@ is good enough for the other; if it is not, both fail.
 
 ### 4. EN 301 549, clause by clause
 
-**Status:** ready. **Depends on:** 1, 2, 3.
+**Status:** **Done, 2026-09-17.** `crates/alo-conforming` holds 46 clauses of
+**EN 301 549 V3.2.1 (2021-03)** — clause 5, and clause 11 including the criteria
+a reader knows from WCAG, which reach a native shell as `11.1`–`11.4` rather than
+through clause 9 (the web; the plan's wording is corrected in the report). Each
+carries its number, its requirement in one sentence of this repository's own
+words, and one of *met by* a named test, *not yet because* a named task in a
+named plan, or *not applicable because* a reason. **No clause can be met by a
+sentence**: `Standing::Met` has nowhere to put one, and
+`tests/every_clause_that_is_met_names_a_test_that_exists.rs` reads the repository
+and refuses a test nobody wrote, a plan nobody wrote and a task a plan does not
+have. Today: **12 met, 29 waiting, 5 not applicable, and 0 read against the
+standard's own text** — which every clause says of itself, because a list to
+check is useful and a list that looks checked and is not is worse than nothing.
+Written up in [EN 301 549, clause by clause](updates/en-301-549-clause-by-clause.md).
+**Depends on:** 1, 2, 3.
 
 `docs/features.md` v1: *procurement asks for the report, not the intention.* v0.5
 builds what the report will be generated from.

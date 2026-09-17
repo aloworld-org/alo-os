@@ -29,6 +29,7 @@ members = [
   "crates/alo-citing",
   "crates/alo-clipboard",
   "crates/alo-collected",
+  "crates/alo-conforming",
   "crates/alo-context",
   "crates/alo-converting",
   "crates/alo-corridor",
