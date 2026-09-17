@@ -91,7 +91,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 4. The flow: a person, not a toolchain
 
-**Status:** ready. **Depends on:** 1, 2, 3.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2, 3.
 
 *As a flow rather than a toolchain.*
 

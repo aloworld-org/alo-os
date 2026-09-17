@@ -49,6 +49,7 @@
 pub mod adapter;
 pub mod dataset;
 pub mod engine;
+pub mod flow;
 pub mod learned_from;
 pub mod leaving;
 pub mod words;
@@ -58,6 +59,7 @@ pub mod yours;
 pub use adapter::{Adapter, Composed, TheBaseIsUntouched, TheBaseMoved};
 pub use dataset::{Dataset, NotTrainedOn, Skipped};
 pub use engine::{THE_ADAPTER_FORMAT, THE_STACK, WHY_NOT_THE_OBVIOUS_LOCAL_TOOL};
+pub use flow::{Flow, Step};
 pub use learned_from::LearnedFrom;
 pub use leaving::{WhatItWouldBe, why_an_adapted_model_cannot_simply_be_sent};
 pub use working_folder::WorkingFolder;

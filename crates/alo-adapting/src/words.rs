@@ -64,13 +64,68 @@ pub const NOT_TRAINED_ON: Word = Word::saying("adapting.not-trained-on", "found 
      read something it never saw.",
     );
 
+/// Step one: which granted folder.
+pub const WHICH_FOLDER: Word = Word::saying(
+    "adapting.which-folder",
+    "which folder should your model learn from?",
+)
+.noting(
+    "The first of five steps. A person picks a folder they have already granted; there is no way \
+     to type a path here and no option for all of their documents.",
+);
+
+/// Step two: what they want it to be better at.
+pub const WHAT_IT_SHOULD_LEARN: Word = Word::saying(
+    "adapting.what-it-should-learn",
+    "what should it get better at?",
+)
+.noting(
+    "The second step, answered in the person's own words — for example \"understanding my \
+     invoices\". It is kept beside the result so that months later somebody can tell why this \
+     was made.",
+);
+
+/// Step four: begin.
+pub const START_TEACHING: Word =
+    Word::saying("adapting.start-teaching", "teach it from these documents").noting(
+        "The fourth step: the button that starts it, and the change a person approves. What is \
+     approved is the sentence naming the folder, as with every other change to this machine.",
+    );
+
+/// Step five: what it cost, and whether they keep it.
+pub const KEEP_IT_OR_NOT: Word = Word::saying(
+    "adapting.keep-it-or-not",
+    "keep what it learned?",
+)
+.noting(
+    "The last step, shown when training has finished, beside how long it took and what it cost. \
+     Keeping it means the model uses it from now on; not keeping it deletes what was learned and \
+     leaves the model as it was.",
+);
+
+/// How long it took and what it used.
+pub const WHAT_IT_COST: Word = Word::saying(
+    "adapting.what-it-cost",
+    "how long it took, and how much of this machine it used",
+)
+.noting(
+    "The heading above the cost of a finished fine-tune: a length of time and an amount of \
+     memory, both shown as numbers beside this line. No step in this flow names the method, the \
+     settings or the program that did the training.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 5] = [
+pub const EVERY_WORD: [Word; 10] = [
     DELETING_THIS_ADAPTER,
     REVOKING_AFTER_A_FINE_TUNE,
     DELETE_THE_ADAPTER,
     WHAT_IT_WILL_LEARN_FROM,
     NOT_TRAINED_ON,
+    WHICH_FOLDER,
+    WHAT_IT_SHOULD_LEARN,
+    START_TEACHING,
+    KEEP_IT_OR_NOT,
+    WHAT_IT_COST,
 ];
 
 /// Why this crate's own list could not be declared.
