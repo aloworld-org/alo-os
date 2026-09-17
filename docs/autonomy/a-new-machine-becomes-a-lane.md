@@ -116,6 +116,54 @@ crate and very nearly the whole of a rebuild that changed one line. Unset
 `RUSTFLAGS` for the two BPF gates: that target is not linked by anything of
 ours, and the flag would be handed to a linker that is not there.
 
+### Where the checkout lives, which is worth more than every other setting here
+
+**Do not gate a checkout that lives under `/mnt/c`.** WSL reads it across the
+bridge to the Windows filesystem, file by file, in every gate. Copy it onto the
+Linux filesystem instead — `rsync -a --exclude target /mnt/c/dev/<checkout>/
+/root/<checkout>/`, twenty-one seconds for a 65 MB repository — and gate there.
+Measured on the development PC on 2026-09-17, the same nine gates on the same
+commit, with the same cores, linker and job count:
+
+| Gate | under `/mnt/c` | on the Linux filesystem |
+|---|---|---|
+| fmt | 75s | 3s |
+| clippy, warnings denied | 61s | 3s |
+| the workspace's tests | 1664s | 988s |
+| rustdoc | 88s | 56s |
+| the BPF target's formatting | 72s | 6s |
+| **all nine** | **1907s** | **1085s** |
+
+Thirty-two minutes to eighteen, and the part that is not actually running tests
+fell from about four minutes to ninety seconds. What is left is the
+network-namespace tests, which take real time wherever the files sit.
+
+The wall-clock is not the point. **A lane whose gate takes half an hour cannot
+win a push race** against a fleet that pushes every ten to twenty minutes: it
+gates, `main` moves, it rebases and gates again. One task lost four races that
+way in a single morning and published nothing, while nothing at all was wrong
+with it. Halving the gate is what makes a lane able to finish.
+
+### The disk only grows unless you tell it not to
+
+`ext4.vhdx` never shrinks by itself. Deleting files inside returns nothing to
+Windows, and `diskpart compact vdisk` reclaims nothing at all on a disk that is
+not sparse — measured at 155.5 GB before and after. A lane machine therefore
+fills up and stops, and every symptom looks like something else: a worker that
+died mid-task, a supervisor that could not even write its own lock file, gates
+blaming the work twice in a row.
+
+Do this once, before it happens: `wsl --shutdown`, then
+`wsl --manage <distro> --set-sparse true --allow-unsafe`, then `fstrim -av`
+inside the guest. Microsoft marks the conversion unsafe; with the distro shut
+down and nothing inside it but build directories that rebuild, it is worth
+taking. On this PC it turned **2.8 GB free into 53.5 GB** once a stale 65 GB
+`target` was deleted — space that had been unreachable the day before.
+
+Cargo target directories are what fills the disk: one per checkout, tens of
+gigabytes each. A machine that changes where it builds should delete the
+directory it stopped building in.
+
 ## The prompt
 
 Paste this whole thing, with the one line marked below replaced by that
