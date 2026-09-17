@@ -62,6 +62,7 @@ alo-measuring = { path = "../alo-measuring" }
 alo-printing = { path = "../alo-printing" }
 alo-adapters = { path = "../alo-adapters" }
 alo-changing-network = { path = "../alo-changing-network" }
+alo-capturing = { path = "../alo-capturing" }
 # The workspace read for which crates declare verbs, so that list cannot drift
 # from the one handed to the terminal's check.
 alo-by-hand = { path = "../alo-by-hand" }

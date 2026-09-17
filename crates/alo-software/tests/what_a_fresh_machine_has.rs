@@ -382,6 +382,7 @@ fn every_verb_this_machine_ships() -> Verbs {
         [
             "alo-adapters",
             "alo-applications",
+            "alo-capturing",
             "alo-changing-network",
             "alo-converting",
             "alo-files",
@@ -403,6 +404,7 @@ fn every_verb_this_machine_ships() -> Verbs {
     alo_software::verbs::declare_into(&mut verbs).unwrap();
     alo_adapters::verbs::declare_into(&mut verbs).unwrap();
     alo_changing_network::verbs::declare_into(&mut verbs).unwrap();
+    alo_capturing::verbs::declare_into(&mut verbs).unwrap();
     verbs
 }
 
