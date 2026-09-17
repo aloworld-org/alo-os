@@ -226,7 +226,7 @@ pub const NOTHING_CAME_BACK: Word = Word::saying(
 pub const EVERY_TOLD: [Word; 3] = [SAVED, COPIED, SAVED_AND_COPIED];
 
 /// Every refusal: why no picture was taken, or none was kept.
-pub const EVERY_REFUSAL: [Word; 10] = [
+pub const EVERY_REFUSAL: [Word; 12] = [
     THE_LOCK_SCREEN,
     ANOTHER_PERSONS_WINDOW,
     NOT_AN_AREA_OF_THE_SCREEN,
@@ -237,6 +237,8 @@ pub const EVERY_REFUSAL: [Word; 10] = [
     NOTHING_READS_THE_SCREEN,
     NO_PICTURE,
     NOTHING_CAME_BACK,
+    TOO_MUCH_TO_ENCODE,
+    TOO_MUCH_TO_ENCODE_BUT,
 ];
 
 /// Every string this crate can say, in the order a translator meets them.
@@ -276,11 +278,84 @@ pub const HIDE_WHAT_IS_THERE: Word = Word::saying(
      softening, which sound reversible.",
 );
 
+/// No sound in the recording.
+pub const NO_SOUND: Word = Word::saying("capturing.sound.none", "No sound").noting(
+    "One of four choices made before a screen recording starts, and the one every recording \
+     begins at. Nothing is recorded but the picture.",
+);
+
+/// The machine's own sound.
+pub const THIS_MACHINES_SOUND: Word = Word::saying(
+    "capturing.sound.this-machine",
+    "This machine's sound — nobody in the room is recorded",
+)
+.noting(
+    "One of four choices made before a screen recording starts: what this machine is playing, and \
+     no microphone. The second half of the sentence is the point of it and must not be dropped: \
+     it is how a person knows this choice records nobody around them.",
+);
+
+/// The microphone, which reaches the room.
+pub const THE_MICROPHONE: Word = Word::saying(
+    "capturing.sound.the-room",
+    "The microphone — this records anyone speaking near this machine, not only you",
+)
+.noting(
+    "One of four choices made before a screen recording starts. Every word after the dash is \
+     load-bearing and none may be softened: a microphone records whoever is in the room, \
+     including people who are not looking at the screen and have not agreed to anything. Do not \
+     translate it as \"your voice\" or \"your microphone\", which say the opposite of what \
+     happens.",
+);
+
+/// Both sounds.
+pub const BOTH_SOUNDS: Word = Word::saying(
+    "capturing.sound.both",
+    "This machine's sound and the microphone — this records anyone speaking near this machine",
+)
+.noting(
+    "One of four choices made before a screen recording starts. Carries the same warning as the \
+     microphone alone, for the same reason.",
+);
+
+/// The machine cannot encode it fast enough, and nothing smaller would help.
+pub const TOO_MUCH_TO_ENCODE: Word = Word::saying(
+    "capturing.recording.too-much-to-encode",
+    "This machine cannot record this screen as fast as it happens, so nothing was started. \
+     Record a smaller part of the screen, or record this screen on a machine that can keep up.",
+)
+.noting(
+    "Shown instead of starting a recording. The numbers — the size, the frames a second it wants \
+     and the frames a second this machine manages — are shown beside this line rather than inside \
+     it. It says nothing was started because the alternative, recording badly, hands somebody a \
+     file whose fault they find when they watch it back.",
+);
+
+/// The machine cannot encode it, but a smaller picture would work.
+pub const TOO_MUCH_TO_ENCODE_BUT: Word = Word::saying(
+    "capturing.recording.too-much-to-encode-but",
+    "This machine cannot record this screen as fast as it happens, so nothing was started. It \
+     can record a smaller picture — choose that size and start again.",
+)
+.noting(
+    "Shown instead of starting a recording, when a smaller size would work. The size that would \
+     work is shown beside this line. The machine offers it and does not choose it: a recording \
+     quietly made smaller than somebody asked for is the thing this sentence exists to prevent.",
+);
+
 /// **The five tools for marking a screenshot**, as a group of their own.
 ///
 /// They are not messages a machine announces; they are what a person picks up.
 /// The group exists so that the test which walks the list cannot be satisfied
 /// by a tool that nothing offers.
+/// **The four sounds a person chooses between before a recording starts**, as
+/// a group of their own.
+///
+/// They are not messages and they are not refusals: they are a question with
+/// four answers, asked every time, because the room is not the same room.
+pub const EVERY_SOUND: [Word; 4] = [NO_SOUND, THIS_MACHINES_SOUND, THE_MICROPHONE, BOTH_SOUNDS];
+
+/// **The five tools for marking a screenshot**, as a group of their own.
 pub const EVERY_TOOL: [Word; 5] = [
     AN_ARROW,
     A_BOX,
@@ -293,7 +368,7 @@ pub const EVERY_TOOL: [Word; 5] = [
 ///
 /// The three groups above are this list, divided by what a person is doing when
 /// they read one: told something, refused something, or picking up a tool.
-pub const EVERY_WORD: [Word; 18] = [
+pub const EVERY_WORD: [Word; 24] = [
     SAVED,
     COPIED,
     SAVED_AND_COPIED,
@@ -312,6 +387,12 @@ pub const EVERY_WORD: [Word; 18] = [
     DRAWN_BY_HAND,
     WORDS_ON_IT,
     HIDE_WHAT_IS_THERE,
+    NO_SOUND,
+    THIS_MACHINES_SOUND,
+    THE_MICROPHONE,
+    BOTH_SOUNDS,
+    TOO_MUCH_TO_ENCODE,
+    TOO_MUCH_TO_ENCODE_BUT,
 ];
 
 /// The area every key in this crate is under.
@@ -404,12 +485,13 @@ mod tests {
             .iter()
             .chain(EVERY_REFUSAL.iter())
             .chain(EVERY_TOOL.iter())
+            .chain(EVERY_SOUND.iter())
             .map(|word| word.named())
             .collect();
         let everything: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named()).collect();
         assert_eq!(grouped, everything);
         assert_eq!(
-            EVERY_TOLD.len() + EVERY_REFUSAL.len() + EVERY_TOOL.len(),
+            EVERY_TOLD.len() + EVERY_REFUSAL.len() + EVERY_TOOL.len() + EVERY_SOUND.len(),
             EVERY_WORD.len()
         );
     }

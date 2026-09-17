@@ -124,13 +124,7 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 4. Screen recording, with audio, to a file
 
-**Status:** **ready — unblocked 2026-09-17.**
-[ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md)
-settles what this machine encodes: **VP9 where software must encode, AV1 where
-hardware can, Opus, in Matroska** — and that a recording the machine cannot keep
-up with is refused before it starts rather than quietly degraded. The Mac lane
-wrote it, owning both plans; nothing here waits on the decoding half, which is
-the owner's.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2.
 
 - **Acceptance:** a recording of the screen, a window or a region, with the
   microphone, the machine's sound, both or neither, chosen before it starts; it is
