@@ -11,7 +11,7 @@ this is kept because the reasoning it contains about what weights hold is still
 true, and because the loop does not rewrite what it decided.
 **Date:** 2026-09-17
 **Context:** [ADR 0001](0001-the-capability-model.md) §3 (grants are visible,
-revocable and expiring), [ADR 0014](0014-our-own-hosted-model-is-a-provider-like-any-other.md)
+revocable and expiring), [ADR 0014](0014-alos-own-model-is-a-provider-like-any-other.md)
 (alo's own service is a provider like any other),
 [ADR 0038](0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md),
 `crates/alo-adapting`, `crates/alo-picking`, and task 1 of

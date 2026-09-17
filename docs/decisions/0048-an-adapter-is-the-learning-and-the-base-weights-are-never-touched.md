@@ -7,7 +7,7 @@ which said the true thing about merged weights and accepted the wrong shape.
 **Context:** [ADR 0001](0001-the-capability-model.md) §3 (grants are visible,
 revocable and expiring), [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md)
 (engines are rented, configured, never patched),
-[ADR 0014](0014-our-own-hosted-model-is-a-provider-like-any-other.md),
+[ADR 0014](0014-alos-own-model-is-a-provider-like-any-other.md),
 `crates/alo-adapting`, and the *models a person adapts* plan
 
 ## The question in one line
