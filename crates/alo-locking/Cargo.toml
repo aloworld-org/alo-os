@@ -1,0 +1,54 @@
+[package]
+name = "alo-locking"
+version = "0.0.1"
+description = "What a locked session is: what keeps running, what the lock screen may show, what waits for the person, and the one road back in."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Whose session is locked. `alo_accounts::Session` cannot exist unless a
+# password verified and the machine description agreed about the number, so a
+# seat is only ever locked over a sign-in that really happened. The accounts are
+# also what an unlock is checked against — handed to the greeting below, never
+# asked here.
+alo-accounts = { path = "../alo-accounts" }
+# Unlocking is signing in again, through the same composition the greeter uses
+# and through nothing weaker. This crate never asks whether a password is right.
+alo-greeting = { path = "../alo-greeting" }
+# The door an unlock knocks at is the locked session itself, and it answers in
+# the opener's own shape — `Knock` and `Answered` — with the opener's own
+# refusal. Nothing here reaches the opener, `logind` or a session's end.
+alo-sessiond = { path = "../alo-sessiond" }
+# The lock image, read: `Appearance::lock_on` is the one answer to what a locked
+# display shows behind the time.
+alo-appearance = { path = "../alo-appearance" }
+# The egress light on the lock screen. `Lamp` is dark or lit for a number, and
+# has no line in it that names what left.
+alo-egress = { path = "../alo-egress" }
+alo-indicator = { path = "../alo-indicator" }
+# The agent's key, refused while locked, and an overlay open at the moment of
+# locking, closed.
+alo-overlay = { path = "../alo-overlay" }
+# A change waiting for approval, which is the signed-in person's act and cannot
+# be put or answered on the lock screen.
+alo-approving = { path = "../alo-approving" }
+alo-capability = { path = "../alo-capability" }
+alo-turn = { path = "../alo-turn" }
+# Every sentence this crate can say, declared rather than written into a file.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# A whole turn on a real disk, so *the change was not carried out* is a file
+# that did not move rather than a flag nobody set.
+alo-context = { path = "../alo-context" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
+# The machine's one vocabulary, for the test that asks whether what this crate
+# says is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

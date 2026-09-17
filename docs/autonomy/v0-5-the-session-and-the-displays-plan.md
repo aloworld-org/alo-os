@@ -35,7 +35,20 @@ plan as published.
 
 ### 1. What a locked session is, and what the lock screen may show
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-16.** `crates/alo-locking`: a `Seat` is a session
+open or locked and holds the session in both, with no road to ending one
+(`tests/nothing_here_ends_a_session.rs` reads the source and manifest).
+`LockScreen` has room for the time, the lock image (`Appearance::lock_on`, read),
+the battery and an egress `Lamp` that counts and names nothing, and no generic
+parameter a notification could fill; a notification on a locked seat is
+`Arrived::Held` and handed back only at an unlock. The agent's key and all three
+approval calls answer `NotWhileLocked` without reaching the compositor or the
+turn. `Seat::unlocks` is `alo_greeting::Greeting::signs_in` for the locked
+session's own number, knocking at the locked session rather than the opener
+(`tests/unlocking_is_signing_in.rs`). Report:
+`docs/autonomy/updates/what-a-locked-session-is-and-what-the-lock-screen-may-show.md`.
+Not on hardware — nothing here touches the machine; the shell draws it later.
+**Depends on:** nothing.
 
 A lock screen is the one surface a stranger at the desk is guaranteed to see. On
 most systems it leaks: the names of recent documents in notifications, the

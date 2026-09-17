@@ -661,6 +661,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-locking"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-appearance",
+ "alo-approving",
+ "alo-capability",
+ "alo-context",
+ "alo-egress",
+ "alo-files",
+ "alo-greeting",
+ "alo-indicator",
+ "alo-overlay",
+ "alo-record",
+ "alo-saying",
+ "alo-sessiond",
+ "alo-strings",
+ "alo-turn",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-measuring"
 version = "0.0.1"
 dependencies = [
@@ -887,6 +909,7 @@ dependencies = [
  "alo-installing",
  "alo-keeping",
  "alo-keeping-up",
+ "alo-locking",
  "alo-measuring",
  "alo-models",
  "alo-nearby",

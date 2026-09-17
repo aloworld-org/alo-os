@@ -47,6 +47,7 @@ alo-installer = { path = "../alo-installer" }
 alo-installing = { path = "../alo-installing" }
 alo-keeping = { path = "../alo-keeping" }
 alo-keeping-up = { path = "../alo-keeping-up" }
+alo-locking = { path = "../alo-locking" }
 alo-measuring = { path = "../alo-measuring" }
 alo-models = { path = "../alo-models" }
 alo-nearby = { path = "../alo-nearby" }
