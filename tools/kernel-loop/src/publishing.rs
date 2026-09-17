@@ -55,7 +55,9 @@
 
 use std::path::Path;
 
-use crate::{evidence, gates, handoff::Handed, journal, repository};
+use crate::{
+    evidence, gate_turn, gates, handoff::Handed, inside_the_plan, journal, plan, repository,
+};
 
 /// How many times a lost race is worth answering before somebody should look.
 ///
@@ -133,6 +135,20 @@ pub trait Steps {
 
     /// Write one line in the loop's own log.
     fn note(&mut self, said: &str);
+
+    /// Refuse a task whose handoff changes a crate its plan's header says the
+    /// plan never edits ([`crate::inside_the_plan`]).
+    ///
+    /// # Errors
+    /// A sentence naming each such file and the crate it is in.
+    fn inside_the_plan(&mut self) -> Result<(), String>;
+
+    /// Wait for this machine's turn at the gates, and hold it for as long as the
+    /// returned value is held ([`crate::gate_turn`]).
+    ///
+    /// # Errors
+    /// Whatever the machine said when the turn could not be asked for.
+    fn our_turn(&mut self) -> Result<gate_turn::Turn, String>;
 }
 
 /// Whether a check runs the task's acceptance evidence as well as the gates.
@@ -188,6 +204,14 @@ pub fn touches(arrived: &[String], ours: &[String]) -> bool {
 /// conflicted rebase is left where it stopped, and a lost or refused push leaves
 /// the commit sitting locally for the next attempt.
 pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
+    // A task that changes another plan's crate is refused before anything runs:
+    // an hour of gates is no reason to publish into a crate another lane owns.
+    steps.inside_the_plan()?;
+
+    // One lane's gates at a time on this machine, held from the first gate to
+    // the push. Dropped when this function returns, however it returns.
+    let _turn = steps.our_turn()?;
+
     // Nothing is staged before this returns `Ok`. A failure here leaves a tree
     // the supervisor has not touched, which is what makes the work recoverable
     // by reading it rather than by finding it.
@@ -319,6 +343,24 @@ impl Steps for OnThisMachine<'_> {
     fn note(&mut self, said: &str) {
         journal::note(self.ours, said);
     }
+
+    fn inside_the_plan(&mut self) -> Result<(), String> {
+        let named = plan::the_plan()?;
+        let written = std::fs::read_to_string(self.at.join(&named))
+            .map_err(|why| format!("{named} could not be read: {why}"))?;
+        match inside_the_plan::refusal(&self.task.files, &written, &named) {
+            Some(refused) => Err(refused),
+            None => Ok(()),
+        }
+    }
+
+    fn our_turn(&mut self) -> Result<gate_turn::Turn, String> {
+        let at = gate_turn::this_machines()?;
+        let ours = self.ours;
+        gate_turn::taken(&at, gate_turn::ASKING_EVERY, None, &mut |said| {
+            journal::note(ours, said);
+        })
+    }
 }
 
 #[cfg(test)]
@@ -342,6 +384,10 @@ mod tests {
 
         /// Which step refuses, if any, by the name it is recorded under.
         refusing: Option<&'static str>,
+
+        /// How many steps had been done when the turn at the gates was taken,
+        /// or `None` if it never was.
+        turn_taken_after: Option<usize>,
 
         /// What `advanced` answers, one call at a time, then `false`.
         advancing: Vec<bool>,
@@ -425,6 +471,42 @@ mod tests {
         }
 
         fn note(&mut self, _said: &str) {}
+
+        fn inside_the_plan(&mut self) -> Result<(), String> {
+            if self.refusing == Some("inside_the_plan") {
+                return Err("this task changes a crate its plan never edits".to_owned());
+            }
+            Ok(())
+        }
+
+        fn our_turn(&mut self) -> Result<gate_turn::Turn, String> {
+            self.turn_taken_after = Some(self.did.len());
+            Ok(gate_turn::Turn::nobody_elses())
+        }
+    }
+
+    /// **A task outside its plan is refused before anything is gated, staged or
+    /// pushed**, and before it waits for a turn.
+    #[test]
+    fn a_task_outside_its_plan_runs_nothing() {
+        let mut steps = Recording {
+            refusing: Some("inside_the_plan"),
+            ..Recording::default()
+        };
+        let went = gated_and_pushed(&mut steps);
+
+        assert!(went.is_err_and(|why| why.contains("never edits")));
+        assert!(steps.did.is_empty(), "{:?}", steps.did);
+        assert_eq!(steps.turn_taken_after, None);
+    }
+
+    /// **The machine's turn is taken before the first gate**, so no lane gates
+    /// beside another.
+    #[test]
+    fn the_turn_is_taken_before_the_first_gate() {
+        let mut steps = Recording::default();
+        gated_and_pushed(&mut steps).unwrap();
+        assert_eq!(steps.turn_taken_after, Some(0));
     }
 
     /// **A failed gate publishes nothing, and stages nothing.**

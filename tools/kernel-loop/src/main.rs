@@ -88,8 +88,10 @@
 //! would be a supervisor that can throw work away.
 
 mod evidence;
+mod gate_turn;
 mod gates;
 mod handoff;
+mod inside_the_plan;
 mod journal;
 mod keeping_ubuntu_up;
 mod lock;
