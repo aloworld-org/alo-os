@@ -176,7 +176,7 @@ screenshot is the most harvest-shaped thing a machine has.
 
 ### 7. Every sentence, and the walk through a call
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2, 3, 4, 5, 6.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — take a region screenshot, blur a field, save; join a
