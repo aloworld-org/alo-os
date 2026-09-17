@@ -561,7 +561,12 @@ const NOT_COPIED: [&str; 4] = [
 ];
 
 /// The copy of the source a build directory's gates read, beside it on the same
-/// filesystem: `$HOME/alo-builds/alo-os-1a2b` reads `$HOME/alo-trees/alo-os-1a2b`.
+/// filesystem: `$HOME/alo-builds/this-machine` reads `$HOME/alo-trees/this-machine`.
+///
+/// **One copy for every checkout on the machine**, overwritten by whichever
+/// lane has the gate turn, and read only while it holds the turn. A path that
+/// stays the same from lane to lane is what lets Cargo reuse what the previous
+/// lane built.
 #[cfg(any(windows, test))]
 fn the_copy_for(building_in: &str) -> String {
     building_in.replacen(where_it_builds::ALL_OF_THEM, TREES, 1)
@@ -868,18 +873,14 @@ mod a_mac_names_its_linux {
 mod tests {
     use super::*;
 
-    /// **The source a build directory's gates read sits beside it**, on the same
-    /// filesystem, one copy per checkout the way there is one build directory per
-    /// checkout, and history and old builds are not copied.
+    /// **The source the gates read sits beside the build directory**, on the
+    /// same filesystem and under the same name, and history and old builds are
+    /// not copied.
     #[test]
-    fn each_build_directory_reads_its_own_copy_of_the_source() {
+    fn the_build_directory_reads_the_copy_of_the_source_beside_it() {
         assert_eq!(
-            the_copy_for("$HOME/alo-builds/alo-os-2-72aa7fda7f7de151"),
-            "$HOME/alo-trees/alo-os-2-72aa7fda7f7de151"
-        );
-        assert_ne!(
-            the_copy_for("$HOME/alo-builds/alo-os-88e6ebddb0cab76e"),
-            the_copy_for("$HOME/alo-builds/alo-os-2-72aa7fda7f7de151")
+            the_copy_for("$HOME/alo-builds/this-machine"),
+            "$HOME/alo-trees/this-machine"
         );
         for kept_out in ["/.git", "/target", "/.kernel-loop"] {
             assert!(

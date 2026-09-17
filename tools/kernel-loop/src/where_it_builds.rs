@@ -15,10 +15,17 @@
 //!
 //! # What it does instead
 //!
-//! One build directory per checkout, on the filesystem the gates actually run
-//! on, named from the checkout's own path so that two lanes on one machine can
-//! never land on the same one. A shared `target` is a lock, and a lock is a
-//! lane waiting.
+//! One build directory **per machine**, on the filesystem the gates actually run
+//! on, shared by every checkout's gates there.
+//!
+//! It used to be one per checkout, because a shared `target` was a lock and a
+//! lock was a lane waiting. Since [`crate::gate_turn`] exists, two lanes on one
+//! machine never gate at once anyway, so the lock costs nothing and the second
+//! directory costs a whole workspace build of disk. On 2026-09-17 that second
+//! copy of every artefact filled a 100 GB volume to zero on two machines, and
+//! one of them could not even start WSL afterwards. The copy of the source the
+//! gates read ([`crate::gates`]) is one per machine too, at the same path for
+//! every checkout, so what one lane built is fresh for the next.
 //!
 //! The reserve is then asked of **that** directory, and the refusal names the
 //! filesystem it asked about — because a sentence about free space that does
@@ -104,7 +111,7 @@ impl BuildsIn {
 pub fn chosen(at: &Path) -> &'static BuildsIn {
     static CHOSEN: OnceLock<BuildsIn> = OnceLock::new();
     CHOSEN.get_or_init(|| {
-        let wanted = match where_it_goes(at) {
+        let wanted = match where_it_goes() {
             Ok(wanted) => wanted,
             Err(why) => return the_choice(String::new(), Err(why)),
         };
@@ -209,7 +216,8 @@ fn the_choice(wanted: String, made: Result<(), String>) -> BuildsIn {
         return BuildsIn {
             because: format!(
                 "the gates build in {wanted}, which is on the filesystem they run on rather than \
-                 the one this checkout is on, and no other checkout builds there."
+                 the one this checkout is on. Every checkout on this machine builds there, one \
+                 at a time, because they take turns at the gates."
             ),
             directory: Some(wanted),
         };
@@ -252,8 +260,8 @@ fn made_it(at: &Path, directory: &str) -> Result<(), String> {
 ///
 /// # Errors
 /// A sentence when the home the gates run in cannot be named.
-fn where_it_goes(at: &Path) -> Result<String, String> {
-    Ok(named_for(&the_home()?, at))
+fn where_it_goes() -> Result<String, String> {
+    Ok(this_machines(&the_home()?))
 }
 
 /// The home directory the gates run in.
@@ -265,8 +273,8 @@ fn where_it_goes(at: &Path) -> Result<String, String> {
 /// visible inside the VM at the same path and would put the build directory on
 /// the shared mount rather than on the VM's own disk. Every path built from
 /// `$HOME` is free of spaces by construction — the Linux home has none and
-/// [`a_name_from`] allows none — which is what makes it safe in a command line
-/// the bridge assembles unquoted.
+/// [`THIS_MACHINE`] has none — which is what makes it safe in a command line the
+/// bridge assembles unquoted.
 ///
 /// # Errors
 /// None here; the signature matches the Linux half so the caller has one shape.
@@ -286,65 +294,12 @@ fn the_home() -> Result<String, String> {
         .map_err(|_| "this machine's environment names no HOME to build under".to_owned())
 }
 
-/// One checkout's build directory under a home.
-///
-/// The last part of the checkout's path makes it readable and a fingerprint of
-/// the whole path makes it that checkout's alone, so two clones called
-/// `alo-os-claude` in different places never meet. A checkout reached by two
-/// different names — a drive letter on one host and a mount point on another —
-/// is two directories, which costs a rebuild and never shares one.
-fn named_for(home: &str, checkout: &Path) -> String {
-    // A trailing separator is the same checkout, so it must not be a different
-    // fingerprint: `C:\dev\alo-os-claude\` and `C:/dev/alo-os-claude` are one
-    // directory and one build of it.
-    let written = checkout.to_string_lossy().replace('\\', "/");
-    let written = written.trim_end_matches('/');
-    let readable = a_name_from(
-        written
-            .rsplit('/')
-            .find(|part| !part.is_empty())
-            .unwrap_or_default(),
-    );
-    format!(
-        "{home}/{ALL_OF_THEM}/{readable}-{}",
-        fingerprint(&written.to_lowercase())
-    )
-}
+/// The name of the one build directory on a machine, under [`ALL_OF_THEM`].
+const THIS_MACHINE: &str = "this-machine";
 
-/// A path component as a directory name: lowercase, and nothing in it that a
-/// command line would have to quote.
-///
-/// Runs of anything else become one `-` rather than one each, so that a name a
-/// person chose reads as a name rather than as punctuation.
-fn a_name_from(component: &str) -> String {
-    let mut tidied = String::new();
-    for letter in component.chars() {
-        if letter.is_ascii_alphanumeric() {
-            tidied.push(letter.to_ascii_lowercase());
-        } else if !tidied.ends_with('-') {
-            tidied.push('-');
-        }
-    }
-    let tidied = tidied.trim_matches('-').to_owned();
-    if tidied.is_empty() {
-        "checkout".to_owned()
-    } else {
-        tidied
-    }
-}
-
-/// A path, as sixteen hexadecimal characters.
-///
-/// FNV-1a, written out here because this is a supervisor that publishes and a
-/// dependency added to shorten a name is a dependency in the thing that
-/// publishes. It distinguishes; it is not asked to do anything else.
-fn fingerprint(of: &str) -> String {
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for byte in of.as_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
-    }
-    format!("{hash:016x}")
+/// The machine's build directory under a home, whichever checkout asks.
+fn this_machines(home: &str) -> String {
+    format!("{home}/{ALL_OF_THEM}/{THIS_MACHINE}")
 }
 
 /// What `df` answered, read.
@@ -441,61 +396,18 @@ mod tests {
         );
     }
 
-    /// **Two checkouts never share a build directory**, however alike their
-    /// names, because a shared `target` is a lock and a lock is a lane waiting.
+    /// **One machine, one build directory**, and nothing in its name a command
+    /// line would have to quote, because the bridge joins words with spaces.
     #[test]
-    fn two_checkouts_never_build_in_the_same_directory() {
-        let one = named_for("/root", Path::new("C:/dev/alo-os-claude"));
-        let other = named_for("/root", Path::new("C:/dev2/alo-os-claude"));
-        assert_ne!(one, other);
-        assert!(one.starts_with("/root/alo-builds/alo-os-claude-"), "{one}");
+    fn every_checkout_on_a_machine_builds_in_one_directory() {
+        assert_eq!(this_machines("/root"), "/root/alo-builds/this-machine");
+        assert_eq!(this_machines("$HOME"), "$HOME/alo-builds/this-machine");
         assert!(
-            other.starts_with("/root/alo-builds/alo-os-claude-"),
-            "{other}"
+            THIS_MACHINE
+                .chars()
+                .all(|letter| letter.is_ascii_lowercase() || letter == '-'),
+            "{THIS_MACHINE} would have to be quoted"
         );
-    }
-
-    /// And the same checkout is the same directory every time it is asked,
-    /// whichever separator its path is written with — a run that chose a new
-    /// name each time would rebuild the workspace from nothing on every gate.
-    #[test]
-    fn one_checkout_is_one_directory_however_it_is_written() {
-        assert_eq!(
-            named_for("$HOME", Path::new(r"C:\dev\alo-os-claude")),
-            named_for("$HOME", Path::new("C:/dev/alo-os-claude")),
-        );
-        assert_eq!(
-            named_for("$HOME", Path::new("C:/dev/alo-os-claude/")),
-            named_for("$HOME", Path::new("C:/dev/alo-os-claude")),
-        );
-    }
-
-    /// **Nothing in the name needs quoting**, because the bridge assembles its
-    /// command line by joining words with spaces: a directory whose name
-    /// carried one would become two arguments and build somewhere else.
-    #[test]
-    fn a_checkout_with_an_awkward_name_still_names_a_plain_directory() {
-        let awkward = named_for("/home/one", Path::new("/srv/My Checkout (2)"));
-        assert_eq!(
-            &awkward[.."/home/one/alo-builds/".len()],
-            "/home/one/alo-builds/"
-        );
-        let name = awkward.rsplit('/').next().unwrap_or_default();
-        assert!(
-            name.chars().all(|letter| letter.is_ascii_lowercase()
-                || letter.is_ascii_digit()
-                || letter == '-'),
-            "{name} would have to be quoted"
-        );
-        assert!(name.starts_with("my-checkout-2-"), "{name}");
-    }
-
-    /// A path with no last part of its own still names a directory rather than
-    /// producing one that ends in nothing.
-    #[test]
-    fn a_checkout_with_no_name_of_its_own_is_still_given_one() {
-        let named = named_for("/root", Path::new("/"));
-        assert!(named.starts_with("/root/alo-builds/checkout-"), "{named}");
     }
 
     /// **Room enough is a pass, and the sentence for too little names the
