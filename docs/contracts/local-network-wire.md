@@ -441,6 +441,11 @@ reads its interfaces — a dock re-enumerating its adapters, a namespace rebuilt
 - **The first question asked there once the machine has followed the kernel is
   answered, and the port answers there**, over IPv4 as over IPv6, with no
   restart — at the old number and at a new one alike.
+- **An adapter that comes back identical is still a new network.** Added
+  2026-09-17, additively: a cable with no IPv4 address laid again with its number,
+  its name and its hardware address — and so its `fe80::` address — is joined
+  afresh, found by the first question once the machine has followed the kernel,
+  and a pairing proposed there is measured and completed on that interface.
 - **Where a machine cannot tell what went** — the kernel's notices were lost or
   unreadable — it answers every network again from the start once, rather than
   assume nothing went.

@@ -1410,6 +1410,38 @@ off theirs; nothing on alo OS joins `224.0.0.251` but this service, so it is
 written down rather than worked around.
 **Date:** 2026-09-16.
 
+### The Linux kernel — an adapter laid again with its hardware address is, in a dump, the interface that went
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip`, `veth`), procps `kill`; measured on 2026-09-17
+by `crates/alo-agentd/src/a_link_local_cable_re_laid_with_its_hardware_address.rs`.
+**Behaviour:** RFC 4862 derives a link-local address from the interface identifier
+and says nothing about an interface that goes and comes back. On a `veth` with no
+IPv4 address, laid with `ip link add … index N address M … peer … index P address
+Q`, deleted, and laid again with the same arguments while the machine at one end is
+held still with `SIGSTOP`:
+
+- **Everything a dump reads comes back the same.** The number, the name, the
+  hardware address and the `fe80::` address (the default `addr_gen_mode`, EUI-64)
+  are equal at both ends before and after; a service reading `RTM_GETLINK` and
+  `RTM_GETADDR` dumps alone cannot tell the two interfaces apart. The only thing
+  that says one went is the `RTM_DELLINK` queued on the routing socket meanwhile.
+- **Duplicate address detection runs in a namespace whose only process is
+  stopped.** Both link-local addresses stop being `tentative` before the stopped
+  service is let go, so the first dump it reads already has the address usable —
+  nothing in it arrives later to move the network.
+- **The membership is the IPv6 one `two_machines_with_no_ipv4_find_each_other_again.rs`
+  measured**: with the service's
+  socket still holding `ff02::fb` at that number, `/proc/<pid>/net/igmp6` lists no
+  group on the re-laid interface.
+
+**Our response:** `crate::joining` leaves and joins afresh every network whose
+interface the kernel said was deleted, whether or not it is reported again
+(`crate::interfaces_that_went`). With that reading removed, the fixture fails at
+*reception never followed its cable to 40: joined at `40`, and the interface is not
+in the discovery group* — the service counting itself joined on an interface nobody
+on the cable can reach it through.
+**Date:** 2026-09-17.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

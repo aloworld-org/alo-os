@@ -1611,7 +1611,31 @@ same assumption task 30 removed.
 
 ### 32. A link-local cable re-laid with the same hardware address between two readings is still joined
 
-**Status:** ready. **Depends on:** 30, 31.
+**Status:** **Done, 2026-09-17.** Measured on a real kernel by
+`crates/alo-agentd/src/a_link_local_cable_re_laid_with_its_hardware_address.rs` —
+the studio and reception each serving as `src/main.rs` does, on one `veth` with
+link-local IPv6 only, laid every time at numbers 40 and 41 **and with hardware
+addresses given**. The studio holds reception still with `SIGSTOP`, deletes the
+cable, lays it again identically, and waits until both link-local addresses have
+finished duplicate address detection before `SIGCONT`: the number, name, hardware
+address and `fe80::` address at each end are asserted equal to what they were, so
+the first dump reception reads is of the network it had. While held, with the cable
+deleted the studio finds nothing and a proposal to reception is refused before
+anything is sent; laid again, reception's re-laid interface is not in `ff02::fb`
+although its socket joined at that number, and nothing answers. Let go, once
+reception's service is joined and the kernel lists the interface in the group
+(`/proc/<pid>/net/igmp6`, which only the service joins in that network), the
+studio's **first** question finds reception on the same interface at the same
+address, both questions are answered with the same bytes as before, and the studio
+proposes and they pair on that interface. **No product code changed:** the reading
+task 31 put into `crate::joining` holds it. With that reading removed
+(`kept_and_gone` keeping every reported network) the fixture fails at *reception
+never followed its cable to 40: joined at `40`, and the interface is not in the
+discovery group*. Contract: `docs/contracts/local-network-wire.md` (*An adapter
+that comes back identical is still a new network*, additive). `docs/quirks.md`
+records the kernel. The report is
+`docs/autonomy/updates/a-link-local-cable-re-laid-with-its-hardware-address.md`.
+**Depends on:** 30, 31.
 
 *Machines find each other with zero configuration — no addresses typed.* Task 31
 made every set of sockets that follows the kernel read **what the kernel said
@@ -1641,3 +1665,39 @@ that network never went.
   person or an agent, no trusted-network setting, what crosses the wire unchanged.
   No interval and no polling. What reality does that the specification does not say
   goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 33. A machine that missed what the kernel said about its networks is still found on every one
+
+**Status:** ready. **Depends on:** 31, 32.
+
+*Machines find each other with zero configuration.* Tasks 31 and 32 measured the
+service reading the kernel's `RTM_DELLINK` after being held still across a cable
+re-laid. What neither measured is the kernel **not delivering** it: a routing
+socket nobody reads in time overflows, the kernel drops what it would have queued
+and says `ENOBUFS` once, and `crate::unix::emptied` hands that on as a message
+lost, which `crate::interfaces_that_went::Went` reads as *any interface may have
+gone* — every membership taken afresh, every responder let go of and made again.
+That half is held only by a unit test on a `Went` built by hand. A dock with a
+dozen adapters, or a container host rebuilding its bridges while the service is
+descheduled, is exactly the burst that overflows the socket, and a machine that
+then counts itself joined everywhere is a machine nobody finds until it restarts.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does, with
+  a far end on a `veth` carrying IPv4 and one carrying link-local IPv6 only
+  (`crate::a_cable_re_laid_between_two_readings` and
+  `crate::a_link_local_cable_re_laid_with_its_hardware_address` show how a machine
+  is held still): while it is held still, enough interfaces are made and deleted in
+  its network to overflow its routing socket — made certain rather than hoped for,
+  by reading the kernel's own drop count for that socket (`/proc/<pid>/net/netlink`)
+  before it is let go, and written up — and both cables are deleted and laid again
+  at the same numbers with the same hardware addresses; once it has followed the
+  kernel, the far end's first question on each cable is answered and the port is
+  reached there, tested; the service log says what was lost once and the service
+  keeps running, tested; with `Went::lost` read as *nothing went* the test fails,
+  and the report says where; and what is said is the same bytes throughout.
+- **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, what crosses the wire
+  unchanged. No interval and no polling, and no larger receive buffer offered as
+  the fix — a buffer only moves the burst that overflows it. What reality does that
+  the specification does not say goes in `docs/quirks.md`. Nothing in `alo-shell`,
+  nothing in `image/`.

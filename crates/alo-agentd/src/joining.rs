@@ -63,6 +63,11 @@
 //! ([`crate::interfaces_that_went`]): a network whose interface it said was
 //! deleted is left and joined afresh whether or not it is reported again, which
 //! is the same rule `crate::responding` follows for the IPv4 group.
+//! `crate::a_link_local_cable_re_laid_with_its_hardware_address` is the
+//! measurement: a cable laid again with its number, its name and its hardware
+//! address while the machine is held still is, in the next dump, the network it
+//! was down to its `fe80::` address, and without this reading the machine never
+//! joins it again.
 //!
 //! # Over IPv6, on that notification
 //!

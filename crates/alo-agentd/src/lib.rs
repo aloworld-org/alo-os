@@ -184,6 +184,8 @@ mod a_cable_re_laid_between_two_readings;
 #[cfg(all(test, target_os = "linux"))]
 mod a_discovery_answer_leaves_on_the_network_it_arrived_on;
 #[cfg(all(test, target_os = "linux"))]
+mod a_link_local_cable_re_laid_with_its_hardware_address;
+#[cfg(all(test, target_os = "linux"))]
 mod a_machine_reachable_on_both_networks;
 #[cfg(all(test, target_os = "linux"))]
 mod a_paired_machine_on_two_networks_with_one_address;
