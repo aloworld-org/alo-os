@@ -26,13 +26,17 @@
 
 registry = "ghcr.io/aloworld-org/alo-os"
 
-# Declared 2026-09-17, in the change that moved the recipe's label to it. 0.0.2
-# exists to carry `usr/lib/tmpfiles.d/alo.conf`, the door on the way to the
-# boundary, which the installer plan's tasks 15 and 11 cannot be finished
-# without. Until its digest is pinned below, an installer still pulls 0.0.1.
-next = "0.0.2"
-
-version = "0.0.1"
-digest = "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c"
-revision = "2501af53d459d7d75e08c2ecaf61d3e8430a2d50"
+# Release 0.0.2: built from 8d2619daeb07b4b0ebbed59ded8caee722103b65, pushed and
+# signed by the owner on 2026-09-17 (cosign 3.1.3, by digest, no transparency
+# log), and verified against `signing/alo-os.pub`; a different key was refused
+# with *Found: 0, Expected 1*. It carries `usr/lib/tmpfiles.d/alo.conf`, the
+# door on the way to the boundary, which 0.0.1 did not — and the document
+# converter, checked executable inside the built image before it was pushed.
+#
+# The digest is the one the **registry** reports, not the one podman gives the
+# local copy: those differ, and a signature over the local digest would verify
+# here and be unpullable everywhere else.
+version = "0.0.2"
+digest = "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9"
+revision = "8d2619daeb07b4b0ebbed59ded8caee722103b65"
 key = "signing/alo-os.pub"

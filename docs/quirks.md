@@ -4930,6 +4930,7 @@ entries, because a person's machine can have one.
 **Date:** 2026-09-16.
 
 
+
 ### A virtual source made by the media server's own loopback tool cannot be recorded from
 **Version:** PipeWire 1.0.5 with WirePlumber 0.4.17, Ubuntu 24.04 aarch64, 2026-09-17.
 **Behaviour:** `pw-loopback` will publish a node with `media.class =
@@ -5036,4 +5037,20 @@ terminal, and a machine that did not trust its owner with one would be a toy. It
 also exactly why `alo-cameras` holds *off* below the door: with the camera switched
 off the machine lets go of the device, so there is no device file for a program of
 anybody's to open, asked or unasked.
+
+### `/opt` is a real directory on the pinned base, not a link into `/var`
+**Version:** the base pinned in `image/Containerfile`, built 2026-09-17.
+**Behaviour:** bootc bases commonly ship `/opt` as a symbolic link into `/var`, and
+the recipe replaced it with a real directory before installing the document
+converter — because `/var` is machine state a bootc system does not update from the
+image, so an engine installed through the link would stop being part of the
+read-only image. The pinned base does not do this: `/opt` is already a real
+directory. `rm -f` refuses a directory, so the step failed the whole build with
+`rm: cannot remove '/opt': Is a directory` the first time the recipe was ever built.
+The recipe had said this was unmeasured; it was, until a release needed it.
+**Our response:** the replacement is conditional — `if [ -L /opt ]`, done where a
+base ships a link and skipped where it does not — rather than assuming either
+shape. The `test -x` on the installed engine at the end of the same step is what
+proves the engine really landed somewhere it will be found, whichever shape `/opt`
+had.
 **Date:** 2026-09-17.

@@ -13,7 +13,7 @@
 //! the boot environment, `docs/booting.md`, a Release's notes — can carry a
 //! second spelling of it that drifts. This crate reads it because this crate is
 //! already where the recipe and the document are held to each other, and the
-//! pin is a sentence with its other half in the recipe: *release `0.0.1`* is
+//! pin is a sentence with its other half in the recipe: *release `0.0.2`* is
 //! *these bytes*. `crate::publishing` holds the two halves together.
 //!
 //! # Read strictly, unlike the recipe
@@ -212,32 +212,33 @@ mod tests {
     /// release is being worked on; `next` is the candidate the recipe now
     /// names, and it becomes the pin only when a digest signed against the key
     /// below is written here. This reading is therefore what a release in
-    /// flight looks like: still serving 0.0.1, preparing 0.0.2.
+    /// This reads the pin between releases: what was signed is what the
+    /// recipe names, and no candidate is declared.
     #[test]
     fn the_shipped_pin_names_the_release_the_owner_signed() {
         let pin = ThePin::read(&the_pin()).unwrap();
 
         assert_eq!(pin.registry(), THE_REGISTRY);
-        assert_eq!(pin.version(), "0.0.1");
+        assert_eq!(pin.version(), "0.0.2");
         assert_eq!(
             pin.reference(),
-            "ghcr.io/aloworld-org/alo-os@sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c"
+            "ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9"
         );
-        assert_eq!(pin.revision(), "2501af53d459d7d75e08c2ecaf61d3e8430a2d50");
+        assert_eq!(pin.revision(), "8d2619daeb07b4b0ebbed59ded8caee722103b65");
         assert_eq!(pin.key(), "signing/alo-os.pub");
-        assert_eq!(pin.next(), Some("0.0.2"));
+        assert_eq!(pin.next(), None);
     }
 
     /// **A digest that is not a whole SHA-256 is not a pin**: a short one, an
     /// uppercase one, another algorithm, and a tag where the digest goes.
     #[test]
     fn a_digest_that_is_not_one_is_refused() {
-        let digest = "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
+        let digest = "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
         for instead in [
             "sha256:d3f05b60",
             "sha256:D3F05B60975EDCFF51A44C1F21E764A32B286677E306BA24631BAD6A00B6A13C",
-            "sha512:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c",
-            "d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c",
+            "sha512:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9",
+            "8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9",
             "latest",
             "",
         ] {
@@ -254,17 +255,23 @@ mod tests {
     #[test]
     fn a_release_that_moves_is_refused() {
         let refused =
-            ThePin::read(&the_pin_with("version = \"0.0.1\"", "version = \"latest\"")).unwrap_err();
+            ThePin::read(&the_pin_with("version = \"0.0.2\"", "version = \"latest\"")).unwrap_err();
         assert!(
             matches!(refused, NotPinned::NotARelease { .. }),
             "{refused}"
         );
 
-        // The declared candidate is changed rather than a second one added:
-        // the shipped pin already declares one, and two `next` keys would be
-        // refused by the parser before this rule was ever reached.
-        let refused =
-            ThePin::read(&the_pin_with("next = \"0.0.2\"", "next = \"dev\"")).unwrap_err();
+        // Between releases the shipped pin declares no candidate, so one is
+        // added here rather than changed. While a release is in flight the pin
+        // does carry `next`, and this fixture would have to replace it instead
+        // — two `next` keys are refused by the parser before this rule is
+        // reached, which would fail for the wrong reason.
+        let refused = ThePin::read(&the_pin_with(
+            "version = \"0.0.2\"",
+            "version = \"0.0.2\"
+next = \"dev\"",
+        ))
+        .unwrap_err();
         assert!(
             matches!(refused, NotPinned::NotARelease { .. }),
             "{refused}"
@@ -276,7 +283,7 @@ mod tests {
     #[test]
     fn a_revision_that_is_not_a_whole_commit_is_refused() {
         let refused = ThePin::read(&the_pin_with(
-            "revision = \"2501af53d459d7d75e08c2ecaf61d3e8430a2d50\"",
+            "revision = \"8d2619daeb07b4b0ebbed59ded8caee722103b65\"",
             "revision = \"2501af5\"",
         ))
         .unwrap_err();
@@ -330,6 +337,6 @@ mod tests {
     fn the_reference_is_by_digest() {
         let pin = ThePin::read(&the_pin()).unwrap();
         assert!(pin.reference().contains('@'));
-        assert!(!pin.reference().contains(":0.0.1"));
+        assert!(!pin.reference().contains(":0.0.2"));
     }
 }

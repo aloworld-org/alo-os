@@ -176,7 +176,7 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
 
 /// The digest the owner signed on 2026-09-15, for release `0.0.1`.
 const THE_SIGNED_DIGEST: &str =
-    "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
+    "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
 
 /// **The digest an installer pulls is the one the owner signed, pinned in one
 /// file the crate reads, and the image agrees with it.**

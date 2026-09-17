@@ -1,4 +1,4 @@
-# alo OS 0.0.1 — the installer
+# alo OS 0.0.2 — the installer
 
 The notes the GitHub Release carries, committed here so that nothing about the
 release is typed twice. `crates/alo-image` holds every fact below to
@@ -22,11 +22,18 @@ setting.
 What this release installs, from the registry, by content:
 
     registry: ghcr.io/aloworld-org/alo-os
-    tag: 0.0.1
-    digest: sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c
+    tag: 0.0.2
+    digest: sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9
     secure boot: off
 
 Nothing but that digest is pulled, whatever a tag in the registry says later.
+
+**What changed since 0.0.1.** The disk this installs carries the door on the way
+to the kernel boundary, which 0.0.1 did not — without it an installed machine
+runs the agent service but the boundary it is meant to be held inside has no
+way through. It also carries the document engine, so a `.docx`, `.xlsx` or
+`.pptx` is converted on the machine itself, by a service that can reach nothing,
+and what the copy could not carry is said by name rather than lost quietly.
 
 `SHA256SUMS` is published beside the download: it is the checksum of every asset
 in this Release, so a download can be compared with what was published.

@@ -65,10 +65,10 @@ The owner's first publish happened on
 
 | | |
 |---|---|
-| Release | `0.0.1` (`org.opencontainers.image.version`) |
-| Built from | `2501af53d459d7d75e08c2ecaf61d3e8430a2d50` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.1` |
-| Digest | `sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c` |
+| Release | `0.0.2` (`org.opencontainers.image.version`) |
+| Built from | `8d2619daeb07b4b0ebbed59ded8caee722103b65` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.2` |
+| Digest | `sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9` |
 | Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
 | Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
 

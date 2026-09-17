@@ -133,7 +133,7 @@ mod tests {
 
     /// A digest, as the shipped notes name it.
     const THE_DIGEST_STATED: &str =
-        "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
+        "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
 
     /// **The four facts are read off the indented block**, and the digest is
     /// read both as a fact and as a digest named in the text.

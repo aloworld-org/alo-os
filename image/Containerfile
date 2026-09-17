@@ -316,13 +316,20 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec
 # The office engine, from the checked packages, installed by the base's own
 # package manager so its libraries come from the base rather than from us.
 #
-# `/opt` on this base is a link into `/var`, which a bootc machine does not
-# update from the image after it is installed; the engine installs under `/opt`,
-# so the link is replaced with a real directory first and the engine is part of
-# the read-only image like everything else here. **Unmeasured until this recipe
-# is built** — `docs/quirks.md` is where the measurement goes.
+# `/opt` on a bootc base is often a link into `/var`, which a bootc machine does
+# not update from the image after it is installed; the engine installs under
+# `/opt`, so a link has to be replaced with a real directory before the engine
+# is installed, or the engine would land in mutable state instead of the
+# read-only image.
+#
+# **Measured 2026-09-17, the first time this recipe was built: on the pinned
+# base `/opt` is already a real directory**, and `rm -f` refuses a directory, so
+# the unconditional removal failed the build (`rm: cannot remove '/opt': Is a
+# directory`). The replacement is therefore conditional — done where the base
+# ships a link, skipped where it does not — rather than assuming either shape.
+# Recorded in `docs/quirks.md`.
 COPY --from=converter /converter/ /tmp/alo-converter/
-RUN rm -f /opt \
+RUN if [ -L /opt ]; then rm -f /opt; fi \
  && mkdir -p /opt \
  && dnf install --assumeyes --setopt=install_weak_deps=False /tmp/alo-converter/*.rpm \
  && dnf clean all \

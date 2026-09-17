@@ -169,3 +169,30 @@ Two decisions the owner made when accepting A, and they sharpen what
   image, and then only as *the workflow pushes, a person signs*.
 - **C**, for the reasons above; a transparency log may return as an addition to
   a key, never as a replacement for one.
+
+## The private half was exposed, and the owner accepted it, 2026-09-17
+
+While release 0.0.2 was being prepared, the encrypted private half was pasted
+into a conversation with the agent preparing it. The agent did not write it to
+disk and it is not in this repository — the test below still refuses any private
+key under `image/signing/` — but a transcript is stored, and the key's secrecy
+from that moment rests on its passphrase alone.
+
+The agent recommended rotating: nothing is installed in the field, 0.0.2 was not
+yet signed, and rotating the root of trust costs almost nothing before machines
+exist and a great deal afterwards. **The owner declined, and that is recorded
+here rather than left as a silence**, because a decision nobody wrote down looks
+identical to an oversight when somebody reads this in a year.
+
+What follows from it, unchanged by the decision:
+
+- **The passphrase is never typed where an agent can read it.** Ciphertext and
+  passphrase together are the key; separately, neither is.
+- **Signing stays the owner's.** The agent prepares the digest and hands over one
+  command; the owner runs it; the agent verifies the signature against the
+  committed public half before anything is pinned. That was option A's shape and
+  it is now also the reason the exposure is survivable.
+- **If a machine is ever installed in the field, this stops being cheap.** The
+  moment there are machines trusting this key, rotation means every one of them
+  refusing updates until it is re-keyed by hand. Revisit before the certified
+  laptop is installed, not after.

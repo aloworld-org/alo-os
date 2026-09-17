@@ -208,7 +208,7 @@ mod tests {
 
     /// The digest the owner signed, as the shipped pin and notes state it.
     const THE_DIGEST: &str =
-        "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
+        "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
 
     /// A file this repository ships, as text.
     fn text(at: &str) -> String {
@@ -313,7 +313,7 @@ mod tests {
     #[test]
     fn notes_naming_another_release_are_refused() {
         let root = a_copy_of_the_image("notes-another-tag");
-        edited(&root, THE_NOTES, "    tag: 0.0.1", "    tag: 0.0.0");
+        edited(&root, THE_NOTES, "    tag: 0.0.2", "    tag: 0.0.0");
 
         let wrong = wrong_at(&root);
 
