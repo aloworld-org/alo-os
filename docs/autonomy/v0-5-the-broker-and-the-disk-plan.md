@@ -114,7 +114,35 @@ first.
 
 ### 4. Updates and storage, through the broker
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-17** — storage built, and the updates decided as far
+as a worker may and moved to task 8. **Depends on:** 1. Report:
+`docs/autonomy/updates/storage-through-the-broker-and-the-update-decision.md`;
+decision: ADR 0053, proposed.
+
+**Storage, built.** `crates/alo-drives` (new) is what a drive is as udisks2
+reports it, and the client over the system bus. A drive is named by the disk
+service's `Id`, a filesystem by that and its UUID, and a device name is never an
+identity. The client can call five methods and no other: read everything, mount,
+unmount, power off, eject. A test reads the source for every udisks2 method that
+formats, repartitions, erases, relabels, repairs, unlocks or tests a disk, and
+finds none. `alo-brokerd`'s `Storage` carries `storage.mount` and `storage.eject`
+out against what the service reports now: exactly one match, a drive a person
+plugged in and never one that is part of the machine, a filesystem not already
+mounted, mounted *as* the person by the login `/etc/passwd` gives the door's user,
+and ejected by unmounting without force before switching the drive off. Mounting
+makes no grant; neither crate depends on anything that could make one. Health is
+not a broker verb: it is a read the disk service answers to anybody, in
+`alo_drives::Drives::now`.
+
+**Updates, not built, and why.** Measured in the pinned base: `bootc` changes the
+machine only for root holding `CAP_SYS_ADMIN`, and the broker holds no capability,
+by test. `alo_keeping_up::Ready`, which `Staging` needs, cannot cross into another
+process. Every road forward either widens a privileged component, adds one, or
+edits `alo-keeping-up`, which this plan never edits. So ADR 0053 sets out the
+options and recommends a unit per update verb that the broker starts through
+systemd. Both update verbs answer `not-carried` in the record until it is accepted,
+and `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` fails once it
+is. The update half of the acceptance below is task 8's, word for word.
 
 - **Acceptance:** the broker's update verbs — apply a staged update, roll back — carry
   out exactly what `alo-keeping-up` decided and nothing it did not, with the
@@ -165,7 +193,7 @@ machine.
 
 ### 7. Every sentence, and the walk from a new printer to a recovered disk
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4.
+**Status:** ready. **Depends on:** 1, 2, 3, 4, and 8 for the update in the walk.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — the agent proposes adding a printer, the person approves,
@@ -174,3 +202,31 @@ machine.
   one test; the encryption sentences join the table once task 6 lands; no sentence names
   LUKS, TPM, CUPS, NetworkManager, a socket or *root*.
 - **Constraint:** nothing here re-decides what the sentences describe.
+
+### 8. Updates, through the broker, as ADR 0053 decides
+
+**Status:** blocked — on ADR 0053 being accepted by the owner; on
+`alo-keeping-up`'s owner adding a way to decide a `Staging` from an approved
+`{from, to}` checked against the base's status now (the machine-keeps-itself
+lane's crate, which this plan never edits); and on `alo-egress`'s owner adding an
+errand for fetching an update. **Depends on:** 1, 4.
+
+Task 4 carried storage out and found that the updates could not be carried out
+without a decision: the base's program asks for `CAP_SYS_ADMIN`, the broker holds
+no capability, and an update `alo-keeping-up` decided cannot cross into the
+broker. Its report and ADR 0053 have the measurements.
+
+- **Acceptance** (task 4's, for the updates, unchanged): the broker's update verbs
+  — apply a staged update, roll back — carry out exactly what `alo-keeping-up`
+  decided and nothing it did not, with the machine-keeps-itself plan's rule that
+  an update never interrupts intact. And, from ADR 0053 if accepted as proposed:
+  no instruction the broker causes carries `--apply`; the broker still holds no
+  capability; what runs the base is a unit with a fixed command line, its
+  capabilities named line by line and held by a test; each refusal ADR 0053 lists
+  is a test beside the carried case; and
+  `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` is replaced by
+  those tests.
+- **Constraint:** `bootc` is rented and never patched (ADR 0011). What the image
+  installs is the installer plan's; this task hands it the units and the measured
+  capability set. No test changes a real machine's deployments; the virtual
+  machine is where a staged update and a return are shown.

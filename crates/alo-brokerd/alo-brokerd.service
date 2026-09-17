@@ -21,9 +21,13 @@ After=NetworkManager.service dbus.service
 [Service]
 Type=exec
 
-# Root, because the network manager decides who may change the machine's network
-# from the credentials of whoever asks on the system bus, and root is who it lets
-# without asking anybody; and because the machine's proxy file is root's to write.
+# Root, because the network manager decides who may change the machine's network,
+# and the disk service who may mount a drive for the person, from the credentials
+# of whoever asks on the system bus, and root is who each lets without asking
+# anybody; and because the machine's proxy file is root's to write. The disk
+# service is started by the bus when it is first asked, so it needs no line here.
+# The updates are not carried out by this process at all: the base's program asks
+# for a capability this unit does not hold, and ADR 0053 decides what runs it.
 # And the person's own group, because the door, the approving key and the folder
 # a person hands a proxy over in are handed to whatever group this process runs
 # in: the person's service reaches them, and the agent's own login, which is not

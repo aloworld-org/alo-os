@@ -34,7 +34,7 @@ use std::time::{Duration, SystemTime};
 use alo_broker::handing_over::hand_over_a_fresh_key;
 use alo_broker::listening::Listening;
 use alo_broker::{BY_HAND, Broker, Door, Identity, Switch, SystemVerb, our_group, our_user};
-use alo_brokerd::{Carriers, Network, Proxy};
+use alo_brokerd::{Carriers, Network, Proxy, Storage};
 use alo_capability::{Approvals, Authorised, Given, Grantee, Grants, NotAuthorised, Proposal};
 use alo_changing_network::words::{NETWORK, THIS_CONVERSATION, WIRELESS};
 use alo_changing_network::{
@@ -42,6 +42,7 @@ use alo_changing_network::{
     carry_out_approved, carry_out_by_hand, changed_said, network_verbs, proposable,
     set_proxy_by_hand,
 };
+use alo_drives::{Drive, DriveService, Drives, Filesystem, LoginName, TheDrives};
 use alo_networks::proxy_file::kept_on_this_machine;
 use alo_networks::{
     NetworkName, NetworkService, Networks, NotAnswering, NotDone, Primary, Protection, Saved,
@@ -147,6 +148,27 @@ fn the_agent() -> Grantee {
     Grantee::named("alo")
 }
 
+/// A disk service that reports no drives, and fails the test if a network
+/// change ever reaches a drive.
+#[derive(Debug)]
+struct NoDrives;
+
+impl Drives for NoDrives {
+    fn now(&self) -> Result<TheDrives, alo_drives::NotAnswering> {
+        Ok(TheDrives::default())
+    }
+}
+
+impl DriveService for NoDrives {
+    fn mount(&self, _: &Drive, _: &Filesystem, _: &LoginName) -> Result<(), alo_drives::NotDone> {
+        panic!("a network change mounted a drive")
+    }
+
+    fn eject(&self, _: &Drive) -> Result<(), alo_drives::NotDone> {
+        panic!("a network change ejected a drive")
+    }
+}
+
 /// A group this test may hand a file to that is not root's.
 fn a_group() -> u32 {
     if our_group() == 0 { 4242 } else { our_group() }
@@ -181,6 +203,7 @@ fn a_broker(what: &str, service: &Standing, how_many: usize) -> Running {
     let carriers = Carriers::of(
         Network::against(service.clone()),
         Proxy::handed_over(&wanted, &machines_proxy, our_user()),
+        Storage::against(NoDrives, &here.join("passwd"), our_user()),
     );
     let answering = std::thread::spawn(move || {
         let mut broker = Broker::new(

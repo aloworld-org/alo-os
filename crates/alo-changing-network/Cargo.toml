@@ -30,6 +30,9 @@ thiserror = { workspace = true }
 # person's approval, through the real door, to the network manager's side and
 # back.
 alo-brokerd = { path = "../alo-brokerd" }
+# The broker's carriers include storage; the test hands it a disk service that
+# reports no drives and fails if a network change ever reaches one.
+alo-drives = { path = "../alo-drives" }
 
 [lints]
 workspace = true

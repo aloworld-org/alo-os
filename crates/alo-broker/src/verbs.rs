@@ -15,9 +15,10 @@
 //! a protected network asks the person in a surface the agent cannot read (task
 //! 3), and [`SystemVerb::JoinNetwork`] has nowhere to put one. **No VPN
 //! configuration** in v0.5. **No read**: checking a disk's health is a read, and
-//! a read answers inside a turn without an approval (ADR 0001 §5) — how one
-//! reaches privileged hardware is task 4's decision, and putting it here would
-//! have made every read wait for an approval it should not need. And, above
+//! a read answers inside a turn without an approval (ADR 0001 §5). Task 4 found
+//! it needs no privilege at all: the disk service answers it to anybody on the
+//! system bus (`alo-drives`), so putting it here would only have made every read
+//! wait for an approval it should not need. And, above
 //! all, **no verb runs anything, and none takes a path, a command, a device
 //! name or a line of configuration.**
 //!

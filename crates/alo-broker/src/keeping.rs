@@ -8,10 +8,10 @@
 //!   memory; the process that runs the broker on a machine,
 //!   `crates/alo-brokerd`, writes to the machine's own record file.
 //! - [`Carrying`] is what carries a verb out. `crates/alo-brokerd` carries the
-//!   network's verbs (task 3 of
+//!   network's verbs and the storage verbs (tasks 3 and 4 of
 //!   `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`); printers are task
-//!   2 and updates and storage task 4, and each adds its verbs there and
-//!   nothing else.
+//!   2, and the updates wait on ADR 0053. Each adds its verbs there and nothing
+//!   else.
 
 use alo_record::{Entry, Record};
 

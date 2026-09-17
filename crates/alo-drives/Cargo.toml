@@ -1,0 +1,23 @@
+[package]
+name = "alo-drives"
+version = "0.0.1"
+description = "What a drive is on this machine, as the rented disk service reports it: the drives, the filesystems on them, their health, and the one client that mounts and ejects a removable one."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Nothing else, and the absence is part of the argument. No `alo-capability`,
+# `alo-granted` or `alo-picking`: mounting a drive grants nobody anything, and a
+# crate that cannot name a grant cannot make one. `tests/a_drive_is_only_ever_mounted_or_ejected.rs`
+# reads this list to hold it to that.
+
+# The rented disk service, spoken to over the system bus. Linux only: it is a
+# Linux service. Already in the workspace for the keyring, the portals, the
+# adapters and the network manager, at the same version and with the same
+# runtime, so it adds no crate.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true

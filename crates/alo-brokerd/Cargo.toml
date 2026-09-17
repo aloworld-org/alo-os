@@ -23,6 +23,12 @@ alo-broker = { path = "../alo-broker" }
 # person approved and changes the one that matches.
 alo-networks = { path = "../alo-networks" }
 
+# What a drive is as the disk service reports it, and the client that mounts
+# and ejects a removable one. Read, never decided here: the carrier compares what
+# the disk service reports now with the identity a person approved, and mounts
+# or ejects the one that matches, for the person.
+alo-drives = { path = "../alo-drives" }
+
 # The one proxy setting and whose it is, for the refusal a person's proxy meets
 # on a machine an organisation manages.
 alo-proxy = { path = "../alo-proxy" }

@@ -862,9 +862,10 @@ constraint on its design rather than a hope about its future.
 
 `crates/alo-broker` is the list and the door, added 2026-09-16.
 `crates/alo-brokerd` is the process that runs it, and carries out the four
-network verbs; printers, updates and storage are answered `not-carried` until
-the tasks that own them arrive (`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`,
-tasks 2 and 4).
+network verbs (added 2026-09-16) and the two storage verbs (added 2026-09-17).
+Printers are answered `not-carried` until the task that owns them arrives
+(`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 2); the two update
+verbs are answered `not-carried` until ADR 0053, proposed, is accepted and built.
 
 **The list.** Eleven verbs, each with exactly one argument:
 
@@ -878,7 +879,8 @@ tasks 2 and 4).
 
 An **identity** is the SHA-256 of the identity the rented service reported for
 the thing — the printer the print service found, the network the network manager
-reported, the drive the kernel reported, the build the base staged — written as
+reported, the drive or filesystem the disk service reported, the build the base
+staged — written as
 sixty-four lowercase hexadecimal characters. The broker never interprets one; the
 verb compares it with what the service reports at that moment and acts on the
 match or on nothing. There is no argument of any other shape: no text, no path,
@@ -940,8 +942,35 @@ person handed over at `/run/alo-broker/wanted/proxy.json` — a plain file owned
 by the person, opened without following a link — sets it only if its bytes
 digest to the identity and it is a setting `alo-proxy` would itself have made,
 and never over a proxy the organisation set. The machine's proxy file is
-`machine-proxy-file.md`. Printers, updates and storage are answered
-`not-carried` until the tasks that own them arrive.
+`machine-proxy-file.md`.
+
+**The storage verbs carried out.** The disk service is udisks2, spoken to over
+the system bus. A drive's identity is the SHA-256 of
+`alo-drives drive 1`, a zero byte, and the identifier the disk service keeps for
+the drive (its `Id`). A filesystem's identity is the SHA-256 of
+`alo-drives filesystem 1`, a zero byte, that drive identifier, a zero byte, and
+the filesystem's UUID (`alo_drives::Drive::as_reported`,
+`alo_drives::Drive::filesystem_as_reported`). A device name is never an identity.
+`storage.mount` asks for every filesystem now and mounts the one whose identity
+matches. It is mounted *as* the person the door is for, by the login name
+`/etc/passwd` gives that user, with no other option, where the disk service puts
+that person's drives. `storage.eject` asks for every drive now and ejects the one
+whose identity matches. Every mounted filesystem on it is unmounted first, never
+by force, and then the drive is switched off, or its medium ejected, when the
+disk service says it can be. Each is `not-carried`, and nothing is changed, when:
+no filesystem or drive matches, or more than one does; the drive is part of the
+machine rather than one a person plugs in (it is not removable and not attached
+over USB or an SD slot, or any of its block devices holds the system); the
+filesystem is already mounted; the account file does not name exactly one login
+for the person; or a filesystem on a drive being ejected will not unmount.
+Mounting makes no grant. What an agent may read on a drive is granted in a
+picker, like any folder. **A drive's health is not a broker verb.** It is a read
+the disk service answers to anybody on the system bus (`alo_drives::Drives::now`).
+
+**The update verbs.** `updates.apply` and `updates.roll-back` are answered
+`not-carried`, and nothing is run. The base's program changes the machine only
+for a process holding `CAP_SYS_ADMIN`, and the broker holds no capability. ADR
+0053 proposes how they are carried out.
 
 ## Records
 

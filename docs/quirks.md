@@ -5003,6 +5003,23 @@ Two things keep it from happening again:
   every artefact is built again beside the old ones. The change that moves the
   directory has to delete the one it moves away from in the same step. Both machines
   filled their volume from that cause on the same day.
+
+### `bootc` changes the machine only for root holding `CAP_SYS_ADMIN`
+**Version:** `bootc 1.15.1` in the pinned base (`quay.io/fedora/fedora-bootc`,
+local image `b035260f985f`), read on 2026-09-17.
+**Behaviour:** the program's write commands (`switch`, `upgrade`, `rollback`) check
+that they run as uid 0 **and** hold `CAP_SYS_ADMIN`. Its binary carries *This
+command requires full root privileges (CAP_SYS_ADMIN)* and *Verified uid 0 with
+CAP_SYS_ADMIN*. Being root is not enough. `alo-brokerd` runs as root with both
+capability lines of its unit empty, so `alo-updating` run inside it would fail on
+every machine. In a container `bootc` refuses first for not being a booted host,
+so the capability refusal was read from the program rather than provoked. A booted
+virtual machine is where it is confirmed. The same image carries `udisks2
+2.10.91`, which needs no capability of its caller: it decides from the caller's
+uid through polkit, as NetworkManager does.
+**Our response:** the storage verbs are carried out by the broker through udisks2.
+The update verbs are answered `not-carried`, and ADR 0053 (proposed) decides how
+they are carried out without handing the broker a capability.
 **Date:** 2026-09-17.
 
 ### No client can open a camera through the media server on WirePlumber 0.4

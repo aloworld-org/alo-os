@@ -12,6 +12,7 @@
 #![cfg(unix)]
 #![expect(
     clippy::unwrap_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -22,7 +23,8 @@ use std::time::SystemTime;
 use alo_broker::{
     Answer, ApprovingKey, Broker, Door, Identity, Request, Switch, SystemVerb, our_user,
 };
-use alo_brokerd::{Carriers, Network, Proxy};
+use alo_brokerd::{Carriers, Network, Proxy, Storage};
+use alo_drives::{Drive, DriveService, Drives, Filesystem, LoginName, TheDrives};
 use alo_networks::{
     NetworkName, NetworkService, Networks, NotAnswering, NotDone, Primary, Protection, Saved,
     TheNetworks, Visible,
@@ -69,6 +71,26 @@ impl NetworkService for Reporting {
     }
 }
 
+/// A disk service with no drives, which must never be asked to change one.
+#[derive(Debug)]
+struct NoDrives;
+
+impl Drives for NoDrives {
+    fn now(&self) -> Result<TheDrives, alo_drives::NotAnswering> {
+        Ok(TheDrives::default())
+    }
+}
+
+impl DriveService for NoDrives {
+    fn mount(&self, _: &Drive, _: &Filesystem, _: &LoginName) -> Result<(), alo_drives::NotDone> {
+        panic!("a network test mounted a drive")
+    }
+
+    fn eject(&self, _: &Drive) -> Result<(), alo_drives::NotDone> {
+        panic!("a network test ejected a drive")
+    }
+}
+
 /// A name.
 fn named(name: &str) -> NetworkName {
     NetworkName::announced(name.as_bytes()).unwrap()
@@ -94,7 +116,7 @@ fn a_flat() -> TheNetworks {
 
 /// A broker whose door hears this test, carrying the network's verbs out
 /// against `networks`.
-fn a_broker(networks: TheNetworks) -> Broker<Record, Carriers<Reporting>> {
+fn a_broker(networks: TheNetworks) -> Broker<Record, Carriers<Reporting, NoDrives>> {
     Broker::new(
         Door::handed_to(our_user()),
         ApprovingKey::of(&THE_KEY),
@@ -109,13 +131,18 @@ fn a_broker(networks: TheNetworks) -> Broker<Record, Carriers<Reporting>> {
                 Path::new("/nonexistent-alo-brokerd/proxy.json"),
                 our_user(),
             ),
+            Storage::against(
+                NoDrives,
+                Path::new("/nonexistent-alo-brokerd/passwd"),
+                our_user(),
+            ),
         ),
     )
 }
 
 /// Ask `broker` for `verb`, under a genuine token for approval `approval`.
 fn ask(
-    broker: &mut Broker<Record, Carriers<Reporting>>,
+    broker: &mut Broker<Record, Carriers<Reporting, NoDrives>>,
     verb: SystemVerb,
     approval: u64,
 ) -> Answer {
@@ -125,7 +152,7 @@ fn ask(
 }
 
 /// What the network manager was asked to change.
-fn asked(broker: &Broker<Record, Carriers<Reporting>>) -> Vec<String> {
+fn asked(broker: &Broker<Record, Carriers<Reporting, NoDrives>>) -> Vec<String> {
     broker.carrying().network().service().asked.borrow().clone()
 }
 
@@ -228,7 +255,8 @@ fn two_networks_answering_to_one_identity_are_neither_and_a_sign_in_is_not_joine
 }
 
 /// **A verb that is not the network's is not carried out here**, and says so
-/// in the record rather than pretending: printers, updates and storage.
+/// in the record rather than pretending: printers and updates, and storage verbs
+/// naming no drive the disk service reports.
 #[test]
 fn a_verb_that_is_not_the_networks_is_not_carried_out_here() {
     let mut broker = a_broker(a_flat());

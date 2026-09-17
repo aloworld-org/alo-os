@@ -19,8 +19,9 @@ mod running {
     use std::process::ExitCode;
 
     use alo_broker::our_group;
-    use alo_brokerd::{Carriers, Network, Places, Proxy, Started, started};
-    use alo_networks::network_manager::OnThisMachine;
+    use alo_brokerd::{Carriers, Network, Places, Proxy, Started, Storage, THE_ACCOUNTS, started};
+    use alo_drives::udisks::OnThisMachine as TheDiskService;
+    use alo_networks::network_manager::OnThisMachine as TheNetworkManager;
     use alo_networks::proxy_file::{THE_MACHINES_PROXY, THE_WANTED_PROXY};
 
     /// Open the door and answer whoever knocks, until this service is stopped.
@@ -32,12 +33,13 @@ mod running {
         let places = Places::on_this_machine();
         let carriers = |logins: &alo_brokerd::Logins| {
             Carriers::of(
-                Network::against(OnThisMachine),
+                Network::against(TheNetworkManager),
                 Proxy::handed_over(
                     Path::new(THE_WANTED_PROXY),
                     Path::new(THE_MACHINES_PROXY),
                     logins.person,
                 ),
+                Storage::against(TheDiskService, Path::new(THE_ACCOUNTS), logins.person),
             )
         };
         let Started {

@@ -45,7 +45,7 @@
 //!
 //! This crate is the door and the list, and it stays small enough to audit in
 //! an afternoon. The process that runs it — root, holding no capability, with
-//! the machine's record and the network's verbs behind it — is
+//! the machine's record and the network's and storage verbs behind it — is
 //! `crates/alo-brokerd`, which is where anything that carries a verb out lives.
 //! What both sides of the door must agree on is here: where the door and the
 //! key are ([`THE_DOOR`], [`THE_KEY`]), how the key is handed over
