@@ -222,6 +222,12 @@ impl Service {
         self.unit.listed(SERVICE, "IPAddressDeny")
     }
 
+    /// The mounts this one waits for, as `RequiresMountsFor=` names them.
+    #[must_use]
+    pub fn waits_for_mounts(&self) -> Vec<&str> {
+        self.unit.listed(UNIT, "RequiresMountsFor")
+    }
+
     /// The units this one is started before.
     #[must_use]
     pub fn before(&self) -> Vec<&str> {

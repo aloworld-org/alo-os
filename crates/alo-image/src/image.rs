@@ -241,6 +241,12 @@ impl Image {
         self.made.iter().find(|it| it.is_a_directory_at(path))
     }
 
+    /// What this image adjusts at this path at boot, if it adjusts anything.
+    #[must_use]
+    pub fn adjusted_at(&self, path: &Path) -> Option<&Made> {
+        self.made.iter().find(|it| it.is_adjusted_at(path))
+    }
+
     /// The number this image gives a login by this name, if it makes one.
     #[must_use]
     pub fn login_called(&self, name: &str) -> Option<u32> {

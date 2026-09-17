@@ -163,6 +163,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
     crate::released::everything_wrong_with_the_notes(image, &mut wrong);
     crate::converts::everything_wrong_with_the_converter(image, &mut wrong);
+    crate::reaching::everything_wrong_with_the_way_to_the_boundary(image, &mut wrong);
     wrong
 }
 

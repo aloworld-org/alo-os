@@ -207,6 +207,49 @@ pub enum Wrong {
         /// The group it is in.
         group: String,
     },
+    /// The loader does not wait for the file system it pins the boundary in.
+    #[error(
+        "{loader} does not wait for {mount} to be mounted — ADR 0018's boundary is pinned there, \
+         and a loader started before it is a machine whose boundary is pinned nowhere"
+    )]
+    TheLoaderDoesNotWaitForItsFileSystem {
+        /// The loader's unit.
+        loader: String,
+        /// The mount it has to wait for.
+        mount: String,
+    },
+    /// Nothing lets the agent's group pass through the BPF file system's root.
+    #[error(
+        "nothing adjusts {at} at boot, and systemd mounts it 0700 root:root — `{group}`, which \
+         ADR 0018 gives the map of turns, cannot reach the boundary beneath it, and alo-agentd \
+         stops saying there is none (docs/quirks.md)"
+    )]
+    TheBoundaryIsOutOfTheAgentsReach {
+        /// The mount point.
+        at: PathBuf,
+        /// The group the loader hands the boundary to.
+        group: String,
+    },
+    /// The way through the BPF file system's root is not what was decided.
+    #[error(
+        "{at} is adjusted to {mode:04o} {owner}:{group}, and the way to the boundary is \
+         {expected_mode:04o} root:{agents_group} — the agent's group may pass through and do \
+         nothing else, and nobody else may pass at all (ADR 0018)"
+    )]
+    TheWayToTheBoundaryIsNotWhatWasDecided {
+        /// The mount point.
+        at: PathBuf,
+        /// The mode it is adjusted to.
+        mode: u32,
+        /// The login it is given to.
+        owner: String,
+        /// The group it is given to.
+        group: String,
+        /// The mode that was decided.
+        expected_mode: u32,
+        /// The group the loader hands the boundary to.
+        agents_group: String,
+    },
     /// The folder the record goes in belongs to somebody else.
     #[error(
         "{at} is made for `{owner}`, and the record is written by `{person}` — what an agent did \

@@ -894,6 +894,78 @@ the environment says *You can turn this computer off or restart it now*.
 `Task` could say which program it could not start. Not filed from here.
 **Date:** 2026-09-16.
 
+### systemd 257 — systemd mounts the BPF filesystem so only root can pass through it
+**Version:** systemd 257.13-1.fc42, kernel 6.19.14-101.fc42, selinux-policy
+42.24-1.fc42, as release `0.0.1` (`ghcr.io/aloworld-org/alo-os@sha256:d3f05b60…`)
+carries them; QEMU q35 with Fedora's `edk2-ovmf-20250812-21.fc42`, **Secure Boot
+enabled** under Microsoft's certificates, processor emulated (TCG). Compared with
+WSL 2 (`6.18.33.2-microsoft-standard-WSL2`, systemd 255 as PID 1). 2026-09-16.
+**Behaviour:** the disk installed under Secure Boot booted, `alo-boundaryd` loaded
+and pinned the boundary, and `alo-agentd` stopped a second later saying there was
+no boundary. The installed machine's own account, printed to the serial line by the
+installer test's watching unit:
+
+```
+[  253.815658] fedora alo-boundaryd[809]: alo-boundaryd: the boundary is on this kernel, pinned at /sys/fs/bpf/alo, with 60989 to write it and nobody else; this process holds nothing and is done
+[  254.917004] fedora alo-agentd[1124]: alo-agentd did not run: a turn's work cannot be bounded on this machine: there is no boundary at /sys/fs/bpf/alo/bounds: alo-boundaryd loads one at boot, and until it has, this machine cannot bound a turn — …
+× alo-agentd.service - alo OS agent service: the door an agent knocks on
+     Active: failed (Result: exit-code) since Thu 2026-09-17 00:55:27 UTC; 32s ago
+    Process: 1124 ExecStart=/usr/bin/alo-agentd (code=exited, status=1/FAILURE)
+/sys/fs/bpf:
+drwx-----T.  3 root root      0 Sep 17 00:53 .
+drwxr-x---.  2 root alo-agent 0 Sep 17 00:55 alo
+none [integrity] confidentiality
+Enforcing
+uid=1000(alo) gid=1000(alo) groups=1000(alo),60989(alo-agent)
+```
+
+**Located:** the boundary *was* there. The loader made `/sys/fs/bpf/alo` `0750
+root:alo-agent` exactly as ADR 0018 asks, but systemd, which mounts the BPF
+filesystem early in PID 1, mounts it with `mode=0700`, so its root is `1700
+root:root` and nobody but root can pass through it to the directory beneath.
+`alo-agentd` runs as the person, holding nothing, so it could not reach the pin.
+`alo_bounding::Boundary::opened` asks `Path::exists()`, which answers `false` for a
+path it is not allowed to look at as well as for one that is not there, so the
+refusal said *there is no boundary* when there was one it could not reach. On WSL,
+where every boundary test in this repository had run, the same mount point is
+`drwxrwxrwt root:root`, the kernel's own default. The mount's source there is
+`bpffs`, not systemd's `bpf`: WSL's init mounts it before systemd starts, and
+systemd leaves a mount that is already there alone. So no test could have seen
+this.
+Neither Secure Boot's lockdown (`integrity`) nor SELinux (`Enforcing`) played any
+part: with the passage below given, the same disk under the same firmware ran
+`alo-agentd`.
+**Our response:** none to systemd (ADR 0011). `image/usr/lib/tmpfiles.d/alo.conf`
+adjusts the mount point, and makes nothing: `z /sys/fs/bpf 0710 root alo-agent -`.
+The agent's group may pass through and do nothing else there. It can't list what is
+pinned, it can't write, and nobody else may pass at all. The same release, written
+to a disk by its own `bootc install to-disk` and booted under the same Secure Boot
+firmware with only that line added through systemd's `tmpfiles.extra` credential,
+said:
+
+```
+Id=alo-agentd.service
+ActiveState=active
+SubState=running
+/sys/fs/bpf:
+drwx--x---.  3 root alo-agent 0 Sep 17 01:02 .
+drwxr-x---.  2 root alo-agent 0 Sep 17 01:04 alo
+/run/alo/1000:
+srw-rw----. 1 alo  alo-agent  0 Sep 17 01:04 agentd.sock
+```
+
+`crates/alo-image/src/reaching.rs` holds the line to the mode, to root, and to the
+group the loader's unit runs in, and refuses an image without it, a directory made
+there instead, every wider mode, another owner or group, and a loader that does not
+wait for the mount. The credential was a diagnosis on a scratch disk. The
+installer's own test changes nothing on the disk it installs: the line reaches a
+machine in the next release the owner signs (ADR 0036), and release `0.0.1` boots
+with `alo-agentd` failed as above.
+**Upstream:** systemd's `mode=0700` is deliberate (pins are privileged objects), and a
+distribution that wants an unprivileged reader is expected to arrange its own
+passage, which is what this is. Not a bug to file.
+**Date:** 2026-09-16.
+
 ### The Linux kernel — a link-local IPv6 address is only an address beside its interface, a new one cannot be used for a moment, and a development machine may have IPv6 off where a fresh namespace has it on
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

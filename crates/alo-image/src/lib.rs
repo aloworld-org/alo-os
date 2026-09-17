@@ -19,6 +19,7 @@
 //! | [`Unit`], [`Service`] | A systemd unit as text, and the settings alo OS asks about |
 //! | [`THE_LOADER`], [`THE_AGENT`], [`THE_OPENER`], [`THE_SERVER`] | The four units a machine starts, as systemd names them |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
+//! | [`THE_BPF_FILESYSTEM`], [`THE_PASSAGES_MODE`] | The mount the boundary is pinned in, and the way through it the agent's group is given |
 //! | [`Asserted`] | The numbers the build itself checks once those logins have been made |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
@@ -100,6 +101,7 @@ mod making;
 mod notes;
 mod pinned;
 mod publishing;
+mod reaching;
 mod recipe;
 mod refusing;
 mod released;
@@ -127,9 +129,10 @@ pub use installing::{
     ABOARD, SHARED, THE_CHECKER_ABOARD, THE_ENVIRONMENT, THE_PIN_ABOARD, TheEnvironment,
 };
 pub use logins::{Declared, every_login};
-pub use making::{A_DIRECTORY, Made, everything_made};
+pub use making::{A_DIRECTORY, ADJUSTED, Made, everything_made};
 pub use notes::{THE_NOTES, THE_SECURE_BOOT, TheNotes};
 pub use pinned::{THE_PIN, THE_REGISTRY, ThePin};
+pub use reaching::{THE_BPF_FILESYSTEM, THE_PASSAGES_MODE};
 pub use refusing::{
     NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade, NotPinned,
 };

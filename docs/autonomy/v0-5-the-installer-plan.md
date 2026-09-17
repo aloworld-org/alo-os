@@ -547,9 +547,10 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** ready. **Depends on:** 2, 14 — its acceptance boots a virtual-machine
+**Status:** ready. **Depends on:** 2, 15 — its acceptance boots a virtual-machine
 install to `alo-agentd`: task 13 saw an install finish and the disk boot under
-Secure Boot on 2026-09-16, and `alo-agentd` failed there, which is task 14.
+Secure Boot on 2026-09-16, and `alo-agentd` failed there. Task 14 found why and
+fixed the image, and a release carrying that fix is task 15.
 
 Added 2026-09-16 by [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md),
 accepted that day: ★ *undo what the agent did* rewinds from the base's own
@@ -686,9 +687,32 @@ the way `alo-updating`'s test ends on *Freezing execution*.
 
 ### 14. The disk installed under Secure Boot runs the agent service
 
-**Status:** ready — on the third PC, or any machine with 15 GB free that holds one
-emulated install run (about an hour) inside a worker's limit, or has hardware
-virtualisation. **Depends on:** 13.
+**Status:** **Done, 2026-09-16**, for the part this task ends at since its split
+(`updates/the-agent-service-can-reach-the-boundary-on-an-installed-disk.md`). **Why
+`alo-agentd` failed is located from the installed machine's own account, and fixed
+in the image.** systemd mounts `/sys/fs/bpf` `1700 root:root`, so the person's
+service could not pass through it to the boundary the loader had pinned beneath it,
+and said there was none. It is in `docs/quirks.md` with both consoles.
+`image/usr/lib/tmpfiles.d/alo.conf` gives the agent's group passage and nothing more
+(`z /sys/fs/bpf 0710 root alo-agent -`), and `crates/alo-image/src/reaching.rs`
+refuses an image without it or with anything wider. The same release, with only that
+line added and Secure Boot on, ran `alo-agentd`.
+**The named test does not pass yet, and cannot inside this task.** It installs the
+*pinned* release, `0.0.1`, which does not carry the line, and only the owner builds,
+signs and pins a release (ADR 0036). The run that passes whole is task 15, below.
+**Depends on:** 13.
+
+*Before it was done:* ready on the third PC, or any machine with 15 GB free that
+holds one emulated install run (about an hour) inside a worker's limit, or has
+hardware virtualisation.
+
+**A quicker road to the installed machine, measured on the third PC.** A worker does
+not need the emulated install to read an installed disk. `bootc install to-disk
+--via-loopback --wipe --filesystem ext4` from the pinned release itself, run
+natively in `podman --privileged`, writes the same disk in about 7 minutes. With
+`console=ttyS0` added to a scratch copy's boot entry, that disk boots emulated under
+Secure Boot to the watching unit in about 5. Use it for diagnosis only. The
+acceptance is still the named test, which installs through the environment.
 
 Split from task 13 on 2026-09-16. With Secure Boot on, the environment installed
 the pinned release onto the second disk (*alo OS is installed*, the first disk
@@ -728,3 +752,40 @@ kernel under emulation is this task's to show from that run, not to assume.
   nothing on the installed disk is changed by the test to make a service start. A
   worker checks for 15 GB free before every run and removes the run's disks and
   images when it ends, pass or fail.
+
+### 15. A release that carries the way to the boundary, installed under Secure Boot to the agent service
+
+**Status:** blocked — on the owner's release (ADR 0036), described below; once its
+digest is pinned, ready on the third PC or any machine that holds one emulated
+install run inside a worker's limit. **Depends on:** 14.
+
+Split from task 14 on 2026-09-16. Task 14 found why `alo-agentd` failed on the disk
+installed under Secure Boot. systemd mounts `/sys/fs/bpf` so that only root can pass
+through it, so the person's service could not reach the boundary pinned beneath it.
+The image now gives the agent's group passage, and the same release with only that
+line added ran `alo-agentd` under Secure Boot. The line is in `image/`, and **not in
+release `0.0.1`**, which is what the installer pulls and what the named test
+installs. So a machine installed today still boots with `alo-agentd` failed.
+
+Only the owner makes a release worth pinning (ADR 0036): built from a commit that
+carries `image/usr/lib/tmpfiles.d/alo.conf`'s passage, pushed to
+`ghcr.io/aloworld-org/alo-os`, signed by digest with the owner's key, and pinned in
+`image/pinned.toml`. A worker may prepare the candidate (declare `next` and move the
+recipe's `org.opencontainers.image.version` in one change, as that file says), and
+never pushes, signs or pins.
+
+- **Acceptance:**
+  `the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+  passes **with Secure Boot on**, against the release pinned after this change, as a
+  whole: the install, *the first disk is unchanged during the install*, `alo-agentd`
+  active and running on the installed disk, and *the first disk is unchanged when
+  alo OS booted*, which no run has yet reached. Paste the run into the report. If
+  something stops it after `alo-agentd` starts, it goes into `docs/quirks.md` with
+  the machine's own account, and this task is split again rather than extended.
+- **Constraint:** Secure Boot is never switched off to make the test pass (ADR 0033
+  §4). No shim, loader or installer is patched or built by us (ADR 0011). Nothing on
+  the installed disk is changed by the test to make a service start, and that
+  includes the `tmpfiles.extra` credential task 14 used on a scratch disk to show
+  the fix. No worker signs or pins a release (ADR 0036). A worker checks for 15 GB
+  free before every run, and removes the run's disks and images when it ends, pass
+  or fail.

@@ -1,11 +1,14 @@
 //! What the image makes at boot, which is the two directories the daemon
-//! refuses to make itself.
+//! refuses to make itself — and what it adjusts, which is the one mount the
+//! daemon has to pass through.
 //!
 //! `systemd-tmpfiles` reads these lines. What matters here is that both
 //! refusals in `alo-agentd` — [ADR 0017](../../../docs/decisions/0017-the-agents-door-is-ours-and-not-in-the-session.md)'s
 //! `/run/alo` and the machine description's record folder — are answered by
 //! something, because on a machine where they are not the service names a
-//! directory and stops.
+//! directory and stops; and that the way to the boundary is open to the agent's
+//! group, because on a machine where it is not the service says there is no
+//! boundary and stops (`crate::reaching`).
 //!
 //! # Only the five fields that decide anything
 //!
@@ -20,6 +23,10 @@ use crate::refusing::NotMade;
 
 /// The type letter that means an ordinary directory, made if it is not there.
 pub const A_DIRECTORY: &str = "d";
+
+/// The type letter that adjusts the mode and owner of something already there,
+/// and makes nothing: how a mount the kernel made is given its permissions.
+pub const ADJUSTED: &str = "z";
 
 /// One line of a `tmpfiles.d` file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +78,12 @@ impl Made {
     #[must_use]
     pub fn is_a_directory_at(&self, path: &Path) -> bool {
         self.kind == A_DIRECTORY && self.at == path
+    }
+
+    /// Whether this line adjusts what is already at this path.
+    #[must_use]
+    pub fn is_adjusted_at(&self, path: &Path) -> bool {
+        self.kind == ADJUSTED && self.at == path
     }
 }
 
@@ -190,6 +203,25 @@ d /var/lib/alo 0700 alo alo -
                 .any(|it| it.is_a_directory_at(Path::new("/run/alo/1000"))),
             "the per-person directory is the daemon's, not the image's"
         );
+    }
+
+    /// **An adjustment is not a directory**, and a directory is not an
+    /// adjustment: `z` makes nothing, so a line that only adjusts a path is no
+    /// answer to a daemon that needs the path made, and the other way round.
+    #[test]
+    fn an_adjustment_and_a_directory_are_not_each_other() {
+        let made =
+            everything_made("z /sys/fs/bpf 0710 root alo-agent -\nd /run/alo 0755 root root -\n")
+                .unwrap();
+        let passage = made.first().unwrap();
+        assert!(passage.is_adjusted_at(Path::new("/sys/fs/bpf")));
+        assert!(!passage.is_a_directory_at(Path::new("/sys/fs/bpf")));
+        assert_eq!(passage.mode(), 0o710);
+        assert_eq!(passage.owner(), "root");
+        assert_eq!(passage.group(), "alo-agent");
+        let door = made.get(1).unwrap();
+        assert!(door.is_a_directory_at(Path::new("/run/alo")));
+        assert!(!door.is_adjusted_at(Path::new("/run/alo")));
     }
 
     /// A file with nothing but comments makes nothing, and that is an answer
