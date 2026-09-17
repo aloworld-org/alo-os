@@ -106,8 +106,19 @@ pairing grants nothing** — held against the real `alo-nearby` and
 
 ### 4. The camera and the microphone
 
-**Status:** blocked — on `v0-5-capture-and-the-room-plan.md` task 1, whose
-`alo-in-use` is the indicator every camera and microphone use must appear on.
+**Status:** **the code is written and four of the five acceptances are taken,
+2026-09-17** — the fifth is waiting on a media stack, not on work. Its blocker
+cleared: the capture plan's task 1 is done. `crates/alo-cameras` (a fifth crate, and why is
+in the report): cameras are listed by what they are and never by a device number,
+the switch turns the camera or the microphone off for everyone, and **off is held
+below the door** — the machine lets go of the hardware, measured on a machine by
+looking for the device file afterwards. **What is not taken:** *an application opens the camera
+through the portal and appears on the in-use indicator*. On WirePlumber 0.4.17 — what
+Ubuntu 24.04 ships — **no client can attach to a camera through the media server at
+all**, measured with two of the server's own tools (`docs/quirks.md`), so there is no
+machine here on which the test could pass or fail honestly. It wants WirePlumber 0.5,
+which the image should pin deliberately. Written up in
+[A camera is a thing, not a number](updates/a-camera-is-a-thing-not-a-number.md).
 **Depends on:** 2.
 
 - **Acceptance:** cameras are listed by a stable identity through the rented camera

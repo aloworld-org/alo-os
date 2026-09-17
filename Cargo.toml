@@ -20,6 +20,7 @@ members = [
   "crates/alo-broker",
   "crates/alo-brokerd",
   "crates/alo-by-hand",
+  "crates/alo-cameras",
   "crates/alo-capability",
   "crates/alo-capturing",
   "crates/alo-changing",

@@ -1,0 +1,29 @@
+[package]
+name = "alo-cameras"
+version = "0.0.1"
+description = "The cameras this machine has, and the switch that turns the camera and the microphone off for everyone."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The sentences a person reads about a camera and a switch.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+# The grant that says yes, so the test that holds the switch against it holds
+# the real one.
+alo-capability = { path = "../alo-capability" }
+# The indicator every use has to appear on.
+alo-in-use = { path = "../alo-in-use" }
+# The one road an application reaches a camera by, so the test that puts the
+# switch in front of it puts it in front of the real one.
+alo-portals = { path = "../alo-portals" }
+
+[lints]
+workspace = true

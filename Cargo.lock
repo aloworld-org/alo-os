@@ -280,6 +280,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-cameras"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-in-use",
+ "alo-portals",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [
@@ -913,6 +927,7 @@ dependencies = [
  "alo-approving",
  "alo-asking",
  "alo-bluetooth",
+ "alo-cameras",
  "alo-capability",
  "alo-capturing",
  "alo-changing",

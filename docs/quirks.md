@@ -5002,3 +5002,38 @@ Two things keep it from happening again:
   directory has to delete the one it moves away from in the same step. Both machines
   filled their volume from that cause on the same day.
 **Date:** 2026-09-17.
+
+### No client can open a camera through the media server on WirePlumber 0.4
+**Version:** PipeWire 1.0.5 with WirePlumber 0.4.17 (Ubuntu 24.04 aarch64), against the
+kernel's own `vivid` video device, 2026-09-17.
+**Behaviour:** the camera is in the graph and complete — `pw-dump` lists
+`v4l2_input.platform-vivid.0` as an `Audio`-style node of class `Video/Source`, with its
+formats, its device file and its serial. **Nothing can attach to it.** `pw-cat --record
+--media-type Video --target <name>` fails with `no target node available`, and
+`gst-launch-1.0 pipewiresrc` fails with `stream error: target not found` — by name, by
+serial and with no target at all. Both are the media server's own tools talking to its
+own node.
+**Our response:** `alo-cameras` lists cameras and turns them off; the acceptance that
+*a test opens the camera through the portal and finds it listed on the indicator* was
+**not** taken here, because on this stack no program can open a camera through the
+server at all. Ubuntu 24.04 ships WirePlumber 0.4.17 and the video policy people write
+about is 0.5's, so a machine that has to do this needs 0.5 — which the certified image
+should pin deliberately rather than inherit.
+**Date:** 2026-09-17.
+
+### A program that opens a camera directly does not appear on the in-use indicator
+**Version:** `alo-in-use` as of 2026-09-17, PipeWire 1.0.5, Ubuntu 24.04 aarch64.
+**Behaviour:** `alo-in-use` reads the media server's record and counts a **running
+source** as a use. A program that opens `/dev/video0` itself never touches the media
+server: with `v4l2-ctl --stream-mmap` pulling frames at five a second, the server's own
+record still said the camera's node was `suspended`, so the indicator has nothing to
+show. The same is true of any program that opens an ALSA device directly.
+**Our response:** stated rather than fixed, because it is the honest shape of the
+claim: **the indicator shows what goes through the machine's media server, and an
+application on alo OS is sandboxed (ADR 0005) and has no other road.** A program a
+person runs in their own terminal does, and that is deliberate — alo OS ships a
+terminal, and a machine that did not trust its owner with one would be a toy. It is
+also exactly why `alo-cameras` holds *off* below the door: with the camera switched
+off the machine lets go of the device, so there is no device file for a program of
+anybody's to open, asked or unasked.
+**Date:** 2026-09-17.
