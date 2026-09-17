@@ -39,6 +39,7 @@ members = [
   "crates/alo-finding",
   "crates/alo-granted",
   "crates/alo-greeting",
+  "crates/alo-hosted",
   "crates/alo-image",
   "crates/alo-in-use",
   "crates/alo-locking",

@@ -107,7 +107,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 5. alo's own service, as a provider like any other
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing.
 
 - **Acceptance:** `alo-hosted` is **data, not code**: alo's service as a provider entry —
   an address, where it runs as the service says it runs, the chain it discloses (*answered

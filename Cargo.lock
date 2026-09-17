@@ -534,6 +534,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-hosted"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-models",
+ "alo-saying",
+ "alo-strings",
+]
+
+[[package]]
 name = "alo-image"
 version = "0.0.1"
 dependencies = [

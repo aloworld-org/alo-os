@@ -1,0 +1,25 @@
+[package]
+name = "alo-hosted"
+version = "0.0.1"
+description = "alo's own service, as one more provider entry and nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The provider types every provider uses. This crate adds no type of its own:
+# if alo's service needed one, it would be a special case, which is the thing
+# ADR 0014 forbids.
+alo-models = { path = "../alo-models" }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# What a person is told when a provider refuses, and the rule that refuses it.
+alo-answering = { path = "../alo-answering" }
+# The machine's own vocabulary, so a refusal is compared in the words a person
+# actually reads rather than in a key.
+alo-saying = { path = "../alo-saying" }
+alo-strings = { path = "../alo-strings" }
