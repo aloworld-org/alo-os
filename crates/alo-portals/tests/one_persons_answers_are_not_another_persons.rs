@@ -40,17 +40,41 @@ use alo_portals::not_recorded::NotRecorded;
 use alo_portals::recording::Recording;
 use alo_portals::{Answered, AnswersFile, Outcome, Portal, ThePlace, Unanswered};
 
-/// A login's home directory, made for this test.
-fn a_login(named: &str) -> PathBuf {
-    use std::sync::atomic::{AtomicU32, Ordering};
-    static NEXT: AtomicU32 = AtomicU32::new(0);
-    let home = std::env::temp_dir().join(format!(
-        "alo-portals-{named}-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
-    std::fs::create_dir_all(&home).expect("a home for this test");
-    home
+/// A login's home directory, made for this test and taken away when it ends —
+/// pass or fail.
+///
+/// `docs/quirks.md` records what the alternative costs: this machine's `/tmp`
+/// held 43,290 folders left by tests on 2026-09-17 and the suite died of open
+/// files. Every one of them was left by a test that made a folder and did not
+/// remove it.
+struct ALogin(PathBuf);
+
+impl ALogin {
+    fn made(named: &str) -> Self {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static NEXT: AtomicU32 = AtomicU32::new(0);
+        let home = std::env::temp_dir().join(format!(
+            "alo-portals-{named}-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&home).expect("a home for this test");
+        Self(home)
+    }
+
+    fn home(&self) -> &OsStr {
+        self.0.as_os_str()
+    }
+
+    fn at(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl Drop for ALogin {
+    fn drop(&mut self) {
+        drop(std::fs::remove_dir_all(&self.0));
+    }
 }
 
 /// One answer, so that a file has something in it worth not sharing.
@@ -68,11 +92,11 @@ fn an_answer(application: &str, at: SystemTime) -> Answered {
 fn what_one_login_was_asked_is_not_in_another_logins_record() {
     let noon = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
 
-    let adas_home = a_login("ada");
-    let bos_home = a_login("bo");
-    let ada = ThePlace::for_this_login(None, Some(adas_home.as_os_str()))
+    let adas_home = ALogin::made("ada");
+    let bos_home = ALogin::made("bo");
+    let ada = ThePlace::for_this_login(None, Some(adas_home.home()))
         .expect("a login with a home has somewhere");
-    let bo = ThePlace::for_this_login(None, Some(bos_home.as_os_str()))
+    let bo = ThePlace::for_this_login(None, Some(bos_home.home()))
         .expect("a login with a home has somewhere");
 
     assert_ne!(ada.file(), bo.file(), "two logins were given one file");
@@ -117,8 +141,8 @@ fn what_one_login_was_asked_is_not_in_another_logins_record() {
 #[test]
 fn a_file_belonging_to_another_login_is_refused_rather_than_read() {
     let noon = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
-    let home = a_login("ada-and-a-stranger");
-    let place = ThePlace::for_this_login(None, Some(home.as_os_str())).expect("somewhere");
+    let home = ALogin::made("ada-and-a-stranger");
+    let place = ThePlace::for_this_login(None, Some(home.home())).expect("somewhere");
     let at = place.made().expect("the folder was made");
     let record = AnswersFile::opened(at).expect("opened");
     record
@@ -162,7 +186,8 @@ fn a_file_belonging_to_another_login_is_refused_rather_than_read() {
 fn a_login_with_nowhere_to_keep_a_record_refuses_rather_than_answering() {
     // A state directory that is not there: a typo, or a login this machine is
     // not set up for.
-    let nowhere = a_login("nowhere").join("not-a-state-directory");
+    let elsewhere = ALogin::made("nowhere");
+    let nowhere = elsewhere.at().join("not-a-state-directory");
     let place = ThePlace::for_this_login(Some(nowhere.as_os_str()), None).expect("a path");
     let why = place
         .made()

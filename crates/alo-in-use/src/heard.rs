@@ -149,14 +149,8 @@ pub const NAMING_THE_AGENT: &str = "alo.agent";
 /// like a quiet room, and being told the machine cannot answer is the only
 /// honest alternative.
 pub fn in_use_in(record: &str) -> Result<Vec<Use>, NotHeard> {
-    let read: Value = serde_json::from_str(record).map_err(|why| NotHeard::NotUnderstood {
-        said: format!("the record is not readable: {why}"),
-    })?;
-    let Some(objects) = read.as_array() else {
-        return Err(NotHeard::NotUnderstood {
-            said: "the record is not a list of objects".to_owned(),
-        });
-    };
+    let objects = everything_in(record)?;
+    let objects = &objects;
 
     let mut nodes: Vec<Node<'_>> = Vec::new();
     let mut links: Vec<(u32, u32)> = Vec::new();
@@ -234,6 +228,57 @@ fn what_is_used(class: &str) -> Option<Used> {
 /// # Errors
 /// [`NotHeard::NotUnderstood`] when an object the record calls a node cannot be
 /// read as one.
+/// **Everything the server listed**, as one list of objects.
+///
+/// The record is one JSON list on an ordinary reading, and this would be a line
+/// of `serde_json` — except that on 2026-09-17 a gate read one that had
+/// **trailing characters after the end of the list**, and every reading of the
+/// same machine a moment later was a single list that parsed. What produced it
+/// was not caught, so nothing here claims to know; what is certain is that a
+/// record arriving as more than one list must not read as *this machine
+/// answered something unreadable*, because that sentence takes an indicator off
+/// a screen while a camera is on.
+///
+/// So the record is read as **a stream of lists**, and an object listed twice is
+/// taken as it was listed last, which is what a second list of a changing graph
+/// would mean. A single list — every other reading there has ever been — goes
+/// through this unchanged. `docs/quirks.md` records what was seen.
+fn everything_in(record: &str) -> Result<Vec<Value>, NotHeard> {
+    let mut objects: Vec<Value> = Vec::new();
+    for read in serde_json::Deserializer::from_str(record).into_iter::<Value>() {
+        let read = read.map_err(|why| NotHeard::NotUnderstood {
+            said: format!("the record is not readable: {why}"),
+        })?;
+        let Value::Array(listed) = read else {
+            return Err(NotHeard::NotUnderstood {
+                said: "the record is not a list of objects".to_owned(),
+            });
+        };
+        for object in listed {
+            let same = object.get("id").and_then(Value::as_u64).and_then(|id| {
+                objects
+                    .iter()
+                    .position(|seen| seen.get("id").and_then(Value::as_u64) == Some(id))
+            });
+            match same {
+                Some(at) => {
+                    if let Some(held) = objects.get_mut(at) {
+                        *held = object;
+                    }
+                }
+                None => objects.push(object),
+            }
+        }
+    }
+    if objects.is_empty() && record.trim().is_empty() {
+        return Err(NotHeard::NotUnderstood {
+            said: "the record is empty".to_owned(),
+        });
+    }
+    Ok(objects)
+}
+
+/// One object read as a node, or [`None`] where it is not one this crate holds.
 fn node_in(object: &Value) -> Result<Option<Node<'_>>, NotHeard> {
     let number = number_in(object)?;
     let Some(info) = object.get("info") else {
@@ -375,11 +420,38 @@ fn said_in<'a>(props: &'a Map<String, Value>, named: &str) -> Option<&'a str> {
 
 #[cfg(test)]
 #[expect(
+    clippy::expect_used,
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
     use super::*;
+
+    /// **A record that arrives as more than one list is still one machine.**
+    ///
+    /// Seen once on 2026-09-17, on a gate, as trailing characters after the end
+    /// of the list; never reproduced. A reader that refused it would take the
+    /// indicator off a screen while a camera was on, so it reads a stream of
+    /// lists — and an object listed twice is taken as it was listed last, which
+    /// is what a second list of a changing graph means.
+    #[test]
+    fn a_record_in_two_lists_reads_as_one_machine_and_the_later_line_wins() {
+        let one = r#"[{"id": 31, "type": "PipeWire:Interface:Node",
+             "info": {"state": "idle", "props": {"media.class": "Audio/Source"}}}]"#;
+        let and_then = r#"[{"id": 31, "type": "PipeWire:Interface:Node",
+             "info": {"state": "running", "props": {"media.class": "Audio/Source"}}}]"#;
+
+        let quiet = in_use_in(one).expect("one list reads");
+        assert!(quiet.is_empty(), "an idle source is not a use");
+
+        let both = in_use_in(&format!("{one}\n{and_then}")).expect("two lists read");
+        assert_eq!(
+            both.len(),
+            1,
+            "the same source was counted twice, or the later line did not win"
+        );
+        assert_eq!(both.first().map(Use::what), Some(Used::Microphone));
+    }
     use crate::testing::{a_record_of, a_recorded_link, a_recorded_node};
 
     /// **A running camera read by one application is one use, named.** The

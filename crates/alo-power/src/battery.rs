@@ -156,8 +156,11 @@ fn said(at: &Path, file: &str) -> Option<String> {
 mod tests {
     use super::*;
 
-    /// A power supply written the way the kernel writes one.
-    fn a_supply(kind: &str, files: &[(&str, &str)]) -> PathBuf {
+    /// A power supply written the way the kernel writes one, in a folder that
+    /// takes itself away when the test is done with it (`docs/quirks.md`: a
+    /// machine's `/tmp` held 43,290 folders left by tests on 2026-09-17, and
+    /// the suite died of open files).
+    fn a_supply(kind: &str, files: &[(&str, &str)]) -> ASupply {
         use std::sync::atomic::{AtomicU32, Ordering};
         static NEXT: AtomicU32 = AtomicU32::new(0);
         let supplies = std::env::temp_dir().join(format!(
@@ -171,7 +174,22 @@ mod tests {
         for (file, said) in files {
             std::fs::write(at.join(file), format!("{said}\n")).expect("written");
         }
-        supplies
+        ASupply(supplies)
+    }
+
+    /// Where a test's power supplies are, removed when it is done.
+    struct ASupply(PathBuf);
+
+    impl ASupply {
+        fn at(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for ASupply {
+        fn drop(&mut self) {
+            drop(std::fs::remove_dir_all(&self.0));
+        }
     }
 
     /// **A machine with no battery has no battery**, which is not an error and
@@ -179,7 +197,7 @@ mod tests {
     #[test]
     fn a_machine_with_no_battery_is_a_machine() {
         let supplies = a_supply("Mains", &[("online", "1")]);
-        assert_eq!(TheBattery::among(&supplies), None);
+        assert_eq!(TheBattery::among(supplies.at()), None);
         assert_eq!(
             TheBattery::among(Path::new("/there-is-no-such-place")),
             None
@@ -198,7 +216,7 @@ mod tests {
                 ("present", "1"),
             ],
         );
-        let battery = TheBattery::among(&supplies).expect("this machine has a battery");
+        let battery = TheBattery::among(supplies.at()).expect("this machine has a battery");
         let reading = battery.read_at(SystemTime::UNIX_EPOCH).expect("a reading");
         assert_eq!(reading.charge().hundredths(), 50);
         assert_eq!(reading.charging(), Charging::Discharging);
@@ -216,7 +234,9 @@ mod tests {
             &[("capacity", "80"), ("charge_control_end_threshold", "80")],
         );
         assert_eq!(
-            TheBattery::among(&with).expect("a battery").charge_limit(),
+            TheBattery::among(with.at())
+                .expect("a battery")
+                .charge_limit(),
             ChargeLimit::StopsAt { stops_at: 80 }
         );
     }
@@ -227,7 +247,7 @@ mod tests {
     #[test]
     fn a_battery_that_says_something_strange_is_not_read_as_empty() {
         let odd = a_supply("Battery", &[("capacity", "not a number")]);
-        let why = TheBattery::among(&odd)
+        let why = TheBattery::among(odd.at())
             .expect("a battery")
             .read_at(SystemTime::UNIX_EPOCH)
             .expect_err("that is not a reading");
@@ -235,7 +255,7 @@ mod tests {
 
         let missing = a_supply("Battery", &[("status", "Discharging")]);
         assert!(matches!(
-            TheBattery::among(&missing)
+            TheBattery::among(missing.at())
                 .expect("a battery")
                 .read_at(SystemTime::UNIX_EPOCH),
             Err(NotRead::NothingThere { .. })
@@ -243,7 +263,7 @@ mod tests {
 
         let past_full = a_supply("Battery", &[("capacity", "127")]);
         assert!(matches!(
-            TheBattery::among(&past_full)
+            TheBattery::among(past_full.at())
                 .expect("a battery")
                 .read_at(SystemTime::UNIX_EPOCH),
             Err(NotRead::NotHeld(NotAReading::PastFull { .. }))

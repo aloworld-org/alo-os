@@ -46,6 +46,16 @@
 //! ([`crate::NotHeard::NothingHandlesSoundAndVideo`]), it is there and failed
 //! ([`crate::NotHeard::NoAnswer`]), or it answered something unreadable
 //! ([`crate::NotHeard::NotUnderstood`]).
+//!
+//! **A machine where the tool is installed and no server is running is the
+//! first of those, not the second**, and that was got wrong until 2026-09-17: a
+//! build host with the package on it and no session answered *what handles
+//! sound and video did not answer*, which reads as a machine whose server is
+//! broken. Nothing is handling sound and video there — that is the whole of the
+//! truth — and the diagnostic beside the sentence says the tool was there and
+//! could not reach one. The tool's own wording is what says so, which is a thin
+//! thread: where it changes, this falls back to *did not answer*, which is a
+//! refusal rather than silence, and the indicator is still not empty.
 
 use std::io::ErrorKind;
 use std::process::{Command, Stdio};
@@ -112,16 +122,25 @@ impl TheMediaServer {
         instead: &[u8],
     ) -> Result<Vec<Use>, NotHeard> {
         if !succeeded {
-            return Err(NotHeard::NoAnswer {
-                said: format!(
-                    "{} failed: {}",
-                    self.program,
-                    String::from_utf8_lossy(instead).trim()
-                ),
-            });
+            let instead = String::from_utf8_lossy(instead).trim().to_owned();
+            let said = format!("{} failed: {instead}", self.program);
+            if nothing_was_listening(&instead) {
+                return Err(NotHeard::NothingHandlesSoundAndVideo { said });
+            }
+            return Err(NotHeard::NoAnswer { said });
         }
         heard::in_use_in(&String::from_utf8_lossy(said))
     }
+}
+
+/// Whether what the tool said is *there is no server here to talk to*.
+///
+/// The tool says `can't connect` and then why — a directory with no socket in
+/// it, or one nothing is listening on. Both mean the same thing to a person:
+/// nothing on this machine is handling sound and video.
+fn nothing_was_listening(said: &str) -> bool {
+    let said = said.to_lowercase();
+    said.contains("can't connect") || said.contains("cannot connect")
 }
 
 impl Streams for TheMediaServer {
@@ -196,11 +215,37 @@ mod tests {
     fn a_tool_that_ran_and_failed_is_refused_with_what_it_said() {
         let server = TheMediaServer::on_this_machine();
         let refused = server
-            .what_it_answered(false, b"", b"cannot connect to the daemon\n")
+            .what_it_answered(false, b"", b"the graph could not be read\n")
             .unwrap_err();
         assert!(matches!(refused, NotHeard::NoAnswer { .. }), "{refused:?}");
-        assert!(refused.diagnosis().contains("cannot connect to the daemon"));
+        assert!(refused.diagnosis().contains("the graph could not be read"));
         assert!(refused.diagnosis().contains(THE_TOOL));
+    }
+
+    /// **A tool that could not reach a server is a machine where nothing is
+    /// handling sound and video** — not a server that would not answer.
+    ///
+    /// This case used to be the one above: a build host with the package
+    /// installed and no session running answered *what handles sound and video
+    /// did not answer*, which reads as a broken server rather than as no server.
+    /// The difference is what an indicator shows and what somebody does next.
+    #[test]
+    fn a_machine_with_the_tool_and_no_server_is_a_machine_with_nothing_handling_it() {
+        let server = TheMediaServer::on_this_machine();
+        for said in [
+            "can't connect: Host is down",
+            "can't connect: No such file or directory",
+            "Cannot connect to PipeWire",
+        ] {
+            let refused = server
+                .what_it_answered(false, b"", said.as_bytes())
+                .unwrap_err();
+            assert!(
+                matches!(refused, NotHeard::NothingHandlesSoundAndVideo { .. }),
+                "{said}: {refused:?}"
+            );
+            assert!(refused.diagnosis().contains(said));
+        }
     }
 
     /// **A tool that answered nonsense is refused too**, rather than read as a

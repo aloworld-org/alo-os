@@ -69,12 +69,8 @@ pub enum NotSeen {
 /// crate reads. A camera inside it that cannot be read — no name, or a name that
 /// is a device number — is passed over rather than failing the whole reading.
 pub fn in_the_record(record: &str) -> Result<Seen, NotSeen> {
-    let read: Value = serde_json::from_str(record).map_err(|why| {
-        NotSeen::NotUnderstood(format!("it is not a record this crate reads: {why}"))
-    })?;
-    let objects = read
-        .as_array()
-        .ok_or_else(|| NotSeen::NotUnderstood("the record is not a list of objects".to_owned()))?;
+    let objects = everything_in(record, NotSeen::NotUnderstood)?;
+    let objects = &objects;
 
     let mut cameras = Vec::new();
     let mut behind = BTreeMap::new();
@@ -91,6 +87,43 @@ pub fn in_the_record(record: &str) -> Result<Seen, NotSeen> {
         cameras: TheCameras::reported(cameras),
         behind,
     })
+}
+
+/// **Everything the server listed**, as one list of objects.
+///
+/// The record is one JSON list on an ordinary reading. It is read as a **stream**
+/// of lists because on 2026-09-17 a gate read one with trailing characters after
+/// the end of the list, and every reading of the same machine a moment later
+/// parsed as one list. What produced it was not caught, so nothing here claims
+/// to know; what a reader must not do is turn it into *this machine answered
+/// something unreadable*, which takes a list of devices off a screen for a
+/// reason nobody can act on. An object listed twice is taken as it was listed
+/// last. `docs/quirks.md` records what was seen.
+fn everything_in(record: &str, said: impl Fn(String) -> NotSeen) -> Result<Vec<Value>, NotSeen> {
+    let mut objects: Vec<Value> = Vec::new();
+    for read in serde_json::Deserializer::from_str(record).into_iter::<Value>() {
+        let read =
+            read.map_err(|why| said(format!("it is not a record this crate reads: {why}")))?;
+        let Value::Array(listed) = read else {
+            return Err(said("the record is not a list of objects".to_owned()));
+        };
+        for object in listed {
+            let same = object.get("id").and_then(Value::as_u64).and_then(|id| {
+                objects
+                    .iter()
+                    .position(|seen| seen.get("id").and_then(Value::as_u64) == Some(id))
+            });
+            match same {
+                Some(at) => {
+                    if let Some(held) = objects.get_mut(at) {
+                        *held = object;
+                    }
+                }
+                None => objects.push(object),
+            }
+        }
+    }
+    Ok(objects)
 }
 
 /// One object read as a camera, with the device file it is behind.

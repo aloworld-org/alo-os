@@ -5119,3 +5119,36 @@ certified image's kernel is not measured here: a kernel without `CONFIG_INET_DIA
 refuses the join, and the service log then says a taken port is tried again only
 when the machine's networks change.
 **Date:** 2026-09-17.
+
+### A record from the media server arrived as more than one list, once
+**Version:** PipeWire 1.0.5, Ubuntu 24.04 aarch64, 2026-09-17, under a full gate run.
+**Behaviour:** `alo-in-use` read `pw-dump`'s record and refused it with *the record is
+not readable: trailing characters at line 42599 column 1* — a complete JSON list,
+followed by something else. The same machine, asked again a moment later and six times
+after that while its graph was changing under it, answered a single list that parsed
+every time. **What produced it was not caught**, so nothing here claims to know; the
+line number was fifty past the length of an ordinary record, which is consistent with a
+second list of whatever changed while the first was being written, and that is as far as
+the evidence goes.
+**Our response:** the three crates that read that record — `alo-in-use`, `alo-sound`
+and `alo-cameras` — now read it as a **stream** of lists rather than as one, taking an
+object listed twice as it was listed last. A single list, which is every other reading
+there has ever been, goes through unchanged. The reason for tolerating it rather than
+insisting: *this machine answered something unreadable* takes the in-use indicator off
+a screen while a camera may be on, and that is the one answer it must never give for a
+reason nobody can act on.
+**Date:** 2026-09-17.
+
+### A machine with the media server's tools installed and no server running
+**Version:** `alo-in-use` as of 2026-09-17.
+**Behaviour:** `pw-dump` is installed, no session is running, and the tool exits
+non-zero with `can't connect: Host is down`. That was read as *what handles sound and
+video did not answer* — a server that is broken — when what is true is that there is no
+server: an ordinary build host with the package on it, and every machine whose session
+has not started yet.
+**Our response:** a failure whose text says it could not connect is now
+`NothingHandlesSoundAndVideo`, which is what an indicator should say and what makes the
+on-a-machine test skip itself rather than fail. It reads the tool's own wording, which
+is a thin thread: where that changes, it falls back to *did not answer*, which is still
+a refusal and still not an empty indicator.
+**Date:** 2026-09-17.

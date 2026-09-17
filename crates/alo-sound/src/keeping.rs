@@ -100,23 +100,46 @@ mod tests {
     use super::*;
     use crate::device::{Kind, OneDevice};
 
-    fn a_folder() -> std::path::PathBuf {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static NEXT: AtomicU32 = AtomicU32::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "alo-sound-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path).expect("a folder for this test");
-        path
+    /// A folder for one test, which takes itself away when the test is done
+    /// with it — pass or fail.
+    ///
+    /// `docs/quirks.md` records what the alternative costs: on 2026-09-16 a
+    /// machine's `/tmp` held 19,632 folders left by tests and `alo-measuring`'s
+    /// walk took forty minutes; on 2026-09-17 the same machine held 43,290 and
+    /// the suite died of open files. Every one of them was left by a test that
+    /// made a folder and did not remove it.
+    struct AFolder(std::path::PathBuf);
+
+    impl AFolder {
+        fn made() -> Self {
+            use std::sync::atomic::{AtomicU32, Ordering};
+            static NEXT: AtomicU32 = AtomicU32::new(0);
+            let at = std::env::temp_dir().join(format!(
+                "alo-sound-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            std::fs::create_dir_all(&at).expect("a folder for this test");
+            Self(at)
+        }
+
+        fn at(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl Drop for AFolder {
+        fn drop(&mut self) {
+            drop(std::fs::remove_dir_all(&self.0));
+        }
     }
 
     /// **A machine nobody has touched has set nothing**, and is not muted.
     #[test]
     fn a_machine_nobody_has_touched_has_set_nothing() {
-        let folder = a_folder();
-        let kept = read(&folder).expect("no file is not an error");
+        let folder = AFolder::made();
+        let folder = folder.at();
+        let kept = read(folder).expect("no file is not an error");
         assert_eq!(kept, Kept::default());
         assert!(kept.muted.is_empty());
         assert_eq!(kept.pinned, crate::Pinned::nothing());
@@ -126,7 +149,8 @@ mod tests {
     /// muted when it is plugged in tomorrow.
     #[test]
     fn what_is_set_for_one_device_is_kept_for_that_device() {
-        let folder = a_folder();
+        let folder = AFolder::made();
+        let folder = folder.at();
         let headset = OneDevice::reported(
             Identity::reported("usb-headset").expect("named"),
             "Headset",
@@ -142,9 +166,9 @@ mod tests {
             Identity::reported("desk-speakers").expect("named"),
             Volume::of(60).expect("a volume"),
         );
-        keep(&folder, &kept).expect("written");
+        keep(folder, &kept).expect("written");
 
-        let read_back = read(&folder).expect("read");
+        let read_back = read(folder).expect("read");
         assert_eq!(read_back, kept);
         assert_eq!(
             read_back.muted.get(headset.identity()),

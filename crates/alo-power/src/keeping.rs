@@ -95,35 +95,58 @@ pub fn keep(at: &Path, kept: &Kept) -> Result<(), FileNotWritten> {
 mod tests {
     use super::*;
 
-    fn a_folder() -> std::path::PathBuf {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static NEXT: AtomicU32 = AtomicU32::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "alo-power-kept-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path).expect("a folder for this test");
-        path
+    /// A folder for one test, which takes itself away when the test is done
+    /// with it — pass or fail.
+    ///
+    /// `docs/quirks.md` records what the alternative costs: on 2026-09-16 a
+    /// machine's `/tmp` held 19,632 folders left by tests and `alo-measuring`'s
+    /// walk took forty minutes; on 2026-09-17 the same machine held 43,290 and
+    /// the suite died of open files. Every one of them was left by a test that
+    /// made a folder and did not remove it.
+    struct AFolder(std::path::PathBuf);
+
+    impl AFolder {
+        fn made() -> Self {
+            use std::sync::atomic::{AtomicU32, Ordering};
+            static NEXT: AtomicU32 = AtomicU32::new(0);
+            let at = std::env::temp_dir().join(format!(
+                "alo-power-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            std::fs::create_dir_all(&at).expect("a folder for this test");
+            Self(at)
+        }
+
+        fn at(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl Drop for AFolder {
+        fn drop(&mut self) {
+            drop(std::fs::remove_dir_all(&self.0));
+        }
     }
 
     /// **A person who has chosen nothing has chosen nothing**, which is not the
     /// same as having chosen balanced.
     #[test]
     fn a_machine_nobody_has_chosen_on_has_no_choice_in_it() {
-        let kept = read(&a_folder()).expect("no file is not an error");
+        let kept = read(AFolder::made().at()).expect("no file is not an error");
         assert_eq!(kept.chosen, None);
     }
 
     /// **And what they chose comes back.**
     #[test]
     fn what_a_person_chose_is_what_comes_back() {
-        let folder = a_folder();
+        let folder = AFolder::made();
+        let folder = folder.at();
         let kept = Kept {
             chosen: Some(Profile::Saver),
             ..Kept::default()
         };
-        keep(&folder, &kept).expect("written");
-        assert_eq!(read(&folder).expect("read").chosen, Some(Profile::Saver));
+        keep(folder, &kept).expect("written");
+        assert_eq!(read(folder).expect("read").chosen, Some(Profile::Saver));
     }
 }

@@ -91,22 +91,44 @@ mod tests {
     use super::*;
     use crate::switch::{Switch, Which};
 
-    fn a_folder() -> std::path::PathBuf {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static NEXT: AtomicU32 = AtomicU32::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "alo-cameras-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path).expect("a folder for this test");
-        path
+    /// A folder for one test, which takes itself away when the test is done
+    /// with it — pass or fail.
+    ///
+    /// `docs/quirks.md` records what the alternative costs: on 2026-09-16 a
+    /// machine's `/tmp` held 19,632 folders left by tests and `alo-measuring`'s
+    /// walk took forty minutes; on 2026-09-17 the same machine held 43,290 and
+    /// the suite died of open files. Every one of them was left by a test that
+    /// made a folder and did not remove it.
+    struct AFolder(std::path::PathBuf);
+
+    impl AFolder {
+        fn made() -> Self {
+            use std::sync::atomic::{AtomicU32, Ordering};
+            static NEXT: AtomicU32 = AtomicU32::new(0);
+            let at = std::env::temp_dir().join(format!(
+                "alo-cameras-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            std::fs::create_dir_all(&at).expect("a folder for this test");
+            Self(at)
+        }
+
+        fn at(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl Drop for AFolder {
+        fn drop(&mut self) {
+            drop(std::fs::remove_dir_all(&self.0));
+        }
     }
 
     /// **A machine nobody has touched has both on.**
     #[test]
     fn a_machine_nobody_has_touched_has_both_switches_on() {
-        let kept = read(&a_folder()).expect("no file is not an error");
+        let kept = read(AFolder::made().at()).expect("no file is not an error");
         assert_eq!(kept, Kept::default());
         assert_eq!(kept.switches.of(Which::Camera), Switch::On);
     }
@@ -116,14 +138,15 @@ mod tests {
     /// nobody can trust.
     #[test]
     fn a_switch_turned_off_is_still_off_tomorrow() {
-        let folder = a_folder();
+        let folder = AFolder::made();
+        let folder = folder.at();
         let kept = Kept {
             switches: TheSwitches::both_on().switching(Which::Camera),
             ..Kept::default()
         };
-        keep(&folder, &kept).expect("written");
+        keep(folder, &kept).expect("written");
 
-        let read_back = read(&folder).expect("read");
+        let read_back = read(folder).expect("read");
         assert_eq!(read_back, kept);
         assert_eq!(read_back.switches.of(Which::Camera), Switch::Off);
         assert_eq!(read_back.switches.of(Which::Microphone), Switch::On);
