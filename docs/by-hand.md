@@ -213,8 +213,8 @@ turning Wi-Fi off will cut the connection a conversation is answered over.
 ### picture_of_the_screen
 
 **By hand:** a person takes the screenshot themselves and shows it to the agent
-— `Capture: screenshots, annotation, screen recording with audio, screen
-sharing`, which every desktop has had for thirty years, and which is one key.
+— `Screenshots: whole screen, one window, a selected region — to a file or the
+clipboard`, which every desktop has had for thirty years, and which is one key.
 Then they choose what to send, and they can blur what should not be seen before
 they send it.
 

@@ -32,6 +32,8 @@ alo-changing-network = { path = "../alo-changing-network" }
 alo-software = { path = "../alo-software" }
 # The adapters alo OS ships, whose verbs are verbs like any other.
 alo-adapters = { path = "../alo-adapters" }
+# What an agent may capture of the screen, which is a verb like any other.
+alo-capturing = { path = "../alo-capturing" }
 
 [lints]
 workspace = true
