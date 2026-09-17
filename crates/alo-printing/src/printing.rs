@@ -75,6 +75,12 @@ pub enum NotPrinted {
 
 impl NotPrinted {
     /// What a person reads, in order.
+    ///
+    /// A printer that stopped is said the way it is said when anybody asks how
+    /// it is, and then — because this document was not taken and will not come
+    /// out when the trouble is put right — that it needs printing again. A
+    /// refused document already says nothing was printed and that sending it
+    /// again changes nothing, so nothing is added to it.
     #[must_use]
     pub fn said(self, strings: &Strings) -> Vec<Said> {
         match self {
@@ -83,7 +89,11 @@ impl NotPrinted {
                 vec![strings.say(&words::NOT_SHOWN_LEAVING.key(), &Filling::nothing())]
             }
             Self::NotPrintable(not) => not.said(strings),
-            Self::Stopped(stopped) => vec![stopped.said(strings)],
+            Self::Stopped(Stopped::RefusedTheJob) => vec![Stopped::RefusedTheJob.said(strings)],
+            Self::Stopped(stopped) => vec![
+                stopped.said(strings),
+                strings.say(&words::NOT_TAKEN.key(), &Filling::nothing()),
+            ],
         }
     }
 }

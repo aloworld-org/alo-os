@@ -478,10 +478,41 @@ fn a_printer_that_does_not_take_the_document_says_which_thing_is_wrong() {
         empty.operations(),
         [GET_DEFAULT, PRINT_JOB, GET_PRINTER_ATTRIBUTES]
     );
-    assert!(
-        refused
-            .said(&in_english())
-            .first()
-            .is_some_and(|said| said.text().starts_with("The printer is out of paper"))
+    let said: Vec<String> = refused
+        .said(&in_english())
+        .iter()
+        .map(|said| said.text().to_owned())
+        .collect();
+    assert_eq!(
+        said,
+        [
+            "The printer is out of paper. Put paper in its tray, and documents it has already \
+             taken print once it has some",
+            "The printer did not take this document, so it will not print by itself. Once that is \
+             put right, print it again",
+        ],
+        "a document the printer did not take is never left to be waited for"
     );
+}
+
+/// **A refused document is not told to be printed again.** It already says
+/// nothing was printed and that sending it again will not change that; a second
+/// sentence saying *print it again* would contradict it.
+#[test]
+fn a_refused_document_is_not_told_to_be_printed_again() {
+    let strings = in_english();
+    let said = NotPrinted::Stopped(Stopped::RefusedTheJob).said(&strings);
+    assert_eq!(said, [Stopped::RefusedTheJob.said(&strings)]);
+    for stopped in Stopped::EVERY {
+        let said = NotPrinted::Stopped(stopped).said(&strings);
+        let told_again = said
+            .iter()
+            .any(|sentence| sentence.text().contains("print it again"));
+        assert_eq!(
+            told_again,
+            stopped != Stopped::RefusedTheJob,
+            "{stopped:?}: {said:?}"
+        );
+        assert_eq!(said.first(), Some(&stopped.said(&strings)), "{stopped:?}");
+    }
 }

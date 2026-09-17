@@ -271,6 +271,27 @@ an application that opens and shows nothing. The promise is that the moment is
 
 **Status:** ready. **Depends on:** 1, 2, 3, 4.
 
+**Done, 2026-09-17.** `crates/alo-converting/tests/the_walk_through_documents_and_paper.rs`
+walks a PDF arriving, the owner's `sample.docx` arriving and being converted
+through the real service and engine, a printer on the network found, set up and
+printed on with the indicator lit, the printer out of paper and ready again, and
+a Word document cut short arriving. It compares every sentence, in order, with
+the 19-row table it parses out of the report. So a sentence that changes without
+the table fails, and so does a table that says what the machine does not.
+`every_sentence_about_documents_and_paper_carries_a_note.rs` holds that the three
+crates' words are exactly what `alo-saying` collects, each with a note that names
+every gap (four `{printer}` notes were fixed).
+`no_english_outside_the_vocabulary_in_documents_and_paper.rs` reads the shipped
+source of all three crates. Its 20 exceptions are each argued: the service's
+log, `Display`s mapped to a worded refusal, the wire protocol, and an HTTP head.
+One untrue sentence changed: a print refused while the printer is out of paper,
+ink or not answering promised *what was waiting prints*, and nothing was waiting.
+Those sentences now say *documents it has already taken*, and a new
+`printing.not-taken` tells the person to print it again. Report:
+`docs/autonomy/updates/every-sentence-about-documents-and-paper-and-the-walk-through-them.md`.
+A later change to a sentence along the walk publishes the table again in a
+follow-up report and points the test's `THE_REPORT` at it.
+
 The four tasks above end in sentences a person reads at the exact moment they
 are already frustrated, which is the moment a system is judged.
 
@@ -286,3 +307,35 @@ are already frustrated, which is the moment a system is judged.
 - **Constraint:** nothing here re-decides what the sentences describe. If a
   sentence is true and reads badly the sentence changes; if it reads well and
   is not true it changes the other way.
+
+### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
+
+**Status:** ready. **Depends on:** 1, 4, 5.
+
+`docs/features.md`: ★ *"I can't open this file." A `.pages`, a `.heic`, a
+`.dwg`: the system converts it where it can, and where it cannot says plainly
+what will open it, instead of shrugging.* Tasks 1 and 4 made the shrug
+impossible, but the three files the promise names are still met as *this machine
+does not recognise what this file is*. That is honest, but it is not the
+sentence the promise describes, because this machine could know what each of
+them is from its bytes. A photo from a phone is the commonest of the three.
+
+- **Acceptance:** `alo-opening` recognises a Pages document, a HEIC photo and a
+  DWG drawing **from their content**. A HEIC is the ISO media container with its
+  own brand, a Pages document is a zip holding a Pages index, and a DWG has its
+  version marker. Each is recognised by that and never by its extension. Each
+  becomes a `Kind` with a name a person uses (*a Pages document from a Mac*, *a
+  photo in the format iPhones save*, *an AutoCAD drawing*), and it lands in
+  task 1's closed set. Where nothing on this machine opens or converts it, it is
+  `NothingHereOpens` with task 4's *what would*. Where a rented engine the image
+  already pins converts one on this machine, it is `Converts` with its costs,
+  registered the way task 2 registers a conversion. Each kind is tested against
+  **a real file with its provenance** beside it, as task 2's documents are, and
+  never a synthesised header alone. A file that is none of these still says *not
+  recognised*. Task 5's walk and its table gain the photo, published in a
+  follow-up report.
+- **Constraint:** no new engine is added to the image without an ADR. A format
+  this machine cannot convert here is explained, never uploaded to be converted.
+  Nothing names Apple's, Autodesk's or anybody's program as *what would open
+  it*: *a Mac*, *a drawing program* and *a copy saved as a PDF* are places a
+  person can go, and a product name is an advertisement.

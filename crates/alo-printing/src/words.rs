@@ -87,8 +87,9 @@ pub const CANNOT_SET_UP_NEEDS_ITS_MAKERS_PROGRAM: Word = Word::saying(
 )
 .noting(
     "Said when a person chose a printer that only works with software its manufacturer supplies. \
-     This machine never installs that software, on purpose. The last sentence tells the person \
-     what kind of printer does work, so they are not left with only a refusal.",
+     {printer} is the name the printer gave itself, which is not translated. This machine never \
+     installs that software, on purpose. The last sentence tells the person what kind of printer \
+     does work, so they are not left with only a refusal.",
 );
 
 /// A printer that did not answer while it was being set up.
@@ -98,9 +99,9 @@ pub const CANNOT_SET_UP_DID_NOT_ANSWER: Word = Word::saying(
      up. Check that it is switched on and connected, then set it up again",
 )
 .noting(
-    "Said when setting up a printer failed because the printer itself did not reply. A printer \
-     describes itself when it is added, and this one did not. The advice is the thing a person can \
-     do at the printer.",
+    "Said when setting up a printer failed because the printer itself did not reply. {printer} is \
+     the name the printer gave itself, which is not translated. A printer describes itself when it \
+     is added, and this one did not. The advice is the thing a person can do at the printer.",
 );
 
 /// Setting up was not allowed for this account.
@@ -111,7 +112,8 @@ pub const CANNOT_SET_UP_NOT_PERMITTED: Word = Word::saying(
 )
 .noting(
     "Said when the person's account is not one allowed to add printers — usually on a machine an \
-     organisation manages. It is a statement about how the machine is configured, not a fault.",
+     organisation manages. {printer} is the name of the printer they chose, which is not \
+     translated. It is a statement about how the machine is configured, not a fault.",
 );
 
 /// The printing service did not answer while a printer was being set up.
@@ -122,8 +124,8 @@ pub const CANNOT_SET_UP_SERVICE_NOT_ANSWERING: Word = Word::saying(
 )
 .noting(
     "Said when the machine's own printing system did not reply while a printer was being added. \
-     \"The part of this machine that prints\" is deliberate: the person never needs to know what \
-     it is called.",
+     {printer} is the name of the printer being added, which is not translated. \"The part of \
+     this machine that prints\" is deliberate: the person never needs to know what it is called.",
 );
 
 /// No printer has been set up.
@@ -148,12 +150,14 @@ pub const READY: Word = Word::saying("printing.ready", "The printer is ready")
 /// Out of paper.
 pub const OUT_OF_PAPER: Word = Word::saying(
     "printing.stopped.out-of-paper",
-    "The printer is out of paper. Put paper in its tray, and what was waiting prints once it has \
-     some",
+    "The printer is out of paper. Put paper in its tray, and documents it has already taken print \
+     once it has some",
 )
 .noting(
     "Said when the printer stopped because it has no paper. The second sentence is what the person \
-     does, and what happens after.",
+     does, and what happens after: documents the printer accepted before it stopped come out by \
+     themselves. It does not promise that about a document the printer did not accept — another \
+     sentence says that one needs printing again.",
 );
 
 /// Jammed.
@@ -171,12 +175,13 @@ pub const JAMMED: Word = Word::saying(
 /// Out of ink or toner.
 pub const OUT_OF_INK: Word = Word::saying(
     "printing.stopped.out-of-ink",
-    "The printer has run out of ink or toner. Put in a new cartridge, and what was waiting prints \
-     once it has one",
+    "The printer has run out of ink or toner. Put in a new cartridge, and documents it has already \
+     taken print once it has one",
 )
 .noting(
     "Said when the printer stopped because a cartridge is empty. Ink and toner are both named \
-     because the person knows which their printer uses and the machine is not always told.",
+     because the person knows which their printer uses and the machine is not always told. As with \
+     paper, only documents the printer accepted before it stopped come out by themselves.",
 );
 
 /// The printer refused the document.
@@ -241,6 +246,20 @@ pub const PRINTED: Word = Word::saying(
     "Said once a document has been handed to the printer. \"Sent\" rather than \"printed\" on \
          purpose: the paper has not come out yet, and if the printer then stops, another sentence \
          says why.",
+);
+
+/// The printer stopped and did not take this document, which will not print by
+/// itself.
+pub const NOT_TAKEN: Word = Word::saying(
+    "printing.not-taken",
+    "The printer did not take this document, so it will not print by itself. Once that is put \
+     right, print it again",
+)
+.noting(
+    "Said straight after the sentence saying what is wrong with a printer — out of paper, jammed, \
+     out of ink, or not answering — when that stopped it accepting the document the person was \
+     printing. \"That\" is whatever the sentence before it named. Without this sentence a person \
+     would wait for a page that is never coming.",
 );
 
 /// The document is not a kind printers take.
@@ -345,7 +364,7 @@ pub const VERB_SENTENCE: Word = Word::saying(
 pub const THE_NAMES: [Word; 3] = [A_PRINTER_WITHOUT_A_NAME, VERB_PURPOSE, VERB_DOCUMENT];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 25] = [
+pub const THE_SENTENCES: [Word; 26] = [
     FOUND_ON_THE_NETWORK,
     FOUND_ON_THIS_MACHINE,
     SET_UP_PROPOSED,
@@ -364,6 +383,7 @@ pub const THE_SENTENCES: [Word; 25] = [
     NOT_ANSWERING_THE_PRINTER,
     NOT_ANSWERING_NOT_SET_UP,
     PRINTED,
+    NOT_TAKEN,
     NOT_A_KIND_PRINTERS_TAKE,
     CANNOT_BE_OPENED,
     NOT_WHAT_ITS_NAME_SAYS,
@@ -374,7 +394,7 @@ pub const THE_SENTENCES: [Word; 25] = [
 ];
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 28] = [
+pub const EVERY_WORD: [Word; 29] = [
     A_PRINTER_WITHOUT_A_NAME,
     VERB_PURPOSE,
     VERB_DOCUMENT,
@@ -396,6 +416,7 @@ pub const EVERY_WORD: [Word; 28] = [
     NOT_ANSWERING_THE_PRINTER,
     NOT_ANSWERING_NOT_SET_UP,
     PRINTED,
+    NOT_TAKEN,
     NOT_A_KIND_PRINTERS_TAKE,
     CANNOT_BE_OPENED,
     NOT_WHAT_ITS_NAME_SAYS,

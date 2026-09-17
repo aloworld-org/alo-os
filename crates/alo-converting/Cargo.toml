@@ -45,6 +45,12 @@ rustix = { workspace = true }
 [dev-dependencies]
 # The machine's one vocabulary, which is what a shell really holds.
 alo-saying = { path = "../alo-saying" }
+# The walk from a file arriving to a file that cannot be opened goes through
+# printing the copy, and a printer across the network is shown leaving on the
+# indicator (`tests/the_walk_through_documents_and_paper.rs`). Dev-dependencies
+# only: converting never prints, and neither crate reaches the other.
+alo-egress = { path = "../alo-egress" }
+alo-printing = { path = "../alo-printing" }
 
 [lints]
 workspace = true

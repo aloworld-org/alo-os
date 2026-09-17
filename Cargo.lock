@@ -378,8 +378,10 @@ name = "alo-converting"
 version = "0.0.1"
 dependencies = [
  "alo-capability",
+ "alo-egress",
  "alo-files",
  "alo-opening",
+ "alo-printing",
  "alo-record",
  "alo-saying",
  "alo-strings",
