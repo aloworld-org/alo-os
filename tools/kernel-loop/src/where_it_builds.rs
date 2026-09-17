@@ -50,7 +50,7 @@ use crate::gates;
 ///
 /// Not hidden, deliberately: a build directory nobody can find is one nobody
 /// cleans, and the run says the whole path out loud anyway.
-const ALL_OF_THEM: &str = "alo-builds";
+pub(crate) const ALL_OF_THEM: &str = "alo-builds";
 
 /// The disk a build needs before it starts, in bytes.
 ///

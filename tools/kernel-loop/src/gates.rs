@@ -175,6 +175,7 @@ pub const EVERY_GATE: &[Gate] = &[
 /// first is deliberate: the others' output would be noise around the one thing
 /// that has to be fixed.
 pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String> {
+    copied_where_it_builds(at)?;
     the_machine_is_ready(at)?;
     forget_what_was_built_of(at, touched);
     let mut passed = Vec::new();
@@ -544,7 +545,97 @@ pub fn without_a_target_directory(
     bridged(at, within, program, args, None)
 }
 
+/// Where the gates read a checkout's source from on this host's Linux side.
+#[cfg(any(windows, test))]
+const TREES: &str = "alo-trees";
+
+/// What is never copied: history, and what was built, which the gates keep in
+/// their own directory anyway. The loop's own directory stays too, because the
+/// handoff is the supervisor's to read, not a test's.
+#[cfg(any(windows, test))]
+const NOT_COPIED: [&str; 4] = [
+    "--exclude=/.git",
+    "--exclude=/target",
+    "--exclude=/tools/kernel-loop/target",
+    "--exclude=/.kernel-loop",
+];
+
+/// The copy of the source a build directory's gates read, beside it on the same
+/// filesystem: `$HOME/alo-builds/alo-os-1a2b` reads `$HOME/alo-trees/alo-os-1a2b`.
+#[cfg(any(windows, test))]
+fn the_copy_for(building_in: &str) -> String {
+    building_in.replacen(where_it_builds::ALL_OF_THEM, TREES, 1)
+}
+
+/// Whether a command in `within` links with mold.
+///
+/// **Not the BPF target's.** Its gates cross-compile with a pinned nightly and
+/// `bpf-linker`, and a host linker flag has nothing to say there.
+#[cfg(any(windows, test))]
+fn links_with_mold(within: &str) -> bool {
+    !within.starts_with("crates/alo-bounding-kernel")
+}
+
+/// Copy the checkout onto the filesystem its gates build on, before they run.
+///
+/// **Measured on 2026-09-17, on the same commit.** The Windows checkout reaches
+/// WSL over `/mnt/c`, a 9p mount, where every `stat` crosses the virtual machine
+/// boundary. The nine gates took 1907 s reading it there and 1085 s reading a
+/// copy on the Linux side, `cargo fmt` 75 s against 3 s, and an incremental
+/// clippy 61 s against 1.3 s. The copy costs about twenty seconds the first time
+/// and four when little changed. It has also hung a gate thread in
+/// uninterruptible sleep more than once, which only `wsl --shutdown` cleared.
+///
+/// `rsync -a --delete`: the copy is exactly the tree being published, including
+/// files the task removed and modification times, which Cargo's freshness reads.
+/// Nothing in the Windows checkout is written to.
+///
+/// # Errors
+/// A sentence carrying [`NOT_READY_TO_BE_GATED`] when the copy could not be made,
+/// because that says nothing about the work.
+#[cfg(windows)]
+fn copied_where_it_builds(at: &Path) -> Result<(), String> {
+    let Some(building_in) = where_it_builds::chosen(at).directory.as_deref() else {
+        return Ok(());
+    };
+    let from = as_wsl_sees_it(at)?;
+    let to = the_copy_for(building_in);
+    let said = Command::new("wsl")
+        .args(["-d", "Ubuntu", "--", "bash", "-lc"])
+        .arg(format!(
+            "mkdir -p \"{to}\" && rsync -a --delete {} \"{from}/\" \"{to}/\"",
+            NOT_COPIED.join(" ")
+        ))
+        .output()
+        .map_err(|why| format!("{NOT_READY_TO_BE_GATED}: the source could not be copied: {why}"))?;
+    if said.status.success() {
+        return Ok(());
+    }
+    Err(format!(
+        "{NOT_READY_TO_BE_GATED}: the source could not be copied to {to}, where the gates read \
+         it: {}",
+        what_it_printed::as_text(&said.stderr).trim()
+    ))
+}
+
+/// Elsewhere the checkout is already on the filesystem the gates run on.
+///
+/// # Errors
+/// None; the signature matches the Windows half.
+#[cfg(not(windows))]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the same shape as the Windows half, which can fail"
+)]
+const fn copied_where_it_builds(_at: &Path) -> Result<(), String> {
+    Ok(())
+}
+
 /// One command, as this host runs it, building where it is told to.
+///
+/// With a build directory, it runs in the copy of the source beside it, which
+/// [`copied_where_it_builds`] made before the gates began; without one, on the
+/// checkout through `/mnt/c`, which is only ever a question about the machine.
 ///
 /// # Errors
 /// A sentence when a Windows checkout is somewhere `wsl` cannot see.
@@ -556,20 +647,27 @@ fn bridged(
     args: &[String],
     building_in: Option<&str>,
 ) -> Result<Command, String> {
-    let within = as_wsl_sees_it(&at.join(within))?;
-    // Unquoted on purpose where it is absent, so that a command with no build
-    // directory carries no empty variable either. `where_it_builds` guarantees
-    // the path has nothing in it a shell would have to be protected from.
-    let target = building_in.map_or_else(String::new, |directory| {
-        format!("export CARGO_TARGET_DIR=\"{directory}\"; ")
-    });
+    let (within_it, target) = match building_in {
+        // `where_it_builds` guarantees the path has nothing in it a shell would
+        // have to be protected from.
+        Some(directory) => (
+            format!("{}/{within}", the_copy_for(directory)),
+            format!("export CARGO_TARGET_DIR=\"{directory}\"; "),
+        ),
+        None => (as_wsl_sees_it(&at.join(within))?, String::new()),
+    };
+    let linker = if links_with_mold(within) {
+        "export RUSTFLAGS=\"-C link-arg=-fuse-ld=mold\"; "
+    } else {
+        "unset RUSTFLAGS; "
+    };
     let mut asking = Command::new("wsl");
     asking
         .args(["-d", "Ubuntu", "--", "bash", "-lc"])
         .arg(format!(
             "export PATH=\"$HOME/.cargo/bin:$PATH\"; \
-         {target}export RUSTDOCFLAGS=\"-D warnings\"; \
-         cd {within} && {program} {}",
+         {target}{linker}export RUSTDOCFLAGS=\"-D warnings\"; \
+         cd {within_it} && {program} {}",
             args.join(" ")
         ));
     Ok(asking)
@@ -769,6 +867,41 @@ mod a_mac_names_its_linux {
 )]
 mod tests {
     use super::*;
+
+    /// **The source a build directory's gates read sits beside it**, on the same
+    /// filesystem, one copy per checkout the way there is one build directory per
+    /// checkout, and history and old builds are not copied.
+    #[test]
+    fn each_build_directory_reads_its_own_copy_of_the_source() {
+        assert_eq!(
+            the_copy_for("$HOME/alo-builds/alo-os-2-72aa7fda7f7de151"),
+            "$HOME/alo-trees/alo-os-2-72aa7fda7f7de151"
+        );
+        assert_ne!(
+            the_copy_for("$HOME/alo-builds/alo-os-88e6ebddb0cab76e"),
+            the_copy_for("$HOME/alo-builds/alo-os-2-72aa7fda7f7de151")
+        );
+        for kept_out in ["/.git", "/target", "/.kernel-loop"] {
+            assert!(
+                NOT_COPIED.contains(&format!("--exclude={kept_out}").as_str()),
+                "{kept_out} is copied"
+            );
+        }
+    }
+
+    /// **Every gate links with mold except the BPF target's**, which has its own
+    /// linker and nothing a host flag could mean to it.
+    #[test]
+    fn the_bpf_target_is_the_one_gate_not_linked_with_mold() {
+        for gate in EVERY_GATE {
+            assert_eq!(
+                links_with_mold(gate.within),
+                !gate.named.starts_with("the BPF target"),
+                "{}",
+                gate.named
+            );
+        }
+    }
 
     /// **A gate that did not exit successfully stops publication**, and says
     /// which gate and what it printed.
