@@ -4115,6 +4115,28 @@ to look for a local trainer will find `llama-finetune` first, and its help text
 mentions LoRA, which makes the wrong answer look like the right one.
 **Date:** 2026-09-17.
 
+### The pinned runtime will not read an ordinary LoRA adapter, only a GGUF of it
+**Version:** Ollama 0.34.0 on an Apple M3, 2026-09-17, with a `peft` 0.18.0 LoRA
+adapter over `Qwen2.5-0.5B-Instruct`.
+**Behaviour:** given the adapter in the ordinary safetensors format — the one
+every other tool reads — `/api/create` with an `adapters` map answers
+`{"status":"converting adapter"}` and then `{"error":"unsupported architecture"}`,
+for `Qwen2ForCausalLM`, whether or not the base model's `config.json` is handed
+over with it. The same adapter converted by `llama.cpp`'s `convert_lora_to_gguf.py`
+is accepted, served beside its base, and changes what the model says.
+Two smaller things beside it: the `adapters` field is a map of name to **uploaded
+blob digest**, not a filesystem path (a path answers `error getting blobs path`),
+and it is `adapters` as a map rather than a list.
+**Our response:** the safetensors adapter stays canonical — it is what a person
+takes to another machine — and the GGUF is derived, regenerable, and deleted with
+the adapter it came from
+([ADR 0048](decisions/0048-an-adapter-is-the-learning-and-the-base-weights-are-never-touched.md)).
+The cost of keeping the portable format is one conversion step and a second copy
+to track; we pay it on purpose. Whoever changes the pinned runtime should check
+whether the new one reads LoRA safetensors directly, which would remove the
+derived copy and a class of mistakes with it.
+**Date:** 2026-09-17.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

@@ -10,6 +10,23 @@
 //! than a promise made about it: there is nothing to separate afterwards,
 //! because the bytes were never mixed.
 //!
+//! # One format is the truth, and the other is a copy
+//!
+//! **The safetensors adapter is canonical.** It is what the trainer wrote, what
+//! any other tool reads, and what a person takes to another machine. Everything
+//! else is **derived**: the pinned runtime cannot read that format for every
+//! architecture, so a copy is converted into the shape that runtime wants, and
+//! that copy belongs to that runtime and to this machine.
+//!
+//! **A derived copy carries the documents too.** It is the same learning in
+//! another container, so every rule for the adapter is a rule for it: sending
+//! it anywhere is sending the person's documents, and **deleting the adapter
+//! deletes every copy made from it**. A machine that kept the runtime's copy
+//! after a person deleted their adapter would have taken nothing back at all.
+//!
+//! If a later change ever keeps only the derived copy, the person's learning is
+//! locked to one runtime — which is the thing this product sells against.
+//!
 //! One adapter per granted folder. v0.5 ships a single one and needs no more —
 //! the shape is decided now because it cannot be decided later: once a fine-tune
 //! merges into base weights, no amount of care afterwards can take one folder
@@ -25,8 +42,13 @@ use crate::learned_from::LearnedFrom;
 /// **One adapter: what one grant taught, in a file of its own.**
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Adapter {
-    /// The file this adapter is, beside the base model and never inside it.
+    /// **The adapter itself**, in the ordinary LoRA safetensors format: the
+    /// truth, and what a person can take elsewhere.
     file: PathBuf,
+    /// **Copies made from it for a runtime that cannot read the canonical
+    /// format** — derived, regenerable, and carrying the same documents. Each
+    /// goes when the adapter goes.
+    derived: Vec<PathBuf>,
     /// The base model it applies to, as the catalogue names it.
     applies_to: String,
     /// What the base model was when this was trained — the digest that must
@@ -50,6 +72,7 @@ impl Adapter {
     ) -> Self {
         Self {
             file: file.to_owned(),
+            derived: Vec::new(),
             applies_to: applies_to.to_owned(),
             the_base_was: the_base_was.to_owned(),
             learned,
@@ -57,10 +80,27 @@ impl Adapter {
         }
     }
 
-    /// The file it is.
+    /// The adapter itself — the canonical safetensors file.
     #[must_use]
     pub fn file(&self) -> &Path {
         &self.file
+    }
+
+    /// **Note a copy converted for a runtime.**
+    ///
+    /// It is derived from [`file`](Self::file) and can always be made again, so
+    /// nothing reads it as the truth; and it holds the same learning, so it is
+    /// deleted with the adapter.
+    #[must_use]
+    pub fn and_the_copy_made_for_a_runtime(mut self, copy: &Path) -> Self {
+        self.derived.push(copy.to_owned());
+        self
+    }
+
+    /// Every copy made from this adapter for a runtime.
+    #[must_use]
+    pub fn derived_copies(&self) -> &[PathBuf] {
+        &self.derived
     }
 
     /// The base model it applies to.
@@ -89,16 +129,30 @@ impl Adapter {
             && self.learned.folders.iter().any(|granted| granted == folder)
     }
 
-    /// **Delete it**, which takes back what that grant taught and nothing else.
+    /// **Delete it and every copy made from it**, which takes back what that
+    /// grant taught and nothing else.
+    ///
+    /// The derived copies go first. A machine interrupted halfway through would
+    /// otherwise be left holding the runtime's copy — the whole of the learning
+    /// — with the canonical file gone and nothing left to say where it came
+    /// from.
     ///
     /// # Errors
     /// Whatever the filesystem says. A file that is already gone is not an
     /// error: the person asked for it not to be there.
     pub fn delete(&self) -> std::io::Result<()> {
-        match std::fs::remove_file(&self.file) {
-            Err(why) if why.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            other => other,
+        for copy in &self.derived {
+            gone(copy)?;
         }
+        gone(&self.file)
+    }
+}
+
+/// Remove a file, and count a file that was already absent as removed.
+fn gone(path: &Path) -> std::io::Result<()> {
+    match std::fs::remove_file(path) {
+        Err(why) if why.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        other => other,
     }
 }
 
@@ -290,6 +344,30 @@ mod tests {
         assert!(
             letters_file.exists(),
             "revoking one folder took away what another folder taught"
+        );
+        std::fs::remove_dir_all(&at).unwrap();
+    }
+
+    /// **Deleting an adapter deletes the runtime's copy of it as well.**
+    ///
+    /// The converted copy is the same learning in another container. A machine
+    /// that kept it would have taken nothing back, and the sentence a person
+    /// read when they deleted it would be false.
+    #[test]
+    fn deleting_an_adapter_deletes_every_copy_made_from_it() {
+        let at = a_folder();
+        let canonical = an_adapter("/home/anna/Invoices", "@adapting", &at);
+        let copy = at.join("anna-lora.gguf");
+        std::fs::write(&copy, b"the same learning, converted for one runtime").unwrap();
+        let adapter = canonical.and_the_copy_made_for_a_runtime(&copy);
+        assert_eq!(adapter.derived_copies(), std::slice::from_ref(&copy));
+
+        adapter.delete().unwrap();
+
+        assert!(!adapter.file().exists(), "the adapter is still there");
+        assert!(
+            !copy.exists(),
+            "the runtime's copy outlived the adapter, so nothing was taken back"
         );
         std::fs::remove_dir_all(&at).unwrap();
     }

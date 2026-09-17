@@ -78,7 +78,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 3. The adapted model is measured before it is trusted
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-17.** **Depends on:** 2.
 
 - **Acceptance:** an adapter is served by the pinned runtime beside the base model it came
   from, and is **graded by `alo-driving`'s exercises in the words a turn shows** exactly as
