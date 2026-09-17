@@ -13,6 +13,7 @@ members = [
   "crates/alo-asking",
   "crates/alo-applications",
   "crates/alo-approving",
+  "crates/alo-bluetooth",
   "crates/alo-bounding",
   "crates/alo-bounding-map",
   "crates/alo-boundaryd",

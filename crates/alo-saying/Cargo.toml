@@ -27,6 +27,7 @@ alo-applications = { path = "../alo-applications" }
 alo-approving = { path = "../alo-approving" }
 alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
+alo-bluetooth = { path = "../alo-bluetooth" }
 alo-capturing = { path = "../alo-capturing" }
 alo-sound = { path = "../alo-sound" }
 alo-changing = { path = "../alo-changing" }

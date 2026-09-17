@@ -82,7 +82,15 @@ back and found empty while its volume stood where a person left it. Written up i
 
 ### 3. Bluetooth: pairing, audio, keyboards and mice
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-17.** `crates/alo-bluetooth`: nothing is paired with
+that a person did not choose from what was found and say yes to, the four things
+a device can ask are shown in full and asked of a person by an agent that has no
+branch answering for them, forgetting is one act that takes the keys, and **a
+pairing grants nothing** — held against the real `alo-nearby` and
+`alo-capability`. On a machine, the part a machine with no radio can take:
+*no Bluetooth here* is a different sentence from *nothing found*. Written up in
+[Pairing a device, and what it is not](updates/pairing-a-device-and-what-it-is-not.md).
+**Depends on:** 2.
 
 - **Acceptance:** `alo-bluetooth` pairs a device only when a person chose it from what
   was found, and shows the passkey or confirmation the device requires in full, never

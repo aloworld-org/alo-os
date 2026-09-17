@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 49] = [
+pub const EVERY_LIST: [&str; 50] = [
     "alo-adapting",
     "alo-access",
     "alo-accounts",
@@ -86,6 +86,7 @@ pub const EVERY_LIST: [&str; 49] = [
     "alo-applications",
     "alo-approving",
     "alo-asking",
+    "alo-bluetooth",
     "alo-capability",
     "alo-capturing",
     "alo-changing",
@@ -205,6 +206,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_approving::declare_into,
     )?;
     declare(&mut vocabulary, "alo-asking", alo_asking::declare_into)?;
+    declare(
+        &mut vocabulary,
+        "alo-bluetooth",
+        alo_bluetooth::declare_into,
+    )?;
     declare(
         &mut vocabulary,
         "alo-capability",
@@ -333,7 +339,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 49] = [
+    const ONE_STRING_EACH: [(&str, &str); 50] = [
         ("alo-adapting", "adapting.deleting-this-adapter"),
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
@@ -343,6 +349,7 @@ mod tests {
         ("alo-applications", "applications.not-installed"),
         ("alo-approving", "approving.nothing-to-answer"),
         ("alo-asking", "asking.question.nothing"),
+        ("alo-bluetooth", "bluetooth.radio-off"),
         ("alo-capability", "capability.grant.anonymous"),
         ("alo-capturing", "capturing.the-lock-screen"),
         ("alo-changing", "changing.not-kept"),
@@ -437,6 +444,7 @@ mod tests {
             alo_applications::application_words().unwrap().how_many(),
             alo_approving::approving_words().unwrap().how_many(),
             alo_asking::asking_words().unwrap().how_many(),
+            alo_bluetooth::bluetooth_words().unwrap().how_many(),
             alo_capability::capability_words().unwrap().how_many(),
             alo_capturing::capturing_words().unwrap().how_many(),
             alo_changing::changing_words().unwrap().how_many(),

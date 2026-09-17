@@ -1,0 +1,26 @@
+[package]
+name = "alo-bluetooth"
+version = "0.0.1"
+description = "Pairing a device, what a paired device is for, and forgetting it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The sentences a person reads while pairing something.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[dev-dependencies]
+# The two crates that own the other meanings of the word pairing, so that the
+# test which holds them untouched holds the real ones.
+alo-capability = { path = "../alo-capability" }
+alo-nearby = { path = "../alo-nearby" }
+
+[lints]
+workspace = true

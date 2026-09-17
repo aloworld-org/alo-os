@@ -202,6 +202,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-bluetooth"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-nearby",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "zbus",
+]
+
+[[package]]
 name = "alo-boundaryd"
 version = "0.0.1"
 dependencies = [
@@ -900,6 +912,7 @@ dependencies = [
  "alo-applications",
  "alo-approving",
  "alo-asking",
+ "alo-bluetooth",
  "alo-capability",
  "alo-capturing",
  "alo-changing",
