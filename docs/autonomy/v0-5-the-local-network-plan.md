@@ -1729,7 +1729,35 @@ then counts itself joined everywhere is a machine nobody finds until it restarts
 
 ### 34. A dock with a dozen adapters is found on every one of them at once
 
-**Status:** ready. **Depends on:** 29, 33.
+**Status:** **Done, 2026-09-17.** Measured on a real kernel by
+`crates/alo-agentd/src/a_dock_with_a_dozen_adapters.rs`. Reception serves as
+`src/main.rs` does; the far end has twelve `veth` cables to it (`cable0`–`cable11`
+at 40–51, hardware addresses given), six carrying IPv4 and six carrying link-local
+IPv6 only, **laid in one `ip -batch` and brought up in a second while reception is
+held still** with `SIGSTOP`, with every link-local address through duplicate
+address detection before it is let go. **The burst did not overflow the routing
+socket:** the kernel's `Drops` count for it stayed 0 on this machine. The fixture
+reads it and holds the service log to it either way (`DROPPED` said exactly when
+the kernel counted a drop). Once the kernel lists every cable in its groups
+(`/proc/<pid>/net/igmp`, `igmp6`) and the service holds each of them, the far end's
+**first** question on every cable is answered, all twelve with the same bytes, and
+the port is reached on every cable. **Six cables unplugged in one batch** (three of
+each kind, the last enumerated among them) leave reception found and reached on the
+other six, holding nothing at the six that went, its door answering. **A network
+made to fail:** a thirteenth cable, `cable12`, is laid while reception is held still,
+and a squatter in reception's network listens on the port held to that interface
+alone. The service log says *the port presence advertises could not be bound on
+cable12 (10.74.12.1): Address already in use*. Reception is still found there with
+the same bytes, reached on every other IPv4 cable, and its door answers. Every
+per-network failure line names `cable12` and no other network. **No product code
+changed** and no limit is imposed. Mutation runs: with the listener's failure line
+silenced, the fixture fails at *the service log never named the network its port
+could not be bound on*; with the last network enumerated skipped by the responders,
+it fails at *reception never followed its cables … the kernel does not list
+["cable5"] in their groups*. Contract: `docs/contracts/local-network-wire.md`
+(*Many networks at once*, new, additive). `docs/quirks.md` records the kernel. The
+report is `docs/autonomy/updates/a-dock-with-a-dozen-adapters.md`.
+**Depends on:** 29, 33.
 
 *Machines find each other with zero configuration.* Every fixture so far has put a
 machine on one or two cables. Task 33 found that a single batch of changes in one
@@ -1761,3 +1789,35 @@ would say which one was missed.
   found on, unless a limit the kernel really imposes is measured, written into
   `docs/quirks.md` and said in the service log where it bites. Nothing in
   `alo-shell`, nothing in `image/`.
+
+### 35. A port another program let go of on one network is listened on there again
+
+**Status:** ready. **Depends on:** 29, 34.
+
+*Machines find each other with zero configuration.* Task 34 made one network fail
+on a real kernel: another program held the port presence advertises on one
+interface, and the service's listener there was refused `EADDRINUSE`. The service
+log says *a machine on that network cannot reach this one until it can be*. But
+nothing tries again when the port **can** be bound. `crate::listeners` tries only
+when the kernel says a network changed, and a program closing a socket is not a
+network change. A machine whose port was taken for a moment at start-up by an
+installer, or by a service restarting, is found on that network and cannot be
+reached there until some cable somewhere changes. The service log's promise is not
+kept.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does, with
+  a far end on a `veth` carrying IPv4 and a second one carrying IPv4 as well
+  (`crate::a_dock_with_a_dozen_adapters` shows how to squat the port on one
+  interface while the machine is held still). With the port held by another program
+  on one cable, the port is not reached there and is reached on the other, tested.
+  Once that program lets go, and **with no network changing**, the port is reached
+  on that cable, tested, and the service log says so once, tested. How the service
+  learns the port is free is decided and written up with the reason, using a reading
+  the kernel really gives. If no such reading exists without an interval, the
+  decision itself is the work: an ADR with the options, and the log line changed
+  meanwhile to say what is true. What is said is the same bytes throughout, tested.
+- **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, what crosses the wire
+  unchanged. No interval and no polling unless an accepted ADR allows it. What
+  reality does that the specification does not say goes in `docs/quirks.md`.
+  Nothing in `alo-shell`, nothing in `image/`.

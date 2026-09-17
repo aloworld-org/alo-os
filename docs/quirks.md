@@ -4891,6 +4891,7 @@ longer than usual is worth a look: `ps -eo stat,args | grep " D "` finds the
 uninterruptible thread, and `/proc/<tid>/stack` names the filesystem.
 **Date:** 2026-09-15.
 
+
 ### Fixed-length lists of crates break when two lanes each add a crate
 **Version:** `crates/alo-saying/src/collecting.rs` (`EVERY_LIST`, `ONE_STRING_EACH`)
 and `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`
@@ -5053,4 +5054,37 @@ base ships a link and skipped where it does not — rather than assuming either
 shape. The `test -x` on the installed engine at the end of the same step is what
 proves the engine really landed somewhere it will be found, whichever shape `/opt`
 had.
+
+### A dozen networks in one burst: no limit bites, and a port taken on one interface is refused on that interface alone
+**Version:** WSL2 kernel `6.18.33.2-microsoft-standard-WSL2`, Ubuntu 24.04;
+`net.core.rmem_default` 212992, `net.core.optmem_max` 131072,
+`net.ipv4.igmp_max_memberships` 20, 10240 open descriptors. Measured by
+`crates/alo-agentd/src/a_dock_with_a_dozen_adapters.rs`. 2026-09-17.
+**Behaviour:** twelve `veth` cables were laid in one `ip -batch` and addressed and
+brought up in a second, while `alo-agentd` was held still with `SIGSTOP`. Six
+carried IPv4 and six link-local IPv6 only. The burst **did not overflow** the
+service's routing socket: the kernel's `Drops` count for it in
+`/proc/<pid>/net/netlink` stayed 0, with every link-local address through duplicate
+address detection. (Task 33 needed 64 pairs made and deleted to reach 164 drops.)
+Once let go, the service joined, answered and listened on all twelve, and the
+kernel refused nothing. The service holds one IPv4 datagram socket per network with
+one membership each, so `igmp_max_memberships`, which counts per socket, never
+comes near. Its one IPv6 socket held twelve `ff02::fb` memberships within
+`optmem_max`.
+A TCP listener bound to `0.0.0.0` at the service's port, held to one interface
+(`SO_BINDTOIFINDEX`) and without `SO_REUSEADDR`, makes the service's own listener
+refused with `EADDRINUSE` **on that interface only**. Its listeners at the same port
+held to every other interface, its IPv6-only listener, and its discovery responder
+on that same interface are all unaffected. The refusal comes again on every later
+round that reads the interfaces, so the service log repeats it each time the kernel
+reports a change.
+With several IPv4 interfaces in one network, the fixture sends each question to
+`224.0.0.251` with `IP_MULTICAST_IF` set to that cable's address rather than rely on
+the route to pick the interface.
+**Our response:** nothing is limited and nothing is patched. The service's
+per-network failure lines already name the network (`crate::responding`,
+`crate::listeners`, `crate::networks::joined_on`). The fixture now holds them to
+that, and fails if a line is lost or a network is silently skipped. More than
+thirteen networks is not measured here; a limit met on certified hardware is written
+here and said in the service log where it bites.
 **Date:** 2026-09-17.

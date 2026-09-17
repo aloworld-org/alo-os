@@ -454,6 +454,26 @@ reads its interfaces — a dock re-enumerating its adapters, a namespace rebuilt
   each is answered and its port answers there, with no restart.
 - **What is said is the same bytes before and after.**
 
+## Many networks at once
+
+Added 2026-09-17, additively. Nothing on this wire changes; this says what a
+reader of it can rely on when a machine is on many networks — a docking station or
+a lab switch bringing a dozen adapters up in one moment.
+
+- **A machine is found on every network it is on, however many there are.** It
+  sets no limit of its own on how many networks it answers, listens and joins on.
+  A dozen brought up in one burst are each found by the first question asked there
+  once the machine has followed the kernel, and the port answers on each, over
+  IPv4 and over link-local IPv6 alike.
+- **Networks that go leave the others as they were.** With half of them unplugged
+  at once, the machine is still found and reached on the rest, and holds nothing
+  at those that went.
+- **A network the machine cannot serve is named.** Where one network refuses —
+  its port taken by another program, say — the machine's own log names that
+  network and says what it could not do there. It goes on being found and reached
+  on every other network, and it does not stop.
+- **What is said is the same bytes on every network.**
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a
