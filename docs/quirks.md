@@ -4929,6 +4929,7 @@ crates' owners: tests that make a folder should remove it, pass or fail, and
 entries, because a person's machine can have one.
 **Date:** 2026-09-16.
 
+
 ### A virtual source made by the media server's own loopback tool cannot be recorded from
 **Version:** PipeWire 1.0.5 with WirePlumber 0.4.17, Ubuntu 24.04 aarch64, 2026-09-17.
 **Behaviour:** `pw-loopback` will publish a node with `media.class =
@@ -4962,4 +4963,42 @@ replug of the same card in the same profile, which is what a person's cable does
 and not across a profile that was set and then lost. A profile alo OS wants kept is
 configured on the session manager rather than set once at runtime. The test picks
 cards offering a single output, which are cards in their ordinary profile.
+
+### A full WSL disk image cannot be shrunk by making it sparse
+**Version:** WSL 2.7.14 on Windows Server 2022, and the development PC, 2026-09-17.
+**Behaviour:** WSL's `ext4.vhdx` only grows. Files deleted inside the distribution
+give nothing back to Windows, and `diskpart compact vdisk` reclaims nothing: the
+development PC measured 155.5 GB before and after. The fix that works depends on how
+much room the volume has left when you apply it.
+- **With room left**, `wsl --manage <distro> --set-sparse true --allow-unsafe`, a
+  restart, then `fstrim -av` inside gives the space back. The development PC did this
+  with about 20 GB free. Deleting one stale 65 GB build directory afterwards took the
+  volume from 2.8 GB free to 53.5 GB.
+- **With a full volume**, the same steps give nothing back. On the third PC, D: held
+  only the image, a non-sparse 99.7 GB file, and had 0.05 GB free. It was made sparse
+  with WSL shut down, then trimmed twice, once of 996 GiB of free blocks. Afterwards D:
+  still had 0.05 GB free, and `fsutil sparse queryrange` still showed all 99.7 GB
+  allocated. Punching holes is itself a write, and there was no room to make it.
+**Our response:** convert every distribution to sparse while its volume still has
+headroom. Once the volume is full, export, unregister and re-import. On the third PC:
+1. Removed the 200 GB sparse loop file that held the build directories, so the export
+   would not write it out at full size.
+2. `wsl --export Ubuntu C:\wsl-export\ubuntu.tar` wrote 7.9 GB. `tar -tf` read it to
+   the end: 267,099 entries, including the pinned nightly, `bpf-linker`, LLVM and the
+   configuration.
+3. `wsl --unregister Ubuntu`, then `wsl --import Ubuntu D:\wsl\Ubuntu` from the tar.
+4. `--set-sparse` with WSL shut down.
+The image came back at 6.9 GB, D: had 92.9 GB free, and nothing had to be reinstalled.
+The WSL filesystem had also gone read-only before the fix: when the image could not
+grow, a compiler died with SIGBUS and WSL then would not start, error
+`Wsl/Service/CreateInstance/E_FAIL`. Freeing 90 MB on D: was enough to start it again.
+
+Two things keep it from happening again:
+- The gates' build directories now live on an ext4 loop image with a fixed size
+  (80 GB on a 100 GB volume). A build that outgrows it fails as a build, and the machine
+  keeps working.
+- A change that moves where builds happen doubles disk use while nobody is looking:
+  every artefact is built again beside the old ones. The change that moves the
+  directory has to delete the one it moves away from in the same step. Both machines
+  filled their volume from that cause on the same day.
 **Date:** 2026-09-17.
