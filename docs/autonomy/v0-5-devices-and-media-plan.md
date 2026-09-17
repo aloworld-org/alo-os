@@ -33,7 +33,14 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **the decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
+2026-09-17.** Its encoding half is **accepted**: everything alo OS produces is
+AV1 or VP9, Opus and Matroska, royalty-free, with AV1 only where hardware can
+encode it — measured, not preferred. Its decoding half is **put to the owner**,
+because whether the image may carry H.264, HEVC and AAC decoders in the EU is a
+legal position rather than a technical one. **`alo-playing`'s closed list and its
+per-format tests wait on that half**, so this task is done as far as a lane may
+take it and the rest is the owner's. **Depends on:** nothing.
 
 *Media playback, and the codecs people actually have files in.* Some of those
 codecs carry patent licences, and an image distributed across the EU carries their

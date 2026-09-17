@@ -124,11 +124,13 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 4. Screen recording, with audio, to a file
 
-**Status:** blocked — on `v0-5-devices-and-media-plan.md` task 1, the codec
-decision, which is `ready` and which **no machine holds**. This task's own
-constraint puts the encoder and format there, and that plan's constraint says a
-task that records a format it has not settled waits on it. Choosing one here
-would breach both.
+**Status:** **ready — unblocked 2026-09-17.**
+[ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md)
+settles what this machine encodes: **VP9 where software must encode, AV1 where
+hardware can, Opus, in Matroska** — and that a recording the machine cannot keep
+up with is refused before it starts rather than quietly degraded. The Mac lane
+wrote it, owning both plans; nothing here waits on the decoding half, which is
+the owner's.
 
 - **Acceptance:** a recording of the screen, a window or a region, with the
   microphone, the machine's sound, both or neither, chosen before it starts; it is
@@ -143,7 +145,7 @@ would breach both.
 
 ### 5. Sharing the screen in a call
 
-**Status:** blocked — behind task 4, and so behind the same codec decision.
+**Status:** ready — unblocked with task 4 by ADR 0051. **Depends on:** 1, 4.
 
 - **Acceptance:** a call application asking to share the screen receives exactly
   what the person picked — the whole screen, one window, or nothing — through the
