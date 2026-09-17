@@ -549,6 +549,11 @@ pub fn without_a_target_directory(
 #[cfg(any(windows, test))]
 const TREES: &str = "alo-trees";
 
+/// How the copy is made: by content, giving a changed file the time it changed,
+/// and removing whatever the tree being published does not have.
+#[cfg(any(windows, test))]
+const HOW: &str = "--recursive --links --perms --delete --checksum --no-times";
+
 /// What is never copied: history, and what was built, which the gates keep in
 /// their own directory anyway. The loop's own directory stays too, because the
 /// handoff is the supervisor's to read, not a test's.
@@ -591,7 +596,18 @@ fn links_with_mold(within: &str) -> bool {
 /// and four when little changed. It has also hung a gate thread in
 /// uninterruptible sleep more than once, which only `wsl --shutdown` cleared.
 ///
-/// `rsync -a --delete`: the copy is exactly the tree being published, including
+/// **By content, and never by timestamp.** `rsync -a` keeps each file's own
+/// modification time, and Cargo decides what to rebuild by comparing times. One
+/// build directory serves every lane on this machine, so a file whose content
+/// differs from the last lane's but whose time is *older* than what was built
+/// from it looked fresh: on 2026-09-17 a task was refused for a `SleptThrough`
+/// case in a tree that had no such case, because the crate had been compiled
+/// from another lane's copy. So the copy compares checksums and gives the files
+/// it changes the time it changed them — `--checksum --no-times`, keeping
+/// permissions and links. A whole-tree checksum of this repository takes about
+/// two seconds.
+///
+/// The copy is exactly the tree being published, including
 /// files the task removed and modification times, which Cargo's freshness reads.
 /// Nothing in the Windows checkout is written to.
 ///
@@ -608,7 +624,7 @@ fn copied_where_it_builds(at: &Path) -> Result<(), String> {
     let said = Command::new("wsl")
         .args(["-d", "Ubuntu", "--", "bash", "-lc"])
         .arg(format!(
-            "mkdir -p \"{to}\" && rsync -a --delete {} \"{from}/\" \"{to}/\"",
+            "mkdir -p \"{to}\" && rsync {HOW} {} \"{from}/\" \"{to}/\"",
             NOT_COPIED.join(" ")
         ))
         .output()
@@ -882,6 +898,11 @@ mod tests {
             the_copy_for("$HOME/alo-builds/this-machine"),
             "$HOME/alo-trees/this-machine"
         );
+        // One build directory serves every lane, so a copy that decided by
+        // timestamp handed the next lane the last lane's artefacts.
+        for by_content in ["--checksum", "--no-times", "--delete"] {
+            assert!(HOW.contains(by_content), "the copy is missing {by_content}");
+        }
         for kept_out in ["/.git", "/target", "/.kernel-loop"] {
             assert!(
                 NOT_COPIED.contains(&format!("--exclude={kept_out}").as_str()),
