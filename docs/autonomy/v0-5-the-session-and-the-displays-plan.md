@@ -147,8 +147,8 @@ system whose agent could otherwise learn what a person was doing yesterday.
 
 ### 6. Notifications, and do-not-disturb
 
-**Status:** blocked — on `v0-5-capture-and-the-room-plan.md` task 1, whose
-`alo-in-use` says when the screen is shared or recorded. **Depends on:** 1.
+**Status:** ready — `v0-5-capture-and-the-room-plan.md` task 1, whose `alo-in-use`
+says when the screen is shared or recorded, was published on 2026-09-16. **Depends on:** 1.
 
 *Notifications, with do-not-disturb* (`docs/features.md` v0.5). A notification is the
 one thing on a screen that arrives uninvited, and the thing most likely to put a private

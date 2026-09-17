@@ -43,7 +43,7 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
 | `v0-5-the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
 | `v0-5-capture-and-the-room-plan.md` | **spare PC two**, first — its task 1 unblocks two other plans | `alo-capturing`, `alo-in-use` (new) |
-| `v0-5-the-session-and-the-displays-plan.md` | spare PC two, second | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
+| `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
 | `v0-5-hands-on-the-desktop-plan.md` | spare PC two, third | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
 | `v0-5-devices-and-media-plan.md` | spare PC two, fourth — or whichever machine empties first | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power` (new) |
 
