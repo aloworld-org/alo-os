@@ -62,7 +62,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 2. A fine-tune run, on the small model, with the rented stack
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1.
 
 - **Acceptance:** a LoRA (or QLoRA where the machine's memory needs it) adapter is trained
   on **the smallest model the catalogue recommends**, by a pinned upstream fine-tuning

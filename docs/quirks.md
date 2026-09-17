@@ -4095,6 +4095,26 @@ did, read by a person, and what the reader scored. Nothing in the product decide
 anything important on this reader; it chooses one sentence in a prompt.
 **Date:** 2026-09-16.
 
+### The obvious local fine-tuning tool cannot make an adapter, only a merged model
+**Version:** `llama.cpp` 0.4.0 (build 10809, commit 5266f24da), read on
+2026-09-17 on an Apple M3 and in the aarch64 gate VM.
+**Behaviour:** `llama-finetune` is already on every machine that serves a model
+here, and it looks like the way to fine-tune locally. It is not. It trains
+**every weight** and writes a whole new model to `-o`; its `--lora` flag only
+*loads* an adapter somebody else produced. There is no option that writes one.
+So a fine-tune through it either rewrites the base weights or produces a second
+copy of the model with the person's documents merged into it.
+**Our response:** it is not the engine.
+[ADR 0048](decisions/0048-an-adapter-is-the-learning-and-the-base-weights-are-never-touched.md)
+requires that what one granted folder taught be a file a person can delete on its
+own, and merging forecloses that permanently — the bytes cannot be unmixed later.
+The rented stack is `transformers` + `peft`, pinned in
+`crates/alo-adapting/src/engine.rs`, which produces a LoRA adapter as a separate
+file in the ordinary safetensors format. Recorded here because the next person
+to look for a local trainer will find `llama-finetune` first, and its help text
+mentions LoRA, which makes the wrong answer look like the right one.
+**Date:** 2026-09-17.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

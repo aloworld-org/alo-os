@@ -36,15 +36,19 @@
 //! able to answer a year later. [`learned_from`] is the statement that answers
 //! it.
 //!
-//! # No trainer here
+//! # The trainer is rented, and one file names it
 //!
-//! This crate decides the **input**. The training itself is a rented
-//! fine-tuning stack, configured and never patched, and it is task 2's.
+//! [`engine`] is the only file in this workspace that knows what runs a
+//! fine-tune: `transformers` and `peft`, pinned by version and by the digest
+//! the image installs, unmodified (ADR 0011). It writes the adapter in the
+//! ordinary LoRA safetensors format, so what a person's documents taught them
+//! is theirs to take elsewhere.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod adapter;
 pub mod dataset;
+pub mod engine;
 pub mod learned_from;
 pub mod leaving;
 pub mod words;
@@ -52,6 +56,7 @@ pub mod working_folder;
 
 pub use adapter::{Adapter, Composed, TheBaseIsUntouched, TheBaseMoved};
 pub use dataset::{Dataset, NotTrainedOn, Skipped};
+pub use engine::{THE_ADAPTER_FORMAT, THE_STACK, WHY_NOT_THE_OBVIOUS_LOCAL_TOOL};
 pub use learned_from::LearnedFrom;
 pub use leaving::{WhatItWouldBe, why_an_adapted_model_cannot_simply_be_sent};
 pub use working_folder::WorkingFolder;
