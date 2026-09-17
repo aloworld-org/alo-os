@@ -248,3 +248,22 @@ cannot become a letter.
 - **A second refusal shape for video.** *This film cannot be played* beside *this
   document cannot be opened* is two ways of telling somebody the same thing, and
   the second one drifts. `alo-opening`'s road carries both.
+
+### The road now exists (noted 2026-09-17)
+
+When this amendment was written, `alo-opening`'s `Cannot::NothingHereOpens(Kind)`
+was the road it chose and **`alo_opening::Kind` had no media in it** — eighteen
+kinds, all documents, images and a zip archive — so a film reached a person as
+*this machine does not recognise what this file is*, which is what a corrupt file
+reads like.
+
+`alo-opening` now carries nine media kinds, read from the containers people are
+actually sent: Matroska, WebM, the container MP4 names (split into a film and a
+sound recording with no picture), AVI, Ogg, MP3, WAVE and FLAC. A film this
+machine cannot play is therefore already reported the way this amendment says,
+and `alo-playing` inherits the sentence rather than inventing one.
+
+**A kind is the wrapping, not the codec**, which is the split this decision
+needs: one Matroska file holds AV1 that this machine plays and the next holds
+something it may not. `alo-playing` reads the tracks inside against the list
+above; `alo_opening::Kind::is_played` says which kinds it is asked about.

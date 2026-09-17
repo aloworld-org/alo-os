@@ -199,8 +199,21 @@ fn every_file_lands_in_exactly_one_of_three_outcomes() {
         decided_on_disk("nothing.txt", b"", &machine),
         Decided::AsItIs(Outcome::CannotOpen(Cannot::Empty))
     );
+    // A film is recognised as the film it is, and refused for the reason that
+    // is true of this machine: nothing here opens it. Bytes of no kind at all
+    // are the ones that are *not recognised*.
     assert_eq!(
         decided_on_disk("video", b"\0\0\0\x18ftypmp42\0\0\0\0", &machine),
+        Decided::AsItIs(Outcome::CannotOpen(Cannot::NothingHereOpens(
+            Kind::Mp4Video
+        )))
+    );
+    assert_eq!(
+        decided_on_disk(
+            "whatever",
+            b"\x07\x0e\x13\x2b\x91\xa0\x00\xff\xfe\x01",
+            &machine
+        ),
         Decided::AsItIs(Outcome::CannotOpen(Cannot::Unrecognised))
     );
     assert_eq!(

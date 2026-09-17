@@ -474,9 +474,74 @@ pub const UNREADABLE: Word = Word::saying(
      was learned about it, and the sentence must not suggest the file is damaged or unsupported.",
 );
 
+/// A Matroska video.
+pub const KIND_MATROSKA_VIDEO: Word =
+    Word::saying("opening.kind.matroska-video", "a Matroska video").noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". Matroska is \
+         the format's own name — the one a person sees on a file ending `.mkv` — and is normally \
+         left as it is.",
+    );
+
+/// A WebM video.
+pub const KIND_WEBM_VIDEO: Word = Word::saying("opening.kind.webm-video", "a WebM video").noting(
+    "The name of a kind of file, read inside another sentence: \"This is {what}\". WebM is the \
+     format's own name, usually a video from a web page, and is normally left as it is.",
+);
+
+/// An MP4 video.
+pub const KIND_MP4_VIDEO: Word = Word::saying("opening.kind.mp4-video", "an MP4 video").noting(
+    "The name of a kind of file, read inside another sentence: \"This is {what}\". MP4 is the \
+     format's own name — most videos people are sent — and is normally left as it is. The \
+     article changes with the name in languages that have one.",
+);
+
+/// Sound in an MP4 file.
+pub const KIND_MP4_AUDIO: Word =
+    Word::saying("opening.kind.mp4-audio", "a sound recording in an MP4 file").noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". The same \
+         format as an MP4 video with sound in it and no picture — what a file ending `.m4a` is. \
+         Say it as a sound recording rather than as music: it may be a voice note.",
+    );
+
+/// An AVI video.
+pub const KIND_AVI_VIDEO: Word = Word::saying("opening.kind.avi-video", "an AVI video").noting(
+    "The name of a kind of file, read inside another sentence: \"This is {what}\". AVI is an older \
+     format people are still sent, and is normally left as it is.",
+);
+
+/// An Ogg file.
+pub const KIND_OGG_MEDIA: Word = Word::saying("opening.kind.ogg-media", "an Ogg file").noting(
+    "The name of a kind of file, read inside another sentence: \"This is {what}\". Ogg is the \
+     format's own name and is normally left as it is. It is deliberately not called a sound \
+     recording: an Ogg file usually holds sound and can hold a picture, and this machine has \
+     looked at the file's wrapping rather than at what is inside it.",
+);
+
+/// An MP3 sound recording.
+pub const KIND_MP3_AUDIO: Word = Word::saying("opening.kind.mp3-audio", "an MP3 sound recording")
+    .noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". MP3 is the \
+         format's own name and is normally left as it is. Say it as a sound recording rather than \
+         as music: it may be a voice note or a recorded call.",
+    );
+
+/// A WAVE sound recording.
+pub const KIND_WAVE_AUDIO: Word = Word::saying("opening.kind.wave-audio", "a WAVE sound recording")
+    .noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". WAVE is the \
+         format's own name — the one a file ending `.wav` is in — and is normally left as it is.",
+    );
+
+/// A FLAC sound recording.
+pub const KIND_FLAC_AUDIO: Word = Word::saying("opening.kind.flac-audio", "a FLAC sound recording")
+    .noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". FLAC is the \
+         format's own name and is normally left as it is.",
+    );
+
 /// Every name of what a file is, in the order [`crate::Kind::EVERY`] lists
 /// kinds, followed by the two that are not kinds and the two containers.
-pub const THE_NAMES: [Word; 22] = [
+pub const THE_NAMES: [Word; 31] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -495,6 +560,15 @@ pub const THE_NAMES: [Word; 22] = [
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
     KIND_ZIP_ARCHIVE,
+    KIND_MATROSKA_VIDEO,
+    KIND_WEBM_VIDEO,
+    KIND_MP4_VIDEO,
+    KIND_MP4_AUDIO,
+    KIND_AVI_VIDEO,
+    KIND_OGG_MEDIA,
+    KIND_MP3_AUDIO,
+    KIND_WAVE_AUDIO,
+    KIND_FLAC_AUDIO,
     A_PROGRAM,
     A_PASSWORD_PROTECTED_DOCUMENT,
     CONTAINER_COMPRESSED,
@@ -531,7 +605,7 @@ pub const THE_REMEDIES: [Word; 5] = [
 
 /// Every string this crate can say: the names, the sentences, then what would
 /// open a file this machine cannot.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 49] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -550,6 +624,15 @@ pub const EVERY_WORD: [Word; 40] = [
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
     KIND_ZIP_ARCHIVE,
+    KIND_MATROSKA_VIDEO,
+    KIND_WEBM_VIDEO,
+    KIND_MP4_VIDEO,
+    KIND_MP4_AUDIO,
+    KIND_AVI_VIDEO,
+    KIND_OGG_MEDIA,
+    KIND_MP3_AUDIO,
+    KIND_WAVE_AUDIO,
+    KIND_FLAC_AUDIO,
     A_PROGRAM,
     A_PASSWORD_PROTECTED_DOCUMENT,
     CONTAINER_COMPRESSED,
@@ -816,8 +899,20 @@ mod tests {
                     word.named()
                 );
             }
+            // A number in a sentence is almost always machinery leaking — a
+            // format version, an error code, a byte count — and none of those
+            // belongs in front of a person. The exception is a format whose own
+            // name has a number in it: a person sent a film knows what MP4
+            // means, and *a video in the MPEG family, version four* would be
+            // this machine explaining itself instead of naming the thing. So
+            // the names are listed, and anything else with a digit in it fails
+            // here.
+            const NAMED_WITH_A_NUMBER: [&str; 3] = ["mp4", "mp3", "m4a"];
+            let left = NAMED_WITH_A_NUMBER
+                .iter()
+                .fold(said.clone(), |said, named| said.replace(named, ""));
             assert!(
-                !said.chars().any(|letter| letter.is_ascii_digit()),
+                !left.chars().any(|letter| letter.is_ascii_digit()),
                 "{} has a number in it",
                 word.named()
             );

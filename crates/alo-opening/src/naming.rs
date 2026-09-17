@@ -19,7 +19,11 @@
 //! it to disagree.
 //!
 //! A name this crate has no claim for — no extension, or one it does not know —
-//! claims nothing, and nothing can disagree with it.
+//! claims nothing, and nothing can disagree with it. `.mov` is deliberately
+//! one of those: a QuickTime file is the same container an `.mp4` is, and this
+//! crate would have to call it *an MP4 video* or invent a kind for a name. It
+//! reads as what its bytes are and its name claims nothing, which is the honest
+//! answer and costs a person nothing.
 
 use std::ffi::OsStr;
 use std::path::Path;
@@ -40,7 +44,7 @@ pub enum Named {
 }
 
 /// Every extension this crate reads a claim from, and the claim.
-const CLAIMS: [(&str, Named); 29] = [
+const CLAIMS: [(&str, Named); 42] = [
     ("pdf", Named::A(Kind::Pdf)),
     ("docx", Named::A(Kind::WordDocument)),
     ("docm", Named::A(Kind::WordDocument)),
@@ -66,6 +70,19 @@ const CLAIMS: [(&str, Named); 29] = [
     ("gif", Named::A(Kind::GifImage)),
     ("webp", Named::A(Kind::WebpImage)),
     ("zip", Named::A(Kind::ZipArchive)),
+    ("mkv", Named::A(Kind::MatroskaVideo)),
+    ("webm", Named::A(Kind::WebmVideo)),
+    ("mp4", Named::A(Kind::Mp4Video)),
+    ("m4v", Named::A(Kind::Mp4Video)),
+    ("m4a", Named::A(Kind::Mp4Audio)),
+    ("m4b", Named::A(Kind::Mp4Audio)),
+    ("avi", Named::A(Kind::AviVideo)),
+    ("ogg", Named::A(Kind::OggMedia)),
+    ("oga", Named::A(Kind::OggMedia)),
+    ("opus", Named::A(Kind::OggMedia)),
+    ("mp3", Named::A(Kind::Mp3Audio)),
+    ("wav", Named::A(Kind::WaveAudio)),
+    ("flac", Named::A(Kind::FlacAudio)),
     ("exe", Named::AProgram),
     ("dll", Named::AProgram),
     ("scr", Named::AProgram),

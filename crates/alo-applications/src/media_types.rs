@@ -21,7 +21,7 @@ use alo_opening::Kind;
 /// `text/plain` declares both kinds of plain text: an application that opens
 /// text says nothing about which character set, and a file in an older one is
 /// still text to it.
-const TABLE: [(&str, &[Kind]); 22] = [
+const TABLE: [(&str, &[Kind]); 38] = [
     ("application/pdf", &[Kind::Pdf]),
     (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -74,6 +74,22 @@ const TABLE: [(&str, &[Kind]); 22] = [
     ("image/webp", &[Kind::WebpImage]),
     ("application/zip", &[Kind::ZipArchive]),
     ("application/x-zip-compressed", &[Kind::ZipArchive]),
+    ("video/x-matroska", &[Kind::MatroskaVideo]),
+    ("video/webm", &[Kind::WebmVideo]),
+    ("audio/webm", &[Kind::WebmVideo]),
+    ("video/mp4", &[Kind::Mp4Video]),
+    ("video/quicktime", &[Kind::Mp4Video]),
+    ("audio/mp4", &[Kind::Mp4Audio]),
+    ("audio/x-m4a", &[Kind::Mp4Audio]),
+    ("video/x-msvideo", &[Kind::AviVideo]),
+    ("audio/ogg", &[Kind::OggMedia]),
+    ("video/ogg", &[Kind::OggMedia]),
+    ("application/ogg", &[Kind::OggMedia]),
+    ("audio/mpeg", &[Kind::Mp3Audio]),
+    ("audio/wav", &[Kind::WaveAudio]),
+    ("audio/x-wav", &[Kind::WaveAudio]),
+    ("audio/flac", &[Kind::FlacAudio]),
+    ("audio/x-flac", &[Kind::FlacAudio]),
 ];
 
 /// The kinds this media type declares — none for a type this machine does not

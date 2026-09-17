@@ -132,8 +132,16 @@ fn an_empty_file_is_explained() {
 #[test]
 fn a_file_nothing_recognises_is_explained() {
     let strings = in_english();
+    // Bytes of no kind at all. This test used to hand it an MP4 file, which is
+    // the whole of what changed here: a film was *not recognised* until this
+    // crate learned the containers people are sent, and a person could not tell
+    // it apart from a file that had arrived corrupt.
     let said = an_explanation(
-        decided_on_disk("holiday", b"\0\0\0\x18ftypmp42\0\0\0\0", &a_machine()),
+        decided_on_disk(
+            "holiday",
+            b"\x07\x0e\x13\x2b\x91\xa0\x00\xff\xfe\x01",
+            &a_machine(),
+        ),
         Cannot::Unrecognised,
         Would::WhoeverMadeIt,
         &strings,
@@ -307,4 +315,95 @@ fn a_file_named_as_what_it_is_not_is_still_explained() {
             "If a document was expected, whoever sent it can send the document itself instead",
         ]
     );
+}
+
+/// **A film this machine cannot play is told what it is**, in the sentence a
+/// person already meets for a document nothing here opens — never *this machine
+/// does not recognise it*, which is what it used to say and which reads like a
+/// broken file.
+///
+/// This is what [ADR 0051](../../../docs/decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md)'s
+/// amendment needs: *a format this machine does not play is reported through
+/// `alo-opening`'s cannot-open road with what would play it.* One sentence for
+/// **I cannot open this**, whether it was a document or a film.
+#[test]
+fn a_film_this_machine_does_not_play_is_named_rather_than_called_unrecognisable() {
+    let strings = in_english();
+    let said = an_explanation(
+        decided_on_disk("holiday", b"\0\0\0\x18ftypmp42\0\0\0\0", &a_machine()),
+        Cannot::NothingHereOpens(Kind::Mp4Video),
+        Would::AnotherMachineOrFormat,
+        &strings,
+    );
+    assert_eq!(
+        said,
+        [
+            "This is an MP4 video, and nothing on this machine opens it or converts it into \
+             something that does",
+            "What would open it is a machine with a program for this kind of file, or a copy \
+             saved in a different format by whoever sent it",
+        ]
+    );
+}
+
+/// **Every container a person is sent is recognised as itself**, and each of
+/// them reaches the same road.
+#[test]
+fn every_kind_of_film_and_recording_is_named_by_what_it_is() {
+    let strings = in_english();
+    for (named, bytes, kind) in [
+        (
+            "film",
+            &b"\x1a\x45\xdf\xa3\x01\x00\x00\x00\x00\x00\x00\x23B\x82\x88matroska"[..],
+            Kind::MatroskaVideo,
+        ),
+        (
+            "clip",
+            &b"\x1a\x45\xdf\xa3\x01\x00\x00\x00\x00\x00\x00\x1fB\x82\x84webm"[..],
+            Kind::WebmVideo,
+        ),
+        (
+            "holiday",
+            &b"\0\0\0\x18ftypisom\0\0\x02\0"[..],
+            Kind::Mp4Video,
+        ),
+        ("note", &b"\0\0\0\x18ftypM4A \0\0\0\0"[..], Kind::Mp4Audio),
+        ("wedding", &b"RIFF\x24\x08\0\0AVI LIST"[..], Kind::AviVideo),
+        ("song", &b"OggS\0\x02\0\0\0\0\0\0\0\0"[..], Kind::OggMedia),
+        (
+            "voice-note",
+            &b"ID3\x04\0\0\0\0\0\x23TSSE"[..],
+            Kind::Mp3Audio,
+        ),
+        (
+            "call",
+            &b"\xff\xfb\x90\x64\0\0\0\0\0\0\0\0"[..],
+            Kind::Mp3Audio,
+        ),
+        (
+            "recording",
+            &b"RIFF\x24\x08\0\0WAVEfmt "[..],
+            Kind::WaveAudio,
+        ),
+        (
+            "master",
+            &b"fLaC\0\0\0\x22\x12\0\x12\0"[..],
+            Kind::FlacAudio,
+        ),
+    ] {
+        let decided = decided_on_disk(named, bytes, &a_machine());
+        assert_eq!(
+            decided,
+            Decided::AsItIs(Outcome::CannotOpen(Cannot::NothingHereOpens(kind))),
+            "{named} was read as something else"
+        );
+        assert!(kind.is_played(), "{kind:?} is not something to play");
+        let said = read(decided, &strings);
+        assert_eq!(said.len(), 2);
+        assert!(
+            said.first()
+                .is_some_and(|first| first.starts_with("This is ")),
+            "{said:?}"
+        );
+    }
 }

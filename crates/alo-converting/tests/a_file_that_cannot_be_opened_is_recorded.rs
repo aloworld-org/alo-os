@@ -166,8 +166,13 @@ fn each_reason_is_recorded_with_what_the_person_was_told() {
             Would::TheDocumentItself,
         ),
         (
-            "holiday",
-            b"\0\0\0\x18ftypmp42\0\0\0\0".to_vec(),
+            // Bytes of no kind at all. This case held an MP4 file until
+            // `alo-opening` learned the containers people are sent: a film is
+            // now recognised as the film it is, and is refused as a kind this
+            // converter does not convert rather than as something nothing
+            // recognises.
+            "whatever",
+            b"\x07\x0e\x13\x2b\x91\xa0\x00\xff\xfe\x01".to_vec(),
             Cannot::Unrecognised,
             Would::WhoeverMadeIt,
         ),

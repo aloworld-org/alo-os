@@ -59,7 +59,15 @@ use alo_sound::{Mute, Pinned, bring_into_line};
 use alo_strings::{Filling, Strings, Word};
 
 /// The report this walk is recorded in.
-const THE_REPORT: &str = "docs/autonomy/updates/the-walk-through-a-working-days-devices.md";
+///
+/// The first table was published in
+/// `docs/autonomy/updates/the-walk-through-a-working-days-devices.md` and stands
+/// as it was: step 9 has since changed, because `alo-opening` learned the
+/// containers people are sent and a film stopped reading as a file nothing
+/// recognises. A published report is never rewritten, so the new table is a
+/// follow-up and this points at it.
+const THE_REPORT: &str =
+    "docs/autonomy/updates/the-walk-through-a-working-days-devices-after-media-kinds.md";
 
 /// The heading its table is under.
 const THE_WALK: &str = "## The walk, sentence by sentence";

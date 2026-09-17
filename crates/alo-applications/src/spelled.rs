@@ -41,6 +41,15 @@ pub const fn spelled(kind: Kind) -> &'static str {
         Kind::GifImage => "gif-image",
         Kind::WebpImage => "webp-image",
         Kind::ZipArchive => "zip-archive",
+        Kind::MatroskaVideo => "matroska-video",
+        Kind::WebmVideo => "webm-video",
+        Kind::Mp4Video => "mp4-video",
+        Kind::Mp4Audio => "mp4-audio",
+        Kind::AviVideo => "avi-video",
+        Kind::OggMedia => "ogg-media",
+        Kind::Mp3Audio => "mp3-audio",
+        Kind::WaveAudio => "wave-audio",
+        Kind::FlacAudio => "flac-audio",
     }
 }
 
@@ -63,10 +72,14 @@ mod tests {
         assert_eq!(names.len(), Kind::EVERY.len());
         for kind in Kind::EVERY {
             assert_eq!(kind_spelled(spelled(kind)), Some(kind));
+            // Lower case, digits and hyphens: plain to type in an editor and
+            // the same on every keyboard. Digits are here because the formats
+            // people are sent have them in their names — MP4, MP3 — and a key
+            // spelled `mpeg-four-video` would be a name nobody would guess.
             assert!(
                 spelled(kind)
                     .chars()
-                    .all(|c| c.is_ascii_lowercase() || c == '-'),
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
                 "{kind:?}"
             );
         }

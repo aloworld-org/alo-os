@@ -13,7 +13,7 @@
 //! draw a status area. A binding would be the same record with a build
 //! dependency and an ABI in front of it.
 //!
-//! # No shell, no environment of the caller's, and the C locale
+//! # No shell, no environment of the caller's, the C locale, and one more thing
 //!
 //! The program is started directly, so no argument is interpreted by anything
 //! but the tool. Its environment is cleared and given back only what it needs
@@ -21,6 +21,22 @@
 //! it prints is read to decide things, and a translated field name would be a
 //! record nothing recognised. The shape is `alo_software::TheRentedTool`'s,
 //! copied rather than re-decided.
+//!
+//! **And `XDG_RUNTIME_DIR`, which was missing and had to be added.** The tool
+//! finds the media server by that variable, and falls back to `/run/user/` and
+//! the user's number when it is unset. On an ordinary login those are the same
+//! place, which is why this went unnoticed; on a machine where the server
+//! listens anywhere else — every test session, and any machine running more
+//! than one — the cleared environment sent the tool to a directory with no
+//! server in it, and the indicator reported *this machine's media server would
+//! not answer* while the machine's media server was answering everything else.
+//! It was found on 2026-09-17 by a gate: `alo-sound`'s tests run against a
+//! session in a runtime directory of its own, and this crate's own on-a-machine
+//! test failed beside them with `can't connect: Host is down`.
+//!
+//! Nothing else of the caller's environment is passed, and the variable is
+//! passed **only when it is set**: a service started without one is still a
+//! service asking the machine's own default.
 //!
 //! # A machine with no media server says so
 //!
@@ -44,6 +60,10 @@ const THE_TOOL: &str = "pw-dump";
 
 /// Where a machine's own programs are, for a cleared environment.
 const WHERE_ITS_PROGRAMS_ARE: &str = "/usr/bin:/bin";
+
+/// Where this machine's media server is listening, which a session sets and
+/// without which the tool asks a directory that may hold no server at all.
+const WHERE_THE_SERVER_IS: &str = "XDG_RUNTIME_DIR";
 
 /// This machine's media server.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -111,6 +131,10 @@ impl Streams for TheMediaServer {
             .env("LC_ALL", "C")
             .env("LANG", "C")
             .env("PATH", WHERE_ITS_PROGRAMS_ARE)
+            .envs(
+                std::env::var_os(WHERE_THE_SERVER_IS)
+                    .map(|listening| (WHERE_THE_SERVER_IS.to_owned(), listening)),
+            )
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

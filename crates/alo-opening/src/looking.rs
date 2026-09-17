@@ -13,6 +13,15 @@
 //!    (`crate::text`), and bytes that are not text are
 //!    [`Appears::Unrecognised`].
 //!
+//! # A film is recognised by its wrapping, and that is all it is
+//!
+//! The media rules say which container a file is in — Matroska, the one MP4
+//! names, Ogg, RIFF — and **nothing about what is inside it**. Whether this
+//! machine can play what is in there is `alo-playing`'s question, asked of the
+//! tracks rather than of the first four bytes (ADR 0051). What this crate
+//! decides is what every other file it reads decides: what the file *is*, so
+//! that a person who cannot open it is told what they have.
+//!
 //! # A PDF is damaged when it has no end
 //!
 //! A PDF finishes with `%%EOF`, and the rule every widely used reader applies
@@ -44,6 +53,9 @@ pub const THE_HEAD: usize = 512;
 
 /// How far from the end of a PDF its `%%EOF` may be.
 pub(crate) const THE_PDF_TAIL: usize = 1024;
+
+/// What every Matroska and WebM file begins with: EBML's own signature.
+const EBML: [u8; 4] = [0x1A, 0x45, 0xDF, 0xA3];
 
 /// What a file's bytes say, and whether a document among them carries macros.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,8 +108,55 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
             return Ok(Looked::plainly(Appears::A(kind)));
         }
     }
-    if head.starts_with(b"RIFF") && head.get(8..12) == Some(&b"WEBP"[..]) {
-        return Ok(Looked::plainly(Appears::A(Kind::WebpImage)));
+    // RIFF holds several formats and the four bytes at eight say which. The
+    // three people are sent are a picture, a sound recording and an older film.
+    if head.starts_with(b"RIFF") {
+        return Ok(Looked::plainly(match head.get(8..12) {
+            Some(b"WEBP") => Appears::A(Kind::WebpImage),
+            Some(b"WAVE") => Appears::A(Kind::WaveAudio),
+            Some(b"AVI ") => Appears::A(Kind::AviVideo),
+            _ => Appears::Unrecognised,
+        }));
+    }
+
+    // Matroska and WebM are one container with two names, and the name is
+    // written in the header this signature starts. It is read by looking for
+    // the name inside that header rather than by walking EBML's elements: the
+    // search is bounded to the head of a file that already begins with the
+    // signature, and the two names are the only ones that decide anything.
+    // Anything else in that container is a Matroska file, which is what it is.
+    if head.starts_with(&EBML) {
+        return Ok(Looked::plainly(Appears::A(if says(&head, b"webm") {
+            Kind::WebmVideo
+        } else {
+            Kind::MatroskaVideo
+        })));
+    }
+
+    // The container MP4 names says `ftyp` at four, with what kind of file it is
+    // in the four bytes after that. Sound with no picture is saved in the same
+    // container under its own brand, and that is the one thing worth telling
+    // apart: a person is shown a sound recording rather than a film with
+    // nothing to see.
+    if head.get(4..8) == Some(&b"ftyp"[..]) {
+        let brand = head.get(8..12).unwrap_or_default();
+        return Ok(Looked::plainly(Appears::A(
+            if brand.starts_with(b"M4A") || brand.starts_with(b"M4B") {
+                Kind::Mp4Audio
+            } else {
+                Kind::Mp4Video
+            },
+        )));
+    }
+
+    if head.starts_with(b"OggS") {
+        return Ok(Looked::plainly(Appears::A(Kind::OggMedia)));
+    }
+    if head.starts_with(b"fLaC") {
+        return Ok(Looked::plainly(Appears::A(Kind::FlacAudio)));
+    }
+    if head.starts_with(b"ID3") || is_an_mpeg_audio_frame(&head) {
+        return Ok(Looked::plainly(Appears::A(Kind::Mp3Audio)));
     }
 
     if head.starts_with(b"\x7fELF") || is_a_windows_program(reading, &head)? {
@@ -132,6 +191,35 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
         Texted::OlderCharacterSet => Appears::A(Kind::TextInAnOlderCharacterSet),
         Texted::NotText => Appears::Unrecognised,
     }))
+}
+
+/// Whether this name is written in the head of the file.
+///
+/// Used for the one thing a Matroska file's header says that decides anything:
+/// whether the file calls itself WebM.
+fn says(head: &[u8], name: &[u8]) -> bool {
+    head.windows(name.len()).any(|seen| seen == name)
+}
+
+/// Whether these bytes begin a valid MPEG audio frame.
+///
+/// An MP3 with tags on it begins `ID3` and needs none of this. One without them
+/// begins with a frame, and the eleven bits every frame starts with are not
+/// enough to go on by themselves: each of the fields after them has a value
+/// that means *reserved*, and a header carrying one of those is not a frame.
+/// All four are checked, which is what a player does before it decodes
+/// anything — and what keeps a file of bytes that happen to start `0xFF` from
+/// being called a sound recording.
+fn is_an_mpeg_audio_frame(head: &[u8]) -> bool {
+    let (Some(first), Some(second), Some(third)) = (head.first(), head.get(1), head.get(2)) else {
+        return false;
+    };
+    *first == 0xFF
+        && second & 0b1110_0000 == 0b1110_0000
+        && (second >> 3) & 0b11 != 0b01
+        && (second >> 1) & 0b11 != 0b00
+        && third >> 4 != 0b1111
+        && (third >> 2) & 0b11 != 0b11
 }
 
 /// Whether a file beginning `MZ` is a Windows program: its header points, at

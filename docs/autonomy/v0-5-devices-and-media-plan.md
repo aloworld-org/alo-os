@@ -164,10 +164,12 @@ battery down — held against the table in
 [The walk through a working day's devices](updates/the-walk-through-a-working-days-devices.md),
 which the test reads rather than a copy of. Twelve moments, nine sentences and
 three that say nothing; all thirty sentences of the four crates are in the
-machine's vocabulary with a note, and none names the rented stack. **Step 9 is a
-finding:** a video file reads today as *this machine does not recognise what this
-file is*, because `alo_opening::Kind` has no media kinds — the road ADR 0051's
-amendment chose needs them, and they belong beside task 1's codec list.
+machine's vocabulary with a note, and none names the rented stack. **Step 9 was a
+finding and is now fixed:** a video file read as *this machine does not recognise
+what this file is*, because `alo_opening::Kind` had no media kinds. It has nine
+of them since 2026-09-17, so a film reaches a person by the road ADR 0051's
+amendment chose — the walk's table moved with it, in
+[a follow-up](updates/the-walk-through-a-working-days-devices-after-media-kinds.md).
 **Depends on:** 1, 2, 3, 4, 5.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
