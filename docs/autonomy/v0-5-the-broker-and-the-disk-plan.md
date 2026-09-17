@@ -60,7 +60,21 @@ its design rather than a hope about its future* (`docs/contracts/agent-verbs.md`
 
 ### 2. Printers, through the broker
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — on the owner: its acceptance takes `alo-printing`'s own types,
+and the worker changed `alo-printing` to give them, which the lane table gives to
+another machine. **Depends on:** 1.
+
+**Built, then held back, 2026-09-16.** A worker built the broker's printer verbs, and
+with them nine files of `alo-printing`, a new `alo-brokerd` and
+`alo-changing-printers`, and the `alo-by-hand` and `alo-saying` registrations. The
+acceptance below asks for the verbs to take `alo-printing`'s own types. But the lane
+table gives `alo-printing` to the development PC's documents-and-paper plan, which
+is running there, and two lanes in one crate is the collision the table exists to
+prevent. So the supervising machine kept the change unpublished, on its local
+branch `held/broker-task-2-edits-alo-printing`, with the handoff in
+`.kernel-loop/refused/`. **For the owner:** whether this lane may make the
+`alo-printing` change, or whether the documents lane exposes what the broker needs
+first.
 
 - **Acceptance:** the broker's printer verbs — add a printer `alo-printing` found, remove
   one, set the default — take `alo-printing`'s own types, and configure the rented
@@ -77,8 +91,8 @@ its design rather than a hope about its future* (`docs/contracts/agent-verbs.md`
 
 ### 3. Network, through the broker
 
-**Status:** blocked — on `v0-5-software-and-the-web-plan.md` task 4, whose
-`alo-proxy` holds the proxy this task's verbs set. **Depends on:** 1.
+**Status:** ready — `v0-5-software-and-the-web-plan.md` task 4, whose `alo-proxy`
+holds the proxy this task's verbs set, was published on 2026-09-16. **Depends on:** 1.
 
 - **Acceptance:** the broker's network verbs — join a network the machine can see, forget
   a network, turn the radio on or off, set the proxy `alo-proxy` holds — take closed
