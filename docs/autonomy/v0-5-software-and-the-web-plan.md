@@ -300,3 +300,48 @@ section of the machine description itself.
   no section.
 - **Constraint:** nothing here edits what `alo-software` decides; a section that does not
   hold stops the service, as `[questions]` does.
+
+### 9. A list of crates that cannot drift from the workspace it describes
+
+**Status:** ready. **Depends on:** nothing.
+
+**Why, 2026-09-17.** Three times in one day a lane was refused for a change it
+never made, each time by a hand-kept list that has to move in step with the
+workspace and has nothing tying it there:
+- `alo-software`'s `the_terminal_is_a_persons_and_no_verb_reaches_it` spells out
+  the crates that declare verbs. It broke when `alo-converting` was added, and
+  again when `alo-capturing` was (f9054b0).
+- `alo-by-hand`'s `every_verb_can_be_done_by_hand` keeps `WHO_DECLARES_THEM` and
+  its own copy of the calls. It broke for `alo-capturing` too (38ccba8).
+- `alo-saying`'s `EVERY_LIST` and `ONE_STRING_EACH` are arrays with a written
+  length. Two lanes each adding a crate merge cleanly and then fail to compile,
+  five times on 2026-09-16 alone.
+Each broke every lane on every machine until somebody fixed a list their task
+never touched.
+
+This plan owns `alo-software`, so it takes the fix. It crosses into
+`alo-by-hand`'s test and `alo-saying`'s `collecting.rs`. No plan owns either, and
+every plan that adds a crate already edits both. The change there is only this
+one.
+
+- **Acceptance:**
+  - **No length is written anywhere:** `EVERY_LIST` and `ONE_STRING_EACH` are
+    slices, so two parallel additions merge and compile.
+  - **One list of verb-declaring crates:** there is **one** list of the crates
+    whose verbs alo OS ships, with the calls that declare them, in one place both
+    tests use. A test holds that list to what the workspace says:
+    `alo_by_hand::whoever_declares_verbs` over `Cargo.toml`'s members.
+  - **A missing crate is named, with where to add it:** when a crate is missing,
+    the failure names it and names the one file to add it in.
+  - **Only the check reads the workspace:** the words and the verbs still reach a
+    test through real Cargo dependencies, because a test cannot call a crate it
+    does not depend on. So the crates cannot be derived at build time, and only
+    their agreement with the workspace is. The report says so plainly rather than
+    claiming a list that writes itself.
+  - **Proof it holds:** a test adds a crate that declares verbs to a fixture
+    workspace, and finds the check naming it and the file.
+- **Constraint:** no test gets weaker. Every crate that is checked today is still
+  checked, and a verb or a word that escaped the list is still a failure, just in
+  one place.
+- **Not this task:** the release number written in six places. It belongs to the
+  installer plan's `image/` and `alo-image`, and is left to that plan.
