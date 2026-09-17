@@ -38,7 +38,8 @@
 //! their own settings, and nothing here rewrites it. What a machine may say
 //! about it is [`Described::questions`] — *where* an answer may come from, which
 //! ADR 0016 gives to the organisation — and a bound refuses a choice without
-//! ever replacing one.
+//! ever replacing one. [`Described::applications`] is the same kind of bound for
+//! where an application may come from, and it never chooses one either.
 
 use std::path::{Path, PathBuf};
 
@@ -73,8 +74,36 @@ pub struct Described {
     record: PathBuf,
     /// How long it is kept.
     keeping: Keeping,
-    /// Where a question may be answered, and who said so.
-    questions: TheBound,
+    /// Where a question may be answered, and where an application may come
+    /// from — and who said so.
+    bounds: Bounds,
+}
+
+/// What an organisation bounds on this machine, and who set each bound.
+///
+/// Two fields and no `Default`, so a machine is assembled with **both** written:
+/// a bound left out would be an unmanaged machine by omission, and *nobody set a
+/// rule* has to be something somebody wrote rather than something forgotten.
+/// They travel together because they arrive together — from the one file, with
+/// the one owner deciding who set each.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bounds {
+    /// Where a question may be answered (`[questions]`).
+    pub questions: TheBound,
+    /// Which places an application may come from (`[applications]`).
+    pub applications: alo_software::Bound,
+}
+
+impl Bounds {
+    /// No bound on anything: a machine no organisation manages, on which the
+    /// person set no rule of their own either. ADR 0016's *absent*, written out.
+    #[must_use]
+    pub const fn nobodys() -> Self {
+        Self {
+            questions: TheBound::Nobodys,
+            applications: alo_software::Bound::Nobodys,
+        }
+    }
 }
 
 impl Described {
@@ -91,7 +120,7 @@ impl Described {
     /// would put the evidence of what an agent did wherever the service happened
     /// to be started from — and somewhere different the next time.
     ///
-    /// `questions` is the bound and its origin, which `crate::describing` has
+    /// `bounds` are the bounds and their origin, which `crate::describing` has
     /// already refused every way of not holding. It is a parameter rather than
     /// something added afterwards because a machine assembled without it would
     /// be an unmanaged machine by omission, and *nobody set a rule* has to be a
@@ -103,7 +132,7 @@ impl Described {
         proposal: Lasting,
         record: &Path,
         keeping: Keeping,
-        questions: TheBound,
+        bounds: Bounds,
     ) -> Result<Self, NotDescribed> {
         if agent.trim().is_empty() {
             return Err(NotDescribed::Anonymous);
@@ -129,7 +158,7 @@ impl Described {
             proposal,
             record: record.to_owned(),
             keeping,
-            questions,
+            bounds,
         })
     }
 
@@ -198,7 +227,20 @@ impl Described {
     /// it is `crate::starting`, which hands it to the questions a turn puts.
     #[must_use]
     pub const fn questions(&self) -> &TheBound {
-        &self.questions
+        &self.bounds.questions
+    }
+
+    /// Which places an application may come from on this machine, and who said
+    /// so.
+    ///
+    /// `alo_software::Bound::Nobodys` on every machine whose description has no
+    /// `[applications]` in it — ADR 0016's *absent*, never a permissive list.
+    /// It is the value `alo_software::Enabled::read` is handed, so a place the
+    /// description does not name is refused in the words naming whoever set the
+    /// rule; nothing here decides anything `alo-software` decides.
+    #[must_use]
+    pub const fn applications(&self) -> &alo_software::Bound {
+        &self.bounds.applications
     }
 }
 
@@ -242,7 +284,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap()
     }
@@ -273,7 +315,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap_err();
         assert!(matches!(refused, NotDescribed::Anonymous));
@@ -293,7 +335,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap_err();
         assert!(
@@ -309,7 +351,7 @@ mod tests {
                 a_proposal(),
                 Path::new("/var/lib/alo/record"),
                 Keeping::Forever,
-                TheBound::Nobodys,
+                Bounds::nobodys(),
             )
             .is_ok()
         );
@@ -328,7 +370,7 @@ mod tests {
                 a_proposal(),
                 Path::new("/var/lib/alo/record"),
                 Keeping::Forever,
-                TheBound::Nobodys,
+                Bounds::nobodys(),
             )
             .unwrap_err(),
             NotDescribed::Anonymous
@@ -347,7 +389,7 @@ mod tests {
             a_proposal(),
             Path::new("record"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap_err();
         assert!(matches!(refused, NotDescribed::NotAbsolute { what, .. } if what == THE_RECORD));
@@ -366,7 +408,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             ninety,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap();
         assert_eq!(machine.keeping(), ninety);
@@ -386,7 +428,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            Bounds::nobodys(),
         )
         .unwrap();
         assert_eq!(machine.agent(), "Alo Assistant");

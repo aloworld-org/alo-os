@@ -32,7 +32,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use alo_agentd::side::Side;
 use alo_agentd::unix::{our_group, us};
 use alo_agentd::{
-    ALSO_READ, Described, Listening, NotDescribed, Place, THE_DESCRIPTION, THE_FORMAT, TheBound,
+    ALSO_READ, APPLICATIONS_SINCE, Described, Listening, NotDescribed, Place, THE_DESCRIPTION,
+    THE_FORMAT, TheBound,
 };
 use alo_keeping::{Reading, Writing};
 
@@ -296,6 +297,103 @@ fn a_bound_that_cannot_be_read_stops_the_machine() {
     let refused = Described::at(&at, us().unwrap()).unwrap_err();
     assert!(
         matches!(refused, NotDescribed::NowhereNamedThat { .. }),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **The places applications may come from are read off a disk, and attributed
+/// to whoever wrote the file** — root's is an organisation's, anybody else's is
+/// their own — and a place the file does not name is kept out.
+#[test]
+fn places_on_a_disk_are_read_and_attributed_to_whoever_wrote_them() {
+    use std::os::unix::fs::MetadataExt as _;
+
+    let folder = a_directory_of_our_own("permitted-places");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[applications]\nmay-come-from = [\"acme-apps\"]\n",
+        describing_this_machine(&record)
+    );
+    let at = described("permitted-places-file", &said, 0o600);
+
+    let machine = Described::at(&at, us().unwrap()).unwrap();
+    let acme = alo_software::SourceName::checked("acme-apps").unwrap();
+    let flathub = alo_software::SourceName::checked("flathub").unwrap();
+    let who = if std::fs::metadata(&at).unwrap().uid() == 0 {
+        alo_software::SetBy::AnAdministrator
+    } else {
+        alo_software::SetBy::ThisMachine
+    };
+    assert_eq!(
+        machine.applications(),
+        &alo_software::Bound::only([acme.clone()], who),
+        "the places did not come off the disk as they were written, attributed to the file's owner"
+    );
+    assert_eq!(machine.applications().keeps_out(&acme), None);
+    assert_eq!(machine.applications().keeps_out(&flathub), Some(who));
+}
+
+/// **And a description with no `[applications]` has nobody's rule**, never a
+/// permissive list, in every shape this service reads.
+#[test]
+fn a_description_with_no_places_on_a_disk_has_nobodys_rule() {
+    for format in [THE_FORMAT, ALSO_READ[0], ALSO_READ[1]] {
+        let folder = a_directory_of_our_own("no-places");
+        let record = folder.join("record");
+        let said = describing_this_machine(&record).replace(
+            &format!("format = {THE_FORMAT}"),
+            &format!("format = {format}"),
+        );
+        let at = described("no-places-file", &said, 0o600);
+        assert_eq!(
+            Described::at(&at, us().unwrap()).unwrap().applications(),
+            &alo_software::Bound::Nobodys,
+            "format {format}"
+        );
+    }
+}
+
+/// **Places written into a shape that could not carry them are refused off a
+/// disk**, and nothing is started: an alo OS reading that shape would install
+/// from any place the person set up.
+#[test]
+fn places_in_an_older_shape_are_refused_off_the_disk() {
+    let folder = a_directory_of_our_own("places-older");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[applications]\nmay-come-from = [\"acme-apps\"]\n",
+        describing_this_machine(&record).replace(
+            &format!("format = {THE_FORMAT}"),
+            &format!("format = {}", ALSO_READ[1]),
+        )
+    );
+    let at = described("places-older-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::PlacesNeedANewerShape { format, reads, .. }
+            if format == ALSO_READ[1] && reads == APPLICATIONS_SINCE),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **A list this alo OS cannot read stops the machine** off a disk, rather than
+/// leaving an organisation's applications unbounded.
+#[test]
+fn places_that_cannot_be_read_stop_the_machine() {
+    let folder = a_directory_of_our_own("unreadable-places");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[applications]\nmay-come-from = [\"--from-anywhere\"]\n",
+        describing_this_machine(&record)
+    );
+    let at = described("unreadable-places-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::NotAPlaceName { .. }),
         "{refused}"
     );
     assert!(!record.exists(), "and nothing was started");

@@ -268,24 +268,20 @@ that crate's owner. The report, with both tables, is
 
 ### 8. An organisation's permitted places, read from the machine's description
 
-**Status:** blocked — on the owner: its acceptance edits `alo-agentd`, which the
-lane table gives to another machine. **Depends on:** 1.
-
-**Built, then held back, 2026-09-16.** A worker built it as the acceptance below
-reads: `/etc/alo/agentd.toml` gains the section, and `alo-agentd` reads it into
-`alo_software::Bound`. That meant new modules in `alo-agentd`
-(`permitted_places.rs`, `installing_under_the_description.rs`) and changes to
-`described.rs`, `describing.rs`, `refusing.rs`, `starting.rs` and
-`lib.rs`, its `what_a_machine_says_about_itself` test, and
-`docs/contracts/machine-description.md`. The acceptance asks for exactly that, but
-the lane rules on this machine name `alo-agentd` as a crate another machine is
-working in, and lane A on the development PC is committing there. Two lanes in one
-crate is the collision the lane table exists to prevent. So the supervising machine
-kept the change unpublished, on its local branch
-`held/software-task-8-edits-alo-agentd`, with the handoff in
-`.kernel-loop/refused/`. **For the owner:** whether this lane may make the
-`alo-agentd` change once lane A is clear of it, or whether lane A takes this
-section of the machine description itself.
+**Status:** **Done, 2026-09-16.** `/etc/alo/agentd.toml` gained an optional
+`[applications]` section with one key, `may-come-from`, a list of place names;
+it requires `format = 3` (a `1` or `2` carrying it is refused, as a `1` carrying
+`[questions]` is), and `1`, `2` and `3` without it are the same machine. Read in
+`crates/alo-agentd/src/permitted_places.rs` into `alo_software::Bound`, with who
+set it decided by who owns the file, and handed out as
+`alo_agentd::Described::applications`; absence is `Bound::Nobodys`. A name that
+could never be a place, a place named twice, a missing key or an unknown one stops
+the service. Nothing in `alo-software` was edited. The acceptance test is
+`crates/alo-agentd/src/installing_under_the_description.rs`; the contract is
+`docs/contracts/machine-description.md`; the report is
+`docs/autonomy/updates/an-organisations-permitted-places-from-the-machine-description.md`.
+What is not here is the surface that installs — the shell's — handing this value
+to `alo_software::Enabled::read`; nothing on a machine installs yet. **Depends on:** 1.
 
 *The organisation bounds; the person chooses* (ADR 0016), for where applications come from.
 
@@ -301,7 +297,31 @@ section of the machine description itself.
 - **Constraint:** nothing here edits what `alo-software` decides; a section that does not
   hold stops the service, as `[questions]` does.
 
-### 9. A list of crates that cannot drift from the workspace it describes
+### 9. An organisation's proxy, read from the machine's description
+
+**Status:** ready. **Depends on:** 4, 8.
+
+*A great many company networks have no other route out* (task 4), and on a managed
+machine the organisation is who knows the route.
+
+- **Acceptance:** `/etc/alo/agentd.toml` carries an optional section stating the
+  machine-wide proxy an organisation sets — none, a manual address per scheme with
+  exceptions, or an automatic configuration address, in `alo_proxy::Setting`'s three
+  shapes — documented in `docs/contracts/machine-description.md` beside
+  `[questions]` and `[applications]`, with the `format` rule both follow (a new shape
+  number; an older service refuses a description whose proxy it cannot honour, and an
+  older shape carrying the section is refused); `alo-agentd` reads it into
+  `alo_proxy::Kept` with who set it decided by who owns the file, exactly as task 8;
+  its absence is a proxy nobody set, never "straight out" written on a person's
+  behalf; **a proxy password is never in the file** — the section names where the
+  password is in the keyring (ADR 0022), and a password written inline is refused by
+  name; and a test shows a person's own proxy refused in words on a machine whose
+  root-owned description sets one, beside the same change accepted on a machine with
+  no section.
+- **Constraint:** nothing here edits what `alo-proxy` decides; a section that does not
+  hold stops the service, as `[questions]` and `[applications]` do.
+
+### 10. A list of crates that cannot drift from the workspace it describes
 
 **Status:** ready. **Depends on:** nothing.
 

@@ -69,7 +69,7 @@ addition.
 
 | Field | Meaning |
 |---|---|
-| `format` | Which shape this description is in. Required. `1`, or `2` when it carries `[questions]`. |
+| `format` | Which shape this description is in. Required. `1`; `2` or later when it carries `[questions]`; `3` when it carries `[applications]`. |
 
 A description that says a number this service does not read is **refused rather
 than guessed at**,
@@ -200,7 +200,7 @@ as it always was, and by the same rules in *Who may write it* below.
 
 ### It requires `format = 2`
 
-This is the one place the additive rule below does not reach, and the reason is
+This is the first of the two places the additive rule below does not reach, and the reason is
 worth stating plainly. An older service reading a description that carries
 `[questions]` would ignore the section and go on sending questions wherever the
 person chose — **an organisation's policy silently not enforced**, which is not
@@ -227,6 +227,74 @@ image is answerable for and knows only `1` — which is correct for what it chec
 and is why a policy in a built image would need that reader taught the section
 first.
 
+## `[applications]`
+
+Which places an organisation permits applications to come from — the same
+ADR 0016 bound as `[questions]`, for installing and updating an application
+rather than for answering a question.
+
+```toml
+format = 3
+
+[applications]
+may-come-from = ["acme-apps", "flathub"]
+```
+
+| Field | Meaning |
+|---|---|
+| `may-come-from` | Every place an application may be installed or updated from, by the name this machine knows it by. Required when the section is present. |
+
+**A name is what this machine calls a place applications come from** — the name
+the place was set up under, which is the name a person installs by. Letters,
+digits, `.`, `_` and `-`, not beginning with `-`, at most 64 characters. Names
+are matched exactly, as grants are: `Flathub` is not `flathub`. Naming a place
+here does **not** set one up; a place that is permitted and was never set up on
+the machine is still not somewhere anything is installed from, and a place that
+is set up and not named is refused.
+
+**The section is optional and its absence is the common case**, exactly as
+`[questions]`: no section is no rule — *absent, not permissive by default* — and
+a person on that machine installs from any place set up on it.
+
+**An empty list is a rule, and it keeps every place out.** An organisation that
+wrote `may-come-from = []` wrote a rule; it is never read as no section.
+
+**A section that is present and does not hold is refused, and the service does
+not start** — never read as unrestricted. Each of these refuses:
+
+- `[applications]` with no `may-come-from`, or with one that is not a list of
+  strings;
+- a key in the section this service does not know;
+- a name that could never be a place's name — empty, with a space or a `/` in
+  it, or beginning with `-`;
+- the same place named twice, which is most often a line copied and not
+  edited, with the place that was meant missing.
+
+**When a place is kept out, the person is told who set the rule, and who set it
+is decided by who owns this file** — the rule `[questions]` states, for the same
+reason. Root's file is an organisation's, and the refusal says *the organisation
+that manages this machine does not permit installing applications from …*. The
+person's own file is theirs, and the refusal says no organisation set it. A
+restrictive list is never, on its own, evidence that somebody else wrote it.
+
+It bounds **where** applications come from and nothing else. It does not set up
+a place, choose an application, or turn a place's signature checking on or off;
+a place set up without checking is refused whatever this list says.
+
+### It requires `format = 3`
+
+For `[questions]`' reason, one shape later. An older service reading a
+description that carries `[applications]` would not enforce it and would install
+from any place the person set up — **an organisation's rule silently not
+enforced**. So a description carrying `[applications]` says `format = 3`; a
+service that reads only `1` and `2` refuses it and does not start, and a `1` or
+`2` carrying the section is refused as a file claiming an older service could
+have read it correctly.
+
+A description without the section means the same machine under `1`, `2` and `3`,
+and none of them is a migration anybody performs. `[questions]` is read in a `3`
+exactly as in a `2`.
+
 ## What is **not** in it
 
 **Where the socket goes.** It is `/run/alo/<uid>/agentd.sock` for the person
@@ -240,8 +308,9 @@ and `alo-agentd` **refuses to start** rather than create it (ADR 0017). Until
 unreachable by the agent on any real machine; the ADR is why it moved and what
 was rejected on the way.
 
-**Anything secret.** There are two login numbers, two lengths of time and two
-paths in this file and nothing else. A provider's key lives in the keyring and
+**Anything secret.** There are login numbers, two lengths of time, a path, a
+retention rule and, where an organisation set them, two bounds in this file and
+nothing else — the names of places are not secrets. A provider's key lives in the keyring and
 never in a settings file (`crates/alo-models/src/provider.rs`), and that is not
 relaxed here. The file may be world-readable — `0644` in `/etc` is the ordinary
 case — and alo OS does not check that it is not, because checking would teach
@@ -268,7 +337,7 @@ that is checked and a description that is read cannot be two different files.
 
 New keys may be added and `format` stays as it is for as long as an older
 service reading the file without them would still describe the same machine.
-`[questions]` is the one section that fails that test and says why, above:
-ignoring a policy is not describing the same machine. Anything
+`[questions]` and `[applications]` are the two sections that fail that test and
+say why, above: ignoring a policy is not describing the same machine. Anything
 else — a key removed, a meaning changed, a default introduced — is a new
 `format`, and a service refuses a number it does not read.

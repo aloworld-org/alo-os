@@ -291,7 +291,6 @@ pub fn until_stopped(
 mod tests {
     use super::*;
     use crate::lasting::Lasting;
-    use crate::questions::TheBound;
     use crate::side::Side;
     use crate::testing::{
         NothingIsRemembered, Pretending, a_directory_of_our_own, a_folder_with_an_invoice,
@@ -326,7 +325,7 @@ mod tests {
             Lasting::of_seconds(3600, "agent.proposal-seconds").unwrap(),
             Path::new("/var/lib/alo/record.jsonl"),
             Keeping::Forever,
-            TheBound::Nobodys,
+            crate::described::Bounds::nobodys(),
         )
         .unwrap()
     }

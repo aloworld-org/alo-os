@@ -10,7 +10,7 @@
 //!
 //! # The format number, and what additively means
 //!
-//! [`THE_FORMAT`] is `2` and `1` is still read ([`ALSO_READ`]). A description
+//! [`THE_FORMAT`] is `3`, and `1` and `2` are still read ([`ALSO_READ`]). A description
 //! that says anything else is **refused rather than guessed at**, which is
 //! `docs/contracts/record-file.md`'s rule about a record from a newer alo OS,
 //! applied to the file that says what a machine is. A newer alo OS may add keys;
@@ -32,6 +32,14 @@
 //! A description **without** `[questions]` means the same thing under either
 //! number, so `1` keeps working untouched and `2` is not a migration anybody has
 //! to perform.
+//!
+//! **`3` since `[applications]`**, for the identical reason: an older service
+//! that did not enforce the places an organisation permits applications to come
+//! from would install from any place the person set up. So that section needs
+//! [`APPLICATIONS_SINCE`], a description carrying it in an older shape is
+//! [`NotDescribed::PlacesNeedANewerShape`], and a description with neither
+//! section means the same machine under all three numbers. What the section
+//! says and how it is refused is `crate::permitted_places`.
 //!
 //! # A key nobody declared is refused
 //!
@@ -61,31 +69,41 @@ use std::path::PathBuf;
 
 use alo_keeping::Keeping;
 use alo_models::SourcePolicy;
+use alo_software::Bound;
 use serde::Deserialize;
 
 use crate::caller::{Gid, Uid};
-use crate::described::Described;
+use crate::described::{Bounds, Described};
 use crate::lasting::Lasting;
+use crate::permitted_places::TheApplications;
 use crate::questions::TheBound;
 use crate::refusing::NotDescribed;
 use crate::side::Sides;
 use crate::trusting::WhoDescribedIt;
 
 /// The shape of description this alo OS writes, and the newest it reads.
-pub const THE_FORMAT: u32 = 2;
+pub const THE_FORMAT: u32 = 3;
 
 /// Every shape this alo OS still reads, oldest first.
 ///
 /// Expand, migrate, contract — `CLAUDE.md`'s rule for a schema, and this is the
 /// expand. Every description written before there was anywhere to state a
 /// policy says `1`, has no `[questions]` in it, and means exactly what it always
-/// meant; nothing rewrites it and nothing asks anybody to.
-pub const ALSO_READ: [u32; 1] = [1];
+/// meant; one written before there was anywhere to name the places applications
+/// come from says `1` or `2` and has no `[applications]` in it. Nothing rewrites
+/// either and nothing asks anybody to.
+pub const ALSO_READ: [u32; 2] = [1, 2];
+
+/// The first shape that could carry `[questions]`.
+pub const QUESTIONS_SINCE: u32 = 2;
+
+/// The first shape that could carry `[applications]`.
+pub const APPLICATIONS_SINCE: u32 = 3;
 
 /// Whether this alo OS reads a description that says it is this shape.
 #[must_use]
 pub const fn is_a_shape_we_read(format: u32) -> bool {
-    format == THE_FORMAT || format == ALSO_READ[0]
+    format == THE_FORMAT || format == ALSO_READ[0] || format == ALSO_READ[1]
 }
 
 /// The key the agent's name is written under.
@@ -153,12 +171,19 @@ struct AsWritten {
     /// Where a question may be answered, or absent on a machine no
     /// organisation manages.
     ///
-    /// **The one optional section in this file**, and it is optional because
+    /// **One of the two optional sections in this file**, and it is optional because
     /// ADR 0016 says a machine no organisation manages has *no policy at all —
     /// not empty, not permissive by default, absent*. Every other key is
     /// required for item 23's reason; this one is not missing when it is
     /// absent, it is answered.
     questions: Option<TheQuestions>,
+    /// The places applications may come from, or absent on a machine nobody
+    /// set such a rule on.
+    ///
+    /// Optional for exactly `questions`' reason: absent is ADR 0016's *no
+    /// policy*, answered as `alo_software::Bound::Nobodys` rather than as a
+    /// permissive list.
+    applications: Option<TheApplications>,
 }
 
 /// The two logins and the group they meet in, as numbers.
@@ -280,11 +305,20 @@ impl AsWritten {
         // honouring it would be this service believing the half of a
         // disagreement it preferred, on a file that says an older alo OS could
         // have read it correctly when it could not.
-        if self.format < THE_FORMAT && self.questions.is_some() {
+        if self.format < QUESTIONS_SINCE && self.questions.is_some() {
             return Err(NotDescribed::APolicyNeedsANewerShape {
                 at: at.to_owned(),
                 format: self.format,
-                reads: THE_FORMAT,
+                reads: QUESTIONS_SINCE,
+            });
+        }
+        // And the same for the places applications come from, one shape later:
+        // an alo OS reading `2` would not enforce them.
+        if self.format < APPLICATIONS_SINCE && self.applications.is_some() {
+            return Err(NotDescribed::PlacesNeedANewerShape {
+                at: at.to_owned(),
+                format: self.format,
+                reads: APPLICATIONS_SINCE,
             });
         }
         let sides = Sides::of(
@@ -292,13 +326,18 @@ impl AsWritten {
             Uid::of(self.logins.agent)?,
             Gid::of(self.logins.group)?,
         )?;
-        let bound = match self.questions {
+        let questions = match self.questions {
             // ADR 0016's *absent*: no rule, and nobody to name in a refusal.
             None => TheBound::Nobodys,
             Some(questions) => match who {
                 WhoDescribedIt::AnAdministrator => TheBound::AnOrganisations(questions.checked()?),
                 WhoDescribedIt::ThePerson => TheBound::ThePersons(questions.checked()?),
             },
+        };
+        let applications = match self.applications {
+            // The same *absent*, for where applications come from.
+            None => Bound::Nobodys,
+            Some(applications) => applications.checked(who)?,
         };
         Described::of(
             sides,
@@ -307,7 +346,10 @@ impl AsWritten {
             Lasting::of_seconds(self.agent.proposal_seconds, THE_PROPOSAL)?,
             &self.record.path,
             self.record.keeping,
-            bound,
+            Bounds {
+                questions,
+                applications,
+            },
         )
     }
 }
@@ -440,13 +482,13 @@ keeping = "forever"
     /// way round it is.
     #[test]
     fn a_description_from_a_newer_alo_os_is_refused() {
-        let said = an_ordinary_machine().replace("format = 1", "format = 3");
+        let said = an_ordinary_machine().replace("format = 1", "format = 4");
         let refused = an_administrator_wrote(&said).unwrap_err();
         assert!(matches!(
             refused,
             NotDescribed::AnotherFormat {
-                format: 3,
-                reads: 2,
+                format: 4,
+                reads: 3,
                 ..
             }
         ));
@@ -463,7 +505,8 @@ keeping = "forever"
     fn the_shape_before_this_one_is_still_read() {
         assert!(is_a_shape_we_read(1));
         assert!(is_a_shape_we_read(2));
-        assert!(!is_a_shape_we_read(3));
+        assert!(is_a_shape_we_read(3));
+        assert!(!is_a_shape_we_read(4));
         assert!(!is_a_shape_we_read(0));
         assert!(an_administrator_wrote(&an_ordinary_machine()).is_ok());
     }
@@ -842,6 +885,143 @@ keeping = "forever"
             }
         ));
         assert!(refused.to_string().contains("questions"), "{refused}");
+    }
+
+    // `[applications]` — the same bound, for where applications come from.
+
+    /// The same ordinary machine in the newest shape, with this
+    /// `[applications]` section on it.
+    fn a_machine_permitting(section: &str) -> String {
+        format!(
+            "{}\n[applications]\n{section}\n",
+            an_ordinary_machine().replace("format = 1", "format = 3")
+        )
+    }
+
+    fn a_place(name: &str) -> alo_software::SourceName {
+        alo_software::SourceName::checked(name).unwrap()
+    }
+
+    /// **A machine with no `[applications]` has no rule about where
+    /// applications come from**, in every shape this service reads — ADR
+    /// 0016's *absent*, never a permissive list.
+    #[test]
+    fn a_machine_with_no_applications_section_has_nobodys_rule() {
+        for format in ["format = 1", "format = 2", "format = 3"] {
+            let said = an_ordinary_machine().replace("format = 1", format);
+            let machine = an_administrator_wrote(&said).unwrap();
+            assert_eq!(machine.applications(), &Bound::Nobodys, "{format}");
+            let theirs = the_person_wrote(&said).unwrap();
+            assert_eq!(theirs.applications(), &Bound::Nobodys, "{format}");
+        }
+    }
+
+    /// **The places an administrator wrote are an organisation's rule**, and
+    /// keep out what they do not name.
+    #[test]
+    fn places_an_administrator_wrote_are_an_organisations_rule() {
+        let machine =
+            an_administrator_wrote(&a_machine_permitting(r#"may-come-from = ["acme-apps"]"#))
+                .unwrap();
+        assert_eq!(
+            machine.applications(),
+            &Bound::only([a_place("acme-apps")], alo_software::SetBy::AnAdministrator)
+        );
+        assert_eq!(
+            machine.applications().keeps_out(&a_place("flathub")),
+            Some(alo_software::SetBy::AnAdministrator)
+        );
+        // And it bounds nothing about questions.
+        assert_eq!(machine.questions(), &TheBound::Nobodys);
+    }
+
+    /// **The identical list in a file the person owns names no organisation.**
+    #[test]
+    fn the_same_places_the_person_wrote_name_no_organisation() {
+        let said = a_machine_permitting(r#"may-come-from = ["acme-apps"]"#);
+        assert_eq!(
+            the_person_wrote(&said)
+                .unwrap()
+                .applications()
+                .keeps_out(&a_place("flathub")),
+            Some(alo_software::SetBy::ThisMachine)
+        );
+    }
+
+    /// **Both bounds may be written in one description**, and each arrives as
+    /// its own.
+    #[test]
+    fn both_bounds_arrive_from_one_description() {
+        let said = a_machine_permitting(r#"may-come-from = ["flathub"]"#)
+            + "\n[questions]\nmay-go = \"in-the-building\"\n";
+        let machine = an_administrator_wrote(&said).unwrap();
+        assert_eq!(
+            machine.questions(),
+            &TheBound::AnOrganisations(SourcePolicy::InTheBuilding)
+        );
+        assert_eq!(
+            machine.applications(),
+            &Bound::only([a_place("flathub")], alo_software::SetBy::AnAdministrator)
+        );
+    }
+
+    /// **Places written into a shape that could not carry them are refused**,
+    /// in both older shapes, and the refusal says which shape they need.
+    #[test]
+    fn places_in_a_shape_that_could_not_carry_them_are_refused() {
+        for (format, number) in [("format = 1", 1), ("format = 2", 2)] {
+            let said = a_machine_permitting(r#"may-come-from = ["flathub"]"#)
+                .replace("format = 3", format);
+            let refused = an_administrator_wrote(&said).unwrap_err();
+            assert!(
+                matches!(
+                    refused,
+                    NotDescribed::PlacesNeedANewerShape { format: f, reads: 3, .. } if f == number
+                ),
+                "{refused:?}"
+            );
+            assert!(refused.to_string().contains("[applications]"), "{refused}");
+        }
+    }
+
+    /// **A section that does not hold stops the service**, never read as no
+    /// rule: no key, a key nobody declared, a name no place could have, and a
+    /// place named twice.
+    #[test]
+    fn an_applications_section_that_does_not_hold_is_refused() {
+        let empty = an_administrator_wrote(&a_machine_permitting("")).unwrap_err();
+        assert!(matches!(empty, NotDescribed::NotUnderstood { .. }));
+        assert!(empty.to_string().contains("may-come-from"), "{empty}");
+
+        let typo = an_administrator_wrote(&a_machine_permitting(r#"may-come-frm = ["flathub"]"#))
+            .unwrap_err();
+        assert!(matches!(typo, NotDescribed::NotUnderstood { .. }));
+
+        let not_a_list =
+            an_administrator_wrote(&a_machine_permitting(r#"may-come-from = "flathub""#))
+                .unwrap_err();
+        assert!(matches!(not_a_list, NotDescribed::NotUnderstood { .. }));
+
+        assert!(matches!(
+            an_administrator_wrote(&a_machine_permitting(r#"may-come-from = ["--no-deps"]"#))
+                .unwrap_err(),
+            NotDescribed::NotAPlaceName { .. }
+        ));
+        assert!(matches!(
+            an_administrator_wrote(&a_machine_permitting(
+                r#"may-come-from = ["flathub", "flathub"]"#
+            ))
+            .unwrap_err(),
+            NotDescribed::APlaceNamedTwice { .. }
+        ));
+    }
+
+    /// The shapes each section arrived in are named once.
+    #[test]
+    fn the_shapes_each_bound_arrived_in_are_named_once() {
+        assert_eq!(QUESTIONS_SINCE, 2);
+        assert_eq!(APPLICATIONS_SINCE, THE_FORMAT);
+        assert_eq!(ALSO_READ, [1, 2]);
     }
 
     /// The keys a bound is written under are named once, because they are in a

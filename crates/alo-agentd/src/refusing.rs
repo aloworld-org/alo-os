@@ -139,6 +139,35 @@ pub enum NotDescribed {
         /// The shape a policy needs.
         reads: u32,
     },
+    /// The description names the places applications may come from in a shape
+    /// that could not have carried them.
+    #[error(
+        "{at} says format {format} and has an [applications] section in it, which arrived in format {reads}; an alo OS reading format {format} would not enforce that section and would install applications from any place the person set up, so the file is refused rather than half-honoured — say format {reads}"
+    )]
+    PlacesNeedANewerShape {
+        /// The description.
+        at: PathBuf,
+        /// What it says it is.
+        format: u32,
+        /// The shape the section needs.
+        reads: u32,
+    },
+    /// A place permitted by name is not a name a place could have.
+    #[error(
+        "applications.may-come-from names {said:?}, which could never be what this machine calls a place applications come from — letters, digits, '.', '_' and '-', not beginning with '-'; a list that could not be read is refused rather than treated as unrestricted"
+    )]
+    NotAPlaceName {
+        /// What the description said.
+        said: String,
+    },
+    /// The same place is permitted twice.
+    #[error(
+        "applications.may-come-from names {named:?} more than once; that is usually a line copied and not edited, so the place that was meant is missing — name each place once"
+    )]
+    APlaceNamedTwice {
+        /// The place, as it was written the second time.
+        named: String,
+    },
     /// The bound names somewhere this service has never heard of.
     #[error(
         "questions.may-go is \"{said}\", which is nowhere this alo OS knows; it is one of {every}, and a bound that could not be read is refused rather than treated as unrestricted"

@@ -90,6 +90,13 @@ alo-keeping = { path = "../alo-keeping" }
 # allowed to be the environment at all.
 alo-choosing = { path = "../alo-choosing" }
 
+# Where an application may come from, as the machine's description bounds it.
+# `[applications]` in `/etc/alo/agentd.toml` is read into `alo_software::Bound`
+# in `src/permitted_places.rs`, and nothing else here reads that section; what that
+# value decides — the order a place is refused in, and the words — is that
+# crate's, and nothing here edits it.
+alo-software = { path = "../alo-software" }
+
 # The runtime a question is put to, found rather than configured (ADR 0019).
 # `src/questions.rs` is the only file that looks for one, and it is deliberately
 # the only thing in this crate that can name a model runtime: nothing here
@@ -135,6 +142,10 @@ alo-nearby = { path = "../alo-nearby" }
 # entries back and count them, which is what `alo_record::Record` is.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-record = { path = "../alo-record" }
+
+# The application an installation is for, so the test that a place the
+# description does not name is refused asks `alo-software`'s own two steps.
+alo-applications = { path = "../alo-applications" }
 
 # Reading what a runtime a test served was sent, so that whether a question was
 # held to the protocol's envelope (ADR 0032) is compared as a value.

@@ -227,6 +227,8 @@ pub mod hearing;
 pub mod holding;
 #[cfg(target_os = "linux")]
 pub mod hosting;
+#[cfg(all(test, target_os = "linux"))]
+mod installing_under_the_description;
 #[cfg(target_os = "linux")]
 pub mod interfaces_that_went;
 #[cfg(target_os = "linux")]
@@ -261,6 +263,8 @@ pub mod networks;
 pub mod opening_workspaces;
 #[cfg(target_os = "linux")]
 pub mod pairing;
+#[cfg(target_os = "linux")]
+pub mod permitted_places;
 #[cfg(target_os = "linux")]
 pub mod place;
 #[cfg(target_os = "linux")]
@@ -332,9 +336,11 @@ pub use bounding::ByTheKernel;
 #[cfg(target_os = "linux")]
 pub use caller::{Caller, Gid, Uid};
 #[cfg(target_os = "linux")]
-pub use described::{Described, THE_DESCRIPTION};
+pub use described::{Bounds, Described, THE_DESCRIPTION};
 #[cfg(target_os = "linux")]
-pub use describing::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};
+pub use describing::{
+    ALSO_READ, APPLICATIONS_SINCE, QUESTIONS_SINCE, THE_FORMAT, is_a_shape_we_read,
+};
 #[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
 #[cfg(target_os = "linux")]
