@@ -37,6 +37,11 @@
 //! changes that each pass alone and fail together is not a hypothetical; it is
 //! the ordinary way a shared branch breaks.
 //!
+//! So when git can do it without touching the task's files, the task is brought
+//! up to `origin/main` **before** its first gate, and that first gate is already
+//! the second kind. The gates then run twice only when `main` moves again
+//! during them, or when an arrival overlaps the task's own files.
+//!
 //! # A lost race, and the thing that is not one
 //!
 //! A push that loses to somebody else's is a race: integrate again, gate the
@@ -149,6 +154,14 @@ pub trait Steps {
     /// # Errors
     /// Whatever the machine said when the turn could not be asked for.
     fn our_turn(&mut self) -> Result<gate_turn::Turn, String>;
+
+    /// Bring the uncommitted task up to `origin/main` before its first gate,
+    /// when git can do that without touching the task's own files
+    /// ([`crate::repository::caught_up`]); whether it moved comes back.
+    ///
+    /// # Errors
+    /// Whatever `git` said about fetching or counting.
+    fn caught_up(&mut self) -> Result<bool, String>;
 }
 
 /// Whether a check runs the task's acceptance evidence as well as the gates.
@@ -211,6 +224,13 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
     // One lane's gates at a time on this machine, held from the first gate to
     // the push. Dropped when this function returns, however it returns.
     let _turn = steps.our_turn()?;
+
+    // Gate the tree `main` will actually get, once, rather than a stale one and
+    // then the combination. When main has not moved again by the push, the
+    // second gating below never happens.
+    if steps.caught_up()? {
+        steps.note("brought the task up to `origin/main` before gating, so it is gated once");
+    }
 
     // Nothing is staged before this returns `Ok`. A failure here leaves a tree
     // the supervisor has not touched, which is what makes the work recoverable
@@ -361,6 +381,10 @@ impl Steps for OnThisMachine<'_> {
             journal::note(ours, said);
         })
     }
+
+    fn caught_up(&mut self) -> Result<bool, String> {
+        repository::caught_up(self.at)
+    }
 }
 
 #[cfg(test)]
@@ -388,6 +412,10 @@ mod tests {
         /// How many steps had been done when the turn at the gates was taken,
         /// or `None` if it never was.
         turn_taken_after: Option<usize>,
+
+        /// How many steps had been done when the task was brought up to
+        /// `origin/main`, or `None` if it never was asked to be.
+        caught_up_after: Option<usize>,
 
         /// What `advanced` answers, one call at a time, then `false`.
         advancing: Vec<bool>,
@@ -483,6 +511,11 @@ mod tests {
             self.turn_taken_after = Some(self.did.len());
             Ok(gate_turn::Turn::nobody_elses())
         }
+
+        fn caught_up(&mut self) -> Result<bool, String> {
+            self.caught_up_after = Some(self.did.len());
+            Ok(false)
+        }
     }
 
     /// **A task outside its plan is refused before anything is gated, staged or
@@ -507,6 +540,27 @@ mod tests {
         let mut steps = Recording::default();
         gated_and_pushed(&mut steps).unwrap();
         assert_eq!(steps.turn_taken_after, Some(0));
+    }
+
+    /// **The task is brought up to `main` inside the turn and before the first
+    /// gate**, so the tree gated first is the one `main` would get, and a task
+    /// outside its plan is never moved at all.
+    #[test]
+    fn the_task_is_caught_up_before_the_first_gate() {
+        let mut steps = Recording::default();
+        gated_and_pushed(&mut steps).unwrap();
+        assert_eq!(steps.caught_up_after, Some(0));
+        assert_eq!(
+            steps.did.first().map(String::as_str),
+            Some("check this task's tree")
+        );
+
+        let mut outside = Recording {
+            refusing: Some("inside_the_plan"),
+            ..Recording::default()
+        };
+        drop(gated_and_pushed(&mut outside));
+        assert_eq!(outside.caught_up_after, None);
     }
 
     /// **A failed gate publishes nothing, and stages nothing.**

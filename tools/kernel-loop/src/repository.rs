@@ -204,6 +204,36 @@ pub fn advanced(at: &Path) -> Result<bool, String> {
     Ok(behind.trim() != "0")
 }
 
+/// Bring a checkout with no commits of its own up to `origin/main` before its
+/// first gate, with the task's work still uncommitted in it; whether it moved
+/// comes back.
+///
+/// **Why before the first gate.** A task written while other lanes published is
+/// almost always behind by the time it is gated, so gating the tree as it stood
+/// and then gating the combination after a rebase ran every gate twice: about
+/// seventy minutes of a four-core machine per task on 2026-09-17, with two lanes
+/// taking turns. A gate on a stale tree also fails on bugs `main` has already
+/// fixed; one lane's task did exactly that the same day.
+///
+/// Only a fast-forward, which git refuses **before touching anything** when an
+/// arriving change would overwrite one of the task's modified or untracked
+/// files. Refused, or with commits of its own, the checkout stays as it was and
+/// `false` comes back, and publishing gates it the way it always did. Nothing
+/// is stashed, reset or discarded on any road.
+///
+/// # Errors
+/// Whatever `git` said about fetching or counting.
+pub fn caught_up(at: &Path) -> Result<bool, String> {
+    if !advanced(at)? {
+        return Ok(false);
+    }
+    let ours = git(at, &["rev-list", "--count", "origin/main..HEAD"])?;
+    if ours.trim() != "0" {
+        return Ok(false);
+    }
+    Ok(git(at, &["merge", "--ff-only", "--quiet", "origin/main"]).is_ok())
+}
+
 /// Put this checkout's unpublished commits on top of what arrived.
 ///
 /// # Errors
@@ -602,6 +632,10 @@ pub fn applied_over(at: &Path, patch: &Path, path: &str) -> Result<Applied, Stri
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 mod tests {
     /// **`main` is the only branch this supervisor pushes**, and this reads the
     /// file to say so rather than trusting anybody to remember.
@@ -722,5 +756,112 @@ mod tests {
             !accounted_for("docs/autonomy/updates/something-else.md", &named),
             "a path nobody named was accounted for"
         );
+    }
+
+    use super::{MAIN, caught_up, git};
+    use std::path::Path;
+
+    /// A shared repository and one checkout of it, in a directory of this test's
+    /// own, with one file already published.
+    fn a_shared_repository(named: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+        let root = std::env::temp_dir().join(format!(
+            "alo-kernel-loop-caught-up-{named}-{}",
+            std::process::id()
+        ));
+        drop(std::fs::remove_dir_all(&root));
+        std::fs::create_dir_all(&root).unwrap();
+        let shared = root.join("shared.git");
+        let checkout = root.join("checkout");
+        git(
+            &root,
+            &["init", "--quiet", "--bare", "-b", MAIN, "shared.git"],
+        )
+        .unwrap();
+        git(&root, &["clone", "--quiet", "shared.git", "checkout"]).unwrap();
+        std::fs::write(checkout.join("theirs.txt"), "one\n").unwrap();
+        std::fs::write(checkout.join("ours.txt"), "one\n").unwrap();
+        a_commit_by_somebody(&checkout, "the first");
+        git(&checkout, &["push", "--quiet", "origin", MAIN]).unwrap();
+        (shared, checkout)
+    }
+
+    /// Commit everything in `at` as a fixture author, which only a test repository
+    /// ever has.
+    fn a_commit_by_somebody(at: &Path, message: &str) {
+        git(at, &["add", "--all"]).unwrap();
+        git(
+            at,
+            &[
+                "-c",
+                "user.name=fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                message,
+            ],
+        )
+        .unwrap();
+    }
+
+    /// Another lane publishes `file` while this checkout's task is being written.
+    fn another_lane_publishes(shared: &Path, file: &str) {
+        let root = shared.parent().unwrap();
+        let other = root.join("other");
+        drop(std::fs::remove_dir_all(&other));
+        git(root, &["clone", "--quiet", "shared.git", "other"]).unwrap();
+        std::fs::write(other.join(file), "changed by another lane\n").unwrap();
+        a_commit_by_somebody(&other, "another lane's task");
+        git(&other, &["push", "--quiet", "origin", MAIN]).unwrap();
+    }
+
+    /// **An uncommitted task is brought up to what another lane published**, when
+    /// what arrived does not touch its files, and its work is still there.
+    #[test]
+    fn a_task_is_caught_up_with_what_another_lane_published() {
+        let (shared, checkout) = a_shared_repository("clean");
+        another_lane_publishes(&shared, "theirs.txt");
+        std::fs::write(checkout.join("ours.txt"), "the task's work\n").unwrap();
+        std::fs::write(checkout.join("new.txt"), "a file the task made\n").unwrap();
+
+        assert_eq!(caught_up(&checkout), Ok(true));
+        assert_eq!(
+            // Git for Windows may write the arrival with a carriage return.
+            std::fs::read_to_string(checkout.join("theirs.txt"))
+                .unwrap()
+                .replace("\r\n", "\n"),
+            "changed by another lane\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(checkout.join("ours.txt")).unwrap(),
+            "the task's work\n"
+        );
+        assert!(checkout.join("new.txt").exists());
+        assert_eq!(
+            caught_up(&checkout),
+            Ok(false),
+            "a second catch-up moved again"
+        );
+        drop(std::fs::remove_dir_all(shared.parent().unwrap()));
+    }
+
+    /// **When what arrived would overwrite the task's own file, nothing moves**
+    /// and nothing of the task's is lost; publishing then rebases after its commit
+    /// the way it always did.
+    #[test]
+    fn a_task_whose_file_arrived_changed_is_left_exactly_as_it_was() {
+        let (shared, checkout) = a_shared_repository("overlapping");
+        another_lane_publishes(&shared, "ours.txt");
+        std::fs::write(checkout.join("ours.txt"), "the task's work\n").unwrap();
+        let before = git(&checkout, &["rev-parse", "HEAD"]).unwrap();
+
+        assert_eq!(caught_up(&checkout), Ok(false));
+        assert_eq!(git(&checkout, &["rev-parse", "HEAD"]).unwrap(), before);
+        assert_eq!(
+            std::fs::read_to_string(checkout.join("ours.txt")).unwrap(),
+            "the task's work\n"
+        );
+        drop(std::fs::remove_dir_all(shared.parent().unwrap()));
     }
 }
