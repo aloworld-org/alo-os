@@ -1,0 +1,18 @@
+[package]
+name = "alo-dividing"
+version = "0.0.1"
+description = "Which window has which share of a display, and how the shares hold together while a person works."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# A keyboard split is a shortcut, and the chord it answers to is that crate's
+# value: this crate reads what a chord does and never binds one of its own.
+alo-shortcuts = { path = "../alo-shortcuts" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

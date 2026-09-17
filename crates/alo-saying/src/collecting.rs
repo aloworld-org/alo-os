@@ -97,6 +97,7 @@ pub const EVERY_LIST: [&str; 53] = [
     "alo-context",
     "alo-converting",
     "alo-corridor",
+    "alo-dividing",
     "alo-dock",
     "alo-egress",
     "alo-files",
@@ -244,6 +245,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_converting::declare_into,
     )?;
     declare(&mut vocabulary, "alo-corridor", alo_corridor::declare_into)?;
+    declare(&mut vocabulary, "alo-dividing", alo_dividing::declare_into)?;
     declare(&mut vocabulary, "alo-dock", alo_dock::declare_into)?;
     declare(&mut vocabulary, "alo-egress", alo_egress::declare_into)?;
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
@@ -369,6 +371,7 @@ mod tests {
         ("alo-context", "context.the-document"),
         ("alo-converting", "converting.carried.everything"),
         ("alo-corridor", "corridor.at-the-door.not-granted-there"),
+        ("alo-dividing", "dividing.place.left-half"),
         ("alo-dock", "dock.edge.bottom"),
         ("alo-egress", "egress.destination.paired-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
@@ -466,6 +469,7 @@ mod tests {
             alo_context::context_words().unwrap().how_many(),
             alo_converting::converting_words().unwrap().how_many(),
             alo_corridor::corridor_words().unwrap().how_many(),
+            alo_dividing::dividing_words().unwrap().how_many(),
             alo_dock::dock_words().unwrap().how_many(),
             alo_egress::egress_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),

@@ -34,7 +34,12 @@ and read the plan as published.
 
 ### 1. A split: halves and quarters that hold
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing. `crates/alo-dividing`;
+evidence in `crates/alo-dividing/tests/halves_and_quarters_that_hold.rs` and
+`tests/a_division_never_overlaps_or_leaves_a_gap.rs`; report
+`docs/autonomy/updates/a-split-halves-and-quarters-that-hold.md`. The keyboard
+split answers to `alo-shortcuts`' existing *left half* and *right half* actions
+rather than a new one, because this plan never edits that crate.
 
 ★ The star is on *hold*. Every system can snap a window to half the screen. Almost
 none keeps the two halves a pair: resize one and the other stays where it was,
