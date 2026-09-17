@@ -1,0 +1,23 @@
+[package]
+name = "alo-adapting"
+version = "0.0.1"
+description = "What a guided fine-tune is trained on, and what it may never reach."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The grant a person made over a folder. A dataset is a granted folder and
+# nothing wider, so this crate reads that crate's types and never a path
+# somebody typed.
+alo-picking = { path = "../alo-picking" }
+# Who the fine-tune runs as, and the grant it runs under.
+alo-capability = { path = "../alo-capability" }
+# The sentences a person reads about what their model will learn from.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

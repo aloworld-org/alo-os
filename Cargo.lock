@@ -73,6 +73,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-adapting"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-picking",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
@@ -809,6 +820,7 @@ dependencies = [
  "alo-access",
  "alo-accounts",
  "alo-adapters",
+ "alo-adapting",
  "alo-answering",
  "alo-appearance",
  "alo-applications",

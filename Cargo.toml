@@ -6,6 +6,7 @@ members = [
   "crates/alo-access",
   "crates/alo-adapters",
   "crates/alo-accounts",
+  "crates/alo-adapting",
   "crates/alo-agentd",
   "crates/alo-answering",
   "crates/alo-appearance",

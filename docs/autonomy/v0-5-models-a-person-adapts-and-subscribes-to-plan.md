@@ -45,7 +45,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 1. What a fine-tune is trained on, and what it may never reach
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing.
 
 - **Acceptance:** `alo-adapting` holds a fine-tune's input as **one granted folder** (or
   several, each granted) read through the grant a person made with `alo-picking` —
