@@ -405,7 +405,6 @@ fn every_verb_this_machine_ships() -> Verbs {
     alo_adapters::verbs::declare_into(&mut verbs).unwrap();
     alo_capturing::verbs::declare_into(&mut verbs).unwrap();
     alo_changing_network::verbs::declare_into(&mut verbs).unwrap();
-    alo_capturing::verbs::declare_into(&mut verbs).unwrap();
     verbs
 }
 
