@@ -23,6 +23,14 @@ asking to keep the machine awake), `alo-approving` and `alo-overlay`, and
 `alo-saying`/`alo-strings`. **Nothing in `crates/alo-shell`**: every surface this
 plan needs is drawn by the shell plan's later tasks, from the decisions made here.
 
+**Where this plan crosses into lane A's crates:** task 2 adds
+`Turning::slept_through` to `alo-turn`, and the slept-through entry to `alo-record`
+and its contract `docs/contracts/record-file.md`. Both are additive, and both were
+published after `v0-5-the-local-network-plan.md`, the plan working in those crates,
+had finished. Task 2 also adds that entry's sentence to `alo-recounting`, which no
+plan owns. This plan claims none of the three; a later task that needs them again
+checks who is working in them first.
+
 **What this plan may not do:** tick anything *on the machine* — a lid that has
 never closed on certified hardware is `- [x] The code.` and nothing more; write a
 display driver, a power-management daemon or a session manager of our own (ADR
@@ -74,7 +82,24 @@ agent's last question, an approval waiting to be tapped.
 
 ### 2. Suspend, resume, the lid, and what may keep a machine awake
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-17.** `crates/alo-sleeping`: `asked` decides whether
+the machine sleeps before anything reaches `logind`, and `Going::carried_out`
+locks `alo_locking::Seat` and only then calls `Logind::sleep`, which takes a
+`LockedFirst` that only a locked seat can produce. A sleep started somewhere
+else waits on `UntilLocked`, a delay inhibitor, and a sleep that fails leaves the
+seat locked. `Lid` sleeps unless another display is attached and the person
+chose otherwise, kept in `sleeping.toml` through `alo-kept` (ADR 0038). `Holding`
+is the closed list of `Keeper`s, each named: the person's setting, an
+application's `alo_portals::Allowed` for the inhibit portal (the grants are asked
+again at every decision), and a `Turning` for its own length. Each hold is an
+`idle` block inhibitor from `logind`. A keeper holds off only idle sleep and never
+a sleep the person asked for. No crate that answers an agent depends on this one
+(`tests/an_agent_cannot_keep_this_machine_awake.rs`). At a wake, `Woke::a_turn`
+carries a turn on or stops it with a sentence, and writes the additive
+`slept-through` record entry through `alo_turn::Turning::slept_through`. Report:
+`docs/autonomy/updates/suspend-resume-the-lid-and-what-may-keep-a-machine-awake.md`.
+The real `logind` hold is measured in WSL. No sleep and no lid have been measured
+on certified hardware, and none is claimed. **Depends on:** 1.
 
 *Power management, battery, sleep on lid close*, and the inhibit portal's
 *no sleep mid-presentation*. The mechanism is `logind`'s; what is ours is the

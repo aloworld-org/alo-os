@@ -677,6 +677,30 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.keeping(Entry::a_workspace_was_opened(workspace, answers_at, now))
     }
 
+    /// Write down what became of this turn when the machine woke from a sleep
+    /// that came in the middle of it: it carried on, or — when `stopped` is
+    /// given — it was stopped, with the sentence the person was shown.
+    ///
+    /// `alo-sleeping` decides which, and calls this before the turn does
+    /// anything more, so work a person asked for is never silently lost to a
+    /// closed lid. The sentence arrives already rendered, for the reason
+    /// [`Turning::a_question_that_went_nowhere`] gives. **The agent comes from
+    /// the turn**, so the entry cannot name anybody else's.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it exactly as [`Turning::a_pairing_was_kept`] closes
+    /// one.
+    pub fn slept_through(
+        &mut self,
+        stopped: Option<&Said>,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        let entry = Entry::slept_through(self.turn.grantee(), stopped.map(Said::text), now);
+        self.keeping_stamped(entry)
+    }
+
     /// What is leaving this machine right now.
     ///
     /// The machine's indicator, lent out while a turn holds the machine — a

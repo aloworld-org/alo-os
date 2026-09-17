@@ -29,6 +29,7 @@
 //! | [`Happened::Updated`] | This machine started on a different build of its system than the one it ran before |
 //! | [`Happened::RolledBack`] | This machine went back to the build it ran before, because the person asked it to |
 //! | [`Happened::Brokered`] | The privileged broker handed a system verb on under an approval, or refused the request ([`brokered`]) |
+//! | [`Happened::SleptThrough`] | A turn was under way when the machine slept, and carried on or was stopped when it woke |
 //!
 //! # The two with nobody in them
 //!

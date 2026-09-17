@@ -65,7 +65,7 @@ Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
 `not-bounded`, `left`,
-`held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered` — and the fields under it depend on
+`held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered`, `slept-through` — and the fields under it depend on
 that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
@@ -134,6 +134,16 @@ record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
 with nobody's authority looks for the entries with no `agent`; the seven are
 told apart by their tags, and only the first of them reached the network.
+
+**`slept-through` is a turn the machine went to sleep in the middle of**, added
+2026-09-17 and additive. It is written when the machine wakes, through the
+turn's own door and before the turn does anything more, so work a person asked
+for is never silently lost to a closed lid (`crates/alo-sleeping`). It carries
+`agent`, whose turn it was, and `stopped`: absent (`null`) when the turn
+carried on, and otherwise the sentence the person was shown when it was stopped
+— today, that its time ran out while the machine was asleep. A stopped one is a
+refusal and a reader looking for what was refused finds it; neither is a
+departure, and neither holds a call.
 
 **`not-bounded` is the machine's own refusal**, added 2026-09-12 and additive.
 ADR 0015's *a turn whose boundary cannot be applied does not run* used to leave

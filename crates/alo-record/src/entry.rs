@@ -404,6 +404,26 @@ impl Entry {
         )
     }
 
+    /// A turn of `agent`'s was under way when this machine slept, and when it
+    /// woke the turn carried on — or, when `stopped` is given, was stopped with
+    /// that sentence.
+    ///
+    /// `stopped` is handed in already rendered, for the reason
+    /// [`Entry::never_put_anywhere`] gives. See [`Happened::SleptThrough`] for
+    /// who writes it and when.
+    ///
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn slept_through(agent: &Grantee, stopped: Option<&str>, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::SleptThrough {
+                agent: Line::of(agent.as_str()),
+                stopped: stopped.map(Line::of),
+            },
+        )
+    }
+
     /// There was no boundary to run this turn's work inside, so nothing ran.
     ///
     /// `why` is the sentence the person was shown, handed in already rendered
@@ -918,6 +938,43 @@ mod tests {
         );
         assert!(!written.contains("agent"), "{written}");
         assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **A turn the machine slept through names its agent either way**, is a
+    /// refusal only when it was stopped and then carries the sentence the
+    /// person was shown, is never a departure, and reads back as it was
+    /// written.
+    #[test]
+    fn a_turn_the_machine_slept_through_is_recorded_carried_on_or_stopped() {
+        let agent = Grantee::named("@files");
+
+        let carried_on = Entry::slept_through(&agent, None, noon());
+        assert!(carried_on.agent().is_some_and(|line| line.is("@files")));
+        assert!(!carried_on.happened().was_stopped());
+        assert_eq!(carried_on.happened().why_stopped(), None);
+        assert!(!carried_on.happened().ran());
+        assert!(!carried_on.happened().caused_egress());
+        assert_eq!(carried_on.happened().what(), None);
+
+        let stopped = Entry::slept_through(&agent, Some("ran out of time"), noon());
+        assert!(stopped.happened().was_stopped());
+        assert!(
+            stopped
+                .happened()
+                .why_stopped()
+                .is_some_and(|why| why.is("ran out of time"))
+        );
+        assert!(!stopped.happened().caused_egress());
+        assert_eq!(stopped.happened().destination(), None);
+
+        for entry in [carried_on, stopped] {
+            let written = serde_json::to_string(&entry).unwrap();
+            assert!(
+                written.contains(r#""slept-through":{"agent":"@files""#),
+                "{written}"
+            );
+            assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+        }
     }
 
     /// **The machine going back is written with both builds and no agent**, is

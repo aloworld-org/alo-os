@@ -105,6 +105,10 @@ pub enum Outcome {
     MachineChangeHandedOn,
     /// A request to change the whole machine was refused, and nothing changed.
     MachineChangeRefused,
+    /// A turn was under way when the machine slept, and carried on when it woke.
+    CarriedOnAfterSleep,
+    /// A turn was under way when the machine slept, and was stopped when it woke.
+    StoppedBySleep,
 }
 
 impl Outcome {
@@ -134,6 +138,10 @@ impl Outcome {
             Happened::Brokered {
                 refused: Some(_), ..
             } => Self::MachineChangeRefused,
+            Happened::SleptThrough { stopped: None, .. } => Self::CarriedOnAfterSleep,
+            Happened::SleptThrough {
+                stopped: Some(_), ..
+            } => Self::StoppedBySleep,
         }
     }
 
@@ -161,6 +169,8 @@ impl Outcome {
             Self::RolledBack => words::ROLLED_BACK,
             Self::MachineChangeHandedOn => words::MACHINE_CHANGE_HANDED_ON,
             Self::MachineChangeRefused => words::MACHINE_CHANGE_REFUSED,
+            Self::CarriedOnAfterSleep => words::CARRIED_ON_AFTER_SLEEP,
+            Self::StoppedBySleep => words::STOPPED_BY_SLEEP,
         }
     }
 
@@ -566,6 +576,35 @@ mod tests {
         assert_eq!(told.agent(), None);
         assert!(told.went_to().is_some());
         assert_eq!(told.at(), noon() + hour());
+    }
+
+    /// **A turn the machine slept through reads back as carried on or stopped**,
+    /// under the turn's agent, and a stopped one keeps the sentence the person
+    /// was shown.
+    #[test]
+    fn a_turn_the_machine_slept_through_reads_back_carried_on_or_stopped() {
+        let strings = in_english();
+        let agent = alo_capability::Grantee::named("@files");
+        let carried_on = Told::of(&alo_record::Entry::slept_through(&agent, None, noon()));
+        let stopped = Told::of(&alo_record::Entry::slept_through(
+            &agent,
+            Some("its time ran out"),
+            noon(),
+        ));
+
+        assert_eq!(carried_on.outcome(), Outcome::CarriedOnAfterSleep);
+        assert_eq!(stopped.outcome(), Outcome::StoppedBySleep);
+        assert_eq!(carried_on.because(), None);
+        assert!(
+            stopped
+                .because()
+                .is_some_and(|why| why.is("its time ran out"))
+        );
+        for told in [&carried_on, &stopped] {
+            assert!(told.agent().is_some_and(|agent| agent.is("@files")));
+            assert_eq!(told.sentence(), None);
+            assert!(!told.outcome().said(&strings).is_a_bug());
+        }
     }
 
     /// **What the privileged broker answered reads back in two clauses, and

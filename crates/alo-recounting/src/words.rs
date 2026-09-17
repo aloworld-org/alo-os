@@ -281,6 +281,36 @@ pub const MACHINE_CHANGE_REFUSED: Word = Word::saying(
      given, or that approval had already been used — so nothing about the machine changed.",
 );
 
+/// A turn was under way when the machine went to sleep, and carried on when it
+/// woke.
+pub const CARRIED_ON_AFTER_SLEEP: Word = Word::saying(
+    "recounting.outcome.carried-on-after-sleep",
+    "the machine went to sleep while the agent was working on this, and the work carried on when \
+     it woke",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The machine went to sleep — the lid was closed, \
+     or the person chose Sleep — while the assistant was in the middle of something the person \
+     asked for. When the machine woke there was still time left, so the assistant's work \
+     continued. Nothing was lost and nothing was redone.",
+);
+
+/// A turn was under way when the machine went to sleep, and was stopped when it
+/// woke.
+pub const STOPPED_BY_SLEEP: Word = Word::saying(
+    "recounting.outcome.stopped-by-sleep",
+    "the machine went to sleep while the agent was working on this, and the work was stopped when \
+     it woke",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The machine went to sleep while the assistant \
+     was in the middle of something the person asked for, and when it woke the work could not \
+     carry on. The reason the person was shown at the time is beside this line. \
+     Say plainly that the work stopped; the person may need to ask for it again.",
+);
+
 // ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
@@ -400,7 +430,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 26] = [
+pub const EVERY_WORD: [Word; 28] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -420,6 +450,8 @@ pub const EVERY_WORD: [Word; 26] = [
     ROLLED_BACK,
     MACHINE_CHANGE_HANDED_ON,
     MACHINE_CHANGE_REFUSED,
+    CARRIED_ON_AFTER_SLEEP,
+    STOPPED_BY_SLEEP,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -434,7 +466,7 @@ pub const EVERY_WORD: [Word; 26] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 19] = [
+pub const EVERY_OUTCOME: [Word; 21] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -454,6 +486,8 @@ pub const EVERY_OUTCOME: [Word; 19] = [
     ROLLED_BACK,
     MACHINE_CHANGE_HANDED_ON,
     MACHINE_CHANGE_REFUSED,
+    CARRIED_ON_AFTER_SLEEP,
+    STOPPED_BY_SLEEP,
 ];
 
 /// What an account says about itself, rather than about one entry.

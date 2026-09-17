@@ -75,6 +75,7 @@ members = [
   "crates/alo-saying",
   "crates/alo-setting-up",
   "crates/alo-shortcuts",
+  "crates/alo-sleeping",
   "crates/alo-secrets",
   "crates/alo-software",
   "crates/alo-sessiond",

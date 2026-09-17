@@ -1,0 +1,62 @@
+[package]
+name = "alo-sleeping"
+version = "0.0.1"
+description = "Suspend, resume and the lid: the session is locked before the machine sleeps, and what may keep a machine awake is a closed list, each named."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The seat a sleep locks before anything reaches `logind`, and that a resume
+# lands on still locked. Read and never edited: locking is task 1's decision,
+# and this crate only decides that it comes first.
+alo-locking = { path = "../alo-locking" }
+# The agent's overlay, closed by locking the seat.
+alo-overlay = { path = "../alo-overlay" }
+# An application keeps the machine awake through the inhibit portal and a grant
+# over `Facility::Sleep`, judged by `alo-portals` against `alo-capability` at
+# the moment a hold is taken and again at every moment sleep is asked.
+alo-portals = { path = "../alo-portals" }
+alo-capability = { path = "../alo-capability" }
+# A turn that is running holds the machine awake for its own length, and what
+# became of it when the machine woke is written down through its own door.
+alo-turn = { path = "../alo-turn" }
+alo-keeping = { path = "../alo-keeping" }
+# The rule `sleeping.toml` is kept by: only the difference, refused whole when
+# wrong, written whole or not at all (ADR 0038).
+alo-kept = { path = "../alo-kept" }
+# Every sentence this crate can say, declared rather than written into a file.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# `systemd-logind`, spoken to over the system bus for two methods: `Inhibit`,
+# which hands back the descriptor a hold lives as long as, and `Suspend`. The
+# crate this workspace already speaks D-Bus with, configured exactly as
+# `alo-sessiond` configures it and for the same reasons — a runtime named here
+# so `cargo test -p alo-sleeping` builds on its own, and the blocking API
+# because a hold and a sleep are one call each.
+zbus = { version = "5.19", default-features = false, features = [
+  "async-io",
+  "blocking-api",
+] }
+
+[dev-dependencies]
+# A real sign-in under the seat, a real turn on a real disk under the hold, and
+# the record that turn writes to.
+alo-accounts = { path = "../alo-accounts" }
+alo-context = { path = "../alo-context" }
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
+# The machine's one vocabulary, for the test that asks whether what this crate
+# says is collected at all.
+alo-saying = { path = "../alo-saying" }
+# Reads the text of `sleeping.toml` in `keeping.rs`'s tests, to hold the list
+# of keys to what a change writes.
+toml = { workspace = true }
+
+[lints]
+workspace = true

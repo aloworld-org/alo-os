@@ -496,6 +496,28 @@ pub enum Happened {
         /// Why it was refused — absent when it was handed on.
         refused: Option<AtTheBroker>,
     },
+    /// A turn was under way when this machine went to sleep, and this is what
+    /// became of it when the machine woke: it carried on, or it was stopped
+    /// with a sentence.
+    ///
+    /// Written by `alo-sleeping` through the turn's own door, at the moment of
+    /// waking and before the turn does anything more, so that work a person
+    /// asked for is never silently lost to a closed lid. **The agent is the
+    /// turn's**: the work was done under its authority, and the sleep only
+    /// interrupted it. **Not egress** — nothing left the machine by sleeping.
+    ///
+    /// `stopped` is the sentence the person was shown when the turn was
+    /// stopped, and is absent when it carried on, because *it carried on* is
+    /// the whole of that answer.
+    ///
+    /// Additive, and `format` stays `1`.
+    SleptThrough {
+        /// Whose turn it was.
+        agent: Line,
+        /// Why it was stopped, in the words the person was shown — absent when
+        /// it carried on.
+        stopped: Option<Line>,
+    },
 }
 
 impl Happened {
@@ -518,7 +540,8 @@ impl Happened {
             | Self::NeverPutAnywhere { agent, .. }
             | Self::NotBounded { agent, .. }
             | Self::Left { agent, .. }
-            | Self::HeldBack { agent, .. } => Some(agent),
+            | Self::HeldBack { agent, .. }
+            | Self::SleptThrough { agent, .. } => Some(agent),
             // And a third that answers `None`: a question from a paired
             // machine was caused by an agent on *that* machine, whose name
             // this one cannot check. Writing it here would put somebody
@@ -558,6 +581,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -588,6 +612,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -623,6 +648,10 @@ impl Happened {
                     refused: Some(_),
                     ..
                 }
+                | Self::SleptThrough {
+                    stopped: Some(_),
+                    ..
+                }
         )
     }
 
@@ -650,6 +679,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -675,7 +705,10 @@ impl Happened {
             | Self::HeldBack { refused: why, .. }
             | Self::NeverPutAnywhere { why, .. }
             | Self::GrantsNotReadAgain { why }
-            | Self::NotBounded { why, .. } => Some(why),
+            | Self::NotBounded { why, .. }
+            | Self::SleptThrough {
+                stopped: Some(why), ..
+            } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
             | Self::AnsweredForAnotherMachine { .. }
@@ -683,6 +716,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { stopped: None, .. }
             | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -705,6 +739,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -728,6 +763,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -757,6 +793,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
@@ -785,6 +822,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::SleptThrough { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
