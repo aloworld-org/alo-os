@@ -71,7 +71,8 @@ pub fn a_machine(
         chosen.join(", ")
     ));
     let record = format!("[ {} ]", objects.join(", "));
-    heard::in_the_record(&record).unwrap_or_default()
+    let read = alo_media_server::read(&record).unwrap_or_default();
+    heard::in_the_record(read.objects()).unwrap_or_default()
 }
 
 /// **What a machine was told**, one line each.

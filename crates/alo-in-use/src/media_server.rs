@@ -1,93 +1,43 @@
-//! The machine's own media server, reached.
+//! The machine's own media server, reached — through the crate that owns
+//! reaching it.
 //!
-//! [`TheMediaServer`] is [`crate::Streams`] on a real machine: it asks the
-//! rented media server for its record of the graph and hands the answer to
-//! [`crate::heard`]. That is the whole of it, on purpose — nothing is decided
-//! here, and nothing about the server is patched, wrapped or extended (ADR
-//! 0011: the media server is rented, configured and never written).
+//! [`TheMediaServer`] is [`crate::Streams`] on a real machine: it asks
+//! `alo-media-server` for the record and hands it to [`crate::heard`]. That is
+//! the whole of it, on purpose — nothing is decided here, and nothing about the
+//! server is patched, wrapped or extended (ADR 0011).
 //!
-//! The record is asked for through the server's own tool rather than through a
-//! library binding, and that is a decision worth stating. The tool is part of
-//! the thing we rent, it prints exactly the record the server holds, and it
-//! keeps this crate from linking a C library into every process that wants to
-//! draw a status area. A binding would be the same record with a build
-//! dependency and an ABI in front of it.
+//! # What moved out of this file, and why
 //!
-//! # No shell, no environment of the caller's, the C locale, and one more thing
+//! Starting the tool, clearing its environment, passing the runtime directory
+//! through, and reading a record that may arrive as more than one list all used
+//! to be here, in a copy shared with `alo-sound`, `alo-cameras` and
+//! `alo-capturing`. The copies drifted: this one did not pass
+//! `XDG_RUNTIME_DIR`, and spent a day telling a machine with a working server
+//! that its server would not answer. They are `alo-media-server`'s now, and
+//! there is one of them.
 //!
-//! The program is started directly, so no argument is interpreted by anything
-//! but the tool. Its environment is cleared and given back only what it needs
-//! to find the machine's own installation and to answer in the C locale: what
-//! it prints is read to decide things, and a translated field name would be a
-//! record nothing recognised. The shape is `alo_software::TheRentedTool`'s,
-//! copied rather than re-decided.
+//! # The four facts, turned into this crate's three
 //!
-//! **And `XDG_RUNTIME_DIR`, which was missing and had to be added.** The tool
-//! finds the media server by that variable, and falls back to `/run/user/` and
-//! the user's number when it is unset. On an ordinary login those are the same
-//! place, which is why this went unnoticed; on a machine where the server
-//! listens anywhere else — every test session, and any machine running more
-//! than one — the cleared environment sent the tool to a directory with no
-//! server in it, and the indicator reported *this machine's media server would
-//! not answer* while the machine's media server was answering everything else.
-//! It was found on 2026-09-17 by a gate: `alo-sound`'s tests run against a
-//! session in a runtime directory of its own, and this crate's own on-a-machine
-//! test failed beside them with `can't connect: Host is down`.
-//!
-//! Nothing else of the caller's environment is passed, and the variable is
-//! passed **only when it is set**: a service started without one is still a
-//! service asking the machine's own default.
-//!
-//! # A machine with no media server says so
-//!
-//! Three different things can go wrong and they are three different sentences,
-//! because a person fixes them differently and because *the indicator could not
-//! answer* must never look like *nothing is watching*: the tool is not there
-//! ([`crate::NotHeard::NothingHandlesSoundAndVideo`]), it is there and failed
-//! ([`crate::NotHeard::NoAnswer`]), or it answered something unreadable
-//! ([`crate::NotHeard::NotUnderstood`]).
-//!
-//! **A machine where the tool is installed and no server is running is the
-//! first of those, not the second**, and that was got wrong until 2026-09-17: a
-//! build host with the package on it and no session answered *what handles
-//! sound and video did not answer*, which reads as a machine whose server is
-//! broken. Nothing is handling sound and video there — that is the whole of the
-//! truth — and the diagnostic beside the sentence says the tool was there and
-//! could not reach one. The tool's own wording is what says so, which is a thin
-//! thread: where it changes, this falls back to *did not answer*, which is a
-//! refusal rather than silence, and the indicator is still not empty.
+//! `alo-media-server` tells four things apart: no tool, no server running, a
+//! server that would not answer, and an answer that will not read. This crate
+//! has three sentences, because two of those are one thing to a **person**:
+//! either way, nothing on this machine is handling sound and video, and there is
+//! nothing to watch or listen. The difference is for whoever is fixing the
+//! machine, and it is kept in the diagnosis beside the sentence rather than
+//! thrown away.
 
-use std::io::ErrorKind;
-use std::process::{Command, Stdio};
+use alo_media_server::{AsksIt, NotAsked};
 
 use crate::heard;
 use crate::refusing::NotHeard;
 use crate::streams::Streams;
 use crate::uses::Use;
 
-/// The rented media server's own tool for writing out its record.
-const THE_TOOL: &str = "pw-dump";
-
-/// Where a machine's own programs are, for a cleared environment.
-const WHERE_ITS_PROGRAMS_ARE: &str = "/usr/bin:/bin";
-
-/// Where this machine's media server is listening, which a session sets and
-/// without which the tool asks a directory that may hold no server at all.
-const WHERE_THE_SERVER_IS: &str = "XDG_RUNTIME_DIR";
-
 /// This machine's media server.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TheMediaServer {
-    /// The program asked for the record.
-    program: String,
-}
-
-impl Default for TheMediaServer {
-    fn default() -> Self {
-        Self {
-            program: THE_TOOL.to_owned(),
-        }
-    }
+    /// The server, reached.
+    asking: alo_media_server::TheMediaServer,
 }
 
 impl TheMediaServer {
@@ -105,168 +55,80 @@ impl TheMediaServer {
     #[cfg(test)]
     fn reached_by(program: &str) -> Self {
         Self {
-            program: program.to_owned(),
+            asking: alo_media_server::TheMediaServer::reached_by(program),
         }
     }
-
-    /// What the tool answered, turned into uses.
-    ///
-    /// Split from starting it so that every way of answering badly is a test
-    /// rather than a paragraph: a machine cannot be made to fail a rented tool
-    /// on demand, and the reading of a failure is the half that has to be
-    /// right.
-    fn what_it_answered(
-        &self,
-        succeeded: bool,
-        said: &[u8],
-        instead: &[u8],
-    ) -> Result<Vec<Use>, NotHeard> {
-        if !succeeded {
-            let instead = String::from_utf8_lossy(instead).trim().to_owned();
-            let said = format!("{} failed: {instead}", self.program);
-            if nothing_was_listening(&instead) {
-                return Err(NotHeard::NothingHandlesSoundAndVideo { said });
-            }
-            return Err(NotHeard::NoAnswer { said });
-        }
-        heard::in_use_in(&String::from_utf8_lossy(said))
-    }
-}
-
-/// Whether what the tool said is *there is no server here to talk to*.
-///
-/// The tool says `can't connect` and then why — a directory with no socket in
-/// it, or one nothing is listening on. Both mean the same thing to a person:
-/// nothing on this machine is handling sound and video.
-fn nothing_was_listening(said: &str) -> bool {
-    let said = said.to_lowercase();
-    said.contains("can't connect") || said.contains("cannot connect")
 }
 
 impl Streams for TheMediaServer {
     fn in_use_now(&mut self) -> Result<Vec<Use>, NotHeard> {
-        let answered = Command::new(&self.program)
-            .env_clear()
-            .env("LC_ALL", "C")
-            .env("LANG", "C")
-            .env("PATH", WHERE_ITS_PROGRAMS_ARE)
-            .envs(
-                std::env::var_os(WHERE_THE_SERVER_IS)
-                    .map(|listening| (WHERE_THE_SERVER_IS.to_owned(), listening)),
-            )
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output();
-        match answered {
-            Ok(output) => {
-                self.what_it_answered(output.status.success(), &output.stdout, &output.stderr)
-            }
-            Err(why) if why.kind() == ErrorKind::NotFound => {
-                Err(NotHeard::NothingHandlesSoundAndVideo {
-                    said: format!("{} is not on this machine: {why}", self.program),
-                })
-            }
-            Err(why) => Err(NotHeard::NoAnswer {
-                said: format!("{} could not be started: {why}", self.program),
-            }),
+        let record = self.asking.record().map_err(what_it_means)?;
+        heard::in_use_in(record.objects())
+    }
+}
+
+/// What one of `alo-media-server`'s four facts means to an indicator.
+///
+/// Two of them are one sentence here and that is deliberate: *there is no such
+/// tool* and *nothing is listening* are both **nothing on this machine handles
+/// sound and video**, which is what a person needs to read. Which of the two it
+/// was stays in the diagnosis, for whoever is fixing the machine.
+fn what_it_means(why: NotAsked) -> NotHeard {
+    let said = why.said().to_owned();
+    match why {
+        NotAsked::NothingHandlesIt { .. } | NotAsked::NoServerIsRunning { .. } => {
+            NotHeard::NothingHandlesSoundAndVideo { said }
         }
+        NotAsked::ItWouldNotAnswer { .. } => NotHeard::NoAnswer { said },
+        NotAsked::ItAnsweredSomethingUnreadable { .. } => NotHeard::NotUnderstood { said },
     }
 }
 
 #[cfg(test)]
 #[expect(
-    clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
     use super::*;
-    use crate::used::Used;
 
-    /// **A machine with nothing handling sound and video says so**, and says it
-    /// in its own sentence rather than by showing an empty indicator. This is
-    /// the refusal every machine without a media server takes, including every
-    /// machine this test suite runs on.
+    /// **A machine with no media server is not an empty indicator.**
     #[test]
-    fn a_machine_with_no_media_server_refuses_rather_than_looking_quiet() {
-        let mut nowhere = TheMediaServer::reached_by("alo-there-is-no-such-program");
-        let refused = nowhere.in_use_now().unwrap_err();
-        assert!(
-            matches!(refused, NotHeard::NothingHandlesSoundAndVideo { .. }),
-            "{refused:?}"
-        );
-        assert!(refused.diagnosis().contains("alo-there-is-no-such-program"));
+    fn a_machine_with_nothing_to_ask_says_so_rather_than_reading_as_a_quiet_room() {
+        let mut nowhere = TheMediaServer::reached_by("alo-in-use-no-such-tool");
+        let why = nowhere
+            .in_use_now()
+            .expect_err("there is no such tool on this machine");
+        assert!(matches!(why, NotHeard::NothingHandlesSoundAndVideo { .. }));
+        assert!(why.diagnosis().contains("alo-in-use-no-such-tool"));
     }
 
-    /// **A record that came back is read**, and is the only thing that is.
+    /// **Each of the four facts becomes the sentence a person should read.**
     #[test]
-    fn a_record_that_came_back_is_read() {
-        let server = TheMediaServer::on_this_machine();
-        let record = br#"[{"id": 31, "type": "PipeWire:Interface:Node",
-             "info": {"state": "running", "props": {"media.class": "Audio/Source"}}}]"#;
-        let in_use = server.what_it_answered(true, record, b"").unwrap();
-        assert_eq!(in_use.len(), 1);
-        assert_eq!(in_use.first().map(Use::what), Some(Used::Microphone));
-    }
-
-    /// **A tool that ran and failed is not an answer**, and what it said is
-    /// kept for whoever is fixing it.
-    #[test]
-    fn a_tool_that_ran_and_failed_is_refused_with_what_it_said() {
-        let server = TheMediaServer::on_this_machine();
-        let refused = server
-            .what_it_answered(false, b"", b"the graph could not be read\n")
-            .unwrap_err();
-        assert!(matches!(refused, NotHeard::NoAnswer { .. }), "{refused:?}");
-        assert!(refused.diagnosis().contains("the graph could not be read"));
-        assert!(refused.diagnosis().contains(THE_TOOL));
-    }
-
-    /// **A tool that could not reach a server is a machine where nothing is
-    /// handling sound and video** — not a server that would not answer.
-    ///
-    /// This case used to be the one above: a build host with the package
-    /// installed and no session running answered *what handles sound and video
-    /// did not answer*, which reads as a broken server rather than as no server.
-    /// The difference is what an indicator shows and what somebody does next.
-    #[test]
-    fn a_machine_with_the_tool_and_no_server_is_a_machine_with_nothing_handling_it() {
-        let server = TheMediaServer::on_this_machine();
-        for said in [
-            "can't connect: Host is down",
-            "can't connect: No such file or directory",
-            "Cannot connect to PipeWire",
+    fn the_four_facts_become_three_sentences_and_none_of_them_is_silence() {
+        let said = || "because".to_owned();
+        for (fact, sentence) in [
+            (
+                NotAsked::NothingHandlesIt { said: said() },
+                "nothing handles it",
+            ),
+            (
+                NotAsked::NoServerIsRunning { said: said() },
+                "nothing handles it",
+            ),
+            (NotAsked::ItWouldNotAnswer { said: said() }, "no answer"),
+            (
+                NotAsked::ItAnsweredSomethingUnreadable { said: said() },
+                "not understood",
+            ),
         ] {
-            let refused = server
-                .what_it_answered(false, b"", said.as_bytes())
-                .unwrap_err();
-            assert!(
-                matches!(refused, NotHeard::NothingHandlesSoundAndVideo { .. }),
-                "{said}: {refused:?}"
-            );
-            assert!(refused.diagnosis().contains(said));
+            let meant = what_it_means(fact);
+            let read = match meant {
+                NotHeard::NothingHandlesSoundAndVideo { .. } => "nothing handles it",
+                NotHeard::NoAnswer { .. } => "no answer",
+                NotHeard::NotUnderstood { .. } => "not understood",
+            };
+            assert_eq!(read, sentence);
         }
-    }
-
-    /// **A tool that answered nonsense is refused too**, rather than read as a
-    /// machine on which nothing is watching.
-    #[test]
-    fn a_tool_that_answered_nonsense_is_refused() {
-        let server = TheMediaServer::on_this_machine();
-        let refused = server
-            .what_it_answered(true, b"this is not a record", b"")
-            .unwrap_err();
-        assert!(
-            matches!(refused, NotHeard::NotUnderstood { .. }),
-            "{refused:?}"
-        );
-    }
-
-    /// The machine's media server is reached through the rented tool and
-    /// through nothing else — the one place that name appears.
-    #[test]
-    fn the_machines_media_server_is_the_rented_tool() {
-        assert_eq!(TheMediaServer::on_this_machine().program, THE_TOOL);
-        assert_eq!(TheMediaServer::default(), TheMediaServer::on_this_machine());
     }
 }

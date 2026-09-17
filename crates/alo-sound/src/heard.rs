@@ -1,4 +1,9 @@
-//! The media server's own record of the machine's sound, read.
+//! The media server's own record, read for this machine's sound.
+//!
+//! The record itself — running the tool, clearing its environment, and reading
+//! an answer that may arrive as more than one list — is `alo-media-server`'s.
+//! What is here is what those objects mean when the question is **which device
+//! is this, and what is it doing**.
 //!
 //! The rented media server keeps the graph of everything this machine can play
 //! through or listen with, and will write it out as a list of objects. This file
@@ -141,10 +146,7 @@ impl Heard {
 /// crate knows how to read. A device inside it that cannot be read — no name,
 /// a volume past loud — is passed over rather than failing the whole reading:
 /// one strange device must not cost a person the list of the other three.
-pub fn in_the_record(record: &str) -> Result<Heard, NotHeard> {
-    let objects = everything_in(record, |said| NotHeard::NotUnderstood { said })?;
-    let objects = &objects;
-
+pub fn in_the_record(objects: &[Value]) -> Result<Heard, NotHeard> {
     let mut devices = Vec::new();
     let mut doing = BTreeMap::new();
     let mut heard = Heard::default();
@@ -160,43 +162,6 @@ pub fn in_the_record(record: &str) -> Result<Heard, NotHeard> {
     heard.devices = Devices::reported(devices);
     heard.doing = doing;
     Ok(heard)
-}
-
-/// **Everything the server listed**, as one list of objects.
-///
-/// The record is one JSON list on an ordinary reading. It is read as a **stream**
-/// of lists because on 2026-09-17 a gate read one with trailing characters after
-/// the end of the list, and every reading of the same machine a moment later
-/// parsed as one list. What produced it was not caught, so nothing here claims
-/// to know; what a reader must not do is turn it into *this machine answered
-/// something unreadable*, which takes a list of devices off a screen for a
-/// reason nobody can act on. An object listed twice is taken as it was listed
-/// last. `docs/quirks.md` records what was seen.
-fn everything_in(record: &str, said: impl Fn(String) -> NotHeard) -> Result<Vec<Value>, NotHeard> {
-    let mut objects: Vec<Value> = Vec::new();
-    for read in serde_json::Deserializer::from_str(record).into_iter::<Value>() {
-        let read =
-            read.map_err(|why| said(format!("it is not a record this crate reads: {why}")))?;
-        let Value::Array(listed) = read else {
-            return Err(said("the record is not a list of objects".to_owned()));
-        };
-        for object in listed {
-            let same = object.get("id").and_then(Value::as_u64).and_then(|id| {
-                objects
-                    .iter()
-                    .position(|seen| seen.get("id").and_then(Value::as_u64) == Some(id))
-            });
-            match same {
-                Some(at) => {
-                    if let Some(held) = objects.get_mut(at) {
-                        *held = object;
-                    }
-                }
-                None => objects.push(object),
-            }
-        }
-    }
-    Ok(objects)
 }
 
 /// One object read as a device, or [`None`] where it is not one.
@@ -317,6 +282,11 @@ fn read_the_choice_in(object: &Value, into: &mut Heard) {
 mod tests {
     use super::*;
 
+    /// A record, read the way a machine's is.
+    fn objects(record: &str) -> alo_media_server::TheRecord {
+        alo_media_server::read(record).expect("a record this crate reads")
+    }
+
     /// A record shaped like the rented server's own, kept short. Every field
     /// read above is in it, and so is one of each thing that must be passed
     /// over.
@@ -350,7 +320,7 @@ mod tests {
     /// **The devices are read and everything else is passed over.**
     #[test]
     fn the_outputs_and_the_inputs_are_read_and_a_program_is_not_a_device() {
-        let heard = in_the_record(A_RECORD).expect("a record this crate reads");
+        let heard = in_the_record(objects(A_RECORD).objects()).expect("a record this crate reads");
         assert_eq!(heard.devices().all().len(), 2);
         assert_eq!(heard.devices().of_kind(Kind::Output).count(), 1);
         assert_eq!(heard.devices().of_kind(Kind::Input).count(), 1);
@@ -368,7 +338,7 @@ mod tests {
     /// replug rather than by the number that does not.
     #[test]
     fn what_the_server_chose_is_read_by_name() {
-        let heard = in_the_record(A_RECORD).expect("a record this crate reads");
+        let heard = in_the_record(objects(A_RECORD).objects()).expect("a record this crate reads");
         assert_eq!(
             heard.chosen(Kind::Output).map(Identity::as_str),
             Some("the-headset")
@@ -383,7 +353,7 @@ mod tests {
     /// and the cubic scale the server keeps is turned into a person's.
     #[test]
     fn each_device_is_read_with_its_volume_its_mute_and_whether_it_is_in_use() {
-        let heard = in_the_record(A_RECORD).expect("a record this crate reads");
+        let heard = in_the_record(objects(A_RECORD).objects()).expect("a record this crate reads");
         let headset = Identity::reported("the-headset").expect("named");
         let microphone = Identity::reported("the-headset-mic").expect("named");
 
@@ -400,20 +370,16 @@ mod tests {
         assert!(!mic.carrying(), "a suspended source is not in use");
     }
 
-    /// **A record that is not one says so** rather than reading as a machine
-    /// with no sound devices, which is the failure that matters: *nothing is
-    /// listed* and *nothing could be asked* are different sentences.
+    /// **An empty record is a machine with no sound devices**, which is an
+    /// answer rather than a refusal.
+    ///
+    /// Text that is not a record at all is refused a step earlier, by
+    /// `alo-media-server`: *nothing is listed* and *nothing could be asked* are
+    /// different sentences, and the second one is that crate's to say.
     #[test]
-    fn something_that_is_not_a_record_is_refused_rather_than_read_as_silence() {
-        assert!(matches!(
-            in_the_record("not a record at all"),
-            Err(NotHeard::NotUnderstood { .. })
-        ));
-        assert!(matches!(
-            in_the_record("{\"id\": 1}"),
-            Err(NotHeard::NotUnderstood { .. })
-        ));
-        let empty = in_the_record("[]").expect("an empty record is a machine with no devices");
+    fn an_empty_record_is_a_machine_with_no_devices_rather_than_a_refusal() {
+        let empty = in_the_record(objects("[]").objects())
+            .expect("an empty record is a machine with no devices");
         assert!(empty.devices().all().is_empty());
         assert!(empty.chosen(Kind::Output).is_none());
     }
@@ -429,7 +395,7 @@ mod tests {
             "info": { "state": "idle",
               "props": { "media.class": "Audio/Sink", "node.name": "speakers" } } }
         ]"#;
-        let heard = in_the_record(record).expect("a record this crate reads");
+        let heard = in_the_record(objects(record).objects()).expect("a record this crate reads");
         assert_eq!(heard.devices().all().len(), 1);
         let speakers = Identity::reported("speakers").expect("named");
         assert_eq!(

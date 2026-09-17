@@ -45,7 +45,15 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it. Its tasks 4, 5 and 7 waited on the devices plan's codec decision, which the same lane then took and wrote as ADR 0051 | `alo-capturing`, `alo-in-use` |
 | `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
 | `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
-| `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power` (new) |
+| `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
+
+**`alo-media-server` is owned here and read elsewhere.** It holds reaching the
+rented media server and reading what it says, for the four crates that were each
+doing it their own way — `alo-in-use` and `alo-capturing` (the capture plan's),
+`alo-sound` and `alo-cameras` (this one's). It is listed here so that nobody adopts
+it later as unowned: **the devices and media plan owns it, and a change to it is that
+plan's lane's**. A crate that wants to read the media server reads this one rather
+than starting a fifth copy.
 
 **Why this division.** The Mac holds the small model and runs no virtual machine
 well, so it takes the plans that need a model and no hardware: access and language

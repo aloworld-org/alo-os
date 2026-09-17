@@ -56,6 +56,7 @@ members = [
   "crates/alo-keeping-up",
   "crates/alo-updating",
   "crates/alo-measuring",
+  "crates/alo-media-server",
   "crates/alo-models",
   "crates/alo-nearby",
   "crates/alo-networks",

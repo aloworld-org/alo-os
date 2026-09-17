@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 # The sentences a person reads about a camera and a switch.
+alo-media-server = { path = "../alo-media-server" }
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 serde_json = { workspace = true }

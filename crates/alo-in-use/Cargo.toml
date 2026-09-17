@@ -26,6 +26,7 @@ alo-appearance = { path = "../alo-appearance" }
 alo-strings = { path = "../alo-strings" }
 # The rented media server writes its record of what is open as JSON, and this is
 # what turns it into values. Nothing else here is serialised.
+alo-media-server = { path = "../alo-media-server" }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 

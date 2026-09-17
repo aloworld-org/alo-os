@@ -11,8 +11,17 @@ working Bluetooth is not a product.*
 **Crates this plan owns, all new:** `crates/alo-sound` (outputs and inputs, which is
 in use, and switching mid-call), `crates/alo-bluetooth` (pairing a device, what a
 paired device may be, and forgetting it), `crates/alo-playing` (what media this
-machine plays, which codecs it carries and under what terms), and `crates/alo-power`
-(the battery, power profiles, and what a person is told about both). **It reads and
+machine plays, which codecs it carries and under what terms), `crates/alo-power`
+(the battery, power profiles, and what a person is told about both),
+`crates/alo-cameras` (the cameras this machine has and the switch that turns the
+camera and the microphone off for everyone — task 4 named no crate and needed one),
+and **`crates/alo-media-server`** (reaching the rented media server and reading what
+it says). **`alo-media-server` is read by crates this plan does not own** —
+`alo-in-use` and `alo-capturing`, both the capture plan's — and that is the point of
+it: four crates had their own copy of the same twenty lines, the copies drifted, and
+each fix had to be made three times. It says nothing to a person and decides nothing
+about what a node means; those belong to the crates that know which question is being
+asked. **It reads and
 never edits** `alo-portals` and `alo-capability` (camera and microphone are
 grantable facilities, ADR 0040), `alo-in-use` (the capture plan's indicator — a
 microphone switched mid-call is still a microphone in use), `alo-sleeping` (the

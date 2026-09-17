@@ -1,30 +1,13 @@
-//! This machine's own media server, asked what it can see with.
+//! This machine's media server, asked what it can see with.
 //!
-//! The same shape `alo-sound` uses for the same server, and the reason is the
-//! same: the server's own tool is part of what we rent, it prints exactly what
-//! the server holds, and it keeps a C library out of every process that wants to
-//! draw a list of cameras.
-//!
-//! **Three crates now reach this server through their own copy of these twenty
-//! lines** — this one, `alo-sound`, and `alo-in-use`. That is worth a sentence
-//! rather than a shrug: none of them owns *reaching the media server*, and a
-//! crate that did would be a better home for it than three copies. It is a
-//! proposal for whoever holds the media stack, not a change to make from inside
-//! one plan.
+//! The record — running the tool, clearing its environment, passing the runtime
+//! directory through, reading an answer that may arrive as more than one list —
+//! is `alo-media-server`'s. This is the half that is this crate's: turning that
+//! crate's four facts into the two sentences a list of cameras needs.
 
-use std::io::ErrorKind;
-use std::process::{Command, Stdio};
+use alo_media_server::{AsksIt, NotAsked};
 
 use crate::seen::{self, NotSeen, Seen};
-
-/// The server's own tool for writing out its record.
-const READ_WITH: &str = "pw-dump";
-
-/// Where a machine's own programs are, for a cleared environment.
-const WHERE_ITS_PROGRAMS_ARE: &str = "/usr/bin:/bin";
-
-/// Where the media server is listening, which a session sets.
-const WHERE_THE_SERVER_IS: &str = "XDG_RUNTIME_DIR";
 
 /// **What this machine can see with**, asked.
 pub trait Cameras {
@@ -38,18 +21,10 @@ pub trait Cameras {
 }
 
 /// **This machine's media server.**
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TheMediaServer {
-    /// The program asked for the record.
-    reading: String,
-}
-
-impl Default for TheMediaServer {
-    fn default() -> Self {
-        Self {
-            reading: READ_WITH.to_owned(),
-        }
-    }
+    /// The server, asked by the crate that owns asking.
+    asking: alo_media_server::TheMediaServer,
 }
 
 impl TheMediaServer {
@@ -58,38 +33,38 @@ impl TheMediaServer {
     pub fn on_this_machine() -> Self {
         Self::default()
     }
+
+    /// The same, reached through a program named here — for a test standing in
+    /// for a machine.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn reached_by(tool: &str) -> Self {
+        Self {
+            asking: alo_media_server::TheMediaServer::reached_by(tool),
+        }
+    }
 }
 
 impl Cameras for TheMediaServer {
     fn now(&self) -> Result<Seen, NotSeen> {
-        let answered = Command::new(&self.reading)
-            .env_clear()
-            .env("LC_ALL", "C")
-            .env("LANG", "C")
-            .env("PATH", WHERE_ITS_PROGRAMS_ARE)
-            .envs(
-                std::env::var_os(WHERE_THE_SERVER_IS)
-                    .map(|where_it_is| (WHERE_THE_SERVER_IS.to_owned(), where_it_is)),
-            )
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output();
-        match answered {
-            Ok(output) if output.status.success() => {
-                seen::in_the_record(&String::from_utf8_lossy(&output.stdout))
-            }
-            Ok(output) => Err(NotSeen::NoAnswer(format!(
-                "{} failed: {}",
-                self.reading,
-                String::from_utf8_lossy(&output.stderr).trim()
-            ))),
-            Err(why) if why.kind() == ErrorKind::NotFound => Err(NotSeen::NothingAnswers(format!(
-                "{} is not on this machine",
-                self.reading
-            ))),
-            Err(why) => Err(NotSeen::NoAnswer(why.to_string())),
+        let record = self.asking.record().map_err(what_it_means)?;
+        seen::in_the_record(record.objects())
+    }
+}
+
+/// What one of `alo-media-server`'s four facts means to a list of cameras.
+///
+/// A machine with no tool and a machine with no server running are one sentence
+/// here — neither can say what this machine sees with — and which it was stays
+/// in the diagnosis for whoever is fixing it.
+fn what_it_means(why: NotAsked) -> NotSeen {
+    let said = why.said().to_owned();
+    match why {
+        NotAsked::NothingHandlesIt { .. } | NotAsked::NoServerIsRunning { .. } => {
+            NotSeen::NothingAnswers(said)
         }
+        NotAsked::ItWouldNotAnswer { .. } => NotSeen::NoAnswer(said),
+        NotAsked::ItAnsweredSomethingUnreadable { .. } => NotSeen::NotUnderstood(said),
     }
 }
 
@@ -101,16 +76,32 @@ impl Cameras for TheMediaServer {
 mod tests {
     use super::*;
 
-    /// **A machine with no media server says so rather than reading as a
-    /// machine with no cameras**, which is the difference between *you have no
-    /// camera* and *this could not be asked*.
+    /// **A machine with nothing to ask says so rather than reading as a machine
+    /// with no cameras**, which is the difference between *you have no camera*
+    /// and *this could not be asked*.
     #[test]
     fn a_machine_with_nothing_to_ask_refuses_rather_than_reading_as_no_cameras() {
-        let nowhere = TheMediaServer {
-            reading: "alo-cameras-no-such-tool".to_owned(),
-        };
+        let nowhere = TheMediaServer::reached_by("alo-cameras-no-such-tool");
         let why = nowhere.now().expect_err("there is no such tool");
         assert!(matches!(why, NotSeen::NothingAnswers(_)));
         assert!(why.to_string().contains("alo-cameras-no-such-tool"));
+    }
+
+    /// **And each of the four facts becomes the sentence it should.**
+    #[test]
+    fn the_four_facts_become_the_sentences_a_list_of_cameras_needs() {
+        let said = || "because".to_owned();
+        assert!(matches!(
+            what_it_means(NotAsked::NoServerIsRunning { said: said() }),
+            NotSeen::NothingAnswers(_)
+        ));
+        assert!(matches!(
+            what_it_means(NotAsked::ItWouldNotAnswer { said: said() }),
+            NotSeen::NoAnswer(_)
+        ));
+        assert!(matches!(
+            what_it_means(NotAsked::ItAnsweredSomethingUnreadable { said: said() }),
+            NotSeen::NotUnderstood(_)
+        ));
     }
 }

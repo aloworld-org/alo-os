@@ -165,7 +165,8 @@ mod tests {
         ])
         .to_string();
 
-        let in_use = heard::in_use_in(&record).unwrap_or_default();
+        let read = alo_media_server::read(&record).unwrap_or_default();
+        let in_use = heard::in_use_in(read.objects()).unwrap_or_default();
         let ours = in_use
             .iter()
             .find(|used| used.at() == alo_in_use::UseId::recorded(41));

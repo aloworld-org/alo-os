@@ -32,6 +32,7 @@ alo-clipboard = { path = "../alo-clipboard" }
 
 # Everything a person reads: what happened to the picture, and every way it did
 # not happen.
+alo-media-server = { path = "../alo-media-server" }
 alo-strings = { path = "../alo-strings" }
 
 # The one derive this crate rents, for its refusals and for the error its own

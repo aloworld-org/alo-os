@@ -286,6 +286,7 @@ version = "0.0.1"
 dependencies = [
  "alo-capability",
  "alo-in-use",
+ "alo-media-server",
  "alo-portals",
  "alo-strings",
  "serde",
@@ -313,6 +314,7 @@ dependencies = [
  "alo-capability",
  "alo-clipboard",
  "alo-in-use",
+ "alo-media-server",
  "alo-portals",
  "alo-saying",
  "alo-strings",
@@ -603,6 +605,7 @@ dependencies = [
  "alo-capability",
  "alo-egress",
  "alo-indicator",
+ "alo-media-server",
  "alo-saying",
  "alo-strings",
  "serde_json",
@@ -736,6 +739,14 @@ dependencies = [
  "alo-files",
  "alo-record",
  "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-media-server"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
  "thiserror 2.0.20",
 ]
 
@@ -1121,6 +1132,7 @@ dependencies = [
  "alo-cameras",
  "alo-capability",
  "alo-measuring",
+ "alo-media-server",
  "alo-opening",
  "alo-power",
  "alo-saying",

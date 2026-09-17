@@ -32,7 +32,9 @@
 //! one the machine ships (the plan's constraint, in one sentence).
 
 use std::io::ErrorKind;
-use std::process::{Command, Stdio};
+use std::process::Command;
+
+use alo_media_server::{ATool, AsksIt, NotAsked};
 
 use crate::asking::Sound;
 use crate::device::{Identity, Kind, Volume};
@@ -40,23 +42,14 @@ use crate::heard::{self, Heard};
 use crate::mute::Mute;
 use crate::refusing::{NotDone, NotHeard};
 
-/// The server's own tool for writing out its record.
-const READ_WITH: &str = "pw-dump";
-
 /// The session manager's own tool for changing what a device is doing.
 const TELL_WITH: &str = "wpctl";
-
-/// Where a machine's own programs are, for a cleared environment.
-const WHERE_ITS_PROGRAMS_ARE: &str = "/usr/bin:/bin";
-
-/// Where the media server is listening, which a session sets.
-const WHERE_THE_SERVER_IS: &str = "XDG_RUNTIME_DIR";
 
 /// **This machine's media server.**
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TheAudioServer {
-    /// The program asked for the record.
-    reading: String,
+    /// The server, asked for its record by the crate that owns asking.
+    asking: alo_media_server::TheMediaServer,
     /// The program told to change something.
     telling: String,
 }
@@ -64,9 +57,26 @@ pub struct TheAudioServer {
 impl Default for TheAudioServer {
     fn default() -> Self {
         Self {
-            reading: READ_WITH.to_owned(),
+            asking: alo_media_server::TheMediaServer::on_this_machine(),
             telling: TELL_WITH.to_owned(),
         }
+    }
+}
+
+/// What one of `alo-media-server`'s four facts means to a list of sound
+/// devices.
+///
+/// Two of them are one sentence here: a machine with no tool and a machine with
+/// no server running both have no sound this crate can list, and the difference
+/// is in the diagnosis for whoever is fixing it.
+fn what_it_means(why: NotAsked) -> NotHeard {
+    let said = why.said().to_owned();
+    match why {
+        NotAsked::NothingHandlesIt { .. } | NotAsked::NoServerIsRunning { .. } => {
+            NotHeard::NothingHandlesSound { said }
+        }
+        NotAsked::ItWouldNotAnswer { .. } => NotHeard::NoAnswer { said },
+        NotAsked::ItAnsweredSomethingUnreadable { .. } => NotHeard::NotUnderstood { said },
     }
 }
 
@@ -77,23 +87,11 @@ impl TheAudioServer {
         Self::default()
     }
 
-    /// One of the server's tools, started with nothing of the caller's
-    /// environment but where the machine's programs are, the C locale and where
-    /// the server is listening.
+    /// One of the server's tools, started under `alo-media-server`'s rules:
+    /// nothing of the caller's environment but where the machine's programs
+    /// are, the C locale and where the server is listening.
     fn tool(named: &str) -> Command {
-        let mut command = Command::new(named);
-        command
-            .env_clear()
-            .env("LC_ALL", "C")
-            .env("LANG", "C")
-            .env("PATH", WHERE_ITS_PROGRAMS_ARE)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        if let Some(listening) = std::env::var_os(WHERE_THE_SERVER_IS) {
-            command.env(WHERE_THE_SERVER_IS, listening);
-        }
-        command
+        ATool::named(named).started_here()
     }
 
     /// The server's own number for a device that is here, or a refusal naming
@@ -130,25 +128,8 @@ impl TheAudioServer {
 
 impl Sound for TheAudioServer {
     fn heard_now(&mut self) -> Result<Heard, NotHeard> {
-        let answered = Self::tool(&self.reading).output();
-        match answered {
-            Ok(output) if output.status.success() => {
-                heard::in_the_record(&String::from_utf8_lossy(&output.stdout))
-            }
-            Ok(output) => Err(NotHeard::NoAnswer {
-                said: format!(
-                    "{} failed: {}",
-                    self.reading,
-                    said_in(&output.stderr, &output.stdout)
-                ),
-            }),
-            Err(why) if why.kind() == ErrorKind::NotFound => Err(NotHeard::NothingHandlesSound {
-                said: format!("{} is not on this machine", self.reading),
-            }),
-            Err(why) => Err(NotHeard::NoAnswer {
-                said: why.to_string(),
-            }),
-        }
+        let record = self.asking.record().map_err(what_it_means)?;
+        heard::in_the_record(record.objects())
     }
 
     fn choose(&mut self, identity: &Identity, kind: Kind) -> Result<(), NotDone> {
@@ -223,7 +204,7 @@ mod tests {
     #[test]
     fn a_machine_with_no_media_server_refuses_rather_than_reading_as_no_devices() {
         let mut nowhere = TheAudioServer {
-            reading: "alo-sound-no-such-tool".to_owned(),
+            asking: alo_media_server::TheMediaServer::reached_by("alo-sound-no-such-tool"),
             telling: "alo-sound-no-such-tool".to_owned(),
         };
         assert!(matches!(
@@ -245,7 +226,7 @@ mod tests {
     #[test]
     fn a_refusal_names_what_could_not_be_done() {
         let mut nowhere = TheAudioServer {
-            reading: "alo-sound-no-such-tool".to_owned(),
+            asking: alo_media_server::TheMediaServer::reached_by("alo-sound-no-such-tool"),
             telling: "alo-sound-no-such-tool".to_owned(),
         };
         let why = nowhere

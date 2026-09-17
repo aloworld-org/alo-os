@@ -1,4 +1,9 @@
-//! The media server's own record, read.
+//! The media server's own record, read for what is in use.
+//!
+//! The record itself — running the tool, clearing its environment, and reading
+//! an answer that may arrive as more than one list — is `alo-media-server`'s.
+//! What is here is the half that is this crate's: **what those objects mean when
+//! the question is *what is watching or listening*.**
 //!
 //! The rented media server keeps the graph of what is open on this machine and
 //! will write it out as a list of objects: the nodes — devices and the streams
@@ -148,10 +153,7 @@ pub const NAMING_THE_AGENT: &str = "alo.agent";
 /// that was quietly skipped past would leave an indicator that reads exactly
 /// like a quiet room, and being told the machine cannot answer is the only
 /// honest alternative.
-pub fn in_use_in(record: &str) -> Result<Vec<Use>, NotHeard> {
-    let objects = everything_in(record)?;
-    let objects = &objects;
-
+pub fn in_use_in(objects: &[Value]) -> Result<Vec<Use>, NotHeard> {
     let mut nodes: Vec<Node<'_>> = Vec::new();
     let mut links: Vec<(u32, u32)> = Vec::new();
     for object in objects {
@@ -228,56 +230,6 @@ fn what_is_used(class: &str) -> Option<Used> {
 /// # Errors
 /// [`NotHeard::NotUnderstood`] when an object the record calls a node cannot be
 /// read as one.
-/// **Everything the server listed**, as one list of objects.
-///
-/// The record is one JSON list on an ordinary reading, and this would be a line
-/// of `serde_json` — except that on 2026-09-17 a gate read one that had
-/// **trailing characters after the end of the list**, and every reading of the
-/// same machine a moment later was a single list that parsed. What produced it
-/// was not caught, so nothing here claims to know; what is certain is that a
-/// record arriving as more than one list must not read as *this machine
-/// answered something unreadable*, because that sentence takes an indicator off
-/// a screen while a camera is on.
-///
-/// So the record is read as **a stream of lists**, and an object listed twice is
-/// taken as it was listed last, which is what a second list of a changing graph
-/// would mean. A single list — every other reading there has ever been — goes
-/// through this unchanged. `docs/quirks.md` records what was seen.
-fn everything_in(record: &str) -> Result<Vec<Value>, NotHeard> {
-    let mut objects: Vec<Value> = Vec::new();
-    for read in serde_json::Deserializer::from_str(record).into_iter::<Value>() {
-        let read = read.map_err(|why| NotHeard::NotUnderstood {
-            said: format!("the record is not readable: {why}"),
-        })?;
-        let Value::Array(listed) = read else {
-            return Err(NotHeard::NotUnderstood {
-                said: "the record is not a list of objects".to_owned(),
-            });
-        };
-        for object in listed {
-            let same = object.get("id").and_then(Value::as_u64).and_then(|id| {
-                objects
-                    .iter()
-                    .position(|seen| seen.get("id").and_then(Value::as_u64) == Some(id))
-            });
-            match same {
-                Some(at) => {
-                    if let Some(held) = objects.get_mut(at) {
-                        *held = object;
-                    }
-                }
-                None => objects.push(object),
-            }
-        }
-    }
-    if objects.is_empty() && record.trim().is_empty() {
-        return Err(NotHeard::NotUnderstood {
-            said: "the record is empty".to_owned(),
-        });
-    }
-    Ok(objects)
-}
-
 /// One object read as a node, or [`None`] where it is not one this crate holds.
 fn node_in(object: &Value) -> Result<Option<Node<'_>>, NotHeard> {
     let number = number_in(object)?;
@@ -427,29 +379,28 @@ fn said_in<'a>(props: &'a Map<String, Value>, named: &str) -> Option<&'a str> {
 mod tests {
     use super::*;
 
-    /// **A record that arrives as more than one list is still one machine.**
-    ///
-    /// Seen once on 2026-09-17, on a gate, as trailing characters after the end
-    /// of the list; never reproduced. A reader that refused it would take the
-    /// indicator off a screen while a camera was on, so it reads a stream of
-    /// lists — and an object listed twice is taken as it was listed last, which
-    /// is what a second list of a changing graph means.
+    /// A record, read the way a machine's is — through the crate that owns
+    /// reading it.
+    fn objects(record: &str) -> alo_media_server::TheRecord {
+        alo_media_server::read(record).expect("a record this crate reads")
+    }
+
+    /// **A record that arrives as more than one list is still one machine**,
+    /// end to end: `alo-media-server` reads the stream, and this crate counts
+    /// the source once.
     #[test]
-    fn a_record_in_two_lists_reads_as_one_machine_and_the_later_line_wins() {
+    fn a_record_in_two_lists_reads_as_one_machine() {
         let one = r#"[{"id": 31, "type": "PipeWire:Interface:Node",
              "info": {"state": "idle", "props": {"media.class": "Audio/Source"}}}]"#;
         let and_then = r#"[{"id": 31, "type": "PipeWire:Interface:Node",
              "info": {"state": "running", "props": {"media.class": "Audio/Source"}}}]"#;
 
-        let quiet = in_use_in(one).expect("one list reads");
+        let quiet = in_use_in(objects(one).objects()).expect("one list reads");
         assert!(quiet.is_empty(), "an idle source is not a use");
 
-        let both = in_use_in(&format!("{one}\n{and_then}")).expect("two lists read");
-        assert_eq!(
-            both.len(),
-            1,
-            "the same source was counted twice, or the later line did not win"
-        );
+        let text = format!("{one}\n{and_then}");
+        let both = in_use_in(objects(&text).objects()).expect("two lists read");
+        assert_eq!(both.len(), 1, "the same source was counted twice");
         assert_eq!(both.first().map(Use::what), Some(Used::Microphone));
     }
     use crate::testing::{a_record_of, a_recorded_link, a_recorded_node};
@@ -471,7 +422,7 @@ mod tests {
             ),
             a_recorded_link(50, 30, 42),
         ]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         assert_eq!(in_use.len(), 1);
         let one = in_use.first().unwrap();
         assert_eq!(one.what(), Used::Camera);
@@ -488,7 +439,7 @@ mod tests {
     #[test]
     fn a_camera_nobody_is_reading_is_not_in_use() {
         let record = a_record_of(&[a_recorded_node(30, A_VIDEO_SOURCE, "idle", &[])]);
-        assert!(in_use_in(&record).unwrap().is_empty());
+        assert!(in_use_in(objects(&record).objects()).unwrap().is_empty());
     }
 
     /// **A running source with nothing recorded reading it is still a use**,
@@ -498,7 +449,7 @@ mod tests {
     #[test]
     fn a_running_source_nothing_is_recorded_reading_is_still_shown() {
         let record = a_record_of(&[a_recorded_node(30, AN_AUDIO_SOURCE, RUNNING, &[])]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         assert_eq!(in_use.len(), 1);
         let one = in_use.first().unwrap();
         assert_eq!(one.what(), Used::Microphone);
@@ -519,7 +470,11 @@ mod tests {
             a_recorded_node(15, "Stream/Input/Video", RUNNING, &[]),
             a_recorded_node(16, "", RUNNING, &[]),
         ]);
-        let what: Vec<Used> = in_use_in(&record).unwrap().iter().map(Use::what).collect();
+        let what: Vec<Used> = in_use_in(objects(&record).objects())
+            .unwrap()
+            .iter()
+            .map(Use::what)
+            .collect();
         assert_eq!(
             what,
             vec![Used::Microphone, Used::Camera, Used::Screen],
@@ -550,7 +505,7 @@ mod tests {
             a_recorded_link(51, 30, 42),
             a_recorded_link(52, 30, 43),
         ]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         assert_eq!(in_use.len(), 2);
         assert_eq!(
             in_use.iter().map(Use::at).collect::<Vec<_>>(),
@@ -573,7 +528,7 @@ mod tests {
             ),
             a_recorded_link(50, 30, 42),
         ]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         assert_eq!(in_use.len(), 1);
         let one = in_use.first().unwrap();
         assert_eq!(one.what(), Used::Screen);
@@ -597,7 +552,7 @@ mod tests {
             ),
             a_recorded_link(50, 30, 42),
         ]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         let one = in_use.first().unwrap();
         assert!(one.by().is_the_agents());
         assert_eq!(one.by().agent().map(Grantee::as_str), Some("@alo"));
@@ -626,7 +581,7 @@ mod tests {
             ),
             a_recorded_link(50, 30, 42),
         ]);
-        let in_use = in_use_in(&record).unwrap();
+        let in_use = in_use_in(objects(&record).objects()).unwrap();
         let one = in_use.first().unwrap();
         assert!(!one.by().is_the_agents(), "it was drawn as the agent");
         assert!(!one.by().is_alo_os(), "it was drawn as alo OS");
@@ -652,7 +607,7 @@ mod tests {
                 a_recorded_node(42, "Stream/Input/Video", RUNNING, &props),
                 a_recorded_link(50, 30, 42),
             ]);
-            let in_use = in_use_in(&record).unwrap();
+            let in_use = in_use_in(objects(&record).objects()).unwrap();
             assert_eq!(in_use.len(), 1, "{props:?}");
             let one = in_use.first().unwrap();
             assert_eq!(one.what(), Used::Camera, "{props:?}");
@@ -672,25 +627,28 @@ mod tests {
             {"id": 60, "type": "PipeWire:Interface:Client",
              "info": {"props": {"application.name": "something"}}}
         ]"#;
-        let in_use = in_use_in(record).unwrap();
+        let in_use = in_use_in(objects(record).objects()).unwrap();
         assert_eq!(in_use.len(), 1);
         assert_eq!(in_use.first().map(Use::what), Some(Used::Microphone));
     }
 
-    /// **A record that cannot be read is refused, not skipped.** Every one of
+    /// **An object that cannot be read is refused, not skipped.** Every one of
     /// these would otherwise leave an indicator that reads exactly like a quiet
     /// room, which is the one thing it may never do.
+    ///
+    /// Text that is not a record at all — nothing, something that is not JSON, a
+    /// single object rather than a list — is refused a step earlier, by
+    /// `alo-media-server`, and is held by that crate's own tests. What is left
+    /// here is what this crate is the judge of: an object in a perfectly good
+    /// record that does not say what this crate needs.
     #[test]
-    fn a_record_that_cannot_be_read_is_refused_rather_than_read_as_quiet() {
+    fn an_object_that_cannot_be_read_is_refused_rather_than_read_as_quiet() {
         for unreadable in [
-            "",
-            "not json at all",
-            r#"{"id": 1}"#,
             r#"[{"type": "PipeWire:Interface:Node"}]"#,
             r#"[{"id": 1, "type": "PipeWire:Interface:Node", "info": {"state": "running"}}]"#,
             r#"[{"id": 1, "type": "PipeWire:Interface:Link", "info": {"props": {}}}]"#,
         ] {
-            let refused = in_use_in(unreadable).unwrap_err();
+            let refused = in_use_in(objects(unreadable).objects()).unwrap_err();
             assert!(
                 matches!(refused, NotHeard::NotUnderstood { .. }),
                 "{unreadable} was read as {refused:?}"
@@ -703,6 +661,6 @@ mod tests {
     /// unreadable one and is not a refusal.
     #[test]
     fn an_empty_record_is_a_quiet_room() {
-        assert!(in_use_in("[]").unwrap().is_empty());
+        assert!(in_use_in(objects("[]").objects()).unwrap().is_empty());
     }
 }

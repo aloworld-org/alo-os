@@ -46,7 +46,8 @@
 //! ([`crate::NotGrabbed::NothingCameBack`]).
 
 use std::io::ErrorKind;
-use std::process::{Command, Stdio};
+
+use alo_media_server::ATool;
 
 use crate::announcing;
 use crate::grabs::{Grabs, NotGrabbed};
@@ -56,16 +57,6 @@ use crate::screen::Screen;
 
 /// The rented mechanism's own tool for reading a stream and writing a picture.
 const THE_TOOL: &str = "gst-launch-1.0";
-
-/// Where a machine's own programs are, for a cleared environment.
-const WHERE_ITS_PROGRAMS_ARE: &str = "/usr/bin:/bin";
-
-/// The variable a client of the media server finds its socket through.
-///
-/// Passed through rather than invented: what it holds is where this session's
-/// own runtime files are, which is the session's to say and not this crate's.
-/// Without it the tool cannot reach the machine's media server at all.
-const WHERE_THE_SESSION_KEEPS_ITS_SOCKETS: &str = "XDG_RUNTIME_DIR";
 
 /// The variable the media server reads a client's own properties from.
 const WHAT_A_CLIENT_CALLS_ITSELF: &str = "PIPEWIRE_PROPS";
@@ -158,20 +149,15 @@ impl TheScreenCast {
 
 impl Grabs for TheScreenCast {
     fn grab(&mut self, across: Region, on: Screen) -> Result<Picture, NotGrabbed> {
-        let mut asking = Command::new(&self.program);
-        asking
-            .args(self.asking_for(across, on))
-            .env_clear()
-            .env("LC_ALL", "C")
-            .env("LANG", "C")
-            .env("PATH", WHERE_ITS_PROGRAMS_ARE)
-            .env(WHAT_A_CLIENT_CALLS_ITSELF, announcing::announced())
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        if let Some(sockets) = std::env::var_os(WHERE_THE_SESSION_KEEPS_ITS_SOCKETS) {
-            asking.env(WHERE_THE_SESSION_KEEPS_ITS_SOCKETS, sockets);
-        }
+        // The environment these tools are started with is `alo-media-server`'s
+        // rule, kept in one place since 2026-09-17: nothing of the caller's,
+        // the machine's own programs, the C locale, and where the server is
+        // listening. What this crate adds is the one thing that is its own —
+        // the name the server shows a person for whoever is asking.
+        let mut asking = ATool::named(&self.program)
+            .asking(&self.asking_for(across, on))
+            .also(WHAT_A_CLIENT_CALLS_ITSELF, Some(announcing::announced()))
+            .started_here();
         match asking.output() {
             Ok(output) => {
                 self.what_it_answered(output.status.success(), &output.stdout, &output.stderr)

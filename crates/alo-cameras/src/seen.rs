@@ -1,5 +1,9 @@
 //! The media server's record, read for cameras.
 //!
+//! The record itself is `alo-media-server`'s — one crate owns reaching the
+//! server and reading what it says. What is here is what those objects mean when
+//! the question is **what can see**.
+//!
 //! The same record `alo-sound` reads for sound and `alo-in-use` reads for what
 //! is in use, asked a third question: **what can see.** Nothing here is patched
 //! or worked around (ADR 0011).
@@ -68,10 +72,7 @@ pub enum NotSeen {
 /// [`NotSeen::NotUnderstood`] where the record is not the list of objects this
 /// crate reads. A camera inside it that cannot be read — no name, or a name that
 /// is a device number — is passed over rather than failing the whole reading.
-pub fn in_the_record(record: &str) -> Result<Seen, NotSeen> {
-    let objects = everything_in(record, NotSeen::NotUnderstood)?;
-    let objects = &objects;
-
+pub fn in_the_record(objects: &[Value]) -> Result<Seen, NotSeen> {
     let mut cameras = Vec::new();
     let mut behind = BTreeMap::new();
     for object in objects {
@@ -87,43 +88,6 @@ pub fn in_the_record(record: &str) -> Result<Seen, NotSeen> {
         cameras: TheCameras::reported(cameras),
         behind,
     })
-}
-
-/// **Everything the server listed**, as one list of objects.
-///
-/// The record is one JSON list on an ordinary reading. It is read as a **stream**
-/// of lists because on 2026-09-17 a gate read one with trailing characters after
-/// the end of the list, and every reading of the same machine a moment later
-/// parsed as one list. What produced it was not caught, so nothing here claims
-/// to know; what a reader must not do is turn it into *this machine answered
-/// something unreadable*, which takes a list of devices off a screen for a
-/// reason nobody can act on. An object listed twice is taken as it was listed
-/// last. `docs/quirks.md` records what was seen.
-fn everything_in(record: &str, said: impl Fn(String) -> NotSeen) -> Result<Vec<Value>, NotSeen> {
-    let mut objects: Vec<Value> = Vec::new();
-    for read in serde_json::Deserializer::from_str(record).into_iter::<Value>() {
-        let read =
-            read.map_err(|why| said(format!("it is not a record this crate reads: {why}")))?;
-        let Value::Array(listed) = read else {
-            return Err(said("the record is not a list of objects".to_owned()));
-        };
-        for object in listed {
-            let same = object.get("id").and_then(Value::as_u64).and_then(|id| {
-                objects
-                    .iter()
-                    .position(|seen| seen.get("id").and_then(Value::as_u64) == Some(id))
-            });
-            match same {
-                Some(at) => {
-                    if let Some(held) = objects.get_mut(at) {
-                        *held = object;
-                    }
-                }
-                None => objects.push(object),
-            }
-        }
-    }
-    Ok(objects)
 }
 
 /// One object read as a camera, with the device file it is behind.
@@ -169,6 +133,11 @@ fn a_camera_in(object: &Value) -> Option<(OneCamera, Option<String>)> {
 mod tests {
     use super::*;
 
+    /// A record, read the way a machine's is.
+    fn objects(record: &str) -> alo_media_server::TheRecord {
+        alo_media_server::read(record).expect("a record this crate reads")
+    }
+
     const A_RECORD: &str = r#"[
       { "id": 49, "type": "PipeWire:Interface:Node",
         "info": { "state": "suspended",
@@ -185,7 +154,7 @@ mod tests {
     /// **Cameras are read, and a program reading one is not a camera.**
     #[test]
     fn a_camera_is_read_and_a_microphone_and_a_program_are_not() {
-        let seen = in_the_record(A_RECORD).expect("a record this crate reads");
+        let seen = in_the_record(objects(A_RECORD).objects()).expect("a record this crate reads");
         assert_eq!(seen.cameras().every().len(), 1);
         let one = seen
             .cameras()
@@ -201,7 +170,7 @@ mod tests {
     /// camera, never as the camera.
     #[test]
     fn the_device_number_is_kept_as_a_road_to_the_hardware_and_nothing_else() {
-        let seen = in_the_record(A_RECORD).expect("a record this crate reads");
+        let seen = in_the_record(objects(A_RECORD).objects()).expect("a record this crate reads");
         let one = CameraId::reported("v4l2_input.platform-vivid.0").expect("an identity");
         assert_eq!(seen.behind(&one), Some("/dev/video0"));
         assert!(
@@ -211,16 +180,17 @@ mod tests {
         assert_eq!(seen.every_device_file().count(), 1);
     }
 
-    /// **A record that is not one says so**, rather than reading as a machine
-    /// with no cameras.
+    /// **An empty record is a machine with no cameras**, which is an answer
+    /// rather than a refusal.
+    ///
+    /// Text that is not a record at all is refused a step earlier, by
+    /// `alo-media-server`, which is the crate that reads one — and its own tests
+    /// hold that a machine whose record will not parse never reads as a machine
+    /// with nothing on it.
     #[test]
-    fn something_that_is_not_a_record_is_refused_rather_than_read_as_no_cameras() {
-        assert!(matches!(
-            in_the_record("not a record"),
-            Err(NotSeen::NotUnderstood(_))
-        ));
+    fn an_empty_record_is_a_machine_with_no_cameras_rather_than_a_refusal() {
         assert!(
-            in_the_record("[]")
+            in_the_record(objects("[]").objects())
                 .expect("an empty record is a machine with no cameras")
                 .cameras()
                 .every()

@@ -29,7 +29,13 @@ struct AMachineWhoseRecordIs(String);
 
 impl Streams for AMachineWhoseRecordIs {
     fn in_use_now(&mut self) -> Result<Vec<Use>, NotHeard> {
-        heard::in_use_in(&self.0)
+        // The record is read by the crate that owns reading one, and what the
+        // objects in it mean is `alo-in-use`'s — the same two steps a real
+        // machine takes.
+        let read = alo_media_server::read(&self.0).map_err(|why| NotHeard::NotUnderstood {
+            said: why.said().to_owned(),
+        })?;
+        heard::in_use_in(read.objects())
     }
 }
 
