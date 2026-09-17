@@ -1,0 +1,58 @@
+[Unit]
+# The privileged broker: the closed list of changes to the whole machine, carried
+# out only under an approval a person gave, and every answer written down first.
+# ADR 0001 §2 — alo-agentd runs as the person and never as root, and what needs
+# privilege sits behind this, small enough to audit in an afternoon.
+#
+# It lives beside the crate rather than in image/ until the image carries the
+# network manager it drives: a root service with nothing to carry out would be
+# privilege on the machine with no function. The report for the broker's network
+# verbs says which lane moves it, and crates/alo-brokerd holds every line below
+# to what the process expects.
+Description=alo OS broker: the closed list of changes to the whole machine
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0001-the-capability-model.md
+
+# The network manager it carries network changes out against. Wants= rather than
+# Requires=: a machine without one answers every network verb not-carried, in the
+# record, which is the honest failure.
+Wants=NetworkManager.service
+After=NetworkManager.service dbus.service
+
+[Service]
+Type=exec
+
+# Root, because the network manager decides who may change the machine's network
+# from the credentials of whoever asks on the system bus, and root is who it lets
+# without asking anybody; and because the machine's proxy file is root's to write.
+# And the person's own group, because the door, the approving key and the folder
+# a person hands a proxy over in are handed to whatever group this process runs
+# in: the person's service reaches them, and the agent's own login, which is not
+# in this group, reaches none of them. The process refuses to start in root's
+# group or in the agent's.
+User=root
+Group=alo
+
+# Both lines, both empty. What this needs is a uid, not a capability.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# The door, the key and the folder a wanted proxy is handed over in, in a
+# directory of the broker's own that only the person's group may enter. Taken
+# away when the service stops, which takes the key with it.
+RuntimeDirectory=alo-broker
+RuntimeDirectoryMode=0750
+
+# The broker's record. Root's alone.
+StateDirectory=alo-broker
+StateDirectoryMode=0700
+
+# The machine's proxy file. Root's to write, everybody's to read, because every
+# road out of this machine reads it.
+ConfigurationDirectory=alo-proxy
+ConfigurationDirectoryMode=0755
+
+ExecStart=/usr/libexec/alo-brokerd
+
+[Install]
+WantedBy=multi-user.target

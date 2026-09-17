@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 46] = [
+pub const EVERY_LIST: [&str; 47] = [
     "alo-adapting",
     "alo-access",
     "alo-accounts",
@@ -89,6 +89,7 @@ pub const EVERY_LIST: [&str; 46] = [
     "alo-capability",
     "alo-capturing",
     "alo-changing",
+    "alo-changing-network",
     "alo-choosing",
     "alo-clipboard",
     "alo-context",
@@ -213,6 +214,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_capturing::declare_into,
     )?;
     declare(&mut vocabulary, "alo-changing", alo_changing::declare_into)?;
+    declare(
+        &mut vocabulary,
+        "alo-changing-network",
+        alo_changing_network::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-choosing", alo_choosing::declare_into)?;
     declare(
         &mut vocabulary,
@@ -323,7 +329,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 46] = [
+    const ONE_STRING_EACH: [(&str, &str); 47] = [
         ("alo-adapting", "adapting.deleting-this-adapter"),
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
@@ -336,6 +342,10 @@ mod tests {
         ("alo-capability", "capability.grant.anonymous"),
         ("alo-capturing", "capturing.the-lock-screen"),
         ("alo-changing", "changing.not-kept"),
+        (
+            "alo-changing-network",
+            "changing-network.verb.loses-its-connection",
+        ),
         ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-clipboard", "clipboard.nothing-copied"),
         ("alo-context", "context.the-document"),
@@ -424,6 +434,9 @@ mod tests {
             alo_capability::capability_words().unwrap().how_many(),
             alo_capturing::capturing_words().unwrap().how_many(),
             alo_changing::changing_words().unwrap().how_many(),
+            alo_changing_network::changing_network_words()
+                .unwrap()
+                .how_many(),
             alo_choosing::choosing_words().unwrap().how_many(),
             alo_clipboard::clipboard_words().unwrap().how_many(),
             alo_context::context_words().unwrap().how_many(),

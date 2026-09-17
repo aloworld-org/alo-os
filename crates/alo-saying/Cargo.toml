@@ -29,6 +29,7 @@ alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
 alo-capturing = { path = "../alo-capturing" }
 alo-changing = { path = "../alo-changing" }
+alo-changing-network = { path = "../alo-changing-network" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }

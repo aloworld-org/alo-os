@@ -10,8 +10,20 @@
 //!   is what somebody auditing the broker has to follow. [`MOST_LINES`] is the
 //!   ceiling on everything in `src/`, documentation and tests included, which
 //!   is what they have to open. When this was written the broker was 744 lines
-//!   of code in 1,904 lines; the ceilings leave room for a small fix and none
+//!   of code in 1,904 lines; the ceilings left room for a small fix and none
 //!   for a new responsibility.
+//!
+//!   **Raised on 2026-09-16, with the first verbs carried out** (the network's,
+//!   the plan's task 3; the same raise was first written for task 2, which is
+//!   held back), from
+//!   900 and 2,200. The broker took on the two halves of its own contract that
+//!   the side that asks must agree with byte for byte — how its approving key is
+//!   handed over (`src/handing_over.rs`), and how a request is asked and its
+//!   answer read (`src/asking.rs`) — and where the door and the key are
+//!   (`src/place.rs`). That made it 898 lines of code in 2,205. Everything
+//!   that carries a verb out went to `crates/alo-brokerd` instead, and so will
+//!   every verb after it; the new ceilings again leave room for a small fix and
+//!   none for a new responsibility.
 //! - **what it depends on**, exactly. A privileged component's dependency list
 //!   is part of what an audit reads, so a dependency added or removed fails
 //!   [`the_broker_depends_on_exactly_what_it_names`] until this file says so.
@@ -24,10 +36,10 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 /// The most lines of code `src/` may hold, tests and comments aside.
-const MOST_CODE: usize = 900;
+const MOST_CODE: usize = 1_000;
 
 /// The most lines `src/` may hold altogether.
-const MOST_LINES: usize = 2_200;
+const MOST_LINES: usize = 2_450;
 
 /// Every dependency, of every kind, the broker is allowed.
 const DEPENDS_ON: [&str; 5] = [

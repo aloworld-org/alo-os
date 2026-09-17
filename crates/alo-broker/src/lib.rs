@@ -18,6 +18,9 @@
 //! | [`Broker`] | The one decision, in order, written down before it is answered |
 //! | [`Recording`], [`Carrying`] | Where entries go, and what carries a verb out |
 //! | `listening` | The door as a real socket (Unix only) |
+//! | `asking` | The other side of the door: one request, one answer (Unix only) |
+//! | `handing_over` | How the approving key reaches the turn, and nobody else (Unix only) |
+//! | [`THE_DOOR`], [`THE_KEY`], [`BY_HAND`] | Where the two are, and the approval a person's own change is issued under |
 //!
 //! # What it decides, and what it does not
 //!
@@ -38,13 +41,15 @@
 //! in `src/` and the exact dependency list; growing either is a change to that
 //! test, made in the open.
 //!
-//! # No process yet, on purpose
+//! # The process is somewhere else, on purpose
 //!
-//! This crate has no binary and the image has no unit for it. A root service
-//! that can carry nothing out would be privilege on the machine with no
-//! function — the one thing this component exists to avoid. The process, its
-//! unit, where its key comes from and which record it writes arrive with the
-//! first verb it carries out (the plan's task 2).
+//! This crate is the door and the list, and it stays small enough to audit in
+//! an afternoon. The process that runs it — root, holding no capability, with
+//! the machine's record and the network's verbs behind it — is
+//! `crates/alo-brokerd`, which is where anything that carries a verb out lives.
+//! What both sides of the door must agree on is here: where the door and the
+//! key are ([`THE_DOOR`], [`THE_KEY`]), how the key is handed over
+//! (`handing_over`), and how a turn asks (`asking`).
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -55,6 +60,7 @@ mod broker;
 mod door;
 mod hex;
 mod keeping;
+mod place;
 mod request;
 mod spent;
 #[cfg(unix)]
@@ -62,14 +68,19 @@ mod unix;
 mod verbs;
 
 #[cfg(unix)]
+pub mod asking;
+#[cfg(unix)]
+pub mod handing_over;
+#[cfg(unix)]
 pub mod listening;
 
 pub use answer::Answer;
-pub use approving::{ApprovingKey, LIFETIME, NoRandomness, Token};
+pub use approving::{ApprovingKey, BY_HAND, LIFETIME, NoRandomness, Token};
 pub use arguments::{Argument, IDENTITY_BYTES, Identity, Switch};
 pub use broker::Broker;
 pub use door::{Door, NotADoor};
 pub use keeping::{Carrying, NotCarried, NotKept, Recording};
+pub use place::{THE_DOOR, THE_KEY};
 pub use request::{LONGEST, NotRead, Request};
 #[cfg(unix)]
 pub use unix::{our_group, our_user};

@@ -634,6 +634,63 @@ application, and a verb with no grant needs a written reason in an ADR — and
 measurement verbs are not: `alo-turn` offers the verbs it has an executor for,
 and adding this one is an edit there.
 
+## The network verbs
+
+★ *System verbs through the privileged broker*: joining a Wi-Fi network,
+forgetting one, and turning Wi-Fi on or off. Each is a change to the whole
+machine, so each is carried out by the privileged broker and by nothing else.
+Declared in `alo-changing-network`'s `src/verbs.rs` with a `pub fn
+declare_into`;
+[ADR 0049](../decisions/0049-the-network-is-changed-through-the-broker-and-its-password-never-reaches-the-agent.md)
+is the decision.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `join_network` | change | `network` (name, at most 32), `this_conversation` (choice: `keeps_its_connection`, `loses_its_connection`) | join the Wi-Fi network {network}, and {this_conversation} |
+| `forget_network` | change | `network` (name, at most 32), `this_conversation` (choice) | forget the Wi-Fi network {network}, so this machine no longer joins it on its own, and {this_conversation} |
+| `switch_wireless` | change | `wireless` (choice: `on`, `off`), `this_conversation` (choice) | turn Wi-Fi {wireless}, and {this_conversation} |
+
+**A network is named by the name it announces**, and never by a device, a file
+or an address. When the approved change is carried out, the name is matched
+exactly against what the network manager reports — the networks in range for
+`join_network`, the saved networks for `forget_network` — and **a name no
+network has, or two networks share, changes nothing**. An open network using the
+name of a protected one is a second network of that name. A network asking for
+an organisation's sign-in is not joined in v0.5. What crosses into the broker is
+the matching network's identity (below), never the name.
+
+**No argument can hold a password.** Joining a protected network asks the person
+for its password in their own session, through the secret agent
+`alo_networks::secret_agent` registers with the network manager, which answers
+the network manager's connection and nobody else's. The password crosses no
+verb, no door and no record.
+
+**Each says what it does to this conversation.** `this_conversation` must be the
+truth: the change *loses* the conversation's connection exactly when the
+conversation is answered over the network and the change takes the machine off
+the Wi-Fi network it sends through now (`alo_changing_network::would`). A call
+saying anything else is refused before it is proposed
+(`alo_changing_network::proposable`), and an approval that is no longer true
+when it is carried out is refused without asking the broker.
+
+**None requires a grant**, with its reason in ADR 0049 §2 and in each
+declaration: a network is neither a path nor an application, and the approval of
+the sentence naming it is what makes the change, once.
+
+**Not verbs, deliberately:** setting the proxy (a person sets it in Settings,
+through the broker's `network.set-proxy`; ADR 0049 §3), configuring a VPN (not in
+v0.5), and listing the networks nearby.
+
+**A person does the same in Settings, through the same broker verbs.** What a
+person picks in the network pane becomes the identical `network.join`,
+`network.forget` or `network.radio`, crossing the same door under the approval
+number `BY_HAND` (below).
+
+**Declared and carried out, and not yet offered by a turn**, for the reason the
+printing verb is not: handing a turn's call to `proposable` and its redeemed
+approval to `alo_changing_network::carry_out_approved` is an edit in `alo-turn`
+and `alo-agentd`.
+
 ## The converting verb
 
 `docs/features.md` promises at v0.5 that *the documents people are actually sent
@@ -711,6 +768,7 @@ printing verb is not.
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), and press one control named by its kind and the name it shows (`accessible.activate_control`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
+| **Network** | Propose joining or forgetting a Wi-Fi network by the name it announces, or turning Wi-Fi on or off, saying what each does to the conversation | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-network`; declared, not yet offered by a turn |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
 
 ## A turn, and the order the steps happen in
@@ -756,9 +814,11 @@ that holds the few operations needing privilege, with:
 The broker is small enough to be audited in an afternoon, and that is a
 constraint on its design rather than a hope about its future.
 
-`crates/alo-broker` is the list and the door, added 2026-09-16. No verb is
-carried out yet; each arrives with the task that owns it
-(`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, tasks 2 to 4).
+`crates/alo-broker` is the list and the door, added 2026-09-16.
+`crates/alo-brokerd` is the process that runs it, and carries out the four
+network verbs; printers, updates and storage are answered `not-carried` until
+the tasks that own them arrive (`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`,
+tasks 2 and 4).
 
 **The list.** Eleven verbs, each with exactly one argument:
 
@@ -800,6 +860,42 @@ The answer is `carried`, `not-kept`, or `refused` and one of
 answer is written to the record, as a `brokered` entry, before it is given
 (`record-file.md`); `not-kept` means it could not be, and a broker that has said
 it once carries nothing out again.
+
+**An approval made by hand.** A person's own change in Settings has no turn and
+no proposal number behind it; its token is issued under the approval number
+`18446744073709551615` (`alo_broker::BY_HAND`, the largest a `u64` holds), which
+no turn's approval reaches. In the broker's record, that number means *a person
+made this change themselves*.
+
+**Where the door and the key are.** On a machine the door is
+`/run/alo-broker/door.sock`, mode `0660`, and the approving key is
+`/run/alo-broker/approving.key`: thirty-two bytes, mode `0440`, owned by root, in
+the broker's group — which is the person's own group, never the agent's. The
+directory is `0750` in that group. The broker makes a fresh key each time it
+starts, so a token issued under the last one is refused; whatever issues tokens
+reads the key each time it issues one, and believes it only as a plain file of
+exactly thirty-two bytes, owned by root, that nobody but root can write and
+nobody outside its group can read.
+
+**The process.** `alo-brokerd` runs as root in the person's group, holding no
+capability. Before its door opens it reads who `alo-agentd` runs as from the
+machine description and refuses root; refuses to run in root's group or the
+agent's; opens its own record, `/var/lib/alo-broker/record.jsonl`, in the
+record file's format; makes `/run/alo-broker/wanted`, `0770` in its group; and
+hands its key over. A refusal at any step opens no door.
+
+**The network verbs carried out.** `network.join` asks the network manager for
+the networks in range now and joins the one whose name and protection digest to
+the identity, answering once it is joined or has failed; `network.forget` asks
+for the saved networks and forgets the one whose identifier digests to it;
+`network.radio` turns Wi-Fi on or off. No match, or more than one, is
+`not-carried`, and nothing is changed. `network.set-proxy` reads the proxy a
+person handed over at `/run/alo-broker/wanted/proxy.json` — a plain file owned
+by the person, opened without following a link — sets it only if its bytes
+digest to the identity and it is a setting `alo-proxy` would itself have made,
+and never over a proxy the organisation set. The machine's proxy file is
+`machine-proxy-file.md`. Printers, updates and storage are answered
+`not-carried` until the tasks that own them arrive.
 
 ## Records
 
@@ -881,7 +977,7 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
 puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
-`alo-finding`, `alo-measuring`, `alo-printing`, `alo-software` and `alo-adapters` all do exactly that, and it is a rule rather
+`alo-finding`, `alo-measuring`, `alo-printing`, `alo-changing-network`, `alo-software` and `alo-adapters` all do exactly that, and it is a rule rather
 than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and

@@ -236,12 +236,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-brokerd"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-keeping",
+ "alo-networks",
+ "alo-proxy",
+ "alo-record",
+ "rustix 1.1.4",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "alo-by-hand"
 version = "0.0.1"
 dependencies = [
  "alo-adapters",
  "alo-applications",
  "alo-capability",
+ "alo-changing-network",
  "alo-converting",
  "alo-files",
  "alo-finding",
@@ -287,6 +302,20 @@ dependencies = [
  "alo-protocol",
  "alo-remembering",
  "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-changing-network"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-brokerd",
+ "alo-capability",
+ "alo-networks",
+ "alo-proxy",
+ "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
 ]
@@ -668,6 +697,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-networks"
+version = "0.0.1"
+dependencies = [
+ "alo-proxy",
+ "serde_json",
+ "zbus",
+]
+
+[[package]]
 name = "alo-opening"
 version = "0.0.1"
 dependencies = [
@@ -829,6 +867,7 @@ dependencies = [
  "alo-capability",
  "alo-capturing",
  "alo-changing",
+ "alo-changing-network",
  "alo-choosing",
  "alo-clipboard",
  "alo-context",
@@ -969,6 +1008,7 @@ dependencies = [
  "alo-applications",
  "alo-by-hand",
  "alo-capability",
+ "alo-changing-network",
  "alo-converting",
  "alo-egress",
  "alo-files",

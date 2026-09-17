@@ -1,0 +1,35 @@
+[package]
+name = "alo-changing-network"
+version = "0.0.1"
+description = "Joining and forgetting Wi-Fi networks, turning Wi-Fi on or off, and setting the machine's proxy — proposed by an agent and approved, or chosen by hand in Settings — through the privileged broker's network verbs and no other road."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The broker's closed list, its approving key as it is handed over, and the
+# door a change is asked at. The only road into the machine's network settings.
+alo-broker = { path = "../alo-broker" }
+# The three verbs are verbs, and what is carried out is the authority a person's
+# approval became.
+alo-capability = { path = "../alo-capability" }
+# What a network is as the network manager reports it, and the shape of the
+# proxy a person hands over. Read, never extended here.
+alo-networks = { path = "../alo-networks" }
+# The proxy a person chooses in Settings.
+alo-proxy = { path = "../alo-proxy" }
+# The broker answers with one of the record's own reasons.
+alo-record = { path = "../alo-record" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The broker's own process and its network carrier, so a change is tested from a
+# person's approval, through the real door, to the network manager's side and
+# back.
+alo-brokerd = { path = "../alo-brokerd" }
+
+[lints]
+workspace = true

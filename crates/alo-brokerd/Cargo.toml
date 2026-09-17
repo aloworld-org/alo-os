@@ -1,0 +1,56 @@
+[package]
+name = "alo-brokerd"
+version = "0.0.1"
+description = "The privileged broker as a machine runs it: root, holding no capability, one door, the machine's record, and the verbs it carries out."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# `alo-broker` is the door and the closed list, held small enough to audit in an
+# afternoon by a test that counts its lines and names its dependencies. This is
+# the process around it, and everything a door does not decide lives here:
+# where the record is, how the process starts, and what carries each verb out.
+# Keeping them apart is what keeps the first one auditable.
+
+[dependencies]
+# The door, the list, the approving key and how it is handed over.
+alo-broker = { path = "../alo-broker" }
+
+# What a network is as the network manager reports it, the client that asks and
+# tells it, and the shape of the machine's proxy file. Read, never decided here:
+# the carrier compares what the network manager reports now with the identity a
+# person approved and changes the one that matches.
+alo-networks = { path = "../alo-networks" }
+
+# The one proxy setting and whose it is, for the refusal a person's proxy meets
+# on a machine an organisation manages.
+alo-proxy = { path = "../alo-proxy" }
+
+# The machine's record file for the broker's own entries, written and synced one
+# entry at a time. `src/recording.rs` is the only file that names it.
+alo-keeping = { path = "../alo-keeping" }
+alo-record = { path = "../alo-record" }
+
+# The machine description, `/etc/alo/agentd.toml`, names the person `alo-agentd`
+# runs as — which is the one user the door hears. Read with the parser the
+# daemon reads it with, never by hand. `src/describing.rs` is the only file that
+# names them.
+serde = { workspace = true }
+toml = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# Opening the proxy a person handed over without following a link, asking
+# the kernel who owns what was opened, and handing the folder it is handed over
+# in to a group. `std` has no safe spelling of
+# `O_NOFOLLOW`, and this workspace forbids `unsafe`. Already a workspace
+# dependency with the features this needs. Named only by `src/proxy.rs`, and by
+# `src/starting.rs` to hand that folder to the person's group.
+rustix = { workspace = true }
+
+[[bin]]
+name = "alo-brokerd"
+path = "src/main.rs"
+
+[lints]
+workspace = true

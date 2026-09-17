@@ -1,0 +1,29 @@
+[package]
+name = "alo-networks"
+version = "0.0.1"
+description = "What a network is on this machine, as the rented network manager reports it: the networks it can see and has saved, the one client that asks and tells it, the agent that asks a person for a Wi-Fi password, and the machine's proxy file."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The machine's one proxy setting, which the broker writes into the machine's
+# proxy file and every road out reads back. Read, never decided here: a setting
+# arriving from a file is rebuilt through `alo-proxy`'s own checked
+# constructors, so nothing this crate reads can hold what that crate refuses.
+alo-proxy = { path = "../alo-proxy" }
+
+# The proxy file's notation, which is `alo-proxy`'s own serde shape written as
+# JSON — the notation the record file and the portal answers file are already
+# written in. Already a workspace dependency, so this adds no crate.
+serde_json = { workspace = true }
+
+# The rented network manager, spoken to over the system bus. Linux only: it is a
+# Linux service. Already in the workspace for the keyring, the portals and the
+# adapters, at the same version and with the same runtime, so it adds no crate.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true

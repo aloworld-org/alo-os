@@ -91,8 +91,8 @@ first.
 
 ### 3. Network, through the broker
 
-**Status:** ready — `v0-5-software-and-the-web-plan.md` task 4, whose `alo-proxy`
-holds the proxy this task's verbs set, was published on 2026-09-16. **Depends on:** 1.
+**Status:** **Done, 2026-09-16.** **Depends on:** 1. Report:
+`docs/autonomy/updates/network-through-the-broker.md`; decision: ADR 0049.
 
 - **Acceptance:** the broker's network verbs — join a network the machine can see, forget
   a network, turn the radio on or off, set the proxy `alo-proxy` holds — take closed
@@ -103,6 +103,14 @@ holds the proxy this task's verbs set, was published on 2026-09-16. **Depends on
   cut a turn's own connection says so before it is approved.
 - **Constraint:** NetworkManager is rented. No VPN configuration verb in v0.5; its
   absence is recorded.
+- **What tasks 2 and 4 inherit from 3** (its report has the reasoning): the broker's
+  process now exists — `crates/alo-brokerd`, its unit beside it, its record, the
+  key hand-over and the asking side in `alo-broker`, taken from the held task 2
+  branch unchanged where they do not touch printers. A task carrying verbs out adds
+  them to `alo_brokerd::Carriers`, whose match already names every verb it does not
+  carry. Task 2's held branch therefore conflicts with this in `alo-brokerd` and
+  `alo-broker` when it is published, and the conflict is the same files with the
+  printers' carrier beside the network's.
 
 ### 4. Updates and storage, through the broker
 

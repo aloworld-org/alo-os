@@ -43,6 +43,19 @@ use crate::verbs::SystemVerb;
 /// How long a token is good for after it is issued.
 pub const LIFETIME: Duration = Duration::from_secs(60);
 
+/// The approval number a person's own change in Settings is issued under.
+///
+/// ADR 0009: a person does by hand, in Settings, what an agent proposes — and
+/// through the same verbs, so there is one road into the machine rather than
+/// two. There is no turn behind a change made by hand and so no proposal number
+/// to carry; the click is the approval. This number says so in the broker's
+/// record rather than borrowing a turn's.
+///
+/// A turn numbers its approvals upward from zero, one turn at a time, and would
+/// need every number a `u64` holds to reach this one, so the two cannot be
+/// mistaken for each other.
+pub const BY_HAND: u64 = u64::MAX;
+
 /// What a proof is made under, so no other HMAC this machine computes with a
 /// key of the same bytes can ever be mistaken for one.
 const WHAT_THIS_PROVES: &[u8] = b"alo-broker approval 1\0";
@@ -79,9 +92,7 @@ impl ApprovingKey {
     /// [`NoRandomness`] when the kernel would not give any. There is no
     /// fallback: a key from anywhere else is a key somebody could guess.
     pub fn fresh() -> Result<Self, NoRandomness> {
-        let mut bytes = [0_u8; PROOF_BYTES];
-        getrandom::fill(&mut bytes).map_err(|why| NoRandomness(why.to_string()))?;
-        Ok(Self::of(&bytes))
+        Ok(Self::of(&fresh_bytes()?))
     }
 
     /// A key made of these bytes — how the side that issues tokens and the
@@ -180,6 +191,17 @@ impl Token {
             crate::hex::written(&self.proof)
         )
     }
+}
+
+/// The bytes of a new key, from the kernel's randomness.
+///
+/// Crate-private: the only thing outside [`ApprovingKey::fresh`] that holds a
+/// key's bytes is `crate::handing_over`, which writes them where the turn reads
+/// them and nowhere else.
+pub(crate) fn fresh_bytes() -> Result<[u8; PROOF_BYTES], NoRandomness> {
+    let mut bytes = [0_u8; PROOF_BYTES];
+    getrandom::fill(&mut bytes).map_err(|why| NoRandomness(why.to_string()))?;
+    Ok(bytes)
 }
 
 /// A number in its one spelling.

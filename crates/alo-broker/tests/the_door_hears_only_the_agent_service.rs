@@ -62,12 +62,20 @@ fn an_approved_request() -> String {
 }
 
 /// Send one line to the door on another thread, and read the answer back.
+///
+/// A write that fails is not the test failing: a door that refuses a caller
+/// unread may answer and close before the line is written, and then the write
+/// meets a closed socket while the answer is already waiting to be read. The
+/// answer is what every test here asserts on.
 fn ask(at: &Path, line: String) -> std::thread::JoinHandle<String> {
     let at = at.to_owned();
     std::thread::spawn(move || {
         let mut connection = UnixStream::connect(&at).unwrap();
-        connection.write_all(line.as_bytes()).unwrap();
-        connection.write_all(b"\n").unwrap();
+        drop(
+            connection
+                .write_all(line.as_bytes())
+                .and_then(|()| connection.write_all(b"\n")),
+        );
         let mut answer = String::new();
         BufReader::new(connection).read_line(&mut answer).unwrap();
         answer

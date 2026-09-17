@@ -185,6 +185,31 @@ application arrives granted nothing either way. A person needs no approval to
 install an application for themselves: the approval is what an agent needs,
 because it is the agent choosing what arrives on somebody's machine.
 
+### join_network
+
+**By hand:** a person picks the network in the network pane of `Settings, as one
+place` — *network, display, sound, printers* — and types its password there if
+it asks for one. Their pick becomes the very broker verb an agent's approved
+proposal becomes, crossing the same door and written into the same record,
+marked as a change they made themselves. A person needs no approval to join a
+network: the approval is what an agent needs, because it is the agent choosing
+where everything this machine sends goes, and a password is only ever typed by
+the person either way.
+
+### forget_network
+
+**By hand:** a person picks the saved network in the network pane of `Settings,
+as one place` and forgets it. The pick is the same broker verb the agent's
+approved proposal becomes, against the same saved network, in the same record.
+
+### switch_wireless
+
+**By hand:** a person turns Wi-Fi on or off in the network pane of `Settings, as
+one place`, or from the network in the `Status area: clock, battery, network,
+volume, brightness`. Both go through the same broker verb an approved proposal
+does. A person is told in Settings, as the agent's sentence tells them, when
+turning Wi-Fi off will cut the connection a conversation is answered over.
+
 ### text_editor.open_document
 
 **By hand:** a person opens the text editor and chooses Open, or opens the file

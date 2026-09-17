@@ -9,7 +9,8 @@
 //!   `peer_cred` is unstable (rust-lang issue #42839) and a `getsockopt` by hand
 //!   is `unsafe`, which this workspace forbids.
 //! - **Hand this path to a group** — how a socket the broker made becomes one
-//!   `alo-agentd` can connect to at all.
+//!   `alo-agentd` can connect to at all, and how its approving key becomes one
+//!   the turn can read (`crate::handing_over`).
 
 use std::os::unix::net::UnixStream;
 use std::path::Path;

@@ -2,14 +2,16 @@
 //!
 //! Two seams, one file, because they are the two things the door is handed
 //! rather than things it decides — and the reason they are seams at all is the
-//! same: **this task implements no verb and chooses no record file.**
+//! same: **the door carries no verb out and chooses no record file.**
 //!
 //! - [`Recording`] is where an entry goes. `alo_record::Record` is one, in
-//!   memory, and the process that runs the broker on a machine is handed the
-//!   machine's record by the task that ships that process.
-//! - [`Carrying`] is what carries a verb out. Printers, updates and storage are
-//!   tasks 2 and 4 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`,
-//!   the network task 3; each implements this for its verbs and nothing else.
+//!   memory; the process that runs the broker on a machine,
+//!   `crates/alo-brokerd`, writes to the machine's own record file.
+//! - [`Carrying`] is what carries a verb out. `crates/alo-brokerd` carries the
+//!   network's verbs (task 3 of
+//!   `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`); printers are task
+//!   2 and updates and storage task 4, and each adds its verbs there and
+//!   nothing else.
 
 use alo_record::{Entry, Record};
 
