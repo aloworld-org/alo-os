@@ -10,12 +10,19 @@
 //!
 //! - the path is **not a symbolic link** (`O_NOFOLLOW`);
 //! - it is **a regular file**, not a pipe, a device or a folder;
-//! - it belongs to **root or to the login reading it**, and **nobody else can
-//!   write it**.
+//! - it belongs to **the login reading it**, and **nobody else can write it**.
 //!
-//! A file made here is made `0600`. **The folder is never made**:
-//! `/var/lib/alo` is the image's, and a folder made here would turn a typo in a
-//! path into a second record nobody reads.
+//! The ownership rule is narrower than it was, and
+//! [ADR 0052](../../../docs/decisions/0052-what-a-persons-applications-asked-for-is-the-persons-record.md)
+//! is why: the answers file used to be one machine-wide file beside the agent's
+//! record, where root's ownership was the ordinary case. It is now **this
+//! login's own**, in their own state directory — and a root-owned file there is
+//! not the ordinary case, it is evidence that something else wrote a person's
+//! record.
+//!
+//! A file made here is made `0600`. **The folder is not made here**:
+//! `crate::where_the_answers_are` makes it, once, inside a directory that
+//! already exists.
 
 use std::fs::{File, OpenOptions};
 use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
@@ -106,8 +113,8 @@ enum Missing {
     IsAFailure,
 }
 
-/// `at`, opened with `options`, refused unless it is a regular file only root
-/// or this login could have written.
+/// `at`, opened with `options`, refused unless it is a regular file only this
+/// login could have written.
 fn believed_open(
     at: &Path,
     options: &OpenOptions,
@@ -139,7 +146,7 @@ fn believed_open(
 /// Whether a file with this owner and mode is one to believe, as a rule of its
 /// own so every branch of it is testable without root.
 pub(crate) fn believed(at: &Path, owner: u32, mode: u32, us: u32) -> Result<(), NotRecorded> {
-    if owner != 0 && owner != us {
+    if owner != us {
         return Err(NotRecorded::SomebodyElses {
             at: at.to_owned(),
             owner,
@@ -181,17 +188,25 @@ mod tests {
 
     /// **The ownership rule, every branch** — a test cannot chown a file to
     /// somebody else without root, so the rule is a function and this walks it.
+    ///
+    /// **Root's own file is refused too**, which is the change ADR 0052 made: in
+    /// a person's own state directory, a file owned by root is not this login's
+    /// record.
     #[test]
-    fn only_roots_file_or_our_own_is_believed() {
-        let at = Path::new("/var/lib/alo/portal-answers.jsonl");
-        assert!(believed(at, 0, OURS_ALONE, 1000).is_ok());
+    fn only_this_logins_own_file_is_believed() {
+        let at = Path::new("/home/ada/.local/state/alo/portal-answers.jsonl");
+        assert!(matches!(
+            believed(at, 0, OURS_ALONE, 1000),
+            Err(NotRecorded::SomebodyElses { owner: 0, .. })
+        ));
         assert!(believed(at, 1000, OURS_ALONE, 1000).is_ok());
+        assert!(believed(at, 0, OURS_ALONE, 0).is_ok());
         assert!(matches!(
             believed(at, 1001, OURS_ALONE, 1000),
             Err(NotRecorded::SomebodyElses { owner: 1001, .. })
         ));
         assert!(matches!(
-            believed(at, 0, 0o620, 1000),
+            believed(at, 1000, 0o620, 1000),
             Err(NotRecorded::WritableByOthers { .. })
         ));
         assert!(matches!(

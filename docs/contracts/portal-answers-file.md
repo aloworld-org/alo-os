@@ -26,20 +26,45 @@ It is **not** the agent's record (`docs/contracts/record-file.md`). That file is
 application is not an agent, so its requests are kept here, beside it, in the
 same notation.
 
+## Whose it is
+
+**The person's.** One file per login, and
+[ADR 0052](../decisions/0052-what-a-persons-applications-asked-for-is-the-persons-record.md)
+says why: a list of every time somebody's calendar asked for their microphone
+and what they said is a description of their working day, not a record of what
+was executed on the machine. An organisation that manages this machine exports
+the agent's record (ADR 0004); it does not export this.
+
+A machine with two people on it has **two of these files**, one in each person's
+own state, and neither can read the other's — held by the filesystem rather than
+by a field in a line.
+
 ## Where it is
 
-`/var/lib/alo/portal-answers.jsonl`, beside the agent's record, in the folder
-the image makes for what happened on this machine.
+`$XDG_STATE_HOME/alo/portal-answers.jsonl` when that variable is set and
+absolute; otherwise `$HOME/.local/state/alo/portal-answers.jsonl`, which is the
+base directory specification's own default. A relative variable is ignored, as
+the specification says. A login with neither variable has **nowhere** for this
+file, and the backend refuses rather than guessing at one.
+
+Before ADR 0052 it was `/var/lib/alo/portal-answers.jsonl`, beside the agent's
+record. **A machine upgraded from a pre-release image still has that file and
+nothing reads it**: it may hold two people's answers, there is no honest way to
+split one, and deleting somebody's record is a thing a person does rather than a
+thing an upgrade does.
 
 It is held to the rules `alo-remembering` holds the grants and pairings files
 to. Before a byte is read or added:
 
 - the path is **not a symbolic link**, and is never followed;
 - it is **a regular file**, never a pipe, a device or a folder;
-- it belongs to **root or to the login reading it**, and **nobody else can
-  write it** (group- or world-writable is refused);
-- a file the backend makes is made **`0600`**, and **the folder is never
-  made**.
+- it belongs to **the login reading it**, and **nobody else can write it**
+  (group- or world-writable is refused). A file owned by root in a person's own
+  state directory is refused too: there, root's ownership is evidence that
+  something else wrote this person's record;
+- a file the backend makes is made **`0600`**; the **`alo` folder** is made
+  `0700` inside a state directory that already exists, and nothing makes a
+  directory under a path that is not there.
 
 A file refused on any of these is neither read nor added to, and the backend
 answers no request while its record is refused (see *An answer that is not kept

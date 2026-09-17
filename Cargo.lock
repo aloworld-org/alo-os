@@ -1088,6 +1088,7 @@ dependencies = [
  "alo-applications",
  "alo-by-hand",
  "alo-capability",
+ "alo-capturing",
  "alo-changing-network",
  "alo-converting",
  "alo-egress",

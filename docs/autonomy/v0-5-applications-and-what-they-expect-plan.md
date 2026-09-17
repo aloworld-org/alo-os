@@ -515,7 +515,19 @@ the agent's record.
 
 ### 11. Whose record of applications' answers it is, decided before anything shows it
 
-**Status:** ready. **Depends on:** 8, 9, 10.
+**Status:** **Done, 2026-09-17.** Decided first, in
+[ADR 0052](../decisions/0052-what-a-persons-applications-asked-for-is-the-persons-record.md):
+the record is the **person's**, one file per login in their own state
+(`$XDG_STATE_HOME/alo/portal-answers.jsonl`), and not the machine-wide file
+beside the agent's record. The path, the ownership and the read-back are that
+decision in code — `alo_portals::ThePlace`, a `believed_file` that now refuses
+root's own file in a person's state, and
+`tests/one_persons_answers_are_not_another_persons.rs`, which keeps an answer as
+one login and finds the other login's machine reading nothing of it, then gives
+the file to another login and finds it refused before a byte is read. The
+contract says where the file is and who reads it. **This was the plan's last
+task; the report says what was added to this plan after it was written.**
+**Depends on:** 8, 9, 10.
 
 Tasks 8–10 made the answers file durable, shortened under the machine's rule,
 and readable in a person's language. None of them decided whose it is. The

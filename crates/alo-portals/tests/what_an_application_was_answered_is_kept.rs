@@ -39,7 +39,20 @@ fn the_contract_describes_the_file() {
     )
     .expect("docs/contracts/portal-answers-file.md is there");
     #[cfg(unix)]
-    assert!(contract.contains(alo_portals::THE_ANSWERS), "the path");
+    {
+        // Where the file is now, and the two variables that decide it — the
+        // path is per login since ADR 0052, so the contract names the rule
+        // rather than one machine's answer.
+        assert!(contract.contains(alo_portals::THE_ANSWERS_FILE), "the file");
+        assert!(contract.contains(alo_portals::THE_FOLDER), "the folder");
+        assert!(contract.contains(alo_portals::STATE_HOME), "the state home");
+        assert!(contract.contains(alo_portals::HOME), "the home");
+        assert!(
+            contract.contains(alo_portals::WHERE_IT_USED_TO_BE),
+            "where the file used to be, which a machine upgraded from a pre-release image still \
+             has"
+        );
+    }
     assert!(contract.contains(r#"{"format":1}"#), "the format line");
     for answer in [
         "secret-handed-over",

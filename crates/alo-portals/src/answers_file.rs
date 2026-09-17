@@ -1,10 +1,19 @@
 //! What applications were answered, kept on the disk after the backend stops.
 //!
-//! [`AnswersFile`] is the [`Recording`] a machine runs. One file,
-//! [`THE_ANSWERS`], beside the agent's record: its first line says which format
-//! it is in, and every line after it is one answer ([`KeptAnswer`]), in the
-//! order given. `docs/contracts/portal-answers-file.md` is the shape for people
-//! reading it without this crate.
+//! [`AnswersFile`] is the [`Recording`] a machine runs. **One file per login**,
+//! in that person's own state directory (`crate::where_the_answers_are`): its
+//! first line says which format it is in, and every line after it is one answer
+//! ([`KeptAnswer`]), in the order given.
+//! `docs/contracts/portal-answers-file.md` is the shape for people reading it
+//! without this crate.
+//!
+//! # Whose it is
+//!
+//! [ADR 0052](../../../docs/decisions/0052-what-a-persons-applications-asked-for-is-the-persons-record.md):
+//! the record of what somebody's applications asked for and were told is
+//! **theirs**. It is not the agent's record, which is the machine's and which an
+//! organisation may export (ADR 0004); a list of every time a person's calendar
+//! asked for their microphone is a description of their working day.
 //!
 //! # Appended to, never rewritten
 //!
@@ -32,8 +41,9 @@
 //!
 //! # Who may have written it
 //!
-//! `crate::believed_file`: not a link, a regular file, root's or this login's,
-//! and nobody else can write it. The folder is never made.
+//! `crate::believed_file`: not a link, a regular file, **this login's**, and
+//! nobody else can write it. The folder is made once, by
+//! `crate::where_the_answers_are`, inside a directory that is already there.
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
@@ -50,9 +60,15 @@ use crate::kept_answer::KeptAnswer;
 use crate::not_recorded::NotRecorded;
 use crate::recording::Recording;
 
-/// Where a machine keeps what applications were answered: in the folder the
-/// image makes for what happened on this machine, beside the agent's record.
-pub const THE_ANSWERS: &str = "/var/lib/alo/portal-answers.jsonl";
+/// Where a machine kept what applications were answered before ADR 0052 moved
+/// it into each person's own state directory.
+///
+/// Kept as a name so that a machine upgraded from a pre-release image can say
+/// what the file it is no longer reading was. **Nothing opens it**: it may hold
+/// two people's answers, there is no honest way to split one, and deleting
+/// somebody's record is a thing a person does rather than a thing an upgrade
+/// does. `crate::where_the_answers_are` is where the file is now.
+pub const WHERE_IT_USED_TO_BE: &str = "/var/lib/alo/portal-answers.jsonl";
 
 /// The longest first line read looking for the format. A format line is a
 /// dozen bytes; anything this long is not one.
