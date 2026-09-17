@@ -21,3 +21,9 @@ thiserror = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# The machine's whole vocabulary, so the walk is read in the sentences a person
+# meets rather than in this crate's own copies of them.
+alo-saying = { path = "../alo-saying" }
+alo-strings = { path = "../alo-strings" }

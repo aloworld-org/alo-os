@@ -128,7 +128,7 @@ has; or run a model larger than the small one (above). Before writing the next t
 
 ### 6. Every sentence, and the walk from a folder to a better model
 
-**Status:** ready. **Depends on:** 4, 5.
+**Status:** **Done, 2026-09-17.** **Depends on:** 4, 5.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — grant a folder, see what will be learned from, fine-tune
