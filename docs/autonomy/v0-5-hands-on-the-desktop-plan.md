@@ -91,7 +91,18 @@ overlapping or leaving a gap.
 
 ### 4. Drag and drop, and context menus
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing. Two new crates rather
+than one, because a drop and a menu share no type: `crates/alo-handing` (a drag,
+what letting go would do, where it is delivered, and a drop on the agent's
+surface) and `crates/alo-menus` (the closed list of actions a thing offers).
+Evidence in `crates/alo-handing/tests/a_drop_carries_what_a_paste_carries.rs`
+and `tests/a_drop_on_the_agent_is_not_a_grant.rs`, and in
+`crates/alo-menus/tests/a_menu_is_a_closed_list_of_actions.rs` and
+`tests/no_entry_reaches_the_agent_unless_it_says_so.rs`; report
+`docs/autonomy/updates/drag-and-drop-and-context-menus.md`. A payload is
+`alo-clipboard`'s throughout; `alo-capability` is a dev-dependency of
+`alo-handing` and of nothing that ships, which is what makes *a drop is not a
+grant* structural rather than remembered.
 
 - **Acceptance:** a drop carries what copy and paste carries — text, images, files
   — through `alo-clipboard`'s payload types rather than a second set, and the

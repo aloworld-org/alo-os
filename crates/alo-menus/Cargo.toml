@@ -1,0 +1,27 @@
+[package]
+name = "alo-menus"
+version = "0.0.1"
+description = "The context menu: a closed list of actions the thing under the pointer offers, each of which a person can reach another way."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Where a menu entry's other road is, when that road is a keyboard shortcut.
+# This crate reads `alo-shortcuts`' actions and never adds one: a menu is a
+# second way to reach something that already exists, and an entry that was the
+# only way to reach anything would be the thing ADR 0009 forbids.
+alo-shortcuts = { path = "../alo-shortcuts" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. A crate that says something is collected by
+# `alo-saying` and never reaches for it, so this is dev-only: the integration
+# test asks the question this crate's own list cannot, which is whether what it
+# says is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

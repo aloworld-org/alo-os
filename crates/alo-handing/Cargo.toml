@@ -1,0 +1,36 @@
+[package]
+name = "alo-handing"
+version = "0.0.1"
+description = "Dragging something from one window and letting it go in another: the same payloads copy and paste carry, and a drop on the agent that grants nothing."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# A drop carries what a paste carries. The forms, the offer, the way back to
+# the window that has the data and the two ways it can be taken are all
+# `alo-clipboard`'s, because a second set of payload types would be a second
+# set of refusals to keep honest and a fourth kind of thing arriving as a
+# fourth path nobody wrote.
+alo-clipboard = { path = "../alo-clipboard" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's grants — **dev-only, and that it is dev-only is the
+# guarantee.** A drop is not a grant (ADR 0001 §3: a grant is made by
+# `alo-picking` and nothing else), so this crate has nowhere to make one: it
+# holds no `Grants`, builds no `Reach`, and cannot, because the types are not
+# linked into it. `tests/a_drop_on_the_agent_is_not_a_grant.rs` reads this
+# manifest and says so, and then does the drop in front of a real grant list.
+alo-capability = { path = "../alo-capability" }
+
+# The machine's one vocabulary. A crate that says something is collected by
+# `alo-saying` and never reaches for it, so this is dev-only too: the
+# integration test asks the question this crate's own list cannot, which is
+# whether what it says is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

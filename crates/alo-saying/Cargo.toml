@@ -46,6 +46,7 @@ alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-granted = { path = "../alo-granted" }
 alo-greeting = { path = "../alo-greeting" }
+alo-handing = { path = "../alo-handing" }
 alo-in-use = { path = "../alo-in-use" }
 alo-indicator = { path = "../alo-indicator" }
 alo-installer = { path = "../alo-installer" }
@@ -54,6 +55,7 @@ alo-keeping = { path = "../alo-keeping" }
 alo-keeping-up = { path = "../alo-keeping-up" }
 alo-locking = { path = "../alo-locking" }
 alo-measuring = { path = "../alo-measuring" }
+alo-menus = { path = "../alo-menus" }
 alo-models = { path = "../alo-models" }
 alo-nearby = { path = "../alo-nearby" }
 alo-opening = { path = "../alo-opening" }

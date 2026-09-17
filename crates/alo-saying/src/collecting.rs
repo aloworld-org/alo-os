@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 53] = [
+pub const EVERY_LIST: [&str; 56] = [
     "alo-adapting",
     "alo-access",
     "alo-accounts",
@@ -104,6 +104,7 @@ pub const EVERY_LIST: [&str; 53] = [
     "alo-finding",
     "alo-granted",
     "alo-greeting",
+    "alo-handing",
     "alo-in-use",
     "alo-indicator",
     "alo-installer",
@@ -112,6 +113,7 @@ pub const EVERY_LIST: [&str; 53] = [
     "alo-keeping-up",
     "alo-locking",
     "alo-measuring",
+    "alo-menus",
     "alo-models",
     "alo-nearby",
     "alo-opening",
@@ -252,6 +254,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-finding", alo_finding::declare_into)?;
     declare(&mut vocabulary, "alo-granted", alo_granted::declare_into)?;
     declare(&mut vocabulary, "alo-greeting", alo_greeting::declare_into)?;
+    declare(&mut vocabulary, "alo-handing", alo_handing::declare_into)?;
     declare(&mut vocabulary, "alo-in-use", alo_in_use::declare_into)?;
     declare(
         &mut vocabulary,
@@ -280,6 +283,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-measuring",
         alo_measuring::declare_into,
     )?;
+    declare(&mut vocabulary, "alo-menus", alo_menus::declare_into)?;
     declare(&mut vocabulary, "alo-models", alo_models::declare_into)?;
     declare(
         &mut vocabulary,
@@ -347,7 +351,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 53] = [
+    const ONE_STRING_EACH: [(&str, &str); 56] = [
         ("alo-adapting", "adapting.deleting-this-adapter"),
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
@@ -378,6 +382,7 @@ mod tests {
         ("alo-finding", "finding.not-absolute"),
         ("alo-granted", "granted.nothing-granted"),
         ("alo-greeting", "greeting.make-an-account"),
+        ("alo-handing", "handing.offered-for-this-question"),
         ("alo-in-use", "in-use.nothing-is-in-use"),
         ("alo-indicator", "indicator.nothing-is-leaving"),
         ("alo-installer", "installer.not-genuine"),
@@ -386,6 +391,7 @@ mod tests {
         ("alo-keeping-up", "keeping-up.ready"),
         ("alo-locking", "locking.locked"),
         ("alo-measuring", "measuring.not-on-this-host"),
+        ("alo-menus", "menus.action.ask-the-agent-about-this"),
         ("alo-models", "models.source.this-machine"),
         ("alo-nearby", "nearby.may.ask-its-models"),
         ("alo-opening", "opening.cannot.damaged"),
@@ -476,6 +482,7 @@ mod tests {
             alo_finding::finding_words().unwrap().how_many(),
             alo_granted::granted_words().unwrap().how_many(),
             alo_greeting::greeting_words().unwrap().how_many(),
+            alo_handing::handing_words().unwrap().how_many(),
             alo_in_use::in_use_words().unwrap().how_many(),
             alo_indicator::indicator_words().unwrap().how_many(),
             alo_installer::installer_words().unwrap().how_many(),
@@ -484,6 +491,7 @@ mod tests {
             alo_keeping_up::keeping_up_words().unwrap().how_many(),
             alo_locking::locking_words().unwrap().how_many(),
             alo_measuring::measuring_words().unwrap().how_many(),
+            alo_menus::menu_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
             alo_nearby::nearby_words().unwrap().how_many(),
             alo_opening::opening_words().unwrap().how_many(),

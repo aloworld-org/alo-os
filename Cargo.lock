@@ -592,6 +592,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-handing"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-clipboard",
+ "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-hosted"
 version = "0.0.1"
 dependencies = [
@@ -767,6 +778,16 @@ name = "alo-media-server"
 version = "0.0.1"
 dependencies = [
  "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-menus"
+version = "0.0.1"
+dependencies = [
+ "alo-saying",
+ "alo-shortcuts",
+ "alo-strings",
  "thiserror 2.0.20",
 ]
 
@@ -995,6 +1016,7 @@ dependencies = [
  "alo-finding",
  "alo-granted",
  "alo-greeting",
+ "alo-handing",
  "alo-in-use",
  "alo-indicator",
  "alo-installer",
@@ -1003,6 +1025,7 @@ dependencies = [
  "alo-keeping-up",
  "alo-locking",
  "alo-measuring",
+ "alo-menus",
  "alo-models",
  "alo-nearby",
  "alo-opening",
