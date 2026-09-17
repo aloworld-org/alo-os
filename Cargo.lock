@@ -735,6 +735,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-keyboards"
+version = "0.0.1"
+dependencies = [
+ "alo-kept",
+ "alo-shortcuts",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-keyring-fixture"
 version = "0.0.1"
 dependencies = [
@@ -1027,6 +1039,7 @@ dependencies = [
  "alo-installing",
  "alo-keeping",
  "alo-keeping-up",
+ "alo-keyboards",
  "alo-locking",
  "alo-measuring",
  "alo-menus",

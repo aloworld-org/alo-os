@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 56] = [
+pub const EVERY_LIST: [&str; 57] = [
     "alo-adapting",
     "alo-access",
     "alo-accounts",
@@ -111,6 +111,7 @@ pub const EVERY_LIST: [&str; 56] = [
     "alo-installing",
     "alo-keeping",
     "alo-keeping-up",
+    "alo-keyboards",
     "alo-locking",
     "alo-measuring",
     "alo-menus",
@@ -277,6 +278,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-keeping-up",
         alo_keeping_up::declare_into,
     )?;
+    declare(
+        &mut vocabulary,
+        "alo-keyboards",
+        alo_keyboards::words::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-locking", alo_locking::declare_into)?;
     declare(
         &mut vocabulary,
@@ -351,7 +357,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 56] = [
+    const ONE_STRING_EACH: [(&str, &str); 57] = [
         ("alo-adapting", "adapting.deleting-this-adapter"),
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
@@ -389,6 +395,7 @@ mod tests {
         ("alo-installing", "installing.not-genuine"),
         ("alo-keeping", "keeping.forever"),
         ("alo-keeping-up", "keeping-up.ready"),
+        ("alo-keyboards", "keyboards.compose.none"),
         ("alo-locking", "locking.locked"),
         ("alo-measuring", "measuring.not-on-this-host"),
         ("alo-menus", "menus.action.ask-the-agent-about-this"),
@@ -489,6 +496,7 @@ mod tests {
             alo_installing::installing_words().unwrap().how_many(),
             alo_keeping::keeping_words().unwrap().how_many(),
             alo_keeping_up::keeping_up_words().unwrap().how_many(),
+            alo_keyboards::keyboard_words().unwrap().how_many(),
             alo_locking::locking_words().unwrap().how_many(),
             alo_measuring::measuring_words().unwrap().how_many(),
             alo_menus::menu_words().unwrap().how_many(),

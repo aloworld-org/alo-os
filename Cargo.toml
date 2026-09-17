@@ -54,6 +54,7 @@ members = [
   "crates/alo-installer",
   "crates/alo-installing",
   "crates/alo-instructing",
+  "crates/alo-keyboards",
   "crates/alo-keyring-fixture",
   "crates/alo-kept",
   "crates/alo-keeping",

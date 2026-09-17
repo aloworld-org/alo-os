@@ -128,7 +128,19 @@ grant* structural rather than remembered.
 
 ### 6. Keyboards: layouts, dead keys, compose, input methods
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-18.** **Depends on:** nothing.
+`crates/alo-keyboards`; evidence in
+`crates/alo-keyboards/tests/a_keyboard_for_every_language.rs`,
+`tests/dead_keys_and_compose_through_the_rented_tables.rs`,
+`tests/switching_is_one_shortcut.rs`,
+`tests/keyboards_are_kept_in_the_persons_folder.rs` and
+`tests/an_input_method_is_added_without_knowing_its_name.rs`; report
+`docs/autonomy/updates/keyboards-layouts-dead-keys-compose-input-methods.md`.
+Switching keyboards is `Alt+Space`, not the `Super+Space` most systems use,
+because `alo-shortcuts` already binds that to the launcher and this plan may not
+edit that crate; when it gains a *switch keyboard* action the chord becomes its
+value, and `alo_keyboards::switching` says so. Dutch is offered `us(intl)` and
+not `nl` — the report argues it.
 
 *"Müller" and "Liège" are test cases in a European product, not edge cases.*
 

@@ -1,0 +1,26 @@
+[package]
+name = "alo-keyboards"
+version = "0.0.1"
+description = "Which keyboard a person types on, which key composes, and how a letter that is not on the keyboard is typed."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Switching keyboards is one shortcut, and what a chord is and which chords the
+# release already binds are that crate's values: this crate reads them and binds
+# nothing of its own.
+alo-shortcuts = { path = "../alo-shortcuts" }
+alo-strings = { path = "../alo-strings" }
+# ADR 0038: a person's keyboards are kept in their own folder, by this crate,
+# under the one rule every such file is kept by.
+alo-kept = { path = "../alo-kept" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+toml = { workspace = true }
+
+[lints]
+workspace = true
