@@ -1,6 +1,6 @@
 //! **No identifier, constant or branch outside this crate names alo's service.**
 //!
-//! [ADR 0014](../../../docs/decisions/0014-our-own-hosted-model-is-a-provider-like-any-other.md):
+//! [ADR 0014](../../../docs/decisions/0014-alos-own-model-is-a-provider-like-any-other.md):
 //! *no default, no pre-selection and no special case anywhere in the code.* A
 //! rule like that is kept by a test or it is kept by whoever remembers it, and
 //! the thing about commercial pressure is that it arrives years later, with

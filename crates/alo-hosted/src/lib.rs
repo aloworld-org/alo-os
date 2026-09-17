@@ -1,6 +1,6 @@
 //! **alo's own service, as one more provider entry.**
 //!
-//! [ADR 0014](../../../docs/decisions/0014-our-own-hosted-model-is-a-provider-like-any-other.md):
+//! [ADR 0014](../../../docs/decisions/0014-alos-own-model-is-a-provider-like-any-other.md):
 //! alo hosts models in the EU and sells access by subscription, and this
 //! operating system treats that service as **exactly one more provider** — same
 //! indicator, same provenance line, same policy, same refusals, same behaviour

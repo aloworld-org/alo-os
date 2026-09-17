@@ -1,6 +1,6 @@
 //! **Every rule that applies to a provider applies to ours, in the same words.**
 //!
-//! [ADR 0014](../../../docs/decisions/0014-our-own-hosted-model-is-a-provider-like-any-other.md)
+//! [ADR 0014](../../../docs/decisions/0014-alos-own-model-is-a-provider-like-any-other.md)
 //! writes down the pressures before they arrive: make ours the default, make it
 //! look safer, let the indicator treat it gently, let a failing local model
 //! become a paid call. Each is refused here by comparing our entry against a
