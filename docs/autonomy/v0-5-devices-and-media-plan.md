@@ -133,7 +133,16 @@ which the image should pin deliberately. Written up in
 
 ### 5. The battery, and power profiles
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** `crates/alo-power`: the battery is read straight
+from the kernel's own files, a person is told once at low and once at nearly gone,
+and **how long is left is not said at all** unless four rules hold — the rules are
+in one file and each is a test that names it. Power profiles are the rented
+daemon's own list, and a profile this machine's hardware does not do is absent
+rather than greyed out; on a machine, a profile was chosen, read back and put
+back. The battery half was taken through the kernel's own **test** battery, driven
+down past both marks. Written up in
+[A battery, and what a machine will not guess](updates/a-battery-and-what-a-machine-will-not-guess.md).
+**Depends on:** nothing.
 
 - **Acceptance:** `alo-power` reads the battery the kernel reports — charge, whether
   it is charging, and time remaining only when the reading is steady enough to mean

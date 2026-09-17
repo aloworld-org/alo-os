@@ -1,0 +1,23 @@
+[package]
+name = "alo-power"
+version = "0.0.1"
+description = "The battery, power profiles, and what a person is told about both."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What is running and what it is using, for naming what is draining the battery.
+alo-measuring = { path = "../alo-measuring" }
+# The sentences a person reads about a battery.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true

@@ -269,6 +269,7 @@ dependencies = [
  "alo-adapters",
  "alo-applications",
  "alo-capability",
+ "alo-capturing",
  "alo-changing-network",
  "alo-converting",
  "alo-files",
@@ -822,6 +823,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-power"
+version = "0.0.1"
+dependencies = [
+ "alo-measuring",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+ "zbus",
+]
+
+[[package]]
 name = "alo-printing"
 version = "0.0.1"
 dependencies = [
@@ -957,6 +970,7 @@ dependencies = [
  "alo-overlay",
  "alo-picking",
  "alo-portals",
+ "alo-power",
  "alo-printing",
  "alo-protocol",
  "alo-proxy",
