@@ -32,6 +32,7 @@ members = [
   "crates/alo-egress",
   "crates/alo-entering",
   "crates/alo-files",
+  "crates/alo-formats",
   "crates/alo-finding",
   "crates/alo-granted",
   "crates/alo-greeting",

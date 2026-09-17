@@ -131,7 +131,7 @@ thing a cloud assistant does badly for smaller languages.*
 
 ### 6. Regional formats and timezones per language
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing.
 
 - **Acceptance:** `alo-formats` gives each of the 24 languages its default regional
   formats — dates, times, numbers, currency, first day of the week, paper size — **from
