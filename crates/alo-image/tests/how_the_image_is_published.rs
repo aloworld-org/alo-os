@@ -195,12 +195,24 @@ fn the_signed_digest_is_pinned_and_the_image_agrees_with_it() {
     assert_eq!(pin.registry(), THE_REGISTRY);
     assert_eq!(pin.registry(), "ghcr.io/aloworld-org/alo-os");
     assert_eq!(pin.digest(), THE_SIGNED_DIGEST);
-    assert_eq!(Some(pin.version()), image.version().said());
+    // The recipe names the release being built: the declared candidate while
+    // one is in flight, and the pinned release otherwise. Between releases
+    // those are the same sentence; during one they are not, and holding the
+    // recipe to the pinned release would make it impossible to build the next
+    // one from a published commit — which is ADR 0036's first step, and the
+    // whole reason `next` exists.
     assert_eq!(
-        pin.next(),
-        None,
-        "a candidate is declared with nothing to build"
+        image.version().said(),
+        Some(pin.next().unwrap_or(pin.version())),
+        "the recipe builds neither what is pinned nor what is declared next"
     );
+    if let Some(next) = pin.next() {
+        assert_ne!(
+            next,
+            pin.version(),
+            "a candidate is declared that is the release already pinned"
+        );
+    }
     assert_eq!(
         Path::new(THE_IMAGE).join(pin.key()),
         Path::new(THE_PUBLIC_KEY),

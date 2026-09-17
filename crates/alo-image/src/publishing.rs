@@ -229,8 +229,37 @@ mod tests {
     const THE_DIGEST: &str =
         "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c";
 
-    /// The recipe's release line.
-    const THE_RELEASE_LABEL: &str = "LABEL org.opencontainers.image.version=\"0.0.1\"";
+    /// The recipe's release line, as the repository ships it.
+    const THE_RELEASE_LABEL: &str = "LABEL org.opencontainers.image.version=\"0.0.2\"";
+
+    /// The release line the pinned digest was built from.
+    const THE_PINNED_RELEASE_LABEL: &str = "LABEL org.opencontainers.image.version=\"0.0.1\"";
+
+    /// The candidate the shipped pin declares.
+    const THE_DECLARED_NEXT: &str = "next = \"0.0.2\"";
+
+    /// A copy of the image with **no release in flight**.
+    ///
+    /// Every scenario below is about the recipe and the pin disagreeing, and
+    /// since 2026-09-17 the shipped files disagree *legitimately*: 0.0.2 is
+    /// declared and being prepared, so the recipe names it while the pin still
+    /// holds the digest of 0.0.1. A fixture built straight from that would be
+    /// arranging two disagreements and asserting about one, and would go on
+    /// passing if the thing it meant to catch stopped being caught.
+    ///
+    /// So each starts from the state this repository is in *between* releases:
+    /// the recipe naming exactly what the pin holds, and nothing declared.
+    fn a_copy_between_releases(what: &str) -> std::path::PathBuf {
+        let root = a_copy_of_the_image(what);
+        edited(&root, THE_PIN, THE_DECLARED_NEXT, "");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            THE_RELEASE_LABEL,
+            THE_PINNED_RELEASE_LABEL,
+        );
+        root
+    }
 
     /// Everything wrong with the image at this root.
     fn wrong_at(root: &std::path::Path) -> Vec<Wrong> {
@@ -255,11 +284,11 @@ mod tests {
     /// pinned digest disagree, and a test fails.
     #[test]
     fn a_recipe_naming_a_release_the_pin_does_not_is_caught() {
-        let root = a_copy_of_the_image("recipe-moved-on");
+        let root = a_copy_between_releases("recipe-moved-on");
         edited(
             &root,
             THE_CONTAINERFILE,
-            THE_RELEASE_LABEL,
+            THE_PINNED_RELEASE_LABEL,
             "LABEL org.opencontainers.image.version=\"0.0.2\"",
         );
 
@@ -279,7 +308,7 @@ mod tests {
     /// a digest written against a version nothing built.
     #[test]
     fn a_pin_naming_a_release_the_recipe_does_not_is_caught() {
-        let root = a_copy_of_the_image("pin-moved-on");
+        let root = a_copy_between_releases("pin-moved-on");
         edited(&root, THE_PIN, "version = \"0.0.1\"", "version = \"0.0.3\"");
 
         let wrong = wrong_at(&root);
@@ -297,8 +326,8 @@ mod tests {
     /// **A recipe with no release at all disagrees with every pin.**
     #[test]
     fn a_recipe_naming_no_release_disagrees_with_the_pin() {
-        let root = a_copy_of_the_image("recipe-no-release");
-        edited(&root, THE_CONTAINERFILE, THE_RELEASE_LABEL, "");
+        let root = a_copy_between_releases("recipe-no-release");
+        edited(&root, THE_CONTAINERFILE, THE_PINNED_RELEASE_LABEL, "");
 
         let wrong = wrong_at(&root);
 
@@ -315,11 +344,11 @@ mod tests {
     /// only while the recipe names exactly it.
     #[test]
     fn a_declared_next_release_the_recipe_names_is_a_candidate() {
-        let root = a_copy_of_the_image("declared-next");
+        let root = a_copy_between_releases("declared-next");
         edited(
             &root,
             THE_CONTAINERFILE,
-            THE_RELEASE_LABEL,
+            THE_PINNED_RELEASE_LABEL,
             "LABEL org.opencontainers.image.version=\"0.1.0\"",
         );
         edited(
@@ -346,7 +375,7 @@ mod tests {
     /// about a build nobody is making.
     #[test]
     fn a_declared_next_release_the_recipe_does_not_name_is_caught() {
-        let root = a_copy_of_the_image("next-not-built");
+        let root = a_copy_between_releases("next-not-built");
         edited(
             &root,
             THE_PIN,
@@ -377,11 +406,11 @@ mod tests {
             ("0.0.9", "0.0.10", true),
             ("0.9.9", "1.0.0", true),
         ] {
-            let root = a_copy_of_the_image(&format!("next-{pinned}-{next}"));
+            let root = a_copy_between_releases(&format!("next-{pinned}-{next}"));
             edited(
                 &root,
                 THE_CONTAINERFILE,
-                THE_RELEASE_LABEL,
+                THE_PINNED_RELEASE_LABEL,
                 &format!("LABEL org.opencontainers.image.version=\"{next}\""),
             );
             edited(

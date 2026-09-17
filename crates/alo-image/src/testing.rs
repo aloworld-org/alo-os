@@ -100,6 +100,25 @@ fn copied(from: &Path, to: &Path) {
     }
 }
 
+/// The recipe's release line, read from the recipe rather than repeated.
+///
+/// A release number changes every time one is published, and a test that spells
+/// it out has to be edited by whoever publishes — a chore at the exact moment
+/// care is wanted, and a way for a check to end up asserting against a release
+/// nobody ships any more.
+pub(crate) fn the_release_line() -> String {
+    let recipe =
+        std::fs::read_to_string(Path::new(crate::THE_IMAGE).join(THE_CONTAINERFILE)).unwrap();
+    let line = recipe
+        .lines()
+        .find(|line| line.starts_with("LABEL org.opencontainers.image.version="));
+    assert!(
+        line.is_some(),
+        "the recipe names no release, which is what the caller is about"
+    );
+    line.unwrap_or_default().to_owned()
+}
+
 /// Change one thing in one of this image's files.
 ///
 /// The `from` has to be there: a fixture whose edit silently did nothing is a

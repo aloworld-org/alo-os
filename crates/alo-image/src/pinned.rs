@@ -204,7 +204,15 @@ mod tests {
     }
 
     /// **The pin this repository ships reads**, and says what the owner
-    /// signed on 2026-09-15.
+    /// signed on 2026-09-15 — and, since 2026-09-17, which release is being
+    /// prepared.
+    ///
+    /// The two are deliberately separate facts. `version` and `digest` are what
+    /// an installer pulls **today**, and they do not move because a newer
+    /// release is being worked on; `next` is the candidate the recipe now
+    /// names, and it becomes the pin only when a digest signed against the key
+    /// below is written here. This reading is therefore what a release in
+    /// flight looks like: still serving 0.0.1, preparing 0.0.2.
     #[test]
     fn the_shipped_pin_names_the_release_the_owner_signed() {
         let pin = ThePin::read(&the_pin()).unwrap();
@@ -217,7 +225,7 @@ mod tests {
         );
         assert_eq!(pin.revision(), "2501af53d459d7d75e08c2ecaf61d3e8430a2d50");
         assert_eq!(pin.key(), "signing/alo-os.pub");
-        assert_eq!(pin.next(), None);
+        assert_eq!(pin.next(), Some("0.0.2"));
     }
 
     /// **A digest that is not a whole SHA-256 is not a pin**: a short one, an
@@ -252,11 +260,11 @@ mod tests {
             "{refused}"
         );
 
-        let refused = ThePin::read(&the_pin_with(
-            "version = \"0.0.1\"",
-            "version = \"0.0.1\"\nnext = \"dev\"",
-        ))
-        .unwrap_err();
+        // The declared candidate is changed rather than a second one added:
+        // the shipped pin already declares one, and two `next` keys would be
+        // refused by the parser before this rule was ever reached.
+        let refused =
+            ThePin::read(&the_pin_with("next = \"0.0.2\"", "next = \"dev\"")).unwrap_err();
         assert!(
             matches!(refused, NotPinned::NotARelease { .. }),
             "{refused}"

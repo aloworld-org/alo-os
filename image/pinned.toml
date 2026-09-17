@@ -25,6 +25,13 @@
 # still pulls what is pinned.
 
 registry = "ghcr.io/aloworld-org/alo-os"
+
+# Declared 2026-09-17, in the change that moved the recipe's label to it. 0.0.2
+# exists to carry `usr/lib/tmpfiles.d/alo.conf`, the door on the way to the
+# boundary, which the installer plan's tasks 15 and 11 cannot be finished
+# without. Until its digest is pinned below, an installer still pulls 0.0.1.
+next = "0.0.2"
+
 version = "0.0.1"
 digest = "sha256:d3f05b60975edcff51a44c1f21e764a32b286677e306ba24631bad6a00b6a13c"
 revision = "2501af53d459d7d75e08c2ecaf61d3e8430a2d50"

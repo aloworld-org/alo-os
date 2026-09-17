@@ -1131,7 +1131,7 @@ mod tests {
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
         THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at, the_store_file,
+        a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -2646,7 +2646,10 @@ mod tests {
     /// published digest could be pinned against nothing.
     #[test]
     fn an_image_that_does_not_name_one_release_is_caught() {
-        let label = "LABEL org.opencontainers.image.version=\"0.0.1\"";
+        // Read the release out of the recipe rather than spelling it here, so
+        // that publishing a release does not mean editing this test.
+        let label = the_release_line();
+        let label = label.as_str();
         for (what, instead) in [
             ("no-release", String::new()),
             (
@@ -2655,7 +2658,10 @@ mod tests {
             ),
             (
                 "two-releases",
-                format!("{label}\nLABEL org.opencontainers.image.version=\"0.0.2\""),
+                // A second release line, deliberately not a number this
+                // repository will ever publish, so that "two releases" cannot
+                // quietly become "the same release written twice".
+                format!("{label}\nLABEL org.opencontainers.image.version=\"9.9.9\""),
             ),
         ] {
             let root = a_copy_of_the_image(what);
