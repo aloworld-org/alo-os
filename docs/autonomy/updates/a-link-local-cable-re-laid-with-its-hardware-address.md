@@ -131,6 +131,26 @@ runs (see the SIGBUS/IO-error symptoms written up for task 31).
   address is still identical for the same name and prefix. That is not measured
   here, and the reading does not depend on it.
 
+## The second pass: a program busy being written
+
+The first handover was refused twice by the workspace suite, not on this work but
+on `alo-updating`'s `with_no_proxy_the_program_is_told_there_is_none`, which
+could not start its program: `Text file busy (os error 26)`. That test and
+`the_program_the_base_starts_really_receives_the_proxy` each write a small shell
+program and start it, on two threads of one test process. While one thread still
+holds its program open for writing, a child the other thread forks inherits that
+descriptor until the child starts its own program, and in that moment the kernel
+refuses to start the first program (`ETXTBSY`). It shows only when the machine is
+loaded, which the whole workspace suite is.
+
+The fix is in the test file alone: both tests take one lock
+(`STARTING_A_PROGRAM`) for as long as they write and start a program, so no fork
+can copy a program that is still being written. The lock guards no data, so a
+poisoned lock is taken anyway rather than failing the next test. No product code
+changed, and no test was removed or weakened. `cargo test -p alo-updating` and
+`cargo test -p alo-agentd` pass, and the proxy test binary passed eight runs in a
+row.
+
 ## Proposed updates for the integration owner
 
 - **CHANGELOG.md:** the change description above.

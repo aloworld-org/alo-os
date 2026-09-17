@@ -19,6 +19,8 @@
 )]
 
 use std::path::PathBuf;
+#[cfg(unix)]
+use std::sync::{Mutex, MutexGuard};
 
 use alo_proxy::{
     Carried, ConfigurationAddress, NotEvaluated, ProxyAddress, Reaching, Road, Scheme, SpokenTo,
@@ -40,6 +42,25 @@ impl TheEvaluator for NeverAsked {
     ) -> Result<String, NotEvaluated> {
         unreachable!("nothing should have been asked about {address}")
     }
+}
+
+/// Held while a program is written and started, by every test here that does.
+///
+/// Tests in one binary run on threads of one process. A program still open for
+/// writing on one thread is copied into every child another thread forks, and
+/// stays open there until that child starts its own program; starting the first
+/// program in that moment is refused with `ETXTBSY` ("Text file busy"). Only one
+/// test at a time writing and starting a program closes that moment.
+#[cfg(unix)]
+static STARTING_A_PROGRAM: Mutex<()> = Mutex::new(());
+
+/// The right to write and start a program, even after another test panicked
+/// holding it: the lock guards no data, only the moment.
+#[cfg(unix)]
+fn alone_starting_a_program() -> MutexGuard<'static, ()> {
+    STARTING_A_PROGRAM
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// A program that prints the environment it was given and ignores its
@@ -128,6 +149,7 @@ fn a_base_nobody_handed_a_road_to_is_told_there_is_no_proxy() {
 #[cfg(unix)]
 #[test]
 fn the_program_the_base_starts_really_receives_the_proxy() {
+    let _alone = alone_starting_a_program();
     let program = a_program_that_prints_its_environment("alo-updating-proxy-road");
     let base = TheBase::at(&program).taking(decided(&TheProxy::one(the_proxy())));
 
@@ -150,6 +172,7 @@ fn the_program_the_base_starts_really_receives_the_proxy() {
 #[cfg(unix)]
 #[test]
 fn with_no_proxy_the_program_is_told_there_is_none() {
+    let _alone = alone_starting_a_program();
     let program = a_program_that_prints_its_environment("alo-updating-no-proxy");
     let base = TheBase::at(&program).taking(decided(&TheProxy::None));
 
