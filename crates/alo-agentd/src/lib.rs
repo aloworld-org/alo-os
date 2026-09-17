@@ -196,6 +196,8 @@ mod a_paired_machine_on_two_networks_with_one_address;
 #[cfg(all(test, target_os = "linux"))]
 mod a_paired_machine_over_link_local;
 #[cfg(all(test, target_os = "linux"))]
+mod a_port_another_program_let_go_of;
+#[cfg(all(test, target_os = "linux"))]
 mod a_proposal_measured_on_the_network_it_arrived_on;
 #[cfg(target_os = "linux")]
 pub mod ageing;
@@ -297,6 +299,8 @@ pub mod terms;
 pub mod the_runtime;
 #[cfg(target_os = "linux")]
 pub mod told_of_a_move;
+#[cfg(target_os = "linux")]
+pub mod told_of_a_port_let_go;
 #[cfg(target_os = "linux")]
 pub mod trusting;
 #[cfg(all(test, target_os = "linux"))]

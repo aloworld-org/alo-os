@@ -392,6 +392,22 @@ impl Wire {
         self.responders.answered_on()
     }
 
+    /// What to wait on for the kernel saying a program let go of the port —
+    /// nothing on a listener a test handed in, or where the kernel would not
+    /// say (`crate::told_of_a_port_let_go`).
+    #[must_use]
+    pub fn let_go_waiting_on(&self) -> Option<BorrowedFd<'_>> {
+        self.listeners.let_go_waiting_on()
+    }
+
+    /// The kernel said a TCP socket at the port was destroyed: the port is
+    /// tried again on every network it was refused on, with no network having
+    /// changed (`crate::listeners`). Nothing discovery says moves.
+    pub fn port_let_go_of(&self) {
+        self.listeners
+            .let_go_of(&mut |line| eprintln!("alo-agentd: {line}"));
+    }
+
     /// What to wait on for the kernel saying one of this machine's networks
     /// appeared, changed or went — nothing on sockets a test handed in, or
     /// where the kernel would not say.

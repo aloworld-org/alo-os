@@ -5088,3 +5088,34 @@ that, and fails if a line is lost or a network is silently skipped. More than
 thirteen networks is not measured here; a limit met on certified hardware is written
 here and said in the service log where it bites.
 **Date:** 2026-09-17.
+
+### A person's service with no capabilities hears every TCP socket in its network destroyed
+**Version:** WSL2 kernel `6.18.33.2-microsoft-standard-WSL2`, Ubuntu 24.04,
+`CONFIG_INET_DIAG=y`, `CONFIG_INET_TCP_DIAG=y`. Measured with a scratch probe as
+root, as uid 1000 with `CapEff` 0 in the initial namespaces, and as mapped root in
+a user namespace; then by `crates/alo-agentd/src/told_of_a_port_let_go.rs` and
+`crates/alo-agentd/src/a_port_another_program_let_go_of.rs`, the latter with the
+service under `setpriv --bounding-set=-all`. 2026-09-17.
+**Behaviour:** a `NETLINK_SOCK_DIAG` socket may bind to the multicast groups
+`SKNLGRP_INET_TCP_DESTROY` (1) and `SKNLGRP_INET6_TCP_DESTROY` (3) with **no
+capability at all**; the kernel does not ask for `CAP_NET_ADMIN`, as it does for
+most netlink groups. From then on it is sent one `inet_diag_msg` for every TCP socket
+destroyed **in its own network namespace**, whoever owned it, with both addresses and
+ports — a listener closed, a bound socket that never listened, a connection ended.
+The message comes after the socket has left the bind tables: a listener bound at the
+same port on hearing it is not refused. A listener closed arrives with `idiag_state`
+7 (`TCP_CLOSE`), so the state does not tell a listener from a connection; a socket
+whose bind failed arrives with port 0. A classic socket filter attached with
+`SO_ATTACH_FILTER` (no capability either) runs on these broadcasts, so a filter
+loading the sixteen bits at offset 20 and keeping only one port drops every other
+message in the kernel.
+**Our response:** `alo-agentd` joins both groups to learn that a program let go of
+the port presence advertises, and attaches that filter before it joins, so it never
+reads what any other socket on the machine was doing. A message is a reason to try
+the port again, not proof it is free. The refusal line for a network whose port is
+taken is now said once, when it is first refused, and a line says when it binds.
+This changes what the entry above records about the refusal repeating. The
+certified image's kernel is not measured here: a kernel without `CONFIG_INET_DIAG`
+refuses the join, and the service log then says a taken port is tried again only
+when the machine's networks change.
+**Date:** 2026-09-17.

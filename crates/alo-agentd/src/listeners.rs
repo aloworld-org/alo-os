@@ -53,7 +53,26 @@
 //! that would not start.
 //!
 //! What refuses a network's bind is somebody else holding the port there
-//! (`EADDRINUSE`). An interface that went between the kernel's report and the
+//! (`EADDRINUSE`), and **that line is said once**, when the network is first
+//! refused — not again on every notification that tries it and is refused
+//! again. When it does bind, the log says so, once.
+//!
+//! # And the port is tried again when another program lets go of it
+//!
+//! A program closing a socket is not a network change, so a network refused
+//! because its port was taken would otherwise wait for a cable somewhere to
+//! change. The listeners hold a second socket the kernel writes to when a TCP
+//! socket **at this port** is destroyed (`crate::told_of_a_port_let_go`, which
+//! has the readings weighed and why that one), opened before the first bind so a
+//! let-go cannot fall between a refusal and the subscription. On hearing it,
+//! every network refused is tried again ([`Listeners::let_go_of`]); a network
+//! nothing refused costs nothing. A kernel that will not open that socket is a
+//! line in the service log, and the refusal line then says the port is tried
+//! again only when this machine's networks next change.
+//! `crate::a_port_another_program_let_go_of` is the measurement, on a real
+//! kernel and with no capabilities.
+//!
+//! An interface that went between the kernel's report and the
 //! bind does **not** refuse — `SO_BINDTOIFINDEX` takes an index no interface has
 //! (`docs/quirks.md`) — and leaves a listener nothing can reach, which the next
 //! notification lets go of because the index is no longer reported.
@@ -89,9 +108,10 @@
 //! into, read from the kernel; no person and no agent names one, and the port is
 //! the constant task 1 made it.
 
+use std::collections::BTreeSet;
 use std::net::{Ipv4Addr, SocketAddr, TcpListener};
 use std::num::NonZeroU32;
-use std::os::fd::{AsFd as _, BorrowedFd};
+use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use alo_corridor::AT_MOST_A_VERB;
@@ -102,6 +122,7 @@ use crate::arrived_on::{ArrivedOn, the_network_it_arrived_on, what_a_listener_he
 use crate::networks::{Network, listening_networks};
 use crate::refusing::NotBound;
 use crate::route_messages::reported_by_the_kernel;
+use crate::told_of_a_port_let_go::told_when_let_go_of;
 use crate::wire::Knocked;
 
 /// What this machine says when it is listening nowhere at all.
@@ -166,6 +187,14 @@ pub struct Listeners {
     /// bound its own, the one held to nothing on a machine that could not read
     /// its networks, and the one a test handed in.
     fixed: Vec<Arc<Listener>>,
+    /// The interfaces of the networks the port was refused on, by number —
+    /// each said in the service log once, when it was first refused.
+    ///
+    /// Locked only while [`held`](Self::held) is, and after it.
+    refused: Mutex<BTreeSet<u32>>,
+    /// The socket the kernel says a TCP socket at the port was destroyed on,
+    /// when it opened (`crate::told_of_a_port_let_go`).
+    told: Option<OwnedFd>,
     /// Whether [`held`](Self::held) follows the kernel's networks.
     follows: bool,
     /// The port every one of them is bound at, which is the port presence
@@ -216,8 +245,24 @@ impl Listeners {
                 Err(why) => refused = Some(why),
             }
         }
+        // Before the first bind, so a program letting go between a refusal and
+        // the subscription is still heard.
+        let told = match &reported {
+            Ok(_) => match told_when_let_go_of(port) {
+                Ok(told) => Some(told),
+                Err(why) => {
+                    said(&format!(
+                        "the kernel will not say when a program lets go of the port presence advertises ({why}); a network where another program holds it is tried again only when this machine's networks next change"
+                    ));
+                    None
+                }
+            },
+            Err(_) => None,
+        };
         let listeners = Self {
             held: Mutex::new(Vec::new()),
+            refused: Mutex::new(BTreeSet::new()),
+            told,
             fixed,
             follows: reported.is_ok(),
             port,
@@ -255,6 +300,8 @@ impl Listeners {
             .port();
         Ok(Self {
             held: Mutex::new(Vec::new()),
+            refused: Mutex::new(BTreeSet::new()),
+            told: None,
             fixed: vec![Arc::new(Listener {
                 on: None,
                 arrived: None,
@@ -300,6 +347,40 @@ impl Listeners {
         }
     }
 
+    /// What to wait on for the kernel saying a TCP socket at the port was
+    /// destroyed, when it can.
+    #[must_use]
+    pub fn let_go_waiting_on(&self) -> Option<BorrowedFd<'_>> {
+        self.told.as_ref().map(AsFd::as_fd)
+    }
+
+    /// The kernel said a TCP socket at the port was destroyed: empty what it
+    /// said, and try again every network the port was refused on.
+    ///
+    /// What was destroyed may be a connection the wire itself closed, or one
+    /// of the other program's while it goes on holding the port, so a network
+    /// still refused is still refused — and not said again. With nothing
+    /// refused, nothing is asked of the kernel at all.
+    pub fn let_go_of(&self, said: &mut dyn FnMut(&str)) {
+        let Some(told) = &self.told else {
+            return;
+        };
+        if let Err(why) = crate::unix::emptied(told.as_fd(), &mut |_| {}) {
+            said(&format!(
+                "what the kernel said about the port presence advertises being let go of could not be read ({why}); every network it was refused on is tried again anyway"
+            ));
+        }
+        if self
+            .refused
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+        {
+            return;
+        }
+        self.changed(said);
+    }
+
     /// A handle onto each listener, in the order they are waited on and
     /// accepted from.
     ///
@@ -312,13 +393,19 @@ impl Listeners {
 
     /// Listen on every one of `networks` not listened on already, and let go of
     /// the listeners whose networks are not among them.
+    ///
+    /// A network refused is said once, when it is first refused; one that binds
+    /// after being refused is said once, when it binds; one that goes is
+    /// forgotten, so a network that comes back and is refused is said again.
     fn listen_on(&self, networks: &[Network], said: &mut dyn FnMut(&str)) {
         let on = |listener: &Arc<Listener>| listener.on.as_ref().map(Network::index);
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut refused = self.refused.lock().unwrap_or_else(PoisonError::into_inner);
         held.retain(|listener| {
             on(listener)
                 .is_some_and(|index| networks.iter().any(|network| network.index() == index))
         });
+        refused.retain(|index| networks.iter().any(|network| network.index() == *index));
         for network in networks {
             if held
                 .iter()
@@ -327,20 +414,44 @@ impl Listeners {
                 continue;
             }
             match held_to(self.port, NonZeroU32::new(network.index())) {
-                Ok(listener) => held.push(Arc::new(Listener {
-                    on: Some(network.clone()),
-                    arrived: Some(what_a_listener_held_to(network)),
-                    listener,
-                })),
+                Ok(listener) => {
+                    held.push(Arc::new(Listener {
+                        on: Some(network.clone()),
+                        arrived: Some(what_a_listener_held_to(network)),
+                        listener,
+                    }));
+                    if refused.remove(&network.index()) {
+                        said(&format!(
+                            "the port presence advertises is bound on {} ({}) now that nothing else holds it there; a machine on that network can reach this one",
+                            network.name(),
+                            network.address()
+                        ));
+                    }
+                }
                 // A network that will not be listened on is a line, and the
                 // others are still listened on: a machine reachable on two of
                 // its three networks beats a service that would not start.
-                Err(why) => said(&format!(
-                    "the port presence advertises could not be bound on {} ({}): {why}; a machine on that network cannot reach this one until it can be",
-                    network.name(),
-                    network.address()
-                )),
+                Err(why) => {
+                    if refused.insert(network.index()) {
+                        said(&format!(
+                            "the port presence advertises could not be bound on {} ({}): {why}; {}",
+                            network.name(),
+                            network.address(),
+                            self.until()
+                        ));
+                    }
+                }
             }
+        }
+    }
+
+    /// What the service log says about when a refused network is tried again —
+    /// which depends on whether the kernel will say the port was let go of.
+    const fn until(&self) -> &'static str {
+        if self.told.is_some() {
+            "a machine on that network cannot reach this one until it can be, and it is tried again as soon as the kernel says a program let go of the port"
+        } else {
+            "a machine on that network cannot reach this one until it can be, and it is tried again only when this machine's networks next change"
         }
     }
 }
@@ -455,7 +566,7 @@ mod tests {
     use crate::arrived_on::ArrivedOn;
     use crate::networks::listening_networks;
     use crate::route_messages::reported_by_the_kernel;
-    use crate::unix::ready_and;
+    use crate::unix::{ready, ready_and};
 
     /// A port nothing else on this machine is on.
     fn a_free_port() -> u16 {
@@ -625,10 +736,31 @@ mod tests {
             "a network that would not bind cost the others their listeners"
         );
 
-        // Once somebody else lets go, the next notification listens there, and
-        // the service that never stopped answers on it.
+        // Tried again on a notification while somebody else still holds it, it
+        // is still refused, and not said a second time.
+        listeners.changed(&mut |line| panic!("a refusal was said twice: {line}"));
+        assert!(
+            !listeners
+                .listened_on()
+                .iter()
+                .any(|network| network.index() == loopback.index())
+        );
+
+        // Once somebody else lets go, the kernel says so with no network
+        // changing, the port is listened on there, and that is said once.
         drop(somebody_else);
-        listeners.changed(&mut |line| panic!("{line}"));
+        heard_let_go(&listeners);
+        let mut bound = Vec::new();
+        listeners.let_go_of(&mut |line| bound.push(line.to_owned()));
+        assert_eq!(bound.len(), 1, "{bound:?}");
+        assert!(
+            bound.first().is_some_and(|line| line.starts_with(&format!(
+                "the port presence advertises is bound on {} (",
+                loopback.name()
+            ))),
+            "{bound:?}"
+        );
+        listeners.changed(&mut |line| panic!("a bind was said twice: {line}"));
         assert!(
             listeners
                 .listened_on()
@@ -644,5 +776,85 @@ mod tests {
         let knocked = a_knock(&listening);
         assert_eq!(knocked.arrived, ArrivedOn::ItsOwnNetwork);
         assert_eq!(knocked.message.unwrap().body, "still\n");
+    }
+
+    /// Wait until the kernel says a TCP socket at the listeners' port was
+    /// destroyed, failing if it says nothing.
+    fn heard_let_go(listeners: &Listeners) {
+        let told = [listeners.let_go_waiting_on()];
+        assert!(told[0].is_some(), "the listeners hear nothing let go of");
+        let said = ready(&told, Some(Duration::from_secs(5))).unwrap();
+        assert_eq!(said, [true], "the kernel never said the port was let go of");
+    }
+
+    /// **Hearing is not proof**: a connection at the port closing while
+    /// somebody else's listener goes on holding it is heard, tried, still
+    /// refused — and nothing more is said.
+    #[test]
+    fn a_let_go_that_leaves_the_port_held_is_still_refused_and_not_said_again() {
+        let port = a_free_port();
+        let reported = reported_by_the_kernel().unwrap();
+        let loopback = listening_networks(&reported)
+            .into_iter()
+            .find(|network| network.address().is_loopback())
+            .unwrap();
+        let somebody_else = held_to(port, NonZeroU32::new(loopback.index())).unwrap();
+        let mut said = Vec::new();
+        let listeners = Listeners::bound(port, &mut |line| said.push(line.to_owned())).unwrap();
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert!(
+            said.first()
+                .is_some_and(|line| line.contains("as soon as the kernel says a program let go")),
+            "the refusal does not say when it is tried again: {said:?}"
+        );
+
+        let connection = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+        let (accepted, _) = somebody_else.accept().unwrap();
+        drop(accepted);
+        drop(connection);
+        heard_let_go(&listeners);
+        listeners.let_go_of(&mut |line| panic!("a port still held was said: {line}"));
+        assert!(
+            !listeners
+                .listened_on()
+                .iter()
+                .any(|network| network.index() == loopback.index()),
+            "a port somebody else still holds was counted listened on"
+        );
+        drop(somebody_else);
+    }
+
+    /// **With nothing refused, a let-go is emptied and nothing else is done** —
+    /// the wire's own connections closing are heard, and change nothing.
+    #[test]
+    fn a_let_go_with_nothing_refused_changes_nothing() {
+        let port = a_free_port();
+        let listeners = Listeners::bound(port, &mut |_| {}).unwrap();
+        let before = listeners.listened_on();
+        let listening = Listening::of(&listeners);
+        let connection = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+        let knocked = a_knock(&listening);
+        drop(knocked);
+        drop(connection);
+        heard_let_go(&listeners);
+        listeners.let_go_of(&mut |line| panic!("{line}"));
+        assert_eq!(listeners.listened_on(), before);
+        // And again, with what the kernel said already emptied: the socket does
+        // not block, so a round woken for nothing returns rather than hangs.
+        // Whether the kernel sends more after this is not asserted — it sends
+        // these from a queue of its own, so a socket closed earlier (the one
+        // `a_free_port` bound, say) may be said late.
+        listeners.let_go_of(&mut |line| panic!("{line}"));
+        assert_eq!(listeners.listened_on(), before);
+    }
+
+    /// **A wire on a listener handed in hears nothing let go of**: it follows
+    /// no kernel, and has no network to try again.
+    #[test]
+    fn a_listener_handed_in_hears_nothing_let_go_of() {
+        let listeners =
+            Listeners::on(TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()).unwrap();
+        assert!(listeners.let_go_waiting_on().is_none());
+        listeners.let_go_of(&mut |line| panic!("{line}"));
     }
 }

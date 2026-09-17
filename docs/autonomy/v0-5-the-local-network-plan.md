@@ -1792,7 +1792,39 @@ would say which one was missed.
 
 ### 35. A port another program let go of on one network is listened on there again
 
-**Status:** ready. **Depends on:** 29, 34.
+**Status:** **Done, 2026-09-17.** Measured on a real kernel by
+`crates/alo-agentd/src/a_port_another_program_let_go_of.rs`. Reception serves as
+`src/main.rs` does, started through `setpriv` with an **empty capability bounding
+set** as `alo-agentd.service` runs it, and asserts `CapEff` and `CapBnd` are zero.
+The far end has two `veth` cables to it carrying IPv4 (`cable0`/`cable1` at 40/41).
+Both are laid while reception is held still, and a squatter listens on the port held
+to `cable1` before it is let go. The port is then reached on `cable0` and not on
+`cable1`, and both questions are answered with the same bytes. Then the squatter
+lets go while `ip -o monitor link address` watches reception's network, and the
+fixture waits until the kernel lists that monitor's routing socket before the
+squatter lets go. Reception listens on `cable1` and the port is reached there and
+still on `cable0`. The monitor printed **nothing**, so no network changed. The
+answers are the same bytes as before. The service log names `cable1` in exactly one
+refusal and exactly one *is bound on cable1 … now* line. **How the service learns
+the port is free:** the kernel's own TCP socket destruction broadcast
+(`NETLINK_SOCK_DIAG`, groups `SKNLGRP_INET_TCP_DESTROY` and
+`SKNLGRP_INET6_TCP_DESTROY`). The kernel lets a process with no capabilities join
+them (measured). A classic socket filter attached before the join keeps only
+messages at the wire's port, so the service never reads another socket's close
+(`crate::told_of_a_port_let_go`, new). It was chosen over a `pidfd` on the holder
+(unreadable for another user's program, and blind to a socket closed by a program
+that keeps running), over an interval, and over knocking on the other program's
+port. `crate::listeners` opens the socket before its first bind and tries every
+refused network again on hearing it. It says a refusal once and a bind once.
+**No ADR was needed**, because the reading exists without an interval. Mutation
+runs: with the retry removed, the fixture fails at *reception never held
+`cable0,cable1|cable0,cable1`: it holds `cable0,cable1|cable0`*; with the filter
+keeping every port, `told_of_a_port_let_go`'s unit test fails at *the destruction of
+a socket at another port reached the service*. Contract:
+`docs/contracts/local-network-wire.md` (*A port another program lets go of*, new,
+additive). `docs/quirks.md` records the kernel. The report is
+`docs/autonomy/updates/a-port-another-program-let-go-of.md`.
+**Depends on:** 29, 34.
 
 *Machines find each other with zero configuration.* Task 34 made one network fail
 on a real kernel: another program held the port presence advertises on one
@@ -1821,3 +1853,36 @@ kept.
   unchanged. No interval and no polling unless an accepted ADR allows it. What
   reality does that the specification does not say goes in `docs/quirks.md`.
   Nothing in `alo-shell`, nothing in `image/`.
+
+### 36. A port another program held over IPv6 at start is listened on over IPv6 once it is let go of
+
+**Status:** ready. **Depends on:** 23, 35.
+
+*Machines find each other with zero configuration.* Task 35 made a network whose
+IPv4 port another program held be listened on again when the kernel says that
+program let go. **The IPv6 listener is not one of those networks.** `crate::listeners`
+binds one IPv6-only listener, held to nothing, once at start, and keeps it in
+`fixed`. If it is refused because another program holds `[::]` at the port (an
+installer, or a service restarting as the machine boots), the service log says the
+port is bound over IPv4 alone and a machine on a network with no IPv4 address cannot
+reach this one. Nothing tries it again, not on a network change and not on the
+let-go task 35 now hears. The kernel already sends that let-go
+(`SKNLGRP_INET6_TCP_DESTROY` is joined). Only the listener does not follow it. A
+machine whose only network is link-local is then found and unreachable until the
+service restarts.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does with no
+  capabilities (`crate::a_port_another_program_let_go_of` shows how), with a far end
+  on a `veth` carrying link-local IPv6 only. A program holds the port over IPv6
+  before the service starts. The port is not reached over link-local, and the
+  machine is still found there with the same bytes, tested. Once that program lets
+  go, **with no network changing** (read with `ip monitor` as task 35 does), the port
+  is reached over link-local, tested. The service log says the refusal once and the
+  bind once, tested. A let-go that leaves the port held over IPv6 is refused again
+  and not said again, tested. Whether the IPv6 listener then counts as one of the
+  refused networks, or as a separate thing tried again, is decided in the crate and
+  written up with the reason.
+- **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, what crosses the wire
+  unchanged. No interval and no polling. What reality does that the specification
+  does not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.

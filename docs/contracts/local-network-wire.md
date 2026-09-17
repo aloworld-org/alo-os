@@ -474,6 +474,21 @@ a lab switch bringing a dozen adapters up in one moment.
   on every other network, and it does not stop.
 - **What is said is the same bytes on every network.**
 
+## A port another program lets go of
+
+Added 2026-09-17, additively. Nothing on this wire changes.
+
+- **Where another program holds this machine's port on one network, the machine
+  is still found there**, and cannot be reached there. Its log names that network
+  once.
+- **When that program lets go, the machine listens there again**, with no network
+  changing and no restart. It learns this from the kernel, when a socket at the
+  port is closed, and never by asking again on an interval. Its log says once that
+  the port is bound there now.
+- **A machine whose kernel will not say so** says that in its log, and tries a
+  taken port again only when its networks next change.
+- **What is said is the same bytes before and after.**
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

@@ -554,7 +554,16 @@ impl<'a> Serving<'a> {
         } else {
             Vec::new()
         };
-        let (stopped, person, agent, knocked, discovery_failed, networks_changed, on_the_port) = {
+        let (
+            stopped,
+            person,
+            agent,
+            knocked,
+            discovery_failed,
+            networks_changed,
+            port_let_go,
+            on_the_port,
+        ) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
                 held.person.as_ref().map(Line::waiting_on),
@@ -562,6 +571,7 @@ impl<'a> Serving<'a> {
                 Some(self.knocking.waiting_on()),
                 Some(discovery.failed_waiting_on()),
                 self.wire.networks_waiting_on(),
+                self.wire.let_go_waiting_on(),
             ];
             let (
                 [
@@ -571,6 +581,7 @@ impl<'a> Serving<'a> {
                     knocked,
                     discovery_failed,
                     networks_changed,
+                    port_let_go,
                 ],
                 on_the_port,
             ) = ready_and(&waiting_on, &on_the_ports, for_at_most)
@@ -582,6 +593,7 @@ impl<'a> Serving<'a> {
                 knocked,
                 discovery_failed,
                 networks_changed,
+                port_let_go,
                 on_the_port,
             )
         };
@@ -727,6 +739,13 @@ impl<'a> Serving<'a> {
             // a line in the log, not a stop.
             drop(listening);
             self.wire.networks_changed();
+        }
+        if port_let_go {
+            // A TCP socket at the port was destroyed — perhaps another
+            // program's, on a network whose port it held. Every network the
+            // port was refused on is tried again; nothing else moves, and with
+            // nothing refused nothing is tried at all.
+            self.wire.port_let_go_of();
         }
 
         Ok(Next::GoOn)
