@@ -261,6 +261,7 @@ fn a_file_that_is_not_what_its_name_says_is_that_finding_first() {
             "This file is named as a PDF document, but it is a program",
             "This file is a program. Opening a file never runs a program, so it has not been \
              opened",
+            "If a document was expected, whoever sent it can send the document itself instead",
         ]
     );
 

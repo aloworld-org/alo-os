@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Three groups.
+//! Four groups.
 //!
 //! **The names of what a file is.** Every one is read *inside* another sentence
 //! — *This is {what}* — so each is lowercase and carries its article, and the
@@ -20,6 +20,12 @@
 //!
 //! **What the name got wrong.** A file named as one thing that is another is
 //! said to be exactly that, before anything else is said about it.
+//!
+//! **What would open it.** One sentence for each [`crate::Would`], read straight
+//! after the reason a file cannot be opened: a complete copy, a copy without
+//! the password, the document itself, another machine or format, or whoever
+//! made it. None of them offers to send the file anywhere, and a test holds
+//! that.
 //!
 //! # There is no word here for "probably"
 //!
@@ -365,6 +371,70 @@ pub const CANNOT_NOTHING_HERE_OPENS_IT: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// What would open it — [`crate::Would`], said after each reason.
+// ---------------------------------------------------------------------------
+
+/// A complete copy would open.
+pub const WOULD_A_COMPLETE_COPY: Word = Word::saying(
+    "opening.would.a-complete-copy",
+    "What would open is a complete copy, which whoever has the original can send again",
+)
+.noting(
+    "Said straight after the sentence saying a file is empty or damaged, as the next thing a \
+     person reads. It sends them back to whoever sent the file: the file itself is incomplete, and \
+     another copy of the original is what helps. It must not suggest another program or another \
+     machine — nothing is wrong with this machine, and sending a person there wastes their time.",
+);
+
+/// A copy without the password would open.
+pub const WOULD_A_COPY_WITHOUT_THE_PASSWORD: Word = Word::saying(
+    "opening.would.a-copy-without-the-password",
+    "What would open is a copy saved without the password, which whoever sent it can make",
+)
+.noting(
+    "Said straight after the sentence saying a Word, Excel or PowerPoint file is protected with a \
+     password this machine cannot open. The author, or whoever sent it, can save a copy with the \
+     protection removed. It does not ask the person for the password.",
+);
+
+/// The document itself would open.
+pub const WOULD_THE_DOCUMENT_ITSELF: Word = Word::saying(
+    "opening.would.the-document-itself",
+    "If a document was expected, whoever sent it can send the document itself instead",
+)
+.noting(
+    "Said straight after the sentence saying a file is a program, which this machine never runs. \
+     A person who was expecting an invoice or a letter and received a program should ask the \
+     sender for the actual document. Calm and practical on purpose: it does not call the file \
+     dangerous or the person careless.",
+);
+
+/// Another machine, or a different format, would open.
+pub const WOULD_ANOTHER_MACHINE_OR_FORMAT: Word = Word::saying(
+    "opening.would.another-machine-or-format",
+    "What would open it is a machine with a program for this kind of file, or a copy saved in a \
+     different format by whoever sent it",
+)
+.noting(
+    "Said straight after the sentence saying this machine knows what a file is but has nothing \
+     that shows that kind of file. The file is fine: another computer with a suitable program can \
+     open it, or the sender can save it in another format. It never offers to send the file \
+     anywhere, and it names no particular program.",
+);
+
+/// Whoever sent it knows what made it.
+pub const WOULD_WHOEVER_MADE_IT: Word = Word::saying(
+    "opening.would.whoever-made-it",
+    "Whoever sent it can say which program made it, or send a copy saved in a different format",
+)
+.noting(
+    "Said straight after the sentence saying this machine does not recognise what a file is. \
+     Because the machine does not know what the file is, it cannot say which machine or program \
+     would open it — the sender can. It must not suggest the file is damaged, and it never offers \
+     to send the file anywhere to find out.",
+);
+
+// ---------------------------------------------------------------------------
 // What the name got wrong — [`crate::Decided::NotWhatItsNameSays`].
 // ---------------------------------------------------------------------------
 
@@ -448,8 +518,20 @@ pub const THE_SENTENCES: [Word; 13] = [
     UNREADABLE,
 ];
 
-/// Every string this crate can say: the names, then the sentences.
-pub const EVERY_WORD: [Word; 35] = [
+/// What would open a file this machine cannot, in the order
+/// [`crate::Would::EVERY`] lists them. Each stands on its own and is read
+/// straight after the sentence saying why.
+pub const THE_REMEDIES: [Word; 5] = [
+    WOULD_A_COMPLETE_COPY,
+    WOULD_A_COPY_WITHOUT_THE_PASSWORD,
+    WOULD_THE_DOCUMENT_ITSELF,
+    WOULD_ANOTHER_MACHINE_OR_FORMAT,
+    WOULD_WHOEVER_MADE_IT,
+];
+
+/// Every string this crate can say: the names, the sentences, then what would
+/// open a file this machine cannot.
+pub const EVERY_WORD: [Word; 40] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -485,6 +567,11 @@ pub const EVERY_WORD: [Word; 35] = [
     NAMED_AS_SOMETHING_ELSE,
     NAMED_AS_WHAT_IT_IS_NOT,
     UNREADABLE,
+    WOULD_A_COMPLETE_COPY,
+    WOULD_A_COPY_WITHOUT_THE_PASSWORD,
+    WOULD_THE_DOCUMENT_ITSELF,
+    WOULD_ANOTHER_MACHINE_OR_FORMAT,
+    WOULD_WHOEVER_MADE_IT,
 ];
 
 /// The gap holding what a file is.
@@ -580,14 +667,15 @@ mod tests {
         }
     }
 
-    /// The two groups are the whole list, so a word added to one of them
+    /// The three lists are the whole list, so a word added to one of them
     /// without a test being told about it fails here.
     #[test]
-    fn the_two_groups_are_the_whole_list() {
-        let mut both: Vec<&str> = THE_NAMES.iter().map(Word::named).collect();
-        both.extend(THE_SENTENCES.iter().map(Word::named));
+    fn the_three_lists_are_the_whole_list() {
+        let mut all: Vec<&str> = THE_NAMES.iter().map(Word::named).collect();
+        all.extend(THE_SENTENCES.iter().map(Word::named));
+        all.extend(THE_REMEDIES.iter().map(Word::named));
         let every: Vec<&str> = EVERY_WORD.iter().map(Word::named).collect();
-        assert_eq!(both, every);
+        assert_eq!(all, every);
     }
 
     /// The list declares, and nothing about it is refused by the crate that
@@ -632,10 +720,10 @@ mod tests {
             let found = word.phrase().unwrap().source().gaps().to_vec();
             assert_eq!(found, gaps, "{}", word.named());
         }
-        for word in THE_NAMES {
+        for word in THE_NAMES.iter().chain(THE_REMEDIES.iter()) {
             assert!(
                 word.phrase().unwrap().source().gaps().is_empty(),
-                "{} is a name and has a gap in it",
+                "{} has a gap in it",
                 word.named()
             );
         }
@@ -662,7 +750,7 @@ mod tests {
     /// **The sentences begin a sentence and the names do not.**
     #[test]
     fn the_sentences_begin_a_sentence_and_the_names_do_not() {
-        for word in THE_SENTENCES {
+        for word in THE_SENTENCES.iter().chain(THE_REMEDIES.iter()) {
             assert!(
                 word.says().chars().next().unwrap().is_uppercase(),
                 "{} does not begin a sentence",
@@ -714,6 +802,13 @@ mod tests {
                 "format:",
                 ".docx",
                 ".pdf",
+                "library",
+                "libreoffice",
+                "office suite",
+                "return",
+                "exit status",
+                "cups",
+                "application/octet",
             ] {
                 assert!(
                     !said.contains(machinery),
@@ -726,6 +821,36 @@ mod tests {
                 "{} has a number in it",
                 word.named()
             );
+        }
+    }
+
+    /// **Nothing a person reads offers to send the file anywhere to find
+    /// out.** An offer to upload is the sentence this crate exists to replace,
+    /// and on this machine it would be an errand nobody asked for.
+    #[test]
+    fn nothing_offers_to_send_the_file_anywhere() {
+        for word in EVERY_WORD {
+            let said = word.says().to_lowercase();
+            for offer in [
+                "upload",
+                "online",
+                "internet",
+                "website",
+                "web ",
+                "cloud",
+                "service",
+                "send it to",
+                "send this file",
+                "look it up",
+                "search",
+            ] {
+                assert!(
+                    !said.contains(offer),
+                    "{} says \"{offer}\": a file this machine cannot open is never sent \
+                     anywhere to find out",
+                    word.named()
+                );
+            }
         }
     }
 }

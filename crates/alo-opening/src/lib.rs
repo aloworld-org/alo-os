@@ -38,6 +38,7 @@
 //! | [`Decided`] | The answer, with a lying name as a finding it cannot be read past |
 //! | [`Outcome`] | Opens as it is, converts a copy, or cannot — and no *probably* |
 //! | [`Cannot`] | Each reason a file cannot be opened, each its own sentence |
+//! | [`Would`] | What would open it instead, said after every reason |
 //! | [`Costs`] | What converting costs, as far as it is known before it runs |
 //! | [`Kind`], [`Appears`], [`Container`], [`Macros`] | What the bytes say |
 //! | [`Named`] | What the name claims, read only to notice a lie |
@@ -77,6 +78,11 @@
 //! `tests/deciding_never_leaves_the_machine.rs` reads the manifest and the
 //! source to hold that.
 //!
+//! **It does not send a file anywhere to find out what it is.** A file this
+//! machine cannot open is explained — what it is, why, and what would open it
+//! ([`Cannot::explained`]) — and no explanation offers an upload, a lookup or a
+//! service.
+//!
 //! **It does not guess which older character set a text file is in**, or open
 //! a document protected with a password. Both are findings with a sentence, and
 //! both are said as what this machine cannot do rather than as a fault in the
@@ -96,6 +102,7 @@ pub mod outcome;
 mod reading;
 mod text;
 pub mod words;
+pub mod would;
 mod zip;
 
 #[cfg(test)]
@@ -110,3 +117,4 @@ pub use machine::{NotAnAbility, ThisMachine};
 pub use naming::Named;
 pub use outcome::{Cannot, Costs, Outcome};
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, opening_words};
+pub use would::Would;

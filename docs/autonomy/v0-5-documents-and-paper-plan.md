@@ -227,6 +227,28 @@ the entire reason printing is on a list of promises.
 
 **Status:** ready. **Depends on:** 2, 3.
 
+**Done, 2026-09-17.** `crates/alo-opening`: every `Cannot` now answers
+`would()` with one of a closed set of five `Would`s — *a complete copy* (empty,
+damaged), *a copy without the password*, *the document itself* (a program),
+*another machine or a different format* (nothing here opens it), and *whoever
+made it* (not recognised, where this machine cannot name a machine that would).
+`Cannot::explained` is what a person reads — what the file is and why, then what
+would — and `Outcome::said` says exactly that for `CannotOpen`, so every caller
+(`alo-converting`, `alo-printing`, `Decided`) carries the way out without a
+change of its own. Damaged and not recognised answer differently, and a test
+holds it; no sentence names a library, a media type, a code or a rented engine,
+and none offers to upload, look up or send the file anywhere. A converted
+document whose name lies and that cannot be opened now keeps the whole
+explanation. The refusal is recorded like any other outcome: a document the
+converting verb cannot open is recorded with the explanation the person read,
+and the record answers it by the file's own path. 5 strings added (40), collected
+by `alo-saying`. Report:
+`docs/autonomy/updates/i-cannot-open-this-file-said-properly.md`. Owed: the
+open-with portal still says only the reason (`alo-applications`'
+`NothingOpens::TheFile` returns one sentence) and its answers file keeps
+`the-file` without which reason — both another plan's crates; the report
+proposes the change. For task 5: the sentences are in `THE_REMEDIES`.
+
 ★ and the sharpest line in the group. Every system has this moment; every
 system spends it badly — an error code, a dialogue with one button, or worst,
 an application that opens and shows nothing. The promise is that the moment is

@@ -13,12 +13,22 @@
 //! carry will be said once it exists, and whether the document carries macros
 //! that will be left behind. What a particular conversion actually lost — a
 //! font, a field — cannot be known until it has run, and saying it is task 2's.
+//!
+//! # A file that cannot be opened is explained, not refused
+//!
+//! [`Cannot::explained`] is what a person reads: what the file is and why this
+//! machine cannot open it, then what would — a complete copy, a copy without
+//! the password, the document itself, another machine or format, or whoever
+//! made it ([`Would`]). [`Outcome::said`] says exactly that for
+//! [`Outcome::CannotOpen`], so no caller can show the reason and drop the way
+//! out of it.
 
 use alo_strings::{Filling, Said, Strings};
 
 use crate::appears::{Appears, Container, Macros};
 use crate::kind::Kind;
 use crate::words::{self, Word};
+use crate::would::Would;
 
 /// What this machine can do with a file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -105,7 +115,7 @@ impl Outcome {
 
     /// The sentences a person reads about this outcome, in order: what the
     /// machine can do, then what the macros in it will not do when there are
-    /// any.
+    /// any — or, for a file it cannot open, [`Cannot::explained`].
     #[must_use]
     pub fn said(self, strings: &Strings) -> Vec<Said> {
         match self {
@@ -133,13 +143,40 @@ impl Outcome {
                 }
                 said
             }
-            Self::CannotOpen(cannot) => vec![cannot.said(strings)],
+            Self::CannotOpen(cannot) => cannot.explained(strings),
         }
     }
 }
 
 impl Cannot {
-    /// The sentence a person reads about why.
+    /// What would open a file this machine cannot open for this reason.
+    ///
+    /// *Damaged* and *empty* send a person back to whoever has the original;
+    /// *nothing here opens it* sends them on to another machine or a different
+    /// format; *not recognised* to whoever made it, because this machine does
+    /// not know which machine would. None of them is *send it somewhere to find
+    /// out*.
+    #[must_use]
+    pub const fn would(self) -> Would {
+        match self {
+            Self::Empty | Self::Damaged(_) => Would::ACompleteCopy,
+            Self::Unrecognised => Would::WhoeverMadeIt,
+            Self::AProgram => Would::TheDocumentItself,
+            Self::PasswordProtected => Would::ACopyWithoutThePassword,
+            Self::NothingHereOpens(_) => Would::AnotherMachineOrFormat,
+        }
+    }
+
+    /// What a person reads about a file this machine cannot open, in order:
+    /// what it is and why it cannot be opened ([`Cannot::said`]), then what
+    /// would open it ([`Cannot::would`]).
+    #[must_use]
+    pub fn explained(self, strings: &Strings) -> Vec<Said> {
+        vec![self.said(strings), self.would().said(strings)]
+    }
+
+    /// The sentence a person reads about what the file is and why it cannot be
+    /// opened — the first of [`Cannot::explained`].
     #[must_use]
     pub fn said(self, strings: &Strings) -> Said {
         match self {
@@ -261,6 +298,51 @@ mod tests {
         said.sort();
         said.dedup();
         assert_eq!(said.len(), reasons.len());
+    }
+
+    /// **A damaged file and a file nothing recognises send a person in
+    /// different directions** — back for a complete copy, or to whoever made
+    /// it — and nothing this machine has, on to another machine or format.
+    #[test]
+    fn damaged_and_unrecognised_are_answered_differently() {
+        for container in [
+            Container::Pdf,
+            Container::Compressed,
+            Container::OlderOffice,
+        ] {
+            assert_eq!(Cannot::Damaged(container).would(), Would::ACompleteCopy);
+        }
+        assert_eq!(Cannot::Empty.would(), Would::ACompleteCopy);
+        assert_eq!(Cannot::Unrecognised.would(), Would::WhoeverMadeIt);
+        assert_eq!(
+            Cannot::NothingHereOpens(Kind::WebpImage).would(),
+            Would::AnotherMachineOrFormat
+        );
+        assert_ne!(
+            Cannot::Damaged(Container::Pdf).would(),
+            Cannot::NothingHereOpens(Kind::Pdf).would()
+        );
+    }
+
+    /// **The outcome for a file that cannot be opened is its explanation**:
+    /// why, then what would — never the reason alone.
+    #[test]
+    fn cannot_open_says_why_and_then_what_would() {
+        let strings = in_english();
+        let outcome = Outcome::CannotOpen(Cannot::PasswordProtected);
+        assert_eq!(
+            texts(&outcome.said(&strings)),
+            [
+                "This is an Office document protected with a password, and this machine cannot \
+                 open a document protected that way",
+                "What would open is a copy saved without the password, which whoever sent it can \
+                 make"
+            ]
+        );
+        assert_eq!(
+            outcome.said(&strings),
+            Cannot::PasswordProtected.explained(&strings)
+        );
     }
 
     /// **Every outcome is reached from what the bytes said, and says so.**

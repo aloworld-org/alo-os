@@ -177,7 +177,18 @@ impl NotConverted {
             }
             Self::NotWhatItsNameSays(decided) => {
                 let mut said = decided.said(strings);
-                said.truncate(1);
+                // What a file that cannot be opened is, why, and what would
+                // open it are all still true when nothing was converted; that
+                // it opens as something else is not, so only the finding stays.
+                if !matches!(
+                    decided,
+                    Decided::NotWhatItsNameSays {
+                        outcome: Outcome::CannotOpen(_),
+                        ..
+                    }
+                ) {
+                    said.truncate(1);
+                }
                 said.push(plainly(strings, words::NOTHING_WAS_CONVERTED));
                 said
             }
@@ -421,5 +432,83 @@ mod tests {
         said.sort();
         said.dedup();
         assert_eq!(said.len(), before);
+    }
+
+    /// **A document that cannot be opened is explained before *nothing was
+    /// converted***: what it is, why, and what would open it — and a name that
+    /// lies does not cut that short, while a name that lies about something that
+    /// opens keeps only the finding, because *this machine opens it* is not true
+    /// of a conversion that did not happen.
+    #[test]
+    fn a_document_that_cannot_be_opened_is_explained_before_nothing_was_converted() {
+        let strings = in_english();
+        let texts = |not: &NotConverted| -> Vec<String> {
+            not.said(&strings)
+                .iter()
+                .map(|said| said.text().to_owned())
+                .collect()
+        };
+        let nothing = plainly(&strings, words::NOTHING_WAS_CONVERTED)
+            .text()
+            .to_owned();
+
+        let damaged = texts(&NotConverted::CannotBeOpened(Cannot::Damaged(
+            alo_opening::Container::Compressed,
+        )));
+        let explained = Cannot::Damaged(alo_opening::Container::Compressed).explained(&strings);
+        let mut expected: Vec<String> = explained
+            .iter()
+            .map(|said| said.text().to_owned())
+            .collect();
+        expected.push(nothing.clone());
+        assert_eq!(damaged, expected);
+        assert!(
+            damaged
+                .first()
+                .is_some_and(|said| said.starts_with("This file is damaged"))
+        );
+
+        let mut program = std::io::Cursor::new(b"\x7fELF\x02\x01\x01\0\0\0\0\0\0\0\0\0".to_vec());
+        let lying = decide(
+            &mut program,
+            std::ffi::OsStr::new("report.docx"),
+            &ThisMachine::with_nothing(),
+        );
+        assert!(
+            matches!(
+                lying,
+                Ok(Decided::NotWhatItsNameSays {
+                    outcome: Outcome::CannotOpen(Cannot::AProgram),
+                    ..
+                })
+            ),
+            "{lying:?}"
+        );
+        let Ok(lying) = lying else { return };
+        let mut expected =
+            vec!["This file is named as a Word document, but it is a program".to_owned()];
+        expected.extend(
+            Cannot::AProgram
+                .explained(&strings)
+                .iter()
+                .map(|said| said.text().to_owned()),
+        );
+        expected.push(nothing.clone());
+        assert_eq!(texts(&NotConverted::NotWhatItsNameSays(lying)), expected);
+
+        let opens = Decided::NotWhatItsNameSays {
+            named: alo_opening::Named::A(Kind::WordDocument),
+            outcome: Outcome::OpensAsItIs {
+                kind: Kind::PngImage,
+                macros: alo_opening::Macros::NoneSeen,
+            },
+        };
+        assert_eq!(
+            texts(&NotConverted::NotWhatItsNameSays(opens)),
+            [
+                "This file is named as a Word document, but it is a PNG image".to_owned(),
+                nothing
+            ]
+        );
     }
 }

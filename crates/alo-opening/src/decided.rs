@@ -107,7 +107,8 @@ mod tests {
             [
                 "This file is named as a PDF document, but it is a program",
                 "This file is a program. Opening a file never runs a program, so it has not been \
-                 opened"
+                 opened",
+                "If a document was expected, whoever sent it can send the document itself instead"
             ]
         );
     }
