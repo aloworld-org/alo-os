@@ -225,7 +225,8 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 **Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason,
 and after 9 and 10. It installs beside a real Windows in a virtual machine and
 walks the switching both ways, which is the largest disk of the three.
-**Depends on:** 3, 8, 9, 10.
+**Depends on:** 3, 8, 9, 10. Like task 10, it needs hardware virtualisation, which the
+third PC does not have (task 10 says why).
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -511,6 +512,16 @@ partition, before Linux, and hangs.
 **Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason: a
 real Windows in a virtual machine is tens of gigabytes of disk per run, and the
 development PC has about 25 GB at its best. **Depends on:** 3.
+
+**And for hardware virtualisation, as found on the third PC, 2026-09-16.** The third
+PC has the disk but no hardware virtualisation: it is a VMware guest, and
+`qemu -accel kvm` refuses there (`docs/quirks.md`), so every virtual machine it runs
+is emulated. Measured there, an emulated install of alo OS alone took forty-six
+minutes. This task installs a Windows unattended and restarts it to its desktop at
+least eight times, once after each step the installer is killed at and once for the
+whole road. That has not been timed under emulation, but at the measured speed one
+run is many hours, far past a worker's ninety-minute limit, so the third PC does
+not take it. It needs a machine where Hyper-V or KVM works.
 
 Split from task 3 on 2026-09-15. `crates/alo-installer` is written and every
 decision in it is tested against a scripted Windows; its checks have been run,
