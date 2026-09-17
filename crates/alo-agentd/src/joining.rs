@@ -69,6 +69,13 @@
 //! was down to its `fe80::` address, and without this reading the machine never
 //! joins it again.
 //!
+//! Where the kernel **dropped** what it said — a routing socket not read in time
+//! during a burst of network changes — every network is left and joined afresh,
+//! and the service log says so once for that round ([`DROPPED`]).
+//! `crate::a_machine_that_missed_what_the_kernel_said` is the measurement: a
+//! socket overflowed on a real kernel while both cables were re-laid identically
+//! is still joined and found on each.
+//!
 //! # Over IPv6, on that notification
 //!
 //! Where the machine could open an IPv6 discovery socket, every IPv6 link-local
@@ -179,9 +186,10 @@ impl Joining {
                 said(&format!(
                     "what the kernel said about a network change could not be read ({why}); the interfaces are asked again anyway, and every membership is taken afresh"
                 ));
-                went.lost();
+                went = Went::any_of_them();
             }
         }
+        said_if_dropped(&went, said);
         self.follow(&went, said);
         went
     }
@@ -214,6 +222,19 @@ impl Joining {
             .collect();
         let newly = joined_on(new, |network| join(discovery, network), said);
         joined.extend(newly);
+    }
+}
+
+/// What the service log says when the kernel dropped what it said about this
+/// machine's networks because nobody read it in time.
+pub const DROPPED: &str = "the kernel dropped what it said about this machine's networks, because it was not read in time; which networks went is not known, so discovery is joined and answered afresh on every network this machine is on";
+
+/// Say [`DROPPED`] once for a round whose messages the kernel dropped, and
+/// nothing for any other round — a message that could not be read included,
+/// which is said where it is found.
+fn said_if_dropped(went: &Went, said: &mut dyn FnMut(&str)) {
+    if went.was_dropped() {
+        said(DROPPED);
     }
 }
 
@@ -270,7 +291,7 @@ mod tests {
 
     use alo_nearby::THE_IPV6_ADDRESS;
 
-    use super::{join, kept_and_gone, left};
+    use super::{DROPPED, join, kept_and_gone, left, said_if_dropped};
     use crate::interfaces_that_went::Went;
     use crate::networks::{
         IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface, Network, link_local_networks,
@@ -383,6 +404,24 @@ mod tests {
         let (kept, gone) = kept_and_gone(joined.into_iter(), &now, &went);
         assert!(kept.is_empty(), "a round that lost messages kept {kept:?}");
         assert_eq!(gone.len(), 3);
+    }
+
+    /// **A round whose messages the kernel dropped says so once, and no other
+    /// round says it** — not one where nothing went, not one where an interface
+    /// was said to go, and not one that could not be read.
+    #[test]
+    fn a_round_the_kernel_dropped_messages_in_says_so_once_and_no_other_round_does() {
+        let mut lines = Vec::new();
+        let mut dropped = Went::nothing();
+        dropped.lost();
+        said_if_dropped(&dropped, &mut |line| lines.push(line.to_owned()));
+        assert_eq!(lines, vec![DROPPED.to_owned()]);
+
+        let mut lines = Vec::new();
+        for round in [Went::nothing(), Went::any_of_them()] {
+            said_if_dropped(&round, &mut |line| lines.push(line.to_owned()));
+        }
+        assert!(lines.is_empty(), "{lines:?}");
     }
 
     /// **A join at a number no interface has is refused**, never counted as

@@ -1442,6 +1442,40 @@ in the discovery group* — the service counting itself joined on an interface n
 on the cable can reach it through.
 **Date:** 2026-09-17.
 
+### The Linux kernel — a routing socket nobody reads overflows quickly, says so once, and drops everything after, deletions included
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
+`nsenter`), iproute2 6.19.0 (`ip -batch`, `veth`), procps `kill`; measured on
+2026-09-17 by `crates/alo-agentd/src/a_machine_that_missed_what_the_kernel_said.rs`.
+**Behaviour:** `netlink(7)` says a socket whose receive buffer is full gets
+`ENOBUFS` and that messages are lost; it does not say how soon, or how a test can
+tell it happened. With the service's routing socket (`RTMGRP_LINK |
+RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR`, default receive buffer) in a process held
+still with `SIGSTOP`:
+
+- **One batch of 64 `veth` pairs made and deleted in its network overflows it.**
+  The kernel counted 164 messages dropped after that batch.
+- **The kernel counts the drops per socket, where a test can read them.** The
+  `Drops` column of `/proc/<pid>/net/netlink`, on the row whose inode is the
+  socket's (`/proc/<pid>/fd`) and whose `Groups` is `00000111`. It was `0` before
+  the burst.
+- **Everything after the overflow is dropped too, while nobody reads**, including
+  `RTM_DELLINK` for a cable that is really gone and the `RTM_NEWADDR` that says a
+  re-laid link-local address finished duplicate address detection. Deleting and
+  re-laying two cables raised the count from 164 to 180.
+- **What the reader then gets is one `ENOBUFS` and whatever was queued before the
+  overflow.** The service said its log line for dropped messages exactly once.
+- **Multicast memberships behave as with nothing dropped.** Neither re-laid
+  interface was in `224.0.0.251` or `ff02::fb`, although the service's sockets
+  still held memberships at both numbers.
+
+**Our response:** `crate::interfaces_that_went::Went::lost` is *any interface may
+have gone*: every responder is let go of and made again and every IPv6 join is
+taken afresh, and `crate::joining` says `DROPPED` in the service log once. There is
+no larger receive buffer: a buffer only moves the size of the burst that overflows
+it. With `lost` read as nothing having gone, the fixture fails at *reception never
+followed its cables … 40 in the IPv4 group: false; 44 in the IPv6 group: false*.
+**Date:** 2026-09-17.
+
 ### The Linux kernel — a multicast group joined "anywhere" is joined on one interface, and a question to the group leaves by the default route unless it is sent from an interface's own address
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3 (`unshare`,
 `nsenter`), iproute2 6.19.0 (`ip`, `veth`), rustix 1.1.4; measured on 2026-09-15 by

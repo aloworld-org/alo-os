@@ -43,6 +43,19 @@
 //! membership is taken afresh once. That costs a report on each network on the
 //! rare round it happens, and it never leaves a machine counted joined where it
 //! is not.
+//!
+//! The two are told apart for one reason: **messages the kernel dropped are said
+//! in the service log**, once, by the round that finds out
+//! ([`Went::was_dropped`]). A burst that overflows the socket — a dock with a
+//! dozen adapters, a container host rebuilding its bridges while the service is
+//! descheduled — is something a person asking *why was it not found for a
+//! moment* should be able to see happened, and the kernel says `ENOBUFS` once per
+//! overflow. A message merely unreadable is a parser's disagreement with the
+//! kernel, not an event on the machine, and is not said as one.
+//! `crate::a_machine_that_missed_what_the_kernel_said` is the measurement: a
+//! routing socket overflowed on a real kernel, with both cables re-laid while it
+//! was full, is still found and reached on each — and is not, with [`Went::lost`]
+//! read as nothing having gone.
 
 use std::collections::BTreeSet;
 
@@ -56,6 +69,8 @@ pub struct Went {
     /// Whether something it said was lost or unreadable, so any interface may
     /// have gone.
     unknown: bool,
+    /// Whether the kernel said it dropped messages nobody read in time.
+    dropped: bool,
 }
 
 impl Went {
@@ -72,23 +87,34 @@ impl Went {
         Self {
             numbered: BTreeSet::new(),
             unknown: true,
+            dropped: false,
         }
     }
 
     /// Read one datagram the kernel sent on the routing socket.
     ///
-    /// One that cannot be read is [`lost`](Self::lost): which interfaces it
-    /// said went is not known.
+    /// One that cannot be read is any interface having gone: which interfaces
+    /// it said went is not known. It is not [`lost`](Self::lost) — the kernel
+    /// dropped nothing.
     pub fn heard(&mut self, datagram: &[u8]) {
         match links_deleted_in(datagram) {
             Ok(deleted) => self.numbered.extend(deleted),
-            Err(_) => self.lost(),
+            Err(_) => self.unknown = true,
         }
     }
 
-    /// The kernel dropped messages nobody read in time.
+    /// The kernel dropped messages nobody read in time: any interface may have
+    /// gone, and the round [`was_dropped`](Self::was_dropped).
     pub const fn lost(&mut self) {
         self.unknown = true;
+        self.dropped = true;
+    }
+
+    /// Whether the kernel said, this round, that it dropped messages — which
+    /// the service log says, where a message merely unreadable is not.
+    #[must_use]
+    pub const fn was_dropped(&self) -> bool {
+        self.dropped
     }
 
     /// Whether the interface numbered `index` went — or may have.
@@ -145,13 +171,36 @@ mod tests {
     #[test]
     fn what_was_lost_or_cannot_be_read_is_any_interface_having_gone() {
         let mut lost = Went::nothing();
+        lost.heard(&deleted(40));
         lost.lost();
         assert!(lost.includes(7));
-        assert_eq!(lost, Went::any_of_them());
+        assert!(lost.includes(40));
 
         let mut unreadable = Went::nothing();
         let whole = deleted(40);
         unreadable.heard(whole.get(..whole.len() - 4).unwrap());
         assert!(unreadable.includes(41), "{unreadable:?}");
+        assert!(Went::any_of_them().includes(41));
+    }
+
+    /// **Only messages the kernel dropped are a round that was dropped** — never
+    /// a round where nothing was lost, nor one with a message cut short, nor one
+    /// that could not be read at all. Each of those is still any interface
+    /// having gone; none is what the service log reports as dropped.
+    #[test]
+    fn only_messages_the_kernel_dropped_are_a_round_that_was_dropped() {
+        let mut dropped = Went::nothing();
+        dropped.heard(&deleted(40));
+        assert!(!dropped.was_dropped());
+        dropped.lost();
+        assert!(dropped.was_dropped());
+
+        assert!(!Went::nothing().was_dropped());
+        assert!(!Went::any_of_them().was_dropped());
+        let mut unreadable = Went::nothing();
+        let whole = deleted(40);
+        unreadable.heard(whole.get(..whole.len() - 4).unwrap());
+        assert!(unreadable.includes(40));
+        assert!(!unreadable.was_dropped(), "{unreadable:?}");
     }
 }

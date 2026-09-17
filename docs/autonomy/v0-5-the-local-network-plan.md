@@ -1668,7 +1668,32 @@ that network never went.
 
 ### 33. A machine that missed what the kernel said about its networks is still found on every one
 
-**Status:** ready. **Depends on:** 31, 32.
+**Status:** **Done, 2026-09-17.** Measured on a real kernel by
+`crates/alo-agentd/src/a_machine_that_missed_what_the_kernel_said.rs`. Reception
+serves as `src/main.rs` does, with a far end on two `veth` cables laid every time at
+the same numbers and hardware addresses: one carrying IPv4 (40/41) and one carrying
+link-local IPv6 only (44/45). **The overflow is made certain rather than hoped
+for.** Reception is held still with `SIGSTOP`. Batches of 64 `veth` pairs are then
+made and deleted in its network until the kernel's own `Drops` count rises for
+reception's routing socket. That socket is found in `/proc/<pid>/net/netlink` by
+its inode among reception's descriptors and its groups `00000111`; the count was 0
+before and 164 after one batch. Both cables are then deleted and laid again
+identically, and the count must rise again (180): what the kernel said about the
+cables was dropped too. Neither re-laid interface is in its group. Once reception
+has followed the kernel (read from `/proc/<pid>/net/igmp` and `igmp6`), the far
+end's **first** question on each cable is answered with the same bytes as before,
+the port is reached on each, and the door answers. The service log says `DROPPED`
+exactly once, and the service stops only when told to. **Product change:**
+`Went` now tells messages the kernel dropped (`lost`, `was_dropped`) from a message
+it could not read. `crate::joining` says `DROPPED` once for a round in which
+messages were dropped; before this change, a dropped burst left no trace in the
+log. Mutation run: with `Went::lost` read as nothing having gone, the fixture fails
+at *reception never followed its cables … 40 in the IPv4 group: false; 44 in the
+IPv6 group: false*. Contract: `docs/contracts/local-network-wire.md` (*A cable
+deleted and laid again before the machine looks*, additive). `docs/quirks.md`
+records the kernel. The report is
+`docs/autonomy/updates/a-machine-that-missed-what-the-kernel-said.md`.
+**Depends on:** 31, 32.
 
 *Machines find each other with zero configuration.* Tasks 31 and 32 measured the
 service reading the kernel's `RTM_DELLINK` after being held still across a cable
@@ -1701,3 +1726,38 @@ then counts itself joined everywhere is a machine nobody finds until it restarts
   the fix — a buffer only moves the burst that overflows it. What reality does that
   the specification does not say goes in `docs/quirks.md`. Nothing in `alo-shell`,
   nothing in `image/`.
+
+### 34. A dock with a dozen adapters is found on every one of them at once
+
+**Status:** ready. **Depends on:** 29, 33.
+
+*Machines find each other with zero configuration.* Every fixture so far has put a
+machine on one or two cables. Task 33 found that a single batch of changes in one
+network overflows the service's routing socket, so a real dock is a burst. A
+docking station or a lab switch with many ports brings up a dozen interfaces in one
+moment, and the service then holds one responder, one listener and one IPv6 join
+per network. Nobody has measured that a machine brought onto many networks in one
+burst is found and reached on **each** of them. That includes the last one
+enumerated, and a burst that overflows the routing socket while the adapters come
+up. A socket, a descriptor or a join that runs out part of the way through would
+show up as *found on eleven networks of twelve*, and nothing in the service log
+would say which one was missed.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does, with
+  a far end on twelve `veth` cables laid in one batch while the machine is held
+  still (`crate::a_machine_that_missed_what_the_kernel_said` shows how), six
+  carrying IPv4 and six carrying link-local IPv6 only. Once it has followed the
+  kernel (read per interface from `/proc/<pid>/net/igmp` and `igmp6`), the far
+  end's first question on every cable is answered and the port is reached on every
+  cable that carries IPv4, tested. Every answer is the same bytes, tested. Half the
+  cables deleted in one batch leaves the machine found on the other half and on
+  nothing at the deleted ones, with the service still running, tested. Whether the
+  burst overflowed the routing socket is read from the kernel's drop count and
+  written up either way. A failure on one network is a line in the service log
+  naming that network, never a stopped service and never a silent miss, tested.
+- **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, what crosses the wire
+  unchanged. No interval and no polling. No limit on how many networks a machine is
+  found on, unless a limit the kernel really imposes is measured, written into
+  `docs/quirks.md` and said in the service log where it bites. Nothing in
+  `alo-shell`, nothing in `image/`.

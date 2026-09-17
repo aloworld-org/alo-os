@@ -448,7 +448,10 @@ reads its interfaces — a dock re-enumerating its adapters, a namespace rebuilt
   and a pairing proposed there is measured and completed on that interface.
 - **Where a machine cannot tell what went** — the kernel's notices were lost or
   unreadable — it answers every network again from the start once, rather than
-  assume nothing went.
+  assume nothing went. Added 2026-09-17, additively: this holds when a burst of
+  network changes overflows what the machine was told while it was not looking,
+  and the cables it is on come back identical in that time — the first question on
+  each is answered and its port answers there, with no restart.
 - **What is said is the same bytes before and after.**
 
 ## Versioning
