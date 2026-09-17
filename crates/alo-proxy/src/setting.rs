@@ -32,6 +32,7 @@
 //! bottom of this file is what says so, against the whole setting rather than
 //! against the address alone.
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::address::ProxyAddress;
@@ -134,6 +135,15 @@ impl TheProxy {
             Self::Manual { .. } => words::THE_PROXY_MANUAL,
             Self::Automatic { .. } => words::THE_PROXY_AUTOMATIC,
         }
+    }
+
+    /// What a person is shown about this setting, in the language they read.
+    ///
+    /// The address itself is never inside the sentence: it is data shown beside
+    /// it, as it was written.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
     }
 }
 

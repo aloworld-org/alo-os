@@ -943,6 +943,7 @@ dependencies = [
  "alo-measuring",
  "alo-printing",
  "alo-proxy",
+ "alo-saying",
  "alo-strings",
  "serde",
  "serde_json",

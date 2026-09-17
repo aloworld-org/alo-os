@@ -68,10 +68,12 @@
 //! that took the second half of that sentence by itself would decide, on a
 //! network it cannot see, that a company's rule had stopped applying.
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::address::{NotAnAddress, ProxyAddress, SpokenTo};
 use crate::road::Way;
+use crate::words;
 
 /// The most characters the address of a configuration may be.
 ///
@@ -80,23 +82,53 @@ use crate::road::Way;
 pub const LONGEST: usize = 2048;
 
 /// Why some text is not the address an automatic configuration is at.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+///
+/// **No `Display`**, so that the only road to words is
+/// [`NotAConfiguration::said`]: every one of these is somebody having just typed
+/// into a settings panel, as [`NotAnAddress`] is.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotAConfiguration {
     /// Nothing, or only blank space.
-    #[error("no address was given for the automatic configuration")]
     Nothing,
     /// Not `http` or `https`: the two ways this machine fetches anything.
-    #[error("an automatic configuration is fetched over http or https, and that address is not")]
     NotFetchable,
     /// Blank space or a control character inside it.
-    #[error("that address is not one line")]
     NotOneLine,
-    /// Longer than an address may be.
-    #[error("that address is longer than {LONGEST} bytes")]
+    /// Longer than [`LONGEST`].
     TooLong,
     /// A name and a password written into the address.
-    #[error("that address carries a name and a password in it")]
     CarriesAPassword,
+}
+
+impl NotAConfiguration {
+    /// Every way of not being one, in the order this file declares them.
+    pub const EVERY: [Self; 5] = [
+        Self::Nothing,
+        Self::NotFetchable,
+        Self::NotOneLine,
+        Self::TooLong,
+        Self::CarriesAPassword,
+    ];
+
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> words::Word {
+        match self {
+            Self::Nothing => words::CONFIGURATION_NOWHERE,
+            Self::NotFetchable => words::CONFIGURATION_NOT_FETCHABLE,
+            Self::NotOneLine => words::CONFIGURATION_NOT_ONE_LINE,
+            Self::TooLong => words::CONFIGURATION_TOO_LONG,
+            Self::CarriesAPassword => words::CONFIGURATION_CARRIES_A_PASSWORD,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// Where an automatic configuration is.
@@ -378,6 +410,26 @@ mod tests {
             ConfigurationAddress::checked(&format!("http://a/{}", "x".repeat(LONGEST)))
                 .unwrap_err(),
             NotAConfiguration::TooLong
+        );
+    }
+
+    /// **Each refusal of what somebody typed is a sentence of its own in the
+    /// vocabulary**, whole, and none of them repeats what was typed.
+    #[test]
+    fn each_refusal_of_a_configuration_address_is_its_own_sentence() {
+        let strings = crate::testing::in_english();
+        let mut seen = std::collections::BTreeSet::new();
+        for refusal in NotAConfiguration::EVERY {
+            let said = refusal.said(&strings);
+            assert!(!said.is_a_bug(), "{refusal:?}: {said}");
+            assert!(said.unfilled().is_empty(), "{refusal:?}: {said}");
+            assert!(!said.text().contains("hunter2"), "{refusal:?}: {said}");
+            assert!(seen.insert(refusal.word().named()), "{refusal:?}");
+        }
+        let typed = ConfigurationAddress::checked("http://anna:hunter2@wpad.example.com/c");
+        assert_eq!(
+            typed.unwrap_err().said(&strings).text(),
+            words::CONFIGURATION_CARRIES_A_PASSWORD.says()
         );
     }
 }

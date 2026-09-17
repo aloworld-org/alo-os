@@ -83,12 +83,14 @@ pub const UPDATED: Word = Word::saying(
 /// An application was removed, and its grants with it.
 pub const REMOVED: Word = Word::saying(
     "software.removed",
-    "{application} is removed, and everything it had been allowed has ended",
+    "{application} is removed. Everything it was allowed has ended, and so has every permission \
+     to use it",
 )
 .noting(
     "Said once an application has been taken off this machine. Everything the person had allowed \
-     it — a folder, the camera — ended in the same moment, so installing it again later starts \
-     with nothing allowed. {application} is the application's identifier.",
+     it — a folder, the camera — ended in the same moment, and so did every permission to use it, \
+     such as an assistant's permission to open documents in it. Installing it again later starts \
+     with nothing allowed either way. {application} is the application's identifier.",
 );
 
 // ---------------------------------------------------------------------------

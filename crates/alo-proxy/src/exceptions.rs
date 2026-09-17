@@ -32,25 +32,56 @@
 
 use std::collections::BTreeSet;
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::reaching::{LONGEST, Reaching};
+use crate::words;
 
 /// Why some text is not an exception.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+///
+/// **No `Display`**, so that the only road to words is
+/// [`NotAnException::said`]: the list is typed into a settings panel, as a
+/// proxy's address is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NotAnException {
     /// Nothing, or only blank space.
-    #[error("no host was given")]
     Nothing,
     /// Blank space or a control character inside it.
-    #[error("that host is not one line")]
     NotOneLine,
-    /// Longer than a host can be.
-    #[error("that host is longer than {LONGEST} characters")]
+    /// Longer than a host can be ([`LONGEST`]).
     TooLong,
     /// Only a dot, or a dot with nothing under it.
-    #[error("that names no domain")]
     NoDomain,
+}
+
+impl NotAnException {
+    /// Every way of not being one, in the order this file declares them.
+    pub const EVERY: [Self; 4] = [
+        Self::Nothing,
+        Self::NotOneLine,
+        Self::TooLong,
+        Self::NoDomain,
+    ];
+
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(self) -> words::Word {
+        match self {
+            Self::Nothing => words::EXCEPTION_NOTHING,
+            Self::NotOneLine => words::EXCEPTION_NOT_ONE_LINE,
+            Self::TooLong => words::EXCEPTION_TOO_LONG,
+            Self::NoDomain => words::EXCEPTION_NO_DOMAIN,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// The places that go straight out.
@@ -201,6 +232,24 @@ mod tests {
             NotAnException::TooLong
         );
         assert_eq!(Exceptions::of(["."]).unwrap_err(), NotAnException::NoDomain);
+    }
+
+    /// **Each refusal of the list is a sentence of its own in the
+    /// vocabulary**, whole — and what was typed is not in it.
+    #[test]
+    fn each_refusal_of_the_list_is_its_own_sentence() {
+        let strings = crate::testing::in_english();
+        let mut seen = BTreeSet::new();
+        for refusal in NotAnException::EVERY {
+            let said = refusal.said(&strings);
+            assert!(!said.is_a_bug(), "{refusal:?}: {said}");
+            assert!(said.unfilled().is_empty(), "{refusal:?}: {said}");
+            assert!(seen.insert(refusal.word().named()), "{refusal:?}");
+        }
+        let typed = Exceptions::of(["intranet.example.com", "build box"]).unwrap_err();
+        let said = typed.said(&strings);
+        assert_eq!(said.text(), words::EXCEPTION_NOT_ONE_LINE.says());
+        assert!(!said.text().contains("build box"), "{said}");
     }
 
     /// Nothing excepted is a list, not an absence of one, and says so.

@@ -1,7 +1,9 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Four groups: what the machine's proxy is, whose it is, why a person could not
-//! change it, and why a road out was not taken. Every refusal says **what did
+//! What the machine's proxy is, whose it is, why a person could not change it,
+//! why a road out was not taken, and why something a person typed into the
+//! settings panel — a proxy's address or password, the address of the network's
+//! rule, or a place reached directly — is not one. Every refusal says **what did
 //! not happen and what a person does about it** — *nothing was sent* on its own
 //! leaves somebody staring at a window that did nothing.
 //!
@@ -115,13 +117,15 @@ pub const THE_PROXY_COULD_NOT_BE_WORKED_OUT: Word = Word::saying(
 /// This machine has nothing that works an automatic configuration out.
 pub const NOTHING_WORKS_OUT_THE_PROXY: Word = Word::saying(
     "proxy.refused.nothing-works-it-out",
-    "This machine cannot read the rule this network publishes, so nothing was sent. Set the proxy \
-     here by hand, or ask whoever runs this network for its address",
+    "This machine cannot read the rule this network publishes, so nothing was sent. Ask whoever \
+     runs this network for the address of its proxy",
 )
 .noting(
     "Said on a machine that has nothing able to read an automatic configuration. \"nothing was \
-     sent\" must survive translation. The second sentence gives the person two things they can \
-     actually do.",
+     sent\" must survive translation. The second sentence is true on every machine: on the \
+     person's own machine the address they are given can be typed into settings, and on a machine \
+     an organisation manages the proxy is the organisation's to set, so the sentence does not tell \
+     the person to change it.",
 );
 
 // ---------------------------------------------------------------------------
@@ -184,11 +188,11 @@ pub const ADDRESS_NO_PLACE_FOR_THE_PASSWORD: Word = Word::saying(
 /// The address is not the name of a host.
 pub const ADDRESS_NOT_A_HOST: Word = Word::saying(
     "proxy.address.not-a-host",
-    "That is not the name of a proxy. Type the name of the machine on its own, without http:// in 
+    "That is not the name of a proxy. Type the name of the machine on its own, without http:// in \
      front of it and without anything after it",
 )
 .noting(
-    "Said when what was typed is not a host name or an address — usually a whole web address 
+    "Said when what was typed is not a host name or an address — usually a whole web address \
      pasted into the field, or a path. The advice is the useful half.",
 );
 
@@ -212,11 +216,115 @@ pub const PASSWORD_NOT_SENDABLE: Word = Word::saying(
      repeats what was typed.",
 );
 
+// ---------------------------------------------------------------------------
+// What somebody typed that was not where the network's rule is.
+// ---------------------------------------------------------------------------
+
+/// Nothing where the address of the rule goes.
+pub const CONFIGURATION_NOWHERE: Word = Word::saying(
+    "proxy.configuration.nowhere",
+    "Type the address this network publishes its rule at, or choose to reach the network directly",
+)
+.noting(
+    "Said when the field for an automatic configuration's address is empty. \"its rule\" is the \
+     rule whoever runs the network publishes about where each connection goes; do not name the \
+     notation it is written in.",
+);
+
+/// The address is not one this machine fetches anything over.
+pub const CONFIGURATION_NOT_FETCHABLE: Word = Word::saying(
+    "proxy.configuration.not-fetchable",
+    "That is not an address this machine can fetch the network's rule from. Type the whole address, \
+     beginning with http:// or https://",
+)
+.noting(
+    "Said when the address has no http:// or https:// in front of it, names another kind of \
+     address such as a file, or names no machine. Leave http:// and https:// exactly as they are. \
+     The sentence deliberately does not repeat what was typed.",
+);
+
+/// The address is not one line.
+pub const CONFIGURATION_NOT_ONE_LINE: Word = Word::saying(
+    "proxy.configuration.not-one-line",
+    "That address is not one line. Type the address this network publishes its rule at on its own",
+)
+.noting(
+    "Said when what was typed or pasted holds a line break, a blank or a control character. The \
+     sentence deliberately does not repeat what was typed.",
+);
+
+/// The address is longer than this machine accepts.
+pub const CONFIGURATION_TOO_LONG: Word = Word::saying(
+    "proxy.configuration.too-long",
+    "That address is longer than this machine accepts. Check it against what you were given",
+)
+.noting("Said when the address is longer than any address this machine fetches from may be.");
+
+/// A name and a password were written into the address.
+pub const CONFIGURATION_CARRIES_A_PASSWORD: Word = Word::saying(
+    "proxy.configuration.carries-a-password",
+    "That address has a name and a password written into it. Type the address on its own — a \
+     password written into it would be written into this machine's settings with it",
+)
+.noting(
+    "Said when somebody pastes an address of the form name:password@host for the network's rule. \
+     The clause after the dash is the reason it is refused and is worth keeping.",
+);
+
+// ---------------------------------------------------------------------------
+// What somebody typed that was not a place to reach directly.
+// ---------------------------------------------------------------------------
+
+/// One of the places is empty.
+pub const EXCEPTION_NOTHING: Word = Word::saying(
+    "proxy.exception.nothing",
+    "One of the places to reach directly is empty. Type the name of a machine or a domain there, or \
+     remove it",
+)
+.noting(
+    "Said about the list of machines and domains that are reached without the proxy, when one \
+     entry in it holds nothing. The whole list is refused rather than the empty entry dropped, so \
+     nothing about how this machine reaches the network changed.",
+);
+
+/// One of the places is more than one name.
+pub const EXCEPTION_NOT_ONE_LINE: Word = Word::saying(
+    "proxy.exception.not-one-line",
+    "One of the places to reach directly is not one name. Type each machine or domain as an entry \
+     of its own",
+)
+.noting(
+    "Said when one entry in the list holds a blank, a line break or a control character — usually \
+     two names typed into one entry. Nothing about how this machine reaches the network changed.",
+);
+
+/// One of the places is longer than a host can be.
+pub const EXCEPTION_TOO_LONG: Word = Word::saying(
+    "proxy.exception.too-long",
+    "One of the places to reach directly is longer than any machine's name can be. Check it against \
+     what you were given",
+)
+.noting(
+    "Said when one entry in the list is longer than a host name may be. Nothing about how this \
+     machine reaches the network changed.",
+);
+
+/// One of the places is only a dot.
+pub const EXCEPTION_NO_DOMAIN: Word = Word::saying(
+    "proxy.exception.no-domain",
+    "One of the places to reach directly names no domain. Type a name such as example.com, with or \
+     without a dot in front of it",
+)
+.noting(
+    "Said when one entry in the list is only a dot. example.com is an example domain and is not \
+     translated; a dot in front of a domain means the same domain and everything under it.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// string left off it is a string nothing can say.
-pub const EVERY_WORD: [Word; 17] = [
+pub const EVERY_WORD: [Word; 26] = [
     THE_PROXY_NONE,
     THE_PROXY_MANUAL,
     THE_PROXY_AUTOMATIC,
@@ -234,6 +342,15 @@ pub const EVERY_WORD: [Word; 17] = [
     ADDRESS_NOT_A_HOST,
     PASSWORD_BLANK,
     PASSWORD_NOT_SENDABLE,
+    CONFIGURATION_NOWHERE,
+    CONFIGURATION_NOT_FETCHABLE,
+    CONFIGURATION_NOT_ONE_LINE,
+    CONFIGURATION_TOO_LONG,
+    CONFIGURATION_CARRIES_A_PASSWORD,
+    EXCEPTION_NOTHING,
+    EXCEPTION_NOT_ONE_LINE,
+    EXCEPTION_TOO_LONG,
+    EXCEPTION_NO_DOMAIN,
 ];
 
 /// Why this crate's own list would not declare.
@@ -337,6 +454,23 @@ mod tests {
                 assert!(
                     !read.contains(machinery),
                     "{} names {machinery}: {read}",
+                    word.named()
+                );
+            }
+        }
+    }
+
+    /// **Every sentence and every note is one line with single blanks.** A
+    /// string continued onto the next line of this file without its trailing
+    /// backslash carries the line break and the indentation into what a person
+    /// reads, and two of them did.
+    #[test]
+    fn every_sentence_and_note_is_one_line_with_single_blanks() {
+        for word in everything() {
+            for text in [word.says(), word.note().unwrap_or_default()] {
+                assert!(
+                    !text.contains('\n') && !text.contains("  "),
+                    "{}: {text:?}",
                     word.named()
                 );
             }

@@ -64,6 +64,11 @@ alo-adapters = { path = "../alo-adapters" }
 # The workspace read for which crates declare verbs, so that list cannot drift
 # from the one handed to the terminal's check.
 alo-by-hand = { path = "../alo-by-hand" }
+# The one vocabulary the machine collects, so that *every sentence is in the
+# vocabulary* is asked of the vocabulary a person's machine actually speaks from,
+# and the walk from nothing to a working application is said through it — the
+# indicator's, the one list's and the agent's sentences beside this crate's own.
+alo-saying = { path = "../alo-saying" }
 
 [lints]
 workspace = true

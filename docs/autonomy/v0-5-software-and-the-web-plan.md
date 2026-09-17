@@ -240,7 +240,24 @@ acceptance is. The report is `docs/autonomy/updates/the-accessibility-fallback.m
 
 ### 7. Every sentence, and the walk from nothing to a working application
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
+**Status:** **Done, 2026-09-16.** Held in `crates/alo-software/tests`, the one
+crate that already reaches the other two:
+`every_sentence_of_software_and_the_web.rs` asks every word `alo-software`,
+`alo-proxy` and `alo-adapters` declare to be in the machine's collected
+vocabulary with its note, on one line, naming no packaging, bus, accessibility
+interface or browser engine; `from_nothing_to_a_working_application.rs` walks
+set a proxy → install the text editor → open a web link → the agent opens a
+document through the reference adapter → remove it, and a second walk stopped at
+each step, each against its table, with every row's key measured rather than
+written down. Reading them fixed four things: two proxy sentences carrying a line
+break, the automatic configuration's address and the places reached directly
+refused only in English (`NotAConfiguration` and `NotAnException` now have words
+and no `Display`), a managed machine told to set its proxy by hand, and removal
+not saying that permission to use the application ended. What
+`capability.refused.never-granted` says about an application's grant is named for
+that crate's owner. The report, with both tables, is
+`docs/autonomy/updates/every-sentence-and-the-walk-to-a-working-application.md`.
+**Depends on:** 1, 2, 3, 4, 5, 6.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — set a proxy, install an application, open a web link
