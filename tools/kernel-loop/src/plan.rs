@@ -173,6 +173,13 @@ pub fn numbered(at: &Path, number: u32) -> Result<Option<Task>, String> {
         .find(|task| task.number == number))
 }
 
+/// Every task in a plan that has already been read, as this program reads the
+/// one it runs — for [`crate::who_owns`], which asks it of every other plan.
+#[must_use]
+pub fn tasks_in(written: &str) -> Vec<Task> {
+    read(written)
+}
+
 /// Every task in a plan that has already been read.
 ///
 /// Separated from the commit it comes out of so that what this program believes

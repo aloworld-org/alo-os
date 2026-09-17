@@ -102,6 +102,7 @@ mod recovering;
 mod repository;
 mod what_it_printed;
 mod where_it_builds;
+mod who_owns;
 mod worker;
 
 use std::path::Path;
