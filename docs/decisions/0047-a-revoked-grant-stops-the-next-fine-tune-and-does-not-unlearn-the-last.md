@@ -1,6 +1,14 @@
 # ADR 0047 — A revoked grant stops the next fine-tune and does not unlearn the last
 
-**Status:** accepted
+**Status:** **superseded** by
+[ADR 0048](0048-an-adapter-is-the-learning-and-the-base-weights-are-never-touched.md),
+2026-09-17, the same day. This decision answered *how do we tell a person that
+merged weights cannot be untrained*, and accepted merging without noticing it was
+a choice. ADR 0048 does not create the limitation: the base weights are never
+written to, what is learned lives in an adapter tied to the grant that produced
+it, and deleting that adapter takes back what that grant taught. Read it instead;
+this is kept because the reasoning it contains about what weights hold is still
+true, and because the loop does not rewrite what it decided.
 **Date:** 2026-09-17
 **Context:** [ADR 0001](0001-the-capability-model.md) §3 (grants are visible,
 revocable and expiring), [ADR 0014](0014-our-own-hosted-model-is-a-provider-like-any-other.md)

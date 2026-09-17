@@ -18,6 +18,16 @@
 //! errand such a departure would have to be made under **does not exist yet** —
 //! deliberately, and named there rather than worked around.
 //!
+//! # The base model is never written to
+//!
+//! What a fine-tune learns lives in an **adapter** beside the model, tied to the
+//! granted folder that taught it, applied when the model answers
+//! ([ADR 0048](../../../docs/decisions/0048-an-adapter-is-the-learning-and-the-base-weights-are-never-touched.md)).
+//! So deleting one adapter takes back what one folder taught and leaves
+//! everything else — which is only possible because the bytes were never mixed.
+//! [`adapter`] is where that lives, and [`TheBaseIsUntouched`] is what catches a
+//! stack that would merge.
+//!
 //! # A fine-tune is a change, so a person approves it and the machine writes it down
 //!
 //! Training changes what the machine will say afterwards, so it is proposed and
@@ -33,12 +43,14 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod adapter;
 pub mod dataset;
 pub mod learned_from;
 pub mod leaving;
 pub mod words;
 pub mod working_folder;
 
+pub use adapter::{Adapter, Composed, TheBaseIsUntouched, TheBaseMoved};
 pub use dataset::{Dataset, NotTrainedOn, Skipped};
 pub use learned_from::LearnedFrom;
 pub use leaving::{WhatItWouldBe, why_an_adapted_model_cannot_simply_be_sent};

@@ -324,7 +324,7 @@ mod tests {
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
     const ONE_STRING_EACH: [(&str, &str); 46] = [
-        ("alo-adapting", "adapting.revoking-does-not-unlearn"),
+        ("alo-adapting", "adapting.deleting-this-adapter"),
         ("alo-access", "access.screen-reader"),
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-adapters", "adapters.not-carried-out.not-there"),
