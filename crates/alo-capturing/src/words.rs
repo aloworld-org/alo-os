@@ -223,7 +223,15 @@ pub const NOTHING_CAME_BACK: Word = Word::saying(
 );
 
 /// Everything a person is told when a picture was taken.
-pub const EVERY_TOLD: [Word; 3] = [SAVED, COPIED, SAVED_AND_COPIED];
+pub const EVERY_TOLD: [Word; 7] = [
+    SAVED,
+    COPIED,
+    SAVED_AND_COPIED,
+    SHARING_NOTHING,
+    SHARING_THE_WHOLE_SCREEN,
+    SHARING_ONE_WINDOW,
+    SHARING_A_PART_OF_THE_SCREEN,
+];
 
 /// Every refusal: why no picture was taken, or none was kept.
 pub const EVERY_REFUSAL: [Word; 12] = [
@@ -348,6 +356,49 @@ pub const TOO_MUCH_TO_ENCODE_BUT: Word = Word::saying(
 /// They are not messages a machine announces; they are what a person picks up.
 /// The group exists so that the test which walks the list cannot be satisfied
 /// by a tool that nothing offers.
+/// Nothing is shared with the call.
+pub const SHARING_NOTHING: Word = Word::saying(
+    "capturing.sharing.nothing",
+    "This call cannot see your screen",
+)
+.noting(
+    "Shown where a call application could ask to see the screen and nothing has been shared with \
+     it. It is the ordinary state, and it is said rather than left blank so that a person can \
+     tell it apart from a share they have forgotten about.",
+);
+
+/// The whole screen is shared.
+pub const SHARING_THE_WHOLE_SCREEN: Word = Word::saying(
+    "capturing.sharing.the-whole-screen",
+    "This call can see your whole screen, including anything that appears on it",
+)
+.noting(
+    "Shown while a person shares everything. The second half is the part that matters: whatever \
+     opens, arrives or pops up while the share lasts is seen by the call, and a person who \
+     pictured only the document they meant to show needs telling.",
+);
+
+/// One window is shared.
+pub const SHARING_ONE_WINDOW: Word = Word::saying(
+    "capturing.sharing.one-window",
+    "This call can see one window, and nothing else on your screen",
+)
+.noting(
+    "Shown while a person shares a single window. The promise in the second half is the reason \
+     somebody picks a window instead of the screen, so it must not be softened or dropped; the \
+     window's own name is shown beside this line rather than inside it.",
+);
+
+/// A part of the screen is shared.
+pub const SHARING_A_PART_OF_THE_SCREEN: Word = Word::saying(
+    "capturing.sharing.a-part-of-the-screen",
+    "This call can see one part of your screen, and nothing outside it",
+)
+.noting(
+    "Shown while a person shares a rectangle they drew. As with one window, the second half is \
+     the promise and must be kept whole.",
+);
+
 /// **The four sounds a person chooses between before a recording starts**, as
 /// a group of their own.
 ///
@@ -368,7 +419,7 @@ pub const EVERY_TOOL: [Word; 5] = [
 ///
 /// The three groups above are this list, divided by what a person is doing when
 /// they read one: told something, refused something, or picking up a tool.
-pub const EVERY_WORD: [Word; 24] = [
+pub const EVERY_WORD: [Word; 28] = [
     SAVED,
     COPIED,
     SAVED_AND_COPIED,
@@ -393,6 +444,10 @@ pub const EVERY_WORD: [Word; 24] = [
     BOTH_SOUNDS,
     TOO_MUCH_TO_ENCODE,
     TOO_MUCH_TO_ENCODE_BUT,
+    SHARING_NOTHING,
+    SHARING_THE_WHOLE_SCREEN,
+    SHARING_ONE_WINDOW,
+    SHARING_A_PART_OF_THE_SCREEN,
 ];
 
 /// The area every key in this crate is under.

@@ -139,7 +139,7 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 5. Sharing the screen in a call
 
-**Status:** ready — unblocked with task 4 by ADR 0051. **Depends on:** 1, 4.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 4.
 
 - **Acceptance:** a call application asking to share the screen receives exactly
   what the person picked — the whole screen, one window, or nothing — through the
