@@ -65,12 +65,12 @@ Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
 `not-bounded`, `left`,
-`held-back`, `left-on-its-own`, `updated`, `rolled-back` — and the fields under it depend on
+`held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered` — and the fields under it depend on
 that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
-**Every entry names whose authority it was under, except six.** `agent` is
+**Every entry names whose authority it was under, except seven.** `agent` is
 present on all of them but these:
 
 - `left-on-its-own`, which is alo OS reaching the network with nobody having
@@ -111,6 +111,19 @@ present on all of them but these:
   base is told anything — so a return is never recorded as an update, nor an
   update as a return. No agent is named and it is not a departure: the earlier
   build was still on the disk, and nothing was fetched.
+- `brokered`, added 2026-09-16 and additive, which is the privileged broker
+  (ADR 0001 §2, `crates/alo-broker`) answering one request for a system verb —
+  printers, the network, updates, storage. It is written by the broker before it
+  answers, for every request it receives. `verb` is the broker's own name for the
+  verb, and is absent when the request was never read as far as one;
+  `from_approval` is the approval the request's token was genuinely issued for,
+  and is absent when there was no genuine one; `refused` is absent when the verb
+  was handed on to be carried out, and otherwise one of `not-the-agent-service`,
+  `not-a-request`, `not-one-of-its-verbs`, `not-approved`, `approval-spent`,
+  `approval-lapsed` or `not-carried` — a tag, never a sentence. No agent is named:
+  the broker is told an approval and not whose grants it was proposed under, and
+  the turn's own entry for the same approval already names that. It is not a
+  departure.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
@@ -119,7 +132,7 @@ pairing rather than any agent, and a person opened a workspace no agent could
 open, so a name there would be an authority the
 record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
-with nobody's authority looks for the entries with no `agent`; the six are
+with nobody's authority looks for the entries with no `agent`; the seven are
 told apart by their tags, and only the first of them reached the network.
 
 **`not-bounded` is the machine's own refusal**, added 2026-09-12 and additive.

@@ -1,0 +1,45 @@
+[package]
+name = "alo-broker"
+version = "0.0.1"
+description = "The privileged broker: a closed list of system verbs, one door, and nothing else (ADR 0001 §2)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Every dependency here is held by `tests/small_enough_to_audit_in_an_afternoon.rs`,
+# by name. Adding one fails that test on purpose: a privileged component's
+# dependency list is part of what an afternoon's audit has to read, so growing it
+# is a decision somebody makes in the open rather than a line nobody noticed.
+
+[dependencies]
+# Where every answer is written down before it is given. Read, never edited: the
+# broker makes entries through `alo-record`'s own constructors and holds no type
+# of its own that could be mistaken for one.
+alo-record = { path = "../alo-record" }
+
+# The proof a turn's approval carries, and the digest an identity is made of:
+# HMAC-SHA-256 and SHA-256, rented rather than written, exactly as ADR 0031
+# decides for the pairing's proofs. Already compiled into every build through
+# `ureq`'s `rustls`, so this adds no code to the tree. Reached only from
+# `src/approving.rs` and `src/arguments.rs`.
+ring = { workspace = true }
+
+# The kernel's randomness, for the key a turn's approvals are proven with. One
+# narrow call, no fallback generator. Reached only from `src/approving.rs`.
+getrandom = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# Who is at the other end of the door, and handing the door to a group.
+# `SO_PEERCRED` and `chown` have no safe spelling in `std` on a stable compiler,
+# `CLAUDE.md` forbids unsafe, and `src/unix.rs` is the only file that names this
+# crate — the rule `alo-agentd`'s and `alo-sessiond`'s own `unix.rs` set.
+rustix = { workspace = true }
+
+[dev-dependencies]
+# Reading an entry the way the record file writes it, so a test can hold the
+# door's answer and the record's tag to one spelling.
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Twenty-three, and they divide in three. Sixteen are **what became of one entry** —
+//! Twenty-six, and they divide in three. Nineteen are **what became of one entry** —
 //! the short clause read at the head of a line, before the sentence the machine
 //! generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Sixteen clauses, and none of them is a category
+//! # Nineteen clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -256,6 +256,31 @@ pub const ROLLED_BACK: Word = Word::saying(
      own files were not changed by it.",
 );
 
+/// A change to the whole machine, which a person approved, was handed on to be
+/// made.
+pub const MACHINE_CHANGE_HANDED_ON: Word = Word::saying(
+    "recounting.outcome.machine-change-handed-on",
+    "a change to settings for the whole machine was passed on to be made, as the person approved",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. Settings for the whole \
+     machine are things like printers, the network, updates and drives, which only a protected part \
+     of the system may change. The person approved this change once, and this line is that \
+     protected part accepting it.",
+);
+
+/// A request to change the whole machine was refused, and nothing changed.
+pub const MACHINE_CHANGE_REFUSED: Word = Word::saying(
+    "recounting.outcome.machine-change-refused",
+    "a request to change settings for the whole machine was refused, and nothing was changed",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. Settings for the whole \
+     machine are things like printers, the network, updates and drives. The protected part of the \
+     system that changes them refused this request — it did not carry an approval the person had \
+     given, or that approval had already been used — so nothing about the machine changed.",
+);
+
 // ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
@@ -375,7 +400,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 24] = [
+pub const EVERY_WORD: [Word; 26] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -393,6 +418,8 @@ pub const EVERY_WORD: [Word; 24] = [
     LEFT_ON_ITS_OWN,
     UPDATED,
     ROLLED_BACK,
+    MACHINE_CHANGE_HANDED_ON,
+    MACHINE_CHANGE_REFUSED,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -407,7 +434,7 @@ pub const EVERY_WORD: [Word; 24] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 17] = [
+pub const EVERY_OUTCOME: [Word; 19] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -425,6 +452,8 @@ pub const EVERY_OUTCOME: [Word; 17] = [
     LEFT_ON_ITS_OWN,
     UPDATED,
     ROLLED_BACK,
+    MACHINE_CHANGE_HANDED_ON,
+    MACHINE_CHANGE_REFUSED,
 ];
 
 /// What an account says about itself, rather than about one entry.

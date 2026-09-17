@@ -37,7 +37,8 @@ own disk without the recovery road task 5 decides. Before writing the next task,
 
 ### 1. The broker: a closed list, a door, and nothing else
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-16.** **Depends on:** nothing. Report:
+`docs/autonomy/updates/the-brokers-closed-list-and-door.md`.
 
 *The broker is small enough to be audited in an afternoon, and that is a constraint on
 its design rather than a hope about its future* (`docs/contracts/agent-verbs.md`).
@@ -68,6 +69,11 @@ its design rather than a hope about its future* (`docs/contracts/agent-verbs.md`
   person does the same by hand in Settings through the same verbs (ADR 0009).
 - **Constraint:** `alo-printing` decides what a printer is and what is wrong with it; the
   broker only carries out a decided change.
+- **Inherits from 1** (its report has the reasoning): the first verb brings the broker's
+  process — its binary, its unit, the machine's record it writes to, and how its
+  approving key reaches the turn that issues tokens — because task 1 shipped no root
+  service that could carry nothing out. `alo-printing`'s types reach the broker as an
+  `alo_broker::Identity` of what the print service reported, never as its text.
 
 ### 3. Network, through the broker
 

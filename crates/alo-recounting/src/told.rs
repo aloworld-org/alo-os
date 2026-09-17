@@ -100,6 +100,11 @@ pub enum Outcome {
     Updated,
     /// This machine went back to the build of its system it ran before.
     RolledBack,
+    /// A change to the whole machine, approved by a person, was handed on to
+    /// be made (ADR 0001 §2).
+    MachineChangeHandedOn,
+    /// A request to change the whole machine was refused, and nothing changed.
+    MachineChangeRefused,
 }
 
 impl Outcome {
@@ -125,6 +130,10 @@ impl Outcome {
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
             Happened::Updated { .. } => Self::Updated,
             Happened::RolledBack { .. } => Self::RolledBack,
+            Happened::Brokered { refused: None, .. } => Self::MachineChangeHandedOn,
+            Happened::Brokered {
+                refused: Some(_), ..
+            } => Self::MachineChangeRefused,
         }
     }
 
@@ -150,6 +159,8 @@ impl Outcome {
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,
             Self::Updated => words::UPDATED,
             Self::RolledBack => words::ROLLED_BACK,
+            Self::MachineChangeHandedOn => words::MACHINE_CHANGE_HANDED_ON,
+            Self::MachineChangeRefused => words::MACHINE_CHANGE_REFUSED,
         }
     }
 
@@ -555,6 +566,50 @@ mod tests {
         assert_eq!(told.agent(), None);
         assert!(told.went_to().is_some());
         assert_eq!(told.at(), noon() + hour());
+    }
+
+    /// **What the privileged broker answered reads back in two clauses, and
+    /// neither names an agent, a verb's sentence or the machinery.** The
+    /// approval it was handed on under is kept; a forged one is not.
+    #[test]
+    fn what_the_broker_answered_reads_back_as_a_change_to_the_whole_machine() {
+        let strings = in_english();
+        let handed_on = Told::of(&alo_record::Entry::handed_on_by_the_broker(
+            "printers.add",
+            7,
+            noon(),
+        ));
+        let refused = Told::of(&alo_record::Entry::refused_by_the_broker(
+            Some("printers.add"),
+            None,
+            alo_record::AtTheBroker::NotApproved,
+            noon(),
+        ));
+
+        assert_eq!(handed_on.outcome(), Outcome::MachineChangeHandedOn);
+        assert_eq!(refused.outcome(), Outcome::MachineChangeRefused);
+        assert_eq!(handed_on.from_approval(), Some(7));
+        assert_eq!(refused.from_approval(), None);
+        for told in [&handed_on, &refused] {
+            assert_eq!(told.agent(), None);
+            assert_eq!(told.sentence(), None);
+            let said = told.outcome().said(&strings);
+            assert!(!said.is_a_bug(), "{said}");
+            for machinery in [
+                "broker",
+                "socket",
+                "root",
+                "CUPS",
+                "NetworkManager",
+                "token",
+            ] {
+                assert!(!said.text().contains(machinery), "{said}");
+            }
+        }
+        assert_ne!(
+            handed_on.outcome().said(&strings).text(),
+            refused.outcome().said(&strings).text()
+        );
     }
 
     /// **Every entry the record can hold has a clause**, and no two of them read

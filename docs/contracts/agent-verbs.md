@@ -756,6 +756,51 @@ that holds the few operations needing privilege, with:
 The broker is small enough to be audited in an afternoon, and that is a
 constraint on its design rather than a hope about its future.
 
+`crates/alo-broker` is the list and the door, added 2026-09-16. No verb is
+carried out yet; each arrives with the task that owns it
+(`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, tasks 2 to 4).
+
+**The list.** Eleven verbs, each with exactly one argument:
+
+| Verb | Argument |
+|---|---|
+| `printers.add`, `printers.remove`, `printers.set-default` | an identity |
+| `network.join`, `network.forget`, `network.set-proxy` | an identity |
+| `network.radio` | `on` or `off` |
+| `updates.apply`, `updates.roll-back` | an identity |
+| `storage.mount`, `storage.eject` | an identity |
+
+An **identity** is the SHA-256 of the identity the rented service reported for
+the thing — the printer the print service found, the network the network manager
+reported, the drive the kernel reported, the build the base staged — written as
+sixty-four lowercase hexadecimal characters. The broker never interprets one; the
+verb compares it with what the service reports at that moment and acts on the
+match or on nothing. There is no argument of any other shape: no text, no path,
+no command, no device name, no password, and no verb formats, repartitions or
+erases anything.
+
+**The door.** One Unix socket, one line in and one line out, one caller at a
+time. The caller must be the user `alo-agentd` runs as, read from the kernel
+(`SO_PEERCRED`) before its line is read. A request is five words separated by
+single spaces:
+
+```text
+<verb> <argument> <approval> <issued> <proof>
+```
+
+`approval` is the turn's number for the approval that was spent, `issued` the
+moment in whole seconds since the epoch, both decimal with no leading zero, and
+`proof` an HMAC-SHA-256, in sixty-four lowercase hexadecimal characters, over the
+exact verb, argument, approval and moment under the broker's approving key. A
+token is good once, and for sixty seconds.
+
+The answer is `carried`, `not-kept`, or `refused` and one of
+`not-the-agent-service`, `not-a-request`, `not-one-of-its-verbs`,
+`not-approved`, `approval-spent`, `approval-lapsed` or `not-carried`. Every
+answer is written to the record, as a `brokered` entry, before it is given
+(`record-file.md`); `not-kept` means it could not be, and a broker that has said
+it once carries nothing out again.
+
 ## Records
 
 Every execution — read or change, permitted or refused — is recorded with what

@@ -102,6 +102,7 @@
 use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
+use crate::brokered::AtTheBroker;
 use crate::line::Line;
 use crate::what::What;
 
@@ -474,6 +475,27 @@ pub enum Happened {
         /// The earlier build it started on.
         to: Line,
     },
+    /// A request reached the privileged broker (ADR 0001 §2), and this is what
+    /// the broker did with it — handed one of its verbs on, or refused.
+    ///
+    /// Written by `alo-broker` before it answers, for every request, and
+    /// [`crate::brokered`] has the reasoning in full. **No agent**: the broker
+    /// is told an approval and never whose grants it was proposed under, and
+    /// the turn's own entry for the same approval already names that. **Not
+    /// egress**, and not an execution either — what the verb then did is its
+    /// own.
+    ///
+    /// Additive, and `format` stays `1`.
+    Brokered {
+        /// The verb, by the broker's own name for it — absent when the request
+        /// was never read as far as a verb.
+        verb: Option<Line>,
+        /// The approval the request's token was genuinely issued for — absent
+        /// when there was no genuine one.
+        from_approval: Option<u64>,
+        /// Why it was refused — absent when it was handed on.
+        refused: Option<AtTheBroker>,
+    },
 }
 
 impl Happened {
@@ -506,6 +528,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
@@ -534,6 +557,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -563,6 +587,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -594,6 +619,10 @@ impl Happened {
                 | Self::HeldBack { .. }
                 | Self::GrantsNotReadAgain { .. }
                 | Self::NotBounded { .. }
+                | Self::Brokered {
+                    refused: Some(_),
+                    ..
+                }
         )
     }
 
@@ -620,6 +649,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -652,6 +682,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -662,7 +693,9 @@ impl Happened {
     #[must_use]
     pub fn from_approval(&self) -> Option<u64> {
         match self {
-            Self::Ran { from_approval, .. } => *from_approval,
+            Self::Ran { from_approval, .. } | Self::Brokered { from_approval, .. } => {
+                *from_approval
+            }
             Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
@@ -694,6 +727,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -722,6 +756,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
@@ -749,6 +784,7 @@ impl Happened {
             | Self::Paired { .. }
             | Self::Updated { .. }
             | Self::RolledBack { .. }
+            | Self::Brokered { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
