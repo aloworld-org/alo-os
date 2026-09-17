@@ -122,7 +122,22 @@ fn every_sentence_about_a_file_names_which_file() {
         let at_a_line = phrase(&vocabulary, &format!("{area}.kept.not-understood-at"));
         assert!(at_a_line.source().has("line"), "{}", at_a_line.key());
     }
+    // Every `choosing` sentence but one is about a person's settings file and
+    // names it. The exception is a session that has nowhere to keep a change
+    // at all, said before any change is made: there is no file to name, and
+    // the crate's own `is_about_the_file` holds the same exemption to the same
+    // one key, so a second pathless sentence fails both.
+    const SAID_BY_A_SESSION_WITH_NOWHERE_TO_KEEP_ANYTHING: &str = "choosing.session.no-folder";
+    let mut exempted = 0_u8;
     for phrase in phrases_of(&vocabulary, "choosing") {
+        if phrase.key().to_string() == SAID_BY_A_SESSION_WITH_NOWHERE_TO_KEEP_ANYTHING {
+            exempted += 1;
+            continue;
+        }
         assert!(phrase.source().has("path"), "{}", phrase.key());
     }
+    assert_eq!(
+        exempted, 1,
+        "the sentence a session with no folder says is no longer in the vocabulary"
+    );
 }

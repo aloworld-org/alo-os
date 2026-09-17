@@ -120,6 +120,7 @@
 mod bound;
 mod choosing;
 mod chosen;
+mod folder;
 mod holding;
 mod keeping;
 mod paired;
@@ -137,6 +138,7 @@ mod written;
 
 pub use choosing::Choosing;
 pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
+pub use folder::{HomeWas, NoFolder, PersonsFolder, the_persons_folder};
 pub use paired::{AMachine, NotPairedToAnswer, WHAT_THAT_MACHINE_CHOSE, WhoMayBeAsked};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is, where_the_folder_is};
 pub use refusing::NotSet;
@@ -144,5 +146,5 @@ pub use settings::{Settings, Unresolved};
 pub use setup::Setup;
 pub use unreadable::{At, NotToml};
 pub use unwritten::NotWritten;
-pub use words::{EVERY_WORD, Word, WordsError, choosing_words, declare_into};
+pub use words::{EVERY_WORD, SESSION_NO_FOLDER, Word, WordsError, choosing_words, declare_into};
 pub use written::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};

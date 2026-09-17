@@ -626,6 +626,38 @@ fn the_search_finds_every_crates_declared_vocabulary() {
     }
 }
 
+/// **What a session with no folder says comes only from the vocabulary.**
+///
+/// The sentence a person reads when their session has nowhere to keep a change
+/// is the one this crate is most likely to write by hand: it is a refusal, it
+/// is short, and it is reached from code that is already deep in an error. So
+/// it is held twice — the machine can say it, and the file that says it ships
+/// no English of its own.
+///
+/// Held on `folder.rs` by name rather than on the crate as a whole, which the
+/// test above already does, because what is being measured here is that this
+/// one road to words goes through `alo-strings` like every other.
+#[test]
+fn a_session_with_no_folder_is_said_only_from_the_vocabulary() {
+    let vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
+    assert!(
+        vocabulary
+            .phrases()
+            .any(|phrase| phrase.key().to_string() == "choosing.session.no-folder"),
+        "the machine cannot say what a session with no folder says"
+    );
+
+    let (_, source) = shipped_files_of("alo-choosing")
+        .into_iter()
+        .find(|(under, _)| under == "folder.rs")
+        .expect("alo-choosing has src/folder.rs");
+    let written = english_in("folder.rs", &source);
+    assert!(
+        written.is_empty(),
+        "folder.rs says something a person reads without going through the vocabulary: {written:?}"
+    );
+}
+
 /// **A sentence written anywhere else is found**, however it is spelt — held
 /// against text, so the rule is shown refusing without planting English in the
 /// repository.

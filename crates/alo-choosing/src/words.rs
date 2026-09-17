@@ -308,8 +308,27 @@ pub const CHANGE_NOT_PAIRED_TO_ANSWER: Word = Word::saying(
      it is — the sentence deliberately does not.",
 );
 
+// ---------------------------------------------------------------------------
+// A session with nowhere to keep anything — [`crate::NoFolder`].
+// ---------------------------------------------------------------------------
+
+/// A session started without a home directory, said on a Settings surface.
+pub const SESSION_NO_FOLDER: Word = Word::saying(
+    "choosing.session.no-folder",
+    "this session has no home directory, so nothing you change now will be kept once you sign out",
+)
+.noting(
+    "Said on a Settings surface before anything is changed rather than after a change failed: the \
+     point of it is that a person decides whether to bother. The first clause is the cause and \
+     the second is what they act on. One sentence covers a session with no home directory and a \
+     session whose home directory is not an absolute path, because what a person does about \
+     either is the same — which of the two it was is for whoever is fixing the login, and is not \
+     said here. It names no path, deliberately: a session this broken has no sensible path to \
+     name.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 18] = [
+pub const EVERY_WORD: [Word; 19] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -328,6 +347,7 @@ pub const EVERY_WORD: [Word; 18] = [
     CHANGE_NOT_EXPRESSIBLE,
     CHANGE_NOT_KEPT,
     CHANGE_NOT_PAIRED_TO_ANSWER,
+    SESSION_NO_FOLDER,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -439,11 +459,40 @@ mod tests {
         }
     }
 
+    /// The one sentence here that is not about the settings file.
+    ///
+    /// Both rules below are about sentences that report what became of a
+    /// person's file: they name it, and they say what the machine did with it.
+    /// [`SESSION_NO_FOLDER`] is neither. It is said by a session that has
+    /// nowhere to keep a change *at all*, before any change is made — so there
+    /// is no file to name, and nothing has yet been done for it to report. Its
+    /// whole purpose is to be said in advance, which is what makes it useful.
+    ///
+    /// Exempted by name rather than by a pattern — *sentences with no path in
+    /// them*, say — so that a second sentence cannot quietly join it by
+    /// happening to leave the file out.
+    fn is_about_the_file(word: &Word) -> bool {
+        word.named() != SESSION_NO_FOLDER.named()
+    }
+
+    /// **The exemption stays one sentence wide.** If a later word is added to
+    /// [`is_about_the_file`], this fails until somebody has said here why that
+    /// sentence is also not about the file.
+    #[test]
+    fn the_only_sentence_exempted_is_the_one_a_session_says_before_anything_is_changed() {
+        let exempt: Vec<&str> = EVERY_WORD
+            .iter()
+            .filter(|word| !is_about_the_file(word))
+            .map(Word::named)
+            .collect();
+        assert_eq!(exempt, ["choosing.session.no-folder"]);
+    }
+
     /// **Every sentence about the file names the file.** A person who has been
     /// told their settings are wrong needs the one thing that lets them fix it.
     #[test]
     fn every_sentence_about_the_file_names_the_file() {
-        for word in EVERY_WORD {
+        for word in EVERY_WORD.iter().filter(|word| is_about_the_file(word)) {
             assert!(word.says().contains("{path}"), "{}", word.named());
         }
     }
@@ -491,7 +540,7 @@ mod tests {
             "nothing in the file has been used",
             "nothing in your settings has been changed",
         ];
-        for word in EVERY_WORD {
+        for word in EVERY_WORD.iter().filter(|word| is_about_the_file(word)) {
             assert!(
                 WHAT_THE_MACHINE_DID
                     .iter()
