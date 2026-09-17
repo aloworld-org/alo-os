@@ -153,10 +153,12 @@ order, on a machine that has them. **Depends on:** 1.
 
 ### 6. An agent and the screen
 
-**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2. **Finding:**
-`docs/contracts/agent-verbs.md` lists no verb that captures the screen, so no
-agent can reach it at all today; the road it would have to come down is built
-and refuses everything else, and the verb was **not** added here.
+**Status:** **Done, 2026-09-17.** **Depends on:** 1, 2. **The finding is
+closed:** the contract listed no verb that captures the screen, and on the
+owner's instruction this lane declared it the same day — `picture_of_the_screen`,
+a change with no arguments, requiring no grant because ADR 0040 gives an agent
+nothing standing over the screen. The approval of the sentence is the whole
+authority, spent by the picture it authorised.
 
 The agent overlay offers *context on invocation* (v0.01) and never harvests. A
 screenshot is the most harvest-shaped thing a machine has.

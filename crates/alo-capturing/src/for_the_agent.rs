@@ -64,19 +64,50 @@ pub struct ForTheAgent {
 }
 
 impl ForTheAgent {
-    /// **The only way to one**: a call the boundary validated and a person
-    /// approved.
+    /// **The only way to one**: an approved call of the screen verb.
     ///
-    /// The `Authorised` is not stored. What it proves is that this capture
-    /// happened at the end of an approval, and a value that kept the proof
-    /// would invite somebody to reuse it.
-    #[must_use]
-    pub fn approved(approved: &Authorised, screen: Screen, picture: Picture) -> Self {
-        Self {
+    /// # Why there is no grant to check
+    ///
+    /// ADR 0040 keeps facilities — the camera, the screen, notifications — to
+    /// **applications, never to agents**: *an agent is offered what it needs at
+    /// the moment it is asked, and a durable grant to the camera would be a
+    /// background reader by another name.* `alo-capability` refuses such a
+    /// grant outright (`GrantError::NotForAnAgent`).
+    ///
+    /// So the agent holds nothing standing, and **the approval of the sentence
+    /// is the whole of the authority** — which is why this checks that the
+    /// authority came from an approval rather than from the read door.
+    ///
+    /// The `Authorised` is taken **by value and spent**. An approval is never a
+    /// session (ADR 0001), and this is where that carries weight rather than
+    /// tidiness: an agent that could take a second picture on this morning's
+    /// approval is an agent watching the screen, which `docs/features.md`
+    /// forbids in the same breath as it promises context on invocation. One
+    /// approval is one picture, and there is no way to hold the authority and
+    /// use it twice.
+    ///
+    /// # Errors
+    /// [`NotForTheAgent::AnotherVerb`] for an authority from any other verb,
+    /// and [`NotForTheAgent::NobodyApprovedIt`] for one that reached here
+    /// without a person having approved the sentence.
+    pub fn approved(
+        approved: Authorised,
+        screen: Screen,
+        picture: Picture,
+    ) -> Result<Self, NotForTheAgent> {
+        if approved.verb() != crate::verbs::PICTURE_OF_THE_SCREEN {
+            return Err(NotForTheAgent::AnotherVerb {
+                verb: approved.verb().to_owned(),
+            });
+        }
+        if approved.from_approval().is_none() {
+            return Err(NotForTheAgent::NobodyApprovedIt);
+        }
+        Ok(Self {
             screen,
             agent: approved.under().as_str().to_owned(),
             picture,
-        }
+        })
     }
 
     /// Which screen was captured.
@@ -120,14 +151,37 @@ impl ForTheAgent {
     }
 }
 
-/// **A capture, for a test that cannot make one the honest way.**
+/// Why a capture is not the agent's to have.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum NotForTheAgent {
+    /// The authority came from some other verb. Nothing else opens this road:
+    /// an approval for renaming a file is not an approval for a picture of
+    /// everything on the screen.
+    #[error("`{verb}` is not the screen verb, and no other verb produces a picture of the screen")]
+    AnotherVerb {
+        /// What the authority was for.
+        verb: String,
+    },
+    /// The authority did not come from an approval.
+    ///
+    /// A read verb's authority is granted at the door and runs inside the turn;
+    /// this verb is a change, and the sentence a person approved **is** the
+    /// authority, because ADR 0040 gives an agent nothing standing over the
+    /// screen to hold.
+    #[error(
+        "nobody approved a picture of the screen, and an agent holds nothing that stands in \
+             for that"
+    )]
+    NobodyApprovedIt,
+}
+
+/// **A capture, as the road produces one, for a test that has no verb to call.**
 ///
-/// No verb that captures the screen exists in `docs/contracts/agent-verbs.md`,
-/// so no `Authorised` for one can be built, so a test of what this road does
-/// once a capture exists has nothing to build from. This is that, and it is
-/// `#[cfg(test)]`-free on purpose: `tests/` is a separate crate and cannot
-/// reach a test-only item. It takes no authorisation and is therefore useless
-/// for reaching the screen — it holds a picture somebody already has.
+/// A test cannot build an `Authorised`: that comes from a person approving a
+/// proposal, through machinery no test here runs. So this makes the value the
+/// honest road would make, and it is `#[doc(hidden)]` and takes no
+/// authorisation — it is useless for reaching a screen, because it holds a
+/// picture somebody already has.
 #[doc(hidden)]
 #[must_use]
 pub fn for_a_test(agent: &str, screen: Screen, picture: Picture) -> ForTheAgent {

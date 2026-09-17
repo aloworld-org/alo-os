@@ -223,7 +223,7 @@ pub const NOTHING_CAME_BACK: Word = Word::saying(
 );
 
 /// Everything a person is told when a picture was taken.
-pub const EVERY_TOLD: [Word; 7] = [
+pub const EVERY_TOLD: [Word; 9] = [
     SAVED,
     COPIED,
     SAVED_AND_COPIED,
@@ -231,6 +231,8 @@ pub const EVERY_TOLD: [Word; 7] = [
     SHARING_THE_WHOLE_SCREEN,
     SHARING_ONE_WINDOW,
     SHARING_A_PART_OF_THE_SCREEN,
+    VERB_PURPOSE,
+    VERB_SENTENCE,
 ];
 
 /// Every refusal: why no picture was taken, or none was kept.
@@ -356,6 +358,25 @@ pub const TOO_MUCH_TO_ENCODE_BUT: Word = Word::saying(
 /// They are not messages a machine announces; they are what a person picks up.
 /// The group exists so that the test which walks the list cannot be satisfied
 /// by a tool that nothing offers.
+/// What the screen verb is for, in the words a person would use.
+pub const VERB_PURPOSE: Word = Word::saying(
+    "capturing.verb.purpose",
+    "Take a picture of the screen, for the question being answered",
+)
+.noting(
+    "Shown in the list of what an agent may ask for. It is the purpose of one verb, not a \
+     sentence to approve; the sentence a person approves is below.",
+);
+
+/// The sentence a person approves.
+pub const VERB_SENTENCE: Word =
+    Word::saying("capturing.verb.sentence", "Take a picture of your screen").noting(
+        "The whole of what a person approves before an agent sees the screen, and the only such \
+     sentence there is: this verb takes nothing to fill in, because there is no version of it \
+     narrower than the whole screen. One approval is one picture, so this is read again every \
+     time.",
+    );
+
 /// Nothing is shared with the call.
 pub const SHARING_NOTHING: Word = Word::saying(
     "capturing.sharing.nothing",
@@ -419,7 +440,7 @@ pub const EVERY_TOOL: [Word; 5] = [
 ///
 /// The three groups above are this list, divided by what a person is doing when
 /// they read one: told something, refused something, or picking up a tool.
-pub const EVERY_WORD: [Word; 28] = [
+pub const EVERY_WORD: [Word; 30] = [
     SAVED,
     COPIED,
     SAVED_AND_COPIED,
@@ -448,6 +469,8 @@ pub const EVERY_WORD: [Word; 28] = [
     SHARING_THE_WHOLE_SCREEN,
     SHARING_ONE_WINDOW,
     SHARING_A_PART_OF_THE_SCREEN,
+    VERB_PURPOSE,
+    VERB_SENTENCE,
 ];
 
 /// The area every key in this crate is under.

@@ -727,6 +727,52 @@ home folder. There is no remote form, fallback or setting.
 **Declared and carried out, and not yet offered by a turn**, for the reason the
 printing verb is not.
 
+## The screen verb
+
+`docs/features.md` promises *context on invocation* and never harvesting. A
+picture of the screen is the most harvest-shaped thing this machine has: one
+call hands over everything a person was looking at — their mail beside their
+bank, a colleague's name, a photograph on a second display. So there is **one**
+verb, it is a change, and what it produces goes to the turn that asked and
+nowhere else.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `picture_of_the_screen` | change | none | take a picture of your screen |
+
+**It is a change, so it waits for one approval**, and the sentence a person
+approves is the whole of it: there are no arguments to fill in, because there is
+no version of this that is narrower than *your screen*.
+
+**It requires no grant, and the reason is ADR 0040's.** Facilities — the screen,
+the camera, notifications — are granted to **applications and never to agents**:
+*a durable grant to the camera would be a background reader by another name*.
+`alo-capability` refuses such a grant outright. So an agent holds nothing
+standing over the screen, and **the approval of the sentence is the whole of the
+authority**.
+
+It is the second verb in this contract that requires no grant, for a different
+reason from the first: `install_application` needs none because there is nothing
+on the machine yet to grant over; this needs none because what a grant would be
+over is something an agent may never hold.
+
+**One approval is one picture.** An approval is never a session (ADR 0001), and
+this verb is where that rule is load-bearing rather than tidy: an agent that
+could look again on an approval a person gave this morning is an agent watching
+the screen, which `docs/features.md` forbids in the same breath as it promises
+context on invocation. `alo_capturing::ForTheAgent::approved` takes the
+authorisation **by value and spends it**, and refuses one that came from
+anything but an approval, so a second picture needs a second approval. Declared
+in `alo-capturing`'s `src/verbs.rs` with a `pub fn declare_into`.
+
+**What the picture may reach.** The turn that asked, and nothing else: not the
+index, not the record, not a file. The record says *a picture of the screen was
+taken* and never what was in it.
+
+**While the turn holds it, the in-use indicator shows the screen in use by the
+agent**, in terracotta with the agent's mark and word (ADR 0010) — the same line
+an application gets, in the colour reserved for the agent.
+
 ## The installing verb
 
 `docs/features.md` promises *install applications* at v0.5. What an agent may

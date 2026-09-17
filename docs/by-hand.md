@@ -210,6 +210,25 @@ volume, brightness`. Both go through the same broker verb an approved proposal
 does. A person is told in Settings, as the agent's sentence tells them, when
 turning Wi-Fi off will cut the connection a conversation is answered over.
 
+### picture_of_the_screen
+
+**By hand:** a person takes the screenshot themselves and shows it to the agent
+— `Capture: screenshots, annotation, screen recording with audio, screen
+sharing`, which every desktop has had for thirty years, and which is one key.
+Then they choose what to send, and they can blur what should not be seen before
+they send it.
+
+**What the verb adds** is that they do not have to leave what they are doing,
+and the agent sees it in the same turn. **What it costs** is that the machine
+holds a picture of everything on the screen at that moment, which is why it is a
+change, why the approval is for one picture rather than for a session, and why
+nothing keeps it afterwards.
+
+**The honest comparison:** by hand is not worse here. It is slower, and it is
+strictly more private — the person chooses the moment, the frame, and what to
+blur. A machine that made the verb feel necessary would be a machine whose
+screenshot key was hard to reach.
+
 ### text_editor.open_document
 
 **By hand:** a person opens the text editor and chooses Open, or opens the file

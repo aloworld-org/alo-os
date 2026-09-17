@@ -169,3 +169,90 @@ fn every_file(folder: &Path) -> Vec<PathBuf> {
     }
     found
 }
+
+/// **Only the screen verb opens this road.**
+///
+/// An approval is for a sentence. An agent holding an approval for some other
+/// change does not hold an approval for a picture of everything on the screen,
+/// and the type says so rather than trusting whoever passes it.
+#[test]
+fn an_authority_from_another_verb_does_not_open_this_road() {
+    let refused = alo_capturing::ForTheAgent::approved(
+        an_approval_for("some_other_change"),
+        alo_capturing::Screen::measuring(1920, 1080).expect("a screen"),
+        Picture::of(vec![1]).expect("a picture"),
+    )
+    .expect_err("some other change is not a picture of the screen");
+    assert!(matches!(
+        refused,
+        alo_capturing::NotForTheAgent::AnotherVerb { .. }
+    ));
+}
+
+/// **One approval is one picture.**
+///
+/// The authority is taken by value and spent, so a second picture needs a
+/// second approval. ADR 0040 says why in the crate that refuses the
+/// alternative: *a durable grant to the camera would be a background reader by
+/// another name*, and an approval reused all afternoon is the same thing.
+#[test]
+fn an_approval_is_spent_by_the_picture_it_authorised() {
+    let approval = an_approval_for(alo_capturing::PICTURE_OF_THE_SCREEN);
+    let capture = alo_capturing::ForTheAgent::approved(
+        approval,
+        alo_capturing::Screen::measuring(1920, 1080).expect("a screen"),
+        Picture::of(vec![7]).expect("a picture"),
+    )
+    .expect("the screen verb, approved");
+    assert_eq!(capture.to_the_turn().bytes(), [7]);
+
+    // And the compiler is the test: `approval` was moved into the call above,
+    // so a second picture cannot be taken from it. The line below does not
+    // compile, which is checked by `compile_fail` in the crate's own docs
+    // rather than here, where it would simply not build.
+}
+
+/// An approval for this verb, as a person giving one produces it: a proposal,
+/// approved, redeemed once.
+fn an_approval_for(verb: &str) -> alo_capability::Authorised {
+    use alo_capability::{
+        Approvals, Call, Effect, Grantee, Grants, Proposal, Requires, Verb, Verbs,
+    };
+    let now = std::time::SystemTime::UNIX_EPOCH;
+    let hour = std::time::Duration::from_secs(3600);
+
+    let mut verbs = Verbs::default();
+    if verb == alo_capturing::PICTURE_OF_THE_SCREEN {
+        alo_capturing::verbs::declare_into(&mut verbs).expect("the screen verb");
+    } else {
+        verbs
+            .declare(
+                Verb::checked(
+                    verb,
+                    alo_capturing::words::VERB_PURPOSE,
+                    Effect::Change,
+                    Vec::new(),
+                    Requires::nothing_because("a stand-in for another change, in a test"),
+                    alo_capturing::words::VERB_SENTENCE,
+                )
+                .expect("a verb"),
+            )
+            .expect("a fresh registry");
+    }
+    let declared = verbs
+        .all()
+        .find(|one| one.name() == verb)
+        .expect("declared");
+    let call = Call::of(declared, &[]).expect("a call with nothing to fill in");
+
+    let agent = Grantee::named("@the-agent");
+    let grants = Grants::default();
+    let mut approvals = Approvals::default();
+    let id = approvals
+        .propose(Proposal::checked(&call, &agent, &grants, now, hour).expect("a proposal"));
+    approvals
+        .approve(id, now)
+        .expect("a person approved it")
+        .redeem(&grants, now)
+        .expect("the approval redeems once")
+}

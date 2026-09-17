@@ -112,12 +112,20 @@ next.
 
 ## A citation this lane nearly repeated
 
-This report's ADR named `0008-when-the-machine-cannot-answer.md` in its first
-draft. The real file is `0008-where-inference-happens.md`. It was caught by
+This report's ADR, in its first draft, cited ADR 0008 by a filename ending
+*-when-the-machine-cannot-answer* — which is what it is about and not what it is
+called. The real file is `0008-where-inference-happens.md`. It was caught by
 listing `docs/decisions/` before committing — the habit this lane adopted after
 three pointers in `alo-hosted` named ADR 0014 by a filename it no longer had and
 broke `alo-citing` on `main` for every machine. `alo-citing`'s ten pointer tests
 pass on this tree.
+
+**And the guard caught this report too.** The sentence above originally quoted
+the wrong filename in full, as an example of the mistake — which `alo-citing`
+reads as a pointer, because it cannot tell a cautionary tale from a citation.
+That is the right behaviour and it is worth knowing: **write the wrong name in
+prose, never as a filename**, or the check will refuse your account of having
+made the error.
 
 ## Gates
 
