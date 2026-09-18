@@ -37,6 +37,7 @@ members = [
   "crates/alo-corridor",
   "crates/alo-declared",
   "crates/alo-desktops",
+  "crates/alo-displays",
   "crates/alo-dividing",
   "crates/alo-dock",
   "crates/alo-drives",

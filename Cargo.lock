@@ -500,6 +500,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-displays"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-dock",
+ "alo-kept",
+ "alo-saying",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-dividing"
 version = "0.0.1"
 dependencies = [
@@ -1079,6 +1093,7 @@ dependencies = [
  "alo-converting",
  "alo-corridor",
  "alo-desktops",
+ "alo-displays",
  "alo-dividing",
  "alo-dock",
  "alo-egress",

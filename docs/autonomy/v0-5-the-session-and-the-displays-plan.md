@@ -123,7 +123,41 @@ order of things and who may hold the machine awake.
 
 ### 3. A person's screens: which, where, how large, and remembered
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-18.** `crates/alo-displays`: an `Identity` is what a
+screen says about itself — make, model, serial where it has one — and, for a
+screen that says nothing **and for two screens that say the same thing**, the
+socket it is plugged into, which `whoever_is_attached` decides over the whole set
+because whether a description is unique is not a fact about one screen. An
+`Arrangement` is every screen of one set with its `Placed` — position, `Scale`,
+and exactly one main screen — remembered under the `Screens` set it holds, one
+per set, in `displays.toml` through `alo-kept` (ADR 0038).
+`tests/three_sets_of_screens_remembered_apart.rs` plugs three sets in turn
+through that file and finds each restored on its own. `Scale` is a whole per
+cent from 100 to 300, fractional where `Support::Fractional` says the compositor
+can draw it and rounded up to the nearest whole multiple with a sentence where it
+cannot; a screen nobody has sized is worked out from its own pixels and glass
+against 96 per inch, rounded to the nearest quarter — never 100% unless the
+screen reports no size at all. `Attached::unplugged` answers where the windows of
+a screen that went belong (the main screen of what remains) and `plugged_in`
+answers that they go back, carrying a chain of two hops
+(`tests/a_screen_that_goes_and_comes_back.rs`); no window identifier appears
+anywhere in the crate. `Wearing` reads `alo_appearance::Appearance::background_on`
+under the name the shell knows each screen by, and `alo_dock::Dock::edge` — the
+background is per screen and the dock's edge is not, because `alo_dock::Dock`
+holds one edge for the machine and this plan never edits it, so
+`docs/features.md`'s *Per display, so the dock can sit along the bottom of the
+laptop and down the side of the external screen* is **not met** and waits on
+`alo-dock`; `Wearing::of` is the one function here that changes when it decides
+otherwise. A remembered arrangement that would draw two screens over each other
+is set aside for one worked out, and the person is told. Report:
+`docs/autonomy/updates/a-persons-screens-which-where-how-large-and-remembered.md`.
+It reaches `main` through a pull request from
+`task/dev-pc/a-persons-screens-which-where-how-large-and-remembered` and not
+through a push to a protected branch;
+`docs/autonomy/updates/publishing-a-persons-screens-through-a-task-branch.md`
+says why and what it leaves owed to `tools/kernel-loop`.
+Not on hardware — nothing here opens a device or sets a mode; the shell draws it
+later. **Depends on:** nothing.
 
 *Multi-monitor, display scaling, hotplug.* The failure everybody knows is the
 laptop that forgets, every morning, that the external screen is on the left.
