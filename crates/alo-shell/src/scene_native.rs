@@ -8,6 +8,8 @@ use smithay::{
 /// Shared painter input keeps the existing complete-label public API additive.
 #[derive(Clone, Copy)]
 pub(crate) enum NativeScene<'a> {
+    /// An exclusive opaque lock texture; no other layer may be imported.
+    Lock(&'a crate::lock_raster::LockPicture),
     /// Existing strip with an optional complete label.
     Controls(crate::WindowControlScene<'a>),
     /// Complete paged reader and its original strip.
@@ -40,6 +42,13 @@ impl NativeScene<'_> {
     /// Refuse mismatched target geometry before importing clients.
     pub(crate) fn validate(self, size: Size<i32, Physical>) -> Result<(), RenderError> {
         match self {
+            Self::Lock(picture) => {
+                if picture.size == (size.w, size.h) {
+                    Ok(())
+                } else {
+                    Err(RenderError::LockScene)
+                }
+            }
             Self::Controls(scene) => scene.validate(size),
             Self::Reader(scene) => scene.validate(size),
             Self::SignIn(picture) => picture.validate(size),
@@ -49,6 +58,7 @@ impl NativeScene<'_> {
     /// Paint the selected native content between clients and cursors.
     pub(crate) fn paint(self, frame: &mut impl Frame) -> Result<(), RenderError> {
         match self {
+            Self::Lock(_) => Err(RenderError::LockScene),
             Self::Reader(scene) => scene.paint(frame),
             Self::SignIn(picture) => picture.paint(frame),
             Self::Controls(scene) => {

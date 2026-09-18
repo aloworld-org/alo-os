@@ -48,6 +48,19 @@ impl SignInEntry {
         }
     }
 
+    /// Edit one key, answering true only when credentials should be submitted.
+    pub(crate) fn pressed(&mut self, key: crate::SignInKey) -> bool {
+        match key {
+            crate::SignInKey::Letter(letter) => self.typed(letter),
+            crate::SignInKey::Erase => self.erased(),
+            crate::SignInKey::OtherField => self.other_field(),
+            crate::SignInKey::Enter if self.field == SignInField::Name => self.other_field(),
+            crate::SignInKey::Enter => return true,
+            crate::SignInKey::Nothing => {}
+        }
+        false
+    }
+
     /// A letter, into whichever field is waiting. A letter past a field's
     /// bound is not taken.
     pub(crate) fn typed(&mut self, letter: char) {
