@@ -3,9 +3,9 @@
 > **Current workflow, owner-approved 2026-09-18:**
 > [SHARED_MAIN.md](SHARED_MAIN.md) supersedes direct-to-main, main-only,
 > per-checkout build-cache and concurrent-build instructions below. Use one
-> task branch and draft PR per task; progress pushes are allowed. The designated
-> coordinator alone squash-merges after all nine gates and acceptance pass on
-> the exact combined tree. Existing direct-to-main publishers remain paused;
+> task branch and draft PR per task; progress pushes are allowed. Either PC
+> may hold the shared integration turn and squash-merge its own task after all
+> nine gates and acceptance pass on the exact combined tree. Existing direct-to-main publishers remain paused;
 > the historical runner recipes below do not implement the new workflow.
 
 ## Current runner (2026-09-07)
