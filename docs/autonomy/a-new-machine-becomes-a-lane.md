@@ -77,9 +77,38 @@ No two of those touch one crate, and none of them touches `alo-shell`,
 lanes on them. **Two lanes in one crate corrupted a task on 2026-09-11; that is
 why the table exists.**
 
-If a lane empties its plan, it does **not** pick another by itself — it says so
-and stops. The next plan is assigned here, by a person who can see what every
-other lane is doing.
+## A machine unblocks itself
+
+**Changed 2026-09-18, by the owner.** A machine no longer reports that it is
+waiting on another machine and stops. It takes the thing blocking it.
+
+- **A blocker in a plan nobody holds, or in one that has finished** — take it,
+  and edit its row in the table above in the same commit, so the fleet can see
+  who holds it now.
+- **A blocker that is a decision** — write the ADR. You are the machine that
+  understands why it matters; waiting for one with less context to decide it is
+  worse rather than safer. Two exceptions: what needs the owner personally, and
+  what needs a lawyer.
+- **A blocker inside a crate another machine's lane is working right now** —
+  the one case to coordinate. Say so, and take your next ready task meanwhile.
+- **Never idle.** Stopping while work is available is the one outcome that is
+  always wrong. If a lane empties its plan it says so *and takes the next thing*
+  rather than waiting to be told.
+
+**Why this is safe now and was not before.** Crate ownership existed because two
+lanes editing one crate on a shared `main` corrupted a task on 2026-09-11. Under
+`docs/autonomy/SHARED_MAIN.md` each task has its own branch and its own pull
+request, so two machines in one crate now meet at merge time as a conflict
+somebody can see and resolve. The table remains the record of who holds what; it
+is no longer a reason to sit still.
+
+**It works.** On 2026-09-17 the Mac was blocked on a codec decision and on the
+media kinds `alo-playing` needed. It took both and published inside the hour,
+while three other machines were idle waiting on each other.
+
+When a machine takes a blocker, its report says **whose plan it came from and
+why nobody was on it** — so a plan being quietly abandoned is visible, rather
+than inferred later from a count.
 
 ## Before the prompt: what the machine needs
 
