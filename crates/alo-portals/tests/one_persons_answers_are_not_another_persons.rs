@@ -53,13 +53,27 @@ impl ALogin {
     fn made(named: &str) -> Self {
         use std::sync::atomic::{AtomicU32, Ordering};
         static NEXT: AtomicU32 = AtomicU32::new(0);
-        let home = std::env::temp_dir().join(format!(
-            "alo-portals-{named}-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&home).expect("a home for this test");
-        Self(home)
+        loop {
+            let home = std::env::temp_dir().join(format!(
+                "alo-portals-{named}-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            // Made rather than made-if-needed. Two fixtures under one prefix
+            // with a counter each handed one folder to both in `alo-power` on
+            // 2026-09-18, and the cleanup that followed removed another test's
+            // files. This crate has the same shape — a login named here, and
+            // `where_the_answers_are`'s own folders beside it — and this is
+            // what stops it mattering.
+            if let Err(why) = std::fs::create_dir(&home) {
+                assert!(
+                    why.kind() == std::io::ErrorKind::AlreadyExists,
+                    "a home for this test: {why}"
+                );
+                continue;
+            }
+            return Self(home);
+        }
     }
 
     fn home(&self) -> &OsStr {

@@ -163,11 +163,27 @@ mod tests {
     fn a_supply(kind: &str, files: &[(&str, &str)]) -> ASupply {
         use std::sync::atomic::{AtomicU32, Ordering};
         static NEXT: AtomicU32 = AtomicU32::new(0);
-        let supplies = std::env::temp_dir().join(format!(
-            "alo-power-battery-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
+        // A prefix of its own, and made rather than made-if-needed: this
+        // fixture and the one in `crate::keeping` shared a prefix with a
+        // counter each until 2026-09-18, handed the same folder to both, and
+        // one test's cleanup removed the other's files. The prefix was
+        // separated then; this is the half that does not depend on anybody
+        // spelling a prefix differently.
+        let supplies = loop {
+            let supplies = std::env::temp_dir().join(format!(
+                "alo-power-battery-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            if let Err(why) = std::fs::create_dir(&supplies) {
+                assert!(
+                    why.kind() == std::io::ErrorKind::AlreadyExists,
+                    "a folder for this test: {why}"
+                );
+                continue;
+            }
+            break supplies;
+        };
         let at = supplies.join(if kind == "Battery" { "BAT0" } else { "AC" });
         std::fs::create_dir_all(&at).expect("a folder for this test");
         std::fs::write(at.join("type"), format!("{kind}\n")).expect("written");
