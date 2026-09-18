@@ -14,17 +14,39 @@ push is a checkpoint, not a completed task or a release.
 - Never run Git or edit a checkout while its worker or gate owns it. Finish the
   current run before switching its branch. Preserve existing work; no stash,
   destructive reset, automatic conflict resolution or force-push.
-- This development PC is the initial merge coordinator. The third PC submits
-  task branches and pull requests; the Mac is stopped. Transfer merge authority
-  explicitly before another machine merges. Only one candidate is integrated
-  and gated at a time across the machines; other machines keep developing and
-  pushing their branches.
-- This is a **manual integration queue**, not a deployed GitHub merge-queue bot.
-  The coordinator records the current candidate and base SHA in its pull request.
+- Both this development PC and the third PC may integrate and squash-merge
+  their own completed tasks, then delete their verified merged task branches.
+  The Mac is stopped. Neither PC needs the other to perform its merge.
+- Only one PC holds the integration turn at a time. The holder is the temporary
+  coordinator for its candidate; the other PC keeps developing and pushing task
+  branches. This is a manual queue, not a deployed GitHub merge-queue bot.
   Do not enable auto-merge or let direct-to-main supervisors race this queue.
 - Existing `kernel-loop` and `dev-loop` publication commands still target `main`.
   Keep those publishers paused until separately adapted and verified for this
   workflow. Documentation does not change their executable behavior.
+
+## Taking the integration turn
+
+Use the shared, temporary remote ref `refs/heads/coordination/integration-lock`
+as an atomic claim, not a product-work branch. Before the final gate, create
+that ref through GitHub's create-reference API at the candidate's current head
+SHA (`POST /repos/aloworld-org/alo-os/git/refs`). Creation succeeds for only one
+PC. If it already exists, wait; never update, overwrite or force-push it. Record
+which PC owns it, its claim SHA and the PR in that PR's integration evidence.
+
+After claiming, fetch current main, integrate it into the task branch and run
+all required gates on the final candidate. The claim SHA remains unchanged even
+if integration changes the candidate. Only the holder may set its candidate's
+`alo/nine-gates` status and merge. Keep the turn until the merge is verified;
+then delete the coordination ref after confirming it still names the held claim
+SHA. Delete the merged task branch separately. On a failed gate, preserve logs
+and work, release the claim, and repair before taking another turn.
+
+A crashed or disconnected holder does not lose its turn by timeout. Confirm its
+gate/merge has stopped and arrange an explicit handoff before removing a stale
+claim. Read failures or unavailable permissions mean no claim, not permission
+to merge. This convention coordinates trusted PCs; main protection still checks
+PR status and freshness. Never merge without both the claim and valid evidence.
 
 ## Task lifecycle
 
@@ -38,7 +60,7 @@ push is a checkpoint, not a completed task or a release.
 3. Open one draft pull request to `main`. State what is unfinished, checks
    actually run and acceptance still owed. Never describe an ungated checkpoint
    as passed. Finish focused acceptance before requesting integration.
-4. The coordinator selects one ready PR. Freeze that branch's head for the gate
+4. Either authorized PC selects its ready PR and claims the integration turn. Freeze that branch's head for the gate
    run (use a separate task branch for further work), fetch latest `main`, and
    merge it into the task branch if needed. Preserve published branch history;
    do not rebase it and force-push. Resolve conflicts deliberately.
@@ -73,7 +95,7 @@ disable merge-commit and rebase merging. No extra reviewer is required for this
 small-team workflow; that does not replace the coordinator's evidence review.
 The status reports the existing local nine-gate run; it is not a newly installed
 CI runner. Credentials able to write commit statuses remain trusted, so every
-machine must follow the coordinator-only rule. Do not bypass protection if API
+machine must follow the integration-turn rule. Do not bypass protection if API
 access is unavailable: preserve the branch and report the concrete blocker.
 
 ## One build cache and one gate run per machine
