@@ -65,6 +65,15 @@ Settings source checks, sign-in safety checks, Clippy and four background
 tests pass after that repair. New checks verify unchanged image bytes and
 refusal of directories, FIFOs and oversized files. Earlier failures remain
 in the local gate logs; they are not counted as passing validation.
+A review also found that large-text refusal wording could disappear below the
+reused sign-in form. A regression test reproduced that omission. The shared
+renderer now refuses a layout unless both fields and the whole refusal fit;
+this applies to sign-in and unlocking. The lock path keeps its fail-closed
+blanking, and a larger layout is checked to render normally. The incomplete
+gate was stopped only after its active test binary exited; it is not a pass.
+After the repair, all 651 shell package tests, scoped Clippy, shell rustdoc
+with warnings denied, the wallpaper recipe test and the ten-frame nested probe
+passed. Final workspace gate results remain separate evidence.
 
 The development probe is `cargo run -p alo-shell --example lock_screen` under
 a Wayland parent. It submitted ten frames through the real nested renderer.

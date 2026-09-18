@@ -30,6 +30,15 @@ fn draw(
     surface: &crate::LockSurface<String>,
     indicator: &Indicator,
 ) -> super::lock_raster::LockPicture {
+    try_draw(surface, indicator, (800, 600), TextScale::ordinary()).unwrap()
+}
+/// Draw at the requested output and scale, retaining layout refusals.
+fn try_draw(
+    surface: &crate::LockSurface<String>,
+    indicator: &Indicator,
+    size: (i32, i32),
+    scale: TextScale,
+) -> Result<super::lock_raster::LockPicture, crate::RenderError> {
     let screen = snapshot(surface, indicator);
     let temp = tempfile::tempdir().unwrap();
     std::fs::copy(
@@ -38,15 +47,14 @@ fn draw(
         temp.path().join("alo.png"),
     )
     .unwrap();
-    let background =
-        LockBackground::within(screen.image(), (800, 600), Duration::ZERO, temp.path()).unwrap();
+    let background = LockBackground::within(screen.image(), size, Duration::ZERO, temp.path())?;
     let region = alo_formats::Regionally::reading("en").unwrap();
     let timezone = alo_formats::Timezone::named("Europe/Berlin").unwrap();
     let strings = words();
     let look = LockLook {
         appearance: SignInLook {
             scheme: Scheme::Dark,
-            scale: TextScale::ordinary(),
+            scale,
         },
         region: &region,
         timezone: &timezone,
@@ -59,7 +67,6 @@ fn draw(
         &mut WindowControlLabels::new().unwrap(),
         &look,
     )
-    .unwrap()
 }
 /// Departure.
 fn departure(destination: &str, agent: &str) -> Indicator {
@@ -145,4 +152,22 @@ fn the_clock_uses_civil_time_across_daylight_saving_and_refuses_unknown_zones() 
         )
         .is_err()
     );
+}
+
+/// An authentication refusal is never silently dropped when large text needs space.
+#[test]
+fn a_refusal_that_does_not_fit_is_rejected_instead_of_disappearing() {
+    let crate::LockPressed::Still(surface) =
+        typed("ada", "x").pressed(crate::SignInKey::Enter, || {
+            Err(alo_greeting::NotReadable {
+                at: "/private/accounts".into(),
+                why: "unreadable".into(),
+            })
+        })
+    else {
+        panic!("an unreadable store unlocked the screen")
+    };
+    let scale = TextScale::percent(200).unwrap();
+    assert!(try_draw(&surface, &Indicator::default(), (800, 840), scale).is_err());
+    assert!(try_draw(&surface, &Indicator::default(), (1200, 1800), scale).is_ok());
 }

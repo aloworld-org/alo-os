@@ -156,6 +156,10 @@ pub(crate) fn picture(
                 .as_ref()
                 .map_or(0, |text| measure.px(24) + text.height);
             let whole = 2 * field_height + gap + under_height;
+            // A refusal must fit whole; clipping can otherwise omit it entirely.
+            if whole + 2 * measure.px(16) > height {
+                return Err(RenderError::SignInScene);
+            }
             let top = ((height - whole) / 2).max(measure.px(16));
 
             let name_box = Rectangle::new((left, top).into(), (column, field_height).into());
