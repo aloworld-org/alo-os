@@ -198,6 +198,8 @@ mod a_paired_machine_over_link_local;
 #[cfg(all(test, target_os = "linux"))]
 mod a_port_another_program_let_go_of;
 #[cfg(all(test, target_os = "linux"))]
+mod a_port_held_over_ipv6_at_start;
+#[cfg(all(test, target_os = "linux"))]
 mod a_proposal_measured_on_the_network_it_arrived_on;
 #[cfg(target_os = "linux")]
 pub mod ageing;
@@ -247,6 +249,8 @@ pub mod lines;
 pub mod listeners;
 #[cfg(target_os = "linux")]
 pub mod listening;
+#[cfg(target_os = "linux")]
+pub mod listening_over_ipv6;
 #[cfg(target_os = "linux")]
 pub mod listing_workspaces;
 #[cfg(target_os = "linux")]

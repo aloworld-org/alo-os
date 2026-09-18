@@ -72,6 +72,16 @@
 //! `crate::a_port_another_program_let_go_of` is the measurement, on a real
 //! kernel and with no capabilities.
 //!
+//! # And over IPv6
+//!
+//! The IPv6-only listener is held to no network, so it is not one of the
+//! refused networks: it is its own small state (`crate::listening_over_ipv6`,
+//! which says why), bound at start, and — where another program held the port
+//! over IPv6 then — tried again on the same two occasions as a refused network,
+//! a let-go of the port and a network changing. Its refusal is said once and its
+//! bind once. `crate::a_port_held_over_ipv6_at_start` is the measurement, on a
+//! real kernel, with no capabilities and over link-local alone.
+//!
 //! An interface that went between the kernel's report and the
 //! bind does **not** refuse — `SO_BINDTOIFINDEX` takes an index no interface has
 //! (`docs/quirks.md`) — and leaves a listener nothing can reach, which the next
@@ -119,6 +129,7 @@ use alo_nearby::http::{self, WHILE_THE_WIRE_ANSWERS};
 use alo_nearby::{HeardFrom, NotNearby};
 
 use crate::arrived_on::{ArrivedOn, the_network_it_arrived_on, what_a_listener_held_to};
+use crate::listening_over_ipv6::OverIpv6;
 use crate::networks::{Network, listening_networks};
 use crate::refusing::NotBound;
 use crate::route_messages::reported_by_the_kernel;
@@ -130,7 +141,7 @@ const NOTHING_IS_LISTENING: &str = "the port presence advertises";
 
 /// One listener on the port, and what it says about the connections it accepts.
 #[derive(Debug)]
-struct Listener {
+pub(crate) struct Listener {
     /// The network it is held to, and nothing for one held to none.
     on: Option<Network>,
     /// What every connection it accepts arrived on, where the listener itself
@@ -142,6 +153,16 @@ struct Listener {
 }
 
 impl Listener {
+    /// A listener held to no network, whose connections are each read for the
+    /// network they arrived on.
+    pub(crate) const fn unheld(listener: TcpListener) -> Self {
+        Self {
+            on: None,
+            arrived: None,
+            listener,
+        }
+    }
+
     /// Accept one connection and read what it carries, with the network it
     /// arrived on beside it.
     fn accept_one(&self) -> Result<Knocked, NotNearby> {
@@ -183,10 +204,12 @@ pub struct Listeners {
     /// waits and accepts holding no lock at all, and a listener whose interface
     /// went while a round held a handle onto it closes when that round ends.
     held: Mutex<Vec<Arc<Listener>>>,
-    /// The listeners that do not change: the IPv6-only one on a machine that
-    /// bound its own, the one held to nothing on a machine that could not read
-    /// its networks, and the one a test handed in.
+    /// The listeners that do not change: the one held to nothing on a machine
+    /// that could not read its networks, and the one a test handed in.
     fixed: Vec<Arc<Listener>>,
+    /// The IPv6-only listener, bound or waiting for another program to let go
+    /// of the port (`crate::listening_over_ipv6`).
+    over_ipv6: OverIpv6,
     /// The interfaces of the networks the port was refused on, by number —
     /// each said in the service log once, when it was first refused.
     ///
@@ -217,53 +240,35 @@ impl Listeners {
     /// [`NotBound::NoWire`] when nothing could be listened on, in either family.
     pub fn bound(port: u16, said: &mut dyn FnMut(&str)) -> Result<Self, NotBound> {
         let mut fixed = Vec::new();
-        let mut refused = None;
-        match crate::unix::an_ipv6_only_listener_on(port) {
-            Ok(listener) => fixed.push(Arc::new(Listener {
-                on: None,
-                arrived: None,
-                listener,
-            })),
+        // Before the first bind, so a program letting go between a refusal and
+        // the subscription is still heard. Opened on a machine that cannot read
+        // its networks too: the IPv6 listener needs no network to be tried again.
+        let told = match told_when_let_go_of(port) {
+            Ok(told) => Some(told),
             Err(why) => {
                 said(&format!(
-                    "the port presence advertises could not be bound over IPv6 ({why}); it is bound over IPv4 alone, and a machine on a network with no IPv4 address cannot reach this one"
+                    "the kernel will not say when a program lets go of the port presence advertises ({why}); a network where another program holds it is tried again only when this machine's networks next change"
                 ));
-                refused = Some(why);
+                None
             }
-        }
+        };
+        let (over_ipv6, mut refused) = OverIpv6::bound(port, until(told.is_some()), said);
         let reported = reported_by_the_kernel();
         if let Err(why) = &reported {
             said(&format!(
                 "this machine's networks could not be read ({why}); the port presence advertises is bound once and held to no network, so it answers a handshake by the route and a machine on a network the route does not point at cannot reach this one"
             ));
             match held_to(port, None) {
-                Ok(listener) => fixed.push(Arc::new(Listener {
-                    on: None,
-                    arrived: None,
-                    listener,
-                })),
+                Ok(listener) => fixed.push(Arc::new(Listener::unheld(listener))),
                 Err(why) => refused = Some(why),
             }
         }
-        // Before the first bind, so a program letting go between a refusal and
-        // the subscription is still heard.
-        let told = match &reported {
-            Ok(_) => match told_when_let_go_of(port) {
-                Ok(told) => Some(told),
-                Err(why) => {
-                    said(&format!(
-                        "the kernel will not say when a program lets go of the port presence advertises ({why}); a network where another program holds it is tried again only when this machine's networks next change"
-                    ));
-                    None
-                }
-            },
-            Err(_) => None,
-        };
         let listeners = Self {
             held: Mutex::new(Vec::new()),
             refused: Mutex::new(BTreeSet::new()),
             told,
             fixed,
+            over_ipv6,
             follows: reported.is_ok(),
             port,
         };
@@ -302,11 +307,8 @@ impl Listeners {
             held: Mutex::new(Vec::new()),
             refused: Mutex::new(BTreeSet::new()),
             told: None,
-            fixed: vec![Arc::new(Listener {
-                on: None,
-                arrived: None,
-                listener,
-            })],
+            fixed: vec![Arc::new(Listener::unheld(listener))],
+            over_ipv6: OverIpv6::not_asked(port),
             follows: false,
             port,
         })
@@ -335,7 +337,24 @@ impl Listeners {
     /// Nothing this machine says moves — the same identity, port and workspace
     /// answer on every network — so this changes only where it can be reached. A
     /// failure is a line in the service log.
+    ///
+    /// The IPv6 listener is tried again here too, if another program held the
+    /// port over IPv6 when it was last tried.
     pub fn changed(&self, said: &mut dyn FnMut(&str)) {
+        self.over_ipv6.tried_again(said);
+        self.followed_the_kernel(said);
+    }
+
+    /// Whether the port is listened on over IPv6 now — which is how a machine on
+    /// a network with no IPv4 address reaches this one.
+    #[must_use]
+    pub fn listening_over_ipv6(&self) -> bool {
+        self.over_ipv6.listener().is_some()
+    }
+
+    /// Listen on every network the kernel reports now, when these listeners
+    /// follow it at all.
+    fn followed_the_kernel(&self, said: &mut dyn FnMut(&str)) {
         if !self.follows {
             return;
         }
@@ -355,7 +374,8 @@ impl Listeners {
     }
 
     /// The kernel said a TCP socket at the port was destroyed: empty what it
-    /// said, and try again every network the port was refused on.
+    /// said, and try again every network the port was refused on — and the
+    /// IPv6 listener, if another program held the port over IPv6.
     ///
     /// What was destroyed may be a connection the wire itself closed, or one
     /// of the other program's while it goes on holding the port, so a network
@@ -370,6 +390,7 @@ impl Listeners {
                 "what the kernel said about the port presence advertises being let go of could not be read ({why}); every network it was refused on is tried again anyway"
             ));
         }
+        self.over_ipv6.tried_again(said);
         if self
             .refused
             .lock()
@@ -378,7 +399,7 @@ impl Listeners {
         {
             return;
         }
-        self.changed(said);
+        self.followed_the_kernel(said);
     }
 
     /// A handle onto each listener, in the order they are waited on and
@@ -388,7 +409,11 @@ impl Listeners {
     /// while it waits — which may be for ever — is done holding it.
     fn listening(&self) -> Vec<Arc<Listener>> {
         let held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
-        held.iter().chain(&self.fixed).map(Arc::clone).collect()
+        held.iter()
+            .chain(&self.fixed)
+            .map(Arc::clone)
+            .chain(self.over_ipv6.listener())
+            .collect()
     }
 
     /// Listen on every one of `networks` not listened on already, and let go of
@@ -434,25 +459,25 @@ impl Listeners {
                 Err(why) => {
                     if refused.insert(network.index()) {
                         said(&format!(
-                            "the port presence advertises could not be bound on {} ({}): {why}; {}",
+                            "the port presence advertises could not be bound on {} ({}): {why}; a machine on that network cannot reach this one until it can be, {}",
                             network.name(),
                             network.address(),
-                            self.until()
+                            until(self.told.is_some())
                         ));
                     }
                 }
             }
         }
     }
+}
 
-    /// What the service log says about when a refused network is tried again —
-    /// which depends on whether the kernel will say the port was let go of.
-    const fn until(&self) -> &'static str {
-        if self.told.is_some() {
-            "a machine on that network cannot reach this one until it can be, and it is tried again as soon as the kernel says a program let go of the port"
-        } else {
-            "a machine on that network cannot reach this one until it can be, and it is tried again only when this machine's networks next change"
-        }
+/// What the service log says about when a refused port is tried again — which
+/// depends on whether the kernel `tells` when the port was let go of.
+const fn until(tells: bool) -> &'static str {
+    if tells {
+        "and it is tried again as soon as the kernel says a program let go of the port"
+    } else {
+        "and it is tried again only when this machine's networks next change"
     }
 }
 
@@ -557,7 +582,7 @@ fn held_to(port: u16, interface: Option<NonZeroU32>) -> Result<TcpListener, std:
 )]
 mod tests {
     use std::io::Write as _;
-    use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
+    use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
     use std::num::NonZeroU32;
     use std::os::fd::BorrowedFd;
     use std::time::Duration;
@@ -822,6 +847,82 @@ mod tests {
             "a port somebody else still holds was counted listened on"
         );
         drop(somebody_else);
+    }
+
+    /// **A port another program held over IPv6 at start is listened on over
+    /// IPv6 once it lets go** — heard from the kernel with no network changing,
+    /// said once — and a let-go that leaves it held is refused again and not
+    /// said. The IPv4 networks are listened on throughout.
+    #[test]
+    fn a_port_held_over_ipv6_at_start_is_listened_on_over_ipv6_once_let_go_of() {
+        let port = a_free_port();
+        let Ok(somebody_else) = crate::unix::an_ipv6_only_listener_on(port) else {
+            // A host whose kernel has no IPv6 has no IPv6 port to hold.
+            return;
+        };
+        let mut said = Vec::new();
+        let listeners = Listeners::bound(port, &mut |line| said.push(line.to_owned())).unwrap();
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert!(
+            said.first().is_some_and(|line| line.contains("over IPv6")
+                && line.contains("as soon as the kernel says a program let go")),
+            "the refusal does not say it is tried again: {said:?}"
+        );
+        assert!(!listeners.listening_over_ipv6());
+        let networks = listeners.listened_on();
+        assert!(!networks.is_empty(), "IPv4 was not listened on");
+        assert_eq!(Listening::of(&listeners).waiting_on().len(), networks.len());
+
+        // A connection to the other program closing is heard, tried, refused
+        // again — and nothing is said. Nor on a network change. A kernel can
+        // have IPv6 with no `::1` in it (this WSL host is one), and there is
+        // then nothing to connect over: the refusal is still tried below, and
+        // `crate::a_port_held_over_ipv6_at_start` connects over link-local.
+        let loopback_over_ipv6 = TcpListener::bind((Ipv6Addr::LOCALHOST, 0)).is_ok();
+        if loopback_over_ipv6 {
+            let connection = TcpStream::connect((Ipv6Addr::LOCALHOST, port)).unwrap();
+            let (accepted, _) = somebody_else.accept().unwrap();
+            drop(accepted);
+            drop(connection);
+            heard_let_go(&listeners);
+        }
+        listeners.let_go_of(&mut |line| panic!("a port still held was said: {line}"));
+        listeners.changed(&mut |line| panic!("a port still held was said: {line}"));
+        assert!(!listeners.listening_over_ipv6());
+
+        drop(somebody_else);
+        heard_let_go(&listeners);
+        let mut bound = Vec::new();
+        listeners.let_go_of(&mut |line| bound.push(line.to_owned()));
+        assert_eq!(bound.len(), 1, "{bound:?}");
+        assert!(
+            bound.first().is_some_and(
+                |line| line.starts_with("the port presence advertises is bound over IPv6 now")
+            ),
+            "{bound:?}"
+        );
+        assert!(listeners.listening_over_ipv6());
+        assert_eq!(listeners.listened_on(), networks, "an IPv4 network moved");
+        listeners.let_go_of(&mut |line| panic!("a bind was said twice: {line}"));
+        listeners.changed(&mut |line| panic!("a bind was said twice: {line}"));
+
+        let listening = Listening::of(&listeners);
+        assert_eq!(listening.waiting_on().len(), networks.len() + 1);
+        assert!(
+            crate::unix::an_ipv6_only_listener_on(port).is_err(),
+            "the port is not held over IPv6 once it was bound"
+        );
+        if !loopback_over_ipv6 {
+            return;
+        }
+        let mut client = TcpStream::connect((Ipv6Addr::LOCALHOST, port)).unwrap();
+        client
+            .write_all(alo_nearby::http::a_request("/somewhere", "h", "over six\n").as_bytes())
+            .unwrap();
+        let knocked = a_knock(&listening);
+        assert_eq!(knocked.arrived, ArrivedOn::ItsOwnNetwork);
+        assert!(knocked.from.ip().is_loopback());
+        assert_eq!(knocked.message.unwrap().body, "over six\n");
     }
 
     /// **With nothing refused, a let-go is emptied and nothing else is done** —

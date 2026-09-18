@@ -361,6 +361,14 @@ impl Wire {
         self.listeners.listened_on()
     }
 
+    /// Whether the port is listened on over IPv6 now — false while another
+    /// program holds it there, and on a wire listening through a listener
+    /// somebody handed in (`crate::listening_over_ipv6`).
+    #[must_use]
+    pub fn listening_over_ipv6(&self) -> bool {
+        self.listeners.listening_over_ipv6()
+    }
+
     /// The responders as they stand, for one round of answering discovery: what
     /// to wait on for a question, and what to answer it from.
     ///
@@ -401,8 +409,9 @@ impl Wire {
     }
 
     /// The kernel said a TCP socket at the port was destroyed: the port is
-    /// tried again on every network it was refused on, with no network having
-    /// changed (`crate::listeners`). Nothing discovery says moves.
+    /// tried again on every network it was refused on, and over IPv6 if it was
+    /// refused there, with no network having changed (`crate::listeners`).
+    /// Nothing discovery says moves.
     pub fn port_let_go_of(&self) {
         self.listeners
             .let_go_of(&mut |line| eprintln!("alo-agentd: {line}"));

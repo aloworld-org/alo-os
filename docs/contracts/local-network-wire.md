@@ -485,6 +485,11 @@ Added 2026-09-17, additively. Nothing on this wire changes.
   changing and no restart. It learns this from the kernel, when a socket at the
   port is closed, and never by asking again on an interval. Its log says once that
   the port is bound there now.
+- **The same holds over IPv6** (added 2026-09-17, additively). Where another
+  program holds the port over IPv6 when the machine starts, a machine on a network
+  with no IPv4 address finds it and cannot reach it; when that program lets go, the
+  machine listens over IPv6 and is reached there, with no network changing. Its log
+  says once that IPv6 was refused, and once that it is bound over IPv6 now.
 - **A machine whose kernel will not say so** says that in its log, and tries a
   taken port again only when its networks next change.
 - **What is said is the same bytes before and after.**

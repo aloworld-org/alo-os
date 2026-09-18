@@ -5208,3 +5208,28 @@ on-a-machine test skip itself rather than fail. It reads the tool's own wording,
 is a thin thread: where that changes, it falls back to *did not answer*, which is still
 a refusal and still not an empty indicator.
 **Date:** 2026-09-17.
+
+### A dual-stack listener on `[::]` refuses every IPv4 listener held to an interface, and a kernel can bind IPv6 with IPv6 off everywhere
+**Version:** WSL2 kernel `6.18.33.2-microsoft-standard-WSL2`, Ubuntu 24.04. Measured
+with a scratch probe in a user network namespace, and by
+`crates/alo-agentd/src/listeners.rs` and
+`crates/alo-agentd/src/a_port_held_over_ipv6_at_start.rs`. 2026-09-17.
+**Behaviour:** two things the specification leaves implicit. **First**, a TCP listener
+on `[::]` without `IPV6_V6ONLY` holds the IPv4 port too, and an IPv4 listener at that
+port held to an interface with `SO_BINDTOIFINDEX` — loopback included — is refused
+`EADDRINUSE` beside it, both with `SO_REUSEADDR`. An IPv6-only listener on `[::]`
+refuses none of them. So a program holding the port *dual-stack* takes every network
+from the service at once, and one holding it *IPv6-only* takes IPv6 alone.
+**Second**, this host's initial network namespace has `net.ipv6.conf.all.disable_ipv6
+= 1` and no `::1` on `lo`, yet an `AF_INET6` socket still opens and binds `[::]` at a
+port: the kernel has IPv6, the interfaces have none. A connection to `::1` there fails
+`EADDRNOTAVAIL`. A fresh network namespace has IPv6 on and `::1` on `lo` once `lo` is
+up.
+**Our response:** the IPv6-only listener is tried again when the kernel says the port
+was let go of only after `EADDRINUSE`, never after anything else
+(`crate::listening_over_ipv6`). The unit test that connects over `::1` does so only
+where `::1` is there, and the fixture that measures the behaviour connects over
+link-local in namespaces of its own, where it always is. A dual-stack holder at start
+still stops the service, because nothing at all binds; that is task 37 of the local
+network plan.
+**Date:** 2026-09-17.

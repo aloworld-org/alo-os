@@ -1856,7 +1856,37 @@ kept.
 
 ### 36. A port another program held over IPv6 at start is listened on over IPv6 once it is let go of
 
-**Status:** ready. **Depends on:** 23, 35.
+**Status:** **Done, 2026-09-17.** Measured on a real kernel by
+`crates/alo-agentd/src/a_port_held_over_ipv6_at_start.rs`. Reception is started
+through `setpriv` with an **empty capability bounding set** and asserts `CapEff` and
+`CapBnd` are zero, then waits to be told to serve. The far end lays one `veth` cable
+to it carrying **link-local IPv6 only** (`cable0`/`far0` at 40/60), waits for
+duplicate address detection at both ends, and starts a squatter holding the wire's
+port over IPv6 alone on `[::]` — and only then tells reception to serve. Reception
+joins discovery on the cable and is answered over link-local; the port is not reached
+there. That knock is accepted and closed by the squatter: a let-go that leaves the
+port held over IPv6, which the service hears and is refused again. Then, with `ip -o
+monitor link address` subscribed in reception's network, the squatter lets go.
+Reception listens over IPv6, the port is reached over link-local, the monitor printed
+**nothing**, and the answer is the same bytes as before. The service log says the IPv6
+refusal exactly once and *is bound over IPv6 now* exactly once, and refuses or binds
+no IPv4 network. **Decided:** the IPv6 listener is **a separate thing tried again**,
+not one of the refused networks — `crate::listening_over_ipv6` (new), because it is
+held to no interface and refused networks are remembered, and forgotten, by interface
+number. It is tried on the same two occasions as a refused network (a let-go of the
+port, and a network changing), and only after `EADDRINUSE`: a kernel with no IPv6 is
+said once and never asked again. The let-go socket is now opened before the IPv6 bind,
+and on a machine that cannot read its networks too. Mutation run: with the IPv6 retry
+removed from `let_go_of`, the fixture fails at *reception never held `cable0|-|yes`:
+it holds `cable0|-|no`*. Contract: `docs/contracts/local-network-wire.md` (*A port
+another program lets go of*, one bullet added). `docs/quirks.md` records that this WSL
+host's own namespace binds IPv6 sockets with IPv6 disabled on every interface. A
+gate refusal naming a non-exhaustive `match` on `alo_opening::Kind` was the one
+build directory every lane on this machine shares handing this tree another lane's
+artefacts, which `f984203` fixed on `main`; nothing in this work changed for it,
+and the report says how that was established. The report is
+`docs/autonomy/updates/a-port-held-over-ipv6-at-start.md`.
+**Depends on:** 23, 35.
 
 *Machines find each other with zero configuration.* Task 35 made a network whose
 IPv4 port another program held be listened on again when the kernel says that
@@ -1882,6 +1912,41 @@ service restarts.
   and not said again, tested. Whether the IPv6 listener then counts as one of the
   refused networks, or as a separate thing tried again, is decided in the crate and
   written up with the reason.
+- **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
+  by a person or an agent, no trusted-network setting, what crosses the wire
+  unchanged. No interval and no polling. What reality does that the specification
+  does not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 37. A port another program holds in both families at start does not stop the service
+
+**Status:** ready. **Depends on:** 35, 36.
+
+*Machines find each other with zero configuration.* Tasks 35 and 36 made a port
+another program held on one network, or over IPv6, be listened on again when the
+kernel says that program let go. Both assume the service **started**.
+`crate::listeners::Listeners::bound` refuses to start when nothing at all could be
+listened on (`NotBound::NoWire`), and a program holding the port **dual-stack** —
+one listener on `[::]` without `IPV6_V6ONLY`, which is how most programs bind "every
+address" on Linux — refuses the IPv6-only listener *and* every IPv4 listener held to
+an interface, loopback included. Measured 2026-09-17 on `6.18.33.2` in a user
+network namespace: an IPv4 listener held to `lo` beside a dual-stack `[::]` listener
+at the same port is refused `EADDRINUSE`. So an installer or a restarting service
+that holds the port dual-stack at the moment the service starts stops the service,
+and whether it comes back is systemd's restart policy rather than the kernel's
+let-go, which the service would hear if it were running.
+
+- **Acceptance:** on a real kernel, one machine serving as `src/main.rs` does with no
+  capabilities (`crate::a_port_held_over_ipv6_at_start` shows how), with a far end on
+  a `veth` carrying IPv4 and link-local IPv6. A program holds the port dual-stack
+  before the service starts. The service starts and serves its person's door, is
+  found on the cable over both families with the same bytes, and the port is not
+  reached in either family, tested. Once that program lets go, **with no network
+  changing**, the port is reached over IPv4 and over link-local, tested. The service
+  log says each refusal once and each bind once, tested. Whether *listening nowhere*
+  stays a refusal to start in any case (a kernel with no IPv6 and no network that
+  binds for a reason other than the port being held), and what `NotBound::NoWire`
+  then means, is decided in the crate and written up with the reason — without
+  contradicting what a machine that advertises a port says about itself.
 - **Constraint:** ADR 0003, ADR 0041 and ADR 0044 as they stand: no network chosen
   by a person or an agent, no trusted-network setting, what crosses the wire
   unchanged. No interval and no polling. What reality does that the specification
