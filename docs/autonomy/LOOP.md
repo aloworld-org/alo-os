@@ -1,5 +1,13 @@
 # The alo OS build loop
 
+> **Current workflow, owner-approved 2026-09-18:**
+> [SHARED_MAIN.md](SHARED_MAIN.md) supersedes direct-to-main, main-only,
+> per-checkout build-cache and concurrent-build instructions below. Use one
+> task branch and draft PR per task; progress pushes are allowed. The designated
+> coordinator alone squash-merges after all nine gates and acceptance pass on
+> the exact combined tree. Existing direct-to-main publishers remain paused;
+> the historical runner recipes below do not implement the new workflow.
+
 ## Current runner (2026-09-07)
 
 The owner authorized continuous full-v0.01 development with a push after every

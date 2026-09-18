@@ -67,17 +67,23 @@ Conventional subjects: `type(scope): descriptive subject`. Names describe the
 subject matter — release codes live in `ROADMAP.md` and commit trailers, not in
 branch names.
 
-Commit with your own author identity. One agent, human or otherwise, per working
-tree: concurrent editors on one checkout produce work nobody can attribute.
+Use the checkout's configured owner identity; agents do not set their own
+author or add co-author trailers. One agent per working tree. Follow
+`docs/autonomy/SHARED_MAIN.md`: one short-lived task branch and PR, progress
+pushes allowed, one coordinator, and a fully gated squash merge into `main`.
 
-## Before you open a pull request
+## Before a pull request is merged
 
-- Every line of the gate in `CLAUDE.md` passes.
+Draft PRs may hold unfinished checkpoints and must say so. Before merging:
+
+- All nine gates pass on the exact combined tree with current `main`, along
+  with task acceptance and every applicable gate in `CLAUDE.md`.
 - It is in `docs/features.md` with a tier, in the current release.
 - **One file, one responsibility** (law 4). A file that grew a second reason to
   change gets split in the same pull request that discovered it — in this
   repository the file nobody wants to open is where the security bug lives.
-- `CHANGELOG.md` has a line a person outside this repository can read.
+- The task report includes a user-readable change description; the integration
+  owner consolidates shared progress documents under `SHARED_MAIN.md`.
 
 ## Security
 
