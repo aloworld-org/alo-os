@@ -766,9 +766,12 @@ kernel under emulation is this task's to show from that run, not to assume.
 
 ### 15. A release that carries the way to the boundary, installed under Secure Boot to the agent service
 
-**Status:** blocked — on the owner's release (ADR 0036), described below; once its
-digest is pinned, ready on the third PC or any machine that holds one emulated
-install run inside a worker's limit. **Depends on:** 14.
+**Status:** ready — the release it waited on is published, signed and pinned:
+`image/pinned.toml` names version `0.0.2` at digest
+`sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9`, built
+from revision `8d2619d`, verified against `signing/alo-os.pub`. Taken by the
+third PC on 2026-09-18, which holds one emulated install run inside a worker's
+limit. **Depends on:** 14.
 
 Split from task 14 on 2026-09-16. Task 14 found why `alo-agentd` failed on the disk
 installed under Secure Boot. systemd mounts `/sys/fs/bpf` so that only root can pass
