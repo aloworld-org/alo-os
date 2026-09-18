@@ -308,7 +308,12 @@ refuse.
 
 ### 8. The lock screen, drawn
 
-**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 1.
+**Status:** **Done, 2026-09-18: the code only.** Owner-assigned lane A implemented
+`LockSurface`, exclusive nested lock rendering and the approved wallpaper
+installation mapping. Publication requires all nine gates on the combined tree;
+results accompany the commit. See
+`docs/autonomy/updates/the-lock-screen-draws-only-what-lock-policy-allows.md`.
+Direct-display, installed-image and certified-machine acceptance remain open.
 **Depends on:** 1.
 
 - **Acceptance:** the lock screen draws exactly what `alo-locking` allows — the

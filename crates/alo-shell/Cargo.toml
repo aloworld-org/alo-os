@@ -12,6 +12,13 @@ publish = false
 # and never the accounts themselves, which only `alo-greeting` asks.
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
+# Lock policy, regional wording, and bounded image/time engines. No network lookup.
+alo-locking = { path = "../alo-locking" }
+alo-formats = { path = "../alo-formats" }
+alo-overlay = { path = "../alo-overlay" }
+alo-egress = { path = "../alo-egress" }
+image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg"] }
+jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
 # The sentence a person approves: a change that is really waiting, put in
 # front of them once and answered once. This crate draws the question and
 # carries keys to it; every answer goes back through `alo_approving::Approving`

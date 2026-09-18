@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// The lock frame, selected image or clock cannot be represented safely.
+    #[error("the lock screen cannot be drawn safely")]
+    LockScene,
     /// Fresh reader wording, pagination or placement refused before submission.
     #[error(transparent)]
     ControlReader(#[from] crate::WindowControlPageError),

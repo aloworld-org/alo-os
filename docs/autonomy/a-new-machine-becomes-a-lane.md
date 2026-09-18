@@ -37,7 +37,7 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
 | `v0-5-the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
 | `v0-5-documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
-| `v0-5-the-shell-plan.md` (tasks 7–14) | **paused 2026-09-16**, its settings task published and every remaining task blocked on another plan's crates; the next machine to free a lane takes it, and it stays the one owner of `alo-shell` | `alo-shell`, `tools/graphics-check` |
+| `v0-5-the-shell-plan.md` (tasks 7-14) | **this PC, lane A (`alo-os-claude`), from 2026-09-18** - assigned by the owner after the local-network plan finished; starts with task 8, whose lock-state dependency is done. Other tasks retain their dependencies | `alo-shell`, `tools/graphics-check` |
 | `v0-5-access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
 | `v0-5-models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
 | `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
@@ -271,3 +271,12 @@ the filesystem the gates run on. If it says it could not make one and fell back
 to the checkout's own `target/`, the machine is out of memory or WSL is not
 answering — fix that before letting it build, because the fallback is slow
 enough to look like a hang.
+
+### Narrow wallpaper handoff, 2026-09-18
+
+The owner assigned the approved Quiet Horizon wallpaper installation to this
+PC together with shell task 8. Lane A may add the default-picture COPY mapping,
+its alo-image acceptance test and the shared wallpaper lookup contract. All
+other installer/image work remains with the third PC. The source artwork was
+already published in c69a044; this handoff does not choose new artwork or
+change the default appearance.
