@@ -19,21 +19,19 @@ alo-capability = { path = "../alo-capability" }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-# The crates that declare the verbs alo OS ships. They are the measurement
-# rather than the method, so they are here and not above: this crate checks
-# whatever list it is handed, and the test is what hands it the real one.
-alo-applications = { path = "../alo-applications" }
-alo-converting = { path = "../alo-converting" }
+# Every verb alo OS ships, on the one list, with the crates that declare them.
+# It is the measurement rather than the method, so it is here and not above:
+# this crate checks whatever list it is handed, and the test is what hands it
+# the real one. Until 2026-09-17 the real one was written out here and again in
+# `alo-software`'s test of the same verbs, and two copies of it broke three
+# lanes in a day for changes none of them made. `alo-declared` depends on this
+# crate for the workspace walk, which is a dependency cycle only through these
+# dev-dependencies and is what Cargo allows them for.
+alo-declared = { path = "../alo-declared" }
+# The verbs the fixtures below are about, declared the way the real ones are.
+# Nothing in this crate holds a verb's name, so a fixture needs real verbs to be
+# a fixture about anything.
 alo-files = { path = "../alo-files" }
-alo-finding = { path = "../alo-finding" }
-alo-measuring = { path = "../alo-measuring" }
-alo-printing = { path = "../alo-printing" }
-alo-changing-network = { path = "../alo-changing-network" }
-alo-software = { path = "../alo-software" }
-# The adapters alo OS ships, whose verbs are verbs like any other.
-alo-adapters = { path = "../alo-adapters" }
-# What an agent may capture of the screen, which is a verb like any other.
-alo-capturing = { path = "../alo-capturing" }
 
 [lints]
 workspace = true

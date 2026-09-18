@@ -4948,6 +4948,17 @@ not written anywhere; the tests beside them already check every entry against th
 workspace, so nothing a fixed length proves is lost. `alo-saying` and `alo-by-hand`
 are not the lane's that found this, so the change is left to their owners.
 **Date:** 2026-09-16.
+**Fixed, 2026-09-17:** `EVERY_LIST` and `ONE_STRING_EACH` are `&[&str]` and
+`&[(&str, &str)]`, with no length written on either, and the counts they were
+written for are made by comparing one list against another instead of against a
+literal. `WHO_DECLARES_THEM` did not become a slice where it was — it moved.
+There were two copies of it, in `alo-by-hand`'s test and `alo-software`'s, and
+both broke on the day a crate was added rather than only on the day two lanes
+added one; they are now one list in `crates/alo-declared/src/shipped.rs`, held to
+the workspace's own member list by that crate, with the names and the
+`declare_into` calls in one file so neither can move without the other.
+`tools/kernel-loop`'s `REGISTRATIONS` names that file now, so a plan adding such
+a crate is not refused for registering it.
 
 ### Tests leave their folders in /tmp, and enough of them slow a walk of the machine
 **Version:** the workspace test suite as gated on the third PC, 2026-09-16.

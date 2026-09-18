@@ -33,6 +33,7 @@ members = [
   "crates/alo-context",
   "crates/alo-converting",
   "crates/alo-corridor",
+  "crates/alo-declared",
   "crates/alo-desktops",
   "crates/alo-dividing",
   "crates/alo-dock",

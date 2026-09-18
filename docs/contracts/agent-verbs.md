@@ -1059,3 +1059,15 @@ not handed to that check would make every verb in it invisible to rule 7**, and
 the check would go on passing in the same colour. An adapter outside this
 workspace keeps the same shape for the same reason — whoever assembles its list
 is who has to answer rule 7 for it.
+
+**And the list that is handed in is one list, in one file.** A crate that
+declares verbs is named in `crates/alo-declared/src/shipped.rs` — one registry entry
+pairing its name with its `declare_into` function. That entry derives
+`WHO_DECLARES_THEM`, the combined declarations and the per-crate declarations.
+Add the dependency to that crate's `Cargo.toml` too, because a test cannot call a
+crate it does not depend on. Nothing else needs
+touching: every check over the verbs alo OS ships is handed that one list, and
+`crates/alo-declared` holds it to this workspace's own member list, naming the
+crate and this file when they disagree. It was two hand-written copies until
+2026-09-17, in `alo-by-hand`'s test and `alo-software`'s, and a crate arriving
+broke lanes that had not touched either.

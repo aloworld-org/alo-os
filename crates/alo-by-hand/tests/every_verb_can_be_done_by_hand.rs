@@ -1,12 +1,21 @@
 //! The check itself, run against the verbs this machine really ships.
 //!
-//! Everything in the crate is the method. This is the measurement: the verbs
-//! `alo-files`, `alo-applications`, `alo-finding`, `alo-measuring`,
-//! `alo-printing`, `alo-changing-network`, `alo-software`, `alo-converting`,
-//! `alo-adapters` and `alo-capturing` declare, the real `docs/by-hand.md`, the real
-//! `docs/features.md` and this workspace's own member list — read off the disk this test is running on, so
-//! a verb added tomorrow with nothing said about it fails here rather than in
-//! somebody's reading a release from now.
+//! Everything in the crate is the method. This is the measurement: every verb
+//! alo OS ships — the one list `alo-declared` keeps, and the crates it calls —
+//! the real `docs/by-hand.md`, the real `docs/features.md` and this workspace's
+//! own member list, read off the disk this test is running on, so a verb added
+//! tomorrow with nothing said about it fails here rather than in somebody's
+//! reading a release from now.
+//!
+//! # Why the crates are not named here any more
+//!
+//! They were, until 2026-09-17, and so were they in `alo-software`'s test of the
+//! same verbs. Two hand-kept copies of one list broke three lanes in a day for
+//! changes none of them made — `alo-converting` arriving, then `alo-capturing` —
+//! so the list moved to `alo-declared`, which is also where it is held to this
+//! workspace's own members. Nothing was given up: [`Finding::AVerbListNobodyHandedIn`]
+//! below is still what a crate missing from that list is, and the fixture at the
+//! bottom still shows it happening.
 //!
 //! # And the refusals, beside it
 //!
@@ -28,32 +37,15 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use alo_by_hand::{Finding, Held, THE_ANSWERS, THE_WORKSPACE, held, whoever_declares_verbs};
+use alo_by_hand::{Finding, Held, THE_ANSWERS, held};
 use alo_capability::Verbs;
+use alo_declared::{WHO_DECLARES_THEM, every_verb_this_machine_ships};
 
 /// The only list of what gets built, which every by-hand answer quotes.
 const THE_DEFINITION: &str = "docs/features.md";
 
 /// The other half of it: how a person does each verb without the agent.
 const THE_DOCUMENT: &str = "docs/by-hand.md";
-
-/// The crates that declare the verbs alo OS ships.
-///
-/// Written here rather than in the crate, because this is the measurement: the
-/// crate checks whatever list it is handed, and a crate declaring verbs that is
-/// missing from this array is what [`Finding::AVerbListNobodyHandedIn`] is for.
-const WHO_DECLARES_THEM: [&str; 10] = [
-    "alo-files",
-    "alo-applications",
-    "alo-converting",
-    "alo-finding",
-    "alo-measuring",
-    "alo-printing",
-    "alo-changing-network",
-    "alo-software",
-    "alo-adapters",
-    "alo-capturing",
-];
 
 /// This repository, from the crate this test is in.
 fn the_repository() -> PathBuf {
@@ -73,18 +65,7 @@ fn reading(named: &str) -> String {
 
 /// Every verb alo OS ships, on one list, as a daemon would be handed them.
 fn what_this_machine_ships() -> Verbs {
-    let mut verbs = Verbs::default();
-    alo_files::declare_into(&mut verbs).expect("the six file verbs declare");
-    alo_applications::declare_into(&mut verbs).expect("the four application verbs declare");
-    alo_converting::verbs::declare_into(&mut verbs).expect("the converting verb declares");
-    alo_finding::verbs::declare_into(&mut verbs).expect("the search verb declares");
-    alo_measuring::verbs::declare_into(&mut verbs).expect("the two measuring verbs declare");
-    alo_printing::verbs::declare_into(&mut verbs).expect("the printing verb declares");
-    alo_changing_network::verbs::declare_into(&mut verbs).expect("the three network verbs declare");
-    alo_software::verbs::declare_into(&mut verbs).expect("the installing verb declares");
-    alo_adapters::verbs::declare_into(&mut verbs).expect("the shipped adapters' verbs declare");
-    alo_capturing::verbs::declare_into(&mut verbs).expect("the screen verb declares");
-    verbs
+    every_verb_this_machine_ships().expect("every crate alo OS ships verbs from declares them")
 }
 
 /// **Every verb alo OS ships names how a person does the same thing without the
@@ -98,7 +79,7 @@ fn every_verb_this_machine_ships_can_be_done_by_hand() {
 
     match held(
         &verbs,
-        &WHO_DECLARES_THEM,
+        WHO_DECLARES_THEM,
         &reading(THE_DOCUMENT),
         &reading(THE_DEFINITION),
         &off_the_disk,
@@ -132,27 +113,6 @@ fn every_verb_this_machine_ships_can_be_done_by_hand() {
             );
         }
     }
-}
-
-/// **Every crate of this workspace that declares verbs was handed to the check.**
-///
-/// The failure a list of verb names could never catch, measured against the real
-/// workspace: a crate declaring verbs that nothing here knows about would make
-/// every verb in it invisible to the check above, which would go on passing.
-#[test]
-fn every_crate_that_declares_verbs_is_one_this_check_was_handed() {
-    let here = the_repository();
-    let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
-    let mut declaring = whoever_declares_verbs(&reading(THE_WORKSPACE), &off_the_disk);
-    declaring.sort();
-    let mut handed = WHO_DECLARES_THEM.map(str::to_owned);
-    handed.sort();
-    assert_eq!(
-        declaring,
-        handed.to_vec(),
-        "the crates of this workspace that declare verbs are not the ones this \
-         test hands to the check"
-    );
 }
 
 /// The definition those answers quote, written the way `docs/features.md` writes

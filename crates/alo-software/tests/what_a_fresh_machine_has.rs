@@ -23,7 +23,6 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use alo_applications::Application;
-use alo_by_hand::{THE_WORKSPACE, whoever_declares_verbs};
 use alo_capability::{
     Agent, Applicant, Ask, Authorised, Given, Grant, GrantError, GrantId, Grantee, Grants, Held,
     NotAuthorised, NotGranted, Proposal, ProposalError, Reach, Takes, Verb, Verbs,
@@ -368,44 +367,16 @@ fn a_person_may_remove_any_of_them_the_browser_included() {
 // The terminal is a person's, and never an agent's.
 // ---------------------------------------------------------------------------
 
-/// Every verb alo OS ships, on one list as a daemon is handed them — and the
-/// list is held to the crates of this workspace that declare verbs, so a verb
-/// added in a new crate cannot escape this test by not being handed to it.
+/// Every verb alo OS ships, on one list as a daemon is handed them.
+///
+/// The list is `alo-declared`'s, and that crate is where it is held to the
+/// crates of this workspace that declare verbs — so a verb added in a new crate
+/// still cannot escape this test by not being handed to it, and a crate arriving
+/// no longer fails here for a change this plan never made. Until 2026-09-17 the
+/// crates were written out here and again in `alo-by-hand`'s test of the same
+/// verbs; `alo-converting` and then `alo-capturing` broke both.
 fn every_verb_this_machine_ships() -> Verbs {
-    let here = the_repository();
-    let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
-    let manifest = fs::read_to_string(the_repository().join(THE_WORKSPACE)).unwrap();
-    let mut declaring = whoever_declares_verbs(&manifest, &off_the_disk);
-    declaring.sort();
-    assert_eq!(
-        declaring,
-        [
-            "alo-adapters",
-            "alo-applications",
-            "alo-capturing",
-            "alo-changing-network",
-            "alo-converting",
-            "alo-files",
-            "alo-finding",
-            "alo-measuring",
-            "alo-printing",
-            "alo-software",
-        ],
-        "a crate declares verbs that this test does not hand to the terminal's check"
-    );
-
-    let mut verbs = Verbs::default();
-    alo_converting::verbs::declare_into(&mut verbs).unwrap();
-    alo_files::declare_into(&mut verbs).unwrap();
-    alo_applications::declare_into(&mut verbs).unwrap();
-    alo_finding::verbs::declare_into(&mut verbs).unwrap();
-    alo_measuring::verbs::declare_into(&mut verbs).unwrap();
-    alo_printing::verbs::declare_into(&mut verbs).unwrap();
-    alo_software::verbs::declare_into(&mut verbs).unwrap();
-    alo_adapters::verbs::declare_into(&mut verbs).unwrap();
-    alo_capturing::verbs::declare_into(&mut verbs).unwrap();
-    alo_changing_network::verbs::declare_into(&mut verbs).unwrap();
-    verbs
+    alo_declared::every_verb_this_machine_ships().unwrap()
 }
 
 /// A value for every argument of this verb, naming `application` wherever it

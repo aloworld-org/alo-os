@@ -1,0 +1,46 @@
+[package]
+name = "alo-declared"
+version = "0.0.1"
+description = "Every verb alo OS ships, on one list with the calls that declare them — held to the workspace that has the crates."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The registry the verbs are declared into, which is the same one a daemon
+# enforces. Nothing here declares a verb of its own; this crate is where the
+# ten crates that do are called, once, so that two tests cannot hold two
+# different ideas of what this machine ships.
+alo-capability = { path = "../alo-capability" }
+
+# The workspace's own member list, and the convention that says which of its
+# crates declare verbs. Parsed once in this repository rather than three times:
+# `alo-collected` borrows the same walk for the crates that declare *words*, and
+# a second copy of that parser would be a second thing to fix the day the
+# manifest changes shape.
+alo-by-hand = { path = "../alo-by-hand" }
+
+# The crates whose verbs alo OS ships. They are dependencies rather than names
+# read off the disk because a test cannot call a crate it does not depend on —
+# `lib.rs` is why that is the whole shape of this crate, and why only the
+# agreement with the workspace is derived and never the list itself.
+alo-adapters = { path = "../alo-adapters" }
+alo-applications = { path = "../alo-applications" }
+alo-capturing = { path = "../alo-capturing" }
+alo-changing-network = { path = "../alo-changing-network" }
+alo-converting = { path = "../alo-converting" }
+alo-files = { path = "../alo-files" }
+alo-finding = { path = "../alo-finding" }
+alo-measuring = { path = "../alo-measuring" }
+alo-printing = { path = "../alo-printing" }
+alo-software = { path = "../alo-software" }
+
+# The findings are sentences whoever is adding a crate acts on, and each one
+# names the crate it is about and the file to add it in. This crate says nothing
+# to a person in their own language — see `crate` documentation for why an
+# author's English is right here and `alo-strings` is not.
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

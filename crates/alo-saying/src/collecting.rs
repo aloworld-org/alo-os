@@ -75,7 +75,8 @@ impl NotCollected {
 ///
 /// The length follows the entries rather than a number maintained beside them.
 /// The tests compare these names with the actual declarations, so adding a
-/// vocabulary must still include it in the collection.
+/// vocabulary must still include it in the collection. The workspace check in
+/// `alo-collected` also names any crate omitted from both lists.
 pub const EVERY_LIST: &[&str] = &[
     "alo-adapting",
     "alo-access",

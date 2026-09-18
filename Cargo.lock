@@ -269,17 +269,9 @@ dependencies = [
 name = "alo-by-hand"
 version = "0.0.1"
 dependencies = [
- "alo-adapters",
- "alo-applications",
  "alo-capability",
- "alo-capturing",
- "alo-changing-network",
- "alo-converting",
+ "alo-declared",
  "alo-files",
- "alo-finding",
- "alo-measuring",
- "alo-printing",
- "alo-software",
  "thiserror 2.0.20",
 ]
 
@@ -452,6 +444,25 @@ dependencies = [
  "alo-turn",
  "serde",
  "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-declared"
+version = "0.0.1"
+dependencies = [
+ "alo-adapters",
+ "alo-applications",
+ "alo-by-hand",
+ "alo-capability",
+ "alo-capturing",
+ "alo-changing-network",
+ "alo-converting",
+ "alo-files",
+ "alo-finding",
+ "alo-measuring",
+ "alo-printing",
+ "alo-software",
  "thiserror 2.0.20",
 ]
 
@@ -1204,17 +1215,10 @@ version = "0.0.1"
 dependencies = [
  "alo-adapters",
  "alo-applications",
- "alo-by-hand",
  "alo-capability",
- "alo-capturing",
- "alo-changing-network",
- "alo-converting",
+ "alo-declared",
  "alo-egress",
- "alo-files",
- "alo-finding",
  "alo-granted",
- "alo-measuring",
- "alo-printing",
  "alo-proxy",
  "alo-saying",
  "alo-strings",

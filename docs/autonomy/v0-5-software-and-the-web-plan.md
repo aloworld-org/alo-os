@@ -17,7 +17,10 @@ application gets there.
 removing a sandboxed application, from which sources, and the applications a fresh
 machine ships), `crates/alo-proxy` (one machine-wide proxy, honoured by applications),
 and `crates/alo-adapters` (loading an adapter against
-`docs/contracts/app-adapters.md`, and the accessibility fallback). **It reads and
+`docs/contracts/app-adapters.md`, and the accessibility fallback) — and, from task
+10, `crates/alo-declared` (the one list of the crates whose verbs alo OS ships,
+held to this workspace's members), which belongs to no workstream and which every
+plan that adds a verb-declaring crate registers in. **It reads and
 never edits** `alo-portals`, `alo-granted`, `alo-applications` and `alo-secrets` (the
 applications plan's — an installed application arrives with no grants), `alo-capability`
 (an adapter's verbs are verbs; if registering them needs a change there, that is a
@@ -327,7 +330,24 @@ machine the organisation is who knows the route.
 
 ### 10. A list of crates that cannot drift from the workspace it describes
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-18.** Recovered task 10; the one list is the new `crates/alo-declared`:
+`WHO_DECLARES_THEM` and the `declare_into` calls in one file
+(`src/shipped.rs`), so neither half can move without the other, and
+`alo_declared::held` holds that list to `Cargo.toml`'s members through
+`alo_by_hand::whoever_declares_verbs` — naming the crate and naming
+`crates/alo-declared/src/shipped.rs` when one is missing. `alo-by-hand`'s test
+and `alo-software`'s terminal test are both handed it and keep no copy;
+`alo-saying`'s `EVERY_LIST` and `ONE_STRING_EACH` are slices with no length
+written on them. Nothing got weaker: `alo-by-hand`'s `AVerbListNobodyHandedIn`
+still runs against the real workspace inside its own check, and the crates it
+covered are the crates it covers. `tools/kernel-loop`'s `REGISTRATIONS` names the
+new file, so a plan adding a verb-declaring crate is not refused for registering
+it. What the report says plainly is that the list does not write itself and
+cannot: a test cannot call a crate it does not depend on, so the calls are Cargo
+dependencies. The registry derives names and calls from one entry per crate;
+the check derives their agreement with the workspace. The report
+is `docs/autonomy/updates/one-list-of-crates-that-cannot-drift.md`.
+**Depends on:** nothing.
 
 **Why, 2026-09-17.** Three times in one day a lane was refused for a change it
 never made, each time by a hand-kept list that has to move in step with the

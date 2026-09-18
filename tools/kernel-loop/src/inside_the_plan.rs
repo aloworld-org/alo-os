@@ -17,18 +17,28 @@
 //! # The registrations every crate makes
 //!
 //! A crate that declares words is listed in `alo-saying`'s collected list, and a
-//! crate that declares verbs in `alo-by-hand`'s, because workspace tests refuse the
+//! crate that declares verbs in `alo-declared`'s, because workspace tests refuse the
 //! workspace otherwise. Every plan that adds such a crate has to touch those files,
 //! whatever its header says about the crates they are in, so those files alone are
 //! not refused.
+//!
+//! The verb half moved on 2026-09-17. It was `alo-by-hand`'s test and
+//! `alo-software`'s, two hand-kept copies of one list, and the day they each
+//! refused a lane for a crate it had not added is the day they became one list in
+//! `alo-declared`. A plan adding a crate that declares verbs now registers it
+//! there and nowhere else.
 
 /// Files every plan may change, because a workspace test makes every new crate
 /// with words or verbs register there.
-const REGISTRATIONS: [&str; 4] = [
+///
+/// A slice rather than an array with a length written on it, for the reason
+/// `alo-saying`'s own lists became slices on the same day: a number beside a
+/// list is a thing two lanes cannot both be right about.
+const REGISTRATIONS: &[&str] = &[
     "crates/alo-saying/src/collecting.rs",
     "crates/alo-saying/Cargo.toml",
-    "crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs",
-    "crates/alo-by-hand/Cargo.toml",
+    "crates/alo-declared/src/shipped.rs",
+    "crates/alo-declared/Cargo.toml",
 ];
 
 /// Where a plan's tasks begin, and so where its header ends.
@@ -148,7 +158,8 @@ mod tests {
     /// A header written the way the broker plan's is.
     const A_HEADER: &str = "# a plan\n\n**Crates this plan owns, all new:** `crates/alo-broker` \
         (the broker) and `crates/alo-encrypting`. **It reads and never\nedits** `alo-capability`, \
-        `alo-printing` (the documents plan's), `alo-record`, `image/`, and `alo-saying`. \
+        `alo-printing` (the documents plan's), `alo-record`, `image/`, `alo-saying` and \
+        `alo-declared`. \
         **Nothing in `crates/alo-shell`.**\n\n**What this plan may not do:** mention `alo-broker` \
         again.\n\n## Tasks\n\n### 1. Something\n\nIt edits `alo-turn` in its prose.\n";
 
@@ -167,6 +178,7 @@ mod tests {
             "alo-record",
             "image/",
             "alo-saying",
+            "alo-declared",
             "alo-shell",
         ] {
             assert!(
@@ -223,12 +235,23 @@ mod tests {
         let handed = files(&[
             "crates/alo-saying/src/collecting.rs",
             "crates/alo-saying/Cargo.toml",
+            "crates/alo-declared/src/shipped.rs",
+            "crates/alo-declared/Cargo.toml",
             "crates/alo-broker/src/words.rs",
+            "crates/alo-broker/src/verbs.rs",
         ]);
         assert_eq!(refusal(&handed, A_HEADER, "the plan"), None);
 
-        let not_a_registration = files(&["crates/alo-saying/src/rented.rs"]);
-        assert!(refusal(&not_a_registration, A_HEADER, "the plan").is_some());
+        for not_a_registration in [
+            "crates/alo-saying/src/rented.rs",
+            "crates/alo-declared/src/holding.rs",
+        ] {
+            let handed = files(&[not_a_registration]);
+            assert!(
+                refusal(&handed, A_HEADER, "the plan").is_some(),
+                "{not_a_registration} was let through as a registration"
+            );
+        }
     }
 
     /// **A plan with no such lines refuses nothing.**
