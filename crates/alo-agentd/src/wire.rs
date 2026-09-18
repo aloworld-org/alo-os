@@ -174,12 +174,15 @@ impl Wire {
     /// address. A network that will not join is a line in the service log and
     /// the others are joined; a network that appears later is joined when the
     /// kernel says so ([`Wire::networks_changed`]); a machine that cannot listen
-    /// over IPv6 at all is a line in the log and answers over IPv4.
+    /// over IPv6 at all is a line in the log. A port held in both families can
+    /// wait for the kernel's let-go notification while discovery and the person's
+    /// door serve (see [`Listeners::bound`]).
     ///
     /// # Errors
     ///
-    /// [`NotBound::NoWire`] when the port or the IPv4 discovery socket will not
-    /// bind, and nothing is listening.
+    /// [`NotBound::NoWire`] when no listener binds and no retryable port conflict
+    /// has a kernel let-go subscription, or a discovery socket cannot be prepared
+    /// for waiting.
     pub fn bound(here: MachineId) -> Result<Self, NotBound> {
         let said = |line: &str| eprintln!("alo-agentd: {line}");
         let listeners = Listeners::bound(THE_WIRE_PORT, &mut |line| said(line))?;

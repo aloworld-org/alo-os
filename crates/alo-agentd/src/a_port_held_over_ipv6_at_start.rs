@@ -51,6 +51,12 @@
 //!    left the port held — and the IPv6 bind exactly once, refuses and binds no
 //!    IPv4 network, never says the kernel would not tell it, and the service stops
 //!    when it is told to and not before.
+//!
+//! The dual-stack case uses the same machines and ordering, with IPv4 added to
+//! the cable before serving and IPV6_V6ONLY explicitly disabled on the squatter.
+//! Every listener, including loopback, is then refused at startup. Both families
+//! must still discover the service, its person's door must answer, and both must
+//! reach its protocol after the squatter lets go without a network change.
 
 #[cfg(test)]
 #[expect(
@@ -64,7 +70,10 @@ mod tests {
     use std::env;
     use std::fmt::Write as _;
     use std::io::{BufRead as _, BufReader, Read as _, Write as _};
-    use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV6, TcpStream, UdpSocket};
+    use std::net::{
+        IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV6, TcpListener, TcpStream,
+        UdpSocket,
+    };
     use std::os::unix::net::UnixStream;
     use std::path::{Path, PathBuf};
     use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
@@ -97,6 +106,19 @@ mod tests {
     /// Set on the binary run again inside a namespace, naming which machine it
     /// is.
     const INSIDE: &str = "ALO_AGENTD_A_PORT_HELD_OVER_IPV6_AT_START_INSIDE";
+
+    /// Inherited by all fixture processes; never a product setting.
+    const BOTH_FAMILIES: &str = "ALO_AGENTD_PORT_HELD_IN_BOTH_FAMILIES";
+
+    /// Whether this fixture's squatter holds both families.
+    fn both_families() -> bool {
+        env::var(BOTH_FAMILIES).ok().as_deref() == Some("yes")
+    }
+
+    /// IPv4 addresses added only in the dual-stack startup case.
+    const RECEPTIONS_IPV4: Ipv4Addr = Ipv4Addr::new(10, 77, 0, 1);
+    /// The far end's address in the dual-stack startup case.
+    const FAR_IPV4: Ipv4Addr = Ipv4Addr::new(10, 77, 0, 2);
 
     /// Reception's end of the cable.
     const RECEPTIONS_END: &str = "cable0";
@@ -133,12 +155,25 @@ mod tests {
     /// what it saw and what reception's service log said.
     #[test]
     fn a_port_held_over_ipv6_at_start_is_listened_on_over_ipv6_once_let_go_of() {
+        measured(false);
+    }
+
+    /// All listeners refused at startup still leave discovery and the person's
+    /// door serving; both families recover on a port release alone.
+    #[test]
+    fn a_port_held_in_both_families_at_start_does_not_stop_the_service() {
+        measured(true);
+    }
+
+    /// Run the namespace fixture and check every refusal and recovery line.
+    fn measured(both: bool) {
         let exe = env::current_exe().expect("a test binary knows where it is");
         let script = "ip link set lo up && exec \"$0\" --exact --ignored --nocapture a_port_held_over_ipv6_at_start::tests::the_far_end_on_a_link_local_cable";
         let ran = Command::new("unshare")
             .args(["--map-root-user", "--net", "--", "sh", "-c", script])
             .arg(exe)
             .env(INSIDE, "far end")
+            .env(BOTH_FAMILIES, if both { "yes" } else { "no" })
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -195,10 +230,29 @@ mod tests {
                     .any(|what| line.contains(what))
             })
             .collect();
-        assert!(
-            per_network.is_empty(),
-            "an IPv4 network was refused or bound again:\n{per_network:?}"
-        );
+        if both {
+            for name in ["lo", RECEPTIONS_END] {
+                for action in ["could not be bound on", "is bound on"] {
+                    let expected = format!("{action} {name} (");
+                    assert_eq!(
+                        per_network
+                            .iter()
+                            .filter(|line| line.contains(&expected))
+                            .count(),
+                        1,
+                        "the service did not say `{expected}` exactly once:\n{log}"
+                    );
+                }
+            }
+            assert_eq!(per_network.len(), 4, "unexpected IPv4 log lines: {log}");
+            assert!(!log.contains("it is bound over IPv4 alone"), "{log}");
+            assert!(said.contains("both families found, refused, and recovered"));
+        } else {
+            assert!(
+                per_network.is_empty(),
+                "an IPv4 network was refused or bound again:\n{per_network:?}"
+            );
+        }
         assert!(
             !log.contains("will not say when a program lets go"),
             "the kernel would not tell a service with no capabilities:\n{log}"
@@ -265,8 +319,8 @@ mod tests {
             .ok()
     }
 
-    /// Lay the cable between here and reception at `pid`, with no IPv4 address
-    /// on either end, and hand back both link-local addresses — reception's
+    /// Lay the cable between here and reception at `pid`, with IPv4 only in the
+    /// dual-stack case, and hand back both link-local addresses — reception's
     /// first — once each has finished duplicate address detection.
     fn laid(pid: u32) -> (Ipv6Addr, Ipv6Addr) {
         ip_said(
@@ -290,19 +344,27 @@ mod tests {
         );
         ip_said(None, &["link", "set", FAR_END, "up"]);
         ip_said(Some(pid), &["link", "set", RECEPTIONS_END, "up"]);
+        if both_families() {
+            ip_said(None, &["addr", "add", "10.77.0.2/24", "dev", FAR_END]);
+            ip_said(
+                Some(pid),
+                &["addr", "add", "10.77.0.1/24", "dev", RECEPTIONS_END],
+            );
+        }
         let until = Instant::now() + PATIENCE;
         loop {
             if let (Some(receptions), Some(far)) = (
                 link_local_on(Some(pid), RECEPTIONS_END),
                 link_local_on(None, FAR_END),
             ) {
-                assert!(
-                    !ip_said(
+                assert_eq!(
+                    ip_said(
                         Some(pid),
                         &["-4", "-o", "addr", "show", "dev", RECEPTIONS_END]
                     )
                     .contains("inet"),
-                    "the cable carries IPv4"
+                    both_families(),
+                    "the cable's IPv4 addresses do not match the fixture"
                 );
                 return (receptions, far);
             }
@@ -325,6 +387,29 @@ mod tests {
                 words.first() == Some(&index.to_string().as_str())
                     && words.get(2) == Some(&THE_GROUP_IN_IGMP6)
             })
+    }
+
+    /// Whether the kernel lists reception's cable in the IPv4 discovery group.
+    fn in_the_ipv4_group(pid: u32) -> bool {
+        let group = format!(
+            "{:08X}",
+            u32::from_ne_bytes(alo_nearby::THE_ADDRESS.octets())
+        );
+        let listed = std::fs::read_to_string(format!("/proc/{pid}/net/igmp")).unwrap();
+        let mut on = None;
+        for line in listed.lines() {
+            if line.starts_with(|first: char| first.is_ascii_digit()) {
+                on = line
+                    .split_whitespace()
+                    .next()
+                    .and_then(|at| at.parse::<u32>().ok());
+            } else if on == Some(RECEPTIONS_NUMBER)
+                && line.split_whitespace().next() == Some(group.as_str())
+            {
+                return true;
+            }
+        }
+        false
     }
 
     /// The inodes of the sockets `pid` holds open.
@@ -488,20 +573,26 @@ mod tests {
             self.told("door") == "yes"
         }
 
-        /// Wait until the service has joined discovery on the cable over IPv6, listens on no
-        /// IPv4 cable and listens over IPv6 as `over_ipv6` says, **and** the
+        /// Wait until discovery is joined and the expected families listen as
+        /// `over_ipv6` says (IPv4 too in the dual-stack case), **and** the
         /// kernel lists the cable in the discovery group — and then until a round
         /// of the service after that has finished.
         fn until_it_holds(&mut self, over_ipv6: bool) {
             let igmp6 = PathBuf::from(format!("/proc/{}/net/igmp6", self.pid()));
             let wanted = format!(
-                "{RECEPTIONS_END}|-|{}",
+                "{RECEPTIONS_END}|{}|{}",
+                if both_families() && over_ipv6 {
+                    RECEPTIONS_END
+                } else {
+                    "-"
+                },
                 if over_ipv6 { "yes" } else { "no" }
             );
             let until = Instant::now() + PATIENCE;
             loop {
                 let held = self.told("where");
-                let joined = in_the_ipv6_group(&igmp6, RECEPTIONS_NUMBER);
+                let joined = in_the_ipv6_group(&igmp6, RECEPTIONS_NUMBER)
+                    && (!both_families() || in_the_ipv4_group(self.pid()));
                 if held == wanted && joined {
                     break;
                 }
@@ -633,11 +724,42 @@ mod tests {
         "nothing".to_owned()
     }
 
+    /// Ask over IPv4 and compare the answer's actual bytes with the IPv6 one.
+    fn the_ipv4_answer() -> String {
+        let socket = UdpSocket::bind((FAR_IPV4, 0)).unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        socket2::SockRef::from(&socket)
+            .set_multicast_if_v4(&FAR_IPV4)
+            .unwrap();
+        let question = alo_nearby::advertising::a_question().unwrap();
+        socket
+            .send_to(&question, (alo_nearby::THE_ADDRESS, THE_PORT))
+            .unwrap();
+        let mut heard = [0_u8; 1_500];
+        let (count, from) = socket.recv_from(&mut heard).unwrap();
+        assert_eq!(from.ip(), IpAddr::V4(RECEPTIONS_IPV4));
+        heard
+            .get(..count)
+            .unwrap()
+            .iter()
+            .fold(String::new(), |mut hex, byte| {
+                let _ = write!(hex, "{byte:02x}");
+                hex
+            })
+    }
+
     /// Whether the service on reception's port at its link-local address
     /// `receptions` answered a message — a handshake completed **and** the
     /// wire's own refusal read back.
     fn reached(receptions: Ipv6Addr) -> bool {
         let at = SocketAddr::V6(SocketAddrV6::new(receptions, THE_WIRE_PORT, 0, FAR_NUMBER));
+        reached_at(at)
+    }
+
+    /// Reach the service protocol, not merely the other program's TCP socket.
+    fn reached_at(at: SocketAddr) -> bool {
         let Ok(mut connection) = TcpStream::connect_timeout(&at, Duration::from_secs(2)) else {
             return false;
         };
@@ -688,6 +810,11 @@ mod tests {
         assert!(reception.door_answers(), "reception never served");
         reception.until_it_holds(false);
         let said = the_answer(far, receptions);
+        if both_families() {
+            assert_eq!(the_ipv4_answer(), said);
+            assert!(!reached_at((RECEPTIONS_IPV4, THE_WIRE_PORT).into()));
+            squatter.until_it_says("alo:closed");
+        }
         assert!(
             !reached(receptions),
             "the port was reached over link-local while another program held it over IPv6"
@@ -712,6 +839,9 @@ mod tests {
             reached(receptions),
             "the port was not reached over link-local once it was let go of"
         );
+        if both_families() {
+            assert!(reached_at((RECEPTIONS_IPV4, THE_WIRE_PORT).into()));
+        }
         let printed = monitor.stopped();
         assert_eq!(
             printed, "",
@@ -726,17 +856,33 @@ mod tests {
         println!("with the port let go of and no network changing, it is reached over link-local");
         println!("what was said was the same bytes throughout");
 
+        if both_families() {
+            assert_eq!(the_ipv4_answer(), said);
+            println!("both families found, refused, and recovered");
+        }
+
         reception.stopped();
     }
 
-    /// The squatter: listens on the port presence advertises over IPv6 alone,
+    /// The squatter: listens on the port over IPv6, or explicitly dual-stack,
     /// held to nothing, accepting and closing every connection, until its
     /// standard input closes.
     #[test]
     #[ignore = "run in reception's network by the_far_end_on_a_link_local_cable"]
     fn a_squatter_on_the_port_over_ipv6() {
         must_be("squatter");
-        let listener = crate::unix::an_ipv6_only_listener_on(THE_WIRE_PORT).unwrap();
+        let listener: TcpListener = if both_families() {
+            let socket =
+                socket2::Socket::new(socket2::Domain::IPV6, socket2::Type::STREAM, None).unwrap();
+            socket.set_only_v6(false).unwrap();
+            socket.set_reuse_address(true).unwrap();
+            let at: SocketAddr = (Ipv6Addr::UNSPECIFIED, THE_WIRE_PORT).into();
+            socket.bind(&at.into()).unwrap();
+            socket.listen(128).unwrap();
+            socket.into()
+        } else {
+            crate::unix::an_ipv6_only_listener_on(THE_WIRE_PORT).unwrap()
+        };
         println!("alo:holding");
         std::thread::scope(|scope| {
             let listener = &listener;

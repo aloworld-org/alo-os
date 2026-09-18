@@ -287,11 +287,11 @@ pub enum NotBound {
     /// The port presence advertises, or the socket discovery is answered on,
     /// could not be bound.
     ///
-    /// Another responder may hold the discovery port without sharing it, or
-    /// another service the advertised one; either way nothing is listening
-    /// on the network and the person's door was not opened either, because
-    /// a machine that advertises a port nothing answers on is a machine that
-    /// lies about itself.
+    /// Discovery setup failed, or no TCP listener bound and no retryable port
+    /// conflict has a kernel let-go subscription. A port held by another program
+    /// in both families can instead wait for that notification while discovery
+    /// and the person's door serve. Presence names the protocol's port, not the
+    /// identity of whoever happens to hold it.
     #[error("could not bind {what}: {why}")]
     NoWire {
         /// Which of the two.

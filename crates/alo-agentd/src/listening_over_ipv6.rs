@@ -89,13 +89,13 @@ impl OverIpv6 {
             ),
             Err(why) if why.kind() == ErrorKind::AddrInUse => {
                 said(&format!(
-                    "the port presence advertises could not be bound over IPv6 ({why}); it is bound over IPv4 alone, and a machine on a network with no IPv4 address cannot reach this one until it can be, {until}"
+                    "the port presence advertises could not be bound over IPv6 ({why}); a machine cannot reach this one over IPv6 until it can be, {until}"
                 ));
                 (Standing::HeldElsewhere, Some(why))
             }
             Err(why) => {
                 said(&format!(
-                    "the port presence advertises could not be bound over IPv6 ({why}); it is bound over IPv4 alone, and a machine on a network with no IPv4 address cannot reach this one"
+                    "the port presence advertises could not be bound over IPv6 ({why}); a machine cannot reach this one over IPv6"
                 ));
                 (Standing::NotHere, Some(why))
             }
@@ -128,7 +128,6 @@ impl OverIpv6 {
 
     /// Whether another program held the port over IPv6 when it was last tried —
     /// which is what a let-go of the port is worth trying again for.
-    #[cfg(test)]
     pub(crate) fn held_elsewhere(&self) -> bool {
         matches!(*self.standing(), Standing::HeldElsewhere)
     }
@@ -199,6 +198,10 @@ mod tests {
             Some(std::io::ErrorKind::AddrInUse)
         );
         assert_eq!(said.len(), 1, "{said:?}");
+        assert!(
+            said.iter().all(|line| !line.contains("bound over IPv4")),
+            "an IPv6 refusal claimed an IPv4 listener it never checked: {said:?}"
+        );
         assert!(
             said.first()
                 .is_some_and(|line| line.contains("over IPv6") && line.ends_with(UNTIL)),

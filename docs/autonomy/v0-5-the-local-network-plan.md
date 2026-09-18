@@ -1919,7 +1919,11 @@ service restarts.
 
 ### 37. A port another program holds in both families at start does not stop the service
 
-**Status:** ready. **Depends on:** 35, 36.
+**Status:** **Done, 2026-09-18** — implementation complete; the supervisor's
+formatting refusal is repaired. Publication validation remains pending. Report:
+`docs/autonomy/updates/a-port-held-in-both-families-at-start.md`.
+Local validation is deferred to the supervisor under the worker's execution
+instructions. **Depends on:** 35, 36.
 
 *Machines find each other with zero configuration.* Tasks 35 and 36 made a port
 another program held on one network, or over IPv6, be listened on again when the

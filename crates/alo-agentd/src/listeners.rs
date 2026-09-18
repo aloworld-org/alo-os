@@ -231,13 +231,15 @@ impl Listeners {
     ///
     /// Every failure on the way — the kernel's interfaces unreadable, one
     /// network refusing the bind, IPv6 left out of the kernel — is a line handed
-    /// to `said` and never a refusal to start. Listening **nowhere at all** is
-    /// the one refusal: a machine that advertises a port nothing answers on is a
-    /// machine that lies about itself.
+    /// to `said`. Listening nowhere can wait only when another program holds a
+    /// retryable listener's port and the kernel's let-go subscription is open.
+    /// Presence still names this machine's protocol port, never a promise that
+    /// another program currently holding that port speaks for this machine.
     ///
     /// # Errors
     ///
-    /// [`NotBound::NoWire`] when nothing could be listened on, in either family.
+    /// [`NotBound::NoWire`] when nothing could be listened on and no held port
+    /// can be retried on a kernel let-go notification.
     pub fn bound(port: u16, said: &mut dyn FnMut(&str)) -> Result<Self, NotBound> {
         let mut fixed = Vec::new();
         // Before the first bind, so a program letting go between a refusal and
@@ -272,17 +274,32 @@ impl Listeners {
             follows: reported.is_ok(),
             port,
         };
-        if let Ok(reported) = reported {
-            listeners.listen_on(&listening_networks(&reported), said);
-        }
-        if listeners.listening().is_empty() {
+        let held_elsewhere = if let Ok(reported) = reported {
+            listeners.listen_on(&listening_networks(&reported), said)
+        } else {
+            false
+        };
+        listeners.ready_to_start(held_elsewhere, refused)?;
+        Ok(listeners)
+    }
+
+    /// Refuse an empty wire unless a known port conflict has an event-driven
+    /// recovery path. An unheld IPv4 fallback is not retried and cannot qualify.
+    fn ready_to_start(
+        &self,
+        ipv4_held_elsewhere: bool,
+        refused: Option<std::io::Error>,
+    ) -> Result<(), NotBound> {
+        let can_retry = self.told.is_some()
+            && (self.over_ipv6.held_elsewhere() || (self.follows && ipv4_held_elsewhere));
+        if self.listening().is_empty() && !can_retry {
             return Err(NotBound::NoWire {
                 what: NOTHING_IS_LISTENING,
                 why: refused
                     .unwrap_or_else(|| std::io::Error::from(std::io::ErrorKind::AddrNotAvailable)),
             });
         }
-        Ok(listeners)
+        Ok(())
     }
 
     /// This machine listening on a listener somebody else bound, for a test that
@@ -359,7 +376,9 @@ impl Listeners {
             return;
         }
         match reported_by_the_kernel() {
-            Ok(reported) => self.listen_on(&listening_networks(&reported), said),
+            Ok(reported) => {
+                self.listen_on(&listening_networks(&reported), said);
+            }
             Err(why) => said(&format!(
                 "this machine's networks could not be read ({why}); the port stays listened on where it was"
             )),
@@ -422,7 +441,9 @@ impl Listeners {
     /// A network refused is said once, when it is first refused; one that binds
     /// after being refused is said once, when it binds; one that goes is
     /// forgotten, so a network that comes back and is refused is said again.
-    fn listen_on(&self, networks: &[Network], said: &mut dyn FnMut(&str)) {
+    /// Returns whether a bind was refused because another program holds the port.
+    fn listen_on(&self, networks: &[Network], said: &mut dyn FnMut(&str)) -> bool {
+        let mut held_elsewhere = false;
         let on = |listener: &Arc<Listener>| listener.on.as_ref().map(Network::index);
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
         let mut refused = self.refused.lock().unwrap_or_else(PoisonError::into_inner);
@@ -457,6 +478,7 @@ impl Listeners {
                 // others are still listened on: a machine reachable on two of
                 // its three networks beats a service that would not start.
                 Err(why) => {
+                    held_elsewhere |= why.kind() == std::io::ErrorKind::AddrInUse;
                     if refused.insert(network.index()) {
                         said(&format!(
                             "the port presence advertises could not be bound on {} ({}): {why}; a machine on that network cannot reach this one until it can be, {}",
@@ -468,6 +490,7 @@ impl Listeners {
                 }
             }
         }
+        held_elsewhere
     }
 }
 
@@ -600,6 +623,52 @@ mod tests {
             .local_addr()
             .unwrap()
             .port()
+    }
+
+    /// An empty wire with no IPv6 listener, for the startup refusal policy.
+    fn listening_nowhere() -> Listeners {
+        let mut listeners =
+            Listeners::on(TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()).unwrap();
+        listeners.fixed.clear();
+        listeners.follows = true;
+        listeners.told =
+            Some(crate::told_of_a_port_let_go::told_when_let_go_of(listeners.port).unwrap());
+        listeners
+    }
+
+    /// No IPv6 and no recoverable IPv4 bind is still a startup refusal, even
+    /// with an open notification socket.
+    #[test]
+    fn listening_nowhere_without_a_port_conflict_refuses_to_start() {
+        let listeners = listening_nowhere();
+        let why = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
+        let Err(crate::refusing::NotBound::NoWire { why, .. }) =
+            listeners.ready_to_start(false, Some(why))
+        else {
+            panic!("an empty wire with no recoverable bind started");
+        };
+        assert_eq!(why.kind(), std::io::ErrorKind::PermissionDenied);
+    }
+
+    /// A held IPv4 port can recover without IPv6, but only while its network
+    /// is followed and the kernel's let-go subscription is open.
+    #[test]
+    fn listening_nowhere_needs_a_retryable_conflict_and_a_subscription() {
+        let mut listeners = listening_nowhere();
+        assert!(listeners.ready_to_start(true, None).is_ok());
+        listeners.follows = false;
+        assert!(listeners.ready_to_start(true, None).is_err());
+        listeners.follows = true;
+        listeners.told = None;
+        assert!(listeners.ready_to_start(true, None).is_err());
+    }
+
+    /// A working listener needs neither a conflict nor a let-go subscription.
+    #[test]
+    fn a_working_listener_starts_without_a_subscription() {
+        let listeners =
+            Listeners::on(TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()).unwrap();
+        assert!(listeners.ready_to_start(false, None).is_ok());
     }
 
     /// Wait on every listener and accept the one connection that is there.

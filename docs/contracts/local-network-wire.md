@@ -427,6 +427,23 @@ link-local addresses only.
   proposer at the address its connection came from.
 - **What is said is the same bytes before and after.**
 
+### A port held in both families at startup
+
+Added 2026-09-18, additively. A dual-stack listener held by another program can
+refuse every listener, including loopback. The service still starts, answers its
+person's door and advertises the same presence in both families when a retryable
+port conflict has an open kernel port-release subscription. When that program lets
+go, the service retries through that notification, without a network change or an
+interval. Each listener's refusal and subsequent bind are logged once.
+
+Presence names the machine and its protocol's fixed port; it neither certifies
+current reachability nor vouches for another program temporarily holding that
+port. It confers no authority. No listener and no recoverable port conflict (for
+example, unavailable IPv6 and IPv4 binds refused for other reasons) remains a
+startup refusal. So does no listener with no port-release subscription: there is
+then no event-driven recovery from the holder's release alone. A machine with a
+working listener keeps the existing network-change retry fallback.
+
 ## A cable deleted and laid again before the machine looks
 
 Added 2026-09-16, additively. Nothing on this wire changes; this says what a
