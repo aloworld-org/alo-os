@@ -456,6 +456,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-desktops"
+version = "0.0.1"
+dependencies = [
+ "alo-dividing",
+ "alo-shortcuts",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-dividing"
 version = "0.0.1"
 dependencies = [
@@ -1025,6 +1035,7 @@ dependencies = [
  "alo-context",
  "alo-converting",
  "alo-corridor",
+ "alo-desktops",
  "alo-dividing",
  "alo-dock",
  "alo-egress",

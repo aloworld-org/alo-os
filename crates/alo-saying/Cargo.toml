@@ -39,6 +39,7 @@ alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }
 alo-converting = { path = "../alo-converting" }
 alo-corridor = { path = "../alo-corridor" }
+alo-desktops = { path = "../alo-desktops" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }

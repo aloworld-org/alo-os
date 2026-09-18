@@ -1,0 +1,22 @@
+[package]
+name = "alo-desktops"
+version = "0.0.1"
+description = "A person's desktops, per display: which windows are on each, what stays on all of them, and how a person moves between them."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Each desktop keeps its own division of the display. A desktop holds one, and
+# this crate never does that arithmetic itself.
+alo-dividing = { path = "../alo-dividing" }
+# Switching desktops from the keyboard. This crate reads what a chord already
+# does and never adds an action of its own — see `chords.rs` for why the chords
+# that reach a numbered desktop cannot be a closed list in that crate.
+alo-shortcuts = { path = "../alo-shortcuts" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

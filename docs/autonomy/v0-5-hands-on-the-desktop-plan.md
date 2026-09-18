@@ -78,7 +78,17 @@ overlapping or leaving a gap.
 
 ### 3. Virtual desktops
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-17.** **Depends on:** nothing. `crates/alo-desktops`;
+evidence in `crates/alo-desktops/tests/desktops_a_person_arranges.rs` and
+`tests/every_promise_is_on_every_desktop.rs`; report
+`docs/autonomy/updates/virtual-desktops.md`. Two decisions the task left open:
+switching answers to desktop chords this crate keeps (`Super+PageDown`,
+`Super+PageUp`, `Super+1`…`Super+9`), because *go to desktop 4* cannot be a
+variant of `alo-shortcuts`' closed `Action` list and this plan never edits that
+crate — a chord a system shortcut holds is never a desktop chord, which that
+crate still decides; and the three promises are stated when a display is plugged
+in (`Promises`), so a display cannot have desktops without all three and no road
+can put one on a single desktop.
 
 - **Acceptance:** `alo-desktops` holds a person's desktops per display — add,
   remove, name, reorder — and which windows are on each; **removing a desktop moves

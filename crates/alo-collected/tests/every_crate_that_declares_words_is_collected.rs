@@ -53,7 +53,7 @@ fn the_manifest() -> String {
 #[test]
 fn every_crate_that_declares_words_is_collected_or_named_apart() {
     match held(
-        &EVERY_LIST,
+        EVERY_LIST,
         &DELIBERATELY_APART,
         &the_manifest(),
         &off_the_disk,
