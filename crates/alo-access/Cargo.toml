@@ -16,6 +16,7 @@ alo-appearance = { path = "../alo-appearance" }
 # The sentences a person reads about each setting. Hardcoded English is a bug
 # (CLAUDE.md), and a setting nobody can find in their own language is the bug
 # this crate exists to prevent.
+alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 thiserror = { workspace = true }

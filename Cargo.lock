@@ -37,6 +37,7 @@ name = "alo-access"
 version = "0.0.1"
 dependencies = [
  "alo-appearance",
+ "alo-shortcuts",
  "alo-strings",
  "serde",
  "thiserror 2.0.20",
