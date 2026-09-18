@@ -103,11 +103,19 @@ mod flip_gate;
 mod keyboard;
 mod libinput_routing;
 mod libinput_scroll;
+mod lock_background;
+mod lock_clock;
+mod lock_image_fit;
+mod lock_pixels;
+mod lock_raster;
+mod lock_surface;
+mod lock_texture;
 mod nested;
 mod nested_approval;
 mod nested_control_input;
 mod nested_desktop;
 mod nested_egress_status;
+mod nested_lock;
 mod nested_pointer;
 mod nested_reader_frame;
 mod nested_reader_input;
@@ -342,3 +350,21 @@ pub use window_control_reader_keys::{ReaderKeyCommand, ReaderKeyRoute, WindowCon
 pub use window_control_reader_pointer::{
     ReaderPointerFeedback, ReaderPointerHit, WindowControlReaderPointer,
 };
+
+pub use lock_background::LockBackground;
+pub use lock_raster::LockLook;
+pub use lock_surface::{LockPressed, LockSurface};
+
+#[cfg(test)]
+mod lock_background_tests;
+#[cfg(test)]
+mod lock_raster_tests;
+#[cfg(test)]
+mod lock_surface_tests;
+#[cfg(test)]
+mod lock_testing;
+
+mod lock_background_path;
+mod lock_battery;
+mod lock_image_decode;
+mod nested_lock_input;

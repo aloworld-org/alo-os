@@ -53,5 +53,9 @@ alo-converting = { path = "../alo-converting" }
 # checker, which is the drift this crate exists to catch.
 alo-models = { path = "../alo-models" }
 
+[dev-dependencies]
+# The image must carry the picture selected by the actual appearance default.
+alo-appearance = { path = "../alo-appearance" }
+
 [lints]
 workspace = true

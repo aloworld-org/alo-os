@@ -30,6 +30,10 @@ pub(crate) fn paint(
     if let Some(controls) = native.scene {
         controls.validate(size)?;
     }
+    // A lock frame bypasses every client import and private native layer.
+    if let Some(crate::scene_native::NativeScene::Lock(picture)) = native.scene {
+        return crate::lock_texture::paint(renderer, framebuffer, picture, transform);
+    }
     if let Some(desktop) = native.desktop {
         desktop.validate(size)?;
     }

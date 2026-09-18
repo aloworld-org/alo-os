@@ -7,7 +7,8 @@
 # agent service (queue item 28) — and, since ADR 0025, the pinned model runtime,
 # the weights a machine arrives with and the one unit that serves them, because
 # the local model is what the machine arrives ready to run. There is no
-# compositor in it, no desktop, no wallpaper and nothing to sign in at.
+# compositor in it, no desktop and nothing to sign in at. The approved wallpaper
+# is installed for the shell to consume; its presence does not certify a desktop.
 #
 # Build it from the root of the repository:
 #
@@ -396,6 +397,11 @@ COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 COPY image/etc/alo/ /etc/alo/
+
+# The owner-approved default picture. A shipped wallpaper name resolves to the
+# same basename under this directory (docs/contracts/shipped-wallpapers.md).
+# Explicit mode prevents Windows checkout permissions from deciding readability.
+COPY --chmod=0644 docs/artwork/wallpapers/alo-quiet-horizon.png /usr/share/alo/wallpapers/alo.png
 
 # The modes are set rather than inherited. A `COPY` carries whatever the machine
 # the build ran on had, and this repository is checked out on Windows as often

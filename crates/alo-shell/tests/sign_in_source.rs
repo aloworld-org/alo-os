@@ -21,8 +21,8 @@
 
 use std::path::{Path, PathBuf};
 
-/// Every type that holds a password being typed, directly or through another.
-const CARRIES_A_PASSWORD: [&str; 4] = ["TypedPassword", "SignInEntry", "SignInScreen", "Signing"];
+#[path = "support/password_holders.rs"]
+mod password_holders;
 
 /// This crate's source directory.
 fn src() -> PathBuf {
@@ -173,13 +173,14 @@ fn the_password_holder_has_no_road_out() {
 /// be added without this test being told.
 #[test]
 fn no_type_that_carries_a_password_has_a_debug_that_could_print_it() {
+    let carries = password_holders::derived(&shipped());
     let mut declared = Vec::new();
     for (named, code) in shipped() {
         let mut attributes: Vec<String> = Vec::new();
         let mut within: Option<String> = None;
         for (which, line) in &code {
             let trimmed = line.trim();
-            for holder in CARRIES_A_PASSWORD {
+            for holder in &carries {
                 for printing in ["Debug for", "Display for"] {
                     assert!(
                         !(trimmed.contains(printing)
@@ -211,7 +212,7 @@ fn no_type_that_carries_a_password_has_a_debug_that_could_print_it() {
                     .chars()
                     .take_while(|letter| letter.is_alphanumeric() || *letter == '_')
                     .collect();
-                if CARRIES_A_PASSWORD.contains(&type_named.as_str()) {
+                if carries.contains(&type_named) {
                     declared.push(type_named.clone());
                     for attribute in &attributes {
                         assert!(
@@ -226,10 +227,10 @@ fn no_type_that_carries_a_password_has_a_debug_that_could_print_it() {
             } else if line.starts_with('}') {
                 within = None;
             } else if let Some(holding) = &within {
-                for holder in CARRIES_A_PASSWORD {
+                for holder in &carries {
                     if names(trimmed, holder) {
                         assert!(
-                            CARRIES_A_PASSWORD.contains(&holding.as_str()),
+                            carries.contains(holding),
                             "{named}:{which}: `{holding}` holds a {holder}, so it carries a password \
                              and has to be on this test's list: {trimmed}"
                         );
@@ -240,10 +241,7 @@ fn no_type_that_carries_a_password_has_a_debug_that_could_print_it() {
         }
     }
     declared.sort();
-    let mut expected: Vec<String> = CARRIES_A_PASSWORD
-        .iter()
-        .map(|holder| (*holder).to_owned())
-        .collect();
+    let mut expected: Vec<String> = carries.iter().map(|holder| holder.to_owned()).collect();
     expected.sort();
     assert_eq!(
         declared, expected,

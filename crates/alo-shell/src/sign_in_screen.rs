@@ -142,19 +142,10 @@ impl<K: Knocking> SignInScreen<K> {
         let Stands::SignIn(greeting) = &self.stands else {
             return Signing::Still(Box::new(self));
         };
-        match key {
-            SignInKey::Letter(letter) => self.entry.typed(letter),
-            SignInKey::Erase => self.entry.erased(),
-            SignInKey::OtherField => self.entry.other_field(),
-            SignInKey::Enter if self.entry.field() == SignInField::Name => {
-                self.entry.other_field();
-            }
-            SignInKey::Enter => {
-                let greeted = greeting.signs_in(self.entry.name(), self.entry.password());
-                self.entry.forgotten();
-                return self.answered(greeted);
-            }
-            SignInKey::Nothing => {}
+        if self.entry.pressed(key) {
+            let greeted = greeting.signs_in(self.entry.name(), self.entry.password());
+            self.entry.forgotten();
+            return self.answered(greeted);
         }
         Signing::Still(Box::new(self))
     }
