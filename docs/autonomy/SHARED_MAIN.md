@@ -152,3 +152,39 @@ Before starting another task, existing contributor sessions must pull these
 rules and reread them. Saved instructions do not update an already-running
 Claude session automatically. Genuine code conflicts still require review;
 never use an automatic union merge or force-push to hide one.
+
+## A branch belongs to the machine that made it
+
+The machine that creates a task branch gates it, merges it and deletes it.
+Nobody waits for another machine's permission to merge their own finished work,
+and nobody merges somebody else's.
+
+**A merged branch is deleted in the same turn it is merged.** A finished branch
+left in the list is indistinguishable from work still in flight, and a branch
+list that cannot be read is not a record of anything. GitHub deletes it on merge
+where the repository is set to; where it is not, delete it explicitly and
+confirm it is gone.
+
+**An unmerged branch is never deleted.** Parked tasks and recovery work live
+there, and that work exists nowhere else.
+
+**A branch nobody has moved for a day is reported, not removed.** Its owner says
+whether it is alive or abandoned; silence is not consent to delete.
+
+## Gate the committed tree, not the working tree
+
+Run the gates against **what the commit contains**, not what the working
+directory happens to hold. Use `git archive`, a fresh clone, or a checkout of
+the candidate SHA — not a copy of a working tree that a worker has been writing
+into.
+
+The two differ in ways that are invisible until they are expensive. On
+2026-09-18 a gate failed on `alo-updating`'s base-image check because the
+recipe in the working tree carried CRLF line endings: a worker had written the
+file that way, `.gitattributes` normalised it to LF *in the commit*, and the
+gate — which copied the working tree — tested bytes that would never reach
+`main`. The branch was refused for a fault that did not exist in the work being
+merged, and the same trap catches any test that compares exact file content.
+
+The rule is the same one the integration turn already follows for `main`: gate
+the thing that will actually land.
