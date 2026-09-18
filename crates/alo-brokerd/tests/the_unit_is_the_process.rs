@@ -106,7 +106,24 @@ fn the_units_directories_are_where_the_process_looks() {
 #[test]
 fn the_broker_starts_after_the_network_manager_without_requiring_it() {
     let unit = lines(&the_unit());
-    assert_eq!(only(&unit, "Wants"), "NetworkManager.service");
+    assert_eq!(only(&unit, "Wants"), "NetworkManager.service cups.socket");
     assert!(only(&unit, "After").contains("NetworkManager.service"));
+    assert!(unit.iter().all(|(key, _)| key != "Requires"));
+}
+
+/// Printing may be absent without stopping the broker's other carriers.
+#[test]
+fn the_broker_starts_after_the_printing_socket_without_requiring_it() {
+    let unit = lines(&the_unit());
+    assert!(
+        only(&unit, "Wants")
+            .split_whitespace()
+            .any(|name| name == "cups.socket")
+    );
+    assert!(
+        only(&unit, "After")
+            .split_whitespace()
+            .any(|name| name == "cups.socket")
+    );
     assert!(unit.iter().all(|(key, _)| key != "Requires"));
 }

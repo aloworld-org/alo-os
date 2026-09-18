@@ -70,6 +70,9 @@ enum Reaching {
     /// Its own socket.
     #[cfg(unix)]
     Socket(PathBuf),
+    /// The broker asks CUPS to verify root through the socket peer credentials.
+    #[cfg(unix)]
+    BrokerSocket(PathBuf),
     /// An address on this machine.
     Address(SocketAddr),
 }
@@ -89,6 +92,19 @@ impl PrintingService {
     pub fn at_its_socket(socket: impl Into<PathBuf>) -> Self {
         Self {
             reaching: Reaching::Socket(socket.into()),
+        }
+    }
+
+    /// The service as reached by the privileged broker.
+    ///
+    /// Sends the fixed PeerCred root authentication header over a Unix socket.
+    /// CUPS checks the actual peer UID; this constructor grants no authority,
+    /// takes no password, and is refused for a caller that is not root.
+    #[cfg(unix)]
+    #[must_use]
+    pub fn for_the_broker(socket: impl Into<PathBuf>) -> Self {
+        Self {
+            reaching: Reaching::BrokerSocket(socket.into()),
         }
     }
 
@@ -122,14 +138,21 @@ impl PrintingService {
         let head = message.head().map_err(|_| Unanswered::NotUnderstood)?;
         let body = match &self.reaching {
             #[cfg(unix)]
-            Reaching::Socket(socket) => {
+            Reaching::Socket(socket) | Reaching::BrokerSocket(socket) => {
                 let mut stream = std::os::unix::net::UnixStream::connect(socket)
                     .map_err(|_| Unanswered::NotRunning)?;
                 stream
                     .set_read_timeout(Some(ANSWERING))
                     .and_then(|()| stream.set_write_timeout(Some(ANSWERING)))
                     .map_err(|_| Unanswered::NotRunning)?;
-                over(&mut stream, path, &head, document, length)?
+                over(
+                    &mut stream,
+                    path,
+                    &head,
+                    document,
+                    length,
+                    matches!(&self.reaching, Reaching::BrokerSocket(_)),
+                )?
             }
             Reaching::Address(address) => {
                 let mut stream = TcpStream::connect_timeout(address, CONNECTING)
@@ -138,7 +161,7 @@ impl PrintingService {
                     .set_read_timeout(Some(ANSWERING))
                     .and_then(|()| stream.set_write_timeout(Some(ANSWERING)))
                     .map_err(|_| Unanswered::NotRunning)?;
-                over(&mut stream, path, &head, document, length)?
+                over(&mut stream, path, &head, document, length, false)?
             }
         };
         let answer = Message::read(&body).map_err(|_| Unanswered::NotUnderstood)?;
@@ -156,8 +179,9 @@ fn over<S: Read + Write, D: Read>(
     head: &[u8],
     document: &mut D,
     length: u64,
+    as_root: bool,
 ) -> Result<Vec<u8>, Unanswered> {
-    http::exchange(stream, path, head, document, length).map_err(|failed| match failed {
+    http::exchange(stream, path, head, document, length, as_root).map_err(|failed| match failed {
         Failed::Io => Unanswered::Silent,
         Failed::NotPermitted => Unanswered::NotPermitted,
         Failed::NotUnderstood | Failed::Status | Failed::TooLarge => Unanswered::NotUnderstood,

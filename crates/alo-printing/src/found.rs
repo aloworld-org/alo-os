@@ -77,6 +77,20 @@ impl Found {
         &self.device
     }
 
+    /// The bytes the printing service reported this printer under — the
+    /// address it was found at — for **digesting into an identity and nothing
+    /// else**.
+    ///
+    /// A change to the whole machine names a found printer by the SHA-256 of
+    /// these bytes (`alo_broker::Identity`), so what crosses into the
+    /// privileged broker is never an address somebody could have written. Bytes
+    /// rather than text, and no `Display` anywhere near them: the address is
+    /// machinery, and a person never reads it.
+    #[must_use]
+    pub fn as_reported(&self) -> &[u8] {
+        self.device.as_bytes()
+    }
+
     /// Its line in the list of what was found.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {

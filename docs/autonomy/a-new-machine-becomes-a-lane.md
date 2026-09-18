@@ -55,6 +55,21 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
 | `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
+**Narrow printer producer contribution, authorized 2026-09-18.** The owner told
+the third PC, "no you should do all the blockers by yourself so no need to lean
+on the other pc". For **broker task 2, Printers, through the broker**, this
+releases the preserved `alo-printing` additions: `printers_set_up`,
+`Found::as_reported`, `Printer::as_reported`, `remove`, `make_default`,
+`CannotChange`, their re-exports, contract comments and producer tests, plus the
+measured broker socket authentication fix and its real-CUPS acceptance.
+The documents plan records the exact released files for this task alone. The third PC integrates that producer contribution with its receiving
+broker task publication; the report is
+`docs/autonomy/updates/printers-through-the-broker.md`. The documents plan and
+its completed work retain their owner, as do all shell and settings work. This
+does not transfer the documents plan or authorize any other producer API.
+Worker validation is deferred to the supervisor's nine gates and named task
+acceptance checks; the ownership release changes none of those requirements.
+
 **`alo-media-server` is owned here and read elsewhere.** It holds reaching the
 rented media server and reading what it says, for the four crates that were each
 doing it their own way — `alo-in-use` and `alo-capturing` (the capture plan's),

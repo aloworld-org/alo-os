@@ -19,10 +19,13 @@ mod running {
     use std::process::ExitCode;
 
     use alo_broker::our_group;
-    use alo_brokerd::{Carriers, Network, Places, Proxy, Started, Storage, THE_ACCOUNTS, started};
+    use alo_brokerd::{
+        Carriers, Network, Places, Printers, Proxy, Started, Storage, THE_ACCOUNTS, started,
+    };
     use alo_drives::udisks::OnThisMachine as TheDiskService;
     use alo_networks::network_manager::OnThisMachine as TheNetworkManager;
     use alo_networks::proxy_file::{THE_MACHINES_PROXY, THE_WANTED_PROXY};
+    use alo_printing::{PrintingService, THE_SOCKET};
 
     /// Open the door and answer whoever knocks, until this service is stopped.
     ///
@@ -41,6 +44,9 @@ mod running {
                 ),
                 Storage::against(TheDiskService, Path::new(THE_ACCOUNTS), logins.person),
             )
+            .with_printers(Printers::against(PrintingService::for_the_broker(
+                THE_SOCKET,
+            )))
         };
         let Started {
             listening,

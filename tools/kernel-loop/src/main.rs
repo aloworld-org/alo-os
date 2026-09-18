@@ -95,6 +95,7 @@ mod inside_the_plan;
 mod journal;
 mod keeping_ubuntu_up;
 mod lock;
+mod owner_releases;
 mod parking;
 mod plan;
 mod publishing;

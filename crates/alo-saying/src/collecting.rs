@@ -93,6 +93,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-capturing",
     "alo-changing",
     "alo-changing-network",
+    "alo-changing-printers",
     "alo-choosing",
     "alo-clipboard",
     "alo-context",
@@ -237,6 +238,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-changing-network",
         alo_changing_network::declare_into,
     )?;
+    declare(
+        &mut vocabulary,
+        "alo-changing-printers",
+        alo_changing_printers::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-choosing", alo_choosing::declare_into)?;
     declare(
         &mut vocabulary,
@@ -379,6 +385,10 @@ mod tests {
             "alo-changing-network",
             "changing-network.verb.loses-its-connection",
         ),
+        (
+            "alo-changing-printers",
+            "changing-printers.refused.more-than-one-called",
+        ),
         ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-clipboard", "clipboard.nothing-copied"),
         ("alo-context", "context.the-document"),
@@ -479,6 +489,9 @@ mod tests {
             alo_capturing::capturing_words().unwrap().how_many(),
             alo_changing::changing_words().unwrap().how_many(),
             alo_changing_network::changing_network_words()
+                .unwrap()
+                .how_many(),
+            alo_changing_printers::changing_printers_words()
                 .unwrap()
                 .how_many(),
             alo_choosing::choosing_words().unwrap().how_many(),

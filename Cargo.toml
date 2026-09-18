@@ -25,6 +25,7 @@ members = [
   "crates/alo-capturing",
   "crates/alo-changing",
   "crates/alo-changing-network",
+  "crates/alo-changing-printers",
   "crates/alo-choosing",
   "crates/alo-citing",
   "crates/alo-clipboard",
