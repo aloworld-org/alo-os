@@ -241,7 +241,9 @@ pub const CHORD_IS_A_SWITCH: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 21] = [
+    GESTURES_NOT_READ,
+    GESTURES_NOT_WRITTEN,
     THE_EGRESS_INDICATOR,
     THE_APPROVAL_SURFACE,
     THE_AGENT_OVERLAY,
@@ -262,6 +264,20 @@ pub const EVERY_WORD: [Word; 19] = [
     CHORD_IS_TAKEN,
     CHORD_IS_A_SWITCH,
 ];
+
+/// A gesture settings file is refused whole.
+pub const GESTURES_NOT_READ: Word = Word::saying(
+    "desktops.gestures.not-read",
+    "Your gesture settings could not be read. The file has been kept for you to repair.",
+)
+.noting("A settings read failed. No part of the file was applied or replaced.");
+
+/// A gesture settings write left the previous file intact.
+pub const GESTURES_NOT_WRITTEN: Word = Word::saying(
+    "desktops.gestures.not-written",
+    "Your gesture settings could not be saved. The previous file has been kept.",
+)
+.noting("A settings write failed, including refusal to replace an unreadable existing file.");
 
 /// Why this crate's own words could not be declared.
 ///

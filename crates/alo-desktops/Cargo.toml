@@ -17,6 +17,11 @@ alo-dividing = { path = "../alo-dividing" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
+alo-kept = { path = "../alo-kept" }
+serde = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+input = { version = "=0.9.1", default-features = false, features = ["libinput_1_19"] }
 
 [lints]
 workspace = true

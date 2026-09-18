@@ -16,6 +16,9 @@
 //! | [`naming`] | What a person calls a desktop, and what is not a name |
 //! | [`position`] | Where a desktop sits in the order, counted from one |
 //! | [`switching`] | The closed set of ways a person asks for another desktop |
+//! | [`gestures`] | Touchpad events decided into scroll, zoom and desktop intents |
+//! | [`gesture_settings`] | Independent gesture switches and scrolling direction |
+//! | [`gesture_files`] | Gesture preferences kept at the session-supplied path |
 //! | [`chords`] | Those ways from the keyboard, without taking a chord from `alo-shortcuts` |
 //! | [`always`] | The three things that are on every desktop and cannot be moved |
 //! | [`refusing`] | Why nothing changed |
@@ -59,17 +62,18 @@
 //!
 //! # Nothing here draws
 //!
-//! No pixels, no surfaces, no pointer, no gesture events. Each desktop keeps its
+//! No pixels or surfaces. Each desktop keeps its
 //! own `alo_dividing::Division`, in logical units, and this crate never does that
-//! arithmetic itself. The compositor draws the desktop a person is on; task 5 of
-//! this crate's plan turns a swipe into a [`Switch`] this crate carries out.
+//! arithmetic itself. The compositor draws the desktop a person is on;
+//! [`gestures`] turns a swipe into a [`Switch`] this crate carries out.
 //!
 //! # Nothing here is the agent's
 //!
 //! A desktop is added, named, reordered and switched by a person's hands. The
 //! agent's *arrange* verb (v0.01) proposes a division and is approved like any
-//! change; nothing in this crate gives it a road, and nothing here reads a
-//! clock, a file or the network.
+//! change; nothing in this crate gives it a road. Gesture preferences are read
+//! only at a supplied path through [`gesture_files`]; nothing watches context
+//! or reads the network.
 //!
 //! # Nothing here says anything in English by itself
 //!
@@ -86,6 +90,13 @@ pub mod chords;
 pub mod desktop;
 pub mod desktops;
 pub mod display;
+pub mod gesture_events;
+pub mod gesture_files;
+pub mod gesture_refusals;
+pub mod gesture_settings;
+pub mod gestures;
+#[cfg(target_os = "linux")]
+pub mod libinput_gestures;
 pub mod naming;
 pub mod on_a_display;
 pub mod position;

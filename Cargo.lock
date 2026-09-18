@@ -460,8 +460,11 @@ name = "alo-desktops"
 version = "0.0.1"
 dependencies = [
  "alo-dividing",
+ "alo-kept",
  "alo-shortcuts",
  "alo-strings",
+ "input",
+ "serde",
  "thiserror 2.0.20",
 ]
 

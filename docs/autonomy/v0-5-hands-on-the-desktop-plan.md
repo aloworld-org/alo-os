@@ -127,7 +127,10 @@ grant* structural rather than remembered.
 
 ### 5. Gestures
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-18** ? implementation complete; supervisor validation pending.
+**Depends on:** 3. Implementation and refusal coverage in `crates/alo-desktops`;
+report `docs/autonomy/updates/touchpad-gesture-intents.md`. Local validation is
+deferred to the supervisor under the worker instructions. Publication requires all nine gates and acceptance evidence to pass.
 
 - **Acceptance:** touchpad scroll, pinch to zoom and three- or four-finger swipes
   between desktops are decided from the input library's gesture events into a
