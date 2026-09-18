@@ -223,7 +223,11 @@ here or by a person.
 
 ### 7. A session with no folder says so in Settings
 
-**Status:** ready. **Depends on:** 6.
+**Status:** **Done, 2026-09-18** — implementation complete; publication requires
+the operator's serialized nine gates and exact acceptance checks. The typed folder result, refusal
+sentence and Settings contract are held by the folder walk and refusal tests;
+see `docs/autonomy/updates/settings-explain-when-session-changes-cannot-be-kept.md`.
+**Depends on:** 6.
 
 Task 6's walk found the one moment on the road that has no words. A login with
 no home directory — or a session whose `$XDG_CONFIG_HOME` is relative and whose

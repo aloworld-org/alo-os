@@ -1138,12 +1138,17 @@ all three files at a time, by
 `crates/alo-choosing/tests/one_persons_folder_from_sign_in_to_the_next_change.rs`,
 which holds this section to exactly the calls it makes.
 
-**Once, at sign-in**, the session asks `alo_choosing::where_the_folder_is`,
-handing it `$XDG_CONFIG_HOME` and `$HOME` as the session has them. No folder
-is a login with no home directory: every section is drawn as the release ships
-it and nothing is written. Otherwise each section's path is that folder joined
-with the file name its own crate declares, and that path is all the crate is
-handed.
+**Once, at sign-in**, the session asks `alo_choosing::the_persons_folder`,
+handing it `$XDG_CONFIG_HOME` and `$HOME` as the session has them. It holds the
+result and handles both cases before handing any path to a keeper.
+On refusal, `alo_choosing::NoFolder::said` supplies the vocabulary sentence
+`choosing.session.no-folder`: “this session has no home directory; changes take
+effect now, but nothing you change now will be kept once you sign out”. Show
+this before a change. Every section starts as the release ships it; changes are
+drawn for this sign-in only and nothing is written. No keeper is called and no
+temporary or relative fallback folder is invented.
+On success, `alo_choosing::PersonsFolder::path_of` joins the folder with the file
+name its own crate declares, and that path is all the crate is handed.
 
 | Section | Its path, inside the folder | Drawn at sign-in | A change | Put back as shipped |
 |---|---|---|---|---|

@@ -12,7 +12,7 @@ this project has could load a 7B model (`docs/autonomy/updates/`, 2026-09-11).
 A Mac with unified memory can. [ADR 0028](../decisions/0028-screenless-v0-5-work-begins-while-v0-01-waits-on-hardware.md)
 governs; `docs/autonomy/a-loop-on-a-mac.md` says how this lane runs.
 
-**Crates this plan owns:** `alo-models`, `alo-driving`, `alo-choosing`,
+**Crates this plan owns:** `alo-models`, `alo-driving`,
 `alo-answering`, `alo-telling`, and `alo-asking`'s hosted and served doors —
 lane B's original partition, idle since 2026-09-13. **Nothing in
 `alo-nearby`, `alo-asking/src/corridor.rs`, `alo-record`, `alo-capability`,
@@ -31,6 +31,13 @@ machine can hold whether it drives the verbs **the way this machine asks**, two
 entries clear that bar, and a machine with room is given one as its agent. The
 lane stops here rather than choosing what to do next: the plans are assigned so
 that five machines working one branch do not collide.
+
+**Ownership clarification, 2026-09-18.** This plan already records its work
+finished above. Its historical changes to `alo-choosing` do not reserve that
+crate from the settings plan: the owner assigned that plan task 7 to this PC
+lane B. The active claim is released to the settings plan. Task 9 remains
+not pursued under the existing owner decision; no missing measurement is
+marked done and no model run is authorized by this clarification.
 
 ## Tasks
 

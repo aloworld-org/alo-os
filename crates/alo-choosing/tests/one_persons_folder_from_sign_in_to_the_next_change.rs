@@ -9,7 +9,7 @@
 //! with the wrong mode, is found here or by a person.
 //!
 //! So this walks it the way a session does. A temporary home directory is
-//! handed to [`alo_choosing::where_the_folder_is`] — never read from the
+//! handed to [`alo_choosing::the_persons_folder`] — never read from the
 //! environment — and each keeper is handed the path its own `THE_FILE` names
 //! inside that folder. The three files are written beside `settings.toml`,
 //! read back at a second sign-in, one of them is broken by hand, the next
@@ -40,7 +40,8 @@ use std::path::{Path, PathBuf};
 
 use alo_appearance::{Accent, Appearance, TextScale};
 use alo_choosing::{
-    Choosing, Settings, THE_FOLDER, THE_SETTINGS, where_it_is, where_the_folder_is,
+    Choosing, SESSION_NO_FOLDER, Settings, THE_FOLDER, THE_SETTINGS, the_persons_folder,
+    where_it_is,
 };
 use alo_dock::{Dock, Edge};
 use alo_shortcuts::{Action, Chord, Key, Modifier, Modifiers, Shortcuts};
@@ -48,8 +49,10 @@ use alo_strings::{Language, Said, Strings};
 
 /// Every call the walk makes into the crates, as the contract's section for
 /// the shell must name them — no more and no fewer.
-const THE_CALLS: [&str; 13] = [
-    "alo_choosing::where_the_folder_is",
+const THE_CALLS: [&str; 15] = [
+    "alo_choosing::the_persons_folder",
+    "alo_choosing::PersonsFolder::path_of",
+    "alo_choosing::NoFolder::said",
     "alo_appearance::keeping::THE_FILE",
     "alo_appearance::keeping::at_sign_in",
     "alo_appearance::keeping::keep",
@@ -307,14 +310,14 @@ impl Folder {
     /// The folder of a login whose home is `home` and whose session names no
     /// `$XDG_CONFIG_HOME`, handed over rather than read from the environment.
     fn of(home: &Path) -> Self {
-        let folder = where_the_folder_is(None, Some(home.as_os_str()))
+        let folder = the_persons_folder(None, Some(home.as_os_str()))
             .expect("a login with a home directory has a folder");
         Self {
             settings: where_it_is(None, Some(home.as_os_str())).unwrap(),
-            appearance: folder.join(AppearanceSection::FILE),
-            dock: folder.join(DockSection::FILE),
-            shortcuts: folder.join(ShortcutsSection::FILE),
-            folder,
+            appearance: folder.path_of(AppearanceSection::FILE),
+            dock: folder.path_of(DockSection::FILE),
+            shortcuts: folder.path_of(ShortcutsSection::FILE),
+            folder: folder.folder().to_owned(),
         }
     }
 }
@@ -558,6 +561,9 @@ fn the_calls_the_contract_names() -> BTreeSet<String> {
         "the contract has no section headed {THE_SHELLS_SECTION:?}"
     );
     let section: Vec<&str> = lines.take_while(|line| !line.starts_with("## ")).collect();
+    let text = section.join(" ");
+    assert!(text.contains(SESSION_NO_FOLDER.named()));
+    assert!(text.contains(SESSION_NO_FOLDER.says()));
     section
         .join("\n")
         .split('`')
@@ -574,6 +580,8 @@ fn the_calls_the_contract_names() -> BTreeSet<String> {
 #[test]
 fn one_persons_folder_is_walked_from_sign_in_to_the_next_change() {
     let strings = everything_this_machine_can_say();
+    let refused = the_persons_folder(None, None).unwrap_err();
+    assert_eq!(refused.said(&strings).text(), SESSION_NO_FOLDER.says());
 
     for broken in ["appearance", "dock", "shortcuts"] {
         let home = a_home_of_our_own(broken);

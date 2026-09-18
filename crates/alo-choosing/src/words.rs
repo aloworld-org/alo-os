@@ -315,12 +315,13 @@ pub const CHANGE_NOT_PAIRED_TO_ANSWER: Word = Word::saying(
 /// A session started without a home directory, said on a Settings surface.
 pub const SESSION_NO_FOLDER: Word = Word::saying(
     "choosing.session.no-folder",
-    "this session has no home directory, so nothing you change now will be kept once you sign out",
+    "this session has no home directory; changes take effect now, but nothing you change now will be kept once you sign out",
 )
 .noting(
     "Said on a Settings surface before anything is changed rather than after a change failed: the \
      point of it is that a person decides whether to bother. The first clause is the cause and \
-     the second is what they act on. One sentence covers a session with no home directory and a \
+     the rest says that changes take effect during this sign-in but do not survive it. One \
+     sentence covers a session with no home directory and a \
      session whose home directory is not an absolute path, because what a person does about \
      either is the same — which of the two it was is for whoever is fixing the login, and is not \
      said here. It names no path, deliberately: a session this broken has no sensible path to \

@@ -79,6 +79,8 @@ fn refused(config_home: Option<&str>, home: Option<&str>) -> NoFolder {
     assert!(said.unfilled().is_empty(), "{said}");
     assert_eq!(said.text(), SESSION_NO_FOLDER.says());
     assert!(said.text().contains("home directory"), "{said}");
+    assert!(said.text().contains("changes take effect now"), "{said}");
+    assert!(said.text().contains("once you sign out"), "{said}");
     assert!(
         said.text().contains("nothing you change now will be kept"),
         "{said}"
@@ -138,4 +140,16 @@ fn a_session_with_a_home_is_handed_paths_inside_its_own_folder() {
 
     let configured = the_persons_folder(Some(OsStr::new("/srv/ada/config")), None).unwrap();
     assert!(configured.folder().starts_with("/srv/ada/config"));
+    // An invalid configuration override is ignored when the home is usable.
+    for config in ["config", ""] {
+        assert_eq!(
+            the_persons_folder(Some(OsStr::new(config)), home).unwrap(),
+            folder
+        );
+    }
+    // A usable configuration directory wins even when HOME is unusable.
+    assert_eq!(
+        the_persons_folder(Some(OsStr::new("/srv/ada/config")), Some(OsStr::new("ada"))).unwrap(),
+        configured
+    );
 }

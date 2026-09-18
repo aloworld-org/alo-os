@@ -640,11 +640,15 @@ fn the_search_finds_every_crates_declared_vocabulary() {
 #[test]
 fn a_session_with_no_folder_is_said_only_from_the_vocabulary() {
     let vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
+    let phrase = vocabulary
+        .phrases()
+        .find(|phrase| phrase.key().to_string() == "choosing.session.no-folder")
+        .expect("the machine can say what a session with no folder says");
     assert!(
-        vocabulary
-            .phrases()
-            .any(|phrase| phrase.key().to_string() == "choosing.session.no-folder"),
-        "the machine cannot say what a session with no folder says"
+        phrase
+            .note()
+            .is_some_and(|note| note.contains("before anything is changed")),
+        "the translator must know this sentence precedes a change"
     );
 
     let (_, source) = shipped_files_of("alo-choosing")
