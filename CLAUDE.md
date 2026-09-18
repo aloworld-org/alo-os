@@ -84,6 +84,10 @@ cannot demonstrate.
 
 ## Standing rules
 
+- **Task branches, one merge coordinator.** Follow
+  `docs/autonomy/SHARED_MAIN.md`: branch checkpoint pushes may precede full
+  gates; only an exact, fully gated combined tree may be squash-merged through
+  a pull request into `main`. Keep legacy direct-to-main publishers paused.
 - **One language: Rust.** The workspace above is TypeScript and lives
   in another repository. Here, a language that is not Rust is a bug.
   Pinned engines are the exception, and an engine is configured,

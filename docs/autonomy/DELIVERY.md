@@ -1,5 +1,13 @@
 # Continuous delivery toward v0.01
 
+> **Current workflow, owner-approved 2026-09-18:**
+> [SHARED_MAIN.md](SHARED_MAIN.md) supersedes direct-to-main, main-only,
+> per-checkout build-cache and concurrent-build instructions below. Use one
+> task branch and draft PR per task; progress pushes are allowed. Either PC
+> may hold the shared integration turn and squash-merge its own task after all
+> nine gates and acceptance pass on the exact combined tree. Existing direct-to-main publishers remain paused;
+> the historical runner recipes below do not implement the new workflow.
+
 Authorized by the owner on 2026-09-07: pursue the full v0.01 release continuously,
 and commit and push each completed step to `aloworld-org/alo-os`, branch `main`.
 Intermediate steps are engineering checkpoints, not a reduced release scope.
