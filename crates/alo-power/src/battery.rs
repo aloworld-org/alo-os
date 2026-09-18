@@ -164,7 +164,7 @@ mod tests {
         use std::sync::atomic::{AtomicU32, Ordering};
         static NEXT: AtomicU32 = AtomicU32::new(0);
         let supplies = std::env::temp_dir().join(format!(
-            "alo-power-{}-{}",
+            "alo-power-battery-{}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
