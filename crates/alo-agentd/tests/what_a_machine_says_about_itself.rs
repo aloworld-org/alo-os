@@ -21,6 +21,7 @@
 #![cfg(target_os = "linux")]
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -32,8 +33,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use alo_agentd::side::Side;
 use alo_agentd::unix::{our_group, us};
 use alo_agentd::{
-    ALSO_READ, APPLICATIONS_SINCE, Described, Listening, NotDescribed, Place, THE_DESCRIPTION,
-    THE_FORMAT, TheBound,
+    ALSO_READ, APPLICATIONS_SINCE, Described, Listening, NotDescribed, PROXY_SINCE, Place,
+    THE_DESCRIPTION, THE_FORMAT, TheBound,
 };
 use alo_keeping::{Reading, Writing};
 
@@ -338,7 +339,7 @@ fn places_on_a_disk_are_read_and_attributed_to_whoever_wrote_them() {
 /// permissive list, in every shape this service reads.
 #[test]
 fn a_description_with_no_places_on_a_disk_has_nobodys_rule() {
-    for format in [THE_FORMAT, ALSO_READ[0], ALSO_READ[1]] {
+    for format in [THE_FORMAT, ALSO_READ[0], ALSO_READ[1], ALSO_READ[2]] {
         let folder = a_directory_of_our_own("no-places");
         let record = folder.join("record");
         let said = describing_this_machine(&record).replace(
@@ -396,6 +397,141 @@ fn places_that_cannot_be_read_stop_the_machine() {
         matches!(refused, NotDescribed::NotAPlaceName { .. }),
         "{refused}"
     );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **The proxy an organisation set is read off a disk, and attributed to
+/// whoever wrote the file** — and it is the setting, exceptions and all, that
+/// the description states.
+#[test]
+fn a_proxy_on_a_disk_is_read_and_attributed_to_whoever_wrote_it() {
+    use std::os::unix::fs::MetadataExt as _;
+
+    let folder = a_directory_of_our_own("proxy");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[proxy]\n\
+         goes-through = \"an-address\"\n\
+         http = \"http://proxy.example.com:8080\"\n\
+         https = \"http://proxy.example.com:8080\"\n\
+         except = [\"intranet.example.com\"]\n",
+        describing_this_machine(&record)
+    );
+    let at = described("proxy-file", &said, 0o600);
+
+    let machine = Described::at(&at, us().unwrap()).unwrap();
+    let kept = machine.proxy().expect("the description states a proxy");
+    assert_eq!(
+        kept.set_by(),
+        if std::fs::metadata(&at).unwrap().uid() == 0 {
+            alo_proxy::SetBy::AnOrganisation
+        } else {
+            alo_proxy::SetBy::ThisPerson
+        },
+        "whose the proxy is did not follow who owns the description"
+    );
+    for scheme in alo_proxy::Scheme::EVERY {
+        assert_eq!(
+            kept.proxy().for_(scheme).unwrap().written(),
+            "http://proxy.example.com:8080"
+        );
+    }
+    assert!(kept.proxy().exceptions().unwrap().let_through(
+        &alo_proxy::Reaching::over(alo_proxy::Scheme::Https, "intranet.example.com").unwrap()
+    ));
+}
+
+/// **And a description with no `[proxy]` has no proxy set on it**, in every
+/// shape this service reads — never *straight out* written on somebody's
+/// behalf.
+#[test]
+fn a_description_with_no_proxy_on_a_disk_has_none_set() {
+    for format in [THE_FORMAT, ALSO_READ[0], ALSO_READ[1], ALSO_READ[2]] {
+        let folder = a_directory_of_our_own("no-proxy");
+        let record = folder.join("record");
+        let said = describing_this_machine(&record).replace(
+            &format!("format = {THE_FORMAT}"),
+            &format!("format = {format}"),
+        );
+        let at = described("no-proxy-file", &said, 0o600);
+        assert_eq!(
+            Described::at(&at, us().unwrap()).unwrap().proxy(),
+            None,
+            "format {format}"
+        );
+    }
+}
+
+/// **A proxy written into a shape that could not carry one is refused off a
+/// disk**, and nothing is started: an alo OS reading that shape would take
+/// every road out straight onto a network where the proxy is often the only
+/// route there is.
+#[test]
+fn a_proxy_in_an_older_shape_is_refused_off_the_disk() {
+    let folder = a_directory_of_our_own("proxy-older");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[proxy]\ngoes-through = \"nothing\"\n",
+        describing_this_machine(&record).replace(
+            &format!("format = {THE_FORMAT}"),
+            &format!("format = {}", ALSO_READ[2]),
+        )
+    );
+    let at = described("proxy-older-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::AProxyNeedsANewerShape { format, reads, .. }
+            if format == ALSO_READ[2] && reads == PROXY_SINCE),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **A proxy this alo OS cannot read stops the machine** off a disk, rather
+/// than leaving it reaching the network directly on a network where that is
+/// the thing an organisation's proxy exists to prevent.
+#[test]
+fn a_proxy_that_cannot_be_read_stops_the_machine() {
+    let folder = a_directory_of_our_own("unreadable-proxy");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[proxy]\ngoes-through = \"an-address\"\nhttp = \"proxy.example.com:8080\"\n",
+        describing_this_machine(&record)
+    );
+    let at = described("unreadable-proxy-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::NotAProxyAddress { .. }),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **A password written into the description stops the machine off a disk**,
+/// and the refusal never repeats it — a password in a refusal is a password in
+/// a service log.
+#[test]
+fn a_password_in_the_description_stops_the_machine_off_the_disk() {
+    let folder = a_directory_of_our_own("proxy-password");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[proxy]\n\
+         goes-through = \"an-address\"\n\
+         http = \"http://proxy.example.com:8080\"\n\
+         sign-in-as = \"anna\"\n\
+         password = \"hunter2\"\n",
+        describing_this_machine(&record)
+    );
+    let at = described("proxy-password-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::AProxyPasswordInTheFile { .. }),
+        "{refused}"
+    );
+    assert!(!refused.to_string().contains("hunter2"), "{refused}");
     assert!(!record.exists(), "and nothing was started");
 }
 

@@ -316,12 +316,32 @@ to `alo_software::Enabled::read`; nothing on a machine installs yet. **Depends o
 
 ### 9. An organisation's proxy, read from the machine's description
 
-**Status:** ready — taken by the third PC on 2026-09-18. It waited on the owner by
-analogy with task 8, and that was wrong: `v0-5-the-local-network-plan.md`
-is finished at 37 of 37, no plan's header claims `alo-agentd`, and nothing has
-edited that crate since lane A's own last commit (`ddbf8ff`) on the morning its
-plan closed. A plan that is finished releases its crates, which is the whole
-point of reading the plans rather than asking. **Depends on:** 4, 8.
+**Status:** **Done, 2026-09-18.** `/etc/alo/agentd.toml` gained an optional
+`[proxy]` section in the shape `[applications]` established: it requires
+`format = 4` (a `1`, `2` or `3` carrying it is refused, as a `2` carrying
+`[applications]` is), and `1`, `2`, `3` and `4` without it are the same machine.
+Which way out is **written rather than worked out** — `goes-through` is
+`"nothing"`, `"an-address"` or `"a-configuration"` — because a section whose
+meaning depended on which line somebody had commented out is a section where
+deleting a line moves the machine's traffic; a key the way out would ignore is
+refused, as a `region` beside the wrong `may-go` is. Read in
+`crates/alo-agentd/src/machine_wide_proxy.rs` into `alo_proxy::Kept`, with who
+set it decided by who owns the file; **absence is `Option::None`, nobody having
+set one**, and never `TheProxy::None` written on a person's behalf. The section
+names the keyring entry the password is kept under (ADR 0022), and both ways a
+password would reach `/etc` — a `password` key declared in order to be refused,
+and a credential pasted into an address or a name — are refused by name in
+sentences that never repeat what was written. Nothing in `alo-proxy` was edited:
+this crate's own spelling goes through that crate's constructors, which is why a
+proxy address in a description is a checked host and not a `Deserialize` derive.
+The acceptance test is
+`crates/alo-agentd/src/changing_the_proxy_under_the_description.rs`; the contract
+is `docs/contracts/machine-description.md`; the report is
+`docs/autonomy/updates/an-organisations-proxy-from-the-machine-description.md`.
+What is not here is the daemon **handing** that setting to the roads a turn
+takes — `alo_proxy::the_way` answers it in this task's own test, and no caller in
+`alo-agentd` carries it to `alo-asking` yet; the report says so and names what
+that would be. **Depends on:** 4, 8.
 
 *A great many company networks have no other route out* (task 4), and on a managed
 machine the organisation is who knows the route.
@@ -404,3 +424,40 @@ one.
   one place.
 - **Not this task:** the release number written in six places. It belongs to the
   installer plan's `image/` and `alo-image`, and is left to that plan.
+
+### 11. The proxy a machine was told about, carried to the question a turn puts
+
+**Status:** ready. Written 2026-09-18 by task 9, which found it: the machine's
+description now states a proxy, `alo-agentd` reads it into `alo_proxy::Kept`, and
+**nothing in that service hands it to anything**. `alo_proxy::the_way` answers
+for every `Road` and `alo_proxy::Carried::for_a_request` turns that answer into
+what a request is configured with — task 4 built both — and the road a turn's
+question actually takes (`alo-asking`, through `crate::doing` and
+`crate::questioned`) is configured with neither. On a company network with no
+other route out, that is a machine that reads its organisation's proxy off the
+disk and then asks a provider directly: the setting exists, is shown, and does
+nothing, which is the one failure task 4's own header says is worse than having
+no setting at all. **Depends on:** 4, 9.
+
+*Machine-wide, and honoured* (`docs/features.md`, v0.5) — a proxy that is read
+and not taken is neither.
+
+- **Acceptance:** the proxy `alo_agentd::Described::proxy` answers with reaches
+  the road a turn's question takes, decided by `alo_proxy::the_way` for
+  `Road::AskingAProvider` and carried by `alo_proxy::Carried`, with a test that
+  puts a question on a machine whose description states a proxy and finds the
+  request configured with it — and the same question on a machine whose
+  description states none going straight out, **said explicitly** so that no
+  process environment can point alo OS's own road anywhere
+  (`alo_models::Trying::taking`'s rule, asked of this road); a machine told to
+  ask an automatic configuration and unable to **refuses the question** rather
+  than asking the provider directly, in the words `alo-proxy` already has; the
+  **egress indicator still names the provider**, never the proxy, held by a test
+  that reads the line; and a question answered by a runtime on this machine is
+  never sent through a proxy at all, which is `alo_proxy::the_way`'s answer about
+  this machine and not a second rule here.
+- **Constraint:** nothing here re-decides which way a road goes — `alo-proxy`
+  decides, and this is the crate that asks it. If carrying a proxy to that road
+  needs `alo-asking` to change, and that crate turns out to be another plan's,
+  **the task stops at a decision record** naming the change and who makes it, the
+  way task 5 was told to about `alo-capability`.

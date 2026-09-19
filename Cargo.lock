@@ -108,6 +108,7 @@ dependencies = [
  "alo-models",
  "alo-nearby",
  "alo-protocol",
+ "alo-proxy",
  "alo-record",
  "alo-remembering",
  "alo-saying",
