@@ -199,6 +199,15 @@ pub const KIND_WEBP_IMAGE: Word = Word::saying("opening.kind.webp-image", "a Web
      format WebP, common on web pages, which is its usual name and is normally left as it is.",
 );
 
+/// A Pages document.
+pub const KIND_PAGES_DOCUMENT: Word =
+    Word::saying("opening.kind.pages-document", "a Pages document").noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". A document \
+         made with Pages, Apple's word processor, which is what arrives when somebody sends one \
+         from a Mac, an iPad or an iPhone. The product name Pages is normally not translated; if \
+         this language has no article here, drop it as the other names in this list do.",
+    );
+
 /// A photo in the format telephones save.
 pub const KIND_HEIC_PHOTO: Word = Word::saying(
     "opening.kind.heic-photo",
@@ -555,7 +564,7 @@ pub const KIND_FLAC_AUDIO: Word = Word::saying("opening.kind.flac-audio", "a FLA
 
 /// Every name of what a file is, in the order [`crate::Kind::EVERY`] lists
 /// kinds, followed by the two that are not kinds and the two containers.
-pub const THE_NAMES: [Word; 32] = [
+pub const THE_NAMES: [Word; 33] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -573,6 +582,7 @@ pub const THE_NAMES: [Word; 32] = [
     KIND_JPEG_IMAGE,
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
+    KIND_PAGES_DOCUMENT,
     KIND_HEIC_PHOTO,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,
@@ -620,7 +630,7 @@ pub const THE_REMEDIES: [Word; 5] = [
 
 /// Every string this crate can say: the names, the sentences, then what would
 /// open a file this machine cannot.
-pub const EVERY_WORD: [Word; 50] = [
+pub const EVERY_WORD: [Word; 51] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -638,6 +648,7 @@ pub const EVERY_WORD: [Word; 50] = [
     KIND_JPEG_IMAGE,
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
+    KIND_PAGES_DOCUMENT,
     KIND_HEIC_PHOTO,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,

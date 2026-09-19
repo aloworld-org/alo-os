@@ -18,6 +18,10 @@ alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# The digest a published fixture's provenance records, checked by the test that
+# reads the fixture: a README describing a file somebody later replaced would be
+# a test passing against a story.
+sha2 = { workspace = true }
 # The machine's one vocabulary, which is what a shell really holds. A
 # dev-dependency and not a dependency, in the direction every crate here takes:
 # a crate that says something is collected by `alo-saying`, and never reaches

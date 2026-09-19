@@ -333,42 +333,89 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** blocked — on
-`docs/decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md`
-(proposed, 2026-09-19). **Depends on:** 1, 4, 5.
+**Status:** blocked — on **the `.dwg` alone**, which no machine this team has can
+write, and on the conversion decision below. **Two of the three are taken.**
 
-**One of the three is taken, 2026-09-19 — the photo.** The other two, a
-`.pages` and a `.dwg`, are left for a reason that is not work, which is what
-the decision above is about. The task stays blocked while it is proposed: the
-third that is finished does not make the whole of it offerable, and a loop that
-took it would find nothing it could honestly do.
+**The Pages document, 2026-09-19**, once the owner installed Pages.
+`Kind::PagesDocument`, *a Pages document*, recognised from the parts its
+container holds — never from `PK\x03\x04`, which would call a Word document a
+Pages document, and never from the extension. Measured against a real file saved
+by Pages 15.3.1 with this repository's own words and its own picture in it, held
+to its digest so swapping the file fails a test.
+`crates/alo-opening/tests/a_document_from_pages.rs` holds it in both directions:
+the real document is recognised, and the real `sample.docx`, `sample.xlsx` and
+`sample.pptx` are still themselves.
 
-**The photo.** `alo-opening` recognises a HEIF photograph from its `ftyp` brand
-and reports it as `Kind::HeicPhoto`, *a photo in the format telephones save*. No
-engine the image pins converts one, so it takes task 4's `NothingHereOpens` road
-with *another machine or format*. Tested against a **real file with its
-provenance** — `crates/alo-opening/tests/files/`, written by macOS's own ImageIO
-from this repository's own artwork, its digest recorded and checked by the test
-that reads it. Seven tests.
+**Its conversion is measured, and deliberately not wired.** Three states, because
+collapsing them is how a promise gets made that a machine cannot keep:
 
-**It was worse than a shrug, and that is why this was taken first.** The plan was
-written when all three read as *not recognised*. By 2026-09-19 a HEIC read as **a
-film**: the media kinds added for ADR 0051 gave `ftyp` a meaning, and everything
-that was not `M4A`/`M4B` fell through to `Mp4Video`. HEIF and MP4 are one
-container and the brand is all that separates them. A machine confidently calling
-somebody's photograph a film is a worse failure than one admitting it does not
-know.
+- **Proven possible.** The owner ran this document through the engine inside the
+  **signed 0.0.3 image**, digest-verified — `soffice --convert-to odt` via filter
+  `writer8`, **778 characters of its own text recovered**. So
+  [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+  stands on this point: it converts through the engine already pinned, as a
+  registration in ADR 0039's words. No iWork reader and no amendment to ADR 0039
+  are needed. **The claim is one file wide** — it says *this document converts*,
+  not that `libetonyek`'s IWA path works in general.
+- **Not wired**, because **the converter in the shipped image cannot start**:
+  twelve runtime libraries are missing from 0.0.3 as published, eleven from
+  0.0.2. So no document of any format converts on a real machine today, `.docx`
+  included, and ADR 0039's promise has been unmet in the product since the
+  converter landed. Registering a conversion into that would make the machine say
+  *this converts* and then fail everywhere, which ADR 0039 §1 forbids by name.
+- **Why nobody caught it:** the recipe ends its converter step with
+  `test -x …/soffice`, **which checks the executable bit rather than that it
+  runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
 
-**What is left, and what it needs.** A `.pages` and a `.dwg` need **one real file
-each**, saved by somebody who has the program — the way the owner saved the three
-Office documents on 2026-09-16. Neither can be produced or obtained on the Mac
-lane's machine with provenance anybody could check: Pages is not installed on it,
-nothing there draws in AutoCAD's format, and a file pulled off the web to make a
-test pass has exactly the provenance this acceptance exists to refuse. **Task 5's
-walk gains the photo when the other two land** — that walk runs the office engine
-and cannot run on an aarch64 gate, and a test nobody can run is not a test to
-edit blind. Written up in
-[A photo from a telephone](updates/a-photo-from-a-telephone.md).
+**The photo, 2026-09-19.** `Kind::HeicPhoto`, recognised from its `ftyp` brand,
+*a photo in the format telephones save*. Nothing the image pins converts one, so
+it takes task 4's `NothingHereOpens` road with *another machine or format*. It was
+worse than the shrug this plan describes when it was found: a HEIC read as **a
+film**, because the media kinds added for ADR 0051 gave `ftyp` a meaning and
+everything that was not `M4A`/`M4B` fell through to `Mp4Video`.
+
+**The Pages document, 2026-09-19**, once the owner installed Pages.
+`Kind::PagesDocument`, *a Pages document*, recognised from the parts the
+container holds and never from `PK\x03\x04` — which would call a Word document
+a Pages document — nor from the extension.
+`crates/alo-opening/tests/a_document_from_pages.rs` holds it in both directions:
+the real document is recognised, and the real `sample.docx`, `sample.xlsx` and
+`sample.pptx` in `alo-converting` are still themselves. Measured against a real
+file saved by Pages 15.3.1 with our own words and our own picture in it, held to
+its digest.
+
+**The conversion is measured, and deliberately not wired.** Three sentences,
+because they are three different states and collapsing them is how a promise gets
+made that a machine cannot keep:
+
+- **Recognition: done**, measured against a real file with its provenance.
+- **Conversion: proven possible.** Measured 2026-09-19 by the owner, inside the
+  **signed 0.0.3 image**, on this exact file digest-verified from the branch —
+  `soffice --convert-to odt` through filter `writer8`, **778 characters of this
+  document's own text recovered**. So
+  [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+  stands on this point: it converts through the engine already pinned, as a
+  registration in ADR 0039's words. No iWork reader and no amendment to ADR 0039
+  are needed. **The claim is one file wide** — it says *this document converts*,
+  not that `libetonyek`'s IWA path works in general.
+- **Conversion: not wired**, because **the converter in the shipped image cannot
+  start.** Twelve runtime libraries are missing from 0.0.3 as published (eleven
+  from 0.0.2), so no document of any format converts on a real machine today,
+  `.docx` included — ADR 0039's promise has been unmet in the product since the
+  converter landed. Registering a conversion into that would make the machine say
+  *this converts* and then fail everywhere, which ADR 0039 §1 forbids by name.
+  Nobody caught it because the recipe ends its converter step with
+  `test -x …/soffice`, **which checks the executable bit rather than that it
+  runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
+
+**What is left.** The `.dwg`, which needs one real drawing from somebody who has
+the program; the conversion decision above; and — to make one reasoned rule
+measured — one Keynote and one Numbers document, because all three iWork
+applications write the same container and the exclusion of the other two has
+never been checked against a real file of either. Task 5's walk gains the Pages
+document when it can be run: it runs the office engine and cannot run on an
+aarch64 gate. Written up in
+[A document from Pages](updates/a-document-from-pages.md).
 **Depends on:** 1, 4, 5.
 
 **The photograph stopped being blocked while this was being written.** The
@@ -389,8 +436,10 @@ real provenance exist on no machine this team has. Both accounts are kept
 below, because they were arrived at independently and agree — which is worth
 more than either on its own.
 
-**Status:** blocked — on `docs/decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md`
-(proposed, 2026-09-19). **Depends on:** 1, 4, 5.
+**The account below was written by another lane on 2026-09-19, before the Pages
+document existed.** It is kept in full because it was arrived at independently and
+its reasoning still holds for the drawing; where it says all three wait on a real
+file, two of them no longer do. The status above is the current one.
 
 **Decided rather than built, 2026-09-19.** The worker found that the one thing
 this task cannot be finished without — *a real file with its provenance*, one of

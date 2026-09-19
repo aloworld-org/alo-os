@@ -62,7 +62,7 @@ macOS 26.5.2**, and recorded here so that this decision's open question reads
 | Looked for | How | Found |
 |---|---|---|
 | an encoder for the photograph | `sips --formats` | **`public.heic`, writable** — macOS's own ImageIO writes the format |
-| **Pages** | `/Applications`, `/System/Applications`, `~/Applications` | **not installed.** Spotlight is unavailable on this machine, so `mdfind` is evidence of nothing either way; the three directories were listed directly |
+| **Pages** | `/Applications`, `/System/Applications`, `~/Applications` | **not installed** when this was written — **installed on 2026-09-19 and no longer a blocker**, see below |
 | anything that writes `.dwg` or `.dxf` | `/Applications`; `dwgread`, `dwgwrite`, `ODAFileConverter`, `teigha`, `librecad`, `freecad`, `qcad` on the path; `ezdxf` for Python; `sips --formats` | **nothing.** No CAD application, no converter, no library, and `sips` has no CAD format at all |
 
 **So the photograph was taken, and it is no longer one of the three.** The Mac
@@ -81,12 +81,33 @@ weaken the evidence; a photograph off a telephone would additionally prove that
 the transfer did not silently convert it, which is the thing option A's first
 bullet asks for and this file cannot show.
 
-**Pages remains option A's to answer, and this machine cannot shorten it.** The
-one machine in this team of the right kind does not have the program. Installing
-it is a sign-in to somebody's account and a change to their personal machine,
-which is not a thing a worker does quietly on their behalf — so it is written
-here as a request rather than done: **Pages installed on the Mac, or one blank
-`.pages` saved anywhere**, and the remaining Pages work is mechanical.
+**Pages was answered on 2026-09-19.** The owner installed it on the Mac, and the
+row above — *not installed* — is corrected rather than left standing, because it
+was this lane that measured it and said so.
+
+A real document now sits at `crates/alo-opening/tests/files/document.pages`:
+saved by **Pages 15.3.1** on macOS 26.5.2 on an Apple M3, carrying this
+repository's own words and a picture made from its own artwork, with a heading
+and a body in two different faces so that what a conversion substitutes can be
+measured. Its size, digest and full list of parts are in the README beside it,
+and `crates/alo-opening/tests/a_document_from_pages.rs` holds the file to that
+digest, so swapping it fails a test rather than quietly changing what the other
+tests are about.
+
+**What that settles is recognition, and only recognition.** A Pages document is
+read as one, from the parts its container holds and never from its name. Whether
+the engine this image already pins converts **this** document well enough is
+**not measured**, and the reason is a machine rather than a decision: the engine
+is x86_64 only, and the lane that made the file gates on aarch64. It is neither
+claimed to convert nor claimed not to.
+
+**One correction worth keeping**, because it is the same mistake this decision is
+about: Pages was installed for some time before this lane found it, because the
+application had been renamed on disk to `Pages Creator Studio.app` and every
+search looked for `Pages.app`. It was identified in the end by what it *is* —
+bundle identifier `com.apple.Pages`, Apple-signed, with a Mac App Store receipt —
+rather than by its name. A file recognised by its extension and an application
+recognised by its filename are the same error.
 
 **The drawing is the one nothing here shortens.** It is not that no worker has
 tried: nothing on any of the three machines can write that format, and the two

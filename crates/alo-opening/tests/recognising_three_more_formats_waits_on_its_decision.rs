@@ -93,13 +93,21 @@ const WHAT_MUST_HAPPEN_FIRST: [&str; 3] = [
 /// written when none of the three could be recognised, because no file of any
 /// of them existed with provenance on any machine this team has. While that was
 /// being written down, the Mac saved a real `.heic` from its own ImageIO and
-/// took that third of the task, so a photograph is recognised and named. What
-/// still waits on the decision is the two nobody can yet produce a real file
-/// of.
-const NOT_NAMED_YET: [&str; 3] = ["pages", "autocad", "drawing"];
+/// took that third of the task, so a photograph is recognised and named.
+///
+/// **And the Pages document is no longer among them either, later the same
+/// day.** The owner installed Pages on that Mac, a real document was saved from
+/// it with this repository's own words and its own picture, and its provenance
+/// and digest are in `tests/files/README.md`. The same sentence applies twice:
+/// what this decision holds back is a format nobody here can produce a real file
+/// of, and the moment somebody can, it stops being held back.
+///
+/// **One remains**, and it is the whole of what keeps the decision proposed: a
+/// drawing. No machine this team has can write one.
+const NOT_NAMED_YET: [&str; 2] = ["autocad", "drawing"];
 
 /// The endings a name would claim one of the three by.
-const NOT_CLAIMED_YET: [&str; 2] = ["a.pages", "a.dwg"];
+const NOT_CLAIMED_YET: [&str; 1] = ["a.dwg"];
 
 /// A file of each of the three, as its own bytes begin.
 const THE_THREE: [(&str, &[u8]); 3] = [
@@ -323,12 +331,15 @@ fn none_of_the_three_is_recognised_while_the_decision_is_proposed() {
     // And what the machine actually answers about one of each: not a kind, and
     // not a film either.
     //
-    // The photograph is skipped. It was one of the three when this was written,
-    // and stopped being one the day a real `.heic` arrived with its provenance
-    // and `alo-opening` learned to recognise it. What the decision still holds
-    // back is the two that nobody can yet produce a real file of.
+    // The photograph and the Pages document are skipped. Each was one of the
+    // three when this was written, and each stopped being one the day a real
+    // file of it arrived with its provenance and `alo-opening` learned to
+    // recognise it — the `.heic` in the morning, the `.pages` the same evening,
+    // once Pages was installed on the machine that could save one. What the
+    // decision still holds back is the one nobody can yet produce a real file
+    // of.
     for (what, bytes) in THE_THREE {
-        if what.contains("photograph") {
+        if what.contains("photograph") || what.contains("Pages") {
             continue;
         }
         let mut file = Cursor::new(bytes.to_vec());

@@ -28,6 +28,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
   `docs/decisions/0058-which-software-decoders-the-image-ships.md`. Evidence:
   `docs/autonomy/updates/which-software-decoders-the-image-ships.md`.
 
+- **A document sent from a Mac is recognised for what it is.** A Pages document
+  arriving in the mail is now read as *a Pages document* rather than as an
+  unnamed archive, from what the file actually holds and never from its name —
+  a file called `minutes.docx` that is really a Pages document is still read
+  correctly, and said to be misnamed. A Word document, a spreadsheet, a
+  presentation and a plain zip are all stored the same way underneath, and each
+  is still itself. Where nothing on the machine opens one, a person is told what
+  the file is and what would open it, instead of being shown nothing. Measured
+  against a real document saved by Pages, published with the repository.
+  Evidence: `docs/autonomy/updates/a-document-from-pages.md`.
+
 - **Native control focus can move through all visible control names**, including
   disabled controls, in either direction. Traversal supports full-name opening
   and cancels pending openings when selection changes. Private-client and WSLg
