@@ -69,7 +69,7 @@ addition.
 
 | Field | Meaning |
 |---|---|
-| `format` | Which shape this description is in. Required. `1`; `2` or later when it carries `[questions]`; `3` when it carries `[applications]`. |
+| `format` | Which shape this description is in. Required. `1`; `2` or later when it carries `[questions]`; `3` or later when it carries `[applications]`; `4` when it carries `[proxy]`. |
 
 A description that says a number this service does not read is **refused rather
 than guessed at**,
@@ -200,7 +200,7 @@ as it always was, and by the same rules in *Who may write it* below.
 
 ### It requires `format = 2`
 
-This is the first of the two places the additive rule below does not reach, and the reason is
+This is the first of the three places the additive rule below does not reach, and the reason is
 worth stating plainly. An older service reading a description that carries
 `[questions]` would ignore the section and go on sending questions wherever the
 person chose — **an organisation's policy silently not enforced**, which is not
@@ -295,6 +295,98 @@ A description without the section means the same machine under `1`, `2` and `3`,
 and none of them is a migration anybody performs. `[questions]` is read in a `3`
 exactly as in a `2`.
 
+## `[proxy]`
+
+The one proxy this machine reaches the network through — machine-wide, honoured
+by every road out and published to applications. On a machine an organisation
+manages it is the organisation's, and the person is **told so** rather than shown
+a setting that quietly does nothing; on a personal machine it is the person's.
+That is the same ADR 0016 rule as the two sections above, with nothing to choose
+*within*: a road out either goes through the company's proxy or it does not.
+
+*A great many company networks have no other route out.*
+
+```toml
+format = 4
+
+[proxy]
+goes-through = "an-address"
+http = "http://proxy.example.com:8080"
+https = "http://proxy.example.com:8080"
+except = ["intranet.example.com", ".example.test"]
+sign-in-as = "anna"
+password-in-keyring = "the company proxy"
+```
+
+| Field | Meaning |
+|---|---|
+| `goes-through` | Which way out this machine takes: `"nothing"`, `"an-address"` or `"a-configuration"`. Required when the section is present. |
+| `http` | Where roads spoken in clear go, written `http://host:port` or `https://host:port`. Only with `"an-address"`. |
+| `https` | Where roads spoken encrypted go, written the same way. Only with `"an-address"`. |
+| `except` | The hosts and domains that go straight out anyway — a host as it is spelt, or a domain and everything under it as `.example.com`. Only with `"an-address"`. |
+| `sign-in-as` | The name the proxy wants, where it wants one. Only with `"an-address"`. |
+| `password-in-keyring` | The keyring name that password is kept under. **Never the password.** Only with `"an-address"`. |
+| `configuration` | Where the network publishes its automatic configuration, as an `http` or `https` address. Only with `"a-configuration"`, and required with it. |
+
+**Which way out is written rather than worked out.** A section whose meaning
+depended on which other keys somebody had commented out would be a section where
+deleting a line changes where the machine's traffic goes.
+
+**`"nothing"` is a proxy setting**, and it says every road out goes straight out.
+It is not the same as having no section: the first is something somebody wrote
+down, and the second is nobody having said. A description with no `[proxy]` is
+answered as *nobody set a proxy on this machine*, never as `"nothing"` written on
+a person's behalf.
+
+**A key the way out would ignore is refused.** `configuration` beside
+`"an-address"`, or `http` beside `"nothing"`, is a key somebody believes is
+sending their traffic through a proxy and is not.
+
+**A password never goes in this file** (ADR 0022). The section names the keyring
+entry the password is kept under, and the two ways a password would otherwise
+reach `/etc` are each refused by name:
+
+- `password = "…"` — a key that exists in order to be refused, so that a
+  credential in `/etc` is answered as one rather than as a spelling mistake;
+- `http://anna:hunter2@proxy.example.com:8080`, which is how a proxy credential
+  is usually pasted, in either address and in `sign-in-as`.
+
+Neither refusal repeats what was written, because a password in a refusal is a
+password in a service log. `sign-in-as` and `password-in-keyring` are written
+together or not at all: a proxy asked for a name with nowhere to find its
+password fails on the first road out.
+
+**A section that is present and does not hold is refused, and the service does
+not start** — never read as no proxy. Besides the above, each of these refuses: a
+`goes-through` this service does not know; `"an-address"` with neither `http` nor
+`https`; `"a-configuration"` with no `configuration`; an address that is not
+`scheme://host:port`; a place in `except` that is not a host or a domain; and a
+key in the section this service does not know.
+
+**Who set it is decided by who owns this file**, exactly as the two sections
+above: root's is an organisation's and a person is refused a change in words
+naming them; the person's own is theirs and they may change it. A restrictive
+setting is never, on its own, evidence that somebody else wrote it.
+
+It says **which way out** and nothing else. It does not name a destination, turn
+the egress indicator off, or change what leaves the machine — the indicator still
+names where a connection is really going, not the proxy it went through.
+
+### It requires `format = 4`
+
+For `[questions]`' and `[applications]`' reason, one shape later again. An older
+service reading a description that carries `[proxy]` would ignore it and take
+every road out straight onto a network where the proxy is frequently the only
+route there is — and where going around it is the thing the proxy exists to
+prevent. So a description carrying `[proxy]` says `format = 4`; a service that
+reads only `1`, `2` and `3` refuses it and does not start, and a `1`, `2` or `3`
+carrying the section is refused as a file claiming an older service could have
+read it correctly.
+
+A description without the section means the same machine under `1`, `2`, `3` and
+`4`, and none of them is a migration anybody performs. `[questions]` and
+`[applications]` are read in a `4` exactly as they were.
+
 ## What is **not** in it
 
 **Where the socket goes.** It is `/run/alo/<uid>/agentd.sock` for the person
@@ -309,10 +401,11 @@ unreachable by the agent on any real machine; the ADR is why it moved and what
 was rejected on the way.
 
 **Anything secret.** There are login numbers, two lengths of time, a path, a
-retention rule and, where an organisation set them, two bounds in this file and
-nothing else — the names of places are not secrets. A provider's key lives in the keyring and
-never in a settings file (`crates/alo-models/src/provider.rs`), and that is not
-relaxed here. The file may be world-readable — `0644` in `/etc` is the ordinary
+retention rule and, where an organisation set them, two bounds and a proxy in
+this file and nothing else — the names of places, of a proxy and of a keyring
+entry are not secrets. A provider's key lives in the keyring and
+never in a settings file (`crates/alo-models/src/provider.rs`), and a proxy's
+password lives there too (`[proxy]` above); neither is relaxed here. The file may be world-readable — `0644` in `/etc` is the ordinary
 case — and alo OS does not check that it is not, because checking would teach
 whoever writes it that secrets may go in.
 
@@ -337,7 +430,9 @@ that is checked and a description that is read cannot be two different files.
 
 New keys may be added and `format` stays as it is for as long as an older
 service reading the file without them would still describe the same machine.
-`[questions]` and `[applications]` are the two sections that fail that test and
-say why, above: ignoring a policy is not describing the same machine. Anything
+`[questions]`, `[applications]` and `[proxy]` are the three sections that fail
+that test and say why, above: ignoring a policy is not describing the same
+machine, and neither is reaching the network a way the organisation forbade.
+Anything
 else — a key removed, a meaning changed, a default introduced — is a new
 `format`, and a service refuses a number it does not read.

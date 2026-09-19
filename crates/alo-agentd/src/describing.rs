@@ -10,7 +10,7 @@
 //!
 //! # The format number, and what additively means
 //!
-//! [`THE_FORMAT`] is `3`, and `1` and `2` are still read ([`ALSO_READ`]). A description
+//! [`THE_FORMAT`] is `4`, and `1`, `2` and `3` are still read ([`ALSO_READ`]). A description
 //! that says anything else is **refused rather than guessed at**, which is
 //! `docs/contracts/record-file.md`'s rule about a record from a newer alo OS,
 //! applied to the file that says what a machine is. A newer alo OS may add keys;
@@ -40,6 +40,16 @@
 //! [`NotDescribed::PlacesNeedANewerShape`], and a description with neither
 //! section means the same machine under all three numbers. What the section
 //! says and how it is refused is `crate::permitted_places`.
+//!
+//! **`4` since `[proxy]`**, and it is the third of exactly the same argument. A
+//! great many company networks have no other route out, and an older service
+//! that did not honour an organisation's proxy would take every road out
+//! straight onto a network where doing so either fails or goes around a rule
+//! somebody is answerable for. So that section needs [`PROXY_SINCE`], a
+//! description carrying it in an older shape is
+//! [`NotDescribed::AProxyNeedsANewerShape`], and a description with none of the
+//! three sections means the same machine under all four numbers. What the
+//! section says and how it is refused is `crate::machine_wide_proxy`.
 //!
 //! # A key nobody declared is refused
 //!
@@ -75,6 +85,7 @@ use serde::Deserialize;
 use crate::caller::{Gid, Uid};
 use crate::described::{Bounds, Described};
 use crate::lasting::Lasting;
+use crate::machine_wide_proxy::TheProxySection;
 use crate::permitted_places::TheApplications;
 use crate::questions::TheBound;
 use crate::refusing::NotDescribed;
@@ -82,7 +93,7 @@ use crate::side::Sides;
 use crate::trusting::WhoDescribedIt;
 
 /// The shape of description this alo OS writes, and the newest it reads.
-pub const THE_FORMAT: u32 = 3;
+pub const THE_FORMAT: u32 = 4;
 
 /// Every shape this alo OS still reads, oldest first.
 ///
@@ -90,9 +101,11 @@ pub const THE_FORMAT: u32 = 3;
 /// expand. Every description written before there was anywhere to state a
 /// policy says `1`, has no `[questions]` in it, and means exactly what it always
 /// meant; one written before there was anywhere to name the places applications
-/// come from says `1` or `2` and has no `[applications]` in it. Nothing rewrites
-/// either and nothing asks anybody to.
-pub const ALSO_READ: [u32; 2] = [1, 2];
+/// come from says `1` or `2` and has no `[applications]` in it; one written
+/// before there was anywhere to state the machine's proxy says `1`, `2` or `3`
+/// and has no `[proxy]` in it. Nothing rewrites any of them and nothing asks
+/// anybody to.
+pub const ALSO_READ: [u32; 3] = [1, 2, 3];
 
 /// The first shape that could carry `[questions]`.
 pub const QUESTIONS_SINCE: u32 = 2;
@@ -100,10 +113,16 @@ pub const QUESTIONS_SINCE: u32 = 2;
 /// The first shape that could carry `[applications]`.
 pub const APPLICATIONS_SINCE: u32 = 3;
 
+/// The first shape that could carry `[proxy]`.
+pub const PROXY_SINCE: u32 = 4;
+
 /// Whether this alo OS reads a description that says it is this shape.
 #[must_use]
 pub const fn is_a_shape_we_read(format: u32) -> bool {
-    format == THE_FORMAT || format == ALSO_READ[0] || format == ALSO_READ[1]
+    format == THE_FORMAT
+        || format == ALSO_READ[0]
+        || format == ALSO_READ[1]
+        || format == ALSO_READ[2]
 }
 
 /// The key the agent's name is written under.
@@ -184,6 +203,15 @@ struct AsWritten {
     /// policy*, answered as `alo_software::Bound::Nobodys` rather than as a
     /// permissive list.
     applications: Option<TheApplications>,
+    /// The proxy this machine reaches the network through, or absent on a
+    /// machine nobody set one on.
+    ///
+    /// Optional for the other two sections' reason, and answered as
+    /// [`Option::None`] rather than as *no proxy*: `alo_proxy::TheProxy::None`
+    /// is *straight out*, which is something somebody wrote down, and writing
+    /// it here on a person's behalf would be this file answering a question
+    /// about their machine that only they can answer.
+    proxy: Option<TheProxySection>,
 }
 
 /// The two logins and the group they meet in, as numbers.
@@ -321,6 +349,16 @@ impl AsWritten {
                 reads: APPLICATIONS_SINCE,
             });
         }
+        // And the same for the machine's proxy, one shape later again: an alo
+        // OS reading `3` would take every road out straight onto a network
+        // where the proxy is often the only route there is.
+        if self.format < PROXY_SINCE && self.proxy.is_some() {
+            return Err(NotDescribed::AProxyNeedsANewerShape {
+                at: at.to_owned(),
+                format: self.format,
+                reads: PROXY_SINCE,
+            });
+        }
         let sides = Sides::of(
             Uid::of(self.logins.person)?,
             Uid::of(self.logins.agent)?,
@@ -339,6 +377,9 @@ impl AsWritten {
             None => Bound::Nobodys,
             Some(applications) => applications.checked(who)?,
         };
+        // And the same *absent* again — as nothing at all rather than as a
+        // setting, because *straight out* is a thing somebody writes down.
+        let proxy = self.proxy.map(|proxy| proxy.checked(who)).transpose()?;
         Described::of(
             sides,
             &self.agent.name,
@@ -349,6 +390,7 @@ impl AsWritten {
             Bounds {
                 questions,
                 applications,
+                proxy,
             },
         )
     }
@@ -482,13 +524,13 @@ keeping = "forever"
     /// way round it is.
     #[test]
     fn a_description_from_a_newer_alo_os_is_refused() {
-        let said = an_ordinary_machine().replace("format = 1", "format = 4");
+        let said = an_ordinary_machine().replace("format = 1", "format = 5");
         let refused = an_administrator_wrote(&said).unwrap_err();
         assert!(matches!(
             refused,
             NotDescribed::AnotherFormat {
-                format: 4,
-                reads: 3,
+                format: 5,
+                reads: 4,
                 ..
             }
         ));
@@ -506,7 +548,8 @@ keeping = "forever"
         assert!(is_a_shape_we_read(1));
         assert!(is_a_shape_we_read(2));
         assert!(is_a_shape_we_read(3));
-        assert!(!is_a_shape_we_read(4));
+        assert!(is_a_shape_we_read(4));
+        assert!(!is_a_shape_we_read(5));
         assert!(!is_a_shape_we_read(0));
         assert!(an_administrator_wrote(&an_ordinary_machine()).is_ok());
     }
@@ -907,7 +950,7 @@ keeping = "forever"
     /// 0016's *absent*, never a permissive list.
     #[test]
     fn a_machine_with_no_applications_section_has_nobodys_rule() {
-        for format in ["format = 1", "format = 2", "format = 3"] {
+        for format in ["format = 1", "format = 2", "format = 3", "format = 4"] {
             let said = an_ordinary_machine().replace("format = 1", format);
             let machine = an_administrator_wrote(&said).unwrap();
             assert_eq!(machine.applications(), &Bound::Nobodys, "{format}");
@@ -1016,12 +1059,161 @@ keeping = "forever"
         ));
     }
 
+    // `[proxy]` — the one road out of this machine, from the same file.
+
+    /// The same ordinary machine in the newest shape, with this `[proxy]`
+    /// section on it.
+    fn a_machine_reaching_the_network_by(section: &str) -> String {
+        format!(
+            "{}\n[proxy]\n{section}\n",
+            an_ordinary_machine().replace("format = 1", "format = 4")
+        )
+    }
+
+    /// **A machine with no `[proxy]` has no proxy set on it at all**, in every
+    /// shape this service reads — nobody's, and never *straight out* written on
+    /// somebody's behalf.
+    #[test]
+    fn a_machine_with_no_proxy_section_has_none_set() {
+        for format in ["format = 1", "format = 2", "format = 3", "format = 4"] {
+            let said = an_ordinary_machine().replace("format = 1", format);
+            assert_eq!(
+                an_administrator_wrote(&said).unwrap().proxy(),
+                None,
+                "{format}"
+            );
+            assert_eq!(the_person_wrote(&said).unwrap().proxy(), None, "{format}");
+        }
+    }
+
+    /// **The proxy an administrator wrote is an organisation's**, and it is the
+    /// setting every road out asks.
+    #[test]
+    fn the_proxy_an_administrator_wrote_is_an_organisations() {
+        let machine = an_administrator_wrote(&a_machine_reaching_the_network_by(
+            "goes-through = \"an-address\"\nhttp = \"http://proxy.example.com:8080\"",
+        ))
+        .unwrap();
+        let kept = machine.proxy().unwrap();
+        assert_eq!(kept.set_by(), alo_proxy::SetBy::AnOrganisation);
+        assert_eq!(
+            kept.proxy()
+                .for_(alo_proxy::Scheme::Http)
+                .map(alo_proxy::ProxyAddress::written),
+            Some("http://proxy.example.com:8080".to_owned())
+        );
+        // And it bounds nothing about questions or applications.
+        assert_eq!(machine.questions(), &TheBound::Nobodys);
+        assert_eq!(machine.applications(), &Bound::Nobodys);
+    }
+
+    /// **The identical section in the person's own file is theirs**, so nothing
+    /// on this machine tells them an administrator set a proxy when nobody did.
+    #[test]
+    fn the_same_proxy_the_person_wrote_names_no_organisation() {
+        let said = a_machine_reaching_the_network_by("goes-through = \"nothing\"");
+        assert_eq!(
+            the_person_wrote(&said).unwrap().proxy().unwrap().set_by(),
+            alo_proxy::SetBy::ThisPerson
+        );
+        assert_eq!(
+            an_administrator_wrote(&said)
+                .unwrap()
+                .proxy()
+                .unwrap()
+                .set_by(),
+            alo_proxy::SetBy::AnOrganisation
+        );
+    }
+
+    /// **All three bounds may be written in one description**, and each arrives
+    /// as its own.
+    #[test]
+    fn all_three_bounds_arrive_from_one_description() {
+        let said = a_machine_reaching_the_network_by("goes-through = \"nothing\"")
+            + "\n[questions]\nmay-go = \"in-the-building\"\n"
+            + "\n[applications]\nmay-come-from = [\"flathub\"]\n";
+        let machine = an_administrator_wrote(&said).unwrap();
+        assert_eq!(
+            machine.questions(),
+            &TheBound::AnOrganisations(SourcePolicy::InTheBuilding)
+        );
+        assert_eq!(
+            machine.applications(),
+            &Bound::only([a_place("flathub")], alo_software::SetBy::AnAdministrator)
+        );
+        assert_eq!(machine.proxy().unwrap().proxy(), &alo_proxy::TheProxy::None);
+    }
+
+    /// **A proxy written into a shape that could not carry one is refused**, in
+    /// all three older shapes, and the refusal says which shape it needs.
+    #[test]
+    fn a_proxy_in_a_shape_that_could_not_carry_one_is_refused() {
+        for (format, number) in [("format = 1", 1), ("format = 2", 2), ("format = 3", 3)] {
+            let said = a_machine_reaching_the_network_by("goes-through = \"nothing\"")
+                .replace("format = 4", format);
+            let refused = an_administrator_wrote(&said).unwrap_err();
+            assert!(
+                matches!(
+                    refused,
+                    NotDescribed::AProxyNeedsANewerShape { format: f, reads: 4, .. } if f == number
+                ),
+                "{refused:?}"
+            );
+            assert!(refused.to_string().contains("[proxy]"), "{refused}");
+        }
+    }
+
+    /// **A `[proxy]` that does not hold stops the service**, never read as no
+    /// proxy: no way out, a key nobody declared, a way out nobody knows, an
+    /// address that is not one, and a password in the file.
+    #[test]
+    fn a_proxy_section_that_does_not_hold_is_refused() {
+        let empty = an_administrator_wrote(&a_machine_reaching_the_network_by("")).unwrap_err();
+        assert!(matches!(empty, NotDescribed::NotUnderstood { .. }));
+        assert!(empty.to_string().contains("goes-through"), "{empty}");
+
+        let typo = an_administrator_wrote(&a_machine_reaching_the_network_by(
+            "goes-through = \"nothing\"\nno-proxy = true",
+        ))
+        .unwrap_err();
+        assert!(matches!(typo, NotDescribed::NotUnderstood { .. }));
+
+        assert!(matches!(
+            an_administrator_wrote(&a_machine_reaching_the_network_by(
+                "goes-through = \"straight-out\""
+            ))
+            .unwrap_err(),
+            NotDescribed::NoWayOutNamedThat { .. }
+        ));
+        assert!(matches!(
+            an_administrator_wrote(&a_machine_reaching_the_network_by(
+                "goes-through = \"an-address\"\nhttp = \"proxy.example.com\""
+            ))
+            .unwrap_err(),
+            NotDescribed::NotAProxyAddress { .. }
+        ));
+        let password = an_administrator_wrote(&a_machine_reaching_the_network_by(
+            "goes-through = \"an-address\"\n\
+             http = \"http://proxy.example.com:8080\"\n\
+             sign-in-as = \"anna\"\n\
+             password = \"hunter2\"",
+        ))
+        .unwrap_err();
+        assert!(matches!(
+            password,
+            NotDescribed::AProxyPasswordInTheFile { .. }
+        ));
+        assert!(!password.to_string().contains("hunter2"), "{password}");
+    }
+
     /// The shapes each section arrived in are named once.
     #[test]
     fn the_shapes_each_bound_arrived_in_are_named_once() {
         assert_eq!(QUESTIONS_SINCE, 2);
-        assert_eq!(APPLICATIONS_SINCE, THE_FORMAT);
-        assert_eq!(ALSO_READ, [1, 2]);
+        assert_eq!(APPLICATIONS_SINCE, 3);
+        assert_eq!(PROXY_SINCE, THE_FORMAT);
+        assert_eq!(ALSO_READ, [1, 2, 3]);
     }
 
     /// The keys a bound is written under are named once, because they are in a

@@ -97,6 +97,14 @@ alo-choosing = { path = "../alo-choosing" }
 # crate's, and nothing here edits it.
 alo-software = { path = "../alo-software" }
 
+# The machine's one proxy, as the description states it. `[proxy]` in
+# `/etc/alo/agentd.toml` is read into `alo_proxy::Kept` in
+# `src/machine_wide_proxy.rs`, and nothing else here reads that section; which
+# way a road out then goes, and the words a person is refused a change in, are
+# that crate's and nothing here edits them. It is the same door
+# `alo-software` is reached through one key above.
+alo-proxy = { path = "../alo-proxy" }
+
 # The runtime a question is put to, found rather than configured (ADR 0019).
 # `src/questions.rs` is the only file that looks for one, and it is deliberately
 # the only thing in this crate that can name a model runtime: nothing here

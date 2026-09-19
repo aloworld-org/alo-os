@@ -152,6 +152,111 @@ pub enum NotDescribed {
         /// The shape the section needs.
         reads: u32,
     },
+    /// The description states a proxy in a shape that could not have carried
+    /// one.
+    #[error(
+        "{at} says format {format} and has a [proxy] section in it, which arrived in format {reads}; an alo OS reading format {format} would not honour that section and would take every road out straight onto a network where the proxy is often the only route, so the file is refused rather than half-honoured — say format {reads}"
+    )]
+    AProxyNeedsANewerShape {
+        /// The description.
+        at: PathBuf,
+        /// What it says it is.
+        format: u32,
+        /// The shape the section needs.
+        reads: u32,
+    },
+    /// A password was written into the description.
+    ///
+    /// The one refusal in this file that never repeats what it read: a password
+    /// in a refusal is a password in a service log, which is the thing this
+    /// sentence exists to get off the disk.
+    #[error(
+        "{what} carries a password, and a password never goes in this file (ADR 0022); write the name the proxy wants as proxy.sign-in-as, put the password in the keyring, and name it in proxy.password-in-keyring"
+    )]
+    AProxyPasswordInTheFile {
+        /// The key it was written under.
+        what: &'static str,
+    },
+    /// The proxy section names a way out this service has never heard of.
+    #[error(
+        "proxy.goes-through is \"{said}\", which is no way out this alo OS knows; it is one of {every}, and a proxy that could not be read is refused rather than treated as no proxy"
+    )]
+    NoWayOutNamedThat {
+        /// What the description said.
+        said: String,
+        /// Every way out it could have said.
+        every: String,
+    },
+    /// A key is written beside a way out that would ignore it.
+    #[error(
+        "{key} is written beside proxy.goes-through = \"{goes_through}\", which would ignore it; a key somebody believes is sending this machine's traffic through a proxy and is not is refused — take it out, or say the way out it belongs to"
+    )]
+    AProxyKeyThatDoesNothing {
+        /// The way out it was written beside.
+        goes_through: String,
+        /// The key that does nothing.
+        key: &'static str,
+    },
+    /// The proxy is an address and no address is named.
+    #[error(
+        "proxy.goes-through is \"an-address\" and neither proxy.http nor proxy.https names one, so every road out would go straight out under a setting that says otherwise; name the proxy, or say proxy.goes-through = \"nothing\""
+    )]
+    NoProxyAddressNamed,
+    /// The proxy is an automatic configuration and none is named.
+    #[error(
+        "proxy.goes-through is \"a-configuration\" and proxy.configuration names none, so there is nothing to ask where each connection should go; name the address the network publishes it at"
+    )]
+    NoConfigurationNamed,
+    /// What is written under a proxy key is not a proxy address.
+    #[error(
+        "{what} is {said:?}, which is not a proxy address; write it as http://host:port or https://host:port, with the port the proxy answers on"
+    )]
+    NotAProxyAddress {
+        /// The key in the description.
+        what: &'static str,
+        /// What the description said.
+        said: String,
+    },
+    /// What is written as an automatic configuration is not an address.
+    #[error(
+        "proxy.configuration is {said:?}, which is not an address this machine could fetch a configuration from; write it as http://host/path or https://host/path"
+    )]
+    NotAConfigurationAddress {
+        /// What the description said.
+        said: String,
+    },
+    /// A place excepted from the proxy is not a host or a domain.
+    #[error(
+        "proxy.except names {said:?}, which is not a host or a domain; write a host as it is spelt, or a domain and everything under it as .example.com — the list is refused whole rather than half-honoured, because a machine sending traffic somewhere nobody chose is what it exists to prevent"
+    )]
+    NotAnExceptedPlace {
+        /// What the description said.
+        said: String,
+    },
+    /// A name the proxy is signed in as is not one.
+    #[error(
+        "proxy.sign-in-as is {said:?}, which is not a name a proxy can be signed in as; give the name the proxy wants, on one line"
+    )]
+    NotASignInName {
+        /// What the description said.
+        said: String,
+    },
+    /// The keyring name a proxy's password is kept under is not a name.
+    #[error("proxy.password-in-keyring is not a name a password can be kept under: {why}")]
+    NotAKeyringName {
+        /// What `alo-proxy` said about it.
+        why: alo_proxy::NotAName,
+    },
+    /// One half of a sign-in was written and the other was not.
+    #[error(
+        "{written} is written and {missing} is not, so the proxy would be asked for a name with nowhere to find its password; write both, or neither"
+    )]
+    HalfASignIn {
+        /// The half that was written.
+        written: &'static str,
+        /// The half that was not.
+        missing: &'static str,
+    },
     /// A place permitted by name is not a name a place could have.
     #[error(
         "applications.may-come-from names {said:?}, which could never be what this machine calls a place applications come from — letters, digits, '.', '_' and '-', not beginning with '-'; a list that could not be read is refused rather than treated as unrestricted"
