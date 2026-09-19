@@ -157,6 +157,33 @@ pub(crate) fn the_version_line() -> String {
     format!("version = \"{}\"", the_pinned_release())
 }
 
+/// One `name = "value"` line's value, from the shipped pin.
+fn the_pins(field: &str) -> String {
+    let pin = std::fs::read_to_string(Path::new(crate::THE_IMAGE).join(THE_PIN_FILE)).unwrap();
+    let wanted = format!("{field} = ");
+    let line = pin
+        .lines()
+        .find(|line| line.starts_with(&wanted))
+        .unwrap_or_default();
+    line.split('"').nth(1).unwrap_or_default().to_owned()
+}
+
+/// **The digest the owner signed**, read from the pin rather than spelled.
+///
+/// Spelling it was how pinning a release came to mean editing seven literals
+/// across five files. Each one missed stopped the gate; each one missed the
+/// other way would have left a test asserting against an image nobody ships.
+/// The pin is the one place a digest belongs, because the pin is what an
+/// installer reads.
+pub(crate) fn the_pinned_digest() -> String {
+    the_pins("digest")
+}
+
+/// **The commit the pinned image was built from**, read from the pin.
+pub(crate) fn the_pinned_revision() -> String {
+    the_pins("revision")
+}
+
 /// The tag line `docs/booting.md` and the release notes spell, which names what
 /// is pinned rather than what is being built.
 pub(crate) fn the_tag_line() -> String {

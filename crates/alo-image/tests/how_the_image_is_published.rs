@@ -174,9 +174,21 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
     }
 }
 
-/// The digest the owner signed on 2026-09-15, for release `0.0.1`.
+/// The digest the owner signed on 2026-09-19, for release `0.0.3`.
+///
+/// **The one place the digest is spelled rather than read, and that is
+/// deliberate.** Everywhere else it was spelled it was a *copy*, one of seven
+/// that had to be edited in step; those read the pin now. This one is not a
+/// copy, it is the checkpoint. A test that read the pin and then asserted the
+/// pin would pass however the pin changed, and the point is that the digest an
+/// installer pulls cannot move without a person writing it here too.
+///
+/// So when this fails it is asking a question rather than reporting a fault:
+/// *was this pin changed by somebody who verified the signature?* Answer it by
+/// verifying, then edit this line. The verification cannot live here — it needs
+/// the registry, and nothing in this crate reaches the network.
 const THE_SIGNED_DIGEST: &str =
-    "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
+    "sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7";
 
 /// **The digest an installer pulls is the one the owner signed, pinned in one
 /// file the crate reads, and the image agrees with it.**

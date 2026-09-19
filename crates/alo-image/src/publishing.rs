@@ -226,9 +226,13 @@ mod tests {
         edited, image_at, the_pinned_release, the_tag_line, the_version_line,
     };
 
-    /// The digest the owner signed, as the shipped pin and document state it.
-    const THE_DIGEST: &str =
-        "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
+    /// The digest the owner signed, read from the pin rather than spelled.
+    ///
+    /// Spelled here once, and it made pinning a release a hunt through five
+    /// files at the moment care is least affordable.
+    fn the_digest() -> String {
+        crate::testing::the_pinned_digest()
+    }
 
     /// The recipe's release line, as the repository ships it.
     ///
@@ -482,7 +486,7 @@ mod tests {
     fn a_document_pulling_another_digest_is_caught() {
         let root = a_copy_of_the_image("document-another-digest");
         let other = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
-        edited(&root, THE_BOOTING_DOCUMENT, THE_DIGEST, other);
+        edited(&root, THE_BOOTING_DOCUMENT, &the_digest(), other);
 
         let wrong = wrong_at(&root);
 
@@ -533,7 +537,10 @@ mod tests {
         edited(
             &root,
             THE_BOOTING_DOCUMENT,
-            &format!("    podman pull ghcr.io/aloworld-org/alo-os@{THE_DIGEST}"),
+            &format!(
+                "    podman pull ghcr.io/aloworld-org/alo-os@{}",
+                the_digest()
+            ),
             "    podman pull ghcr.io/aloworld-org/alo-os:0.0.1",
         );
 
@@ -577,7 +584,10 @@ mod tests {
         let root = a_copy_of_the_image("document-verify-after");
         let document = root.join(THE_BOOTING_DOCUMENT);
         let text = std::fs::read_to_string(&document).unwrap_or_default();
-        let pull = format!("    podman pull ghcr.io/aloworld-org/alo-os@{THE_DIGEST}\n");
+        let pull = format!(
+            "    podman pull ghcr.io/aloworld-org/alo-os@{}\n",
+            the_digest()
+        );
         assert!(
             text.contains(&pull),
             "the document does not pull the digest"

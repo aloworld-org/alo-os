@@ -93,8 +93,8 @@ registry updates will come from
 §3), and it installs it by digest:
 
     registry: ghcr.io/aloworld-org/alo-os
-    tag: 0.0.2
-    digest: sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9
+    tag: 0.0.3
+    digest: sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7
 
 Those three are `image/pinned.toml`, the one file the digest is written in, and
 `crates/alo-image` holds this document to it the way it holds the four disk
@@ -102,7 +102,7 @@ facts to the recipe. The tag is how a person reads the release; the digest is
 what is pulled, because a tag is a name somebody can move after the owner
 signed and a digest is the bytes themselves.
 
-**Verify first, and write nothing if it fails.** Release `0.0.2` was signed by
+**Verify first, and write nothing if it fails.** Release `0.0.3` was signed by
 the owner, by digest, with the key whose public half is committed at
 `image/signing/alo-os.pub`
 ([ADR 0036](decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md)),
@@ -111,7 +111,7 @@ repository and the registry, and nothing else. From the root of a checkout, with
 `cosign` installed:
 
     cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true \
-      ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9
+      ghcr.io/aloworld-org/alo-os@sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7
 
 `--insecure-ignore-tlog=true` is the flag for *there is no log entry to check*,
 which is true of every alo OS signature by decision rather than by accident; the
@@ -122,7 +122,7 @@ Then pull that digest into podman's store and install it, the same way as the
 local build above — the image in the `podman run` is the only thing that
 changed:
 
-    podman pull ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9
+    podman pull ghcr.io/aloworld-org/alo-os@sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7
 
     truncate -s 20G alo-os.raw
 
@@ -130,7 +130,7 @@ changed:
       --security-opt label=type:unconfined_t \
       -v /var/lib/containers:/var/lib/containers \
       -v .:/output \
-      ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9 \
+      ghcr.io/aloworld-org/alo-os@sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7 \
       bootc install to-disk --via-loopback --wipe \
         --filesystem ext4 /output/alo-os.raw
 
