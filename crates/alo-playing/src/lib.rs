@@ -16,7 +16,7 @@
 //! |---|---|
 //! | [`codec`] | the codecs the decision names, and which carry no royalty |
 //! | [`producing`] | what this machine encodes, which is free on every machine |
-//! | [`right`] | **where a right to decode comes from**, and the question counsel has not answered |
+//! | [`right`] | **where a right to decode comes from**, and the closed list of decoders the image ships |
 //! | [`machine`] | what a machine has, handed in rather than read here |
 //! | [`inside`] | the tracks in a file, because **a kind is the wrapping, not the codec** |
 //! | [`deciding`] | the order, walked once per track |
@@ -27,19 +27,29 @@
 //! A machine may play an H.264 file because the chip in it holds a licence, or
 //! because a company that paid for redistribution gave us a binary to pass on.
 //! **It may not play one because we compiled a decoder and hoped.** The order —
-//! free, then the silicon, then a redistributable decoder, then a refusal — is
-//! not a preference: it is the order in which the right to decode exists at all.
+//! free, then expired, then the silicon, then a redistributable decoder, then a
+//! refusal — is not a preference: it is the order in which the right to decode
+//! exists at all.
 //!
-//! # What is open, and where it shows
+//! # Which decoders the image itself carries
 //!
-//! *Which software decoders may ship in the image, and where* is a question for
-//! a lawyer, and ADR 0051 marks it so with a deadline that is a shipment rather
-//! than a version: **before the certified laptop goes to anybody outside this
-//! team.** Until it is answered there is no fourth step, and this crate decides
-//! with three — the decision's own *none may ship* row, taken as the safe
-//! reading rather than as the answer. [`right::SoftwareDecoders`] is a type with
-//! one value so that the hole is somewhere a reader trips over, rather than a
-//! comment somebody deletes while tidying.
+//! [ADR 0058] closed the question ADR 0051 left open, and its rule is the one
+//! thing worth remembering: **we ship a decoder when nobody can charge us for
+//! shipping it** — because it was made free, because the patents expired, or
+//! because a company that paid the royalty published a binary for us to pass
+//! on. Everything else is the silicon's job, and where there is no silicon the
+//! machine says so.
+//!
+//! So [`right::SoftwareDecoders`] names AV1, VP9 and every audio codec the
+//! decision lists, and does not name H.264 or HEVC. MP3 and AAC-LC are in it
+//! because their terms ran out, which is why [`right::Right::ByExpiry`] is its
+//! own answer rather than folded into `RoyaltyFree`: **one row of the list rests
+//! on a patent term**, and that is the sentence still with a lawyer, named at
+//! [`right::SoftwareDecoders::THE_ONE_FOR_COUNSEL`]. The deadline is unchanged
+//! and is a shipment rather than a version: before the certified laptop goes to
+//! anybody outside this team.
+//!
+//! [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
 //!
 //! # What this crate does not do
 //!
@@ -51,7 +61,7 @@
 //!   of being told the same thing.
 //! - **It plays nothing.** It decides. Moving bytes through the rented media
 //!   stack is the work that reads this, and the test that a real sample file
-//!   plays end to end waits on a machine and on the counsel answer above.
+//!   plays end to end waits on a machine — which is now all it waits on.
 //! - **It reads no file.** What is inside one arrives as [`inside::Inside`],
 //!   from whoever parsed the container.
 
