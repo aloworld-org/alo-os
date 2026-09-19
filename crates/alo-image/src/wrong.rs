@@ -704,6 +704,14 @@ pub enum Wrong {
         /// What is missing.
         what: String,
     },
+    /// The build never converts a document, so nothing shows the engine runs.
+    #[error(
+        "the build tests that the engine is there but never converts anything with it — releases \
+         0.0.2 and 0.0.3 both passed `test -x` while shipping an engine that died at launch for \
+         want of twelve shared libraries, and no document of any format converted on a real \
+         machine; the recipe converts a document and fails if nothing comes out"
+    )]
+    TheBuildNeverConvertsADocument,
     /// The converting service could reach something ADR 0039 says it cannot.
     #[error(
         "{converter} says `{setting}` is `{says}` — ADR 0039's service reads documents from \
