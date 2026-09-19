@@ -128,6 +128,16 @@ all**, measured with two of the server's own tools (`docs/quirks.md`), so there 
 machine here on which the test could pass or fail honestly. It wants WirePlumber 0.5,
 which the image should pin deliberately. Written up in
 [A camera is a thing, not a number](updates/a-camera-is-a-thing-not-a-number.md).
+**The pin is in, 2026-09-19** — `image/Containerfile` now installs `pipewire`,
+`pipewire-utils` and `wireplumber` and **refuses a WirePlumber below 0.5 in the
+build itself**, which also ended a larger fault: the recipe carried no media
+server at all, so neither `pw-dump` nor `wpctl` was on a machine built from it
+and every crate that reaches sound, cameras or the in-use indicator answered
+*nothing here handles sound and video*. `image/` belongs to the installer plan
+and was taken deliberately while nobody was inside it, with the reason in
+[The image carries a media server](updates/the-image-carries-a-media-server.md).
+**The acceptance is still not taken**: it needs a machine running a built image,
+and this lane gates on aarch64 against WirePlumber 0.4.17.
 **Depends on:** 2.
 
 - **Acceptance:** cameras are listed by a stable identity through the rented camera
