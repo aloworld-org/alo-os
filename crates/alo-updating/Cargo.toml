@@ -37,6 +37,13 @@ thiserror = { workspace = true }
 [dev-dependencies]
 alo-egress = { path = "../alo-egress" }
 alo-saying = { path = "../alo-saying" }
+# The four clauses a person reads *afterwards*, when they look at what their
+# machine did: that it updated, that it went back, that something was put back
+# and that something could not be. Half of *what a person is told, before and
+# after* is the after, and those four sentences are that crate's rather than
+# `alo-keeping-up`'s — so the walk that ends at *it is rolled back* cannot be
+# written without them. A test's alone: nothing in `src/` reads an account back.
+alo-recounting = { path = "../alo-recounting" }
 # Every verb alo OS ships, so the acceptance for putting something back is
 # written against the machine's own `move_file` and its own words rather than
 # against a verb this test invented, which could agree with a machine that

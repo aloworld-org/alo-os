@@ -298,6 +298,35 @@ changed their mind. Today nothing can answer that.
 
 **Status:** ready. **Depends on:** 1, 4.
 
+**Done, 2026-09-19.** Nothing was re-decided: every sentence this task holds
+existed before it, and what was missing was the proof that they are a
+*sequence* rather than forty-five strings in two crates.
+`crates/alo-updating/tests/what_a_person_is_told.rs` is the one test file, here
+rather than in `alo-keeping-up` because *before and after* needs both halves —
+the offer and the promise are `alo-keeping-up`'s, and *this machine started on
+an updated version of its system* is `alo-recounting`'s, read off an entry
+`alo-record` keeps, and `alo-updating` is the crate that already has both
+beside it. `THE_WALK` is the sixteen sentences a person meets from *an update
+exists* through *it is applied* to *it is rolled back*, each **produced by
+driving the real types** — `Standing::between`, `THE_RULE`, `WhenItApplies`,
+`Staging::of`, `Since::between` onto `Entry::updated`, `GoingBack::offered`,
+`Returning::of`, `Since::RolledBack` onto `Entry::rolled_back` — and compared
+with the table's key *and* its exact English; the same table is printed
+verbatim in the report. Changing one word of one sentence was measured to fail
+it, twice over. The other four: every one of `alo-keeping-up`'s forty-one
+words is in the machine's one vocabulary with a translator's note **and is
+reachable from a public `said()`**, which is checked by collecting what every
+refusal and offer in both crates renders and comparing the set; each of the
+fourteen *this cannot be undone* refusals says **why**, no two alike, with the
+ones the plan names checked by name; no sentence in either crate names the
+machinery, which now holds `alo-recounting`'s four clauses to the list
+`alo-keeping-up` already held its own to, and adds `subvolume`, `btrfs` and
+`filesystem` to it for the undo road; and every refusal on the same walk is
+said, distinct, and — for the six that follow something the person chose —
+says the machine is as it was. One dependency added, `alo-recounting` as a
+dev-dependency of `alo-updating`; no `src/` changed anywhere. Report:
+`docs/autonomy/updates/what-a-person-is-told-before-and-after.md`.
+
 The four promises above end in sentences, and the sentences are the product:
 *an update is ready*, *this will not interrupt you*, *you are running this,
 you were running that*, *this can be undone*, *this cannot*.
@@ -316,3 +345,44 @@ you were running that*, *this can be undone*, *this cannot*.
 - **Constraint:** nothing here re-decides what the sentences describe. If a
   sentence is true and reads badly, the sentence changes; if it reads well
   and is not true, it changes the other way.
+
+### 6. Finding out there is an update
+
+**Status:** ready. **Depends on:** 1, 2.
+
+Four fifths of *updates that never interrupt* is built and **nothing on this
+machine has ever looked**. Task 1 left it out by name — `alo-keeping-up`'s own
+header says *when to check is a later task that builds on these types* — and
+the whole promise rests on a machine that finds out there is an update without
+watching for one. It is the last piece of that `ROADMAP.md` line this plan can
+build; the recovery *screen* stays the shell plan's.
+
+- **Acceptance:** where this machine checks is **read rather than guessed** —
+  the registry and release `image/pinned.toml` already pins, through
+  `alo-image`, so one repository has one answer about where a build comes from
+  and an organisation's own mirror is v1 rather than a second constant here;
+  a check is one act that asks that place and is on the indicator for the whole
+  of it (`alo_keeping_up::a_check_at`, and an `Offered` can be heard no other
+  way), fetching **the answer and never the build** — a test reads the crate
+  for a container library and for anything that writes a fetched build to the
+  disk; **when** a check happens is somebody's act and never a watcher's, which
+  means the two that exist are *the person asked* and *once at a start*, each a
+  call something else makes, with no thread, no timer and nothing that checks
+  while a person is working; what a check answers is an `Offered` or one of a
+  closed set of refusals with a sentence each, and a machine with no way out at
+  all says so **once** rather than at every asking
+  (`updates/a-machine-that-cannot-reach-a-model-says-so-once.md` is the shape
+  to copy); the answer is kept where a surface reads it back without asking
+  again, and a kept answer names the build it was about, so *an update is
+  ready* on a machine that has moved on since is refused rather than shown
+  stale; and the whole of it is **measured against the real registry** that
+  `image/pinned.toml` names, from this machine, with the proxy honoured
+  (`alo-proxy`), a refusal exercised, and the indicator's own record read
+  afterwards to show the check appeared there.
+- **Constraint:** nothing downloads a build. Staging is task 2's and is the
+  person's choice; a check that fetched the build to be helpful would be
+  exactly the traffic law 1 exists to make visible. No setting that turns
+  checking off (task 1's rule), and no member meaning *urgent*.
+  **`alo-keeping-up` gains no clock, no socket and no file** — the test holding
+  it to four dependencies stays exactly as it is, and whatever does the asking
+  is `alo-updating`'s or a new crate beside it.
