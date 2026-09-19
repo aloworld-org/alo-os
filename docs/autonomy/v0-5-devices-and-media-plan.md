@@ -146,10 +146,19 @@ all, and 0.5.2 — contemporary with this PipeWire — creates a complete, healt
 `Video/Source` node that **still nothing can attach to**, by node id, by serial,
 by name or with no target. `docs/quirks.md` carries the measurement.
 
-What the fifth acceptance actually waits on is therefore **unknown and named
-rather than guessed**: the `xdg-desktop-portal` camera road, which is what the
-acceptance asks for and is not running here; PipeWire's own camera path; or a
-real camera rather than a kernel fixture. The image's 0.5 floor stays — 0.4 is
+What the fifth acceptance actually waits on was then narrowed the same day by a
+control experiment: in one session, the same client attached to an **audio**
+source and captured 1.9 MB, and could not attach to the **camera** at all. So the
+session, the client, the addressing and the client's permissions all work, and
+**the refusal is video-specific**. That also rules out the portal — `alo-portals`
+declares `Portal::Camera` and the obvious guess was that a camera is reachable
+only through a portal handing over a connection, but a portal hands out a
+connection and connections demonstrably work. **A portal cannot make a link the
+graph will not make.**
+
+Two candidates are left and neither is tested: whether `vivid` differs from a
+real camera in a way that matters — every camera measurement here is against that
+one fixture — and PipeWire 1.0.5's own V4L2 capture path. The image's 0.5 floor stays — 0.4 is
 the old line and the recipe shipped no media server at all — but it was pinned
 partly on this belief, and that half of the reason is withdrawn. Its blocker
 cleared: the capture plan's task 1 is done. `crates/alo-cameras` (a fifth crate, and why is
