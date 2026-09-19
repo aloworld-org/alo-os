@@ -111,6 +111,7 @@ RUN apt-get update \
       gcc libc6-dev musl-tools \
       llvm-${THE_LLVM} llvm-${THE_LLVM}-dev libpolly-${THE_LLVM}-dev \
       zlib1g-dev libzstd-dev \
+      libinput-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # `LLVM_PREFIX` is bpf-linker's own variable, and it is not `llvm-sys`'s
