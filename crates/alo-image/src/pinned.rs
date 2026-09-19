@@ -190,15 +190,38 @@ fn stays_inside(key: &str) -> bool {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{the_pinned_release, the_version_line};
 
     /// The pin this repository ships, as text.
     fn the_pin() -> String {
         std::fs::read_to_string(Path::new(crate::THE_IMAGE).join(THE_PIN)).unwrap()
     }
 
+    /// The shipped pin with no release in flight.
+    ///
+    /// A pin that declares a candidate already carries `next`, and a fixture
+    /// adding a second one is refused by the parser before the rule it meant to
+    /// test is ever reached. Stripping it first makes these fixtures mean the
+    /// same thing whether or not a release is being prepared.
+    fn the_pin_between_releases() -> String {
+        let held = the_pin();
+        let without: Vec<&str> = held
+            .lines()
+            .filter(|line| !line.starts_with("next = "))
+            .collect();
+        format!(
+            "{}
+",
+            without.join(
+                "
+"
+            )
+        )
+    }
+
     /// A pin with one line replaced, from the one this repository ships.
     fn the_pin_with(from: &str, to: &str) -> String {
-        let shipped = the_pin();
+        let shipped = the_pin_between_releases();
         assert!(shipped.contains(from), "the pin does not contain `{from}`");
         shipped.replace(from, to)
     }
@@ -219,14 +242,23 @@ mod tests {
         let pin = ThePin::read(&the_pin()).unwrap();
 
         assert_eq!(pin.registry(), THE_REGISTRY);
-        assert_eq!(pin.version(), "0.0.2");
+        assert_eq!(pin.version(), the_pinned_release());
         assert_eq!(
             pin.reference(),
             "ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9"
         );
         assert_eq!(pin.revision(), "8d2619daeb07b4b0ebbed59ded8caee722103b65");
         assert_eq!(pin.key(), "signing/alo-os.pub");
-        assert_eq!(pin.next(), None);
+        // Between releases nothing is declared; while a release is in flight
+        // the pin declares exactly the release the recipe builds. Both are
+        // correct, and which holds depends on whether one is being prepared —
+        // so the invariant is asserted rather than whichever is true today.
+        let building = crate::testing::the_release();
+        if building == pin.version() {
+            assert_eq!(pin.next(), None);
+        } else {
+            assert_eq!(pin.next(), Some(building.as_str()));
+        }
     }
 
     /// **A digest that is not a whole SHA-256 is not a pin**: a short one, an
@@ -255,7 +287,7 @@ mod tests {
     #[test]
     fn a_release_that_moves_is_refused() {
         let refused =
-            ThePin::read(&the_pin_with("version = \"0.0.2\"", "version = \"latest\"")).unwrap_err();
+            ThePin::read(&the_pin_with(&the_version_line(), "version = \"latest\"")).unwrap_err();
         assert!(
             matches!(refused, NotPinned::NotARelease { .. }),
             "{refused}"
@@ -267,9 +299,8 @@ mod tests {
         // — two `next` keys are refused by the parser before this rule is
         // reached, which would fail for the wrong reason.
         let refused = ThePin::read(&the_pin_with(
-            "version = \"0.0.2\"",
-            "version = \"0.0.2\"
-next = \"dev\"",
+            &the_version_line(),
+            &format!("{}\nnext = \"dev\"", the_version_line()),
         ))
         .unwrap_err();
         assert!(
@@ -337,6 +368,9 @@ next = \"dev\"",
     fn the_reference_is_by_digest() {
         let pin = ThePin::read(&the_pin()).unwrap();
         assert!(pin.reference().contains('@'));
-        assert!(!pin.reference().contains(":0.0.2"));
+        assert!(
+            !pin.reference()
+                .contains(&format!(":{}", the_pinned_release()))
+        );
     }
 }
