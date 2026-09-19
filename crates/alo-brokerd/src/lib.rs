@@ -13,6 +13,7 @@
 //! | [`Network`] | The network's three verbs, carried out against what the network manager reports now |
 //! | [`Proxy`] | Setting the machine's proxy to the one a person handed over, exactly |
 //! | [`Storage`] | A removable drive mounted for the signed-in person, or ejected, against what the disk service reports now |
+//! | [`Printers`], [`PrintService`] | The printers' three verbs, carried out against what the printing service reports now |
 //! | `alo-brokerd.service` | The unit, beside this manifest, held to what the process expects by a test |
 //!
 //! # Root, holding nothing
@@ -20,8 +21,9 @@
 //! The broker runs as root because the network manager and the disk service
 //! decide who may change the machine's network, and who may mount a drive for
 //! another login, from the credentials of whoever asks; and because the
-//! machine's proxy file is root's to write. It holds **no capability** — both
-//! capability lines in its unit are empty — and runs in the person's own group,
+//! machine's proxy file is root's to write. The printing service also checks
+//! the credentials of whoever asks to configure a printer. The broker holds
+//! **no capability** — both capability lines in its unit are empty — and runs in the person's own group,
 //! so its door and its approving key are theirs to reach and not the agent's.
 //! `tests/the_unit_is_the_process.rs` holds the unit to that.
 //!
@@ -29,9 +31,8 @@
 //!
 //! What carries a verb out is handed the verb only after the door has decided
 //! it is exactly one a person approved, once, and written that down. The network
-//! and storage are carried out here. Printers are answered `not-carried` until
-//! the task that owns them carries them out; the updates are answered
-//! `not-carried` until ADR 0053 decides how they are carried out without this
+//! and storage, and the printers supplied to the carriers, are carried out here.
+//! The updates are answered `not-carried` until ADR 0053 decides how they are carried out without this
 //! process holding the capability the base's program asks for. Each of those
 //! answers is written down like every other.
 //!
@@ -47,6 +48,8 @@ mod carrying;
 #[cfg(unix)]
 mod describing;
 mod network;
+mod printers;
+mod printing_service;
 #[cfg(unix)]
 mod proxy;
 #[cfg(unix)]
@@ -60,6 +63,7 @@ pub use carrying::Carriers;
 #[cfg(unix)]
 pub use describing::{Logins, NotDescribed, logins};
 pub use network::Network;
+pub use printers::{PrintService, Printers, Reported};
 #[cfg(unix)]
 pub use proxy::Proxy;
 #[cfg(unix)]

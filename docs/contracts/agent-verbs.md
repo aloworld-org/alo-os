@@ -623,16 +623,51 @@ the verb prints on the one the printing service keeps as this machine's. A
 printer argument would be machinery — a queue name — in a sentence a person
 approves.
 
-**Finding and setting up a printer are not verbs.** A printer is a place
-documents can go, and adding one is a person choosing that place: no call an
-agent can make adds one. The agent *finds it, sets it up* half of the feature
-line waits on a verb shape for a device — a grant covers a path or an
-application, and a verb with no grant needs a written reason in an ADR — and
-`alo-printing`'s report names it as owed rather than folding it in here.
+**Finding a printer is not a verb, and setting one up is not this one.** A
+printer is a place documents can go, and adding one is a person choosing that
+place: no call to `print_document` adds one. An agent may *propose* setting up,
+removing or choosing a printer — the three printer verbs below, each a change a
+person approves, carried out by the privileged broker.
 
 **Declared and carried out, and not yet offered by a turn**, for the reason the
 measurement verbs are not: `alo-turn` offers the verbs it has an executor for,
 and adding this one is an edit there.
+
+## The printer verbs
+
+★ *Printers, solved*: setting a printer up, removing one, and choosing the one
+this machine prints on. Each is a change to the whole machine, so each is carried
+out by the privileged broker and by nothing else. Declared in
+`alo-changing-printers`' `src/verbs.rs` with a `pub fn declare_into`;
+[ADR 0055](../decisions/0055-a-printer-is-changed-by-its-sentence-through-the-broker.md)
+is the decision.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `add_printer` | change | `printer` (name, at most 127) | set up the printer {printer}, so this machine can print on it |
+| `remove_printer` | change | `printer` (name, at most 127) | remove the printer {printer} from this machine |
+| `set_default_printer` | change | `printer` (name, at most 127) | print on {printer} from now on |
+
+**A printer is named by the name it gave itself**, never by an address, a queue
+or a driver. When the approved change is carried out, the name is matched
+exactly against the printers the printing service reports — the printers it can
+find for `add_printer`, the printers set up for the other two — and **a name no
+printer has, or two printers share, changes nothing**. What crosses into the
+broker is the matching printer's identity (below), never the name.
+
+**None requires a grant**, with its reason in ADR 0055 §2 and in each
+declaration: a printer is neither a path nor an application, and the approval of
+the sentence naming it is what makes the change, once.
+
+**A person does the same in Settings, through the same broker verbs.** What a
+person picks in the printers pane becomes the identical `printers.add`,
+`printers.remove` or `printers.set-default`, crossing the same door under the
+approval number `BY_HAND` (below).
+
+**Declared and carried out, and not yet offered by a turn**, for the reason the
+printing verb is not: handing a turn's redeemed approval to
+`alo_changing_printers::carry_out_approved` is an edit in `alo-turn` and
+`alo-agentd`.
 
 ## The network verbs
 
@@ -815,6 +850,7 @@ printing verb is not.
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), and press one control named by its kind and the name it shows (`accessible.activate_control`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **Network** | Propose joining or forgetting a Wi-Fi network by the name it announces, or turning Wi-Fi on or off, saying what each does to the conversation | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-network`; declared, not yet offered by a turn |
+| **Printers** | Propose setting up, removing or choosing a printer, by the name it gave itself | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-printers`; declared, not yet offered by a turn |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
 
 ## A turn, and the order the steps happen in
@@ -863,8 +899,13 @@ constraint on its design rather than a hope about its future.
 `crates/alo-broker` is the list and the door, added 2026-09-16.
 `crates/alo-brokerd` is the process that runs it, and carries out the four
 network verbs (added 2026-09-16) and the two storage verbs (added 2026-09-17).
-Printers are answered `not-carried` until the task that owns them arrives
-(`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 2); the two update
+The recovered printer carrier adds its three verbs beside them through
+`Carriers::with_printers(Printers::against(service))`. The published
+`Carriers::of(network, proxy, storage)` remains compatible and refuses printer
+verbs until that service is supplied; the process supplies `PrintingService`
+at its own socket through PrintingService::for_the_broker. Its fixed root
+peer-credential header is verified against the actual socket UID by CUPS;
+it carries no password and gives a non-root caller no authority. The two update
 verbs are answered `not-carried` until ADR 0053, proposed, is accepted and built.
 
 **The list.** Eleven verbs, each with exactly one argument:
@@ -931,6 +972,16 @@ machine description and refuses root; refuses to run in root's group or the
 agent's; opens its own record, `/var/lib/alo-broker/record.jsonl`, in the
 record file's format; makes `/run/alo-broker/wanted`, `0770` in its group; and
 hands its key over. A refusal at any step opens no door.
+
+**The printer verbs carried out.** `printers.add` asks the printing service for
+the printers it can find now and sets up the one whose reported address digests
+to the identity; `printers.remove` and `printers.set-default` ask for the
+printers set up and act on the one whose queue digests to it. No match, or more
+than one, is `not-carried`, and nothing is changed. The carrier uses
+`alo-printing`'s `Found`, `Printer`, `printers_set_up`, `set_up`, `remove` and
+`make_default`; `as_reported` supplies the bytes hashed into `Identity`.
+`CannotChange` reports a missing printer, denied permission or an unanswered
+service. No caller supplies an address, queue or driver to the broker.
 
 **The network verbs carried out.** `network.join` asks the network manager for
 the networks in range now and joins the one whose name and protection digest to
@@ -1052,7 +1103,8 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
 puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
-`alo-finding`, `alo-measuring`, `alo-printing`, `alo-changing-network`, `alo-software` and `alo-adapters` all do exactly that, and it is a rule rather
+`alo-finding`, `alo-measuring`, `alo-printing`, `alo-changing-network`,
+`alo-changing-printers`, `alo-software` and `alo-adapters` all do exactly that, and it is a rule rather
 than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and

@@ -15,7 +15,13 @@
 //! can make reaches them. An agent that could add a printer could make a place
 //! for documents to leave to that nobody chose, which is the one thing
 //! `docs/autonomy/v0-5-documents-and-paper-plan.md` says never happens. A test
-//! at the bottom of this file holds the list to the one verb.
+//! at the bottom of this file holds this list to the one verb.
+//!
+//! What an agent may do instead is **propose** adding, removing or choosing a
+//! printer, as a change a person approves by its sentence — and that is not
+//! this list: those three verbs are `crates/alo-changing-printers`', and the
+//! change they cause is carried out by the privileged broker, never by an
+//! agent's call reaching this crate.
 //!
 //! **Which printer.** v0.5 is one printer that works, so the verb prints on the
 //! printer this machine prints on and takes no argument naming one — an

@@ -203,6 +203,15 @@ pub fn the_default(queue: &str, uri: &str, info: &str) -> Message {
         .with(Group::Printer, "printer-info", vec![Value::text(info)])
 }
 
+/// One printer in an answer listing the printers set up.
+pub fn with_printer(message: Message, queue: &str, uri: &str, info: &str) -> Message {
+    message
+        .beginning(Group::Printer)
+        .with(Group::Printer, "printer-name", vec![Value::name(queue)])
+        .with(Group::Printer, "device-uri", vec![Value::uri(uri)])
+        .with(Group::Printer, "printer-info", vec![Value::text(info)])
+}
+
 /// An answer describing how a printer is.
 pub fn a_printer_that_is(state: i32, reasons: &[&str], accepting: bool) -> Message {
     ok().beginning(Group::Printer)
@@ -234,3 +243,7 @@ pub const GET_DEFAULT: u16 = 0x4001;
 pub const GET_PRINTER_ATTRIBUTES: u16 = 0x000b;
 /// The operation that prints a document.
 pub const PRINT_JOB: u16 = 0x0002;
+/// The operation that lists the printers set up.
+pub const GET_PRINTERS: u16 = 0x4002;
+/// The operation that removes a printer.
+pub const DELETE_PRINTER: u16 = 0x4004;

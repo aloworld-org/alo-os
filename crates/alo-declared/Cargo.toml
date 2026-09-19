@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 # The registry the verbs are declared into, which is the same one a daemon
 # enforces. Nothing here declares a verb of its own; this crate is where the
-# ten crates that do are called, once, so that two tests cannot hold two
+# crates that do are called, once, so that two tests cannot hold two
 # different ideas of what this machine ships.
 alo-capability = { path = "../alo-capability" }
 
@@ -29,6 +29,7 @@ alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
 alo-capturing = { path = "../alo-capturing" }
 alo-changing-network = { path = "../alo-changing-network" }
+alo-changing-printers = { path = "../alo-changing-printers" }
 alo-converting = { path = "../alo-converting" }
 alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }

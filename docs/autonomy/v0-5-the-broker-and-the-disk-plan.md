@@ -14,16 +14,22 @@ fixed verb list, its door, and nothing else — the third privileged component a
 `alo-boundaryd` and `alo-sessiond`, and held to their rule of doing one kind of
 thing) and `crates/alo-encrypting` (what full-disk encryption is on this machine:
 how it is enrolled, where the key is, and how a person recovers). **It reads and
-never edits** `alo-capability`, `alo-turn` and `alo-protocol` (a system verb is a
+never edits** `alo-printing` (except the exact owner release below), `alo-capability`, `alo-turn` and `alo-protocol` (a system verb is a
 verb, proposed and approved in a turn — if the verb list or the door must change,
-that is a finding and a decision), `alo-printing` (the documents plan's — what a
-printer is), `alo-keeping-up` (the machine-keeps-itself plan's — what an update is),
+that is a finding and a decision), `alo-keeping-up` (the machine-keeps-itself
+plan's — what an update is),
 `alo-software` (the software plan's — an application install is not a system verb),
 `alo-boundaryd` and `alo-sessiond` (the pattern a privileged component follows),
 `alo-record`, `alo-egress`, `image/`, `alo-image` and `alo-installer` (the installer
 plan's — enrolment happens during install, and what this plan decides is handed to
 it), and `alo-saying`. **Nothing in `crates/alo-shell`.**
 
+**Printing producer scope, owner-authorized 2026-09-18:** the documents plan
+retains alo-printing. Its owner-release header names the exact files released
+to this task: the preserved producer API, the kernel-verified broker socket
+credential, and their tests. No other producer file or task is released. Both
+supervisor scope checks still refuse everything outside that exact record.
+The receiving task's report and the roster record the owner's authorization.
 **What this plan may not do:** tick anything *on the machine* — an encrypted disk that
 has never booted on certified hardware is `- [x] The code.`; add a free-form
 parameter, a shell, a path argument or a *run as root* verb to the broker, ever (ADR
@@ -60,9 +66,11 @@ its design rather than a hope about its future* (`docs/contracts/agent-verbs.md`
 
 ### 2. Printers, through the broker
 
-**Status:** blocked — on the owner: its acceptance takes `alo-printing`'s own types,
-and the worker changed `alo-printing` to give them, which the lane table gives to
-another machine. **Depends on:** 1.
+**Status:** **Done, 2026-09-18.** The recovered carrier and producer pass the
+real-CUPS runtime acceptance; publication requires the supervisor's nine gates
+and every named acceptance check. This is code and WSL service evidence, not
+physical-printer or desktop integration certification. **Depends on:** 1. Report:
+`docs/autonomy/updates/printers-through-the-broker.md`.
 
 **Built, then held back, 2026-09-16.** A worker built the broker's printer verbs, and
 with them nine files of `alo-printing`, a new `alo-brokerd` and
@@ -74,7 +82,9 @@ prevent. So the supervising machine kept the change unpublished, on its local
 branch `held/broker-task-2-edits-alo-printing`, with the handoff in
 `.kernel-loop/refused/`. **For the owner:** whether this lane may make the
 `alo-printing` change, or whether the documents lane exposes what the broker needs
-first.
+first. **Resolved by the owner's 2026-09-18 authorization above:** the third PC
+now integrates exactly that narrow contribution with this receiving task.
+The held branch and original refused handoff remain preserved.
 
 - **Acceptance:** the broker's printer verbs — add a printer `alo-printing` found, remove
   one, set the default — take `alo-printing`'s own types, and configure the rented
@@ -88,6 +98,15 @@ first.
   approving key reaches the turn that issues tokens — because task 1 shipped no root
   service that could carry nothing out. `alo-printing`'s types reach the broker as an
   `alo_broker::Identity` of what the print service reported, never as its text.
+- **Recovery integration, 2026-09-18:** task 3 already published the common
+  process, record, key hand-over and transport, and task 4 added Storage. Keep
+  those implementations and their later fixes. Printers join Network, Proxy
+  and Storage through additive `Carriers::with_printers`; the published
+  `Carriers::of(network, proxy, storage)` remains available. Updates still
+  refuse pending ADR 0053. Software task 10 published the shared verb registry
+  at `959ad33c15769618373ed50e0d06c5d9cf087d41`; add this task's declaration to
+  `alo-declared/src/shipped.rs` and its dependency, never to copied lists in
+  other consumers. Historical results do not validate this combined tree.
 
 ### 3. Network, through the broker
 

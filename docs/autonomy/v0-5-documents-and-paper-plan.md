@@ -39,6 +39,29 @@ a source patch needs an ADR first); or convert anything by sending it off the
 machine without that being an errand a person saw. Before writing the next
 task, `git pull` and read the plan as published.
 
+**Owner-authorized contribution, 2026-09-18:** the third PC may recover the
+printer producer API required by broker task 2. This releases only the files
+below to that task; this plan retains its ownership and unfinished work.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-broker-and-the-disk-plan.md
+task = 2
+files =
+  crates/alo-printing/src/changing.rs
+  crates/alo-printing/src/found.rs
+  crates/alo-printing/src/lib.rs
+  crates/alo-printing/src/printer.rs
+  crates/alo-printing/src/set_up_here.rs
+  crates/alo-printing/src/setting_up.rs
+  crates/alo-printing/src/verbs.rs
+  crates/alo-printing/tests/changing_a_printer_set_up.rs
+  crates/alo-printing/tests/serving/mod.rs
+  crates/alo-printing/src/http.rs
+  crates/alo-printing/src/service.rs
+  crates/alo-printing/tests/cups_runtime/mod.rs
+  crates/alo-printing/tests/the_real_printing_service.rs
+```
+
 ## Tasks
 
 ### 1. What this machine can do with a file, and what it cannot

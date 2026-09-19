@@ -162,6 +162,33 @@ and a person needs no grant and no approval to print their own document: the
 grant and the approval are what an agent needs, because it is the agent
 choosing to put a document on paper — or across the network to a printer.
 
+### add_printer
+
+**By hand:** a person opens the printers in Settings, sees the printers this
+machine found, and chooses the one to set up — the printers pane of `Settings, as
+one place`, for `Printing. Unglamorous, and it decides public-sector deals`. What
+they choose becomes the privileged broker's own verb for adding a printer,
+crossing the same door into the same record as an agent's approved proposal, so
+the printer is set up the same way whoever asks. A person needs no approval to
+set up a printer for themselves: choosing it is the approval, and it is written
+down as a change made by hand.
+
+### remove_printer
+
+**By hand:** a person opens the printers in Settings and removes the one they no
+longer want — the printers pane of `Settings, as one place`, for `Printing.
+Unglamorous, and it decides public-sector deals`. It is the broker's verb for
+removing a printer either way, through the same door, and the choice is the
+approval.
+
+### set_default_printer
+
+**By hand:** a person opens the printers in Settings and chooses which of the
+printers set up this machine prints on — the printers pane of `Settings, as one
+place`, for `Printing. Unglamorous, and it decides public-sector deals`. It is the
+broker's verb for choosing a printer either way, and the print dialogue then
+prints on it by default.
+
 ### convert_document
 
 **By hand:** a person opens the document they were sent from the file manager,

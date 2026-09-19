@@ -1,0 +1,35 @@
+[package]
+name = "alo-changing-printers"
+version = "0.0.1"
+description = "Setting up, removing and choosing printers — proposed by an agent and approved, or chosen by hand in Settings — through the privileged broker's printer verbs and no other road."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The broker's closed list, its approving key as it is handed over, and the
+# door a change is asked at. The only road into the machine's printers.
+alo-broker = { path = "../alo-broker" }
+# The three verbs are verbs, and what is carried out is the authority a person's
+# approval became.
+alo-capability = { path = "../alo-capability" }
+# What a printer is, what it is called, and what the printing service reported
+# it under. Read, never extended here.
+alo-printing = { path = "../alo-printing" }
+# The broker answers with one of the record's own reasons.
+alo-record = { path = "../alo-record" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The broker's own process and its printer carrier, so a change is tested from a
+# person's approval to the printing service's side of the wire and back.
+alo-brokerd = { path = "../alo-brokerd" }
+# The composite carrier's other services refuse any accidental printer dispatch.
+alo-drives = { path = "../alo-drives" }
+alo-networks = { path = "../alo-networks" }
+
+[lints]
+workspace = true

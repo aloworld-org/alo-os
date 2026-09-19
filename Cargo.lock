@@ -37,6 +37,7 @@ name = "alo-access"
 version = "0.0.1"
 dependencies = [
  "alo-appearance",
+ "alo-shortcuts",
  "alo-strings",
  "serde",
  "thiserror 2.0.20",
@@ -258,6 +259,7 @@ dependencies = [
  "alo-drives",
  "alo-keeping",
  "alo-networks",
+ "alo-printing",
  "alo-proxy",
  "alo-record",
  "rustix 1.1.4",
@@ -342,6 +344,21 @@ dependencies = [
  "alo-drives",
  "alo-networks",
  "alo-proxy",
+ "alo-record",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-changing-printers"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-brokerd",
+ "alo-capability",
+ "alo-drives",
+ "alo-networks",
+ "alo-printing",
  "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
@@ -457,6 +474,7 @@ dependencies = [
  "alo-capability",
  "alo-capturing",
  "alo-changing-network",
+ "alo-changing-printers",
  "alo-converting",
  "alo-files",
  "alo-finding",
@@ -1045,6 +1063,7 @@ dependencies = [
  "alo-capturing",
  "alo-changing",
  "alo-changing-network",
+ "alo-changing-printers",
  "alo-choosing",
  "alo-clipboard",
  "alo-context",

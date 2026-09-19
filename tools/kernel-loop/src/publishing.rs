@@ -369,9 +369,11 @@ impl Steps for OnThisMachine<'_> {
         let named = plan::the_plan()?;
         let written = std::fs::read_to_string(self.at.join(&named))
             .map_err(|why| format!("{named} could not be read: {why}"))?;
-        if let Some(refused) = inside_the_plan::refusal(&self.task.files, &written, &named) {
-            return Err(refused);
-        }
+        let number = plan::tasks_in(&written)
+            .into_iter()
+            .find(|task| task.named == self.task.task)
+            .map(|task| task.number)
+            .ok_or_else(|| format!("{} names no task called {}", named, self.task.task))?;
 
         // Every plan's own claims, so a crate this plan's header forgot to name
         // is still refused while the plan that owns it is at work.
@@ -379,18 +381,18 @@ impl Steps for OnThisMachine<'_> {
         let listed = std::fs::read_dir(&plans)
             .map_err(|why| format!("{} could not be read: {why}", plans.display()))?;
         let mut claims = Vec::new();
-        for entry in listed.flatten() {
+        let mut releases = Vec::new();
+        for entry in listed {
+            let entry = entry.map_err(|why| format!("a plan could not be listed: {why}"))?;
             let file = entry.file_name().to_string_lossy().into_owned();
             if !file.ends_with("-plan.md") {
                 continue;
             }
-            let Ok(text) = std::fs::read_to_string(entry.path()) else {
-                continue;
-            };
-            claims.push(who_owns::claimed_by(
-                &format!("docs/autonomy/{file}"),
-                &text,
-            ));
+            let text = std::fs::read_to_string(entry.path())
+                .map_err(|why| format!("{file} could not be read: {why}"))?;
+            let owner = format!("docs/autonomy/{file}");
+            releases.extend(crate::owner_releases::read(&owner, &text)?);
+            claims.push(who_owns::claimed_by(&owner, &text));
         }
         for (crate_named, claimants) in who_owns::claimed_twice(&claims) {
             journal::note(
@@ -402,7 +404,21 @@ impl Steps for OnThisMachine<'_> {
                 ),
             );
         }
-        match who_owns::refusal(&self.task.files, &named, &claims) {
+        let mut checked = Vec::new();
+        for file in &self.task.files {
+            if crate::owner_releases::permits(file, &named, number, &claims, &releases) {
+                journal::note(
+                    self.ours,
+                    &format!("the owning plan releases exactly {file} to {named} task {number}"),
+                );
+            } else {
+                checked.push(file.clone());
+            }
+        }
+        if let Some(refused) = inside_the_plan::refusal(&checked, &written, &named) {
+            return Err(refused);
+        }
+        match who_owns::refusal(&checked, &named, &claims) {
             Some(refused) => Err(refused),
             None => Ok(()),
         }
