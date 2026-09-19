@@ -23,7 +23,7 @@
 //! A checkbox is the thing that promise is contrasted with, and the difference
 //! is exactly this: a checkbox has the code behind it either way.
 //!
-//! # Six reasons, and each one is somebody's business rather than ours
+//! # Seven reasons, and each one is somebody's business rather than ours
 //!
 //! - **Signing in** — `docs/features.md` v0.01, *sign-in with an alo identity*.
 //! - **Fetching a model** — v0.01, *model lifecycle: pull*. A machine that
@@ -33,6 +33,14 @@
 //!   here now rather than when it is built, because a list that is complete
 //!   later is not a guarantee today, and an update check is the classic place
 //!   telemetry rides along.
+//! - **Fetching an update** — the same v0.5 line, and a separate reason for the
+//!   same cause as the two application lines below: *looking for* and
+//!   *fetching* are different things to see happening, and this is the long
+//!   one. Under [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+//!   the download runs in a unit the broker started, so it is the machine
+//!   reaching a registry with no agent behind it and nothing else on screen to
+//!   explain the minutes it takes. One line, from the moment the person's side
+//!   asks the broker until the answer comes back.
 //!
 //! - **Installing an application**, **looking for updates to applications**
 //!   and **updating an application** — v0.5, *install applications, sandboxed,
@@ -103,6 +111,15 @@ pub enum Errand {
     FetchingAModel,
     /// Asking whether there is a newer deployment than the one that is running.
     CheckingForAnUpdate,
+    /// Downloading a deployment a person approved, so the machine can be
+    /// restarted into it.
+    ///
+    /// Separate from [`Self::CheckingForAnUpdate`] for the same reason the two
+    /// application lines are separate: *looking for* and *fetching* are
+    /// different things to see happening. A check is a moment; this is minutes
+    /// of the machine pulling a system image, and a person watching the
+    /// indicator through it is owed a line saying which of the two is going on.
+    FetchingAnUpdate,
     /// Fetching an application a person chose, from a place this machine
     /// installs applications from.
     InstallingAnApplication,
@@ -118,10 +135,11 @@ impl Errand {
     ///
     /// What a settings panel lists and what the test at the bottom of this file
     /// walks. A reason left out of it would be one nothing can show.
-    pub const EVERY: [Self; 6] = [
+    pub const EVERY: [Self; 7] = [
         Self::SigningIn,
         Self::FetchingAModel,
         Self::CheckingForAnUpdate,
+        Self::FetchingAnUpdate,
         Self::InstallingAnApplication,
         Self::CheckingForApplicationUpdates,
         Self::UpdatingAnApplication,
@@ -134,6 +152,7 @@ impl Errand {
             Self::SigningIn => words::ALO_IS_SIGNING_YOU_IN,
             Self::FetchingAModel => words::ALO_IS_FETCHING_A_MODEL,
             Self::CheckingForAnUpdate => words::ALO_IS_CHECKING_FOR_AN_UPDATE,
+            Self::FetchingAnUpdate => words::ALO_IS_FETCHING_AN_UPDATE,
             Self::InstallingAnApplication => words::ALO_IS_INSTALLING_AN_APPLICATION,
             Self::CheckingForApplicationUpdates => words::ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
             Self::UpdatingAnApplication => words::ALO_IS_UPDATING_AN_APPLICATION,
@@ -175,23 +194,30 @@ mod tests {
 
     /// **★ No telemetry, as a closed list rather than as a promise.**
     ///
-    /// This is a tripwire and is meant to be one. A seventh reason for alo OS
+    /// This is a tripwire and is meant to be one. An eighth reason for alo OS
     /// to reach the network cannot be added without the exhaustive match below
     /// failing to compile and this count failing to hold, so whoever adds one
     /// reads this file first — which is where they find out that measurement,
     /// diagnostics, crash reports and *usage* anything are not scope decisions
     /// somebody may revisit but the promise the product is sold on.
+    ///
+    /// The seventh was added on 2026-09-19 and is what the tripwire is for: it
+    /// went through `docs/features.md` first (v0.5 *atomic updates with
+    /// rollback*, already promised), it carries nothing about how the machine
+    /// is used, and it is on the indicator like the other six.
     #[test]
     fn there_is_no_reason_on_the_list_that_is_about_how_this_machine_is_used() {
-        assert_eq!(Errand::EVERY.len(), 6);
+        assert_eq!(Errand::EVERY.len(), 7);
         for errand in Errand::EVERY {
             match errand {
                 // Somebody signing in, somebody's model, the release this
-                // machine is running, and the applications somebody chose.
-                // Nothing about what they did with any of it.
+                // machine is running and the one it is being moved to, and the
+                // applications somebody chose. Nothing about what they did with
+                // any of it.
                 Errand::SigningIn
                 | Errand::FetchingAModel
                 | Errand::CheckingForAnUpdate
+                | Errand::FetchingAnUpdate
                 | Errand::InstallingAnApplication
                 | Errand::CheckingForApplicationUpdates
                 | Errand::UpdatingAnApplication => {}

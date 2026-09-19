@@ -43,6 +43,14 @@ pub enum Road {
     FetchingAModel,
     /// Asking whether there is a newer deployment of the operating system.
     CheckingForAnUpdate,
+    /// Downloading a deployment a person approved.
+    ///
+    /// The long one, and under
+    /// [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+    /// it runs in a unit the broker started rather than in the broker itself.
+    /// So it is a road taken by a process that was not the one told about the
+    /// proxy — which is precisely why it has to be named here.
+    FetchingAnUpdate,
     /// Fetching an application a person chose.
     InstallingAnApplication,
     /// Asking whether there are newer versions of installed applications.
@@ -63,10 +71,11 @@ impl Road {
     ///
     /// What the test per road walks, and what a settings panel would list if it
     /// ever showed a person what their machine reaches the network for.
-    pub const EVERY: [Self; 7] = [
+    pub const EVERY: [Self; 8] = [
         Self::SigningIn,
         Self::FetchingAModel,
         Self::CheckingForAnUpdate,
+        Self::FetchingAnUpdate,
         Self::InstallingAnApplication,
         Self::CheckingForApplicationUpdates,
         Self::UpdatingAnApplication,
@@ -129,12 +138,13 @@ mod tests {
     /// where whoever adds one finds out that the proxy has to reach it.
     #[test]
     fn every_road_out_of_this_machine_is_on_the_list() {
-        assert_eq!(Road::EVERY.len(), 7);
+        assert_eq!(Road::EVERY.len(), 8);
         for road in Road::EVERY {
             match road {
                 Road::SigningIn
                 | Road::FetchingAModel
                 | Road::CheckingForAnUpdate
+                | Road::FetchingAnUpdate
                 | Road::InstallingAnApplication
                 | Road::CheckingForApplicationUpdates
                 | Road::UpdatingAnApplication
@@ -143,18 +153,31 @@ mod tests {
         }
     }
 
-    /// Six of the seven are roads alo OS takes with nobody having asked, which
-    /// is `alo_egress::Errand`'s list; the seventh is an agent's.
+    /// All but one are roads alo OS takes with nobody having asked, which is
+    /// `alo_egress::Errand`'s list; the remaining one is an agent's.
+    ///
+    /// Counted as *every road except the agent's* rather than as a number, so
+    /// that an errand added to either crate moves this on its own. The number
+    /// was written out until 2026-09-19, and adding
+    /// [`Road::FetchingAnUpdate`] made it fail for a reason that was not a
+    /// fault — which is a test asking to be rewritten rather than edited.
     #[test]
-    fn six_of_the_roads_are_ones_alo_os_takes_on_its_own() {
+    fn every_road_but_the_agents_is_one_alo_os_takes_on_its_own() {
         assert_eq!(
             Road::EVERY
                 .iter()
                 .filter(|road| road.is_an_errand())
                 .count(),
-            6
+            Road::EVERY.len() - 1
         );
         assert!(!Road::AskingAProvider.is_an_errand());
+        assert_eq!(
+            Road::EVERY
+                .iter()
+                .filter(|road| !road.is_an_errand())
+                .collect::<Vec<_>>(),
+            vec![&Road::AskingAProvider]
+        );
     }
 
     /// **A way out names the proxy and never a destination.** There is nothing

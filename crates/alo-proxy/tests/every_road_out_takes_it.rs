@@ -67,9 +67,16 @@ fn the_proxy() -> ProxyAddress {
 /// **Every reason alo OS reaches the network is a road the proxy covers.**
 ///
 /// The two lists are written in two crates that cannot see each other's
-/// reasoning, and this is what stops them drifting: a seventh errand added to
+/// reasoning, and this is what stops them drifting: an errand added to
 /// `alo-egress` without a road here would be an egress that leaves the machine
 /// with nobody having decided which way out it takes.
+///
+/// It caught one on 2026-09-19. `Errand::FetchingAnUpdate` was added for
+/// [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+/// and this refused to compile until the road existed — which matters more for
+/// that errand than for most, because under that decision the download runs in
+/// a unit the broker started rather than in the broker, so the process taking
+/// the road is not the one that was told about the proxy.
 #[test]
 fn every_errand_alo_os_runs_is_a_road_the_proxy_covers() {
     let errands: Vec<Errand> = Errand::EVERY.to_vec();
@@ -92,6 +99,7 @@ fn every_errand_alo_os_runs_is_a_road_the_proxy_covers() {
             Errand::SigningIn => Road::SigningIn,
             Errand::FetchingAModel => Road::FetchingAModel,
             Errand::CheckingForAnUpdate => Road::CheckingForAnUpdate,
+            Errand::FetchingAnUpdate => Road::FetchingAnUpdate,
             Errand::InstallingAnApplication => Road::InstallingAnApplication,
             Errand::CheckingForApplicationUpdates => Road::CheckingForApplicationUpdates,
             Errand::UpdatingAnApplication => Road::UpdatingAnApplication,
