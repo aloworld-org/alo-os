@@ -232,7 +232,13 @@ asserted about one road a test walked.
 
 ### 6. Enrolled at install, and recovered
 
-**Status:** blocked — on task 5's decision being accepted. **Depends on:** 5.
+**Status:** ready — [ADR 0054](../decisions/0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
+is accepted by the owner, 2026-09-19: option C falling back to B, without
+amendment. Taken by the third PC the same day, with the acceptance itself in this
+change: `alo-encrypting`'s `nothing_is_enrolled_while_its_decision_is_proposed`
+fails the moment that status stops saying *proposed*, so the acceptance and what
+it decided land together, and that guard is replaced here by the tests of what was
+built. **Depends on:** 5.
 
 - **Acceptance:** what the installer plan needs to enrol encryption during install is
   handed to it as `alo-encrypting`'s types and one tested command sequence against a
