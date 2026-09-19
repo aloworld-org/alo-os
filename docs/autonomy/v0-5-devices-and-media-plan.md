@@ -42,36 +42,42 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** blocked — on the counsel answer ADR 0051 leaves open, and on a
-machine to play a real sample file on. **Everything a lane may take is taken.**
-A supervisor cannot start what is left, so this says so in the one word it
-reads: a status it cannot parse is a finished task it selects again for ever,
-which is how this line was found.
+**Status:** blocked — **on a machine to play a real sample file on, and on
+nothing else.** The question that was the other half of this block was answered
+on 2026-09-19. **Everything a lane may take is taken.** A supervisor cannot start
+what is left, so this says so in the one word it reads: a status it cannot parse
+is a finished task it selects again for ever, which is how this line was found.
 
 The decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
-2026-09-17 — and everything around the open question is built, 2026-09-19. Its
-encoding half is **accepted**: everything alo OS produces is AV1 or VP9, Opus and
-Matroska, royalty-free, with AV1 only where hardware can encode it — measured,
-not preferred. Its decoding half was answered the same day, with **one question
-left to counsel**: which software decoders may ship in the image.
+2026-09-17 — and everything that is not hardware is built. Its encoding half is
+**accepted**: everything alo OS produces is AV1 or VP9, Opus and Matroska,
+royalty-free, with AV1 only where hardware can encode it — measured, not
+preferred. Its decoding half was answered the same day except for one question,
+*which software decoders may ship in the image*, and
+[ADR 0058](../decisions/0058-which-software-decoders-the-image-ships.md) closed
+that on 2026-09-19: **we ship a decoder when nobody can charge us for shipping
+it.** In practice AV1, VP9 and every audio codec in the list decode in software;
+H.264 goes to the silicon or to Cisco's `openh264`; HEVC goes to the silicon
+alone, and without it an HEVC file is refused by name.
 
-`crates/alo-playing` now holds everything that does not depend on that answer —
-the codecs as a closed set with which carry no royalty; what this machine
-produces, tested exhaustively to be free on every machine and for every purpose;
-**the order in which a right to decode exists at all** (free, then the silicon,
-then a redistributable licensed decoder, then a refusal), walked once per track
-because *a kind is the wrapping, not the codec*; and the refusal, which is
+`crates/alo-playing` holds all of it — the codecs as a closed set, split by
+*free by design* against *term expired*, because only the second is arguable;
+what this machine produces, tested exhaustively to be free on every machine and
+for every purpose; **the order in which a right to decode exists at all** (free,
+then expired, then the silicon, then a redistributable licensed decoder, then a
+refusal), walked once per track because *a kind is the wrapping, not the codec*;
+the list of decoders the image itself carries; and the refusal, which is
 `alo_opening::Cannot::NothingHereOpens` and **not a second shape for video**.
 What a machine has is handed in rather than read, so a laptop with no video
-hardware and a workstation that decodes HEVC are both testable here. The open
-question is a **type with one value**, `SoftwareDecoders::NotAnsweredByCounsel`,
-and an acceptance test reads ADR 0051 itself and **fails the day somebody answers
-it** — an answer that changed no code is an answer nobody acted on. 32 tests.
-Written up in [What this machine plays](updates/what-this-machine-plays.md).
+hardware and a workstation that decodes HEVC are both testable here. **One row
+of the list rests on a patent term** — AAC-LC — and that is named as a type
+constant and asserted in both directions, so a lawyer's answer cannot arrive and
+change nothing. 43 tests. Written up in
+[What this machine plays](updates/what-this-machine-plays.md).
 
-**What still waits on counsel, and only that:** a test per format that plays a
-real sample file through the rented stack. It needs the answer *and* a machine,
-and it is the whole of what is left in this task. **Depends on:** nothing.
+**What is left, and only this:** a test per format that plays a real sample file
+through the rented stack. It needs a machine, which cannot be written.
+**Depends on:** nothing.
 
 *Media playback, and the codecs people actually have files in.* Some of those
 codecs carry patent licences, and an image distributed across the EU carries their
