@@ -1,0 +1,17 @@
+[package]
+name = "alo-playing"
+version = "0.0.1"
+description = "What this machine plays, what it produces, and where the right to decode came from."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The sentence a person meets when a film cannot be played is the sentence they
+# already meet when a document cannot be opened (ADR 0051): one road, not two.
+# This crate decides; that crate says.
+alo-opening = { path = "../alo-opening" }
+
+[lints]
+workspace = true

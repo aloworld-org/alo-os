@@ -924,6 +924,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-playing"
+version = "0.0.1"
+dependencies = [
+ "alo-opening",
+]
+
+[[package]]
 name = "alo-portals"
 version = "0.0.1"
 dependencies = [
