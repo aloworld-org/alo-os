@@ -59,9 +59,14 @@ pub fn this_machine() -> String {
     }
 }
 
-/// This machine's name, as the operating system gives it.
+/// What names this machine, in the order worth believing.
+///
+/// `ALO_MACHINE` first, because a branch says which machine to ask and a
+/// hostname often cannot: this development PC calls itself `HYB4GchZ1tnQNqB`,
+/// which named a branch nobody could place. A machine told what it is called
+/// says so; one that is not falls back to what the operating system thinks.
 fn hostname() -> Option<String> {
-    for named in ["COMPUTERNAME", "HOSTNAME"] {
+    for named in ["ALO_MACHINE", "COMPUTERNAME", "HOSTNAME"] {
         if let Ok(found) = std::env::var(named)
             && !found.trim().is_empty()
         {
