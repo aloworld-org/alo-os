@@ -5134,6 +5134,31 @@ from a real camera in a way that matters. **A pinned floor of 0.5 in the image i
 right** — 0.4 is the old line and the image shipped no media server at all — but it is
 right for those reasons, and *it unblocks the camera acceptance* was never measured and
 is now known to be false.
+**Narrowed the same day, by a control experiment.** In one session under
+WirePlumber 0.5.2, with the same client library and the same `pw-cat` binary:
+
+| What was asked for | Result |
+|---|---|
+| an **audio** source (`alsa_input.platform-snd_aloop.0.analog-stereo`) | attached and captured **1 908 780 bytes** |
+| the **camera** (`v4l2_input.platform-vivid.0`) | *no target node available*, **0 bytes** |
+
+So the session works, the client works, the addressing works, and the client's
+permissions work — a client that can attach to one node in a graph is not being
+denied by access control on another. **The refusal is video-specific**, and that
+eliminates most of what it could have been: not the session manager's version,
+not permissions, not the client, not the way the target is named.
+
+**It also eliminates the portal.** `alo-portals` declares `Portal::Camera` with a
+grant over `Facility::Camera`, and the obvious next guess was that a camera is
+reachable only through a portal handing over a connection. A portal hands out a
+*connection*, and connections demonstrably work — the audio capture above used
+one. A portal cannot make a link that the graph will not make.
+
+**What is left to test**, and neither has been: whether `vivid` differs from a
+real camera in a way that matters — every camera measurement in this repository
+is against that one fixture — and PipeWire 1.0.5's own V4L2 capture path. A
+second fixture would separate them, and `v4l2loopback` is not it: the version
+packaged here (0.12.7) does not build against this kernel.
 **Date:** 2026-09-19.
 
 ### A program that opens a camera directly does not appear on the in-use indicator
