@@ -199,6 +199,20 @@ pub const KIND_WEBP_IMAGE: Word = Word::saying("opening.kind.webp-image", "a Web
      format WebP, common on web pages, which is its usual name and is normally left as it is.",
 );
 
+/// A photo in the format telephones save.
+pub const KIND_HEIC_PHOTO: Word = Word::saying(
+    "opening.kind.heic-photo",
+    "a photo in the format telephones save",
+)
+.noting(
+    "The name of a kind of file, read inside another sentence: \"This is {what}\". A photograph in \
+     HEIF, which is what most telephones have saved since about 2017 and what arrives when \
+     somebody sends a picture from one. Describe it by where it comes from rather than by the \
+     format's initials, which nobody outside this trade knows — and do not name a manufacturer: \
+     it is not one company's format, and a person reading this may not own that make of \
+     telephone.",
+);
+
 /// A zip archive.
 pub const KIND_ZIP_ARCHIVE: Word = Word::saying("opening.kind.zip-archive", "a zip archive")
     .noting(
@@ -541,7 +555,7 @@ pub const KIND_FLAC_AUDIO: Word = Word::saying("opening.kind.flac-audio", "a FLA
 
 /// Every name of what a file is, in the order [`crate::Kind::EVERY`] lists
 /// kinds, followed by the two that are not kinds and the two containers.
-pub const THE_NAMES: [Word; 31] = [
+pub const THE_NAMES: [Word; 32] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -559,6 +573,7 @@ pub const THE_NAMES: [Word; 31] = [
     KIND_JPEG_IMAGE,
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
+    KIND_HEIC_PHOTO,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,
     KIND_WEBM_VIDEO,
@@ -605,7 +620,7 @@ pub const THE_REMEDIES: [Word; 5] = [
 
 /// Every string this crate can say: the names, the sentences, then what would
 /// open a file this machine cannot.
-pub const EVERY_WORD: [Word; 49] = [
+pub const EVERY_WORD: [Word; 50] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -623,6 +638,7 @@ pub const EVERY_WORD: [Word; 49] = [
     KIND_JPEG_IMAGE,
     KIND_GIF_IMAGE,
     KIND_WEBP_IMAGE,
+    KIND_HEIC_PHOTO,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,
     KIND_WEBM_VIDEO,

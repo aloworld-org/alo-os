@@ -79,6 +79,9 @@ pub enum Kind {
     GifImage,
     /// A WebP image.
     WebpImage,
+    /// A photo in HEIF, which is what most telephones have saved since about
+    /// 2017.
+    HeicPhoto,
     /// A zip archive that is not a document stored as one.
     ZipArchive,
     /// A film in a Matroska file, which is what `.mkv` is.
@@ -105,7 +108,7 @@ pub enum Kind {
 
 impl Kind {
     /// Every kind, in the order [`crate::words::THE_NAMES`] names them.
-    pub const EVERY: [Self; 27] = [
+    pub const EVERY: [Self; 28] = [
         Self::Pdf,
         Self::WordDocument,
         Self::ExcelWorkbook,
@@ -123,6 +126,7 @@ impl Kind {
         Self::JpegImage,
         Self::GifImage,
         Self::WebpImage,
+        Self::HeicPhoto,
         Self::ZipArchive,
         Self::MatroskaVideo,
         Self::WebmVideo,
@@ -156,6 +160,7 @@ impl Kind {
             Self::JpegImage => words::KIND_JPEG_IMAGE,
             Self::GifImage => words::KIND_GIF_IMAGE,
             Self::WebpImage => words::KIND_WEBP_IMAGE,
+            Self::HeicPhoto => words::KIND_HEIC_PHOTO,
             Self::ZipArchive => words::KIND_ZIP_ARCHIVE,
             Self::MatroskaVideo => words::KIND_MATROSKA_VIDEO,
             Self::WebmVideo => words::KIND_WEBM_VIDEO,

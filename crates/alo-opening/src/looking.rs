@@ -140,13 +140,13 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
     // nothing to see.
     if head.get(4..8) == Some(&b"ftyp"[..]) {
         let brand = head.get(8..12).unwrap_or_default();
-        return Ok(Looked::plainly(Appears::A(
-            if brand.starts_with(b"M4A") || brand.starts_with(b"M4B") {
-                Kind::Mp4Audio
-            } else {
-                Kind::Mp4Video
-            },
-        )));
+        return Ok(Looked::plainly(Appears::A(if is_a_photo(brand) {
+            Kind::HeicPhoto
+        } else if brand.starts_with(b"M4A") || brand.starts_with(b"M4B") {
+            Kind::Mp4Audio
+        } else {
+            Kind::Mp4Video
+        })));
     }
 
     if head.starts_with(b"OggS") {
@@ -191,6 +191,27 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
         Texted::OlderCharacterSet => Appears::A(Kind::TextInAnOlderCharacterSet),
         Texted::NotText => Appears::Unrecognised,
     }))
+}
+
+/// Whether this brand says the file is a photograph rather than a film.
+///
+/// **HEIF and MP4 are the same container**, and the brand after `ftyp` is the
+/// only thing that tells them apart. Until this rule existed a photograph from a
+/// telephone came out of the branch below as *a film* — which is worse than not
+/// recognising it, because the machine was confidently wrong about the commonest
+/// file anybody is sent.
+///
+/// The brands are the ones the HEIF standard registers for still pictures:
+/// `heic` and `heix` for one picture coded with HEVC, `heim` and `heis` for the
+/// multi-image forms, `mif1` and `msf1` for the generic image and image-sequence
+/// brands a file written by something other than a telephone carries, and `avif`
+/// and `avis` for the same containers holding AV1 instead. `hevc` and `hevx` are
+/// **not** here: those are the brands of an HEVC *sequence*, which is a film.
+fn is_a_photo(brand: &[u8]) -> bool {
+    matches!(
+        brand,
+        b"heic" | b"heix" | b"heim" | b"heis" | b"mif1" | b"msf1" | b"avif" | b"avis"
+    )
 }
 
 /// Whether this name is written in the head of the file.

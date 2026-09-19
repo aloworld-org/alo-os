@@ -21,7 +21,7 @@ use alo_opening::Kind;
 /// `text/plain` declares both kinds of plain text: an application that opens
 /// text says nothing about which character set, and a file in an older one is
 /// still text to it.
-const TABLE: [(&str, &[Kind]); 38] = [
+const TABLE: [(&str, &[Kind]); 40] = [
     ("application/pdf", &[Kind::Pdf]),
     (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -72,6 +72,12 @@ const TABLE: [(&str, &[Kind]); 38] = [
     ("image/jpeg", &[Kind::JpegImage]),
     ("image/gif", &[Kind::GifImage]),
     ("image/webp", &[Kind::WebpImage]),
+    // Both, because a viewer declares whichever it was written against: `heic`
+    // is the brand a telephone stamps and `heif` the family it belongs to, and
+    // an application that declared only the one it had heard of would open
+    // nothing.
+    ("image/heic", &[Kind::HeicPhoto]),
+    ("image/heif", &[Kind::HeicPhoto]),
     ("application/zip", &[Kind::ZipArchive]),
     ("application/x-zip-compressed", &[Kind::ZipArchive]),
     ("video/x-matroska", &[Kind::MatroskaVideo]),
