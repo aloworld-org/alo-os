@@ -25,6 +25,11 @@
 //!   machine now, notes the build chosen ([`AcrossRestarts`]), and runs the
 //!   base's one instruction; [`after_a_restart`] writes
 //!   `alo_record::Happened::RolledBack` at the first start on it.
+//! - **Whether what the record says an agent did can be put back** —
+//!   [`what_was_done`] reads one entry onto `alo_keeping_up`'s closed table and
+//!   [`putting_back()`] answers with the undo or with the reason there is none.
+//!   The seam between the record and the crate that decides, in one file, and
+//!   nothing in it puts anything back.
 //!
 //! # What an update never touches
 //!
@@ -59,6 +64,7 @@ pub mod applying;
 pub mod going_back;
 pub mod last_known;
 mod one_build;
+pub mod putting_back;
 pub mod refusing;
 pub mod restarted;
 pub mod status;
@@ -68,6 +74,7 @@ pub mod yesterday;
 pub use across_restarts::{AcrossRestarts, THE_BUILD_TO_GO_BACK_TO, THE_LAST_KNOWN_BUILD};
 pub use applying::apply;
 pub use going_back::go_back;
+pub use putting_back::{putting_back, what_this_machine_kept, what_was_done};
 pub use refusing::{NotAnswered, NotApplied, NotGoneBack, NotRead, NotRecorded};
 pub use restarted::after_a_restart;
 pub use status::{THE_STATUS, deployments, running};

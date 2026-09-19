@@ -99,6 +99,8 @@
 //! no longer exist — and a record holds facts about the past, not references
 //! into the present.
 
+use std::time::SystemTime;
+
 use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
@@ -518,6 +520,52 @@ pub enum Happened {
         /// it carried on.
         stopped: Option<Line>,
     },
+    /// The person put back what an agent had changed — an undo
+    /// ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)
+    /// point 4).
+    ///
+    /// **No agent, and no field for one.** An undo is the person's act: there
+    /// is no verb that undoes and none that proposes one, because an agent
+    /// choosing which of a person's approvals to reverse is the thing ADR 0045
+    /// forbids by name. A name in that position would be an authority the
+    /// record invented, for the reason [`Happened::LeftOnItsOwn`] gives.
+    ///
+    /// **It is written only from an entry that [`Happened::Ran`]**, which
+    /// [`crate::Entry::undone`] is what holds: a change a person declined
+    /// carries a [`What`] too, and an undo written from one would be a record
+    /// of putting back something nobody did.
+    ///
+    /// **It carries a copy, not a pointer.** `undid` is the moment of the entry
+    /// that was undone and `what` is that entry's own [`What`] — the verb, the
+    /// sentence the person approved and the arguments — copied in. A record is
+    /// appended to and shortened (`crates/alo-keeping/src/pruning.rs`), so a
+    /// position in the file is not a name that lasts; an undo that pointed at
+    /// one would become a line about nothing the day the original was pruned.
+    /// With the copy, the record stays a complete account rather than one with
+    /// a hole where a change used to be.
+    ///
+    /// **An undo that failed is still an undo that was tried.** `failed` is the
+    /// sentence the person was shown when it did not happen, and is absent when
+    /// it did. [`Happened::was_stopped`] counts a failed one, for the reason it
+    /// counts [`Happened::GrantsNotReadAgain`]: something a person asked for
+    /// did not happen, and a review looking for that finds it here.
+    ///
+    /// **Not egress**, and not an execution of a verb either: nothing left the
+    /// machine, and the thing that ran was the person's own act on their own
+    /// files.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    Undone {
+        /// The moment of the entry this undid.
+        undid: SystemTime,
+        /// What that entry said ran, copied in.
+        what: What,
+        /// Why it did not happen, in the words the person was shown — absent
+        /// when it did.
+        failed: Option<Line>,
+    },
 }
 
 impl Happened {
@@ -552,6 +600,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
@@ -582,6 +631,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -602,7 +652,10 @@ impl Happened {
             Self::Ran { what, .. } | Self::Stopped { what, .. } => Some(what),
             // **Deliberately none here.** A refused question never became a
             // call, so there is nothing for `what` to answer with and no shape
-            // in which it could pretend otherwise.
+            // in which it could pretend otherwise. An undo carries a `What`
+            // and still answers `None`: the copy it carries is what somebody
+            // put *back*, not what ran, and answering it here would make an
+            // undo of a move read as a move — `undid` is where it belongs.
             Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::AnsweredForAnotherMachine { .. }
@@ -613,11 +666,28 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
+        }
+    }
+
+    /// What this undid, and when it happened — absent for everything that is
+    /// not an undo.
+    ///
+    /// The copy [`Happened::Undone`] carries, answered as the pair it is: the
+    /// moment of the entry that was put back, and what that entry said ran. It
+    /// is deliberately not [`Happened::what`] — see the comment there — and it
+    /// is deliberately not a pointer into the record, because the record is
+    /// shortened and a position in it is not a name that lasts.
+    #[must_use]
+    pub fn undid(&self) -> Option<(SystemTime, &What)> {
+        match self {
+            Self::Undone { undid, what, .. } => Some((*undid, what)),
+            _ => None,
         }
     }
 
@@ -652,6 +722,10 @@ impl Happened {
                     stopped: Some(_),
                     ..
                 }
+                | Self::Undone {
+                    failed: Some(_),
+                    ..
+                }
         )
     }
 
@@ -680,6 +754,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -708,6 +783,9 @@ impl Happened {
             | Self::NotBounded { why, .. }
             | Self::SleptThrough {
                 stopped: Some(why), ..
+            }
+            | Self::Undone {
+                failed: Some(why), ..
             } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
@@ -717,6 +795,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { stopped: None, .. }
+            | Self::Undone { failed: None, .. }
             | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -740,6 +819,7 @@ impl Happened {
             | Self::Updated { .. }
             | Self::RolledBack { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -764,6 +844,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
@@ -794,6 +875,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
@@ -823,6 +905,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
+            | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -847,6 +930,10 @@ impl Happened {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 mod tests {
     use super::*;
     use crate::test_calls::{
@@ -1155,6 +1242,8 @@ mod tests {
                 workspace: Line::of("0f1e2d3c4b5a69788796a5b4c3d2e1f0"),
                 answers_at: Line::of("192.168.1.20:8443"),
             },
+            undone(None),
+            undone(Some("something this would put back has changed since")),
         ] {
             let written = serde_json::to_string(&happened).unwrap_or_default();
             assert_eq!(
@@ -1163,5 +1252,61 @@ mod tests {
                 "{written}"
             );
         }
+    }
+
+    /// The person putting back what an agent changed, with a copy of the change
+    /// in it — and, when `failed` is given, the sentence they were shown when
+    /// it did not happen.
+    fn undone(failed: Option<&str>) -> Happened {
+        Happened::Undone {
+            undid: SystemTime::UNIX_EPOCH,
+            what: What::of(&archiving_march(), &in_english()),
+            failed: failed.map(Line::of),
+        }
+    }
+
+    /// **An undo carries what it undid and is never read as what ran.**
+    ///
+    /// An undo of a move that answered [`Happened::what`] would be one change
+    /// counted twice — once as a move and once as the putting back of one —
+    /// and a review asking what this machine executed would find an act no
+    /// agent performed. [`Happened::undid`] is where the copy belongs.
+    #[test]
+    fn an_undo_says_what_it_undid_and_is_no_execution_of_it() {
+        let happened = undone(None);
+        assert_eq!(happened.what(), None);
+        assert!(!happened.ran());
+        assert!(!happened.caused_egress());
+        assert_eq!(happened.agent(), None);
+        assert_eq!(happened.errand(), None);
+        assert_eq!(happened.from_approval(), None);
+        assert_eq!(happened.against(), [] as [u64; 0]);
+
+        let (undid, what) = happened.undid().unwrap();
+        assert_eq!(undid, SystemTime::UNIX_EPOCH);
+        assert!(what.verb().is("move_file"));
+
+        // And nothing else in the record answers that question, so a reader
+        // cannot mistake one kind of entry for an undo.
+        assert_eq!(ran().undid(), None);
+        assert_eq!(fetching_a_model().undid(), None);
+    }
+
+    /// **An undo that did not happen is a refusal, with the sentence the person
+    /// was shown.**
+    ///
+    /// Something a person asked for did not happen, and a review looking for
+    /// that finds it here rather than nowhere.
+    #[test]
+    fn an_undo_that_did_not_happen_is_counted_among_the_refusals() {
+        let why = "something this would put back has changed since";
+        let failed = undone(Some(why));
+        assert!(failed.was_stopped());
+        assert!(failed.why_stopped().is_some_and(|shown| shown.is(why)));
+
+        let happened = undone(None);
+        assert!(!happened.was_stopped());
+        assert_eq!(happened.why_stopped(), None);
+        assert_ne!(failed, happened);
     }
 }

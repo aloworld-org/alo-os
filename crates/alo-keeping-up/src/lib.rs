@@ -50,6 +50,18 @@
 //!   sentence is what the person approves. [`Returning`] is the one
 //!   instruction, checked against the machine as it is when they approved, and
 //!   [`Since::RolledBack`] is the first start on the build they chose.
+//! - **Putting back what an agent did** — ★ *undo what the agent did*, whose
+//!   most important half is the half that says no.
+//!   [`WhatWasDone::could_be_put_back`] is
+//!   [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)'s
+//!   closed table: a message that was sent, a question put to a model, a page
+//!   printed are gone beyond recall, and each says **why** in the vocabulary.
+//!   [`AnUndo::offered`] asks the second question — whether this machine kept
+//!   what the files were — and refuses before anything is offered, including
+//!   when what it would put back is no longer as the agent left it.
+//!   [`HowFarBack`] bounds what is kept, so that a disk does not fill quietly.
+//!   **There is no verb here**: an undo is the person's, approved one sentence
+//!   at a time like any other change.
 //!
 //! # What is not here
 //!
@@ -79,12 +91,15 @@ pub mod checking;
 pub mod deployments;
 pub mod digest;
 pub mod going_back;
+pub mod how_far_back;
 pub mod never;
+pub mod putting_back;
 pub mod returning;
 pub mod since;
 pub mod source;
 pub mod staging;
 pub mod standing;
+pub mod undoing;
 pub mod when;
 pub mod words;
 
@@ -96,11 +111,14 @@ pub use checking::{NotACheck, Offered, a_check_at};
 pub use deployments::{Deployments, NotRunningABuild};
 pub use digest::{Digest, NotADigest};
 pub use going_back::{CannotGoBack, GoingBack};
+pub use how_far_back::{HowFarBack, NotAWindow};
 pub use never::{Cause, Disturbance, Forbidden, THE_RULE, TheRule};
+pub use putting_back::{AnUndo, Bracket, WhatWasKept, WhenItWasDone};
 pub use returning::Returning;
 pub use since::Since;
 pub use source::{NotASource, Source};
 pub use staging::{NotStaged, Staging};
 pub use standing::{Ready, Running, Standing};
+pub use undoing::{Change, NotUndoable, WhatWasDone};
 pub use when::WhenItApplies;
 pub use words::{EVERY_WORD, WordsError, declare_into, keeping_up_words};

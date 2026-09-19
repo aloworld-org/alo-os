@@ -11,8 +11,13 @@ repository.workspace = true
 # What an update is and what the base may be told — every decision here is
 # that crate's, and this one only carries it out.
 alo-keeping-up = { path = "../alo-keeping-up" }
-# The entry saying the machine updated.
+# The entry saying the machine updated, and the entries an undo is read from.
 alo-record = { path = "../alo-record" }
+# Whether a verb answered a question or changed something. Read off the entry
+# the record already kept, never decided here: `putting_back.rs` is the one
+# place the record and what `alo-keeping-up` decides are put beside each other,
+# and the column it turns on is that one.
+alo-capability = { path = "../alo-capability" }
 # Where that entry is written.
 alo-keeping = { path = "../alo-keeping" }
 # The one proxy this machine has, on the road the base takes: staging an update
@@ -32,6 +37,11 @@ thiserror = { workspace = true }
 [dev-dependencies]
 alo-egress = { path = "../alo-egress" }
 alo-saying = { path = "../alo-saying" }
+# Every verb alo OS ships, so the acceptance for putting something back is
+# written against the machine's own `move_file` and its own words rather than
+# against a verb this test invented, which could agree with a machine that
+# does not exist.
+alo-declared = { path = "../alo-declared" }
 
 [lints]
 workspace = true

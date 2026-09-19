@@ -26,6 +26,15 @@ thiserror = { workspace = true }
 # crate that says something is collected by `alo-saying`, and never reaches
 # for it.
 alo-saying = { path = "../alo-saying" }
+# Every verb alo OS ships, on the one list. ★ *Undo what the agent did* is a
+# promise about all of them and about the ones this machine gains later, so the
+# acceptance asks that registry rather than keeping a second copy of it here
+# that could quietly come to disagree with it.
+alo-declared = { path = "../alo-declared" }
+# Whether a verb answers a question or changes something, which is the column
+# the table in ADR 0045 turns on. A test's alone: nothing in `src/` decides
+# anything about a capability.
+alo-capability = { path = "../alo-capability" }
 serde_json = { workspace = true }
 
 [lints]

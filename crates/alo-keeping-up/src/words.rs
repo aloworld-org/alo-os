@@ -297,8 +297,218 @@ pub const GOING_BACK_NOT_PREPARED: Word = Word::saying(
      is that the machine is unchanged and will start normally.",
 );
 
+// ---------------------------------------------------------------------------
+// Putting back what an agent did — `crate::AnUndo`, `crate::NotUndoable`,
+// `crate::WhatWasKept`, `crate::HowFarBack`.
+// ---------------------------------------------------------------------------
+
+/// Putting back what an agent changed, offered.
+pub const UNDO_OFFERED: Word = Word::saying(
+    "keeping-up.undo.offered",
+    "Put back {what}, as it was before the agent changed it on {when}",
+)
+.noting(
+    "The sentence a person approves before their machine puts their own files back as they were \
+     before the agent changed them — the agent being the assistant built into alo OS and not a \
+     person. {what} is the names of the files and folders that change back, one after another \
+     with a comma between them; {when} is the day and time of the change, already written in the \
+     person's own language. Approving this sentence puts those back and nothing else.",
+);
+
+/// It left this machine.
+pub const NOT_UNDONE_IT_LEFT: Word = Word::saying(
+    "keeping-up.undo.it-left",
+    "This left your machine, and nothing here can call it back",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is \
+     something that went somewhere else — a question put to a model elsewhere, a file handed to \
+     another machine, anything sent. It is gone beyond this machine's reach, and saying anything \
+     softer would be a promise the machine cannot keep.",
+);
+
+/// A model was told it.
+pub const NOT_UNDONE_A_MODEL_WAS_TOLD: Word = Word::saying(
+    "keeping-up.undo.a-model-was-told",
+    "A model was told this, and nothing can untell it",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is a \
+     question that was answered. A model here means the language model that answers on this \
+     machine.",
+);
+
+/// It only looked.
+pub const NOT_UNDONE_IT_ONLY_LOOKED: Word = Word::saying(
+    "keeping-up.undo.it-only-looked",
+    "This only looked at something, so nothing changed that could be put back",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is the \
+     agent reading or searching rather than changing anything — the agent being the assistant \
+     built into alo OS and not a person. Nothing is wrong: there is simply nothing to put back.",
+);
+
+/// It was printed on paper.
+pub const NOT_UNDONE_IT_WAS_PRINTED: Word = Word::saying(
+    "keeping-up.undo.it-was-printed",
+    "This was printed on paper, which your machine cannot take back",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is a \
+     document that was printed.",
+);
+
+/// An application is not something the machine puts back.
+pub const NOT_UNDONE_AN_APPLICATION: Word = Word::saying(
+    "keeping-up.undo.an-application",
+    "Opening, arranging or closing an application is not something your machine puts back, and an \
+     application that closed may have let go of what was open in it",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is the \
+     agent having opened, brought forward, arranged or closed an application — the agent being \
+     the assistant built into alo OS and not a person. The second half is the important one: \
+     reopening an application would not bring back what was unsaved in it, so the machine does \
+     not pretend that reopening it is putting anything back.",
+);
+
+/// Removing an application is the person's own act.
+pub const NOT_UNDONE_AN_APPLICATION_INSTALLED: Word = Word::saying(
+    "keeping-up.undo.an-application-installed",
+    "Removing an application is yours to do, where you install and remove them, rather than \
+     something put back here",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is an \
+     application the agent installed. Removing it is a deliberate act the person makes in the \
+     place applications are managed, and the machine will not do it as a side effect of undoing \
+     something.",
+);
+
+/// Not one of the changes the machine puts back.
+pub const NOT_UNDONE_NOT_ONE_OF_THE_CHANGES: Word = Word::saying(
+    "keeping-up.undo.not-one-of-the-changes",
+    "This is not one of the changes your machine can put back",
+)
+.noting(
+    "Said instead of offering to put something back, for a change the machine has no way of \
+     returning — setting up a printer, joining a network, and anything else that is not a file of \
+     the person's being renamed, moved or archived. It is the honest answer for anything the \
+     machine has not been taught to return, including something added after this was written.",
+);
+
+/// Nothing happened.
+pub const NOT_UNDONE_NOTHING_HAPPENED: Word = Word::saying(
+    "keeping-up.undo.nothing-happened",
+    "Nothing happened here, so there is nothing to put back",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is \
+     something that was refused, or never happened at all. The line is in their machine's history \
+     because a refusal is worth keeping, not because anything changed.",
+);
+
+/// No agent did it.
+pub const NOT_UNDONE_NOT_AN_AGENTS: Word = Word::saying(
+    "keeping-up.undo.not-an-agents",
+    "No agent did this, so there is nothing of an agent's to put back",
+)
+.noting(
+    "Said instead of offering to put something back, when what the person is looking at is \
+     something the machine itself did — the agent being the assistant built into alo OS and not a \
+     person. Returning to an earlier version of the system, for one, is its own thing a person \
+     chooses elsewhere.",
+);
+
+/// This machine keeps nothing of what a person's files were.
+pub const NOT_UNDONE_NOTHING_KEEPS_WHAT_WAS_THERE: Word = Word::saying(
+    "keeping-up.undo.nothing-keeps-what-was-there",
+    "This machine does not keep what your files were before the agent changed them, so it cannot \
+     put them back",
+)
+.noting(
+    "Said instead of offering to put something back, on a machine whose disk was set up without \
+     the means to hold an earlier state of a folder — the agent being the assistant built into \
+     alo OS and not a person. It is the plain truth rather than a fault: the machine says what it \
+     cannot do instead of offering something that would fail.",
+);
+
+/// There was no room to keep it for this one change.
+pub const NOT_UNDONE_THE_TURN_WAS_NOT_KEPT: Word = Word::saying(
+    "keeping-up.undo.the-turn-was-not-kept",
+    "There was not enough room to keep what your files were before this change, so it cannot be \
+     put back",
+)
+.noting(
+    "Said instead of offering to put something back, when the machine was too short of space to \
+     hold what the files were before this one change. The work the person asked for still \
+     happened — the machine does not stop working to protect the ability to put things back — and \
+     this line says what that cost.",
+);
+
+/// What was kept has been let go.
+pub const NOT_UNDONE_NO_LONGER_KEPT: Word = Word::saying(
+    "keeping-up.undo.no-longer-kept",
+    "What your files were before this change is no longer kept, so it cannot be put back",
+)
+.noting(
+    "Said instead of offering to put something back, when the machine did keep what the files \
+     were and has since let it go — because the change is older than the machine keeps, because \
+     the disk needed the room, or because the person chose to forget it.",
+);
+
+/// Something has changed since.
+pub const NOT_UNDONE_CHANGED_SINCE: Word = Word::saying(
+    "keeping-up.undo.changed-since",
+    "Something this would put back has changed since, so putting it back would take away that \
+     newer change too",
+)
+.noting(
+    "Said instead of offering to put something back, when what would be returned is no longer as \
+     the agent left it — the person edited it, or something later moved it. The machine refuses \
+     the whole thing rather than returning part of it: a person's own newer work is never taken \
+     away to undo an older change.",
+);
+
+/// Nothing is left to put back.
+pub const NOT_UNDONE_NOTHING_LEFT: Word = Word::saying(
+    "keeping-up.undo.nothing-left",
+    "Nothing of this change is left to put back",
+)
+.noting(
+    "Said instead of offering to put something back, when the machine compared how the person's \
+     files were before and after the change and found them the same. Nothing was lost; there is \
+     simply nothing to return.",
+);
+
+/// Forgetting everything that could be put back.
+pub const FORGETTING_WHAT_CAN_BE_PUT_BACK: Word = Word::saying(
+    "keeping-up.undo.forgetting",
+    "Forget what your files were before the changes the agent made, so that none of them can be \
+     put back afterwards. This frees the space it is holding",
+)
+.noting(
+    "The sentence a person approves to let go of everything their machine is holding so that \
+     changes can be put back — the agent being the assistant built into alo OS and not a person. \
+     It is one act covering all of it, and both halves have to survive translation: nothing can \
+     be put back afterwards, and the space comes back.",
+);
+
+/// How far back an undo reaches has to reach something.
+pub const NOT_A_WINDOW: Word = Word::saying(
+    "keeping-up.undo.not-a-window",
+    "How far back changes can be put back has to be at least one day and at least one change, so \
+     this was not kept",
+)
+.noting(
+    "Said when a person, or the organisation that manages their machine, set how far back changes \
+     can be put back to nothing at all. The setting is unchanged. To hold nothing, the person \
+     forgets what is held, which is a separate act they are shown the cost of.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 24] = [
+pub const EVERY_WORD: [Word; 41] = [
     READY,
     UP_TO_DATE,
     ANSWER_NOT_UNDERSTOOD,
@@ -323,7 +533,33 @@ pub const EVERY_WORD: [Word; 24] = [
     ALREADY_GOING_BACK,
     CHANGED_SINCE_GOING_BACK_WAS_OFFERED,
     GOING_BACK_NOT_PREPARED,
+    UNDO_OFFERED,
+    NOT_UNDONE_IT_LEFT,
+    NOT_UNDONE_A_MODEL_WAS_TOLD,
+    NOT_UNDONE_IT_ONLY_LOOKED,
+    NOT_UNDONE_IT_WAS_PRINTED,
+    NOT_UNDONE_AN_APPLICATION,
+    NOT_UNDONE_AN_APPLICATION_INSTALLED,
+    NOT_UNDONE_NOT_ONE_OF_THE_CHANGES,
+    NOT_UNDONE_NOTHING_HAPPENED,
+    NOT_UNDONE_NOT_AN_AGENTS,
+    NOT_UNDONE_NOTHING_KEEPS_WHAT_WAS_THERE,
+    NOT_UNDONE_THE_TURN_WAS_NOT_KEPT,
+    NOT_UNDONE_NO_LONGER_KEPT,
+    NOT_UNDONE_CHANGED_SINCE,
+    NOT_UNDONE_NOTHING_LEFT,
+    FORGETTING_WHAT_CAN_BE_PUT_BACK,
+    NOT_A_WINDOW,
 ];
+
+/// The one sentence here with anything to fill in.
+///
+/// Every other word this crate says is whole: an update, going back and a
+/// refusal each say the same thing whatever machine reads them. The offer to
+/// put something back is the exception, and has to be — a person approving it
+/// is approving **these** files and **that** moment, and a sentence that named
+/// neither would be a person agreeing to something they were not told.
+pub const THE_ONE_WITH_GAPS: Word = UNDO_OFFERED;
 
 /// Why this crate's own words could not be declared.
 ///
@@ -393,17 +629,25 @@ mod tests {
         ));
     }
 
-    /// **Every word carries a note, and none has a gap** — nothing this crate
-    /// says names a build, a place or a time, so there is nothing to fill.
+    /// **Every word carries a note, and one of them has gaps.**
+    ///
+    /// Nothing this crate says names a build, a place or a time, so there is
+    /// nothing to fill — except the offer to put files back, which a person
+    /// cannot check without being told which files and when. Those two gaps are
+    /// named here, so a third arriving in any sentence fails this rather than
+    /// quietly putting `{}` in front of somebody.
     #[test]
-    fn every_word_carries_a_note_and_has_no_gap() {
+    fn every_word_carries_a_note_and_only_the_offer_to_put_back_has_gaps() {
         for word in EVERY_WORD {
             assert!(word.note().is_some(), "{}", word.named());
-            assert!(
-                word.phrase().unwrap().source().gaps().is_empty(),
-                "{} has a gap",
-                word.named()
-            );
+            let phrase = word.phrase().unwrap();
+            let mut gaps: Vec<&str> = phrase.source().gaps().iter().map(String::as_str).collect();
+            gaps.sort_unstable();
+            if word.named() == THE_ONE_WITH_GAPS.named() {
+                assert_eq!(gaps, ["what", "when"], "{}", word.named());
+            } else {
+                assert!(gaps.is_empty(), "{} has a gap", word.named());
+            }
         }
     }
 
