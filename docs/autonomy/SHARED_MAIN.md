@@ -220,13 +220,29 @@ them is the largest avoidable cost in this repository: on 2026-09-19 a
 documentation-only commit spent twenty-three minutes running 120 test binaries,
 none of which read a word it changed.
 
-A candidate runs the gates its diff can reach:
+### One gate is not scoped, and this is the reason
+
+**If the diff contains a single `.rs` file, `cargo fmt --all --check` runs —
+whatever else it touches, and wherever that file lives.**
+
+It is not in the table below because it is not a choice. It takes seconds
+against the whole workspace, and it is the gate that has stopped every machine
+here most often: PR #32 merged an unformatted file under `crates/`, and the next
+five candidates on five machines all failed on a file none of them had touched.
+
+The table read the other way round until 2026-09-19, and that is how #32 got
+through: it required *formatting* of the rows that cannot break `cargo fmt` —
+Markdown under `docs/` — and not of the rows that can. A gate demanded where it
+is inapplicable and skipped where it applies is worse than no table, because it
+reads as care. Found by the third PC's lane.
+
+### The rest is scoped to what the diff can reach
 
 | What the diff touches | What must pass |
 |---|---|
 | `docs/decisions/**` | the citation check, which is what a renamed decision breaks |
 | `docs/autonomy/*plan.md` | the plan checks that read every plan |
-| `docs/**` otherwise | formatting, the citation check, the plan checks |
+| `docs/**` otherwise | the citation check, the plan checks |
 | `image/**` | `alo-image`, `alo-installing`, `alo-updating` |
 | `tools/kernel-loop/**` | the supervisor's own three gates |
 | `crates/<name>/**` | that crate, and every crate that depends on it |
@@ -234,9 +250,9 @@ A candidate runs the gates its diff can reach:
 
 **Where the mapping is uncertain, run all nine.** A documentation change did
 break `main` for five machines on 2026-09-17 — an ADR was renamed and every link
-to it still read the same — which is why the decisions row is not simply
-*formatting*. The saving comes from the common case, not from trusting the rare
-one.
+to it still read the same — which is why the decisions row is not simply a
+formatting question. The saving comes from the common case, not from trusting
+the rare one.
 
 Say in the pull request which gates ran and why those. A candidate that merges
 several branches runs the union of what each reaches.
