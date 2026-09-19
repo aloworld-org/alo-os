@@ -54,6 +54,7 @@ members = [
   "crates/alo-hosted",
   "crates/alo-image",
   "crates/alo-in-use",
+  "crates/alo-leaving",
   "crates/alo-locking",
   "crates/alo-indicator",
   "crates/alo-installer",

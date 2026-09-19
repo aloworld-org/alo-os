@@ -13,8 +13,10 @@ looking at it, and on which screens it is when they are.**
 is, what the lock screen may show, what survives it), `crates/alo-sleeping`
 (suspend, resume, the lid, and what may keep a machine awake), and
 `crates/alo-displays` (a person's arrangement of screens: which, where, at what
-scale, remembered per set of screens, and night light), and `crates/alo-notifying`
-(notifications and do-not-disturb, task 6). **It reads and never
+scale, remembered per set of screens, and night light), `crates/alo-notifying`
+(notifications and do-not-disturb, task 6), and `crates/alo-leaving` (logging
+out, switching user, and what was open — task 5, which had no crate named for it
+until the work was done; it is this plan's). **It reads and never
 edits** `alo-accounts`, `alo-greeting`, `alo-sessiond` (a lock is not a sign-out,
 and unlocking is authenticated the way signing in is), `alo-appearance` (the lock
 image and a per-display background are its values), `alo-dock` (per-display
@@ -236,7 +238,49 @@ shell plan's task 9). **Depends on:** 3.
 
 ### 5. Log out, switch user, lock — and reopen what was open
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-18.** `crates/alo-leaving`, new and named here
+because the plan's header named no crate for this task. `logging_out::asked`
+walks a session's applications through a `TheApplications` the compositor
+implements — one at a time, **last opened first**, because a stack unwinds and
+the application a person was just in is the one they expect to be asked about
+first — and asks every one of them even after one has refused, so what comes back
+is one list rather than a queue of dialogues. Whatever stayed is a
+`WouldNotClose` carrying its own name and what had already closed, each said as
+its own sentence (one per application, so no language has to form a plural alo OS
+chose for it). **Nothing here kills anything:** `MayEnd` has no public
+constructor and exactly two roads — every application closed, or
+`WouldNotClose::even_so`, which consumes the named list, so the session can only
+end over an application that said no once the person has been shown which
+(`tests/nothing_here_reaches_into_an_application.rs` reads the crate's shipped
+code for a process, a signal or a kill, and holds its dependency list closed).
+`switching::asked` locks `alo_locking::Seat` and **only then** makes the
+`alo_greeting::Standing` a greeter draws from; nothing closes, nothing ends, and
+nothing is written down, because a switch is not a sign-out. What was open is an
+`Open` with three fields — the application's **identifier**, the screen's name,
+and a `Split` (the whole screen, or one of `alo_dividing::Place`'s halves,
+quarters and parts) — and no fourth: `tests/what_was_open_is_applications_and_places.rs`
+reads this crate's shipped source for a title, a document, an address, a subject
+and a window identifier, and holds that a file carrying any of them is refused
+whole rather than read past. It is kept in `leaving.toml` through `alo-kept`
+(ADR 0038), written **once, at a log-out, and only for a person who asked for
+it** — a machine nobody configured is left with no file at all, and turning the
+setting off takes the list with it. `restoring::at_sign_in` reopens nothing
+unless the choice is on, whatever a hand-edited list says.
+`tests/the_agent_never_reads_what_was_open.rs` reads every manifest in the
+workspace and every source file of `alo-agentd`, `alo-turn`, `alo-capability`,
+`alo-protocol` and `alo-broker`: none of them reaches this crate or names its
+file. Report:
+`docs/autonomy/updates/log-out-switch-user-and-reopen-what-was-open.md`.
+**Two findings in it rather than silences:** *switch user* is refused at a
+**locked** screen, because a road to the sign-in would be a fifth thing on a lock
+screen and what a lock screen may show is task 1's decision — so a household
+sharing one machine has the first person unlock before the second signs in, and
+the change that would fix it is a change to `alo-locking`; and
+`docs/contracts/person-settings.md` still describes four kept files, naming
+neither `sleeping.toml` (task 2), `displays.toml` (task 3) nor `leaving.toml`,
+which is now three files owed to that contract rather than two. Not on hardware
+— nothing here opens a device, ends a session or draws a dialogue; the shell
+draws it later. **Depends on:** 1.
 
 *Session management.* Reopening what was open is a promise about applications
 and windows, not about their contents, and it has to be made carefully in a
