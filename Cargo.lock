@@ -1374,6 +1374,7 @@ dependencies = [
  "alo-keeping-up",
  "alo-proxy",
  "alo-record",
+ "alo-recounting",
  "alo-saying",
  "alo-strings",
  "serde_json",
