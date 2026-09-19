@@ -22,6 +22,13 @@
 //! decides is what every other file it reads decides: what the file *is*, so
 //! that a person who cannot open it is told what they have.
 //!
+//! **The wrapping is not the same as the header, though.** `ftyp` at offset
+//! four begins a whole family of formats, of which the container MP4 names is
+//! one; which of them a file is is written in the brands after it, and
+//! `crate::iso_media` is the rule that reads them. Until 2026-09-19 this file
+//! took the header for the container and reported a photograph from a telephone
+//! as a film.
+//!
 //! # A PDF is damaged when it has no end
 //!
 //! A PDF finishes with `%%EOF`, and the rule every widely used reader applies
@@ -39,6 +46,7 @@ use std::io::{self, Read, Seek};
 
 use crate::appears::{Appears, Container, Macros};
 use crate::compound::{self, Stored};
+use crate::iso_media::{self, Iso};
 use crate::kind::Kind;
 use crate::reading::{Reading, u32_at};
 use crate::text::{self, Texted};
@@ -133,20 +141,16 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
         })));
     }
 
-    // The container MP4 names says `ftyp` at four, with what kind of file it is
-    // in the four bytes after that. Sound with no picture is saved in the same
-    // container under its own brand, and that is the one thing worth telling
-    // apart: a person is shown a sound recording rather than a film with
-    // nothing to see.
-    if head.get(4..8) == Some(&b"ftyp"[..]) {
-        let brand = head.get(8..12).unwrap_or_default();
-        return Ok(Looked::plainly(Appears::A(
-            if brand.starts_with(b"M4A") || brand.starts_with(b"M4B") {
-                Kind::Mp4Audio
-            } else {
-                Kind::Mp4Video
-            },
-        )));
+    // The container MP4 names says `ftyp` at four — and so do several other
+    // formats, which is why the brands after it decide rather than the header
+    // (`crate::iso_media`). A file whose brands name none of the ones this
+    // machine reads is not claimed to be a film.
+    if iso_media::is_the_header(&head) {
+        return Ok(Looked::plainly(match iso_media::look(&head) {
+            Iso::AFilm => Appears::A(Kind::Mp4Video),
+            Iso::ASoundRecording => Appears::A(Kind::Mp4Audio),
+            Iso::NotOneOfOurs => Appears::Unrecognised,
+        }));
     }
 
     if head.starts_with(b"OggS") {

@@ -333,7 +333,45 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** ready. **Depends on:** 1, 4, 5.
+**Status:** blocked — on `docs/decisions/0056-a-format-is-recognised-on-the-evidence-of-a-real-file.md`
+(proposed, 2026-09-19). **Depends on:** 1, 4, 5.
+
+**Decided rather than built, 2026-09-19.** The worker found that the one thing
+this task cannot be finished without — *a real file with its provenance*, one of
+each — exists on no machine this team has, and that was measured rather than
+assumed: no `.heic`, `.pages` or `.dwg` anywhere on the development PC or in the
+Linux tree the gates run in; no encoder for any of them installed there; no HEIF
+encoder registered with Windows on the development PC; and the rented office
+engine reads a Pages document and saves none of the three. The Mac that could
+save one is stopped. The three ways out — wait for a real file, build one here
+to the specification, or borrow somebody else's — decide between leaving the
+star in `docs/features.md` unmet in v0.5 and shipping a rule whose only evidence
+is that it agrees with its own author, and neither is a worker's to pick. ADR
+0056 sets out the three options, what each costs, and recommends the first; it
+also decides the parts that do not depend on a file, so that the work is
+mechanical the day they arrive — what each of the three is recognised by, what
+each one is called, that a Pages document **converts** through the engine
+already pinned (a registration, in ADR 0039's own words, rather than a new
+engine), and that a photograph is **explained** rather than converted because
+ADR 0051 ships no software decoder for an encumbered format until counsel
+answers. It lists the three things that must happen before this task is ready
+again: the owner's answer, one real file of each with its provenance, and task
+5's walk and table published again in a follow-up report.
+`crates/alo-opening/tests/recognising_three_more_formats_waits_on_its_decision.rs`
+holds the ADR in place and fails if any of the three is recognised while it
+still says *proposed*.
+
+**One wrong answer did not wait, 2026-09-19.** This task's premise says the
+three are met today as *this machine does not recognise what this file is*. For
+the photograph that was not true: `crates/alo-opening/src/looking.rs` took the
+four bytes `ftyp` at offset four for the container MP4 names, so a photograph
+from a telephone was reported as **an MP4 video** and a person reading that
+would go looking for something to play it with. The header is a family, not a
+format; `crates/alo-opening/src/iso_media.rs` now reads the brands after it, and
+a file whose brands name none of the ones this machine knows is *not
+recognised*. It does not recognise a photograph — it stops this machine saying
+something untrue about one. Report:
+`docs/autonomy/updates/a-photograph-is-not-a-film-and-three-formats-wait-on-a-real-file.md`.
 
 `docs/features.md`: ★ *"I can't open this file." A `.pages`, a `.heic`, a
 `.dwg`: the system converts it where it can, and where it cannot says plainly
@@ -362,3 +400,40 @@ them is from its bytes. A photo from a phone is the commonest of the three.
   Nothing names Apple's, Autodesk's or anybody's program as *what would open
   it*: *a Mac*, *a drawing program* and *a copy saved as a PDF* are places a
   person can go, and a product name is an advertisement.
+
+### 7. An OpenDocument text, spreadsheet and presentation — converted, and what each copy lost
+
+**Status:** ready. **Depends on:** 1, 2, 5.
+
+Task 2's own *Owed* names this: **older Office and OpenDocument files**. The
+two halves are not equally ready, and this task is deliberately the half that
+is. ADR 0039 fixed the conversions at three *and* said each further kind is "a
+registration and a test against a real file, in a later change" — this is that
+change, for the three open-standard formats. The engine pinned in the image
+reads and writes them, so the real file this task is measured against can be
+saved **by the application people actually use for these files**, on the machine
+that gates it, which is why it is not waiting on anybody. The three older
+Microsoft formats are a later task and wait on real documents from the owner,
+for the reason ADR 0056 sets out: a `.doc` saved by something that is not Word
+is not evidence about the `.doc` files people are sent.
+
+`docs/features.md`: ★ *"I can't open this file" — converted, or plainly
+explained.* A person sent an `.odt` by a European public body meets this on
+their first morning; today it is recognised, named, and then refused.
+
+- **Acceptance:** an OpenDocument text document, spreadsheet and presentation
+  are each converted to a PDF copy through the same service and the same pinned
+  engine task 2 built — three more conversions in ADR 0039's closed set, each
+  with its word on the socket, its name in the scratch folder, its line in the
+  contract and `docs/by-hand.md`, and **no new engine** in the image; what each
+  copy could not carry is said by name through task 2's `Carried`, with *lost
+  nothing* reachable only after both files were inventoried, exactly as it is
+  for a `.docx`; each is tested against a real file with its provenance beside
+  it, saved by the pinned engine on the machine that gates this task and
+  recorded in a `README.md` the way `crates/alo-converting/tests/documents/`
+  records its three; and a document carrying a macro library says so, because
+  an OpenDocument keeps macros where `alo-opening` can already see them.
+- **Constraint:** the engine is rented and unpatched (ADR 0011), and a
+  conversion that skips itself where the engine is missing is refused (ADR
+  0039's own rule). Nothing is uploaded. No sentence changes without task 5's
+  table changing with it, published again in a follow-up report.
