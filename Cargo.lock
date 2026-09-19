@@ -688,6 +688,7 @@ dependencies = [
  "alo-models",
  "alo-sessiond",
  "serde",
+ "serde_json",
  "thiserror 2.0.20",
  "toml",
 ]
@@ -779,6 +780,8 @@ dependencies = [
 name = "alo-keeping-up"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
+ "alo-declared",
  "alo-egress",
  "alo-saying",
  "alo-strings",
@@ -1364,6 +1367,8 @@ dependencies = [
 name = "alo-updating"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
+ "alo-declared",
  "alo-egress",
  "alo-keeping",
  "alo-keeping-up",
