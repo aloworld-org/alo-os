@@ -45,8 +45,11 @@ use crate::release::{NotARelease, Release};
 
 /// The pin this repository publishes, as it stood when this was built.
 ///
-/// `image/pinned.toml` itself, rather than a copy: one file, one answer.
-const THE_PIN_AS_BUILT: &str = include_str!(concat!(
+/// `image/pinned.toml` itself, rather than a copy: one file, one answer. It is
+/// readable by the rest of the crate so that a test wanting a pin with one line
+/// changed edits this text rather than writing a second pin out
+/// (`crate::testing::the_pin_where`).
+pub(crate) const THE_PIN_AS_BUILT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../image/pinned.toml"
 ));
@@ -161,6 +164,12 @@ fn host_of(source: &Source) -> &str {
 )]
 mod tests {
     use super::*;
+    use crate::testing::the_pin_where;
+
+    /// The pin this repository ships, with its registry replaced.
+    fn a_pin_whose_registry_is(registry: &str) -> ThePin {
+        the_pin_where("registry", registry)
+    }
 
     /// **The place is the pin's, and this file names no address of its own.**
     #[test]
@@ -225,19 +234,13 @@ mod tests {
         assert!(matches!(refused, NotAPlace::NotAPin(_)), "{refused}");
     }
 
-    /// The pin this repository ships, with its registry replaced.
-    fn a_pin_whose_registry_is(registry: &str) -> ThePin {
-        let written = THE_PIN_AS_BUILT
-            .lines()
-            .map(|line| {
-                if line.starts_with("registry = ") {
-                    format!("registry = \"{registry}\"")
-                } else {
-                    line.to_owned()
-                }
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        ThePin::read(&written).unwrap()
+    /// **A place made from a pin naming another release has that release as
+    /// its floor**, which is what lets a test state the floor it means instead
+    /// of inheriting whichever release this repository is pinned at today.
+    #[test]
+    fn the_floor_is_the_release_the_pin_states() {
+        let place = Place::the_pin_names(&the_pin_where("version", "1.2.3")).unwrap();
+        assert_eq!(place.not_before().named_as(), "1.2.3");
+        assert_eq!(place.source(), Place::on_this_machine().unwrap().source());
     }
 }

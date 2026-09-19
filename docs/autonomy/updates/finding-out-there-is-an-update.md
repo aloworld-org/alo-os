@@ -285,6 +285,62 @@ honest half — the sentence — belongs with the refusal it replaces
 (`keeping-up.not-prepared`, which today says both *the download failed* and
 *what arrived was not a genuine alo OS*).
 
+## The gate that refused this, and what it showed
+
+The first attempt at this task was refused by the workspace's suite, on one
+test:
+
+```
+---- looking::tests::the_build_this_machine_runs_is_not_an_update stdout ----
+panicked at crates/alo-looking/src/looking.rs:161:
+called `Result::unwrap()` on an `Err` value: NothingIsOffered
+```
+
+**Nothing was wrong with `look`.** Between the attempt that passed its gates
+and the attempt that was combined with `main`, release `0.0.3` was pinned
+(`94a88df`, *The image ships the decoders nobody can charge us for, and 0.0.3 is
+pinned*). `Place::on_this_machine` reads its floor from that pin, and the unit
+tests here took their place from it while writing their own release names down
+— so a test whose place held `0.0.2` stopped meaning *a release this machine
+would take* and started meaning *a release older than this machine's floor*,
+which is exactly the answer it got. The test was right, the code was right, and
+the two disagreed because of a number in a third file that neither of them is
+about.
+
+That is a real defect in the tests rather than an accident, and bumping the
+literal to `0.0.3` would have rebuilt it to go off at `0.0.4`. So the fix is
+that **a test which means *a release this machine would take* says which one**:
+
+- `crate::testing::a_place_not_before` makes a place from the shipped pin with
+  its `version` line replaced, through the pin's own reader and the real
+  `Place::the_pin_names`. `crate::testing::the_pin_where` is the one line
+  rewriter in the crate — `place.rs`'s own test helper, which already rewrote
+  the `registry` line, now goes through it rather than keeping a second copy.
+- Every unit test in `looking.rs` that names releases takes its floor from
+  `NOT_BEFORE`, a constant in that test module, and the comment on it says why.
+- The two tests that *are* about the shipped pin keep reading it, and they read
+  the release **out of the place** instead of writing a number down:
+  `the_line_a_person_reads_is_the_check_at_the_place_the_pin_names`, and a new
+  `a_machine_at_the_pinned_release_is_offered_what_that_release_is_now` — which
+  is the failing test's meaning, stated so that it cannot go off again. It also
+  records a real property: the floor is the pinned release *itself* and not one
+  above it, so a machine built from a release that was afterwards re-pushed is
+  offered the build now behind that name rather than told there is nothing for
+  it.
+- `place.rs` gains `the_floor_is_the_release_the_pin_states`, so the mechanism
+  those tests now rely on is itself tested rather than assumed.
+
+`THE_PIN_AS_BUILT` became `pub(crate)` for this, and that is the whole of the
+change to anything that ships: no public surface moved, and `look` and every
+type around it are byte for byte what the first attempt handed over.
+
+**What generalises:** a test that reads a file the release process writes is a
+test with a second author. `image/pinned.toml` moves whenever a release is
+pushed, in another lane, and any test that both reads it and hard-codes
+something to compare against it will fail on a change that has nothing to do
+with it. The assertions that belong against the shipped pin are the ones about
+the pin — and they read their values out of it.
+
 ## Limitations, stated
 
 - **One page of names.** A place holding more than 1000 names would need its
@@ -311,12 +367,21 @@ build cache and one gate run per machine*.
 | Check | Result |
 |---|---|
 | `cargo fmt --all --check` | clean |
-| `cargo clippy -p alo-looking -p alo-saying -p alo-collected --all-targets -- -D warnings` | clean, zero warnings |
-| `cargo test -p alo-looking` | 52 unit + 5 acceptance passed, 3 ignored |
-| `cargo test -p alo-saying` | passed |
-| `cargo test -p alo-collected` | passed |
-| `cargo doc -p alo-looking -p alo-saying -p alo-collected --no-deps`, `RUSTDOCFLAGS=-D warnings` | clean |
-| `cargo test -p alo-looking --test against_the_real_registry -- --ignored` | 3 passed in 2.64 s, against the real registry |
+| `cargo clippy --all-targets -- -D warnings`, the whole workspace | clean, zero warnings |
+| `cargo test -p alo-looking` | 54 unit + 5 acceptance passed, 0 failed, 3 ignored |
+| `cargo test -p alo-saying` | 63 unit + 4 acceptance + 1 doctest passed |
+| `cargo doc --no-deps -p alo-looking -p alo-saying`, `RUSTDOCFLAGS=-D warnings` | clean |
+| each of the eight evidence tests, run alone with `--exact --include-ignored` | 1 passed each |
+| `against_the_real_registry`, the three measurements | passed in 2.69 s, 0.88 s and 0.51 s, against the real registry, re-measured 2026-09-19 |
+
+The second attempt's numbers, on the same machine and the same build directory.
+One note for whoever gates from a Windows checkout next: `cargo fmt --all` has
+to be run through the Linux side as well, because from Windows it stops at *The
+filename or extension is too long (os error 206)* — it hands every file in the
+workspace to `rustfmt` on one command line, and this workspace is past what
+Windows will carry. `cargo fmt --all --check` from `/mnt/c/...` is clean and
+writes to the checkout, which is what was run here. This is about the loop's own
+machines rather than about alo OS, so it is here and not in `docs/quirks.md`.
 
 **Not run here:** the whole workspace's suite, the supervisor's three gates and
 the BPF target's two. The supervisor runs the nine on the combined tree; this
@@ -361,4 +426,7 @@ Proposed, not made:
 
 **Ready for integration.** Nothing in this change is partial: every acceptance
 criterion has a test in the change that claims it, and the sixth is a
-measurement against the real place with its output printed above.
+measurement against the real place with its output printed above. The one test
+the gates refused now passes, stated so that pinning the next release cannot
+break it again, and each of the eight pieces of evidence was run on its own
+before this was handed over.

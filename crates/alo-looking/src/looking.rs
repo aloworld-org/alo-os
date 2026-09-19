@@ -103,15 +103,27 @@ fn asked(
 )]
 mod tests {
     use super::*;
-    use crate::testing::{APlaceThatAnswers, a_moment, build, the_place};
+    use crate::testing::{APlaceThatAnswers, a_moment, a_place_not_before, build, the_place};
     use alo_egress::Errand;
+
+    /// The floor these tests are written against.
+    ///
+    /// **Stated here rather than read off `image/pinned.toml`.** Which releases
+    /// a place holds and which of them is offered is what is being tested, and
+    /// none of it is about the number this repository is pinned at: a floor
+    /// taken from the shipped pin made every one of these tests a hostage of
+    /// the release process, and on 2026-09-19 the pin moved to `0.0.3` and the
+    /// test below holding `0.0.2` began answering *nothing is offered*. The one
+    /// test that is about the shipped pin says so in its name and uses
+    /// [`the_place`].
+    const NOT_BEFORE: &str = "0.0.2";
 
     /// A newer release is an update, and it is `Standing`'s answer rather than
     /// one this crate made up.
     #[test]
     fn a_newer_release_at_the_place_is_an_update() {
         let mut indicator = Indicator::default();
-        let place = the_place();
+        let place = a_place_not_before(NOT_BEFORE);
         let found = look(
             &mut indicator,
             a_moment(),
@@ -136,7 +148,7 @@ mod tests {
         let found = look(
             &mut indicator,
             a_moment(),
-            &the_place(),
+            &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
             Because::ThisMachineStarted,
             &APlaceThatAnswers::holding(&["0.0.10", "latest", "0.0.9", "0.0.2"])
@@ -153,7 +165,7 @@ mod tests {
         let found = look(
             &mut indicator,
             a_moment(),
-            &the_place(),
+            &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("bb")),
             Because::ThePersonAsked,
             &APlaceThatAnswers::holding(&["0.0.2"]).whose_builds(&[("0.0.2", build("bb"))]),
@@ -172,7 +184,7 @@ mod tests {
             let refused = look(
                 &mut indicator,
                 a_moment(),
-                &the_place(),
+                &a_place_not_before(NOT_BEFORE),
                 &Running::reported(build("bb")),
                 Because::ThePersonAsked,
                 &APlaceThatAnswers::holding(&holding),
@@ -190,7 +202,7 @@ mod tests {
         let refused = look(
             &mut indicator,
             a_moment(),
-            &the_place(),
+            &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("bb")),
             Because::ThePersonAsked,
             &APlaceThatAnswers::holding(&["0.0.3"]).whose_names(&[("0.0.3", "sha256:beef")]),
@@ -211,7 +223,7 @@ mod tests {
         look(
             &mut indicator,
             a_moment(),
-            &the_place(),
+            &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
             Because::ThePersonAsked,
             &asked,
@@ -230,7 +242,7 @@ mod tests {
         let refused = look(
             &mut indicator,
             a_moment(),
-            &the_place(),
+            &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
             Because::ThePersonAsked,
             &APlaceThatAnswers::that_cannot_be_reached(),
@@ -251,7 +263,7 @@ mod tests {
             let answered = look(
                 &mut indicator,
                 a_moment(),
-                &the_place(),
+                &a_place_not_before(NOT_BEFORE),
                 &Running::reported(build("aa")),
                 Because::ThisMachineStarted,
                 &APlaceThatAnswers::that_answers_with(refusal),
@@ -269,5 +281,33 @@ mod tests {
         let errand = a_check_at(place.destination().clone());
         assert_eq!(errand.errand(), Errand::CheckingForAnUpdate);
         assert_eq!(errand.destination(), place.destination());
+    }
+
+    /// **A machine carrying the pin this repository ships is offered the
+    /// release that pin names**, whatever release that is today.
+    ///
+    /// The floor is the pinned release itself and not one above it, so a
+    /// machine built from a release that was afterwards re-pushed is offered
+    /// the build now behind that name rather than told there is nothing for it.
+    /// This is the one test here that reads `image/pinned.toml`, and it reads
+    /// the release out of the place rather than writing a number down, so
+    /// pinning the next release moves nothing in this file.
+    #[test]
+    fn a_machine_at_the_pinned_release_is_offered_what_that_release_is_now() {
+        let place = the_place();
+        let pinned = place.not_before().named_as().to_owned();
+        let mut indicator = Indicator::default();
+        let found = look(
+            &mut indicator,
+            a_moment(),
+            &place,
+            &Running::reported(build("aa")),
+            Because::ThisMachineStarted,
+            &APlaceThatAnswers::holding(&[&pinned]).whose_builds(&[(&pinned, build("bb"))]),
+        )
+        .unwrap();
+
+        assert!(found.is_ready(), "{pinned}");
+        assert!(indicator.is_quiet());
     }
 }

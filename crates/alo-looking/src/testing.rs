@@ -15,13 +15,14 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use alo_egress::Indicator;
+use alo_image::ThePin;
 use alo_keeping_up::{Digest, Offered, Running, Standing, a_check_at};
 use alo_strings::{Strings, Vocabulary};
 
 use crate::asking::ThePlace;
 use crate::because::Because;
 use crate::found::Found;
-use crate::place::Place;
+use crate::place::{Place, THE_PIN_AS_BUILT};
 use crate::refusing::NoAnswer;
 use crate::release::Release;
 
@@ -38,6 +39,43 @@ pub(crate) fn a_moment() -> SystemTime {
 /// The place this machine's build was pinned to come from.
 pub(crate) fn the_place() -> Place {
     Place::on_this_machine().expect("the pin this repository ships")
+}
+
+/// A place whose floor is the release named here, rather than whichever one
+/// this repository happens to be pinned at today.
+///
+/// **A test that means *a release this machine would take* says which one.**
+/// The tests in [`crate::looking`] are about which of the releases a place
+/// holds is offered and what is made of the answer; not one of them is about
+/// the number in `image/pinned.toml`. Taking their floor from the shipped pin
+/// tied every one of them to the release process, and on 2026-09-19 that came
+/// due: `0.0.3` was pinned, and a test whose place held `0.0.2` — as every
+/// machine built before that release does — began answering *nothing is
+/// offered*. [`the_place`] stays for the tests that are about the shipped pin
+/// itself, which are the only ones that should move when it does.
+pub(crate) fn a_place_not_before(release: &str) -> Place {
+    Place::the_pin_names(&the_pin_where("version", release)).expect("a pin naming a place")
+}
+
+/// The pin this repository ships, with one `field = "value"` line replaced.
+///
+/// The pin's own reader over the pin's own text: a pin written out here would
+/// be the second spelling of the address `crate::place` exists so that nothing
+/// carries.
+pub(crate) fn the_pin_where(field: &str, value: &str) -> ThePin {
+    let opening = format!("{field} = ");
+    let written = THE_PIN_AS_BUILT
+        .lines()
+        .map(|line| {
+            if line.starts_with(&opening) {
+                format!("{opening}\"{value}\"")
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+    ThePin::read(&written).expect("the shipped pin with one line replaced")
 }
 
 /// This crate's own words and `alo-keeping-up`'s, which is every sentence

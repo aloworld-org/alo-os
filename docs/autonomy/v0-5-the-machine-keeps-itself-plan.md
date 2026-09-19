@@ -390,7 +390,13 @@ publishes and a release it does not hold are both *it refused*, a host that does
 not exist is *no way out*, and a proxy that is not there turns a place that
 answers straight out into one that cannot be reached. **Found:** a machine
 running the pinned release is offered `0.0.3`, which the owner has pushed and
-signed but this repository has not pinned — task 7. Report:
+signed but this repository has not pinned — task 7. **Refused once and fixed:**
+the first attempt's unit tests took their floor from `image/pinned.toml` while
+writing their own release names down, so pinning `0.0.3` turned a place holding
+`0.0.2` into one offering nothing; a test that means *a release this machine
+would take* now says which (`testing::a_place_not_before`), and the two tests
+that are about the shipped pin read the release out of the place rather than
+writing a number down. Nothing that ships changed. Report:
 `docs/autonomy/updates/finding-out-there-is-an-update.md`.
 
 Four fifths of *updates that never interrupt* is built and **nothing on this
