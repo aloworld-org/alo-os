@@ -40,6 +40,12 @@
 //! ADR 0016 gives to the organisation — and a bound refuses a choice without
 //! ever replacing one. [`Described::applications`] is the same kind of bound for
 //! where an application may come from, and it never chooses one either.
+//!
+//! **Which proxy the machine reaches the network through** is
+//! [`Described::proxy`], and it is the same shape of rule with nothing to choose
+//! within: on a machine an organisation manages it is theirs and the person is
+//! told so, and on a personal machine it is the person's. A description with no
+//! `[proxy]` in it is nobody's, which is not the same as no proxy.
 
 use std::path::{Path, PathBuf};
 
@@ -92,6 +98,14 @@ pub struct Bounds {
     pub questions: TheBound,
     /// Which places an application may come from (`[applications]`).
     pub applications: alo_software::Bound,
+    /// The proxy this machine reaches the network through (`[proxy]`), and
+    /// whose it is.
+    ///
+    /// [`Option::None`] is *nobody set a proxy on this machine*, which is a
+    /// different fact from *straight out*: the second is something somebody
+    /// wrote down, and `crate::machine_wide_proxy` is why this file does not
+    /// write it on their behalf.
+    pub proxy: Option<alo_proxy::Kept>,
 }
 
 impl Bounds {
@@ -102,6 +116,7 @@ impl Bounds {
         Self {
             questions: TheBound::Nobodys,
             applications: alo_software::Bound::Nobodys,
+            proxy: None,
         }
     }
 }
@@ -241,6 +256,20 @@ impl Described {
     #[must_use]
     pub const fn applications(&self) -> &alo_software::Bound {
         &self.bounds.applications
+    }
+
+    /// The proxy this machine reaches the network through, and who set it.
+    ///
+    /// [`Option::None`] on every machine whose description has no `[proxy]` in
+    /// it, and that is **nobody set one** rather than *straight out*: the
+    /// second is a setting, and a machine is told what its proxy is (ADR 0016,
+    /// `alo_proxy::Kept`). A person on such a machine sets their own; on a
+    /// machine whose root-owned description states one, the same change is
+    /// refused in words naming the organisation — which is
+    /// `alo_proxy::NotChanged`'s refusal, and nothing here decides it.
+    #[must_use]
+    pub const fn proxy(&self) -> Option<&alo_proxy::Kept> {
+        self.bounds.proxy.as_ref()
     }
 }
 

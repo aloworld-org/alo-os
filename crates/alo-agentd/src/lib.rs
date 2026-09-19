@@ -213,6 +213,8 @@ pub mod arrived_on;
 pub mod bounding;
 #[cfg(target_os = "linux")]
 pub mod caller;
+#[cfg(all(test, target_os = "linux"))]
+mod changing_the_proxy_under_the_description;
 #[cfg(target_os = "linux")]
 pub mod choosing_to_answer;
 #[cfg(target_os = "linux")]
@@ -255,6 +257,8 @@ pub mod listening_over_ipv6;
 pub mod listing_workspaces;
 #[cfg(target_os = "linux")]
 pub mod looking;
+#[cfg(target_os = "linux")]
+pub mod machine_wide_proxy;
 #[cfg(target_os = "linux")]
 pub mod names;
 #[cfg(target_os = "linux")]
@@ -343,7 +347,7 @@ pub use caller::{Caller, Gid, Uid};
 pub use described::{Bounds, Described, THE_DESCRIPTION};
 #[cfg(target_os = "linux")]
 pub use describing::{
-    ALSO_READ, APPLICATIONS_SINCE, QUESTIONS_SINCE, THE_FORMAT, is_a_shape_we_read,
+    ALSO_READ, APPLICATIONS_SINCE, PROXY_SINCE, QUESTIONS_SINCE, THE_FORMAT, is_a_shape_we_read,
 };
 #[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
