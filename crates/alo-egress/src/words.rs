@@ -191,6 +191,20 @@ pub const ALO_IS_CHECKING_FOR_AN_UPDATE: Word = Word::saying(
      OS\" is never translated.",
 );
 
+/// Downloading a deployment a person approved.
+pub const ALO_IS_FETCHING_AN_UPDATE: Word = Word::saying(
+    "egress.itself.fetching-an-update",
+    "alo OS is downloading an update from {destination}",
+)
+.noting(
+    "Shown for the minutes an approved update is being downloaded, which is long enough that a \
+     person will look at it and wonder. It must read as the machine fetching something for \
+     itself, never as anything leaving. Keep it clearly distinct from the checking line: a reader \
+     who confuses the two cannot tell a moment's question from a long download. Nothing has \
+     changed on the machine at this point, so do not translate it as installing or applying. \
+     {destination} arrives already in the reader's language; \"alo OS\" is never translated.",
+);
+
 /// Fetching an application a person chose.
 pub const ALO_IS_INSTALLING_AN_APPLICATION: Word = Word::saying(
     "egress.itself.installing-an-application",
@@ -338,7 +352,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 20] = [
+pub const EVERY_WORD: [Word; 21] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -348,6 +362,7 @@ pub const EVERY_WORD: [Word; 20] = [
     ALO_IS_SIGNING_YOU_IN,
     ALO_IS_FETCHING_A_MODEL,
     ALO_IS_CHECKING_FOR_AN_UPDATE,
+    ALO_IS_FETCHING_AN_UPDATE,
     ALO_IS_INSTALLING_AN_APPLICATION,
     ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
     ALO_IS_UPDATING_AN_APPLICATION,
@@ -480,6 +495,7 @@ mod tests {
             ALO_IS_SIGNING_YOU_IN,
             ALO_IS_FETCHING_A_MODEL,
             ALO_IS_CHECKING_FOR_AN_UPDATE,
+            ALO_IS_FETCHING_AN_UPDATE,
             ALO_IS_INSTALLING_AN_APPLICATION,
             ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
             ALO_IS_UPDATING_AN_APPLICATION,
@@ -505,6 +521,7 @@ mod tests {
             ALO_IS_SIGNING_YOU_IN,
             ALO_IS_FETCHING_A_MODEL,
             ALO_IS_CHECKING_FOR_AN_UPDATE,
+            ALO_IS_FETCHING_AN_UPDATE,
             ALO_IS_INSTALLING_AN_APPLICATION,
             ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
             ALO_IS_UPDATING_AN_APPLICATION,

@@ -183,6 +183,7 @@ fn an_answer_heard_during_any_other_errand_is_refused() {
     let others = [
         Errand::SigningIn,
         Errand::FetchingAModel,
+        Errand::FetchingAnUpdate,
         Errand::InstallingAnApplication,
         Errand::CheckingForApplicationUpdates,
         Errand::UpdatingAnApplication,
@@ -196,6 +197,12 @@ fn an_answer_heard_during_any_other_errand_is_refused() {
     // Every errand there is was considered: the one that may hear an answer,
     // and the others above that may not — an application's update check among
     // them, because an application's update is not this system's.
+    //
+    // `FetchingAnUpdate` refuses for the sharpest reason of the six. It is the
+    // download of a build somebody has already approved, so an offer heard
+    // during it is an answer arriving after the decision it was meant to
+    // inform. A machine that accepted one could be told to fetch one build and
+    // end up holding another.
     assert_eq!(Errand::EVERY.len(), others.len() + 1);
 }
 

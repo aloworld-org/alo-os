@@ -83,8 +83,16 @@ impl Offered {
             Errand::CheckingForAnUpdate => Ok(Self { digest }),
             // An application's update check is its own errand, and an answer
             // heard during it is about an application rather than this system.
+            //
+            // `FetchingAnUpdate` refuses for a sharper reason than the others,
+            // and it is the one worth reading twice: that errand is the
+            // download of a build somebody has **already approved**, so an
+            // offer heard during it would be an answer arriving after the
+            // decision it was meant to inform. A build is offered while the
+            // machine is asking, and only then.
             other @ (Errand::SigningIn
             | Errand::FetchingAModel
+            | Errand::FetchingAnUpdate
             | Errand::InstallingAnApplication
             | Errand::CheckingForApplicationUpdates
             | Errand::UpdatingAnApplication) => Err(NotACheck { during: other }),
