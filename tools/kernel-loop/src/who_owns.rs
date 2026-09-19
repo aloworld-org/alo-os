@@ -51,6 +51,14 @@ pub struct Claim {
     pub unfinished: bool,
 }
 
+impl Claim {
+    /// Whether this file is inside a crate or directory this plan claims.
+    #[must_use]
+    pub fn holds(&self, file: &str) -> bool {
+        !is_in(file, &self.owns).is_empty()
+    }
+}
+
 /// What one plan claims, read from its text.
 #[must_use]
 pub fn claimed_by(plan_named: &str, written: &str) -> Claim {

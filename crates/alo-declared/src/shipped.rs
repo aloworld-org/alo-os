@@ -52,6 +52,7 @@ declare_crates! {
     "alo-applications" => alo_applications::declare_into,
     "alo-capturing" => alo_capturing::verbs::declare_into,
     "alo-changing-network" => alo_changing_network::verbs::declare_into,
+    "alo-changing-printers" => alo_changing_printers::verbs::declare_into,
     "alo-converting" => alo_converting::verbs::declare_into,
     "alo-files" => alo_files::declare_into,
     "alo-finding" => alo_finding::verbs::declare_into,

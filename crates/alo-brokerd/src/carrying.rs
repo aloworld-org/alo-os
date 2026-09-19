@@ -4,8 +4,8 @@
 //! The door hands over a verb only once it has decided the verb is exactly one a
 //! person approved and has written that down. [`Carriers`] sends it to what
 //! carries it out. The match below names every verb on the closed list with no
-//! wildcard, so the task that carries the printers or the updates out meets its
-//! own line in the compiler rather than a verb that fell through.
+//! wildcard, so the task that carries the updates out meets its own line in
+//! the compiler rather than a verb that fell through.
 //!
 //! **The update verbs wait on a decision.** The base's own program refuses to
 //! change the machine for anything but root holding `CAP_SYS_ADMIN`, and this
@@ -16,20 +16,24 @@
 use alo_broker::{Carrying, NotCarried, SystemVerb};
 use alo_drives::DriveService;
 use alo_networks::NetworkService;
+use alo_printing::PrintingService;
 
 use crate::network::Network;
+use crate::printers::{PrintService, Printers};
 use crate::proxy::Proxy;
 use crate::storage::Storage;
 
 /// Everything that carries a verb out on this machine.
 #[derive(Debug)]
-pub struct Carriers<S, D> {
+pub struct Carriers<S, D, P = PrintingService> {
     /// The network's three verbs.
     network: Network<S>,
     /// The proxy.
     proxy: Proxy,
     /// The two storage verbs.
     storage: Storage<D>,
+    /// The printers, when the caller supplies their service.
+    printers: Option<Printers<P>>,
 }
 
 impl<S: NetworkService, D: DriveService> Carriers<S, D> {
@@ -41,7 +45,31 @@ impl<S: NetworkService, D: DriveService> Carriers<S, D> {
             network,
             proxy,
             storage,
+            printers: None,
         }
+    }
+}
+
+impl<S: NetworkService, D: DriveService, P: PrintService> Carriers<S, D, P> {
+    /// Add the printer carrier, preserving the network, proxy and storage.
+    ///
+    /// [`Carriers::of`] keeps its published three-argument signature and refuses
+    /// printer verbs until this method supplies their service. The process
+    /// supplies this machine's printing service; tests can supply their own.
+    #[must_use]
+    pub fn with_printers<T: PrintService>(self, printers: Printers<T>) -> Carriers<S, D, T> {
+        Carriers {
+            network: self.network,
+            proxy: self.proxy,
+            storage: self.storage,
+            printers: Some(printers),
+        }
+    }
+
+    /// What carries printer verbs out, if supplied.
+    #[must_use]
+    pub const fn printers(&self) -> Option<&Printers<P>> {
+        self.printers.as_ref()
     }
 
     /// What carries the network's verbs out, for a test to look at.
@@ -57,8 +85,8 @@ impl<S: NetworkService, D: DriveService> Carriers<S, D> {
     }
 }
 
-impl<S: NetworkService, D: DriveService> Carrying for Carriers<S, D> {
-    fn carry(&mut self, verb: SystemVerb, _approval: u64) -> Result<(), NotCarried> {
+impl<S: NetworkService, D: DriveService, P: PrintService> Carrying for Carriers<S, D, P> {
+    fn carry(&mut self, verb: SystemVerb, approval: u64) -> Result<(), NotCarried> {
         match verb {
             SystemVerb::JoinNetwork(identity) => self.network.join(identity),
             SystemVerb::ForgetNetwork(identity) => self.network.forget(identity),
@@ -73,10 +101,13 @@ impl<S: NetworkService, D: DriveService> Carrying for Carriers<S, D> {
             ))),
             SystemVerb::AddPrinter(_)
             | SystemVerb::RemovePrinter(_)
-            | SystemVerb::SetDefaultPrinter(_) => Err(NotCarried(format!(
-                "{} is not carried out on this machine yet, so nothing was changed",
-                verb.name()
-            ))),
+            | SystemVerb::SetDefaultPrinter(_) => match self.printers.as_mut() {
+                Some(printers) => printers.carry(verb, approval),
+                None => Err(NotCarried(format!(
+                    "{} is not carried out on this machine yet, so nothing was changed",
+                    verb.name()
+                ))),
+            },
         }
     }
 }

@@ -176,6 +176,19 @@ impl Printer {
     pub(crate) fn queue(&self) -> &Queue {
         &self.queue
     }
+
+    /// The bytes the printing service reports this printer under — the name
+    /// of the queue it keeps it in — for **digesting into an identity and
+    /// nothing else**.
+    ///
+    /// The queue is derived and never shown ([`Queue`]); what leaves this crate
+    /// is these bytes, which the privileged broker's callers turn into an
+    /// `alo_broker::Identity`, and which the broker compares with what the
+    /// printing service reports at the moment it carries a change out.
+    #[must_use]
+    pub fn as_reported(&self) -> &[u8] {
+        self.queue.as_str().as_bytes()
+    }
 }
 
 #[cfg(test)]
