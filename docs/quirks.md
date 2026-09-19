@@ -5109,6 +5109,33 @@ about is 0.5's, so a machine that has to do this needs 0.5 — which the certifi
 should pin deliberately rather than inherit.
 **Date:** 2026-09-17.
 
+**Corrected 2026-09-19: WirePlumber 0.5 does not fix it, and the sentence above
+guessed.** *The video policy people write about is 0.5's* was inference from release
+notes, not a measurement, and it was repeated into a plan, a report and an image pin
+before anybody ran it. Two 0.5 releases were built from upstream source and run against
+this same PipeWire 1.0.5 and the same `vivid` device, each in its own prefix with the
+packaged 0.4.17 left installed:
+
+| WirePlumber | What happened |
+|---|---|
+| **0.5.17** (`13d1e445…`) | the V4L2 node is never created: *Failed to activate V4L2 node `v4l2_input.platform-vivid.0`: enum params id:2 (Spa:Enum:ParamId:Props) failed*. Version skew — 0.5.17 is two years newer than PipeWire 1.0.5 |
+| **0.5.2** (`24ecc232…`), contemporary with PipeWire 1.0.5 | the node **is** created and is complete — `Video/Source`, `/dev/video0`, state `suspended`, a full YUY2 `EnumFormat` from 320×180 to the largest vivid offers — and **still nothing can attach** |
+
+On 0.5.2, `gst-launch-1.0 pipewiresrc` fails with `target not found` for **every** way of
+naming it — `path=<node id>`, `target-object=<serial>`, `target-object=<node name>`, and
+with no target at all — and `pw-cat --record --media-type Video` fails the same way. The
+node is healthy and addressable and the refusal is identical to 0.4.17's.
+
+**So the blocker is not the session manager's version.** What remains, untested here: the
+`xdg-desktop-portal` camera road, which is what the acceptance actually asks for (*an
+application reaches a camera only through the portal and its grant*) and which is not
+running on this machine; PipeWire 1.0.5's own camera path; and whether `vivid` differs
+from a real camera in a way that matters. **A pinned floor of 0.5 in the image is still
+right** — 0.4 is the old line and the image shipped no media server at all — but it is
+right for those reasons, and *it unblocks the camera acceptance* was never measured and
+is now known to be false.
+**Date:** 2026-09-19.
+
 ### A program that opens a camera directly does not appear on the in-use indicator
 **Version:** `alo-in-use` as of 2026-09-17, PipeWire 1.0.5, Ubuntu 24.04 aarch64.
 **Behaviour:** `alo-in-use` reads the media server's record and counts a **running

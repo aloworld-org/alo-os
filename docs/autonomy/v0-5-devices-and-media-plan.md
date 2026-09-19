@@ -137,9 +137,21 @@ pairing grants nothing** — held against the real `alo-nearby` and
 
 ### 4. The camera and the microphone
 
-**Status:** blocked — on a machine running a built image, which is nobody's to
-arrange from a lane. **The code is written and four of the five acceptances are
-taken, 2026-09-17**; the fifth is waiting on a media stack, not on work. Its blocker
+**Status:** blocked — and **not on what this plan said it was**. **The code is
+written and four of the five acceptances are taken, 2026-09-17**; the fifth was
+recorded as waiting on WirePlumber 0.5, and on 2026-09-19 that was measured and
+is false. Two 0.5 releases were built from upstream and run against this
+machine's PipeWire 1.0.5 and `vivid`: 0.5.17 cannot activate the camera node at
+all, and 0.5.2 — contemporary with this PipeWire — creates a complete, healthy
+`Video/Source` node that **still nothing can attach to**, by node id, by serial,
+by name or with no target. `docs/quirks.md` carries the measurement.
+
+What the fifth acceptance actually waits on is therefore **unknown and named
+rather than guessed**: the `xdg-desktop-portal` camera road, which is what the
+acceptance asks for and is not running here; PipeWire's own camera path; or a
+real camera rather than a kernel fixture. The image's 0.5 floor stays — 0.4 is
+the old line and the recipe shipped no media server at all — but it was pinned
+partly on this belief, and that half of the reason is withdrawn. Its blocker
 cleared: the capture plan's task 1 is done. `crates/alo-cameras` (a fifth crate, and why is
 in the report): cameras are listed by what they are and never by a device number,
 the switch turns the camera or the microphone off for everyone, and **off is held
