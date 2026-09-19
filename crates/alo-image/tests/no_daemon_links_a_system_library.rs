@@ -190,9 +190,7 @@ fn everything_reached_from(read: &serde_json::Value, root: &str) -> BTreeSet<Str
     }
 
     let start = packages(read)
-        .find(|package| {
-            package.get("name").and_then(serde_json::Value::as_str) == Some(root)
-        })
+        .find(|package| package.get("name").and_then(serde_json::Value::as_str) == Some(root))
         .and_then(|package| package.get("id").and_then(serde_json::Value::as_str))
         .unwrap_or_else(|| panic!("{root} is a package in this workspace"));
 
@@ -245,9 +243,9 @@ fn no_daemon_the_image_installs_links_a_system_library() {
     let allowed: BTreeMap<&str, &str> = MAY_LINK.into_iter().collect();
 
     for daemon in &daemons {
-        let package = by_binary
-            .get(daemon)
-            .unwrap_or_else(|| panic!("{daemon} is installed by {THE_RECIPE} and built by nothing"));
+        let package = by_binary.get(daemon).unwrap_or_else(|| {
+            panic!("{daemon} is installed by {THE_RECIPE} and built by nothing")
+        });
         let reached = everything_reached_from(&read, package);
         for (crate_named, library) in links_among(&read, &reached) {
             assert!(

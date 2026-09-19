@@ -42,8 +42,13 @@ Checked on 2026-09-19, on both machines this workstream runs on:
 | an image encoder registered with Windows for the photograph format | the development PC's own encoder list | only a JPEG XL encoder; **no HEIF encoder** |
 | an application that saves any of the three | both machines | the rented office engine opens a Pages document and **saves none of the three** |
 
-The machine that could save a Pages document is a Mac, and
-`docs/autonomy/SHARED_MAIN.md` records that the Mac is stopped. A drawing in
+The machine that could save a Pages document is a Mac, and this said it was
+stopped — quoting `docs/autonomy/SHARED_MAIN.md`, which was out of date. The
+Mac was running, and measured the real answer on 2026-09-19: **Pages is not
+installed on it and cannot be**, because the App Store and iCloud both need a
+screen somebody is sitting at and the owner's own account. So the file waits on
+a person rather than on a machine being restarted, which is a different kind of
+blocked and a different thing to ask for. A drawing in
 `.dwg` comes from a drawing program nobody here runs. A photograph in `.heic`
 comes from a telephone.
 
