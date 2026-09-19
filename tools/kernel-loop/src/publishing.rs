@@ -61,8 +61,8 @@
 use std::path::Path;
 
 use crate::{
-    evidence, gate_turn, gates, handoff::Handed, inside_the_plan, journal, plan, repository,
-    who_owns,
+    evidence, gate_turn, gates, handoff::Handed, inside_the_plan, journal, landing, plan,
+    repository, who_owns,
 };
 
 /// How many times a lost race is worth answering before somebody should look.
@@ -260,10 +260,18 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
                 return Ok(published);
             }
             Err(why) => {
-                if !steps.advanced()? {
+                // Two ways to know a race was lost, and either is enough. The
+                // first is that `origin/main` moved. The second is what the
+                // merge itself said: a pull request refused as *not mergeable*
+                // or with its *base branch modified* is behind `main` by
+                // definition, and it can say so in the moment between the
+                // refusal and this question, when `advanced` would still
+                // answer no. Anything else — a missing check, no permission —
+                // is a real error, and retrying it would only repeat it.
+                if !steps.advanced()? && !landing::is_a_lost_race(&why) {
                     return Err(format!(
-                        "the push was refused and `origin/main` has not moved, so this is a real \
-                         push error rather than a lost race. The commit is in this checkout, \
+                        "publishing was refused and `origin/main` has not moved, so this is a \
+                         real error rather than a lost race. The commit is in this checkout, \
                          unpublished and intact; nothing was discarded: {why}"
                     ));
                 }
@@ -353,8 +361,14 @@ impl Steps for OnThisMachine<'_> {
     }
 
     fn push(&mut self) -> Result<String, String> {
-        repository::pushed(self.at)?;
-        repository::git(self.at, &["rev-parse", "--short", "HEAD"])
+        // `main` is protected, so publishing is no longer a push: the commit is
+        // landed through a branch and a pull request
+        // (`docs/autonomy/SHARED_MAIN.md`). A merge refused because the branch
+        // fell behind is the same lost race a refused push was, and
+        // `gated_and_pushed` handles it above unchanged.
+        let ours = self.ours.to_owned();
+        let mut note = |said: &str| journal::note(&ours, said);
+        landing::landed(self.at, self.task.subject.trim(), &mut note)
     }
 
     fn put_away(&mut self, sha: &str) -> Result<(), String> {
@@ -540,6 +554,12 @@ mod tests {
             }
             if self.refusing == Some("push") {
                 return Err("`push` was set up to refuse".to_owned());
+            }
+            if self.refusing == Some("push-not-mergeable") {
+                // What GitHub answers a merge with when the branch has fallen
+                // behind `main`, which is the lost race said in words rather
+                // than found by asking the remote.
+                return Err("Pull Request is not mergeable".to_owned());
             }
             Ok("abc1234".to_owned())
         }
@@ -792,8 +812,13 @@ mod tests {
         ));
     }
 
-    /// **A refused push with an unmoved remote stops at once** rather than
+    /// **A refusal with an unmoved remote stops at once** rather than
     /// retrying, which is `SHARED_MAIN.md`'s rule about what a rejection means.
+    ///
+    /// The refusal this stands for is now a merge rather than a push — a
+    /// missing check, or no permission to merge. Retrying either would repeat
+    /// it until the attempts ran out, and leave somebody reading a log that
+    /// says a race was lost three times when no race happened.
     #[test]
     fn a_push_error_that_is_not_a_race_stops_at_once() {
         let mut steps = Recording {
@@ -802,11 +827,37 @@ mod tests {
         };
         let went = gated_and_pushed(&mut steps);
 
-        assert!(went.is_err_and(|why| why.contains("real push error")));
+        assert!(went.is_err_and(|why| why.contains("real error")));
         assert_eq!(
             steps.did.iter().filter(|what| *what == "push").count(),
             1,
             "a push error that was not a race was retried"
+        );
+    }
+
+    /// **A merge refused as not mergeable is a lost race, even before the
+    /// remote is seen to have moved.**
+    ///
+    /// The two questions are asked in an order that can disagree for a moment:
+    /// a pull request is refused because `main` moved, and `advanced` is asked
+    /// a breath later. Where the refusal itself says what happened, that is
+    /// believed — otherwise the task would be reported as a real error and
+    /// parked, when integrating and gating again is all it needed.
+    #[test]
+    fn a_merge_refused_as_stale_is_treated_as_a_lost_race() {
+        let mut steps = Recording {
+            refusing: Some("push-not-mergeable"),
+            ..Recording::default()
+        };
+        let went = gated_and_pushed(&mut steps);
+
+        assert!(
+            went.is_err_and(|why| !why.contains("real error")),
+            "a stale merge was reported as a real error rather than a lost race"
+        );
+        assert!(
+            steps.did.iter().filter(|what| *what == "push").count() > 1,
+            "a stale merge was not tried again"
         );
     }
 

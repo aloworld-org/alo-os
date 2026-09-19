@@ -27,7 +27,11 @@ use std::path::Path;
 use std::process::Command;
 
 /// The branch this workstream publishes to.
-const MAIN: &str = "main";
+///
+/// Read by `crate::landing` too, which opens the pull request that lands a task
+/// on it. The branch a task is merged into and the branch this module compares
+/// against are the same one, and two spellings of it could drift apart.
+pub const MAIN: &str = "main";
 
 /// Run one `git` and hand back what it said.
 ///
@@ -358,14 +362,10 @@ fn tempting(at: &Path, message: &str) -> Result<String, String> {
     Ok(named.to_string_lossy().into_owned())
 }
 
-/// Publish. An ordinary push, and never a forced one.
-///
-/// # Errors
-/// Whatever `git` said, which for a lost race is the fast-forward hint the
-/// caller reads as *integrate and try again*.
-pub fn pushed(at: &Path) -> Result<(), String> {
-    git(at, &["push", "origin", MAIN]).map(|_| ())
-}
+// A task used to be published by pushing it to `main`. `main` is protected now
+// (`docs/autonomy/SHARED_MAIN.md`), so nothing pushes to it at all and that
+// function is gone rather than kept for a road nobody may take: `crate::landing`
+// puts the commit on a branch and lands it through a pull request.
 
 /// Put a task's unfinished work on a branch of its own, push it, and leave
 /// `main` clean.
