@@ -333,7 +333,36 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** ready. **Depends on:** 1, 4, 5.
+**Status:** **one of the three taken, 2026-09-19 — the photo.** Not done: a
+`.pages` and a `.dwg` are left, and they are left for a reason that is not work.
+
+**The photo.** `alo-opening` recognises a HEIF photograph from its `ftyp` brand
+and reports it as `Kind::HeicPhoto`, *a photo in the format telephones save*. No
+engine the image pins converts one, so it takes task 4's `NothingHereOpens` road
+with *another machine or format*. Tested against a **real file with its
+provenance** — `crates/alo-opening/tests/files/`, written by macOS's own ImageIO
+from this repository's own artwork, its digest recorded and checked by the test
+that reads it. Seven tests.
+
+**It was worse than a shrug, and that is why this was taken first.** The plan was
+written when all three read as *not recognised*. By 2026-09-19 a HEIC read as **a
+film**: the media kinds added for ADR 0051 gave `ftyp` a meaning, and everything
+that was not `M4A`/`M4B` fell through to `Mp4Video`. HEIF and MP4 are one
+container and the brand is all that separates them. A machine confidently calling
+somebody's photograph a film is a worse failure than one admitting it does not
+know.
+
+**What is left, and what it needs.** A `.pages` and a `.dwg` need **one real file
+each**, saved by somebody who has the program — the way the owner saved the three
+Office documents on 2026-09-16. Neither can be produced or obtained on the Mac
+lane's machine with provenance anybody could check: Pages is not installed on it,
+nothing there draws in AutoCAD's format, and a file pulled off the web to make a
+test pass has exactly the provenance this acceptance exists to refuse. **Task 5's
+walk gains the photo when the other two land** — that walk runs the office engine
+and cannot run on an aarch64 gate, and a test nobody can run is not a test to
+edit blind. Written up in
+[A photo from a telephone](updates/a-photo-from-a-telephone.md).
+**Depends on:** 1, 4, 5.
 
 `docs/features.md`: ★ *"I can't open this file." A `.pages`, a `.heic`, a
 `.dwg`: the system converts it where it can, and where it cannot says plainly
