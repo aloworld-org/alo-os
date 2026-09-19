@@ -1,0 +1,39 @@
+[package]
+name = "alo-displays"
+version = "0.0.1"
+description = "A person's screens: which they are, where each sits, how large, and the arrangement remembered for every set of them."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What is behind the windows on one screen. `Appearance::background_on` is the
+# one answer, and `DisplayId` is the name it is asked under — read, never
+# edited: the background is appearance's value and this crate only says which
+# screen it belongs to.
+alo-appearance = { path = "../alo-appearance" }
+# Which edge the dock sits on. Read for the same reason, and `crate::wearing`
+# says what alo-dock has decided so far and what it has not.
+alo-dock = { path = "../alo-dock" }
+# The rule `displays.toml` is kept by: only the difference, refused whole when
+# wrong, written whole or not at all (ADR 0038).
+alo-kept = { path = "../alo-kept" }
+# Every sentence this crate can say, declared rather than written into a file.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, for the test that asks whether what this crate
+# says is collected at all.
+alo-saying = { path = "../alo-saying" }
+# Reads the text of `displays.toml` in `keeping.rs`'s tests, to hold the list of
+# keys to what a change writes.
+toml = { workspace = true }
+# A value written down and read back, in this crate's own tests: the shape of a
+# settings file rather than its text, which is `alo-kept`'s.
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

@@ -500,6 +500,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-displays"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-dock",
+ "alo-kept",
+ "alo-saying",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-dividing"
 version = "0.0.1"
 dependencies = [
@@ -802,6 +817,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-leaving"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-appearance",
+ "alo-applications",
+ "alo-dividing",
+ "alo-greeting",
+ "alo-kept",
+ "alo-locking",
+ "alo-overlay",
+ "alo-saying",
+ "alo-strings",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-locking"
 version = "0.0.1"
 dependencies = [
@@ -1079,6 +1113,7 @@ dependencies = [
  "alo-converting",
  "alo-corridor",
  "alo-desktops",
+ "alo-displays",
  "alo-dividing",
  "alo-dock",
  "alo-egress",
@@ -1094,6 +1129,7 @@ dependencies = [
  "alo-keeping",
  "alo-keeping-up",
  "alo-keyboards",
+ "alo-leaving",
  "alo-locking",
  "alo-measuring",
  "alo-menus",

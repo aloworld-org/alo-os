@@ -41,6 +41,7 @@ alo-context = { path = "../alo-context" }
 alo-converting = { path = "../alo-converting" }
 alo-corridor = { path = "../alo-corridor" }
 alo-desktops = { path = "../alo-desktops" }
+alo-displays = { path = "../alo-displays" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }
@@ -56,6 +57,7 @@ alo-installing = { path = "../alo-installing" }
 alo-keeping = { path = "../alo-keeping" }
 alo-keeping-up = { path = "../alo-keeping-up" }
 alo-keyboards = { path = "../alo-keyboards" }
+alo-leaving = { path = "../alo-leaving" }
 alo-locking = { path = "../alo-locking" }
 alo-measuring = { path = "../alo-measuring" }
 alo-menus = { path = "../alo-menus" }
