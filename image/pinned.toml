@@ -48,6 +48,20 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # that built it — the digest from `docker-content-digest`, and the revision from
 # the image's own `org.opencontainers.image.revision` label in its config blob.
 # What a local copy says about itself is not what an installer will pull.
+#
+# Declared 2026-09-19, in the change that moved the recipe's label to it.
+# **0.0.4 exists because every release before it shipped a document converter
+# that could not start.** `ldd` inside the published 0.0.2 and 0.0.3 images
+# reported eleven and then twelve libraries *not found*, and the engine died at
+# launch on `libXinerama.so.1`, so no document of any format opened on a real
+# machine and ADR 0039's promise was unmet in the shipped product.
+#
+# It went unnoticed because the build checked the engine's **executable bit**
+# rather than running it. The recipe now converts a document while it builds and
+# fails if nothing comes out, so a release that builds is a release whose engine
+# converted something. Until 0.0.4's digest is pinned below, an installer still
+# pulls 0.0.3 — with the converter it cannot use.
+next = "0.0.4"
 
 version = "0.0.3"
 digest = "sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7"

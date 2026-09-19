@@ -56,6 +56,9 @@ fn the_engine_is_pinned_and_checked(image: &Image, wrong: &mut Vec<Wrong>) {
             what: format!("the engine at {}", alo_converting::engine::THE_ENGINE),
         });
     }
+    if !converter.converts_while_it_builds() {
+        wrong.push(Wrong::TheBuildNeverConvertsADocument);
+    }
 }
 
 /// **The service is on the image and runs as a login of its own that holds

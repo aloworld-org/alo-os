@@ -329,13 +329,42 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec
 # directory`). The replacement is therefore conditional — done where the base
 # ships a link, skipped where it does not — rather than assuming either shape.
 # Recorded in `docs/quirks.md`.
+# **Measured 2026-09-19: releases 0.0.2 and 0.0.3 shipped a converter that could
+# not start.** `ldd` inside the published images reported eleven and then twelve
+# libraries *not found* — `libX11`, `libX11-xcb`, `libXext`, `libXinerama`,
+# `libXrender`, `libxcb`, `libICE`, `libSM`, `libcairo`, `libfontconfig`,
+# `libfreetype`, `libcups` — and the engine died at launch with
+# *error while loading shared libraries: libXinerama.so.1*. So no document of
+# any format converted on a real machine, `.docx` included, and ADR 0039's
+# promise was unmet in the shipped product from the day the converter was added.
+#
+# The engine needs them even headless: it is one binary whose toolkit is linked
+# in, not an optional X front end. They are named here rather than left to
+# `install_weak_deps`, because that is switched off one line below and turning
+# it on would pull in far more than these twelve.
+#
+# **Why it shipped, which is the part worth remembering.** This step used to end
+# with `test -x /opt/libreoffice26.2/program/soffice`. A file can carry the
+# executable bit and still not run, so the check passed on an image whose
+# converter was broken — a proxy for the thing tested instead of the thing. It
+# now *converts a document* and fails the build if nothing comes out. A build
+# that claims a converter works should have converted something.
 COPY --from=converter /converter/ /tmp/alo-converter/
 RUN if [ -L /opt ]; then rm -f /opt; fi \
  && mkdir -p /opt \
- && dnf install --assumeyes --setopt=install_weak_deps=False /tmp/alo-converter/*.rpm \
+ && dnf install --assumeyes --setopt=install_weak_deps=False \
+      /tmp/alo-converter/*.rpm \
+      libX11 libX11-xcb libXext libXinerama libXrender libxcb libICE libSM \
+      cairo fontconfig freetype cups-libs \
  && dnf clean all \
  && rm -rf /tmp/alo-converter \
- && test -x /opt/libreoffice26.2/program/soffice
+ && test -x /opt/libreoffice26.2/program/soffice \
+ && ! ldd /opt/libreoffice26.2/program/soffice.bin | grep 'not found' \
+ && printf 'a document this machine converted while it was being built\n' \
+      > /tmp/proof.txt \
+ && /opt/libreoffice26.2/program/soffice --headless --norestore -env:UserInstallation=file:///tmp/proof-user --convert-to odt --outdir /tmp /tmp/proof.txt \
+ && test -s /tmp/proof.odt \
+ && rm -rf /tmp/proof.txt /tmp/proof.odt /tmp/proof-user
 
 # The media server, and a floor under it (ADR 0011: rented, configured, never
 # patched). Installed by the base's own package manager for the converter's
@@ -434,7 +463,7 @@ LABEL alo.disk.file="alo-os.raw"
 # it is one that cannot say which release it is, and a digest pinned against it
 # is a digest held to nothing. Three numbers, never `latest` — a tag that moves
 # is the one thing a pin exists to refuse. `crates/alo-image` holds it to that.
-LABEL org.opencontainers.image.version="0.0.3"
+LABEL org.opencontainers.image.version="0.0.4"
 
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
