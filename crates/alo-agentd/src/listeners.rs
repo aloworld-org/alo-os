@@ -801,7 +801,6 @@ mod tests {
     /// listener nothing reaches, let go of at the next notification.
     #[test]
     fn a_network_that_will_not_bind_is_a_line_and_the_others_are_still_bound() {
-        let port = a_free_port();
         let reported = reported_by_the_kernel().unwrap();
         let every = listening_networks(&reported);
         let loopback = every
@@ -809,7 +808,22 @@ mod tests {
             .find(|network| network.address().is_loopback())
             .unwrap()
             .clone();
-        let somebody_else = held_to(port, NonZeroU32::new(loopback.index())).unwrap();
+
+        // **The port is held first and read back, rather than found and then
+        // rebound.** `a_free_port` binds port zero, reads what the kernel gave
+        // it, and then *drops* the listener — so between that drop and the bind
+        // below there is a window in which any of the five hundred tests this
+        // binary runs in parallel may take it. This test failed exactly that
+        // way on `main` on 2026-09-19, with `AddrInUse` on a port it had just
+        // been told was free, and then passed three times running on its own.
+        //
+        // Asking for zero here closes the window, because choosing the port and
+        // holding it become the same act. Every other test in this module and
+        // in `responding` still finds a port and rebinds it, and each of them
+        // can lose the same race; they are left for a task that can measure the
+        // change rather than edited in passing.
+        let somebody_else = held_to(0, NonZeroU32::new(loopback.index())).unwrap();
+        let port = somebody_else.local_addr().unwrap().port();
 
         let mut said = Vec::new();
         let listeners = Listeners::bound(port, &mut |line| said.push(line.to_owned()))

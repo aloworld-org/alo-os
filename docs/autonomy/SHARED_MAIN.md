@@ -79,6 +79,21 @@ A revert is not a judgement about the work. It is putting `main` back so four
 other machines can keep moving, and the branch is re-gated against the new head
 and merged again.
 
+**A failure that does not reproduce is flakiness, not breakage — do not
+revert.** Re-run the failing test alone, three times. If it passes every time,
+`main` is fine and what you have found is a test that depends on its
+environment or on what else is running beside it. Record it, and fix it as its
+own task; reverting somebody's work over it would remove good code and leave
+the actual fault in place.
+
+This happened the first time the rule was used, on 2026-09-19. `main` gated
+`test=101` after three merges, and the failure was `AddrInUse` in
+`alo-agentd`'s `a_network_that_will_not_bind_is_a_line_and_the_others_are_still_bound`
+— a test that asks for a free port, lets go of it, and then binds it again,
+racing the other five hundred tests in the same binary. It passed three times
+in a row when run alone. Reverting on that first result would have taken out
+the decoder decision and the errand for nothing.
+
 **A merge queue would be the proper answer and is not available here.** The
 queue waits for `alo/nine-gates` on a temporary branch of its own, and with no
 CI in this repository nothing would ever post it, so every merge would hang.
