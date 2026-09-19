@@ -12,8 +12,16 @@ grant, and there is no trusted-network setting. Nothing here re-decides any of
 that; it builds it.
 
 **Crates this plan owns:** a new `crates/alo-nearby` for discovery and
-pairing, with `crates/alo-models`, `crates/alo-egress` and
-`crates/alo-remembering` touched where a paired machine is already modelled.
+pairing, with `crates/alo-egress` and `crates/alo-remembering` touched where a
+paired machine is already modelled.
+
+**`alo-models` is not this plan's, from 2026-09-19.** It was named here and in
+`v0-5-the-models-measured-plan.md`, and the supervisor's ownership check found
+the two claims on the same crate — quietly true for days, and exactly the kind
+of thing that lets two lanes edit one crate at once. The models-measured plan
+keeps it: that plan is still being worked, and this one is finished, so the
+claim costs it nothing to give up. A task here that finds it needs `alo-models`
+is a finding rather than an edit.
 **From 2026-09-15, `alo-capability`'s `Reach`, `Ask` and `Grantee`, and the
 grants file's format in `alo-remembering`, are the applications plan's**
 ([ADR 0040](../decisions/0040-what-an-applications-grant-is-over.md)): no task
