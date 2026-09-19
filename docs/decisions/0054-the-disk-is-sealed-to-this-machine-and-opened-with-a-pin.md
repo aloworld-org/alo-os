@@ -1,12 +1,30 @@
 # ADR 0054 — The disk is sealed to this machine and opened with a PIN, and the person writes down the key that recovers it
 
-**Status:** proposed, 2026-09-17. Written by task 5 of
+**Status:** **accepted, 2026-09-19, by the owner — option C falling back to B,
+as recommended and without amendment.** Written by task 5 of
 `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Full-disk encryption,
 decided before it is built*), whose whole acceptance is this decision and the
 shape it leaves behind in `crates/alo-encrypting`. Tasks 6 and 7 of that plan
-wait on it being accepted, and
-`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` fails the
-day this line stops saying *proposed*, so that what it decides is then built.
+waited on it and are now the work to do;
+`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` begins
+failing with this line, which is how a decision gets built rather than
+remembered.
+
+**What the owner was told before accepting**, so a later reader knows what it
+rested on: that the machine chooses PIN or passphrase rather than asking a
+person who should never meet the words TPM or LUKS; that the recovery key is
+made *before* the unlock method is enrolled, so an install abandoned at that
+moment is abandoned cleanly rather than leaving a disk nobody can open; that
+confirming means typing the key back, with dashes, case and spacing forgiven and
+the characters not, because a stricter rule teaches people to photograph the
+screen; and that the key is consumed by the type holding it rather than trusted
+to a comment.
+
+**Left open deliberately:** whether an *install without encryption* road should
+exist at all. This decision does not create one, and §6 leaves that to the
+installer plan with the owner. The default is right; it should be settled on
+purpose later rather than discovered by somebody meeting a machine alo OS
+refuses to install onto.
 **Date:** 2026-09-17
 **Proposed by:** the broker-and-the-disk workstream
 **Context:** `docs/features.md` v0.5 *Full-disk encryption, enrolled at install*
