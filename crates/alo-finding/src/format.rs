@@ -121,6 +121,7 @@ pub(crate) fn read(text: &str) -> Result<Index, String> {
 mod tests {
     use super::*;
     use crate::entry::{Contents, Moment};
+    use crate::kept_words::KeptWords;
     use crate::kind::Kind;
 
     /// An index for these tests.
@@ -153,7 +154,7 @@ mod tests {
                     bytes: 10,
                     modified: Moment { secs: 7, nanos: 1 },
                     contents: Contents::Read {
-                        words: vec!["an".to_owned(), "invoice".to_owned()],
+                        words: KeptWords::from(["an", "invoice"]),
                     },
                 },
             ],

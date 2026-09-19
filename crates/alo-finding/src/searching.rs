@@ -115,6 +115,7 @@ mod tests {
     use super::*;
     use crate::covered::{Covered, Unread};
     use crate::entry::{Entry, Moment};
+    use crate::kept_words::KeptWords;
 
     /// An entry for these tests.
     fn an_entry(below: &str, kind: Kind, contents: Contents) -> Entry {
@@ -163,7 +164,7 @@ mod tests {
                     "2026/notes.txt",
                     Kind::Text,
                     Contents::Read {
-                        words: vec!["anna".to_owned(), "contract".to_owned()],
+                        words: KeptWords::from(["anna", "contract"]),
                     },
                 ),
                 an_entry("big.txt", Kind::Text, Contents::TooBig { bytes: 9 }),
@@ -171,7 +172,7 @@ mod tests {
                     "letter.txt",
                     Kind::Text,
                     Contents::Read {
-                        words: vec!["dear".to_owned(), "anna".to_owned()],
+                        words: KeptWords::from(["dear", "anna"]),
                     },
                 ),
             ],

@@ -77,6 +77,7 @@ impl Moment {
 )]
 mod tests {
     use super::*;
+    use crate::kept_words::KeptWords;
 
     /// A moment survives the trip to two numbers and back, and a time before
     /// the epoch is the epoch rather than a refusal. The nanoseconds are a
@@ -111,7 +112,7 @@ mod tests {
             bytes: 10,
             modified: Moment { secs: 1, nanos: 0 },
             contents: Contents::Read {
-                words: vec!["an".to_owned(), "invoice".to_owned()],
+                words: KeptWords::from(["an", "invoice"]),
             },
         };
         assert_eq!(entry.name(), "march.pdf");
@@ -124,6 +125,6 @@ mod tests {
         };
         assert_eq!(at_the_top.name(), "notes.txt");
         assert!(!at_the_top.contents.say("invoice"));
-        assert!(at_the_top.contents.words().is_empty());
+        assert!(at_the_top.contents.kept().is_none_or(KeptWords::is_empty));
     }
 }

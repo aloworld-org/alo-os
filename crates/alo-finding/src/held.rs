@@ -135,6 +135,7 @@ mod tests {
     use crate::covered::Covered;
     use crate::entry::Contents;
     use crate::index::Index;
+    use crate::kept_words::KeptWords;
     use crate::kind::Kind;
     use crate::query::Query;
 
@@ -181,7 +182,7 @@ mod tests {
                     "notes.txt",
                     Kind::Text,
                     Contents::Read {
-                        words: vec!["contract".to_owned()],
+                        words: KeptWords::from(["contract"]),
                     },
                 ),
                 an_entry("big.txt", Kind::Text, Contents::TooBig { bytes: 9 }),

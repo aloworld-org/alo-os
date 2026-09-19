@@ -98,13 +98,6 @@ fn lowered(word: &str) -> Cow<'_, str> {
     }
 }
 
-/// Whether a sorted list of words holds this one.
-pub(crate) fn says(words: &[String], word: &str) -> bool {
-    words
-        .binary_search_by(|kept| kept.as_str().cmp(word))
-        .is_ok()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -128,13 +121,11 @@ mod tests {
                 "za\u{17c}\u{f3}\u{142}\u{107}"
             ]
         );
-        assert!(says(&words, "contract"));
-        assert!(says(&words, "2026"));
-        assert!(
-            !says(&words, "Contract"),
-            "a query is lowered before asking"
-        );
-        assert!(!says(&words, "summer"));
+        let kept = crate::kept_words::KeptWords::of(&words);
+        assert!(kept.says("contract"));
+        assert!(kept.says("2026"));
+        assert!(!kept.says("Contract"), "a query is lowered before asking");
+        assert!(!kept.says("summer"));
         assert!(words_of("... \u{2014} !!!").is_empty());
     }
 

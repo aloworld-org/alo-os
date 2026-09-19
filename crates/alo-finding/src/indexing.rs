@@ -182,6 +182,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
+    use crate::kept_words::KeptWords;
     use crate::reading::Disk;
 
     /// A fixed moment for every index these tests make.
@@ -410,16 +411,22 @@ mod tests {
         assert!(
             matches!(contents, Contents::NotAllKept { unkept: 3, .. }),
             "{} words kept",
-            contents.words().len()
+            contents.kept().map_or(0, KeptWords::len)
         );
-        assert_eq!(contents.words().len(), wording::MOST_WORDS);
+        assert_eq!(
+            contents.kept().map_or(0, KeptWords::len),
+            wording::MOST_WORDS
+        );
         assert!(contents.say("w000000"));
         assert!(contents.say(&format!("w{:06}", wording::MOST_WORDS - 1)));
         assert!(!contents.say(&format!("w{:06}", wording::MOST_WORDS)));
 
         let (_, at_the_bound) = looked(Looked::Whole(text(wording::MOST_WORDS)));
         assert!(matches!(at_the_bound, Contents::Read { .. }));
-        assert_eq!(at_the_bound.words().len(), wording::MOST_WORDS);
+        assert_eq!(
+            at_the_bound.kept().map_or(0, KeptWords::len),
+            wording::MOST_WORDS
+        );
     }
 
     /// A look is turned into a kind and contents: words for text, none for a
@@ -432,7 +439,7 @@ mod tests {
             (
                 Kind::Text,
                 Contents::Read {
-                    words: vec!["an".to_owned(), "invoice".to_owned()]
+                    words: KeptWords::from(["an", "invoice"])
                 }
             )
         );

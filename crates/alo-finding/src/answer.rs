@@ -181,6 +181,7 @@ impl NotSearched<'_> {
 mod tests {
     use super::*;
     use crate::entry::{Contents, Moment};
+    use crate::kept_words::KeptWords;
     use crate::kind::Kind;
 
     /// An entry for these tests.
@@ -234,7 +235,7 @@ mod tests {
             "log.txt",
             Kind::Text,
             Contents::NotAllKept {
-                words: Vec::new(),
+                words: KeptWords::none(),
                 unkept: 1,
             },
         );

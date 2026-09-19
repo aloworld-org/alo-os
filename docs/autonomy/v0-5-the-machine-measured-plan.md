@@ -691,6 +691,27 @@ which is the number that grows.
 
 **Status:** ready. **Depends on:** 13.
 
+**Done, 2026-09-20.** Report:
+[`updates/words-held-in-one-piece.md`](updates/words-held-in-one-piece.md).
+`crates/alo-finding`: a file's kept words are **two allocations** — every word
+joined end to end in one piece, and where each begins beside it — instead of one
+allocation per word. Measured on an **Apple M3 with 8 GB**, in the Lima VM
+(Ubuntu 24.04.4 aarch64, 6 CPUs, 4 GB), against task 13's own folder of six long
+letters and three long logs: **9 548 201 bytes held as separate words, 4 724 993
+in one piece — 49 per cent** — with **301 455 separate allocations** gone. Both
+numbers are from one run on one machine, side by side, because task 13's were
+taken on another and comparing them would measure the machines; and both are the
+index's own count, which cannot see the allocator's rounding on those 301 455
+requests — roughly nine megabytes more, named as an estimate as task 13 named
+it. A search is still a binary search; the index file is byte for byte
+unchanged, 3 218 102 bytes before and after, and one written in the older shape
+still reads. `Contents::kept()` is the new way to ask; `Contents::words()` is
+kept and deprecated and still answers, and the variants keep the field name, so
+`Contents::Read { words }` still pattern-matches. A place is a `usize` rather
+than a `u32` on purpose: four bytes a word would need a branch for a file larger
+than a `u32` can index, and that branch cannot be reached, so it cannot be
+tested. Every task 9, 11 and 13 test answers exactly as before.
+
 Task 13 bounded what one file's words may hold and measured what they do
 hold — and the measurement says where the rest of the memory goes. A word
 is held as its own `String`: twenty-four bytes of place in the list, and an
