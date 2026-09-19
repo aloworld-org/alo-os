@@ -45,6 +45,22 @@ impl Video {
     pub const fn is_royalty_free(self) -> bool {
         matches!(self, Self::Av1 | Self::Vp9)
     }
+
+    /// Whether this codec's patents have run out, so a software decoder for it
+    /// may ship without licensing anything.
+    ///
+    /// **False for every video codec, including baseline H.264**, and that is a
+    /// decision rather than an oversight. Baseline H.264's core filings are old
+    /// enough to argue about, but the H.264 family's terms differ by profile and
+    /// by filing, and a file does not announce its profile before it is decoded.
+    /// [ADR 0058] leaves H.264 to the silicon or to `openh264`, where somebody
+    /// else has already answered the question.
+    ///
+    /// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
+    #[must_use]
+    pub const fn has_expired(self) -> bool {
+        false
+    }
 }
 
 /// **An audio codec this decision names.**
@@ -75,18 +91,38 @@ impl Audio {
         Self::AacLc,
     ];
 
-    /// Whether this codec carries no royalty to anybody.
+    /// Whether this codec was **free by design** — never encumbered, by
+    /// somebody's choice when it was published.
     ///
-    /// **MP3 is here and AAC-LC is not.** MP3's last patents expired in 2017,
-    /// which is a fact with a date rather than a reading of filings; AAC-LC is
-    /// the half of the open question in ADR 0051 that a lawyer has to answer,
-    /// and `crate::right` is where that shows.
+    /// **MP3 is not here any more, and that is the change [ADR 0058] made.** It
+    /// carries no royalty, but for the other reason: its term ran out. The two
+    /// used to be folded together, and folding them lost the only distinction
+    /// that matters when a lawyer reads this — *was it always free* against
+    /// *did it stop being encumbered on a date somebody could argue about*. See
+    /// [`Self::has_expired`].
+    ///
+    /// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
     #[must_use]
     pub const fn is_royalty_free(self) -> bool {
-        matches!(
-            self,
-            Self::Opus | Self::Vorbis | Self::Flac | Self::Pcm | Self::Mp3
-        )
+        matches!(self, Self::Opus | Self::Vorbis | Self::Flac | Self::Pcm)
+    }
+
+    /// Whether this codec's patents have run out, so a software decoder for it
+    /// may ship without licensing anything.
+    ///
+    /// **MP3 and AAC-LC**, and they are not equally settled. MP3's last patents
+    /// expired in 2017 and its licensor publicly closed its programme — a fact
+    /// with a date. AAC-LC's core filings are from 1997 and are past a
+    /// twenty-year term everywhere alo OS ships, but the pool that licenses the
+    /// family still exists for the later extensions, so the position is *the
+    /// part we want has expired, inside a family that has not*. That is the one
+    /// sentence [ADR 0058] sends to a lawyer, and
+    /// [`crate::right::SoftwareDecoders::THE_ONE_FOR_COUNSEL`] names it.
+    ///
+    /// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
+    #[must_use]
+    pub const fn has_expired(self) -> bool {
+        matches!(self, Self::Mp3 | Self::AacLc)
     }
 }
 
@@ -135,27 +171,62 @@ mod tests {
             .collect();
         assert_eq!(
             free_audio,
-            vec![
-                Audio::Opus,
-                Audio::Vorbis,
-                Audio::Flac,
-                Audio::Pcm,
-                Audio::Mp3
-            ]
+            vec![Audio::Opus, Audio::Vorbis, Audio::Flac, Audio::Pcm]
         );
     }
 
-    /// **AAC-LC is not royalty-free here, and that is the open question showing
-    /// through.**
-    ///
-    /// ADR 0051 leaves *which software decoders may ship* to counsel, and the
-    /// wrong way to be ready for the answer is to assume it. Saying AAC-LC is
-    /// free would be assuming it in the permissive direction, which is the more
-    /// expensive mistake of the two.
+    /// **The expired codecs are named separately from the free ones**, because
+    /// they are true for a different reason and only one of the two is
+    /// arguable.
     #[test]
-    fn aac_is_not_claimed_free_while_counsel_has_not_answered() {
+    fn the_expired_codecs_are_the_two_whose_terms_ran_out() {
+        let expired_video: Vec<Video> = Video::EVERY
+            .into_iter()
+            .filter(|codec| codec.has_expired())
+            .collect();
+        assert_eq!(expired_video, Vec::<Video>::new());
+
+        let expired_audio: Vec<Audio> = Audio::EVERY
+            .into_iter()
+            .filter(|codec| codec.has_expired())
+            .collect();
+        assert_eq!(expired_audio, vec![Audio::Mp3, Audio::AacLc]);
+    }
+
+    /// **Nothing is both free by design and expired**, which would mean the two
+    /// predicates had stopped meaning different things.
+    #[test]
+    fn no_codec_is_free_by_design_and_also_expired() {
+        for codec in Video::EVERY {
+            assert!(
+                !(codec.is_royalty_free() && codec.has_expired()),
+                "{codec:?}"
+            );
+        }
+        for codec in Audio::EVERY {
+            assert!(
+                !(codec.is_royalty_free() && codec.has_expired()),
+                "{codec:?}"
+            );
+        }
+    }
+
+    /// **Nothing encumbered is called free**, which is the mistake that would
+    /// cost the most.
+    ///
+    /// AAC-LC ships (ADR 0058) *because its term ran out*, not because it was
+    /// free — and the difference is the whole of what a lawyer is being asked.
+    /// Folding it into `is_royalty_free` would make the question unanswerable
+    /// by making it invisible. H.264 and HEVC are neither, and ship in neither
+    /// sense.
+    #[test]
+    fn nothing_encumbered_is_called_free() {
         assert!(!Audio::AacLc.is_royalty_free());
-        assert!(!Video::H264Baseline.is_royalty_free());
-        assert!(!Video::Hevc.is_royalty_free());
+        assert!(Audio::AacLc.has_expired());
+
+        for codec in [Video::H264Baseline, Video::H264Main, Video::Hevc] {
+            assert!(!codec.is_royalty_free(), "{codec:?}");
+            assert!(!codec.has_expired(), "{codec:?}");
+        }
     }
 }

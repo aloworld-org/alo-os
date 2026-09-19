@@ -12,11 +12,18 @@
 //!
 //! # Why a refusal is one of the answers
 //!
-//! [`Right::None`] is not an error state. It is the third step of the order, and
+//! [`Right::None`] is not an error state. It is the last step of the order, and
 //! it is reached on a real machine that a real person bought: no hardware
-//! decoder, no redistributable decoder, an H.264 file in the mail. **Most people
-//! will meet it at least once**, which is why the refusal it turns into is the
-//! one they already know from documents rather than a new one for video.
+//! decoder, no redistributable decoder, an HEVC film from a newer phone. **Some
+//! people will meet it**, which is why the refusal it turns into is the one they
+//! already know from documents rather than a new one for video.
+//!
+//! [ADR 0058] made that rarer than ADR 0051 left it — every audio codec in the
+//! list now decodes in software, so sound never fails on its own, and H.264
+//! reaches `openh264` where there is no silicon. What is left at the refusal is
+//! HEVC without a hardware decoder.
+//!
+//! [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
 
 /// **Where this machine's right to decode a codec comes from**, if it has one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -26,6 +33,18 @@ pub enum Right {
     /// First in the order because it is not really a step: nothing is being
     /// licensed and nothing can be withdrawn.
     RoyaltyFree,
+    /// **The patents ran out**, so the image may carry a software decoder for
+    /// it without licensing anything from anybody.
+    ///
+    /// Separate from [`Self::RoyaltyFree`] because the two are true for
+    /// different reasons and only one of them is arguable. A format that was
+    /// made free was free on the day it was published; a format whose term
+    /// expired was encumbered until a date, and *which* date depends on which
+    /// filings are counted and where. [ADR 0058] names the one row of its table
+    /// that rests on this, so that it is argued about on purpose.
+    ///
+    /// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
+    ByExpiry,
     /// **The silicon.** A hardware decoder on this machine — VA-API on a
     /// graphics card, V4L2 on an embedded decoder. The licence was paid for
     /// with the chip, and the file never touches a decoder we distributed.
@@ -43,8 +62,9 @@ impl Right {
     ///
     /// **The order is not a preference.** Each step is reached only because the
     /// one above it was absent, which is what `crate::deciding` walks.
-    pub const IN_ORDER: [Self; 4] = [
+    pub const IN_ORDER: [Self; 5] = [
         Self::RoyaltyFree,
+        Self::ByExpiry,
         Self::FromTheSilicon,
         Self::FromALicensedDecoder,
         Self::None,
@@ -68,42 +88,74 @@ impl Right {
     pub const fn could_be_withdrawn(self) -> bool {
         matches!(self, Self::FromALicensedDecoder)
     }
+
+    /// Whether this right rests on a patent term having run out.
+    ///
+    /// True of exactly one answer, and it is the one a lawyer is being asked
+    /// about. Everything else is true because nobody ever charged for it, or
+    /// because somebody else is paying, or because the answer is no — none of
+    /// which turn on a date.
+    #[must_use]
+    pub const fn rests_on_a_patent_term(self) -> bool {
+        matches!(self, Self::ByExpiry)
+    }
 }
 
-/// **A software decoder in the image is the question ADR 0051 left to counsel**,
-/// and this is where that shows in the code.
+/// **The software decoders the image ships**, which is the question ADR 0051
+/// left open and [ADR 0058] closed.
 ///
-/// The decision names four formats whose position differs — AAC-LC, baseline
-/// H.264, main-profile H.264 and HEVC — and asks, for a machine sold and
-/// distributed in the EU, which of them alo OS may include as a software decoder
-/// in the image it ships, and under what notice.
+/// The rule underneath the list, which is what a codec arriving later is
+/// measured against: **we ship a decoder when nobody can charge us for shipping
+/// it** — because it was made free, because the patents expired, or because a
+/// company that paid the royalty published a binary for us to pass on.
+/// Everything else is the silicon's job, and where there is no silicon the
+/// machine says so.
 ///
-/// **Until that is answered there is no fourth step.** This crate decides with
-/// three, and a machine with no hardware decoder and no licensed decoder refuses
-/// — which is the *none may ship* row of the decision's own table, taken as the
-/// safe reading rather than as the answer.
+/// So the image carries no H.264 decoder of its own (that is `openh264`'s job,
+/// and Cisco's bill) and no HEVC decoder at all (nobody publishes one we may
+/// pass on, and the patents are nowhere near term).
 ///
-/// # Why this is a type with one value
-///
-/// So that the hole is somewhere a reader trips over. A comment saying *counsel
-/// has not answered* is a comment somebody deletes while tidying; a type that
-/// every test asserts against is a hole with a shape.
+/// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SoftwareDecoders {
-    /// **Nobody has answered which software decoders may ship.** The deadline is
-    /// a shipment, not a version: before the certified laptop goes to anybody
-    /// outside this team.
-    NotAnsweredByCounsel,
+    /// **Everything free by design, everything whose patents have expired, and
+    /// nothing we would need a licence to distribute.**
+    FreeByDesignAndExpired,
 }
 
 impl SoftwareDecoders {
-    /// Where this stands today.
+    /// The video codecs the image decodes in software.
     ///
-    /// A function rather than a constant, so the day it is answered the change
-    /// is here and every caller keeps compiling until it should not.
+    /// Both of them free by design. Nothing expired is here: baseline H.264 is
+    /// the closest, and [ADR 0058] still leaves it to the silicon or to
+    /// `openh264`, because the H.264 family's terms differ by profile and by
+    /// filing in a way AAC-LC's do not.
+    ///
+    /// [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
+    pub const VIDEO: [crate::codec::Video; 2] =
+        [crate::codec::Video::Av1, crate::codec::Video::Vp9];
+
+    /// The audio codecs the image decodes in software, which is all of them.
+    ///
+    /// Four free by design, and two — MP3 and AAC-LC — whose patents ran out.
+    pub const AUDIO: [crate::codec::Audio; 6] = crate::codec::Audio::EVERY;
+
+    /// **The one row of the list that rests on a patent term**, and therefore
+    /// the one sentence a lawyer is being asked to confirm.
+    ///
+    /// Named here rather than left in prose because it is the part most likely
+    /// to be forgotten once playback works. MP3 rests on a term too, but on one
+    /// that ran out in 2017 with the licensor publicly closing its programme —
+    /// a fact with a date, not a reading. AAC-LC is the reading.
+    pub const THE_ONE_FOR_COUNSEL: crate::codec::Audio = crate::codec::Audio::AacLc;
+
+    /// What the image ships today.
+    ///
+    /// A function rather than a constant, so that changing the answer is an
+    /// edit in one place with every caller still compiling.
     #[must_use]
     pub const fn in_the_image() -> Self {
-        Self::NotAnsweredByCounsel
+        Self::FreeByDesignAndExpired
     }
 }
 
@@ -114,11 +166,12 @@ mod tests {
     /// **The order is the order the right exists in**, written out so that
     /// reordering it is a change to a test somebody reads.
     #[test]
-    fn the_order_is_free_then_silicon_then_a_licensed_decoder_then_a_refusal() {
+    fn the_order_is_free_then_expired_then_silicon_then_a_licensed_decoder_then_a_refusal() {
         assert_eq!(
             Right::IN_ORDER,
             [
                 Right::RoyaltyFree,
+                Right::ByExpiry,
                 Right::FromTheSilicon,
                 Right::FromALicensedDecoder,
                 Right::None,
@@ -149,13 +202,65 @@ mod tests {
         assert_eq!(withdrawable, vec![Right::FromALicensedDecoder]);
     }
 
-    /// **The counsel question is open, and this crate says so rather than
-    /// assuming either answer.**
+    /// **Exactly one answer rests on a patent term**, and it is the one a
+    /// lawyer is being asked about.
     #[test]
-    fn no_software_decoder_ships_until_somebody_says_which_may() {
+    fn only_expiry_rests_on_a_patent_term() {
+        let resting: Vec<Right> = Right::IN_ORDER
+            .into_iter()
+            .filter(|right| right.rests_on_a_patent_term())
+            .collect();
+        assert_eq!(resting, vec![Right::ByExpiry]);
+    }
+
+    /// **A term that ran out cannot be un-run**, so nothing about expiry is
+    /// withdrawable.
+    #[test]
+    fn an_expired_patent_is_not_a_right_that_can_be_taken_back() {
+        assert!(!Right::ByExpiry.could_be_withdrawn());
+        assert!(Right::ByExpiry.may_decode());
+    }
+
+    /// **The image ships no decoder it would need a licence to distribute.**
+    ///
+    /// Held as the rule rather than as the list: every codec named in
+    /// [`SoftwareDecoders`] is free by design or past term, and the two that
+    /// are neither — H.264 and HEVC — are absent.
+    #[test]
+    fn the_image_ships_only_what_nobody_can_charge_for() {
+        for codec in SoftwareDecoders::VIDEO {
+            assert!(
+                codec.is_royalty_free() || codec.has_expired(),
+                "{codec:?} is in the image and somebody could charge for it"
+            );
+        }
+        for codec in SoftwareDecoders::AUDIO {
+            assert!(
+                codec.is_royalty_free() || codec.has_expired(),
+                "{codec:?} is in the image and somebody could charge for it"
+            );
+        }
+        assert!(!SoftwareDecoders::VIDEO.contains(&crate::codec::Video::H264Baseline));
+        assert!(!SoftwareDecoders::VIDEO.contains(&crate::codec::Video::H264Main));
+        assert!(!SoftwareDecoders::VIDEO.contains(&crate::codec::Video::Hevc));
+    }
+
+    /// **The question left for a lawyer is one codec**, and it is one the image
+    /// actually ships — an open question about something we are not doing would
+    /// not need asking.
+    #[test]
+    fn the_one_for_counsel_is_shipped_and_rests_on_a_term() {
+        assert!(SoftwareDecoders::AUDIO.contains(&SoftwareDecoders::THE_ONE_FOR_COUNSEL));
+        assert!(SoftwareDecoders::THE_ONE_FOR_COUNSEL.has_expired());
+        assert!(!SoftwareDecoders::THE_ONE_FOR_COUNSEL.is_royalty_free());
+    }
+
+    /// **The answer is the answer**, and changing it is an edit somebody reads.
+    #[test]
+    fn the_image_ships_what_is_free_by_design_and_what_has_expired() {
         assert_eq!(
             SoftwareDecoders::in_the_image(),
-            SoftwareDecoders::NotAnsweredByCounsel
+            SoftwareDecoders::FreeByDesignAndExpired
         );
     }
 }

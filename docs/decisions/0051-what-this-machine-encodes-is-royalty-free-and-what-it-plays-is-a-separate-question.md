@@ -183,7 +183,16 @@ would*.
 A second refusal written for media would drift from the first, and the person
 reading it would have to learn two ways of being told the same thing.
 
-### What is open, and for counsel
+### What was open, and for counsel — **answered on 2026-09-19**
+
+> **This section is history**, kept as written. The shape of the question is
+> what made the answer cheap, and the reasoning below is what
+> [ADR 0058](0058-which-software-decoders-the-image-ships.md) is a reply to.
+> **The list the image actually ships is in ADR 0058**, and
+> `crates/alo-playing` carries it as types. What remains for a lawyer is one
+> sentence about AAC-LC rather than the four-format question posed here, and
+> the deadline stated at the end of this section is unchanged and still governs
+> it.
 
 **Which software decoders may ship in the image, and where.**
 
@@ -218,6 +227,12 @@ format**: steps 1 and 3 are live, step 2 is live where the publisher's terms are
 unambiguous, and a format that cannot be played is refused by name. That is the
 conservative reading, it is honest to a person, and it is the only one that
 cannot become a letter.
+
+**What was answered.** ADR 0058 took the second row of the table above — *the
+expired ones may ship* — and drew the line at what nobody can charge for: free
+by design, or past term, or somebody else's paid-for binary. In practice that
+is AAC-LC and MP3 in software, H.264 to the silicon or to `openh264`, and HEVC
+to the silicon alone.
 
 ## What it costs
 

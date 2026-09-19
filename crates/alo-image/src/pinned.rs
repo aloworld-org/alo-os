@@ -243,12 +243,28 @@ mod tests {
 
         assert_eq!(pin.registry(), THE_REGISTRY);
         assert_eq!(pin.version(), the_pinned_release());
-        assert_eq!(
-            pin.reference(),
-            "ghcr.io/aloworld-org/alo-os@sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9"
-        );
-        assert_eq!(pin.revision(), "8d2619daeb07b4b0ebbed59ded8caee722103b65");
         assert_eq!(pin.key(), "signing/alo-os.pub");
+
+        // Asserted as shape rather than as today's literal. Spelling the digest
+        // here proved only that somebody had edited two files in step, and it
+        // was one of seven copies that turned pinning a release into a hunt.
+        // What the digest *is* cannot be checked in this crate at all: that
+        // these bytes are in the registry, and that the owner's signature is
+        // over them, both need the network. `image/pinned.toml`'s own comment
+        // records who checked, when, and against which key.
+        assert_eq!(pin.reference(), format!("{THE_REGISTRY}@{}", pin.digest()));
+        assert!(
+            pin.digest().starts_with("sha256:")
+                && pin.digest().len() == "sha256:".len() + A_WHOLE_DIGEST,
+            "{} is not a whole digest",
+            pin.digest()
+        );
+        assert!(
+            pin.revision().len() == A_WHOLE_REVISION
+                && pin.revision().chars().all(|it| it.is_ascii_hexdigit()),
+            "{} is not a whole commit",
+            pin.revision()
+        );
         // Between releases nothing is declared; while a release is in flight
         // the pin declares exactly the release the recipe builds. Both are
         // correct, and which holds depends on whether one is being prepared —
@@ -265,16 +281,17 @@ mod tests {
     /// uppercase one, another algorithm, and a tag where the digest goes.
     #[test]
     fn a_digest_that_is_not_one_is_refused() {
-        let digest = "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
+        let digest = crate::testing::the_pinned_digest();
+        let hex = digest.trim_start_matches("sha256:").to_owned();
         for instead in [
-            "sha256:d3f05b60",
-            "sha256:D3F05B60975EDCFF51A44C1F21E764A32B286677E306BA24631BAD6A00B6A13C",
-            "sha512:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9",
-            "8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9",
-            "latest",
-            "",
+            "sha256:d3f05b60".to_owned(),
+            "sha256:D3F05B60975EDCFF51A44C1F21E764A32B286677E306BA24631BAD6A00B6A13C".to_owned(),
+            format!("sha512:{hex}"),
+            hex.clone(),
+            "latest".to_owned(),
+            String::new(),
         ] {
-            let refused = ThePin::read(&the_pin_with(digest, instead)).unwrap_err();
+            let refused = ThePin::read(&the_pin_with(&digest, &instead)).unwrap_err();
             assert!(
                 matches!(refused, NotPinned::NotADigest { .. }),
                 "`{instead}`: {refused}"
@@ -314,7 +331,7 @@ mod tests {
     #[test]
     fn a_revision_that_is_not_a_whole_commit_is_refused() {
         let refused = ThePin::read(&the_pin_with(
-            "revision = \"8d2619daeb07b4b0ebbed59ded8caee722103b65\"",
+            &format!("revision = \"{}\"", crate::testing::the_pinned_revision()),
             "revision = \"2501af5\"",
         ))
         .unwrap_err();

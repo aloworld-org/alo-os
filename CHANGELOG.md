@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Installing alo OS now gets you release 0.0.3.** It is the first release
+  whose image carries a media server, so sound and video work on a fresh
+  machine rather than reporting that nothing here handles them. The installer
+  pulls it by content and checks the owner's signature before writing anything
+  to your disk; if the signature does not verify, nothing is written.
+
+- **An ordinary video's sound now plays on a machine with no hardware decoder.**
+  The image ships software decoders for everything nobody can charge for — AV1,
+  VP9, Opus, Vorbis, FLAC, PCM, and now MP3 and AAC-LC, whose patents have
+  expired. H.264 still goes to the machine's own chip or to Cisco's `openh264`;
+  HEVC still needs a hardware decoder, and without one the file is refused by
+  name rather than played silently. This closes the licensing question ADR 0051
+  left open. Decision:
+  `docs/decisions/0058-which-software-decoders-the-image-ships.md`. Evidence:
+  `docs/autonomy/updates/which-software-decoders-the-image-ships.md`.
+
 - **Native control focus can move through all visible control names**, including
   disabled controls, in either direction. Traversal supports full-name opening
   and cancels pending openings when selection changes. Private-client and WSLg

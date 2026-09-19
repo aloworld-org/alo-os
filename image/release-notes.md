@@ -1,4 +1,4 @@
-# alo OS 0.0.2 — the installer
+# alo OS 0.0.3 — the installer
 
 The notes the GitHub Release carries, committed here so that nothing about the
 release is typed twice. `crates/alo-image` holds every fact below to
@@ -22,8 +22,8 @@ setting.
 What this release installs, from the registry, by content:
 
     registry: ghcr.io/aloworld-org/alo-os
-    tag: 0.0.2
-    digest: sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9
+    tag: 0.0.3
+    digest: sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7
     secure boot: off
 
 Nothing but that digest is pulled, whatever a tag in the registry says later.

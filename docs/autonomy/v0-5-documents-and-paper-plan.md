@@ -409,8 +409,12 @@ mechanical the day they arrive — what each of the three is recognised by, what
 each one is called, that a Pages document **converts** through the engine
 already pinned (a registration, in ADR 0039's own words, rather than a new
 engine), and that a photograph is **explained** rather than converted because
-ADR 0051 ships no software decoder for an encumbered format until counsel
-answers. It lists the three things that must happen before this task is ready
+the image ships no software decoder for a format somebody still licenses.
+**That answer arrived on 2026-09-19 and does not change this one:**
+[ADR 0058](../decisions/0058-which-software-decoders-the-image-ships.md) keeps
+HEVC out of the image and leaves it to the silicon, so a HEIC photograph on a
+machine without a hardware decoder is still explained rather than converted.
+It lists the three things that must happen before this task is ready
 again: the owner's answer, one real file of each with its provenance, and task
 5's walk and table published again in a follow-up report.
 `crates/alo-opening/tests/recognising_three_more_formats_waits_on_its_decision.rs`
