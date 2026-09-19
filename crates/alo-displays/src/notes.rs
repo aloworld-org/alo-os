@@ -1,8 +1,11 @@
-//! What a person is told when their screens are set up, and nothing more.
+//! What a person is told about their screens, and nothing more.
 //!
 //! A note is not a refusal: everything here happened, and the arrangement is in
 //! force. It is the sentence that turns *why is my second screen suddenly on
-//! the right* into an answer.
+//! the right* into an answer — and, for the two that are about night light,
+//! *why did my screens not go warm this evening*, which is a question only
+//! somebody inside a polar circle ever asks and which nothing else on their
+//! machine would answer.
 //!
 //! **There is no note for the ordinary morning.** Plugging the same screens
 //! into the same machine and getting the same arrangement says nothing at all —
@@ -34,6 +37,12 @@ pub enum Note {
     /// The arrangement these screens were left in no longer fits them, so they
     /// were laid out side by side again.
     DidNotFit,
+    /// Night light follows the sun, and the sun does not set here today, so the
+    /// screens are not being warmed.
+    TheSunDoesNotSet,
+    /// Night light follows the sun, and the sun does not rise here today, so
+    /// the screens are being warmed all day.
+    TheSunDoesNotRise,
     /// This screen cannot draw at the size it was given, so the nearest size it
     /// can draw was used.
     SizeRounded {
@@ -54,6 +63,8 @@ impl Note {
             Self::RememberedByItsSocket(_) => words::REMEMBERED_BY_ITS_SOCKET,
             Self::ToldApartByTheirSockets => words::TOLD_APART_BY_THEIR_SOCKETS,
             Self::DidNotFit => words::DID_NOT_FIT,
+            Self::TheSunDoesNotSet => words::THE_SUN_DOES_NOT_SET,
+            Self::TheSunDoesNotRise => words::THE_SUN_DOES_NOT_RISE,
             Self::SizeRounded { .. } => words::SIZE_ROUNDED,
         }
     }
@@ -65,7 +76,11 @@ impl Note {
             Self::NewHere(display)
             | Self::RememberedByItsSocket(display)
             | Self::SizeRounded { display, .. } => Some(display),
-            Self::AsYouLeftThem | Self::ToldApartByTheirSockets | Self::DidNotFit => None,
+            Self::AsYouLeftThem
+            | Self::ToldApartByTheirSockets
+            | Self::DidNotFit
+            | Self::TheSunDoesNotSet
+            | Self::TheSunDoesNotRise => None,
         }
     }
 
@@ -82,9 +97,11 @@ impl Note {
                     .and("asked", format!("{}%", rounded.asked().as_per_cent()))
                     .and("used", format!("{}%", rounded.used().as_per_cent()))
             }
-            Self::AsYouLeftThem | Self::ToldApartByTheirSockets | Self::DidNotFit => {
-                Filling::nothing()
-            }
+            Self::AsYouLeftThem
+            | Self::ToldApartByTheirSockets
+            | Self::DidNotFit
+            | Self::TheSunDoesNotSet
+            | Self::TheSunDoesNotRise => Filling::nothing(),
         };
         strings.say(&self.word().key(), &filling)
     }
@@ -113,6 +130,8 @@ mod tests {
             Note::RememberedByItsSocket(the_laptop()),
             Note::ToldApartByTheirSockets,
             Note::DidNotFit,
+            Note::TheSunDoesNotSet,
+            Note::TheSunDoesNotRise,
             Note::SizeRounded {
                 display: the_office_screen(),
                 rounded,

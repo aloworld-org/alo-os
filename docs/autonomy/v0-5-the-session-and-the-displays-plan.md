@@ -182,7 +182,46 @@ laptop that forgets, every morning, that the external screen is on the left.
 
 ### 4. Night light and display colour
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-18.** `crates/alo-displays`: a `NightLight` is
+*when* and *how warm*, kept separately because a person changes them
+separately. `Nightly` has three arms and deliberately no fourth — never, a
+`Between` the person set, or `FromSunsetAt(Whereabouts)` — so *sunset for your
+location* cannot exist on a machine that was never told a location, and the
+setting offers a schedule instead. `sun.rs` is the published sunrise equation,
+worked on this machine from two numbers somebody typed;
+`tests/the_sun_is_worked_out_on_this_machine.rs` reads the crate's own source
+and manifest and refuses seventeen roads off the machine, and a fourth test in
+it checks the arithmetic answers (London on the longest day of 2026: sets 21:21,
+rises 04:43, which is what an almanac prints). A timezone is used for one thing
+only — putting a sunset worked out for the whole earth onto the person's own
+clock (`Moment`, handed a `SystemTime` and an offset, never reading either).
+Inside a polar circle `Sun::NeverSets` and `Sun::NeverRises` are each said, as
+`Note::TheSunDoesNotSet` and `Note::TheSunDoesNotRise`. `Warmth` is a closed
+range, 2000 K to `Warmth::NEUTRAL` at 6500 K where it changes **nothing**
+exactly, and `Warming` is the curve normalised at that point. It is applied per
+screen through `Wearing`, beside that screen's background, rather than as one
+tinted sheet over a desk; there is no *except this one*, and the report says
+why. `tests/terracotta_still_means_the_agent_under_night_light.rs` walks every
+warmth at 50 K and holds the agent's colour ≥ 5.0 ΔE\*ab from all ten accent
+values — measured minimum **9.48, rose on a dark ground at 2000 K** — and holds
+that night light never makes the colour sufficient on its own, because ADR 0010
+measured that it never was. `displays.toml` gains one key, `night-light`.
+Report: `docs/autonomy/updates/night-light-and-display-colour.md`.
+It reaches `main` through a pull request from
+`task/dev-pc/night-light-and-display-colour`, which is based on task 3's commit
+rather than on `origin/main` because this task depends on task 3 — so task 3's
+pull request lands first, and this one is opened on top of it;
+`docs/autonomy/updates/publishing-night-light-through-a-task-branch.md` says
+why, and records that the same refusal has now stopped two finished tasks in a
+row, which makes adapting `tools/kernel-loop`'s publisher the thing blocking
+this plan rather than a queue item anybody can take at leisure.
+**Owed, and not this task's to pay:** `docs/contracts/person-settings.md` still
+describes four kept files and names neither `sleeping.toml` (task 2) nor
+`displays.toml` (task 3), so this change adds a key to a file the contract does
+not yet describe; the report says what that section and its
+`tests/the_contract_describes_this_file.rs` would have to hold. Not on hardware
+— nothing here opens a device or sets a ramp; the shell applies it later (the
+shell plan's task 9). **Depends on:** 3.
 
 - **Acceptance:** `alo-displays` decides night light — on a schedule a person
   sets, or from sunset to sunrise computed **on the machine** from a location the

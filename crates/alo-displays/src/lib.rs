@@ -15,11 +15,18 @@
 //! | [`scale`] | How large everything is drawn, and what a screen nobody has seen is set to |
 //! | [`placed`] | Where one screen sits, how large it draws, and whether it is the main one |
 //! | [`arrangement`] | One set of screens laid out, and the set itself |
-//! | [`changes`] | Every arrangement a person has made, which is all that is written down |
+//! | [`changes`] | Everything a person has changed about their screens, which is all that is written down |
 //! | [`attached`] | The screens plugged in at this moment, laid out |
 //! | [`coming_and_going`] | A screen unplugged and plugged back in: where the windows belong |
-//! | [`wearing`] | The background and the dock edge each screen wears, read from their own crates |
-//! | [`notes`] | What a person is told about how their screens were set up |
+//! | [`time_of_day`] | A time on the clock the person is looking at |
+//! | [`between`] | A stretch of that clock, which nearly always runs through midnight |
+//! | [`moment`] | What the machine's clock says, handed in rather than read |
+//! | [`sun`] | When the sun sets and rises where the person says they are, worked out here |
+//! | [`warmth`] | How warm a screen is drawn, and what that does to every colour on it |
+//! | [`nightly`] | When night light is on: never, a schedule, or the sun |
+//! | [`night_light`] | Night light as a person has it set, and what it is doing now |
+//! | [`wearing`] | The background, the dock edge and the warmth each screen wears |
+//! | [`notes`] | What a person is told about their screens |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //! | [`keeping`] | `displays.toml` in the person's own folder, read and written here |
 //! | [`unkept`] | What a person is told when that file did not read, or was not written |
@@ -73,7 +80,31 @@
 //! assert!(back.anything_goes_back());
 //! ```
 //!
-//! # The four decisions this crate makes, and nothing else
+//! And night light, which is the one thing here that depends on when it is:
+//!
+//! ```
+//! use std::time::{Duration, UNIX_EPOCH};
+//! use alo_displays::{Moment, NightLight, Nightly, Warmth, Whereabouts};
+//!
+//! // From sunset to sunrise in London, at 2700 K — worked out on this machine
+//! // from two numbers somebody typed, and from nothing else.
+//! let london = Whereabouts::typed(51.5074, -0.1278).expect("that is on the earth");
+//! let night = NightLight::of(
+//!     Nightly::FromSunsetAt(london),
+//!     Warmth::kelvin(2700).expect("2700 K is a warmth"),
+//! );
+//!
+//! // The longest evening of 2026, at nine o'clock: the sun is still up.
+//! let midsummer = 20_625 * 24 * 60 * 60;
+//! let nine = Moment::at(UNIX_EPOCH + Duration::from_secs(midsummer + 20 * 60 * 60), 60);
+//! assert!(!night.at(nine).is_on());
+//!
+//! // An hour later it is not, and every screen is drawn warmer.
+//! let ten = Moment::at(UNIX_EPOCH + Duration::from_secs(midsummer + 21 * 60 * 60), 60);
+//! assert_eq!(night.at(ten).warmth(), Warmth::kelvin(2700).expect("2700 K"));
+//! ```
+//!
+//! # The five decisions this crate makes, and nothing else
 //!
 //! 1. **Which screen this is.** What it says about itself, or — for a screen
 //!    that says nothing, and for two screens that say the same thing — where it
@@ -86,6 +117,9 @@
 //!    the nearest size the machine can actually draw ([`scale`]).
 //! 4. **Where the windows of a screen that went belong**, and that they come
 //!    back ([`coming_and_going`]).
+//! 5. **How warm each one is drawn**, on a schedule a person set or from
+//!    sunset to sunrise worked out on this machine from two numbers they typed
+//!    ([`night_light`], [`sun`]).
 //!
 //! # What is not here
 //!
@@ -100,22 +134,37 @@
 //! **A background or a dock.** [`wearing`] reads both from the crates that own
 //! them and says which screen each belongs to. It writes to neither.
 //!
-//! **Night light.** Task 4 of this crate's plan, and not yet built.
+//! **Anywhere a person is.** [`sun`] works a sunset out from two numbers
+//! somebody typed into Settings, on this machine, with arithmetic. There is no
+//! location service here, no address sent anywhere, and no network of any kind
+//! — `tests/the_sun_is_worked_out_on_this_machine.rs` reads this crate's own
+//! source and manifest and refuses every road to one. Absent a place the person
+//! typed, there is no guess: the setting offers a schedule instead.
+//!
+//! **A clock.** [`moment`] is handed one. Nothing here reads the time, an
+//! environment variable or a timezone database.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod arrangement;
 pub mod attached;
+pub mod between;
 pub mod changes;
 pub mod coming_and_going;
 pub mod identity;
 pub mod keeping;
+pub mod moment;
+pub mod night_light;
+pub mod nightly;
 pub mod notes;
 pub mod placed;
 pub mod reported;
 pub mod scale;
+pub mod sun;
+pub mod time_of_day;
 pub mod unkept;
 pub mod unreadable;
+pub mod warmth;
 pub mod wearing;
 pub mod words;
 
@@ -124,14 +173,21 @@ mod testing;
 
 pub use arrangement::{Arrangement, NotArranged, Screens};
 pub use attached::{Attached, OnScreen};
+pub use between::{Between, NotAStretch};
 pub use changes::Changes;
 pub use coming_and_going::{CameBack, Moved, NotAttached};
 pub use identity::{Identity, IdentityError, Panel, Socket, Stability, whoever_is_attached};
+pub use moment::Moment;
+pub use night_light::{NightLight, Tonight};
+pub use nightly::{Nightly, NotNightly, Now};
 pub use notes::Note;
 pub use placed::{Placed, Position};
 pub use reported::{Millimetres, NotAScreen, Reported, Resolution, which_screens_these_are};
 pub use scale::{Rounded, Scale, ScaleError, Support};
+pub use sun::{NowhereOnEarth, Sun, Whereabouts};
+pub use time_of_day::{NotATime, TimeOfDay};
 pub use unkept::{FileNotRead, FileNotWritten};
 pub use unreadable::NotRead;
+pub use warmth::{Warming, Warmth, WarmthError};
 pub use wearing::Wearing;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, display_words};

@@ -1,4 +1,14 @@
-//! Every arrangement a person has made, which is the only part written down.
+//! Everything a person has changed about their screens, which is the only part
+//! written down: every arrangement they have made, and night light.
+//!
+//! # An arrangement is per set of screens; night light is not
+//!
+//! Where a screen sits is a fact about the set it is in, so it is remembered
+//! per set. When the evening starts is not: the clock and the sun are the same
+//! at both desks, and somebody who warms their screens at ten does not stop
+//! wanting that when they plug a monitor in. So there is one night light for
+//! the machine, and [`Changes::night_light`] is absent until the person has
+//! touched it at all.
 //!
 //! The shape `alo-appearance`, `alo-dock` and `alo-sleeping` keep, for the same
 //! reason: what alo OS ships lives in the running release and the file holds
@@ -28,17 +38,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::arrangement::{Arrangement, Screens};
 use crate::identity::Identity;
+use crate::night_light::NightLight;
 use crate::scale::Scale;
 
-/// Every arrangement a person has made.
+/// Everything a person has changed about their screens.
 ///
 /// This is what `displays.toml` holds and nothing else ([`crate::keeping`]): a
-/// machine nobody has arranged has no file at all.
+/// machine nobody has arranged and who has never asked for night light has no
+/// file at all.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Written", into = "Written")]
 pub struct Changes {
     /// One arrangement per set of screens, oldest first.
     arrangements: Vec<Arrangement>,
+    /// Night light, where the person has touched it at all.
+    ///
+    /// One for the machine rather than one per set of screens: the sun and the
+    /// clock are the same at both desks, and somebody who warms their screens
+    /// in the evening does not stop wanting that when they plug a monitor in.
+    night_light: Option<NightLight>,
 }
 
 impl Changes {
@@ -48,11 +66,36 @@ impl Changes {
         Self::default()
     }
 
-    /// Whether nothing has been arranged at all, which is what a fresh machine
+    /// Whether nothing has been changed at all, which is what a fresh machine
     /// has, and what a missing file reads as.
     #[must_use]
     pub fn is_untouched(&self) -> bool {
-        self.arrangements.is_empty()
+        self.arrangements.is_empty() && self.night_light.is_none()
+    }
+
+    /// Night light as the person set it, if they have touched it at all.
+    ///
+    /// Nothing is [`crate::NightLight::as_shipped`], which is off — answered as
+    /// an absence rather than as that value, because *the person has not asked*
+    /// and *the person asked for what the release ships* are different things
+    /// to a release that later ships something else.
+    #[must_use]
+    pub const fn night_light(&self) -> Option<NightLight> {
+        self.night_light
+    }
+
+    /// Night light, set to this.
+    pub const fn set_night_light(&mut self, night_light: NightLight) {
+        self.night_light = Some(night_light);
+    }
+
+    /// Night light, back to what the release ships.
+    ///
+    /// Says whether there was anything to put back.
+    pub const fn forget_night_light(&mut self) -> bool {
+        let had = self.night_light.is_some();
+        self.night_light = None;
+        had
     }
 
     /// Remember this arrangement, replacing any for the same set of screens.
@@ -109,13 +152,17 @@ impl Changes {
     }
 }
 
-/// Changes as a settings file holds them: a machine nobody has arranged writes
+/// Changes as a settings file holds them: a machine nobody has changed writes
 /// no keys at all.
 #[derive(Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct Written {
     /// Every arrangement.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     arrangements: Vec<Arrangement>,
+    /// Night light, where the person has touched it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    night_light: Option<NightLight>,
 }
 
 impl From<Written> for Changes {
@@ -129,6 +176,7 @@ impl From<Written> for Changes {
         for arrangement in written.arrangements {
             changes.remember(arrangement);
         }
+        changes.night_light = written.night_light;
         changes
     }
 }
@@ -137,6 +185,7 @@ impl From<Changes> for Written {
     fn from(changes: Changes) -> Self {
         Self {
             arrangements: changes.arrangements,
+            night_light: changes.night_light,
         }
     }
 }
@@ -150,6 +199,7 @@ mod tests {
     use super::*;
     use crate::placed::{Placed, Position};
     use crate::testing::{an_arrangement, the_home_screen, the_laptop, the_office_screen};
+    use crate::warmth::Warmth;
 
     /// **One arrangement per set of screens**, replaced rather than added to
     /// when the same set is arranged again — and forgotten on request.
@@ -252,6 +302,7 @@ mod tests {
         let set = first.screens();
         let written = Written {
             arrangements: vec![first, second],
+            night_light: None,
         };
         let changes = Changes::from(written);
         assert_eq!(changes.how_many(), 1);
@@ -282,6 +333,67 @@ mod tests {
             "{}",
             "a machine nobody has arranged writes nothing"
         );
+    }
+
+    /// **Night light is one setting for the machine**, remembered whatever
+    /// screens are plugged in and absent until the person has touched it — so
+    /// that a later release changing what it ships reaches everybody who never
+    /// asked.
+    #[test]
+    fn night_light_is_one_setting_for_the_machine_and_is_absent_until_asked_for() {
+        let mut changes = Changes::untouched();
+        assert_eq!(changes.night_light(), None);
+        assert!(changes.is_untouched());
+
+        let asked = NightLight::as_shipped().at_this_warmth(Warmth::kelvin(2700).unwrap());
+        changes.set_night_light(asked);
+        assert_eq!(changes.night_light(), Some(asked));
+        assert!(
+            !changes.is_untouched(),
+            "a machine with night light set is not an untouched one"
+        );
+
+        changes.remember(an_arrangement(&[
+            (the_laptop(), 0, 175),
+            (the_office_screen(), -2560, 150),
+        ]));
+        assert_eq!(
+            changes.night_light(),
+            Some(asked),
+            "arranging screens says nothing about night light"
+        );
+        assert!(
+            changes.forget(
+                &an_arrangement(&[(the_laptop(), 0, 175), (the_office_screen(), -2560, 150),])
+                    .screens()
+            )
+        );
+        assert_eq!(
+            changes.night_light(),
+            Some(asked),
+            "and forgetting an arrangement says nothing about it either"
+        );
+
+        assert!(changes.forget_night_light());
+        assert!(!changes.forget_night_light());
+        assert!(changes.is_untouched());
+    }
+
+    /// Night light survives being written down beside an arrangement, and the
+    /// two are read back independently.
+    #[test]
+    fn night_light_and_an_arrangement_are_written_down_together() {
+        let mut changes = Changes::untouched();
+        changes.remember(an_arrangement(&[
+            (the_laptop(), 0, 175),
+            (the_office_screen(), -2560, 150),
+        ]));
+        changes.set_night_light(
+            NightLight::as_shipped().at_this_warmth(Warmth::kelvin(2700).unwrap()),
+        );
+        let written = serde_json::to_string(&changes).unwrap();
+        assert!(written.contains("night-light"), "{written}");
+        assert_eq!(serde_json::from_str::<Changes>(&written).unwrap(), changes);
     }
 
     /// A place a test puts a screen at, so the shape above stays readable.

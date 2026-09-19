@@ -1,9 +1,10 @@
 //! Every string this crate can say, and the English beside each one.
 //!
 //! They fall into four groups a person meets in four places: **what happened to
-//! their screens** when they signed in or plugged something in; **what became
-//! of the windows** on a screen that went; the **refusals**, which are mostly
-//! about a settings file they edited by hand; and **the person's own file**.
+//! their screens** when they signed in, plugged something in, or asked for
+//! night light somewhere the sun does not set; **what became of the windows**
+//! on a screen that went; the **refusals**, which are mostly about a settings
+//! file they edited by hand; and **the person's own file**.
 //!
 //! # What is deliberately not here
 //!
@@ -99,6 +100,30 @@ pub const DID_NOT_FIT: Word = Word::saying(
      thrown away.",
 );
 
+/// The sun does not set today, so night light has nothing to start at.
+pub const THE_SUN_DOES_NOT_SET: Word = Word::saying(
+    "displays.the-sun-does-not-set",
+    "the sun does not set where you are today, so your screens are not being warmed — they will \
+     be again on the first evening it does",
+)
+.noting(
+    "Said to somebody inside a polar circle in summer, whose night light follows the sun rather \
+     than a schedule. It is not a fault and should not read like one: it says what is happening \
+     and when it will change. \"Warmed\" means made more orange, the way a lamp is warmer than \
+     daylight, and not made hot.",
+);
+
+/// The sun does not rise today, so night light has nothing to stop at.
+pub const THE_SUN_DOES_NOT_RISE: Word = Word::saying(
+    "displays.the-sun-does-not-rise",
+    "the sun does not rise where you are today, so your screens are being warmed all day — they \
+     will stop on the first morning it does",
+)
+.noting(
+    "The same person as the sentence above, six months later: a polar winter. \"Warmed\" means \
+     made more orange, the way a lamp is warmer than daylight, and not made hot.",
+);
+
 /// A size the machine could not draw exactly.
 pub const SIZE_ROUNDED: Word = Word::saying(
     "displays.size-rounded",
@@ -137,7 +162,9 @@ pub const WINDOWS_CAME_BACK: Word = Word::saying(
 
 // ---------------------------------------------------------------------------
 // The refusals — [`crate::IdentityError`], [`crate::ScaleError`],
-// [`crate::NotArranged`] and [`crate::NotAttached`].
+// [`crate::NotATime`], [`crate::NotAStretch`], [`crate::NotNightly`],
+// [`crate::WarmthError`], [`crate::NowhereOnEarth`], [`crate::NotArranged`]
+// and [`crate::NotAttached`].
 // ---------------------------------------------------------------------------
 
 /// Nothing at all was offered as a screen's name.
@@ -170,6 +197,76 @@ pub const SIZE_OUT_OF_RANGE: Word = Word::saying(
 .noting(
     "{asked}, {least} and {most} are percentages as this machine writes them, such as \"150%\", \
      and are never translated. The size is how large everything on the screen is drawn.",
+);
+
+/// A piece of text that is not a time of day.
+pub const NOT_A_TIME: Word = Word::saying(
+    "displays.not-a-time",
+    "{name} is not a time of day — write it as 22:00, on a twenty-four hour clock",
+)
+.noting(
+    "{name} is text as the person typed it, shown inside quotation marks that alo OS adds, so \
+     that a space or a character they cannot otherwise see is visible. It is never translated. \
+     The example is written the way a settings file holds a time, which is the same in every \
+     language; how a time is *shown* to a person elsewhere belongs to their region rather than \
+     to this sentence.",
+);
+
+/// A schedule that begins and ends at the same moment.
+pub const BEGINS_AND_ENDS_AT_ONCE: Word = Word::saying(
+    "displays.begins-and-ends-at-once",
+    "night light cannot begin and end at the same moment — choose two different times",
+)
+.noting(
+    "Shown beside two time boxes in Settings, and read when a settings file somebody edited has \
+     the same time in both. Night light is the setting that makes a screen warmer — more orange \
+     — in the evening.",
+);
+
+/// Both a schedule and the sun.
+pub const A_SCHEDULE_OR_THE_SUN: Word = Word::saying(
+    "displays.a-schedule-or-the-sun",
+    "night light follows a schedule or the sun, and this asks for both",
+)
+.noting(
+    "Almost always a settings file somebody edited by hand and left the old lines in. Night \
+     light is the setting that makes a screen warmer — more orange — in the evening; \"the sun\" \
+     here means from sunset to sunrise where the person said they are.",
+);
+
+/// A number that is not a warmth.
+pub const NOT_A_WARMTH: Word = Word::saying(
+    "displays.not-a-warmth",
+    "{asked} is not a warmth a screen can be drawn at — choose between {least} and {most}",
+)
+.noting(
+    "{asked}, {least} and {most} are colour temperatures as this machine writes them, such as \
+     \"3400 K\", and are never translated. A smaller number is a warmer, more orange screen, \
+     which is the opposite of what the word warm suggests about a number — the sentence \
+     deliberately does not explain that, because the box the person is typing into is a slider \
+     with both ends labelled.",
+);
+
+/// A number that is not a latitude.
+pub const NOT_A_LATITUDE: Word = Word::saying(
+    "displays.not-a-latitude",
+    "{asked} is not a latitude — a latitude runs from -90 in the far south to 90 in the far north",
+)
+.noting(
+    "{asked} is a number as the person typed it and is never translated. A latitude is how far \
+     north or south somewhere is; alo OS asks for it so that it can work out sunset without \
+     asking anybody else where the person lives.",
+);
+
+/// A number that is not a longitude.
+pub const NOT_A_LONGITUDE: Word = Word::saying(
+    "displays.not-a-longitude",
+    "{asked} is not a longitude — a longitude runs from -180 in the far west to 180 in the far \
+     east",
+)
+.noting(
+    "{asked} is a number as the person typed it and is never translated. A longitude is how far \
+     east or west somewhere is, counted from the line through Greenwich.",
 );
 
 /// An arrangement with no screens in it.
@@ -345,18 +442,26 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 27] = [
+pub const EVERY_WORD: [Word; 35] = [
     AS_YOU_LEFT_THEM,
     NEW_HERE,
     REMEMBERED_BY_ITS_SOCKET,
     TOLD_APART_BY_THEIR_SOCKETS,
     DID_NOT_FIT,
+    THE_SUN_DOES_NOT_SET,
+    THE_SUN_DOES_NOT_RISE,
     SIZE_ROUNDED,
     WINDOWS_MOVED,
     WINDOWS_CAME_BACK,
     NOT_A_NAME,
     NAME_SPACED,
     SIZE_OUT_OF_RANGE,
+    NOT_A_TIME,
+    BEGINS_AND_ENDS_AT_ONCE,
+    A_SCHEDULE_OR_THE_SUN,
+    NOT_A_WARMTH,
+    NOT_A_LATITUDE,
+    NOT_A_LONGITUDE,
     NO_SCREENS,
     THE_SAME_SCREEN_TWICE,
     NO_MAIN_SCREEN,

@@ -3,9 +3,10 @@
 //!
 //! [ADR 0038](../../../docs/decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
 //! gives the file to the crate that declares its shape, and [`alo_kept`] holds
-//! the rule it is kept by. What is written is [`Changes`] — every arrangement
-//! and nothing else — under a `format` number of this file's own. No file is a
-//! person who has never arranged anything. A file that is there and wrong is
+//! the rule it is kept by. What is written is [`Changes`] — every arrangement,
+//! and night light — under a `format` number of this file's own. No file is a
+//! person who has never arranged anything and never asked for night light. A
+//! file that is there and wrong is
 //! refused whole, in this crate's words ([`FileNotRead`]), and every set of
 //! screens is laid out as though the machine had never seen it. A write is
 //! whole or not at all, and read back before it counts.
@@ -41,7 +42,10 @@ pub const FORMAT: i64 = 1;
 
 /// Every key the file may have besides `format` — which is every field a
 /// [`Changes`] writes, and a test holds the two together.
-const KEYS: &[&str] = &["arrangements"];
+///
+/// In the order a settings file sorts them, because that is the order the test
+/// reads them back in.
+const KEYS: &[&str] = &["arrangements", "night-light"];
 
 impl Kept for Changes {
     const FILE: &'static str = THE_FILE;
@@ -128,11 +132,16 @@ pub fn at_sign_in(at: &Path) -> (Changes, Option<FileNotRead>) {
 )]
 mod tests {
     use super::*;
+    use crate::between::Between;
+    use crate::night_light::NightLight;
+    use crate::nightly::Nightly;
     use crate::placed::Position;
     use crate::testing::{a_folder, an_arrangement, the_laptop, the_office_screen};
+    use crate::time_of_day::TimeOfDay;
+    use crate::warmth::Warmth;
 
-    /// **The list of keys is every key a change writes**: an arrangement is
-    /// written under `arrangements` and nothing else.
+    /// **The list of keys is every key a change writes**: an arrangement under
+    /// `arrangements`, night light under `night-light`, and nothing else.
     #[test]
     fn every_key_a_change_writes_is_on_the_list() {
         let mut changes = Changes::untouched();
@@ -140,6 +149,7 @@ mod tests {
             (the_laptop(), 0, 175),
             (the_office_screen(), -2560, 150),
         ]));
+        changes.set_night_light(NightLight::as_shipped());
         let text = alo_kept::text_of(&changes).unwrap();
         let table: toml::Table = toml::from_str(&text).unwrap();
         let written: Vec<&str> = table
@@ -201,6 +211,81 @@ mod tests {
 
         put_back_as_shipped(&at).unwrap();
         assert_eq!(read(&at).unwrap(), Changes::untouched());
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **Night light survives the round trip through the person's own file**,
+    /// and a machine that has only asked for night light writes that and no
+    /// arrangements at all.
+    #[test]
+    fn night_light_is_kept_and_read_back() {
+        let folder = a_folder("night-light");
+        let at = folder.join(THE_FILE);
+
+        let mut changes = Changes::untouched();
+        changes.set_night_light(NightLight::of(
+            Nightly::Between(
+                Between::these_two_times(
+                    TimeOfDay::written("22:00").unwrap(),
+                    TimeOfDay::written("07:00").unwrap(),
+                )
+                .unwrap(),
+            ),
+            Warmth::kelvin(2700).unwrap(),
+        ));
+        let text = alo_kept::text_of(&changes).unwrap();
+        assert!(text.contains("[night-light"), "{text}");
+        assert!(!text.contains("arrangements"), "{text}");
+        keep(&at, &changes).unwrap();
+        assert_eq!(at_sign_in(&at), (changes, None));
+
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **A file whose night light asks for both a schedule and the sun is
+    /// refused whole**, in the same words a settings panel would have used for
+    /// the same mistake — and nothing else in the file is honoured either.
+    #[test]
+    fn a_hand_edited_night_light_that_asks_for_both_is_refused_whole() {
+        let folder = a_folder("a-schedule-or-the-sun");
+        let at = folder.join(THE_FILE);
+        std::fs::write(
+            &at,
+            "format = 1\n\n[[arrangements]]\n\n[[arrangements.screens]]\nsocket = \
+             \"eDP-1\"\nat = [0, 0]\nscale = 100\nmain = true\n\n[night-light]\nwarmth = \
+             2700\n\n[night-light.between]\nfrom = \"22:00\"\nto = \"07:00\"\n\n[night-light.sunset-at]\nlatitude \
+             = 51.5074\nlongitude = -0.1278\n",
+        )
+        .unwrap();
+        let (read_back, refused) = at_sign_in(&at);
+        assert_eq!(
+            read_back,
+            Changes::untouched(),
+            "nothing in the file honoured, not even the arrangement that was fine"
+        );
+        let refused = refused.unwrap();
+        assert!(
+            matches!(refused.why(), alo_kept::Unread::NotItsShape { said } if said
+                .contains("displays.a-schedule-or-the-sun")),
+            "{:?}",
+            refused.why()
+        );
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **And a warmth no screen can be drawn at is refused the same way**,
+    /// which is the door a number typed into a file by hand comes through.
+    #[test]
+    fn a_hand_edited_warmth_outside_the_range_is_refused_whole() {
+        let folder = a_folder("not-a-warmth");
+        let at = folder.join(THE_FILE);
+        std::fs::write(&at, "format = 1\n\n[night-light]\nwarmth = 1000\n").unwrap();
+        let (read_back, refused) = at_sign_in(&at);
+        assert_eq!(read_back, Changes::untouched());
+        assert!(
+            matches!(refused.unwrap().why(), alo_kept::Unread::NotItsShape { said } if said
+                .contains("displays.not-a-warmth")),
+        );
         let _ = std::fs::remove_dir_all(&folder);
     }
 
