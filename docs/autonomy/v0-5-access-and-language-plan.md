@@ -77,8 +77,17 @@ is good enough for the other; if it is not, both fail.
 
 ### 3. Keyboard-only operation of everything
 
-**Status:** blocked — on `v0-5-hands-on-the-desktop-plan.md` task 6, whose
-`alo-keyboards` is the input sticky, slow and bounce keys act on. **Depends on:** 1.
+**Status:** **Done, 2026-09-18.** Its blocker cleared: `alo-keyboards` is on main
+as of `2c2510f`. `alo-access` gained `reaching` — the focus order **is** the
+reading order rather than a second list that can disagree with it, Escape leaves
+every one of the eight surfaces, and every one of `alo-shortcuts`' eleven actions
+has a chord **and** a place the keyboard arrives at by pressing Tab. Two of those
+stops did not exist and were added: the agent and the launcher. `filtering` holds
+what sticky, slow and bounce keys do to a key press, a test each, with time
+arriving as an argument so a test is a list of presses. Five EN 301 549 clauses
+moved from *not yet* to *met* in `alo-conforming`. Written up in
+[Everything from the keyboard](updates/everything-from-the-keyboard.md).
+**Depends on:** 1.
 
 - **Acceptance:** every action the shell offers has a keyboard road, held by a test
   that walks the shell's list of actions and fails on any reachable only by pointer;

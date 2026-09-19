@@ -132,6 +132,19 @@ pub const THE_WINDOWS_OPEN: Word =
     Word::saying("access.the-windows-open", "the windows that are open")
         .noting("A list of what is open, which a person moves through with the keyboard.");
 
+/// The agent, reached without knowing a chord.
+pub const ASK_THE_AGENT: Word = Word::saying("access.ask-the-agent", "ask the agent").noting(
+    "A control on the desktop that opens the agent. It is here because a chord is not a road \
+         for somebody who has never been told the chord: the agent answers to a key, and it must \
+         also be somewhere the keyboard arrives at by pressing Tab.",
+);
+
+/// The launcher, reached the same way.
+pub const THE_LAUNCHER: Word = Word::saying("access.the-launcher", "open something").noting(
+    "A control in the dock that opens the launcher. Named for what a person wants rather than \
+         for the thing — somebody looking for a program is looking to open something.",
+);
+
 /// The strip of applications a person starts things from.
 pub const THE_DOCK: Word = Word::saying("access.the-dock", "the dock")
     .noting("The strip of applications a person starts things from.");
@@ -225,7 +238,7 @@ pub const ARRANGE_THIS_WINDOW: Word =
         .noting("The button that moves a window to one side of the screen.");
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 35] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -242,6 +255,8 @@ pub const EVERY_WORD: [Word; 33] = [
     ACCESS_SETTINGS,
     THE_DESKTOP,
     THE_WINDOWS_OPEN,
+    ASK_THE_AGENT,
+    THE_LAUNCHER,
     THE_DOCK,
     AN_APPLICATION,
     THE_STATUS_AREA,

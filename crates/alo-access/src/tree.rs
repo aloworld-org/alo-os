@@ -82,6 +82,17 @@ impl Control {
     const fn of(role: Role, name: Word, state: State) -> Self {
         Self { role, name, state }
     }
+
+    /// **Whether a person can act on this**, which is what decides whether the
+    /// keyboard stops on it (`crate::reaching`).
+    ///
+    /// A switch is acted on and a thing that announces itself is not: somebody
+    /// hears that something is leaving the machine, and there is nothing to
+    /// press about it.
+    #[must_use]
+    pub const fn can_be_used(&self) -> bool {
+        matches!(self.state, State::CanBeUsed | State::OnOrOff)
+    }
 }
 
 /// **Every surface this machine draws**, as the shell's own frames name them.
@@ -162,10 +173,16 @@ impl Surface {
             Self::Desktop => vec![
                 Control::of(Role::Window, words::THE_DESKTOP, State::ReadOnly),
                 Control::of(Role::List, words::THE_WINDOWS_OPEN, State::CanBeUsed),
+                // The agent answers to a chord, and a chord is not a road for
+                // somebody who has not been told it. `crate::reaching` holds
+                // that every action this machine offers is also a place the
+                // keyboard arrives at by pressing Tab; this is the agent's.
+                Control::of(Role::Button, words::ASK_THE_AGENT, State::CanBeUsed),
             ],
             Self::Dock => vec![
                 Control::of(Role::List, words::THE_DOCK, State::CanBeUsed),
                 Control::of(Role::ListItem, words::AN_APPLICATION, State::CanBeUsed),
+                Control::of(Role::Button, words::THE_LAUNCHER, State::CanBeUsed),
             ],
             Self::StatusArea => vec![
                 Control::of(Role::StatusBar, words::THE_STATUS_AREA, State::ReadOnly),
@@ -226,7 +243,7 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
 
 /// How many of this crate's words name something a reader says, rather than a
 /// setting a person turns on — the count `words.rs` holds its own list to.
-pub const EVERY_NAME_A_READER_SAYS: usize = 24;
+pub const EVERY_NAME_A_READER_SAYS: usize = 26;
 
 #[cfg(test)]
 mod tests {
