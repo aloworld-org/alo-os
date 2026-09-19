@@ -47,6 +47,49 @@ The machine that could save a Pages document is a Mac, and
 `.dwg` comes from a drawing program nobody here runs. A photograph in `.heic`
 comes from a telephone.
 
+#### What the Mac itself measured, 2026-09-19
+
+The Mac was **not** stopped, and two of the three rows above are now answered
+from it rather than inferred about it. Measured on an **Apple M3 with 8 GB,
+macOS 26.5.2**, and recorded here so that this decision's open question reads
+*we tried, and here is what it would take* rather than *nobody has looked*.
+
+| Looked for | How | Found |
+|---|---|---|
+| an encoder for the photograph | `sips --formats` | **`public.heic`, writable** — macOS's own ImageIO writes the format |
+| **Pages** | `/Applications`, `/System/Applications`, `~/Applications` | **not installed.** Spotlight is unavailable on this machine, so `mdfind` is evidence of nothing either way; the three directories were listed directly |
+| anything that writes `.dwg` or `.dxf` | `/Applications`; `dwgread`, `dwgwrite`, `ODAFileConverter`, `teigha`, `librecad`, `freecad`, `qcad` on the path; `ezdxf` for Python; `sips --formats` | **nothing.** No CAD application, no converter, no library, and `sips` has no CAD format at all |
+
+**So the photograph was taken, and it is no longer one of the three.** The Mac
+saved a real `.heic` out of ImageIO — 37 008 bytes, major brand `heic`, its
+`sips` command, digest and what it is *not* recorded in
+`crates/alo-opening/tests/files/README.md` — and it is measured by
+`crates/alo-opening/tests/a_photo_from_a_telephone.rs`, which also reads the
+provenance and fails if the file stops matching what the README says it is. The
+row above saying an encoder was looked for and none found was true of the
+Windows PC and the Linux tree; it was not true of the Mac.
+
+That file is **not** a photograph taken through a lens — no Exif, no make, no
+model — and this decision should weigh that rather than have it discovered
+later. Nothing in the rule it measures reads any of those, so it does not
+weaken the evidence; a photograph off a telephone would additionally prove that
+the transfer did not silently convert it, which is the thing option A's first
+bullet asks for and this file cannot show.
+
+**Pages remains option A's to answer, and this machine cannot shorten it.** The
+one machine in this team of the right kind does not have the program. Installing
+it is a sign-in to somebody's account and a change to their personal machine,
+which is not a thing a worker does quietly on their behalf — so it is written
+here as a request rather than done: **Pages installed on the Mac, or one blank
+`.pages` saved anywhere**, and the remaining Pages work is mechanical.
+
+**The drawing is the one nothing here shortens.** It is not that no worker has
+tried: nothing on any of the three machines can write that format, and the two
+ways to produce one without the program — assembling it to the specification, or
+fetching somebody else's — are exactly options B and C, whose costs are set out
+below. **This measurement does not change the recommendation; it removes the
+possibility that the recommendation was made without looking.**
+
 ### 2. Borrowing one is a licence somebody has to hold
 
 `crates/alo-opening/tests/making/mod.rs` already argues the general case in its
