@@ -316,11 +316,12 @@ to `alo_software::Enabled::read`; nothing on a machine installs yet. **Depends o
 
 ### 9. An organisation's proxy, read from the machine's description
 
-**Status:** blocked — on the owner, for the same reason task 8 was: its acceptance
-reads the section in `alo-agentd`, and `v0-5-the-local-network-plan.md` is at 35
-of 36 with lane A working in that crate. Task 8 was published on 2026-09-17 once
-the owner released it; this task waits for the same word rather than assuming it.
-**Depends on:** 4, 8.
+**Status:** ready — taken by the third PC on 2026-09-18. It waited on the owner by
+analogy with task 8, and that was wrong: `v0-5-the-local-network-plan.md`
+is finished at 37 of 37, no plan's header claims `alo-agentd`, and nothing has
+edited that crate since lane A's own last commit (`ddbf8ff`) on the morning its
+plan closed. A plan that is finished releases its crates, which is the whole
+point of reading the plans rather than asking. **Depends on:** 4, 8.
 
 *A great many company networks have no other route out* (task 4), and on a managed
 machine the organisation is who knows the route.
