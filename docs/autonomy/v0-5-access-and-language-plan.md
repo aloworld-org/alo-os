@@ -169,7 +169,18 @@ thing a cloud assistant does badly for smaller languages.*
 
 ### 7. Every sentence, and the walk with the screen off
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
+**Status:** **Done, 2026-09-19.** `crates/alo-access/tests/the_walk_with_the_screen_off.rs`
+walks fifteen moments — the reader turned on before an account is chosen, four
+Tab stops through sign-in, the agent reached without a chord, a question in Greek
+answered as Greek, an approval read with **no** before **approve** and Escape
+answering no, and the record — and asserts they are exactly the table published in
+`docs/autonomy/updates/the-walk-with-the-screen-off.md`, which the test parses
+rather than copies. Two further tests hold that all 35 of this crate's sentences
+are in `alo_saying`'s assembled vocabulary with a translator's note, and that no
+sentence names Orca, AT-SPI, eSpeak, speech-dispatcher, CLDR or Unicode. Spoken
+and shown are one column on purpose: one description, used by a reader and by the
+shell. **This closes the plan** — seven tasks at publication on 2026-09-15, seven
+at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — turn on the screen reader at sign-in, sign in by

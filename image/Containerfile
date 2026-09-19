@@ -337,6 +337,49 @@ RUN if [ -L /opt ]; then rm -f /opt; fi \
  && rm -rf /tmp/alo-converter \
  && test -x /opt/libreoffice26.2/program/soffice
 
+# The media server, and a floor under it (ADR 0011: rented, configured, never
+# patched). Installed by the base's own package manager for the converter's
+# reason — its libraries come from the base rather than from us.
+#
+# **This recipe shipped no media server at all.** `alo-sound`, `alo-cameras`,
+# `alo-in-use` and `alo-capturing` reach this machine through
+# `crates/alo-media-server`, which starts `pw-dump`, and through `wpctl`.
+# Neither program is in the pinned base and nothing here installed one, so a
+# machine built from this recipe would have answered **nothing here handles
+# sound and video** to every one of them — correctly. The crates were right and
+# the image was empty: a workstation with no sound, no camera, and an in-use
+# indicator with nothing it could ever show.
+#
+# **0.5 is a floor, not a preference.** Measured 2026-09-17 on WirePlumber
+# 0.4.17 and written up in `docs/quirks.md` (*No client can open a camera
+# through the media server on WirePlumber 0.4*): the camera is in the graph and
+# complete, and **nothing can attach to it** — `pw-cat --record` and
+# `gst-launch-1.0 pipewiresrc` both refuse, by name, by serial and with no
+# target, using the server's own tools against its own node. The video policy
+# that makes a camera openable is 0.5's. Below this floor the devices-and-media
+# plan's task 4 acceptance — *an application opens the camera through the portal
+# and appears on the in-use indicator* — can neither pass nor fail honestly, and
+# the machine ships a camera nothing can use.
+#
+# **The floor is checked in the build rather than written down.** The base is
+# pinned by digest and carries 0.5 today; a base that moved back would otherwise
+# change what this machine can do without changing a line of this recipe. A
+# floor nothing enforces is a sentence, not a pin.
+#
+# It is a floor and not an exact release because a distribution package is not
+# an artefact fetched by digest, which is the shape the other three pins here
+# have. Pinning one release of it would pin the base's security updates out with
+# it — a worse trade than a build that refuses anything below 0.5.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      pipewire pipewire-utils wireplumber \
+ && dnf clean all \
+ && test -x /usr/bin/pw-dump \
+ && test -x /usr/bin/wpctl \
+ && least=0.5 \
+ && have="$(rpm --query --queryformat '%{VERSION}' wireplumber)" \
+ && test "$(printf '%s\n%s\n' "${least}" "${have}" | sort --version-sort | head -1)" = "${least}" \
+ && echo "WirePlumber ${have}, at or above ${least}"
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
