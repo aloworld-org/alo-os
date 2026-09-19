@@ -17,6 +17,9 @@ repository.workspace = true
 # The door, the list, the approving key and how it is handed over.
 alo-broker = { path = "../alo-broker" }
 
+# Printer identities and operations, owned by the printing producer.
+alo-printing = { path = "../alo-printing" }
+
 # What a network is as the network manager reports it, the client that asks and
 # tells it, and the shape of the machine's proxy file. Read, never decided here:
 # the carrier compares what the network manager reports now with the identity a

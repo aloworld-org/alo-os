@@ -34,6 +34,7 @@ alo-capturing = { path = "../alo-capturing" }
 alo-sound = { path = "../alo-sound" }
 alo-changing = { path = "../alo-changing" }
 alo-changing-network = { path = "../alo-changing-network" }
+alo-changing-printers = { path = "../alo-changing-printers" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }

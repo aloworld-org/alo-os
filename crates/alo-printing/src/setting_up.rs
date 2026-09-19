@@ -22,8 +22,10 @@
 //!
 //! [`set_up`] takes one [`Found`] printer and adds that one. Nothing here adds
 //! every printer found, nothing adds one as a side effect of finding, and no
-//! verb an agent can ask for reaches this function: the only road is a person
-//! choosing [`Found::proposal`]'s sentence.
+//! verb an agent can ask for reaches this function: the only road is the
+//! privileged broker carrying out a change a person chose — [`Found::proposal`]'s
+//! sentence in Settings, or an agent's proposal to add exactly this printer,
+//! approved (`crates/alo-changing-printers`).
 
 use alo_strings::{Filling, Said, Strings};
 

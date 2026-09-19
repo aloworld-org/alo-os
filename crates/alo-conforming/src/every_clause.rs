@@ -146,13 +146,21 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "5.8",
         requirement: "A key struck twice quickly must be able to count as one.",
-        standing: not_yet(6, THE_DESKTOP_PLAN),
+        standing: met(
+            "alo-access",
+            "src/filtering.rs",
+            "bounce_keys_count_one_press_where_a_hand_shook_twice",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {
         number: "5.9",
         requirement: "Nothing must need two keys or two fingers at once.",
-        standing: not_yet(6, THE_DESKTOP_PLAN),
+        standing: met(
+            "alo-access",
+            "src/filtering.rs",
+            "sticky_keys_make_a_chord_out_of_two_presses_one_after_the_other",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -275,13 +283,21 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.2.1.1",
         requirement: "Everything must be usable from a keyboard alone.",
-        standing: not_yet(3, THE_PLAN),
+        standing: met(
+            "alo-access",
+            "tests/everything_the_shell_offers_has_a_keyboard_road.rs",
+            "every_action_the_shell_offers_is_reached_by_tab_and_not_only_by_a_chord",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {
         number: "11.2.1.2",
         requirement: "The keyboard must never be trapped somewhere it cannot leave.",
-        standing: not_yet(3, THE_PLAN),
+        standing: met(
+            "alo-access",
+            "tests/everything_the_shell_offers_has_a_keyboard_road.rs",
+            "escape_leaves_every_surface_and_never_approves_anything",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -311,7 +327,11 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.2.4.3",
         requirement: "The focus must move in an order that keeps meaning.",
-        standing: not_yet(3, THE_PLAN),
+        standing: met(
+            "alo-access",
+            "tests/everything_the_shell_offers_has_a_keyboard_road.rs",
+            "the_focus_order_is_the_reading_order",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {

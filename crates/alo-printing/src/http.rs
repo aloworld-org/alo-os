@@ -6,7 +6,8 @@
 //! way out, and on the way back either a length or the chunks the service
 //! sends a long answer in. It is not a client for anything else and would be a
 //! poor one — there are no redirects, no cookies, no keep-alive and no
-//! authentication, because the service is on this machine and decides who may
+//! password authentication. Only the broker socket asks for PeerCred root;
+//! the service decides who may
 //! do what from the socket it was reached on.
 //!
 //! **An answer is bounded.** A list of devices is the largest thing this crate
@@ -54,6 +55,7 @@ pub fn exchange<S: Read + Write, D: Read>(
     head: &[u8],
     document: &mut D,
     length: u64,
+    as_root: bool,
 ) -> Result<Vec<u8>, Failed> {
     if !path.starts_with('/')
         || !path
@@ -66,9 +68,14 @@ pub fn exchange<S: Read + Write, D: Read>(
         .ok()
         .and_then(|head| head.checked_add(length))
         .ok_or(Failed::TooLarge)?;
+    let authentication = if as_root {
+        "Authorization: PeerCred root\r\n"
+    } else {
+        ""
+    };
     let request = format!(
         "POST {path} HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/ipp\r\n\
-         Content-Length: {total}\r\nConnection: close\r\n\r\n"
+         Content-Length: {total}\r\n{authentication}Connection: close\r\n\r\n"
     );
     stream.write_all(request.as_bytes())?;
     stream.write_all(head)?;
@@ -253,6 +260,7 @@ mod tests {
             b"head",
             &mut Cursor::new(b"document"),
             8,
+            false,
         );
         (got, wire.sent)
     }
@@ -306,7 +314,14 @@ mod tests {
             answer: Cursor::new(Vec::new()),
             sent: Vec::new(),
         };
-        let got = exchange(&mut wire, "/a b\r\nHost: x", b"", &mut io::empty(), 0);
+        let got = exchange(
+            &mut wire,
+            "/a b\r\nHost: x",
+            b"",
+            &mut io::empty(),
+            0,
+            false,
+        );
         assert!(matches!(got, Err(Failed::NotUnderstood)), "{got:?}");
         assert!(wire.sent.is_empty());
     }

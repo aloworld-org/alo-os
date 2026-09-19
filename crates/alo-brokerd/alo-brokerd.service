@@ -5,7 +5,7 @@
 # privilege sits behind this, small enough to audit in an afternoon.
 #
 # It lives beside the crate rather than in image/ until the image carries the
-# network manager it drives: a root service with nothing to carry out would be
+# services it drives: a root service with nothing to carry out would be
 # privilege on the machine with no function. The report for the broker's network
 # verbs says which lane moves it, and crates/alo-brokerd holds every line below
 # to what the process expects.
@@ -15,8 +15,8 @@ Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/00
 # The network manager it carries network changes out against. Wants= rather than
 # Requires=: a machine without one answers every network verb not-carried, in the
 # record, which is the honest failure.
-Wants=NetworkManager.service
-After=NetworkManager.service dbus.service
+Wants=NetworkManager.service cups.socket
+After=NetworkManager.service dbus.service cups.socket
 
 [Service]
 Type=exec
@@ -26,6 +26,7 @@ Type=exec
 # of whoever asks on the system bus, and root is who each lets without asking
 # anybody; and because the machine's proxy file is root's to write. The disk
 # service is started by the bus when it is first asked, so it needs no line here.
+# The printing service checks the caller's credentials on its own socket too.
 # The updates are not carried out by this process at all: the base's program asks
 # for a capability this unit does not hold, and ADR 0053 decides what runs it.
 # And the person's own group, because the door, the approving key and the folder

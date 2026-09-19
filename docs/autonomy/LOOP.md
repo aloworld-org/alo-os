@@ -493,3 +493,24 @@ powershell -ExecutionPolicy Bypass -File C:\dev\Ficina-orders\scripts\run-loop.p
 
 Stop it any time. Every finished item was committed and pushed by the iteration
 that built it, so nothing is lost by interrupting one.
+
+## A contribution explicitly released by its owner
+
+When the owner authorizes a task to supply a narrow producer dependency, record
+that authorization in the owning plan's header with an owner-release fenced
+block. Its ordered fields are plan = (the receiving plan's repository path),
+task = (its existing positive task number), and files = followed by exact
+repository-relative filenames, one per line. The printer contribution in the
+documents-and-paper plan is the first actual record. This is a record of an
+owner decision, never authority for a worker to expand its own scope.
+
+The supervisor reads this before gating. The plan containing the record must
+actually own each file, the receiving plan and task must match, and no other
+unfinished plan may claim the same file. Every other file still meets both the
+receiving plan's read-only rule and the other plans' ownership checks. Malformed
+records, directories, patterns and traversal are refused. A record inside a task
+body is not read. It neither transfers a crate nor finishes the owning plan.
+
+Record the release with the receiving task's gated publication. All nine gates,
+exact acceptance tests and integration revalidation still apply. Rebuild the
+supervisor after changing this mechanism before relying on it.
