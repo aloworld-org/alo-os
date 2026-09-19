@@ -1,0 +1,44 @@
+[package]
+name = "alo-looking"
+version = "0.0.1"
+description = "Finding out whether there is a newer version of this machine's system: where it asks, when it asks, and what it does with the answer."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What an update is. `Offered`, `Running` and `Standing` are that crate's, and
+# so is the errand a check is put on the indicator as. Nothing about an update
+# is decided here a second time.
+alo-keeping-up = { path = "../alo-keeping-up" }
+# The indicator a check is shown on for the whole of it, and the destination a
+# person reads while it happens.
+alo-egress = { path = "../alo-egress" }
+# Where a build comes from, read rather than guessed: `image/pinned.toml` is the
+# one file in this repository that names the place, and this is the crate that
+# reads it. No registry is spelt here.
+alo-image = { path = "../alo-image" }
+# The one proxy this machine has, on the road a check takes. On a great many
+# company networks there is no other route out, so a check that ignored it would
+# be a machine that can never find out there is an update. Read, never decided
+# here.
+alo-proxy = { path = "../alo-proxy" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+# The client a check is made with, and the answers it reads. A check fetches an
+# answer — which builds a place offers, and what one of them is named — and
+# never a build: there is no container library here, and nothing in this crate
+# writes anything a place sent it.
+ureq = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, in the direction every crate here takes: a crate
+# that says something is collected by `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

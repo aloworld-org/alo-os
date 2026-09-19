@@ -18,7 +18,9 @@ no mechanism. It writes **the decisions around a mechanism somebody else
 maintains**, which is exactly what ADR 0011 asks of a rented engine.
 
 **Crates this plan owns:** a new `crates/alo-keeping-up` for what an update
-is, when it may happen, and what rolling back means, and — from task 4, taken by
+is, when it may happen, and what rolling back means, a new `crates/alo-looking`
+for finding out there is one — added by task 6 on 2026-09-19, because the asking
+needs a client and a disk and `alo-keeping-up` is held to neither — and — from task 4, taken by
 the third PC on 2026-09-19 — the **undo entry in `crates/alo-record`** and the
 sentence `crates/alo-recounting` reads it back with. ADR 0045 point 3 asks for
 a record entry an undo writes, no existing kind fits one, and the crate is
@@ -350,6 +352,53 @@ you were running that*, *this can be undone*, *this cannot*.
 
 **Status:** ready. **Depends on:** 1, 2.
 
+**Done, 2026-09-19.** A new crate, `crates/alo-looking`, so `alo-keeping-up`
+still names no clock, socket or file and `alo-updating` still has no HTTP client
+in it. `Place::on_this_machine` is where this machine asks, read through
+`alo_image::ThePin` from `image/pinned.toml` — the registry is the repository it
+asks and the pinned release is the **oldest** it will be offered, and a test
+reads every file of the crate for the address and finds none. `look` is the one
+act: it puts `a_check_at` on the indicator before it asks anything and takes it
+off after the answer whichever way it ends, asks the place two questions —
+which names it holds, and which build one of them is (a `HEAD`, the answer and
+never the build) — and hears the `Offered` from the same `Underway`. `Because`
+is the whole list of occasions and it is two, *the person asked* and *this
+machine started*; there is no thread, timer, clock read or `await` anywhere in
+the crate and a test reads its source for each. `NoAnswer` is the closed set of
+five, each with a sentence that says the machine is as it was and names no
+machinery — four of them this crate's four words, and *the answer could not be
+understood* is `alo-keeping-up`'s existing sentence rather than a second
+spelling. `SaidOnce` is ADR 0009's rule in `alo-telling`'s shape: a machine with
+no way out is told once, a suppressed telling carries nothing a surface could
+word anyway, and any answer forgets it. `Kept` is one file under
+`/var/lib/alo/an-update-was-found`, written whole or not at all and read
+strictly, so a surface reads the answer back without a second line on somebody's
+indicator — and a kept answer names the build it was about, so *an update is
+ready* on a machine that has moved on is refused with
+`CHANGED_SINCE_IT_WAS_FOUND` rather than shown. What is read back is
+deliberately **not** an `Offered`: that type still does not deserialise, and
+carrying a decided update across a process is ADR 0053's open question.
+**Measured against the real registry** on 2026-09-19 in 2.6 s
+(`tests/against_the_real_registry.rs`, `#[ignore]`d because no other test in
+this suite reaches the internet): `ghcr.io/aloworld-org/alo-os` answered with
+six names, the newest release it offers is `0.0.3` at
+`sha256:41d43c7e…`, the pinned `0.0.2` is exactly the digest
+`image/pinned.toml` holds, the road out was decided by `alo_proxy::the_way` for
+`Road::CheckingForAnUpdate`, the indicator carried the check between the two
+requests, and three refusals came from the real place — a repository nobody
+publishes and a release it does not hold are both *it refused*, a host that does
+not exist is *no way out*, and a proxy that is not there turns a place that
+answers straight out into one that cannot be reached. **Found:** a machine
+running the pinned release is offered `0.0.3`, which the owner has pushed and
+signed but this repository has not pinned — task 7. **Refused once and fixed:**
+the first attempt's unit tests took their floor from `image/pinned.toml` while
+writing their own release names down, so pinning `0.0.3` turned a place holding
+`0.0.2` into one offering nothing; a test that means *a release this machine
+would take* now says which (`testing::a_place_not_before`), and the two tests
+that are about the shipped pin read the release out of the place rather than
+writing a number down. Nothing that ships changed. Report:
+`docs/autonomy/updates/finding-out-there-is-an-update.md`.
+
 Four fifths of *updates that never interrupt* is built and **nothing on this
 machine has ever looked**. Task 1 left it out by name — `alo-keeping-up`'s own
 header says *when to check is a later task that builds on these types* — and
@@ -386,3 +435,40 @@ build; the recovery *screen* stays the shell plan's.
   **`alo-keeping-up` gains no clock, no socket and no file** — the test holding
   it to four dependencies stays exactly as it is, and whatever does the asking
   is `alo-updating`'s or a new crate beside it.
+
+### 7. An offer a person can act on
+
+**Status:** ready. **Depends on:** 6.
+
+Task 6 measured something nobody had looked at before, and it is a gap rather
+than a detail: a machine running the release `image/pinned.toml` pins is
+offered **`0.0.3`**, which the owner pushed and signed and which this
+repository has **not** pinned. The check is right to offer what the place
+offers — a machine cannot know about a release that did not exist when it was
+built, and the pin travels with the build — but *an update is ready* is a
+sentence a person acts on, and the act is `alo_updating::apply`, which stages
+under `--enforce-container-sigpolicy` (ADR 0036) and refuses a build that
+policy will not have. A person told an update is ready and then told it could
+not be prepared has been told two true things and learned nothing, at the one
+moment a machine sold on sovereignty cannot afford to be vague.
+
+- **Acceptance:** what a machine is offered today and what happens when it
+  acts on it is **measured, on the real place and a real base** — the build
+  offered, the instruction staged, whether the signature policy accepts it,
+  and the exact sentence a person reads if it does not, with the machine shown
+  unchanged afterwards; a check does not offer a build this machine has no
+  reason to believe it would accept, which is either the offer narrowed to
+  what the place can vouch for or the offer carrying that it has not been
+  vouched for and saying so **before** the person chooses — whichever is
+  chosen is written down with the reason, and so is the one discarded; the
+  refusal a person meets when a build is refused by the signature policy is
+  its own sentence rather than `keeping-up.not-prepared`, which today says
+  both *the download failed* and *what arrived was not a genuine alo OS* and
+  so tells a person neither; and every refusal added is reachable from a test
+  and is in the vocabulary with a translator's note.
+- **Constraint:** nothing here weakens `--enforce-container-sigpolicy` or adds
+  any road to staging a build the policy refuses — that is the whole of what
+  makes an offer safe to act on. What is **pushed and tagged** at the place is
+  the installer plan's release process (ADR 0036): a change wanted there is a
+  finding handed to that lane in this task's report, never made here. And no
+  setting that turns checking off, and no member meaning *urgent*.
