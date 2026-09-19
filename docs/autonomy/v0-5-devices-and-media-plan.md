@@ -42,8 +42,14 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** **the decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
-2026-09-17 — and everything around the open question is built, 2026-09-19.** Its
+**Status:** blocked — on the counsel answer ADR 0051 leaves open, and on a
+machine to play a real sample file on. **Everything a lane may take is taken.**
+A supervisor cannot start what is left, so this says so in the one word it
+reads: a status it cannot parse is a finished task it selects again for ever,
+which is how this line was found.
+
+The decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
+2026-09-17 — and everything around the open question is built, 2026-09-19. Its
 encoding half is **accepted**: everything alo OS produces is AV1 or VP9, Opus and
 Matroska, royalty-free, with AV1 only where hardware can encode it — measured,
 not preferred. Its decoding half was answered the same day, with **one question
@@ -131,8 +137,9 @@ pairing grants nothing** — held against the real `alo-nearby` and
 
 ### 4. The camera and the microphone
 
-**Status:** **the code is written and four of the five acceptances are taken,
-2026-09-17** — the fifth is waiting on a media stack, not on work. Its blocker
+**Status:** blocked — on a machine running a built image, which is nobody's to
+arrange from a lane. **The code is written and four of the five acceptances are
+taken, 2026-09-17**; the fifth is waiting on a media stack, not on work. Its blocker
 cleared: the capture plan's task 1 is done. `crates/alo-cameras` (a fifth crate, and why is
 in the report): cameras are listed by what they are and never by a device number,
 the switch turns the camera or the microphone off for everyone, and **off is held
