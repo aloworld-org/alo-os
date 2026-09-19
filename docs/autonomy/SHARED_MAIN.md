@@ -16,7 +16,10 @@ push is a checkpoint, not a completed task or a release.
   destructive reset, automatic conflict resolution or force-push.
 - Both this development PC and the third PC may integrate and squash-merge
   their own completed tasks, then delete their verified merged task branches.
-  The Mac is stopped. Neither PC needs the other to perform its merge.
+  Neither PC needs the other to perform its merge. **The Mac runs a lane of
+  its own** — it was stopped for part of 2026-09-18 and has not been since, and
+  a sentence here saying otherwise was quoted as a reason elsewhere before
+  anybody checked it.
 - Only one PC holds the integration turn at a time. The holder is the temporary
   coordinator for its candidate; the other PC keeps developing and pushing task
   branches. This is a manual queue, not a deployed GitHub merge-queue bot.
