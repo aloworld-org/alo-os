@@ -384,21 +384,29 @@ the real document is recognised, and the real `sample.docx`, `sample.xlsx` and
 file saved by Pages 15.3.1 with our own words and our own picture in it, held to
 its digest.
 
-**The conversion is unmeasured, and that is the honest word for it.**
-[ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
-says a Pages document converts through the engine the image already pins. The
-engine does carry an iWork reader — `libetonyek` in
-`ghcr.io/aloworld-org/alo-os:0.0.3` holds `IWAParser::parseText`,
-`IWASnappyStream` and the literal strings `Index/Document.iwa` and
-`Index/Metadata.iwa`, and `ApplePages` is a registered import filter in
-`share/registry/writer.xcd` — so nothing new needs renting and ADR 0039 needs no
-amendment. **What is not known is whether it reads *this* document well enough**:
-that reader's support is partial and varies by Pages version, and *the engine
-reads the format* is not *the engine reads your file*. It is a measurement, and
-this lane cannot take it — the engine is x86_64 only, which is why the image does
-not run on the machine that made the file. So the conversion is **neither
-claimed nor ruled out**, and it is not registered: a machine that said *this
-converts* and then refused would be the shape ADR 0039 §1 forbids by name.
+**The conversion is measured, and deliberately not wired.** Three sentences,
+because they are three different states and collapsing them is how a promise gets
+made that a machine cannot keep:
+
+- **Recognition: done**, measured against a real file with its provenance.
+- **Conversion: proven possible.** Measured 2026-09-19 by the owner, inside the
+  **signed 0.0.3 image**, on this exact file digest-verified from the branch —
+  `soffice --convert-to odt` through filter `writer8`, **778 characters of this
+  document's own text recovered**. So
+  [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+  stands on this point: it converts through the engine already pinned, as a
+  registration in ADR 0039's words. No iWork reader and no amendment to ADR 0039
+  are needed. **The claim is one file wide** — it says *this document converts*,
+  not that `libetonyek`'s IWA path works in general.
+- **Conversion: not wired**, because **the converter in the shipped image cannot
+  start.** Twelve runtime libraries are missing from 0.0.3 as published (eleven
+  from 0.0.2), so no document of any format converts on a real machine today,
+  `.docx` included — ADR 0039's promise has been unmet in the product since the
+  converter landed. Registering a conversion into that would make the machine say
+  *this converts* and then fail everywhere, which ADR 0039 §1 forbids by name.
+  Nobody caught it because the recipe ends its converter step with
+  `test -x …/soffice`, **which checks the executable bit rather than that it
+  runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
 
 **What is left.** The `.dwg`, which needs one real drawing from somebody who has
 the program; the conversion decision above; and — to make one reasoned rule

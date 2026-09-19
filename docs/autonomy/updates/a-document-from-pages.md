@@ -1,4 +1,4 @@
-# A document from Pages, and a conversion nobody has measured yet
+# A document from Pages: recognised, its conversion measured, and deliberately not wired
 
 **Date:** 2026-09-19
 **Workstream:** v0.5 — documents and paper, task 6
@@ -96,54 +96,101 @@ prove those are the right parts. **One real Keynote and one real Numbers documen
 would settle it**, and both are a free install away on the machine that now has
 Pages.
 
-## The conversion is unmeasured, and I first said something stronger
+## The conversion: measured, and deliberately not wired
 
-I wired the conversion — a fourth `Conversion`, its word on the socket, its name
-in the scratch folder, its export filter — then took it out, and reported that
-ADR 0057 and ADR 0039 were in conflict: that no engine here reads IWA, so an
-inventory was impossible, so either an iWork reader had to be rented under ADR
-0011 or ADR 0039 had to be amended.
-
-**That was wrong, and the way it was wrong is worth recording.** I checked what
-*this repository's crates* read — zip and XML — and generalised it to the rented
-engine without checking the engine. The owner measured it against the pinned
-image the same day:
-
-> `/opt/libreoffice26.2/program/libetonyek-0.1-lo.so.1` in
-> `ghcr.io/aloworld-org/alo-os:0.0.3` contains `IWAParser::parseText`,
-> `IWASnappyStream`, and the literal strings `Index/Document.iwa` and
-> `Index/Metadata.iwa`. `ApplePages` is a registered import filter in
-> `share/registry/writer.xcd`.
-
-So **the reader I said we would have to rent is already rented**, ADR 0039 needs
-no amendment, and its rule — an inventory before any copy is shown, and never
-*this converts* followed by a failure — is exactly the rule that makes this
-product's argument. I had proposed weakening the thing the product is for, on a
-premise I had not checked.
-
-**Not wiring it was still right, for a different reason.** `libetonyek`'s IWA
-support is partial and varies by Pages version, so *the engine reads the format*
-is not *the engine reads this document well enough to say what the copy lost*.
-That is a measurement, and **this lane cannot take it**: the engine is x86_64
-only, which is why the image does not run on an aarch64 gate.
-
-So the conversion is **neither claimed nor ruled out**. It is not registered,
-because a machine that says *this converts* and then refuses is the shape ADR
-0039 §1 forbids; and it is not written off, because nobody has run the file
-through the engine. The owner is doing that on the PC that can:
+**It converts.** Measured by the owner on 2026-09-19, inside the **signed 0.0.3
+image**, on this exact file fetched from the branch and digest-verified
+(`1b011899…`, 227 583 bytes):
 
 ```
-soffice --headless --convert-to odt document.pages
+convert /tmp/document.pages as a Writer document -> /tmp/document.odt
+  using filter : writer8
+-rw-r--r-- 71359 /tmp/document.odt
+characters of text: 778
 ```
 
-If the text comes through, ADR 0057's claim stands and the wiring is mechanical —
-and the test for that road is already written and passing against a machine
-*told* it converts, so the sentence a person meets is held in advance. If it
-fails or comes out empty, ADR 0057 asserted something nobody had measured, and a
-Pages document takes the explain road the photograph takes.
+And it is this document's own text, not a stub — *"alo OS — a document this
+machine was sent. This document exists to be recognised…"* comes back out.
 
-**Either way the answer is a file rather than an argument**, which is the whole
-of what ADR 0057 is about — and I had started making it an argument.
+**So ADR 0057 stands on this point.** A Pages document converts through the
+engine already pinned, as a registration in ADR 0039's words rather than a new
+engine. No iWork reader is needed and **no amendment to ADR 0039 is needed**.
+
+**The scope of that claim, held deliberately narrow: this is one measured file.**
+It says *this document converts*. It is **not** a claim about `libetonyek`'s IWA
+path in general — that support is partial and varies by Pages version, and a
+second document could behave differently. One file answers one question, which is
+the whole argument of ADR 0057.
+
+### What I got wrong on the way here
+
+I first reported that this was a conflict between ADR 0057 and ADR 0039: that no
+engine here reads IWA, so an inventory was impossible, so either an iWork reader
+had to be rented under ADR 0011 or **ADR 0039 had to be amended**.
+
+That was wrong, and the way it was wrong matters. I checked what *this
+repository's crates* read — zip and XML — and generalised it to the rented engine
+without opening the engine. `libetonyek-0.1-lo.so.1` in the 0.0.3 image carries
+`IWAParser::parseText`, `IWASnappyStream` and the literal strings
+`Index/Document.iwa` and `Index/Metadata.iwa`, and `ApplePages` is a registered
+filter in `share/registry/writer.xcd`. **The reader I said we would have to rent
+was already rented**, and I had proposed weakening the rule the product exists to
+argue for, on a premise I never checked.
+
+Refusing to wire it blind was still right. The premise was the wrong part.
+
+### And it is still not wired, for a different and larger reason
+
+**The converter in the shipped image cannot start at all.** Measured the same
+day, against 0.0.3 as published:
+
+```
+ldd /opt/libreoffice26.2/program/soffice.bin
+  libX11.so.6, libX11-xcb.so.1, libXext.so.6, libXinerama.so.1,
+  libXrender.so.1, libxcb.so.1, libICE.so.6, libSM.so.6,
+  libcairo.so.2, libfontconfig.so.1, libfreetype.so.6, libcups.so.2
+    => not found
+
+oosplash: error while loading shared libraries: libXinerama.so.1
+```
+
+Twelve runtime libraries are missing; 0.0.2 has the same defect with eleven. The
+conversion above only ran because those libraries were installed by hand first.
+
+**So no document of any format converts on a real alo OS machine today — `.docx`
+included.** ADR 0039's promise has been unmet in the shipped product since the
+converter was added.
+
+Wiring a Pages conversion into this would make the machine say *this converts a
+copy into a PDF* and then fail on every machine that shipped, which is the shape
+ADR 0039 §1 forbids by name. So the capability is **recorded as measured** and
+the promise is **not made until the image can keep it**. The test for that road
+is written and passing against a machine *told* it converts — it proves the
+wiring, not the claim — so the day the image is fixed, registering it is
+mechanical.
+
+### Why nobody caught it, which is the part worth keeping
+
+`image/Containerfile` ends its converter step with:
+
+```
+test -x /opt/libreoffice26.2/program/soffice
+```
+
+**That checks the executable bit.** A file can be executable and never run.
+
+It is the third variant of one error in a single day, and this is the one that
+shipped:
+
+| Where | The proxy that was read | The thing it stood for |
+|---|---|---|
+| this lane, searching for Pages | the filename `Pages.app` | an application with bundle id `com.apple.Pages` — it had been renamed |
+| lane A, watching a gate | `cat /tmp/gate.result \|\| echo "still running"` | work in progress — a missing file reads the same as one not yet written |
+| the image, since the converter landed | `test -x soffice` | a converter that starts |
+
+The fix is lane A's, in `image/`: the twelve libraries added, and `test -x`
+replaced by **a real conversion at build time**, so the build fails if no
+document comes out. That needs 0.0.4 and a signature.
 
 ## Evidence — tests this task publishes
 
@@ -174,9 +221,13 @@ file may be keyed by.
   application, no `dwgread`, `dwgwrite`, `ODAFileConverter`, `teigha`, `librecad`,
   `freecad` or `qcad`, no `ezdxf`, and `sips` has no CAD format. This is the whole
   of what keeps ADR 0057 proposed.
-- **The Pages conversion**, on a measurement this lane cannot take: the engine is
-  x86_64 and this machine is aarch64. One `soffice --headless --convert-to odt
-  document.pages` on a PC that can run the image settles it either way.
-- **One Keynote and one Numbers document**, to make the exclusion measured.
+- **The Pages conversion** — measured and proven possible, and waiting on the
+  image rather than on knowledge: the shipped converter cannot start until the
+  twelve missing libraries are added and `test -x` is replaced by a real
+  conversion at build time. That is lane A's, and it needs 0.0.4.
+- **Nothing for Keynote or Numbers.** `docs/features.md`'s star names three
+  formats, and measuring two more is work outside the scope gate; the default
+  answer to that is no. The iWork exclusion stays marked reasoned-not-measured,
+  to be measured if a task ever asks for those formats.
 - **Task 5's walk**, which gains the Pages document when it can be run — it runs
   the office engine and cannot run on an aarch64 gate.
