@@ -32,16 +32,57 @@ push is a checkpoint, not a completed task or a release.
 
 **There is no lock. Changed 2026-09-19, after it cost two days.**
 
-A machine merges its own finished work when its pull request is up to date with
-`main` and carries a passing `alo/nine-gates` on that exact head. It does not
-claim anything first and does not wait for another machine's permission.
+A machine merges its own finished work when its pull request carries a passing
+`alo/nine-gates` on that exact head. It does not claim anything first and does
+not wait for another machine's permission.
 
-`main` is protected with **strict** status checks, which already does the whole
-job a lock was meant to do: a pull request that has fallen behind `main` cannot
-be merged, however green it looked a moment ago. Two machines finishing at once
-is therefore not a race anybody loses work to — the second one is refused at the
-merge, integrates `main`, gates again and merges. That is the same retry the
-supervisor already performs for a push that lost a race.
+### `main` no longer requires a branch to be up to date. Changed 2026-09-19
+
+It did until then — GitHub's **strict** status checks — and the reason it does
+not any more is that the requirement was starving the slowest machine in the
+fleet. The third PC gated one task three times and was refused three times with
+`mergeable_state: behind`, each refusal costing a fresh thirty-to-forty-minute
+run, because `main` moved while it gated. The interval between landings had
+closed to about the length of one gate run on that machine, so it could lose
+indefinitely.
+
+**What strict bought, stated fairly:** it prevented two branches each gated
+green against *different* `main`s from merging into a combination neither was
+tested as. That is a real fault and this is not a claim that it cannot happen.
+
+**Why losing it is acceptable:** `landing.rs` rebases onto the newest `main` and
+re-gates the combined tree immediately before pushing, so the window between
+*what was gated* and *what is merged* is seconds rather than the forty minutes
+strict was charging to re-check it.
+
+**And the honest part:** strict never caught the failures that actually cost
+this repository days. PR #32 merged an unformatted tree with strict on. So did
+the renamed ADR whose links all still read the same, and the crate missing from
+`alo-software`'s terminal check. Each blocked five machines. Strict guarded one
+narrow case while the expensive ones walked past it, which is why what replaces
+it is wider rather than narrower.
+
+### A merge is finished when `main` still gates
+
+**The machine that merged gates the new `main` head, and reverts its own merge
+if it fails.** This is part of landing, not something done afterwards if there
+is time.
+
+It covers more than strict did, because it catches `main` breaking for *any*
+reason rather than only for staleness — including every one of the three
+failures above. And it turns the expensive shape, *`main` is broken and the next
+machine to gate finds out*, into the cheap one: broken for one gate run, then
+reverted by the machine that broke it, which is also the machine that still has
+the context to fix it.
+
+A revert is not a judgement about the work. It is putting `main` back so four
+other machines can keep moving, and the branch is re-gated against the new head
+and merged again.
+
+**A merge queue would be the proper answer and is not available here.** The
+queue waits for `alo/nine-gates` on a temporary branch of its own, and with no
+CI in this repository nothing would ever post it, so every merge would hang.
+Recorded so that nobody proposes it a second time.
 
 **Why the lock was removed.** A shared claim ref
 (`refs/heads/coordination/integration-lock`) was held by one machine that then
@@ -66,10 +107,11 @@ tests four trees, **none of which is the tree that ends up on `main`**; gating
 the combination tests the thing that will actually exist. Two of the breakages
 on 2026-09-17 reached `main` through exactly that gap.
 
-The rules for it: every branch in the combination is already up to date with
-`main`; the combined candidate is pushed and gated as one commit; and if it
-fails, the combination is split and the branch at fault is named rather than all
-of them being refused together.
+The rules for it: every branch in the combination is brought up to date with
+`main` first — by the machine, since nothing enforces it any more; the combined
+candidate is pushed and gated as one commit; and if it fails, the combination is
+split and the branch at fault is named rather than all of them being refused
+together.
 
 ## Task lifecycle
 
@@ -104,6 +146,32 @@ of them being refused together.
    commit, and delete only that merged task branch, remotely and locally once
    its work is confirmed reachable. Preserve unmerged/parked recovery branches.
    Update an idle checkout's `main` by fast-forward before starting another task.
+9. **Gate the new `main` head, and revert your own merge if it fails.** See
+   *A merge is finished when `main` still gates*.
+10. **Clear the blockers that named the task you just finished**, in the same
+    change that marks it done.
+
+### A stale blocker is invisible work
+
+A task whose blocker has been cleared still reads *blocked* until somebody
+edits the line, and every machine that surveys the plans skips it. Nothing
+tells them otherwise: a plan is read, not computed.
+
+Found on 2026-09-19. `v0-5-hands-on-the-desktop-plan.md` task 2 read *blocked —
+on `v0-5-the-session-and-the-displays-plan.md` task 3*, and that task was
+finished. The work had been takeable for some time and was being stepped over
+by every lane looking for something free — while task 7 of the same plan, which
+depends on it, was being offered to a machine that could not have finished it.
+
+So the machine that finishes a task is the one that clears the lines naming it.
+It is the only machine that knows, and it knows at exactly the moment the
+knowledge is cheap.
+
+**When surveying the plans for free work, key on the `**Done,` marker and not
+on the status word.** A task carries `**Status:** ready.` *and*, separately, a
+`**Done, <date>.**` marker in its body — so reading the status line alone
+reports finished tasks as free. That mistake nearly handed a lane thirteen
+completed tasks on the same day this rule was written.
 
 Do not batch unrelated tasks into one branch or keep release-long development
 branches. Dependencies should land first; dependent branches integrate them
@@ -111,9 +179,11 @@ before their own final gate. The coordinator chooses the next ready PR promptly.
 
 ## Main protection
 
-Configure GitHub to require a pull request, the up-to-date `alo/nine-gates`
-status and linear history for `main`, including administrators. Disallow force
-pushes and deletion. Enable squash merging and deletion of merged branches;
+Configure GitHub to require a pull request, the `alo/nine-gates` status and
+linear history for `main`, including administrators. Disallow force pushes and
+deletion. **Do not require a branch to be up to date** — that setting was
+turned off on 2026-09-19 for the reason given under *Taking the integration
+turn*, and what replaced it is step 9 of the task lifecycle. Enable squash merging and deletion of merged branches;
 disable merge-commit and rebase merging. No extra reviewer is required for this
 small-team workflow; that does not replace the coordinator's evidence review.
 The status reports the existing local nine-gate run; it is not a newly installed
