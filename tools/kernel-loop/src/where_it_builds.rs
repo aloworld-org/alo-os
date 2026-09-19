@@ -140,6 +140,16 @@ pub fn chosen(at: &Path) -> &'static BuildsIn {
 pub fn there_is_room(at: &Path) -> Result<(), String> {
     let builds = chosen(at);
     let asked_about = builds.measured().to_owned();
+    // **Made again when it is gone.** The directory is made once, when a run
+    // chooses it, and a run outlives it: on 2026-09-17 a person cleared the
+    // build directory between two tasks of the same run, and every gate
+    // afterwards refused with *df: no such file or directory* — the machine
+    // blamed for a directory it could make in a millisecond. Whatever `mkdir`
+    // says is dropped, because `df` below is the answer that matters and its
+    // refusal already reads properly.
+    if let Some(directory) = builds.directory.as_deref() {
+        drop(made_it(at, directory));
+    }
     let said = gates::without_a_target_directory(
         at,
         ".",
@@ -407,6 +417,32 @@ mod tests {
                 .chars()
                 .all(|letter| letter.is_ascii_lowercase() || letter == '-'),
             "{THIS_MACHINE} would have to be quoted"
+        );
+    }
+
+    /// **The build directory is made again before it is measured.**
+    ///
+    /// A run chooses it once and outlives it: clearing that directory between
+    /// two tasks of one run left every gate afterwards refusing with *df: no
+    /// such file or directory*, which reads as a broken machine and is a
+    /// directory `mkdir` restores in a millisecond. Held on this file's own
+    /// source, because the alternative is a test of `df` rather than of the
+    /// order these two are asked in.
+    #[test]
+    fn the_build_directory_is_made_again_before_the_room_in_it_is_asked() {
+        let source = include_str!("where_it_builds.rs");
+        let Some((_, from_there)) = source.split_once("pub fn there_is_room") else {
+            panic!("there_is_room is in this file");
+        };
+        let body = from_there
+            .split_once("\nfn ")
+            .map_or(from_there, |(body, _)| body);
+        let (Some(makes_it), Some(asks)) = (body.find("made_it("), body.find("\"df\"")) else {
+            panic!("the room is asked about a directory nothing makes again");
+        };
+        assert!(
+            makes_it < asks,
+            "the room is asked about a directory that may be gone"
         );
     }
 

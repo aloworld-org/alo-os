@@ -766,9 +766,45 @@ kernel under emulation is this task's to show from that run, not to assume.
 
 ### 15. A release that carries the way to the boundary, installed under Secure Boot to the agent service
 
-**Status:** blocked — on the owner's release (ADR 0036), described below; once its
-digest is pinned, ready on the third PC or any machine that holds one emulated
-install run inside a worker's limit. **Depends on:** 14.
+**Status:** ready — the release it waited on is published, signed and pinned:
+`image/pinned.toml` names version `0.0.2` at digest
+`sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9`, built
+from revision `8d2619d`, verified against `signing/alo-os.pub`. Taken by the
+third PC on 2026-09-18; **the run did not fit that worker's window, and what it
+measured is below** — it is ready for a machine that holds it, which on this one
+means a machine no other lane is gating on. **Depends on:** 14.
+
+**The run of 2026-09-18, and why it did not finish inside a worker's window.** A
+worker on the third PC (`AGAI01`) started the named test at 11:44 and had to stop
+it, and the measurement is the finding this plan asks for rather than a reason to
+try again unchanged. The environment built in 16 minutes; the install machine
+started at 12:01 with Secure Boot on, and **against release `0.0.2` the environment
+said every sentence the acceptance asks for, in order** — the choice read, the disk
+found and checked, the network reached, and *This is a genuine alo OS*, which is the
+owner's signature over the pinned digest verified inside the machine. Then it wrote
+the second disk at **about 124 MB a minute** — 4.7 GB in the thirty-eight minutes
+before it was stopped — against the 46-minute whole install task 13 measured on the
+same PC on 2026-09-16. The image is 5.79 GB compressed over 80 layers and lands
+decompressed, so at that rate the install alone needs an hour or more after it
+starts, and the second boot follows it; sixteen minutes had already gone on building
+the environment. **What differs from 2026-09-16 is not the release
+but the machine:** WSL has four processors here, the run is emulated (TCG), and
+another lane was running `cargo test --workspace` and an `apt-get` beside it the
+whole time — load average 8.5 on four processors. So *this PC holds one emulated
+install run inside a worker's limit* is true only when this PC is not also gating
+another lane. A worker taking this task should have the machine to itself, or the
+run belongs to a supervisor outside a worker's window the way task 13's did.
+
+**So, before starting this run:** look at what else is on the machine
+(`uptime`, `pgrep -af cargo`). On four processors, with another lane's suite beside
+it, the window is not enough and the honest thing is to say so and stop rather than
+spend it — the way this plan already asks a worker to stop for want of disk. It also
+costs sixteen minutes to build the environment from nothing before the machine can
+start, so a worker that finds one already built in `CARGO_TARGET_TMPDIR` has most of
+an hour more for the run than one that does not.
+The measurement, the environment's own sentences under Secure Boot against `0.0.2`,
+and where the serial line is kept are in
+`updates/the-install-under-secure-boot-does-not-fit-a-workers-window.md`.
 
 Split from task 14 on 2026-09-16. Task 14 found why `alo-agentd` failed on the disk
 installed under Secure Boot. systemd mounts `/sys/fs/bpf` so that only root can pass
