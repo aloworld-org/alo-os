@@ -25,6 +25,13 @@
 //!   there is no container library here and nothing in this crate writes what a
 //!   place sent it. [`TheRegistry`] is the real one, over the machine's own
 //!   proxy.
+//! - **Whether the place vouched for what it offers** — [`vouched_for`], read
+//!   out of the names the place has already answered with, so the answer costs
+//!   nothing that leaves this machine. It travels with the offer, which is how
+//!   a person who would not be able to apply an update learns that **before**
+//!   they choose rather than as a refusal afterwards. It verifies nothing and
+//!   permits nothing: the machine's signature policy is the authority, asked
+//!   by the base at the moment of staging.
 //! - **What it answers** — [`Found`], or one of exactly five refusals
 //!   ([`NoAnswer`]) with a sentence each. A machine with no way out at all says
 //!   so **once** ([`SaidOnce`]), because the alternative is a line repeated at
@@ -69,6 +76,7 @@ pub mod refusing;
 pub mod registry;
 pub mod release;
 pub mod said_once;
+pub mod vouching;
 pub mod words;
 
 #[cfg(test)]
@@ -84,4 +92,5 @@ pub use refusing::NoAnswer;
 pub use registry::{TheRegistry, WHILE_SOMEBODY_WAITS};
 pub use release::{NotARelease, Release};
 pub use said_once::{SaidOnce, Say};
+pub use vouching::{the_name_vouching_for, vouched_for};
 pub use words::{EVERY_WORD, WordsError, declare_into, looking_words};

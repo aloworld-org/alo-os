@@ -5354,3 +5354,54 @@ one: a temporary folder must be made, not made-if-needed** — `create_dir_all` 
 turns a name collision into two tests sharing a directory, and the cleanup that follows
 is what turns sharing into data loss.
 **Date:** 2026-09-18.
+
+### A release signed with cosign 3 is refused by the policy `bootc` stages under
+**Version:** cosign 3.1.3 (the signer named in `image/pinned.toml`), against
+skopeo 1.22.2 and containers-common 0.67.0 in
+`quay.io/fedora/fedora-bootc:42@sha256:077182b6…` (the base
+`image/Containerfile` pins), which is the `containers/image` the base's
+`bootc` 1.15.1 stages a build with. 2026-09-19.
+**Behaviour:** `cosign sign` 3.x publishes a signature as an **OCI 1.1
+referrer**. On a registry without the referrers API — `ghcr.io` among them —
+that lands under the fallback tag `sha256-<the build>`, with nothing after it,
+and holds an index whose one manifest is
+`artifactType: application/vnd.dev.sigstore.bundle.v0.3+json`. A real
+signature, and the place holds it. `containers/image` does not look there: a
+`sigstoreSigned` policy fetches the **attachment** `sha256-<the build>.sig`,
+which cosign 3 does not write unless it is told to. So a build signed by the
+owner exactly as ADR 0036's procedure describes is refused with *Source image
+rejected: A signature was required, but no signature exists* — measured against
+release `0.0.3`, the one `image/pinned.toml` pins, and against `0.0.4`, which
+nothing at the place vouches for at all. The two are indistinguishable from
+the machine's side, which is the part that matters.
+**Our response:** nothing in this workspace lowers what counts.
+`alo_looking::vouched_for` reads the name **the base would read** — the `.sig`
+attachment — so this machine says *nobody has vouched for it* about a build
+its own base refuses, rather than promising an update it cannot install
+(`crates/alo-looking/src/vouching.rs`, measured by
+`crates/alo-updating/tests/an_offer_a_person_can_act_on.rs`). Bringing the
+signature back to where the policy looks is the release process's, which is
+the installer lane's under ADR 0036, and it is handed over in
+`docs/autonomy/updates/an-offer-a-person-can-act-on.md`. Until it lands, no
+alo OS release can be staged under `--enforce-container-sigpolicy`, which is
+the safe direction to fail in and is not a direction anybody should be left in
+for long.
+**Date:** 2026-09-19.
+
+### `bootc` gives a signature refusal the same exit code as every other failure
+**Version:** bootc 1.15.1 and containers-common 0.67.0 in the base
+`image/Containerfile` pins. 2026-09-19.
+**Behaviour:** a build the signature policy will not have and a download that
+stopped halfway both come back as an unsuccessful exit with the same code.
+Nothing in the status, the code or a separate stream tells them apart; the only
+difference is the text, where a policy refusal is `containers/image`'s *Source
+image rejected: …*.
+**Our response:** `crates/alo-updating/src/genuine.rs` reads what the base
+said, for whole clauses only and never for the word *signature* — the base
+prints *Getting image source signatures* on the way to a **successful** stage,
+so a word match would read a success as a refusal. What it does not recognise
+it does not guess at: that stays *the update could not be prepared*, which is
+true of everything. This is a weaker thing to depend on than an exit code and
+is written down as such; if the base ever gives a distinct code, the reading
+should move to it.
+**Date:** 2026-09-19.

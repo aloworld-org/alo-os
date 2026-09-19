@@ -35,6 +35,27 @@ pub const READY: Word = Word::saying(
      the person, and that nothing is interrupted.",
 );
 
+/// An update is ready, and nothing has vouched for it.
+///
+/// The other half of [`READY`], said in its place when nobody has vouched for
+/// the build offered (`crate::Vouching`). It is said **before** the person
+/// chooses rather than after, because a person told *an update is ready* and
+/// then told *it could not be prepared* has been told two true things and
+/// learned nothing.
+pub const READY_NOT_VOUCHED_FOR: Word = Word::saying(
+    "keeping-up.ready-not-vouched-for",
+    "A new version of this machine's system is available, but this machine cannot confirm that it \
+     came from alo OS. It will not be applied unless it can be confirmed",
+)
+.noting(
+    "Said instead of *an update is ready* when a newer version of alo OS exists but nothing \
+     alongside it proves who made it. The machine will not install a version it cannot confirm \
+     came from alo OS, and this sentence is shown before the person is offered the choice rather \
+     than as a refusal afterwards. It is not an accusation that anything is wrong — most often \
+     the proof has simply not been published yet — so it must not read as a warning about an \
+     attack.",
+);
+
 /// Nothing to update.
 pub const UP_TO_DATE: Word = Word::saying("keeping-up.up-to-date", "This machine is up to date")
     .noting("Said when the person checks for an update and there is none to apply.");
@@ -162,9 +183,30 @@ pub const NOT_PREPARED: Word = Word::saying(
      machine as it is now",
 )
 .noting(
-    "Said when the machine tried to prepare an update the person chose and could not — the \
-     download failed, or what arrived was not a genuine alo OS. The important half is that the \
-     machine is unchanged and will start normally.",
+    "Said when the machine tried to prepare an update the person chose and could not — for \
+     example because the download did not finish. The important half is that the machine is \
+     unchanged and will start normally. There is a separate sentence for the other reason an \
+     update is not prepared, that the machine could not confirm the version came from alo OS, \
+     because a person who is told only that something failed learns nothing they can act on.",
+);
+
+/// The update was refused because the machine could not confirm it is alo OS.
+///
+/// Its own sentence rather than [`NOT_PREPARED`]. Until this existed, a
+/// download that did not finish and a version that could not be shown to be
+/// alo OS read as one line, which told a person neither — and of the two, the
+/// second is the one they can do something about and the one a machine sold on
+/// sovereignty cannot afford to be vague about.
+pub const NOT_GENUINE: Word = Word::saying(
+    "keeping-up.not-genuine",
+    "This machine could not confirm that the new version came from alo OS, so it was not \
+     installed and nothing was changed. The next restart starts this machine as it is now",
+)
+.noting(
+    "Said when the person chose to apply an update and the machine refused it because it could \
+     not confirm who made that version. It is the strongest promise this machine keeps about its \
+     own system: it would rather stay as it is than install something it cannot confirm. The \
+     important half, as in every other refusal here, is that nothing was changed.",
 );
 
 /// Whether the machine updated could not be written down.
@@ -508,8 +550,9 @@ pub const NOT_A_WINDOW: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 43] = [
     READY,
+    READY_NOT_VOUCHED_FOR,
     UP_TO_DATE,
     ANSWER_NOT_UNDERSTOOD,
     APPLY_AT_THE_NEXT_RESTART,
@@ -522,6 +565,7 @@ pub const EVERY_WORD: [Word; 41] = [
     ALREADY_WAITING,
     RUNNING_NOT_KNOWN,
     NOT_PREPARED,
+    NOT_GENUINE,
     NOT_WRITTEN_DOWN,
     GOING_BACK_OFFERED,
     GOING_BACK_SETS_ASIDE_AN_UPDATE,

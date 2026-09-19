@@ -13,7 +13,12 @@
 //!   the place updates come from offers, and [`Standing::between`] says whether
 //!   they differ. An update is exactly that difference and nothing more: it
 //!   carries no priority, no severity and no deadline, because each of those
-//!   is a lever somebody pulls to justify interrupting a person.
+//!   is a lever somebody pulls to justify interrupting a person. What it does
+//!   carry is [`Vouching`]: whether the place offering the build has vouched
+//!   for it, so that a person who will not be able to apply an update learns
+//!   that **before** they choose it rather than as a refusal afterwards. It is
+//!   not a signature check and it decides nothing about what is staged — the
+//!   machine's own signature policy does that, at the moment the base is told.
 //! - **Asking is an errand.** A check for an update leaves this machine, so it
 //!   is [`alo_egress::Errand::CheckingForAnUpdate`] on the same indicator as
 //!   everything else that leaves ([`a_check_at`]). An [`Offered`] can only be
@@ -100,6 +105,7 @@ pub mod source;
 pub mod staging;
 pub mod standing;
 pub mod undoing;
+pub mod vouching;
 pub mod when;
 pub mod words;
 
@@ -120,5 +126,6 @@ pub use source::{NotASource, Source};
 pub use staging::{NotStaged, Staging};
 pub use standing::{Ready, Running, Standing};
 pub use undoing::{Change, NotUndoable, WhatWasDone};
+pub use vouching::Vouching;
 pub use when::WhenItApplies;
 pub use words::{EVERY_WORD, WordsError, declare_into, keeping_up_words};

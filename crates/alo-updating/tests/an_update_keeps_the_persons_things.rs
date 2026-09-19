@@ -56,7 +56,8 @@ use std::time::{Duration, Instant, SystemTime};
 use alo_egress::{Destination, Indicator};
 use alo_keeping::{Reading, Writing};
 use alo_keeping_up::{
-    Digest, NotStaged, Offered, Running, Since, Source, Standing, WhenItApplies, a_check_at,
+    Digest, NotStaged, Offered, Running, Since, Source, Standing, Vouching, WhenItApplies,
+    a_check_at,
 };
 use alo_record::{Entry, Happened};
 use alo_updating::{
@@ -594,7 +595,7 @@ fn before_the_update() -> Digest {
         a_check_at(Destination::at("10.0.2.2").unwrap()),
         SystemTime::now(),
     );
-    let offer = Offered::heard(&underway, offered.clone()).unwrap();
+    let offer = Offered::heard(&underway, offered.clone(), Vouching::ThePlaceVouchesForIt).unwrap();
     assert!(indicator.ended_on_its_own(underway));
     let Standing::Ready(ready) = Standing::between(&Running::reported(before.clone()), &offer)
     else {

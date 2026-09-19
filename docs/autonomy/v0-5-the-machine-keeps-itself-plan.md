@@ -440,6 +440,43 @@ build; the recovery *screen* stays the shell plan's.
 
 **Status:** ready. **Depends on:** 6.
 
+**Done, 2026-09-19.** The offer **carries** the doubt rather than hiding the
+build: `alo_keeping_up::Vouching` is two members, `Offered::heard` takes one as
+an argument (the value a caller would get by forgetting it is the comfortable
+one), `Ready` carries it and `Standing::said` says
+`keeping-up.ready-not-vouched-for` in place of `keeping-up.ready` — *before*
+the person chooses. Narrowing the offer to what the place vouches for was
+considered and discarded in writing: it would leave a machine reading *up to
+date* while a newer version sat at the place, which is task 1's rule turned
+inside out, and would hide the window between pushing and signing from the only
+people who could close it. `alo_looking::vouched_for` reads it out of the names
+the place already answered with — no third question and no second departure —
+and counts only the name **this machine's base would read**. The refusal a
+person meets when the policy refuses a build is now
+`keeping-up.not-genuine`, its own sentence, told apart from *the update could
+not be prepared* by what the base said
+(`alo_updating::refused_for_its_signature`, whole clauses only, because the
+base prints *Getting image source signatures* on its way to a **success**).
+Both new words are in the vocabulary with a translator's note and reachable
+from a public `said()`. A kept answer carries the vouching too, and silence in
+an older one reads as *nobody did*.
+
+**Measured, on the real place and a real base.** The place answers seven names;
+the newest release is `0.0.4` at `sha256:48bd5f31…`; nothing at the place
+vouches for it, and a person reads *A new version of this machine's system is
+available, but this machine cannot confirm that it came from alo OS.* The
+base's own `skopeo` and `containers-common`, out of the image
+`image/Containerfile` pins, under a policy requiring `image/signing/alo-os.pub`,
+refused **both** `0.0.4` **and** the pinned `0.0.3` with *Source image
+rejected: A signature was required, but no signature exists* — before a single
+layer was fetched, so the machine is unchanged. **Found:** `cosign` 3 signs as
+an OCI 1.1 referrer (`sha256-<build>`, no suffix) and `containers/image` reads
+the `.sig` attachment, so **no alo OS release published today can be staged
+under `--enforce-container-sigpolicy`**. That is the release process's and so
+the installer lane's (ADR 0036): handed over as a finding, never repaired here
+by lowering what counts. Two entries in `docs/quirks.md`. Report:
+`docs/autonomy/updates/an-offer-a-person-can-act-on.md`.
+
 Task 6 measured something nobody had looked at before, and it is a gap rather
 than a detail: a machine running the release `image/pinned.toml` pins is
 offered **`0.0.3`**, which the owner pushed and signed and which this
@@ -472,3 +509,42 @@ moment a machine sold on sovereignty cannot afford to be vague.
   the installer plan's release process (ADR 0036): a change wanted there is a
   finding handed to that lane in this task's report, never made here. And no
   setting that turns checking off, and no member meaning *urgent*.
+
+### 8. An update that really stages, under the policy alo OS ships
+
+**Status:** blocked — on a release at the place that this machine's signature
+policy accepts, and on the shipped image carrying a `policy.json` at all. Both
+are the installer lane's under ADR 0036; task 2 handed over the second and task
+7 the first. **Depends on:** 2, 7.
+
+Every crate in this plan is finished and **no alo OS machine can apply an
+update today**. Task 7 measured why, on the base's own tooling: the signature
+this repository publishes is not the one `containers/image` looks for, so
+`--enforce-container-sigpolicy` refuses the pinned release itself. The refusal
+is the correct one — a machine that cannot confirm a build refuses it, and says
+so in its own sentence — but a promise nobody has ever seen kept end to end is
+a promise, not a measurement. `tests/an_update_keeps_the_persons_things.rs`
+staged a build from a registry on the host with a policy that trusts it; what
+has never happened is **this machine staging a real alo OS release under the
+real policy**, which is the only version of the claim a customer's machine
+makes.
+
+- **Acceptance:** a virtual machine built on the pinned base, installed with
+  the shipped `policy.json` rather than a test's, updates from one signed alo
+  OS release to another through `alo_updating::apply` with nothing weakened —
+  the instruction unchanged, the signature policy enforced, the person's named
+  things byte for byte afterwards and one `updated` entry, as task 2 measured
+  with a policy of its own; **and the same machine, offered a build nothing
+  vouches for, refuses it and reads `keeping-up.not-genuine`** — so the two
+  halves of task 7 are measured on a real boot rather than on the base's
+  library alone; a release that the place vouches for is read as vouched for by
+  `alo_looking::vouched_for` against the **real** place, which is the same test
+  as task 7's with the answer the other way round, and it is what says the
+  release process and this machine agree at last; and the time each half took is
+  written down, because the lane that runs it next needs to know what it costs.
+- **Constraint:** nothing here changes what is pushed, tagged or signed at the
+  place, and nothing lowers what counts as vouched for — if the release process
+  has not moved, this task is still blocked and saying so is the work. No
+  policy of a test's own stands in for the shipped one: that substitution is
+  exactly what task 2 did, honestly, and exactly what this task exists to stop
+  doing.

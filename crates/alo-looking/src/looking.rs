@@ -29,10 +29,18 @@
 //! — and *the newest* is the only reading of *what that place offers* that does
 //! not need a name somebody can move, which `image/pinned.toml` exists to
 //! forbid. Whether the offered build is one this machine will actually accept
-//! is not asked here and is not this crate's to answer: the build is staged
+//! is not decided here and is not this crate's to decide: the build is staged
 //! under the owner's signature policy (ADR 0036, `alo_keeping_up::Staging`),
 //! and a build that policy refuses is refused there, with the machine
 //! unchanged.
+//!
+//! **What the offer does carry is whether the place vouched for it**
+//! ([`crate::vouching`]), read out of the names the place has already answered
+//! with. A person who would not be able to apply an update learns that before
+//! they choose rather than as a refusal afterwards — and nothing is narrowed
+//! on the strength of it. A newer version that exists is still a newer version
+//! that exists, and this machine's own rule since task 1 of the plan is that
+//! the choice a person has is *when*, never *whether to be told*.
 //!
 //! Whether the offer *differs* from what is running is
 //! `alo_keeping_up::Standing`'s answer and is deliberately *differ, not newer*.
@@ -51,6 +59,7 @@ use crate::found::Found;
 use crate::place::Place;
 use crate::refusing::NoAnswer;
 use crate::release::Release;
+use crate::vouching::vouched_for;
 
 /// Ask `place` whether there is a newer version of this machine's system.
 ///
@@ -87,12 +96,17 @@ fn asked(
         .ok_or(NoAnswer::NothingIsOffered)?;
     let named = asking.the_build_of(&newest)?;
     let build = Digest::read(&named).map_err(|_| NoAnswer::NotUnderstood)?;
+    // **Whether the place vouches for it, out of the names it has already
+    // answered with.** No third question, so no second departure: a check is
+    // one act, and what a person needs to know before they choose was in the
+    // first answer all along (`crate::vouching`).
+    let vouching = vouched_for(&build, &held);
     // The errand was made from `a_check_at` six lines up, so this cannot be an
     // answer heard during some other errand. It is still read rather than
     // unwrapped, and the branch nothing can reach answers with the refusal that
     // says the machine is unchanged — which is true of every road out of this
     // function.
-    let offered = Offered::heard(underway, build).map_err(|_| NoAnswer::NotUnderstood)?;
+    let offered = Offered::heard(underway, build, vouching).map_err(|_| NoAnswer::NotUnderstood)?;
     Ok(Standing::between(running, &offered))
 }
 
@@ -105,6 +119,7 @@ mod tests {
     use super::*;
     use crate::testing::{APlaceThatAnswers, a_moment, a_place_not_before, build, the_place};
     use alo_egress::Errand;
+    use alo_keeping_up::{Standing as WhereItStands, Vouching};
 
     /// The floor these tests are written against.
     ///
@@ -281,6 +296,119 @@ mod tests {
         let errand = a_check_at(place.destination().clone());
         assert_eq!(errand.errand(), Errand::CheckingForAnUpdate);
         assert_eq!(errand.destination(), place.destination());
+    }
+
+    /// Where a check's answer stands, for a test that wants the update itself.
+    fn the_update_in(found: &Found) -> &alo_keeping_up::Ready {
+        match found.standing() {
+            WhereItStands::Ready(ready) => Some(ready),
+            WhereItStands::UpToDate => None,
+        }
+        .unwrap()
+    }
+
+    /// **An offer carries whether the place vouched for the build**, read out
+    /// of the names the place already answered with.
+    #[test]
+    fn an_offer_the_place_vouches_for_says_so() {
+        let mut indicator = Indicator::default();
+        let found = look(
+            &mut indicator,
+            a_moment(),
+            &a_place_not_before(NOT_BEFORE),
+            &Running::reported(build("aa")),
+            Because::ThePersonAsked,
+            &APlaceThatAnswers::holding(&["0.0.3"])
+                .whose_builds(&[("0.0.3", build("bb"))])
+                .also_vouching_for(&[build("bb")]),
+        )
+        .unwrap();
+
+        assert_eq!(
+            the_update_in(&found).vouching(),
+            Vouching::ThePlaceVouchesForIt
+        );
+        assert!(indicator.is_quiet());
+    }
+
+    /// **A build nothing at the place vouches for is still offered, and says
+    /// so.** Narrowing the offer away would leave a person told *up to date*
+    /// on a machine a newer version exists for, which is the one thing task 1
+    /// of the plan forbids: the choice is *when*, never *whether to be told*.
+    #[test]
+    fn an_offer_nothing_vouches_for_is_offered_and_says_that_nothing_does() {
+        let mut indicator = Indicator::default();
+        let found = look(
+            &mut indicator,
+            a_moment(),
+            &a_place_not_before(NOT_BEFORE),
+            &Running::reported(build("aa")),
+            Because::ThePersonAsked,
+            // The shape of this repository's own place on 2026-09-19: a signed
+            // release, and a newer one with nothing beside it.
+            &APlaceThatAnswers::holding(&["0.0.3", "0.0.4"])
+                .whose_builds(&[("0.0.4", build("cc"))])
+                .also_vouching_for(&[build("bb")]),
+        )
+        .unwrap();
+
+        assert!(
+            found.is_ready(),
+            "a newer version existed and was not offered"
+        );
+        assert_eq!(
+            the_update_in(&found).vouching(),
+            Vouching::NobodyHasVouchedForIt
+        );
+        let said = found.said(&crate::testing::in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("cannot confirm"), "{said}");
+    }
+
+    /// **A signature for some other build vouches for nothing.** The names a
+    /// place holds are read for the build actually offered, never for the
+    /// presence of signatures in general.
+    #[test]
+    fn a_signature_for_another_build_does_not_vouch_for_this_one() {
+        let mut indicator = Indicator::default();
+        let found = look(
+            &mut indicator,
+            a_moment(),
+            &a_place_not_before(NOT_BEFORE),
+            &Running::reported(build("aa")),
+            Because::ThePersonAsked,
+            &APlaceThatAnswers::holding(&["0.0.3"])
+                .whose_builds(&[("0.0.3", build("bb"))])
+                .also_vouching_for(&[build("cc"), build("dd")]),
+        )
+        .unwrap();
+
+        assert_eq!(
+            the_update_in(&found).vouching(),
+            Vouching::NobodyHasVouchedForIt
+        );
+    }
+
+    /// **Asking whether it is vouched for costs no extra departure.** The
+    /// answer is in the list the first question already fetched, so the place
+    /// is asked twice and no more — a third request would be a second line on
+    /// somebody's indicator for a question already answered.
+    #[test]
+    fn whether_it_is_vouched_for_costs_no_third_question() {
+        let mut indicator = Indicator::default();
+        let asked = APlaceThatAnswers::holding(&["0.0.3"])
+            .whose_builds(&[("0.0.3", build("bb"))])
+            .also_vouching_for(&[build("bb")]);
+        look(
+            &mut indicator,
+            a_moment(),
+            &a_place_not_before(NOT_BEFORE),
+            &Running::reported(build("aa")),
+            Because::ThePersonAsked,
+            &asked,
+        )
+        .unwrap();
+        assert_eq!(asked.how_often_it_was_asked(), 2);
     }
 
     /// **A machine carrying the pin this repository ships is offered the

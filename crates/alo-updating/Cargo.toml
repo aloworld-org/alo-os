@@ -49,6 +49,12 @@ alo-recounting = { path = "../alo-recounting" }
 # against a verb this test invented, which could agree with a machine that
 # does not exist.
 alo-declared = { path = "../alo-declared" }
+# Where this machine's builds come from and which release it was cut from, for
+# the one test that asks the **real** base's signature policy about the real
+# place's builds. Read from `image/pinned.toml` rather than written down here:
+# one repository, one answer about where a build comes from. A test's alone —
+# nothing in `src/` knows an address.
+alo-image = { path = "../alo-image" }
 
 [lints]
 workspace = true

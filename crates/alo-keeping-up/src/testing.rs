@@ -13,6 +13,7 @@ use alo_strings::Strings;
 
 use crate::digest::Digest;
 use crate::standing::Ready;
+use crate::vouching::Vouching;
 use crate::words::keeping_up_words;
 
 /// This crate's own words, with nothing translated.
@@ -31,5 +32,18 @@ pub(crate) fn whole(pair: &str) -> Digest {
 /// indicator, and an indicator needs a moment this crate's source never names;
 /// that road is walked in `tests/what_an_update_may_never_do.rs`.
 pub(crate) fn ready_between(running: &str, offered: &str) -> Ready {
-    Ready::for_a_test(whole(running), whole(offered))
+    Ready::for_a_test(
+        whole(running),
+        whole(offered),
+        Vouching::ThePlaceVouchesForIt,
+    )
+}
+
+/// The same, for a build nobody has vouched for.
+pub(crate) fn ready_between_unvouched(running: &str, offered: &str) -> Ready {
+    Ready::for_a_test(
+        whole(running),
+        whole(offered),
+        Vouching::NobodyHasVouchedForIt,
+    )
 }

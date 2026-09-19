@@ -18,6 +18,12 @@
 //!   at each start, writes `alo_record::Happened::Updated` from which build to
 //!   which, with no agent behind it, when a different build booted than the one
 //!   last known ([`last_known`]).
+//! - **Why the base refused, when it did** — [`refused_for_its_signature`]
+//!   tells the signature policy's refusal apart from every other way preparing
+//!   an update can fail, so that *this machine could not confirm the new
+//!   version came from alo OS* is its own sentence rather than the same line a
+//!   stalled download reads as. It reads what the base said, because the base
+//!   gives no other sign, and what it does not recognise it does not guess at.
 //! - **Yesterday's machine** — [`yesterday()`] names the build before, when it
 //!   was replaced and whether it is still on the disk, and decides whether going
 //!   back can be offered, so a return that cannot be done says so first.
@@ -61,6 +67,7 @@
 
 pub mod across_restarts;
 pub mod applying;
+pub mod genuine;
 pub mod going_back;
 pub mod last_known;
 mod one_build;
@@ -73,6 +80,7 @@ pub mod yesterday;
 
 pub use across_restarts::{AcrossRestarts, THE_BUILD_TO_GO_BACK_TO, THE_LAST_KNOWN_BUILD};
 pub use applying::apply;
+pub use genuine::refused_for_its_signature;
 pub use going_back::go_back;
 pub use putting_back::{putting_back, what_this_machine_kept, what_was_done};
 pub use refusing::{NotAnswered, NotApplied, NotGoneBack, NotRead, NotRecorded};

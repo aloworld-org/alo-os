@@ -14,6 +14,7 @@
 
 use alo_keeping_up::{Ready, Source, Staging, WhenItApplies};
 
+use crate::genuine::refused_for_its_signature;
 use crate::refusing::NotApplied;
 use crate::status;
 use crate::the_base::Base;
@@ -37,7 +38,17 @@ pub fn apply(
 ) -> Result<Staging, NotApplied> {
     let deployments = status::deployments(base).map_err(NotApplied::NotRead)?;
     let staging = Staging::of(ready, &deployments, source, when).map_err(NotApplied::Refused)?;
-    base.asked(&staging.arguments())
-        .map_err(NotApplied::TheBaseDidNotStageIt)?;
+    base.asked(&staging.arguments()).map_err(|why| {
+        // **Which refusal it was.** The instruction always carries
+        // `--enforce-container-sigpolicy`, so a build the machine's signature
+        // policy will not have is refused here, by the base, before anything
+        // is staged — and that is a different thing to tell a person from a
+        // download that stopped halfway.
+        if refused_for_its_signature(&why) {
+            NotApplied::TheBuildWasNotGenuine(why)
+        } else {
+            NotApplied::TheBaseDidNotStageIt(why)
+        }
+    })?;
     Ok(staging)
 }
