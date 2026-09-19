@@ -96,6 +96,11 @@ pub mod gesture_refusals;
 pub mod gesture_settings;
 pub mod gestures;
 #[cfg(target_os = "linux")]
+// Behind its feature: reading a touchpad needs libinput, and everything that
+// only wants this crate's words would otherwise link it too — including
+// `alo-agentd`, through `alo-saying`, into a binary linked statically against
+// musl where libinput is not available.
+#[cfg(feature = "libinput")]
 pub mod libinput_gestures;
 pub mod naming;
 pub mod on_a_display;
