@@ -27,26 +27,46 @@ push is a checkpoint, not a completed task or a release.
 
 ## Taking the integration turn
 
-Use the shared, temporary remote ref `refs/heads/coordination/integration-lock`
-as an atomic claim, not a product-work branch. Before the final gate, create
-that ref through GitHub's create-reference API at the candidate's current head
-SHA (`POST /repos/aloworld-org/alo-os/git/refs`). Creation succeeds for only one
-PC. If it already exists, wait; never update, overwrite or force-push it. Record
-which PC owns it, its claim SHA and the PR in that PR's integration evidence.
+**There is no lock. Changed 2026-09-19, after it cost two days.**
 
-After claiming, fetch current main, integrate it into the task branch and run
-all required gates on the final candidate. The claim SHA remains unchanged even
-if integration changes the candidate. Only the holder may set its candidate's
-`alo/nine-gates` status and merge. Keep the turn until the merge is verified;
-then delete the coordination ref after confirming it still names the held claim
-SHA. Delete the merged task branch separately. On a failed gate, preserve logs
-and work, release the claim, and repair before taking another turn.
+A machine merges its own finished work when its pull request is up to date with
+`main` and carries a passing `alo/nine-gates` on that exact head. It does not
+claim anything first and does not wait for another machine's permission.
 
-A crashed or disconnected holder does not lose its turn by timeout. Confirm its
-gate/merge has stopped and arrange an explicit handoff before removing a stale
-claim. Read failures or unavailable permissions mean no claim, not permission
-to merge. This convention coordinates trusted PCs; main protection still checks
-PR status and freshness. Never merge without both the claim and valid evidence.
+`main` is protected with **strict** status checks, which already does the whole
+job a lock was meant to do: a pull request that has fallen behind `main` cannot
+be merged, however green it looked a moment ago. Two machines finishing at once
+is therefore not a race anybody loses work to — the second one is refused at the
+merge, integrates `main`, gates again and merges. That is the same retry the
+supervisor already performs for a push that lost a race.
+
+**Why the lock was removed.** A shared claim ref
+(`refs/heads/coordination/integration-lock`) was held by one machine that then
+stopped, twice: `main` was frozen for eight hours on 2026-09-18 and fifteen more
+on 2026-09-19, with finished work sitting on branches nobody was permitted to
+merge. The protocol had a way to take the turn and no way to recover it, and
+recovering it by hand needed the claim SHA, a GitHub token, and somebody awake.
+A coordination device whose failure mode is *the whole fleet stops* is worse
+than the collisions it prevents, when those collisions were already prevented by
+the branch protection underneath it.
+
+If a coordination ref exists from before this change, any machine may delete it.
+
+## Merging several ready branches at once
+
+A machine may combine **more than one** ready pull request into a single
+candidate, gate that tree once, and merge it — rather than gating each branch
+separately.
+
+This is faster, and it is also more honest. Gating four branches one at a time
+tests four trees, **none of which is the tree that ends up on `main`**; gating
+the combination tests the thing that will actually exist. Two of the breakages
+on 2026-09-17 reached `main` through exactly that gap.
+
+The rules for it: every branch in the combination is already up to date with
+`main`; the combined candidate is pushed and gated as one commit; and if it
+fails, the combination is split and the branch at fault is named rather than all
+of them being refused together.
 
 ## Task lifecycle
 
@@ -188,3 +208,32 @@ merged, and the same trap catches any test that compares exact file content.
 
 The rule is the same one the integration turn already follows for `main`: gate
 the thing that will actually land.
+
+## Gate what the change can reach
+
+The nine gates take about twenty minutes, and nearly all of it is the whole
+workspace's tests. Running all of them for a change that cannot possibly reach
+them is the largest avoidable cost in this repository: on 2026-09-19 a
+documentation-only commit spent twenty-three minutes running 120 test binaries,
+none of which read a word it changed.
+
+A candidate runs the gates its diff can reach:
+
+| What the diff touches | What must pass |
+|---|---|
+| `docs/decisions/**` | the citation check, which is what a renamed decision breaks |
+| `docs/autonomy/*plan.md` | the plan checks that read every plan |
+| `docs/**` otherwise | formatting, the citation check, the plan checks |
+| `image/**` | `alo-image`, `alo-installing`, `alo-updating` |
+| `tools/kernel-loop/**` | the supervisor's own three gates |
+| `crates/<name>/**` | that crate, and every crate that depends on it |
+| `Cargo.toml`, `Cargo.lock`, `.gitattributes`, anything workspace-wide | all nine |
+
+**Where the mapping is uncertain, run all nine.** A documentation change did
+break `main` for five machines on 2026-09-17 — an ADR was renamed and every link
+to it still read the same — which is why the decisions row is not simply
+*formatting*. The saving comes from the common case, not from trusting the rare
+one.
+
+Say in the pull request which gates ran and why those. A candidate that merges
+several branches runs the union of what each reaches.
