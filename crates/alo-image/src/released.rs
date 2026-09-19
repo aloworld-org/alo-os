@@ -206,9 +206,10 @@ mod tests {
     use crate::testing::{a_copy_of_the_image, edited, image_at, the_tag_line};
     use crate::trying::{THE_HARDWARE, THE_README};
 
-    /// The digest the owner signed, as the shipped pin and notes state it.
-    const THE_DIGEST: &str =
-        "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
+    /// The digest the owner signed, read from the pin rather than spelled.
+    fn the_digest() -> String {
+        crate::testing::the_pinned_digest()
+    }
 
     /// A file this repository ships, as text.
     fn text(at: &str) -> String {
@@ -245,7 +246,7 @@ mod tests {
     fn notes_naming_another_digest_are_refused() {
         let other = format!("sha256:{}", "0".repeat(64));
         let root = a_copy_of_the_image("notes-another-digest");
-        edited(&root, THE_NOTES, THE_DIGEST, &other);
+        edited(&root, THE_NOTES, &the_digest(), &other);
 
         let wrong = wrong_at(&root);
 
@@ -295,7 +296,7 @@ mod tests {
     #[test]
     fn notes_naming_no_digest_are_refused() {
         let root = a_copy_of_the_image("notes-no-digest");
-        edited(&root, THE_NOTES, THE_DIGEST, "the one we published");
+        edited(&root, THE_NOTES, &the_digest(), "the one we published");
 
         let wrong = wrong_at(&root);
 

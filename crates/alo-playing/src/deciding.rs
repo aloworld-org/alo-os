@@ -3,16 +3,20 @@
 //! The order in ADR 0051, walked exactly once per track:
 //!
 //! 1. the codec is royalty-free, so there is nothing to have a right to;
-//! 2. **the machine's own hardware decoder** — the licence was paid for with the
+//! 2. **the codec's patents ran out**, so the image's own software decoder may
+//!    run — [ADR 0058], which closed the question ADR 0051 left open;
+//! 3. **the machine's own hardware decoder** — the licence was paid for with the
 //!    silicon;
-//! 3. **a redistributable licensed decoder**, whose publisher paid the royalty;
-//! 4. **a plain refusal**, naming what would play it.
+//! 4. **a redistributable licensed decoder**, whose publisher paid the royalty;
+//! 5. **a plain refusal**, naming what would play it.
 //!
 //! **The order is not a preference.** It is the order in which the right to
 //! decode exists at all, and each step is reached only because the one above it
-//! was absent. There is deliberately no fifth step: *a software decoder we built
-//! ourselves* is the thing the decision refuses, and *a software decoder we may
-//! ship* is the question counsel has not answered (`crate::right`).
+//! was absent. There is deliberately no sixth step: *a software decoder we built
+//! for a format somebody still licenses* is what the decision refuses, and no
+//! arrangement of these five reaches it.
+//!
+//! [ADR 0058]: ../../../docs/decisions/0058-which-software-decoders-the-image-ships.md
 
 use crate::codec::{Audio, Video};
 use crate::inside::Inside;
@@ -56,6 +60,9 @@ pub fn the_right_to_video(machine: &AMachine, codec: Video) -> Right {
     if codec.is_royalty_free() {
         return Right::RoyaltyFree;
     }
+    if codec.has_expired() {
+        return Right::ByExpiry;
+    }
     if machine.decodes_video_in_hardware(codec) {
         return Right::FromTheSilicon;
     }
@@ -74,6 +81,9 @@ pub fn the_right_to_video(machine: &AMachine, codec: Video) -> Right {
 pub fn the_right_to_sound(machine: &AMachine, codec: Audio) -> Right {
     if codec.is_royalty_free() {
         return Right::RoyaltyFree;
+    }
+    if codec.has_expired() {
+        return Right::ByExpiry;
     }
     if machine.decodes_audio_in_hardware(codec) {
         return Right::FromTheSilicon;
@@ -160,33 +170,72 @@ mod tests {
         }
     }
 
-    /// **The common case refuses, and that is the decision working.**
+    /// **The common case refuses on the picture alone, and that is the decision
+    /// working.**
     ///
     /// A plain laptop, no video hardware, an H.264 film from somebody's phone.
-    /// ADR 0051's *none may ship* row says this is what happens until counsel
-    /// answers, and most people will meet it at least once.
+    /// **One refusing track is enough** — but only one of the two refuses now:
+    /// ADR 0058 put AAC-LC in the image, so the sound decodes even here. The
+    /// count matters, because a film refused for one reason and a film refused
+    /// for two are different problems to fix.
     #[test]
     fn a_plain_machine_refuses_an_h264_film_from_a_phone() {
         let machine = AMachine::with_nothing();
         let from_a_phone = Inside::a_film(Video::H264Baseline, Audio::AacLc);
         let decided = plays(&machine, &from_a_phone);
+        assert_eq!(decided.picture, Some(Right::None));
+        assert_eq!(decided.sound, vec![Right::ByExpiry]);
         assert!(!decided.all_of_it());
-        assert_eq!(decided.what_it_cannot_decode(), 2);
+        assert_eq!(decided.what_it_cannot_decode(), 1);
     }
 
-    /// **A film whose sound cannot be decoded does not play.**
+    /// **The same film plays outright once the machine has the silicon.**
+    ///
+    /// The other half of the case above, and the reason AAC-LC was worth
+    /// deciding: with a hardware H.264 decoder the picture is licensed by the
+    /// chip and the sound is licensed by nobody, so an ordinary phone video
+    /// plays end to end with nothing bought.
+    #[test]
+    fn the_same_film_plays_on_a_machine_that_has_the_silicon() {
+        let machine = AMachine::with_nothing().decoding_in_hardware(&[Video::H264Baseline]);
+        let decided = plays(&machine, &Inside::a_film(Video::H264Baseline, Audio::AacLc));
+        assert_eq!(decided.picture, Some(Right::FromTheSilicon));
+        assert_eq!(decided.sound, vec![Right::ByExpiry]);
+        assert!(decided.all_of_it());
+    }
+
+    /// **A film whose sound cannot be decoded does not play**, however good the
+    /// picture is.
     ///
     /// Silence with a picture is the failure that looks like success, and it is
     /// the one a person reports as *your machine broke my video*.
+    ///
+    /// **No codec in the closed list can produce this any more** — ADR 0058
+    /// leaves every audio codec the decision names either free by design or
+    /// past term — so the decision is built by hand rather than played out of a
+    /// file. That is deliberate: the rule outlives the list, and the day an
+    /// encumbered audio codec is added the rule has to already be right.
     #[test]
     fn a_film_with_a_picture_and_no_sound_does_not_play() {
-        let machine = AMachine::with_nothing().decoding_in_hardware(&[Video::H264Baseline]);
-        let film = Inside::a_film(Video::H264Baseline, Audio::AacLc);
-        let decided = plays(&machine, &film);
-        assert_eq!(decided.picture, Some(Right::FromTheSilicon));
-        assert_eq!(decided.sound, vec![Right::None]);
+        let decided = Plays {
+            picture: Some(Right::FromTheSilicon),
+            sound: vec![Right::None],
+        };
         assert!(!decided.all_of_it());
         assert_eq!(decided.what_it_cannot_decode(), 1);
+    }
+
+    /// **Every audio codec the decision names now decodes on a machine with
+    /// nothing**, which is ADR 0058 stated as the thing a person would notice.
+    #[test]
+    fn every_sound_the_decision_names_plays_on_a_bare_machine() {
+        let bare = AMachine::with_nothing();
+        for codec in Audio::EVERY {
+            assert!(
+                the_right_to_sound(&bare, codec).may_decode(),
+                "{codec:?} does not decode on a machine with nothing"
+            );
+        }
     }
 
     /// **Every codec on every machine reaches exactly one answer**, and the
@@ -195,7 +244,7 @@ mod tests {
     /// The exhaustive sweep: three machine shapes across every codec, which is
     /// the whole of what this decision can be asked.
     #[test]
-    fn every_codec_on_every_machine_lands_on_one_of_the_four_answers() {
+    fn every_codec_on_every_machine_lands_on_one_of_the_answers() {
         let machines = [
             AMachine::with_nothing(),
             AMachine::with_nothing().decoding_in_hardware(&Video::EVERY),

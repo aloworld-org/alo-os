@@ -87,10 +87,18 @@ mod tests {
 
     /// **A film whose sound alone cannot be decoded is refused, not played
     /// silently.**
+    ///
+    /// **No codec in the closed list reaches this any more** — ADR 0058 leaves
+    /// every audio codec the decision names either free by design or past term
+    /// — so the decision is built by hand rather than played out of a file. The
+    /// rule has to outlive the list: the day an encumbered audio codec is
+    /// added, a picture that decodes must not turn a refusal into silence.
     #[test]
     fn a_film_that_would_play_without_sound_is_still_refused() {
-        let machine = AMachine::with_nothing().decoding_in_hardware(&[Video::H264Baseline]);
-        let decided = plays(&machine, &Inside::a_film(Video::H264Baseline, Audio::AacLc));
+        let decided = crate::deciding::Plays {
+            picture: Some(crate::right::Right::FromTheSilicon),
+            sound: vec![crate::right::Right::None],
+        };
         assert_eq!(
             reported(Kind::Mp4Video, &decided),
             Some(Cannot::NothingHereOpens(Kind::Mp4Video))
