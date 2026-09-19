@@ -19,14 +19,25 @@
 //! | [`THE_ROAD`], [`Step`] | The order enrolment happens in, which is what makes the proof unskippable |
 //! | [`Enrolment`] | A machine whose disk is encrypted, and which cannot be described without the proof |
 //!
-//! # The decision is proposed, and this crate waits on it
+//! # The road is decided; how it is shown to work is not, and this crate waits
 //!
-//! ADR 0054 recommends; the owner accepts. Until then nothing here enrols
-//! anything on any disk, virtual or real: there is no command sequence in this
-//! crate, no program is named, and no file is opened.
-//! `tests/the_enrolment_waits_on_its_decision.rs` holds that, and **fails the
-//! day the decision stops saying *proposed***, which is task 6's instruction to
-//! turn [`THE_ROAD`] into the tested sequence against a virtual disk.
+//! ADR 0054 is **accepted**, so the road above is settled. What is not settled
+//! is how an enrolment is shown to work: its acceptance asks for the sequence to
+//! run with a software TPM in a virtual machine, and no machine in this fleet
+//! can present a TPM device to anything — the Linux the gates run in is built
+//! with `CONFIG_TCG_VTPM_PROXY` unset, and the host offers no nested
+//! virtualisation, so every virtual machine on it is emulated. What a virtual
+//! disk shows about encryption and what only a machine with a chip can is
+//! therefore
+//! [ADR 0056](../../../docs/decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
+//! proposed, with the measurements in it.
+//!
+//! Until that is accepted nothing here enrols anything on any disk, virtual or
+//! real: there is no command sequence in this crate, no program is named, and no
+//! file is opened. `tests/the_enrolment_waits_on_its_decision.rs` holds that,
+//! and **fails the day ADR 0056 stops saying *proposed***, which is the
+//! instruction to turn [`THE_ROAD`] into the tested sequence against a virtual
+//! disk.
 //!
 //! # Where the recovery key is, and for how long
 //!

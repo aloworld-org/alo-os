@@ -225,20 +225,52 @@ asserted about one road a test walked.
   enrolled on any real disk by any test; everything is a virtual disk.
 - **What task 6 inherits from 5** (its report has the reasoning):
   `alo_encrypting::THE_ROAD` is the sequence to turn into commands, in that order, and
-  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` **fails the day
-  ADR 0054 stops saying *proposed***, so a decision accepted and not built is a red
-  suite rather than a forgotten line. The recovery key comes off the tool's **stdout**
+  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` **failed the day
+  ADR 0054 stopped saying *proposed***, so a decision accepted and not built is a red
+  suite rather than a forgotten line. It did, on 2026-09-19, and task 6 retargeted it at
+  [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
+  — the same guard, on the question that stopped the building. The recovery key comes off the tool's **stdout**
   and its English off stderr, which is how the sentences stay task 7's.
 
 ### 6. Enrolled at install, and recovered
 
-**Status:** ready — [ADR 0054](../decisions/0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
+**Status:** **blocked** — on
+[ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
+being accepted by the owner. Report:
+`docs/autonomy/updates/a-sealed-disks-promise-needs-a-machine-with-a-chip.md`.
+**Depends on:** 5.
+
+[ADR 0054](../decisions/0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
 is accepted by the owner, 2026-09-19: option C falling back to B, without
-amendment. Taken by the third PC the same day, with the acceptance itself in this
-change: `alo-encrypting`'s `nothing_is_enrolled_while_its_decision_is_proposed`
-fails the moment that status stops saying *proposed*, so the acceptance and what
-it decided land together, and that guard is replaced here by the tests of what was
-built. **Depends on:** 5.
+amendment. **The road is settled. What stopped this task is its acceptance, not
+its decision.** The acceptance below asks for the sequence to be run *with a
+software TPM in a virtual machine*, and the third PC measured on 2026-09-19 that
+**no machine in this fleet can present a TPM device to anything**: the Linux the
+gates run in is built with `CONFIG_TCG_VTPM_PROXY` unset, so there is no
+`/dev/vtpmx` for a software chip to appear through and `modprobe tpm_vtpm_proxy`
+finds no module; and the host shows neither `vmx` nor `svm`, so `qemu -accel kvm`
+refuses and every guest is emulated — the one virtual-machine acceptance this
+repository already owns took 3779 seconds. Measured in the same hour, and the
+other half of the same finding: **everything on the road that does not need a
+chip runs here in seconds**, on a real LUKS2 virtual disk in the pinned base
+(format, the recovery key at 72 bytes on stdout, a second secret added, the
+installer's first key wiped, then opened by the person's secret, opened by the
+recovery key, and refused both the wiped key and a key that was not this disk's).
+
+So ADR 0056 asks the owner where the line falls: a virtual disk shows the
+sequence and every promise that is about LUKS; a machine with a chip shows the
+three that are about a chip — that the chip releases the key when the PIN is
+typed, that an update's new measurements do not stop it, and that a change to
+what PCR 7 measures does and the recovery key answers. If it is accepted this
+task becomes the first of those two and a new task becomes the second, whose
+acceptance is run on the certified laptop when it exists (`docs/hardware.md`:
+nothing is certified yet). Nothing about ADR 0054 is reopened, and
+`docs/features.md`'s v0.5 encryption line stays unticked either way.
+
+`crates/alo-encrypting` holds the waiting rather than remembering it: its
+`tests/the_enrolment_waits_on_its_decision.rs` now reads both decisions and fails
+the day ADR 0056 stops saying *proposed*, exactly as it failed the day ADR 0054
+stopped saying so.
 
 - **Acceptance:** what the installer plan needs to enrol encryption during install is
   handed to it as `alo-encrypting`'s types and one tested command sequence against a
