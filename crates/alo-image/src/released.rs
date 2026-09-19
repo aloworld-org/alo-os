@@ -203,7 +203,7 @@ mod tests {
     use super::*;
     use crate::checking::everything_wrong_with;
     use crate::notes::THE_NOTES;
-    use crate::testing::{a_copy_of_the_image, edited, image_at};
+    use crate::testing::{a_copy_of_the_image, edited, image_at, the_tag_line};
     use crate::trying::{THE_HARDWARE, THE_README};
 
     /// The digest the owner signed, as the shipped pin and notes state it.
@@ -313,7 +313,12 @@ mod tests {
     #[test]
     fn notes_naming_another_release_are_refused() {
         let root = a_copy_of_the_image("notes-another-tag");
-        edited(&root, THE_NOTES, "    tag: 0.0.2", "    tag: 0.0.0");
+        edited(
+            &root,
+            THE_NOTES,
+            &format!("    {}", the_tag_line()),
+            "    tag: 0.0.0",
+        );
 
         let wrong = wrong_at(&root);
 

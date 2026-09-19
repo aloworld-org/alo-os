@@ -36,6 +36,13 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # The digest is the one the **registry** reports, not the one podman gives the
 # local copy: those differ, and a signature over the local digest would verify
 # here and be unpullable everywhere else.
+# Declared 2026-09-19, in the change that moved the recipe's label to it. 0.0.3
+# exists because the image gained a media server: without it four crates
+# correctly answered *nothing here handles sound and video*, and the pinned
+# 0.0.2 digest no longer contains what the recipe builds. Until its digest is
+# pinned below, an installer still pulls 0.0.2.
+next = "0.0.3"
+
 version = "0.0.2"
 digest = "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9"
 revision = "8d2619daeb07b4b0ebbed59ded8caee722103b65"

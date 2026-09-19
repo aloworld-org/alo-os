@@ -119,6 +119,105 @@ pub(crate) fn the_release_line() -> String {
     line.unwrap_or_default().to_owned()
 }
 
+/// The release the recipe names, as three numbers alone.
+///
+/// Every fixture below edits a file that spells the release — the pin, the
+/// recipe, the notes, the document a person follows — and each one used to
+/// spell it too. That made publishing a release a hunt through twenty-one
+/// literals in six files, at the moment somebody is least able to afford a
+/// mistake, and it left checks asserting against releases nobody ships. They
+/// read it from the recipe now.
+pub(crate) fn the_release() -> String {
+    the_release_line()
+        .split('"')
+        .nth(1)
+        .unwrap_or_default()
+        .to_owned()
+}
+
+/// The release the **pin** holds — what an installer pulls today.
+///
+/// Deliberately not [`the_release`], which is what the *recipe builds*. Between
+/// releases they are the same sentence; while one is in flight they are not,
+/// and that difference is the whole point of `next`. A fixture that edits the
+/// pin must spell the pin's release, and one that edits the recipe must spell
+/// the recipe's, or it changes nothing and the test passes by checking the
+/// shipped image again.
+pub(crate) fn the_pinned_release() -> String {
+    let pin = std::fs::read_to_string(Path::new(crate::THE_IMAGE).join("pinned.toml")).unwrap();
+    let line = pin
+        .lines()
+        .find(|line| line.starts_with("version = "))
+        .unwrap_or_default();
+    line.split('"').nth(1).unwrap_or_default().to_owned()
+}
+
+/// The pin's version line, as the shipped pin spells it.
+pub(crate) fn the_version_line() -> String {
+    format!("version = \"{}\"", the_pinned_release())
+}
+
+/// The tag line `docs/booting.md` and the release notes spell, which names what
+/// is pinned rather than what is being built.
+pub(crate) fn the_tag_line() -> String {
+    format!("tag: {}", the_pinned_release())
+}
+
+/// A copy of the image with **no release in flight**.
+///
+/// Fixtures below arrange a disagreement between the recipe and the pin and
+/// assert that it is caught. While a release is in flight the shipped files
+/// already disagree, legitimately — the recipe names the candidate, the pin
+/// still holds what an installer pulls — so a fixture built straight from them
+/// would arrange two disagreements and assert about one, and would keep passing
+/// if the thing it meant to catch stopped being caught.
+///
+/// So each starts from the state this repository is in *between* releases: the
+/// recipe naming exactly what the pin holds, and nothing declared. Written to
+/// work in either state, so that publishing a release does not mean editing
+/// fixtures.
+pub(crate) fn a_copy_between_releases(what: &str) -> PathBuf {
+    let root = a_copy_of_the_image(what);
+
+    let pin = root.join(THE_PIN_FILE);
+    let held = std::fs::read_to_string(&pin).unwrap();
+    let without: String = held
+        .lines()
+        .filter(|line| !line.starts_with("next = "))
+        .collect::<Vec<_>>()
+        .join(
+            "
+",
+        );
+    std::fs::write(
+        &pin,
+        format!(
+            "{without}
+"
+        ),
+    )
+    .unwrap();
+
+    let recipe = root.join(THE_CONTAINERFILE);
+    let built = std::fs::read_to_string(&recipe).unwrap();
+    std::fs::write(
+        &recipe,
+        built.replace(
+            &the_release_line(),
+            &format!(
+                "LABEL org.opencontainers.image.version=\"{}\"",
+                the_pinned_release()
+            ),
+        ),
+    )
+    .unwrap();
+
+    root
+}
+
+/// The pin, beneath the image's directory.
+pub(crate) const THE_PIN_FILE: &str = "pinned.toml";
+
 /// Change one thing in one of this image's files.
 ///
 /// The `from` has to be there: a fixture whose edit silently did nothing is a

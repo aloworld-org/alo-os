@@ -222,7 +222,8 @@ mod tests {
     use crate::checking::everything_wrong_with;
     use crate::pinned::THE_PIN;
     use crate::testing::{
-        THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, a_copy_of_the_image, edited, image_at,
+        THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, a_copy_between_releases, a_copy_of_the_image,
+        edited, image_at, the_pinned_release, the_tag_line, the_version_line,
     };
 
     /// The digest the owner signed, as the shipped pin and document state it.
@@ -230,7 +231,19 @@ mod tests {
         "sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9";
 
     /// The recipe's release line, as the repository ships it.
-    const THE_RELEASE_LABEL: &str = "LABEL org.opencontainers.image.version=\"0.0.2\"";
+    ///
+    /// Read rather than spelled: a literal here has to be edited by whoever
+    /// publishes the next release, at the moment they can least afford it.
+    fn the_release_label() -> String {
+        // The label as a copy *between releases* carries it, because that is
+        // what every fixture below starts from. While a release is in flight
+        // the shipped recipe names the candidate instead, and a fixture built
+        // against that would edit a line the copy does not have.
+        format!(
+            "LABEL org.opencontainers.image.version=\"{}\"",
+            the_pinned_release()
+        )
+    }
 
     /// Everything wrong with the image at this root.
     fn wrong_at(root: &std::path::Path) -> Vec<Wrong> {
@@ -255,11 +268,11 @@ mod tests {
     /// pinned digest disagree, and a test fails.
     #[test]
     fn a_recipe_naming_a_release_the_pin_does_not_is_caught() {
-        let root = a_copy_of_the_image("recipe-moved-on");
+        let root = a_copy_between_releases("recipe-moved-on");
         edited(
             &root,
             THE_CONTAINERFILE,
-            THE_RELEASE_LABEL,
+            &the_release_label(),
             // Deliberately a release this repository will never publish, so
             // that the fixture keeps disagreeing with the pin whatever the
             // shipped release becomes.
@@ -282,8 +295,8 @@ mod tests {
     /// a digest written against a version nothing built.
     #[test]
     fn a_pin_naming_a_release_the_recipe_does_not_is_caught() {
-        let root = a_copy_of_the_image("pin-moved-on");
-        edited(&root, THE_PIN, "version = \"0.0.2\"", "version = \"9.9.9\"");
+        let root = a_copy_between_releases("pin-moved-on");
+        edited(&root, THE_PIN, &the_version_line(), "version = \"9.9.9\"");
 
         let wrong = wrong_at(&root);
 
@@ -300,8 +313,8 @@ mod tests {
     /// **A recipe with no release at all disagrees with every pin.**
     #[test]
     fn a_recipe_naming_no_release_disagrees_with_the_pin() {
-        let root = a_copy_of_the_image("recipe-no-release");
-        edited(&root, THE_CONTAINERFILE, THE_RELEASE_LABEL, "");
+        let root = a_copy_between_releases("recipe-no-release");
+        edited(&root, THE_CONTAINERFILE, &the_release_label(), "");
 
         let wrong = wrong_at(&root);
 
@@ -318,18 +331,18 @@ mod tests {
     /// only while the recipe names exactly it.
     #[test]
     fn a_declared_next_release_the_recipe_names_is_a_candidate() {
-        let root = a_copy_of_the_image("declared-next");
+        let root = a_copy_between_releases("declared-next");
         edited(
             &root,
             THE_CONTAINERFILE,
-            THE_RELEASE_LABEL,
+            &the_release_label(),
             "LABEL org.opencontainers.image.version=\"0.1.0\"",
         );
         edited(
             &root,
             THE_PIN,
-            "version = \"0.0.2\"",
-            "version = \"0.0.2\"\nnext = \"0.1.0\"",
+            &the_version_line(),
+            &format!("{}\nnext = \"0.1.0\"", the_version_line()),
         );
 
         let wrong = wrong_at(&root);
@@ -349,16 +362,16 @@ mod tests {
     /// about a build nobody is making.
     #[test]
     fn a_declared_next_release_the_recipe_does_not_name_is_caught() {
-        let root = a_copy_of_the_image("next-not-built");
+        let root = a_copy_between_releases("next-not-built");
         edited(
             &root,
             THE_PIN,
-            "version = \"0.0.2\"",
+            &the_version_line(),
             // A candidate that follows the pinned release but that the recipe
             // does not name: a release declared with nothing built for it.
             // Deliberately a number this repository will never publish, so the
             // fixture keeps meaning this whatever the shipped release becomes.
-            "version = \"0.0.2\"\nnext = \"9.9.9\"",
+            &format!("{}\nnext = \"9.9.9\"", the_version_line()),
         );
 
         let wrong = wrong_at(&root);
@@ -384,23 +397,23 @@ mod tests {
             ("0.0.9", "0.0.10", true),
             ("0.9.9", "1.0.0", true),
         ] {
-            let root = a_copy_of_the_image(&format!("next-{pinned}-{next}"));
+            let root = a_copy_between_releases(&format!("next-{pinned}-{next}"));
             edited(
                 &root,
                 THE_CONTAINERFILE,
-                THE_RELEASE_LABEL,
+                &the_release_label(),
                 &format!("LABEL org.opencontainers.image.version=\"{next}\""),
             );
             edited(
                 &root,
                 THE_PIN,
-                "version = \"0.0.2\"",
+                &the_version_line(),
                 &format!("version = \"{pinned}\"\nnext = \"{next}\""),
             );
             edited(
                 &root,
                 THE_BOOTING_DOCUMENT,
-                "tag: 0.0.2",
+                &the_tag_line(),
                 &format!("tag: {pinned}"),
             );
 
@@ -498,7 +511,7 @@ mod tests {
     #[test]
     fn a_document_naming_another_tag_is_caught() {
         let root = a_copy_of_the_image("document-another-tag");
-        edited(&root, THE_BOOTING_DOCUMENT, "tag: 0.0.2", "tag: 0.0.0");
+        edited(&root, THE_BOOTING_DOCUMENT, &the_tag_line(), "tag: 0.0.0");
 
         let wrong = wrong_at(&root);
 
