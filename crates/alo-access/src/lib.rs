@@ -42,17 +42,21 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod filtering;
 pub mod high_contrast;
 pub mod keeping;
 pub mod key_filter;
+pub mod reaching;
 pub mod setting;
 pub mod tree;
 pub mod turned_on;
 pub mod voices;
 pub mod words;
 
+pub use filtering::{Filtering, Modifier, Pressed, Reported, Typed};
 pub use high_contrast::{HighContrast, THE_PAIRS_THE_SHELL_DRAWS};
 pub use key_filter::{KeyFilter, NotADelay};
+pub use reaching::{Key, Leaving, after_the_last, focus_order, leaving, the_tab_stop_for};
 pub use setting::{Setting, WhatItChanges};
 pub use tree::{Control, Role, State, Surface, the_approval_in_reading_order};
 pub use turned_on::{Magnification, NotAMagnification, TurnedOn};

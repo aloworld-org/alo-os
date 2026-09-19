@@ -109,13 +109,28 @@ mod tests {
         fn made() -> Self {
             use std::sync::atomic::{AtomicU32, Ordering};
             static NEXT: AtomicU32 = AtomicU32::new(0);
-            let at = std::env::temp_dir().join(format!(
-                "alo-power-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ));
-            std::fs::create_dir_all(&at).expect("a folder for this test");
-            Self(at)
+            loop {
+                let at = std::env::temp_dir().join(format!(
+                    "alo-power-{}-{}",
+                    std::process::id(),
+                    NEXT.fetch_add(1, Ordering::Relaxed)
+                ));
+                // Made rather than made-if-needed, and tried again when it is
+                // already there. Two fixtures with one counter each and one
+                // prefix between them handed the same folder to both on
+                // 2026-09-18, and one test's cleanup then removed the other's
+                // files; it cost two lanes a publication. `create_dir` refuses a
+                // folder that exists, so no two fixtures can hold one folder
+                // however their names are spelled.
+                if let Err(why) = std::fs::create_dir(&at) {
+                    assert!(
+                        why.kind() == std::io::ErrorKind::AlreadyExists,
+                        "a folder for this test: {why}"
+                    );
+                    continue;
+                }
+                return Self(at);
+            }
         }
 
         fn at(&self) -> &std::path::Path {

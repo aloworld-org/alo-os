@@ -40,6 +40,20 @@ Flatpak*); accept an adapter that takes model-written code (the contract's one r
 or install anything unsandboxed (v1, and deliberate). Before writing the next task,
 `git pull` and read the plan as published.
 
+**Owner-authorized broker contribution, 2026-09-18:** the third PC owns this
+software workstream and was authorized to clear its broker producer blockers.
+Broker task 2 may register its printer verbs through these two existing shared
+registration files. No other task or file is released; this plan retains its
+remaining work and the supervisor's ownership checks remain unchanged.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-broker-and-the-disk-plan.md
+task = 2
+files =
+  crates/alo-declared/Cargo.toml
+  crates/alo-declared/src/shipped.rs
+```
+
 ## Tasks
 
 ### 1. Installing, updating and removing an application

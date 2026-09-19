@@ -15,7 +15,8 @@
 //! [`put_back_as_shipped`] is the one door that replaces it.
 //!
 //! **This crate does not know where the folder is.** It is handed the path by
-//! whoever starts the session (`alo_choosing::where_the_folder_is`).
+//! whoever starts the session (`alo_choosing::the_persons_folder`, whose refusal
+//! is the sentence a session with no home directory shows before a change).
 //!
 //! **Nothing here watches the file**, and nothing that answers an application's
 //! request writes it: see [`crate::chosen`] on who changes a choice.

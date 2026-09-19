@@ -11,6 +11,8 @@
 //! | [`PrintingService`] | This machine's printing service, reached on this machine and nowhere else |
 //! | [`find`], [`Found`] | Every printer on the local network and on a cable, found and never added |
 //! | [`set_up`], [`CannotSetUp`] | One printer a person chose, set up without a driver being chosen |
+//! | [`printers_set_up`] | The printers already set up on this machine |
+//! | [`remove`], [`make_default`], [`CannotChange`] | A decided change to a printer already set up |
 //! | [`Reached`], [`Speaks`] | Where a printer is — and so whether printing on it leaves this machine |
 //! | [`how_is`], [`Condition`], [`Stopped`], [`Tried`] | What is wrong, as a closed set, each with what to do |
 //! | [`this_machines_printer`], [`NoPrinter`] | The one printer this machine prints on |
@@ -38,9 +40,17 @@
 //! # A printer is never added silently
 //!
 //! [`find`] lists and changes nothing; [`set_up`] adds the one printer it is
-//! handed; and no verb an agent can ask for reaches either. A machine that
-//! acquired a printer by itself has made a place a document can go without
+//! handed; and no verb an agent can ask for reaches either directly. A machine
+//! that acquired a printer by itself has made a place a document can go without
 //! anybody choosing it.
+//!
+//! Adding, removing and choosing the printer this machine prints on are changes
+//! to the whole machine, so they are carried out by the privileged broker
+//! (`crates/alo-brokerd`) and by nothing else — for an agent's proposal a person
+//! approved, and for a person's own choice in Settings, through the same three
+//! verbs (`crates/alo-changing-printers`). What crosses into the broker is never
+//! a printer's address or queue, only the digest of what the printing service
+//! reported ([`Found::as_reported`], [`Printer::as_reported`]).
 //!
 //! # A document to a printer across the network is a document leaving
 //!
@@ -64,6 +74,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod asking;
+pub mod changing;
 pub mod document;
 pub mod found;
 mod http;
@@ -72,18 +83,21 @@ pub mod printer;
 pub mod printing;
 pub mod reached;
 pub mod service;
+pub mod set_up_here;
 pub mod setting_up;
 pub mod stopped;
 pub mod verbs;
 pub mod words;
 
 pub use asking::{Condition, NoPrinter, how_is, this_machines_printer};
+pub use changing::{CannotChange, make_default, remove};
 pub use document::{NotPrintable, Printable, printable};
 pub use found::{Found, find};
 pub use printer::{Called, Printer};
 pub use printing::{NotPrinted, Printed, print};
 pub use reached::{Reached, Speaks};
 pub use service::{NotThisMachine, PrintingService, THE_SOCKET, Unanswered};
+pub use set_up_here::printers_set_up;
 pub use setting_up::{CannotSetUp, set_up, set_up_said};
 pub use stopped::{Stopped, Tried};
 pub use verbs::{PRINT_DOCUMENT, printing_verbs};

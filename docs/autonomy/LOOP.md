@@ -1,5 +1,13 @@
 # The alo OS build loop
 
+> **Current workflow, owner-approved 2026-09-18:**
+> [SHARED_MAIN.md](SHARED_MAIN.md) supersedes direct-to-main, main-only,
+> per-checkout build-cache and concurrent-build instructions below. Use one
+> task branch and draft PR per task; progress pushes are allowed. Either PC
+> may hold the shared integration turn and squash-merge its own task after all
+> nine gates and acceptance pass on the exact combined tree. Existing direct-to-main publishers remain paused;
+> the historical runner recipes below do not implement the new workflow.
+
 ## Current runner (2026-09-07)
 
 The owner authorized continuous full-v0.01 development with a push after every
@@ -485,3 +493,24 @@ powershell -ExecutionPolicy Bypass -File C:\dev\Ficina-orders\scripts\run-loop.p
 
 Stop it any time. Every finished item was committed and pushed by the iteration
 that built it, so nothing is lost by interrupting one.
+
+## A contribution explicitly released by its owner
+
+When the owner authorizes a task to supply a narrow producer dependency, record
+that authorization in the owning plan's header with an owner-release fenced
+block. Its ordered fields are plan = (the receiving plan's repository path),
+task = (its existing positive task number), and files = followed by exact
+repository-relative filenames, one per line. The printer contribution in the
+documents-and-paper plan is the first actual record. This is a record of an
+owner decision, never authority for a worker to expand its own scope.
+
+The supervisor reads this before gating. The plan containing the record must
+actually own each file, the receiving plan and task must match, and no other
+unfinished plan may claim the same file. Every other file still meets both the
+receiving plan's read-only rule and the other plans' ownership checks. Malformed
+records, directories, patterns and traversal are refused. A record inside a task
+body is not read. It neither transfers a crate nor finishes the owning plan.
+
+Record the release with the receiving task's gated publication. All nine gates,
+exact acceptance tests and integration revalidation still apply. Rebuild the
+supervisor after changing this mechanism before relying on it.

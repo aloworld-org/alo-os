@@ -5244,3 +5244,42 @@ link-local in namespaces of its own, where it always is. A dual-stack holder at 
 still stops the service, because nothing at all binds; that is task 37 of the local
 network plan.
 **Date:** 2026-09-17.
+
+## A Unix socket alone does not authenticate CUPS administration
+
+**Observed:** CUPS 2.4.7-1.2ubuntu7.14 in this machine's Ubuntu WSL, 2026-09-18.
+A request to /admin/ over the local socket returned 401 without authentication.
+The same request with PeerCred root returned 200 from root with an empty
+capability bounding set. CUPS verifies that claimed name against SO_PEERCRED;
+a different UID claiming root is not root.
+
+**Response:** the broker uses PrintingService::for_the_broker, which sends only
+that fixed identity over a Unix socket. Ordinary and TCP clients do not gain
+administrative credentials. The ignored the_real_printing_service acceptance
+starts private CUPS queues and the upstream IPP Everywhere emulator: setup,
+default selection and removal succeed with all Linux capability sets empty;
+an unauthenticated request and a different UID are refused without a queue
+change. Discovery input remains the protocol fixture. No physical-printer or
+installed-image certification is inferred. See printers-through-the-broker.md
+under docs/autonomy/updates for the exact test and recovery history.
+
+### Two test fixtures under one prefix can hand each other's folders to each other
+**Version:** `alo-power`, and every crate that copied the shape, 2026-09-18.
+**Behaviour:** a test fixture that makes a temporary folder from a process id and a
+counter of its own is unique **only against itself**. `alo-power` had two — the battery
+fixture in `battery.rs` and the settings fixture in `keeping.rs` — each with a
+zero-based counter and both spelling the folder `alo-power-<process>-<counter>`. In one
+test process they select the same folder, and since both remove their folder when the
+test ends, one test deletes the files another is still using. It fired in a publication
+gate as `NotFound` on a battery fixture write and `NotWritable(NotFound)` on a settings
+write, and **blocked two other lanes' publications** — neither of which had anything to
+do with either crate.
+**Our response:** the prefix was separated (`alo-power-battery-`), and then the
+dependence on prefixes was removed: every fixture in `alo-sound`, `alo-cameras`,
+`alo-power` and `alo-portals` now makes its folder with `create_dir`, which refuses one
+that already exists, and tries the next number when it does. Two fixtures can then never
+hold one folder however their names are spelled. **The general rule for anybody writing
+one: a temporary folder must be made, not made-if-needed** — `create_dir_all` is what
+turns a name collision into two tests sharing a directory, and the cleanup that follows
+is what turns sharing into data loss.
+**Date:** 2026-09-18.

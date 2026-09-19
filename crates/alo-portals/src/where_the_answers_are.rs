@@ -163,13 +163,24 @@ mod tests {
 
     fn a_folder() -> PathBuf {
         static NEXT: AtomicU32 = AtomicU32::new(0);
-        let at = std::env::temp_dir().join(format!(
-            "alo-portals-place-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&at).expect("a folder for this test");
-        at
+        loop {
+            let at = std::env::temp_dir().join(format!(
+                "alo-portals-place-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            // Made rather than made-if-needed, so that this fixture and the
+            // logins in `tests/` can never be handed one folder — which is how
+            // `alo-power` lost another test's files on 2026-09-18.
+            if let Err(why) = std::fs::create_dir(&at) {
+                assert!(
+                    why.kind() == std::io::ErrorKind::AlreadyExists,
+                    "a folder for this test: {why}"
+                );
+                continue;
+            }
+            return at;
+        }
     }
 
     /// **The state home wins when it is set and absolute.**

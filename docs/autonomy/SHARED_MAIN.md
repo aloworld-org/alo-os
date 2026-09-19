@@ -1,82 +1,139 @@
-# Working together on main
+# Task branches and serialized integration
 
-The owner chose direct publication to main on 2026-09-07. Pull before each task,
-integrate concurrent work before publishing, and push every completed, tested
-task. No feature branch or pull request is required by this workflow.
+Owner-approved 2026-09-18. This replaces direct-to-main publication and the
+older prohibition on feature branches. It also replaces the requirement to run
+all nine gates before every push: **progress pushes to task branches are allowed;
+merging into `main` still requires all nine gates and task acceptance.** A branch
+push is a checkpoint, not a completed task or a release.
 
-## Separate checkouts, shared remote
+## Ownership and execution
 
-- The continuous desktop worker owns `C:\dev\alo-os`.
-- Claude Code uses a separate clone, for example `C:\dev\alo-os-claude`.
-- Both local branches can be `main`; they are separate Git repositories.
-- Current division: desktop worker owns the native desktop compositor and
-  release-progress integration. Claude owns the filesystem-security workstream;
-  secure file opening and handle-based file moves have been published. Confirm
-  the next assignment with the owner rather than repeating completed work.
-- Use a separate Linux `CARGO_TARGET_DIR` per checkout. Coordinate tests that
-  alter the shared WSL kernel, cgroups, BPF pins or system services; separate
-  build directories do not isolate those resources.
+- One short-lived branch per task: `task/<machine>/<descriptive-subject>`.
+  One owner and one working tree per task. Branches do not change crate or plan
+  ownership in `a-new-machine-becomes-a-lane.md`.
+- Never run Git or edit a checkout while its worker or gate owns it. Finish the
+  current run before switching its branch. Preserve existing work; no stash,
+  destructive reset, automatic conflict resolution or force-push.
+- Both this development PC and the third PC may integrate and squash-merge
+  their own completed tasks, then delete their verified merged task branches.
+  The Mac is stopped. Neither PC needs the other to perform its merge.
+- Only one PC holds the integration turn at a time. The holder is the temporary
+  coordinator for its candidate; the other PC keeps developing and pushing task
+  branches. This is a manual queue, not a deployed GitHub merge-queue bot.
+  Do not enable auto-merge or let direct-to-main supervisors race this queue.
+- Existing `kernel-loop` and `dev-loop` publication commands still target `main`.
+  Keep those publishers paused until separately adapted and verified for this
+  workflow. Documentation does not change their executable behavior.
 
-## Concurrent work and shared-system tests
+## Taking the integration turn
 
-Owner-approved 2026-09-09: both loops may implement, compile and run isolated tests
-concurrently. This replaces the temporary single-workstream disk-space rule.
-Keep the desktop target at `/root/alo-os-target`; never clean or reuse the other
-worker's target. Claude's supervisor no longer uses a fixed
-`/root/target-claude`: since 2026-09-11 `alo-kernel-loop` chooses
-`$HOME/alo-builds/<checkout name>-<fingerprint of its path>`, one per checkout,
-and says which it is in the first line of every run and in `.kernel-loop/loop.log`
-(`tools/kernel-loop/src/where_it_builds.rs`). `/root/target-claude` is left where
-it is and nothing removes it; whether it goes is the owner's decision.
+**There is no lock. Changed 2026-09-19, after it cost two days.**
 
-The 12 GiB reserve before each build/test phase is unchanged. What changed is
-where it is measured: the kernel-loop supervisor measures the filesystem its own
-build directory is on, which is the one the build writes to, and its refusal names
-that filesystem. The desktop lane's Windows C: preflight is unchanged. Separate
-targets prevent artifact collisions, not memory pressure or exhaustion during a
-running command.
+A machine merges its own finished work when its pull request is up to date with
+`main` and carries a passing `alo/nine-gates` on that exact head. It does not
+claim anything first and does not wait for another machine's permission.
 
-Tests that attach BPF programs or manipulate kernel-global state must take
-`alo_bounding::Waited::on_this_kernel()` for the entire fixture lifetime. Both
-checkouts use the abstract socket name `alo-os/one-kernel-at-a-time`. Existing
-bounding, boundary-loader and daemon integration fixtures already participate.
-The parent holds it across its test child; the child must not acquire it again.
-Do not add an outer suite lock using the same name. Contention waits, and the
-existing bounded timeout fails rather than running unprotected. Never remove
-another fixture's pins or stop its processes to obtain access.
+`main` is protected with **strict** status checks, which already does the whole
+job a lock was meant to do: a pull request that has fallen behind `main` cannot
+be merged, however green it looked a moment ago. Two machines finishing at once
+is therefore not a race anybody loses work to — the second one is refused at the
+merge, integrates `main`, gates again and merges. That is the same retry the
+supervisor already performs for a push that lost a race.
 
-Private buses, temporary files and ordinary compile/lint work may overlap when
-they are actually isolated. Package installs, mounts, global service changes,
-session changes or other shared maintenance outside these fixtures need an
-explicit idle handoff with both workers. No supervisor restarts WSL or silently
-repairs the shared environment. A waiting test is not a reason to pause all
-development or weaken its assertions.
+**Why the lock was removed.** A shared claim ref
+(`refs/heads/coordination/integration-lock`) was held by one machine that then
+stopped, twice: `main` was frozen for eight hours on 2026-09-18 and fifteen more
+on 2026-09-19, with finished work sitting on branches nobody was permitted to
+merge. The protocol had a way to take the turn and no way to recover it, and
+recovering it by hand needed the claim SHA, a GitHub token, and somebody awake.
+A coordination device whose failure mode is *the whole fleet stops* is worse
+than the collisions it prevents, when those collisions were already prevented by
+the branch protection underneath it.
+
+If a coordination ref exists from before this change, any machine may delete it.
+
+## Merging several ready branches at once
+
+A machine may combine **more than one** ready pull request into a single
+candidate, gate that tree once, and merge it — rather than gating each branch
+separately.
+
+This is faster, and it is also more honest. Gating four branches one at a time
+tests four trees, **none of which is the tree that ends up on `main`**; gating
+the combination tests the thing that will actually exist. Two of the breakages
+on 2026-09-17 reached `main` through exactly that gap.
+
+The rules for it: every branch in the combination is already up to date with
+`main`; the combined candidate is pushed and gated as one commit; and if it
+fails, the combination is split and the branch at fault is named rather than all
+of them being refused together.
 
 ## Task lifecycle
 
-1. Start with a clean working tree and `git pull --ff-only origin main`.
-2. Implement one complete task, its tests and a separate descriptive task report
-   under `docs/autonomy/updates/`. Follow the document ownership rules below.
-3. Pass the required Windows/Linux/component checks and make a local commit.
-4. Fetch `origin/main` again. If it advanced, rebase only unpublished task
-   commits onto it. Resolve conflicts deliberately and rerun the required
-   checks on the combined tree before publishing. Never rewrite published work.
-5. Push normally to `main`. If another push wins the race, repeat integration
-   and verification. Never use force-push or discard another worker's changes.
+1. In an idle, clean checkout, fetch `origin`, update local `main` with
+   `git merge --ff-only origin/main`, and create the task branch from it. For
+   existing unfinished work, inspect and preserve it before creating its branch;
+   do not replace it with a fresh checkout or implement it again.
+2. Implement the assigned task and its tests, contract changes and separate
+   task report. Commit with the checkout's configured owner identity, without
+   a co-author trailer. Push normally to the task branch whenever useful.
+3. Open one draft pull request to `main`. State what is unfinished, checks
+   actually run and acceptance still owed. Never describe an ungated checkpoint
+   as passed. Finish focused acceptance before requesting integration.
+4. Either authorized PC selects its ready PR and claims the integration turn. Freeze that branch's head for the gate
+   run (use a separate task branch for further work), fetch latest `main`, and
+   merge it into the task branch if needed. Preserve published branch history;
+   do not rebase it and force-push. Resolve conflicts deliberately.
+5. Record the exact base SHA, candidate head SHA and Git tree SHA. Run **all nine
+   gates from `tools/kernel-loop/src/gates.rs`**, plus required task acceptance,
+   on that combined tree. Keep logs and durations. Existing requirements for
+   Windows/Linux/component and real-hardware evidence remain in force; do not
+   imply hardware certification from developer checks.
+6. Only the coordinator reports `alo/nine-gates` success, on that exact PR head,
+   after reviewing all results and confirming the gated source tree matches it.
+   Include base/tree SHAs and evidence in the PR. Mark it ready. A pending or
+   failed gate never permits a merge; a prior head's success is not transferable.
+7. Recheck that `main` and the PR head have not moved. Squash-merge through the
+   PR, using one descriptive conventional commit and the configured owner's
+   identity, with no co-author trailer. If either moved, stop, integrate and
+   validate the new combined tree; never bypass required checks or protection.
+8. Verify the merged tree matches the gated tree, record the resulting main
+   commit, and delete only that merged task branch, remotely and locally once
+   its work is confirmed reachable. Preserve unmerged/parked recovery branches.
+   Update an idle checkout's `main` by fast-forward before starting another task.
 
-The Rust supervisor performs this sequence for its worker. It retries up to
-three publication races; an unchanged remote after rejection means a real push
-error, so it stops and preserves the local commit. Rebase conflicts require
-deliberate review. Failed integration checks enter up to three repair attempts
-on the same combined tree, followed by all independent gates again. A repair
-is separately committed only after those gates pass; exhausted recovery or a
-missing authority/resource preserves the work without publication. See
-`DELIVERY.md` for the recovery protocol and its non-bypassable safety checks.
-The worker itself still does not stage, commit or push; the supervisor does.
+Do not batch unrelated tasks into one branch or keep release-long development
+branches. Dependencies should land first; dependent branches integrate them
+before their own final gate. The coordinator chooses the next ready PR promptly.
 
-Keeping main clean means it contains integrated, tested work from both checkouts.
-Pulling only at task start is insufficient: another task can finish while this
-one is being implemented.
+## Main protection
+
+Configure GitHub to require a pull request, the up-to-date `alo/nine-gates`
+status and linear history for `main`, including administrators. Disallow force
+pushes and deletion. Enable squash merging and deletion of merged branches;
+disable merge-commit and rebase merging. No extra reviewer is required for this
+small-team workflow; that does not replace the coordinator's evidence review.
+The status reports the existing local nine-gate run; it is not a newly installed
+CI runner. Credentials able to write commit statuses remain trusted, so every
+machine must follow the integration-turn rule. Do not bypass protection if API
+access is unavailable: preserve the branch and report the concrete blocker.
+
+## One build cache and one gate run per machine
+
+The 2026-09-17 disk/contention correction supersedes older instructions to give
+each checkout its own target or run builds/tests concurrently on this PC.
+Reuse `/root/alo-builds/this-machine` and the serialized Linux source copy at
+`/root/alo-trees/this-machine`; synchronize the chosen source before gating.
+Never create another target directory. Check running Cargo processes and the
+machine-wide gate lock before any build/test, and wait if another run owns them.
+Check host C: free space as well as the Linux filesystem; preserve the existing
+reserve checks and act before C: falls below 10 GiB. Other machines reuse their
+existing configured cache and serialize their own shared environment.
+
+Kernel tests retain `alo_bounding::Waited::on_this_kernel()` for their complete
+fixture lifetime. Do not wrap the whole suite in that same lock, bypass it, remove
+another test's BPF pins or stop its services. Shared mounts, packages, services
+and WSL maintenance require an idle handoff. Branches do not isolate a kernel.
 
 ## Descriptive names and document ownership
 
@@ -86,7 +143,7 @@ compositor". Legacy queue codes remain secondary references only; do not rename
 historical ADRs or break existing links. Report filenames use lowercase hyphenated
 words, for example `secure-file-moves.md`, not an internal queue code.
 
-Only the integration owner in `C:\dev\alo-os` edits these shared documents:
+Only the designated integration owner edits these shared documents:
 
 - `CHANGELOG.md`
 - `ROADMAP.md`
@@ -115,3 +172,68 @@ Before starting another task, existing contributor sessions must pull these
 rules and reread them. Saved instructions do not update an already-running
 Claude session automatically. Genuine code conflicts still require review;
 never use an automatic union merge or force-push to hide one.
+
+## A branch belongs to the machine that made it
+
+The machine that creates a task branch gates it, merges it and deletes it.
+Nobody waits for another machine's permission to merge their own finished work,
+and nobody merges somebody else's.
+
+**A merged branch is deleted in the same turn it is merged.** A finished branch
+left in the list is indistinguishable from work still in flight, and a branch
+list that cannot be read is not a record of anything. GitHub deletes it on merge
+where the repository is set to; where it is not, delete it explicitly and
+confirm it is gone.
+
+**An unmerged branch is never deleted.** Parked tasks and recovery work live
+there, and that work exists nowhere else.
+
+**A branch nobody has moved for a day is reported, not removed.** Its owner says
+whether it is alive or abandoned; silence is not consent to delete.
+
+## Gate the committed tree, not the working tree
+
+Run the gates against **what the commit contains**, not what the working
+directory happens to hold. Use `git archive`, a fresh clone, or a checkout of
+the candidate SHA — not a copy of a working tree that a worker has been writing
+into.
+
+The two differ in ways that are invisible until they are expensive. On
+2026-09-18 a gate failed on `alo-updating`'s base-image check because the
+recipe in the working tree carried CRLF line endings: a worker had written the
+file that way, `.gitattributes` normalised it to LF *in the commit*, and the
+gate — which copied the working tree — tested bytes that would never reach
+`main`. The branch was refused for a fault that did not exist in the work being
+merged, and the same trap catches any test that compares exact file content.
+
+The rule is the same one the integration turn already follows for `main`: gate
+the thing that will actually land.
+
+## Gate what the change can reach
+
+The nine gates take about twenty minutes, and nearly all of it is the whole
+workspace's tests. Running all of them for a change that cannot possibly reach
+them is the largest avoidable cost in this repository: on 2026-09-19 a
+documentation-only commit spent twenty-three minutes running 120 test binaries,
+none of which read a word it changed.
+
+A candidate runs the gates its diff can reach:
+
+| What the diff touches | What must pass |
+|---|---|
+| `docs/decisions/**` | the citation check, which is what a renamed decision breaks |
+| `docs/autonomy/*plan.md` | the plan checks that read every plan |
+| `docs/**` otherwise | formatting, the citation check, the plan checks |
+| `image/**` | `alo-image`, `alo-installing`, `alo-updating` |
+| `tools/kernel-loop/**` | the supervisor's own three gates |
+| `crates/<name>/**` | that crate, and every crate that depends on it |
+| `Cargo.toml`, `Cargo.lock`, `.gitattributes`, anything workspace-wide | all nine |
+
+**Where the mapping is uncertain, run all nine.** A documentation change did
+break `main` for five machines on 2026-09-17 — an ADR was renamed and every link
+to it still read the same — which is why the decisions row is not simply
+*formatting*. The saving comes from the common case, not from trusting the rare
+one.
+
+Say in the pull request which gates ran and why those. A candidate that merges
+several branches runs the union of what each reaches.
