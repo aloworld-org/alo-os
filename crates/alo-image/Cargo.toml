@@ -54,6 +54,10 @@ alo-converting = { path = "../alo-converting" }
 alo-models = { path = "../alo-models" }
 
 [dev-dependencies]
+# `cargo metadata` answers in JSON, and the guard on what the image's daemons may
+# link reads its resolved graph. Only a test needs it: nothing this crate ships
+# parses JSON.
+serde_json = { workspace = true }
 # The image must carry the picture selected by the actual appearance default.
 alo-appearance = { path = "../alo-appearance" }
 
