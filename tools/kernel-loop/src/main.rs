@@ -94,6 +94,7 @@ mod handoff;
 mod inside_the_plan;
 mod journal;
 mod keeping_ubuntu_up;
+mod landing;
 mod lock;
 mod owner_releases;
 mod parking;
