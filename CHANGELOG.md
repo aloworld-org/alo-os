@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Installing alo OS now gets you release 0.0.3.** It is the first release
+  whose image carries a media server, so sound and video work on a fresh
+  machine rather than reporting that nothing here handles them. The installer
+  pulls it by content and checks the owner's signature before writing anything
+  to your disk; if the signature does not verify, nothing is written.
+
 - **An ordinary video's sound now plays on a machine with no hardware decoder.**
   The image ships software decoders for everything nobody can charge for — AV1,
   VP9, Opus, Vorbis, FLAC, PCM, and now MP3 and AAC-LC, whose patents have

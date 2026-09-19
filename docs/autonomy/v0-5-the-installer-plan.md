@@ -60,19 +60,26 @@ reads and holds to the recipe's release, the committed key and `docs/booting.md`
 records why it is not yet the road. What stays the owner's: making the `ghcr.io`
 package public, so an installer pulls without an account.
 
-The owner's first publish happened on
-2026-09-15 under [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md):
+The owner has published three times, beginning 2026-09-15 under
+[ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md).
+The pinned one, signed 2026-09-19:
 
 | | |
 |---|---|
-| Release | `0.0.2` (`org.opencontainers.image.version`) |
-| Built from | `8d2619daeb07b4b0ebbed59ded8caee722103b65` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.2` |
-| Digest | `sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9` |
+| Release | `0.0.3` (`org.opencontainers.image.version`) |
+| Built from | `a875f80e3100ab51ac5fc64c762f5fc3fcde75f5` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.3` |
+| Digest | `sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7` |
 | Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
 | Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
 
-What remains is the acceptance below with this digest to pin. The package on
+**Both the digest and the revision above were read back from the registry**, not
+from the machine that built the image — the digest from `docker-content-digest`,
+the revision from the image's own label in its config blob. A local copy's
+digest is not the one a registry stores, and signing the local one produces a
+signature that verifies on the builder's machine and nowhere else.
+
+The package on
 `ghcr.io` is still private until the owner makes it public, so a pull today
 needs a login; that is named in the report, not worked around.
 **Depends on:** nothing.
