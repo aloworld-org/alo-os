@@ -1,5 +1,13 @@
 # A new machine becomes a lane
 
+> **Current workflow, owner-approved 2026-09-18:**
+> [SHARED_MAIN.md](SHARED_MAIN.md) supersedes direct-to-main, main-only,
+> per-checkout build-cache and concurrent-build instructions below. Use one
+> task branch and draft PR per task; progress pushes are allowed. Either PC
+> may hold the shared integration turn and squash-merge its own task after all
+> nine gates and acceptance pass on the exact combined tree. Existing direct-to-main publishers remain paused;
+> the historical runner recipes below do not implement the new workflow.
+
 Three more machines join the work on 2026-09-14: two spare PCs and the
 certified laptop, which builds until the installer is ready to put alo OS on it
 ([ADR 0033](../decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md)).
