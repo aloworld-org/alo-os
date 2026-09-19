@@ -106,9 +106,15 @@ fn a_photo_is_not_a_kind_that_is_played() {
 
 /// **A machine that cannot open one says so, and says what would.**
 ///
-/// No engine the image pins converts a HEIF photograph — the office engine
-/// converts documents — so this is the `NothingHereOpens` road with task 4's
-/// *what would*, and not a `Converts` this machine cannot perform.
+/// **Nothing registers a conversion for a photograph.**
+/// `alo_converting::Conversion::EVERY` holds three, and a machine is told about
+/// those and no others — so this is the `NothingHereOpens` road with task 4's
+/// *what would*, because no conversion for it exists to offer.
+///
+/// Said that way on purpose. This comment first said *no engine the image pins
+/// converts a HEIF photograph*, which was never measured: what a rented engine
+/// can read is a question about the engine, and the reason a photograph is
+/// explained here is a question about what this repository registers.
 #[test]
 fn a_machine_with_nothing_explains_it_rather_than_shrugging() {
     assert_eq!(

@@ -82,6 +82,14 @@ struct Named {
     /// A macro module under `Basic/` or a script under `Scripts/`, which is
     /// where an OpenDocument keeps them.
     open_document_macros: bool,
+    /// `Index/Document.iwa`, which every iWork document carries — a Pages
+    /// document, a Keynote presentation and a Numbers spreadsheet alike.
+    iwork_document: bool,
+    /// A part only a Keynote presentation has: its slides, its masters or its
+    /// theme.
+    keynote: bool,
+    /// A part only a Numbers spreadsheet has: its tables.
+    numbers: bool,
 }
 
 /// Decide what a file beginning with a zip's signature is.
@@ -130,6 +138,29 @@ pub(crate) fn look<F: Read + Seek>(
             (false, true, false) => Zipped::A(Kind::ExcelWorkbook, macros),
             (false, false, true) => Zipped::A(Kind::PowerPointPresentation, macros),
             _ => Zipped::Unrecognised,
+        });
+    }
+
+    // An iWork document, of which this crate names one: a Pages document.
+    //
+    // **The shape is `crate::iso_media`'s, and for its reason.** The three
+    // iWork applications write the same container — `Index/*.iwa` beside
+    // `Metadata/` and the previews — so the index alone says *one of these
+    // three* and not which. What is named here is a document carrying that
+    // index and **neither of the parts the other two have**, and anything else
+    // is claimed to be nothing rather than guessed at.
+    //
+    // Turning it round — *an iWork document is a Pages document unless it
+    // looks like the others* — reads the same until somebody is sent a form
+    // nobody here listed, and then says *this is a Pages document* about a
+    // presentation. That is the mistake this crate made about a photograph
+    // until 2026-09-19, and it is worse than saying nothing because a person
+    // acts on it.
+    if named.iwork_document {
+        return Ok(if named.keynote || named.numbers {
+            Zipped::Unrecognised
+        } else {
+            Zipped::A(Kind::PagesDocument, Macros::NoneSeen)
         });
     }
 
@@ -357,4 +388,14 @@ fn notice(named: &mut Named, name: &[u8], size: u32) {
     {
         named.open_document_macros = true;
     }
+
+    // What an iWork document carries, and what tells the three of them apart.
+    // Measured against a real Pages document saved by Pages 15.3.1
+    // (`tests/files/README.md`): `Index/Document.iwa` beside a stylesheet, the
+    // metadata, the view state and the previews.
+    named.iwork_document |= lower == b"index/document.iwa";
+    named.keynote |= lower.starts_with(b"index/slide")
+        || lower.starts_with(b"index/masterslide")
+        || lower.starts_with(b"index/theme");
+    named.numbers |= lower.starts_with(b"index/tables/");
 }

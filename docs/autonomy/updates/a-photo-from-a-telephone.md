@@ -71,10 +71,21 @@ manufacturer in a sentence about a file somebody was sent is an advertisement in
 the place where an explanation belongs, which is the constraint this task already
 applies to remedies.
 
-**No engine converts one.** The office engine the image pins converts documents.
-So a photograph is the `NothingHereOpens` road, not a `Converts` this machine
-cannot perform — checked rather than assumed, and stated here because *we
-believed something would convert it* is how that road gets made wrong.
+**Nothing registers a conversion for one.** `alo_converting::Conversion::EVERY`
+holds three — a Word document, a spreadsheet, a presentation — and
+`with_what_converts` tells a machine about those and nothing else. So a
+photograph takes the `NothingHereOpens` road because **no conversion for it
+exists to offer**, which is a fact about this repository and checkable in one
+file.
+
+**Corrected 2026-09-19.** This paragraph first said *no engine converts one — the
+office engine the image pins converts documents*, and claimed that was checked
+rather than assumed. **It was assumed.** Whether the rented engine could read a
+HEIF was never measured here, and the same reasoning — from what our crates do to
+what a rented engine does — was wrong about a Pages document the same day, where
+the engine turned out to carry an iWork reader all along. What the engine can do
+is not the reason a photograph is explained; what this machine offers is, and
+that is the sentence above.
 
 ## The file is real, and the provenance is tested
 

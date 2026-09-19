@@ -79,6 +79,8 @@ pub enum Kind {
     GifImage,
     /// A WebP image.
     WebpImage,
+    /// A document made with Pages, Apple's word processor.
+    PagesDocument,
     /// A photo in HEIF, which is what most telephones have saved since about
     /// 2017.
     HeicPhoto,
@@ -108,7 +110,7 @@ pub enum Kind {
 
 impl Kind {
     /// Every kind, in the order [`crate::words::THE_NAMES`] names them.
-    pub const EVERY: [Self; 28] = [
+    pub const EVERY: [Self; 29] = [
         Self::Pdf,
         Self::WordDocument,
         Self::ExcelWorkbook,
@@ -126,6 +128,7 @@ impl Kind {
         Self::JpegImage,
         Self::GifImage,
         Self::WebpImage,
+        Self::PagesDocument,
         Self::HeicPhoto,
         Self::ZipArchive,
         Self::MatroskaVideo,
@@ -160,6 +163,7 @@ impl Kind {
             Self::JpegImage => words::KIND_JPEG_IMAGE,
             Self::GifImage => words::KIND_GIF_IMAGE,
             Self::WebpImage => words::KIND_WEBP_IMAGE,
+            Self::PagesDocument => words::KIND_PAGES_DOCUMENT,
             Self::HeicPhoto => words::KIND_HEIC_PHOTO,
             Self::ZipArchive => words::KIND_ZIP_ARCHIVE,
             Self::MatroskaVideo => words::KIND_MATROSKA_VIDEO,
