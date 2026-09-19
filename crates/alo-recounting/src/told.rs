@@ -52,11 +52,13 @@ use crate::words::{self, Word};
 
 /// What became of one entry.
 ///
-/// Ten, and they are `alo_record::Happened`'s seven with its three ways of
-/// being stopped told apart — because *nobody was asked*, *the person said no*
-/// and *the grants said no at the last moment* are three different facts about
-/// a machine, and an account that flattened them into *refused* would answer
-/// none of the questions each one raises.
+/// One for each kind of entry `alo_record::Happened` keeps, with its three ways
+/// of being stopped told apart — because *nobody was asked*, *the person said
+/// no* and *the grants said no at the last moment* are three different facts
+/// about a machine, and an account that flattened them into *refused* would
+/// answer none of the questions each one raises. The same holds of the kinds
+/// that succeeded or did not: an undo that happened and one that could not are
+/// two clauses, never one.
 ///
 /// Derived in one place, from an exhaustive match. A kind of entry added to the
 /// record and not given a clause here is a build that fails rather than a line
@@ -109,6 +111,10 @@ pub enum Outcome {
     CarriedOnAfterSleep,
     /// A turn was under way when the machine slept, and was stopped when it woke.
     StoppedBySleep,
+    /// The person put back what an agent had changed (ADR 0045).
+    PutBack,
+    /// The person asked for something to be put back and it did not happen.
+    NotPutBack,
 }
 
 impl Outcome {
@@ -142,6 +148,10 @@ impl Outcome {
             Happened::SleptThrough {
                 stopped: Some(_), ..
             } => Self::StoppedBySleep,
+            Happened::Undone { failed: None, .. } => Self::PutBack,
+            Happened::Undone {
+                failed: Some(_), ..
+            } => Self::NotPutBack,
         }
     }
 
@@ -171,6 +181,8 @@ impl Outcome {
             Self::MachineChangeRefused => words::MACHINE_CHANGE_REFUSED,
             Self::CarriedOnAfterSleep => words::CARRIED_ON_AFTER_SLEEP,
             Self::StoppedBySleep => words::STOPPED_BY_SLEEP,
+            Self::PutBack => words::PUT_BACK,
+            Self::NotPutBack => words::NOT_PUT_BACK,
         }
     }
 
@@ -252,6 +264,9 @@ pub struct Told {
     from_approval: Option<u64>,
     /// The grants it ran against.
     against: Vec<u64>,
+    /// The moment of the entry an undo put back — absent for everything that
+    /// is not an undo.
+    undid: Option<SystemTime>,
 }
 
 impl Told {
@@ -262,12 +277,19 @@ impl Told {
     #[must_use]
     pub fn of(entry: &Entry) -> Self {
         let happened = entry.happened();
+        // An undo carries a copy of the change it put back, and the copy is
+        // what a person reads under the clause — *you put this back*, and then
+        // the sentence they approved when it happened. `alo_record::Happened`
+        // keeps the two apart, which is right there; here they are one line.
+        let what = entry
+            .what()
+            .or_else(|| happened.undid().map(|(_, what)| what));
         Self {
             at: entry.at(),
             agent: entry.agent().cloned(),
             outcome: Outcome::of(happened),
-            verb: entry.what().map(|what| what.verb().clone()),
-            sentence: entry.what().map(|what| what.sentence().clone()),
+            verb: what.map(|what| what.verb().clone()),
+            sentence: what.map(|what| what.sentence().clone()),
             because: happened.why_stopped().cloned(),
             asked_for: match happened {
                 Happened::TurnedAway { verb, .. } => Some(verb.clone()),
@@ -276,7 +298,19 @@ impl Told {
             went_to: happened.destination().cloned(),
             from_approval: happened.from_approval(),
             against: happened.against().to_vec(),
+            undid: happened.undid().map(|(at, _)| at),
         }
+    }
+
+    /// The moment of the change an undo put back — [`None`] for everything
+    /// that is not an undo.
+    ///
+    /// The line beside it is the copy the undo carries, so *what did I put
+    /// back, and when had it happened* is one line of an account rather than
+    /// two entries a reader has to pair up themselves.
+    #[must_use]
+    pub fn undid(&self) -> Option<SystemTime> {
+        self.undid
     }
 
     /// When it happened.
@@ -309,6 +343,10 @@ impl Told {
     }
 
     /// The verb, by name — [`None`] when nothing ever became a call.
+    ///
+    /// For an undo it is the verb that was **put back**, out of the copy the
+    /// entry carries, because *you put this back* read beside no verb at all
+    /// would be a line saying nothing.
     #[must_use]
     pub fn verb(&self) -> Option<&Line> {
         self.verb.as_ref()
@@ -323,6 +361,11 @@ impl Told {
     /// [`None`] where there was never a call to generate one from — a question
     /// answered here, something that left, and above all a verb that was turned
     /// away, whose text is [`Told::asked_for`] and is deliberately not this.
+    ///
+    /// For an undo it is the sentence the person approved for the change that
+    /// was put back, copied into the entry when the undo was written, so an
+    /// account stays readable after the original has been pruned.
+    /// [`Told::undid`] is when that change happened.
     #[must_use]
     pub fn sentence(&self) -> Option<&Line> {
         self.sentence.as_ref()
@@ -396,8 +439,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         an_afternoon, answered_here, archived, declined, fetched_a_model, held_back, hour,
-        in_english, left, never_asked, never_put_anywhere, noon, not_bounded, ran_a_read,
-        refused_at_the_moment, translated, turned_away,
+        in_english, left, never_asked, never_put_anywhere, noon, not_bounded, not_put_back,
+        put_back, ran_a_read, refused_at_the_moment, translated, turned_away,
     };
 
     /// **The sentence read back is the one the machine wrote down.** Not a
@@ -651,6 +694,74 @@ mod tests {
         );
     }
 
+    /// **An undo reads back as one line: you put this back, and here is what
+    /// it was.**
+    ///
+    /// `alo_record::Happened` keeps the two apart, which is right there — the
+    /// copy an undo carries is what somebody put *back*, never what ran. Here
+    /// they are one line, because *what did I put back, and when had it
+    /// happened* is one question and an account that made a reader pair up two
+    /// entries themselves would be answering it badly.
+    #[test]
+    fn an_undo_reads_back_as_the_change_it_put_back_and_when_that_was() {
+        let moved = archived();
+        let told = Told::of(&put_back());
+
+        assert_eq!(told.outcome(), Outcome::PutBack);
+        assert_eq!(told.at(), noon() + hour());
+        assert_eq!(told.undid(), Some(moved.at()));
+        assert!(told.verb().is_some_and(|verb| verb.is("move_file")));
+        assert_eq!(
+            told.sentence(),
+            moved.what().map(alo_record::What::sentence),
+            "the account and the record worded one change differently"
+        );
+
+        // It names nobody, because nobody's agent did it, and it is not an
+        // execution: a question about what ran never answers with an undo.
+        assert_eq!(told.agent(), None);
+        assert_eq!(told.asked_for(), None);
+        assert_eq!(told.went_to(), None);
+        assert_eq!(told.from_approval(), None);
+        assert_eq!(told.because(), None);
+
+        // And nothing that is not an undo answers `undid`, so the line cannot
+        // be read onto an ordinary change.
+        assert_eq!(Told::of(&moved).undid(), None);
+        assert_eq!(Told::of(&fetched_a_model()).undid(), None);
+    }
+
+    /// **An undo that did not happen reads back as one that did not**, with the
+    /// reason the person was shown beside it.
+    ///
+    /// Two clauses and not one: *you put this back* and *it could not be* are
+    /// two facts about an afternoon, and an account that flattened them would
+    /// tell somebody their files came back when they did not.
+    #[test]
+    fn an_undo_that_did_not_happen_reads_back_as_one_that_did_not() {
+        let strings = in_english();
+        let failed = Told::of(&not_put_back());
+
+        assert_eq!(failed.outcome(), Outcome::NotPutBack);
+        assert!(
+            failed
+                .because()
+                .is_some_and(|why| why.as_str().contains("changed since")),
+            "{:?}",
+            failed.because()
+        );
+        assert_eq!(failed.undid(), Some(archived().at()));
+        assert!(failed.sentence().is_some(), "what it was for is kept");
+
+        let happened = Told::of(&put_back());
+        assert_ne!(failed.outcome(), happened.outcome());
+        assert_ne!(
+            failed.outcome().said(&strings).text(),
+            happened.outcome().said(&strings).text()
+        );
+        assert_eq!(happened.because(), None);
+    }
+
     /// **Every entry the record can hold has a clause**, and no two of them read
     /// the same. A kind of entry with no clause would reach a person as a key.
     #[test]
@@ -671,7 +782,7 @@ mod tests {
         }
         assert_eq!(
             outcomes.len(),
-            10,
+            12,
             "an afternoon that does not hold one of every kind of entry proves less than it looks"
         );
     }

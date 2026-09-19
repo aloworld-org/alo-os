@@ -381,6 +381,63 @@ impl Entry {
         )
     }
 
+    /// The person put back what the entry `undid` says an agent changed.
+    ///
+    /// [`None`] for an entry that did not **run**: a change that was refused,
+    /// one that never became a call, a departure, a pairing, an errand, another
+    /// undo. Nothing in any of them changed anything of the person's, so there
+    /// is nothing to put back and nothing to copy, and the honest shape is no
+    /// entry rather than one with an empty account of what it reversed.
+    ///
+    /// **Made only from an entry that exists**, like every constructor here: an
+    /// undo is written from the record the person was reading, so the moment
+    /// and the sentence it names are the ones that were shown to them. See
+    /// [`Happened::Undone`] for why it names no agent and why it copies rather
+    /// than points.
+    ///
+    /// **Whether that execution could be put back is not decided here.** This
+    /// crate keeps what happened and decides nothing about undoing;
+    /// `alo_keeping_up::WhatWasDone` holds ADR 0045's table and
+    /// `alo_updating::putting_back` is the one place the two are put beside
+    /// each other.
+    ///
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn undone(undid: &Self, at: SystemTime) -> Option<Self> {
+        Some(Self::new(
+            at,
+            Happened::Undone {
+                undid: undid.at,
+                what: undid.what_ran()?.clone(),
+                failed: None,
+            },
+        ))
+    }
+
+    /// The person asked to put back what the entry `undid` says an agent
+    /// changed, and it did not happen.
+    ///
+    /// `why` is the sentence they were shown, handed in already rendered for
+    /// the reason [`Entry::never_put_anywhere`] gives. [`None`] for the same
+    /// entries [`Entry::undone`] answers [`None`] for, and for the same reason.
+    ///
+    /// An undo that failed is kept because a record that held only the undos
+    /// that worked would answer *what became of my afternoon* with the half
+    /// that went well. [`Happened::was_stopped`] counts it.
+    ///
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn undo_failed(undid: &Self, why: &str, at: SystemTime) -> Option<Self> {
+        Some(Self::new(
+            at,
+            Happened::Undone {
+                undid: undid.at,
+                what: undid.what_ran()?.clone(),
+                failed: Some(Line::of(why)),
+            },
+        ))
+    }
+
     /// The person opened `workspace`, which answered at `answers_at` when the
     /// link was looked at.
     ///
@@ -502,6 +559,27 @@ impl Entry {
         self.happened.what()
     }
 
+    /// What this undid, and when that happened — absent for everything that is
+    /// not an undo.
+    #[must_use]
+    pub fn undid(&self) -> Option<(SystemTime, &What)> {
+        self.happened.undid()
+    }
+
+    /// What this entry says **ran** — absent for everything else, a call that
+    /// was refused included.
+    ///
+    /// Narrower than [`Entry::what`], which answers for a refusal too, and
+    /// that difference is the whole of why it exists: an undo is written from
+    /// a change that really happened, and one written from a change a person
+    /// declined would be a record of putting back something nobody did.
+    fn what_ran(&self) -> Option<&What> {
+        match &self.happened {
+            Happened::Ran { what, .. } => Some(what),
+            _ => None,
+        }
+    }
+
     /// What the person was told the execution came to, in order — empty when
     /// nothing was told beyond the call.
     #[must_use]
@@ -535,8 +613,8 @@ impl Entry {
 mod tests {
     use super::*;
     use crate::test_calls::{
-        archiving_march, files, granting, granting_both, hour, listing_invoices, mail, noon,
-        proposing,
+        archiving_march, asking_alo, departing, fetching_a_model, files, granting, granting_both,
+        hour, listing_invoices, mail, noon, proposing,
     };
     use crate::testing::in_english;
     use alo_capability::{Approvals, Grants};
@@ -1006,5 +1084,132 @@ mod tests {
         );
         assert!(!written.contains("agent"), "{written}");
         assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// One change an agent really made: proposed, approved once, redeemed and
+    /// run, which is the only entry an undo can be made from.
+    fn a_file_an_agent_moved() -> Entry {
+        let grants = granting_both();
+        let mut approvals = Approvals::default();
+        let id = approvals.propose(proposing(&archiving_march(), &grants));
+        let approved = approvals.approve(id, noon()).unwrap();
+        Entry::ran(&approved.redeem(&grants, noon()).unwrap(), &in_english())
+    }
+
+    /// **An undo is written with a copy of what it undid, and with nobody
+    /// behind it** — ADR 0045 point 4.
+    ///
+    /// The copy is the whole point: the record is appended to and shortened, so
+    /// a position in the file is not a name that lasts, and an undo that
+    /// pointed at one would become a line about nothing the day the change it
+    /// reversed was pruned.
+    #[test]
+    fn an_undo_is_recorded_with_a_copy_of_what_it_undid_and_nobody_behind_it() {
+        let moved = a_file_an_agent_moved();
+        let entry = Entry::undone(&moved, noon() + hour()).unwrap();
+
+        assert_eq!(entry.at(), noon() + hour());
+        assert_eq!(entry.agent(), None);
+        assert_eq!(entry.origin(), None);
+        assert!(!entry.happened().ran());
+        assert!(!entry.happened().was_stopped());
+        assert!(!entry.happened().caused_egress());
+        assert_eq!(entry.happened().errand(), None);
+        assert_eq!(entry.happened().from_approval(), None);
+        assert_eq!(entry.happened().against(), [] as [u64; 0]);
+
+        // What it undid is answered as the pair it is, and never as what ran:
+        // an undo of a move that read back as a move would be one change
+        // counted twice.
+        assert_eq!(entry.what(), None);
+        let (undid, what) = entry.undid().unwrap();
+        assert_eq!(undid, moved.at());
+        assert!(what.verb().is("move_file"));
+        assert_eq!(Some(what), moved.what());
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(written.contains(r#""undone":{"undid":"#), "{written}");
+        assert!(!written.contains("agent"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **An undo that did not happen is kept, and is a refusal.**
+    ///
+    /// A record holding only the undos that worked would answer *what became of
+    /// my afternoon* with the half that went well. The sentence kept is the one
+    /// the person was shown, handed in already worded for the reason
+    /// [`Entry::never_put_anywhere`] gives.
+    #[test]
+    fn an_undo_that_did_not_happen_is_kept_as_a_refusal_with_the_sentence_shown() {
+        let moved = a_file_an_agent_moved();
+        let why = "something this would put back has changed since";
+        let entry = Entry::undo_failed(&moved, why, noon() + hour()).unwrap();
+
+        assert!(entry.happened().was_stopped());
+        assert!(
+            entry
+                .happened()
+                .why_stopped()
+                .is_some_and(|shown| shown.is(why))
+        );
+        assert_eq!(entry.undid().map(|(at, _)| at), Some(moved.at()));
+        assert_eq!(entry.agent(), None);
+        assert_ne!(entry, Entry::undone(&moved, noon() + hour()).unwrap());
+
+        // And the one that happened is not a refusal, so a review looking for
+        // what did not happen finds exactly those.
+        assert!(
+            !Entry::undone(&moved, noon())
+                .unwrap()
+                .happened()
+                .was_stopped()
+        );
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(
+            written.contains(&format!(r#""failed":"{why}""#)),
+            "{written}"
+        );
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **An entry that did not run cannot be undone**, and the honest shape is
+    /// no entry rather than one with an empty account of what it reversed.
+    ///
+    /// The refusal path of both constructors, and the one worth reading twice
+    /// is the first: a change the **person declined** has a `what` on it, so a
+    /// constructor that took anything carrying one would write down an undo of
+    /// something nobody did. A pairing, a departure, an errand and the machine
+    /// updating have nothing of an agent's in them at all — and neither has
+    /// an undo, because an undo of an undo is a machine that has lost count of
+    /// what it is putting back.
+    #[test]
+    fn an_entry_that_did_not_run_cannot_be_undone() {
+        let moved = a_file_an_agent_moved();
+        for nothing_to_put_back in [
+            Entry::declined(
+                &proposing(&archiving_march(), &granting_both()),
+                &in_english(),
+                noon(),
+            ),
+            Entry::turned_away("tidy_everything", "there is no such verb", &files(), noon()),
+            Entry::paired("the studio", noon()),
+            Entry::updated("sha256:a", "sha256:b", noon()),
+            Entry::rolled_back("sha256:b", "sha256:a", noon()),
+            Entry::answered_here(&mail(), noon()),
+            Entry::left(&departing(asking_alo(), noon())),
+            Entry::left_on_its_own(&fetching_a_model(noon())),
+            Entry::the_grants_were_not_read_again("the grants could not be read", noon()),
+            Entry::undone(&moved, noon()).unwrap(),
+        ] {
+            assert!(
+                Entry::undone(&nothing_to_put_back, noon()).is_none(),
+                "{nothing_to_put_back:?}"
+            );
+            assert!(
+                Entry::undo_failed(&nothing_to_put_back, "it could not be", noon()).is_none(),
+                "{nothing_to_put_back:?}"
+            );
+        }
     }
 }

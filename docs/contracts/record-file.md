@@ -70,7 +70,7 @@ that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
-**Every entry names whose authority it was under, except seven.** `agent` is
+**Every entry names whose authority it was under, except eight.** `agent` is
 present on all of them but these:
 
 - `left-on-its-own`, which is alo OS reaching the network with nobody having
@@ -124,16 +124,49 @@ present on all of them but these:
   the broker is told an approval and not whose grants it was proposed under, and
   the turn's own entry for the same approval already names that. It is not a
   departure.
+- `undone`, added 2026-09-18 and additive, which is the person putting back what
+  an agent had changed, or asking for that and being told it could not be done.
+  It is set out in full below; what belongs here is why it names nobody. An undo
+  is the person's own act, there is no verb that undoes and none that proposes
+  one, so there is no agent to name and no field to name one in.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
 permission to hold the person's own list of grants, two people made a
-pairing rather than any agent, and a person opened a workspace no agent could
-open, so a name there would be an authority the
+pairing rather than any agent, a person opened a workspace no agent could
+open, and a person put something back that no agent may, so a name there would
+be an authority the
 record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
-with nobody's authority looks for the entries with no `agent`; the seven are
+with nobody's authority looks for the entries with no `agent`; the eight are
 told apart by their tags, and only the first of them reached the network.
+
+**`undone` is the person putting back what an agent changed**, added 2026-09-18
+and additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) point 4).
+It carries `undid`, the moment of the entry it put back; `what`, that entry's own
+account of the call — verb, effect, the sentence the person approved and the
+arguments — **copied in rather than pointed at**, because the file is shortened
+and a position in it is not a name that lasts, so an undo that pointed at one
+would become a line about nothing the day the original was pruned; and `failed`,
+absent (`null`) when it happened and otherwise the sentence the person was shown
+when it did not. A failed one is a refusal and a reader looking for what was
+refused finds it. **No `agent` and no field for one**: an undo is the person's
+act, there is no verb that undoes and none that proposes one, and a name in that
+position would be an authority the record invented. It is not a departure and it
+is not an execution of a verb: what ran was the person's own act on their own
+files, and the `what` it carries is what was undone rather than what ran, so a
+question about executions never answers with one.
+
+**It is written only from an entry that `ran`.** A change a person declined
+carries a `what` as well, and an `undone` written from one would be a record of
+putting back something nobody did; a pairing, a departure, an errand and the
+machine updating carry nothing of an agent's at all. An `undone` naming one of
+those, or naming another `undone`, is a file this repository never writes.
+**Whether what ran could be put back is not the record's question**: the closed
+table of what can never be undone, and why, is `alo-keeping-up`'s
+([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) point 1), and a reader
+of this file learns from an `undone` entry that something was put back, never
+that it could have been.
 
 **`slept-through` is a turn the machine went to sleep in the middle of**, added
 2026-09-17 and additive. It is written when the machine wakes, through the

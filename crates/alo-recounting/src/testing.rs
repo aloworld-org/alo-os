@@ -373,10 +373,32 @@ pub(crate) fn fetched_a_model() -> Entry {
     Entry::left_on_its_own(&underway)
 }
 
+/// The person putting back what `@files` moved, an hour after it was moved.
+///
+/// Made from the entry the move really left behind, which is the only thing an
+/// undo can be made from: what it carries is a copy of that entry's own account
+/// of the call, so an account read back after the original has been pruned
+/// still says what was put back.
+pub(crate) fn put_back() -> Entry {
+    Entry::undone(&archived(), noon() + hour()).unwrap()
+}
+
+/// The same undo, asked for and refused, with the sentence the person was
+/// shown.
+pub(crate) fn not_put_back() -> Entry {
+    Entry::undo_failed(
+        &archived(),
+        "something this would put back has changed since",
+        noon() + hour(),
+    )
+    .unwrap()
+}
+
 /// One of every kind of entry there is, in the order it happened.
 ///
-/// Ten entries and ten outcomes: an afternoon missing one of them would let a
-/// kind of entry go unread without any test noticing.
+/// Thirteen entries and twelve outcomes — two of them ran, and everything else
+/// is a kind of its own. An afternoon missing one of them would let a kind of
+/// entry go unread without any test noticing.
 pub(crate) fn an_afternoon() -> Vec<Entry> {
     vec![
         archived(),
@@ -390,6 +412,8 @@ pub(crate) fn an_afternoon() -> Vec<Entry> {
         left(),
         held_back(),
         fetched_a_model(),
+        put_back(),
+        not_put_back(),
     ]
 }
 

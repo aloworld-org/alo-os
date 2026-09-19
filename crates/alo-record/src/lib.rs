@@ -30,6 +30,7 @@
 //! | [`Happened::RolledBack`] | This machine went back to the build it ran before, because the person asked it to |
 //! | [`Happened::Brokered`] | The privileged broker handed a system verb on under an approval, or refused the request ([`brokered`]) |
 //! | [`Happened::SleptThrough`] | A turn was under way when the machine slept, and carried on or was stopped when it woke |
+//! | [`Happened::Undone`] | The person put back what an agent had changed, or asked to and it did not happen ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)) |
 //!
 //! # The two with nobody in them
 //!

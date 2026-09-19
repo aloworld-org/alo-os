@@ -18,9 +18,15 @@ no mechanism. It writes **the decisions around a mechanism somebody else
 maintains**, which is exactly what ADR 0011 asks of a rented engine.
 
 **Crates this plan owns:** a new `crates/alo-keeping-up` for what an update
-is, when it may happen, and what rolling back means. **It reads and never
-edits** `alo-record` and `alo-keeping` (what the machine did, and where that
-is written), `alo-capability` (what a verb is), `alo-egress` (an update is an
+is, when it may happen, and what rolling back means, and — from task 4, taken by
+the third PC on 2026-09-19 — the **undo entry in `crates/alo-record`** and the
+sentence `crates/alo-recounting` reads it back with. ADR 0045 point 3 asks for
+a record entry an undo writes, no existing kind fits one, and the crate is
+additive: no plan's header claims `alo-record`, and the plan that was working in
+it, `v0-5-the-local-network-plan.md`, is finished at 37 of 37. Taking it is the
+rule of 2026-09-18, and this line is the record of the take. **It reads and never
+edits** `alo-keeping` (where what the machine did is written),
+`alo-capability` (what a verb is), `alo-egress` (an update is an
 errand that leaves the machine, and the indicator fires for it), `image/` and
 `crates/alo-image` (the installer plan's — the registry an update comes from
 is established by its task 1). Nothing in `crates/alo-shell` — the recovery
@@ -209,8 +215,40 @@ accounts work's, the bracket lane A's `alo-turn`, and the privilege to snapshot
 the broker plan's — each named in the decision, none of them this plan's to edit.
 **Depends on:** 3.
 
-**Not done; decided as far as a worker may, 2026-09-15.** The road this task
-names does not exist on the machine we install: `crates/alo-installing` formats
+**Done, 2026-09-18.** Points 1 to 5 of ADR 0045's *what holds whichever option
+is taken*, with every change verb answering *not yet on this machine* because
+that is what is true here. `alo-keeping-up` decides, still with no clock, file
+or process: `WhatWasDone` is what the record says as far as undoing cares and
+`could_be_put_back` is the decision's closed table — three verbs have a road
+back (`Change::Renamed`, `Moved`, `Archived`) and **every other verb this
+machine ships or gains answers never**, each of the fourteen `NotUndoable`
+reasons in its own sentence; `AnUndo::offered` asks the second question, what
+this machine kept, and refuses before anything is offered —
+`NothingKeepsWhatWasThere`, `TheTurnWasNotKept`, `NoLongerKept`,
+`ChangedSinceItWasDone`, `NothingLeftToPutBack` — so one name changed since
+refuses the whole undo rather than taking away a person's newer work; `AnUndo`'s
+sentence names **what** comes back and **when** it was changed, and is the one
+sentence in this crate with anything to fill in; `HowFarBack` is the owner's
+first term, seven days or fifty changing turns, whichever ends first, refusing a
+window that reaches nothing, and `WhatWasKept::forgetting` is his fifth, one act
+that says both what it costs and what it frees. `alo-record` gains the additive
+`Happened::Undone { undid, what, failed }` — no agent and no field for one,
+carrying a **copy** of what it undid rather than a pointer into a file that is
+pruned, written only from an entry that **ran**, a failed one counted among the
+refusals; `alo-recounting` reads it back as *you put this back* or *it could not
+be*, with the change's own sentence on the same line. `alo-updating` is the seam
+and the only place the two are put beside each other: `what_was_done` maps every
+kind of entry onto the table exhaustively, `what_this_machine_kept` answers
+`NothingOnThisMachine` and names the four lanes that would change it, and
+`putting_back` is one call from an entry to an honest answer. **No agent verb
+undoes and none proposes one**, held against `alo-declared`'s registry.
+`docs/contracts/record-file.md` gains the `undone` kind; `format` stays `1`.
+Nothing puts a file back: the road is still the installer's task 11, the
+accounts lane's home subvolume, lane A's bracket and the broker's privilege.
+Report: `docs/autonomy/updates/undo-what-the-agent-did.md`.
+
+**Before it: decided as far as a worker could, 2026-09-15.** The road this task
+names did not exist on the machine we install: `crates/alo-installing` formats
 the disk `ext4`, which has no subvolume and no snapshot, and the base's rollback
 swaps `/usr` and leaves a person's home alone (task 3). Measured in the pinned
 base: `bootc 1.15.1` accepts `--filesystem btrfs` and `btrfs-progs 6.19.1` is
@@ -226,11 +264,11 @@ fallback and our own copy (B) and inverses from the record (C) rejected. It
 also settles what holds under every option: which entries can never be undone
 and the sentence why, that an undo is the person's with no agent verb, that it
 never overwrites a later change, and that the record gains an additive `undone`
-kind carrying a copy of what it undid. **No code is built**, and
-`crates/alo-keeping-up/tests/undoing_is_decided_before_it_is_built.rs` fails if
-an `Undone` entry or a file about undoing appears while the ADR says
-*proposed*. When it is accepted, change this status to ready and split the task
-as the ADR's consequences say. Report:
+kind carrying a copy of what it undid. **No code was built in that change**, and
+`crates/alo-keeping-up/tests/undoing_is_decided_before_it_is_built.rs` still
+fails if an `Undone` entry or a file about undoing appears while the ADR says
+*proposed* — it says *accepted*, and what was built above is what the
+acceptance asked for. Report:
 `docs/autonomy/updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md`.
 
 ★ and the sharpest of the four. `ROADMAP.md`: *the one agent capability the

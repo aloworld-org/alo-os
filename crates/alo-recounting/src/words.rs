@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Twenty-six, and they divide in three. Nineteen are **what became of one entry** —
+//! Thirty, and they divide in three. Twenty-three are **what became of one entry** —
 //! the short clause read at the head of a line, before the sentence the machine
 //! generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Nineteen clauses, and none of them is a category
+//! # Twenty-three clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -311,6 +311,30 @@ pub const STOPPED_BY_SLEEP: Word = Word::saying(
      Say plainly that the work stopped; the person may need to ask for it again.",
 );
 
+/// The person put back what an agent had changed.
+pub const PUT_BACK: Word = Word::saying(
+    "recounting.outcome.put-back",
+    "you put this back as it was before the agent changed it",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The person themselves asked for something the \
+     assistant had changed to be returned to how it was, and it was. The line beneath says what \
+     the assistant had done, in the words the person approved at the time.",
+);
+
+/// The person asked for something to be put back, and it did not happen.
+pub const NOT_PUT_BACK: Word = Word::saying(
+    "recounting.outcome.not-put-back",
+    "you asked for this to be put back as it was, and it could not be",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The person asked for something the assistant \
+     had changed to be returned to how it was, and the machine could not do it. The reason they \
+     were shown at the time is beside this line.",
+);
+
 // ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
@@ -430,7 +454,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 28] = [
+pub const EVERY_WORD: [Word; 30] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -452,6 +476,8 @@ pub const EVERY_WORD: [Word; 28] = [
     MACHINE_CHANGE_REFUSED,
     CARRIED_ON_AFTER_SLEEP,
     STOPPED_BY_SLEEP,
+    PUT_BACK,
+    NOT_PUT_BACK,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -466,7 +492,7 @@ pub const EVERY_WORD: [Word; 28] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 21] = [
+pub const EVERY_OUTCOME: [Word; 23] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -488,6 +514,8 @@ pub const EVERY_OUTCOME: [Word; 21] = [
     MACHINE_CHANGE_REFUSED,
     CARRIED_ON_AFTER_SLEEP,
     STOPPED_BY_SLEEP,
+    PUT_BACK,
+    NOT_PUT_BACK,
 ];
 
 /// What an account says about itself, rather than about one entry.
