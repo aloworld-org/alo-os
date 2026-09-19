@@ -702,6 +702,25 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### `systemd-cryptenroll` — there is no way to hand it the secret it is enrolling, and `--password` waits forever
+**Version:** `systemd-cryptenroll` 257.13-1.fc42 in the pinned base
+(`quay.io/fedora/fedora-bootc`, local image `b035260f985f`), measured 2026-09-19.
+**Behaviour:** it has `--unlock-key-file=` for the secret that *opens* the volume, and no
+option at all for the secret being *enrolled*. `--password` asks for the new passphrase
+through `systemd-ask-password`, and closing standard input does not make it fail — it
+waits. A container running `systemd-cryptenroll --unlock-key-file=… --password disk.img
+< /dev/null` sat on it for two and a half minutes and was still waiting when it was
+killed. An installer that took this road would hang with nothing on the screen.
+**Our response:** `systemd-cryptenroll` is used for exactly two things, which are the two
+it is the only tool for: `--recovery-key`, whose key it generates and prints to stdout,
+and the chip (`--tpm2-device=`, `--tpm2-with-pin=`, `--tpm2-pcrs=`), whose PIN it does
+take non-interactively. **The person's passphrase — ADR 0054's option B, the road a
+machine with no usable chip takes — is enrolled with `cryptsetup luksAddKey`**, which
+takes both the unlocking key and the new one as files. Measured working on a 64 MiB
+LUKS2 virtual disk in the same base on the same day: added, the installer's first key
+removed, and the volume then opened by the passphrase and by the recovery key and by
+nothing else. See ADR 0056 measurement 6.
+
 ### `bootc` — `--block-setup tpm2-luks` is the chip alone, with no PIN and no recovery key
 **Version:** `bootc 1.15.1` in the pinned base (`quay.io/fedora/fedora-bootc`, local image
 `b035260f985f`), read on 2026-09-17.
