@@ -21,7 +21,24 @@ alo-kept = { path = "../alo-kept" }
 serde = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-input = { version = "=0.9.1", default-features = false, features = ["libinput_1_19"] }
+# The touchpad, behind a feature, because linking it is not free for everybody
+# who reads this crate's words.
+#
+# `alo-saying` collects the machine's one vocabulary by depending on every crate
+# that declares any, and `alo-agentd` depends on `alo-saying`. So an optional
+# dependency here is not tidiness: with `input` unconditional, the agent daemon
+# — which draws nothing and reads no touchpad — links libinput, and the image
+# links its daemons **statically against musl**, where libinput does not exist.
+# Release 0.0.3 could not be built because of it (`cannot find -linput`).
+#
+# Whoever needs gestures asks for them: `features = ["libinput"]`.
+input = { version = "=0.9.1", default-features = false, features = [
+    "libinput_1_19",
+], optional = true }
 
 [lints]
 workspace = true
+
+[features]
+# The touchpad gestures, and the system library they need.
+libinput = ["dep:input"]
