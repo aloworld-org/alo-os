@@ -43,13 +43,29 @@ the plan as published.
 ### 1. Which codecs this machine carries, decided before anything plays
 
 **Status:** **the decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
-2026-09-17.** Its encoding half is **accepted**: everything alo OS produces is
-AV1 or VP9, Opus and Matroska, royalty-free, with AV1 only where hardware can
-encode it — measured, not preferred. Its decoding half is **put to the owner**,
-because whether the image may carry H.264, HEVC and AAC decoders in the EU is a
-legal position rather than a technical one. **`alo-playing`'s closed list and its
-per-format tests wait on that half**, so this task is done as far as a lane may
-take it and the rest is the owner's. **Depends on:** nothing.
+2026-09-17 — and everything around the open question is built, 2026-09-19.** Its
+encoding half is **accepted**: everything alo OS produces is AV1 or VP9, Opus and
+Matroska, royalty-free, with AV1 only where hardware can encode it — measured,
+not preferred. Its decoding half was answered the same day, with **one question
+left to counsel**: which software decoders may ship in the image.
+
+`crates/alo-playing` now holds everything that does not depend on that answer —
+the codecs as a closed set with which carry no royalty; what this machine
+produces, tested exhaustively to be free on every machine and for every purpose;
+**the order in which a right to decode exists at all** (free, then the silicon,
+then a redistributable licensed decoder, then a refusal), walked once per track
+because *a kind is the wrapping, not the codec*; and the refusal, which is
+`alo_opening::Cannot::NothingHereOpens` and **not a second shape for video**.
+What a machine has is handed in rather than read, so a laptop with no video
+hardware and a workstation that decodes HEVC are both testable here. The open
+question is a **type with one value**, `SoftwareDecoders::NotAnsweredByCounsel`,
+and an acceptance test reads ADR 0051 itself and **fails the day somebody answers
+it** — an answer that changed no code is an answer nobody acted on. 32 tests.
+Written up in [What this machine plays](updates/what-this-machine-plays.md).
+
+**What still waits on counsel, and only that:** a test per format that plays a
+real sample file through the rented stack. It needs the answer *and* a machine,
+and it is the whole of what is left in this task. **Depends on:** nothing.
 
 *Media playback, and the codecs people actually have files in.* Some of those
 codecs carry patent licences, and an image distributed across the EU carries their
