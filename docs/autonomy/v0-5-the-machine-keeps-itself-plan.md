@@ -390,7 +390,17 @@ publishes and a release it does not hold are both *it refused*, a host that does
 not exist is *no way out*, and a proxy that is not there turns a place that
 answers straight out into one that cannot be reached. **Found:** a machine
 running the pinned release is offered `0.0.3`, which the owner has pushed and
-signed but this repository has not pinned — task 7. **Refused once and fixed:**
+signed but this repository has not pinned — task 7.
+
+**That measurement is of 2026-09-19, and the registry has moved twice since.**
+`0.0.3` was pinned that evening and **`0.0.4` on 2026-09-20**, which is what
+`image/pinned.toml` holds now, at `sha256:48bd5f31…`. The measurement is left
+exactly as it was taken — one with a date is worth more than one edited to stay
+true — but the impression that a machine today is offered `0.0.3` is not left
+standing. Anyone re-running `tests/against_the_real_registry.rs` should expect
+the pinned release to be `0.0.4`.
+
+**Refused once and fixed:**
 the first attempt's unit tests took their floor from `image/pinned.toml` while
 writing their own release names down, so pinning `0.0.3` turned a place holding
 `0.0.2` into one offering nothing; a test that means *a release this machine

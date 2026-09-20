@@ -826,12 +826,26 @@ kernel under emulation is this task's to show from that run, not to assume.
 ### 15. A release that carries the way to the boundary, installed under Secure Boot to the agent service
 
 **Status:** ready — the release it waited on is published, signed and pinned:
-`image/pinned.toml` names version `0.0.2` at digest
-`sha256:8f9c36e0d608eb13d8ba7746b9c549438a939bcbd51e90e2b5fcd5103be90bf9`, built
-from revision `8d2619d`, verified against `signing/alo-os.pub`. Taken by the
+`image/pinned.toml` names version `0.0.4` at digest
+`sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858`, built
+from revision `b41b4b5e`, verified against `signing/alo-os.pub`. Taken by the
 third PC on 2026-09-18; **the run did not fit that worker's window, and what it
-measured is below** — it is ready for a machine that holds it, which on this one
-means a machine no other lane is gating on. **Depends on:** 14.
+measured is below**. **Depends on:** 14.
+
+**Re-pointed at 0.0.4 on 2026-09-20.** This line named `0.0.2` until then, and
+by that morning it was naming the release before last: 0.0.3 was pinned on
+2026-09-19 and 0.0.4 that evening. Anybody following it would have installed
+**the release whose document converter cannot start** — 0.0.2 and 0.0.3 both
+shipped an engine that died at launch for want of twelve shared libraries, which
+0.0.4 is the fix for. A record that names a superseded release is not merely out
+of date; it sends somebody to the wrong bytes.
+
+**It wants a machine with a virtual machine that is not emulated.** The 2026-09-18
+run stopped because every guest on the third PC is emulated — it has no `vmx`,
+no `svm`, and `qemu -accel kvm` there answers *failed to initialize kvm*. The
+development PC has a working `/dev/kvm` (measured 2026-09-20: the same guest boots
+in 12.4 s accelerated against 27.7 s emulated), so this belongs on that machine
+rather than on the one that first took it.
 
 **The run of 2026-09-18, and why it did not finish inside a worker's window.** A
 worker on the third PC (`AGAI01`) started the named test at 11:44 and had to stop

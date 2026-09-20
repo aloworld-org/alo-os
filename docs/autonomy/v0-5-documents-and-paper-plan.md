@@ -383,12 +383,25 @@ collapsing them is how a promise gets made that a machine cannot keep:
   registration in ADR 0039's words. No iWork reader and no amendment to ADR 0039
   are needed. **The claim is one file wide** — it says *this document converts*,
   not that `libetonyek`'s IWA path works in general.
-- **Not wired**, because **the converter in the shipped image cannot start**:
-  twelve runtime libraries are missing from 0.0.3 as published, eleven from
-  0.0.2. So no document of any format converts on a real machine today, `.docx`
-  included, and ADR 0039's promise has been unmet in the product since the
-  converter landed. Registering a conversion into that would make the machine say
-  *this converts* and then fail everywhere, which ADR 0039 §1 forbids by name.
+- **Not wired when this was written**, because the converter in the shipped
+  image could not start: twelve runtime libraries were missing from 0.0.3 as
+  published, eleven from 0.0.2. No document of any format converted on a real
+  machine, `.docx` included, and ADR 0039's promise was unmet in the product
+  from the day the converter landed. Registering a conversion into that would
+  have made the machine say *this converts* and then fail everywhere, which
+  ADR 0039 §1 forbids by name.
+
+  **That condition is gone as of 2026-09-20.** Release **0.0.4** carries the
+  twelve libraries and is signed and pinned, and its build converts a document
+  as a build step and fails if nothing comes out — so a release that builds is
+  a release whose engine ran. Measured on the pushed image: no missing
+  libraries, and the Pages document above converted with 778 characters of text
+  recovered.
+
+  **So the wiring is unblocked, and what remains is the inventory.** ADR 0039 §4
+  will not show a copy whose cost was not measured, and measuring what
+  `libetonyek` gives for a Pages document means running the engine — x86_64
+  only, which is the same wall that keeps task 5's walk off the Mac.
 - **Why nobody caught it:** the recipe ends its converter step with
   `test -x …/soffice`, **which checks the executable bit rather than that it
   runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
@@ -424,12 +437,19 @@ made that a machine cannot keep:
   registration in ADR 0039's words. No iWork reader and no amendment to ADR 0039
   are needed. **The claim is one file wide** — it says *this document converts*,
   not that `libetonyek`'s IWA path works in general.
-- **Conversion: not wired**, because **the converter in the shipped image cannot
-  start.** Twelve runtime libraries are missing from 0.0.3 as published (eleven
-  from 0.0.2), so no document of any format converts on a real machine today,
-  `.docx` included — ADR 0039's promise has been unmet in the product since the
-  converter landed. Registering a conversion into that would make the machine say
-  *this converts* and then fail everywhere, which ADR 0039 §1 forbids by name.
+- **Conversion: not wired when this was written**, because the converter in the
+  shipped image could not start. Twelve runtime libraries were missing from
+  0.0.3 as published, eleven from 0.0.2, so no document of any format converted
+  on a real machine, `.docx` included — ADR 0039's promise was unmet in the
+  product from the day the converter landed. Registering a conversion into that
+  would have made the machine say *this converts* and then fail everywhere,
+  which ADR 0039 §1 forbids by name.
+
+  **Unblocked 2026-09-20 by release 0.0.4**, which carries the twelve libraries,
+  is signed and pinned, and converts a document as a build step so that a
+  release which builds is a release whose engine ran. What is left before the
+  wiring is the inventory ADR 0039 §4 requires, and that needs the engine — so
+  it needs an x86_64 machine.
   Nobody caught it because the recipe ends its converter step with
   `test -x …/soffice`, **which checks the executable bit rather than that it
   runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
