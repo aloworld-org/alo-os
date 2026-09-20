@@ -5161,6 +5161,120 @@ second fixture would separate them, and `v4l2loopback` is not it: the version
 packaged here (0.12.7) does not build against this kernel.
 **Date:** 2026-09-19.
 
+**Both of those were eliminated on 2026-09-20, and neither was it.** Measured on
+the **development PC** (Intel Core Ultra 7 155U) in a KVM guest — Ubuntu 24.04.5,
+kernel `6.8.0-139-generic`, **x86_64**, PipeWire 1.0.5, WirePlumber 0.4.17. A
+different machine and a different architecture from the aarch64 lane above, which
+is worth saying because the symptom is byte-identical on both.
+
+The experiment that settles it **takes the camera out**. A synthetic video
+stream was published *into* the graph —
+
+```
+gst-launch-1.0 videotestsrc is-live=true ! video/x-raw,width=320,height=240 \
+  ! pipewiresink mode=provide \
+      stream-properties="props,media.class=Video/Source,node.name=lane-b-synth"
+```
+
+— so there is **no V4L2, no `vivid` and no kernel device** anywhere in the path.
+`pipewiresrc target-object=lane-b-synth` failed against it with the identical
+`stream error: target not found` and **0 bytes**, in a session where `pw-record`
+captured **1 298 476 bytes** of audio. A refusal that survives the removal of the
+camera is not about the camera.
+
+| Candidate | Verdict, 2026-09-20 |
+|---|---|
+| `vivid` differs from a real camera | **eliminated** — a source that is not a camera at all is refused the same way |
+| PipeWire 1.0.5's own V4L2 capture path | **eliminated** — same experiment; there is no V4L2 in the synthetic path |
+| WirePlumber's version | already eliminated 2026-09-19; **0.4.17 also *creates* the node**, contrary to this entry's heading |
+| permissions / access control | **eliminated from the server's side** — `pw-cli info` reports the client's permissions on the camera node as **`rwxm-`** |
+| the node being incomplete | **eliminated** — full `EnumFormat`: YUY2 320×180 with fourteen framerates |
+| the client giving no format | **eliminated, and it is a trap** — see below |
+
+**The trap, because it will cost the next person an hour.** With
+`PIPEWIRE_DEBUG=3` the client logs
+`find_format(): no format given` **immediately before**
+`error (-32) target not found`, which reads exactly like the cause. It is not.
+Supplying the node's own advertised caps
+(`! video/x-raw,format=YUY2,width=320,height=180,framerate=15/1`), addressed by
+node id, by node name, and with no target, **failed all three times with the same
+error and zero bytes**. `target not found` is a misleading message for whatever
+this actually is, and `no format given` is a red herring.
+
+**Also measured, and it is the control the rest needed:** raw V4L2 straight off
+the same `vivid` device captured **13 824 000 bytes** at 4.99 fps. The device
+works; the graph will not hand it to anyone.
+
+**What is left** is one question inside the media server's own stream connection
+— not hardware, not a version, not a fixture — and **no further camera
+measurement in this repository needs a camera.**
+**Date:** 2026-09-20.
+
+### WSL's kernel has no `vivid`; a KVM guest with a stock distro kernel does
+**Version:** WSL 2 kernel `6.18.33.2-microsoft-standard-WSL2` on the development
+PC, against Ubuntu 24.04.5's `6.8.0-139-generic` in a KVM guest, 2026-09-20.
+**Behaviour:** `modprobe vivid` answers *Module not found* under WSL — the
+Microsoft kernel ships no `linux-modules-extra` and there is no package that
+supplies one for it. In a guest,
+`apt install linux-modules-extra-$(uname -r)` then
+`modprobe vivid n_devs=1 node_types=0x1` gives `/dev/video0` immediately.
+**Our response:** camera work does not happen under WSL directly; it happens in a
+guest. Two details that cost time here and are not obvious: the node appears
+**`root:root 0600`** because a cloud image has no udev rule for it, so a
+`KERNEL=="video[0-9]*" … GROUP="video", MODE="0660"` rule plus
+`usermod -aG video` is needed; and **the user's PipeWire session must be
+restarted after the group is added**, because a `systemd --user` manager started
+before the group change keeps the old supplementary groups and its WirePlumber
+then enumerates **no camera at all**. A camera missing from `wpctl status` is far
+more often this than anything about the media server.
+**Date:** 2026-09-20.
+
+### A guest can be given a TPM 2.0 without `vtpm_proxy`; the host cannot
+**Version:** QEMU 10.2.1 and `swtpm` 0.10.1 on the development PC (Intel Core
+Ultra 7 155U), WSL 2 kernel `6.18.33.2-microsoft-standard-WSL2`; guest Ubuntu
+24.04.5 under OVMF, 2026-09-20.
+**Behaviour:** the WSL kernel has `# CONFIG_TCG_VTPM_PROXY is not set`, so
+`/dev/vtpmx` does not exist and `modprobe tpm_vtpm_proxy` answers *Module not
+found*. That was read as *no TPM is reachable from this machine at all*, and it
+is not: `vtpm_proxy` is how a software TPM becomes a device on the **host**. A
+**guest** is given one by QEMU's `emulator` backend over a `swtpm` socket, which
+needs no kernel module. With
+`-tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0` the guest
+has `/dev/tpm0` and `/dev/tpmrm0`, and
+`systemd-cryptenroll --tpm2-device=list` answers
+`/dev/tpmrm0  MSFT0101:00  tpm_tis`.
+**Our response:** two things to know before trusting either answer. **First**,
+systemd 255 is built `+TPM2` but loads libtss2 at runtime, so with a chip
+present and `tpm2-tools` not installed the same command says ***TPM2 support is
+not installed*** — a sentence about userspace that reads like one about
+hardware. **Second**, `/dev/tpm*` is `tss`-owned, so every one of these commands
+needs `sudo` or membership of `tss`; without it `tpm2-tools` prints a wall of
+TCTI errors ending in *No standard TCTI could be loaded*, which also reads like
+a missing chip. And what the guest gets **says what it is**:
+`TPM2_PT_MANUFACTURER` is **"IBM"**, `TPM2_PT_VENDOR_STRING_1` is **"SW"**, and
+its lockout is the simulator's default (`MAX_AUTH_FAIL 0x3`,
+`LOCKOUT_INTERVAL 0x3E8`). See ADR 0056: this is a chip for exercising a
+sequence, never evidence about a real chip's lockout.
+**Date:** 2026-09-20.
+
+### KVM is real on the development PC, and the third PC's `/dev/kvm` is not
+**Version:** QEMU 10.2.1 on the development PC (Intel Core Ultra 7 155U),
+WSL 2 Ubuntu, 2026-09-20.
+**Behaviour:** the entry *WSL on a VMware guest shows `/dev/kvm` and has no KVM
+behind it* is about the **third PC** and must not be quoted as a fact about this
+fleet. Here `/proc/cpuinfo` shows `vmx`, `/dev/kvm` works, and it **accelerates**
+rather than merely initialising: the same Alpine 3.21 virt image reached a login
+prompt in **12.4 s under `-accel kvm` against 27.7 s under `-accel tcg`**, and an
+Ubuntu 24.04 guest under OVMF went cold start to SSH login in **23 s**. There are
+**805 GB** free inside WSL, not the ~25 GB recorded in the installer plan.
+**Our response:** the rule in that other entry still stands and is what produced
+this measurement — *prove acceleration by booting a guest under `-accel kvm` and
+timing it, never by looking for the device file*. What changes is that plans
+citing *no machine in this fleet has hardware virtualisation* or *a machine with
+50 GB free* were citing one machine. Both are corrected in
+`docs/autonomy/v0-5-the-installer-plan.md` and ADR 0056.
+**Date:** 2026-09-20.
+
 ### A program that opens a camera directly does not appear on the in-use indicator
 **Version:** `alo-in-use` as of 2026-09-17, PipeWire 1.0.5, Ubuntu 24.04 aarch64.
 **Behaviour:** `alo-in-use` reads the media server's record and counts a **running

@@ -231,11 +231,19 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason,
-and after 9 and 10. It installs beside a real Windows in a virtual machine and
-walks the switching both ways, which is the largest disk of the three.
-**Depends on:** 3, 8, 9, 10. Like task 10, it needs hardware virtualisation, which the
-third PC does not have (task 10 says why).
+**Status:** scheduled — **and no longer scheduled on hardware.** It installs
+beside a real Windows in a virtual machine and walks the switching both ways,
+which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
+
+> **Both of this task's hardware conditions were cleared on 2026-09-20, on the
+> development PC** (Intel Core Ultra 7 155U), and the line above is corrected
+> rather than left standing. *A machine with 50 GB free*: there are **805 GB**
+> free inside WSL, not the ~25 GB this plan recorded. *Hardware virtualisation,
+> which the third PC does not have*: `/dev/kvm` exists here and accelerates —
+> task 10's note carries the measurements. A real Windows 11 was installed
+> unattended in a KVM guest on that machine the same day, with a TPM 2.0 and a
+> second empty disk, which is the guest this task needs. **What still blocks it
+> is only its own dependencies — 9 and 10 — which is work, not hardware.**
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -518,11 +526,38 @@ partition, before Linux, and hangs.
 
 ### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
 
-**Status:** scheduled — **for a machine with 50 GB free**, for task 9's reason: a
-real Windows in a virtual machine is tens of gigabytes of disk per run, and the
-development PC has about 25 GB at its best. **Depends on:** 3.
+**Status:** scheduled — **and no longer scheduled on hardware, as of
+2026-09-20.** **Depends on:** 3.
 
-**And for hardware virtualisation, as found on the third PC, 2026-09-16.** The third
+> **Both conditions this task waited on were measured away on the development PC
+> (Intel Core Ultra 7 155U), 2026-09-20.** The two struck-through paragraphs
+> below are kept because they are correct *about the third PC*, and the mistake
+> worth not repeating is that they were read as facts about the fleet.
+>
+> - **Disk.** `df` inside WSL on the development PC reports **805 GB free**, not
+>   the ~25 GB recorded below.
+> - **Hardware virtualisation.** `/proc/cpuinfo` shows `vmx`, `/dev/kvm` exists,
+>   and it accelerates rather than merely initialising: the same Alpine 3.21
+>   image reached a login prompt in **12.4 s under `-accel kvm` against 27.7 s
+>   under `-accel tcg`**, and an Ubuntu 24.04 guest under OVMF went from cold
+>   start to an SSH login in **23 s**. QEMU here is 10.2.1, not 8.2.2.
+> - **The Windows this task needs exists.** The Windows 11 Enterprise
+>   *Evaluation* ISO is a direct, unauthenticated 4.5 GB download from
+>   `software-static.download.prss.microsoft.com` — no key and no form — and on
+>   2026-09-20 it installed **unattended** in a KVM guest on that machine: q35
+>   with OVMF, AHCI disks (virtio would need drivers Windows Setup does not
+>   carry), a `swtpm` TPM 2.0, a 64 GB system disk and **a second empty 32 GB
+>   disk**, which is exactly the shape this task's acceptance asks for.
+>
+> **What remains is this task's own work** — copying a release build of the
+> installer in, killing it at each of `staging.rs`'s seven steps, and restarting
+> — and that is engineering, not hardware. Nothing here ticks the task.
+
+~~**For a machine with 50 GB free**, for task 9's reason: a
+real Windows in a virtual machine is tens of gigabytes of disk per run, and the
+development PC has about 25 GB at its best.~~
+
+~~**And for hardware virtualisation, as found on the third PC, 2026-09-16.** The third
 PC has the disk but no hardware virtualisation: it is a VMware guest, and
 `qemu -accel kvm` refuses there (`docs/quirks.md`), so every virtual machine it runs
 is emulated. Measured there, an emulated install of alo OS alone took forty-six
@@ -530,7 +565,7 @@ minutes. This task installs a Windows unattended and restarts it to its desktop 
 least eight times, once after each step the installer is killed at and once for the
 whole road. That has not been timed under emulation, but at the measured speed one
 run is many hours, far past a worker's ninety-minute limit, so the third PC does
-not take it. It needs a machine where Hyper-V or KVM works.
+not take it. It needs a machine where Hyper-V or KVM works.~~
 
 Split from task 3 on 2026-09-15. `crates/alo-installer` is written and every
 decision in it is tested against a scripted Windows; its checks have been run,
