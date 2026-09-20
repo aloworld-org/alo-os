@@ -296,11 +296,18 @@ stopped saying so.
 
 ### 8. Updates, through the broker, as ADR 0053 decides
 
-**Status:** blocked — on ADR 0053 being accepted by the owner; on
-`alo-keeping-up`'s owner adding a way to decide a `Staging` from an approved
-`{from, to}` checked against the base's status now (the machine-keeps-itself
-lane's crate, which this plan never edits); and on `alo-egress`'s owner adding an
-errand for fetching an update. **Depends on:** 1, 4.
+**Status:** blocked — on ADR 0053 being accepted by the owner, and on that alone
+as of 2026-09-19. The other two blockers are cleared, by the lanes that owed
+them: `alo-egress` gained `Errand::FetchingAnUpdate`, and `alo-keeping-up` gained
+`Staging::approved(from, to, deployments, source)`, which decides `Staging::of`'s
+instruction element for element from an approved `{from, to}` and the base's
+status read now, refuses with `NotRunningABuild`, `TheMachineMovedOn`,
+`AlreadyWaiting` and the new `NotAnUpdate`, and can never carry `--apply`
+(machine-keeps-itself plan task 9, whose report is
+`updates/a-staging-decided-from-an-approval.md`). The decision file
+itself still reads *proposed, 2026-09-17*, so
+`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` still passes for
+the reason it was written; accepting it is the owner's. **Depends on:** 1, 4.
 
 Task 4 carried storage out and found that the updates could not be carried out
 without a decision: the base's program asks for `CAP_SYS_ADMIN`, the broker holds

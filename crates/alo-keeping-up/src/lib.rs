@@ -43,7 +43,12 @@
 //!   as a value against a [`Source`] and the deployments as they are *now*:
 //!   the offered build by digest, the signature policy enforced, no argument
 //!   naming a path, and a restart only when the person asked for one.
-//!   [`NotStaged`] is every refusal before anything runs.
+//!   [`NotStaged`] is every refusal before anything runs. It has **two doors
+//!   and one instruction**: [`Staging::of`] from a [`Ready`] this machine's own
+//!   check made, and [`Staging::approved`] from a `{from, to}` a person
+//!   approved somewhere else and something carried here
+//!   ([ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)),
+//!   which stages for the next restart and can never carry `--apply`.
 //! - **What changed across a restart.** [`Since`] compares the build last known
 //!   with the build booted, and an update is exactly a different one — from
 //!   which, to which — with nothing invented when nothing was known.
