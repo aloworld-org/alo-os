@@ -13,7 +13,7 @@ use alo_opening::Macros;
 use crate::carried::{Field, FontName, Linked};
 use crate::conversion::Conversion;
 use crate::inventory::linked::{NotLinked, linked};
-use crate::inventory::{excel, powerpoint, word};
+use crate::inventory::{excel, pages, powerpoint, word};
 use crate::xml::NotXml;
 use crate::zip::{NotRead, Zipped};
 
@@ -36,6 +36,10 @@ pub enum NotInventoried {
     /// More fonts than are kept.
     #[error("the document sets text in more fonts than are listed")]
     TooManyFonts,
+    /// The format's parts are known and nothing in one has ever been read on a
+    /// machine this repository gates on, so there is nothing to inventory by.
+    #[error("no {0} has been inventoried on this machine")]
+    NotMeasured(&'static str),
 }
 
 impl From<NotLinked> for NotInventoried {
@@ -85,6 +89,7 @@ impl Original {
             Conversion::PowerPointPresentation => {
                 powerpoint::inventory(&mut zipped, &mut original)?;
             }
+            Conversion::PagesDocument => pages::inventory(&mut zipped, &mut original)?,
         }
         original.linked = linked(&mut zipped)?;
         Ok(original)

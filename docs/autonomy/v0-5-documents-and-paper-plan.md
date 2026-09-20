@@ -334,7 +334,8 @@ are already frustrated, which is the moment a system is judged.
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
 **Status:** blocked — on **the `.dwg` alone**, which no machine this team has can
-write, and on the conversion decision below. **Two of the three are taken.**
+write. **Two of the three are taken**, and the Pages conversion is written and
+held back rather than undecided: see *The fourth conversion*, 2026-09-20, below.
 
 **The Pages document, 2026-09-19**, once the owner installed Pages.
 `Kind::PagesDocument`, *a Pages document*, recognised from the parts its
@@ -408,8 +409,39 @@ made that a machine cannot keep:
   `test -x …/soffice`, **which checks the executable bit rather than that it
   runs.** The fix is lane A's, in `image/`, and needs 0.0.4.
 
+**The fourth conversion: written whole and held back, 2026-09-20.** Both things
+the bullet above waits on have moved, and in opposite directions.
+
+**The image blocker is cleared.** `image/Containerfile` pins **0.0.4**, and the
+converter step now runs `ldd` for a missing library and **converts a real file**
+before the build continues, in place of the `test -x` that checked the
+executable bit. The recipe proves the converter starts.
+
+**So the remaining blocker is the inventory, and it is a different one.**
+ADR 0039 §4 makes the inventory of the original the step before any copy, and no
+Pages document has been inventoried, because the engine that reads one is an
+x86_64 build and this repository gates on aarch64. Registering the conversion
+without one would make the machine say *this converts* and then refuse at the
+inventory — ADR 0039 §1's named failure, reached one step earlier than before.
+
+`Conversion::PagesDocument` is therefore written complete — its kind, its word
+`pages-document` on the socket, Writer's export filter, `document.pages` in the
+scratch folder — and put in `Conversion::HELD_BACK` rather than
+`Conversion::EVERY`, whose being empty is the finished state. All three roads
+into a conversion are shut in the code and tested shut: `Conversion::of` answers
+`None` for the kind, `Conversion::asked` does not answer to the word, and
+`with_what_converts` does not announce it, so a machine with the service
+answering still says *nothing here opens* a real Pages document.
+`crates/alo-converting/src/inventory/pages.rs` states the inventory's shape —
+the fifteen parts read off the real document, the six things an `Original`
+holds, and `Measured::NothingOnThisMachine`, one value the way ADR 0051's open
+counsel question has one — **with no numbers in it**, and its test fails the day
+somebody measures one. Written up in
+[The fourth conversion, written whole and held back](updates/the-fourth-conversion-written-and-held-back.md).
+
 **What is left.** The `.dwg`, which needs one real drawing from somebody who has
-the program; the conversion decision above; and — to make one reasoned rule
+the program; the inventory measurement above, which needs the x86_64 engine; and
+— to make one reasoned rule
 measured — one Keynote and one Numbers document, because all three iWork
 applications write the same container and the exclusion of the other two has
 never been checked against a real file of either. Task 5's walk gains the Pages

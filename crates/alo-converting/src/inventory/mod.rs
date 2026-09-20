@@ -11,6 +11,7 @@
 //! | [`theme`], [`linked`] | What the three formats share: theme fonts and relationships |
 //! | [`copy`] | The PDF, read for the fonts it contains |
 //! | [`difference`] | The two inventories, compared into a [`crate::Carried`] |
+//! | [`pages`] | A fourth format, whose shape is written and whose contents nobody here has read |
 //!
 //! # Set on text, not merely declared
 //!
@@ -25,6 +26,7 @@ pub mod difference;
 pub mod excel;
 pub mod linked;
 pub mod original;
+pub mod pages;
 pub mod powerpoint;
 pub mod theme;
 pub mod word;
