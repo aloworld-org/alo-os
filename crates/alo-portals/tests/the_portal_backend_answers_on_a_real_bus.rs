@@ -151,6 +151,12 @@ mod on_the_bus {
         fn time_of_day(&self) -> Option<TimeOfDay> {
             TimeOfDay::checked(12, 0).ok()
         }
+
+        /// This test asks nothing of the network monitor portal, and a machine
+        /// that cannot say how far it reaches says so.
+        fn reaching(&self) -> Option<alo_portals::Reaching> {
+            None
+        }
     }
 
     /// No keyring: this test asks nothing of the Secret portal.

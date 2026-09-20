@@ -7,9 +7,11 @@
 //! is no copy here to go stale.
 //!
 //! Any can fail to read — a grants file that is not there, a person's choices
-//! that do not parse — and the backend then refuses the request
-//! ([`crate::Unanswered::GrantsUnread`], [`crate::Unanswered::ApplicationsUnread`],
-//! [`crate::Unanswered::AppearanceUnread`]) rather than answering from nothing.
+//! that do not parse, a network manager that is not answering — and the backend
+//! then refuses the request ([`crate::Unanswered::GrantsUnread`],
+//! [`crate::Unanswered::ApplicationsUnread`],
+//! [`crate::Unanswered::AppearanceUnread`], [`crate::Unanswered::NetworkUnread`])
+//! rather than answering from nothing.
 //! An empty list of grants would refuse everything anyway; an empty list of
 //! choices would open a file in an application the person chose against, and an
 //! appearance nobody read would tell an application the release's defaults as
@@ -22,6 +24,10 @@ use alo_capability::Grants;
 /// it names them from here rather than depending on that crate to answer
 /// nothing about appearance.
 pub use alo_appearance::{Appearance, TimeOfDay};
+
+/// The `alo-networks` reading [`TheMachine`] names, re-exported for the same
+/// reason.
+pub use alo_networks::Reaching;
 
 /// What the backend reads about this machine.
 pub trait TheMachine: Send + Sync {
@@ -44,6 +50,16 @@ pub trait TheMachine: Send + Sync {
     /// answers light and dark at a time it is given and never reads a clock, and
     /// the local time of day is the machine's to know.
     fn time_of_day(&self) -> Option<TimeOfDay>;
+
+    /// How far this machine reaches through the connection it is sending on,
+    /// and whether that way out is metered, as it is now — [`None`] when the
+    /// network manager cannot be asked.
+    ///
+    /// Asked of the machine rather than read here for the same reason as the
+    /// rest: read at every request and never held between them, so a cable
+    /// pulled out is felt at an application's next question rather than at the
+    /// backend's next restart.
+    fn reaching(&self) -> Option<Reaching>;
 }
 
 /// The three things *what opens this* is answered from, read together.

@@ -55,6 +55,11 @@ pub enum KeptOutcome {
         /// The grant behind each thing the request was for.
         against: Vec<GrantId>,
     },
+    /// The application read how far this machine reaches.
+    NetworkRead {
+        /// The grant behind each thing the request was for.
+        against: Vec<GrantId>,
+    },
     /// The grants refused it.
     Refused {
         /// How.
@@ -86,7 +91,8 @@ impl KeptOutcome {
             Self::SecretHandedOver { .. }
             | Self::Opened { .. }
             | Self::AppearanceRead { .. }
-            | Self::AppearanceSent { .. } => false,
+            | Self::AppearanceSent { .. }
+            | Self::NetworkRead { .. } => false,
             Self::Refused { .. }
             | Self::NotARequest { .. }
             | Self::NothingOpens { .. }
@@ -141,6 +147,9 @@ impl From<&Outcome> for KeptOutcome {
                 against: allowed.against().to_vec(),
             },
             Outcome::AppearanceSent(allowed) => Self::AppearanceSent {
+                against: allowed.against().to_vec(),
+            },
+            Outcome::NetworkRead(allowed) => Self::NetworkRead {
                 against: allowed.against().to_vec(),
             },
             Outcome::Refused(refused) => Self::Refused {

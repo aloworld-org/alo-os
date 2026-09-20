@@ -372,6 +372,28 @@ pub const APPEARANCE_UNREAD: Word = Word::saying(
     "Your appearance settings could not be read, so the application was not told them",
 );
 
+/// An application read how far this machine reaches.
+pub const NETWORK_READ: Word = Word::saying(
+    "portals.answered.network-read",
+    "{application} read whether this machine is connected, and whether the connection is metered",
+)
+.noting(
+    "{application} is the identifier of an application, like io.gitlab.news_flash.NewsFlash, and \
+     is never translated. It is told whether anything is reached and whether the connection costs \
+     money to use — never which network this machine is on, nor its name.",
+);
+
+/// How far this machine reaches could not be read.
+pub const NETWORK_UNREAD: Word = Word::saying(
+    "portals.unanswered.network-unread",
+    "This machine could not tell whether it is connected, so the application was not told",
+)
+.noting(
+    "Said when the service that manages networks did not answer. The application is refused rather \
+     than told the machine is connected, which would have it keep retrying something that cannot \
+     work.",
+);
+
 // ---------------------------------------------------------------------------
 // What applications were answered, read back — [`crate::KeptAnswer::said`] and
 // `ReadBack::said`.
@@ -469,7 +491,7 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 46] = [
+pub const EVERY_WORD: [Word; 48] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -508,6 +530,8 @@ pub const EVERY_WORD: [Word; 46] = [
     APPEARANCE_SENT,
     NO_SUCH_SETTING,
     APPEARANCE_UNREAD,
+    NETWORK_READ,
+    NETWORK_UNREAD,
     ASKED_BY,
     NOBODY_NAMED,
     WHAT_IT_ASKED_FOR,

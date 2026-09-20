@@ -49,6 +49,7 @@ impl KeptOutcome {
             ),
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),
             Self::AppearanceSent { .. } => strings.say(&words::APPEARANCE_SENT.key(), &asked),
+            Self::NetworkRead { .. } => strings.say(&words::NETWORK_READ.key(), &asked),
             Self::Refused { why } => refused(*why, asked, portal, strings),
             Self::NotARequest { why } => why.said(strings),
             Self::NothingOpens { why } => nothing_opens(why, strings),

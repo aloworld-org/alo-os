@@ -78,6 +78,12 @@ impl TheMachine for ThisMachine {
     fn time_of_day(&self) -> Option<TimeOfDay> {
         TimeOfDay::checked(12, 0).ok()
     }
+
+    /// This test asks nothing of the network monitor portal, and a machine that
+    /// cannot say how far it reaches says so rather than claiming to be online.
+    fn reaching(&self) -> Option<alo_portals::Reaching> {
+        None
+    }
 }
 
 /// Everything one test serves and asks through.

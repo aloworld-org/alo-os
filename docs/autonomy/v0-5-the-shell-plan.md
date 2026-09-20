@@ -270,19 +270,27 @@ them has ever been shown.
 
 ### 7. The status area's clock, battery, network and volume
 
-**Status:** blocked on one of its four, down from four — **re-read 2026-09-20**,
-when a lane sent to write the four found three of them already on `main`. This
-paragraph had said they did not exist; it was written on 2026-09-15 and they
-landed after it.
+**Status:** **unblocked, 2026-09-20** — all four are on `main`. **Re-read
+2026-09-20**, when a lane sent to write the four found three already there; this
+paragraph had said they did not exist, and it was written on 2026-09-15 before
+they landed. The fourth was written that day.
 
 | Blocker | | |
 |---|---|---|
 | the battery | `alo-power` | **clear** — landed 2026-09-17, task 5 of `v0-5-devices-and-media-plan.md`. `TheBattery::on_this_machine` is `Option`, so a machine with no battery reads as **absent** rather than as a battery at zero, which is this task's own word. |
 | the volume | `alo-sound` | **clear** — landed 2026-09-17, task 2 of the same plan. `Volume` and `Heard` come through `TheAudioServer`, the one road to the media server. |
 | a time written regionally | `alo-formats` | **clear** — landed 2026-09-17, task 6 of `v0-5-access-and-language-plan.md`. `Regionally::time` writes a time as the person's language and region write it, from CLDR. |
-| the network's state | the network monitor portal `alo-portals` names | **open** — `Portal::NetworkMonitor` is in the closed list and `answered_on_the_bus` is `None` for it. Now task 12 of `v0-5-applications-and-what-they-expect-plan.md`, whose first half — an honest reading, `alo_networks::WhatIsReached` — landed 2026-09-20. |
+| the network's state | the network monitor portal `alo-portals` names | **clear** — landed 2026-09-20 as task 12 of `v0-5-applications-and-what-they-expect-plan.md`, in two halves: `alo_networks::WhatIsReached` reads how far the machine reaches, and `org.freedesktop.portal.NetworkMonitor` answers from it. What a status area reads is `alo_networks::Reaching` — `HowFar::reaches_anything` is the one place *connected* is decided, so this task shows that answer rather than making a second one. |
 
-It unblocks when that portal answers. **Depends on:** 5.
+**Nothing here is on a screen.** Each of the four is a crate that measures or
+owns; drawing them is this task, and it is now free to start. **Depends on:** 5.
+
+Two things the drawing must not undo. `alo_power::TheBattery::on_this_machine`
+is an `Option`, and a desktop with no battery is that `None` — **absent**, as
+this task's acceptance says, never a battery drawn at zero. And
+`alo_networks::Metered::should_hold_off` counts *nothing said* as metered: a
+status area that showed *not metered* where the machine does not know would be
+adding a claim of its own, which the constraint below forbids.
 
 The half of task 5's acceptance that could not be drawn without deciding it
 here. `docs/features.md`, v0.5: *Status area: clock, battery, network, volume,

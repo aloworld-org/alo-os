@@ -174,6 +174,7 @@ mod the_file {
             KeptOutcome::Opened { .. } => "opened".to_owned(),
             KeptOutcome::AppearanceRead { .. } => "appearance-read".to_owned(),
             KeptOutcome::AppearanceSent { .. } => "appearance-sent".to_owned(),
+            KeptOutcome::NetworkRead { .. } => "network-read".to_owned(),
             KeptOutcome::Refused { why } => format!(
                 "refused/{}",
                 match why {
@@ -216,6 +217,7 @@ mod the_file {
                     Unanswered::NotDecidedHere => "not-decided-here",
                     Unanswered::NoSuchSetting => "no-such-setting",
                     Unanswered::AppearanceUnread => "appearance-unread",
+                    Unanswered::NetworkUnread => "network-unread",
                 }
             ),
         }
@@ -236,6 +238,9 @@ mod the_file {
                 against: Vec::new(),
             },
             KeptOutcome::AppearanceSent {
+                against: Vec::new(),
+            },
+            KeptOutcome::NetworkRead {
                 against: Vec::new(),
             },
         ];
@@ -280,6 +285,7 @@ mod the_file {
             Unanswered::NotDecidedHere,
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
+            Unanswered::NetworkUnread,
         ] {
             every.push(KeptOutcome::Unanswered { why });
         }
@@ -297,7 +303,7 @@ mod the_file {
         let outcomes = every_kept_outcome();
         let kinds: BTreeSet<String> = outcomes.iter().map(kind_of).collect();
         assert_eq!(kinds.len(), outcomes.len(), "each kind once");
-        assert_eq!(kinds.len(), 28);
+        assert_eq!(kinds.len(), 30);
 
         let mut lines = Vec::new();
         let mut second = 0;

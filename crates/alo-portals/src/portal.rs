@@ -156,10 +156,10 @@ impl Portal {
     /// The `org.freedesktop.portal.*` interface this machine answers this
     /// portal on, or [`None`] while it answers it on none.
     ///
-    /// Three, for now: the Secret portal, open-with and the appearance settings,
-    /// the portals whose every answer is decided without a dialog (tasks 3, 4
-    /// and 6 of the applications plan). Every other portal is **not
-    /// registered** on the bus, so an
+    /// Four, for now: the Secret portal, open-with, the appearance settings and
+    /// the network monitor — the portals whose every answer is decided without
+    /// a dialog (tasks 3, 4, 6 and 12 of the applications plan). Every other
+    /// portal is **not registered** on the bus, so an
     /// application asking one is told by the bus that nothing answers it,
     /// rather than told yes by a backend with nothing to show.
     /// `docs/contracts/portals.md` is this list for people building against it.
@@ -169,6 +169,7 @@ impl Portal {
             Self::Secret => Some("org.freedesktop.portal.Secret"),
             Self::OpenWith => Some("org.freedesktop.portal.OpenURI"),
             Self::Settings => Some("org.freedesktop.portal.Settings"),
+            Self::NetworkMonitor => Some("org.freedesktop.portal.NetworkMonitor"),
             Self::FileChooser
             | Self::Notifications
             | Self::Print
@@ -180,7 +181,6 @@ impl Portal {
             | Self::Trash
             | Self::Wallpaper
             | Self::Inhibit
-            | Self::NetworkMonitor
             | Self::PowerProfileMonitor => None,
         }
     }

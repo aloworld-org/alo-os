@@ -10,6 +10,7 @@
 //! | `org.freedesktop.portal.Secret` | the person's one keyring (`crate::secret_portal`) |
 //! | `org.freedesktop.portal.OpenURI` | *what opens what* (`crate::open_uri_portal`) |
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
+//! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and
@@ -34,6 +35,7 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::JoinHandle;
 
 use crate::keeping_secrets::KeepsSecrets;
+use crate::network_monitor_portal::NetworkMonitorPortal;
 use crate::open_uri_portal::OpenUriPortal;
 use crate::recording::Recording;
 use crate::sandboxed::Sandboxes;
@@ -105,6 +107,13 @@ impl Backend {
             .serve_at(
                 THE_PORTALS_OBJECT,
                 SettingsPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                NetworkMonitorPortal {
                     backend: self.clone(),
                 },
             )

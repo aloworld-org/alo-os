@@ -111,6 +111,8 @@ pub enum Outcome {
     AppearanceRead(Allowed),
     /// The application was sent the appearance settings that changed.
     AppearanceSent(Allowed),
+    /// The application read how far this machine reaches.
+    NetworkRead(Allowed),
     /// The grants refused it.
     Refused(Refused),
     /// What arrived was never a request.
@@ -136,7 +138,8 @@ impl Outcome {
             Self::SecretHandedOver(_)
             | Self::Opened(_)
             | Self::AppearanceRead(_)
-            | Self::AppearanceSent(_) => 0,
+            | Self::AppearanceSent(_)
+            | Self::NetworkRead(_) => 0,
             Self::Refused(_)
             | Self::NotARequest(_)
             | Self::NothingOpens(_)
@@ -170,6 +173,10 @@ impl Outcome {
             ),
             Self::AppearanceSent(allowed) => strings.say(
                 &words::APPEARANCE_SENT.key(),
+                &Filling::of("application", allowed.application().as_str()),
+            ),
+            Self::NetworkRead(allowed) => strings.say(
+                &words::NETWORK_READ.key(),
                 &Filling::of("application", allowed.application().as_str()),
             ),
             Self::Refused(refused) => refused.said(strings),
@@ -217,6 +224,8 @@ pub enum Unanswered {
     /// The person's appearance settings, or the time of day they are answered
     /// at, could not be read.
     AppearanceUnread,
+    /// The network manager could not be asked how far this machine reaches.
+    NetworkUnread,
 }
 
 impl Unanswered {
@@ -237,6 +246,7 @@ impl Unanswered {
             Self::NotDecidedHere => (words::NOT_DECIDED_HERE, Filling::nothing()),
             Self::NoSuchSetting => (words::NO_SUCH_SETTING, Filling::nothing()),
             Self::AppearanceUnread => (words::APPEARANCE_UNREAD, Filling::nothing()),
+            Self::NetworkUnread => (words::NETWORK_UNREAD, Filling::nothing()),
         };
         strings.say(&word.key(), &filling)
     }
@@ -274,6 +284,7 @@ mod tests {
             Unanswered::NotDecidedHere,
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
+            Unanswered::NetworkUnread,
         ] {
             let outcome = Outcome::Unanswered(unanswered);
             assert_eq!(outcome.response(), 2, "{outcome:?}");
@@ -310,6 +321,7 @@ mod tests {
             Unanswered::NotDecidedHere,
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
+            Unanswered::NetworkUnread,
         ] {
             let said = unanswered.said(&strings);
             assert!(!said.is_a_bug(), "{unanswered:?}: {said}");

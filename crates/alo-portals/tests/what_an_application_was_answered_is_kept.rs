@@ -164,7 +164,12 @@ mod the_file {
             (
                 Some(FRACTAL),
                 Portal::Settings,
-                Outcome::AppearanceSent(allowed),
+                Outcome::AppearanceSent(allowed.clone()),
+            ),
+            (
+                Some(FRACTAL),
+                Portal::NetworkMonitor,
+                Outcome::NetworkRead(allowed),
             ),
             (
                 Some(STRANGER),
@@ -202,6 +207,7 @@ mod the_file {
             Unanswered::NotDecidedHere,
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
+            Unanswered::NetworkUnread,
         ] {
             let nobody = unanswered == Unanswered::NotIdentified;
             outcomes.push((
@@ -535,6 +541,12 @@ mod on_the_bus {
 
         fn time_of_day(&self) -> Option<TimeOfDay> {
             Some(*self.time.read().unwrap())
+        }
+
+        /// This test asks nothing of the network monitor portal, and a machine
+        /// that cannot say how far it reaches says so.
+        fn reaching(&self) -> Option<alo_portals::Reaching> {
+            None
         }
     }
 
