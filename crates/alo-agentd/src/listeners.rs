@@ -610,19 +610,48 @@ mod tests {
     use std::os::fd::BorrowedFd;
     use std::time::Duration;
 
+    use std::sync::atomic::{AtomicU16, Ordering};
+
     use super::{Listeners, Listening, held_to};
     use crate::arrived_on::ArrivedOn;
     use crate::networks::listening_networks;
     use crate::route_messages::reported_by_the_kernel;
     use crate::unix::{ready, ready_and};
 
-    /// A port nothing else on this machine is on.
+    /// A port nothing else on this machine is on, and that **no other test in
+    /// this binary will be handed**.
+    ///
+    /// Asking the kernel for port zero and reading back what it gave is the
+    /// obvious way and it is a race: the listener is dropped before the caller
+    /// binds, and the kernel is free to hand the same ephemeral port to another
+    /// of the five hundred tests running beside this one in the gap. That is
+    /// not theoretical — it failed on `main` on 2026-09-19 with `AddrInUse` on
+    /// a port a test had just been told was free, and again on 2026-09-20 in
+    /// another lane's gate run, each time costing a full re-run.
+    ///
+    /// So the number comes from a counter instead. Two calls in this binary can
+    /// never be handed the same one, whatever the kernel would have done, and
+    /// the loop only steps past a number something else already holds. The port
+    /// is still released before the caller binds it — the code under test is
+    /// what does the binding — but the window is now against the rest of the
+    /// machine rather than against this binary's own tests, which is where the
+    /// collisions were coming from.
     fn a_free_port() -> u16 {
-        TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
-            .unwrap()
-            .local_addr()
-            .unwrap()
-            .port()
+        /// Above the range a machine hands out for itself, so the counter is
+        /// not walking through ports the kernel is also assigning.
+        const ABOVE_THE_EPHEMERAL_RANGE: u16 = 20_000;
+
+        static NEXT: AtomicU16 = AtomicU16::new(ABOVE_THE_EPHEMERAL_RANGE);
+        loop {
+            let port = NEXT.fetch_add(1, Ordering::Relaxed);
+            assert!(
+                port >= ABOVE_THE_EPHEMERAL_RANGE,
+                "this binary ran out of ports"
+            );
+            if TcpListener::bind((Ipv4Addr::LOCALHOST, port)).is_ok() {
+                return port;
+            }
+        }
     }
 
     /// An empty wire with no IPv6 listener, for the startup refusal policy.
