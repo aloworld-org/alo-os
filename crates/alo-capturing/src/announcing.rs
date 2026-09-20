@@ -47,9 +47,15 @@ pub const THE_NODE_NAME: &str = "alo-os-capture";
 ///
 /// Read back by `alo_in_use::heard` as [`alo_in_use::By::alo_os_itself`], which
 /// is what puts the capture on the indicator for its moment.
-pub const ANNOUNCED_AS: [(&str, &str); 2] = [
+///
+/// The third is what makes the capture happen at all, and it is the one that
+/// was missing: **a capture says it is reading video.** Without it the session
+/// manager sees a stream of no kind, has nothing to search by, and refuses the
+/// link — see [`heard::VIDEO_OUT_OF_THE_GRAPH`] for the measurement.
+pub const ANNOUNCED_AS: [(&str, &str); 3] = [
     (heard::WHAT_IT_CALLS_ITSELF, heard::ALO_OSS_OWN_IDENTIFIER),
     (heard::THE_NODE_NAME, THE_NODE_NAME),
+    (heard::WHAT_KIND_IT_IS, heard::VIDEO_OUT_OF_THE_GRAPH),
 ];
 
 /// The announcement, written the way the media server takes one.
@@ -80,6 +86,32 @@ mod tests {
             "{ANNOUNCED_AS:?}"
         );
         assert_eq!(heard::WHAT_IT_CALLS_ITSELF, "application.id");
+    }
+
+    /// **The capture says it is reading video**, which is what gets it linked
+    /// to anything at all. A stream that names no kind reaches the session
+    /// manager as `Stream/Input/Unknown`, which has no kind to search by, and
+    /// is refused with *target not found* and zero bytes — measured on the
+    /// development PC, 2026-09-20, against a source with no camera in it.
+    #[test]
+    fn the_capture_says_it_is_reading_video() {
+        assert!(
+            ANNOUNCED_AS.contains(&(heard::WHAT_KIND_IT_IS, heard::VIDEO_OUT_OF_THE_GRAPH)),
+            "{ANNOUNCED_AS:?}"
+        );
+        assert_eq!(heard::VIDEO_OUT_OF_THE_GRAPH, "Stream/Input/Video");
+        assert!(
+            announced().contains("media.class = Stream/Input/Video"),
+            "{}",
+            announced()
+        );
+    }
+
+    /// **A capture is not itself a use**, so saying what kind it is does not put
+    /// a second line on the indicator beside the screen it is reading.
+    #[test]
+    fn saying_what_kind_it_is_does_not_make_the_capture_a_use_of_its_own() {
+        assert_ne!(heard::VIDEO_OUT_OF_THE_GRAPH, heard::VIDEO_INTO_THE_GRAPH);
     }
 
     /// **It never stamps an application's identity.** That property is the

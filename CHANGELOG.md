@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A picture of your screen can now actually be taken.** The road alo OS takes
+  its own screenshots along had never produced a picture on any machine: the
+  pipeline handed to the rented capture tool was rejected as malformed before a
+  frame was ever asked for, and the capture never told the machine's media
+  server what kind of stream it was opening, so the server had nothing to match
+  it against and refused it with a message about a missing target. Both are
+  fixed, and a screenshot comes back as a real picture. A capture still appears
+  on the in-use indicator as alo OS itself, and still says nothing about what
+  was on the screen or where the picture went.
+  Evidence: `docs/quirks.md`, *A video capture that names no kind is refused*.
+
 - **A drawing somebody sent you is now named instead of shrugged at.** Open a
   `.dwg` — the file a plan of a building, a part or a machine is saved as — and
   the machine tells you it is an AutoCAD drawing, and then that nothing here

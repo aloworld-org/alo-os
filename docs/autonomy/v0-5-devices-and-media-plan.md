@@ -143,7 +143,29 @@ pairing grants nothing** — held against the real `alo-nearby` and
 
 ### 4. The camera and the microphone
 
-**Status:** blocked — and **not on what this plan said it was**. **The code is
+**Status:** blocked — **on reaching a camera through the portal, on a machine
+with a desktop session.** Updated 2026-09-20, and this is the third thing this
+line has said it was waiting for, so what changed is written out rather than
+swapped over. Two faults were found in our own code and fixed, and **neither of
+them was the camera's**: a video capture that never said what kind it was, so
+the session manager searched by an unknown kind and refused it with *target not
+found*; and a pipeline handed to `gst-launch-1.0` with each element's settings
+glued to it in one argument, which that tool reads as one word and refuses as a
+syntax error — so the screenshot road had never carried a picture on any
+machine. Both are proved on the development PC against a source with no camera
+in it: without the kind, zero bytes by id, by name and with no target; with it,
+768,000 bytes each time, and a real 320×240 PNG out of the whole screenshot
+pipeline. **The camera itself is still refused** with both fixes in, on
+WirePlumber 0.4.17 and 0.5.13, by the server's own `pw-cat` as well as ours.
+What that re-opens is the portal: ~~*a portal cannot make a link the graph will
+not make*~~ is **withdrawn** — the session manager's own
+`client/access-portal.lua` gates exactly the nodes a camera is
+(`media.role = Camera` with `media.class = Video/Source`) on the portal
+permission store, so a portal does not link, it grants the permission without
+which no link is offered. That is a reading of the engine's script and not yet
+a measurement. `docs/quirks.md` carries all of it.
+
+**The code is
 written and four of the five acceptances are taken, 2026-09-17**; the fifth was
 recorded as waiting on WirePlumber 0.5, and on 2026-09-19 that was measured and
 is false. Two 0.5 releases were built from upstream and run against this
@@ -187,6 +209,8 @@ answer:
 - **Not permissions, and not the portal.** `pw-cli info` on the camera node
   reports the client's permissions as **`rwxm-`** — everything — which confirms
   from the server's side what the 2026-09-19 control argued from the client's.
+  ~~and not the portal~~ — **withdrawn 2026-09-20.** The permissions reading
+  stands; the portal conclusion drawn from it does not. See the status above.
 - **Not a node that failed to form.** `vivid` under this kernel is a real
   source: raw V4L2 captured **13,824,000 bytes** at 4.99 fps from it, and the
   graph's node `v4l2_input.platform-vivid.0` advertises a full `EnumFormat` —
