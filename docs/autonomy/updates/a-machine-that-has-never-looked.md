@@ -11,7 +11,10 @@ and task 11 is written there because the plan named nothing after it. Two things
 are handed over rather than done here and are named below: the **image
 installation**, which belongs to the lane that owns `image/`, and the **base's
 answer to an unprivileged caller**, which needs a machine with a real `bootc` on
-it and is task 11's first half.
+it and is task 11's first half. **That second one is closed, 2026-09-20**: it
+was measured on `alo-lane-b-bootc` and the base refuses uid 1000, so the unit
+this report describes fails at every boot until task 12 lands — see
+`docs/autonomy/updates/the-base-answers-only-root.md`.
 
 ## What changed
 
@@ -236,6 +239,17 @@ build this machine is running*, keeps nothing, and the unit fails at every boot
 — and the answer is **not** to make this component root. It is named rather than
 guessed, and the code that meets it says so in its own sentence rather than
 panicking.
+
+**Measured 2026-09-20, and it refuses.** On `alo-lane-b-bootc` — the pinned
+0.0.4 image installed to disk and booted under KVM, `bootc` 1.15.1 — every form
+of `bootc status` asked as uid 1000 exits 1 with nothing on stdout and
+`This command must be executed as the root user` on stderr, and this report's
+own unit, run as the person, says *the base would not say which build this
+machine is running … nothing left this machine* and keeps nothing. The answer
+is still not to make it root: the base's own origin file is world-readable and
+names the build, read as uid 1000 on that machine. Task 11 is the measurement
+and task 12 is the fix; `docs/autonomy/updates/the-base-answers-only-root.md`
+has both.
 
 ## Verification
 
