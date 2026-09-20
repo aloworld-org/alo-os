@@ -207,9 +207,10 @@ fn alo_oss_own_picture_is_listed_like_anybody_elses() {
     );
 }
 
-/// **Nothing about the picture reaches the indicator.** The announcement is two
-/// properties — who we are and what the node is called — and neither of them
-/// says what was on the screen, what was captured, or where the picture went.
+/// **Nothing about the picture reaches the indicator.** The announcement is
+/// three properties — who we are, what the node is called, and that it is a
+/// video capture — and none of them says what was on the screen, what was
+/// captured, or where the picture went.
 #[test]
 fn nothing_about_what_was_captured_reaches_the_indicator() {
     let announced = announcing::announced();
@@ -227,5 +228,16 @@ fn nothing_about_what_was_captured_reaches_the_indicator() {
             "{announced} names {absent}"
         );
     }
-    assert_eq!(announcing::ANNOUNCED_AS.len(), 2);
+    // Named rather than counted: the guard is that these three are the whole
+    // announcement, so a fourth property has to be argued for here before it
+    // can reach a person's indicator.
+    let named: Vec<&str> = announcing::ANNOUNCED_AS
+        .iter()
+        .map(|(named, _)| *named)
+        .collect();
+    assert_eq!(
+        named,
+        vec!["application.id", "node.name", "media.class"],
+        "{announced}"
+    );
 }

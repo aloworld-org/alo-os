@@ -116,6 +116,22 @@ const A_VIDEO_SOURCE: &str = "Video/Source";
 /// the screen, offered to whatever is reading it.
 pub const VIDEO_INTO_THE_GRAPH: &str = "Stream/Output/Video";
 
+/// What the record calls a client reading video out of the graph: a capture,
+/// looking at a camera or at the picture of the screen somebody else offers.
+///
+/// **Not a use in itself.** This crate maps the source a capture reads from
+/// and never the reader, so nothing here counts twice. It matters for the
+/// other reason: it is what this machine's session manager sorts a stream by
+/// when it goes looking for something to link it to, and **a video capture that
+/// does not say this is linked to nothing**. Measured on the development PC,
+/// 2026-09-20: a capture that named no kind reached the session manager as
+/// `Stream/Input/Unknown`, which has no kind to search by, and was refused with
+/// *target not found* and zero bytes.
+pub const VIDEO_OUT_OF_THE_GRAPH: &str = "Stream/Input/Video";
+
+/// The property a node's kind is written into.
+pub const WHAT_KIND_IT_IS: &str = "media.class";
+
 /// What the record says the state of a node that is capturing is.
 pub const RUNNING: &str = "running";
 
@@ -248,7 +264,7 @@ fn node_in(object: &Value) -> Result<Option<Node<'_>>, NotHeard> {
     Ok(Some(Node {
         number,
         class: props
-            .get("media.class")
+            .get(WHAT_KIND_IT_IS)
             .and_then(Value::as_str)
             .unwrap_or_default(),
         running: info.get("state").and_then(Value::as_str) == Some(RUNNING),

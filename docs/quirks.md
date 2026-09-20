@@ -5210,6 +5210,83 @@ works; the graph will not hand it to anyone.
 measurement in this repository needs a camera.**
 **Date:** 2026-09-20.
 
+### A video capture that names no kind is refused, and it is two faults not one
+**Version:** PipeWire 1.6.2 with WirePlumber 0.5.13 under WSL 2 on the
+development PC (Intel Core Ultra 7 155U), and the same pair in a KVM guest on
+Ubuntu 26.04.1, kernel `7.0.0-31-generic`; measured against PipeWire 1.0.5 with
+WirePlumber 0.4.17 in an Ubuntu 24.04.5 guest, kernel `6.8.0-139-generic`.
+2026-09-20.
+
+**Behaviour, and the correction it makes to the entry above.** The sentence
+*what is left is one question inside the media server's own stream connection*
+was right that the fault was ours, and wrong that there was one of them. Two
+were found, and **only one of them is the camera's**.
+
+**The first is a kind that was never named.** A client reading video announces
+itself to the session manager, and if it does not say `media.class`, the stream
+arrives as `Stream/Input/Unknown`. The linking policy searches by kind, an
+unknown kind matches nothing, and `prepare-link.lua` refuses it with
+`sendClientError (…, -2, "target not found")` — which is why the message names
+a target when nothing is wrong with the target. Measured in one session with no
+camera and no kernel device anywhere in it: a synthetic source published with
+`gst-launch-1.0 videotestsrc ! pipewiresink mode=provide`, attached by node id,
+by node name and with no target. Without the kind, **all three refused, zero
+bytes**. With `media.class = Stream/Input/Video`, **all three succeeded,
+768 000 bytes each** — 5 frames of 320×240 YUY2, exactly. The same held for a
+source shaped like a screen cast (`Stream/Output/Video`) as for one shaped like
+a camera (`Video/Source`).
+
+**A downstream element hides it, which is why it looked intermittent.** The
+same attach with `videoconvert` after it succeeds *without* the declaration,
+because the caps negotiated downstream give the stream a kind by accident. With
+`filesink` or `fakesink` directly it fails. A pipeline that happens to work is
+not a pipeline that said what it wanted, so the kind is declared rather than
+inferred. This is also what `find_format(): no format given` was: **not the
+cause of the refusal, and not a red herring either — the same missing kind seen
+from the other side.**
+
+**The second fault is the tool's arguments, and it had never worked at all.**
+`gst-launch-1.0` takes **each argument as one word** of the pipeline and does
+not look inside an argument for spaces. `pipewiresrc path=3 num-buffers=1`
+handed over as a single argument is one word, no element is called that, and
+the answer is `erroneous pipeline: syntax error` before a frame is asked for.
+`alo-capturing` wrote it that way, so **the screenshot road had never carried a
+picture on any machine**. With every setting its own argument the same pipeline
+returns a real PNG: `320 x 240, 8-bit/color RGBA`, 11 602 bytes.
+
+**And the camera is still refused, which is the part that is not ours.** With
+both faults fixed — the stream logged by the session manager as
+`Lookup for 'alo-os-capture' (52) / 'Stream/Input/Video'`, so the declaration
+demonstrably arrived — a real `vivid` camera refuses every attach on **both**
+stacks: by id, by name and with no target, on WirePlumber 0.4.17 and on 0.5.13,
+and `pw-cat --record --media-type Video` refuses it too (*no target node
+available*). Adding `media.role = Camera` to the capture changes nothing. Raw
+V4L2 off the same device in the same session captured 13 824 000 bytes on
+24.04 and 4 608 000 on 26.04. `find-defined-target`, `find-default-target` and
+`find-best-target` each run and each find no candidate.
+
+**So the earlier conclusion that the portal is eliminated is withdrawn.** It
+rested on *a portal cannot make a link the graph will not make*, and the
+shipped session manager says otherwise:
+`/usr/share/wireplumber/scripts/client/access-portal.lua` keeps an object
+manager over exactly the nodes a camera is —
+`Constraint { "media.role", "=", "Camera" }` with
+`Constraint { "media.class", "=", "Video/Source" }` — and updates client
+permissions on them from the portal permission store, for clients matching
+`Constraint { "pipewire.access", "=", "portal" }`. A portal does not link; it
+grants the permission without which no link is offered. That is a reading of
+the engine's own script and **not yet a measurement**: what would settle it is
+a client reaching the camera through `xdg-desktop-portal` on a machine with a
+desktop session, which this lane has not run.
+
+**Our response:** `alo_in_use::heard::VIDEO_OUT_OF_THE_GRAPH` and
+`WHAT_KIND_IT_IS` hold the vocabulary, `alo-capturing`'s `announcing.rs`
+declares the kind, and `the_screen_cast.rs` gives every setting its own
+argument with a test that holds the shape rather than the joined text. The
+camera acceptance stays untaken and its blocker stays, now pointed at the
+portal instead of at the version.
+**Date:** 2026-09-20.
+
 ### WSL's kernel has no `vivid`; a KVM guest with a stock distro kernel does
 **Version:** WSL 2 kernel `6.18.33.2-microsoft-standard-WSL2` on the development
 PC, against Ubuntu 24.04.5's `6.8.0-139-generic` in a KVM guest, 2026-09-20.
