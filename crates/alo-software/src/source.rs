@@ -88,6 +88,12 @@ pub struct Source {
     /// Where installing from it reaches, when it has an address this machine
     /// can read.
     destination: Option<Destination>,
+    /// The host in that address, kept beside the destination because a road out
+    /// is decided about a host and `alo_egress::Destination` does not give one
+    /// back. Two readings of one address would be two answers to *where does
+    /// this reach*, so it is read once, in [`Source::of`], and both are made
+    /// from it.
+    host: Option<String>,
     /// Whether what it sends is checked.
     checks_signatures: bool,
 }
@@ -104,6 +110,7 @@ impl Source {
         Some(Self {
             name: SourceName::checked(&configured.name)?,
             destination: host_of(&configured.address).and_then(|host| Destination::at(host).ok()),
+            host: host_of(&configured.address).map(str::to_owned),
             checks_signatures: configured.checks_signatures,
         })
     }
@@ -119,6 +126,13 @@ impl Source {
     #[must_use]
     pub fn destination(&self) -> Option<&Destination> {
         self.destination.as_ref()
+    }
+
+    /// The host installing from it reaches, which is what a road out is
+    /// decided about (`crate::road`).
+    #[must_use]
+    pub fn host(&self) -> Option<&str> {
+        self.host.as_deref()
     }
 
     /// Whether what it sends is checked against its signature.
@@ -199,6 +213,38 @@ mod tests {
         ] {
             assert!(SourceName::checked(bad).is_none(), "{bad:?}");
         }
+    }
+
+    /// **A place gives back the host a road out is decided about**, and it is
+    /// the same host its destination was made from.
+    ///
+    /// The two are read from one address exactly once, so a place cannot come
+    /// to be shown on the indicator as one host and reached through a proxy
+    /// decided about another.
+    #[test]
+    fn a_place_gives_back_the_host_its_destination_was_made_from() {
+        let source = Source::of(&Configured {
+            name: "flathub".to_owned(),
+            address: "https://dl.flathub.org/repo/".to_owned(),
+            checks_signatures: true,
+            switched_off: false,
+        })
+        .unwrap();
+        assert_eq!(source.host(), Some("dl.flathub.org"));
+        assert_eq!(
+            source.destination(),
+            Some(&Destination::at("dl.flathub.org").unwrap())
+        );
+
+        let nowhere = Source::of(&Configured {
+            name: "local".to_owned(),
+            address: "file:///srv/apps".to_owned(),
+            checks_signatures: true,
+            switched_off: false,
+        })
+        .unwrap();
+        assert_eq!(nowhere.host(), None);
+        assert_eq!(nowhere.destination(), None);
     }
 
     #[test]

@@ -27,6 +27,7 @@ alo-egress = { path = "../alo-egress" }
 # application, looking for updates and fetching one all leave the machine, and
 # on a great many company networks there is no other route out. Read, never
 # decided here — `alo_proxy::the_way` decides, and this crate carries.
+alo-networks = { path = "../alo-networks" }
 alo-proxy = { path = "../alo-proxy" }
 
 # Everything a person reads here.

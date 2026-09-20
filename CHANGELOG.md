@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The proxy you set is the one your applications install through.** On a
+  company network, setting a proxy in Settings now decides the way out for
+  installing an application and updating one — not whatever the machine
+  happened to be started with. If the proxy is set and cannot be used, the
+  install **fails and says so** rather than quietly going out around it: on a
+  network where that matters, "this did not work" is something you can fix and
+  "this left the building without permission" is not. A machine with no proxy
+  set is unaffected, and the indicator still tells you where the install is
+  really reaching rather than naming the proxy.
+  Evidence: `docs/autonomy/updates/the-proxy-a-person-set-on-the-road-that-installs.md`.
+
 - **A model you download is the model we checked, or you don't get it.** The
   catalogue names the exact file behind each model somebody other than the
   publisher built, and alo OS now asks the machine which file it actually

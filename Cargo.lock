@@ -1340,6 +1340,7 @@ dependencies = [
  "alo-declared",
  "alo-egress",
  "alo-granted",
+ "alo-networks",
  "alo-proxy",
  "alo-saying",
  "alo-strings",

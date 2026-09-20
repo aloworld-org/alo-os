@@ -106,6 +106,11 @@ is never read back out; replacing it is giving a new one.
 - **An organisation's proxy** is read from the machine description by
   `alo-agentd` (`alo_proxy::Kept`'s own documentation); how it comes to be written
   into this file is not decided by this contract.
-- **Who reads it today.** No road out reads this file yet: `alo-software`,
-  `alo-updating` and `alo-models` are handed a `TheProxy` by their callers. Wiring
-  each reader to this file is owed, and named in the report for the network task.
+- **Who reads it today**, corrected 2026-09-20. Two roads out read this file:
+  `alo-looking-once` (the one look a machine takes on its way up) and
+  `alo-software` (installing an application and updating one), each through
+  `alo_networks::proxy_file::kept_on_this_machine` and neither with a reader of
+  its own. **`alo-updating` and `alo-models` are still handed a `TheProxy` by
+  their callers**, and wiring those two remains owed. The line this replaces
+  said *no road out reads this file yet*, which stopped being true when
+  `alo-looking-once` landed and was not corrected then.

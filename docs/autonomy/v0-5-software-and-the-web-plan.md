@@ -639,7 +639,7 @@ machine as much as on a company's.
 
 ### 14. The proxy a person set, read from the machine's file by the roads that install
 
-**Status:** ready. Written 2026-09-20 by task 13, which found it — and the
+**Status:** **Done, 2026-09-20.** Written 2026-09-20 by task 13, which found it — and the
 contract has named it since the network task: *no road out reads this file yet;
 `alo-software`, `alo-updating` and `alo-models` are handed a `TheProxy` by their
 callers* (`docs/contracts/machine-proxy-file.md`, **What is not here**). Task 4
@@ -653,6 +653,38 @@ whose applications still install straight out — or do not install at all, whic
 is the same bug read from the other end. `alo-looking-once` already reads that
 file (`crates/alo-looking-once/src/road.rs`) and is the shape to follow.
 **Depends on:** 4, 12.
+
+**Done, 2026-09-20.** Report:
+[The proxy a person set, on the road that installs](updates/the-proxy-a-person-set-on-the-road-that-installs.md).
+`crates/alo-software/src/road.rs` reads the machine's own file through
+`alo_networks::proxy_file::kept_on_this_machine` — the same one reader and the
+same one path `alo-looking-once` uses, and no second spelling of either — asks
+`alo_proxy::the_way` for the road, and signs in through `alo_proxy::signed_in`
+with the password the machine gave the unit that carries the errand out.
+`the_tool_for` hands back a `TheRentedTool` already carrying it, which is what
+closes the gap: a caller asks by errand rather than by proxy, and cannot pass
+the wrong one.
+
+**Three states of the machine, each measured.** A file naming a proxy is taken
+on all three roads; **no file at all goes straight out**; and a file that is
+there and is **not one this machine wrote is refused** — never read as *no
+proxy*, which on a company network is the difference between *this did not work*
+and *this left the building without permission*. Only one of those can be
+undone.
+
+**And the half that earns the task**: an errand on a machine whose file names a
+proxy produces a tool whose **started program really receives it**, read out of
+a real child process rather than out of a list — including the credential, for a
+proxy that asks who this machine is. A proxy that is set and cannot be worked
+out **refuses rather than falling back to straight out**, and there is no branch
+that could do otherwise. The egress indicator still names where the errand is
+really going and never the proxy, held by a test that reads the line.
+
+**What this leaves owed**, named the way the network task named this one:
+`alo-updating` and `alo-models` are still handed a `TheProxy` by their callers
+and are **not this plan's crates**. `docs/contracts/machine-proxy-file.md` is
+corrected to say so — its *no road out reads this file yet* had been stale since
+`alo-looking-once` landed.
 
 *Machine-wide, and honoured by applications* (`docs/features.md`, v0.5) — a
 setting nothing reads is neither.
