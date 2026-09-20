@@ -25,6 +25,7 @@
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::kept_words::KeptWords;
 use crate::wording;
 use crate::words;
 
@@ -36,7 +37,7 @@ pub enum Contents {
     /// sorted.
     Read {
         /// The words.
-        words: Vec<String>,
+        words: KeptWords,
     },
     /// The file is text with more different words than an index keeps:
     /// these are the first [`crate::MOST_WORDS`] of them in the order the
@@ -44,7 +45,7 @@ pub enum Contents {
     /// not kept, so a search by words may not find this file, and says so.
     NotAllKept {
         /// The words that were kept.
-        words: Vec<String>,
+        words: KeptWords,
         /// How many different words the file had that were not kept.
         unkept: usize,
     },
@@ -69,8 +70,8 @@ impl Contents {
     /// The words of a text file: [`Contents::Read`] when none were left
     /// out, and [`Contents::NotAllKept`] when `unkept` were. The list is held
     /// with no room to spare, so what an entry holds is what it says.
-    pub(crate) fn of_words(mut words: Vec<String>, unkept: usize) -> Self {
-        words.shrink_to_fit();
+    pub(crate) fn of_words(words: Vec<String>, unkept: usize) -> Self {
+        let words = KeptWords::of(&words);
         if unkept == 0 {
             Self::Read { words }
         } else {
@@ -78,13 +79,29 @@ impl Contents {
         }
     }
 
+    /// The words this file kept, held in one piece — or nothing, for a file
+    /// with no words to keep.
+    ///
+    /// The way to ask since 2026-09-19. [`Contents::words`] is the old way and
+    /// still answers, at the cost of building the list it used to hold.
+    #[must_use]
+    pub const fn kept(&self) -> Option<&KeptWords> {
+        match self {
+            Self::Read { words } | Self::NotAllKept { words, .. } => Some(words),
+            Self::NotText | Self::NotRead { .. } | Self::TooBig { .. } | Self::NotAFile => None,
+        }
+    }
+
     /// The words, if the file had any — every one that was kept.
     #[must_use]
-    pub fn words(&self) -> &[String] {
-        match self {
-            Self::Read { words } | Self::NotAllKept { words, .. } => words,
-            Self::NotText | Self::NotRead { .. } | Self::TooBig { .. } | Self::NotAFile => &[],
-        }
+    #[deprecated(
+        since = "0.0.2",
+        note = "the words are held in one piece now; ask `kept()`, which hands them \
+                over without building a list. This still answers, and allocates one \
+                `String` per word to do it."
+    )]
+    pub fn words(&self) -> Vec<String> {
+        self.kept().map(KeptWords::to_vec).unwrap_or_default()
     }
 
     /// Whether the file's kept words hold this one, which is already lower
@@ -93,7 +110,7 @@ impl Contents {
     /// the whole of the file.
     #[must_use]
     pub fn say(&self, word: &str) -> bool {
-        wording::says(self.words(), word)
+        self.kept().is_some_and(|words| words.says(word))
     }
 
     /// Whether every word the file had was kept — `false` only for
@@ -132,8 +149,10 @@ impl Contents {
 enum Writing<'a> {
     /// Both kinds of words: `unkept` left out when it is nothing.
     Read {
-        /// The kept words.
-        words: &'a [String],
+        /// The kept words, written as the list they have always been written
+        /// as — see `KeptWords`'s own `Serialize`, which is why an index file
+        /// is byte for byte what it was.
+        words: &'a KeptWords,
         /// How many were not kept.
         #[serde(skip_serializing_if = "is_nothing")]
         unkept: usize,
@@ -233,13 +252,13 @@ mod tests {
         let spelled = |contents: &Contents| serde_json::to_string(contents).unwrap();
         assert_eq!(
             spelled(&Contents::Read {
-                words: vec!["a".to_owned()]
+                words: KeptWords::from(["a"])
             }),
             r#"{"were":"read","words":["a"]}"#
         );
         assert_eq!(
             spelled(&Contents::NotAllKept {
-                words: vec!["a".to_owned()],
+                words: KeptWords::from(["a"]),
                 unkept: 3
             }),
             r#"{"were":"read","words":["a"],"unkept":3}"#
@@ -265,10 +284,10 @@ mod tests {
     fn contents_come_back_as_they_went_and_nothing_unkept_is_all_read() {
         for contents in [
             Contents::Read {
-                words: vec!["a".to_owned(), "b".to_owned()],
+                words: KeptWords::from(["a", "b"]),
             },
             Contents::NotAllKept {
-                words: vec!["a".to_owned()],
+                words: KeptWords::from(["a"]),
                 unkept: 7,
             },
             Contents::NotText,
@@ -287,7 +306,7 @@ mod tests {
         assert_eq!(
             zero,
             Contents::Read {
-                words: vec!["a".to_owned()]
+                words: KeptWords::from(["a"])
             }
         );
     }

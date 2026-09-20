@@ -232,7 +232,7 @@ fn a_folder_larger_than_one_walk_is_one_whole_index_with_every_file_in_it_timed(
         .map(|entry| {
             entry.below.len()
                 + match &entry.contents {
-                    Contents::Read { words } => words.iter().map(String::len).sum(),
+                    Contents::Read { words } => words.iter().map(str::len).sum(),
                     _ => 0,
                 }
         })

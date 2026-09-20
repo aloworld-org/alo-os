@@ -14,6 +14,7 @@
 
 use std::path::PathBuf;
 
+use alo_finding::KeptWords;
 use alo_finding::{
     Contents, Covered, Entry, Kind, Moment, NotAsked, NotIndexed, NotSearched, Unread,
     finding_words,
@@ -281,7 +282,7 @@ fn everything_a_search_did_not_look_at(strings: &Strings) -> Vec<Said> {
         "log.txt",
         Kind::Text,
         Contents::NotAllKept {
-            words: vec!["started".to_owned()],
+            words: KeptWords::from(["started"]),
             unkept: 12,
         },
     );
@@ -372,7 +373,7 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
         },
         Contents::TooBig { bytes: 5_000_000 },
         Contents::NotAllKept {
-            words: Vec::new(),
+            words: KeptWords::none(),
             unkept: 1,
         },
     ] {
@@ -429,9 +430,11 @@ fn a_machine_with_no_translations_still_says_everything_in_english() {
         assert!(!said.text().starts_with("finding."), "{said}");
     }
     assert!(
-        Contents::Read { words: Vec::new() }
-            .said(&strings)
-            .is_none()
+        Contents::Read {
+            words: KeptWords::none()
+        }
+        .said(&strings)
+        .is_none()
     );
     assert!(Contents::NotAFile.said(&strings).is_none());
     assert!(a_covered(true, 0).not_the_whole(&strings).is_none());
@@ -511,7 +514,7 @@ fn every_sentence_is_read_in_the_language_the_person_reads() {
          wszystkich ich słów."
     );
     let not_all_kept = Contents::NotAllKept {
-        words: Vec::new(),
+        words: KeptWords::none(),
         unkept: 1,
     }
     .said(&strings)

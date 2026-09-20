@@ -189,6 +189,7 @@ mod tests {
 
     use super::*;
     use crate::entry::{Contents, Moment};
+    use crate::kept_words::KeptWords;
 
     /// An entry for these tests: a text file with three words, written at
     /// second one thousand.
@@ -202,11 +203,7 @@ mod tests {
                 nanos: 0,
             },
             contents: Contents::Read {
-                words: vec![
-                    "anna".to_owned(),
-                    "contract".to_owned(),
-                    "summer".to_owned(),
-                ],
+                words: KeptWords::from(["anna", "contract", "summer"]),
             },
         }
     }

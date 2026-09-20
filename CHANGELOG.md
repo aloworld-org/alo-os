@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Searching your own files takes half the memory it did.** The words an index
+  keeps for each file are now held in one piece rather than one at a time, which
+  halves what an open file manager holds for them — measured at 9.5 MB down to
+  4.7 MB on a folder of long letters and logs, and that is the conservative
+  figure: some three hundred thousand small allocations went with it. Searching
+  answers exactly as it did, the index file on disk is unchanged to the byte, and
+  an index made before this still opens.
+  Evidence: `docs/autonomy/updates/words-held-in-one-piece.md`.
+
 - **Installing alo OS now gets you release 0.0.3.** It is the first release
   whose image carries a media server, so sound and video work on a fresh
   machine rather than reporting that nothing here handles them. The installer

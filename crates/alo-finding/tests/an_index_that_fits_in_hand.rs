@@ -35,6 +35,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime};
 
+use alo_finding::KeptWords;
 use alo_finding::{Contents, Entry, Index, Indexed, MOST_WORDS, NotIndexed, Query, finding_words};
 use alo_strings::{Said, Strings};
 use serde::Deserialize;
@@ -166,9 +167,31 @@ fn held_in_hand(entry: &Entry) -> usize {
     size_of::<Entry>()
         + entry.below.capacity()
         + match &entry.contents {
+            Contents::Read { words } | Contents::NotAllKept { words, .. } => words.bytes_in_hand(),
+            Contents::NotRead { why } => why.capacity(),
+            _ => 0,
+        }
+}
+
+/// What the same words would have held before task 14, on **this machine in
+/// this run**: a place in the list for each — twenty-four bytes — and a
+/// separate allocation for each word's own bytes.
+///
+/// Measured beside the new shape rather than quoted from task 13, whose
+/// numbers were taken on another machine. Comparing a number from one machine
+/// with a number from another says as much about the machines as about the
+/// change.
+///
+/// It is still the index's own count, so it does not see what the allocator
+/// rounded each of those small allocations up to — which is the larger half of
+/// what the one piece saves, and is named as an estimate rather than measured,
+/// as task 13 named it.
+fn held_the_old_way(entry: &Entry) -> usize {
+    size_of::<Entry>()
+        + entry.below.capacity()
+        + match &entry.contents {
             Contents::Read { words } | Contents::NotAllKept { words, .. } => {
-                words.capacity() * size_of::<String>()
-                    + words.iter().map(String::capacity).sum::<usize>()
+                words.len() * size_of::<String>() + words.iter().map(str::len).sum::<usize>()
             }
             Contents::NotRead { why } => why.capacity(),
             _ => 0,
@@ -234,16 +257,35 @@ fn a_folder_of_long_text_files_is_held_in_hand_in_a_bounded_number_of_bytes_meas
         let mut held_by_logs = 0;
         let mut words_of_letters = 0;
         let mut words_of_logs = 0;
+        let mut held_the_old_way_total = 0;
         for entry in &held.entries {
-            let words = entry.contents.words();
-            assert!(words.len() <= MOST_WORDS, "{how}: {}", entry.below);
-            if let Contents::Read { words } | Contents::NotAllKept { words, .. } = &entry.contents {
-                assert_eq!(words.capacity(), words.len(), "{how}: {}", entry.below);
-                for word in words {
-                    assert_eq!(word.capacity(), word.len(), "{how}: {word}");
-                }
+            let kept = entry.contents.kept();
+            assert!(
+                kept.map_or(0, KeptWords::len) <= MOST_WORDS,
+                "{how}: {}",
+                entry.below
+            );
+            if let Some(words) = kept {
+                // Held with no room to spare: what the one piece and the
+                // places hold is exactly the words' own bytes and a place
+                // each, with nothing asked for and not used.
+                let letters: usize = words.iter().map(str::len).sum();
+                assert_eq!(
+                    words.bytes_in_hand(),
+                    letters + size_of::<usize>() * (words.len() + 1),
+                    "{how}: {}",
+                    entry.below
+                );
             }
             let in_hand = held_in_hand(entry);
+            let the_old_way = held_the_old_way(entry);
+            assert!(
+                in_hand <= the_old_way,
+                "{how}: {} holds more in one piece ({in_hand}) than it did as \
+                 separate words ({the_old_way})",
+                entry.below
+            );
+            held_the_old_way_total += the_old_way;
             assert!(
                 in_hand <= the_bound_for(entry),
                 "{how}: {} holds {in_hand} bytes, more than {}",
@@ -254,11 +296,11 @@ fn a_folder_of_long_text_files_is_held_in_hand_in_a_bounded_number_of_bytes_meas
             if letters.contains(&entry.below) {
                 bytes_of_letters += bytes;
                 held_by_letters += in_hand;
-                words_of_letters += words.len();
+                words_of_letters += kept.map_or(0, KeptWords::len);
             } else {
                 bytes_of_logs += bytes;
                 held_by_logs += in_hand;
-                words_of_logs += words.len();
+                words_of_logs += kept.map_or(0, KeptWords::len);
             }
         }
         println!(
@@ -268,6 +310,18 @@ fn a_folder_of_long_text_files_is_held_in_hand_in_a_bounded_number_of_bytes_meas
              the index file is {} bytes",
             fs::metadata(&at).unwrap().len()
         );
+        // The same folder, the same run, the same machine, in the shape the
+        // words were held in before task 14 — so the two numbers differ by the
+        // change and not by the machine.
+        let held_now = held_by_letters + held_by_logs;
+        println!(
+            "{how}: held in one piece {held_now} bytes; held as separate words it would be \
+             {held_the_old_way_total} bytes, so one piece holds \
+             {} per cent of what separate words did — and the allocator's rounding on \
+             {} separate allocations, which neither count can see, is gone with them",
+            held_now * 100 / held_the_old_way_total.max(1),
+            words_of_letters + words_of_logs
+        );
     }
 
     for below in &letters {
@@ -275,7 +329,7 @@ fn a_folder_of_long_text_files_is_held_in_hand_in_a_bounded_number_of_bytes_meas
         assert!(
             matches!(letter.contents, Contents::Read { .. }),
             "prose keeps every word: {below} has {} words",
-            letter.contents.words().len()
+            letter.contents.kept().map_or(0, KeptWords::len)
         );
         assert!(letter.contents.all_kept());
     }
@@ -295,9 +349,9 @@ fn a_folder_of_long_text_files_is_held_in_hand_in_a_bounded_number_of_bytes_meas
                 Contents::NotAllKept { unkept, .. } if unkept == WORDS_OF_A_LOG - MOST_WORDS
             ),
             "{below}: {:?} words kept",
-            log.contents.words().len()
+            log.contents.kept().map_or(0, KeptWords::len)
         );
-        assert_eq!(log.contents.words().len(), MOST_WORDS);
+        assert_eq!(log.contents.kept().map_or(0, KeptWords::len), MOST_WORDS);
         assert!(!log.contents.all_kept());
         println!(
             "{below}: {} bytes in hand with its words bounded; every different word held \
@@ -503,7 +557,11 @@ fn the_index_file_is_format_one_and_a_reader_from_before_still_reads_it() {
         assert_eq!(
             before.contents,
             ContentsFromBefore::Read {
-                words: now.contents.words().to_vec()
+                words: now
+                    .contents
+                    .kept()
+                    .map(KeptWords::to_vec)
+                    .unwrap_or_default()
             },
             "{}",
             before.below
