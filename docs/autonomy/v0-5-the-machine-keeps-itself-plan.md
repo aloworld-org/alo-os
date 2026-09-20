@@ -548,3 +548,51 @@ makes.
   policy of a test's own stands in for the shipped one: that substitution is
   exactly what task 2 did, honestly, and exactly what this task exists to stop
   doing.
+
+### 9. A staging decided from an approval that arrived from elsewhere
+
+**Status:** ready. Written 2026-09-20 for
+[`v0-5-the-broker-and-the-disk-plan.md`](v0-5-the-broker-and-the-disk-plan.md)
+task 8, which names it as one of its three blockers and **may not write it**:
+`alo-keeping-up` is this plan's crate and that plan never edits it. Its other two
+blockers are closed — [ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+was accepted by the owner on 2026-09-19, option B, and `alo-egress` gained
+`Errand::FetchingAnUpdate` the same day. **Depends on:** 1, 2.
+
+[`Staging::of`](../../crates/alo-keeping-up/src/staging.rs) decides the one
+instruction from a `Ready`, and a `Ready` exists only inside a check **this**
+machine made: it carries the build this machine was running when it looked and
+the build the place offered. That is right for the road a person takes through
+the shell, and it is the wrong shape for the broker's. What reaches the broker
+under ADR 0053 is an approval — a `{from, to}` pair a person approved, carried
+over the door, with no `Ready` behind it and nothing of this crate's in it. So
+today there is no way to decide a staging from an approval, and the plan that
+needs one is not allowed to add it.
+
+**What must not happen is a second way to stage.** The temptation is for the
+broker's unit to assemble the base's arguments itself from two digests, and then
+there are two places that know what staging an update means and one of them will
+drift. The instruction stays this crate's, and gains a second door into it.
+
+- **Acceptance:** a constructor on `Staging` that decides the same instruction
+  from an approved `{from, to}` and the base's `Deployments` **read now**, after
+  the approval and before the instruction is made, so its refusals are about the
+  machine as it is rather than as it was when somebody approved. It refuses,
+  each with a sentence of its own: the machine is no longer running `from`
+  (`TheMachineMovedOn`, carrying both digests so the person is told what moved);
+  `to` is already staged (`AlreadyWaiting`); the base reports no running build;
+  and `from` and `to` are the same digest, which is not an update and is the one
+  refusal `Staging::of` never needed because a `Ready` could not hold it. **A
+  test takes one `Ready`, decides a staging both ways — through `Staging::of`
+  and through the new constructor given that `Ready`'s own `{from, to}` — and
+  asserts the two `arguments()` are identical, element for element**, which is
+  what holds the two doors to one instruction. Every new refusal is in the
+  machine's one vocabulary with a translator's note, reachable from a public
+  `said()`, and no two of them read alike, as task 5 measured for the rest.
+- **Constraint:** nothing here approves anything, and nothing here carries
+  anything out — the approval is the person's and the broker's, the unit that
+  runs the base is ADR 0053's and lives in that plan. This crate gains no road
+  to the base, names no program, and starts nothing. The new constructor takes
+  digests and the base's status; it does not read a registry, and it does not
+  decide whether a build is vouched for, which is task 7's and stays where it
+  is.
