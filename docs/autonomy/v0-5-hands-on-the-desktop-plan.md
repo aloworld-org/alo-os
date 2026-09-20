@@ -12,8 +12,12 @@ pixel.
 **Crates this plan owns, all new:** `crates/alo-dividing` (splits: which window
 has which share of which display, how a split holds under resizing, and how it is
 remembered), `crates/alo-desktops` (virtual desktops and what moves between
-them), and `crates/alo-keyboards` (layouts, dead keys, the compose key, input
-methods, and the layout offered with a language). **It reads and never edits**
+them), `crates/alo-keyboards` (layouts, dead keys, the compose key, input
+methods, and the layout offered with a language), and — **added by task 4 on
+2026-09-17, and missing from this line until 2026-09-20** — `crates/alo-handing`
+(a drag, and what letting go would do) and `crates/alo-menus` (the closed list of
+actions a thing offers). Five, not three: both of those put words in front of a
+person, which is why task 7 holds five vocabularies. **It reads and never edits**
 `alo-shortcuts` (a keyboard split is a shortcut; the binding is that crate's
 value), `alo-displays` (the session plan's — a split is per display), `alo-dock`,
 `alo-clipboard` (drag and drop carries the same payloads copy and paste does),
@@ -188,7 +192,23 @@ not `nl` — the report argues it.
 
 ### 7. Every sentence, and the walk through a working morning
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
+**Status:** **Done, 2026-09-20.** **This closes the plan.**
+`crates/alo-dividing/tests/the_walk_through_a_working_morning.rs` walks seven
+moments — two windows split, the boundary dragged, one sent to a second desktop,
+a file dragged over an application, and *Müller* typed on a layout where the
+umlaut takes two keys — and asserts they are exactly the table published in
+[The walk through a working morning](updates/the-walk-through-a-working-morning.md),
+which it parses rather than copies. The row worth arguing about is the third: a
+dragged boundary leaves **Part of the screen**, not `1200x1080` and not `62%`,
+because a person who drags a boundary has not asked for a measurement. The last
+two are two moments on purpose — the first key writes nothing **and says so**,
+the second writes **u-umlaut**.
+`every_sentence_the_desktop_says.rs` holds **all five** crates' vocabularies at
+once, 86 sentences, each read out of `alo-saying`'s assembled vocabulary and each
+carrying a note long enough to translate by; and no sentence names `libinput`,
+`evdev`, XKB, a keysym, a scancode, a keycode, `ibus`, `fcitx`, an input-method
+framework, Wayland or the compositor. 62 tests in the crate.
+**Depends on:** 1, 2, 3, 4, 5, 6.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — split two windows, resize the boundary, move one to
