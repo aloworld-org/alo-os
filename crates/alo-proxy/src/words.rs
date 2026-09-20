@@ -129,6 +129,48 @@ pub const NOTHING_WORKS_OUT_THE_PROXY: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// Why this machine could not sign in to the proxy it has to go through.
+// ---------------------------------------------------------------------------
+
+/// This machine has not been given the password the proxy asks for.
+pub const NOT_SIGNED_IN_NO_PASSWORD: Word = Word::saying(
+    "proxy.not-signed-in.no-password",
+    "This machine does not have the password the proxy for this network asks for, so nothing was \
+     sent. Ask whoever manages this machine",
+)
+.noting(
+    "Said on a road out when the proxy asks who this machine is and the password it would answer \
+     with was never given to it. \"nothing was sent\" must survive translation: the person needs \
+     to know the connection did not quietly happen another way. On a machine an organisation \
+     manages the password is theirs to set, which is why the advice is to ask rather than to type \
+     one.",
+);
+
+/// The password is kept where somebody else could read it.
+pub const NOT_SIGNED_IN_READABLE_BY_ANYBODY: Word = Word::saying(
+    "proxy.not-signed-in.readable-by-anybody",
+    "The password for this network's proxy is kept on this machine where other people using it \
+     could read it, so nothing was sent. Ask whoever manages this machine to set it again",
+)
+.noting(
+    "Said when the password is on the machine and is not protected. It is refused rather than \
+     used, because sending it would leave a readable password in place with nobody told. \"set it \
+     again\" is the useful half: the password should be replaced, not only protected.",
+);
+
+/// The password is there and cannot be used.
+pub const NOT_SIGNED_IN_NOT_USABLE: Word = Word::saying(
+    "proxy.not-signed-in.not-usable",
+    "This machine could not use the password it has for this network's proxy, so nothing was \
+     sent. Ask whoever manages this machine",
+)
+.noting(
+    "Said when the password is on the machine and cannot be read, or what is kept is not a \
+     password at all. The sentence never repeats what was stored. What exactly was wrong is kept \
+     for whoever administers the machine.",
+);
+
+// ---------------------------------------------------------------------------
 // What somebody typed that was not a proxy.
 // ---------------------------------------------------------------------------
 
@@ -324,7 +366,7 @@ pub const EXCEPTION_NO_DOMAIN: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// string left off it is a string nothing can say.
-pub const EVERY_WORD: [Word; 26] = [
+pub const EVERY_WORD: [Word; 29] = [
     THE_PROXY_NONE,
     THE_PROXY_MANUAL,
     THE_PROXY_AUTOMATIC,
@@ -333,6 +375,9 @@ pub const EVERY_WORD: [Word; 26] = [
     NOT_CHANGED_AN_ORGANISATION_SET_IT,
     THE_PROXY_COULD_NOT_BE_WORKED_OUT,
     NOTHING_WORKS_OUT_THE_PROXY,
+    NOT_SIGNED_IN_NO_PASSWORD,
+    NOT_SIGNED_IN_READABLE_BY_ANYBODY,
+    NOT_SIGNED_IN_NOT_USABLE,
     ADDRESS_NOWHERE,
     ADDRESS_NOT_ONE_LINE,
     ADDRESS_TOO_LONG,

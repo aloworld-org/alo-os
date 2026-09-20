@@ -299,6 +299,8 @@ pub mod settings;
 pub mod side;
 #[cfg(target_os = "linux")]
 pub mod signalling;
+#[cfg(all(test, target_os = "linux"))]
+mod signing_in_to_a_proxy_that_asks_who_you_are;
 #[cfg(target_os = "linux")]
 pub mod starting;
 #[cfg(target_os = "linux")]

@@ -1074,6 +1074,7 @@ name = "alo-proxy"
 version = "0.0.1"
 dependencies = [
  "alo-egress",
+ "alo-models",
  "alo-strings",
  "serde",
  "serde_json",

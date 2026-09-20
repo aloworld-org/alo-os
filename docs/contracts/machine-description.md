@@ -356,6 +356,30 @@ password in a service log. `sign-in-as` and `password-in-keyring` are written
 together or not at all: a proxy asked for a name with nowhere to find its
 password fails on the first road out.
 
+**Where that name is looked up** is ADR 0059's, decided 2026-09-20: for a
+**machine-wide** proxy it is the machine's own credentials, provisioned to each
+unit that takes a road out and read at `/run/credentials/<unit>/<the name>`. A
+credential on the person's session bus — ADR 0022's store, and what *keyring*
+means for a **provider's** key — cannot serve this: `alo-agentd` reads this file
+as the machine starts, and the unit that asks whether there is an update runs
+before anybody has signed in. The key keeps its spelling, because it is this
+contract's and renaming it would break every description already written against
+it. Whoever administers the machine writes the credential once, and the same
+name goes in both places:
+
+```
+systemd-creds encrypt --name="the company proxy" - /etc/credstore.encrypted/the-company-proxy
+```
+
+```
+LoadCredentialEncrypted=the company proxy:/etc/credstore.encrypted/the-company-proxy
+```
+
+A unit that was not given it **refuses the road it was taking, in words**. It
+never reaches the proxy as somebody with no password, and never goes straight
+out around the proxy: on a network with no other route out, either would be
+worse than being told.
+
 **A section that is present and does not hold is refused, and the service does
 not start** — never read as no proxy. Besides the above, each of these refuses: a
 `goes-through` this service does not know; `"an-address"` with neither `http` nor

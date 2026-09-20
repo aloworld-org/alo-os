@@ -55,27 +55,33 @@
 //! | [`Kept`] | whose it is — an organisation's on a machine it manages, the person's on their own (ADR 0016) |
 //! | [`Road`] | every road out of this machine, as a closed list |
 //! | [`the_way`] | which way one road goes, decided once |
+//! | [`signed_in`] | that road, signed in to where the proxy asks who you are — **the one door a credential travels through** |
+//! | [`TheMachinesPasswords`] | where a machine-wide proxy password is kept, as a unit was given it (ADR 0059) |
 //! | [`Carried`] | what that road is then given: variables for a program, an address for a client |
 //! | [`Published`] | what an application is given, so it honours the same proxy |
 //! | [`looked_up`] | the same answer, one address at a time, for the portal applications already ask |
 //! | [`TheEvaluator`] | where an automatic configuration is worked out — a **separate program that holds no grant** |
 //!
-//! # The four things this crate promises, and where each is kept
+//! # The five things this crate promises, and where each is kept
 //!
 //! | | |
 //! |---|---|
 //! | **Every road out takes it** | [`Road`] is closed and [`the_way`] is the one door; `tests/every_road_out_takes_it.rs` walks both |
 //! | **A password goes to the keyring, never to a file** | [`ProxyAddress`] holds [`WhereThePasswordIs`] and has no field a password could arrive in (ADR 0022) |
+//! | **A proxy that asks who you are is signed in to, on every road** | [`signed_in`] is the one door, and a test in `signing_in.rs` reads the workspace for a second caller of [`Carried::with_the_password`] (ADR 0059) |
 //! | **The indicator names the real destination** | a [`Way`] carries the proxy and **no destination**: what an `alo_egress::Destination` is built from is the [`Reaching`] the caller already had |
 //! | **A configuration is evaluated where nothing is granted** | `evaluator.rs` is a separate program with a cleared environment, and a machine without one **refuses** rather than going straight out |
 //!
 //! # What this crate is not
 //!
-//! **Not a proxy server**, and not a client either. It opens no socket, starts
-//! no thread and reads no file. What it does is decide, once, which way each
-//! road out goes — and the crates that take those roads ask it: `alo-software`
-//! for installing and updating applications, `alo-updating` for the system's own
-//! update, and `alo-models` for a provider.
+//! **Not a proxy server**, and not a client either. It opens no socket and
+//! starts no thread. What it does is decide, once, which way each road out goes
+//! — and the crates that take those roads ask it: `alo-software` for installing
+//! and updating applications, `alo-updating` and `alo-looking-once` for the
+//! system's own update, `alo-models` for a provider and `alo-agentd` for a
+//! turn's question. The one thing it reads off a disk is the password a proxy
+//! asks for ([`TheMachinesPasswords`]), and a machine whose proxy asks for none
+//! never causes a read at all.
 //!
 //! **Not the machine's description.** Reading an organisation's proxy out of
 //! `/etc/alo/agentd.toml` is `alo-agentd`'s, where that file is read;
@@ -106,11 +112,13 @@ pub mod exceptions;
 pub mod kept;
 pub mod password;
 pub mod portal;
+pub mod provisioned;
 pub mod published;
 pub mod reaching;
 pub mod refusing;
 pub mod road;
 pub mod setting;
+pub mod signing_in;
 pub mod words;
 
 #[cfg(test)]
@@ -127,9 +135,11 @@ pub use exceptions::{Exceptions, NotAnException};
 pub use kept::{Kept, NotChanged, SetBy};
 pub use password::{NotAName, NotAPassword, Password, WhereThePasswordIs};
 pub use portal::{NotLookedUp, STRAIGHT_OUT, looked_up};
+pub use provisioned::{LONGEST_PASSWORD, TheMachinesPasswords, WHERE_THEY_ARE};
 pub use published::Published;
 pub use reaching::{NotReachable, Reaching, Scheme};
 pub use refusing::NotOnTheRoad;
 pub use road::{Road, Way};
 pub use setting::TheProxy;
+pub use signing_in::{NotSignedIn, WhatIsWrong, WhereThePasswordsAre, signed_in};
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, proxy_words};

@@ -185,9 +185,26 @@ pub(crate) fn a_listener_that_reports_what_it_was_told() -> (
                 // first line rather than finding nothing there yet.
                 drop(stream.set_nonblocking(false));
                 drop(stream.set_read_timeout(Some(Duration::from_secs(2))));
-                let mut said = [0_u8; 256];
-                let read = std::io::Read::read(&mut stream, &mut said).unwrap_or_default();
-                return Some(said.get(..read).unwrap_or_default().to_vec());
+                // Read until the end of what was said rather than once. The
+                // opening of a `CONNECT` conversation is written in several
+                // goes, so one read can catch the first line and none of the
+                // headers under it — and the header that says who this machine
+                // signed in as is one of those
+                // (`crate::signing_in_to_a_proxy_that_asks_who_you_are`).
+                let mut said = Vec::new();
+                let mut lump = [0_u8; 512];
+                while said.len() < 4096 {
+                    match std::io::Read::read(&mut stream, &mut lump) {
+                        Ok(0) | Err(_) => break,
+                        Ok(read) => {
+                            said.extend_from_slice(lump.get(..read).unwrap_or_default());
+                            if said.windows(4).any(|end| end == b"\r\n\r\n") {
+                                break;
+                            }
+                        }
+                    }
+                }
+                return Some(said);
             }
             std::thread::sleep(Duration::from_millis(20));
         }
