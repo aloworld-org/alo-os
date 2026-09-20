@@ -1,10 +1,19 @@
-//! The three conversions this machine makes, as a closed set — and a fourth
-//! that is written down and not made.
+//! The conversions this machine makes, as a closed set — and one that is
+//! written down and not made.
 //!
 //! ADR 0039 §A: the service runs the engine *with a fixed argument list chosen
-//! from a closed set of three conversions*. [`Conversion::EVERY`] is that set.
-//! Nothing a turn sends can name a fourth, because a request carries one of
-//! these three words and a word that is not one of them is not a request.
+//! from a closed set* of conversions. [`Conversion::EVERY`] is that set.
+//! Nothing a turn sends can name one that is not in it, because a request
+//! carries one of these words and a word that is not one of them is not a
+//! request.
+//!
+//! **The set began at three and grows by measurement.** ADR 0039 fixed it at
+//! the three current Office formats *and* said each further kind is "a
+//! registration and a test against a real file, in a later change". The three
+//! OpenDocument formats are that, made against real files saved by the engine
+//! the image already pins — no new engine, and nothing about the closed-set
+//! rule relaxed. What the rule forbids is a conversion a request can name
+//! without one, and [`Conversion::HELD_BACK`] is where those wait.
 //!
 //! **The copy is always a PDF** (ADR 0039 §1): it is the one kind whose
 //! rendering does not depend on another engine interpreting the copy again.
@@ -37,6 +46,12 @@ pub enum Conversion {
     ExcelWorkbook,
     /// A PowerPoint presentation into a PDF.
     PowerPointPresentation,
+    /// An OpenDocument text document into a PDF.
+    OpenDocumentText,
+    /// An OpenDocument spreadsheet into a PDF.
+    OpenDocumentSpreadsheet,
+    /// An OpenDocument presentation into a PDF.
+    OpenDocumentPresentation,
     /// A Pages document into a PDF. Written, and in [`Conversion::HELD_BACK`]
     /// rather than [`Conversion::EVERY`], until one is inventoried.
     PagesDocument,
@@ -50,10 +65,13 @@ impl Conversion {
     /// decides what this machine offers reads this and not the variants:
     /// `crate::machine` announces these, `Self::asked` answers to these, and a
     /// request naming any other word is not a request.
-    pub const EVERY: [Self; 3] = [
+    pub const EVERY: [Self; 6] = [
         Self::WordDocument,
         Self::ExcelWorkbook,
         Self::PowerPointPresentation,
+        Self::OpenDocumentText,
+        Self::OpenDocumentSpreadsheet,
+        Self::OpenDocumentPresentation,
     ];
 
     /// Every conversion that is written here and that this machine does not
@@ -74,6 +92,9 @@ impl Conversion {
             Kind::WordDocument => Some(Self::WordDocument),
             Kind::ExcelWorkbook => Some(Self::ExcelWorkbook),
             Kind::PowerPointPresentation => Some(Self::PowerPointPresentation),
+            Kind::OpenDocumentText => Some(Self::OpenDocumentText),
+            Kind::OpenDocumentSpreadsheet => Some(Self::OpenDocumentSpreadsheet),
+            Kind::OpenDocumentPresentation => Some(Self::OpenDocumentPresentation),
             // A Pages document is recognised, and `Self::PagesDocument` is
             // written; naming it here is what would make a verb reach it, so
             // this stays the same answer as for any other kind until one is
@@ -90,6 +111,9 @@ impl Conversion {
             Self::WordDocument => Kind::WordDocument,
             Self::ExcelWorkbook => Kind::ExcelWorkbook,
             Self::PowerPointPresentation => Kind::PowerPointPresentation,
+            Self::OpenDocumentText => Kind::OpenDocumentText,
+            Self::OpenDocumentSpreadsheet => Kind::OpenDocumentSpreadsheet,
+            Self::OpenDocumentPresentation => Kind::OpenDocumentPresentation,
             Self::PagesDocument => Kind::PagesDocument,
         }
     }
@@ -111,6 +135,9 @@ impl Conversion {
             Self::WordDocument => "word-document",
             Self::ExcelWorkbook => "excel-workbook",
             Self::PowerPointPresentation => "powerpoint-presentation",
+            Self::OpenDocumentText => "opendocument-text",
+            Self::OpenDocumentSpreadsheet => "opendocument-spreadsheet",
+            Self::OpenDocumentPresentation => "opendocument-presentation",
             Self::PagesDocument => "pages-document",
         }
     }
@@ -132,6 +159,9 @@ impl Conversion {
             Self::WordDocument => "document.docx",
             Self::ExcelWorkbook => "document.xlsx",
             Self::PowerPointPresentation => "document.pptx",
+            Self::OpenDocumentText => "document.odt",
+            Self::OpenDocumentSpreadsheet => "document.ods",
+            Self::OpenDocumentPresentation => "document.odp",
             Self::PagesDocument => "document.pages",
         }
     }
@@ -144,16 +174,22 @@ mod tests {
     /// **Three conversions, each from its own kind, each into a PDF**, and a
     /// word that names none of them names nothing.
     #[test]
-    fn three_conversions_and_no_fourth() {
+    fn each_conversion_is_from_its_own_kind_and_no_other_kind_converts() {
         for conversion in Conversion::EVERY {
             assert_eq!(Conversion::of(conversion.from()), Some(conversion));
             assert_eq!(conversion.into(), Kind::Pdf);
             assert_eq!(Conversion::asked(conversion.asked_as()), Some(conversion));
         }
+        // Every kind this machine can name, against the set: a kind converts
+        // exactly when a conversion in `EVERY` is from it, and a kind that no
+        // conversion is from converts not at all. Asked of the list rather than
+        // of a property of `Kind`, so that adding a conversion cannot leave a
+        // rule about which kinds convert behind in another crate.
         for kind in Kind::EVERY {
-            if !kind.is_current_office() {
-                assert_eq!(Conversion::of(kind), None, "{kind:?}");
-            }
+            let from_the_set = Conversion::EVERY
+                .into_iter()
+                .find(|conversion| conversion.from() == kind);
+            assert_eq!(Conversion::of(kind), from_the_set, "{kind:?}");
         }
         for word in [
             "",
@@ -167,10 +203,13 @@ mod tests {
     }
 
     /// Every conversion there is, offered or held back.
-    const EVERY_VARIANT: [Conversion; 4] = [
+    const EVERY_VARIANT: [Conversion; 7] = [
         Conversion::WordDocument,
         Conversion::ExcelWorkbook,
         Conversion::PowerPointPresentation,
+        Conversion::OpenDocumentText,
+        Conversion::OpenDocumentSpreadsheet,
+        Conversion::OpenDocumentPresentation,
         Conversion::PagesDocument,
     ];
 

@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The documents European public bodies actually send you now convert.** An
+  OpenDocument text document, spreadsheet or presentation — `.odt`, `.ods`,
+  `.odp` — becomes a PDF copy the same way a Word, Excel or PowerPoint file
+  does, on your own machine, through the same converter that can reach nothing,
+  and the copy still tells you by name what it could not carry: a font your
+  machine does not have, a date that will not update again, a picture the
+  document only linked to, a comment, a tracked change, and now **a macro that
+  was not run**. Nothing is uploaded, and no new software was added to the
+  system to do it.
+  Evidence: `docs/autonomy/updates/an-opendocument-converted.md`.
+
 - **A morning at your desk reads as one thing.** Splitting two windows, dragging
   the boundary between them, sending one to another desktop, dropping a file on
   an application and typing a name with an umlaut now produce one sequence of

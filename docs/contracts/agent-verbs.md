@@ -755,6 +755,19 @@ tracked changes — or that nothing was lost, which is said only when both the
 document and the copy were checked. A document or a copy that could not be
 checked is a refusal, and no copy is kept.
 
+**What converts is a closed set, and it grows only by measurement.** Today:
+a Word document, an Excel workbook and a PowerPoint presentation, and an
+OpenDocument text document, spreadsheet and presentation — each into a PDF. The
+kind is read from the file's own bytes and never from its name, so a document
+called something else converts as what it is, and a program named as a document
+converts as nothing.
+
+This set is additive and will grow: ADR 0039 makes each further kind a
+registration and **a test against a real file**, so a format appears here on the
+day somebody measures one and not before. A kind that is recognised but does not
+convert is not a silent failure — the machine says *nothing here opens it* and
+what would, rather than offering a conversion it cannot complete.
+
 **Nothing leaves the machine.** The verb hands two open descriptors to
 `alo-convertd` over a Unix socket; the service has no network and no view of any
 home folder. There is no remote form, fallback or setting.

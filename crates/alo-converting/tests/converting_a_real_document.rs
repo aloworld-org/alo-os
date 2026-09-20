@@ -281,6 +281,80 @@ fn a_powerpoint_presentation_is_converted_and_what_it_lost_is_named() {
     a_real_document_loses_exactly("sample.pptx", &[font("Garamond"), NotCarried::Comments]);
 }
 
+/// **An OpenDocument text document**: Garamond, the date field, the picture it
+/// links rather than carries, and the comment.
+///
+/// # What these four hold and what they do not
+///
+/// The originals are **measured**: `crate::inventory::opendocument` reads them
+/// here, on this gate, and `inventory::original`'s own tests hold each to what
+/// it contains — including the two things only a real file said, the family that
+/// lives on a spreadsheet's column and the presentation comment written in a
+/// namespace of its own.
+///
+/// What is **not** measured here is the copy, because these tests need the
+/// engine ADR 0039 pins and that engine is an x86_64 build, so on an aarch64
+/// gate they join the four that already cannot run. The loss lists below are
+/// therefore held by rules this repository has already measured three times
+/// over on the Office documents beside them — a family the engine does not have
+/// is substituted, a field that is not fixed is fixed, a link is not fetched, a
+/// comment is not shown, a macro is not run — and by nothing about these three
+/// files in particular. **They become measurements the first time this suite
+/// runs on a machine with the engine**, and until then that is what they are.
+#[test]
+fn an_opendocument_text_is_converted_and_what_it_lost_is_named() {
+    a_real_document_loses_exactly(
+        "sample.odt",
+        &[
+            font("Garamond"),
+            NotCarried::FieldFixed(Field::Date),
+            NotCarried::LinkedNotFetched(Linked::Picture),
+            NotCarried::Comments,
+        ],
+    );
+}
+
+/// **An OpenDocument spreadsheet**: Garamond, `NOW()`, and the comment.
+#[test]
+fn an_opendocument_spreadsheet_is_converted_and_what_it_lost_is_named() {
+    a_real_document_loses_exactly(
+        "sample.ods",
+        &[
+            font("Garamond"),
+            NotCarried::FieldFixed(Field::TheCurrentMoment),
+            NotCarried::Comments,
+        ],
+    );
+}
+
+/// **An OpenDocument presentation**: Garamond, and the comment.
+#[test]
+fn an_opendocument_presentation_is_converted_and_what_it_lost_is_named() {
+    a_real_document_loses_exactly("sample.odp", &[font("Garamond"), NotCarried::Comments]);
+}
+
+/// **A document carrying a macro library says the macros were not run.**
+///
+/// The one thing none of the other documents in this folder can show: the three
+/// Office files deliberately carry no macro, and a `.docm` was left to a later
+/// change. An OpenDocument keeps its macros in the open, as a module under
+/// `Basic/`, where `alo-opening` already sees them — so this is the format that
+/// can prove the sentence exists, against a real file rather than a constructed
+/// one.
+#[test]
+fn a_document_with_a_macro_library_says_the_macros_were_not_run() {
+    a_real_document_loses_exactly(
+        "sample-with-a-macro.odt",
+        &[
+            font("Garamond"),
+            NotCarried::FieldFixed(Field::Date),
+            NotCarried::LinkedNotFetched(Linked::Picture),
+            NotCarried::Comments,
+            NotCarried::Macros,
+        ],
+    );
+}
+
 /// **A document that loses nothing says so, in its own sentence** — the one
 /// case the owner's files cannot show, so the smallest Word document set in a
 /// font the engine carries.

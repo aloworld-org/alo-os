@@ -45,6 +45,11 @@ const MAPPED_TO_A_REFUSAL: &str = "the Display of a reason inside the converting
 const A_MISSING_PART: &str = "fills NotInventoried::Missing's Display, which serving.rs discards for \
      Refusal::OriginalNotChecked; the person is told that refusal in words";
 
+/// Why a lint expectation's reason is not read by a person.
+const A_LINT_EXPECTATION: &str = "the reason on a lint expectation: the compiler prints it to \
+     whoever builds this crate when the expectation stops being fulfilled, and nothing else \
+     ever reads it";
+
 /// English in shipped source that no person using the machine reads, each with
 /// the reason — `(crate, file under src/, a fragment of the literal, why)`.
 const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
@@ -113,6 +118,30 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
         "inventory/excel.rs",
         "workbook part",
         A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
+        "inventory/opendocument.rs",
+        "content part",
+        A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "Pages document",
+        A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "the shape of an inventory nobody has taken",
+        A_LINT_EXPECTATION,
+    ),
+    (
+        "alo-converting",
+        "inventory/original.rs",
+        "has been inventoried on this machine",
+        MAPPED_TO_A_REFUSAL,
     ),
     (
         "alo-converting",

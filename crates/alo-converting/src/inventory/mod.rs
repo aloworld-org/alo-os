@@ -7,10 +7,11 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`original`] | The original, read by format: [`word`], [`excel`], [`powerpoint`] |
+//! | [`original`] | The original, read by format: [`word`], [`excel`], [`powerpoint`], [`opendocument`] |
 //! | [`theme`], [`linked`] | What the three formats share: theme fonts and relationships |
 //! | [`copy`] | The PDF, read for the fonts it contains |
 //! | [`difference`] | The two inventories, compared into a [`crate::Carried`] |
+//! | [`formula`] | What a spreadsheet formula calls for, in either kind of spreadsheet |
 //! | [`pages`] | A fourth format, whose shape is written and whose contents nobody here has read |
 //!
 //! # Set on text, not merely declared
@@ -24,7 +25,9 @@
 pub mod copy;
 pub mod difference;
 pub mod excel;
+pub mod formula;
 pub mod linked;
+pub mod opendocument;
 pub mod original;
 pub mod pages;
 pub mod powerpoint;
