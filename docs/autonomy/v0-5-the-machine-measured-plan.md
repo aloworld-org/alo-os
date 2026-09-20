@@ -689,10 +689,24 @@ which is the number that grows.
 
 ### 14. Words held in one piece: an index in hand the size of its words
 
-**Status:** ready. **Depends on:** 13.
+**Status:** done. **Depends on:** 13.
 
 **Done, 2026-09-20.** Report:
 [`updates/words-held-in-one-piece.md`](updates/words-held-in-one-piece.md).
+**This closes the plan** — **five tasks at publication on 2026-09-13, fourteen
+at close, nine added and every one of them within two days of publication.**
+That is a plan rewritten rather than grown: the five published on the first day
+were a sketch, the nine that followed were the real plan being written down once
+somebody had read the code, and nothing was added after 2026-09-14 — tasks 13
+and 14 then sat unreached for six days. It is worth telling apart from the
+applications plan, which went five to eleven **over four days** as the work
+found adjacent work, and from the access-and-language plan, which did not grow
+at all because its subject was fixed by somebody else's list. **Which kind a
+plan is, is knowable the day it is written**: a plan bounded by an external list
+does not grow, and one bounded by our own judgement does. The count of remaining
+tasks is a safe estimate for a plan that has found its size and a misleading one
+for a plan that has not, and only the dates tell you which you are looking at.
+The reasoning is in the report.
 `crates/alo-finding`: a file's kept words are **two allocations** — every word
 joined end to end in one piece, and where each begins beside it — instead of one
 allocation per word. Measured on an **Apple M3 with 8 GB**, in the Lima VM
