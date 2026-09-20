@@ -69,16 +69,46 @@ Its words and its picture are this repository's own, so it carries no licence
 anybody has to honour and is published here with the rest. It holds nothing
 private.
 
-## What is missing, and why
+## `drawing.dwg`
 
-Task 6 names three formats, and **a `.dwg` drawing has no file here.** Nothing on
-any machine this team has can write one: no CAD application, no `dwgread`,
-`dwgwrite`, `ODAFileConverter`, `teigha`, `librecad`, `freecad` or `qcad`, no
-`ezdxf` for Python, and `sips` has no CAD format at all — measured on the Mac on
-2026-09-19. A file pulled off the web to make a test pass has exactly the
-provenance the rule above exists to refuse. It wants one real drawing, saved by
-somebody who has the program, the way the three Office documents in
-`alo-converting` were saved by the owner on 2026-09-16.
+| | |
+|---|---|
+| Drawn by | **us**, with `ezdxf` 1.4.4 on the development PC — a bench plan for the certified laptop: desk, machine, external display, cable run |
+| Written as DWG by | **ODA File Converter 27.1**, the Open Design Alliance's own converter |
+| When | 2026-09-20 |
+| Size | 16 352 bytes |
+| SHA-256 | `d63d11d6b592e9a09b6cbec8843723bd5a087c3f708e1708d34670a49609dddc` |
+| Format | `AC1032` — AutoCAD 2018/2019/2020, as `file` reports it |
+| Holds | five layers (`DESK`, `MACHINE`, `DISPLAY`, `CABLE`, `NOTES`), nine entities across four types, two dimensions, two text strings |
+
+**Why this counts as a real file.** The bytes were written by the Open Design
+Alliance's converter, which is the DWG implementation the CAD industry licenses
+— not by this repository assembling a header. It was checked by converting it
+**back** to DXF with the same tool and reading what came out: every layer, every
+entity type and both text strings survived the round trip. That is what makes it
+evidence rather than a claim.
+
+**What it is and is not.** It is a genuine DWG. It is **not** a drawing made in
+AutoCAD by somebody who draws for a living, so it carries none of the awkward
+parts a real engineering drawing would have — no blocks, no external references,
+no paper-space layouts, no hatch patterns. Nothing in the rule it tests reads any
+of those, so the difference does not weaken the test; it is recorded here rather
+than left for somebody to assume, because the provenance is the point of the
+file.
+
+The drawing is our own, so it carries no licence anybody has to honour.
+
+**Why it had to be made rather than found.** Nothing on any machine this team
+has could write one: no CAD application, no `dwgread`, `dwgwrite`, `teigha`,
+`librecad`, `freecad` or `qcad`, and `sips` has no CAD format at all — measured
+on the Mac on 2026-09-19. GNU LibreDWG's writer exists and is experimental, and
+a file out of it would have been nearer a synthesised header than something real
+software wrote. A file pulled off the web has exactly the provenance the rule
+above exists to refuse. So the drawing is ours and the writer is the format's own
+consortium, which is as close to *saved by somebody who has the program* as this
+team can get without owning AutoCAD.
+
+## What is missing, and why
 
 **And two documents this team does not have that would make one rule measured
 rather than reasoned.** A Pages document, a Keynote presentation and a Numbers

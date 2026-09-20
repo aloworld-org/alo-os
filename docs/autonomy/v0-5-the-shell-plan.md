@@ -326,8 +326,14 @@ Direct-display, installed-image and certified-machine acceptance remain open.
 
 ### 9. Several displays, and a background and a dock on each
 
-**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` tasks 3 and
-4. **Depends on:** 5.
+**Status:** ready. **Depends on:** 5.
+
+**Unblocked 2026-09-20**, by work that landed earlier. It read *blocked on
+`v0-5-the-session-and-the-displays-plan.md` tasks 3 and 4*, and both are
+finished — task 3 gives a display the stable identity an arrangement is kept
+under, which is the whole of what this waited for. Nobody moved the line when
+they landed, so the task read as untakeable to every machine that surveyed the
+plans.
 
 - **Acceptance:** the compositor lays out outputs as `alo-displays` arranges them,
   at the scale it names, restores an arrangement when a known set of displays is
@@ -374,8 +380,13 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 12. The accessibility tree, the magnifier and keyboard-only operation
 
-**Status:** blocked — on `v0-5-access-and-language-plan.md` tasks 1, 2 and 3.
-**Depends on:** 1, 2, 3, 4, 5.
+**Status:** ready. **Depends on:** 1, 2, 3, 4, 5.
+
+**Unblocked 2026-09-20.** It read *blocked on
+`v0-5-access-and-language-plan.md` tasks 1, 2 and 3*; that plan is closed, all
+six tasks done — what each accessibility setting changes, the screen reader and
+the tree it reads, and keyboard-only operation of everything. Every one of the
+three is finished and the line was never moved.
 
 - **Acceptance:** the shell exposes every surface's role, name and state to AT-SPI
   as `alo-access` decides them, and a test reads the exposed tree over the bus for
@@ -387,8 +398,12 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 13. The recovery and rollback screen
 
-**Status:** blocked — on `v0-5-the-machine-keeps-itself-plan.md` task 3.
-**Depends on:** 1.
+**Status:** ready. **Depends on:** 1.
+
+**Unblocked 2026-09-20.** It read *blocked on
+`v0-5-the-machine-keeps-itself-plan.md` task 3*, *Back to yesterday's machine*,
+which is done — going back is decided and built, so the screen that offers it
+has something to offer.
 
 `ROADMAP.md` v0.5: *Recovery and rollback screen — reachable when the workspace is
 not.*
