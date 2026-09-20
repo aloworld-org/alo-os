@@ -5265,14 +5265,37 @@ behind it* is about the **third PC** and must not be quoted as a fact about this
 fleet. Here `/proc/cpuinfo` shows `vmx`, `/dev/kvm` works, and it **accelerates**
 rather than merely initialising: the same Alpine 3.21 virt image reached a login
 prompt in **12.4 s under `-accel kvm` against 27.7 s under `-accel tcg`**, and an
-Ubuntu 24.04 guest under OVMF went cold start to SSH login in **23 s**. There are
-**805 GB** free inside WSL, not the ~25 GB recorded in the installer plan.
+Ubuntu 24.04 guest under OVMF went cold start to SSH login in **23 s**.
 **Our response:** the rule in that other entry still stands and is what produced
 this measurement — *prove acceleration by booting a guest under `-accel kvm` and
 timing it, never by looking for the device file*. What changes is that plans
-citing *no machine in this fleet has hardware virtualisation* or *a machine with
-50 GB free* were citing one machine. Both are corrected in
-`docs/autonomy/v0-5-the-installer-plan.md` and ADR 0056.
+citing *no machine in this fleet has hardware virtualisation* were citing one
+machine. Corrected in `docs/autonomy/v0-5-the-installer-plan.md` and ADR 0056.
+**The disk half of those plans' condition is a different matter and is NOT
+cleared — see the next entry, which is the same mistake in the other
+direction.**
+**Date:** 2026-09-20.
+
+### `df` inside WSL reports the virtual disk's size, not the host's free space
+**Version:** WSL 2 Ubuntu on the development PC, 2026-09-20. **Written after
+filling the host's C: drive to zero bytes by trusting the first number.**
+**Behaviour:** `df -h /` inside WSL reported **1007 GB total with 805 GB free**.
+That is the **ext4 vhdx's virtual size**. The vhdx is a sparse file on the host's
+C:, which is **474 GB with about 13 GB actually free**. Writing ~10 GB of ISOs
+and qcow2 images inside WSL grew the vhdx by ~10 GB and took C: to **0 bytes**,
+at which point WSL refused to start a new instance
+(`Wsl/Service/CreateInstance/E_FAIL`, *failure step: 2*), the agent harness could
+not write its own temp files, and every lane sharing the machine was at risk —
+not just the one that did it.
+**Our response:** **the free-space figure for anything that writes inside WSL is
+the Windows volume's, never `df`'s.** Check it from the Windows side
+(`df -h /c` under Git Bash, or `Get-PSDrive C`) before downloading an image or
+creating a virtual disk. Recovery, once it has happened: delete the files inside
+WSL and run **`fstrim -v /`**, which returned the blocks to the host — C: went
+from 3 GB free to 11 GB free — **because the vhdx is sparse**. Deleting alone
+does nothing; the vhdx does not shrink on its own. Do **not** reach for
+`wsl --shutdown` plus `Optimize-VHD` while another lane is working in WSL: it
+kills their session, and `fstrim` does the job without it.
 **Date:** 2026-09-20.
 
 ### A program that opens a camera directly does not appear on the in-use indicator
