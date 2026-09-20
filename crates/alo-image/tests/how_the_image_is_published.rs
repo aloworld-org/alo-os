@@ -174,7 +174,7 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
     }
 }
 
-/// The digest the owner signed on 2026-09-19, for release `0.0.3`.
+/// The digest the owner signed on 2026-09-20, for release `0.0.4`.
 ///
 /// **The one place the digest is spelled rather than read, and that is
 /// deliberate.** Everywhere else it was spelled it was a *copy*, one of seven
@@ -188,7 +188,7 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
 /// verifying, then edit this line. The verification cannot live here — it needs
 /// the registry, and nothing in this crate reaches the network.
 const THE_SIGNED_DIGEST: &str =
-    "sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7";
+    "sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858";
 
 /// **The digest an installer pulls is the one the owner signed, pinned in one
 /// file the crate reads, and the image agrees with it.**
