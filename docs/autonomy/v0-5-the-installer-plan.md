@@ -825,12 +825,44 @@ kernel under emulation is this task's to show from that run, not to assume.
 
 ### 15. A release that carries the way to the boundary, installed under Secure Boot to the agent service
 
-**Status:** ready — the release it waited on is published, signed and pinned:
-`image/pinned.toml` names version `0.0.4` at digest
-`sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858`, built
-from revision `b41b4b5e`, verified against `signing/alo-os.pub`. Taken by the
-third PC on 2026-09-18; **the run did not fit that worker's window, and what it
-measured is below**. **Depends on:** 14.
+**Status:** done. **Depends on:** 14.
+
+**Done, 2026-09-20, on the development PC.** The named test passed whole, with
+Secure Boot on, against the release pinned now — `0.0.4` at
+`sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858`,
+revision `b41b4b5e`, verified against `signing/alo-os.pub` **inside the machine**:
+`test result: ok. 1 passed; 0 failed`, in `1303.36s`, exit 0. The guest kernel's
+own account of its firmware, twice — `secureboot: Secure boot enabled` — and the
+environment said every sentence in order with none of the four refusals anywhere
+in the log. **The two assertions no run had reached are both in it:**
+`alo-agentd` is `active (running)`, Main PID 1137, on the disk the installer
+wrote, and *the first disk is unchanged when alo OS booted*. So task 14's passage
+through `/sys/fs/bpf` is in a released image and works **through the installer**,
+which is the whole of what this task existed to show. Nothing on the installed
+disk was changed by the test to make a service start.
+
+**What the machine changed, which is the finding worth keeping.** The 2026-09-18
+run stopped because every guest on the third PC is emulated. This PC's hardware
+virtualisation was used (`-accel kvm -cpu host`, the test's own probe having
+started a machine and seen it stay up), and the install that ran at about 124 MB
+a minute emulated — 4.7 GB in 38 minutes, unfinished — finished **whole in about
+eleven minutes**. The previous report's *does not fit a worker's window* is
+therefore true of an emulated machine and false of this one: it ran to the end
+with lane A's `cargo test --workspace` beside it at load average 8.3 on twelve
+processors.
+
+**One line in the log is not a defect, and is recorded so nobody files it as
+one.** On the installed disk the agent service says `no translations were
+loaded: /usr/share/alo/translations could not be read`. This is the first time
+that has been seen on a machine installed from a **released** image, but task 14
+already recorded it with the reason and the reason still holds: **no translation
+exists in this repository yet**, checked again here, so there is nothing for the
+image to carry and `alo-saying` is correctly reporting an empty case. Nothing
+goes to `docs/quirks.md` — nothing stopped, and that file is for others'
+misbehaviour. Whether the image should ship the empty directory remains the open
+question task 14 put to `alo-saying`'s owner. Report:
+`updates/the-install-under-secure-boot-reaches-the-agent-service.md`; the run's
+disks were removed and `fstrim` returned 20.5 GiB to Windows.
 
 **Re-pointed at 0.0.4 on 2026-09-20.** This line named `0.0.2` until then, and
 by that morning it was naming the release before last: 0.0.3 was pinned on
@@ -840,7 +872,12 @@ shipped an engine that died at launch for want of twelve shared libraries, which
 0.0.4 is the fix for. A record that names a superseded release is not merely out
 of date; it sends somebody to the wrong bytes.
 
-**It wants a machine with a virtual machine that is not emulated.** The 2026-09-18
+**It wanted a machine with a virtual machine that is not emulated, and it got
+one — this condition is gone.** Cleared 2026-09-20 by the run above: on the
+development PC the test's own probe started a machine with `-accel kvm` and it
+stayed up, the guests ran `-accel kvm -cpu host`, and the whole named test
+finished in `1303.36s`. What follows is why the condition was real, kept because
+it still describes the third PC. The 2026-09-18
 run stopped because every guest on the third PC is emulated — it has no `vmx`,
 no `svm`, and `qemu -accel kvm` there answers *failed to initialize kvm*. The
 development PC has a working `/dev/kvm` (measured 2026-09-20: the same guest boots
