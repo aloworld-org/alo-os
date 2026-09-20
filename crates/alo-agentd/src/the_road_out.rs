@@ -23,14 +23,15 @@
 //! re-decides which way a road goes — `alo-proxy` decides, and this is the
 //! crate that asks it.*
 //!
-//! # Two refusals, and neither of them is a road going straight out instead
+//! # Three refusals, and none of them is a road going straight out instead
 //!
-//! [`NotTaken`] is both ways this can fail, and on both of them **nothing is
+//! [`NotTaken`] is every way this can fail, and on all of them **nothing is
 //! sent**:
 //!
 //! | | |
 //! |---|---|
 //! | the machine is told to ask an automatic configuration and cannot | `alo_proxy::NotOnTheRoad`, in that crate's own words |
+//! | the proxy asks who this machine is and it cannot sign in | `alo_proxy::NotSignedIn`, in that crate's own words (ADR 0059) |
 //! | the provider's address is not somewhere a road can be decided about | [`crate::words::NO_ROAD_TO_THAT_PROVIDER`] |
 //!
 //! The first is the one that matters on a company network: a machine that
@@ -45,27 +46,40 @@
 //! host may be, and `alo_proxy::Reaching` does, because a host becomes an
 //! argument to a program and a line a person reads.
 //!
-//! # A proxy that asks for a password is not signed in to yet, on any road
+//! # A proxy that asks who you are is signed in to here, and nowhere else
 //!
-//! `alo_proxy::Carried::with_the_password` is how a credential travels, and
-//! **no road in this workspace calls it** — not the rented tool's, not the
-//! base's, and not this one. `[proxy]` names the keyring entry the password is
-//! kept under (ADR 0022 is about a *provider's* key and settles nothing about
-//! this one), and which store a machine-wide password is read from, by a
-//! service running as root before anybody has signed in, is a decision nobody
-//! has taken. Writing one here would be this file taking it quietly for every
-//! road at once. A proxy that asks for no password works today; one that does
-//! is refused by the proxy itself, which is at least a sentence somebody can
-//! act on.
+//! `alo_proxy::signed_in` is the one door a proxy credential travels through,
+//! and this file calls it — which is what turns *the way* into *the road*.
+//! Where does the password come from is
+//! [ADR 0059](../../../docs/decisions/0059-where-a-machine-wide-proxy-password-is-kept.md)'s:
+//! the machine's own credentials, given to this unit by the machine, at
+//! [`THE_UNIT`]. Not the keyring ADR 0022 chose — that is a *provider's* key,
+//! the person's, reached over their session bus, and this daemon reads
+//! `/etc/alo/agentd.toml` and puts questions on roads whether or not anybody has
+//! signed in.
+//!
+//! **A machine that cannot sign in refuses the question.** It does not reach
+//! the company's proxy as somebody with no password, and it does not go
+//! straight out around it — the same rule as the configuration it cannot work
+//! out, one line above.
 
 use alo_models::Provider;
 use alo_proxy::{
-    Carried, Kept, NotOnTheRoad, NotReachable, Reaching, Road, TheProxy, TheRentedEvaluator,
-    the_way,
+    Carried, Kept, NotOnTheRoad, NotReachable, NotSignedIn, Reaching, Road, TheMachinesPasswords,
+    TheProxy, TheRentedEvaluator, signed_in, the_way,
 };
 use alo_strings::{Filling, Said, Strings};
 
 use crate::words::{NO_ROAD_TO_THAT_PROVIDER, Word};
+
+/// This service's own unit, which is where the machine puts the credentials it
+/// gave it.
+///
+/// Written here rather than worked out, for `alo_proxy::provisioned`'s reason:
+/// a name cannot be pointed somewhere by a variable. It is also the line
+/// `alo-agentd.service` has to carry before a proxy that asks for a name works
+/// on this road — ADR 0059 names it exactly.
+pub const THE_UNIT: &str = "alo-agentd.service";
 
 /// What a machine nobody set a proxy on is asked about.
 ///
@@ -102,6 +116,13 @@ pub struct TheRoadOut {
     /// automatic configuration, which is `alo-proxy`'s behaviour and not a
     /// second rule here.
     evaluating: TheRentedEvaluator,
+
+    /// Where the password a proxy asks for is, as this unit was given it
+    /// (ADR 0059).
+    ///
+    /// Holding one reaches nothing: a proxy that asks for no name never causes
+    /// a read, and neither does a question going straight out.
+    signing_in: TheMachinesPasswords,
 }
 
 impl Default for TheRoadOut {
@@ -132,6 +153,7 @@ impl TheRoadOut {
         Self {
             kept,
             evaluating: TheRentedEvaluator::on_this_machine(),
+            signing_in: TheMachinesPasswords::given_to(THE_UNIT),
         }
     }
 
@@ -144,7 +166,25 @@ impl TheRoadOut {
     /// reviewing `of` would look at.
     #[cfg(test)]
     pub(crate) fn evaluated_by(kept: Option<Kept>, evaluating: TheRentedEvaluator) -> Self {
-        Self { kept, evaluating }
+        Self {
+            kept,
+            evaluating,
+            signing_in: TheMachinesPasswords::given_to(THE_UNIT),
+        }
+    }
+
+    /// The same machine, with the passwords it was given somewhere else.
+    ///
+    /// **A test seam, `cfg(test)` for the same reason** as the one above: a
+    /// machine's credentials live where the machine put them, and a production
+    /// constructor taking a directory would be a second answer to that.
+    #[cfg(test)]
+    pub(crate) fn signing_in_at(kept: Option<Kept>, signing_in: TheMachinesPasswords) -> Self {
+        Self {
+            kept,
+            evaluating: TheRentedEvaluator::on_this_machine(),
+            signing_in,
+        }
     }
 
     /// The setting a road is decided against, with absence answering as the
@@ -182,7 +222,11 @@ impl TheRoadOut {
             &self.evaluating,
         )
         .map_err(NotTaken::TheWayOutCouldNotBeDecided)?;
-        Ok(Carried::of(way))
+        // And then, where the proxy asks who this machine is, the one door a
+        // credential travels through. A proxy that asks for nothing never
+        // reaches the store; a machine that cannot sign in refuses the
+        // question rather than reaching the proxy as nobody in particular.
+        signed_in(way, &self.signing_in).map_err(NotTaken::NotSignedInToTheProxy)
     }
 }
 
@@ -203,6 +247,14 @@ pub enum NotTaken {
     /// The provider's address is not somewhere a road out can be decided
     /// about, so no way out was asked for.
     NotSomewhereWithARoadOut(NotReachable),
+
+    /// The proxy this road goes through asks who this machine is, and it could
+    /// not sign in.
+    ///
+    /// `alo-proxy` decided it and `alo-proxy` words it, as the first member's
+    /// refusal is. **The question is not put**: not through the proxy without
+    /// the credential it asked for, and not around the proxy either.
+    NotSignedInToTheProxy(NotSignedIn),
 }
 
 impl NotTaken {
@@ -215,6 +267,7 @@ impl NotTaken {
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
             Self::TheWayOutCouldNotBeDecided(why) => why.said(strings),
+            Self::NotSignedInToTheProxy(why) => why.said(strings),
             Self::NotSomewhereWithARoadOut(_) => {
                 strings.say(&Self::OUR_OWN.key(), &Filling::nothing())
             }
@@ -235,7 +288,21 @@ impl NotTaken {
     pub const fn because(&self) -> Option<&alo_proxy::NotEvaluated> {
         match self {
             Self::TheWayOutCouldNotBeDecided(why) => Some(why.because()),
-            Self::NotSomewhereWithARoadOut(_) => None,
+            Self::NotSomewhereWithARoadOut(_) | Self::NotSignedInToTheProxy(_) => None,
+        }
+    }
+
+    /// What is wrong with signing in to the proxy, for whoever administers the
+    /// machine, and [`None`] where this refusal is not about one.
+    ///
+    /// Answered here so that the one caller does not have to match on the
+    /// variant to find out whether there is anything to say — the shape
+    /// [`NotTaken::because`] above already has.
+    #[must_use]
+    pub const fn signing_in(&self) -> Option<alo_proxy::WhatIsWrong> {
+        match self {
+            Self::NotSignedInToTheProxy(why) => Some(why.because()),
+            Self::TheWayOutCouldNotBeDecided(_) | Self::NotSomewhereWithARoadOut(_) => None,
         }
     }
 }
@@ -248,12 +315,49 @@ impl NotTaken {
 )]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
     use alo_models::Region;
-    use alo_proxy::{ConfigurationAddress, NotEvaluated, ProxyAddress, SpokenTo};
+    use alo_proxy::{
+        ConfigurationAddress, NotEvaluated, ProxyAddress, SpokenTo, WhereThePasswordIs,
+    };
+
+    use crate::testing::a_directory_of_our_own;
 
     /// The company's proxy, as somebody was handed it on a slip of paper.
     fn the_companys() -> ProxyAddress {
         ProxyAddress::checked(SpokenTo::Http, "proxy.example.com", 8080).unwrap()
+    }
+
+    /// The same proxy, asking who this machine is.
+    fn the_companys_asking_who_you_are() -> ProxyAddress {
+        the_companys()
+            .signing_in(
+                "anna",
+                WhereThePasswordIs::named("the company proxy").unwrap(),
+            )
+            .unwrap()
+    }
+
+    /// The credentials a machine gave this unit, holding that proxy's password.
+    fn given_the_password(called: &str) -> TheMachinesPasswords {
+        let directory = a_directory_of_our_own(called);
+        let at = directory.join("the company proxy");
+        std::fs::write(&at, "hunter2").unwrap();
+        held_the_way_a_machine_holds_one(&at);
+        TheMachinesPasswords::at(&directory)
+    }
+
+    /// The credentials of a unit that was given none.
+    fn given_nothing(called: &str) -> TheMachinesPasswords {
+        TheMachinesPasswords::at(&a_directory_of_our_own(called).join("never-made"))
+    }
+
+    /// The permissions a machine keeps a credential with.
+    fn held_the_way_a_machine_holds_one(at: &PathBuf) {
+        use std::os::unix::fs::PermissionsExt as _;
+
+        std::fs::set_permissions(at, std::fs::Permissions::from_mode(0o400)).unwrap();
     }
 
     /// A provider somewhere else, which is the only kind this road goes to.
@@ -389,6 +493,80 @@ mod tests {
                 .text()
                 .contains(&provider.endpoint[..30.min(provider.endpoint.len())]),
             "the sentence repeats what was written: {said}"
+        );
+    }
+
+    /// **A proxy that asks who this machine is, is signed in to** — with the
+    /// password the machine was given, and with nothing a person reads
+    /// carrying it.
+    #[test]
+    fn a_proxy_that_asks_who_this_machine_is_is_signed_in_to() {
+        let road = TheRoadOut::signing_in_at(
+            Some(Kept::by_an_organisation(TheProxy::one(
+                the_companys_asking_who_you_are(),
+            ))),
+            given_the_password("the-road-out-signed-in"),
+        );
+        let carried = road.to(&a_provider()).unwrap();
+
+        assert_eq!(
+            carried.as_an_address(),
+            Some("http://anna:hunter2@proxy.example.com:8080".to_owned())
+        );
+        assert_eq!(
+            carried.shown(),
+            Some("http://proxy.example.com:8080".to_owned()),
+            "what a person reads carries the credential"
+        );
+        assert!(!format!("{carried:?}").contains("hunter2"));
+    }
+
+    /// **A machine that cannot sign in refuses the question**, rather than
+    /// reaching the proxy as somebody with no password or going round it.
+    #[test]
+    fn a_machine_that_cannot_sign_in_refuses_the_question() {
+        let road = TheRoadOut::signing_in_at(
+            Some(Kept::by_an_organisation(TheProxy::one(
+                the_companys_asking_who_you_are(),
+            ))),
+            given_nothing("the-road-out-given-nothing"),
+        );
+        let refused = road
+            .to(&a_provider())
+            .expect_err("a road was taken with no credential");
+
+        assert_eq!(
+            refused,
+            NotTaken::NotSignedInToTheProxy(alo_proxy::NotSignedIn::NothingKeepsIt)
+        );
+        assert_eq!(
+            refused.signing_in(),
+            Some(alo_proxy::WhatIsWrong::TheMachineHasNotGotIt)
+        );
+        assert_eq!(refused.because(), None);
+
+        // And it is said in `alo-proxy`'s own words rather than reworded here.
+        let strings = crate::testing::in_english();
+        assert_eq!(
+            refused.said(&strings).text(),
+            alo_proxy::NotSignedIn::NothingKeepsIt.said(&strings).text()
+        );
+        assert!(refused.said(&strings).text().contains("nothing was sent"));
+    }
+
+    /// **A proxy that asks for no name never reaches the store at all**, so a
+    /// machine on an ordinary company network meets none of this — the
+    /// credentials here are a directory that does not exist.
+    #[test]
+    fn a_proxy_that_asks_for_no_name_never_reaches_the_store() {
+        let road = TheRoadOut::signing_in_at(
+            Some(Kept::by_an_organisation(TheProxy::one(the_companys()))),
+            given_nothing("the-road-out-never-asked"),
+        );
+        let carried = road.to(&a_provider()).unwrap();
+        assert_eq!(
+            carried.as_an_address(),
+            Some("http://proxy.example.com:8080".to_owned())
         );
     }
 

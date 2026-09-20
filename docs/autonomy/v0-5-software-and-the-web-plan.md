@@ -478,7 +478,40 @@ and not taken is neither.
 
 ### 12. A proxy that asks who you are, signed in to on every road
 
-**Status:** ready. Written 2026-09-20 by task 11, which found it: `[proxy]`
+**Status:** **Done, 2026-09-20.** The decision came first and is
+`docs/decisions/0059-where-a-machine-wide-proxy-password-is-kept.md` (accepted
+2026-09-20): a machine-wide proxy password lives in **the machine's own
+credentials**, provisioned to each unit by systemd and read at
+`/run/credentials/<unit>/<entry>`, where the entry is the name
+`password-in-keyring` already gives — **not**
+ADR 0022's store, because that is a *provider's* key on the person's session bus
+and two of the four roads run before anybody has signed in. `alo_proxy::signed_in`
+(`crates/alo-proxy/src/signing_in.rs`) is the one door a credential travels
+through, and `alo_proxy::TheMachinesPasswords`
+(`crates/alo-proxy/src/provisioned.rs`) is the reader, which believes nothing it
+finds: it checks the name is one thing to look up, that what is there is a
+regular file, that nobody but its owner may read it, and that what it holds is a
+password. Seven states are told apart under three sentences — what an
+administrator *does* about them is three things — and on every one of them the
+road is **not taken**: not to the proxy without the credential it asked for, and
+not around the proxy either. The unit is **named, never worked out**
+(`TheRoadOut::THE_UNIT`, `alo_looking_once::road::THE_UNIT`), so
+`$CREDENTIALS_DIRECTORY` is not read and there is no code path that could —
+`alo_secrets::TheBus::of`'s rule. Held by a test per road, each with its
+refusals beside it, and two of them read the credential **off the wire**:
+`alo-agentd`'s and `alo-models`' watch a socket and find
+`Proxy-Authorization: Basic …` in the `CONNECT` this machine sends. A test in
+`signing_in.rs` reads the workspace and finds `Carried::with_the_password` has
+one caller that ships. What is **not** here, and is named rather than implied:
+the `LoadCredentialEncrypted=` lines in `image/`'s unit files, which are the
+installer lane's as every line there is — until they land, a machine whose proxy
+asks for a name is refused *by alo OS, in words* rather than by the proxy, which
+is better than what it did and is not the finish; and a door for a person on
+their own machine to write one, which is task 13. The report is
+`docs/autonomy/updates/signing-in-to-a-proxy-that-asks-who-you-are.md`.
+**Depends on:** 4, 11.
+
+**Originally written 2026-09-20 by task 11, which found it:** `[proxy]`
 names `sign-in-as` and `password-in-keyring`, `alo_proxy::ProxyAddress` carries
 both, and `alo_proxy::Carried::with_the_password` is the one door a proxy
 credential becomes text through — and **no road in this workspace calls it**.
@@ -489,20 +522,23 @@ proxy wants a name reaches it as somebody with no password and is refused by the
 proxy — on a network task 4's own header says has no other route out. Today that
 refusal is at least a sentence somebody can act on, which is why task 11 left it
 rather than taking the decision underneath it quietly for four roads at once.
-**Depends on:** 4, 11.
 
 *A great many company networks have no other route out* — and a good many of
 those proxies ask who you are.
 
-**The decision this waits on, and it is small.** ADR 0022 settles where a
+**The decision this waited on, and it was small. Taken, as ADR 0059.**
+ADR 0022 settles where a
 **provider's** key lives: the Secret Service, over the person's own session bus
 at `/run/user/<uid>/bus`, derived from the daemon's uid. A machine-wide proxy
 password is not that, and the difference is not a detail — `alo-agentd` reads
 `/etc/alo/agentd.toml` as root before anybody has signed in, and the rented tool
 and the base take their roads with no session at all. So *which store*, *whose*,
-and *what a road does when nobody has signed in yet* are the three questions,
-and the first task to need them writes the ADR rather than answering them in a
-crate.
+and *what a road does when nobody has signed in yet* were the three questions,
+and this task wrote the ADR rather than answering them in a crate. Its answers,
+in order: the machine's own credentials; the machine's, set by whoever
+administers it (ADR 0016's split, unchanged); and **it takes the road**, because
+a credential delivered to a unit at its start does not wait for a person — which
+is the property the store was chosen for.
 
 - **Acceptance:** a proxy an organisation's description says wants a name is
   signed in to on **every road out alo OS itself uses** — installing and
@@ -522,3 +558,48 @@ crate.
   `docs/decisions/`, and it is this task's first deliverable — a store chosen
   inside a crate would be a store four roads then have to agree with. Nothing
   here widens what `[proxy]` may contain: a password in the file stays refused.
+
+### 13. A person's own proxy password, set on the machine that is theirs
+
+**Status:** ready. Written 2026-09-20 by task 12, which found it. ADR 0059
+settled where a machine-wide proxy password lives — the machine's own
+credentials, provisioned to a unit — and settled it for the case that pays for
+it: an organisation writes the credential with the machine, alongside the
+`[proxy]` section in the description. **On a personal machine there is nobody
+else to write it.** ADR 0016 says the person is their own machine's
+organisation, and ADR 0049 §3 says the proxy is set by a person through the
+broker rather than by any agent — so a person on their own machine may already
+set a proxy in Settings and, today, may not give it the password it asks for
+without opening a terminal and running `systemd-creds` by hand. That is a
+settings panel with a field that works and a field beside it that does not.
+**Depends on:** 12.
+
+*Machine-wide, and honoured* (`docs/features.md`, v0.5) — on the person's own
+machine as much as on a company's.
+
+- **Acceptance:** a person on a machine they own may give their proxy the
+  password it asks for, from the same place they set the proxy — carried to the
+  broker **by identity and never as text**, in the bytes-and-digest shape
+  `alo_networks::proxy_file` already uses for the proxy itself (ADR 0001 §2,
+  ADR 0049 §1), so nothing free-form crosses the broker's door; the broker
+  writes it where ADR 0059 says it lives and **nowhere else**, through the tool
+  the base already has rather than an encryption of ours (ADR 0011), and the
+  bytes the person handed over are removed in the same act; a person on a
+  machine **an organisation manages is refused in words** naming who can change
+  it, which is `alo_proxy::NotChanged`'s existing sentence and not a second one;
+  the password never reaches a file the person's own programs can read, never
+  reaches the record, the journal or any `Debug`, and is never read back out —
+  a settings panel shows *a password is set* and offers to replace it, held by a
+  test; **no verb reaches any of this** (ADR 0049 §3: no agent proposes a proxy
+  in v0.5), held by a test; and a machine where the write fails says so and
+  changes nothing, rather than leaving a proxy set that cannot be signed in to.
+- **Constraint:** no encryption of ours, no second store, and no credential-
+  transfer protocol — ADR 0022's approval excluded one and ADR 0059 did not add
+  one. If carrying this to the broker needs a change to the broker's own door,
+  and that door turns out to be another plan's, **the task stops at a decision
+  record** naming the change and who makes it, the way task 5 was told to about
+  `alo-capability`.
+- **Not this task:** the `LoadCredentialEncrypted=` lines in `image/`'s unit
+  files. ADR 0059 names them exactly and they are the installer lane's, as every
+  line in `image/` is; this plan hands them over as data rather than editing
+  them, the way task 2 handed over `shipped.toml`.

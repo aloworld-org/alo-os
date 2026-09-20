@@ -7,6 +7,11 @@
 //! not consulted* is a fact rather than an assumption. [`Answering`] is the one
 //! that answers, and writes down what it was asked, so a test can say what did
 //! and did not reach a network's own script.
+//!
+//! [`NeverKept`] and [`Keeping`] are the same pair for the machine's own
+//! passwords: one panics if a road asks it for a credential, which is how *this
+//! road never reached the store* is a fact; the other answers, or refuses in
+//! whichever way is being tested, and writes down what it was asked for.
 
 #![expect(
     clippy::unwrap_used,
@@ -15,10 +20,13 @@
 )]
 
 use std::cell::RefCell;
+use std::path::PathBuf;
 
 use alo_strings::{Language, Strings, Translation, Vocabulary};
 
 use crate::automatic::{ConfigurationAddress, NotEvaluated, TheEvaluator};
+use crate::password::{Password, WhereThePasswordIs};
+use crate::signing_in::{NotSignedIn, WhereThePasswordsAre};
 use crate::words::{Word, declare_into};
 
 /// Everything this crate says.
@@ -109,5 +117,87 @@ impl TheEvaluator for Answering {
             .borrow_mut()
             .push((at.as_str().to_owned(), address.to_owned(), host.to_owned()));
         self.answer.clone()
+    }
+}
+
+/// A directory of this test's own, empty, on the machine the tests run on.
+///
+/// Named for the test rather than made at random, so that a failure leaves
+/// something a person can look at, and emptied first so that one run never
+/// reads what the last one wrote.
+pub(crate) fn a_directory_of_its_own(named: &str) -> PathBuf {
+    let directory = std::env::temp_dir().join(format!("alo-proxy-{named}"));
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    directory
+}
+
+/// A store nothing may ask.
+///
+/// Handed over wherever a test says *this road never reached for a credential*.
+/// A road that quietly looked one up would pass against a permissive stand-in
+/// and fail nowhere.
+pub(crate) struct NeverKept;
+
+impl WhereThePasswordsAre for NeverKept {
+    fn password(&self, kept: &WhereThePasswordIs) -> Result<Password, NotSignedIn> {
+        panic!(
+            "nothing should have been asked for the password at {}",
+            kept.as_str()
+        )
+    }
+}
+
+/// A store that answers, and remembers what it was asked for.
+///
+/// **No `Debug`**, on purpose: it holds a password for the length of a test,
+/// and a fixture that can be formatted is the first place a credential reaches
+/// a log.
+pub(crate) struct Keeping {
+    /// The name it has a password under, and the password.
+    holding: Option<(String, String)>,
+    /// Why it will not answer, where it will not.
+    refusing: Option<NotSignedIn>,
+    /// Every name it was asked for.
+    asked: RefCell<Vec<String>>,
+}
+
+impl Keeping {
+    /// A store holding this password under this name.
+    pub(crate) fn of(named: &str, password: &str) -> Self {
+        Self {
+            holding: Some((named.to_owned(), password.to_owned())),
+            refusing: None,
+            asked: RefCell::new(Vec::new()),
+        }
+    }
+
+    /// A store that refuses every name, this way.
+    pub(crate) fn refusing(why: NotSignedIn) -> Self {
+        Self {
+            holding: None,
+            refusing: Some(why),
+            asked: RefCell::new(Vec::new()),
+        }
+    }
+
+    /// Every name it was asked for.
+    pub(crate) fn asked_for(&self) -> Vec<String> {
+        self.asked.borrow().clone()
+    }
+}
+
+impl WhereThePasswordsAre for Keeping {
+    fn password(&self, kept: &WhereThePasswordIs) -> Result<Password, NotSignedIn> {
+        self.asked.borrow_mut().push(kept.as_str().to_owned());
+        if let Some(why) = self.refusing {
+            return Err(why);
+        }
+        match &self.holding {
+            Some((named, password)) if named == kept.as_str() => {
+                Ok(Password::typed(password).unwrap())
+            }
+            _ => Err(NotSignedIn::NotKept),
+        }
     }
 }

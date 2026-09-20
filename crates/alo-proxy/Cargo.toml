@@ -43,6 +43,21 @@ ureq = { workspace = true }
 # actually going. **Dev only** — a decision crate that depended on the indicator
 # would be the first step towards the two answers being one value read two ways.
 alo-egress = { path = "../alo-egress" }
+
+# The road out to a provider, for the one test that shows a proxy which asks who
+# this machine is being signed in to on it — `alo_models::Trying` is where that
+# road is. **Dev only**, for `alo-egress`' reason one line up, and going one way:
+# this crate decides a way out and hands it over, and knows nothing about what a
+# provider is.
+#
+# The test is here rather than in `alo-models`' own `tests/` because that crate
+# belongs to `docs/autonomy/v0-5-the-models-measured-plan.md`, which still has an
+# unfinished task, and a lane does not write in another plan's crate
+# (`tools/kernel-loop/src/who_owns.rs`). `alo-models` already dev-depends on this
+# crate for task 4's road test, so the two dev edges are a cycle Cargo permits
+# and neither crate's own dependencies move.
+alo-models = { path = "../alo-models" }
+
 serde_json = { workspace = true }
 
 [lints]
