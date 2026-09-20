@@ -144,9 +144,12 @@ pairing grants nothing** — held against the real `alo-nearby` and
 ### 4. The camera and the microphone
 
 **Status:** blocked — **on reaching a camera through the portal, on a machine
-with a desktop session.** Updated 2026-09-20, and this is the third thing this
-line has said it was waiting for, so what changed is written out rather than
-swapped over. Two faults were found in our own code and fixed, and **neither of
+with a desktop session** — *or* on why a V4L2 node never becomes a linkable,
+which is a second explanation measured later the same day and is **cheaper to
+decide than the first**. See *Two explanations, and how to tell them apart*
+immediately below the account of the two faults. Updated 2026-09-20, and this is
+the third thing this line has said it was waiting for, so what changed is
+written out rather than swapped over. Two faults were found in our own code and fixed, and **neither of
 them was the camera's**: a video capture that never said what kind it was, so
 the session manager searched by an unknown kind and refused it with *target not
 found*; and a pipeline handed to `gst-launch-1.0` with each element's settings
@@ -164,6 +167,33 @@ not make*~~ is **withdrawn** — the session manager's own
 permission store, so a portal does not link, it grants the permission without
 which no link is offered. That is a reading of the engine's script and not yet
 a measurement. `docs/quirks.md` carries all of it.
+
+**Two explanations, and how to tell them apart, 2026-09-20 (later the same
+day).** A second measurement in the Lima VM, on WirePlumber **0.4.17**, found
+something upstream of any permission question: **the camera is not a linkable at
+all.** The policy chooses a target only from `linkables_om`, and printing every
+member of it at the moment of a failed attach gives the six loopback audio
+nodes, a synthetic `Video/Source`, and the client — and **not** the camera.
+WirePlumber never makes a session item for it: instrumented, `create-item.lua`'s
+`addItem` is called for every audio node and for the synthetic video source, and
+never for `v4l2_input.platform-vivid.0`, in a run where that node is present and
+complete. A portal grants permission *on a node*; here nothing is choosing among
+candidates that include the camera, so on this stack no permission store entry
+could produce a link.
+
+The same measurement **confirmed the undeclared-kind fault on a second stack and
+through a second code path** — on 0.4.17 it is `policy-node.lua`'s `canLink()`
+rejecting on `media.type` being `nil`, not 0.5's `prepare-link.lua` — so that
+fault spans two major versions.
+
+**The experiment that decides between them is cheap and needs no desktop
+session:** print `linkables_om`'s members on **0.5.13** at the moment of a failed
+camera attach. Absent there too, and the portal cannot be the explanation on that
+stack either; present, and the portal reading stands and the above is a 0.4-only
+quirk. Written up in
+[The camera is not a candidate](updates/the-camera-is-not-a-candidate.md), which
+also records that `vivid` being *eliminated* as a variable rested on a control
+that was itself failing for the undeclared-kind fault, and is withdrawn.
 
 **The code is
 written and four of the five acceptances are taken, 2026-09-17**; the fifth was
