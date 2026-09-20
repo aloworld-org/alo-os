@@ -40,6 +40,7 @@ use crate::bus::{
     A_WIRELESS_DEVICE, ACCESS_POINT, ACTIVATED, ACTIVE, CONNECTION, DEACTIVATED, DEVICE, MANAGER,
     MANAGER_AT, SETTINGS, SETTINGS_AT, WIRELESS, call, property, set,
 };
+use crate::reaching::{HowFar, Metered, Reaching, WhatIsReached};
 use crate::reported::{
     AccessPointAt, NetworkName, Primary, Protection, Saved, TheNetworks, Visible,
 };
@@ -242,6 +243,28 @@ impl Networks for NetworkManager {
     }
 }
 
+impl WhatIsReached for NetworkManager {
+    /// Both properties in one pair of reads, off the network manager's own
+    /// object, and neither worked out here: `Connectivity` is the answer to its
+    /// own connectivity check, and `Metered` is what the connection said about
+    /// itself or what it guessed.
+    ///
+    /// A property that cannot be read is [`NotAnswering`] for the whole
+    /// reading, never one answer beside a made-up other: a status area told
+    /// *reaching everything, not metered* because half the read failed is a
+    /// status area lying about both.
+    fn reaching_now(&self) -> Result<Reaching, NotAnswering> {
+        let connectivity: u32 =
+            property(&self.bus, MANAGER_AT, MANAGER, "Connectivity").map_err(NotAnswering)?;
+        let metered: u32 =
+            property(&self.bus, MANAGER_AT, MANAGER, "Metered").map_err(NotAnswering)?;
+        Ok(Reaching::reported(
+            HowFar::reported(connectivity),
+            Metered::reported(metered),
+        ))
+    }
+}
+
 impl NetworkService for NetworkManager {
     fn join(&self, network: &Visible) -> Result<(), NotDone> {
         let Some(at) = &network.at else {
@@ -324,6 +347,12 @@ pub struct OnThisMachine;
 impl Networks for OnThisMachine {
     fn now(&self) -> Result<TheNetworks, NotAnswering> {
         NetworkManager::on_this_machine()?.now()
+    }
+}
+
+impl WhatIsReached for OnThisMachine {
+    fn reaching_now(&self) -> Result<Reaching, NotAnswering> {
+        NetworkManager::on_this_machine()?.reaching_now()
     }
 }
 

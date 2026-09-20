@@ -270,14 +270,19 @@ them has ever been shown.
 
 ### 7. The status area's clock, battery, network and volume
 
-**Status:** blocked — on crates that do not exist yet: one that measures the
-battery and the network's state and says each in the vocabulary, one that
-owns the volume, and a regional way of writing a time (the finding task 4 made
-for dates). Since 2026-09-15 each has a plan: the battery is `alo-power` and the
-volume `alo-sound` (`v0-5-devices-and-media-plan.md`), a time written regionally
-is `alo-formats` (`v0-5-access-and-language-plan.md`), and the network's state
-is read from the network monitor portal `alo-portals` names. It unblocks when
-those have landed. **Depends on:** 5.
+**Status:** blocked on one of its four, down from four — **re-read 2026-09-20**,
+when a lane sent to write the four found three of them already on `main`. This
+paragraph had said they did not exist; it was written on 2026-09-15 and they
+landed after it.
+
+| Blocker | | |
+|---|---|---|
+| the battery | `alo-power` | **clear** — landed 2026-09-17, task 5 of `v0-5-devices-and-media-plan.md`. `TheBattery::on_this_machine` is `Option`, so a machine with no battery reads as **absent** rather than as a battery at zero, which is this task's own word. |
+| the volume | `alo-sound` | **clear** — landed 2026-09-17, task 2 of the same plan. `Volume` and `Heard` come through `TheAudioServer`, the one road to the media server. |
+| a time written regionally | `alo-formats` | **clear** — landed 2026-09-17, task 6 of `v0-5-access-and-language-plan.md`. `Regionally::time` writes a time as the person's language and region write it, from CLDR. |
+| the network's state | the network monitor portal `alo-portals` names | **open** — `Portal::NetworkMonitor` is in the closed list and `answered_on_the_bus` is `None` for it. Now task 12 of `v0-5-applications-and-what-they-expect-plan.md`, whose first half — an honest reading, `alo_networks::WhatIsReached` — landed 2026-09-20. |
+
+It unblocks when that portal answers. **Depends on:** 5.
 
 The half of task 5's acceptance that could not be drawn without deciding it
 here. `docs/features.md`, v0.5: *Status area: clock, battery, network, volume,

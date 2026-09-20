@@ -11,6 +11,7 @@
 //! |---|---|
 //! | [`NetworkName`], [`Visible`], [`Saved`], [`Protection`], [`Primary`], [`TheNetworks`] | What the network manager reported, and nothing it did not |
 //! | [`Networks`], [`NetworkService`] | Asking what there is now, and the three changes the broker makes |
+//! | [`HowFar`], [`Metered`], [`Reaching`], [`WhatIsReached`] | How far this machine reaches through the connection it is on, and whether that way out is somebody's meter |
 //! | `network_manager` | The client that speaks the network manager's own interface on the system bus (Linux only) |
 //! | `secret_agent` | Where a Wi-Fi password is asked of a person, and handed to the network manager and nobody else (Linux only) |
 //! | [`WifiPassword`] | A password a person typed, held for one answer |
@@ -43,11 +44,13 @@ pub mod network_manager;
 mod password;
 pub mod proxy_file;
 pub mod proxy_password;
+mod reaching;
 mod reported;
 #[cfg(target_os = "linux")]
 pub mod secret_agent;
 mod service;
 
 pub use password::{NotAPassword, WifiPassword};
+pub use reaching::{HowFar, Metered, Reaching, WhatIsReached};
 pub use reported::{LONGEST_NAME, NetworkName, Primary, Protection, Saved, TheNetworks, Visible};
 pub use service::{NetworkService, Networks, NotAnswering, NotDone};
