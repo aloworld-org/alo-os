@@ -72,6 +72,14 @@ is good enough for the other; if it is not, both fail.
   change, once; and the rented screen reader starts from the setting with the rented
   speech engine speaking the person's language, with a test per language naming the
   voice or naming that none exists.
+**Finding, 2026-09-20 — the machine itself has no name.** The shell now
+publishes its tree on the accessibility bus (the shell plan's task 12), and the
+thing a reader announces as the application is published with **no name**: this
+crate names controls, and nothing in the workspace words *this machine*. A
+reader therefore announces it as nothing. The word is this plan's to decide — a
+crate that draws must not write one — and until it exists the application is
+nameless on purpose rather than named by whichever crate got there first.
+
 **A ninth surface, 2026-09-20.** The shell drew the recovery screen (the shell
 plan's task 13) and this crate's guard failed it, which is that guard working.
 `Surface::Recovery` follows this crate's own pattern rather than inventing one:

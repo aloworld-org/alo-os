@@ -1251,7 +1251,9 @@ dependencies = [
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [
+ "alo-access",
  "alo-accounts",
+ "alo-adapters",
  "alo-appearance",
  "alo-approving",
  "alo-capability",
@@ -1273,6 +1275,7 @@ dependencies = [
  "alo-models",
  "alo-nearby",
  "alo-overlay",
+ "alo-portals",
  "alo-record",
  "alo-recounting",
  "alo-remembering",
@@ -1293,6 +1296,7 @@ dependencies = [
  "thiserror 2.0.20",
  "wayland-client",
  "wayland-protocols",
+ "zbus",
 ]
 
 [[package]]
