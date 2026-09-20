@@ -1,7 +1,8 @@
 //! Which way a share is cut, and which side of the cut a window goes on.
 
 /// The direction a split runs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Axis {
     /// Two shares next to each other, the boundary between them running top to
     /// bottom.

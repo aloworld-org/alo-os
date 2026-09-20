@@ -12,7 +12,13 @@ repository.workspace = true
 # value: this crate reads what a chord does and never binds one of its own.
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
+# A remembered division is written to the person's folder (ADR 0038), which is
+# the first thing this crate keeps. What is written is applications and shares
+# — never a window's title or a document's name — and the file is TOML, as
+# every other settings file in this repository is.
+serde = { workspace = true }
 thiserror = { workspace = true }
+toml = { workspace = true }
 
 [lints]
 workspace = true

@@ -339,8 +339,13 @@ Direct-display, installed-image and certified-machine acceptance remain open.
 
 ### 10. Dividing the screen, virtual desktops and gestures, drawn
 
-**Status:** blocked — on `v0-5-hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5.
-**Depends on:** 5.
+**Status:** ready — **its blocker cleared on 2026-09-20.** It waited on
+`v0-5-hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5; task 2 was the last of
+them and landed that day, and 1, 3 and 5 were done on 2026-09-17 and 2026-09-18.
+`alo-dividing` now proposes, commits and **remembers** a division, so there is a
+decided split for this task to draw. Cleared by the lane that finished task 2,
+in the same change — a blocker that outlives its cause makes takeable work look
+untakeable to every machine that reads these plans. **Depends on:** 5.
 
 - **Acceptance:** dragging a window shows the half or quarter `alo-dividing`
   proposes before it is committed and commits it on release; a boundary between
