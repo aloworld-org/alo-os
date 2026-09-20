@@ -42,11 +42,39 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** blocked — **on a machine to play a real sample file on, and on
-nothing else.** The question that was the other half of this block was answered
-on 2026-09-19. **Everything a lane may take is taken.** A supervisor cannot start
-what is left, so this says so in the one word it reads: a status it cannot parse
-is a finished task it selects again for ever, which is how this line was found.
+**Status:** blocked — on a machine to play a real sample file on, **and on the
+image, which is the part this line used to deny.** A supervisor cannot start what
+is left, so this says so in the one word it reads: a status it cannot parse is a
+finished task it selects again for ever, which is how this line was found.
+
+**Corrected 2026-09-20 by reading release `0.0.4` itself.** This line said the
+block was a machine *and nothing else*. It is not. Measured inside the published
+image (config `74a4aa1563c0`) on the development PC:
+
+- **Every audio codec ADR 0058 names is there** — `libopus`, `libvorbis`,
+  `libFLAC`, `libmpg123`, `libfdk-aac`.
+- **Not one of the video codecs it says we ship in software is** — no `libdav1d`
+  and no `libaom` (AV1), no `libvpx` (VP9, VP8), no `libopenh264` (H.264). HEVC
+  is absent and that is correct.
+- **There is no media pipeline at all**: no GStreamer, no `libavcodec`, no
+  `ffmpeg`, no player. The only media programs in alo OS are PipeWire's own, and
+  `pw-cat` reads files through libsndfile, whose business is sound.
+- **And no encoder program ships** — no `opusenc`, `oggenc`, `flac`, `lame`,
+  `aomenc`, `vpxenc` or `svt-av1` — so the samples cannot be *made* with the
+  image's own encoders the way this task intends, even though the encoder
+  libraries are present with nothing to drive them.
+
+So *plays a real sample file through the rented stack* has nothing to run for
+AV1, VP9 or H.264 **on any machine**, and the certified laptop would not have
+changed that. ADR 0058 is accepted and **half applied**: this is a gap between a
+record and a release, not a reopened decision, and nothing here proposes a
+package — which decoders arrive how, and what plays them, is a plan's decision
+and an owner's.
+
+**The audio half is writable now**, and is the honest place to start: five
+formats with a decoder in the released image and a program that can reach it,
+needing only a machine with a sound device. Measured in
+`updates/what-the-image-carries-to-play-with.md`.
 
 The decision is written — [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md),
 2026-09-17 — and everything that is not hardware is built. Its encoding half is
@@ -75,8 +103,10 @@ constant and asserted in both directions, so a lawyer's answer cannot arrive and
 change nothing. 43 tests. Written up in
 [What this machine plays](updates/what-this-machine-plays.md).
 
-**What is left, and only this:** a test per format that plays a real sample file
-through the rented stack. It needs a machine, which cannot be written.
+**What is left:** a test per format that plays a real sample file through the
+rented stack. For the five audio formats that is a machine with a sound device.
+For AV1, VP9 and H.264 it is **first a decoder and a pipeline in the image**,
+which no machine supplies — see the correction above.
 **Depends on:** nothing.
 
 *Media playback, and the codecs people actually have files in.* Some of those
