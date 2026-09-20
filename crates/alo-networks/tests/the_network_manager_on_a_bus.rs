@@ -28,7 +28,8 @@ use std::time::{Duration, Instant};
 use alo_networks::network_manager::NetworkManager;
 use alo_networks::secret_agent::{SecretAgent, ThePersonsOwnSurface, registered};
 use alo_networks::{
-    NetworkName, NetworkService, Networks, NotDone, Primary, Protection, TheNetworks, WifiPassword,
+    HowFar, Metered, NetworkName, NetworkService, Networks, NotDone, Primary, Protection,
+    TheNetworks, WhatIsReached, WifiPassword,
 };
 use zbus::blocking::Connection;
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -200,6 +201,21 @@ impl Manager {
     #[zbus(property, name = "PrimaryConnection")]
     fn primary_connection(&self) -> OwnedObjectPath {
         object("/org/freedesktop/NetworkManager/ActiveConnection/0")
+    }
+
+    /// How far the machine reaches: `NM_CONNECTIVITY_PORTAL`, a sign-in page in
+    /// the way. Chosen because it is neither end of the range, so a client that
+    /// rounded to *online* or to *offline* would be caught.
+    #[zbus(property, name = "Connectivity")]
+    fn connectivity(&self) -> u32 {
+        2
+    }
+
+    /// Whether the way out is a meter: `NM_METERED_GUESS_YES`, a guess rather
+    /// than somebody's answer — the two the client is required to keep apart.
+    #[zbus(property, name = "Metered")]
+    fn metered(&self) -> u32 {
+        3
     }
 }
 
@@ -455,6 +471,41 @@ fn a_network_manager(bus: &ABus, asked: &Asked, joined: u32) -> Connection {
 /// A name.
 fn named(name: &str) -> NetworkName {
     NetworkName::announced(name.as_bytes()).unwrap()
+}
+
+/// **How far the machine reaches is read from the network manager, and is
+/// neither guessed nor rounded.**
+///
+/// The stand-in reports a sign-in page in the way and a *guess* that the
+/// connection is metered — both deliberately in the middle of their ranges. A
+/// client that inferred reachability from having a primary connection would say
+/// the machine reaches everything, and one that flattened the guess to a plain
+/// yes or no would lose the distinction a person is owed before their data is
+/// spent. This reads the two properties off the network manager's own object.
+///
+/// What this does **not** show is what NetworkManager itself reports on a real
+/// machine: this is a stand-in on a private bus, and no machine in this lane has
+/// a network manager. What is proven is the asking and the reading.
+#[test]
+fn how_far_the_machine_reaches_is_read_from_the_network_manager_and_not_guessed() {
+    let bus = ABus::started("reaching");
+    let asked = Asked::default();
+    let _service = a_network_manager(&bus, &asked, 2);
+    let client = NetworkManager::at(&bus.address()).unwrap();
+
+    let reaching = client.reaching_now().unwrap();
+    assert_eq!(reaching.how_far, HowFar::APageInTheWay);
+    assert_eq!(reaching.metered, Metered::ProbablyMetered);
+
+    // The machine has a primary connection, and still does not reach past the
+    // sign-in page: the two questions are answered apart.
+    assert!(client.now().unwrap().primary.is_some());
+    assert!(reaching.how_far.reaches_anything());
+    assert_ne!(reaching.how_far, HowFar::AllOfIt);
+
+    // A guess that it is metered holds off what would spend a person's data.
+    assert!(reaching.metered.should_hold_off());
+    assert_ne!(reaching.metered, Metered::Metered);
 }
 
 /// **What the network manager reports is what the client says**: one network

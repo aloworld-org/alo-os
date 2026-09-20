@@ -558,3 +558,40 @@ person's is not written anywhere.
 - **Constraint:** no edit to `alo-record`, `alo-keeping` or `alo-sessiond`
   without their owners' written agreement. Nothing here starts the backend in a
   session or draws a list. No new dependency.
+
+---
+
+### 12. The network monitor portal, answered from an honest reading
+
+**Status:** in progress, 2026-09-20 — **the reading has landed**
+(`docs/autonomy/updates/how-far-this-machine-reaches.md`); the portal that
+answers from it has not. **Depends on:** 1, 5.
+
+**Added 2026-09-20**, by the lane clearing task 7 of
+`docs/autonomy/v0-5-the-shell-plan.md` — the status area's clock, battery,
+network and volume, which names the network monitor portal as one of its four
+blockers. It was the only one of the four still open: `alo-power`, `alo-sound`
+and `alo-formats` all landed on 2026-09-17 and 2026-09-18, after that task's
+status paragraph was written.
+
+`crate::Portal::NetworkMonitor` has been in the closed list since task 1, over
+`Facility::NetworkState`, and `answered_on_the_bus` returns `None` for it.
+`docs/contracts/portals.md` gives the reason: *this backend has no honest source
+for the network's state yet*. That reason has now gone.
+`alo_networks::WhatIsReached` reads NetworkManager's `Connectivity` and
+`Metered`, keeps what the service has not worked out as *nothing said*, and
+answers *is anything reached* in one place.
+
+- **Acceptance:** `org.freedesktop.portal.NetworkMonitor` is registered and
+  answers `GetAvailable`, `GetMetered` and `GetConnectivity` from
+  `alo_networks::Reaching` and from nothing else, with the mapping to the
+  specification's numbers written down and tested; a caller is judged for
+  `Facility::NetworkState` before the network is read, and a refused caller
+  learns nothing a caller asking about a machine with no network would not;
+  every answer and every refusal is recorded with the application named, and an
+  answer the record did not keep is not sent; `docs/contracts/portals.md` moves
+  the portal out of *not answered yet* in the same change.
+- **Constraint:** nothing here decides what the network is — the reading is
+  `alo-networks`' and is read, never restated. Nothing here draws a network
+  icon: the status area is the shell plan's. No new dependency beyond
+  `alo-networks`.
