@@ -71,6 +71,31 @@ record and a release, not a reopened decision, and nothing here proposes a
 package — which decoders arrive how, and what plays them, is a plan's decision
 and an owner's.
 
+**Answered 2026-09-20, and being built as release `0.0.5`.** The owner chose the
+list that makes the decision true: `dav1d`, `libvpx`, `openh264` and GStreamer as
+the pipeline. The recipe names them, and two things about how are worth keeping:
+
+- **`gstreamer1-plugin-dav1d` is named as well as `dav1d`.** Measured before the
+  build was spent: installing the library alone gives the image `libdav1d` and
+  **no `dav1ddec` element**, so a pipeline asking for one answers *no element
+  "dav1ddec"*. The decoder aboard and unreachable is the same shape as the
+  converter that could not start. `aom` would have hidden it, because it brings
+  an `av1dec` of its own.
+- **`gstreamer1-plugins-libav` is refused by the build**, which fails if it is
+  installed. It is the FFmpeg bundle and would carry formats the decision does
+  not permit — HEVC among them — past a rule enforced nowhere else at runtime.
+
+The build inspects each of `dav1ddec`, `vp8dec`, `vp9dec` and `openh264dec` by
+name and fails when one is missing, and
+`crates/alo-image/tests/the_image_can_play_what_the_decision_says.rs` holds the
+recipe to asking. Proved in the pinned base before the recipe was changed: a
+file of each format made there and read back through its own decoder returned
+**288 000 bytes of raw frames each — ten frames of 160×120 I420, to the byte.**
+
+What is left of this task after `0.0.5` is pinned is what it always was: the
+samples and a machine to play them on. The encoders are the same question and
+are not answered here.
+
 **The audio half is writable now**, and is the honest place to start: five
 formats with a decoder in the released image and a program that can reach it,
 needing only a machine with a sound device. Measured in

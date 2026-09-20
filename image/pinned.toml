@@ -73,6 +73,26 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # The digest and the revision here were both read back from the **registry** —
 # the digest from `docker-content-digest`, the revision from the image's own
 # `org.opencontainers.image.revision` label in its config blob.
+#
+# Declared 2026-09-20, in the change that moved the recipe's label to it.
+# **0.0.5 exists because every release before it could decode the sound of a
+# file and nothing else.** Measured inside the published images: each carried
+# all five audio decoders ADR 0058 names and **not one video decoder** — no
+# `libdav1d`, no `libvpx`, no `libopenh264` — and nothing to drive them, no
+# GStreamer and no player. AV1 and VP9 are what this machine *encodes*
+# (ADR 0051), so a machine could not play back its own screen recording.
+#
+# It survived three releases because `alo-playing` held the decided list as
+# types and every one of its tests was green — and not one of them was about
+# the image. A decision can be written down, held in code, and absent from the
+# thing that ships.
+#
+# The recipe now inspects each decoder by name and fails the build when one is
+# missing, and refuses `gstreamer1-plugins-libav` — the bundle that would carry
+# formats the decision does not permit, HEVC among them, past a rule enforced
+# nowhere else at runtime. Until 0.0.5's digest is pinned below, an installer
+# still pulls 0.0.4, which opens documents and plays no video.
+next = "0.0.5"
 
 version = "0.0.4"
 digest = "sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858"

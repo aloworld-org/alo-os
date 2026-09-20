@@ -409,6 +409,72 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && test "$(printf '%s\n%s\n' "${least}" "${have}" | sort --version-sort | head -1)" = "${least}" \
  && echo "WirePlumber ${have}, at or above ${least}"
 
+# **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
+# decided it** — and the decoders it may not carry, absent by name.
+#
+# **Measured 2026-09-20: releases 0.0.2 through 0.0.4 shipped every audio
+# decoder the decision names and not one video decoder.** No `libdav1d`, no
+# `libvpx`, no `libopenh264`, no `libavcodec`, and nothing to drive them — no
+# GStreamer, no player. So a machine could decode the sound of a file and
+# nothing else: `alo-playing` held the decided list in types, its tests were
+# green, and the thing itself was not aboard. The devices-and-media plan said
+# task 1 was blocked "on a machine to play a real sample file on"; it was
+# blocked on packages nobody had added, and the certified laptop would not have
+# changed that.
+#
+# **AV1 and VP9 are what this machine encodes** (ADR 0051), so without `dav1d`
+# and `libvpx` it cannot play back its own screen recording — which is the worst
+# shape this hole could take.
+#
+# `openh264` is Cisco's, from the base's own `fedora-cisco-openh264` repository,
+# and is on the list because its publisher pays the royalty for the binary it
+# distributes — ADR 0058's second step, not a decoder we built.
+#
+# **`gstreamer1-plugins-libav` is deliberately NOT here.** It is the FFmpeg
+# bundle, and it would carry decoders for formats the decision does not permit —
+# HEVC among them — past a rule that is enforced nowhere else at runtime. What
+# is absent from the image is the only thing making the closed list true on a
+# real machine.
+# **`gstreamer1-plugin-dav1d` is named, and the library alone is not enough.**
+# Measured 2026-09-20: installing `dav1d` gives the image the library and no
+# `dav1ddec` element, so a pipeline asking for one answers *no element
+# "dav1ddec"* — the decoder is aboard and unreachable, which is the same shape
+# as the converter that could not start. The plugin is its own package.
+#
+# `aom` brings an `av1dec` of its own and would have hidden this: AV1 would
+# decode, slower, and nobody would know which decoder was doing it. dav1d is
+# named because it is the one this image means to use.
+#
+# **`pipewire-gstreamer` is here because decoding is not the whole of it.**
+# `pipewiresrc` is the element `crates/alo-capturing` opens a screen through,
+# and `pipewiresink` the one a capture is offered on. Without that package
+# GStreamer is installed and those two elements do not exist, so every screen
+# recording and every screenshot answers *no element "pipewiresrc"* — which is
+# what the capture road did until 2026-09-20, for a different reason, and would
+# have gone on doing for this one.
+#
+# So the loop below asks for the **encoders and the media-server elements** as
+# well as the decoders. ADR 0051 says this machine produces AV1 or VP9, Opus and
+# Matroska; an image that can play a film and not make one keeps half of that
+# decision. Every element a promise depends on is named here, and a build that
+# cannot find one fails rather than shipping the gap.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      dav1d libvpx openh264 \
+      gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good \
+      gstreamer1-plugins-bad-free gstreamer1-plugin-openh264 \
+      gstreamer1-plugin-dav1d pipewire-gstreamer \
+ && dnf clean all \
+ && test -x /usr/bin/gst-launch-1.0 \
+ && test -x /usr/bin/gst-inspect-1.0 \
+ && ! rpm --query gstreamer1-plugins-libav \
+ && for element in dav1ddec vp8dec vp9dec openh264dec \
+                   av1enc vp9enc opusenc matroskamux webmmux \
+                   pipewiresrc pipewiresink; do \
+      gst-inspect-1.0 "${element}" > /dev/null \
+        || { echo "the image carries no ${element}"; exit 1; }; \
+    done \
+ && echo "this image decodes, encodes, and can reach the media server"
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
@@ -463,7 +529,7 @@ LABEL alo.disk.file="alo-os.raw"
 # it is one that cannot say which release it is, and a digest pinned against it
 # is a digest held to nothing. Three numbers, never `latest` — a tag that moves
 # is the one thing a pin exists to refuse. `crates/alo-image` holds it to that.
-LABEL org.opencontainers.image.version="0.0.4"
+LABEL org.opencontainers.image.version="0.0.5"
 
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
