@@ -45,6 +45,16 @@ const MAPPED_TO_A_REFUSAL: &str = "the Display of a reason inside the converting
 const A_MISSING_PART: &str = "fills NotInventoried::Missing's Display, which serving.rs discards for \
      Refusal::OriginalNotChecked; the person is told that refusal in words";
 
+/// Why the reason on a compiler expectation is not read by a person.
+const A_REASON_FOR_THE_COMPILER: &str = "the reason on an `expect` attribute, which rustc prints \
+     to whoever compiles this crate when the expectation goes unfulfilled; nothing renders it \
+     anywhere a person using the machine can reach";
+
+/// Why the list an inventory would answer is not read by a person.
+const WHAT_A_WORKER_MEASURES: &str = "an item of the list whoever takes this inventory works \
+     through, so that a partial one is recognisable as partial; nothing formats it, and the day \
+     it is measured it becomes a field rather than a sentence";
+
 /// English in shipped source that no person using the machine reads, each with
 /// the reason — `(crate, file under src/, a fragment of the literal, why)`.
 const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
@@ -137,6 +147,60 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
         "zip.rs",
         "does not hold together as a zip",
         MAPPED_TO_A_REFUSAL,
+    ),
+    (
+        "alo-converting",
+        "inventory/original.rs",
+        "has been inventoried on this machine",
+        MAPPED_TO_A_REFUSAL,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "the shape of an inventory nobody has taken",
+        A_REASON_FOR_THE_COMPILER,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "Pages document",
+        MAPPED_TO_A_REFUSAL,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "every family its text is set in",
+        WHAT_A_WORKER_MEASURES,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "every field whose value depends on when or where it is open",
+        WHAT_A_WORKER_MEASURES,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "every kind of content taken from elsewhere",
+        WHAT_A_WORKER_MEASURES,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "whether it has comments",
+        WHAT_A_WORKER_MEASURES,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "whether it has tracked changes",
+        WHAT_A_WORKER_MEASURES,
+    ),
+    (
+        "alo-converting",
+        "inventory/pages.rs",
+        "whether it carries macros",
+        WHAT_A_WORKER_MEASURES,
     ),
     (
         "alo-converting",
