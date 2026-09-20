@@ -12,8 +12,11 @@
 //!
 //! **Where it stops following**: conditional formats, and a shared string's
 //! runs are counted whether or not a cell uses that string.
+//!
+//! What a formula calls for is read by [`crate::inventory::formula`], which an
+//! OpenDocument spreadsheet asks the same question of.
 
-use crate::carried::Field;
+use crate::inventory::formula::field_of;
 use crate::inventory::original::{NotInventoried, Original};
 use crate::inventory::theme::shows;
 use crate::xml::{self, Read, Walk};
@@ -21,12 +24,6 @@ use crate::zip::Zipped;
 
 /// The part an Excel workbook cannot be without.
 const THE_WORKBOOK: &str = "xl/workbook.xml";
-
-/// The functions whose value is the moment the workbook is calculated.
-const THE_CURRENT_MOMENT: [&str; 2] = ["NOW", "TODAY"];
-
-/// The functions whose value is a random number.
-const A_RANDOM_NUMBER: [&str; 3] = ["RAND", "RANDBETWEEN", "RANDARRAY"];
 
 /// A workbook's fonts and cell formats.
 #[derive(Debug, Default)]
@@ -178,29 +175,6 @@ fn cells(read: &[Read], formats: &Formats, original: &mut Original) -> Result<()
     Ok(())
 }
 
-/// What a formula is, when it calls for the moment or for chance.
-///
-/// A function counts where its name stands on its own before a bracket, so
-/// `NOW()` is the moment and `KNOWN()` and a sheet called `NOW` are not.
-fn field_of(formula: &str) -> Option<Field> {
-    let formula = formula.to_ascii_uppercase();
-    let calls = |function: &str| {
-        formula.match_indices(function).any(|(at, _)| {
-            let before = formula.get(..at).and_then(|before| before.chars().last());
-            let after = formula.get(at + function.len()..);
-            before.is_none_or(|letter| !(letter.is_ascii_alphanumeric() || letter == '_'))
-                && after.is_some_and(|after| after.trim_start().starts_with('('))
-        })
-    };
-    if THE_CURRENT_MOMENT.iter().any(|function| calls(function)) {
-        return Some(Field::TheCurrentMoment);
-    }
-    A_RANDOM_NUMBER
-        .iter()
-        .any(|function| calls(function))
-        .then_some(Field::ARandomNumber)
-}
-
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -209,20 +183,6 @@ fn field_of(formula: &str) -> Option<Field> {
 mod tests {
     use super::*;
     use crate::testing::a_zip;
-
-    /// **The moment and chance are found by function**, and what only looks
-    /// like one is not.
-    #[test]
-    fn the_moment_and_chance_are_found_by_function() {
-        assert_eq!(field_of("NOW()"), Some(Field::TheCurrentMoment));
-        assert_eq!(field_of("A1+today ()"), Some(Field::TheCurrentMoment));
-        assert_eq!(field_of("_xlfn.RANDARRAY(3)"), Some(Field::ARandomNumber));
-        assert_eq!(field_of("RANDBETWEEN(1,6)"), Some(Field::ARandomNumber));
-        assert_eq!(field_of("A2*2"), None);
-        assert_eq!(field_of("KNOWN(A1)"), None);
-        assert_eq!(field_of("NOW!A1"), None);
-        assert_eq!(field_of("SUM(NOWHERE)"), None);
-    }
 
     /// **A format given to a cell with no value shows no text**, so its font
     /// is not counted.

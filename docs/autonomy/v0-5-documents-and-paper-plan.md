@@ -544,7 +544,44 @@ them is from its bytes. A photo from a phone is the commonest of the three.
 
 ### 7. An OpenDocument text, spreadsheet and presentation — converted, and what each copy lost
 
-**Status:** ready. **Depends on:** 1, 2, 5.
+**Status:** **Done, 2026-09-20.** **Depends on:** 1, 2, 5.
+
+Report:
+[An OpenDocument converted, and a column that nearly told a lie](updates/an-opendocument-converted.md).
+`Conversion::EVERY` holds **six**: the three current Office formats and the
+three open-standard ones, each into a PDF, each with its word on the socket
+(`opendocument-text`, `opendocument-spreadsheet`, `opendocument-presentation`),
+its name in the scratch folder and its export filter — **no new engine**, and
+the closed-set rule untouched, which is ADR 0039's own "a registration and a
+test against a real file, in a later change".
+
+**Four real files, saved on the machine that gates this**, by the application
+people write these with, running headless: `sample.odt`, `sample.ods`,
+`sample.odp` and `sample-with-a-macro.odt`, with their digests and provenance in
+`crates/alo-converting/tests/documents/README.md`. The macro-carrying one is the
+first document in this repository that can prove the sentence *macros were not
+run* against a real file — the three Office documents deliberately carry none.
+
+**The originals are measured here; the copies are not.** The new
+`crate::inventory::opendocument` reads all three formats — one file, because
+they are one format with three bodies — and its tests hold each document to what
+it contains, on this gate. The conversion itself needs the pinned x86_64 engine,
+so the four new conversion tests join the accepted failing set on an aarch64
+gate and become measurements the first time the suite runs where the engine is.
+
+**Two things only a real file said.** A spreadsheet's text finds its family
+through the **column**, not the cell: `sample.ods` is set in Garamond and no cell
+in it names a style at all. A reader that looked only at what was open around
+the text found no family, and would have reported a conversion that substituted
+every font in that sheet as having lost nothing. And a presentation writes its
+comment in a namespace of its own, which costs nothing only because ADR 0039 §5's
+reader hands on local names and never a prefix.
+
+**A break on `main` was found and fixed on the way** — one this task did not
+cause but did uncover, together with the gate practice that hid it. See the
+report; the short version is that `cargo test` stops at the first failing test
+binary, and with an accepted failing set in the tree that makes every binary
+after it unproven, so `--no-fail-fast` is not optional here.
 
 Task 2's own *Owed* names this: **older Office and OpenDocument files**. The
 two halves are not equally ready, and this task is deliberately the half that

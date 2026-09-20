@@ -68,9 +68,13 @@ pub enum NotConverted {
 /// out of the same writer.
 const fn filter(conversion: Conversion) -> &'static str {
     match conversion {
-        Conversion::WordDocument | Conversion::PagesDocument => "pdf:writer_pdf_Export",
-        Conversion::ExcelWorkbook => "pdf:calc_pdf_Export",
-        Conversion::PowerPointPresentation => "pdf:impress_pdf_Export",
+        Conversion::WordDocument | Conversion::OpenDocumentText | Conversion::PagesDocument => {
+            "pdf:writer_pdf_Export"
+        }
+        Conversion::ExcelWorkbook | Conversion::OpenDocumentSpreadsheet => "pdf:calc_pdf_Export",
+        Conversion::PowerPointPresentation | Conversion::OpenDocumentPresentation => {
+            "pdf:impress_pdf_Export"
+        }
     }
 }
 
@@ -151,16 +155,30 @@ pub fn convert(
 mod tests {
     use super::*;
 
-    /// **Each conversion exports with its own filter, and every filter makes a
-    /// PDF.**
+    /// **Every conversion exports into a PDF, through one of the engine's
+    /// three writers.**
+    ///
+    /// The filters are not one per conversion and must not be: a filter names
+    /// which writer produces the PDF, and the engine has exactly three —
+    /// prose, a sheet, and slides. A `.docx` and an `.odt` are both prose and
+    /// leave by the same one. What would be wrong is a fourth filter appearing,
+    /// which would mean somebody had written down a writer this engine does not
+    /// have.
     #[test]
-    fn each_conversion_has_its_own_filter_into_a_pdf() {
+    fn every_conversion_exports_into_a_pdf_through_one_of_three_writers() {
         let filters: Vec<&str> = Conversion::EVERY.into_iter().map(filter).collect();
         assert!(filters.iter().all(|filter| filter.starts_with("pdf:")));
-        let mut unique = filters.clone();
-        unique.sort_unstable();
-        unique.dedup();
-        assert_eq!(unique.len(), filters.len());
+        let mut writers = filters.clone();
+        writers.sort_unstable();
+        writers.dedup();
+        assert_eq!(
+            writers,
+            [
+                "pdf:calc_pdf_Export",
+                "pdf:impress_pdf_Export",
+                "pdf:writer_pdf_Export"
+            ]
+        );
     }
 
     /// **A held-back conversion already has its filter, and it is one this

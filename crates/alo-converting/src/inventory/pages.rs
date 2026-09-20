@@ -88,18 +88,23 @@ pub const THE_PARTS: [&str; 15] = [
 ];
 
 /// Everything an [`Original`] holds, which an inventory of a Pages document
-/// would have to answer out of [`THE_PARTS`].
+/// would have to answer out of [`THE_PARTS`] — named as the six things on
+/// `Original` that answer them.
 ///
 /// The list is here so that whoever measures one knows when they are finished:
 /// an inventory that answered five of these and left the sixth would be a
 /// partial [`Original`], which [`crate::inventory::original`] does not have.
+///
+/// They are the accessors' own names rather than a sentence each, because a
+/// paraphrase of what `fonts` means is a second description of it, and the one
+/// that would go stale is this one.
 pub const WHAT_AN_INVENTORY_ANSWERS: [&str; 6] = [
-    "every family its text is set in",
-    "every field whose value depends on when or where it is open",
-    "every kind of content taken from elsewhere",
-    "whether it has comments",
-    "whether it has tracked changes",
-    "whether it carries macros",
+    "fonts",
+    "fields",
+    "linked",
+    "comments",
+    "tracked_changes",
+    "macros",
 ];
 
 /// How much of [`WHAT_AN_INVENTORY_ANSWERS`] a Pages document has answered.

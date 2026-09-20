@@ -13,7 +13,7 @@ use alo_opening::Macros;
 use crate::carried::{Field, FontName, Linked};
 use crate::conversion::Conversion;
 use crate::inventory::linked::{NotLinked, linked};
-use crate::inventory::{excel, pages, powerpoint, word};
+use crate::inventory::{excel, opendocument, pages, powerpoint, word};
 use crate::xml::NotXml;
 use crate::zip::{NotRead, Zipped};
 
@@ -89,9 +89,27 @@ impl Original {
             Conversion::PowerPointPresentation => {
                 powerpoint::inventory(&mut zipped, &mut original)?;
             }
+            Conversion::OpenDocumentText
+            | Conversion::OpenDocumentSpreadsheet
+            | Conversion::OpenDocumentPresentation => {
+                opendocument::inventory(&mut zipped, &mut original)?;
+            }
             Conversion::PagesDocument => pages::inventory(&mut zipped, &mut original)?,
         }
-        original.linked = linked(&mut zipped)?;
+        // Where a document says what it links differs by format. The three
+        // Office formats each keep a relationships part beside every part, and
+        // `linked` reads those; an OpenDocument writes the address into the
+        // element that shows the content, so its own reader has already
+        // gathered them and a relationships reader would find no part at all
+        // and report that nothing was linked.
+        if matches!(
+            conversion,
+            Conversion::WordDocument
+                | Conversion::ExcelWorkbook
+                | Conversion::PowerPointPresentation
+        ) {
+            original.linked = linked(&mut zipped)?;
+        }
         Ok(original)
     }
 
@@ -127,6 +145,11 @@ impl Original {
     /// It has tracked changes.
     pub(crate) fn has_tracked_changes(&mut self) {
         self.tracked_changes = true;
+    }
+
+    /// It shows content taken from somewhere else.
+    pub(crate) fn has_linked(&mut self, kind: Linked) {
+        self.linked.insert(kind);
     }
 
     /// Every family text is set in.
@@ -218,6 +241,84 @@ mod tests {
         assert!(powerpoint.fields().is_empty());
         assert!(powerpoint.linked().is_empty());
         assert!(powerpoint.comments());
+    }
+
+    /// **Each of the four OpenDocument files is inventoried as what it holds**
+    /// — `crates/alo-converting/tests/documents/README.md` says what that is,
+    /// and this is the same list read off the files.
+    ///
+    /// Two of these were only right after the files themselves said so.
+    /// `sample.ods` sets its text in Garamond and **no cell in it names a
+    /// style**: the family is on the column, so a reader that
+    /// looked only at what was open around the text found no family at all and
+    /// would have reported a sheet whose every font was substituted as having
+    /// lost nothing. And `sample.odp` keeps its comment as `officeooo:annotation`
+    /// rather than `office:annotation`, which is one local name and so costs
+    /// nothing here — but only because ADR 0039 §5's reader hands on local
+    /// names and never a prefix.
+    #[test]
+    fn each_real_opendocument_is_inventoried_as_what_it_holds() {
+        let text = Original::of(
+            &the_document("sample.odt"),
+            Conversion::OpenDocumentText,
+            Macros::NoneSeen,
+        )
+        .unwrap();
+        assert_eq!(families(&text), ["Garamond"]);
+        assert_eq!(text.fields(), &BTreeSet::from([Field::Date]));
+        assert_eq!(text.linked(), &BTreeSet::from([Linked::Picture]));
+        assert!(text.comments());
+        assert!(!text.tracked_changes());
+        assert!(!text.macros());
+
+        let sheet = Original::of(
+            &the_document("sample.ods"),
+            Conversion::OpenDocumentSpreadsheet,
+            Macros::NoneSeen,
+        )
+        .unwrap();
+        assert_eq!(families(&sheet), ["Garamond"]);
+        assert_eq!(sheet.fields(), &BTreeSet::from([Field::TheCurrentMoment]));
+        assert!(sheet.linked().is_empty());
+        assert!(sheet.comments());
+
+        let slides = Original::of(
+            &the_document("sample.odp"),
+            Conversion::OpenDocumentPresentation,
+            Macros::NoneSeen,
+        )
+        .unwrap();
+        assert_eq!(families(&slides), ["Garamond"]);
+        assert!(slides.fields().is_empty());
+        assert!(slides.linked().is_empty());
+        assert!(slides.comments());
+    }
+
+    /// **A macro library in an OpenDocument reaches the inventory**, and the
+    /// same document without one does not claim to carry macros.
+    ///
+    /// The pair is the test. `alo-opening` is what sees the library — a module
+    /// under `Basic/` that is not one of the two listings every OpenDocument
+    /// carries whether or not it has macros — and this holds that what it saw
+    /// arrives here, and that the otherwise identical document is not swept up
+    /// with it.
+    #[test]
+    fn a_macro_library_in_an_opendocument_is_inventoried() {
+        let with = Original::of(
+            &the_document("sample-with-a-macro.odt"),
+            Conversion::OpenDocumentText,
+            Macros::Inside,
+        )
+        .unwrap();
+        assert!(with.macros());
+
+        let without = Original::of(
+            &the_document("sample.odt"),
+            Conversion::OpenDocumentText,
+            Macros::NoneSeen,
+        )
+        .unwrap();
+        assert!(!without.macros());
     }
 
     /// **A document without the part its format cannot be without is not
