@@ -13,6 +13,11 @@ publish = false
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
 # Lock policy, regional wording, and bounded image/time engines. No network lookup.
+# Whether going back to the build before can be offered at all, and every
+# sentence the recovery screen shows — the offer, the two moments, and each
+# reason it cannot be offered. Read, never acted on:
+# `tests/recovery_source.rs` holds the screen to carrying no rollback out.
+alo-keeping-up = { path = "../alo-keeping-up" }
 alo-locking = { path = "../alo-locking" }
 alo-formats = { path = "../alo-formats" }
 alo-overlay = { path = "../alo-overlay" }

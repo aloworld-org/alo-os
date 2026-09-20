@@ -237,8 +237,63 @@ pub const ARRANGE_THIS_WINDOW: Word =
     Word::saying("access.arrange-this-window", "move this window")
         .noting("The button that moves a window to one side of the screen.");
 
+/// The screen a person reaches when the machine they were running will not do.
+pub const THE_RECOVERY_SCREEN: Word = Word::saying(
+    "access.the-recovery-screen",
+    "getting this machine started again",
+)
+.noting(
+    "The name of the whole screen a person reaches when the desktop will not start. Say it as \
+     what a person came here to do rather than as a name for the screen — somebody hearing it \
+     has just watched their machine fail and is looking for a way on.",
+);
+
+/// The version of its own system this machine is running now.
+pub const WHAT_IS_RUNNING: Word = Word::saying(
+    "access.what-is-running",
+    "the version of this machine you are running",
+)
+.noting(
+    "Names the line that shows which version of its own system this machine started. Only the \
+     name of the line: which version that is, is decided elsewhere and read after this.",
+);
+
+/// The version the one running took the place of.
+pub const WHAT_IT_REPLACED: Word =
+    Word::saying("access.what-it-replaced", "the version it replaced").noting(
+        "Names the line that shows which version the one running took the place of. Only the \
+         name of the line: which version that is, is decided elsewhere and read after this.",
+    );
+
+/// The list of what a person can choose when the machine will not start.
+pub const THE_CHOICES: Word = Word::saying("access.the-choices", "what you can choose").noting(
+    "The list of choices on the screen a person reaches when the desktop will not start. Nothing \
+     in it is chosen for them.",
+);
+
+/// Going back at the next restart.
+pub const GO_BACK_AT_THE_NEXT_RESTART: Word = Word::saying(
+    "access.go-back-at-the-next-restart",
+    "go back the next time this machine starts",
+)
+.noting(
+    "One of the two moments going back can happen at, named as a control a person moves to. It \
+     leaves the machine running as it is until somebody restarts it.",
+);
+
+/// Going back now, which restarts the machine.
+pub const GO_BACK_NOW: Word = Word::saying(
+    "access.go-back-now",
+    "go back now, restarting this machine",
+)
+.noting(
+    "The other of the two moments, named as a control a person moves to. Say the restarting part \
+     — it is what tells somebody who cannot see the screen that choosing this takes the machine \
+     away from under them.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 41] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -274,6 +329,12 @@ pub const EVERY_WORD: [Word; 35] = [
     A_SETTING,
     CLOSE_THIS_WINDOW,
     ARRANGE_THIS_WINDOW,
+    THE_RECOVERY_SCREEN,
+    WHAT_IS_RUNNING,
+    WHAT_IT_REPLACED,
+    THE_CHOICES,
+    GO_BACK_AT_THE_NEXT_RESTART,
+    GO_BACK_NOW,
 ];
 
 /// Why this crate's own list could not be declared.

@@ -62,6 +62,12 @@ pub enum RenderError {
     /// with a row cut or the dock missing.
     #[error("the desktop does not fit this output")]
     DesktopScene,
+    /// The recovery screen cannot hold the whole of the sentence it draws on
+    /// this output, or was laid out for a different one. The frame is refused
+    /// rather than drawn with half of a sentence about replacing the operating
+    /// system.
+    #[error("the recovery screen does not fit this output")]
+    RecoveryScene,
     /// Settings is open and cannot hold every sentence its focused section has
     /// to say and the focused row whole on this output, or was laid out for a
     /// different one. The frame is refused rather than drawn with a row cut.

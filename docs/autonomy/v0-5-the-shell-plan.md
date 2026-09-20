@@ -413,31 +413,48 @@ three is finished and the line was never moved.
 
 ### 13. The recovery and rollback screen
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-20: the code only.** `crates/alo-shell/src/recovery_screen.rs`,
+`recovery_keys.rs`, `recovery_seat.rs`, `recovery_raster.rs`, `recovery_paint.rs`,
+`recovery_reached.rs`, `nested_recovery.rs` and `tests/recovery_source.rs`, 24
+tests of its own.
 
-**Unblocked 2026-09-20.** It read *blocked on
-`v0-5-the-machine-keeps-itself-plan.md` task 3*, *Back to yesterday's machine*,
-which is done — going back is decided and built, so the screen that offers it
-has something to offer.
+**The decision it waited on was made in the same change.** `alo-access` had
+nothing to say about this screen — its own
+`tests/every_surface_the_shell_draws_is_read_aloud.rs` reads `alo-shell`'s
+exports and failed the workspace on `["RecoveryFrame", "RecoveryScreen"]`, which
+is that guard working: a screen a person cannot be told about is a screen they
+cannot use. `alo_access::Surface::Recovery` now names the controls — a Window, a
+Label for what is running, a Label for what it replaced, a List of the choices
+and a Button for each of the two moments — with the words for them and its place
+in `reaching`'s focus order, **before** sign-in, because this is the surface that
+exists when the workspace does not. That crate names the controls and none of the
+sentences, which is its own pattern and not a new one. **No real desktop has ever
+failed to start on this machine**: the desktop in the test is made to refuse,
+which takes the same road a real failure would and is not one.
 
-`ROADMAP.md` v0.5: *Recovery and rollback screen — reachable when the workspace is
-not.*
+**A finding, independent of that one:** *what is running* and *what it
+replaced* have **no sentence in any crate**. `Deployments` has no `said`,
+`Since` has no words at all, and `alo-keeping-up`'s own rule is that a person is
+told an update is ready and **never which build it is** — so drawing them would
+be the drawing crate deciding, which this plan refuses. That half of the
+acceptance waits on a word in `alo-keeping-up`, exactly as task 5's clock and
+battery waited for task 7, and is written down as a finding in
+`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` for the plan that owns it.
+The two lines are named in the accessibility tree and empty until then, so a
+reader announces a line with nothing in it rather than a line nobody knows is
+there. Everything that crate *does* word is drawn: the
+offer, the two moments, and each reason going back cannot be offered.
 
-- **Acceptance:** a screen reachable before sign-in and when the desktop cannot
-  start draws `alo-keeping-up`'s decisions — what is running, what it replaced, and
-  *go back to yesterday's machine* when a rollback is possible — and says why when it
-  is not, in its words; it is operable by keyboard alone; it touches nothing a person
-  owns; and a test starts the shell with the desktop made to fail and finds the
-  screen.
-- **Constraint:** nothing decided here; a rollback is `alo-keeping-up`'s act carried
-  out through the broker (`v0-5-the-broker-and-the-disk-plan.md`).
+Evidence, decisions and both findings in
+`docs/autonomy/updates/the-recovery-and-rollback-screen.md`. **Depends on:** 1.
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 10, 11, 12 and 13. **Tasks 8 and 9 are done**
-(2026-09-18 and 2026-09-20), so the lock screen and a second display are both
-there for the walk to use; cleared here by the lane that finished each, because
-a blocker that outlives its cause makes takeable work look untakeable.
+**Status:** blocked — on tasks 10, 11 and 12. **Tasks 8, 9 and 13 are done**
+(2026-09-18, 2026-09-20 and 2026-09-20), so the lock screen, a second display and
+the recovery screen are all there for the walk to use. Narrowed here by the lane
+that finished each, because a blocker that outlives its cause makes takeable work
+look untakeable.
 **Depends on:** 8, 9, 10, 11, 12, 13.
 
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second

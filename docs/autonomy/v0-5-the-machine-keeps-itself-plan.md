@@ -329,6 +329,21 @@ says the machine is as it was. One dependency added, `alo-recounting` as a
 dev-dependency of `alo-updating`; no `src/` changed anywhere. Report:
 `docs/autonomy/updates/what-a-person-is-told-before-and-after.md`.
 
+**Finding, 2026-09-20 — two of the things a person is told have no sentence.**
+Handed in by the shell plan's task 13 and by `alo-access`'s tree. *What this
+machine is running* and *what it replaced* are drawn on the recovery screen and
+named in the accessibility tree — `access.what-is-running` and
+`access.what-it-replaced` — and **no crate words either**: `Deployments` has no
+`said`, and `Since` has no words at all. So each of those two lines has a name a
+screen reader announces and **no sentence to read after it**. Filling it is this
+plan's: a drawing crate that wrote those sentences would be deciding what a
+person is told, which is what this plan exists to refuse. It is not free either
+— this plan's own rule is that a person is told an update is ready and **never
+which build it is**, so whatever those two say must say it without naming a
+digest or a deployment. Until then the two lines are named and empty, on
+purpose, and a reader announces a line with nothing in it rather than a line
+nobody knows is there.
+
 The four promises above end in sentences, and the sentences are the product:
 *an update is ready*, *this will not interrupt you*, *you are running this,
 you were running that*, *this can be undone*, *this cannot*.

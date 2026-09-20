@@ -107,7 +107,11 @@ pub(crate) struct Measure {
 
 impl Measure {
     /// Measures for this scale.
-    fn of(scale: TextScale) -> Self {
+    ///
+    /// Shared with the recovery screen (`crate::recovery_raster`), which is the
+    /// same panel drawn on the day the machine would not start: a person should
+    /// not meet a surface measured differently from every other one.
+    pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
         }
