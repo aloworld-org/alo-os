@@ -57,7 +57,12 @@ pub fn without_printers() -> Carriers<Nothing, Nothing> {
         Network::against(Nothing),
         Proxy::handed_over(
             Path::new("/nonexistent-printer-test/wanted.json"),
+            Path::new("/nonexistent-printer-test/proxy-password"),
             Path::new("/nonexistent-printer-test/proxy.json"),
+            alo_proxy::TheMachinesCredentials::at(
+                Path::new("/nonexistent-printer-test/credstore.encrypted"),
+                Path::new("/nonexistent-printer-test/systemd-creds"),
+            ),
             alo_broker::our_user(),
         ),
         Storage::against(

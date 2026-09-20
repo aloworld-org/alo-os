@@ -561,7 +561,41 @@ is the property the store was chosen for.
 
 ### 13. A person's own proxy password, set on the machine that is theirs
 
-**Status:** ready. Written 2026-09-20 by task 12, which found it. ADR 0059
+**Status:** **Done, 2026-09-20.** The decision came first and is
+`docs/decisions/0060-a-persons-own-proxy-password-is-set-with-the-proxy-in-one-act.md`
+(accepted 2026-09-20), because the broker's own door
+(`crates/alo-broker`) is the broker-and-disk plan's and still has unfinished
+tasks — so the answer had to be *no twelfth verb*, which is also the better
+answer: `network.set-proxy` carries the proxy **and the password it signs in
+with**, one act under one approval, the credential written **first** and the
+machine's proxy file only if that succeeded. A machine where the write fails is
+therefore left exactly as it was rather than holding a proxy it cannot sign in
+to, which two verbs could not have promised without a transaction across two
+approvals (ADR 0001 §5). The useful corollary is that the proxy file naming
+where its password is kept **is** the machine's statement that one is set, so a
+settings panel needs no second place to look and nothing reads a credential
+back. `alo_proxy::TheMachinesCredentials` (`crates/alo-proxy/src/provisioning.rs`)
+is the writer beside task 12's reader — `systemd-creds`, started directly with a
+cleared environment and the password on its **standard input**, written beside
+its place, `0600`, and renamed over. Two decisions are worth the line here:
+alo OS reserves **one** name, `alo_proxy::THE_PERSONS_PROXY_PASSWORD`
+(`the-proxy-on-this-machine`), because `LoadCredentialEncrypted=` is a static
+line in a unit file and a name a person typed would reach no unit — and the
+broker refuses every other name, which is also what stops a root process writing
+a file somebody else named into the credential store; and the bytes handed over
+carry **thirty-two bytes of the kernel's randomness** in front of the password,
+because the identity that crosses the door is written into the broker's record
+and a digest of a password is a password. A person on a machine an organisation
+manages is refused **before anything is handed over**, in
+`alo_proxy::NotChanged::AnOrganisationSetIt`'s existing sentence, so the password
+they typed never leaves the process they typed it into. What is not here, and is
+named rather than implied: the `LoadCredentialEncrypted=` lines in `image/`,
+which are the installer lane's — ADR 0060 §2 fixes the name so they can be
+written once; and the settings panel itself, which is `alo-shell`'s and which
+this plan may not touch. The report is
+`docs/autonomy/updates/a-persons-own-proxy-password.md`. **Depends on:** 12.
+
+**Originally written 2026-09-20 by task 12, which found it:** ADR 0059
 settled where a machine-wide proxy password lives — the machine's own
 credentials, provisioned to a unit — and settled it for the case that pays for
 it: an organisation writes the credential with the machine, alongside the
@@ -572,7 +606,6 @@ broker rather than by any agent — so a person on their own machine may already
 set a proxy in Settings and, today, may not give it the password it asks for
 without opening a terminal and running `systemd-creds` by hand. That is a
 settings panel with a field that works and a field beside it that does not.
-**Depends on:** 12.
 
 *Machine-wide, and honoured* (`docs/features.md`, v0.5) — on the person's own
 machine as much as on a company's.
@@ -603,3 +636,47 @@ machine as much as on a company's.
   files. ADR 0059 names them exactly and they are the installer lane's, as every
   line in `image/` is; this plan hands them over as data rather than editing
   them, the way task 2 handed over `shipped.toml`.
+
+### 14. The proxy a person set, read from the machine's file by the roads that install
+
+**Status:** ready. Written 2026-09-20 by task 13, which found it — and the
+contract has named it since the network task: *no road out reads this file yet;
+`alo-software`, `alo-updating` and `alo-models` are handed a `TheProxy` by their
+callers* (`docs/contracts/machine-proxy-file.md`, **What is not here**). Task 4
+decided the setting, task 11 carried it to a turn's question and task 13 gave it
+a password a person can set — and **the two roads this plan owns still take
+whichever proxy their caller happens to pass them.**
+`alo_software::TheRentedTool::taking` is handed an `alo_proxy::Carried`, and
+nothing in the workspace builds one for it from `/etc/alo-proxy/proxy.json`. On
+a company network that is a machine whose person set a proxy in Settings and
+whose applications still install straight out — or do not install at all, which
+is the same bug read from the other end. `alo-looking-once` already reads that
+file (`crates/alo-looking-once/src/road.rs`) and is the shape to follow.
+**Depends on:** 4, 12.
+
+*Machine-wide, and honoured by applications* (`docs/features.md`, v0.5) — a
+setting nothing reads is neither.
+
+- **Acceptance:** installing an application and updating one take the way
+  `alo_proxy::the_way` decides from the `alo_proxy::Kept` the **machine's own
+  file** holds, read through `alo_networks::proxy_file::kept_on_this_machine`
+  and signed in to through `alo_proxy::signed_in` and nothing else, with a test
+  that puts each errand on a machine whose file names a proxy and finds the
+  rented tool configured with it — and the same errand on a machine with no
+  file going straight out; a machine whose file **is not one this machine
+  wrote** refuses the errand in words rather than reading it as *no proxy*,
+  which on a company network is a machine that silently goes nowhere; a proxy
+  that asks who this machine is is signed in to with the password task 13 lets a
+  person set, held by a test that reads the first line on the wire rather than
+  an address; and the **egress indicator still names where the errand is really
+  going**, never the proxy, held by a test that reads the line.
+- **Constraint:** nothing here re-decides which way a road goes — `alo-proxy`
+  decides and this is the crate that asks it — and nothing here reads the
+  machine's description: an organisation's proxy reaches the file through the
+  broker, and how it gets there is not this task's. `alo-updating` and
+  `alo-models` are **not** this plan's crates and are not touched: this task is
+  `alo-software`'s two roads, and what it leaves owed for the other two is
+  named in its report the way this one named it.
+- **Not this task:** a road for an application's own traffic. What an installed
+  application is given is `alo_proxy::Published` and the portal
+  (`alo_proxy::looked_up`), which task 4 built; this is alo OS's own errands.

@@ -30,6 +30,12 @@ alo-brokerd = { path = "../alo-brokerd" }
 # The composite carrier's other services refuse any accidental printer dispatch.
 alo-drives = { path = "../alo-drives" }
 alo-networks = { path = "../alo-networks" }
+# The proxy carrier in that composite is told where a machine-wide proxy
+# password would be written (ADR 0060). Named only by the shared broker fixture
+# this crate's test includes, and pointed at a directory that does not exist:
+# nothing here writes a credential, and a printer change that reached one would
+# be the failure the fixture exists to catch.
+alo-proxy = { path = "../alo-proxy" }
 
 [lints]
 workspace = true

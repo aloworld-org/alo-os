@@ -31,6 +31,14 @@ thiserror = { workspace = true }
 # path of its own to invent.
 ureq = { workspace = true }
 
+# The kernel's randomness, for one thing: the nonce a person's proxy password is
+# handed to the broker under (ADR 0060 §3). The identity that crosses the
+# broker's door is written into its record, and a digest of a password is a
+# password — so the bytes digested carry thirty-two random bytes in front of
+# them. One narrow call, no fallback generator, and the workspace's one door to
+# the kernel's randomness.
+getrandom = { workspace = true }
+
 # Nothing else, and the absence is the argument. No script engine: alo OS does
 # not evaluate anybody's script in a process of its own, and the one thing that
 # leaves the machine on this crate's account — an automatic configuration — is

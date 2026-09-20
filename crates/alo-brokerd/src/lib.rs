@@ -11,7 +11,7 @@
 //! | [`MachinesRecord`] | The broker's record file, written before every answer |
 //! | [`Carriers`] | Which verbs this machine carries out, and the refusal for every other, by name |
 //! | [`Network`] | The network's three verbs, carried out against what the network manager reports now |
-//! | [`Proxy`] | Setting the machine's proxy to the one a person handed over, exactly |
+//! | [`Proxy`] | Setting the machine's proxy, and the password it signs in with, to the ones a person handed over, exactly |
 //! | [`Storage`] | A removable drive mounted for the signed-in person, or ejected, against what the disk service reports now |
 //! | [`Printers`], [`PrintService`] | The printers' three verbs, carried out against what the printing service reports now |
 //! | `alo-brokerd.service` | The unit, beside this manifest, held to what the process expects by a test |
@@ -47,6 +47,8 @@
 mod carrying;
 #[cfg(unix)]
 mod describing;
+#[cfg(unix)]
+mod handed_over;
 mod network;
 mod printers;
 mod printing_service;

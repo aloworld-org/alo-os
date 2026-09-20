@@ -43,12 +43,15 @@ use alo_changing_network::{
     set_proxy_by_hand,
 };
 use alo_drives::{Drive, DriveService, Drives, Filesystem, LoginName, TheDrives};
-use alo_networks::proxy_file::kept_on_this_machine;
+use alo_networks::proxy_file::{kept_on_this_machine, machines};
 use alo_networks::{
     NetworkName, NetworkService, Networks, NotAnswering, NotDone, Primary, Protection, Saved,
     TheNetworks, Visible,
 };
-use alo_proxy::{Kept, ProxyAddress, SpokenTo, TheProxy};
+use alo_proxy::{
+    Kept, Password, ProxyAddress, SpokenTo, THE_PERSONS_PROXY_PASSWORD, TheProxy,
+    WhereThePasswordIs,
+};
 use alo_record::{AtTheBroker, Happened, Record};
 use alo_strings::{Strings, Vocabulary};
 
@@ -139,6 +142,7 @@ fn a_flat_on_a_cable() -> TheNetworks {
 fn in_english() -> Strings {
     let mut vocabulary = Vocabulary::empty();
     alo_capability::declare_into(&mut vocabulary).unwrap();
+    alo_proxy::declare_into(&mut vocabulary).unwrap();
     alo_changing_network::declare_into(&mut vocabulary).unwrap();
     Strings::of(vocabulary)
 }
@@ -180,6 +184,12 @@ struct Running {
     reached: TheBroker,
     /// The machine's proxy file.
     machines_proxy: PathBuf,
+    /// The machine's credential store.
+    store: PathBuf,
+    /// Where a person hands a proxy over.
+    wanted: PathBuf,
+    /// Where a person hands its password over.
+    wanted_password: PathBuf,
     /// Where its approving key is, for a test that plants another.
     key: PathBuf,
     /// The broker's thread, which hands back what it wrote down.
@@ -197,12 +207,20 @@ fn a_broker(what: &str, service: &Standing, how_many: usize) -> Running {
     std::fs::create_dir_all(here.join("wanted")).unwrap();
     let (door, key) = (here.join("door.sock"), here.join("approving.key"));
     let wanted = here.join("wanted").join("proxy.json");
+    let wanted_password = here.join("wanted").join("proxy-password");
     let machines_proxy = here.join("proxy.json");
+    let store = here.join("credstore.encrypted");
     let approving = hand_over_a_fresh_key(&key, a_group()).unwrap();
     let listening = Listening::at(&door, a_group()).unwrap();
     let carriers = Carriers::of(
         Network::against(service.clone()),
-        Proxy::handed_over(&wanted, &machines_proxy, our_user()),
+        Proxy::handed_over(
+            &wanted,
+            &wanted_password,
+            &machines_proxy,
+            alo_proxy::TheMachinesCredentials::at(&store, &the_tool()),
+            our_user(),
+        ),
         Storage::against(NoDrives, &here.join("passwd"), our_user()),
     );
     let answering = std::thread::spawn(move || {
@@ -218,8 +236,11 @@ fn a_broker(what: &str, service: &Standing, how_many: usize) -> Running {
         broker.recording().clone()
     });
     Running {
-        reached: TheBroker::at(&door, &key, &wanted, our_user()),
+        reached: TheBroker::at(&door, &key, &wanted, &machines_proxy, our_user()),
         machines_proxy,
+        store,
+        wanted,
+        wanted_password,
         key,
         answering,
     }
@@ -471,7 +492,7 @@ fn a_person_in_settings_changes_the_network_through_the_same_verbs() {
 
     let proxy =
         TheProxy::one(ProxyAddress::checked(SpokenTo::Http, "proxy.example.com", 3128).unwrap());
-    set_proxy_by_hand(&proxy, &running.reached, now).unwrap();
+    set_proxy_by_hand(&proxy, None, &running.reached, now).unwrap();
 
     assert_eq!(
         service.asked(),
@@ -486,6 +507,107 @@ fn a_person_in_settings_changes_the_network_through_the_same_verbs() {
         kept(&running.answering.join().unwrap()),
         [(Some(BY_HAND), None); 4]
     );
+}
+
+/// **A person gives their own machine's proxy the password it asks for, from
+/// the same place they set the proxy** — one approval, through the real door,
+/// and the credential is written where ADR 0059 says it lives.
+///
+/// The proxy file the act leaves behind names where the password is kept, which
+/// is the machine's own statement that one is set (ADR 0060 §1); nothing
+/// anywhere reads it back out.
+#[test]
+fn a_person_gives_their_own_machines_proxy_the_password_it_asks_for() {
+    let service = Standing::reporting(a_flat_on_wifi());
+    let running = a_broker("a-password", &service, 1);
+    let now = SystemTime::now();
+    let proxy = signing_in_on_this_machine();
+    let password = Password::typed("hunter2").unwrap();
+
+    let set = set_proxy_by_hand(&proxy, Some(&password), &running.reached, now);
+    let credential = running.store.join(THE_PERSONS_PROXY_PASSWORD);
+    if the_tool().is_file() && set.is_ok() {
+        let machines = std::fs::read(&running.machines_proxy).unwrap();
+        assert_eq!(
+            kept_on_this_machine(&machines).unwrap(),
+            Kept::by_this_person(proxy)
+        );
+        let held = std::fs::read(&credential).unwrap();
+        assert!(
+            !held.windows(7).any(|window| window == b"hunter2"),
+            "the store holds the password itself"
+        );
+    } else {
+        // A machine with no `systemd-creds`, or one that cannot make a host
+        // key, writes no credential — and then sets no proxy either, rather
+        // than leaving one that cannot be signed in to.
+        assert!(set.is_err());
+        assert!(!running.machines_proxy.exists());
+        assert!(!credential.exists());
+    }
+
+    // Either way the password the person typed is gone from the folder it was
+    // handed over in.
+    assert!(!running.wanted_password.exists());
+    drop(running.answering.join().unwrap());
+}
+
+/// **A person on a machine an organisation manages is refused in the sentence
+/// naming who can change it, and hands nothing over at all** — so the password
+/// they typed never leaves the process they typed it into (ADR 0060 §5).
+#[test]
+fn a_managed_machine_refuses_a_persons_proxy_before_anything_is_handed_over() {
+    let service = Standing::reporting(a_flat_on_wifi());
+    let running = a_broker("managed", &service, 0);
+    let theirs = Kept::by_an_organisation(TheProxy::one(
+        ProxyAddress::checked(SpokenTo::Http, "their-proxy.example.com", 3128).unwrap(),
+    ));
+    std::fs::write(&running.machines_proxy, machines(&theirs).unwrap()).unwrap();
+
+    let refused = set_proxy_by_hand(
+        &signing_in_on_this_machine(),
+        Some(&Password::typed("hunter2").unwrap()),
+        &running.reached,
+        SystemTime::now(),
+    )
+    .unwrap_err();
+    assert_eq!(refused, NotChanged::AnOrganisationSetTheProxy);
+
+    let said = refused.said(&in_english());
+    assert!(!said.is_a_bug(), "{said}");
+    assert!(said.text().contains("Ask whoever manages it"), "{said}");
+
+    assert!(
+        !running.wanted_password.exists(),
+        "a password was handed over"
+    );
+    assert!(!running.wanted.exists(), "a proxy was handed over");
+    assert_eq!(
+        kept_on_this_machine(&std::fs::read(&running.machines_proxy).unwrap()).unwrap(),
+        theirs
+    );
+    assert!(kept(&running.answering.join().unwrap()).is_empty());
+}
+
+/// A proxy that signs in where a person's own machine keeps a password.
+fn signing_in_on_this_machine() -> TheProxy {
+    TheProxy::one(
+        ProxyAddress::checked(SpokenTo::Http, "proxy.example.com", 3128)
+            .unwrap()
+            .signing_in("anna", WhereThePasswordIs::on_this_machine())
+            .unwrap(),
+    )
+}
+
+/// What encrypts a credential on the machine running these tests — the real
+/// tool where there is one, and a path there is nothing at otherwise.
+fn the_tool() -> PathBuf {
+    let at = PathBuf::from(alo_proxy::THE_TOOL);
+    if at.is_file() {
+        at
+    } else {
+        PathBuf::from("/nowhere-at-all/systemd-creds")
+    }
 }
 
 /// **No broker, or no key, changes nothing**, and says the part of the machine

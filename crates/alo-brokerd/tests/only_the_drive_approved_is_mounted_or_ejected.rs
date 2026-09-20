@@ -185,7 +185,12 @@ fn a_broker(
             Network::against(NoNetworks),
             Proxy::handed_over(
                 Path::new("/nonexistent-alo-brokerd/wanted.json"),
+                Path::new("/nonexistent-alo-brokerd/proxy-password"),
                 Path::new("/nonexistent-alo-brokerd/proxy.json"),
+                alo_proxy::TheMachinesCredentials::at(
+                    Path::new("/nonexistent-alo-brokerd/credstore.encrypted"),
+                    Path::new("/nonexistent-alo-brokerd/systemd-creds"),
+                ),
                 our_user(),
             ),
             Storage::against(

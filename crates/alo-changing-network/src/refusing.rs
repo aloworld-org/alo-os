@@ -38,6 +38,14 @@ pub enum NotChanged {
     CouldNotFinish,
     /// The proxy a person chose was not set.
     ProxyNotSet,
+    /// The organisation that manages this machine set its proxy, so a person's
+    /// is not set over it — and neither is a password for it.
+    ///
+    /// **`alo-proxy`'s own sentence**, said here rather than written again
+    /// (ADR 0060 §5): the useful half of it is the second one, which says who
+    /// can change it. Nothing was handed over, so a password typed on a managed
+    /// machine never left the process it was typed into.
+    AnOrganisationSetTheProxy,
     /// The machine has stopped writing down changes, so it makes none.
     NotBeingKept,
     /// Nothing was there to make the change.
@@ -60,6 +68,9 @@ impl NotChanged {
             Self::ApprovalNotAccepted => (words::APPROVAL_NOT_ACCEPTED, None),
             Self::CouldNotFinish => (words::COULD_NOT_FINISH, None),
             Self::ProxyNotSet => (words::PROXY_NOT_SET, None),
+            Self::AnOrganisationSetTheProxy => {
+                return alo_proxy::NotChanged::AnOrganisationSetIt.said(strings);
+            }
             Self::NotBeingKept => (words::NOT_BEING_KEPT, None),
             Self::NothingMakesChanges => (words::NOTHING_MAKES_CHANGES, None),
         };
@@ -147,6 +158,7 @@ mod tests {
             NotChanged::ApprovalNotAccepted,
             NotChanged::CouldNotFinish,
             NotChanged::ProxyNotSet,
+            NotChanged::AnOrganisationSetTheProxy,
             NotChanged::NotBeingKept,
             NotChanged::NothingMakesChanges,
         ] {
@@ -169,6 +181,24 @@ mod tests {
             "This machine is connected to Home"
         );
         assert!(!proxy_set_said(&strings).is_a_bug());
+    }
+
+    /// **A person on a machine an organisation manages reads `alo-proxy`'s own
+    /// sentence**, naming who can change it — not a second one written here and
+    /// not *the proxy was not set* (ADR 0060 §5).
+    #[test]
+    fn a_managed_machine_is_refused_in_the_sentence_that_names_who_set_it() {
+        let strings = in_english();
+        let said = NotChanged::AnOrganisationSetTheProxy.said(&strings);
+        assert_eq!(
+            said.text(),
+            alo_proxy::NotChanged::AnOrganisationSetIt
+                .said(&strings)
+                .text()
+        );
+        assert!(said.text().contains("organisation"), "{said}");
+        assert!(said.text().contains("Ask whoever manages it"), "{said}");
+        assert_ne!(said.text(), NotChanged::ProxyNotSet.said(&strings).text());
     }
 
     /// **Every answer the broker gives means one thing**, and only `carried` is

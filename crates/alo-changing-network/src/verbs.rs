@@ -401,8 +401,14 @@ mod tests {
         }
     }
 
-    /// **No verb configures a VPN, sets a proxy, lists networks or runs
-    /// anything**, so an agent can ask for none of them here.
+    /// **No verb configures a VPN, sets a proxy or its password, lists networks
+    /// or runs anything**, so an agent can ask for none of them here.
+    ///
+    /// The proxy's password is on this list for ADR 0060's sake as well as ADR
+    /// 0049 §3's: a person may now give their own machine's proxy the password
+    /// it asks for, and **no agent reaches any of it**. There are three verbs,
+    /// they are the three below, and the whole list is held to three by
+    /// `three_verbs_every_one_a_change_that_needs_no_grant_and_says_why`.
     #[test]
     fn no_verb_configures_a_vpn_sets_a_proxy_or_lists_networks() {
         let verbs = network_verbs().unwrap();
@@ -411,15 +417,22 @@ mod tests {
             "connect_vpn",
             "add_vpn",
             "set_proxy",
+            "set_proxy_password",
+            "set_proxy_credential",
+            "sign_in_to_proxy",
             "list_networks",
             "scan_networks",
             "join_network_with_password",
             "set_network_password",
         ] {
-            assert!(matches!(
-                verbs.call(name, &[]),
-                Err(CallError::NoSuchVerb { .. })
-            ));
+            assert!(
+                matches!(verbs.call(name, &[]), Err(CallError::NoSuchVerb { .. })),
+                "{name}"
+            );
+        }
+        assert_eq!(verbs.len(), EVERY_VERB.len(), "a fourth verb was declared");
+        for name in EVERY_VERB {
+            assert!(!name.contains("proxy"), "{name}");
         }
     }
 

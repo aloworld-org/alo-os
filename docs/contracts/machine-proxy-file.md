@@ -60,6 +60,47 @@ Then it writes this file with `set_by` `this-person`, and removes the handed-ove
 one. In every other case this file is left exactly as it was, and the broker's
 record says `not-carried`.
 
+## And how its password reaches the machine's own credentials
+
+**Added 2026-09-20 by ADR 0060, additively: a proxy handed over with no password
+is asked for under exactly its own bytes, as above, and nothing here changes for
+a machine that does not use it.**
+
+A person on their own machine may give their proxy the password it asks for,
+from the same place they set the proxy. It is a second handed-over file, in the
+same folder, `0600` and the person's:
+
+| | |
+|---|---|
+| Path | `/run/alo-broker/wanted/proxy-password` (`alo_networks::proxy_password::THE_WANTED_PASSWORD`) |
+| Holds | 32 bytes of the kernel's randomness, then the password (`alo_proxy::provisioning::handed_over`) |
+| Asked for as | the SHA-256 of the proxy's bytes **followed by** these (`alo_networks::proxy_password::handed_over_together`) |
+
+The nonce is there because the identity is written into the broker's record and
+a digest of a password is a password (ADR 0060 §3).
+
+**One act, one approval.** There is no second verb: `network.set-proxy` writes
+the credential **first** and this file only if that succeeded, so a machine is
+never left with a proxy set that it cannot sign in to. The broker sets it only
+when, beside the four above:
+
+5. the proxy signs in under `the-proxy-on-this-machine`
+   (`alo_proxy::THE_PERSONS_PROXY_PASSWORD`) — the one name a person's own
+   machine keeps a proxy password by, which is what a unit file's static
+   `LoadCredentialEncrypted=` line names (ADR 0060 §2). Any other name is
+   refused and nothing is written;
+6. the credential is written into `/etc/credstore.encrypted`, `0600` and root's,
+   by `systemd-creds` and by no encryption of ours (ADR 0011).
+
+The handed-over password is removed whichever way the act went, refusals
+included.
+
+**How a settings panel knows a password is set:** this file names where the
+password is kept, and the broker writes this file only after the credential is
+written. So `proxy.http.password` (or `proxy.https.password`) being
+`the-proxy-on-this-machine` **is** the machine's statement that one is set. It
+is never read back out; replacing it is giving a new one.
+
 ## What is not here
 
 - **An organisation's proxy** is read from the machine description by
