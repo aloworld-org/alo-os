@@ -3,9 +3,20 @@
 **Status:** **proposed, 2026-09-19.** Written by task 6 of
 `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Enrolled at install, and
 recovered*), which cannot be finished as its acceptance is written: the
-acceptance asks for a software TPM in a virtual machine, and **no machine in
-this fleet can present a TPM device to anything**, measured below. The code that
-task 6 would write waits on this, and
+acceptance asks for a software TPM in a virtual machine, and on the machine this
+was written on there was no road to one, measured below.
+
+> **Correction, 2026-09-20.** This header said **no machine in this fleet can
+> present a TPM device to anything**. That was true of the third PC and is
+> **false of the development PC**, where a guest was given a TPM 2.0 the same
+> day and `systemd-cryptenroll --tpm2-device=list` named it (measurement 7).
+> The correction changes a fact, not the decision: **option C stands unchanged**,
+> and measurement 8 is why — the chip a guest gets reports its manufacturer as
+> *IBM / SW* and carries the simulator's own lockout defaults, so it is still not
+> the chip ADR 0054's PIN argument rests on. The certified laptop is still where
+> the three promises get shown.
+
+The code that task 6 would write waits on this, and
 `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` is what
 makes the waiting visible rather than remembered — it now fails the day this
 line stops saying *proposed*.
@@ -35,11 +46,13 @@ and where does each half of it run?**
 
 ## What is true today, measured rather than remembered
 
-All of it on the third PC (`AGAI01`), Windows Server 2022 with WSL 2 Ubuntu,
-2026-09-19, in the same pinned base ADR 0054 was measured in
-(`quay.io/fedora/fedora-bootc`, local image `b035260f985f`).
+Measurements 1–6 are on the third PC (`AGAI01`), Windows Server 2022 with WSL 2
+Ubuntu, 2026-09-19, in the same pinned base ADR 0054 was measured in
+(`quay.io/fedora/fedora-bootc`, local image `b035260f985f`). **Measurements 7–9
+are on the development PC, 2026-09-20, and are what the correction above rests
+on.** Each says which machine it is from, because that is the whole difference.
 
-1. **There is no TPM device on this machine, and the kernel cannot be given
+1. **There is no TPM device on the third PC, and the kernel cannot be given
    one.** `/dev/tpm*` does not exist. The WSL kernel
    (`6.18.33.2-microsoft-standard-WSL2`) is built with `CONFIG_TCG_TPM=y` and
    **`# CONFIG_TCG_VTPM_PROXY is not set`**, so `/dev/vtpmx` does not exist and
@@ -92,6 +105,60 @@ All of it on the third PC (`AGAI01`), Windows Server 2022 with WSL 2 Ubuntu,
    `cryptsetup luksAddKey`, and `systemd-cryptenroll` is used for the recovery
    key and the chip and nothing else. Written into `docs/quirks.md`.
 
+### On the development PC, 2026-09-20
+
+Intel Core Ultra 7 155U, Windows 11 with WSL 2 Ubuntu, kernel
+`6.18.33.2-microsoft-standard-WSL2`, `qemu-system-x86_64` 10.2.1, `swtpm` 0.10.1.
+Guest: Ubuntu 24.04.5, kernel `6.8.0-139-generic`, booted under OVMF.
+
+7. **A guest on this machine can be given a TPM 2.0, and the enrolment tool
+   names it.** The host is unchanged from measurement 1 in the one respect that
+   matters — `/dev/vtpmx` still does not exist and `modprobe tpm_vtpm_proxy`
+   still answers *Module not found* — and that turns out **not to be the
+   obstacle it was read as**. `vtpm_proxy` exposes a software TPM to the *host*;
+   a guest is given one by QEMU's `emulator` backend over a `swtpm` socket,
+   which needs no kernel module at all. With
+   `-tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0` the
+   guest has `/dev/tpm0` and `/dev/tpmrm0`, `/sys/class/tpm/tpm0` reports major
+   version **2**, and inside it:
+
+   ```
+   $ sudo systemd-cryptenroll --tpm2-device=list
+   PATH        DEVICE      DRIVER
+   /dev/tpmrm0 MSFT0101:00 tpm_tis
+   exit=0
+   ```
+
+   That is measurement 1's *No suitable TPM2 devices found* answered the other
+   way, on a different machine. `tpm2_pcrread sha256:7` returns a real value
+   (`0x127C18EB…`), so PCR 7 — the one ADR 0054 seals to — exists and is
+   readable here. **One caution that cost time:** systemd 255 is built `+TPM2`
+   but loads libtss2 at runtime, so before `tpm2-tools` is installed the same
+   command answers *TPM2 support is not installed* with a chip sitting right
+   there. That sentence is about the userspace, not the hardware.
+8. **The chip a guest gets says what it is, and it is not a chip.**
+   `tpm2_getcap properties-fixed` reports `TPM2_PT_MANUFACTURER` **"IBM"** and
+   `TPM2_PT_VENDOR_STRING_1` **"SW"**. Its dictionary-attack parameters are the
+   simulator's defaults — `TPM2_PT_MAX_AUTH_FAIL 0x3`,
+   `TPM2_PT_LOCKOUT_INTERVAL 0x3E8`, `TPM2_PT_LOCKOUT_RECOVERY 0x3E8`. **This is
+   measurement 3 confirmed from the inside rather than argued from outside.**
+   ADR 0054's six-character PIN is worth what it is worth because *a real chip's
+   lockout counts wrong PINs the way its manufacturer shipped it*; what this
+   guest offers is three failures and a thousand-second interval because that is
+   what `swtpm` compiles in. A lawyer, a customer or an auditor asking *whose
+   lockout* gets the answer *IBM's software one*. **So option C is not weakened
+   by this machine existing — it is evidenced by it.**
+9. **Hardware virtualisation is real here, so option A's cost is no longer an
+   hour.** `/proc/cpuinfo` shows `vmx`, `/dev/kvm` exists, and the same Alpine
+   3.21 image reached a login prompt in **12.4 s under `-accel kvm` against
+   27.7 s under `-accel tcg`**; the Ubuntu guest above went from cold start to
+   an SSH login in **23 s**. Measurement 2's *every guest here is TCG* and the
+   3779-second acceptance are facts about the third PC and **must not be quoted
+   as facts about this fleet**. This does not change the recommendation — a fast
+   simulator is still a simulator — but it does mean option A's *kept as an
+   option for a later release, on a machine with nested virtualisation* has a
+   machine now, and it is this one.
+
 ## What the two halves are
 
 Taking measurements 4 and 5 together, ADR 0054's promises separate cleanly, and
@@ -140,7 +207,12 @@ the whole of task 6's acceptance inside it.
   the wipe would sit behind an hour of emulation that has nothing to do with
   them. **Rejected as the acceptance. Kept as an option for a later release**,
   where it is worth having as a *regression* test on a machine with nested
-  virtualisation — which is a thing to buy, not a thing to decide.
+  virtualisation — which was written here as *a thing to buy, not a thing to
+  decide*, and **measurement 9 found that machine already in the fleet**: the
+  development PC runs KVM, and the guest measurement 7 was taken in is the guest
+  such a test would use. What is still true is the rest of the paragraph — the
+  cheap half must not be made hostage to the expensive one — and that is a reason
+  about ordering, not about hardware, so it survives the machine appearing.
 
 ### B. Wait for the certified laptop and build nothing until it arrives
 

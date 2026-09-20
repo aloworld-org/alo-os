@@ -162,9 +162,49 @@ only through a portal handing over a connection, but a portal hands out a
 connection and connections demonstrably work. **A portal cannot make a link the
 graph will not make.**
 
-Two candidates are left and neither is tested: whether `vivid` differs from a
-real camera in a way that matters — every camera measurement here is against that
-one fixture — and PipeWire 1.0.5's own V4L2 capture path. The image's 0.5 floor stays — 0.4 is
+Two candidates were left and neither was tested: whether `vivid` differs from a
+real camera in a way that matters — every camera measurement here was against that
+one fixture — and PipeWire 1.0.5's own V4L2 capture path. **Both were eliminated
+on 2026-09-20, on the development PC** (Intel Core Ultra 7 155U), in a KVM guest
+running Ubuntu 24.04.5, kernel `6.8.0-139-generic`, PipeWire 1.0.5 and
+WirePlumber 0.4.17 — a different machine, a different architecture from this
+lane's, and the first stock distro kernel available here that has `vivid` at all
+(WSL's own kernel has no such module).
+
+The control that settles it takes the camera out of the experiment. A synthetic
+video stream was published *into* the graph with
+`gst-launch-1.0 videotestsrc ! pipewiresink mode=provide` carrying
+`media.class=Video/Source` — **no V4L2, no `vivid`, no kernel device anywhere in
+it** — and `pipewiresrc` failed to attach to that with the identical
+`stream error: target not found`, in a session where `pw-record` captured
+**1,298,476 bytes** of audio. So the refusal is neither `vivid` nor the V4L2
+path; **it is video in this graph**, and the fifth acceptance does not wait on a
+real camera being found.
+
+Three further measurements say what it is *not*, and each kills the obvious
+answer:
+
+- **Not permissions, and not the portal.** `pw-cli info` on the camera node
+  reports the client's permissions as **`rwxm-`** — everything — which confirms
+  from the server's side what the 2026-09-19 control argued from the client's.
+- **Not a node that failed to form.** `vivid` under this kernel is a real
+  source: raw V4L2 captured **13,824,000 bytes** at 4.99 fps from it, and the
+  graph's node `v4l2_input.platform-vivid.0` advertises a full `EnumFormat` —
+  YUY2 320x180 with fourteen framerates. WirePlumber **0.4.17 does create the
+  node**, which narrows the sentence below from *0.4.17 cannot* to *0.4.17
+  creates a node nothing attaches to* — the same sentence already recorded for
+  0.5.2, which makes the version far less interesting than it looked.
+- **Not a missing format on the client side**, which the logs make look likely
+  and which is a trap worth writing down. `PIPEWIRE_DEBUG=3` shows
+  `find_format(): no format given` immediately before
+  `error (-32) target not found`, so the obvious fix is to supply one — and
+  supplying the node's own advertised caps, addressed by node id, by node name,
+  and with no target, **failed all three times with the same error and zero
+  bytes**. The warning is not the cause, and `target not found` is a misleading
+  message for whatever is.
+
+What is left is one question inside the media server's own stream connection,
+and **no further camera measurement needs a camera**. The image's 0.5 floor stays — 0.4 is
 the old line and the recipe shipped no media server at all — but it was pinned
 partly on this belief, and that half of the reason is withdrawn. Its blocker
 cleared: the capture plan's task 1 is done. `crates/alo-cameras` (a fifth crate, and why is
@@ -175,8 +215,14 @@ looking for the device file afterwards. **What is not taken:** *an application o
 through the portal and appears on the in-use indicator*. On WirePlumber 0.4.17 — what
 Ubuntu 24.04 ships — **no client can attach to a camera through the media server at
 all**, measured with two of the server's own tools (`docs/quirks.md`), so there is no
-machine here on which the test could pass or fail honestly. It wants WirePlumber 0.5,
-which the image should pin deliberately. Written up in
+machine here on which the test could pass or fail honestly. ~~It wants WirePlumber 0.5,
+which the image should pin deliberately.~~ **Corrected 2026-09-20: it does not want
+WirePlumber 0.5.** 0.4.17 was measured on the development PC to create the camera node
+perfectly well, and to refuse the attach in exactly the way 0.5.2 does — and a
+*synthetic* video source with no camera in it is refused the same way. The version is
+not the variable. The pin below stays for the separate and still-good reason in its own
+paragraph (the recipe carried no media server at all); what is withdrawn is the belief
+that 0.5 is what this acceptance is waiting for. Written up in
 [A camera is a thing, not a number](updates/a-camera-is-a-thing-not-a-number.md).
 **The pin is in, 2026-09-19** — `image/Containerfile` now installs `pipewire`,
 `pipewire-utils` and `wireplumber` and **refuses a WirePlumber below 0.5 in the
