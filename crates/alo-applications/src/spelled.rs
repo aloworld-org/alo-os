@@ -42,6 +42,7 @@ pub const fn spelled(kind: Kind) -> &'static str {
         Kind::WebpImage => "webp-image",
         Kind::PagesDocument => "pages-document",
         Kind::HeicPhoto => "heic-photo",
+        Kind::AutocadDrawing => "autocad-drawing",
         Kind::ZipArchive => "zip-archive",
         Kind::MatroskaVideo => "matroska-video",
         Kind::WebmVideo => "webm-video",

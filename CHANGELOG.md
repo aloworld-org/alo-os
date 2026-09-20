@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A drawing somebody sent you is now named instead of shrugged at.** Open a
+  `.dwg` — the file a plan of a building, a part or a machine is saved as — and
+  the machine tells you it is an AutoCAD drawing, and then that nothing here
+  opens it or turns it into something that does, so you know to ask for it in
+  another format rather than wonder what you were sent. It is read from the
+  file's own bytes, never from its name: a drawing called `plan.pdf` is still a
+  drawing, and is said to be misnamed. Only the versions that were actually
+  released are accepted, so a file that merely starts with the same two letters
+  is not claimed to be a drawing at all.
+  Evidence: `docs/autonomy/updates/a-drawing-from-a-cad-program.md`.
+
 - **The documents European public bodies actually send you now convert.** An
   OpenDocument text document, spreadsheet or presentation — `.odt`, `.ods`,
   `.odp` — becomes a PDF copy the same way a Word, Excel or PowerPoint file

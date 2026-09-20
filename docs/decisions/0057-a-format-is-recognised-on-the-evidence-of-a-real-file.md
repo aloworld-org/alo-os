@@ -1,9 +1,12 @@
 # ADR 0057 — A format is recognised on the evidence of a real file, and three of them must come from outside this team
 
-**Status:** proposed, 2026-09-19. Written by task 6 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md`, which cannot be built until
-this is answered.
-**Date:** 2026-09-19
+**Status:** accepted, 2026-09-20 — option **A**, with every decision under
+*the recommendation* as written. Written 2026-09-19 by task 6 of
+`docs/autonomy/v0-5-documents-and-paper-plan.md`, which could not be built until
+it was answered. **What answered it is that all three files now exist**, each
+with its provenance beside it; how each was obtained is below, because the
+answer to this decision is evidence rather than an opinion.
+**Date:** 2026-09-19, accepted 2026-09-20
 **Context:** `docs/autonomy/v0-5-documents-and-paper-plan.md` task 6;
 `docs/features.md`'s ★ *"I can't open this file." A `.pages`, a `.heic`, a
 `.dwg`: the system converts it where it can, and where it cannot says plainly
@@ -27,6 +30,41 @@ content, each measured against "a real file with its provenance … never a
 synthesised header alone". No machine this team has can make any of the three.
 So what ships, on whose evidence — and what does the star in `docs/features.md`
 promise in the meantime?**
+
+## What answered it, 2026-09-20
+
+Option A asked for one real file of each of the three, each with its
+provenance, each publishable with this repository. **All three are here.** They
+did not arrive the way the decision expected — the photograph and the document
+came from a machine this team already owned, and the drawing had to be written
+by the format's own consortium — and that is recorded rather than smoothed over,
+because what each file proves depends on where it came from.
+
+| The file | How it was obtained | Where its provenance is |
+|---|---|---|
+| `photo.heic`, 37 008 bytes | **macOS 26.5.2's own ImageIO**, through `sips`, on an Apple M3, 2026-09-19, from this repository's own artwork. Written by the same library that writes them on a telephone; **not** taken through a lens, so it carries no Exif, no make and no location — and nothing the rule reads does either | `crates/alo-opening/tests/files/README.md` |
+| `document.pages`, 227 583 bytes | **Pages 15.3.1** on that same Mac, 2026-09-19, once the owner installed it. This repository's own words and its own picture, a heading and a body in two faces on purpose. Saved by Pages itself — not a container assembled here | the same README |
+| `drawing.dwg`, 16 352 bytes | **drawn by us** with `ezdxf` — a bench plan for the certified laptop — and **written as DWG by ODA File Converter 27.1**, the Open Design Alliance's own converter, 2026-09-20. Checked by converting it back to DXF with the same tool: five layers, nine entities and both text strings survived the round trip | the same README |
+
+**The drawing is the one this decision was really about, so its half-measure is
+named rather than implied.** Nothing on any machine this team has could save
+one: no CAD application, no `dwgread`, `dwgwrite`, `teigha`, `librecad`,
+`freecad` or `qcad`, and `sips` has no CAD format at all. What was done instead
+is neither option B nor option C. It is not B, because the bytes were **not**
+written here to a specification — they were written by the implementation the
+trade licenses, which is the author whose output the rule has to survive. It is
+not C, because nothing was fetched: no third party's file is redistributed here
+and no licence is carried. What it is **not** is a drawing made by somebody who
+draws for a living: it has no blocks, no external references, no paper-space
+layouts and no hatch patterns, and the rule reads none of those. That limit is
+in the README beside the file and it is the honest shape of what this evidence
+covers.
+
+**So the recognition rules stand on files rather than on agreement with
+ourselves**, which was the whole of the question. Each of the three is
+recognised in this change or was in an earlier one, each is measured against its
+own file held to its digest, and a file that is none of them still says *not
+recognised*.
 
 ## Why a worker could not simply choose
 
@@ -276,19 +314,26 @@ read inside *This is {what}*:
 
 ## What must happen before task 6 is ready again
 
-1. **The owner accepts, amends or rejects** this decision.
+1. **The owner accepts, amends or rejects** this decision. **Done, 2026-09-20:
+   accepted as option A.**
 2. **Three real files with their provenance** arrive under
    `crates/alo-opening/tests/`, with a `README.md` beside them in the shape of
-   `crates/alo-converting/tests/documents/README.md`.
+   `crates/alo-converting/tests/documents/README.md`. **Done** — the table under
+   *What answered it* says which, when and from what.
 3. **Task 5's walk and its table** gain the photograph, published in a follow-up
    report, with `THE_REPORT` in
    `crates/alo-converting/tests/the_walk_through_documents_and_paper.rs` pointed
-   at it — because a published report is never rewritten.
+   at it — because a published report is never rewritten. **Still open**: that
+   walk runs the office engine and cannot run on an aarch64 gate, so it waits on
+   an x86_64 machine rather than on this decision.
 
-Until then the task stays blocked, and
 `crates/alo-opening/tests/recognising_three_more_formats_waits_on_its_decision.rs`
-holds this file in place: while it says *proposed*, no kind for any of the three
-exists and no word names one.
+held this file in place while it said *proposed*: no kind for any of the three
+could exist and no word could name one. That half of it stops asserting on
+acceptance, by design — what it goes on checking is that this decision still
+exists under its number, that the plan points at it from task 6, and that it
+still sets out the options and their costs, so the argument a reader lands on is
+the one that was actually answered.
 
 ## What it costs
 

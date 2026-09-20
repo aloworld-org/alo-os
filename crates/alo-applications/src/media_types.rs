@@ -21,7 +21,7 @@ use alo_opening::Kind;
 /// `text/plain` declares both kinds of plain text: an application that opens
 /// text says nothing about which character set, and a file in an older one is
 /// still text to it.
-const TABLE: [(&str, &[Kind]); 41] = [
+const TABLE: [(&str, &[Kind]); 43] = [
     ("application/pdf", &[Kind::Pdf]),
     (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -81,6 +81,12 @@ const TABLE: [(&str, &[Kind]); 41] = [
     ("application/vnd.apple.pages", &[Kind::PagesDocument]),
     ("image/heic", &[Kind::HeicPhoto]),
     ("image/heif", &[Kind::HeicPhoto]),
+    // A drawing, under the type registered for it and the older one drawing
+    // programs still declare in their desktop entries. An application that
+    // declared only the registered type would be passed over by the ones that
+    // have shipped the older spelling for thirty years.
+    ("image/vnd.dwg", &[Kind::AutocadDrawing]),
+    ("application/acad", &[Kind::AutocadDrawing]),
     ("application/zip", &[Kind::ZipArchive]),
     ("application/x-zip-compressed", &[Kind::ZipArchive]),
     ("video/x-matroska", &[Kind::MatroskaVideo]),
