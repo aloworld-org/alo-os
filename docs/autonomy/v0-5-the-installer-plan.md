@@ -60,16 +60,18 @@ reads and holds to the recipe's release, the committed key and `docs/booting.md`
 records why it is not yet the road. What stays the owner's: making the `ghcr.io`
 package public, so an installer pulls without an account.
 
-The owner has published three times, beginning 2026-09-15 under
+The owner has published four times, beginning 2026-09-15 under
 [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md).
-The pinned one, signed 2026-09-19:
+The pinned one, signed 2026-09-20, is **the first release that can open a
+document** — each one before it shipped a converter that died at launch for
+want of twelve shared libraries:
 
 | | |
 |---|---|
-| Release | `0.0.3` (`org.opencontainers.image.version`) |
-| Built from | `a875f80e3100ab51ac5fc64c762f5fc3fcde75f5` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.3` |
-| Digest | `sha256:41d43c7ea491990eea602493e5c645bd7bf8e7d0d9d7a8e9a000bc895a9dd0d7` |
+| Release | `0.0.4` (`org.opencontainers.image.version`) |
+| Built from | `b41b4b5ed36ea29b974af0c13d2f7ed9105169a7` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.4` |
+| Digest | `sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858` |
 | Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
 | Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
 
