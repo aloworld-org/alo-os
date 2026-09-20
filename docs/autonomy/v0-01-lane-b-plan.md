@@ -946,7 +946,29 @@ Task 16 below is the next task and was written in the same change.
 
 ### 16. The pin an entry states, and what the machine actually got
 
-**Status:** ready. **Depends on:** 15.
+**Status:** **Done, 2026-09-20.** **Depends on:** 15.
+
+Report:
+[The pin an entry states](updates/the-pin-an-entry-states.md).
+**The question this task forks on was answered against the real runtime, and the
+answer is that the pin is checkable**, so the check is written rather than an
+ADR. Ollama 0.34.0 states no digest in any structured field; what it states is
+the `FROM` line of the modelfile `/api/show` prints, and that blob's name **is**
+the GGUF's own `sha256` — measured three ways that agree on one real pull, and
+confirmed to carry to both pinned entries by comparing them with their registry
+manifests for a few kilobytes each. `docs/quirks.md` carries it.
+
+`src/ollama.rs` now asks the runtime which file it ended up with and refuses a
+fetch whose file is not the pinned one, naming both digests; **a runtime that
+will not say is also a refusal**, because a check that could not be made has not
+passed. The failure path is measured against the real runtime with a real
+artefact whose real digest is deliberately not the pinned one, and the refusal is
+asserted to report **the digest the machine actually holds** — the half a check
+that compares nothing cannot produce. An entry with no `[model.requantised]`
+block asks the runtime nothing extra and is neither slowed nor newly able to
+fail, measured both ways. Rule 6 in `data/catalogue.toml` now says where the
+promise is kept and what it cannot promise: the check is of what arrived, so a
+re-pointed tag costs the download and then fails.
 
 Task 15 wrote two `sha256` figures into `data/catalogue.toml` and **nothing in
 this repository checks either of them.** `Requantised` refuses a digest that is
