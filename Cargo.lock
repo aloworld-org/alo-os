@@ -1256,6 +1256,7 @@ dependencies = [
  "alo-changing",
  "alo-choosing",
  "alo-context",
+ "alo-displays",
  "alo-dock",
  "alo-egress",
  "alo-files",

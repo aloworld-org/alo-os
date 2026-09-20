@@ -326,7 +326,22 @@ Direct-display, installed-image and certified-machine acceptance remain open.
 
 ### 9. Several displays, and a background and a dock on each
 
-**Status:** ready. **Depends on:** 5.
+**Status:** **Done, 2026-09-20: the code only.** `crates/alo-shell/src/screens.rs`,
+`screen_background.rs`, `screens_raster.rs` and `tests/screens_source.rs`, with
+`alo_shell::desk` as the door a session asks the whole desk through; evidence and
+decisions in
+`docs/autonomy/updates/several-displays-each-with-its-own-background-and-dock.md`.
+**Two displays have never been plugged into this machine**, so every clause below
+is held on two outputs a test describes rather than two panels a person can
+touch — the layout logic and its pixels, not the hardware. Findings in that
+report: `alo-dock` still holds one edge for the whole machine, so each screen's
+dock is drawn from that screen's own `Wearing` and every screen's edge is
+nevertheless the same one today; the image reader a background shares with the
+lock screen words every failure as that screen's, and is said as the desktop's
+refusal here rather than carried into a desktop frame; a rotating background
+turns on one clock for the whole desk, because that is the only clock
+`alo-appearance` decides; and there is still no direct-display submission of a
+desk — the DRM path drives one output at a time. **Depends on:** 5.
 
 **Unblocked 2026-09-20**, by work that landed earlier. It read *blocked on
 `v0-5-the-session-and-the-displays-plan.md` tasks 3 and 4*, and both are
@@ -419,7 +434,11 @@ not.*
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 8 to 13. **Depends on:** 8, 9, 10, 11, 12, 13.
+**Status:** blocked — on tasks 10, 11, 12 and 13. **Tasks 8 and 9 are done**
+(2026-09-18 and 2026-09-20), so the lock screen and a second display are both
+there for the walk to use; cleared here by the lane that finished each, because
+a blocker that outlives its cause makes takeable work look untakeable.
+**Depends on:** 8, 9, 10, 11, 12, 13.
 
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second
   display, divide the screen, take a screenshot with a blur, receive a notification,
