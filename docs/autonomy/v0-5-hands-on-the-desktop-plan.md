@@ -61,8 +61,24 @@ overlapping or leaving a gap.
 
 ### 2. A split remembered, per display
 
-**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 3, whose
-`alo-displays` gives a display the stable identity a remembered split is kept under.
+**Status:** **Done, 2026-09-20.** Its blocker had been stale for two days: it
+waited on `v0-5-the-session-and-the-displays-plan.md` task 3, marked **Done,
+2026-09-18**, and task 1 was done on 2026-09-17 — so every machine surveying
+these plans read a takeable task as untakeable, and a supervisor would not
+select it.
+
+`crates/alo-dividing` gains `remembering` and `keeping`. What is kept is
+**applications and shares** — never a window's title or a document's name (ADR
+0038) — and what is kept is the **tree of cuts**, not the rectangles: a
+`WindowId` is what the compositor calls a window *this time*, so remembering one
+would remember nothing, and remembered rectangles overlap or leave a gap the
+first time a screen returns at another size. A division restored on a 1280×720
+screen covers it exactly. Divisions are per screen and an unplugged screen keeps
+its own, because nothing here forgets one for going away. `HeldBy` is a name
+handed in and never interpreted: this plan reads `alo-displays` and not
+`alo-applications`, so the shell hands the name down. 58 tests, five of them
+closing both windows and reopening them under different numbers. Written up in
+[A split remembered, per display](updates/a-split-remembered-per-display.md).
 **Depends on:** 1.
 
 - **Acceptance:** returning to a pair of windows restores the division they were in

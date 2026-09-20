@@ -12,6 +12,16 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Your split comes back.** Divide two applications side by side, close them,
+  and open them again tomorrow: they return to the division you left them in,
+  rather than to wherever each window happened to sit last. A division belongs
+  to the screen it was made on, so a laptop and an external monitor divide
+  independently, and unplugging a screen keeps its arrangement for when it comes
+  back — at whatever size it comes back at. What is written down is which
+  applications shared the screen and how it was divided, and **never a window's
+  title or a document's name**.
+  Evidence: `docs/autonomy/updates/a-split-remembered-per-display.md`.
+
 - **Searching your own files takes half the memory it did.** The words an index
   keeps for each file are now held in one piece rather than one at a time, which
   halves what an open file manager holds for them — measured at 9.5 MB down to

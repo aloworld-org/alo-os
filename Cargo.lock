@@ -521,7 +521,9 @@ version = "0.0.1"
 dependencies = [
  "alo-shortcuts",
  "alo-strings",
+ "serde",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
