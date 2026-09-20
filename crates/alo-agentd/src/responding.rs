@@ -705,6 +705,7 @@ fn left(socket: &UdpSocket, address: Ipv4Addr) {
 mod tests {
     use std::net::{Ipv4Addr, UdpSocket};
     use std::num::NonZeroU16;
+    use std::sync::atomic::{AtomicU16, Ordering};
     use std::time::Duration;
 
     use alo_nearby::advertising::{
@@ -733,13 +734,34 @@ mod tests {
         NonZeroU16::new(8_443).unwrap()
     }
 
-    /// A port nothing else on this machine is on.
+    /// A port nothing else on this machine is on, and that **no other test in
+    /// this binary will be handed**.
+    ///
+    /// The same fix as `crate::listeners`' helper of this name, for the same
+    /// reason: asking the kernel for port zero and reading back what it gave
+    /// releases the port before the caller binds it, and the kernel is free to
+    /// hand that same one to another of the tests running beside this. Measured
+    /// twice on two machines, each time costing a whole gate run.
+    ///
+    /// A counter cannot hand the same number out twice however the kernel
+    /// behaves, which removes this binary's own tests as a source of the
+    /// collisions.
     fn a_free_port() -> u16 {
-        UdpSocket::bind((Ipv4Addr::LOCALHOST, 0))
-            .unwrap()
-            .local_addr()
-            .unwrap()
-            .port()
+        /// Above the range a machine hands out for itself, and above the block
+        /// `crate::listeners`' helper walks, so the two never meet.
+        const ABOVE_THE_EPHEMERAL_RANGE: u16 = 30_000;
+
+        static NEXT: AtomicU16 = AtomicU16::new(ABOVE_THE_EPHEMERAL_RANGE);
+        loop {
+            let port = NEXT.fetch_add(1, Ordering::Relaxed);
+            assert!(
+                port >= ABOVE_THE_EPHEMERAL_RANGE,
+                "this binary ran out of ports"
+            );
+            if UdpSocket::bind((Ipv4Addr::LOCALHOST, port)).is_ok() {
+                return port;
+            }
+        }
     }
 
     /// A socket of a test's own, to ask questions from.
