@@ -22,3 +22,14 @@ toml = { workspace = true }
 
 [lints]
 workspace = true
+
+# The walk through a working morning meets five crates' words at once, because a
+# person does not meet them one crate at a time. Test-only: nothing this crate
+# ships reads any of them.
+[dev-dependencies]
+alo-clipboard = { path = "../alo-clipboard" }
+alo-desktops = { path = "../alo-desktops" }
+alo-handing = { path = "../alo-handing" }
+alo-keyboards = { path = "../alo-keyboards" }
+alo-menus = { path = "../alo-menus" }
+alo-saying = { path = "../alo-saying" }

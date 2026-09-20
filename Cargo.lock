@@ -519,6 +519,12 @@ dependencies = [
 name = "alo-dividing"
 version = "0.0.1"
 dependencies = [
+ "alo-clipboard",
+ "alo-desktops",
+ "alo-handing",
+ "alo-keyboards",
+ "alo-menus",
+ "alo-saying",
  "alo-shortcuts",
  "alo-strings",
  "serde",

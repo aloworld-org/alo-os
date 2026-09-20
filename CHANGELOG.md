@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A morning at your desk reads as one thing.** Splitting two windows, dragging
+  the boundary between them, sending one to another desktop, dropping a file on
+  an application and typing a name with an umlaut now produce one sequence of
+  plain sentences rather than five programs each speaking for itself. Dragging a
+  boundary tells you the window holds *part of the screen* rather than reciting
+  its size; dragging a file tells you what letting go would do **before** you let
+  go; and a letter that takes two keys says nothing after the first rather than
+  looking broken. None of these sentences names the software underneath, in any
+  language.
+  Evidence: `docs/autonomy/updates/the-walk-through-a-working-morning.md`.
+
 - **Your split comes back.** Divide two applications side by side, close them,
   and open them again tomorrow: they return to the division you left them in,
   rather than to wherever each window happened to sit last. A division belongs
