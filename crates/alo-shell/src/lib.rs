@@ -51,6 +51,16 @@
 //! of an unplugged screen belong is `alo-displays`' answer too, and nothing
 //! here adjusts an arrangement.
 //!
+//! The recovery screen (`RecoveryScreen`) is drawn here and decided in
+//! `alo-keeping-up`: whether going back to yesterday's machine can be offered
+//! at all is `GoingBack::offered`, decided before anything is offered, and a
+//! machine that cannot go back reads that crate's own reason instead of an
+//! offer. It is reached when the desktop will not compose
+//! (`Nested::submit_desktop_or_recovery`), needs nobody signed in, opens no
+//! file, and carries nothing out: choosing hands back what was decided and the
+//! moment the person chose, and `alo-keeping-up`'s `Returning` through the
+//! broker does the rest.
+//!
 //! Settings (`SettingsWindow`) is drawn here and decided in the crates that own
 //! each setting: what answers questions (`alo-setting-up`, `alo-choosing`),
 //! appearance, the dock and shortcuts (each through its own `keeping`), and
@@ -129,6 +139,7 @@ mod nested_reader_frame;
 mod nested_reader_input;
 mod nested_reader_session;
 mod nested_record;
+mod nested_recovery;
 mod nested_settings;
 mod nested_sign_in;
 mod offscreen;
@@ -152,6 +163,14 @@ mod record_shown;
 #[cfg(test)]
 mod record_testing;
 mod record_window;
+mod recovery_keys;
+mod recovery_paint;
+mod recovery_raster;
+mod recovery_reached;
+mod recovery_screen;
+mod recovery_seat;
+#[cfg(test)]
+mod recovery_testing;
 mod resize_transaction;
 mod resource_device;
 mod running_keys;
@@ -288,6 +307,7 @@ pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
 pub use nested_reader_session::NestedReaderSession;
 pub use nested_record::RecordFrame;
+pub use nested_recovery::RecoveryFrame;
 pub use nested_settings::SettingsFrame;
 pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
@@ -297,6 +317,10 @@ pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
 pub use record_keys::RecordKey;
 pub use record_room::RecordLook;
 pub use record_window::{RecordOpened, RecordShows, RecordWindow};
+pub use recovery_keys::RecoveryKey;
+pub use recovery_raster::RecoveryLook;
+pub use recovery_reached::Reached;
+pub use recovery_screen::{RecoveryChosen, RecoveryScreen, RecoveryShows, THE_TWO_MOMENTS};
 pub use running_keys::RunningKey;
 pub use running_window::{RunningPressed, RunningShows, RunningWindow};
 pub use scanout::ActiveScanout;

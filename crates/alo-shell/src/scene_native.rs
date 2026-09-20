@@ -16,6 +16,9 @@ pub(crate) enum NativeScene<'a> {
     Reader(&'a WindowControlReaderScene<'a>),
     /// The sign-in screen, which is the whole output.
     SignIn(&'a crate::sign_in_raster::SignInPicture),
+    /// The recovery screen, which is the whole output: a machine whose desktop
+    /// will not start has no client to draw under it.
+    Recovery(&'a crate::recovery_raster::RecoveryPicture),
 }
 
 /// Everything native painted over clients in one frame: the selected scene, the
@@ -52,6 +55,7 @@ impl NativeScene<'_> {
             Self::Controls(scene) => scene.validate(size),
             Self::Reader(scene) => scene.validate(size),
             Self::SignIn(picture) => picture.validate(size),
+            Self::Recovery(picture) => picture.validate(size),
         }
     }
 
@@ -61,6 +65,7 @@ impl NativeScene<'_> {
             Self::Lock(_) => Err(RenderError::LockScene),
             Self::Reader(scene) => scene.paint(frame),
             Self::SignIn(picture) => picture.paint(frame),
+            Self::Recovery(picture) => picture.paint(frame),
             Self::Controls(scene) => {
                 scene.layout.paint(frame, scene.scheme)?;
                 if let Some(label) = scene.label {
