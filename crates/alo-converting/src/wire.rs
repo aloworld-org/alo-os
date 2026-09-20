@@ -295,6 +295,27 @@ mod tests {
         }
     }
 
+    /// **The word of a held-back conversion is not a request.**
+    ///
+    /// It can be written — the line is decided, and the day the conversion is
+    /// offered nothing on the wire changes — and the service does not read it
+    /// back, so no request can ask for a conversion whose original has never
+    /// been inventoried. The asymmetry is the whole of what holding one back
+    /// means, and this is where it is visible.
+    #[test]
+    fn a_held_back_conversion_can_be_written_and_is_not_read_back() {
+        for held in Conversion::HELD_BACK {
+            let written = Request::Convert(held).written();
+            assert!(written.contains(held.asked_as()), "{written}");
+            assert!(written.len() <= LONGEST_REQUEST);
+            assert_eq!(
+                Request::read(&written),
+                None,
+                "the service answered to {held:?}, whose original it cannot inventory"
+            );
+        }
+    }
+
     /// **No path crosses the wire**: a request is one of four lines.
     #[test]
     fn no_request_carries_a_path_or_anything_else() {

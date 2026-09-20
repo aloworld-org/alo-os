@@ -59,9 +59,16 @@ pub enum NotConverted {
 }
 
 /// What the engine is asked to export each conversion with.
+///
+/// **A filter names the export, not the document.** Which reader opens the
+/// document is decided by the document, from the ending its scratch name
+/// carries; this says which of the engine's writers produces the PDF. So two
+/// conversions of text documents share one filter, and that is not a collision:
+/// a Pages document and a Word document are both pages of text, and both come
+/// out of the same writer.
 const fn filter(conversion: Conversion) -> &'static str {
     match conversion {
-        Conversion::WordDocument => "pdf:writer_pdf_Export",
+        Conversion::WordDocument | Conversion::PagesDocument => "pdf:writer_pdf_Export",
         Conversion::ExcelWorkbook => "pdf:calc_pdf_Export",
         Conversion::PowerPointPresentation => "pdf:impress_pdf_Export",
     }
@@ -154,6 +161,34 @@ mod tests {
         unique.sort_unstable();
         unique.dedup();
         assert_eq!(unique.len(), filters.len());
+    }
+
+    /// **A held-back conversion already has its filter, and it is one this
+    /// engine is asked for anyway.**
+    ///
+    /// The argument list is the whole of what `convert` varies between two
+    /// conversions, so deciding it now is what makes offering this one later a
+    /// one-line change rather than a design. Asserting it is a filter already
+    /// in use is what stops a plausible-looking name nobody has run being
+    /// written here: `pdf:pages_pdf_Export` would pass a test that only
+    /// checked the prefix, and there is no such filter.
+    #[test]
+    fn a_held_back_conversion_exports_through_a_filter_already_in_use() {
+        let in_use: Vec<&str> = Conversion::EVERY.into_iter().map(filter).collect();
+        for held in Conversion::HELD_BACK {
+            let exports_with = filter(held);
+            assert!(exports_with.starts_with("pdf:"), "{held:?}");
+            assert!(
+                in_use.contains(&exports_with),
+                "{held:?} exports with {exports_with}, which no conversion this machine \
+                 makes has ever asked the engine for"
+            );
+        }
+        assert_eq!(
+            filter(Conversion::PagesDocument),
+            filter(Conversion::WordDocument),
+            "both are text documents and come out of the same writer"
+        );
     }
 
     /// **An engine that is not there is a refusal**, not a copy.
