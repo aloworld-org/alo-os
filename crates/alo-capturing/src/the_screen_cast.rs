@@ -104,6 +104,20 @@ impl TheScreenCast {
     /// Split out so that the whole of *which pixels* is a value a test can read
     /// without a machine — which is the half a rented tool cannot be asked to
     /// get right on our behalf.
+    ///
+    /// # One word to an argument, because the tool does not split them again
+    ///
+    /// The tool reads its pipeline from the arguments it is handed, and it
+    /// takes **each argument as one word of it**: it does not look inside an
+    /// argument for spaces. So `pipewiresrc path=3 num-buffers=1` written as a
+    /// single argument is one word, no element is called that, and the whole
+    /// pipeline is a syntax error before a frame is ever asked for. It was
+    /// written that way here until 2026-09-20, which means this road had never
+    /// carried a picture on any machine; `gst-launch-1.0` answered *erroneous
+    /// pipeline: syntax error* and nothing else, measured on the development
+    /// PC. Every setting below is therefore its own argument, and the test
+    /// under this file holds that shape rather than the text it happens to
+    /// join into.
     fn asking_for(&self, across: Region, on: Screen) -> Vec<String> {
         let stream = self.stream;
         let (left, top) = (across.from_the_left(), across.from_the_top());
@@ -111,15 +125,22 @@ impl TheScreenCast {
         vec![
             // Say nothing but the picture: what it prints is the file.
             "-q".to_owned(),
-            format!("pipewiresrc path={stream} num-buffers=1"),
+            "pipewiresrc".to_owned(),
+            format!("path={stream}"),
+            "num-buffers=1".to_owned(),
             "!".to_owned(),
             "videoconvert".to_owned(),
             "!".to_owned(),
-            format!("videocrop left={left} right={right} top={top} bottom={bottom}"),
+            "videocrop".to_owned(),
+            format!("left={left}"),
+            format!("right={right}"),
+            format!("top={top}"),
+            format!("bottom={bottom}"),
             "!".to_owned(),
             "pngenc".to_owned(),
             "!".to_owned(),
-            "fdsink fd=1".to_owned(),
+            "fdsink".to_owned(),
+            "fd=1".to_owned(),
         ]
     }
 
@@ -202,6 +223,39 @@ mod tests {
             asking.contains("left=100 right=1420 top=50 bottom=730"),
             "{asking}"
         );
+    }
+
+    /// **No argument holds two words of the pipeline.**
+    ///
+    /// The tool takes each argument as one word and never looks inside it for
+    /// spaces, so `pipewiresrc path=3 num-buffers=1` in one argument is a
+    /// syntax error rather than a source with two settings. This is the test
+    /// the joined-text ones above cannot be: they pass on the broken shape too.
+    #[test]
+    fn every_setting_the_mechanism_is_told_is_its_own_argument() {
+        let cast = TheScreenCast::reading(57);
+        let asking = cast.asking_for(Region::of(100, 50, 400, 300).unwrap(), a_screen());
+        for word in &asking {
+            assert!(
+                !word.contains(' '),
+                "{word:?} is two words in one argument, which the tool reads as one \
+                 element name and refuses as a syntax error"
+            );
+        }
+        for word in [
+            "pipewiresrc",
+            "path=57",
+            "num-buffers=1",
+            "videocrop",
+            "left=100",
+            "fdsink",
+            "fd=1",
+        ] {
+            assert!(
+                asking.iter().any(|said| said == word),
+                "{word} is not an argument of its own: {asking:?}"
+            );
+        }
     }
 
     /// **The whole screen cuts nothing away**, which is the same path through
