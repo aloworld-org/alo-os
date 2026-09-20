@@ -444,6 +444,20 @@ fn every_sentence_reached(strings: &Strings) -> Vec<Said> {
         .said(strings),
     );
 
+    // An approval that arrived from elsewhere naming one build twice, which is
+    // the one refusal `Staging::of` cannot meet: a `Ready` cannot hold one
+    // build twice, and an approved `{from, to}` can (ADR 0053).
+    said.push(
+        Staging::approved(
+            &second,
+            &second,
+            &Deployments::reported(Some(second.clone()), None, None),
+            &the_source(),
+        )
+        .expect_err("one build named twice is not an update")
+        .said(strings),
+    );
+
     // The base would not prepare it, and the machine is as it was.
     said.push(
         NotApplied::TheBaseDidNotStageIt(NotAnswered::SaidNo {
@@ -758,9 +772,9 @@ fn no_sentence_a_person_reads_names_the_machinery() {
 ///
 /// The walk is the road taken when everything works twice over. This is the
 /// other half of it: which version runs could not be read, the machine moved
-/// on, the base would not prepare it, there is nothing to go back to, what was
-/// there is gone, the machine changed after the offer, and the history could
-/// not be written. Each is a sentence rather than a state a person is left to
+/// on, an approval named one version twice, the base would not prepare it,
+/// there is nothing to go back to, what was there is gone, the machine changed
+/// after the offer, and the history could not be written. Each is a sentence rather than a state a person is left to
 /// infer, and each says what happened to their machine — which in every case
 /// is nothing.
 #[test]
@@ -771,6 +785,7 @@ fn every_refusal_on_the_road_is_said_and_no_two_read_alike() {
         plainly(words::RUNNING_NOT_KNOWN, &strings),
         plainly(words::CHANGED_SINCE_IT_WAS_FOUND, &strings),
         plainly(words::ALREADY_WAITING, &strings),
+        plainly(words::NOT_AN_UPDATE, &strings),
         plainly(words::NOT_PREPARED, &strings),
         plainly(words::NOT_GENUINE, &strings),
         plainly(words::NOT_WRITTEN_DOWN, &strings),
@@ -789,13 +804,14 @@ fn every_refusal_on_the_road_is_said_and_no_two_read_alike() {
     }
     assert_eq!(texts.len(), refusals.len(), "two refusals read the same");
 
-    // The seven that follow something the person chose say that their machine
+    // The eight that follow something the person chose say that their machine
     // is as it was. The five that are said *instead of* an offer do not,
     // because nothing was started for them to say it about.
     for word in [
         words::ANSWER_NOT_UNDERSTOOD,
         words::RUNNING_NOT_KNOWN,
         words::CHANGED_SINCE_IT_WAS_FOUND,
+        words::NOT_AN_UPDATE,
         words::NOT_PREPARED,
         words::NOT_GENUINE,
         words::GOING_BACK_NOT_PREPARED,

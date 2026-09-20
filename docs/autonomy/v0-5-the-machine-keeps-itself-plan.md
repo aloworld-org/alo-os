@@ -559,6 +559,38 @@ blockers are closed — [ADR 0053](../decisions/0053-an-update-is-carried-out-by
 was accepted by the owner on 2026-09-19, option B, and `alo-egress` gained
 `Errand::FetchingAnUpdate` the same day. **Depends on:** 1, 2.
 
+**Done, 2026-09-19.** `Staging::approved(from, to, deployments, source)` is the
+second door, and there is one instruction behind both: `Staging::of` and
+`Staging::approved` each call a single private `decided`, so the two cannot drift
+apart by construction — and
+`an_approval_and_a_ready_decide_the_same_instruction_element_for_element`
+measures it anyway, on one `Ready`, argument by argument. Making the approved
+door decide a different `when` was measured to fail that test and the one beside
+it, both of them, before the change was put back. **It takes no `WhenItApplies`
+and always decides `AtTheNextRestart`**, which was the one thing the task left
+open: an approval that arrived from elsewhere carries two builds and nothing
+else, *restart now and apply it* is not in it, so it is not decided from it — and
+the instruction it writes therefore cannot carry `--apply`, which makes ADR
+0053's *no instruction the broker causes restarts the machine* true by
+construction here rather than by the unit remembering it. The fourth refusal is
+`NotStaged::NotAnUpdate`, with `keeping-up.not-an-update` beside it: its own
+sentence in the machine's one vocabulary with a translator's note, reachable from
+`NotStaged::said`, and distinct from the other three by a test that reads all
+four. It is decided **before** the base's status is read, so an approval naming
+one build twice reads as what it is rather than as a machine whose build could
+not be named. An approval whose two builds arrived the wrong way round is refused
+too, by `TheMachineMovedOn`, which carries both. This crate gained no
+dependency, no road to the base, no program name and nothing that starts
+anything. **Found, and handed back rather than repaired:** the paragraph above
+says ADR 0053 was accepted on 2026-09-19 and
+[the decision itself](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+still reads *proposed, 2026-09-17*, so
+`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` still passes for
+exactly the reason it was written — the broker plan's task 8 is now blocked on
+that one line and on nothing this crate owes. Accepting a decision is the
+owner's, so nothing was changed to match it. Report:
+`docs/autonomy/updates/a-staging-decided-from-an-approval.md`.
+
 [`Staging::of`](../../crates/alo-keeping-up/src/staging.rs) decides the one
 instruction from a `Ready`, and a `Ready` exists only inside a check **this**
 machine made: it carries the build this machine was running when it looked and
@@ -596,3 +628,47 @@ drift. The instruction stays this crate's, and gains a second door into it.
   digests and the base's status; it does not read a registry, and it does not
   decide whether a build is vouched for, which is task 7's and stays where it
   is.
+
+### 10. A machine that has never looked
+
+**Status:** ready. **Depends on:** 6, 7.
+
+Written 2026-09-19 by task 9, because the plan named nothing after it and one
+thing it promises is still done by nobody. `alo_looking::look` is built and
+measured against the real registry; `Because` is the whole list of occasions and
+it is two, *the person asked* and *this machine started*; and **nothing on this
+machine calls either of them**. A check nobody performs is a capability rather
+than a promise kept: from where the person sits, a machine that is never told an
+update exists cannot be told apart from one that has none. *The person asked* is
+a surface's and belongs to the shell plan. *This machine started* is nobody's,
+and this is it.
+
+The hard half is not the call. It is **where it runs and under whose
+privilege**: the answer a check keeps is machine-wide
+(`/var/lib/alo/an-update-was-found`) and a person's session is not, so a session
+hook and a system unit are two different machines being described, and one of
+them may need something no worker may decide.
+
+- **Acceptance:** `Because::ThisMachineStarted` has exactly one caller on a
+  booted machine, and it happens **once per start and never again** — no timer,
+  no thread, no repetition, with a test that reads the caller's own source for
+  each, as task 6's tests read `alo-looking`'s; where it runs and under whose
+  privilege is **decided and written down with the reason**, and if the only road
+  runs through a new privileged component or a widened grant then the ADR is this
+  task's deliverable and the code waits on it (ADR 0001 §2); the check is on the
+  indicator for the whole of it and is in the indicator's own record afterwards;
+  a machine with no way out at all says so **once** rather than at every start,
+  which `SaidOnce` already decides and this must not undo; and the whole of it is
+  **measured on a booted virtual machine** — started twice, with the kept answer,
+  the indicator's record and the departures counted at the network boundary read
+  after each start, and the time it added to a start written down, because a
+  check that delays a sign-in is a check that will be turned off.
+- **Constraint:** a check at start never delays a person's sign-in, takes focus
+  or asks them anything: `THE_RULE` is about an update and this is the thing that
+  finds one, so the same promise holds here. Nothing downloads a build (task 6's
+  constraint, unchanged), no setting turns checking off (task 1's), and
+  **`alo-keeping-up` gains no clock, no socket and no file** — the test holding
+  it to four dependencies stays exactly as it is. The unit or the session hook
+  that performs the act is installed by the lane that owns the image or the
+  session; this plan writes what it calls and hands the installation over, the
+  way task 4 handed over the filesystem it needs.

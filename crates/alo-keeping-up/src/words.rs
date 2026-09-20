@@ -165,6 +165,28 @@ pub const ALREADY_WAITING: Word = Word::saying(
      Nothing is done twice.",
 );
 
+/// The two versions named were the same one, so there was no update to stage.
+///
+/// The one refusal [`crate::Staging::of`] never needed: a [`crate::Ready`] is
+/// made only by `Standing::between`, which answers *up to date* when the two
+/// builds match, so a `Ready` holding one build twice cannot exist. An
+/// approval that arrived from somewhere else can hold exactly that, which is
+/// why it is refused rather than staged — telling the base to change a machine
+/// to what it is already meant to be running is not an update, and a road that
+/// quietly did nothing would leave a person waiting for a restart that changes
+/// nothing.
+pub const NOT_AN_UPDATE: Word = Word::saying(
+    "keeping-up.not-an-update",
+    "This machine was asked to change its system from one version to that same version, so there \
+     was nothing to do and nothing was changed",
+)
+.noting(
+    "Said when something asked this machine to update from a version of alo OS to the very same \
+     version, which is not an update at all — most often because whatever asked was working from \
+     information that had gone out of date. It is not a mistake of the person's, and the \
+     important half, as in every other refusal here, is that nothing was changed.",
+);
+
 /// Which version of its system the machine runs could not be read.
 pub const RUNNING_NOT_KNOWN: Word = Word::saying(
     "keeping-up.running-not-known",
@@ -550,7 +572,7 @@ pub const NOT_A_WINDOW: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 43] = [
+pub const EVERY_WORD: [Word; 44] = [
     READY,
     READY_NOT_VOUCHED_FOR,
     UP_TO_DATE,
@@ -563,6 +585,7 @@ pub const EVERY_WORD: [Word; 43] = [
     WAITING_FOR_THE_RESTART,
     CHANGED_SINCE_IT_WAS_FOUND,
     ALREADY_WAITING,
+    NOT_AN_UPDATE,
     RUNNING_NOT_KNOWN,
     NOT_PREPARED,
     NOT_GENUINE,
