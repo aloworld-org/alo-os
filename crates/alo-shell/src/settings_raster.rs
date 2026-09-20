@@ -36,7 +36,7 @@ use crate::painted::{Inked, Solid};
 use crate::painted_text::Shaped;
 use crate::record_room::{Room, framed, rule};
 use crate::settings_lines::{LineWords, sections};
-use crate::{RecordLook, RenderError, SettingsWindow, WindowControlLabels};
+use crate::{Contrast, RecordLook, RenderError, SettingsWindow, WindowControlLabels};
 
 /// How Settings looks, as the person's appearance and language decide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +48,9 @@ pub struct SettingsLook {
     /// Which way the person reads, which decides where the mark and the rail
     /// are.
     pub reading: Direction,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// One piece of text as drawn.
@@ -157,6 +160,7 @@ pub(crate) fn picture(
     let room = Room::on(
         size,
         RecordLook {
+            contrast: look.contrast,
             scheme: look.scheme,
             scale: look.scale,
             reading: look.reading,

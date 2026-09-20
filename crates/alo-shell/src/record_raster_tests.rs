@@ -9,6 +9,7 @@
 )]
 
 use super::*;
+use crate::Contrast;
 use crate::painted_text::sentence as shaped_sentence;
 use crate::record_room::{Measure, Palette};
 use crate::record_testing::{a_long_record, an_afternoon_kept, light, words};
@@ -141,7 +142,7 @@ fn what_was_refused_is_drawn_as_plainly_as_what_ran() {
     let kept = an_afternoon_kept();
     let window = opened(&kept);
     let picture = drawn(&window);
-    let palette = Palette::of(Scheme::Light);
+    let palette = Palette::of(Scheme::Light, Contrast::AsDesigned);
     let mut labels = WindowControlLabels::new().unwrap();
 
     let outcomes: Vec<Outcome> = picture
@@ -355,6 +356,7 @@ fn the_rail_and_the_indent_follow_the_reading_direction() {
     let kept = a_long_record(80);
     let window = opened(&kept);
     let rtl = RecordLook {
+        contrast: Contrast::AsDesigned,
         reading: Direction::RightToLeft,
         ..light()
     };
@@ -381,7 +383,7 @@ fn terracotta_is_never_drawn() {
     let kept = an_afternoon_kept();
     let window = opened(&kept);
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let palette = Palette::of(scheme);
+        let palette = Palette::of(scheme, Contrast::AsDesigned);
         assert_ne!(palette.ground, terracotta);
         assert_ne!(palette.ink, terracotta);
         let picture = drawn_at(&window, (1920, 1080), RecordLook { scheme, ..light() });

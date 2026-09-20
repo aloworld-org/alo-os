@@ -88,7 +88,7 @@ fn chosen_and_focused_are_shapes_in_two_colours_and_never_terracotta() {
         4
     );
 
-    let palette = Palette::of(alo_appearance::Scheme::Light);
+    let palette = Palette::of(alo_appearance::Scheme::Light, Contrast::AsDesigned);
     let terracotta = Token::Terracotta.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     for solid in &drawn.solids {
@@ -154,6 +154,7 @@ fn a_right_to_left_reader_gets_the_mark_at_the_other_edge() {
         &window,
         (1920, 2160),
         SettingsLook {
+            contrast: Contrast::AsDesigned,
             reading: Direction::RightToLeft,
             ..light()
         },
@@ -174,4 +175,28 @@ fn a_right_to_left_reader_gets_the_mark_at_the_other_edge() {
         drawn.lines.iter().map(|line| line.words.clone()).collect()
     };
     assert_eq!(words_of(&left), words_of(&right));
+}
+
+/// **Where the keyboard is, is drawn before any key is pressed.**
+///
+/// `alo_access::Setting::FocusAlwaysVisible` asks for *where the keyboard is,
+/// always drawn, not only after a key is pressed*, and this window answers it
+/// by construction: a row has the focus from the moment it opens, and it is
+/// drawn as the focused row with no key pressed at all. There is nothing here
+/// for that setting to turn on, which is why nothing reads it — and a change
+/// that made focus appear only after a first keypress would fail here.
+#[test]
+fn where_the_keyboard_is_is_drawn_before_any_key_is_pressed() {
+    let machine = a_persons_machine("focus-at-once");
+    let window = machine.opened();
+    assert!(
+        window.focused(noon()).is_some(),
+        "nothing has the keyboard when Settings opens"
+    );
+    let drawn = drawn_at(&window, (1920, 2160), light());
+    assert_eq!(
+        drawn.lines.iter().filter(|line| line.focused).count(),
+        1,
+        "the focused row is not drawn until a key is pressed"
+    );
 }

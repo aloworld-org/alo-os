@@ -72,6 +72,8 @@
 #![cfg(target_os = "linux")]
 
 mod access_bus;
+mod access_contrast;
+mod access_magnifier;
 mod access_nodes;
 mod access_roles;
 mod active_session;
@@ -280,6 +282,8 @@ pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 pub use window_tiling::{TileGeometry, TileGeometryError, TileSide};
 
 pub use access_bus::{NotRead, ReadAloudBus};
+pub use access_contrast::Contrast;
+pub use access_magnifier::{NotMagnified, magnified, magnifying};
 pub use access_nodes::ReadAloudTree;
 pub use active_session::ActiveSessionResult;
 pub use approval_keys::ApprovalKey;

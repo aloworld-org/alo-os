@@ -311,9 +311,20 @@ fn two_answers_no_third_and_nowhere_to_give_a_reason() {
         variants_of("approval_screen.rs", "ApprovalAnswer"),
         ["No", "Approve"]
     );
+    // `Decline` is not a third answer: it is *no*, the answer this surface
+    // already has, given by Escape because `alo_access::leaving` says
+    // Escape declines here. Nothing was added to what a person can
+    // answer — `ApprovalAnswer` above is still the two — and a key that
+    // dismissed, deferred or asked for a reason would still fail here.
     assert_eq!(
         variants_of("approval_keys.rs", "ApprovalKey"),
-        ["NextAnswer", "PreviousAnswer", "Choose", "Nothing"]
+        [
+            "NextAnswer",
+            "PreviousAnswer",
+            "Choose",
+            "Decline",
+            "Nothing"
+        ]
     );
     for (named, code) in the_approval_files() {
         for (which, line) in code {

@@ -19,6 +19,7 @@
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use crate::Contrast;
 use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -47,6 +48,7 @@ pub(crate) const PROVIDER: &str = "Harbour AI";
 /// The ordinary light look, read left to right.
 pub(crate) fn light() -> SettingsLook {
     SettingsLook {
+        contrast: Contrast::AsDesigned,
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
         reading: Direction::LeftToRight,

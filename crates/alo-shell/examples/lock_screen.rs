@@ -6,7 +6,8 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use alo_appearance::{Appearance, Background, DisplayId, Picture, Scheme, TextScale};
     use alo_shell::{
-        FrameTarget, LockBackground, LockLook, LockSurface, Nested, SignInLook, WindowControlLabels,
+        Contrast, FrameTarget, LockBackground, LockLook, LockSurface, Nested, SignInLook,
+        WindowControlLabels,
     };
     use std::time::{Duration, SystemTime};
     let mut accounts = alo_accounts::Accounts::none()?;
@@ -35,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timezone = alo_formats::Timezone::named("Europe/Berlin").map_err(|_| "invalid zone")?;
     let look = LockLook {
         appearance: SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Dark,
             scale: TextScale::ordinary(),
         },

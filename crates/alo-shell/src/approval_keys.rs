@@ -10,10 +10,20 @@
 //! - **nothing** at all, for every other key.
 //!
 //! There is no letter here, so there is nowhere to type a reason for saying
-//! no; no Escape that dismisses, so there is no third answer; and no shortcut
-//! for either answer, so a key pressed for something else — a `y` meant for a
-//! document, an Enter held down from the last dialogue — cannot answer a
-//! question the person has not read.
+//! no, and no shortcut for either answer, so a key pressed for something else —
+//! a `y` meant for a document, an Enter held down from the last dialogue —
+//! cannot answer a question the person has not read.
+//!
+//! # Escape answers no, and there is still no third answer
+//!
+//! `alo_access::leaving` decides what Escape does on every surface, and on this
+//! one it **declines**. It must never approve — what a person approves is the
+//! sentence (ADR 0001), and a key pressed to get out of the way is not somebody
+//! reading a sentence — and it must not leave the proposal unanswered either,
+//! because somebody who pressed Escape believes they have dealt with it, and a
+//! change still waiting behind that belief is worse than either answer. So
+//! there is no dismissal here: Escape is *no*, said out loud, and the fourth
+//! thing this surface does with a key is the same thing its other answer does.
 
 use smithay::input::keyboard::{Keysym, ModifiersState};
 
@@ -26,6 +36,9 @@ pub enum ApprovalKey {
     PreviousAnswer,
     /// Give the selected answer, or acknowledge a sentence. Enter or Space.
     Choose,
+    /// **Answer no**, whatever is selected and whether or not anything is.
+    /// Escape, which `alo_access::leaving` says declines on this surface.
+    Decline,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -47,6 +60,7 @@ impl ApprovalKey {
             Keysym::Tab if held.shift => Self::PreviousAnswer,
             Keysym::Tab => Self::NextAnswer,
             Keysym::Return | Keysym::KP_Enter | Keysym::space => Self::Choose,
+            Keysym::Escape => Self::Decline,
             _ => Self::Nothing,
         }
     }
@@ -84,9 +98,10 @@ mod tests {
     }
 
     /// **No key is an answer by itself, and none is a third answer.** Letters
-    /// that look like *yes* and *no* in some language, Escape, the arrows and
-    /// Delete all do nothing — so there is no shortcut to approving, no
-    /// dismissing, and no letter with which to type a reason.
+    /// that look like *yes* and *no* in some language, the arrows and Delete
+    /// all do nothing — so there is no shortcut to approving and no letter with
+    /// which to type a reason. Escape is not among them: it answers no, which
+    /// is the next test.
     #[test]
     fn no_key_is_an_answer_by_itself_and_none_is_a_third_answer() {
         let held = nothing_held();
@@ -97,7 +112,6 @@ mod tests {
             Keysym::a,
             Keysym::j,
             Keysym::o,
-            Keysym::Escape,
             Keysym::Left,
             Keysym::Right,
             Keysym::Up,
@@ -136,6 +150,43 @@ mod tests {
             for symbol in [Keysym::Return, Keysym::Tab, Keysym::space] {
                 assert_eq!(ApprovalKey::of(symbol, &held), ApprovalKey::Nothing);
             }
+        }
+    }
+
+    /// **Escape answers no.** `alo_access::leaving` decides what Escape does on
+    /// every surface, and on this one it declines: never yes, and never a
+    /// proposal left waiting behind somebody's belief that they dealt with it.
+    #[test]
+    fn escape_answers_no_and_the_two_crates_agree_that_it_does() {
+        assert_eq!(
+            ApprovalKey::of(Keysym::Escape, &nothing_held()),
+            ApprovalKey::Decline
+        );
+        assert_eq!(
+            alo_access::leaving(alo_access::tree::Surface::Approval),
+            alo_access::Leaving::Declines
+        );
+    }
+
+    /// **A chord is still nothing**, Escape included: a shortcut meant for an
+    /// application never answers a question.
+    #[test]
+    fn escape_in_a_chord_answers_nothing() {
+        for held in [
+            ModifiersState {
+                ctrl: true,
+                ..nothing_held()
+            },
+            ModifiersState {
+                alt: true,
+                ..nothing_held()
+            },
+            ModifiersState {
+                logo: true,
+                ..nothing_held()
+            },
+        ] {
+            assert_eq!(ApprovalKey::of(Keysym::Escape, &held), ApprovalKey::Nothing);
         }
     }
 }

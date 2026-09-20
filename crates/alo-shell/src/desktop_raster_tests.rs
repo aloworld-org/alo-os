@@ -11,6 +11,7 @@ use crate::WindowControlLabels;
 use crate::desktop_look::rgb;
 use crate::desktop_testing::{a_second, an_afternoon, an_appearance, documents, noon_look, words};
 use crate::painted::{Inked, Solid};
+use alo_access::TurnedOn;
 use alo_appearance::{Accent, Appearance, Following, Scheme, Shipped, TimeOfDay, Token};
 
 /// Both windows open: what is running on the written afternoon, and what is
@@ -76,7 +77,7 @@ fn no_pixel_on_the_desktop_is_terracotta() {
                 let mut appearance = an_appearance();
                 appearance.follow(Following::from(Shipped::the_evening_schedule()));
                 appearance.set_accent(accent);
-                let look = DesktopLook::of(&appearance, now, reading);
+                let look = DesktopLook::of(&appearance, &TurnedOn::nothing(), now, reading);
                 let picture =
                     drawn(&Dock::shipped(), look, &running, &filling, (1920, 1080)).unwrap();
                 assert!(!picture.running.is_empty() && !picture.filling.is_empty());
@@ -114,7 +115,12 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
         (&always_light, evening, Scheme::Light),
     ] {
         assert_eq!(appearance.scheme_at(now), scheme);
-        let look = DesktopLook::of(appearance, now, Direction::LeftToRight);
+        let look = DesktopLook::of(
+            appearance,
+            &TurnedOn::nothing(),
+            now,
+            Direction::LeftToRight,
+        );
         let picture = drawn(&dock, look, &running, &filling, size).unwrap();
         let (ground, dock_ground, ink) = match scheme {
             Scheme::Light => (Token::Cream, Token::Porcelain, Token::Navy),

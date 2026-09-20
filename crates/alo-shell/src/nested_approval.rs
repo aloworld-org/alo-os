@@ -163,6 +163,7 @@ fn frame_pictures(
 )]
 mod tests {
     use super::*;
+    use crate::Contrast;
     use crate::approval_testing::{archiving, noon, on_a_machine, words};
     use crate::{EgressStatus, EgressStatusLook};
     use alo_appearance::{Scheme, TextScale};
@@ -175,11 +176,13 @@ mod tests {
     fn looks() -> (EgressStatusLook, ApprovalLook) {
         (
             EgressStatusLook {
+                contrast: Contrast::AsDesigned,
                 scheme: Scheme::Light,
                 scale: TextScale::ordinary(),
                 reading: Direction::LeftToRight,
             },
             ApprovalLook {
+                contrast: Contrast::AsDesigned,
                 scheme: Scheme::Light,
                 scale: TextScale::ordinary(),
                 reading: Direction::LeftToRight,

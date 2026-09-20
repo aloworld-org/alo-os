@@ -148,6 +148,7 @@ fn not_one_pixel_of_the_recovery_screen_is_terracotta() {
             let screen = a_screen(&strings, moves);
             let mut labels = WindowControlLabels::new().unwrap();
             let look = RecoveryLook {
+                contrast: Contrast::AsDesigned,
                 scheme,
                 ..a_light_look()
             };

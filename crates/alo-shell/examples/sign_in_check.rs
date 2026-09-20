@@ -36,7 +36,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_accounts::Accounts;
     use alo_appearance::{Scheme, TextScale};
     use alo_greeting::{Greeting, NotReadable, TheOpenersDoor};
-    use alo_shell::{Nested, Server, SignInLook, SignInScreen, Signing, WindowControlLabels};
+    use alo_shell::{
+        Contrast, Nested, Server, SignInLook, SignInScreen, Signing, WindowControlLabels,
+    };
     use alo_strings::Strings;
     use std::io::{BufRead, BufReader, Write};
     use std::os::unix::fs::PermissionsExt;
@@ -117,6 +119,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     for (what, mut screen) in standings {
         for scheme in [Scheme::Light, Scheme::Dark] {
             let look = SignInLook {
+                contrast: Contrast::AsDesigned,
                 scheme,
                 scale: TextScale::ordinary(),
             };
@@ -144,6 +147,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if let (Some(seconds), Some(mut screen)) = (interactive, kept) {
         println!("Type `ada`, Enter, `nested-check`, Enter at the parent window within {seconds}s");
         let look = SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Light,
             scale: TextScale::ordinary(),
         };

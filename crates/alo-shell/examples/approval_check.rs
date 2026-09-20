@@ -40,7 +40,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_record::Record;
     use alo_shell::{
         ApprovalAnswer, ApprovalFrame, ApprovalKey, ApprovalLook, ApprovalScreen, ApprovalShows,
-        Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested, WindowControlLabels,
+        Contrast, Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested,
+        WindowControlLabels,
     };
     use alo_strings::{Direction, Strings};
     use alo_turn::{Bounding, Doing, Done, Machine, NoBoundary, Turning};
@@ -136,6 +137,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             strings: &strings,
                             dock: &dock,
                             look: EgressStatusLook {
+                                contrast: Contrast::AsDesigned,
                                 scheme,
                                 scale: TextScale::ordinary(),
                                 reading,
@@ -145,6 +147,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             screen,
                             strings: &strings,
                             look: ApprovalLook {
+                                contrast: Contrast::AsDesigned,
                                 scheme,
                                 scale: TextScale::ordinary(),
                                 reading,

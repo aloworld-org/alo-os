@@ -6,14 +6,14 @@
 //! this is how the window looks and is measured, and that file is what goes in
 //! it and in which order.
 
-use alo_appearance::{Scheme, TextScale, Token};
+use alo_appearance::{Scheme, TextScale};
 use alo_strings::Direction;
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::RenderError;
 use crate::painted::Solid;
 use crate::painted_text::{Shaped, sentence};
+use crate::{Contrast, RenderError};
 
 /// How the record window looks, as the person's appearance and language
 /// decide.
@@ -25,6 +25,9 @@ pub struct RecordLook {
     pub scale: TextScale,
     /// Which way the person reads, which decides which edge the rail is on.
     pub reading: Direction,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// The largest output side, in pixels, the window is laid out for.
@@ -67,21 +70,11 @@ pub(crate) struct Palette {
 }
 
 impl Palette {
-    /// `alo-appearance`'s tokens for this scheme. Terracotta is not among them.
-    pub(crate) fn of(scheme: Scheme) -> Self {
-        let rgb = |token: Token| {
-            let colour = token.colour();
-            [colour.red(), colour.green(), colour.blue()]
-        };
-        match scheme {
-            Scheme::Light => Self {
-                ground: rgb(Token::Cream),
-                ink: rgb(Token::Navy),
-            },
-            Scheme::Dark => Self {
-                ground: rgb(Token::Charcoal),
-                ink: rgb(Token::Cream),
-            },
+    /// The window's ground and ink, from the one palette door.
+    pub(crate) fn of(scheme: Scheme, contrast: Contrast) -> Self {
+        Self {
+            ground: contrast.ground(scheme),
+            ink: contrast.ink(scheme),
         }
     }
 }
@@ -150,7 +143,7 @@ impl Room {
             margin,
             gap: measure.px(6),
             measure,
-            palette: Palette::of(look.scheme),
+            palette: Palette::of(look.scheme, look.contrast),
         })
     }
 

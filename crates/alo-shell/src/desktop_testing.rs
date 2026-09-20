@@ -9,6 +9,7 @@
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use alo_access::TurnedOn;
 use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -33,7 +34,7 @@ pub(crate) fn noon() -> TimeOfDay {
 
 /// `appearance` at midday, read `reading`.
 pub(crate) fn noon_look(appearance: &Appearance, reading: Direction) -> DesktopLook {
-    DesktopLook::of(appearance, noon(), reading)
+    DesktopLook::of(appearance, &TurnedOn::nothing(), noon(), reading)
 }
 
 /// One second, which is the interval every reading here is taken over.

@@ -7,6 +7,7 @@
 use super::*;
 use crate::{SignInKey, SignInScreen, Signing};
 use alo_accounts::Accounts;
+use alo_appearance::Token;
 use alo_greeting::{Greeting, Knocking, NotAnswered};
 use alo_sessiond::{Answered, Knock};
 use alo_strings::Strings;
@@ -24,6 +25,7 @@ impl Knocking for NoDoor {
 /// The ordinary light look.
 fn light() -> SignInLook {
     SignInLook {
+        contrast: Contrast::AsDesigned,
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
     }
@@ -62,6 +64,7 @@ fn the_password_is_never_drawn_not_even_its_length() {
     for look in [
         light(),
         SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Dark,
             scale: TextScale::ordinary(),
         },
@@ -107,6 +110,7 @@ fn terracotta_is_not_on_the_sign_in_screen() {
     };
     for scheme in [Scheme::Light, Scheme::Dark] {
         let look = SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme,
             scale: TextScale::ordinary(),
         };
@@ -132,6 +136,7 @@ fn terracotta_is_not_on_the_sign_in_screen() {
 fn everything_drawn_is_inside_the_output() {
     for percent in [100, 200] {
         let look = SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Light,
             scale: TextScale::percent(percent).unwrap(),
         };
@@ -196,4 +201,64 @@ fn the_waiting_field_is_told_apart_by_shape() {
         colours
     };
     assert_eq!(colours(&one), colours(&other));
+}
+
+/// **High contrast is the same screen in the other palette.** Every box is
+/// where it was — turning it on changes no layout, because there is no second
+/// screen for a person who needs it — and every flat colour drawn is one
+/// `alo_access::HighContrast` decided, so a token written into this file by
+/// hand would fail here rather than survive as a patch of the design's cream
+/// on a screen meant to be readable.
+#[test]
+fn high_contrast_draws_the_same_screen_in_the_palette_that_crate_decided() {
+    let screen = typed("ada", "secret");
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let scale = TextScale::ordinary();
+        let designed = drawn(
+            &screen,
+            SignInLook {
+                scheme,
+                scale,
+                contrast: Contrast::AsDesigned,
+            },
+        );
+        let high = drawn(
+            &screen,
+            SignInLook {
+                scheme,
+                scale,
+                contrast: Contrast::High,
+            },
+        );
+        let boxes = |picture: &SignInPicture| {
+            picture
+                .solids
+                .iter()
+                .map(|solid| solid.area)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            boxes(&designed),
+            boxes(&high),
+            "{scheme:?}: high contrast moved something"
+        );
+        let palette = crate::access_contrast::every_colour_of(
+            Contrast::High,
+            scheme,
+            Token::Terracotta.colour(),
+        );
+        for solid in &high.solids {
+            assert!(
+                palette.contains(&solid.colour),
+                "{scheme:?}: {:?} is drawn in {:?}, which is in no palette this crate may use",
+                solid.area,
+                solid.colour
+            );
+        }
+        assert_ne!(
+            designed.solids.first().map(|solid| solid.colour),
+            high.solids.first().map(|solid| solid.colour),
+            "{scheme:?}: the ground did not change at all"
+        );
+    }
 }

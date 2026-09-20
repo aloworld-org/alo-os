@@ -172,6 +172,7 @@ fn frame_pictures(
 )]
 mod tests {
     use super::*;
+    use crate::Contrast;
     use crate::settings_testing::{a_persons_machine, light, words};
     use crate::{EgressStatus, EgressStatusLook};
     use alo_appearance::{Scheme, TextScale};
@@ -191,6 +192,7 @@ mod tests {
         let dock = Dock::shipped();
         let mut labels = WindowControlLabels::new().unwrap();
         let egress_look = EgressStatusLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Light,
             scale: TextScale::ordinary(),
             reading: Direction::LeftToRight,

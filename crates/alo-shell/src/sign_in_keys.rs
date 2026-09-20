@@ -21,6 +21,12 @@ pub enum SignInKey {
     OtherField,
     /// Enter: from the name, move to the password; from the password, sign in.
     Enter,
+    /// **Take back everything typed**, in both fields, and wait at the name
+    /// again. Escape, which `alo_access::leaving` says clears what was typed on
+    /// this screen — there is nowhere further back to go from the screen a
+    /// machine starts at, and somebody who cannot see the password field must
+    /// be able to start it again with one key rather than counting erasures.
+    Clear,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -38,6 +44,7 @@ impl SignInKey {
             Keysym::BackSpace => return Self::Erase,
             Keysym::Tab | Keysym::ISO_Left_Tab => return Self::OtherField,
             Keysym::Return | Keysym::KP_Enter => return Self::Enter,
+            Keysym::Escape => return Self::Clear,
             _ => {}
         }
         if held.ctrl || held.alt || held.logo {
@@ -99,13 +106,13 @@ mod tests {
         }
     }
 
-    /// **Keys with no letter do nothing** — Escape, arrows, function keys —
-    /// and nothing here opens, runs or reaches anything.
+    /// **Keys with no letter do nothing** — arrows, function keys — and
+    /// nothing here opens, runs or reaches anything. Escape is not among them:
+    /// it clears what was typed, which is the next test.
     #[test]
     fn keys_with_no_letter_do_nothing() {
         let held = nothing_held();
         for symbol in [
-            Keysym::Escape,
             Keysym::Left,
             Keysym::F1,
             Keysym::Delete,
@@ -118,5 +125,20 @@ mod tests {
                 "{symbol:?}"
             );
         }
+    }
+
+    /// **Escape clears what was typed**, which is what `alo_access::leaving`
+    /// says this screen's Escape does — there is nowhere further back to go
+    /// from the screen a machine starts at.
+    #[test]
+    fn escape_clears_what_was_typed_and_the_two_crates_agree_that_it_does() {
+        assert_eq!(
+            SignInKey::of(Keysym::Escape, &nothing_held()),
+            SignInKey::Clear
+        );
+        assert_eq!(
+            alo_access::leaving(alo_access::tree::Surface::SignIn),
+            alo_access::Leaving::ClearsWhatWasTyped
+        );
     }
 }

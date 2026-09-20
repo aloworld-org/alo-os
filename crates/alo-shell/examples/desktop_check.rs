@@ -31,6 +31,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// Draw every standing of the desktop in both schemes and both directions.
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    use alo_access::TurnedOn;
     use alo_appearance::{Accent, Appearance, Following, Shipped, TimeOfDay};
     use alo_capability::Grantee;
     use alo_dock::{Dock, Edge};
@@ -115,7 +116,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &mut labels,
                             DesktopFrame {
                                 dock: &dock,
-                                look: DesktopLook::of(&appearance, now, reading),
+                                look: DesktopLook::of(
+                                    &appearance,
+                                    &TurnedOn::nothing(),
+                                    now,
+                                    reading,
+                                ),
                                 strings: &strings,
                                 egress,
                                 running,
