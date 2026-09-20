@@ -5287,6 +5287,85 @@ camera acceptance stays untaken and its blocker stays, now pointed at the
 portal instead of at the version.
 **Date:** 2026-09-20.
 
+### On WirePlumber 0.4.17 the camera is not a linkable at all, so no permission can link it
+**Version:** PipeWire 1.0.5 with WirePlumber 0.4.17, Ubuntu 24.04.4 aarch64, in
+the Lima VM that gates this repository, 2026-09-20. **Measured independently of
+the entry above and after it**, by instrumenting WirePlumber's own Lua through
+`/etc/wireplumber/scripts/`, which it prefers over the installed copies — a
+config override, nothing installed patched (ADR 0011), removed again and the
+ordinary fixture restored and verified with 954 412 bytes of captured audio.
+
+**First, the entry above is confirmed on a second stack and by a second
+mechanism.** A video client that declares no `media.class` is refused here too,
+and on 0.4.17 it happens in a different place: `policy-node.lua`'s `canLink()`
+rejects a candidate on its first test, `properties["media.type"] ~=
+target_properties["media.type"]`, and an undeclared client's `media.type` is
+`nil`, which equals nothing. The instrumented policy printing what it compares:
+
+```
+PROBE findDefinedTarget consumer.media.type=nil want.direction=output
+PROBE   linkable name=synthetic-camera dir=output mtype=Video canLink=false
+```
+
+So the fault spans two WirePlumber major versions through two different code
+paths. With `media.class=Stream/Input/Video`, `gst-launch-1.0 pipewiresrc`
+attached to a synthetic `Video/Source` and captured **ten buffers, EOS in
+0.7 s**.
+
+**Second, and this is new: on this stack the camera is never a candidate,
+because it is not a linkable.** The policy chooses a target only from
+`linkables_om` — `findDefinedTarget`, `findDefaultLinkable` and
+`findBestLinkable` all iterate or look up in it. Printing every member of it at
+the moment of a failed attach gives the six loopback audio nodes, the synthetic
+`Video/Source`, and the client itself. **The camera is not there.**
+
+It is not there because WirePlumber never makes a session item for it.
+Instrumenting `create-item.lua`'s `addItem` shows it called for every audio node
+and for the synthetic `Video/Source` — `si-node`, `class=Video/Source` — and
+**never** for `v4l2_input.platform-vivid.0`, in a run where that node is present
+and complete in the graph.
+
+**This is upstream of permissions, and that is what makes it worth separating
+from the portal reading above.** A portal grants permission on a node; the
+policy never considers this node at all. On this stack, no permission store
+entry could produce a link, because nothing is choosing between candidates that
+include the camera.
+
+**The candidate mechanism, recorded as a reading and not a measurement.** The
+one anomaly in that node's entire trace is that a parameter enumeration on it
+fails where it succeeds on every audio node:
+
+```
+enum_params_for_cache_done: <WpNode:49> enum params failed:
+    enum params id:2 (Spa:Enum:ParamId:Props) failed
+```
+
+| `pw-cli enum-params <node> Props` | Result |
+|---|---|
+| the camera (`v4l2_input.platform-vivid.0`) | **nothing at all** |
+| an audio source (control) | a full `Props` object — volume, mute |
+
+That the failure is *why* the node never reaches `create-item.lua` is **not**
+measured, and one observation argues against the simplest version of it: an
+object manager with the identical interest, run from `wpexec` in a separate
+process against the settled graph, **does** see the node. So whatever excludes
+it is inside the daemon's own handling rather than a property of the global.
+
+**What would tell the two explanations apart**, cheaply and before anybody
+arranges a desktop session: print `linkables_om`'s members on **0.5.13** at the
+moment of a failed camera attach. If the camera is absent there too, the portal
+cannot be the explanation on that stack either, and the question is why a V4L2
+node never becomes a linkable. If it is present, the portal reading stands and
+this entry is a 0.4-only quirk.
+
+**Also worth knowing:** `vivid` was recorded as *eliminated* as a variable on
+the reasoning that a synthetic source is refused identically. That control was
+itself failing for the undeclared-kind fault, so the two agreed for a reason
+unrelated to what was being tested — a correct measurement of the wrong thing.
+With the kind declared they stop agreeing: the synthetic source links and
+`vivid` does not.
+**Date:** 2026-09-20.
+
 ### WSL's kernel has no `vivid`; a KVM guest with a stock distro kernel does
 **Version:** WSL 2 kernel `6.18.33.2-microsoft-standard-WSL2` on the development
 PC, against Ubuntu 24.04.5's `6.8.0-139-generic` in a KVM guest, 2026-09-20.
