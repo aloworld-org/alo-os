@@ -37,7 +37,7 @@ use std::time::{Duration, SystemTime};
 
 use alo_egress::{Destination, Errand, Indicator, OnItsOwn};
 use alo_image::{THE_PIN, ThePin};
-use alo_keeping_up::{Digest, Offered, Running, a_check_at};
+use alo_keeping_up::{Digest, Offered, Running, Vouching, a_check_at};
 use alo_looking::{
     Because, Kept, NoAnswer, NoLongerTrue, NotKept, Place, Release, SaidOnce, Say, ThePlace, look,
 };
@@ -120,10 +120,15 @@ struct APlaceThatAnswers {
 }
 
 impl APlaceThatAnswers {
-    /// A place holding this release and saying it is this build.
+    /// A place holding this release, saying it is this build, and vouching for
+    /// it — which is the ordinary case every test here that is not about
+    /// vouching wants.
     fn offering(release: &str, build: &Digest) -> Self {
         Self {
-            names: vec![release.to_owned()],
+            names: vec![
+                release.to_owned(),
+                alo_looking::the_name_vouching_for(build),
+            ],
             builds: vec![(release.to_owned(), build.as_str().to_owned())],
             refusing: None,
             asked: Cell::new(0),
@@ -254,7 +259,7 @@ fn a_check_is_one_act_that_fetches_an_answer_and_never_a_build() {
     // **An offer can be heard no other way.** During the check it can; during
     // every other errand alo OS runs it cannot, so an answer fetched without
     // being shown has nothing to become.
-    assert!(Offered::heard(&underway, build("bb")).is_ok());
+    assert!(Offered::heard(&underway, build("bb"), Vouching::ThePlaceVouchesForIt).is_ok());
     showing.ended_on_its_own(underway);
     for errand in [
         Errand::SigningIn,
@@ -268,7 +273,8 @@ fn a_check_is_one_act_that_fetches_an_answer_and_never_a_build() {
             OnItsOwn::for_(errand, place.destination().clone()),
             a_moment(),
         );
-        let refused = Offered::heard(&underway, build("bb")).unwrap_err();
+        let refused =
+            Offered::heard(&underway, build("bb"), Vouching::ThePlaceVouchesForIt).unwrap_err();
         assert_eq!(refused.during(), errand);
         elsewhere.ended_on_its_own(underway);
     }

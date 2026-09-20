@@ -59,8 +59,8 @@ use alo_egress::{Destination, Indicator};
 use alo_keeping_up::{
     AnUndo, Bracket, CannotGoBack, Change, Changed, Deployments, Digest, GoingBack, HowFarBack,
     NotAWindow, NotRunningABuild, NotStaged, NotUndoable, Offered, Returning, Running, Since,
-    Source, Staging, Standing, THE_RULE, WhatWasDone, WhatWasKept, WhenItApplies, WhenItWasDone,
-    a_check_at, words,
+    Source, Staging, Standing, THE_RULE, Vouching, WhatWasDone, WhatWasKept, WhenItApplies,
+    WhenItWasDone, a_check_at, words,
 };
 use alo_record::Entry;
 use alo_recounting::{Outcome, Told};
@@ -266,6 +266,18 @@ fn a_file_an_agent_moved(strings: &Strings) -> Entry {
     Entry::ran(&running, strings)
 }
 
+/// A build offered that nobody vouched for, heard the same way.
+fn offered_unvouched(digest: Digest) -> Offered {
+    let mut indicator = Indicator::default();
+    let underway = indicator.beginning_on_its_own(
+        a_check_at(Destination::at("updates.alo.example").unwrap()),
+        noon(),
+    );
+    let offered = Offered::heard(&underway, digest, Vouching::NobodyHasVouchedForIt).unwrap();
+    assert!(indicator.ended_on_its_own(underway));
+    offered
+}
+
 /// A build offered, heard the only way one can be: during a check that was on
 /// the indicator while it happened.
 fn offered(digest: Digest) -> Offered {
@@ -274,7 +286,7 @@ fn offered(digest: Digest) -> Offered {
         a_check_at(Destination::at("updates.alo.example").unwrap()),
         noon(),
     );
-    let offered = Offered::heard(&underway, digest).unwrap();
+    let offered = Offered::heard(&underway, digest, Vouching::ThePlaceVouchesForIt).unwrap();
     assert!(indicator.ended_on_its_own(underway));
     offered
 }
@@ -438,6 +450,27 @@ fn every_sentence_reached(strings: &Strings) -> Vec<Said> {
             program: "the base".to_owned(),
             code: Some(1),
             said: "no".to_owned(),
+        })
+        .said(strings),
+    );
+
+    // An update nothing at the place vouched for, which is what a person is
+    // told *instead of* an update being ready — and, if they act on it
+    // anyway, what the machine's signature policy answers.
+    // `tests/an_offer_a_person_can_act_on.rs` is where both are decided.
+    said.push(
+        Standing::between(
+            &Running::reported(build("aa")),
+            &offered_unvouched(second.clone()),
+        )
+        .said(strings),
+    );
+    said.push(
+        NotApplied::TheBuildWasNotGenuine(NotAnswered::SaidNo {
+            program: "the base".to_owned(),
+            code: Some(1),
+            said: "Source image rejected: A signature was required, but no signature exists"
+                .to_owned(),
         })
         .said(strings),
     );
@@ -739,6 +772,7 @@ fn every_refusal_on_the_road_is_said_and_no_two_read_alike() {
         plainly(words::CHANGED_SINCE_IT_WAS_FOUND, &strings),
         plainly(words::ALREADY_WAITING, &strings),
         plainly(words::NOT_PREPARED, &strings),
+        plainly(words::NOT_GENUINE, &strings),
         plainly(words::NOT_WRITTEN_DOWN, &strings),
         plainly(words::NOTHING_TO_GO_BACK_TO, &strings),
         plainly(words::NO_LONGER_KEPT, &strings),
@@ -755,14 +789,15 @@ fn every_refusal_on_the_road_is_said_and_no_two_read_alike() {
     }
     assert_eq!(texts.len(), refusals.len(), "two refusals read the same");
 
-    // The six that follow something the person chose say that their machine is
-    // as it was. The five that are said *instead of* an offer do not, because
-    // nothing was started for them to say it about.
+    // The seven that follow something the person chose say that their machine
+    // is as it was. The five that are said *instead of* an offer do not,
+    // because nothing was started for them to say it about.
     for word in [
         words::ANSWER_NOT_UNDERSTOOD,
         words::RUNNING_NOT_KNOWN,
         words::CHANGED_SINCE_IT_WAS_FOUND,
         words::NOT_PREPARED,
+        words::NOT_GENUINE,
         words::GOING_BACK_NOT_PREPARED,
         words::CHANGED_SINCE_GOING_BACK_WAS_OFFERED,
     ] {

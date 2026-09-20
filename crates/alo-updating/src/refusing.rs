@@ -54,9 +54,24 @@ pub enum NotApplied {
     NotRead(NotRead),
     /// Refused before anything ran.
     Refused(NotStaged),
-    /// The base was told and refused, or failed — the download did not
-    /// complete, or the build was not one the signature policy accepts.
+    /// The base was told and refused, or failed: the download did not
+    /// complete, or something else went wrong in preparing it.
+    ///
+    /// **Not the signature policy**, which is
+    /// [`Self::TheBuildWasNotGenuine`]. The two were one member until
+    /// 2026-09-19, and one sentence — and a person who reads *it could not be
+    /// prepared* about a build their machine refused to trust has been told
+    /// the least interesting half of what happened.
     TheBaseDidNotStageIt(NotAnswered),
+    /// The base refused the build because its signature policy would not have
+    /// it: this machine could not confirm the build is alo OS.
+    ///
+    /// Told apart from the member above by what the base said
+    /// ([`crate::genuine::refused_for_its_signature`]), because the base
+    /// gives no other sign. Nothing about that reading decides whether a build
+    /// is staged — the base has already refused by the time this is made, and
+    /// `--enforce-container-sigpolicy` is what made it refuse.
+    TheBuildWasNotGenuine(NotAnswered),
 }
 
 /// Whether the machine updated could not be written down.
@@ -143,6 +158,9 @@ impl NotApplied {
             Self::Refused(refused) => refused.said(strings),
             Self::TheBaseDidNotStageIt(_) => {
                 strings.say(&words::NOT_PREPARED.key(), &Filling::nothing())
+            }
+            Self::TheBuildWasNotGenuine(_) => {
+                strings.say(&words::NOT_GENUINE.key(), &Filling::nothing())
             }
         }
     }

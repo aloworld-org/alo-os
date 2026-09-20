@@ -18,7 +18,8 @@ use std::time::{Duration, SystemTime};
 use alo_egress::{Destination, Indicator};
 use alo_keeping::{Reading, Writing};
 use alo_keeping_up::{
-    Digest, NotStaged, Offered, Ready, Running, Since, Source, Standing, WhenItApplies, a_check_at,
+    Digest, NotStaged, Offered, Ready, Running, Since, Source, Standing, Vouching, WhenItApplies,
+    a_check_at,
 };
 use alo_record::{Entry, Happened};
 use alo_saying::everything_this_machine_can_say;
@@ -71,7 +72,12 @@ impl Base for TheBaseStandingIn {
             _ => Err(NotAnswered::SaidNo {
                 program: "bootc".to_owned(),
                 code: Some(1),
-                said: "error: Pulling: signature verification failed".to_owned(),
+                // Deliberately **not** a signature refusal: that is its own
+                // member and its own sentence now
+                // (`tests/an_offer_a_person_can_act_on.rs`), and a stand-in
+                // whose only failure was one would have made every test here
+                // about the wrong refusal.
+                said: "error: Pulling: reading blob sha256:26cdc51f: unexpected EOF".to_owned(),
             }),
         }
     }
@@ -113,7 +119,7 @@ fn ready(running: &str, offered: &str) -> Ready {
     let mut indicator = Indicator::default();
     let underway =
         indicator.beginning_on_its_own(a_check_at(Destination::at("ghcr.io").unwrap()), noon());
-    let offer = Offered::heard(&underway, digest(offered)).unwrap();
+    let offer = Offered::heard(&underway, digest(offered), Vouching::ThePlaceVouchesForIt).unwrap();
     assert!(indicator.ended_on_its_own(underway));
     match Standing::between(&Running::reported(digest(running)), &offer) {
         Standing::Ready(ready) => ready,

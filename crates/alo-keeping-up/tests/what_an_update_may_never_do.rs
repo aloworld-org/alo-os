@@ -25,7 +25,8 @@ use std::time::{Duration, SystemTime};
 
 use alo_egress::{Destination, Errand, Indicator, OnItsOwn};
 use alo_keeping_up::{
-    Cause, Digest, Disturbance, Offered, Running, Standing, THE_RULE, WhenItApplies, a_check_at,
+    Cause, Digest, Disturbance, Offered, Running, Standing, THE_RULE, Vouching, WhenItApplies,
+    a_check_at,
 };
 use alo_saying::everything_this_machine_can_say;
 use alo_strings::Strings;
@@ -54,7 +55,7 @@ fn the_machine() -> Strings {
 fn offered(digest: Digest) -> Offered {
     let mut indicator = Indicator::default();
     let underway = indicator.beginning_on_its_own(a_check_at(updates()), noon());
-    let offered = Offered::heard(&underway, digest).unwrap();
+    let offered = Offered::heard(&underway, digest, Vouching::ThePlaceVouchesForIt).unwrap();
     assert!(indicator.ended_on_its_own(underway));
     offered
 }
@@ -87,7 +88,12 @@ fn an_update_is_a_build_offered_that_differs_from_the_build_running() {
         .map(String::as_str)
         .collect();
     fields.sort_unstable();
-    assert_eq!(fields, ["offered", "running", "standing"]);
+    // Four, and each of them is something the person can be told: the two
+    // builds, which of the two standings this is, and whether the place
+    // vouched for what it offers. A fifth arriving here is a lever somebody
+    // added to justify interrupting a person, and fails this.
+    assert_eq!(fields, ["offered", "running", "standing", "vouching"]);
+    assert_eq!(ready.vouching(), Vouching::ThePlaceVouchesForIt);
 }
 
 /// **No clock, no scheduler and no background fetch is decided here.**
@@ -168,7 +174,7 @@ fn a_check_for_an_update_is_on_the_indicator_while_it_happens() {
         "alo OS is checking for an update at updates.alo.example"
     );
 
-    let offer = Offered::heard(&underway, build("bb")).unwrap();
+    let offer = Offered::heard(&underway, build("bb"), Vouching::ThePlaceVouchesForIt).unwrap();
     assert_eq!(offer.digest(), &build("bb"));
 
     assert!(indicator.ended_on_its_own(underway));
@@ -191,7 +197,8 @@ fn an_answer_heard_during_any_other_errand_is_refused() {
     for errand in others {
         let mut indicator = Indicator::default();
         let underway = indicator.beginning_on_its_own(OnItsOwn::for_(errand, updates()), noon());
-        let refused = Offered::heard(&underway, build("bb")).unwrap_err();
+        let refused =
+            Offered::heard(&underway, build("bb"), Vouching::ThePlaceVouchesForIt).unwrap_err();
         assert_eq!(refused.during(), errand);
     }
     // Every errand there is was considered: the one that may hear an answer,

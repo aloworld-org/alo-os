@@ -183,7 +183,16 @@ fn a_check_against_the_place_this_repository_pins() {
     let build = Digest::read(&named).expect("a whole build");
     assert_eq!(indicator.showing().len(), 1);
 
-    let offered = Offered::heard(&underway, build.clone()).expect("an offer heard during a check");
+    // **Whether the place vouches for what it offers**, out of the names it
+    // has already answered with — no third question and no second departure.
+    let vouching = alo_looking::vouched_for(&build, &held);
+    println!(
+        "it holds {} for that build: {vouching:?}",
+        alo_looking::the_name_vouching_for(&build)
+    );
+
+    let offered =
+        Offered::heard(&underway, build.clone(), vouching).expect("an offer heard during a check");
     let standing = Standing::between(&running, &offered);
     println!("this machine stands: {}", standing.said(&strings).text());
 
@@ -220,6 +229,97 @@ fn a_check_against_the_place_this_repository_pins() {
         .expect("the place named the pinned release's build");
     assert_eq!(pinned, pin.digest(), "the place disagrees with the pin");
     println!("and the pinned release {} is {pinned}", pin.version());
+}
+
+/// **What this machine is offered today, and what it is told about it** — the
+/// first half of task 7's acceptance, against the real place.
+///
+/// It asserts nothing about *which* answer the place gives, because that is
+/// the release process's to change and this is not the place to freeze it. It
+/// asserts the two things that must hold whatever the place holds: that the
+/// sentence a person reads matches what the place actually vouches for, and
+/// that a build nothing vouches for is still **offered** rather than hidden —
+/// the choice a person has is *when*, never *whether to be told*.
+///
+/// What it prints is the measurement the report carries.
+#[test]
+#[ignore = "reaches the real place this repository's builds come from"]
+fn what_this_machine_is_offered_today_and_what_it_is_told_about_it() {
+    let place = Place::on_this_machine().expect("the pin this repository ships");
+    let strings = Strings::of(everything_this_machine_can_say().expect("the machine's words"));
+    let running = Running::reported(
+        Digest::read(the_pin().digest()).expect("the pinned build is a whole build"),
+    );
+
+    let asking = TheRegistry::at(&place).taking(decided(&TheProxy::None, &place));
+    let held = asking.every_name().expect("the place answered");
+    let mut indicator = Indicator::default();
+    let found = look(
+        &mut indicator,
+        a_moment(),
+        &place,
+        &running,
+        Because::ThePersonAsked,
+        &TheRegistry::at(&place).taking(decided(&TheProxy::None, &place)),
+    )
+    .expect("the real place answered a whole check");
+    assert!(indicator.is_quiet());
+
+    let said = found.said(&strings);
+    println!(
+        "running {}\nit holds {held:?}\na person reads: {}",
+        running.digest().as_str(),
+        said.text()
+    );
+    assert!(!said.is_a_bug(), "{said}");
+
+    match found.standing() {
+        Standing::UpToDate => {
+            println!("this machine is up to date, so nothing is offered to act on");
+        }
+        Standing::Ready(ready) => {
+            println!(
+                "offered {} — {:?}",
+                ready.offered().as_str(),
+                ready.vouching()
+            );
+            // The sentence says what the place actually holds, either way.
+            assert_eq!(
+                ready.vouching(),
+                alo_looking::vouched_for(ready.offered(), &held),
+                "the offer disagrees with the names the place holds"
+            );
+            if ready.vouching().is_vouched_for() {
+                assert!(said.text().starts_with("An update is ready"), "{said}");
+            } else {
+                assert!(said.text().contains("cannot confirm"), "{said}");
+            }
+        }
+    }
+
+    // **And the newest release is offered whether or not anything vouches for
+    // it.** A newer version that exists is told about; what changes is the
+    // sentence.
+    let newest = Release::newest_of(held.iter().map(String::as_str)).expect("a release");
+    let newest_is = Digest::read(
+        &asking
+            .the_build_of(&newest)
+            .expect("the place named that release's build"),
+    )
+    .expect("a whole build");
+    if &newest_is != running.digest() {
+        assert!(
+            found.is_ready(),
+            "the place holds {} and this machine was told nothing about it",
+            newest.named_as()
+        );
+    }
+    println!(
+        "the newest release {} is {}, vouched for: {:?}",
+        newest.named_as(),
+        newest_is.as_str(),
+        alo_looking::vouched_for(&newest_is, &held)
+    );
 }
 
 /// **Three refusals, from the real place rather than from a stand-in.**

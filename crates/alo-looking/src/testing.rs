@@ -16,7 +16,7 @@ use std::time::{Duration, SystemTime};
 
 use alo_egress::Indicator;
 use alo_image::ThePin;
-use alo_keeping_up::{Digest, Offered, Running, Standing, a_check_at};
+use alo_keeping_up::{Digest, Offered, Running, Standing, Vouching, a_check_at};
 use alo_strings::{Strings, Vocabulary};
 
 use crate::asking::ThePlace;
@@ -95,26 +95,37 @@ pub(crate) fn a_folder(named: &str) -> PathBuf {
     folder
 }
 
-/// An answer saying an update is ready, heard the only way one can be.
+/// An answer saying an update is ready, for a build the place vouched for.
 pub(crate) fn an_update(running: Digest, offered: Digest) -> Found {
-    let standing = standing_between(&running, offered);
+    an_update_vouched(running, offered, Vouching::ThePlaceVouchesForIt)
+}
+
+/// An answer saying an update is ready, for a build nothing vouched for.
+pub(crate) fn an_update_nobody_vouched_for(running: Digest, offered: Digest) -> Found {
+    an_update_vouched(running, offered, Vouching::NobodyHasVouchedForIt)
+}
+
+/// An answer saying an update is ready, heard the only way one can be.
+fn an_update_vouched(running: Digest, offered: Digest, vouching: Vouching) -> Found {
+    let standing = standing_between(&running, offered, vouching);
     assert!(standing.is_ready(), "the two builds given were the same");
     Found::of(running, standing, Because::ThePersonAsked, a_moment())
 }
 
 /// An answer saying this machine is up to date.
 pub(crate) fn up_to_date(running: Digest) -> Found {
-    let standing = standing_between(&running, running.clone());
+    let standing = standing_between(&running, running.clone(), Vouching::ThePlaceVouchesForIt);
     Found::of(running, standing, Because::ThePersonAsked, a_moment())
 }
 
 /// Where a machine running `running` stands against `offered`, with the offer
 /// heard during a check that was shown — which is the only way to hear one.
-fn standing_between(running: &Digest, offered: Digest) -> Standing {
+fn standing_between(running: &Digest, offered: Digest, vouching: Vouching) -> Standing {
     let mut indicator = Indicator::default();
     let underway =
         indicator.beginning_on_its_own(a_check_at(the_place().destination().clone()), a_moment());
-    let offered = Offered::heard(&underway, offered).expect("an offer heard during a check");
+    let offered =
+        Offered::heard(&underway, offered, vouching).expect("an offer heard during a check");
     let standing = Standing::between(&Running::reported(running.clone()), &offered);
     indicator.ended_on_its_own(underway);
     standing
@@ -170,6 +181,14 @@ impl APlaceThatAnswers {
             .iter()
             .map(|(release, build)| ((*release).to_owned(), build.as_str().to_owned()))
             .collect();
+        self
+    }
+
+    /// The same place, also holding a signature for each of these builds —
+    /// under the name `crate::vouching` says one is held under.
+    pub(crate) fn also_vouching_for(mut self, builds: &[Digest]) -> Self {
+        self.names
+            .extend(builds.iter().map(crate::vouching::the_name_vouching_for));
         self
     }
 

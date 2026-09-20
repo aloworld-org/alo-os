@@ -22,6 +22,7 @@
 use alo_egress::{Destination, Errand, OnItsOwn, Underway};
 
 use crate::digest::Digest;
+use crate::vouching::Vouching;
 
 /// The errand of checking for an update at this place.
 ///
@@ -42,6 +43,8 @@ pub fn a_check_at(from: Destination) -> OnItsOwn {
 pub struct Offered {
     /// The build offered.
     digest: Digest,
+    /// Whether the place offering it has vouched for it.
+    vouching: Vouching,
 }
 
 /// An answer about updates, offered as heard during an errand that was not a
@@ -76,11 +79,18 @@ impl Offered {
     /// line is still showing; ending the errand consumes it, and after that
     /// there is nothing to hear an answer with.
     ///
+    /// `vouching` is said rather than assumed, and it is an argument rather
+    /// than something added to an offer afterwards for one reason: the value a
+    /// caller gets by forgetting it would be
+    /// [`Vouching::ThePlaceVouchesForIt`], which is the reading that tells a
+    /// person there is nothing to think about. A question whose comfortable
+    /// answer is its default is a question that has to be asked.
+    ///
     /// # Errors
     /// [`NotACheck`] when the errand under way is not a check for an update.
-    pub fn heard(during: &Underway, digest: Digest) -> Result<Self, NotACheck> {
+    pub fn heard(during: &Underway, digest: Digest, vouching: Vouching) -> Result<Self, NotACheck> {
         match during.errand() {
-            Errand::CheckingForAnUpdate => Ok(Self { digest }),
+            Errand::CheckingForAnUpdate => Ok(Self { digest, vouching }),
             // An application's update check is its own errand, and an answer
             // heard during it is about an application rather than this system.
             //
@@ -103,6 +113,13 @@ impl Offered {
     #[must_use]
     pub fn digest(&self) -> &Digest {
         &self.digest
+    }
+
+    /// Whether the place offering it has vouched for it — see
+    /// [`crate::vouching`] for what that does and does not mean.
+    #[must_use]
+    pub fn vouching(&self) -> Vouching {
+        self.vouching
     }
 }
 

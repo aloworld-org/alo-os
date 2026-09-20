@@ -1390,6 +1390,7 @@ dependencies = [
  "alo-capability",
  "alo-declared",
  "alo-egress",
+ "alo-image",
  "alo-keeping",
  "alo-keeping-up",
  "alo-proxy",

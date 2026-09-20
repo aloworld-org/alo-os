@@ -46,7 +46,7 @@ use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use alo_keeping_up::{Digest, Running, Standing, words as update_words};
+use alo_keeping_up::{Digest, Running, Standing, Vouching, words as update_words};
 use alo_strings::{Filling, Said, Strings};
 
 use crate::because::Because;
@@ -68,6 +68,16 @@ struct Written {
     about: Digest,
     /// The build offered, where one was and it differed.
     offered: Option<Digest>,
+    /// Whether the place vouched for the build offered.
+    ///
+    /// **Missing is read as *nobody did*.** An answer written by an alo OS
+    /// from before this was kept says nothing about it, and of the two ways to
+    /// read that silence only one is safe: the cautious sentence, read about a
+    /// signed build, costs a person one careful line, and the confident one,
+    /// read about a build nothing vouches for, is the person
+    /// `crate::vouching` exists for.
+    #[serde(default)]
+    vouched_for: bool,
     /// Why it asked.
     because: Because,
     /// When it asked, in seconds since the epoch.
@@ -112,6 +122,8 @@ pub struct TheAnswer {
     about: Digest,
     /// The build offered, where one was and it differed.
     offered: Option<Digest>,
+    /// Whether the place vouched for the build offered.
+    vouching: Vouching,
     /// Why it asked.
     because: Because,
     /// When it asked.
@@ -162,6 +174,10 @@ impl Kept {
                 Standing::UpToDate => None,
                 Standing::Ready(ready) => Some(ready.offered().clone()),
             },
+            vouched_for: match found.standing() {
+                Standing::UpToDate => false,
+                Standing::Ready(ready) => ready.vouching().is_vouched_for(),
+            },
             because: found.because(),
             at: found
                 .at()
@@ -191,6 +207,11 @@ impl Kept {
         Ok(Some(TheAnswer {
             about: written.about,
             offered: written.offered,
+            vouching: if written.vouched_for {
+                Vouching::ThePlaceVouchesForIt
+            } else {
+                Vouching::NobodyHasVouchedForIt
+            },
             because: written.because,
             at: UNIX_EPOCH + Duration::from_secs(written.at),
         }))
@@ -283,19 +304,31 @@ impl TheAnswer {
         }
     }
 
+    /// Whether the place vouched for the build it offered.
+    ///
+    /// Meaningless where nothing was offered, and [`Self::said`] never reads
+    /// it there.
+    #[must_use]
+    pub fn vouching(&self) -> Vouching {
+        self.vouching
+    }
+
     /// What a person reads, when the answer is still about their machine.
     ///
     /// The sentence is `alo_keeping_up::Standing`'s, unchanged — this reads an
-    /// answer back rather than wording one.
+    /// answer back rather than wording one — **including the one for an update
+    /// nothing vouched for**. A surface that read the kept answer back would
+    /// otherwise lose exactly the half of it a person needs before they
+    /// choose, which is the half this whole question is about.
     ///
     /// # Errors
     /// [`NoLongerTrue`], whose own sentence says the machine changed after the
     /// update was found and that checking again finds the right one.
     pub fn said(&self, running: &Running, strings: &Strings) -> Result<Said, NoLongerTrue> {
-        let word = if self.is_ready(running)? {
-            update_words::READY
-        } else {
-            update_words::UP_TO_DATE
+        let word = match (self.is_ready(running)?, self.vouching.is_vouched_for()) {
+            (true, true) => update_words::READY,
+            (true, false) => update_words::READY_NOT_VOUCHED_FOR,
+            (false, _) => update_words::UP_TO_DATE,
         };
         Ok(strings.say(&word.key(), &Filling::nothing()))
     }
@@ -319,7 +352,9 @@ impl NoLongerTrue {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{a_folder, a_moment, an_update, build, in_english, up_to_date};
+    use crate::testing::{
+        a_folder, a_moment, an_update, an_update_nobody_vouched_for, build, in_english, up_to_date,
+    };
 
     /// **It is kept under `/var/lib/alo`**, beside what an update already keeps
     /// across a restart, which is what an update and a return both leave alone.
@@ -413,6 +448,42 @@ mod tests {
                 .text(),
             "This machine is up to date"
         );
+        drop(std::fs::remove_dir_all(&folder));
+    }
+
+    /// **A kept answer carries whether the place vouched for what it offered**,
+    /// so a surface reading it back says the same thing the check said.
+    ///
+    /// Losing it here would be the whole of the doubt disappearing on the way
+    /// to the disk, and a person reading *an update is ready* about a build
+    /// their own machine will refuse.
+    #[test]
+    fn a_kept_answer_carries_whether_anybody_vouched_for_what_was_offered() {
+        let folder = a_folder("vouching");
+        let kept = Kept::in_folder(&folder);
+        let running = Running::reported(build("aa"));
+
+        kept.keep(&an_update_nobody_vouched_for(build("aa"), build("bb")))
+            .unwrap();
+        let read = kept.read().unwrap().unwrap();
+        assert_eq!(read.vouching(), Vouching::NobodyHasVouchedForIt);
+        let said = read.said(&running, &in_english()).unwrap();
+        assert!(said.text().contains("cannot confirm"), "{said}");
+        assert!(read.is_ready(&running).unwrap(), "the update was lost");
+
+        // And an answer from before this was kept — one with nothing written
+        // about it — reads the cautious way round rather than the confident
+        // one.
+        let text = std::fs::read_to_string(kept.path()).unwrap();
+        std::fs::write(
+            kept.path(),
+            text.replace(",\"vouched_for\":false", "")
+                .replace("\"vouched_for\":false,", ""),
+        )
+        .unwrap();
+        let read = kept.read().unwrap().unwrap();
+        assert_eq!(read.vouching(), Vouching::NobodyHasVouchedForIt);
+
         drop(std::fs::remove_dir_all(&folder));
     }
 
