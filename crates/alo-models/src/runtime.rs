@@ -148,6 +148,29 @@ pub enum RuntimeError {
     /// picked from what a runtime already lists have nothing to tell it about.
     /// A refusal about which door was used, not about the weights.
     NothingToBring(String),
+    /// The machine holds a file other than the one the catalogue pinned.
+    ///
+    /// **The case this exists for is a tag re-pointed at a different upload.**
+    /// A catalogue entry that states a `[model.requantised]` block says which
+    /// file exactly it vouches for; a registry tag is a name, and a name can be
+    /// moved. Without this, somebody asks for the model they were promised,
+    /// gets another, and every check in this repository says yes.
+    NotThePinnedFile {
+        /// The model that was asked for.
+        model: String,
+        /// The digest the catalogue entry pinned.
+        expected: String,
+        /// The digest of the file the machine actually has.
+        arrived: String,
+    },
+    /// The pin could not be checked at all, which is a refusal and not a pass.
+    ///
+    /// **A check that cannot be made has not passed.** If the runtime will not
+    /// say which file it holds, the alternative to refusing is installing
+    /// weights nobody compared with anything while the catalogue goes on
+    /// claiming it vouches for them — which is the promise this variant exists
+    /// to stop being empty.
+    PinNotChecked(String),
     /// A path offered to [`ModelRuntime::bring`] that is not a file on this
     /// machine.
     ///
@@ -171,6 +194,8 @@ impl RuntimeError {
             Self::NotEnoughDisk { .. } => words::NOT_ENOUGH_DISK,
             Self::Unusable => words::RUNTIME_UNUSABLE,
             Self::DownloadIncomplete => words::DOWNLOAD_INCOMPLETE,
+            Self::NotThePinnedFile { .. } => words::NOT_THE_PINNED_FILE,
+            Self::PinNotChecked(_) => words::PIN_NOT_CHECKED,
             Self::NothingToBring(_) => words::NOTHING_TO_BRING,
             Self::NotAPathOnThisDisk(_) => words::NOT_A_PATH_ON_THIS_DISK,
         }
@@ -183,9 +208,17 @@ impl RuntimeError {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::NotOffered(model) | Self::NotInstalled(model) | Self::NothingToBring(model) => {
-                Filling::of("model", model.clone())
-            }
+            Self::NotOffered(model)
+            | Self::NotInstalled(model)
+            | Self::NothingToBring(model)
+            | Self::PinNotChecked(model) => Filling::of("model", model.clone()),
+            Self::NotThePinnedFile {
+                model,
+                expected,
+                arrived,
+            } => Filling::of("model", model.clone())
+                .and("expected", expected.clone())
+                .and("arrived", arrived.clone()),
             Self::NotAPathOnThisDisk(path) => Filling::of("path", path.display().to_string()),
             Self::Unreachable
             | Self::TookTooLong

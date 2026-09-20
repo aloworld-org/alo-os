@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A model you download is the model we checked, or you don't get it.** The
+  catalogue names the exact file behind each model somebody other than the
+  publisher built, and alo OS now asks the machine which file it actually
+  received and refuses to install anything else — telling you what was expected
+  and what arrived. A tag quietly re-pointed at a different upload used to pass
+  in silence. If the check cannot be made at all, that is a refusal too: a check
+  that could not run has not passed.
+  Evidence: `docs/autonomy/updates/the-pin-an-entry-states.md`.
+
 - **A picture of your screen can now actually be taken.** The road alo OS takes
   its own screenshots along had never produced a picture on any machine: the
   pipeline handed to the rented capture tool was rejected as malformed before a

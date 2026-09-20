@@ -1956,6 +1956,68 @@ ready to run* owed.
 **Upstream:** not reported.
 **Date:** 2026-09-11, measured under systemd 2026-09-12
 
+### Ollama 0.34.0 — the runtime states no digest anywhere structured, and the one it prints is the GGUF's own
+**Version:** Ollama 0.34.0, the release `image/Containerfile` pins, running on an
+Apple M3, 2026-09-20.
+
+**Why it was asked.** `data/catalogue.toml` pins a `sha256` for each artefact
+somebody other than the publisher made, and rule 6 sells that pin as *the file
+we graded and the file a machine fetches are the same file or the fetch fails*.
+Nothing compared it with anything. Before a check could be written, one question
+had to be answered against the real program: **does the runtime expose, for a
+model pulled from `hf.co/…`, the `sha256` of that GGUF file?**
+
+**Behaviour, and it is two findings.**
+
+**There is no structured field.** `/api/show` answers with `capabilities`,
+`details`, `model_info`, `modelfile`, `modified_at`, `parameters`, `template`
+and `tensors`, and **not one of them states a digest**. What carries it is
+`modelfile` — the text `ollama show --modelfile` prints — whose `FROM` line
+names the blob on disk:
+
+```text
+FROM /Users/…/.ollama/models/blobs/sha256-2e8040ce…68c2d
+```
+
+**And that blob's name is the GGUF's own `sha256`.** Measured on one real pull
+of `hf.co/bartowski/SmolLM2-135M-Instruct-GGUF:Q4_K_M` (105 MB), three ways that
+agree:
+
+| Asked of | Answer |
+|---|---|
+| the registry manifest's `application/vnd.ollama.image.model` layer | `2e8040ce…68c2d` |
+| the manifest the runtime wrote on this disk | `2e8040ce…68c2d` |
+| `sha256sum` of the blob file itself | `2e8040ce…68c2d` |
+
+The runtime prints `verifying sha256 digest` during the pull, so it checks the
+bytes against that digest itself; what it does not do is let anybody ask whether
+the digest is the one they wanted.
+
+**It carries to the entries that matter, and that cost nothing to check.** Both
+catalogue entries that state a pin were compared with their registry manifests —
+a few kilobytes each, no weights fetched:
+
+| Entry | Catalogue `sha256` | The manifest's model layer |
+|---|---|---|
+| `eurollm-9b-instruct` | `785a3b28…806b` | `785a3b28…806b` |
+| `teuken-7b-instruct` | `03fd13da…630b` | `03fd13da…630b` |
+
+**Our response:** `src/ollama.rs` asks `/api/show` after a pull and refuses when
+the digest is not the pinned one, naming both. Reading a **path out of generated
+text** is a thin place to stand, so the reader is strict — sixty-four lowercase
+hexadecimal characters after `sha256-`, on a line beginning `FROM `, or nothing
+— and nothing is a **refusal** rather than a skip. If a later release stops
+printing that line, the pin stops being checkable loudly instead of quietly,
+which is the failure this whole entry exists to avoid.
+
+**What the check cannot do:** refuse before the download. It is of what arrived,
+so a re-pointed tag costs the bytes and then fails. Checking the registry
+manifest first would refuse sooner, and would be checking the registry's promise
+rather than the machine's goods — the same shape as a recipe that tests a file's
+executable bit and calls the program working.
+**Date:** 2026-09-20.
+
+
 ### A bootc image inspected as a container has no `/root`, and the error says `file exists`
 **Version:** `quay.io/fedora/fedora-bootc:42`, the base `image/Containerfile`
 pins; found 2026-09-11 running the built alo OS image under `podman run`.

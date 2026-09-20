@@ -273,6 +273,46 @@ struct ChatSaid {
     content: String,
 }
 
+/// What `/api/show` answers, of which this crate reads one field.
+#[derive(Debug, Deserialize)]
+struct Shown {
+    /// The text `ollama show --modelfile` prints, whose `FROM` line names the
+    /// blob on disk. See [`Ollama::which_file_it_holds`] for why this is where
+    /// the digest has to be read from.
+    #[serde(default)]
+    modelfile: String,
+}
+
+/// The digest a generated modelfile's `FROM` line names, or [`None`] when it
+/// names anything else.
+///
+/// Deliberately strict. A `FROM` line can also carry a bare model name or a
+/// path to a file somebody handed over, and neither is a digest — so this
+/// answers only for the one shape it can read, and its caller turns [`None`]
+/// into a refusal rather than a shrug.
+fn the_digest_in(modelfile: &str) -> Option<String> {
+    for line in modelfile.lines() {
+        let Some(rest) = line.trim_start().strip_prefix("FROM ") else {
+            continue;
+        };
+        let named = rest.trim().rsplit('/').next().unwrap_or_default();
+        let Some(digest) = named.strip_prefix("sha256-") else {
+            continue;
+        };
+        // Sixty-four lowercase hexadecimal characters and nothing else, which
+        // is the one spelling `Requantised::sha256` is held to, so the two are
+        // compared as written rather than normalised into agreement.
+        if digest.len() == 64
+            && digest
+                .chars()
+                .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+        {
+            return Some(digest.to_owned());
+        }
+    }
+    None
+}
+
 /// One line of `/api/pull`'s streamed response.
 #[derive(Deserialize)]
 struct PullLine {
@@ -335,6 +375,58 @@ impl Ollama {
             .body_mut()
             .read_to_string()
             .map_err(|_| RuntimeError::Unusable)
+    }
+}
+
+impl Ollama {
+    /// The digest of the file the runtime holds for this artefact, as the
+    /// runtime itself says.
+    ///
+    /// # Why this asks the runtime rather than the registry
+    ///
+    /// The registry's manifest is a **promise**; this is the **goods**. A
+    /// manifest read before the download says what the registry intended to
+    /// serve, which is one tag-move away from what arrived, and checking it
+    /// would be checking a proxy for the thing — the same shape as a recipe
+    /// that tests a file's executable bit and calls the program working. It
+    /// also keeps every request this crate makes on this machine: the runtime
+    /// does the reaching out, as it already did before this check existed.
+    ///
+    /// # What was measured, against the pinned release
+    ///
+    /// Ollama 0.34.0, 2026-09-20. `/api/show` has **no field that states a
+    /// digest**. What it has is `modelfile`, the text `ollama show --modelfile`
+    /// prints, whose `FROM` line names the blob on disk:
+    ///
+    /// ```text
+    /// FROM /…/.ollama/models/blobs/sha256-2e8040ce…68c2d
+    /// ```
+    ///
+    /// That the name of that blob is the `sha256` of the GGUF the catalogue
+    /// pins was measured three ways on one real pull of
+    /// `hf.co/bartowski/SmolLM2-135M-Instruct-GGUF:Q4_K_M`: the registry
+    /// manifest's `application/vnd.ollama.image.model` layer, the local
+    /// manifest the runtime wrote, and `sha256sum` of the file itself — all
+    /// `2e8040ce…68c2d`. Both catalogue entries that state a pin were checked
+    /// against their registry manifests and agree with it exactly.
+    /// `docs/quirks.md` carries the measurement.
+    ///
+    /// # Errors
+    /// [`RuntimeError::PinNotChecked`] when the answer holds no digest this can
+    /// read — **a refusal, because a check that could not be made has not
+    /// passed.** That is the variant that will fire if a later release stops
+    /// printing the `FROM` line this reads, which is the point of it: the pin
+    /// stops being checkable loudly rather than quietly.
+    fn which_file_it_holds(&self, id: &str, artefact: &str) -> Result<String, RuntimeError> {
+        let body = serde_json::json!({ "model": artefact });
+        let response = ureq::post(format!("{}/api/show", self.endpoint))
+            .send_json(&body)
+            .map_err(|_| RuntimeError::Unreachable)?;
+        let shown: Shown = response
+            .into_body()
+            .read_json()
+            .map_err(|_| RuntimeError::Unusable)?;
+        the_digest_in(&shown.modelfile).ok_or_else(|| RuntimeError::PinNotChecked(id.to_owned()))
     }
 }
 
@@ -425,6 +517,20 @@ impl ModelRuntime for Ollama {
             // cannot — the reason is a variant with a string of its own rather
             // than a sentence this file wrote.
             return Err(RuntimeError::DownloadIncomplete);
+        }
+        // **The pin, checked against what the machine actually got.** Only for
+        // an entry that states one: an entry without a `[model.requantised]`
+        // block asks no question here and is neither slowed nor newly able to
+        // fail, because nothing below runs for it.
+        if let Some(pinned) = entry.requantised.as_ref() {
+            let arrived = self.which_file_it_holds(id, &artefact)?;
+            if arrived != pinned.sha256 {
+                return Err(RuntimeError::NotThePinnedFile {
+                    model: id.to_owned(),
+                    expected: pinned.sha256.clone(),
+                    arrived,
+                });
+            }
         }
         self.named_for_the_catalogue(id, &artefact, template.as_deref())
     }
@@ -743,6 +849,74 @@ mod tests {
         s.chars().filter(|c| !c.is_whitespace()).collect()
     }
 
+    /// **The digest is read only from the shape it can be read from**, and
+    /// every other shape is nothing rather than a guess.
+    ///
+    /// This is about the failure that would be silent. The runtime states no
+    /// digest anywhere structured; what it states is a generated modelfile
+    /// whose `FROM` line names a blob. If a later release stops printing that
+    /// line, or prints a path with no digest in it, this must answer *nothing*
+    /// so that its caller refuses — because the alternative is a pin that
+    /// quietly stops being checked while the catalogue goes on claiming it
+    /// vouches for the file.
+    #[test]
+    fn the_digest_is_read_only_from_the_shape_it_can_be_read_from() {
+        /// A real digest, of a real 105 MB artefact, measured 2026-09-20.
+        const REAL: &str = "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d";
+
+        // The shape Ollama 0.34.0 really prints, measured.
+        let real = format!(
+            "# Modelfile generated by \"ollama show\"\n\
+             # To build a new Modelfile based on this, replace FROM with:\n\
+             # FROM hf.co/bartowski/SmolLM2-135M-Instruct-GGUF:Q4_K_M\n\n\
+             FROM /Users/someone/.ollama/models/blobs/sha256-{REAL}\n\
+             TEMPLATE \"\"\"{{{{ .Prompt }}}}\"\"\"\n"
+        );
+        assert_eq!(the_digest_in(&real).as_deref(), Some(REAL));
+
+        // The commented line above the real one names the model rather than a
+        // blob, which is why `FROM ` is wanted at the start of a line.
+        assert_eq!(
+            the_digest_in("# FROM hf.co/bartowski/SmolLM2-135M-Instruct-GGUF:Q4_K_M\n"),
+            None
+        );
+
+        for (why, modelfile) in [
+            ("no FROM line at all", "TEMPLATE \"\"\"x\"\"\"\n".to_owned()),
+            (
+                "a bare model name, which is what a Modelfile a person wrote carries",
+                "FROM mistral\n".to_owned(),
+            ),
+            (
+                "a path to weights somebody handed over, with no digest in it",
+                "FROM /home/anna/models/weights.gguf\n".to_owned(),
+            ),
+            (
+                "a blob named something other than a sha256",
+                "FROM /var/lib/blobs/sha512-abc\n".to_owned(),
+            ),
+            (
+                "too few characters to be a digest",
+                format!("FROM /b/sha256-{}\n", &REAL[..63]),
+            ),
+            ("too many", format!("FROM /b/sha256-{REAL}0\n")),
+            (
+                "the right length and not hexadecimal",
+                format!("FROM /b/sha256-{}\n", "z".repeat(64)),
+            ),
+            (
+                "upper case, which the catalogue's own spelling is not",
+                format!("FROM /b/sha256-{}\n", REAL.to_uppercase()),
+            ),
+        ] {
+            assert_eq!(
+                the_digest_in(&modelfile),
+                None,
+                "a modelfile with {why} was read as naming a digest"
+            );
+        }
+    }
+
     /// **The listing Ollama 0.34.0 really sends**, verbatim off the runtime on
     /// 2026-09-13, reads as the fixture above assumed: the name, the size and the
     /// quantisation, with every field this crate does not read ignored rather
@@ -931,6 +1105,90 @@ mod tests {
         assert!(body.get("template").is_none(), "{body}");
     }
 
+    /// The digest `data/catalogue.toml` pins for Teuken, which is also what the
+    /// registry's own manifest reports for that artefact (`docs/quirks.md`).
+    const THE_TEUKEN_PIN: &str = "03fd13daafb6f20c1c5f4b908d163841cdd96803a6f5a7c0c39dd236a2b1630b";
+
+    /// A digest of the right shape that is not the one the catalogue pins.
+    const ANOTHER_FILE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    /// What `/api/show` answers for the file the entry pins, in the shape
+    /// Ollama 0.34.0 really sends — a generated modelfile whose `FROM` line
+    /// names the blob on disk.
+    const SHOWN_HOLDING_THE_PINNED_FILE: &str = r##"{"modelfile":"# Modelfile generated by \"ollama show\"\n\nFROM /root/.ollama/models/blobs/sha256-03fd13daafb6f20c1c5f4b908d163841cdd96803a6f5a7c0c39dd236a2b1630b\n"}"##;
+
+    /// The same, for a different file.
+    const SHOWN_HOLDING_ANOTHER_FILE: &str = r#"{"modelfile":"FROM /root/.ollama/models/blobs/sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"}"#;
+
+    /// The same, saying nothing this can read a digest out of.
+    const SHOWN_SAYING_NOTHING: &str = r#"{"modelfile":"TEMPLATE \"\"\"x\"\"\"\n"}"#;
+
+    /// **A file that is not the one pinned is refused, and the refusal names
+    /// both digests.**
+    ///
+    /// The unit half of `tests/the_pin_an_entry_states.rs`, which measures the
+    /// same refusal against the real runtime. This one holds the shape of the
+    /// error and that **nothing is named for the catalogue afterwards** — a
+    /// third request would mean the fetch carried on past the mismatch.
+    #[test]
+    fn a_fetch_whose_file_is_not_the_one_pinned_is_refused() {
+        // Two replies, not three: the pull and the question about which file
+        // arrived. Queueing a third would be queueing the create this fetch
+        // must never reach — and the stand-in waits for one connection per
+        // reply, so an unused third reply is a test that hangs rather than one
+        // that fails.
+        let (url, server) = serving_each(&[
+            (200, "{\"status\":\"success\"}\n"),
+            (200, SHOWN_HOLDING_ANOTHER_FILE),
+        ]);
+        let refused = Ollama::at(&url, catalogue())
+            .fetch("teuken-7b-instruct", &mut Progress::ignored())
+            .unwrap_err();
+        assert_eq!(
+            refused,
+            RuntimeError::NotThePinnedFile {
+                model: "teuken-7b-instruct".to_owned(),
+                expected: THE_TEUKEN_PIN.to_owned(),
+                arrived: ANOTHER_FILE.to_owned(),
+            }
+        );
+        let sent = server.join().unwrap();
+        assert_eq!(
+            sent.len(),
+            2,
+            "the fetch asked for something after refusing: {sent:?}"
+        );
+        assert!(sent.first().unwrap().starts_with("POST /api/pull "));
+        assert!(sent.get(1).unwrap().starts_with("POST /api/show "));
+    }
+
+    /// **A runtime that will not say which file it holds is a refusal, not a
+    /// pass.**
+    ///
+    /// The variant that exists for the day a later release stops printing the
+    /// line this reads. Measured here as an answer with no `FROM` line in it.
+    #[test]
+    fn a_runtime_that_says_nothing_about_the_file_is_refused() {
+        // Two replies, not three: the pull and the question about which file
+        // arrived. Queueing a third would be queueing the create this fetch
+        // must never reach — and the stand-in waits for one connection per
+        // reply, so an unused third reply is a test that hangs rather than one
+        // that fails.
+        let (url, server) = serving_each(&[
+            (200, "{\"status\":\"success\"}\n"),
+            (200, SHOWN_SAYING_NOTHING),
+        ]);
+        let refused = Ollama::at(&url, catalogue())
+            .fetch("teuken-7b-instruct", &mut Progress::ignored())
+            .unwrap_err();
+        assert_eq!(
+            refused,
+            RuntimeError::PinNotChecked("teuken-7b-instruct".to_owned())
+        );
+        let sent = server.join().unwrap();
+        assert_eq!(sent.len(), 2, "{sent:?}");
+    }
+
     /// **An entry whose file carries no chat template is fetched with its
     /// publisher's** — Teuken, whose GGUF has none (`docs/quirks.md`), and only
     /// Teuken: every entry is walked, and only one names a template.
@@ -945,8 +1203,13 @@ mod tests {
             .collect();
         assert_eq!(with_a_template, vec!["teuken-7b-instruct"]);
 
+        // Three requests, not two: this entry states a `[model.requantised]`
+        // block, so between the pull and the create the runtime is asked which
+        // file it ended up with. The answer names the digest the catalogue
+        // pins, which is the case where the fetch carries on.
         let (url, server) = serving_each(&[
             (200, "{\"status\":\"success\"}\n"),
+            (200, SHOWN_HOLDING_THE_PINNED_FILE),
             (200, r#"{"status":"success"}"#),
         ]);
         Ollama::at(&url, shipped.clone())
@@ -954,7 +1217,7 @@ mod tests {
             .unwrap();
         let sent = server.join().unwrap();
         let body = sent
-            .get(1)
+            .get(2)
             .unwrap()
             .split_once("\r\n\r\n")
             .map(|(_, body)| body)

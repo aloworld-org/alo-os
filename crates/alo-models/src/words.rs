@@ -736,6 +736,33 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
      half-model to clean up.",
 );
 
+/// The file that arrived is not the one the catalogue pinned.
+pub const NOT_THE_PINNED_FILE: Word = Word::saying(
+    "models.runtime.not-the-pinned-file",
+    "the file that arrived for {model} is not the one this system checked, so nothing was \
+     installed. {expected} was expected, and {arrived} arrived",
+)
+.noting(
+    "{model} is the name that was asked for and is never translated. {expected} and {arrived} \
+     are digests — long strings of letters and numbers that name a file exactly — and are never \
+     translated either. A digest is unreadable on purpose: it is not for the person to compare, \
+     it is there so they can quote it to whoever published the file. The sentence says nothing \
+     was installed because that is the part they need first.",
+);
+
+/// The runtime would not say which file it holds, so the pin could not be
+/// checked.
+pub const PIN_NOT_CHECKED: Word = Word::saying(
+    "models.runtime.pin-not-checked",
+    "the model runtime would not say which file it has for {model}, so it could not be checked \
+     against the one this system vouches for, and nothing was installed",
+)
+.noting(
+    "{model} is the name that was asked for and is never translated. This is a refusal and not a \
+     warning: a check that cannot be made is not a check that passed. The runtime is the part of \
+     alo OS that holds the models, and it is on this machine.",
+);
+
 /// Weights that name no file, handed to the door that needs one.
 pub const NOTHING_TO_BRING: Word = Word::saying(
     "models.runtime.nothing-to-bring",
@@ -833,7 +860,7 @@ pub const GRADED_ANOTHER_WAY: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 56] = [
+pub const EVERY_WORD: [Word; 58] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -883,6 +910,8 @@ pub const EVERY_WORD: [Word; 56] = [
     NOT_ENOUGH_DISK,
     RUNTIME_UNUSABLE,
     DOWNLOAD_INCOMPLETE,
+    NOT_THE_PINNED_FILE,
+    PIN_NOT_CHECKED,
     NOTHING_TO_BRING,
     NOT_A_PATH_ON_THIS_DISK,
     UNMEASURED_TOO_LARGE,

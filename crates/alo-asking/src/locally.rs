@@ -188,10 +188,14 @@ impl Asking<'_> {
 /// for [`crate::hosted`]'s reason: the crate that joins two decisions up is
 /// where they are joined.
 ///
-/// **The two download reasons cannot happen when a question is asked**, and
-/// they are still mapped rather than left to a wildcard: a runtime that answered
-/// a question with *there is not enough disk* has answered with something that
-/// is not an answer, which is exactly what `NothingUsable` says.
+/// **The download reasons cannot happen when a question is asked**, and they
+/// are still mapped rather than left to a wildcard: a runtime that answered a
+/// question with *there is not enough disk* has answered with something that is
+/// not an answer, which is exactly what `NothingUsable` says. The same holds for
+/// the two a pinned artefact can produce — *this is not the file the catalogue
+/// vouches for*, and *which file it is could not be established* — which belong
+/// to fetching and would be, on this road, a runtime saying something no
+/// question asked for.
 ///
 /// **And no arm of it can produce `WentWrong::KeyNotAccepted`**, which is where
 /// *the runtime is never given a key* now lives. `alo-answering` used to refuse
@@ -216,7 +220,9 @@ fn what_went_wrong(why: RuntimeError) -> WentWrong {
         RuntimeError::NotInstalled(_) | RuntimeError::NotOffered(_) => WentWrong::NoModelThere,
         RuntimeError::Unusable
         | RuntimeError::NotEnoughDisk { .. }
-        | RuntimeError::DownloadIncomplete => WentWrong::NothingUsable,
+        | RuntimeError::DownloadIncomplete
+        | RuntimeError::NotThePinnedFile { .. }
+        | RuntimeError::PinNotChecked(_) => WentWrong::NothingUsable,
         // **Neither can arrive on this road**, and the mapping says what it
         // would mean rather than what it is. Both come from
         // `ModelRuntime::bring`, the door a person's brought file goes through

@@ -102,6 +102,16 @@
 #      digest, in sixty-four lowercase hexadecimal characters. A tag can be
 #      re-pointed after we measured it; a pin is what makes *the file we graded*
 #      and *the file a machine fetches* the same file or a failed fetch.
+#
+#      **Where that is kept, and what it can promise.** `src/ollama.rs` asks the
+#      runtime which file it ended up with and refuses the fetch when it is not
+#      this one, naming both digests; a runtime that will not say is also a
+#      refusal, because a check that could not be made has not passed. Measured
+#      against the real runtime in `tests/the_pin_an_entry_states.rs`, failing
+#      case first. What a pin cannot promise is that no bytes moved: the check
+#      is of what arrived, so a re-pointed tag is caught **after** the download
+#      rather than before it. It is the download that is wasted, never the
+#      answer.
 #    - `note` — **what a reader needs to know**: how it was made where the
 #      uploader says so, and any terms the upload carries beyond the model's
 #      own. Rule 1's "say which conditions" one field over — and the part that
