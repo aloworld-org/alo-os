@@ -72,6 +72,20 @@ is good enough for the other; if it is not, both fail.
   change, once; and the rented screen reader starts from the setting with the rented
   speech engine speaking the person's language, with a test per language naming the
   voice or naming that none exists.
+**A ninth surface, 2026-09-20.** The shell drew the recovery screen (the shell
+plan's task 13) and this crate's guard failed it, which is that guard working.
+`Surface::Recovery` follows this crate's own pattern rather than inventing one:
+it **names the controls and none of the sentences**, the way `Surface::Approval`
+names a label whose words are the turn's. Three things were decided with it, and
+the reasons outlast the values: **nothing is preselected**, because one of the
+two moments restarts the machine and an Enter held down from whatever just
+failed would be that; **two labels are named and empty**, because
+`alo-keeping-up` has no words for what is running or what it replaced and naming
+the control is what lets a reader announce the line at all (handed to that plan
+as a finding); and **recovery comes before sign-in** in the reading and focus
+order, because this is the surface that exists when the workspace does not, and
+somebody who cannot see the screen must reach it without an account.
+
 - **Constraint:** no speech or reading logic of our own. Where the rented speech
   engine has no voice for a language, that is stated per language, not hidden.
 
@@ -80,7 +94,7 @@ is good enough for the other; if it is not, both fail.
 **Status:** **Done, 2026-09-18.** Its blocker cleared: `alo-keyboards` is on main
 as of `2c2510f`. `alo-access` gained `reaching` — the focus order **is** the
 reading order rather than a second list that can disagree with it, Escape leaves
-every one of the eight surfaces, and every one of `alo-shortcuts`' eleven actions
+every one of the surfaces — eight then, nine since the recovery screen — and every one of `alo-shortcuts`' eleven actions
 has a chord **and** a place the keyboard arrives at by pressing Tab. Two of those
 stops did not exist and were added: the agent and the launcher. `filtering` holds
 what sticky, slow and bounce keys do to a key press, a test each, with time

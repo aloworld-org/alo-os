@@ -29,7 +29,7 @@
 //!
 //! # Escape leaves, and never answers
 //!
-//! [`leaving`] says what Escape does on each of the eight surfaces, and the one
+//! [`leaving`] says what Escape does on each of the nine surfaces, and the one
 //! that matters is the approval: **Escape declines.** It must never approve —
 //! ADR 0001 says what a person approves is the sentence, and a key pressed to
 //! get out of the way is not somebody reading a sentence. It must not leave the
@@ -132,6 +132,13 @@ pub enum Leaving {
 #[must_use]
 pub const fn leaving(surface: Surface) -> Leaving {
     match surface {
+        // There is nowhere further back than the screen a person reaches when
+        // the desktop will not start: it is what is left when the workspace is
+        // not there, so Escape leaves it where the desktop's Escape leaves the
+        // desktop. Leaving it for real is restarting the machine, which is a
+        // thing a person does to the machine and not a key
+        // (`alo_shell::RecoveryKey` takes no Escape at all).
+        Surface::Recovery => Leaving::AlreadyTheFloor,
         Surface::SignIn => Leaving::ClearsWhatWasTyped,
         Surface::Desktop => Leaving::AlreadyTheFloor,
         Surface::Dock

@@ -103,6 +103,14 @@ impl Control {
 /// a screen a person cannot be told about is a screen they cannot use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Surface {
+    /// The screen a person reaches when the desktop will not start, and the one
+    /// road out of it: going back to the version of this machine before.
+    ///
+    /// **Before sign-in**, because this is the surface that exists precisely
+    /// when the workspace does not: somebody who cannot see the screen must
+    /// reach it without an account, which is what *reachable when the workspace
+    /// is not* means for a reader.
+    Recovery,
     /// Where somebody signs in — drawn before any account is chosen.
     SignIn,
     /// The desktop itself, and the windows on it.
@@ -122,8 +130,10 @@ pub enum Surface {
 }
 
 impl Surface {
-    /// All eight, in the order a person meets them.
-    pub const ALL: [Self; 8] = [
+    /// All nine, in the order a person meets them — recovery first, because a
+    /// machine that will not start is met before anything a person signs into.
+    pub const ALL: [Self; 9] = [
+        Self::Recovery,
         Self::SignIn,
         Self::Desktop,
         Self::Dock,
@@ -146,6 +156,7 @@ impl Surface {
     #[must_use]
     pub const fn drawn_by(self) -> &'static [&'static str] {
         match self {
+            Self::Recovery => &["RecoveryFrame", "RecoveryScreen"],
             Self::SignIn => &["SignInScreen"],
             Self::Desktop => &["DesktopFrame"],
             Self::Dock => &[],
@@ -161,6 +172,36 @@ impl Surface {
     #[must_use]
     pub fn read_aloud(self) -> Vec<Control> {
         match self {
+            // The screen that is there when the desktop is not. This crate
+            // names the controls and none of the sentences: the offer is
+            // `alo_keeping_up::GoingBack::said`, the refusal is
+            // `CannotGoBack::said`, and the two moments are `when_word` — each
+            // read after the name, the way an application's own name is read
+            // after `AN_APPLICATION`.
+            //
+            // **Nothing is preselected.** One of the two moments restarts the
+            // machine, and an Enter held down from whatever just failed a
+            // moment ago would be that. So both moments are controls a person
+            // moves to, and neither carries a state that reads as chosen.
+            Self::Recovery => vec![
+                Control::of(Role::Window, words::THE_RECOVERY_SCREEN, State::ReadOnly),
+                // What is running and what it replaced are **named here and
+                // said by nobody yet**: `alo_keeping_up::Deployments` has no
+                // `said` and `Since` has no words, so each line has a name and
+                // no sentence until that crate writes one. Naming the control
+                // anyway is what lets a reader announce the line at all, and
+                // the gap is written down as a finding in
+                // `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`.
+                Control::of(Role::Label, words::WHAT_IS_RUNNING, State::ReadOnly),
+                Control::of(Role::Label, words::WHAT_IT_REPLACED, State::ReadOnly),
+                Control::of(Role::List, words::THE_CHOICES, State::CanBeUsed),
+                Control::of(
+                    Role::Button,
+                    words::GO_BACK_AT_THE_NEXT_RESTART,
+                    State::CanBeUsed,
+                ),
+                Control::of(Role::Button, words::GO_BACK_NOW, State::CanBeUsed),
+            ],
             Self::SignIn => vec![
                 Control::of(Role::Window, words::SIGN_IN, State::ReadOnly),
                 Control::of(Role::List, words::WHO_IS_SIGNING_IN, State::CanBeUsed),
@@ -243,7 +284,7 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
 
 /// How many of this crate's words name something a reader says, rather than a
 /// setting a person turns on — the count `words.rs` holds its own list to.
-pub const EVERY_NAME_A_READER_SAYS: usize = 26;
+pub const EVERY_NAME_A_READER_SAYS: usize = 32;
 
 #[cfg(test)]
 mod tests {

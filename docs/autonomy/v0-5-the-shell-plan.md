@@ -413,31 +413,36 @@ three is finished and the line was never moved.
 
 ### 13. The recovery and rollback screen
 
-**Status:** **built, and blocked on one decision that is not there.** The whole
-screen is written and gates clean on its own — `crates/alo-shell/src/recovery_screen.rs`,
+**Status:** **Done, 2026-09-20: the code only.** `crates/alo-shell/src/recovery_screen.rs`,
 `recovery_keys.rs`, `recovery_seat.rs`, `recovery_raster.rs`, `recovery_paint.rs`,
 `recovery_reached.rs`, `nested_recovery.rs` and `tests/recovery_source.rs`, 24
-tests green, `fmt=0 clippy=0 doc=0` — and it **cannot be published**, because
-`alo-access` has nothing to say about it: its own
-`tests/every_surface_the_shell_draws_is_read_aloud.rs` reads `alo-shell`'s
-exports and fails the workspace on `["RecoveryFrame", "RecoveryScreen"]`, since
-no `alo_access::Surface` names them. That is the right failure — a screen a
-person cannot be told about is a screen they cannot use — and the decision it
-asks for is **the role, the name and the state of every control on this
-screen**, which is an accessibility decision. This plan reads `alo-access` and
-does not edit it, so the decision is not made here: it needs
-`Surface::Recovery` with its controls, the words for them, and its place in
-`reaching`'s focus order. Once that lands the branch merges unchanged.
-The work is on `task/dev-pc-lane-a/the-recovery-and-rollback-screen`, in a draft
-pull request that is **not** to be merged until that decision exists.
+tests of its own.
 
-**A second finding, independent of the first:** *what is running* and *what it
+**The decision it waited on was made in the same change.** `alo-access` had
+nothing to say about this screen — its own
+`tests/every_surface_the_shell_draws_is_read_aloud.rs` reads `alo-shell`'s
+exports and failed the workspace on `["RecoveryFrame", "RecoveryScreen"]`, which
+is that guard working: a screen a person cannot be told about is a screen they
+cannot use. `alo_access::Surface::Recovery` now names the controls — a Window, a
+Label for what is running, a Label for what it replaced, a List of the choices
+and a Button for each of the two moments — with the words for them and its place
+in `reaching`'s focus order, **before** sign-in, because this is the surface that
+exists when the workspace does not. That crate names the controls and none of the
+sentences, which is its own pattern and not a new one. **No real desktop has ever
+failed to start on this machine**: the desktop in the test is made to refuse,
+which takes the same road a real failure would and is not one.
+
+**A finding, independent of that one:** *what is running* and *what it
 replaced* have **no sentence in any crate**. `Deployments` has no `said`,
 `Since` has no words at all, and `alo-keeping-up`'s own rule is that a person is
 told an update is ready and **never which build it is** — so drawing them would
 be the drawing crate deciding, which this plan refuses. That half of the
 acceptance waits on a word in `alo-keeping-up`, exactly as task 5's clock and
-battery waited for task 7. Everything that crate *does* word is drawn: the
+battery waited for task 7, and is written down as a finding in
+`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` for the plan that owns it.
+The two lines are named in the accessibility tree and empty until then, so a
+reader announces a line with nothing in it rather than a line nobody knows is
+there. Everything that crate *does* word is drawn: the
 offer, the two moments, and each reason going back cannot be offered.
 
 Evidence, decisions and both findings in
@@ -445,11 +450,10 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 10, 11, 12 and 13. **Tasks 8 and 9 are done**
-(2026-09-18 and 2026-09-20), so the lock screen and a second display are there
-for the walk to use; task 13 is written but cannot be published until
-`alo-access` can say what its controls are. Narrowed here by the lane that
-finished each, because a blocker that outlives its cause makes takeable work
+**Status:** blocked — on tasks 10, 11 and 12. **Tasks 8, 9 and 13 are done**
+(2026-09-18, 2026-09-20 and 2026-09-20), so the lock screen, a second display and
+the recovery screen are all there for the walk to use. Narrowed here by the lane
+that finished each, because a blocker that outlives its cause makes takeable work
 look untakeable.
 **Depends on:** 8, 9, 10, 11, 12, 13.
 

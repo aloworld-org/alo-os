@@ -163,3 +163,37 @@ above the other and has no row to mirror — so the two were not merged. A share
 desktop really failed to start: the desktop in the test was made to refuse by
 withholding what the egress indicator needs, which exercises the same road a
 real failure would take but is not one.
+
+## What a screen reader is told about it
+
+`alo_access::Surface::Recovery` was added with this screen, because a surface the
+shell draws that `alo-access` cannot name fails that crate's guard —
+`every_surface_the_shell_draws_is_read_aloud` reads `alo-shell`'s own exports and
+holds the tree to them. It names the controls and **none of the sentences**: a
+Window for the screen, a Label for what is running, a Label for what it replaced,
+a List of the choices, and a Button for each of the two moments. Every sentence
+stays `alo-keeping-up`'s — `GoingBack::said`, `CannotGoBack::said`,
+`GoingBack::when_word` — read after the name, the way an application's own name
+is read after *an application*.
+
+Three decisions, and the reasons rather than the values:
+
+- **Nothing is preselected.** Both moments are `CanBeUsed` and neither carries a
+  state that reads as chosen. One of the two restarts the machine, and an Enter
+  held down from whatever just failed would otherwise be that.
+- **Two labels are named and say nothing yet.** `Deployments` has no `said` and
+  `Since` has no words, so *what is running* and *what it replaced* have a name
+  and no sentence. Naming them anyway is what lets a reader announce the line;
+  the gap is written down as a finding in
+  `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` and is that crate's to
+  fill.
+- **Recovery comes before sign-in** in `Surface::ALL`, which is the reading order
+  and therefore the focus order. Everywhere else sign-in is first; this surface
+  exists precisely when the desktop will not start, so somebody who cannot see
+  the screen must reach it without an account. Escape on it is
+  `Leaving::AlreadyTheFloor` — there is nowhere further back, and leaving it for
+  real is restarting the machine, which is why `RecoveryKey` takes no Escape at
+  all.
+
+The crate's own tests agreed with all three: 32 names in the tree, 41 words in
+the crate, and the focus order is the reading order with the labels taken out.
