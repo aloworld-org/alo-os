@@ -196,6 +196,7 @@ dependencies = [
  "alo-egress",
  "alo-models",
  "alo-nearby",
+ "alo-proxy",
  "alo-record",
  "alo-saying",
  "alo-strings",

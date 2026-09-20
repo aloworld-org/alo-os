@@ -307,6 +307,10 @@ pub mod stopping;
 pub mod surface;
 #[cfg(target_os = "linux")]
 pub mod terms;
+#[cfg(all(test, target_os = "linux"))]
+mod the_proxy_on_the_road_a_question_takes;
+#[cfg(target_os = "linux")]
+pub mod the_road_out;
 #[cfg(target_os = "linux")]
 pub mod the_runtime;
 #[cfg(target_os = "linux")]
@@ -417,6 +421,8 @@ pub use stopping::{Stop, Waking};
 pub use surface::{AtThePersonsDoor, NobodyToShowItTo};
 #[cfg(target_os = "linux")]
 pub use terms::{NoNameYet, Terms};
+#[cfg(target_os = "linux")]
+pub use the_road_out::{NotTaken, TheRoadOut};
 #[cfg(target_os = "linux")]
 pub use unhosted::Unhosted;
 #[cfg(target_os = "linux")]

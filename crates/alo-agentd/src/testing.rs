@@ -125,6 +125,77 @@ pub(crate) fn a_place_of_our_own(what: &str) -> Place {
     Place::beneath(&a_directory_of_our_own(what), ourselves().person())
 }
 
+/// This machine's own address, which is what a provider's has to be.
+///
+/// A loopback one reports as this machine and the provider door refuses it
+/// outright (`alo_asking::Miswired::NotAProvider`), so a test that wants to
+/// watch a question leave has to offer somewhere that is not loopback — and
+/// the only such address a test may be sure of is this machine's own.
+pub(crate) fn our_own_address() -> std::net::IpAddr {
+    let asking = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
+    match asking
+        .connect("192.0.2.1:9")
+        .and_then(|()| asking.local_addr())
+    {
+        Ok(ours) => ours.ip(),
+        Err(_) => std::net::IpAddr::from([127, 0, 0, 1]),
+    }
+}
+
+/// The same listener, for a test that asks only whether anybody came.
+///
+/// [`a_listener_that_reports_what_it_was_told`] with the first line thrown
+/// away: most tests here are about *whether* a question left and to where, and
+/// only `crate::the_proxy_on_the_road_a_question_takes` is about what was said
+/// when it arrived.
+pub(crate) fn a_listener_that_reports_connections()
+-> (std::net::SocketAddr, std::thread::JoinHandle<bool>) {
+    let (at, heard) = a_listener_that_reports_what_it_was_told();
+    (
+        at,
+        std::thread::spawn(move || heard.join().is_ok_and(|said| said.is_some())),
+    )
+}
+
+/// A listener this test owns, which reports **whether anybody came and what
+/// they said** — [`None`] for a door nobody knocked on.
+///
+/// On this machine's own interface rather than loopback, for
+/// [`our_own_address`]'s reason. It answers nothing at all, so whatever opened
+/// the connection gets no reply and gives up; what is kept is the first bytes
+/// it wrote, which is the only thing that says *who it thought it was talking
+/// to*. A test that watched addresses alone could not tell a proxy from a
+/// provider at all, because the road out is handed its addresses (ADR 0020,
+/// `alo_asking::openai`) rather than resolving a name — so the address is the
+/// same either way and only the first line differs.
+pub(crate) fn a_listener_that_reports_what_it_was_told() -> (
+    std::net::SocketAddr,
+    std::thread::JoinHandle<Option<Vec<u8>>>,
+) {
+    let listener =
+        std::net::TcpListener::bind(std::net::SocketAddr::new(our_own_address(), 0)).unwrap();
+    let at = listener.local_addr().unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let heard = std::thread::spawn(move || {
+        let until = std::time::Instant::now() + Duration::from_secs(2);
+        while std::time::Instant::now() < until {
+            if let Ok((mut stream, _)) = listener.accept() {
+                // The listener is non-blocking so that it can give up; the
+                // connection it accepted is not, so that a read waits for the
+                // first line rather than finding nothing there yet.
+                drop(stream.set_nonblocking(false));
+                drop(stream.set_read_timeout(Some(Duration::from_secs(2))));
+                let mut said = [0_u8; 256];
+                let read = std::io::Read::read(&mut stream, &mut said).unwrap_or_default();
+                return Some(said.get(..read).unwrap_or_default().to_vec());
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        None
+    });
+    (at, heard)
+}
+
 /// A fixed moment, for the tests that do not run a service.
 ///
 /// [`crate::serving`] cannot use it: a service reads a real clock once a round,

@@ -57,6 +57,13 @@
 //! A machine with no such section is [`TheBound::Nobodys`], ADR 0016's *absent*,
 //! and that is the common case rather than a gap.
 //!
+//! **`[proxy]` arrives the same way and is carried the same distance**, as
+//! [`Questions::road_out`]: it is read by `crate::machine_wide_proxy`, handed
+//! here by `crate::starting`, and asked at the question by [`crate::doing`].
+//! What it decides is `alo-proxy`'s and what asks it is
+//! [`crate::the_road_out`]; this file holds the value and nothing else, for the
+//! reason it holds the bound and nothing else.
+//!
 //! `alo_turn::Places` is a different shape of honesty: ADR 0008's *somewhere
 //! else to offer* is a provider list this machine keeps nowhere, so the offer
 //! beside a refusal is empty rather than invented.
@@ -94,6 +101,14 @@ pub struct Questions {
     looked: Option<Looked>,
     /// Whose keyring a provider's key is asked of.
     keyring: WhoseKeyring,
+    /// Which way out of this machine the road to a provider goes.
+    ///
+    /// The description's, as [`crate::the_road_out`] holds it, carried here
+    /// beside [`TheBound`] because they arrive from the same file and are
+    /// wanted at the same moment. **Nothing about a proxy is decided in this
+    /// file**: what a road takes is `alo-proxy`'s and what asks it is that
+    /// module, which is why this is one field and one accessor and no branch.
+    road_out: crate::the_road_out::TheRoadOut,
     /// Whether what was found is held across turns rather than looked for
     /// again — true only of a machine [`Questions::already_found`] made, which
     /// is a test's, and nothing a running machine can be.
@@ -308,9 +323,34 @@ impl Questions {
             catalogue,
             looked: None,
             keyring,
+            road_out: crate::the_road_out::TheRoadOut::nobodys(),
             #[cfg(test)]
             pinned: false,
         }
+    }
+
+    /// The same machine, reaching a provider the way its description says.
+    ///
+    /// A method rather than a sixth argument to the two constructors, for one
+    /// reason: a machine whose description says nothing about a proxy is the
+    /// common case, and it is the one every caller that does not say otherwise
+    /// gets. [`crate::starting`] is the caller that says otherwise, out of
+    /// `crate::described::Described::proxy`.
+    #[must_use]
+    pub fn through(mut self, road_out: crate::the_road_out::TheRoadOut) -> Self {
+        self.road_out = road_out;
+        self
+    }
+
+    /// Which way the road to a provider goes on this machine.
+    ///
+    /// Read where a question is about to be put — [`crate::doing`] — and taken
+    /// **by value, before the turn's answer borrows this**, exactly as
+    /// [`Questions::whose_keyring`] is and for the same reason: what the answer
+    /// borrows is this, and the road out is wanted in the middle of it.
+    #[must_use]
+    pub fn road_out(&self) -> crate::the_road_out::TheRoadOut {
+        self.road_out.clone()
     }
 
     /// Whether an **organisation** supplied the bound, rather than how strict
@@ -466,6 +506,7 @@ impl Questions {
             catalogue: Catalogue { models: Vec::new() },
             looked: Some(Looked::OnThisMachine { chosen, runtime }),
             keyring: WhoseKeyring::Nobodys,
+            road_out: crate::the_road_out::TheRoadOut::nobodys(),
             pinned: true,
         }
     }

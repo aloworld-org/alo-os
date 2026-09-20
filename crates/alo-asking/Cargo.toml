@@ -33,6 +33,13 @@ alo-models = { path = "../alo-models" }
 # The pairing that says this machine may ask the one down the corridor. Reached
 # only from `corridor.rs`, and only to ask whether a pairing permits it.
 alo-nearby = { path = "../alo-nearby" }
+# Which way the road to a provider goes, decided before this crate is reached.
+# Named only in `hosted.rs`, and only to be *given* one: nothing here asks
+# `alo_proxy::the_way` anything, because a crate that opens sockets deciding its
+# own way out is how *machine-wide* stops meaning machine-wide. What it takes is
+# an `alo_proxy::Carried`, which is also the one door a proxy credential becomes
+# text through.
+alo-proxy = { path = "../alo-proxy" }
 # Two refusals a person reads, in the language they read.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
