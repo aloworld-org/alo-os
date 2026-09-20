@@ -72,6 +72,16 @@ is good enough for the other; if it is not, both fail.
   change, once; and the rented screen reader starts from the setting with the rented
   speech engine speaking the person's language, with a test per language naming the
   voice or naming that none exists.
+**Finding, 2026-09-20 — two surfaces did not do what `leaving` says.**
+The shell's walk of this crate's answers (the shell plan's task 12) found that
+the approval surface ignored Escape and so did the sign-in screen, where
+`alo_access::leaving` says the first **declines** and the second **clears what
+was typed**. The shell followed this crate rather than the other way round, and
+both now do what it decided: a key pressed to get out of the way never approves,
+and never leaves a proposal waiting behind somebody's belief that they dealt
+with it. Nothing here changed — it is written down because a decision nobody
+had implemented was, from this side, indistinguishable from one everybody had.
+
 **Finding, 2026-09-20 — the machine itself has no name.** The shell now
 publishes its tree on the accessibility bus (the shell plan's task 12), and the
 thing a reader announces as the application is published with **no name**: this

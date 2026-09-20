@@ -18,13 +18,12 @@
 //! the grounds and structure of the design brief. A palette that would offer
 //! terracotta is refused rather than drawn, and a test says so.
 
-use alo_appearance::{
-    Accent, AccentError, Appearance, Colour, Scheme, TextScale, TimeOfDay, Token,
-};
+use alo_access::TurnedOn;
+use alo_appearance::{Accent, AccentError, Appearance, Colour, Scheme, TextScale, TimeOfDay};
 use alo_strings::Direction;
 use cosmic_text::Metrics;
 
-use crate::EgressStatusLook;
+use crate::{Contrast, EgressStatusLook};
 
 /// How the ordinary desktop looks, as the person's appearance decides it at
 /// one moment and as their language is read.
@@ -38,22 +37,31 @@ pub struct DesktopLook {
     scale: TextScale,
     /// Which way the person reads.
     reading: Direction,
+    /// The design's palette, or the one high contrast decides.
+    contrast: Contrast,
 }
 
 impl DesktopLook {
     /// The desktop as `appearance` looks at `now`, for somebody reading
-    /// `reading`.
+    /// `reading`, with what they have `turned_on` for access.
     ///
     /// The only way to make one: light and dark, the accent and the text size
     /// are the appearance's own answers at that time of day, never this
-    /// crate's.
+    /// crate's, and which palette is drawn is what the person turned on, never
+    /// a choice made here.
     #[must_use]
-    pub fn of(appearance: &Appearance, now: TimeOfDay, reading: Direction) -> Self {
+    pub fn of(
+        appearance: &Appearance,
+        turned_on: &TurnedOn,
+        now: TimeOfDay,
+        reading: Direction,
+    ) -> Self {
         Self {
             scheme: appearance.scheme_at(now),
             accent: appearance.accent_at(now),
             scale: appearance.text(),
             reading,
+            contrast: Contrast::of(turned_on),
         }
     }
 
@@ -81,13 +89,19 @@ impl DesktopLook {
         self.reading
     }
 
+    /// Which palette the desktop is drawn in.
+    #[must_use]
+    pub const fn contrast(self) -> Contrast {
+        self.contrast
+    }
+
     /// The colours this look draws in.
     ///
     /// # Errors
     /// `alo-appearance`'s refusal when the accent is not one a person can
     /// choose — terracotta above all.
     pub(crate) fn palette(self) -> Result<DesktopPalette, AccentError> {
-        DesktopPalette::of(self.scheme, self.accent)
+        DesktopPalette::of(self.scheme, self.accent, self.contrast)
     }
 
     /// The same look, for the egress indicator in the dock's status area.
@@ -96,6 +110,7 @@ impl DesktopLook {
             scheme: self.scheme,
             scale: self.scale,
             reading: self.reading,
+            contrast: self.contrast,
         }
     }
 
@@ -128,21 +143,20 @@ impl DesktopPalette {
     /// # Errors
     /// [`AccentError::Reserved`] for terracotta, and the other refusals for a
     /// colour that is not an accent at all.
-    pub(crate) fn of(scheme: Scheme, accent: Colour) -> Result<Self, AccentError> {
+    pub(crate) fn of(
+        scheme: Scheme,
+        accent: Colour,
+        contrast: Contrast,
+    ) -> Result<Self, AccentError> {
+        // The accent a person chose is checked whichever palette is drawn, so
+        // that a colour nobody may choose is refused rather than quietly
+        // replaced by the contrast palette's.
         let accent = Accent::of_colour(accent)?.on(scheme);
-        Ok(match scheme {
-            Scheme::Light => Self {
-                ground: rgb(Token::Cream.colour()),
-                dock: rgb(Token::Porcelain.colour()),
-                ink: rgb(Token::Navy.colour()),
-                accent: rgb(accent),
-            },
-            Scheme::Dark => Self {
-                ground: rgb(Token::Charcoal.colour()),
-                dock: rgb(Token::Charcoal.colour()),
-                ink: rgb(Token::Cream.colour()),
-                accent: rgb(accent),
-            },
+        Ok(Self {
+            ground: contrast.ground(scheme),
+            dock: contrast.dock(scheme),
+            ink: contrast.ink(scheme),
+            accent: contrast.accent(scheme, accent),
         })
     }
 
@@ -154,6 +168,10 @@ impl DesktopPalette {
 }
 
 /// A colour as the painter takes it.
+///
+/// Only a test's now: every colour the desktop draws comes from the palette
+/// door (`crate::access_contrast`), which hands them over in this shape.
+#[cfg(test)]
 pub(crate) const fn rgb(colour: Colour) -> [u8; 3] {
     [colour.red(), colour.green(), colour.blue()]
 }
@@ -192,6 +210,7 @@ impl Measure {
 )]
 mod tests {
     use super::*;
+    use alo_appearance::Token;
     use alo_appearance::{Following, Shipped};
 
     /// Half past seven in the evening.
@@ -216,7 +235,12 @@ mod tests {
         appearance.set_text(TextScale::percent(150).unwrap());
 
         for now in [morning(), evening()] {
-            let look = DesktopLook::of(&appearance, now, Direction::LeftToRight);
+            let look = DesktopLook::of(
+                &appearance,
+                &TurnedOn::nothing(),
+                now,
+                Direction::LeftToRight,
+            );
             assert_eq!(look.scheme(), appearance.scheme_at(now));
             assert_eq!(look.accent(), appearance.accent_at(now));
             assert_eq!(look.scale(), appearance.text());
@@ -224,18 +248,35 @@ mod tests {
             assert_eq!(palette.accent, rgb(appearance.accent_at(now)));
         }
         assert_eq!(
-            DesktopLook::of(&appearance, morning(), Direction::LeftToRight).scheme(),
+            DesktopLook::of(
+                &appearance,
+                &TurnedOn::nothing(),
+                morning(),
+                Direction::LeftToRight
+            )
+            .scheme(),
             Scheme::Light
         );
         assert_eq!(
-            DesktopLook::of(&appearance, evening(), Direction::LeftToRight).scheme(),
+            DesktopLook::of(
+                &appearance,
+                &TurnedOn::nothing(),
+                evening(),
+                Direction::LeftToRight
+            )
+            .scheme(),
             Scheme::Dark
         );
 
         // A person who changes their mind changes the desktop, and nothing else
         // has to be told.
         appearance.set_accent(Accent::Rose);
-        let look = DesktopLook::of(&appearance, evening(), Direction::RightToLeft);
+        let look = DesktopLook::of(
+            &appearance,
+            &TurnedOn::nothing(),
+            evening(),
+            Direction::RightToLeft,
+        );
         assert_eq!(look.accent(), Accent::Rose.on(Scheme::Dark));
         assert_eq!(look.reading(), Direction::RightToLeft);
         assert_eq!(look.egress().scheme, Scheme::Dark);
@@ -248,16 +289,16 @@ mod tests {
     fn a_palette_that_offers_terracotta_is_refused() {
         for scheme in [Scheme::Light, Scheme::Dark] {
             assert_eq!(
-                DesktopPalette::of(scheme, Token::Terracotta.colour()),
+                DesktopPalette::of(scheme, Token::Terracotta.colour(), Contrast::AsDesigned),
                 Err(AccentError::Reserved)
             );
             assert_eq!(
-                DesktopPalette::of(scheme, Token::Navy.colour()),
+                DesktopPalette::of(scheme, Token::Navy.colour(), Contrast::AsDesigned),
                 Err(AccentError::NotAnAccent(Token::Navy))
             );
             let invented = Colour::of(0xE7, 0x6F, 0x52);
             assert_eq!(
-                DesktopPalette::of(scheme, invented),
+                DesktopPalette::of(scheme, invented, Contrast::AsDesigned),
                 Err(AccentError::NotOffered(invented))
             );
         }
@@ -270,7 +311,8 @@ mod tests {
         let terracotta = rgb(Token::Terracotta.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {
-                let palette = DesktopPalette::of(scheme, accent.on(scheme)).unwrap();
+                let palette =
+                    DesktopPalette::of(scheme, accent.on(scheme), Contrast::AsDesigned).unwrap();
                 assert!(
                     !palette.offers().contains(&terracotta),
                     "{accent:?} {scheme:?}"
@@ -284,7 +326,12 @@ mod tests {
     /// of its two values it arrived as.
     #[test]
     fn the_accent_is_drawn_for_the_scheme_on_screen() {
-        let palette = DesktopPalette::of(Scheme::Dark, Accent::Indigo.on(Scheme::Light)).unwrap();
+        let palette = DesktopPalette::of(
+            Scheme::Dark,
+            Accent::Indigo.on(Scheme::Light),
+            Contrast::AsDesigned,
+        )
+        .unwrap();
         assert_eq!(palette.accent, rgb(Accent::Indigo.on(Scheme::Dark)));
     }
 }

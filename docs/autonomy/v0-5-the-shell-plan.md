@@ -395,28 +395,45 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 12. The accessibility tree, the magnifier and keyboard-only operation
 
-**Status:** **part done, 2026-09-20 — the tree only; the task stays open.**
-`crates/alo-shell`'s `access_roles.rs`, `access_nodes.rs` and `access_bus.rs`
-publish every surface `alo-access` names on the accessibility bus, and
-`tests/the_tree_a_reader_finds.rs` reads them back **over a real one**: a session
-bus of the test's own, at-spi2's own bus launcher and registry on it, the tree
-embedded through `org.a11y.atspi.Socket.Embed`, and the reading done by
-`alo-adapters` — the agent's own reader, which knows nothing of this crate. The
-approval surface reads back as the sentence and its two answers, and nothing on
-any surface reads as the default, as focused or as on. **Still open, and what
-the task is held to before it is ticked:** the magnifier and high contrast are
-not drawn; focus is not always visible and no focus ring is drawn; and the
-shell's own half of *every action has the keyboard road `alo-access` lists* has
-no walking test here. **No screen reader has read the tree** — Orca has never
-been run against it. Evidence and findings in
+**Status:** **Done, 2026-09-20 — the code.** Two changes, one branch each.
+The tree first: `crates/alo-shell`'s `access_roles.rs`, `access_nodes.rs` and
+`access_bus.rs` publish every surface `alo-access` names on the accessibility
+bus, and `tests/the_tree_a_reader_finds.rs` reads them back **over a real one**
+— a session bus of the test's own, at-spi2's own bus launcher and registry on
+it, the tree embedded through `org.a11y.atspi.Socket.Embed`, and the reading
+done by `alo-adapters`, the agent's own reader, which knows nothing of this
+crate. The approval surface reads back as the sentence and its two answers, and
+nothing on any surface reads as the default, as focused or as on.
+
+Then the rest of the acceptance. **High contrast is drawn:**
+`access_contrast.rs` is the one door between `alo_access::HighContrast` and the
+colours this crate paints, every look carries which palette it is drawn in, and
+every palette in the crate — the panel's, the sign-in screen's, the
+indicator's row, the record window's, the desktop's, the lock screen's and the
+agent's own mark — is built through it, with a test per surface holding that
+the layout does not move and that no colour outside that palette is painted.
+**The magnifier** is `access_magnifier.rs`: the prepared frame magnified around
+the pointer, nearest and never smoothed, the view kept inside the screen, at the
+magnification the person set — `PreparedScanout::magnified` is the step a
+presenter takes. **Keyboard-only operation** is walked by
+`tests/every_road_a_keyboard_takes.rs` against `alo-access`' own answers, and
+the walk found two surfaces that disagreed with them: **Escape now answers no on
+an approval** and **clears what was typed at sign-in**, which is what
+`alo_access::leaving` decided and which neither crate's own tests could have
+caught. **Focus is visible before any key is pressed** on every surface that has
+one, held by a test; on the approval and the recovery screen nothing is drawn as
+chosen, which is ADR 0001's rule rather than an omission.
+
+**Two things it does not claim.** **No screen reader has read the tree** —
+Orca has never been run against it; the reader in the measurement is the
+agent's, asking the same questions on the same bus, and a person hearing it is
+not the same as a test reading it. And **two of `alo-access`' Tab stops are not
+walked**: the desktop's *ask the agent* and the dock's launcher are surfaces
+this crate does not draw at all, so there is no key of this crate's to walk to
+them. The walk names them and fails when one is drawn without being walked.
+Evidence, decisions and findings in
 `docs/autonomy/updates/the-tree-a-screen-reader-reads.md`. **Depends on:** 1, 2,
 3, 4, 5.
-
-**Unblocked 2026-09-20.** It read *blocked on
-`v0-5-access-and-language-plan.md` tasks 1, 2 and 3*; that plan is closed, all
-six tasks done — what each accessibility setting changes, the screen reader and
-the tree it reads, and keyboard-only operation of everything. Every one of the
-three is finished and the line was never moved.
 
 - **Acceptance:** the shell exposes every surface's role, name and state to AT-SPI
   as `alo-access` decides them, and a test reads the exposed tree over the bus for
@@ -465,11 +482,12 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 10, 11 and 12. **Tasks 8, 9 and 13 are done**
-(2026-09-18, 2026-09-20 and 2026-09-20), so the lock screen, a second display and
-the recovery screen are all there for the walk to use. Narrowed here by the lane
-that finished each, because a blocker that outlives its cause makes takeable work
-look untakeable.
+**Status:** blocked — on tasks 10 and 11. **Tasks 8, 9, 12 and 13 are done**
+(2026-09-18, 2026-09-20, 2026-09-20 and 2026-09-20), so the lock screen, a second
+display, the accessibility tree with the magnifier and high contrast, and the
+recovery screen are all there for the walk to use. Narrowed here by the lane that
+finished each, because a blocker that outlives its cause makes takeable work look
+untakeable.
 **Depends on:** 8, 9, 10, 11, 12, 13.
 
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second

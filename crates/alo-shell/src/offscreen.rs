@@ -1,5 +1,7 @@
 //! Owned offscreen scene pixels, deliberately separate from display submission.
 
+use alo_access::Magnification;
+
 use crate::{Cursor, Popup, ReadbackError, RenderError, RowOrder, ScanoutPixels};
 use drm::buffer::DrmFourcc;
 use smithay::{
@@ -38,6 +40,24 @@ impl PreparedScanout {
     /// Transfer pixels and surface identities together to the trusted backend.
     pub fn into_parts(self) -> (ScanoutPixels, Vec<WlSurface>) {
         (self.pixels, self.surfaces)
+    }
+
+    /// **The same frame, magnified around the pointer at `at`.**
+    ///
+    /// The step a presenter takes between preparing a frame and submitting it,
+    /// where `alo_shell::magnifying` answers that the person turned the
+    /// magnifier on. The surfaces drawn are unchanged — magnifying is a way of
+    /// showing the frame, not a different scene — so what was drawn is still
+    /// what receives callbacks.
+    ///
+    /// # Errors
+    /// [`crate::NotMagnified`] for a frame whose extent and pixels disagree, and
+    /// when there is no room to keep the magnified pixels.
+    pub fn magnified(self, at: (i32, i32), by: Magnification) -> Result<Self, crate::NotMagnified> {
+        Ok(Self {
+            pixels: crate::access_magnifier::magnified(&self.pixels, at, by)?,
+            surfaces: self.surfaces,
+        })
     }
 }
 

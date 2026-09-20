@@ -43,7 +43,7 @@ use crate::approval_raster::{Measure, Palette, framed, placed};
 use crate::painted::{Inked, Solid};
 use crate::painted_text::sentence;
 use crate::recovery_screen::RecoveryShows;
-use crate::{RenderError, WindowControlLabels};
+use crate::{Contrast, RenderError, WindowControlLabels};
 
 /// The largest output side, in pixels, the screen is laid out for.
 const LARGEST_SIDE: i32 = 16_384;
@@ -62,6 +62,9 @@ pub struct RecoveryLook {
     pub scheme: Scheme,
     /// The person's text scale, applied to every measure.
     pub scale: TextScale,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// One moment as drawn.
@@ -111,7 +114,7 @@ pub(crate) fn picture(
         return Err(RenderError::RecoveryScene);
     }
     let measure = Measure::of(look.scale);
-    let palette = Palette::of(look.scheme);
+    let palette = Palette::of(look.scheme, look.contrast);
     let margin = measure.px(16);
     let pad = measure.px(20);
     let panel_width = (width - 2 * margin).min(measure.px(560));

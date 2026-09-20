@@ -4,6 +4,7 @@
     clippy::unwrap_used,
     reason = "a failed fixture or assertion is a failed test"
 )]
+use crate::Contrast;
 use crate::lock_testing::*;
 use crate::{LockBackground, LockLook, SignInLook, WindowControlLabels};
 use alo_appearance::{Appearance, DisplayId, Scheme, TextScale};
@@ -53,6 +54,7 @@ fn try_draw(
     let strings = words();
     let look = LockLook {
         appearance: SignInLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Dark,
             scale,
         },

@@ -10,6 +10,8 @@
 //! ground. Take every hue off the screen and the arrow is still there.
 
 use alo_appearance::{Colour, Scheme, Token};
+
+use crate::Contrast;
 use smithay::utils::Rectangle;
 
 use crate::painted::Solid;
@@ -26,21 +28,33 @@ pub(crate) struct MarkColours {
 }
 
 impl MarkColours {
-    /// `alo-appearance`'s tokens for this scheme.
-    pub(crate) fn of(scheme: Scheme) -> Self {
-        match scheme {
-            Scheme::Light => Self {
-                edge: Token::Navy.colour(),
-                fill: Token::Terracotta.colour(),
-                arrow: Token::Navy.colour(),
-            },
-            Scheme::Dark => Self {
-                edge: Token::Cream.colour(),
-                fill: Token::Terracotta.colour(),
-                arrow: Token::Charcoal.colour(),
+    /// The mark's three colours in this scheme, in whichever palette the
+    /// surface around it is drawn in.
+    ///
+    /// The fill is terracotta in the design and `alo_access::HighContrast`'s
+    /// own terracotta — the same hue, taken deep enough to read — where high
+    /// contrast is on, because the mark means the agent in both (ADR 0010).
+    /// The arrow is drawn against that fill: the design's navy or charcoal,
+    /// and in high contrast the ground, which is the far end of a palette
+    /// whose accent was chosen to sit at the other one.
+    pub(crate) fn of(scheme: Scheme, contrast: Contrast) -> Self {
+        Self {
+            edge: colour(contrast.ink(scheme)),
+            fill: colour(contrast.accent(scheme, Token::Terracotta.colour())),
+            arrow: match contrast {
+                Contrast::AsDesigned => match scheme {
+                    Scheme::Light => Token::Navy.colour(),
+                    Scheme::Dark => Token::Charcoal.colour(),
+                },
+                Contrast::High => colour(contrast.ground(scheme)),
             },
         }
     }
+}
+
+/// A colour as the palette door hands it over.
+const fn colour(rgb: [u8; 3]) -> Colour {
+    Colour::of(rgb[0], rgb[1], rgb[2])
 }
 
 /// A colour as the painter takes it.
@@ -52,8 +66,8 @@ pub(crate) fn rgb(colour: Colour) -> [u8; 3] {
 ///
 /// The edge first, the terracotta inside it, and then the arrow: a stem and a
 /// head that widens one row at a time, pointing up and out of the square.
-pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme) -> Vec<Solid> {
-    let colours = MarkColours::of(scheme);
+pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme, contrast: Contrast) -> Vec<Solid> {
+    let colours = MarkColours::of(scheme, contrast);
     let side = side.max(8);
     let edge = (side / 12).max(1);
     let inner = side - 2 * edge;
@@ -110,12 +124,47 @@ mod tests {
     #[test]
     fn the_arrow_stands_apart_from_terracotta_without_its_hue() {
         for scheme in [Scheme::Light, Scheme::Dark] {
-            let colours = MarkColours::of(scheme);
+            let colours = MarkColours::of(scheme, Contrast::AsDesigned);
             assert_eq!(colours.fill, Token::Terracotta.colour());
             let contrast = colours.arrow.contrast_with(colours.fill);
             assert!(
                 contrast >= ENOUGH_FOR_A_SHAPE,
                 "{scheme:?}: the arrow is {contrast:.2} from terracotta"
+            );
+        }
+    }
+
+    /// **The arrow stands apart from the fill in high contrast too**, where
+    /// the fill is the other palette's terracotta rather than the design's —
+    /// the same clause, measured on the palette a person who needs it sees.
+    #[test]
+    fn the_arrow_stands_apart_from_the_fill_in_high_contrast() {
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let colours = MarkColours::of(scheme, Contrast::High);
+            assert_eq!(
+                colours.fill,
+                alo_access::HighContrast::of(scheme).accent,
+                "{scheme:?}: the mark is no longer the agent's colour in high contrast"
+            );
+            let contrast = colours.arrow.contrast_with(colours.fill);
+            assert!(
+                contrast >= ENOUGH_FOR_A_SHAPE,
+                "{scheme:?}: the arrow is {contrast:.2} from the fill in high contrast"
+            );
+        }
+    }
+
+    /// **The mark's edge stands apart from the ground in high contrast**, so
+    /// the square is a shape there as well as in the design.
+    #[test]
+    fn the_edge_stands_apart_from_the_ground_in_high_contrast() {
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let colours = MarkColours::of(scheme, Contrast::High);
+            let ground = colour(Contrast::High.ground(scheme));
+            let contrast = colours.edge.contrast_with(ground);
+            assert!(
+                contrast >= ENOUGH_FOR_A_SHAPE,
+                "{scheme:?}: the edge is {contrast:.2} from the ground in high contrast"
             );
         }
     }
@@ -128,7 +177,9 @@ mod tests {
             (Scheme::Light, Token::Cream.colour()),
             (Scheme::Dark, Token::Charcoal.colour()),
         ] {
-            let contrast = MarkColours::of(scheme).edge.contrast_with(ground);
+            let contrast = MarkColours::of(scheme, Contrast::AsDesigned)
+                .edge
+                .contrast_with(ground);
             assert!(
                 contrast >= ENOUGH_FOR_TEXT,
                 "{scheme:?}: the edge is {contrast:.2} from the ground"
@@ -141,7 +192,7 @@ mod tests {
     #[test]
     fn the_arrow_is_inside_the_square_at_every_size() {
         for side in [1, 8, 18, 36, 54] {
-            let solids = mark(10, 20, side, Scheme::Light);
+            let solids = mark(10, 20, side, Scheme::Light, Contrast::AsDesigned);
             let square = solids.first().unwrap().area;
             let fill = solids.get(1).unwrap().area;
             let arrow = solids.get(2..).unwrap();

@@ -59,6 +59,21 @@ impl ScanoutPixels {
     pub fn pixels(&self) -> &[u8] {
         &self.pixels
     }
+
+    /// The same extent and stride, carrying pixels drawn from these.
+    ///
+    /// The one door for a frame made out of another — the magnifier
+    /// (`crate::access_magnifier`) is what asks — so the extent, the stride and
+    /// the length stay one invariant held in this file. [`None`] for a length
+    /// that is not this frame's, rather than a frame a display would read past
+    /// the end of.
+    pub(crate) fn redrawn(&self, pixels: Vec<u8>) -> Option<Self> {
+        (pixels.len() == self.pixels.len()).then_some(Self {
+            size: self.size,
+            stride: self.stride,
+            pixels,
+        })
+    }
 }
 
 /// Copy the entire bound GLES target into an owned scanout source.

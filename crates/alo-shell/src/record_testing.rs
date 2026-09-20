@@ -16,6 +16,7 @@
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use crate::Contrast;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -35,6 +36,7 @@ pub(crate) use crate::approval_testing::{noon, words};
 /// The ordinary light look, read left to right.
 pub(crate) fn light() -> RecordLook {
     RecordLook {
+        contrast: Contrast::AsDesigned,
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
         reading: Direction::LeftToRight,

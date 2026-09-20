@@ -33,7 +33,7 @@
 //! `alo-appearance`'s tokens. Terracotta is not among the colours: it means the
 //! agent acting, and this surface is the moment it has not.
 
-use alo_appearance::{Scheme, TextScale, Token};
+use alo_appearance::{Scheme, TextScale};
 use alo_strings::{Direction, Strings};
 use cosmic_text::Metrics;
 use smithay::utils::{Physical, Rectangle};
@@ -41,7 +41,7 @@ use smithay::utils::{Physical, Rectangle};
 use crate::approval_answers::Answers;
 use crate::painted::{Inked, Solid};
 use crate::painted_text::{Shaped, sentence};
-use crate::{ApprovalAnswer, ApprovalShows, RenderError, WindowControlLabels};
+use crate::{ApprovalAnswer, ApprovalShows, Contrast, RenderError, WindowControlLabels};
 
 /// How the approval surface looks, as the person's appearance and language
 /// decide.
@@ -54,6 +54,9 @@ pub struct ApprovalLook {
     /// Which way the person reads, which decides which side the first answer
     /// is on.
     pub reading: Direction,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// The largest output side, in pixels, the surface is laid out for.
@@ -139,21 +142,13 @@ pub(crate) struct Palette {
 }
 
 impl Palette {
-    /// `alo-appearance`'s tokens for this scheme. Terracotta is not among them.
-    pub(crate) fn of(scheme: Scheme) -> Self {
-        let rgb = |token: Token| {
-            let colour = token.colour();
-            [colour.red(), colour.green(), colour.blue()]
-        };
-        match scheme {
-            Scheme::Light => Self {
-                ground: rgb(Token::Cream),
-                ink: rgb(Token::Navy),
-            },
-            Scheme::Dark => Self {
-                ground: rgb(Token::Charcoal),
-                ink: rgb(Token::Cream),
-            },
+    /// The ground and the ink of this scheme, from the one palette door, so
+    /// that high contrast reaches this panel by being turned on and by nothing
+    /// else.
+    pub(crate) fn of(scheme: Scheme, contrast: Contrast) -> Self {
+        Self {
+            ground: contrast.ground(scheme),
+            ink: contrast.ink(scheme),
         }
     }
 }
@@ -190,7 +185,7 @@ pub(crate) fn picture(
         return Err(RenderError::ApprovalScene);
     }
     let measure = Measure::of(look.scale);
-    let palette = Palette::of(look.scheme);
+    let palette = Palette::of(look.scheme, look.contrast);
     let margin = measure.px(16);
     let pad = measure.px(20);
     let panel_width = (width - 2 * margin).min(measure.px(560));

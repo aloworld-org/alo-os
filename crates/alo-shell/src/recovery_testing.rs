@@ -12,6 +12,7 @@
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use crate::Contrast;
 use alo_appearance::{Scheme, TextScale};
 use alo_keeping_up::{Changed, Deployments, Digest};
 
@@ -71,6 +72,7 @@ pub(crate) fn a_machine_running_nothing_it_can_name() -> Deployments {
 /// A light screen at the ordinary text size.
 pub(crate) fn a_light_look() -> RecoveryLook {
     RecoveryLook {
+        contrast: Contrast::AsDesigned,
         scheme: Scheme::Light,
         scale: TextScale::percent(100).unwrap(),
     }

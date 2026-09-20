@@ -12,11 +12,13 @@ use super::*;
 use crate::approval_testing::{archiving, hour, noon, on_a_machine, words};
 use crate::painted_text::sentence as shaped_sentence;
 use crate::{ApprovalKey, ApprovalScreen};
+use alo_appearance::Token;
 use alo_capability::Given;
 
 /// The ordinary look in `scheme`, read `reading`.
 fn look(scheme: Scheme, reading: Direction) -> ApprovalLook {
     ApprovalLook {
+        contrast: Contrast::AsDesigned,
         scheme,
         scale: TextScale::ordinary(),
         reading,
@@ -59,7 +61,7 @@ fn the_text_drawn_is_byte_for_byte_the_text_the_turn_wrote() {
         assert!(text.contains(&places.invoice("march").display().to_string()));
 
         let mut labels = WindowControlLabels::new().unwrap();
-        let palette = Palette::of(Scheme::Light);
+        let palette = Palette::of(Scheme::Light, Contrast::AsDesigned);
         let alone = shaped_sentence(
             &mut labels.fonts,
             &written,
@@ -210,7 +212,7 @@ fn nothing_is_preselected_and_selection_is_never_colour_alone() {
         );
         assert_ne!(selected_shapes, approve);
 
-        let palette = Palette::of(Scheme::Light);
+        let palette = Palette::of(Scheme::Light, Contrast::AsDesigned);
         for solid in &chosen.solids {
             assert!(
                 solid.colour == palette.ink || solid.colour == palette.ground,
@@ -227,7 +229,7 @@ fn terracotta_is_not_on_the_surface() {
     let terracotta = Token::Terracotta.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let palette = Palette::of(scheme);
+        let palette = Palette::of(scheme, Contrast::AsDesigned);
         assert_ne!(palette.ground, terracotta);
         assert_ne!(palette.ink, terracotta);
     }
@@ -289,6 +291,7 @@ fn a_panel_that_cannot_hold_the_whole_sentence_refuses_the_frame() {
         }
         // A larger text scale is a taller panel, not a cut one.
         let large = ApprovalLook {
+            contrast: Contrast::AsDesigned,
             scale: TextScale::percent(200).unwrap(),
             ..light()
         };
@@ -309,5 +312,56 @@ fn a_panel_that_cannot_hold_the_whole_sentence_refuses_the_frame() {
             picture.validate((1280, 720).into()),
             Err(RenderError::ApprovalScene)
         ));
+    });
+}
+
+/// **High contrast is the same surface in the other palette**: the sentence
+/// and the two answers are where they were, and every flat colour is one
+/// `alo_access::HighContrast` decided.
+#[test]
+fn high_contrast_draws_the_same_surface_in_the_palette_that_crate_decided() {
+    on_a_machine(|turning, grants, places| {
+        let march = archiving(turning, grants, places, "march");
+        let mut screen = ApprovalScreen::on_an_output();
+        screen.arrived(turning, march, noon());
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let designed = drawn(&screen, look(scheme, Direction::LeftToRight));
+            let high = drawn(
+                &screen,
+                ApprovalLook {
+                    contrast: Contrast::High,
+                    ..look(scheme, Direction::LeftToRight)
+                },
+            );
+            assert_eq!(
+                designed.panel, high.panel,
+                "{scheme:?}: high contrast moved the panel"
+            );
+            assert_eq!(
+                designed
+                    .answers
+                    .iter()
+                    .map(|answer| answer.area)
+                    .collect::<Vec<_>>(),
+                high.answers
+                    .iter()
+                    .map(|answer| answer.area)
+                    .collect::<Vec<_>>(),
+                "{scheme:?}: high contrast moved an answer"
+            );
+            let palette = crate::access_contrast::every_colour_of(
+                Contrast::High,
+                scheme,
+                Token::Terracotta.colour(),
+            );
+            for solid in &high.solids {
+                assert!(
+                    palette.contains(&solid.colour),
+                    "{scheme:?}: {:?} is drawn in {:?}, which is in no palette this crate may use",
+                    solid.area,
+                    solid.colour
+                );
+            }
+        }
     });
 }

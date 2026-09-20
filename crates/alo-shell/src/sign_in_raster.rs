@@ -22,13 +22,13 @@
 //! tokens and the scale is the person's `TextScale`; the font is the bundled
 //! face `crate::WindowControlLabels` already loads, never a host font.
 
-use alo_appearance::{Scheme, TextScale, Token};
+use alo_appearance::{Scheme, TextScale};
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid};
 use crate::painted_text::{Shaped, inked, sentence};
-use crate::{RenderError, SignInField, SignInShows, WindowControlLabels};
+use crate::{Contrast, RenderError, SignInField, SignInShows, WindowControlLabels};
 
 /// How the screen looks: the scheme and the text scale the person chose.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,6 +37,9 @@ pub struct SignInLook {
     pub scheme: Scheme,
     /// The person's text scale, applied to every measure on the screen.
     pub scale: TextScale,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// The largest output side, in pixels, the screen is laid out for.
@@ -68,23 +71,14 @@ struct Palette {
 }
 
 impl Palette {
-    /// `alo-appearance`'s tokens for this scheme. Terracotta is not among them.
-    fn of(scheme: Scheme) -> Self {
-        let rgb = |token: Token| {
-            let colour = token.colour();
-            [colour.red(), colour.green(), colour.blue()]
-        };
-        match scheme {
-            Scheme::Light => Self {
-                ground: rgb(Token::Porcelain),
-                field: rgb(Token::Cream),
-                ink: rgb(Token::Navy),
-            },
-            Scheme::Dark => Self {
-                ground: rgb(Token::Charcoal),
-                field: rgb(Token::Charcoal),
-                ink: rgb(Token::Cream),
-            },
+    /// The screen's three colours, from the one palette door. The ground is
+    /// the one the dock is drawn on and a field's inside is a window's ground,
+    /// which is how the two read as a field on a screen rather than two panels.
+    fn of(scheme: Scheme, contrast: Contrast) -> Self {
+        Self {
+            ground: contrast.dock(scheme),
+            field: contrast.ground(scheme),
+            ink: contrast.ink(scheme),
         }
     }
 }
@@ -111,7 +105,7 @@ pub(crate) fn picture(
     if column < measure.px(120) || height < 2 * field_height + gap + 2 * measure.px(16) {
         return Err(RenderError::SignInScene);
     }
-    let palette = Palette::of(look.scheme);
+    let palette = Palette::of(look.scheme, look.contrast);
     let left = (width - column) / 2;
     let mut drawn = SignInPicture {
         size,

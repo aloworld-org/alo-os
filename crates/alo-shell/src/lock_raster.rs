@@ -1,6 +1,5 @@
 //! The lock policy's five permitted facts, rasterized with no access to a desktop.
 use crate::{LockBackground, RenderError, SignInLook, SignInShows, WindowControlLabels};
-use alo_appearance::{Scheme, Token};
 use alo_formats::{Regionally, Timezone};
 use alo_locking::LockScreen;
 use alo_strings::Strings;
@@ -61,15 +60,12 @@ pub(crate) fn picture(
         }
         crate::lock_pixels::overlay(&mut pixels, size, &form.solids, &form.inked);
     }
-    let dark = look.appearance.scheme == Scheme::Dark;
-    let rgb = crate::egress_status_mark::rgb;
-    let ground = rgb(if dark {
-        Token::Charcoal
-    } else {
-        Token::Porcelain
-    }
-    .colour());
-    let ink = rgb(if dark { Token::Cream } else { Token::Navy }.colour());
+    // The same two colours the sign-in screen is drawn in, through the one
+    // palette door: the screen a person meets locked and the screen they sign
+    // in on are one design, and high contrast reaches both or neither.
+    let contrast = look.appearance.contrast;
+    let ground = contrast.dock(look.appearance.scheme);
+    let ink = contrast.ink(look.appearance.scheme);
     let factor = f32::from(look.appearance.scale.as_percent()) / 100.0;
     let margin = (16.0 * factor).ceil() as i32;
     let width = (size.0 - margin * 2).min(960);
@@ -109,6 +105,7 @@ pub(crate) fn picture(
             y,
             28,
             look.appearance.scheme,
+            contrast,
         ));
         inked.push(
             drawn

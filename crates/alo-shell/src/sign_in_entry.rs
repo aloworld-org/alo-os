@@ -56,6 +56,10 @@ impl SignInEntry {
             crate::SignInKey::OtherField => self.other_field(),
             crate::SignInKey::Enter if self.field == SignInField::Name => self.other_field(),
             crate::SignInKey::Enter => return true,
+            // Escape clears what was typed (`alo_access::leaving`), which is
+            // the same forgetting that follows a sign-in: the password first,
+            // the name with it, and the name field waiting again.
+            crate::SignInKey::Clear => self.forgotten(),
             crate::SignInKey::Nothing => {}
         }
         false

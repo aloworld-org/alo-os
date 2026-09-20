@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_indicator::{Drew, Indicating};
     use alo_models::{InferenceSource, Region};
     use alo_shell::{
-        Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested, RenderError,
+        Contrast, Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested, RenderError,
         WindowControlLabels,
     };
     use alo_strings::{Direction, Strings};
@@ -55,6 +55,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut dock = Dock::shipped();
     let look = |scheme| EgressStatusLook {
+        contrast: Contrast::AsDesigned,
         scheme,
         scale: TextScale::ordinary(),
         reading: Direction::LeftToRight,

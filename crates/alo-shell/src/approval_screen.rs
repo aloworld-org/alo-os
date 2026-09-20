@@ -211,9 +211,21 @@ impl ApprovalScreen {
                 }
                 _ => ApprovalOutcome::default(),
             },
-            ApprovalKey::NextAnswer | ApprovalKey::PreviousAnswer | ApprovalKey::Nothing => {
-                ApprovalOutcome::default()
+            // Escape answers no — never yes, and never nothing
+            // (`alo_access::leaving`). A refusal being read is acknowledged by
+            // it the way Enter acknowledges one, because there is no proposal
+            // behind a refusal to decline.
+            ApprovalKey::Decline if self.refusal.is_some() => {
+                self.refusal = None;
+                self.opened_next(turning, now)
             }
+            ApprovalKey::Decline if self.shown.asked().is_some() => {
+                self.answer(ApprovalAnswer::No, turning, grants, now)
+            }
+            ApprovalKey::NextAnswer
+            | ApprovalKey::PreviousAnswer
+            | ApprovalKey::Decline
+            | ApprovalKey::Nothing => ApprovalOutcome::default(),
         }
     }
 

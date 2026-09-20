@@ -29,18 +29,18 @@
 //! leaving this machine right now* — with its mark, so the screen still says
 //! how much is leaving even where it cannot say all of what.
 
-use alo_appearance::{Scheme, TextScale, Token};
+use alo_appearance::{Scheme, TextScale};
 use alo_dock::{Dock, Screen};
 use alo_indicator::Drawn;
 use alo_strings::{Direction, Strings};
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::egress_status_mark::{mark, rgb};
+use crate::egress_status_mark::mark;
 use crate::egress_status_place::{Across, Place, Stacked};
 use crate::painted::{Inked, Solid};
 use crate::painted_text::sentence;
-use crate::{RenderError, WindowControlLabels};
+use crate::{Contrast, RenderError, WindowControlLabels};
 
 /// How the indicator looks, as the person's appearance and language decide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +52,9 @@ pub struct EgressStatusLook {
     /// Which way the person reads, which decides the far end of a row and
     /// which side of its words the mark is on.
     pub reading: Direction,
+    /// The design's palette, or the one high contrast decides
+    /// (`crate::access_contrast`).
+    pub contrast: Contrast,
 }
 
 /// The largest output side, in pixels, the indicator is laid out for.
@@ -120,17 +123,11 @@ struct Palette {
 }
 
 impl Palette {
-    /// `alo-appearance`'s tokens for this scheme.
-    fn of(scheme: Scheme) -> Self {
-        match scheme {
-            Scheme::Light => Self {
-                ground: rgb(Token::Cream.colour()),
-                ink: rgb(Token::Navy.colour()),
-            },
-            Scheme::Dark => Self {
-                ground: rgb(Token::Charcoal.colour()),
-                ink: rgb(Token::Cream.colour()),
-            },
+    /// A row's ground and its ink, from the one palette door.
+    fn of(scheme: Scheme, contrast: Contrast) -> Self {
+        Self {
+            ground: contrast.ground(scheme),
+            ink: contrast.ink(scheme),
         }
     }
 }
@@ -180,7 +177,7 @@ pub(crate) fn picture(
         measure.px(8),
     );
     let fonts = &mut labels.fonts;
-    let palette = Palette::of(look.scheme);
+    let palette = Palette::of(look.scheme, look.contrast);
 
     let sentences: Vec<String> = drawn
         .lines_said(strings)
@@ -325,7 +322,7 @@ impl Laid {
                 colour: palette.ground,
             },
         ];
-        solids.extend(mark(mark_x, mark_y, side, look.scheme));
+        solids.extend(mark(mark_x, mark_y, side, look.scheme, look.contrast));
         for solid in solids {
             if let Some(kept) = solid.area.intersection(output) {
                 picture.solids.push(Solid {

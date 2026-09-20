@@ -87,6 +87,7 @@ pub(crate) fn status_picture(
 )]
 mod tests {
     use super::*;
+    use crate::Contrast;
     use crate::egress_status_testing::{asking_a_provider, noon, words};
     use alo_appearance::{Scheme, TextScale};
     use alo_egress::{EgressPolicy, Indicator};
@@ -96,6 +97,7 @@ mod tests {
     /// The ordinary light look, read left to right.
     fn look() -> EgressStatusLook {
         EgressStatusLook {
+            contrast: Contrast::AsDesigned,
             scheme: Scheme::Light,
             scale: TextScale::ordinary(),
             reading: Direction::LeftToRight,

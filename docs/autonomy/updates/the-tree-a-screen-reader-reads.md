@@ -1,12 +1,14 @@
 # The tree a screen reader reads
 
-**What this is:** the first half of `docs/autonomy/v0-5-the-shell-plan.md` task
-12 — *the shell exposes every surface's role, name and state to AT-SPI as
-`alo-access` decides them, and a test reads the exposed tree over the bus for
-each surface the shell draws*, and *the approval surface is exposed as the
-sentence, then two answers, nothing preselected*. **The task is not finished**:
-what the magnifier and high contrast draw, and the shell's own half of
-keyboard-only operation, are still open and are named at the end.
+**What this is:** `docs/autonomy/v0-5-the-shell-plan.md` task 12, in two
+changes. The first is the tree — *the shell exposes every surface's role, name
+and state to AT-SPI as `alo-access` decides them, and a test reads the exposed
+tree over the bus for each surface the shell draws*, and *the approval surface
+is exposed as the sentence, then two answers, nothing preselected* — and is
+what the body of this document is about. The second is the rest of the
+acceptance: **high contrast, the magnifier, and the shell's own half of
+keyboard-only operation**, added at the end under *What the second change
+did*, with what it found and what it still does not claim.
 
 ## Nothing is decided here
 
@@ -101,9 +103,112 @@ operation has a half still in this crate. The shell draws from exactly two
 palette doors — `Palette::of(scheme)` for the panels and `DesktopPalette::of`
 for the desktop and dock — so high contrast is a change at those two plus the
 look each surface carries; it is not started here, and task 12 stays open for
-it, for the magnifier and for the focus ring.
+it, for the magnifier and for the focus ring. **Closed by the second change,
+below** — and the count was wrong: there are **seven** palettes in this crate,
+not two.
 
 **No screen reader has read this tree.** Orca has never been run against it: the
 reader in the measurement is the agent's, asking the same questions on the same
 bus. A person hearing it is not the same as a test reading it, and the plan is
 explicit that those differ.
+
+## What the second change did
+
+The rest of task 12: **high contrast**, **the magnifier**, and **the shell's
+own half of keyboard-only operation**. Three subjects, three files, and one
+test file that walks the fourth.
+
+### High contrast: one door, seven palettes
+
+What high contrast *is* stays `alo_access::HighContrast`'s — a second palette
+held to WCAG 2.2 AAA over every pair this crate draws, with the agent's
+terracotta taken deep enough to read rather than replaced. What this change
+adds is the door: `crates/alo-shell/src/access_contrast.rs` turns that palette
+into the four colour roles this crate paints with, and **every look now carries
+which palette it is drawn in**, the way it already carried light or dark, the
+text size and the reading direction. `DesktopLook::of` asks
+`alo_access::TurnedOn` for it, which is the only road: no crate here can decide
+that a screen is drawn in high contrast.
+
+The first note above said the shell draws from *exactly two palette doors*.
+That was wrong, and finding out how wrong is the reason this is written down:
+there are **seven** — the approval panel's (the recovery screen shares it), the
+sign-in screen's three colours, the egress indicator's row, the record window's
+(Settings is laid out in it), the desktop's, the lock screen's own two, and the
+agent's mark. Every one of them is now built from the door.
+
+| Surface | Held by |
+|---|---|
+| Sign-in | the same layout, every flat colour in the AAA palette, the ground changed |
+| The approval surface | the panel and both answers where they were, every flat colour in it |
+| The egress indicator | rows unchanged, the mark still the agent's, the design's terracotta gone |
+| The mark itself | the arrow and the edge still stand apart by lightness, in the other palette |
+| Every pair this crate draws | measured again through the colours this crate paints, at AAA |
+
+**The accent in high contrast is not the person's own**, and that is
+`alo-access`' decision rather than this crate's: at AAA a chosen accent is not
+guaranteed to be readable, and that crate decided the role carries the agent's
+colour. A person's accent is still *checked* on the way through — an accent
+nobody may choose is refused before any palette is built — and then not drawn.
+
+### The magnifier: the frame, not the surfaces
+
+`crates/alo-shell/src/access_magnifier.rs` magnifies **the prepared frame**.
+Asking each window to draw itself larger would be a second way of laying the
+screen out, and a client that declined would be a hole in it; magnifying the
+frame means everything is magnified, the egress indicator law 1 promises
+included, with nothing that can be left out. Nearest, never smoothed: a
+magnified pixel is the pixel it came from, because smoothing softens exactly the
+edges — a letter's stem, the caret — that somebody using a magnifier is trying
+to make out. The view is clamped inside the screen, so a pointer at a corner
+shows the corner rather than a band of nothing, and **no pixel is invented**.
+`PreparedScanout::magnified` is the step a presenter takes between preparing a
+frame and submitting it; `magnifying(&TurnedOn)` answers whether to take it.
+
+### Keyboard-only operation, and the two surfaces that disagreed
+
+`crates/alo-shell/tests/every_road_a_keyboard_takes.rs` walks the keys a person
+presses on the surfaces this crate draws against `alo-access`' own answers. It
+found two that did something else:
+
+- **the approval surface ignored Escape**, where `alo_access::leaving` says it
+  **declines** — and the reason is that crate's: a key pressed to get out of the
+  way must never approve, and must not leave the proposal waiting behind
+  somebody's belief that they have dealt with it;
+- **the sign-in screen ignored Escape**, where that crate says it **clears what
+  was typed** — there is nowhere further back to go from the screen a machine
+  starts at, and somebody who cannot see the password field should be able to
+  start again with one key rather than counting erasures.
+
+Both now do what that crate decided. Neither was findable by either crate's own
+tests: one held a model nobody had implemented, the other held an
+implementation nobody had compared to the model.
+
+**Focus is visible before any key is pressed** on every surface that has a
+focus, and that is how this crate was already built rather than something the
+setting turns on: there is no state here in which focus is drawn only after a
+first keypress, so `Setting::FocusAlwaysVisible` asks for what is already true.
+A test says so, so that a change which made focus appear later would fail.
+**Nothing is drawn as chosen on the approval surface or the recovery screen**,
+which is ADR 0001's rule and the recovery screen's own — and it is why no
+*focus ring drawn on the first stop* was added: a ring on an answer nobody has
+moved to is a preselected answer.
+
+### What this still does not claim
+
+**No screen reader has read the tree.** Orca has never been run against it. The
+reader in the measurement is the agent's, asking the same questions on the same
+bus, and a person hearing it is not the same as a test reading it.
+
+**Two of `alo-access`' Tab stops are not walked here.** The desktop's *ask the
+agent* and the dock's launcher are surfaces **this crate does not draw at all** —
+there is no launcher and no agent overlay in it — so there is no key of this
+crate's that reaches them. The walk names the four surfaces it has no key of its
+own for and fails when one of them is drawn without being walked, so the lane
+that draws a launcher is told to widen it in the same change.
+
+**Nothing brings up a session.** As with every other surface this crate draws,
+the magnifier is a step a presenter would take and no shipped program is the
+presenter yet. That is the shell plan's standing state, not something this
+change left out.
+

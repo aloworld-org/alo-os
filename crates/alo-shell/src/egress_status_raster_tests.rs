@@ -6,11 +6,13 @@
 )]
 
 use super::*;
+use crate::egress_status_mark::rgb;
 use crate::egress_status_testing::{
     a_provider, asking_a_provider, fetching, noon, the_agent, the_machine_down_the_corridor, words,
 };
 use crate::painted_text::sentence as shaped_sentence;
 use crate::{EgressStatus, painted::Solid};
+use alo_appearance::Token;
 use alo_dock::Edge;
 use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why};
 use alo_indicator::{Drew, Indicating};
@@ -20,6 +22,7 @@ use alo_strings::Vocabulary;
 /// The ordinary light look, read left to right.
 fn light() -> EgressStatusLook {
     EgressStatusLook {
+        contrast: Contrast::AsDesigned,
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
         reading: Direction::LeftToRight,
@@ -219,7 +222,7 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
     assert_eq!(drawn.rows.len(), lines);
     assert_eq!(drawn.inked.len(), lines);
 
-    let palette = Palette::of(Scheme::Light);
+    let palette = Palette::of(Scheme::Light, Contrast::AsDesigned);
     let metrics = Measure { percent: 100 }.metrics();
     for ((row, line), inked) in drawn.rows.iter().zip(indicator.showing()).zip(&drawn.inked) {
         let said = line.said(&strings);
@@ -281,12 +284,13 @@ fn terracotta_never_arrives_alone() {
     for scheme in [Scheme::Light, Scheme::Dark] {
         for percent in [100, 200, largest] {
             let look = EgressStatusLook {
+                contrast: Contrast::AsDesigned,
                 scheme,
                 scale: TextScale::percent(percent).unwrap(),
                 reading: Direction::LeftToRight,
             };
             let drawn = drawn_as(&indicator, look);
-            let palette = Palette::of(scheme);
+            let palette = Palette::of(scheme, Contrast::AsDesigned);
             assert!(!drawn.rows.is_empty());
             let terracottas: Vec<&Solid> = drawn
                 .solids
@@ -405,6 +409,7 @@ fn the_mark_is_on_the_side_a_person_reads_first() {
     let backwards = drawn_as(
         &indicator,
         EgressStatusLook {
+            contrast: Contrast::AsDesigned,
             reading: Direction::RightToLeft,
             ..light()
         },
@@ -431,6 +436,7 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
                     let mut dock = Dock::shipped();
                     dock.set_edge(edge);
                     let look = EgressStatusLook {
+                        contrast: Contrast::AsDesigned,
                         scheme,
                         scale: TextScale::percent(percent).unwrap(),
                         reading,
@@ -472,6 +478,7 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
         drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
     }
     let look = EgressStatusLook {
+        contrast: Contrast::AsDesigned,
         scale: TextScale::percent(largest).unwrap(),
         ..light()
     };
@@ -541,12 +548,63 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
 #[test]
 fn the_words_are_readable_on_their_ground() {
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let palette = Palette::of(scheme);
+        let palette = Palette::of(scheme, Contrast::AsDesigned);
         let colour = |[red, green, blue]: [u8; 3]| alo_appearance::Colour::of(red, green, blue);
         let contrast = colour(palette.ink).contrast_with(colour(palette.ground));
         assert!(
             contrast >= alo_appearance::ENOUGH_FOR_TEXT,
             "{scheme:?}: {contrast:.2}"
+        );
+    }
+}
+
+/// **High contrast draws the indicator in the other palette, mark and all.**
+/// The rows are where they were, every flat colour is one
+/// `alo_access::HighContrast` decided, and the mark is still the agent's — that
+/// palette's own terracotta, which is the reserved colour taken deep enough to
+/// read rather than another colour wearing the agent's meaning (ADR 0010).
+#[test]
+fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
+    let mut indicator = Indicator::default();
+    indicator
+        .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())
+        .unwrap();
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let designed = drawn_as(&indicator, EgressStatusLook { scheme, ..light() });
+        let high = drawn_as(
+            &indicator,
+            EgressStatusLook {
+                scheme,
+                contrast: Contrast::High,
+                ..light()
+            },
+        );
+        assert_eq!(
+            designed.rows.len(),
+            high.rows.len(),
+            "{scheme:?}: high contrast changed how many rows there are"
+        );
+        let palette = crate::access_contrast::every_colour_of(
+            Contrast::High,
+            scheme,
+            Token::Terracotta.colour(),
+        );
+        for solid in &high.solids {
+            assert!(
+                palette.contains(&solid.colour),
+                "{scheme:?}: {:?} is drawn in {:?}, which is in no palette this crate may use",
+                solid.area,
+                solid.colour
+            );
+        }
+        let agents = rgb(alo_access::HighContrast::of(scheme).accent);
+        assert!(
+            high.solids.iter().any(|solid| solid.colour == agents),
+            "{scheme:?}: the agent's mark is not on the indicator in high contrast"
+        );
+        assert!(
+            !high.solids.iter().any(|solid| solid.colour == terracotta()),
+            "{scheme:?}: the design's terracotta survived into high contrast"
         );
     }
 }

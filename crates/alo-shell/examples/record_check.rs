@@ -42,8 +42,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_record::Entry;
     use alo_recounting::Recounting;
     use alo_shell::{
-        Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested, RecordFrame, RecordKey,
-        RecordLook, RecordShows, RecordWindow, WindowControlLabels,
+        Contrast, Cursor, EgressStatus, EgressStatusFrame, EgressStatusLook, Nested, RecordFrame,
+        RecordKey, RecordLook, RecordShows, RecordWindow, WindowControlLabels,
     };
     use alo_strings::{Direction, Strings};
     use std::os::unix::fs::PermissionsExt;
@@ -134,6 +134,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             strings: &strings,
                             dock: &dock,
                             look: EgressStatusLook {
+                                contrast: Contrast::AsDesigned,
                                 scheme,
                                 scale: TextScale::ordinary(),
                                 reading,
@@ -143,6 +144,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             window,
                             strings: &strings,
                             look: RecordLook {
+                                contrast: Contrast::AsDesigned,
                                 scheme,
                                 scale: TextScale::ordinary(),
                                 reading,

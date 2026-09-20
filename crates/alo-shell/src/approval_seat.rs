@@ -112,7 +112,7 @@ mod tests {
     }
 
     /// **Keys arrive through the seat's own modifiers**: Tab, Shift+Tab and
-    /// Enter move and choose, and a letter or Escape is nothing.
+    /// Enter move and choose, Escape answers no, and a letter is nothing.
     #[test]
     fn keys_arrive_through_the_seats_modifiers() {
         let (_runtime, mut server) = seat();
@@ -129,7 +129,7 @@ mod tests {
             .unwrap();
         assert_eq!(tapped(&mut server, KEY_ENTER), Some(ApprovalKey::Choose));
         assert_eq!(tapped(&mut server, KEY_Y), Some(ApprovalKey::Nothing));
-        assert_eq!(tapped(&mut server, KEY_ESC), Some(ApprovalKey::Nothing));
+        assert_eq!(tapped(&mut server, KEY_ESC), Some(ApprovalKey::Decline));
     }
 
     /// **An Enter held down chooses once.** The repeated press of a key already
