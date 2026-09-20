@@ -55,6 +55,25 @@ fn a_moment() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(60 * 60 * 12)
 }
 
+/// What a check was written into, for a test that reads it back.
+///
+/// On a booted machine this is the machine's record
+/// (`alo_record::Entry::left_on_its_own`, written by `alo-looking-once`); here
+/// it keeps what that entry would be made from, so that this file can say *one
+/// check, one departure written down* without the record itself.
+#[derive(Debug, Default)]
+struct WhatWasWrittenDown {
+    /// Each check that left, as the errand and the place it was made to.
+    departures: Vec<(Errand, Destination)>,
+}
+
+impl alo_looking::Noting for WhatWasWrittenDown {
+    fn the_check_left(&mut self, underway: &alo_egress::Underway) {
+        self.departures
+            .push((underway.errand(), underway.destination().clone()));
+    }
+}
+
 /// A whole build, from one repeated pair.
 fn build(pair: &str) -> Digest {
     Digest::read(&format!("sha256:{}", pair.repeat(32))).unwrap()
@@ -222,12 +241,14 @@ fn where_this_machine_checks_is_read_from_the_pin_and_written_nowhere_else() {
 #[test]
 fn a_check_is_one_act_that_fetches_an_answer_and_never_a_build() {
     let mut indicator = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let place = the_place();
     let asked = APlaceThatAnswers::offering(place.not_before().named_as(), &build("bb"));
 
     assert!(indicator.is_quiet());
     let found = look(
         &mut indicator,
+        &mut written,
         a_moment(),
         &place,
         &Running::reported(build("aa")),
@@ -362,10 +383,12 @@ fn when_a_check_happens_is_somebodys_act_and_never_a_watchers() {
     // Each of them is an answer a surface can act on, and it is written down
     // with the answer so that what is read back says which produced it.
     let mut indicator = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let place = the_place();
     for because in Because::EVERY {
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &place,
             &Running::reported(build("aa")),
@@ -446,10 +469,12 @@ fn every_refusal_is_a_sentence_and_no_way_out_is_said_once() {
     // Every one of them is reachable from a check rather than declared and
     // never said.
     let mut indicator = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let place = the_place();
     for refusal in NoAnswer::EVERY {
         let answered = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &place,
             &Running::reported(build("aa")),
@@ -465,6 +490,7 @@ fn every_refusal_is_a_sentence_and_no_way_out_is_said_once() {
     let no_road_out = || {
         look(
             &mut Indicator::default(),
+            &mut WhatWasWrittenDown::default(),
             a_moment(),
             &place,
             &Running::reported(build("aa")),
@@ -490,6 +516,7 @@ fn every_refusal_is_a_sentence_and_no_way_out_is_said_once() {
         said_once
             .what_to_say(look(
                 &mut Indicator::default(),
+                &mut WhatWasWrittenDown::default(),
                 a_moment(),
                 &place,
                 &Running::reported(build("aa")),
@@ -528,9 +555,12 @@ fn the_answer_is_kept_and_a_machine_that_has_moved_on_is_not_shown_it() {
     assert_eq!(kept.read().unwrap(), None, "a machine that never looked");
 
     let mut indicator = Indicator::default();
+
+    let mut written = WhatWasWrittenDown::default();
     let asked = APlaceThatAnswers::offering(place.not_before().named_as(), &build("bb"));
     let found = look(
         &mut indicator,
+        &mut written,
         a_moment(),
         &place,
         &was_running,

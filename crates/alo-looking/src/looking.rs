@@ -56,6 +56,7 @@ use alo_keeping_up::{Digest, Offered, Running, Standing, a_check_at};
 use crate::asking::ThePlace;
 use crate::because::Because;
 use crate::found::Found;
+use crate::noting::Noting;
 use crate::place::Place;
 use crate::refusing::NoAnswer;
 use crate::release::Release;
@@ -64,13 +65,18 @@ use crate::vouching::vouched_for;
 /// Ask `place` whether there is a newer version of this machine's system.
 ///
 /// The errand is on `indicator` from before the first question until after the
-/// answer, whichever way it ends.
+/// answer, whichever way it ends, and it is written into `noting` before it
+/// comes off — **on every road, including every refusal**. What the indicator
+/// showed while it happened is what the record has to be able to account for
+/// afterwards, and a check that was refused is a check that still reached for
+/// the network.
 ///
 /// # Errors
 /// [`NoAnswer`], each of which leaves the machine exactly as it was: a check
 /// asks a question and changes nothing.
 pub fn look(
     indicator: &mut Indicator,
+    noting: &mut impl Noting,
     now: SystemTime,
     place: &Place,
     running: &Running,
@@ -79,6 +85,7 @@ pub fn look(
 ) -> Result<Found, NoAnswer> {
     let underway = indicator.beginning_on_its_own(a_check_at(place.destination().clone()), now);
     let answered = asked(place, running, &underway, asking);
+    noting.the_check_left(&underway);
     indicator.ended_on_its_own(underway);
     answered.map(|standing| Found::of(running.digest().clone(), standing, because, now))
 }
@@ -117,7 +124,9 @@ fn asked(
 )]
 mod tests {
     use super::*;
-    use crate::testing::{APlaceThatAnswers, a_moment, a_place_not_before, build, the_place};
+    use crate::testing::{
+        APlaceThatAnswers, WhatWasWrittenDown, a_moment, a_place_not_before, build, the_place,
+    };
     use alo_egress::Errand;
     use alo_keeping_up::{Standing as WhereItStands, Vouching};
 
@@ -138,9 +147,11 @@ mod tests {
     #[test]
     fn a_newer_release_at_the_place_is_an_update() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let place = a_place_not_before(NOT_BEFORE);
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &place,
             &Running::reported(build("aa")),
@@ -160,8 +171,10 @@ mod tests {
     #[test]
     fn the_newest_release_the_place_holds_is_the_one_offered() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -177,8 +190,10 @@ mod tests {
     #[test]
     fn the_build_this_machine_runs_is_not_an_update() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("bb")),
@@ -196,8 +211,10 @@ mod tests {
     fn a_place_offering_nothing_this_machine_would_take_is_refused() {
         for holding in [vec!["latest", "sha256-aa"], vec![], vec!["0.0.1"]] {
             let mut indicator = Indicator::default();
+            let mut written = WhatWasWrittenDown::default();
             let refused = look(
                 &mut indicator,
+                &mut written,
                 a_moment(),
                 &a_place_not_before(NOT_BEFORE),
                 &Running::reported(build("bb")),
@@ -214,8 +231,10 @@ mod tests {
     #[test]
     fn an_answer_naming_half_a_build_is_not_understood() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let refused = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("bb")),
@@ -233,10 +252,12 @@ mod tests {
     #[test]
     fn both_questions_happen_inside_one_check() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let asked = APlaceThatAnswers::holding(&["0.0.3"]).whose_builds(&[("0.0.3", build("bb"))]);
         assert!(indicator.is_quiet());
         look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -254,8 +275,10 @@ mod tests {
     #[test]
     fn a_check_that_was_refused_leaves_nothing_on_the_indicator() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let refused = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -275,8 +298,10 @@ mod tests {
     fn every_refusal_a_place_answers_with_comes_back_as_it_is() {
         for refusal in NoAnswer::EVERY {
             let mut indicator = Indicator::default();
+            let mut written = WhatWasWrittenDown::default();
             let answered = look(
                 &mut indicator,
+                &mut written,
                 a_moment(),
                 &a_place_not_before(NOT_BEFORE),
                 &Running::reported(build("aa")),
@@ -312,8 +337,10 @@ mod tests {
     #[test]
     fn an_offer_the_place_vouches_for_says_so() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -338,8 +365,10 @@ mod tests {
     #[test]
     fn an_offer_nothing_vouches_for_is_offered_and_says_that_nothing_does() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -371,8 +400,10 @@ mod tests {
     #[test]
     fn a_signature_for_another_build_does_not_vouch_for_this_one() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -396,11 +427,13 @@ mod tests {
     #[test]
     fn whether_it_is_vouched_for_costs_no_third_question() {
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let asked = APlaceThatAnswers::holding(&["0.0.3"])
             .whose_builds(&[("0.0.3", build("bb"))])
             .also_vouching_for(&[build("bb")]);
         look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &a_place_not_before(NOT_BEFORE),
             &Running::reported(build("aa")),
@@ -425,8 +458,10 @@ mod tests {
         let place = the_place();
         let pinned = place.not_before().named_as().to_owned();
         let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
         let found = look(
             &mut indicator,
+            &mut written,
             a_moment(),
             &place,
             &Running::reported(build("aa")),
@@ -437,5 +472,54 @@ mod tests {
 
         assert!(found.is_ready(), "{pinned}");
         assert!(indicator.is_quiet());
+    }
+
+    /// **One check, one departure written down**, naming the errand and the
+    /// place — so the errand a person saw on the indicator is the errand the
+    /// record accounts for afterwards.
+    #[test]
+    fn the_one_check_is_written_down_once_and_names_where_it_went() {
+        let place = a_place_not_before(NOT_BEFORE);
+        let mut indicator = Indicator::default();
+        let mut written = WhatWasWrittenDown::default();
+        look(
+            &mut indicator,
+            &mut written,
+            a_moment(),
+            &place,
+            &Running::reported(build("aa")),
+            Because::ThisMachineStarted,
+            &APlaceThatAnswers::holding(&["0.0.3"]).whose_builds(&[("0.0.3", build("bb"))]),
+        )
+        .unwrap();
+
+        assert_eq!(written.how_many(), 1);
+        assert_eq!(
+            written.departures(),
+            [(Errand::CheckingForAnUpdate, place.destination().clone())]
+        );
+    }
+
+    /// **A refusal is written down too, every one of them.** The indicator
+    /// showed the check on every road out of it, and a record with a gap in it
+    /// exactly where the check failed is a record that cannot answer law 1's
+    /// question about the quiet days.
+    #[test]
+    fn every_refusal_leaves_the_same_one_entry_behind() {
+        for refusal in NoAnswer::EVERY {
+            let mut indicator = Indicator::default();
+            let mut written = WhatWasWrittenDown::default();
+            let answered = look(
+                &mut indicator,
+                &mut written,
+                a_moment(),
+                &a_place_not_before(NOT_BEFORE),
+                &Running::reported(build("aa")),
+                Because::ThisMachineStarted,
+                &APlaceThatAnswers::that_answers_with(refusal),
+            );
+            assert_eq!(answered.unwrap_err(), refusal);
+            assert_eq!(written.how_many(), 1, "{refusal:?} was not written down");
+        }
     }
 }
