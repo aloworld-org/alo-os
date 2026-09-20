@@ -223,6 +223,12 @@ fn put_to_a_model(
     // from how strict the policy looks: a person who set a strict rule for
     // themselves has no administrator, and naming one would be inventing them.
     let by_an_organisation = questions.by_an_organisation();
+    // **Which way this machine's roads out go**, taken with the other two and
+    // before the turn's answer borrows `questions`. Read only on the provider
+    // road: a question answered by a runtime on this machine never leaves, so
+    // there is nothing for a proxy to be asked about, and a machine down the
+    // corridor is on this network and is no road `alo_proxy::Road` names.
+    let the_road_out = questions.road_out();
     match questions.what_answers() {
         WhatAnswers::Nothing => {
             ToAnAgent::refused(&strings.say(&NOTHING_ANSWERS_QUESTIONS.key(), &Filling::nothing()))
@@ -272,6 +278,27 @@ fn put_to_a_model(
                 }
             };
 
+            // **And then which way out of this machine that road goes**, before
+            // the keyring and before anything opens. `alo_proxy::the_way`
+            // decides it for `Road::AskingAProvider`; nothing here does, and
+            // `crate::the_road_out` is the one place that asks.
+            //
+            // Asked *after* the rule and *before* the key, which is the same
+            // ordering argument twice: a question the organisation's bound
+            // refuses never reaches for a road, and a question with no road to
+            // go on never reaches for the person's credential. A road that
+            // could not be decided is **refused** rather than quietly going
+            // straight out — on a company network that would be a machine
+            // sending its company's traffic around the company's own rule with
+            // nobody told.
+            //
+            // Held out here for the reason the key below is: `Hosted::taking`
+            // borrows it, and it must outlive the ask.
+            let taking = match the_road_out.to(provider) {
+                Ok(taking) => taking,
+                Err(why) => return ToAnAgent::refused(&why.said(strings)),
+            };
+
             // Held out here because `Hosted::provider` borrows it, and it must
             // outlive the ask. This is the only place in the daemon where a
             // credential exists at all, and it lives no longer than the turn.
@@ -299,7 +326,7 @@ fn put_to_a_model(
                 question,
                 model,
                 permission,
-                &Answers::Provider(Hosted::provider(provider, key)),
+                &Answers::Provider(Hosted::provider(provider, key).taking(&taking)),
                 &places,
                 now,
             ) {
@@ -464,26 +491,14 @@ mod tests {
     // along whatever `Questions` was built with.
     use crate::questions::{TheBound, WhoseKeyring};
     use crate::testing::{
-        a_directory_of_our_own, a_message, a_runtime_saying, hour, noon, nothing_has_been_chosen,
-        on_a_machine, on_a_machine_that_answers,
+        a_directory_of_our_own, a_listener_that_reports_connections, a_message, a_runtime_saying,
+        hour, noon, nothing_has_been_chosen, on_a_machine, on_a_machine_that_answers,
+        our_own_address,
     };
     use alo_choosing::{Chosen, Which};
     use alo_keyring_fixture::AKeyringOfOurOwn;
     use alo_models::SourcePolicy;
     use alo_record::Record;
-
-    /// This machine's own address, which is what a provider's has to be: a
-    /// loopback one reports as this machine and the provider door refuses it.
-    fn our_own_address() -> std::net::IpAddr {
-        let asking = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
-        match asking
-            .connect("192.0.2.1:9")
-            .and_then(|()| asking.local_addr())
-        {
-            Ok(ours) => ours.ip(),
-            Err(_) => std::net::IpAddr::from([127, 0, 0, 1]),
-        }
-    }
 
     /// **Each way a key is not handed over is its own sentence**, and no two
     /// are the same.
@@ -562,29 +577,6 @@ mod tests {
                 "text/plain",
             )
             .unwrap();
-    }
-
-    /// A listener this test owns, which reports whether anybody connected to it.
-    ///
-    /// On this machine's own interface rather than loopback, because that is the
-    /// only kind of address the Provider door will carry a key to.
-    fn a_listener_that_reports_connections() -> (std::net::SocketAddr, std::thread::JoinHandle<bool>)
-    {
-        let listener =
-            std::net::TcpListener::bind(std::net::SocketAddr::new(our_own_address(), 0)).unwrap();
-        let at = listener.local_addr().unwrap();
-        listener.set_nonblocking(true).unwrap();
-        let heard = std::thread::spawn(move || {
-            let until = std::time::Instant::now() + Duration::from_secs(2);
-            while std::time::Instant::now() < until {
-                if listener.accept().is_ok() {
-                    return true;
-                }
-                std::thread::sleep(Duration::from_millis(20));
-            }
-            false
-        });
-        (at, heard)
     }
 
     /// Settings naming two providers, with the person having chosen the first.

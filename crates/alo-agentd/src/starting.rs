@@ -136,6 +136,7 @@ use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
 use crate::surface::AtThePersonsDoor;
 use crate::terms::Terms;
+use crate::the_road_out::TheRoadOut;
 use crate::wire::Wire;
 use crate::words::declare_into;
 
@@ -255,12 +256,20 @@ pub fn until_stopped(
     // here: `crate::describing` refused every way that section does not hold
     // before this machine was a `Described` at all, and who owns the file is
     // what makes it an organisation's rather than the person's.
+    //
+    // **And the proxy is the description's too**, which is `[proxy]` in the
+    // same file: a question to a provider takes whichever way out
+    // `alo_proxy::the_way` answers for it (`crate::the_road_out`). A machine
+    // with no such section is a machine nobody set a proxy on, which decides
+    // the same way as *straight out* and is not written down as though somebody
+    // had chosen it.
     let mut questions = Questions::of_this_process(
         Catalogue::built_in().map_err(|why| NotStarted::NoCatalogue {
             why: why.to_string(),
         })?,
         described.questions().clone(),
-    );
+    )
+    .through(TheRoadOut::of(described.proxy().cloned()));
     let terms = Terms {
         for_agent: described.agent(),
         lasting: described.turn().duration(),

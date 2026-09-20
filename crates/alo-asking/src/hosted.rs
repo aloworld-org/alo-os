@@ -6,6 +6,18 @@
 //! here is the half that is about a *provider*: the name and region a person
 //! wrote down, and how long this machine waits for somebody else's service.
 //!
+//! # The road out is the machine's decision, and it arrives here decided
+//!
+//! On a company network there is frequently no other way out, so this door
+//! takes whichever way `alo_proxy::the_way` answered for
+//! [`Road::AskingAProvider`](alo_proxy::Road::AskingAProvider) — handed in by
+//! [`Hosted::taking`] as an [`alo_proxy::Carried`] and never worked out here.
+//! Two things follow from it, and both are stated on
+//! [`Hosted::where_it_would_connect`] and on `Hosted::ask`: **what this machine
+//! actually connects to is the proxy**, so that is what a caller registers with
+//! the boundary (ADR 0020), and **what the answer says it came from is still
+//! the provider**, because the destination never changed.
+//!
 //! # Nothing here opens anything on its own
 //!
 //! `Hosted::ask` is `pub(crate)` and its one caller is
@@ -25,6 +37,7 @@ use alo_answering::WentWrong;
 use std::net::SocketAddr;
 
 use alo_models::{InferenceSource, Provider, Secret};
+use alo_proxy::Carried;
 
 use crate::openai;
 use crate::question::Question;
@@ -50,14 +63,50 @@ pub struct Hosted<'a> {
     provider: &'a Provider,
     /// The key, for a provider that needs one.
     key: Option<&'a Secret>,
+    /// The way out this machine decided for the road to a provider, or
+    /// [`None`] where nobody has handed one over.
+    ///
+    /// Borrowed for the same length as the other two: an [`Carried`] can hold a
+    /// credential and `alo-proxy` keeps it deliberately un-`Clone`, so it lives
+    /// in the caller's frame and this reads it for the length of one question.
+    through: Option<&'a Carried>,
 }
 
 impl<'a> Hosted<'a> {
     /// This provider, with this key — which is [`None`] for one that needs
     /// none.
+    ///
+    /// The road out is straight until [`Hosted::taking`] says otherwise, and
+    /// **that is explicit rather than inherited**: see that method.
     #[must_use]
     pub fn provider(provider: &'a Provider, key: Option<&'a Secret>) -> Self {
-        Self { provider, key }
+        Self {
+            provider,
+            key,
+            through: None,
+        }
+    }
+
+    /// The same provider, reached the way this machine decided.
+    ///
+    /// `alo_proxy::the_way` decides it, for
+    /// [`Road::AskingAProvider`](alo_proxy::Road::AskingAProvider) and for
+    /// where this provider is; nothing here re-decides any of it, and there is
+    /// no argument through which it could. *A great many company networks have
+    /// no other route out*, so a provider that could not be reached through the
+    /// machine's proxy could not be reached at all.
+    ///
+    /// **Straight out is said rather than left unsaid**, which is why a caller
+    /// that decided *straight* still calls this, with a
+    /// [`Carried::straight`]. `ureq::Config::default` reads `HTTP_PROXY` out of
+    /// whatever process this happens to be running in, and a road decided by a
+    /// variable is a road nobody chose and nobody can be shown; `crate::openai`
+    /// therefore says which it is on every request, and
+    /// `alo_models::Trying::taking` is the same rule one crate over.
+    #[must_use]
+    pub const fn taking(mut self, through: &'a Carried) -> Self {
+        self.through = Some(through);
+        self
     }
 
     /// Where an answer from this provider would say it came from, out of what
@@ -92,10 +141,23 @@ impl<'a> Hosted<'a> {
     /// the whole of why this is not public: a public method here would be a way
     /// to reach a provider without law 1 having shown it.
     ///
+    /// The request is configured with the way out that was decided — **including
+    /// when that way is straight**, which is what stops the client reading a
+    /// proxy out of this process's environment.
+    ///
     /// # Errors
-    /// [`WentWrong`], as `openai::put` answers it.
+    /// [`WentWrong`], as `openai::put_through` answers it, and
+    /// [`WentWrong::NoWayThere`] for a proxy address the client cannot use.
+    /// That last one is a refusal rather than a road quietly going straight
+    /// out: a machine reaching around its company's own rule with nobody told
+    /// is the failure `alo-proxy` exists to prevent.
     pub(crate) fn ask(&self, question: &Question, to: &[SocketAddr]) -> Result<String, WentWrong> {
-        openai::put(
+        let through = match self.through {
+            None => None,
+            Some(carried) => carried.for_a_request().map_err(|_| WentWrong::NoWayThere)?,
+        };
+        openai::put_through(
+            through,
             &self.provider.endpoint,
             self.key,
             question,
@@ -108,11 +170,28 @@ impl<'a> Hosted<'a> {
     /// The host and port this would connect to, for somebody to resolve and
     /// register before the boundary is entered (ADR 0020).
     ///
+    /// **The proxy's, on a road going through one**, and the provider's
+    /// otherwise. What ADR 0020 asks to be registered is where the socket
+    /// really opens, and on a proxied road that is the proxy: the client is
+    /// handed these addresses as its whole resolver, speaks `CONNECT` to them
+    /// and never looks the provider's name up at all. Registering the
+    /// provider's instead would bound a turn to an address it does not use and
+    /// leave the one it does use unbounded, which is both halves of ADR 0020
+    /// wrong at once.
+    ///
+    /// It is **not** what the indicator is built from. That is
+    /// [`Hosted::named_source`], which names the provider whichever way the
+    /// road goes, because the destination did not change — `alo_proxy::road`
+    /// makes the same argument from the other end.
+    ///
     /// [`None`] for an endpoint with no host, which is one no request can be
     /// made to either.
     #[must_use]
     pub fn where_it_would_connect(&self) -> Option<(String, u16)> {
-        alo_models::address::where_it_connects(&self.provider.endpoint)
+        match self.through.and_then(|carried| carried.way().through()) {
+            Some(proxy) => Some((proxy.host().to_owned(), proxy.port())),
+            None => alo_models::address::where_it_connects(&self.provider.endpoint),
+        }
     }
 }
 
@@ -141,6 +220,49 @@ mod tests {
             Hosted::provider(&provider, None).named_source(),
             crate::testing::mistral_source()
         );
+    }
+
+    /// **A road going through a proxy connects to the proxy**, so that is what
+    /// a caller registers with the boundary (ADR 0020) — while the line the
+    /// indicator is built from still names the provider.
+    ///
+    /// The two halves are asserted together on purpose: they are the pair that
+    /// must not be confused, and a change that made one of them follow the
+    /// other would be a machine either telling somebody their question went
+    /// somewhere it did not, or bounding a turn to an address it never uses.
+    #[test]
+    fn a_road_through_a_proxy_connects_to_the_proxy_and_is_still_named_for_the_provider() {
+        let provider = mistral("https://api.mistral.ai");
+        let proxy =
+            alo_proxy::ProxyAddress::checked(alo_proxy::SpokenTo::Http, "proxy.example.com", 8080)
+                .unwrap();
+        let through = Carried::through(proxy);
+
+        let hosted = Hosted::provider(&provider, None).taking(&through);
+        assert_eq!(
+            hosted.where_it_would_connect(),
+            Some(("proxy.example.com".to_owned(), 8080))
+        );
+        assert_eq!(hosted.named_source(), crate::testing::mistral_source());
+    }
+
+    /// **A road going straight out connects to the provider**, and says so
+    /// rather than leaving the client to find a proxy in this process's
+    /// environment.
+    #[test]
+    fn a_road_going_straight_out_connects_to_the_provider() {
+        let provider = mistral("https://api.mistral.ai");
+        let straight = Carried::straight();
+
+        for hosted in [
+            Hosted::provider(&provider, None),
+            Hosted::provider(&provider, None).taking(&straight),
+        ] {
+            assert_eq!(
+                hosted.where_it_would_connect(),
+                Some(("api.mistral.ai".to_owned(), 443))
+            );
+        }
     }
 
     /// The question reaches the address the person typed, over the convention

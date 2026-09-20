@@ -100,6 +100,19 @@ No two of those touch one crate, and none of them touches `alo-shell`,
 lanes on them. **Two lanes in one crate corrupted a task on 2026-09-11; that is
 why the table exists.**
 
+**`alo-asking`'s hosted door and `alo-agentd`'s question road, taken
+2026-09-20.** The software-and-the-web plan's task 11 carries the machine's
+proxy to the question a turn puts, and the road it has to reach runs through
+`alo_asking::Hosted` and `alo_asking::openai` — the **models-measured plan's**
+crates, and that plan records itself *Finished, 2026-09-15*. Under *a machine
+unblocks itself* below, a blocker in a plan that has finished is taken rather
+than waited on, so the software-and-the-web plan holds `alo-asking/src/hosted.rs`
+and `alo-asking/src/openai.rs` from that date. **Not `alo-asking/src/corridor.rs`
+or `src/held_to.rs`**, which are the local-network plan's and which task 11 read
+and did not change. `alo-agentd` was already this plan's to edit for the machine
+description (`machine_wide_proxy.rs`, task 9); task 11 adds `the_road_out.rs`
+beside it.
+
 ## A machine unblocks itself
 
 **Changed 2026-09-18, by the owner.** A machine no longer reports that it is

@@ -101,6 +101,26 @@ pub const NOTHING_WAS_ASKED: Word = Word::saying(
      apology.",
 );
 
+/// A provider whose address is not somewhere a road out can be decided about.
+///
+/// `crate::the_road_out::NotTaken::NotSomewhereWithARoadOut`, and the narrow
+/// half of that pair: the other one is `alo-proxy`'s and speaks in its own
+/// words. `alo_models::Provider` has already refused a scheme that is not
+/// `http` or `https` and an address carrying a credential, so what reaches this
+/// is a host `alo_proxy::Reaching` will not make a road out of — a host longer
+/// than a host can be.
+pub const NO_ROAD_TO_THAT_PROVIDER: Word = Word::saying(
+    "agentd.no-road-to-that-provider",
+    "this machine could not work out a route to the provider you chose, because its address is \
+     not one it can reach — check the address in Settings; nothing was sent",
+)
+.noting(
+    "Said when the address saved for a provider cannot be turned into somewhere this machine can \
+     decide a route to, so no question is sent. The person can act on it: the address in their \
+     own settings is wrong. It repeats none of what they wrote, because a sentence with a gap in \
+     it is the one road text somebody else typed could take into something a person reads.",
+);
+
 /// A provider was chosen and there is no credential store to ask.
 ///
 /// `alo_secrets::NotStored::Unavailable`: nobody has signed in yet, or this
@@ -450,7 +470,7 @@ pub const A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT: Word = Word::saying(
 );
 
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 30] = [
+pub const EVERY_WORD: [Word; 31] = [
     A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,
     A_WORKSPACE_HERE_COULD_NOT_BE_READ,
     A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT,
@@ -474,6 +494,7 @@ pub const EVERY_WORD: [Word; 30] = [
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
     NOTHING_WAS_ASKED,
+    NO_ROAD_TO_THAT_PROVIDER,
     NO_KEYRING_FOR_A_PROVIDER,
     THE_KEYRING_IS_LOCKED,
     NO_KEY_FOR_THIS_PROVIDER,

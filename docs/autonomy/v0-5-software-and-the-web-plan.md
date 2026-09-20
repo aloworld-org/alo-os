@@ -427,17 +427,31 @@ one.
 
 ### 11. The proxy a machine was told about, carried to the question a turn puts
 
-**Status:** ready. Written 2026-09-18 by task 9, which found it: the machine's
-description now states a proxy, `alo-agentd` reads it into `alo_proxy::Kept`, and
-**nothing in that service hands it to anything**. `alo_proxy::the_way` answers
-for every `Road` and `alo_proxy::Carried::for_a_request` turns that answer into
-what a request is configured with — task 4 built both — and the road a turn's
-question actually takes (`alo-asking`, through `crate::doing` and
-`crate::questioned`) is configured with neither. On a company network with no
-other route out, that is a machine that reads its organisation's proxy off the
-disk and then asks a provider directly: the setting exists, is shown, and does
-nothing, which is the one failure task 4's own header says is worse than having
-no setting at all. **Depends on:** 4, 9.
+**Status:** **Done, 2026-09-20.** The setting now reaches the socket.
+`crates/alo-agentd/src/the_road_out.rs` is the one place that asks —
+`alo_proxy::the_way` for `Road::AskingAProvider`, over the `alo_proxy::Kept`
+`Described::proxy` answers with — and it decides nothing itself; `starting.rs`
+hands it over, `questions.rs` carries it as it already carries `[questions]`'s
+bound, and `doing.rs` asks it **after the organisation's rule and before the
+keyring**, so a question with no road to go on never reaches for a credential.
+`alo_asking::Hosted::taking` takes the answer as an `alo_proxy::Carried`, and
+`Hosted::where_it_would_connect` then names **the proxy** — which is what ADR
+0020 registers with the boundary, because that is where the socket really opens.
+Two findings are in the report and worth the line here: the provider road was
+**inheriting `HTTP_PROXY` from whatever process the daemon was in**
+(`ureq::Config::default` reads it), which is now said explicitly on every
+request and held by a test that runs the question in a second process with those
+variables set; and a test that watched addresses alone could not have caught
+either half, because a road out is handed its addresses and resolves nothing, so
+the acceptance reads the first line on the wire. Carrying the proxy needed
+`alo-asking`'s hosted door — the models-measured plan's, **finished 2026-09-15**
+— so this plan took it under *a machine unblocks itself*
+(`docs/autonomy/a-new-machine-becomes-a-lane.md`) rather than stopping at a
+decision record; that file records the transfer. The acceptance test is
+`crates/alo-agentd/src/the_proxy_on_the_road_a_question_takes.rs`; the report is
+`docs/autonomy/updates/the-proxy-on-the-road-a-question-takes.md`. What is not
+here is a proxy that asks who you are: no road in this workspace reads the
+password `[proxy]` names, and that is task 12. **Depends on:** 4, 9.
 
 *Machine-wide, and honoured* (`docs/features.md`, v0.5) — a proxy that is read
 and not taken is neither.
@@ -461,3 +475,50 @@ and not taken is neither.
   needs `alo-asking` to change, and that crate turns out to be another plan's,
   **the task stops at a decision record** naming the change and who makes it, the
   way task 5 was told to about `alo-capability`.
+
+### 12. A proxy that asks who you are, signed in to on every road
+
+**Status:** ready. Written 2026-09-20 by task 11, which found it: `[proxy]`
+names `sign-in-as` and `password-in-keyring`, `alo_proxy::ProxyAddress` carries
+both, and `alo_proxy::Carried::with_the_password` is the one door a proxy
+credential becomes text through — and **no road in this workspace calls it**.
+Not the rented tool's (`alo-software`), not the base's (`alo-updating`), not a
+provider's list (`alo-models`), and not a turn's question (task 11). Every one
+of them builds its `Carried` from `the_way` alone, so a machine whose company
+proxy wants a name reaches it as somebody with no password and is refused by the
+proxy — on a network task 4's own header says has no other route out. Today that
+refusal is at least a sentence somebody can act on, which is why task 11 left it
+rather than taking the decision underneath it quietly for four roads at once.
+**Depends on:** 4, 11.
+
+*A great many company networks have no other route out* — and a good many of
+those proxies ask who you are.
+
+**The decision this waits on, and it is small.** ADR 0022 settles where a
+**provider's** key lives: the Secret Service, over the person's own session bus
+at `/run/user/<uid>/bus`, derived from the daemon's uid. A machine-wide proxy
+password is not that, and the difference is not a detail — `alo-agentd` reads
+`/etc/alo/agentd.toml` as root before anybody has signed in, and the rented tool
+and the base take their roads with no session at all. So *which store*, *whose*,
+and *what a road does when nobody has signed in yet* are the three questions,
+and the first task to need them writes the ADR rather than answering them in a
+crate.
+
+- **Acceptance:** a proxy an organisation's description says wants a name is
+  signed in to on **every road out alo OS itself uses** — installing and
+  application updates, the system's own update, a provider's list and a turn's
+  question — through `alo_proxy::Carried::with_the_password` and through nothing
+  else, held by a test per road, so the one function that turns a password into
+  text stays the one function `grep` finds every caller of; the password is
+  read from where ADR 0022's successor says it lives and **never from the
+  description** (`crate::machine_wide_proxy` already refuses one written there,
+  and that refusal does not get weaker); a machine that cannot read it
+  **refuses the road in words** rather than reaching the proxy as somebody with
+  no password or going straight out around it, with the refusal naming what to
+  do and quoting nothing that was stored; and no record, no service log, no
+  indicator line and no `Debug` anywhere carries the password, held by a test
+  that formats everything on the road and finds it absent.
+- **Constraint:** the decision above is written first, as an ADR under
+  `docs/decisions/`, and it is this task's first deliverable — a store chosen
+  inside a crate would be a store four roads then have to agree with. Nothing
+  here widens what `[proxy]` may contain: a password in the file stays refused.

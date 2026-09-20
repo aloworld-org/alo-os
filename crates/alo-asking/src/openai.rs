@@ -387,7 +387,39 @@ pub(crate) fn put(
     to: &[SocketAddr],
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
-    put_on((to, None), endpoint, key, question, waiting, vouching)
+    put_through(None, endpoint, key, question, waiting, to, vouching)
+}
+
+/// **Put the question the way this machine decided the road out goes**: [`put`]
+/// in every other respect, for the one road `alo_proxy` names as an agent's
+/// (`alo_proxy::Road::AskingAProvider`).
+///
+/// `through` is `alo_proxy::Carried::for_a_request`'s answer, and [`None`] is
+/// *straight out* rather than *nothing was decided* — which is the whole point
+/// of it being a parameter. [`sending`] configures every request with whichever
+/// it is, so a road out of this machine is never the one
+/// `ureq::Config::default` found in an environment variable.
+///
+/// # Errors
+/// [`WentWrong`], as [`put`] answers it.
+pub(crate) fn put_through(
+    through: Option<ureq::Proxy>,
+    endpoint: &str,
+    key: Option<&Secret>,
+    question: &Question,
+    waiting: Duration,
+    to: &[SocketAddr],
+    vouching: Option<Vouching<'_>>,
+) -> Result<String, WentWrong> {
+    putting(
+        (to, None),
+        through,
+        endpoint,
+        key,
+        question,
+        waiting,
+        vouching,
+    )
 }
 
 /// **Put the question from a socket held to an interface**, where `to` says
@@ -406,6 +438,24 @@ pub(crate) fn put_on(
     waiting: Duration,
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
+    // **Straight out, said.** A machine down the corridor is on this network
+    // and `alo_proxy::Road` names no road to one; what this passes is therefore
+    // *nothing in the middle* rather than *whatever the environment holds*,
+    // which is the same rule [`put_through`] states for the road it does name.
+    putting(to, None, endpoint, key, question, waiting, vouching)
+}
+
+/// The body every question in words shares, whichever of the three doors above
+/// reached it.
+fn putting(
+    to: Where<'_>,
+    through: Option<ureq::Proxy>,
+    endpoint: &str,
+    key: Option<&Secret>,
+    question: &Question,
+    waiting: Duration,
+    vouching: Option<Vouching<'_>>,
+) -> Result<String, WentWrong> {
     let sent = Sent {
         model: question.of().to_owned(),
         messages: vec![Message {
@@ -418,7 +468,7 @@ pub(crate) fn put_on(
     // the bytes on the wire; `send_json` would serialise again on its own
     // terms (`docs/quirks.md`, ureq 3.4.0).
     let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
-    sending(endpoint, key, &body, waiting, to, vouching)
+    sending(endpoint, key, &body, waiting, to, through, vouching)
 }
 
 /// **Put the question, and hold every token of the answer to `grammar`.**
@@ -451,20 +501,22 @@ pub(crate) fn put_held_to_a_grammar(
         grammar: grammar.to_owned(),
     };
     let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
-    sending(endpoint, key, &body, waiting, (to, None), None)
+    sending(endpoint, key, &body, waiting, (to, None), None, None)
 }
 
 /// Where a request may connect: the addresses registered for it, and the
 /// interface its socket is held to where it is held to one (ADR 0044).
 pub(crate) type Where<'a> = (&'a [SocketAddr], Option<std::num::NonZeroU32>);
 
-/// The one road both of them take: this address, these bytes, that long.
+/// The one road all of them take: this address, these bytes, that long, that
+/// way out.
 fn sending(
     endpoint: &str,
     key: Option<&Secret>,
     body: &[u8],
     waiting: Duration,
     (to, held_to): Where<'_>,
+    through: Option<ureq::Proxy>,
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
     let Some(only_these) = OnlyThese::of(to) else {
@@ -485,7 +537,16 @@ fn sending(
         // an opinion about must not be turned into a transport error by the
         // client, because "that key was not accepted" and "nothing
         // answered" are different things to tell somebody.
-        .http_status_as_error(false);
+        .http_status_as_error(false)
+        // **Said on every request, whichever it is.** `ureq::Config::default`
+        // fills this in from `HTTP_PROXY` and `HTTPS_PROXY` in whatever process
+        // this happens to be running in, and a road decided by a variable is a
+        // road nobody chose, nobody can be shown and nobody can change where
+        // they would look for it. So the caller says, and `None` here means
+        // *straight out* rather than *nothing was decided*: `alo-proxy` is what
+        // decided, and `alo-secrets` refuses to read an environment for exactly
+        // this reason one crate over.
+        .proxy(through);
 
     // **Nothing here in a build a machine runs.** Without the feature this line
     // does not exist and the roots are `ureq`'s default, which is Mozilla's
