@@ -136,10 +136,11 @@ first answer.
 | `opened` | The file was handed to the application that opens its kind. | `opener`: that application's identifier; `chosen`: `true` when it was the person's choice rather than a declaration; `against`: the grants over the file and over the opener. |
 | `appearance-read` | The application read the appearance settings. | `against` |
 | `appearance-sent` | The application was sent appearance settings that changed. | `against` |
+| `network-read` | The application read whether this machine reaches anything, and whether the connection is metered. | `against` |
 | `refused` | The grants refused it. | `why`: `nothing-granted` (the application holds no grant at all), `never-granted` (nothing it holds has ever covered this), or `lapsed` (a grant covered it and has expired). |
 | `not-a-request` | What arrived was never a well-formed request. | `why`: `no-application`, `not-an-identifier`, `needs-a-path`, `not-over-a-path`, `not-a-full-path`, or `could-lead-elsewhere`. |
 | `nothing-opens` | Nothing on this machine opens the file. | `why`: `{"no-application":{}}`, or `{"no-application":{"chosen":ID}}` when the person's choice is not installed; `the-file` (a program, empty, damaged, password-protected or unrecognised); or `unreadable`. |
-| `unanswered` | It could not be answered with what it asked for, and neither the grants nor *what opens what* were the reason. | `why`: `not-identified`, `not-a-token`, `grants-unread`, `applications-unread`, `keyring-unavailable`, `not-written`, `not-a-file`, `not-decided-here`, `no-such-setting`, `appearance-unread`, or `{"not-opened":{"opener":ID}}`. |
+| `unanswered` | It could not be answered with what it asked for, and neither the grants nor *what opens what* were the reason. | `why`: `not-identified`, `not-a-token`, `grants-unread`, `applications-unread`, `keyring-unavailable`, `not-written`, `not-a-file`, `not-decided-here`, `no-such-setting`, `appearance-unread`, `network-unread` (the network manager could not be asked how far this machine reaches), or `{"not-opened":{"opener":ID}}`. |
 
 `against` holds the handles a person revokes grants by, as the grants file
 writes them (`docs/contracts/grants-file.md`).

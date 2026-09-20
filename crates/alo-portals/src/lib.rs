@@ -117,6 +117,7 @@ pub mod kept_answer;
 pub mod kept_answer_said;
 pub mod kept_outcome;
 mod kept_outcome_said;
+pub mod network_state;
 pub mod not_a_request;
 pub mod not_recorded;
 pub mod open_with;
@@ -140,6 +141,8 @@ mod asked;
 mod caller;
 #[cfg(target_os = "linux")]
 pub mod held_process;
+#[cfg(target_os = "linux")]
+mod network_monitor_portal;
 #[cfg(target_os = "linux")]
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
@@ -181,7 +184,7 @@ pub use sandboxed::{Sandboxed, Sandboxes};
 pub use serving::{Backend, NotServed, Served, THE_PORTALS_NAME};
 #[cfg(unix)]
 pub use shortening::Shortened;
-pub use the_machine::{Appearance, Applications, TheMachine, TimeOfDay};
+pub use the_machine::{Appearance, Applications, Reaching, TheMachine, TimeOfDay};
 #[cfg(unix)]
 pub use where_the_answers_are::{HOME, STATE_HOME, THE_ANSWERS_FILE, THE_FOLDER, ThePlace};
 pub use words::{CLAUSES, EVERY_WORD, WordsError, declare_into, portal_words};

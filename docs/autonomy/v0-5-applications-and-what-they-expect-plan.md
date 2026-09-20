@@ -563,9 +563,15 @@ person's is not written anywhere.
 
 ### 12. The network monitor portal, answered from an honest reading
 
-**Status:** in progress, 2026-09-20 — **the reading has landed**
-(`docs/autonomy/updates/how-far-this-machine-reaches.md`); the portal that
-answers from it has not. **Depends on:** 1, 5.
+**Status:** **Done, 2026-09-20.** Both halves landed the same day: the reading
+(`docs/autonomy/updates/how-far-this-machine-reaches.md`) and the portal
+answered from it (`docs/autonomy/updates/the-network-monitor-portal.md`).
+`alo_portals::network_state` decides, `network_monitor_portal` speaks it, and
+`Portal::NetworkMonitor::answered_on_the_bus` is now
+`org.freedesktop.portal.NetworkMonitor` — the fourth portal this backend
+answers. **Nothing was measured against NetworkManager**; this lane has none,
+and the bus tests hand the backend a reading of the test's own. **Depends on:**
+1, 5.
 
 **Added 2026-09-20**, by the lane clearing task 7 of
 `docs/autonomy/v0-5-the-shell-plan.md` — the status area's clock, battery,

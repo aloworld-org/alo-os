@@ -248,6 +248,9 @@ mod tests {
         fn time_of_day(&self) -> Option<TimeOfDay> {
             self.time
         }
+        fn reaching(&self) -> Option<crate::the_machine::Reaching> {
+            None
+        }
     }
 
     fn noon() -> SystemTime {
