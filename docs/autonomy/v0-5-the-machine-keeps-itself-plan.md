@@ -744,7 +744,71 @@ them may need something no worker may decide.
 
 ### 11. The check on a machine that is not this one
 
-**Status:** ready. **Depends on:** 10.
+**Status:** done. **Depends on:** 10.
+
+**Done, 2026-09-20.** Both halves measured on a real bootc machine —
+`alo-lane-b-bootc`, the pinned image `ghcr.io/aloworld-org/alo-os:0.0.4` at
+`sha256:48bd5f31…` installed to a 20 GiB disk with `bootc install to-disk` and
+booted under KVM on the development PC: Fedora 42, kernel 6.19.14, `bootc`
+1.15.1.
+
+**The first half answers the way the task feared.** As uid 1000 the real base
+refuses: exit 1, nothing on stdout, and on stderr `error: Status: Preparing for
+write: Querying root privilege: This command must be executed as the root user`
+— for `--format json --format-version 1`, for `--format yaml`, for the human
+form and for `--booted` alike, whether asked through `runuser`, through a login
+shell, or by systemd with `User=alo`. The whole unit was then run as the login
+it actually uses, and said exactly the sentence this plan predicted it would:
+*alo-looking-once: this machine did not find out whether there is an update: the
+base would not say which build this machine is running … — nothing left this
+machine*, exit 1, nothing kept. As root the same program on the same machine
+asked `ghcr.io` and kept its answer. **So on a real alo OS machine the unit
+task 10 built fails at every boot**, and task 10's decision that the check runs
+as the person cannot stand on `bootc status` as its source.
+
+**The fix is decided, and no ADR is owed, because the road that works is not a
+privileged one.** The base itself already writes, world-readable, what the check
+needs: the booted deployment's origin file
+(`/ostree/deploy/default/deploy/<checksum>.0.origin`, `0644 root root`) names
+the image reference *with its digest*, and `ostree admin status` run as uid 1000
+names which deployment is the booted one — both read as the person on this
+machine, and neither asks the base's command for permission to say what the base
+has already written down. So `alo_updating::running` gains a road that reads
+that, the unit stays the person's, ADR 0018 stands, and **no new privileged
+component and no widened grant is owed** (ADR 0001 §2 does not fire). What it
+costs is one sentence of ADR 0011's *the base is spoken to through its own
+command* — which holds unchanged for every act that changes the machine, and is
+narrowed only for the one question the base refuses to answer to the person at
+all. Applying it is the next task's: this task is two measurements.
+
+**And the measurement found a second thing nobody was looking for.** On this
+machine `status.booted.image.imageDigest` is `sha256:2e7ecd95…` while the image
+reference, the spec and the origin file all say `sha256:48bd5f31…`. `Running`
+reads the former and `Standing::between` compares it to what the registry
+offers, so the kept answer on a machine running exactly the pinned build reads
+`{"about":"sha256:2e7ecd95…","offered":"sha256:48bd5f31…"}` and the person is
+told *a newer version of this machine's system is available* when there is none.
+Both digests were measured for the same image — identical config id
+`74a4aa15…`, local container store manifest `2e7ecd95…`, registry manifest
+`48bd5f31…` — and this machine was installed from the local store, which is
+where its `imageDigest` came from. **Not measured:** whether a machine installed
+straight from the registry records the registry's digest instead. That is one
+install away and is the next task's first line. The origin file, note, carries
+the digest that matches what the registry offers, so the fix above happens to
+close this as well.
+
+**The second half went through the proxy and not around it.** With a real proxy
+on the machine's own `/etc/alo-proxy/proxy.json` (`manual`, `10.0.2.2:3128`,
+`set_by: an-organisation`) the check succeeded, the proxy at the boundary wrote
+down six `CONNECT ghcr.io:443` departures — task 10's six, arriving as CONNECTs
+— and counters inside the machine read **98 packets through the proxy and 0
+straight out to port 443**. With the proxy set to a port nothing listens on the
+check refused — *there is no way out of this machine to the place its updates
+come from* — kept nothing, and left **exactly one packet, a lone SYN at the dead
+proxy, and 0 straight out**: it did not go around. With a proxy file present and
+not readable as a setting it refused before asking anything, *nothing left this
+machine*, and no counter moved at all. Report:
+`docs/autonomy/updates/the-base-answers-only-root.md`.
 
 Written 2026-09-19 by task 10, because the plan named nothing after it and that
 task's measurement leaves exactly two things unmeasured — both of them about
@@ -786,3 +850,46 @@ does not.
   program and the `systemctl enable` are the installer lane's, handed over in
   task 10's report. No setting that turns checking off, no member meaning
   *urgent*, and `alo-keeping-up` still gains no clock, no socket and no file.
+
+### 12. What the base has already written down
+
+**Status:** ready. **Depends on:** 11.
+
+Written 2026-09-20 by task 11, because the plan named nothing after it and its
+measurement leaves the unit it was about broken on every real machine. The check
+runs as the person and asks `bootc status`; the real base refuses uid 1000 with
+*This command must be executed as the root user*; so the unit fails at every
+boot and keeps nothing. Task 11 decided the fix and is two measurements, not a
+change: this is the change.
+
+**The road is the one the base already leaves open.** Measured as uid 1000 on
+`alo-lane-b-bootc`: the booted deployment's origin file is `0644 root root` and
+names the image reference with its digest, and `ostree admin status` names which
+deployment is booted. Nothing there is privileged, nothing is new on the machine,
+and ADR 0018 is untouched. `alo_updating` gains that road for *which build is
+this machine running* and keeps `TheBase` for everything that changes the machine
+— where being root is correct and is the caller's, not this component's.
+
+**Its first line is a measurement, not code.** Task 11 found
+`status.booted.image.imageDigest` (`sha256:2e7ecd95…`) disagreeing with the
+image reference, the spec and the origin file (`sha256:48bd5f31…`) on a machine
+installed from a local container store, so the kept answer said *a newer version
+is available* about the build it was already running. Install one machine
+**straight from the registry** and read all four back: that says whether the
+disagreement is the install's or the product's, and it decides how much of this
+task is a fix and how much is a fix plus a bug.
+
+- **Acceptance:** the check, run **as uid 1000 on a real bootc machine**, keeps
+  an answer that names the build that machine is actually running — the same one
+  the origin file names — and a machine that is running the newest build says so
+  rather than offering itself an update; the digest measurement above is made
+  and written down before the code is; what the base is asked is still exactly
+  the arguments this repository decided, with no shell between them, for every
+  act that changes the machine; and `ADR 0011` carries, in its own text, the one
+  sentence narrowing *spoken to through its own command* to the acts that change
+  the machine, with the refusal that forced it quoted.
+- **Constraint:** nothing becomes root and nothing gains a capability — a fix
+  that widens a grant is the fix this plan spent task 10 and task 11 refusing.
+  No setting that turns checking off, no member meaning *urgent*, and
+  `alo-keeping-up` still gains no clock, no socket and no file. The unit's
+  installation remains the installer lane's.
