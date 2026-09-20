@@ -43,6 +43,14 @@
 //! number the one the kernel or the count gave. The dock grants, approves and
 //! revokes nothing, and neither window acts on what it shows.
 //!
+//! Several screens (`Screens`) are drawn here and arranged in `alo-displays`:
+//! where each output sits, how large it draws and which is the main one are
+//! that crate's answers, restored for a set of screens a person has arranged
+//! before; each screen draws its own background, its own dock on the edge
+//! `alo-dock` names, and is warmed by night light on its own. Where the windows
+//! of an unplugged screen belong is `alo-displays`' answer too, and nothing
+//! here adjusts an arrangement.
+//!
 //! Settings (`SettingsWindow`) is drawn here and decided in the crates that own
 //! each setting: what answers questions (`alo-setting-up`, `alo-choosing`),
 //! appearance, the dock and shortcuts (each through its own `keeping`), and
@@ -157,6 +165,11 @@ mod scene_drawing;
 mod scene_native;
 mod scene_replacement;
 mod scene_scanout;
+mod screen_background;
+mod screens;
+mod screens_raster;
+#[cfg(test)]
+mod screens_testing;
 mod seat_input;
 mod server;
 mod session_device;
@@ -290,6 +303,8 @@ pub use scanout::ActiveScanout;
 pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
+pub use screens::{ScreenPlace, Screens};
+pub use screens_raster::{ScreenPicture, desk};
 pub use server::Server;
 pub use session_device::SessionError;
 pub use settings_answering::{SettingsAnswered, SettingsChoice};

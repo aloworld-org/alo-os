@@ -37,6 +37,11 @@ alo-changing = { path = "../alo-changing" }
 alo-choosing = { path = "../alo-choosing" }
 # Where the dock is, and so which corner is the status area the egress
 # indicator is drawn in. Read, never written.
+# Which screens a person has, where each sits, how large each draws, and what
+# each wears: the background behind its windows, the edge its dock sits on and
+# how warm night light draws it. Read, never written — `tests/screens_source.rs`
+# holds the desk's files to never making an arrangement of their own.
+alo-displays = { path = "../alo-displays" }
 alo-dock = { path = "../alo-dock" }
 # The list of grants a person sees: rows derived from the machine's own grants,
 # and the words for revoking one. Read, and revoked only through `alo-changing`.
