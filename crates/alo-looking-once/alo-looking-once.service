@@ -1,0 +1,109 @@
+[Unit]
+# The one look this machine takes on its way up.
+#
+# `alo-looking` has been able to ask whether there is a newer version of this
+# system since task 6 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`,
+# and until this unit existed **nothing on any alo OS machine ever asked**. From
+# where the person sits, a machine that is never told an update exists cannot be
+# told apart from one that has none.
+#
+# `alo_looking::Because` is the whole list of occasions and it is two. *The
+# person asked* is a surface's, and belongs to the shell. *This machine started*
+# is this, and this is the only caller of it on a booted machine.
+Description=alo OS update check: the one look this machine takes on its way up
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/crates/alo-looking-once/src/lib.rs
+
+# The road out has to exist before there is any point asking. `Wants=` rather
+# than `Requires=`, because a machine whose network never came up is a machine
+# that answers *there is no way out of this machine*, says it once and carries
+# on — which is the honest answer and not a failed unit.
+Wants=network-online.target
+After=network-online.target
+
+# The two files this writes live in the folder `usr/lib/tmpfiles.d/alo.conf`
+# makes, and the program refuses to make a folder of its own rather than turn a
+# typo into a second record nobody is reading.
+After=systemd-tmpfiles-setup.service
+
+[Service]
+# It asks, it writes two files, and it stops.
+#
+# **`exec` rather than `oneshot`, and that was measured rather than chosen.**
+# A unit wanted by a target is implicitly ordered before it, and a `oneshot`'s
+# start job is not finished until the process has exited — so with `oneshot`
+# this check held `multi-user.target` open for as long as it took, and
+# `graphical.target` behind it. Measured on 2026-09-19 on a booted machine:
+# `multi-user.target` at 4.246 s with the check on the critical chain, against
+# 1.9 s without it, and on a machine whose network answers slowly that would
+# have been the whole twenty seconds a request waits. A check that delays a
+# sign-in is a check that will be turned off. `exec` finishes the start job at
+# the moment the program is exec'd, so nothing in the boot waits for the answer.
+#
+# `RemainAfterExit=yes` so that `systemctl status alo-looking-once` says *this
+# machine has looked* rather than *nothing is running* — and so that anything
+# starting the unit again on a machine that has already looked does nothing at
+# all, which is what **once per start** means when it is a unit rather than a
+# sentence.
+Type=exec
+RemainAfterExit=yes
+
+ExecStart=/usr/libexec/alo-looking-once
+
+# **The person, and this is the decision the whole unit turns on.**
+#
+# What a check writes is the person's: the answer a surface reads back
+# (`/var/lib/alo/an-update-was-found`) and the record of the one departure it
+# made are both inside `/var/lib/alo`, which is `0700 alo alo`. A login of its
+# own could not write there without that folder's mode being widened, and that
+# folder is where what an agent did on somebody's machine is kept — no unit may
+# widen it to make a check convenient.
+#
+# And it is emphatically not root. This process reads an answer that came over
+# the network from a public registry. ADR 0018's argument is that one privileged
+# component is acceptable because of how little it is trusted with; a root
+# process parsing what a registry sent it is that argument stopping being true.
+#
+# So it runs as the person, needing nothing the person does not have themselves
+# (ADR 0001 §2), and writing only two files that are already theirs.
+User=alo
+Group=alo
+
+# Both lines, both empty, and it still works. Asking a registry a question needs
+# no privilege at all.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# **It has no view of any home folder.** A check reads `/etc/alo-proxy/proxy.json`
+# and `image`-installed programs, and writes two files under `/var/lib/alo`. It
+# has no business being able to name a person's documents, and this is where
+# that is enforced rather than asserted.
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/alo
+PrivateTmp=yes
+PrivateDevices=yes
+
+# It speaks to one place over one protocol family. There is no Unix socket in a
+# check and no address family beyond the two the internet uses.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# What it says about itself goes to the journal, for whoever administers the
+# machine. What the *person* reads is the answer it kept, worded by a surface in
+# their own language — never a line this process printed.
+StandardOutput=journal
+StandardError=journal
+
+# Deliberately not restarted, and deliberately without a timer beside it.
+# `alo_looking::Because` has two members and neither of them is *every so
+# often*: a machine that checked while somebody was working would be putting a
+# line on their indicator for a question nobody asked. A check that failed is a
+# machine that is as it was, and the next start asks again.
+
+[Install]
+# Started at boot, not at a sign-in, and that is the second decision in this
+# file. The answer a check keeps is one per machine; a session is not one per
+# machine. A hook in the person's session would make two sign-ins two checks —
+# two departures for one question — and would leave a machine nobody signs into
+# never looking at all.
+WantedBy=multi-user.target

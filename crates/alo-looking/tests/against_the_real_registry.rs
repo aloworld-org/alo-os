@@ -73,6 +73,21 @@ impl TheEvaluator for NeverAsked {
     }
 }
 
+/// What a check was written into, so that the one departure it makes can be
+/// read back here the way the machine's record reads it back on a booted one.
+#[derive(Debug, Default)]
+struct WhatWasWrittenDown {
+    /// Each check that left, as the errand and the place it was made to.
+    departures: Vec<(Errand, alo_egress::Destination)>,
+}
+
+impl alo_looking::Noting for WhatWasWrittenDown {
+    fn the_check_left(&mut self, underway: &alo_egress::Underway) {
+        self.departures
+            .push((underway.errand(), underway.destination().clone()));
+    }
+}
+
 /// A moment: nothing in this crate reads a clock.
 fn a_moment() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(60 * 60 * 12)
@@ -141,6 +156,7 @@ fn a_check_against_the_place_this_repository_pins() {
     let asking = TheRegistry::at(&place).taking(taking);
 
     let mut indicator = Indicator::default();
+
     assert!(indicator.is_quiet());
     let underway =
         indicator.beginning_on_its_own(a_check_at(place.destination().clone()), a_moment());
@@ -203,8 +219,10 @@ fn a_check_against_the_place_this_repository_pins() {
     // **And the whole act reaches the same answer.** The same two questions,
     // through the function a machine actually calls.
     let mut again = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let found = look(
         &mut again,
+        &mut written,
         a_moment(),
         &place,
         &running,
@@ -254,8 +272,10 @@ fn what_this_machine_is_offered_today_and_what_it_is_told_about_it() {
     let asking = TheRegistry::at(&place).taking(decided(&TheProxy::None, &place));
     let held = asking.every_name().expect("the place answered");
     let mut indicator = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let found = look(
         &mut indicator,
+        &mut written,
         a_moment(),
         &place,
         &running,
@@ -354,8 +374,10 @@ fn the_refusals_the_real_place_produces() {
     // A place that does not exist at all, which is the one said once.
     let nowhere = a_place_at("nowhere.invalid/aloworld-org/alo-os");
     let mut indicator = Indicator::default();
+    let mut written = WhatWasWrittenDown::default();
     let refused = look(
         &mut indicator,
+        &mut written,
         a_moment(),
         &nowhere,
         &Running::reported(

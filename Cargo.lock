@@ -886,6 +886,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-looking-once"
+version = "0.0.1"
+dependencies = [
+ "alo-egress",
+ "alo-image",
+ "alo-keeping",
+ "alo-keeping-up",
+ "alo-looking",
+ "alo-networks",
+ "alo-proxy",
+ "alo-record",
+ "alo-updating",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-measuring"
 version = "0.0.1"
 dependencies = [

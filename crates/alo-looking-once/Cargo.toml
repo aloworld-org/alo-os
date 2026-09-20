@@ -1,0 +1,45 @@
+[package]
+name = "alo-looking-once"
+version = "0.0.1"
+description = "The one look this machine takes on its way up: the single caller of a check at a start, and the unit that runs it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The one act. `look`, where the answer is kept, whether a machine with no way
+# out has already said so, and the two occasions a check has — one of which this
+# crate is the whole of on a booted machine.
+alo-looking = { path = "../alo-looking" }
+# Which build this machine is running, asked of the base at the moment it is
+# wanted. Nothing here remembers it and nothing here stages anything.
+alo-updating = { path = "../alo-updating" }
+# The indicator the check is shown on for the whole of it.
+alo-egress = { path = "../alo-egress" }
+# The entry a departure is written down as. `Entry::left_on_its_own` is the only
+# one that can be made for an errand, and only from what the indicator made.
+alo-record = { path = "../alo-record" }
+# The one writer of a record file: an entry is on the disk before `keep`
+# answers, and a file whose first line does not say it is a record is refused
+# rather than added to.
+alo-keeping = { path = "../alo-keeping" }
+# The one proxy this machine has, on the road a check takes. Read, never decided
+# here: on a great many company networks there is no other route out.
+alo-proxy = { path = "../alo-proxy" }
+# Where the machine's proxy is kept, and how it is read back. One file, one
+# answer — a second spelling of `/etc/alo-proxy/proxy.json` here is exactly the
+# drift that file exists to prevent.
+alo-networks = { path = "../alo-networks" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The pin a test's place is read from, and the reader that reads a systemd unit
+# — the same one `crates/alo-image` holds the image's own units to, so what a
+# directive means has one answer rather than a second one written in a test.
+alo-image = { path = "../alo-image" }
+# What an update is, for the builds a test's base and place name.
+alo-keeping-up = { path = "../alo-keeping-up" }
+
+[lints]
+workspace = true

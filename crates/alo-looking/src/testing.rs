@@ -226,3 +226,34 @@ impl ThePlace for APlaceThatAnswers {
             .ok_or(NoAnswer::ItRefused)
     }
 }
+
+/// What a check was written into, for a test that wants to read it back.
+///
+/// The real one on a machine writes `alo_record::Entry::left_on_its_own` into
+/// the machine's record; this keeps what that entry would be made from, so
+/// that this crate's tests can say *one check, one departure written down*
+/// without taking a dependency on the record to do it.
+#[derive(Debug, Default)]
+pub(crate) struct WhatWasWrittenDown {
+    /// Each check that left, as the errand and the place it was made to.
+    departures: Vec<(alo_egress::Errand, alo_egress::Destination)>,
+}
+
+impl WhatWasWrittenDown {
+    /// Every departure written down, oldest first.
+    pub(crate) fn departures(&self) -> &[(alo_egress::Errand, alo_egress::Destination)] {
+        &self.departures
+    }
+
+    /// How many were written down.
+    pub(crate) fn how_many(&self) -> usize {
+        self.departures.len()
+    }
+}
+
+impl crate::noting::Noting for WhatWasWrittenDown {
+    fn the_check_left(&mut self, underway: &alo_egress::Underway) {
+        self.departures
+            .push((underway.errand(), underway.destination().clone()));
+    }
+}

@@ -633,6 +633,50 @@ drift. The instruction stays this crate's, and gains a second door into it.
 
 **Status:** ready. **Depends on:** 6, 7.
 
+**Done, 2026-09-19.** `crates/alo-looking-once` is the one caller of
+`Because::ThisMachineStarted` on a booted machine, and a test reads every file
+of it to count that there is exactly one and that nothing there could check a
+second time. **Where it runs and under whose privilege, decided:** a system unit
+started once at `multi-user.target`, running as **the person's own login**,
+holding no capability at all — because both files a check writes are inside
+`/var/lib/alo`, which the image makes `0700 alo alo`, so a login of its own
+would need that folder widened, and root is refused on its own merits (a process
+that reads what a public registry sent it is the last one to hold privilege,
+ADR 0018). Nothing here needed a new privileged component or a widened grant, so
+no ADR was owed. A **session hook was considered and discarded in writing**: the
+answer a check keeps is one per machine and a session is not, so two sign-ins
+would be two departures for one question and a machine nobody signs into would
+never look. The record goes to a file of its own,
+`/var/lib/alo/checking-for-updates.jsonl`, for `alo-brokerd`'s reason —
+`alo_keeping::Writing` has one writer per file and the person's record already
+has `alo-agentd` — and it is **opened before the first question**, so no road
+here reaches the network without somewhere to account for it. `alo_looking::look`
+gained `Noting` in the same change: until then **no check anywhere was ever
+written into a record**, which is half of law 1 missing from the one errand alo
+OS makes unasked.
+
+**Measured on a booted machine, started twice** (`alo` at uid 1000,
+`/var/lib/alo` `0700`, the unit installed byte for byte as this crate hands it
+over): each start made exactly one check against the real `ghcr.io`, kept one
+answer naming the running build, appended exactly one record entry, and
+`systemctl start` on a machine that had already looked did nothing at all.
+**Six TCP connections per check**, counted at the network boundary against a
+start where the unit was masked — two questions, each answered `401` and asked
+again with a token. A machine with no way out said so once, exited `1`, wrote
+the refusal into the record and **left the kept answer untouched**.
+**Found and fixed inside this task:** `Type=oneshot` put the check on the boot's
+critical chain — a unit wanted by a target is implicitly ordered before it, and
+a oneshot's start job is not finished until the process exits — so
+`multi-user.target` was reached at 4.246 s against 1.9 s, and `graphical.target`
+behind it. On a slow network that would have been the whole twenty seconds a
+request waits, which is the constraint *a check at a start never delays a
+person's sign-in* broken. `Type=exec` takes it off the chain, measured twice
+more. **Handed over, not done here:** the image installation — the unit at
+`/usr/lib/systemd/system/`, the program at `/usr/libexec/alo-looking-once`,
+`systemctl enable`, and a `crates/alo-image` check holding the two to each other
+— is the installer lane's, because this plan reads `image/` and never edits it.
+Report: `docs/autonomy/updates/a-machine-that-has-never-looked.md`.
+
 Written 2026-09-19 by task 9, because the plan named nothing after it and one
 thing it promises is still done by nobody. `alo_looking::look` is built and
 measured against the real registry; `Because` is the whole list of occasions and
@@ -672,3 +716,48 @@ them may need something no worker may decide.
   that performs the act is installed by the lane that owns the image or the
   session; this plan writes what it calls and hands the installation over, the
   way task 4 handed over the filesystem it needs.
+
+### 11. The check on a machine that is not this one
+
+**Status:** ready. **Depends on:** 10.
+
+Written 2026-09-19 by task 10, because the plan named nothing after it and that
+task's measurement leaves exactly two things unmeasured — both of them about
+machines this one is not.
+
+**The first is the one that could make task 10's central decision wrong.** The
+check runs as the person and asks the base what this machine is running
+(`alo_updating::running`, `bootc status --format json`). **Nothing in this
+repository has ever run `bootc status` as anybody but root**: task 10's machine
+had no base at all and answered with a stand-in, and every other caller of that
+crate is a test with `/bin/echo` behind it. If the real base refuses an
+unprivileged caller, then on a real alo OS machine the check answers *the base
+would not say which build this machine is running*, keeps nothing, and the whole
+of *updates that never interrupt* is a unit that fails at every boot — and the
+answer is **not** to make this component root, which is what the unit's own
+comments and ADR 0018 spend their length refusing.
+
+**The second is the company network.** `alo-looking`'s road out is decided by
+`alo_proxy::the_way` and handed to the client explicitly, and task 6's report
+said plainly that a machine behind a proxy is owed a measurement of its own. It
+still is. On a great many company networks there is no other route out, so this
+is the difference between a fleet that finds out there are updates and one that
+does not.
+
+- **Acceptance:** `bootc status --format json --format-version 1` is run **as
+  uid 1000 on a real bootc machine** and what it answers is written down —
+  whichever way it goes, because *it refuses an unprivileged caller* is as much
+  an answer as *it does not*; if it refuses, the fix is decided and written down
+  with the reason, and if the only road runs through a new privileged component
+  or a widened grant then the ADR is this task's deliverable and the code waits
+  on it (ADR 0001 §2); and a check is made **through a proxy** — a real one on
+  the machine's own `/etc/alo-proxy/proxy.json`, not a test's argument — with
+  the departures counted at the network boundary to show they went through it
+  and not around it, and a proxy that is set and unreachable shown to refuse
+  rather than to go straight out.
+- **Constraint:** nothing about what a check is changes here; this is two
+  measurements and whatever one line each turns out to need. The image
+  installation is **not** this task and is not this plan's: the unit, the
+  program and the `systemctl enable` are the installer lane's, handed over in
+  task 10's report. No setting that turns checking off, no member meaning
+  *urgent*, and `alo-keeping-up` still gains no clock, no socket and no file.

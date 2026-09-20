@@ -20,6 +20,11 @@
 //! - **The act** — [`look`]. It puts the errand on the indicator before it asks
 //!   anything and takes it off after the answer, whichever way it ends, and the
 //!   `alo_keeping_up::Offered` it hears can be heard no other way.
+//! - **And afterwards, in a record** — [`Noting`], which the check is written
+//!   into before it comes off the indicator, on every road out of it including
+//!   every refusal. Law 1 is two halves, *visible at the moment it happens* and
+//!   *afterwards in a record*, and until this existed a check had only the
+//!   first.
 //! - **What it fetches** — [`ThePlace`] is two questions: which names that
 //!   place holds, and which build one of them is. **Never the build itself**:
 //!   there is no container library here and nothing in this crate writes what a
@@ -71,6 +76,7 @@ pub mod because;
 pub mod found;
 pub mod kept;
 pub mod looking;
+pub mod noting;
 pub mod place;
 pub mod refusing;
 pub mod registry;
@@ -87,6 +93,7 @@ pub use because::Because;
 pub use found::Found;
 pub use kept::{Kept, NoLongerTrue, NotKept, THE_ANSWER, TheAnswer};
 pub use looking::look;
+pub use noting::Noting;
 pub use place::{NotAPlace, Place};
 pub use refusing::NoAnswer;
 pub use registry::{TheRegistry, WHILE_SOMEBODY_WAITS};
