@@ -100,11 +100,54 @@ fn a_stream_opened_through_the_media_server_is_listed() {
                  media server with no recording device behind it"
             );
         }
+        // **A recorder still running has not necessarily opened anything.**
+        // With a server present and no audio source behind it, `pw-record`
+        // neither fails nor exits — it waits, indefinitely, for a device to
+        // appear. So the skip above never fires, nothing is ever listed, and
+        // the assertion below accuses the indicator of missing a stream that
+        // was never opened.
+        //
+        // Met on 2026-09-20: installing PipeWire on a build host to measure
+        // something else turned this test from skipped into failing, on a
+        // machine with no sound hardware at all. Any machine that installs
+        // PipeWire hits it.
+        //
+        // So the graph is asked, rather than the recorder's liveness being read
+        // as evidence that a stream exists — the same mistake as `test -x`
+        // standing in for *the program runs*.
+        None if !this_machine_has_somewhere_to_record_from() => {
+            eprintln!(
+                "skipped: this machine has a media server and no audio source in its graph, so \
+                 {RECORD_WITH} is waiting for a device rather than holding a stream open"
+            );
+        }
         None => panic!(
             "{RECORD_WITH} held a stream open through this machine's media server and the \
              indicator did not list it — which is the one thing this indicator exists to do"
         ),
     }
+}
+
+/// Whether this machine's graph holds anything a recorder could record from.
+///
+/// Asked of the server's own dump, the way the recording above is opened with
+/// the server's own tool. A machine can have a media server and no audio source
+/// at all — a build host where PipeWire was installed for some other reason is
+/// exactly that — and on one of those `pw-record` waits rather than failing.
+///
+/// Answers `false` where the question cannot be asked, so that a machine which
+/// cannot say skips rather than accusing the indicator.
+fn this_machine_has_somewhere_to_record_from() -> bool {
+    let Ok(dumped) = Command::new("pw-dump").output() else {
+        return false;
+    };
+    let Ok(said) = String::from_utf8(dumped.stdout) else {
+        return false;
+    };
+    // The kind a recorder attaches to. `Audio/Source` is a microphone or a
+    // capture device; `Audio/Duplex` is a card that does both and can still be
+    // recorded from.
+    said.contains("Audio/Source") || said.contains("Audio/Duplex")
 }
 
 /// A recording running, and the file it is writing.
