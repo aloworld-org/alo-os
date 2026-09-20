@@ -49,12 +49,12 @@ serde = { workspace = true }
 toml = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
-# Opening the proxy a person handed over without following a link, asking
-# the kernel who owns what was opened, and handing the folder it is handed over
-# in to a group. `std` has no safe spelling of
+# Opening what a person handed over without following a link, asking the kernel
+# who owns what was opened, and handing the folder it is handed over in to a
+# group. `std` has no safe spelling of
 # `O_NOFOLLOW`, and this workspace forbids `unsafe`. Already a workspace
-# dependency with the features this needs. Named only by `src/proxy.rs`, and by
-# `src/starting.rs` to hand that folder to the person's group.
+# dependency with the features this needs. Named only by `src/handed_over.rs`,
+# and by `src/starting.rs` to hand that folder to the person's group.
 rustix = { workspace = true }
 
 [[bin]]

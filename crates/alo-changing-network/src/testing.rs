@@ -1,8 +1,11 @@
 //! The strings this crate's own tests are written against.
 //!
 //! Nothing here is compiled into the crate: it exists under `cfg(test)` only.
-//! The vocabulary is this crate's and the capability model's, which declares a
-//! verb.
+//! The vocabulary is this crate's, the capability model's, which declares a
+//! verb, and `alo-proxy`'s — a person refused their own proxy on a machine an
+//! organisation manages reads that crate's sentence rather than a second one
+//! here (ADR 0060 §5), and a machine assembles every crate's words into one
+//! vocabulary anyway (`alo-saying`).
 
 #![expect(
     clippy::unwrap_used,
@@ -17,6 +20,7 @@ use crate::words::declare_into;
 pub(crate) fn in_english() -> Strings {
     let mut vocabulary = Vocabulary::empty();
     alo_capability::declare_into(&mut vocabulary).unwrap();
+    alo_proxy::declare_into(&mut vocabulary).unwrap();
     declare_into(&mut vocabulary).unwrap();
     Strings::of(vocabulary)
 }

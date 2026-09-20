@@ -25,7 +25,9 @@ mod running {
     use alo_drives::udisks::OnThisMachine as TheDiskService;
     use alo_networks::network_manager::OnThisMachine as TheNetworkManager;
     use alo_networks::proxy_file::{THE_MACHINES_PROXY, THE_WANTED_PROXY};
+    use alo_networks::proxy_password::THE_WANTED_PASSWORD;
     use alo_printing::{PrintingService, THE_SOCKET};
+    use alo_proxy::TheMachinesCredentials;
 
     /// Open the door and answer whoever knocks, until this service is stopped.
     ///
@@ -39,7 +41,9 @@ mod running {
                 Network::against(TheNetworkManager),
                 Proxy::handed_over(
                     Path::new(THE_WANTED_PROXY),
+                    Path::new(THE_WANTED_PASSWORD),
                     Path::new(THE_MACHINES_PROXY),
+                    TheMachinesCredentials::on_this_machine(),
                     logins.person,
                 ),
                 Storage::against(TheDiskService, Path::new(THE_ACCOUNTS), logins.person),

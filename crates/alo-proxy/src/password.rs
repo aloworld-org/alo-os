@@ -20,11 +20,12 @@
 //!
 //! **A password goes in and does not come out** — no accessor, no
 //! [`Display`](std::fmt::Display), no `Serialize`, no `Clone`, and a
-//! [`Debug`](std::fmt::Debug) written by hand to say nothing. The one thing
-//! done with one is put it on the road it belongs to, which is
-//! [`crate::Carried`], and that is the single place in this crate where a
-//! password becomes text. One function, so that everything which could ever
-//! carry one is what `grep` finds.
+//! [`Debug`](std::fmt::Debug) written by hand to say nothing. Two things are
+//! done with one, both inside this crate and neither reachable from outside it:
+//! it is put on the road it belongs to ([`crate::Carried`]), and it is handed
+//! to the tool that writes the machine's own credential
+//! (`crate::provisioning`, ADR 0060 §4). Two functions, named here, so that
+//! everything which could ever carry one is what `grep` finds.
 //!
 //! **What this does not claim.** The bytes are not scrubbed from memory when the
 //! value is dropped: doing that honestly needs either `unsafe`, which this
@@ -44,6 +45,28 @@ use crate::words;
 /// Long enough for any name a machine writes for itself, short enough that a
 /// settings file cannot smuggle a paragraph in where a name belongs.
 pub const LONGEST_NAME: usize = 255;
+
+/// The one name the password a person sets on their own machine is kept under.
+///
+/// [ADR 0060](../../../docs/decisions/0060-a-persons-own-proxy-password-is-set-with-the-proxy-in-one-act.md)
+/// §2: a credential reaches a unit through a **static** line in a unit file
+/// (`LoadCredentialEncrypted=`), so a name a person typed in Settings would be
+/// a name no unit file mentions and a credential delivered to nothing. An
+/// organisation writing a machine's description picks its own name and
+/// provisions that credential with the machine; a person cannot, so alo OS
+/// reserves this one for them.
+///
+/// One path segment, no blank space, and the same on both sides of the colon
+/// the unit line is written with:
+///
+/// ```text
+/// LoadCredentialEncrypted=the-proxy-on-this-machine:/etc/credstore.encrypted/the-proxy-on-this-machine
+/// ```
+///
+/// `crate::TheMachinesCredentials` refuses to write a credential under any
+/// other name, which is also what keeps a root process from writing a file
+/// somebody else chose the name of into the machine's credential store.
+pub const THE_PERSONS_PROXY_PASSWORD: &str = "the-proxy-on-this-machine";
 
 /// Why some text is not a name a password can be kept under.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -91,10 +114,27 @@ impl WhereThePasswordIs {
         Ok(Self(name.to_owned()))
     }
 
+    /// Where the password a person set on their own machine is kept.
+    ///
+    /// [`THE_PERSONS_PROXY_PASSWORD`], as a setting holds it. Settings writes
+    /// this into `password-in-keyring` when somebody gives their own machine's
+    /// proxy a password, and every road out then looks it up under it.
+    #[must_use]
+    pub fn on_this_machine() -> Self {
+        Self(THE_PERSONS_PROXY_PASSWORD.to_owned())
+    }
+
     /// The name to look up in the keyring.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Whether this is the one name a person's own machine keeps its proxy
+    /// password under.
+    #[must_use]
+    pub fn is_this_machines_own(&self) -> bool {
+        self.0 == THE_PERSONS_PROXY_PASSWORD
     }
 }
 
@@ -159,12 +199,16 @@ impl Password {
         Ok(Self(password.to_owned()))
     }
 
-    /// The password, for the one caller in this crate that puts it on a road.
+    /// The password, for the two callers in this crate that have somewhere to
+    /// put it.
     ///
-    /// `pub(crate)` on purpose, and it is the only reader of the bytes that
-    /// exists: a password can be handed to this crate and cannot be taken back
-    /// out of it. [`crate::Carried`] is what uses it, and the test in that file
-    /// is what says where it may appear.
+    /// `pub(crate)` on purpose, and the only reader of the bytes that exists:
+    /// a password can be handed to this crate and cannot be taken back out of
+    /// it. The two are [`crate::Carried`], which puts one on a road out, and
+    /// `crate::provisioning`, which hands one to the tool that writes the
+    /// machine's credential (ADR 0060 §4) — both inside this file's own crate,
+    /// and neither reachable from outside it. The tests in those two files say
+    /// where a password may appear.
     pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
@@ -247,6 +291,32 @@ mod tests {
         let blank = NotAPassword::Blank.said(&strings);
         assert!(blank.text().contains("password"), "{blank}");
         assert!(!blank.text().contains("hunter2"), "{blank}");
+    }
+
+    /// **The one name a person's own machine keeps its proxy password under is
+    /// a name, and one thing to look up** — ADR 0060 §2 puts it on both sides
+    /// of a static unit line, so a blank space or a separator in it would be a
+    /// line nobody can write.
+    #[test]
+    fn the_name_a_persons_own_machine_keeps_its_password_under_is_one_segment() {
+        let kept = WhereThePasswordIs::on_this_machine();
+        assert_eq!(kept.as_str(), THE_PERSONS_PROXY_PASSWORD);
+        assert!(kept.is_this_machines_own());
+        assert_eq!(
+            WhereThePasswordIs::named(THE_PERSONS_PROXY_PASSWORD),
+            Ok(kept)
+        );
+        assert!(
+            THE_PERSONS_PROXY_PASSWORD
+                .chars()
+                .all(|letter| letter.is_ascii_lowercase() || letter == '-'),
+            "{THE_PERSONS_PROXY_PASSWORD}"
+        );
+        assert!(
+            !WhereThePasswordIs::named("the company proxy")
+                .unwrap()
+                .is_this_machines_own()
+        );
     }
 
     /// **The setting can hold where a password is and cannot hold one**, which

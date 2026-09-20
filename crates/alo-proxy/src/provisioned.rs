@@ -159,7 +159,7 @@ impl WhereThePasswordsAre for TheMachinesPasswords {
 /// `..` would name the directory above them. Neither is refused by trimming it
 /// into shape: a name that is not the name somebody wrote is a password looked
 /// up somewhere nobody chose.
-fn one_thing_to_look_up(name: &str) -> Option<&str> {
+pub(crate) fn one_thing_to_look_up(name: &str) -> Option<&str> {
     if name.is_empty() || name == "." || name == ".." {
         return None;
     }
@@ -171,7 +171,7 @@ fn one_thing_to_look_up(name: &str) -> Option<&str> {
 
 /// Whether nobody but the file's owner may read it.
 #[cfg(unix)]
-fn only_its_owners(about: &fs::Metadata) -> bool {
+pub(crate) fn only_its_owners(about: &fs::Metadata) -> bool {
     use std::os::unix::fs::PermissionsExt as _;
 
     about.permissions().mode() & 0o077 == 0
@@ -187,7 +187,7 @@ fn only_its_owners(about: &fs::Metadata) -> bool {
     clippy::missing_const_for_fn,
     reason = "the same signature as the unix half, which reads permissions"
 )]
-fn only_its_owners(_about: &fs::Metadata) -> bool {
+pub(crate) fn only_its_owners(_about: &fs::Metadata) -> bool {
     true
 }
 

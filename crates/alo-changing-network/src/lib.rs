@@ -9,6 +9,12 @@
 //! verb and the digest of what the network manager reported, never a network's
 //! name, a password or an address. ADR 0049 is the decision.
 //!
+//! **The proxy's own password travels the same way** (ADR 0060): a person on
+//! their own machine hands it over as bytes, beside the proxy, and what crosses
+//! the door is the digest of the two together — one act, one approval, and the
+//! credential written before the proxy, so that a machine is never left with a
+//! proxy it cannot sign in to. No agent verb reaches any of it.
+//!
 //! | | |
 //! |---|---|
 //! | [`verbs`], [`approved`] | `join_network`, `forget_network`, `switch_wireless`: changes an agent proposes and a person approves |
@@ -16,7 +22,7 @@
 //! | [`proposable`] | Whether a call may be put to a person at all: its sentence must be true |
 //! | [`chosen`] | The one network an approved name is |
 //! | [`Listed`] | This machine's networks as a person picks among them in Settings |
-//! | [`carry_out_approved`], [`carry_out_by_hand`], [`set_proxy_by_hand`], [`TheBroker`] | The one road from an approval to the broker's door (Unix only) |
+//! | [`carry_out_approved`], [`carry_out_by_hand`], [`set_proxy_by_hand`], [`TheBroker`] | The one road from an approval to the broker's door, and the proxy and its password over it (Unix only) |
 //! | [`NotChanged`], [`changed_said`], [`proxy_set_said`] | What a person reads, either way |
 //! | [`words`] | Every sentence, with a note for whoever translates it |
 //!

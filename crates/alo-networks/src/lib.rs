@@ -15,6 +15,7 @@
 //! | `secret_agent` | Where a Wi-Fi password is asked of a person, and handed to the network manager and nobody else (Linux only) |
 //! | [`WifiPassword`] | A password a person typed, held for one answer |
 //! | [`proxy_file`] | The machine's proxy file, and the wanted proxy a person hands the broker |
+//! | [`proxy_password`] | The password a person hands the broker beside it, and the one identity they are approved under (ADR 0060) |
 //!
 //! # A network is compared by what was reported, never by what anybody typed
 //!
@@ -41,6 +42,7 @@ mod bus;
 pub mod network_manager;
 mod password;
 pub mod proxy_file;
+pub mod proxy_password;
 mod reported;
 #[cfg(target_os = "linux")]
 pub mod secret_agent;

@@ -57,6 +57,7 @@
 //! | [`the_way`] | which way one road goes, decided once |
 //! | [`signed_in`] | that road, signed in to where the proxy asks who you are — **the one door a credential travels through** |
 //! | [`TheMachinesPasswords`] | where a machine-wide proxy password is kept, as a unit was given it (ADR 0059) |
+//! | [`TheMachinesCredentials`] | the same store, as a person sets one on the machine that is theirs (ADR 0060) |
 //! | [`Carried`] | what that road is then given: variables for a program, an address for a client |
 //! | [`Published`] | what an application is given, so it honours the same proxy |
 //! | [`looked_up`] | the same answer, one address at a time, for the portal applications already ask |
@@ -81,7 +82,10 @@
 //! system's own update, `alo-models` for a provider and `alo-agentd` for a
 //! turn's question. The one thing it reads off a disk is the password a proxy
 //! asks for ([`TheMachinesPasswords`]), and a machine whose proxy asks for none
-//! never causes a read at all.
+//! never causes a read at all. The one thing it writes is that same password,
+//! when a person sets one on their own machine ([`TheMachinesCredentials`]),
+//! and it is written by the tool the base already has rather than by anything
+//! here (ADR 0060 §4).
 //!
 //! **Not the machine's description.** Reading an organisation's proxy out of
 //! `/etc/alo/agentd.toml` is `alo-agentd`'s, where that file is read;
@@ -113,6 +117,7 @@ pub mod kept;
 pub mod password;
 pub mod portal;
 pub mod provisioned;
+pub mod provisioning;
 pub mod published;
 pub mod reaching;
 pub mod refusing;
@@ -133,9 +138,15 @@ pub use deciding::the_way;
 pub use evaluator::{THE_EVALUATOR, TheRentedEvaluator, arguments, nothing_of_this_machines};
 pub use exceptions::{Exceptions, NotAnException};
 pub use kept::{Kept, NotChanged, SetBy};
-pub use password::{NotAName, NotAPassword, Password, WhereThePasswordIs};
+pub use password::{
+    NotAName, NotAPassword, Password, THE_PERSONS_PROXY_PASSWORD, WhereThePasswordIs,
+};
 pub use portal::{NotLookedUp, STRAIGHT_OUT, looked_up};
 pub use provisioned::{LONGEST_PASSWORD, TheMachinesPasswords, WHERE_THEY_ARE};
+pub use provisioning::{
+    LONGEST_HANDED_OVER, NONCE_BYTES, NoRandomness, NotHandedOver, NotProvisioned,
+    THE_ENCRYPTED_STORE, THE_TOOL, TheMachinesCredentials, handed_over, what_was_handed_over,
+};
 pub use published::Published;
 pub use reaching::{NotReachable, Reaching, Scheme};
 pub use refusing::NotOnTheRoad;
