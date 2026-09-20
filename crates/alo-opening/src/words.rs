@@ -222,6 +222,20 @@ pub const KIND_HEIC_PHOTO: Word = Word::saying(
      telephone.",
 );
 
+/// A drawing from the program people draw buildings and machines with.
+pub const KIND_AUTOCAD_DRAWING: Word =
+    Word::saying("opening.kind.autocad-drawing", "an AutoCAD drawing").noting(
+        "The name of a kind of file, read inside another sentence: \"This is {what}\". A \
+         technical drawing — a plan of a building, a part or a machine — made in the \
+         drawing program AutoCAD, whose own file format this is. Name the thing and nothing \
+         else: the person reading has been sent a file and wants to know what it is, and most \
+         of them have never used a drawing program, so do not reach for the trade's initials \
+         or its words for the parts of a drawing. AutoCAD is a product name and is normally \
+         not translated; it is here because the format is that one program's and no other word \
+         identifies it, and it is the name of a thing rather than an instruction to go and buy \
+         it. If this language has no article here, drop it as the other names in this list do.",
+    );
+
 /// A zip archive.
 pub const KIND_ZIP_ARCHIVE: Word = Word::saying("opening.kind.zip-archive", "a zip archive")
     .noting(
@@ -564,7 +578,7 @@ pub const KIND_FLAC_AUDIO: Word = Word::saying("opening.kind.flac-audio", "a FLA
 
 /// Every name of what a file is, in the order [`crate::Kind::EVERY`] lists
 /// kinds, followed by the two that are not kinds and the two containers.
-pub const THE_NAMES: [Word; 33] = [
+pub const THE_NAMES: [Word; 34] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -584,6 +598,7 @@ pub const THE_NAMES: [Word; 33] = [
     KIND_WEBP_IMAGE,
     KIND_PAGES_DOCUMENT,
     KIND_HEIC_PHOTO,
+    KIND_AUTOCAD_DRAWING,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,
     KIND_WEBM_VIDEO,
@@ -630,7 +645,7 @@ pub const THE_REMEDIES: [Word; 5] = [
 
 /// Every string this crate can say: the names, the sentences, then what would
 /// open a file this machine cannot.
-pub const EVERY_WORD: [Word; 51] = [
+pub const EVERY_WORD: [Word; 52] = [
     KIND_PDF,
     KIND_WORD_DOCUMENT,
     KIND_EXCEL_WORKBOOK,
@@ -650,6 +665,7 @@ pub const EVERY_WORD: [Word; 51] = [
     KIND_WEBP_IMAGE,
     KIND_PAGES_DOCUMENT,
     KIND_HEIC_PHOTO,
+    KIND_AUTOCAD_DRAWING,
     KIND_ZIP_ARCHIVE,
     KIND_MATROSKA_VIDEO,
     KIND_WEBM_VIDEO,

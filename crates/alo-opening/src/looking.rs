@@ -173,6 +173,14 @@ pub(crate) fn look<F: Read + Seek>(reading: &mut Reading<'_, F>) -> io::Result<L
         return Ok(Looked::plainly(Appears::A(Kind::Mp3Audio)));
     }
 
+    // A drawing carries its version where every other format carries a
+    // signature: the first six characters are the version marker and there is
+    // nothing after them to confirm it, so the rule is the list of markers and
+    // the list is closed (`is_a_drawing`).
+    if is_a_drawing(&head) {
+        return Ok(Looked::plainly(Appears::A(Kind::AutocadDrawing)));
+    }
+
     if head.starts_with(b"\x7fELF") || is_a_windows_program(reading, &head)? {
         return Ok(Looked::plainly(Appears::AProgram));
     }
@@ -225,6 +233,55 @@ fn is_a_photo(brand: &[u8]) -> bool {
     matches!(
         brand,
         b"heic" | b"heix" | b"heim" | b"heis" | b"mif1" | b"msf1" | b"avif" | b"avis"
+    )
+}
+
+/// Whether these bytes begin a drawing, read from the six characters every one
+/// of them starts with.
+///
+/// **Those six are the whole of the evidence.** There is no signature after
+/// them and no length to check, so a loose rule here is dangerous in the exact
+/// way [ADR 0057](../../../docs/decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+/// refuses: *anything beginning `AC`* would claim files nobody here has ever
+/// seen, and *this is a drawing* said of something that is not one is a
+/// confident wrong answer rather than an honest *not recognised*. So the
+/// markers are written out one by one, and anything else falls through to the
+/// rules below.
+///
+/// **Admitted**, each a released version of the format, oldest first:
+///
+/// | Marker | Written by |
+/// |---|---|
+/// | `AC1012` | Release 13 |
+/// | `AC1014` | Release 14 |
+/// | `AC1015` | 2000, 2000i and 2002 |
+/// | `AC1018` | 2004, 2005 and 2006 |
+/// | `AC1021` | 2007, 2008 and 2009 |
+/// | `AC1024` | 2010, 2011 and 2012 |
+/// | `AC1027` | 2013 to 2017 |
+/// | `AC1032` | 2018 onward |
+///
+/// **`AC1032` is the one this repository has a real file of** —
+/// `tests/files/drawing.dwg`, with its provenance and its digest beside it, and
+/// `tests/a_drawing_from_a_cad_program.rs` measured against it. The other seven
+/// are the released versions the format's published history names, and they are
+/// admitted because a drawing saved ten years ago is the same file to the person
+/// who was sent it today. Anything outside this list — a marker from before
+/// Release 13, a version nobody released, or a file of text that happens to
+/// begin with those two letters — is **not** claimed to be a drawing.
+fn is_a_drawing(head: &[u8]) -> bool {
+    matches!(
+        head.get(..6),
+        Some(
+            b"AC1012"
+                | b"AC1014"
+                | b"AC1015"
+                | b"AC1018"
+                | b"AC1021"
+                | b"AC1024"
+                | b"AC1027"
+                | b"AC1032"
+        )
     )
 }
 

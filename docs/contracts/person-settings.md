@@ -1059,7 +1059,8 @@ it — the kind a file is read as from its own bytes, never its extension:
 `opendocument-text`, `opendocument-spreadsheet`, `opendocument-presentation`,
 `older-word-document`, `older-excel-workbook`, `older-powerpoint-presentation`,
 `rich-text`, `text`, `text-in-an-older-character-set`, `png-image`,
-`jpeg-image`, `gif-image`, `webp-image`, `pages-document`, `heic-photo`, `zip-archive`,
+`jpeg-image`, `gif-image`, `webp-image`, `pages-document`, `heic-photo`, `autocad-drawing`,
+`zip-archive`,
 `matroska-video`,
 `webm-video`, `mp4-video`, `mp4-audio`, `avi-video`, `ogg-media`, `mp3-audio`,
 `wave-audio` or `flac-audio`. A kind is matched exactly. A program, an empty file and bytes of no kind alo OS recognises are

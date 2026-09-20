@@ -24,7 +24,10 @@
 //!   happen before the task is ready again.
 //! - **While it says *proposed*, none of the three is recognised**: no kind is
 //!   named for one, no name claims one, and a file of each reads as what this
-//!   machine honestly does not recognise.
+//!   machine honestly does not recognise. **It says *accepted* since
+//!   2026-09-20**, so that half stands down: all three files exist with their
+//!   provenance, which is what answered the decision, and all three are
+//!   recognised. The rest of this file goes on holding.
 //!
 //! It reads files and runs nothing, so it holds on any machine.
 
@@ -102,8 +105,16 @@ const WHAT_MUST_HAPPEN_FIRST: [&str; 3] = [
 /// what this decision holds back is a format nobody here can produce a real file
 /// of, and the moment somebody can, it stops being held back.
 ///
-/// **One remains**, and it is the whole of what keeps the decision proposed: a
-/// drawing. No machine this team has can write one.
+/// **And the drawing stopped being one on 2026-09-20**, which is the day this
+/// list stopped having anything to hold: a real `.dwg` exists with its
+/// provenance — drawn by us, written as DWG by the Open Design Alliance's own
+/// converter — the decision is **accepted**, and `Kind::AutocadDrawing` is
+/// recognised from the six characters a drawing begins with.
+///
+/// The list is kept rather than deleted. It is what the assertions below read,
+/// and they go quiet on acceptance rather than being removed: the day somebody
+/// reopens this decision by changing its status back, this file starts holding
+/// the code to it again without anybody having to remember to rewrite the list.
 const NOT_NAMED_YET: [&str; 2] = ["autocad", "drawing"];
 
 /// The endings a name would claim one of the three by.

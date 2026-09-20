@@ -84,6 +84,9 @@ pub enum Kind {
     /// A photo in HEIF, which is what most telephones have saved since about
     /// 2017.
     HeicPhoto,
+    /// A drawing saved by a program people draw buildings and machines with,
+    /// in the format AutoCAD has written since the nineteen-eighties.
+    AutocadDrawing,
     /// A zip archive that is not a document stored as one.
     ZipArchive,
     /// A film in a Matroska file, which is what `.mkv` is.
@@ -110,7 +113,7 @@ pub enum Kind {
 
 impl Kind {
     /// Every kind, in the order [`crate::words::THE_NAMES`] names them.
-    pub const EVERY: [Self; 29] = [
+    pub const EVERY: [Self; 30] = [
         Self::Pdf,
         Self::WordDocument,
         Self::ExcelWorkbook,
@@ -130,6 +133,7 @@ impl Kind {
         Self::WebpImage,
         Self::PagesDocument,
         Self::HeicPhoto,
+        Self::AutocadDrawing,
         Self::ZipArchive,
         Self::MatroskaVideo,
         Self::WebmVideo,
@@ -165,6 +169,7 @@ impl Kind {
             Self::WebpImage => words::KIND_WEBP_IMAGE,
             Self::PagesDocument => words::KIND_PAGES_DOCUMENT,
             Self::HeicPhoto => words::KIND_HEIC_PHOTO,
+            Self::AutocadDrawing => words::KIND_AUTOCAD_DRAWING,
             Self::ZipArchive => words::KIND_ZIP_ARCHIVE,
             Self::MatroskaVideo => words::KIND_MATROSKA_VIDEO,
             Self::WebmVideo => words::KIND_WEBM_VIDEO,

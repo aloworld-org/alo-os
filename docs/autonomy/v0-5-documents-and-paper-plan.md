@@ -333,9 +333,34 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** blocked — on **the `.dwg` alone**, which no machine this team has can
-write. **Two of the three are taken**, and the Pages conversion is written and
+**Status:** blocked — on **one measurement**, and it is not recognition's to
+take: no Pages document has been inventoried, because the engine that reads one
+is an x86_64 build and this repository gates on aarch64. **Recognition is done:
+all three formats are recognised from their own bytes, each measured against a
+real file held to its digest.**
+[ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+is **accepted, 2026-09-20**, as option A, and what answered it is that all three
+files exist with their provenance. The fourth conversion is written whole and
 held back rather than undecided: see *The fourth conversion*, 2026-09-20, below.
+
+**The drawing, 2026-09-20 — the last of the three.** `Kind::AutocadDrawing`,
+*an AutoCAD drawing*, recognised from the six characters every one of them
+begins with. A drawing has no signature and no container: those six are the
+version and there is nothing after them to check the guess against, so the rule
+is a **closed list of the released versions** — `AC1012` through `AC1032`,
+written out one by one — and never *anything beginning `AC`*. A rule that
+matched more than the evidence supports is what ADR 0057 exists to refuse, and a
+pattern is how it would have got in. Measured against a real file: a bench plan
+drawn by us with `ezdxf` and **written as DWG by ODA File Converter 27.1**, the
+Open Design Alliance's own converter, round-tripped back to DXF to check that
+every layer, entity type and both text strings survived. It is **explained, not
+converted** — nothing this image pins reads the format — so it takes task 4's
+`NothingHereOpens` road with *another machine or format*, the same road as the
+photograph, and that is proved twice in
+`crates/alo-opening/tests/a_drawing_from_a_cad_program.rs`: against a machine
+told it converts **every other kind there is**, and against the registry that
+decides which kinds have a conversion at all. Written up in
+[A drawing from a CAD program](updates/a-drawing-from-a-cad-program.md).
 
 **The Pages document, 2026-09-19**, once the owner installed Pages.
 `Kind::PagesDocument`, *a Pages document*, recognised from the parts its
@@ -439,12 +464,12 @@ counsel question has one — **with no numbers in it**, and its test fails the d
 somebody measures one. Written up in
 [The fourth conversion, written whole and held back](updates/the-fourth-conversion-written-and-held-back.md).
 
-**What is left.** The `.dwg`, which needs one real drawing from somebody who has
-the program; the inventory measurement above, which needs the x86_64 engine; and
-— to make one reasoned rule
-measured — one Keynote and one Numbers document, because all three iWork
-applications write the same container and the exclusion of the other two has
-never been checked against a real file of either. Task 5's walk gains the Pages
+**What is left, 2026-09-20.** Not the drawing, and not recognition — both are
+done. The **inventory measurement** above, which needs the x86_64 engine; and —
+to make one reasoned rule measured — one Keynote and one Numbers document,
+because all three iWork applications write the same container and the exclusion
+of the other two has never been checked against a real file of either. Task 5's
+walk gains the Pages
 document when it can be run: it runs the office engine and cannot run on an
 aarch64 gate. Written up in
 [A document from Pages](updates/a-document-from-pages.md).
