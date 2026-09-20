@@ -10,6 +10,10 @@ publish = false
 # The type of the session the sign-in screen hands over to, and nothing else:
 # `tests/sign_in_source.rs` holds this crate to naming `alo_accounts::Session`
 # and never the accounts themselves, which only `alo-greeting` asks.
+# What a screen reader is told about every surface drawn here: the role, the
+# name and the state of every control, decided there and never in this crate.
+# `tests/the_tree_a_reader_finds.rs` reads the tree back off a real bus.
+alo-access = { path = "../alo-access" }
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
 # Lock policy, regional wording, and bounded image/time engines. No network lookup.
@@ -87,12 +91,21 @@ cosmic-text = { version = "=0.14.2", default-features = false, features = ["std"
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop"] }
 rustix.workspace = true
 thiserror.workspace = true
+# The accessibility bus the tree is answered on. The bus is the rented
+# at-spi2's (ADR 0011) and this crate serves its own surfaces on it; no
+# reader of our own is written, here or anywhere.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 drm = "=0.14.1"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 # The machine's one vocabulary, so the sign-in screen's sentences are checked
 # against what is really collected rather than a list kept here.
 alo-saying = { path = "../alo-saying" }
+# The agent's own reader, used to read this machine's tree back off the bus:
+# one description, read by the reader a blind person uses and by the one an
+# agent uses, is the claim `alo_access::tree` makes and this measures it.
+alo-adapters = { path = "../alo-adapters" }
+alo-portals = { path = "../alo-portals" }
 # The opener's wire words, for a door in a test that answers the way the real
 # one does. Never a dependency of the shipped screen.
 alo-sessiond = { path = "../alo-sessiond" }

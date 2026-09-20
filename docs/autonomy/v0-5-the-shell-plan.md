@@ -395,7 +395,22 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 12. The accessibility tree, the magnifier and keyboard-only operation
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5.
+**Status:** **part done, 2026-09-20 — the tree only; the task stays open.**
+`crates/alo-shell`'s `access_roles.rs`, `access_nodes.rs` and `access_bus.rs`
+publish every surface `alo-access` names on the accessibility bus, and
+`tests/the_tree_a_reader_finds.rs` reads them back **over a real one**: a session
+bus of the test's own, at-spi2's own bus launcher and registry on it, the tree
+embedded through `org.a11y.atspi.Socket.Embed`, and the reading done by
+`alo-adapters` — the agent's own reader, which knows nothing of this crate. The
+approval surface reads back as the sentence and its two answers, and nothing on
+any surface reads as the default, as focused or as on. **Still open, and what
+the task is held to before it is ticked:** the magnifier and high contrast are
+not drawn; focus is not always visible and no focus ring is drawn; and the
+shell's own half of *every action has the keyboard road `alo-access` lists* has
+no walking test here. **No screen reader has read the tree** — Orca has never
+been run against it. Evidence and findings in
+`docs/autonomy/updates/the-tree-a-screen-reader-reads.md`. **Depends on:** 1, 2,
+3, 4, 5.
 
 **Unblocked 2026-09-20.** It read *blocked on
 `v0-5-access-and-language-plan.md` tasks 1, 2 and 3*; that plan is closed, all

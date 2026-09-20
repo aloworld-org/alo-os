@@ -71,6 +71,9 @@
 
 #![cfg(target_os = "linux")]
 
+mod access_bus;
+mod access_nodes;
+mod access_roles;
 mod active_session;
 mod approval_answers;
 mod approval_keys;
@@ -276,6 +279,8 @@ pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 pub use window_tiling::{TileGeometry, TileGeometryError, TileSide};
 
+pub use access_bus::{NotRead, ReadAloudBus};
+pub use access_nodes::ReadAloudTree;
 pub use active_session::ActiveSessionResult;
 pub use approval_keys::ApprovalKey;
 pub use approval_raster::ApprovalLook;
