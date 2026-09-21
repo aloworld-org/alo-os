@@ -41,6 +41,7 @@ fn drawn(
         look,
         &running_shows(running, &strings),
         &filling_shows(filling, &strings),
+        crate::desktop_testing::a_laptops_status(),
         &mut labels.fonts,
         size,
     )
@@ -56,6 +57,10 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
             .collect::<Vec<_>>()
     };
     let mut colours = solids(&picture.dock.solids);
+    // The status area is on the dock and is painted with it, so the promise
+    // this walk exists for — not one pixel of the desktop is the agent's
+    // colour — covers the clock, the battery, the network and the volume too.
+    colours.extend(solids(&picture.status.solids));
     for window in [&picture.running, &picture.filling] {
         colours.extend(solids(&window.solids));
         colours.extend(inked(&window.inked));

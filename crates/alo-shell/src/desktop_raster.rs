@@ -28,6 +28,8 @@ pub(crate) struct DesktopPicture {
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
     pub(crate) filling: ListPicture,
+    /// The clock, battery, network and volume, inside the dock's status area.
+    pub(crate) status: crate::status_items_raster::StatusPicture,
 }
 
 /// What the running window shows, as a panel.
@@ -75,6 +77,7 @@ pub(crate) fn picture(
     look: DesktopLook,
     running: &ListShows,
     filling: &ListShows,
+    status: &crate::status_items::StatusItems,
     fonts: &mut FontSystem,
     size: (i32, i32),
 ) -> Result<DesktopPicture, RenderError> {
@@ -95,11 +98,14 @@ pub(crate) fn picture(
     };
     let running = crate::desktop_list::picture(running, fonts, size, running_room, list)?;
     let filling = crate::desktop_list::picture(filling, fonts, size, filling_room, list)?;
+    let status =
+        crate::status_items_raster::picture(status, &dock_picture, palette.ink, palette.dock);
     Ok(DesktopPicture {
         size,
         dock: dock_picture,
         running,
         filling,
+        status,
     })
 }
 

@@ -223,6 +223,8 @@ mod sign_in_raster;
 mod sign_in_screen;
 mod sign_in_seat;
 mod socket;
+pub mod status_items;
+mod status_items_raster;
 mod surfaces;
 mod window_activation;
 mod window_close;
@@ -269,6 +271,7 @@ mod window_size;
 mod window_switch;
 mod window_tiling;
 
+pub use status_items::StatusItems;
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_maximize::WindowMaximizeError;

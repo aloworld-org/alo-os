@@ -29,9 +29,15 @@ impl DesktopPicture {
         }
     }
 
-    /// Draw the dock, then each open window's shapes and words.
+    /// Draw the dock, then the status area inside it, then each open window's
+    /// shapes and words.
+    ///
+    /// The status items come after the dock because they sit **on** it: the
+    /// band is painted first and the clock, battery, network and volume are
+    /// marked into its far end.
     pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
         crate::painted::paint(frame, &self.dock.solids, &[])?;
+        crate::painted::paint(frame, &self.status.solids, &[])?;
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;
