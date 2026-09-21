@@ -5790,3 +5790,131 @@ true of everything. This is a weaker thing to depend on than an exit code and
 is written down as such; if the base ever gives a distinct code, the reading
 should move to it.
 **Date:** 2026-09-19.
+
+### `bootc install --filesystem btrfs` makes no subvolume of its own
+**Version:** bootc 1.15.1 out of the pinned release 0.0.5
+(`ghcr.io/aloworld-org/alo-os@sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1`),
+btrfs-progs v6.19.1, kernel 6.19.14-101.fc42.x86_64. 2026-09-21.
+**Behaviour:** asked for btrfs, the installer runs one `mkfs.btrfs` and nothing
+else — no `--subvol`, no layout — and everything afterwards is an ordinary
+directory inside the top-level subvolume. The install says so itself:
+
+    podman run --rm --privileged --pid=host --security-opt label=type:unconfined_t \
+      -v /var/lib/containers:/var/lib/containers -v .:/output \
+      ghcr.io/aloworld-org/alo-os@sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1 \
+      bootc install to-disk --via-loopback --wipe --filesystem btrfs \
+        --karg console=ttyS0,115200n8 /output/disk.raw
+    # Creating root filesystem (btrfs) on device /dev/loop0p3 (size=20.9 GB)
+    # > mkfs.btrfs -U 91ebb896-8cd6-4a20-8eba-2e97d84614b6 -L root /dev/loop0p3
+
+and the machine it made says the same, on its first start:
+
+    btrfs subvolume list -a -p -u /sysroot
+    # (nothing)
+    grep btrfs /proc/self/mountinfo
+    # 79 82 0:35 /boot     /boot    rw,… - btrfs /dev/vda3 …,subvolid=5,subvol=/
+    # 83 82 0:35 /ostree/deploy/default/deploy/ea3e…0.0/etc /etc rw,… subvolid=5,subvol=/
+    # 84 82 0:35 /          /sysroot ro,… - btrfs /dev/vda3 …,subvolid=5,subvol=/
+    # 35 82 0:35 /ostree/deploy/default/var /var rw,… - btrfs /dev/vda3 …,subvolid=5,subvol=/
+
+`/boot`, `/etc`, `/sysroot` and `/var` are four bind mounts of four directories
+in subvolume 5, the filesystem's own root; `/` itself is a read-only composefs
+overlay, not btrfs at all.
+**Our response:** btrfs is what ADR 0045's undo needs and it is what the
+installer names (`alo_image::THE_ONLY_FILESYSTEM`), but the *subvolume* half of
+that decision is nobody's yet by default — no home is a subvolume because the
+base makes none. Whoever creates a person's account creates the subvolume; this
+entry exists so that nobody reads *installed on btrfs* as *has somewhere to
+snapshot*. Nothing of ours partitions or lays out subvolumes at install
+(ADR 0011): the only argument passed is `--filesystem`.
+**Date:** 2026-09-21.
+
+### A person's home lands in `/var/home`, which is a directory and not a subvolume
+**Version:** the same install and release. 2026-09-21.
+**Behaviour:** the image's login says `/home/alo`, `/home` is `/var/home`, and
+on a machine nobody has signed into yet `/var/home` is empty. It is an ordinary
+directory, so there is nothing there a snapshot can be taken of:
+
+    getent passwd alo
+    # alo:x:1000:1000:alo OS:/home/alo:/bin/bash
+    ls -la /var/home
+    # total 0
+    # drwxr-xr-x. 1 root root   0 Sep 21 00:57 .
+    # drwxr-xr-x. 1 root root 266 Sep 21 00:57 ..
+    btrfs subvolume show /var/home
+    # ERROR: Not a Btrfs subvolume: Invalid argument
+
+A home *made* as a subvolume behaves as ADR 0045 needs, on the same machine:
+
+    btrfs subvolume create /var/home/person
+    # Create subvolume '/var/home/person'
+    btrfs subvolume snapshot -r /var/home/person /var/lib/alo/undo/before
+    # Create readonly snapshot of '/var/home/person' in '/var/lib/alo/undo/before'
+    rm -f /var/lib/alo/undo/before/a-file
+    # rm: cannot remove '…': Read-only file system
+
+**Our response:** the installer's argument is the half that cannot be changed
+later and it is landed; making each home its own subvolume is the accounts
+lane's, as ADR 0045 assigns it, and until that lands every undo answers *not yet
+on this machine* — which it already does
+(`crates/alo-keeping-up/src/putting_back.rs`). A machine installed before this
+change is on ext4 and is not converted: it keeps that answer for good, which is
+why the argument had to land before the certified laptop was installed.
+**Date:** 2026-09-21.
+
+### Taking a read-only snapshot needs no capability; removing one needs `CAP_SYS_ADMIN`
+**Version:** kernel 6.19.14-101.fc42.x86_64, btrfs-progs v6.19.1, on the disk
+the pinned release installs. 2026-09-21.
+**Behaviour:** the two halves of ADR 0045's undo do not cost the same. Taking a
+snapshot is ordinary filesystem permission — write access to the directory it
+lands in — and no capability at all:
+
+    capsh --drop=cap_sys_admin -- -c 'btrfs subvolume snapshot -r /var/home/person /var/lib/alo/undo/taken'
+    # Create readonly snapshot of '/var/home/person' in '/var/lib/alo/undo/taken'
+    # take_without_sys_admin_exit=0
+    runuser -u alo -- btrfs subvolume snapshot -r /var/home/alo/home /var/home/alo/kept/three
+    # Create readonly snapshot … → person_snapshot_exit=0
+    runuser -u alo -- btrfs subvolume snapshot -r /var/home/alo/home /var/lib/alo/undo/four
+    # ERROR: Could not create subvolume: Permission denied → exit 1
+
+Removing one is not, and the person who took it cannot:
+
+    capsh --drop=cap_sys_admin -- -c 'btrfs subvolume delete /var/lib/alo/undo/taken'
+    # ERROR: Could not destroy subvolume/snapshot: Operation not permitted
+    # WARNING: deletion failed with EPERM, you don't have permissions …
+    # remove_without_sys_admin_exit=1
+    btrfs subvolume delete /var/lib/alo/undo/taken
+    # remove_with_sys_admin_exit=0
+    findmnt -no OPTIONS /var
+    # rw,relatime,seclabel,discard=async,space_cache=v2,subvolid=5,subvol=/
+    # user_subvol_rm_allowed_present=0
+
+`bootc install` sets no `user_subvol_rm_allowed`, and we do not add mount
+options of our own, so deletion is root's on every machine this repository
+installs. A read-only snapshot also cannot be cleared with `rm -rf` — that
+answers *Read-only file system* — so one left behind stays until something
+privileged removes it with `btrfs subvolume delete`.
+**Our response:** written down here because ADR 0045's accepted terms turn on
+it. Taking the bracket is cheap and needs no privilege the turn does not
+already have; **expiring it does** — the seven-day window, the oldest-go-first
+under disk pressure and *forgetting is one act* all need a privileged remover,
+which is the broker's verb rather than something `alo-turn` can do on its own.
+A design that assumed the same authority for both halves would find out on a
+machine that had filled with snapshots nothing could delete.
+**Date:** 2026-09-21.
+
+### A btrfs snapshot into a destination that already exists is made *inside* it, and says `Read-only file system`
+**Version:** btrfs-progs v6.19.1, kernel 6.19.14-101.fc42.x86_64. 2026-09-21.
+**Behaviour:** `btrfs subvolume snapshot -r SRC DEST` where `DEST` already
+exists does not refuse. It treats `DEST` as a directory and makes the snapshot
+at `DEST/$(basename SRC)` — and where `DEST` is itself a read-only snapshot,
+that write is refused with `ERROR: Could not create subvolume: Read-only file
+system`, which reads exactly like a filesystem mounted read-only.
+**Our response:** it cost this task two measuring boots and a wrong conclusion:
+a run that left a snapshot behind made the next run's *taking a snapshot needs
+`CAP_SYS_ADMIN`* look measured, when what had happened was a second snapshot
+landing inside the first. Anything that takes a bracket names a destination
+that does not exist yet and checks the result, rather than reading `EROFS` as a
+mount problem; and any measurement of this is made on a destination nothing
+has touched.
+**Date:** 2026-09-21.

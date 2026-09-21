@@ -20,13 +20,23 @@
 //! machine follows afterwards: the tool records the reference it installed, and
 //! what the machine updates to next is the updates plan's decision to make by
 //! digest, not this environment's.
+//!
+//! **`--filesystem btrfs`**, which is the one argument here that a person can
+//! never take back.
+//! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) rewinds
+//! *undo what the agent did* from the base's own read-only snapshot of a
+//! person's home, and a snapshot needs a filesystem that has them. **A
+//! filesystem is chosen at install and cannot be converted afterwards**, so a
+//! machine installed on `ext4` — which has no subvolume and no snapshot — could
+//! never undo anything without being reinstalled. The value is
+//! [`alo_image::THE_ONLY_FILESYSTEM`] rather than a second spelling here,
+//! because it is also written in `docs/booting.md`, and two spellings of a
+//! decision that cannot be undone is one too many. What the base makes of it is
+//! measured in `docs/quirks.md` rather than assumed.
 
-use alo_image::ThePin;
+use alo_image::{THE_ONLY_FILESYSTEM, ThePin};
 
 use crate::disk::DiskName;
-
-/// The root filesystem, as `docs/booting.md` installs it.
-const THE_FILESYSTEM: &str = "ext4";
 
 /// The write, with everything it is given already checked.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +77,7 @@ impl Writing {
             format!("registry:{}", self.reference),
             "--wipe".to_owned(),
             "--filesystem".to_owned(),
-            THE_FILESYSTEM.to_owned(),
+            THE_ONLY_FILESYSTEM.to_owned(),
             self.disk.path().display().to_string(),
         ]
     }
@@ -103,7 +113,7 @@ mod tests {
                 &format!("registry:ghcr.io/aloworld-org/alo-os@{}", pin.digest()),
                 "--wipe",
                 "--filesystem",
-                "ext4",
+                "btrfs",
                 "/dev/disk/by-id/virtio-alo-target",
             ]
         );
@@ -112,6 +122,38 @@ mod tests {
                 && argument.contains(pin.version())
                 && !argument.contains('@')),
             "the release is never named by its tag"
+        );
+    }
+
+    /// **The disk is written with the one filesystem an undo can be taken on**,
+    /// named once, and taken from the crate that holds every writer to it.
+    ///
+    /// A person cannot convert this afterwards, so an installer that named
+    /// `ext4` here would be a machine that can never undo what an agent did
+    /// without being reinstalled (ADR 0045). A second `--filesystem` in the
+    /// arguments would be the same defect arriving quietly, which is why this
+    /// counts them rather than looking one up.
+    #[test]
+    fn the_disk_is_written_with_the_one_filesystem_an_undo_can_be_taken_on() {
+        let pin = ThePin::read(
+            &std::fs::read_to_string(Path::new(alo_image::THE_IMAGE).join(alo_image::THE_PIN))
+                .unwrap(),
+        )
+        .unwrap();
+        let disk = DiskName::named("virtio-alo-target").unwrap();
+        let arguments = Writing::of(&pin, &disk).arguments();
+
+        let named: Vec<&String> = arguments
+            .iter()
+            .zip(arguments.iter().skip(1))
+            .filter(|(argument, _)| argument.as_str() == "--filesystem")
+            .map(|(_, value)| value)
+            .collect();
+        assert_eq!(
+            named,
+            [THE_ONLY_FILESYSTEM],
+            "the installer names {} filesystem(s): {named:?}",
+            named.len()
         );
     }
 }

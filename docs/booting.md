@@ -62,7 +62,7 @@ Make the file the disk goes into, and then write it:
       -v .:/output \
       localhost/alo-os:dev \
       bootc install to-disk --via-loopback --wipe \
-        --filesystem ext4 /output/alo-os.raw
+        --filesystem btrfs /output/alo-os.raw
 
 **The `truncate` is not optional**, and this document said nothing about it
 until somebody ran the command: `--via-loopback` attaches a loop device to a
@@ -76,6 +76,18 @@ which measured 2.0 GB on 2026-09-11.
 tool expects a block device, which on a workstation means somebody's disk.
 `--wipe` is there so that running it twice is running it twice rather than
 writing into whatever was left.
+
+**`--filesystem btrfs` is the argument that cannot be taken back.**
+[ADR 0045](decisions/0045-what-undoing-rewinds-to.md) rewinds *undo what the
+agent did* from the base's own read-only snapshot of a person's home, and a
+snapshot needs a filesystem that has them: of the three the pinned `bootc`
+accepts — `xfs`, `ext4`, `btrfs` — only `btrfs` does. **A filesystem is chosen
+at install and cannot be converted afterwards**, so a disk written here with
+anything else is a machine that can never undo anything without being
+reinstalled. The value is `alo_image::THE_ONLY_FILESYSTEM` in the code, this
+document is held to the same one, and what the base actually makes of it — which
+subvolumes, where a home lands, what a snapshot needs — is measured in
+`docs/quirks.md` rather than assumed.
 
 And for Hyper-V, one conversion:
 
@@ -132,7 +144,7 @@ changed:
       -v .:/output \
       ghcr.io/aloworld-org/alo-os@sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1 \
       bootc install to-disk --via-loopback --wipe \
-        --filesystem ext4 /output/alo-os.raw
+        --filesystem btrfs /output/alo-os.raw
 
 It writes a file, not a disk. The installer's boot environment will run this
 same invocation against the one disk a person named, and nothing in this
