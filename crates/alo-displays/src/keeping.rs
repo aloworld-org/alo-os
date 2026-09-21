@@ -295,6 +295,108 @@ mod tests {
         let _ = std::fs::remove_dir_all(&folder);
     }
 
+    /// **A key alo OS does not know inside an `[[arrangements]]` table refuses
+    /// the whole file** — not read past, and not honoured as far as the key.
+    /// It is `displays.kept.not-understood` rather than the `unknown-key`
+    /// sentence, because the key is inside a value and not at the top of the
+    /// file, so there is no top-level key to name.
+    #[test]
+    fn a_key_nobody_declared_in_an_arrangement_refuses_the_whole_file() {
+        let folder = a_folder("a-key-in-an-arrangement");
+        let at = folder.join(THE_FILE);
+        std::fs::write(
+            &at,
+            "format = 1\n\n[[arrangements]]\nname = \"the office\"\n\n[[arrangements.screens]]\n\
+             socket = \"eDP-1\"\nat = [0, 0]\nscale = 100\nmain = true\n",
+        )
+        .unwrap();
+        let (read_back, refused) = at_sign_in(&at);
+        assert_eq!(
+            read_back,
+            Changes::untouched(),
+            "the arrangement is not honoured around the key"
+        );
+        let refused = refused.unwrap();
+        assert!(
+            matches!(refused.why(), alo_kept::Unread::NotItsShape { .. }),
+            "{:?}",
+            refused.why()
+        );
+        assert_eq!(refused.word().named(), "displays.kept.not-understood");
+        assert_eq!(refused.key(), None, "the key is not one at the top");
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **And a key alo OS does not know inside an `[[arrangements.screens]]`
+    /// row refuses the whole file too** — `brightness = 50` on a screen row is
+    /// the one this file was read past before.
+    #[test]
+    fn a_key_nobody_declared_on_a_screen_row_refuses_the_whole_file() {
+        let folder = a_folder("a-key-on-a-screen-row");
+        let at = folder.join(THE_FILE);
+        std::fs::write(
+            &at,
+            "format = 1\n\n[[arrangements]]\n\n[[arrangements.screens]]\nsocket = \"eDP-1\"\n\
+             at = [0, 0]\nscale = 100\nmain = true\nbrightness = 50\n",
+        )
+        .unwrap();
+        let (read_back, refused) = at_sign_in(&at);
+        assert_eq!(read_back, Changes::untouched());
+        let refused = refused.unwrap();
+        assert!(
+            matches!(refused.why(), alo_kept::Unread::NotItsShape { .. }),
+            "{:?}",
+            refused.why()
+        );
+        assert_eq!(refused.word().named(), "displays.kept.not-understood");
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **And the same file with only the keys this file declares reads**, and
+    /// the arrangement is honoured — so what the two tests above refuse is the
+    /// stray key and not the shape around it.
+    #[test]
+    fn the_same_file_with_only_the_keys_it_declares_reads() {
+        let folder = a_folder("only-the-keys-it-declares");
+        let at = folder.join(THE_FILE);
+        std::fs::write(
+            &at,
+            "format = 1\n\n[[arrangements]]\n\n[[arrangements.screens]]\nsocket = \"eDP-1\"\n\
+             at = [0, 0]\nscale = 100\nmain = true\n\n[[arrangements.screens]]\nmake = \
+             \"Dell\"\nmodel = \"U2720Q\"\nserial = \"CN-0ABC\"\nat = [-2560, 0]\nscale = 150\n",
+        )
+        .unwrap();
+        let (read_back, refused) = at_sign_in(&at);
+        assert_eq!(refused, None);
+        assert_eq!(read_back.how_many(), 1);
+        let arrangement = read_back.each().next().unwrap();
+        assert_eq!(arrangement.how_many(), 2);
+        assert_eq!(
+            arrangement.placed(&the_office_screen()).unwrap().position(),
+            Position::at(-2560, 0)
+        );
+        assert_eq!(arrangement.main_screen(), &the_laptop());
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **A file this alo OS wrote reads back after the check**, which is the
+    /// promise the change had to keep: nothing about the shape moved, so
+    /// yesterday's file is today's.
+    #[test]
+    fn a_file_this_alo_os_wrote_still_reads() {
+        let folder = a_folder("written-yesterday");
+        let at = folder.join(THE_FILE);
+        let mut changes = Changes::untouched();
+        changes.remember(an_arrangement(&[
+            (the_laptop(), 0, 200),
+            (the_office_screen(), -2560, 150),
+        ]));
+        changes.set_night_light(NightLight::as_shipped());
+        keep(&at, &changes).unwrap();
+        assert_eq!(at_sign_in(&at), (changes, None));
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
     /// **A file whose arrangement names no main screen is refused whole**, in
     /// the same words a settings panel would have used for the same mistake.
     #[test]

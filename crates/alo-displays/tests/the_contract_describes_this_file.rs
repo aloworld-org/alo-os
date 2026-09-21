@@ -425,6 +425,98 @@ fn every_example_the_contract_refuses_is_refused_in_the_words_it_names() {
     }
 }
 
+/// **The section says an arrangement has exactly its own keys, and shows one
+/// refused example per table.**
+///
+/// It said the opposite until this was written — a paragraph headed *One check
+/// `appearance.toml` has that this file does not yet*, describing a key inside
+/// an `[[arrangements]]` table or one of its `screens` rows as read past. The
+/// crate now refuses it, and a contract still carrying that paragraph would
+/// tell a person their stray key is honoured while their whole file is being
+/// refused, which is the worst of the three things that sentence could say.
+///
+/// So both examples are put on a real disk: each is refused, in the sentence
+/// the section names and with nothing in the file honoured; neither names a key
+/// at the top of the file, because the key is inside a value; and each **reads**
+/// with the stray line taken out, so what is refused is that line and not the
+/// shape around it.
+#[test]
+fn the_contract_says_a_key_inside_an_arrangement_refuses_the_whole_file() {
+    let values = the_part("Values");
+    assert!(
+        !values.contains("does not yet"),
+        "the section still describes a check the crate now has: {values}"
+    );
+    assert!(
+        values.contains("has exactly its own keys"),
+        "the section does not say an arrangement has exactly its own keys: {values}"
+    );
+
+    let refused: Vec<Fence> = fences(&the_section())
+        .into_iter()
+        .filter(|fence| fence.info == "toml refused")
+        .collect();
+    for (number, (inside, stray)) in [
+        ("[[arrangements]]", "desk = "),
+        ("[[arrangements.screens]]", "brightness = "),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let fence = refused
+            .iter()
+            .find(|fence| fence.text.contains(inside) && fence.text.contains(stray))
+            .unwrap_or_else(|| {
+                panic!("the section shows no refused example of {stray:?} inside {inside}")
+            });
+        let named = code_span_beginning(&fence.after, "displays.kept.")
+            .unwrap_or_else(|| panic!("no sentence is named after:\n{}", fence.text));
+        assert_eq!(
+            named, "displays.kept.not-understood",
+            "a key inside a value is not the sentence for a key at the top of the file"
+        );
+
+        let (at, read) = read_from_a_file(&format!("a-key-inside-{number}"), &fence.text);
+        let Err(why) = read else {
+            panic!("the section says this is refused:\n{}", fence.text)
+        };
+        assert_eq!(why.word().named(), named, "{}", fence.text);
+        assert_eq!(
+            why.key(),
+            None,
+            "the key is inside a value, so there is no key at the top to name"
+        );
+        assert_eq!(
+            keeping::at_sign_in(&at),
+            (Changes::untouched(), Some(why)),
+            "nothing in the file is honoured"
+        );
+
+        let without: String = fence
+            .text
+            .lines()
+            .filter(|line| !line.starts_with(stray))
+            .map(|line| format!("{line}\n"))
+            .collect();
+        assert_ne!(
+            without, fence.text,
+            "the stray line was not found to remove"
+        );
+        let (_, read) = read_from_a_file(&format!("without-the-key-{number}"), &without);
+        let read = read.unwrap_or_else(|refused| {
+            panic!(
+                "the same file without {stray:?} does not read: {:?}\n{without}",
+                refused.why()
+            )
+        });
+        assert_eq!(
+            read.how_many(),
+            1,
+            "the arrangement the stray key was in is honoured once the key is gone"
+        );
+    }
+}
+
 /// **No file is what the section says it is**: a person who has arranged
 /// nothing and never asked for night light, not an error, and nothing written.
 #[test]

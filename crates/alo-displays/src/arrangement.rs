@@ -24,6 +24,20 @@
 //! So an arrangement is checked for the things a file can be wrong about — a
 //! screen named twice, no main screen, two — and [`crate::Attached`] is where it
 //! meets the machine and the screens are checked for overlapping.
+//!
+//! # A key nobody declared refuses the file
+//!
+//! An `[[arrangements]]` table, and each `[[arrangements.screens]]` row inside
+//! it, has exactly the keys written here. One alo OS does not know refuses the
+//! whole file — the same `displays.kept.not-understood` a value it cannot take
+//! gives, because the key is inside a value rather than at the top of the file
+//! — and [`crate::keeping::at_sign_in`] then answers with a machine that has
+//! arranged nothing, with the refusal beside it.
+//!
+//! A file this alo OS wrote reads unchanged. A hand-edited one with a stray key
+//! in an arrangement stops reading, and that is the point rather than a cost of
+//! it: a row read past is room to put something, which is how a file quietly
+//! grows a field nobody agreed to.
 
 use serde::{Deserialize, Serialize};
 
@@ -219,8 +233,13 @@ impl Arrangement {
 }
 
 /// One screen's row, as a settings file holds it.
+///
+/// **A key alo OS does not know refuses the row**, and with it the whole file.
+/// A row is where a screen is described, which is exactly the place somebody
+/// would be tempted to add a field to — and a row read past is a row a later
+/// release, or a person's own hand, can quietly put something into.
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct WrittenScreen {
     /// Who made the screen, for one that says.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -253,7 +272,12 @@ fn is_not_the_main_screen(main: &bool) -> bool {
 }
 
 /// An arrangement, as a settings file holds it.
+///
+/// `screens` and nothing else: a key alo OS does not know inside an
+/// `[[arrangements]]` table refuses the whole file, the way one at the top of
+/// the file does.
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Written {
     /// Every screen of the set, with its place.
     screens: Vec<WrittenScreen>,
@@ -452,6 +476,28 @@ mod tests {
             refused.to_string().contains("displays.half-a-screen"),
             "{refused}"
         );
+    }
+
+    /// **A key nobody declared refuses the arrangement**, in the table and in
+    /// a screen row alike — and the keys this shape does declare still read, so
+    /// what is refused is the stray key and not the shape around it.
+    #[test]
+    fn a_key_nobody_declared_refuses_the_arrangement() {
+        let declared = r#"{"screens":[{"socket":"eDP-1","at":[0,0],"scale":100,"main":true}]}"#;
+        assert_eq!(
+            serde_json::from_str::<Arrangement>(declared)
+                .unwrap()
+                .main_screen(),
+            &the_laptop()
+        );
+
+        let in_the_row = r#"{"screens":[{"socket":"eDP-1","at":[0,0],"scale":100,"main":true,"brightness":50}]}"#;
+        let refused = serde_json::from_str::<Arrangement>(in_the_row).unwrap_err();
+        assert!(refused.to_string().contains("brightness"), "{refused}");
+
+        let in_the_table = r#"{"screens":[{"socket":"eDP-1","at":[0,0],"scale":100,"main":true}],"name":"office"}"#;
+        let refused = serde_json::from_str::<Arrangement>(in_the_table).unwrap_err();
+        assert!(refused.to_string().contains("name"), "{refused}");
     }
 
     /// A set is the screens and nothing else, and a screen given twice is
