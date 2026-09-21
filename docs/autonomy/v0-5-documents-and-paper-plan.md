@@ -333,11 +333,42 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** blocked — on **one measurement**, and it is not recognition's to
-take: no Pages document has been inventoried, because the engine that reads one
-is an x86_64 build and this repository gates on aarch64. **Recognition is done:
-all three formats are recognised from their own bytes, each measured against a
-real file held to its digest.**
+**Status:** ready — **the measurement is taken**, on 2026-09-21, by the third PC
+(`AGAI01`) at the owner's instruction. It is not this plan's machine: the lane
+table gives this plan to the development PC, and the owner assigned this one task
+across because the engine that reads a Pages document is an **x86_64** build and
+this plan gates on aarch64. Nothing else about the plan moves. **Recognition was
+already done: all three formats are recognised from their own bytes, each
+measured against a real file held to its digest.**
+
+**The inventory of a Pages document, measured 2026-09-21.**
+`crates/alo-opening/tests/files/document.pages`, 227,583 bytes, held to
+`sha256:1b01189904934a7c5d6b59199c9719eab111759cfea5e2a7de17d3e45ee09c4d`, read
+by **LibreOffice 26.2 on x86_64** (exit code 0, taken from a file the run wrote
+rather than from `$?`, which does not survive the Windows-to-WSL boundary). All
+six of `WHAT_AN_INVENTORY_ANSWERS`, from what the engine produced rather than
+from what the format is assumed to hold:
+
+| What an inventory answers | This document |
+|---|---|
+| every family its text is set in | **5** — `Helvetica` and `HelveticaNeue` are the document's own; `Liberation Sans`, `Liberation Serif` and `Noto Sans` are the engine's substitutes |
+| every field whose value depends on when or where it is open | **0** |
+| every kind of content taken from elsewhere | **0 taken from elsewhere**; one picture *embedded* (`Pictures/1000…7E.jpg`, the original's `Data/pasted-image-24.jpeg`) |
+| whether it has comments | **no** — and the original carries `Index/AnnotationAuthorStorage-1732609.iwa` at 23 bytes, so the part exists and is empty |
+| whether it has tracked changes | **no** |
+| whether it carries macros | **no** |
+
+The original holds 15 parts, two of them pasted images.
+
+**Two things in that measurement are the point of taking it rather than assuming
+it.** The fonts answer is a real conversion cost under ADR 0008: the document is
+set in Helvetica and the engine silently substitutes Liberation and Noto, and a
+person is owed that sentence. And *taken from elsewhere* is **0 while an embedded
+picture is present** — the first reading of this measurement counted
+`Pictures/…` as linked and reported 1, which is the opposite answer for a person
+deciding whether a copy is complete offline. Embedded and linked are separated
+here because conflating them is exactly the proxy this project has shipped
+defects from.
 [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
 is **accepted, 2026-09-20**, as option A, and what answered it is that all three
 files exist with their provenance. The fourth conversion is written whole and
