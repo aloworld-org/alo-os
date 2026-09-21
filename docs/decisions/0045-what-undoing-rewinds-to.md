@@ -2,6 +2,9 @@
 
 **Status:** accepted, 2026-09-16 — option **A**, with the six terms under *As the
 owner accepted it*, which are part of the decision rather than commentary on it.
+**Amended 2026-09-21** with a seventh term naming what removes an expired
+snapshot: the first `btrfs` install measured that removing one needs
+`CAP_SYS_ADMIN`, and nothing in this repository removed one at all.
 Written by task 4 of
 `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (*Undo what the agent
 did*), which cannot be built until it is answered. Nothing is built in the
@@ -262,6 +265,76 @@ Until the bracket exists on a machine, points 1 to 5 of *What holds whichever
 option is taken* are built and every change verb answers *not yet on this
 machine*, which is true rather than a stub.
 
+
+## Amended, 2026-09-21 — who removes an expired snapshot
+
+Terms 1 and 2 above both require a snapshot to be *removed*, and neither says
+by what. That was not noticed at acceptance because on `ext4` there was nothing
+to remove; the first real `btrfs` install made it answerable, and the answer is
+not the one the terms assume.
+
+**What was measured** (installer task 11, on five KVM boots against pinned
+0.0.5, 2026-09-20): taking a read-only snapshot **needs no capability** —
+`capsh --drop=cap_sys_admin` still exits 0 — while **removing one needs
+`CAP_SYS_ADMIN`**, and a read-only snapshot cannot be cleared with `rm -rf`
+either. The cost `btrfs` carries is not the snapshot. It is the deletion.
+
+**What was found in this repository at the same time:**
+`crates/alo-keeping-up/src/how_far_back.rs` decides precisely which snapshots
+fall outside seven days or fifty changing turns, and **nothing anywhere removes
+one.** The window was built; the forgetting was not. An undo that is never
+forgotten is a disk that fills quietly, which is the exact failure the owner's
+question at acceptance was about — *if the system takes snapshots every turn,
+will the machines not get fuller with them?* The terms answered it and the code
+did not.
+
+### 7. Expiry is done by a privileged unit on a timer, and no agent can ask for it
+
+What falls outside the window, and what disk pressure takes oldest-first, is
+removed by **a unit the machine runs as root on a timer** — the shape
+[ADR 0053](0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md) already
+uses for applying an update. It is not a verb.
+
+- **`alo-turn` does not gain this, and cannot.** It runs as the person; the
+  removal needs `CAP_SYS_ADMIN`; a capability granted to the thing that takes
+  the brackets is a capability held all day for an act performed once a day.
+- **The broker's fixed list does not gain a `undo.forget` either**, and the
+  reason is stronger than surface area. **An agent that can forget an undo can
+  erase the evidence of what it did.** Undo is the record's counterpart: ADR
+  0001 §5 holds that a change waits and is written down, and a destructive verb
+  over the written-down past is the one verb whose approval a person is least
+  able to judge, because what it destroys is the thing they would judge it by.
+  Nothing on the fixed list is reachable by an agent for this, now or later.
+- **Expiry is therefore housekeeping, not a petition.** There is no request, no
+  approval, no grant and no entry point: a person changes the window in their
+  settings (term 1) and the unit obeys it. The only way to keep a snapshot
+  longer is to widen the window, which is the person's setting and always was.
+
+What does not change: the record still names the turns that can no longer be
+undone (term 2), `alo-measuring` still counts what undo is holding by name
+(term 4), and a machine too full to snapshot still runs the turn (term 3). A
+person is told the same things by the same roads; only the hand that does the
+deleting is named, and it is not an agent's.
+
+**Why not simply drop the window and expire on disk pressure alone.** That was
+weighed and refused. It is the shortcut: it leaves a roomy machine keeping
+every snapshot forever, answers the owner's question with *eventually*, and
+makes the first forgetting a person ever sees happen at the worst moment, when
+the disk is already full.
+
+### What this amendment changes
+
+- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` gains a task for the
+  remover. Terms 1 and 2 are **not built** until it lands, and
+  `how_far_back.rs` deciding a window is not the same as a machine obeying one.
+- `crates/alo-broker/src/verbs.rs` gains nothing. `SystemVerb` is a closed
+  enum and stays closed here; a test should hold that no verb's name begins
+  `undo.`, so that this decision is walked by the compiler and the suite rather
+  than remembered.
+- `crates/alo-turn` gains no capability.
+- `docs/quirks.md` keeps what task 11 wrote: a snapshot taken into an existing
+  directory is made *inside* it and answers `Read-only file system`, which
+  reads like a mount fault and is not one.
 ## Consequences if it is accepted
 
 - `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` task 4 becomes ready,

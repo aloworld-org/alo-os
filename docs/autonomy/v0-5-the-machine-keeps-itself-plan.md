@@ -900,3 +900,52 @@ task is a fix and how much is a fix plus a bug.
   No setting that turns checking off, no member meaning *urgent*, and
   `alo-keeping-up` still gains no clock, no socket and no file. The unit's
   installation remains the installer lane's.
+
+### 13. The snapshot nobody removed
+
+**Status:** ready. **Depends on:** nothing in this plan — installer task 11
+landed the `btrfs` install on 2026-09-21 and that was the only thing it waited
+on. Written 2026-09-21 from [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s
+seventh term.
+
+**Terms 1 and 2 of ADR 0045 are not built, and the reason they read as built is
+that the deciding half is.** `crates/alo-keeping-up/src/how_far_back.rs` works
+out exactly which snapshots fall outside seven days or fifty changing turns,
+with no clock and no file, and it is right. **Nothing removes them.** A search
+of every crate for a snapshot deletion finds none. So a machine decides that a
+snapshot is expired and then keeps it forever, which is the disk filling quietly
+that the owner's question at acceptance was about — answered in prose and not in
+code.
+
+The first real `btrfs` install said why it will not be a small change: **taking
+a read-only snapshot needs no capability and removing one needs
+`CAP_SYS_ADMIN`**, and a read-only snapshot does not yield to `rm -rf` either.
+`alo-turn` runs as the person and must not hold that capability all day for an
+act performed once a day, and the broker's fixed list must not gain a verb over
+the past — *an agent that can forget an undo can erase the evidence of what it
+did*. The seventh term settles it: **a unit the machine runs as root on a
+timer**, the shape [ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+already uses.
+
+- **Acceptance:** a privileged unit, started by a timer and by nothing else,
+  reads the window from the person's settings and removes every snapshot
+  outside it, **measured on a real `btrfs` machine** — snapshots made, the
+  clock moved past the window, the unit run, and `btrfs subvolume list` asked
+  afterwards, with the output in the report; under the named free-space floor
+  the **oldest go first** and the record says which turns can no longer be
+  undone, in the person's words and not as a number (term 2); the window is
+  the person's one setting and widening it keeps snapshots that a narrower one
+  would have taken, held by a test; the unit is **not reachable from any verb**
+  — a test holds that no name on `alo_broker::SystemVerb`'s list begins `undo.`
+  and that `SystemVerb` gained nothing, so this decision is walked by the
+  compiler and the suite rather than remembered; `alo-turn` gains **no**
+  capability, held by the same kind of test that holds the rest of ADR 0001 §2;
+  and `alo-measuring` still counts what undo is holding by name (term 4), which
+  means the number it reports goes **down** after the unit runs, and a test
+  sees that it does.
+- **Constraint:** the deciding stays where it is. `how_far_back.rs` is correct
+  and this task does not re-decide a window, move it, or teach the unit its own
+  arithmetic — the unit asks `alo-keeping-up` what is outside and removes
+  exactly that. A machine on `ext4` answers *not yet on this machine* as it
+  does for every other part of undo (term 6), and the unit does nothing there
+  rather than failing every timer.
