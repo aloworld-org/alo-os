@@ -270,7 +270,9 @@ them has ever been shown.
 
 ### 7. The status area's clock, battery, network and volume
 
-**Status:** **unblocked, 2026-09-20** — all four are on `main`. **Re-read
+**Status:** ready — **unblocked 2026-09-20**, all four are on `main`. The word
+here is *ready* because *unblocked* is not one the supervisor reads, and a
+status it cannot parse is a task it selects for ever. **Re-read
 2026-09-20**, when a lane sent to write the four found three already there; this
 paragraph had said they did not exist, and it was written on 2026-09-15 before
 they landed. The fourth was written that day.
@@ -392,8 +394,13 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 11. Notifications, the capture tools and the in-use indicator, drawn
 
-**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 6 and
-`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. **Depends on:** 5.
+**Status:** ready — **its blockers cleared on 2026-09-19, and this line outlived them.**
+It waited on `v0-5-the-session-and-the-displays-plan.md` task 6 and
+`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
+to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
+`crates/alo-notifying` — on 2026-09-19. Nothing was re-read afterwards, so a
+takeable task read as untakeable for two days and task 14 behind it with it.
+Re-read 2026-09-21. **Depends on:** 5.
 
 - **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
   locked, shared or recorded; the region selection and the annotation marks of
