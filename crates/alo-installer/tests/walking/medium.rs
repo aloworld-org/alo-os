@@ -26,6 +26,10 @@ pub enum Told {
     /// makes every read and every side effect running it has on Windows, and
     /// refuses.
     RefuseAtTheConsent,
+    /// Run the installer the same way, leave it at the consent as long as a
+    /// kill run spends after it, and kill it there: everything a kill run does
+    /// to Windows except staging.
+    KillAtTheConsent,
     /// Run the installer and kill it the moment this step of `staging.rs` has
     /// happened.
     KillAfterStep(u8),
@@ -40,6 +44,7 @@ impl Told {
         match self {
             Self::JustLook => "mode=manifest-only\nstep=0\n".to_owned(),
             Self::RefuseAtTheConsent => "mode=refuse\nstep=0\n".to_owned(),
+            Self::KillAtTheConsent => "mode=kill-at-consent\nstep=0\n".to_owned(),
             Self::KillAfterStep(step) => format!("mode=kill-at-step\nstep={step}\n"),
             Self::TheWholeRoad => "mode=whole-road\nstep=0\n".to_owned(),
         }

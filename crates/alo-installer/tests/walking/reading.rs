@@ -160,6 +160,15 @@ impl Changed {
         }
     }
 
+    /// What either this or another changed.
+    #[must_use]
+    pub fn and(mut self, other: &Self) -> Self {
+        self.windows.extend(other.windows.iter().cloned());
+        self.start_partition
+            .extend(other.start_partition.iter().cloned());
+        self
+    }
+
     /// Whether nothing differs.
     #[must_use]
     pub fn is_nothing(&self) -> bool {

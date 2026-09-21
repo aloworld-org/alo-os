@@ -9,10 +9,13 @@
 //! reads this file.
 //!
 //! **Disk and start-up changes go through Windows' own tools** — the storage
-//! cmdlets of Windows PowerShell and `bcdedit` — and never through an IOCTL
-//! this crate would have to write (the installer plan's task 3; `unsafe_code`
-//! is forbidden). Every script is a constant with numbers put into it, handed
-//! over by `crate::encoded` so no character of it is re-read on the way.
+//! cmdlets of Windows PowerShell, `bcdedit`, and, for the one thing `bcdedit`
+//! cannot do (an entry without Windows' optional data, see
+//! [`Program::WritingTheEntry`]), Windows' documented firmware-variable call
+//! from a script — and never through an IOCTL this crate would have to write
+//! (the installer plan's task 3; `unsafe_code` is forbidden). Every script is
+//! a constant with numbers put into it, handed over by `crate::encoded` so no
+//! character of it is re-read on the way.
 //!
 //! | Reads, and change nothing | |
 //! |---|---|
@@ -30,8 +33,8 @@
 //! | [`Program::Shrinking`] | [`Program::GrowingWindowsBack`] |
 //! | [`Program::MakingTheArea`] | [`Program::RemovingTheArea`] |
 //! | [`Program::PreparingTheArea`] | removing the area |
-//! | [`Program::AddingTheEntry`] | [`Program::RemovingTheEntry`] |
-//! | [`Program::PointingTheEntryAtTheArea`], [`Program::PointingTheEntryAtTheLoader`], [`Program::ListingTheEntry`] | removing the entry |
+//! | [`Program::WritingTheEntry`] | [`Program::RemovingTheEntry`] |
+//! | [`Program::ListingTheEntry`] | removing the entry |
 //! | [`Program::TakingAwayTheLetter`] | nothing to put back |
 //! | [`Program::StartingTheEntryNext`] | [`Program::ForgettingTheNextStart`] |
 //! | [`Program::Restarting`] | — the point after which this program is gone |
@@ -105,32 +108,45 @@ pub enum Program {
         /// partition can be.
         offset: u64,
     },
-    /// Make a start-up entry named [`THE_ENTRYS_NAME`], and print its identifier.
+    /// Write the start-up entry named [`THE_ENTRYS_NAME`] into the firmware
+    /// itself — the area's partition and [`THE_LOADER`], and **no optional
+    /// data** — read it back, and print the identifier Windows lists it under.
     ///
-    /// **Measured on a running Windows** (the installer plan's task 10,
-    /// 2026-09-21): the entry this and the two pointing programs make reaches
-    /// the firmware's `Boot####` variable as the area's own partition and
-    /// [`THE_LOADER`], and on the installer's own restart the firmware starts
-    /// it. It also carries the optional data every copy of `{bootmgr}`
-    /// carries — 136 bytes beginning `WINDOWS` — which shim reads as the name
-    /// of what to start next; shim fails to open it and falls back to its
-    /// default loader, `grubx64.efi` beside it, which is the loader it is meant
-    /// to start (`docs/quirks.md`). And once, after a kill with the next start
-    /// set and a *shutdown* rather than a restart, the variable was found
-    /// pointing at Windows' own EFI system partition instead — which starts
-    /// Windows (`docs/quirks.md`, not yet explained).
-    AddingTheEntry,
-    /// Point the entry at the area.
-    PointingTheEntryAtTheArea {
-        /// The entry.
-        entry: Entry,
-        /// The area's letter.
-        letter: Letter,
-    },
-    /// Point the entry at the loader on the area.
-    PointingTheEntryAtTheLoader {
-        /// The entry.
-        entry: Entry,
+    /// **Why not `bcdedit`**, measured on a running Windows (the installer
+    /// plan's task 10, 2026-09-21), reading each `Boot####` variable back:
+    /// every entry `bcdedit /copy {bootmgr}` makes carries the 136 bytes of
+    /// optional data Windows' own boot manager entry carries
+    /// (`WINDOWS\0…BCDOBJECT={…}`), and deleting every boot-manager value from
+    /// the copy leaves them; shim takes them as the name of what to start, fails
+    /// to open it, and falls back — and on Ubuntu's OVMF that fallback
+    /// page-faults. `bcdedit /create … /application firmware` is refused (*the
+    /// application type switch specified is not valid*), and a copy of an
+    /// existing firmware application keeps the original's device path whatever
+    /// `device` and `path` are set to. So the load option is written as the UEFI
+    /// specification lays it out, through `SetFirmwareEnvironmentVariableEx` —
+    /// Windows' documented call for exactly this — from a script like every
+    /// other program here, with no line of `unsafe` in this crate. Windows then
+    /// lists it as a *Firmware Application* and keeps it without optional data;
+    /// `bcdedit` lists it, sets it as the next start and removes it by the
+    /// identifier printed.
+    ///
+    /// **Measured with this program on 2026-09-22**, the variable read from the
+    /// host after the machine stopped: the area's slot and `\EFI\BOOT\BOOTX64.EFI`
+    /// with 0 bytes of optional data; on the installer's own restart shim
+    /// started its second stage with no fallback on Fedora's `edk2-ovmf`, and
+    /// Linux and the environment followed (`docs/quirks.md`).
+    ///
+    /// The partition in the device path is the GPT entry's own slot, read from
+    /// the disk's partition table, and never Windows' partition number: the
+    /// two differ (measured: the area was Windows' partition 5 in GPT slot 4),
+    /// and a firmware matches a hard-drive node by slot and signature.
+    WritingTheEntry {
+        /// The disk the area is on.
+        disk: DiskNumber,
+        /// The area's number, as Windows gives it.
+        partition: PartitionNumber,
+        /// Where the area must begin — checked before anything is written.
+        offset: u64,
     },
     /// Put the entry last among the systems the firmware lists.
     ListingTheEntry {
@@ -236,9 +252,6 @@ impl Program {
             Self::AskingWhetherThisIsAnAdministrator => Tool::Whoami,
             Self::Restarting => Tool::Shutdown,
             Self::ListingTheStartEntries
-            | Self::AddingTheEntry
-            | Self::PointingTheEntryAtTheArea { .. }
-            | Self::PointingTheEntryAtTheLoader { .. }
             | Self::ListingTheEntry { .. }
             | Self::StartingTheEntryNext { .. }
             | Self::ForgettingTheNextStart
@@ -361,11 +374,20 @@ impl Program {
                 "{}Remove-Partition -DiskNumber {disk} -PartitionNumber {partition} -Confirm:$false",
                 still_the_area(*disk, *partition, *offset)
             ),
+            Self::WritingTheEntry {
+                disk,
+                partition,
+                offset,
+            } => format!(
+                "{}{}",
+                still_the_area(*disk, *partition, *offset),
+                WRITING_THE_ENTRY
+                    .replace("@DISK@", &disk.to_string())
+                    .replace("@NAME@", THE_ENTRYS_NAME)
+                    .replace("@LOADER@", THE_LOADER)
+            ),
             Self::AskingWhetherThisIsAnAdministrator
             | Self::ListingTheStartEntries
-            | Self::AddingTheEntry
-            | Self::PointingTheEntryAtTheArea { .. }
-            | Self::PointingTheEntryAtTheLoader { .. }
             | Self::ListingTheEntry { .. }
             | Self::StartingTheEntryNext { .. }
             | Self::Restarting
@@ -397,21 +419,6 @@ impl Program {
                 ["/groups", "/fo", "csv", "/nh"].map(str::to_owned).to_vec()
             }
             Self::ListingTheStartEntries => ["/enum", "firmware"].map(str::to_owned).to_vec(),
-            Self::AddingTheEntry => ["/copy", "{bootmgr}", "/d", THE_ENTRYS_NAME]
-                .map(str::to_owned)
-                .to_vec(),
-            Self::PointingTheEntryAtTheArea { entry, letter } => vec![
-                "/set".to_owned(),
-                entry.as_str().to_owned(),
-                "device".to_owned(),
-                format!("partition={}", letter.drive()),
-            ],
-            Self::PointingTheEntryAtTheLoader { entry } => vec![
-                "/set".to_owned(),
-                entry.as_str().to_owned(),
-                "path".to_owned(),
-                THE_LOADER.to_owned(),
-            ],
             Self::ListingTheEntry { entry } => vec![
                 "/set".to_owned(),
                 "{fwbootmgr}".to_owned(),
@@ -437,6 +444,165 @@ impl Program {
         words
     }
 }
+
+/// What [`Program::WritingTheEntry`] runs after the check that the area is
+/// still where it was made (which leaves the area in `$area`).
+///
+/// In order: the firmware-variable privilege, which an administrator holds but
+/// must switch on; the area's GPT slot, read from the disk's own partition
+/// table and matched by the area's unique GUID *and* its first sector; a load
+/// option of exactly attributes, length, description and one device path —
+/// the area's hard-drive node and [`THE_LOADER`] — and nothing after it; a
+/// `Boot####` number no variable and no `BootOrder` entry uses; the write; the
+/// variable read back and compared byte for byte; and the identifier Windows
+/// lists it under, found by its description and its type (a firmware
+/// application, `0x101fffff`) in the BCD store rather than in `bcdedit`'s
+/// printed words, which are in Windows' own language.
+///
+/// **Nothing it wrote is left behind when it fails after writing**: the
+/// variable is removed before the failure is thrown, so a failed write is a
+/// step that changed nothing, as the staging journal assumes.
+const WRITING_THE_ENTRY: &str = r#"$sector = [uint32](Get-Disk -Number @DISK@).LogicalSectorSize;
+Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+public static class AloFirmwareEntry {
+  const string Global = "{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}";
+  [StructLayout(LayoutKind.Sequential)] struct Luid { public uint Low; public int High; }
+  [StructLayout(LayoutKind.Sequential)] struct Privilege { public uint Count; public Luid Id; public uint Attributes; }
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+  [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool LookupPrivilegeValue(string system, string name, out Luid id);
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref Privilege state, uint length, IntPtr previous, IntPtr returned);
+  [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
+  [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern uint GetFirmwareEnvironmentVariableEx(string name, string guid, byte[] buffer, uint size, ref uint attributes);
+  [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool SetFirmwareEnvironmentVariableEx(string name, string guid, byte[] value, uint size, uint attributes);
+  [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+  public static void SwitchOnThePrivilege() {
+    IntPtr token;
+    if (!OpenProcessToken(GetCurrentProcess(), 0x28, out token)) throw new InvalidOperationException("OpenProcessToken " + Marshal.GetLastWin32Error());
+    Luid id;
+    if (!LookupPrivilegeValue(null, "SeSystemEnvironmentPrivilege", out id)) throw new InvalidOperationException("LookupPrivilegeValue " + Marshal.GetLastWin32Error());
+    Privilege state = new Privilege { Count = 1, Id = id, Attributes = 2 };
+    if (!AdjustTokenPrivileges(token, false, ref state, 0, IntPtr.Zero, IntPtr.Zero) || Marshal.GetLastWin32Error() != 0) throw new InvalidOperationException("the firmware privilege is not held");
+  }
+
+  static byte[] ReadDisk(uint disk, ulong at, int count) {
+    using (SafeFileHandle handle = CreateFile(@"\\.\PhysicalDrive" + disk, 0x80000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero)) {
+      if (handle.IsInvalid) throw new IOException("the disk could not be opened: " + Marshal.GetLastWin32Error());
+      using (FileStream stream = new FileStream(handle, FileAccess.Read, 1)) {
+        stream.Seek((long)at, SeekOrigin.Begin);
+        byte[] bytes = new byte[count];
+        int got = 0;
+        while (got < count) { int n = stream.Read(bytes, got, count - got); if (n <= 0) throw new IOException("the disk ended early"); got += n; }
+        return bytes;
+      }
+    }
+  }
+
+  public static uint GptSlot(uint disk, Guid partition, ulong firstSector, uint sector) {
+    byte[] header = ReadDisk(disk, sector, (int)sector);
+    if (System.Text.Encoding.ASCII.GetString(header, 0, 8) != "EFI PART") throw new InvalidDataException("the disk has no GPT header");
+    ulong entries = BitConverter.ToUInt64(header, 72);
+    uint count = BitConverter.ToUInt32(header, 80);
+    uint size = BitConverter.ToUInt32(header, 84);
+    if (size < 128 || count == 0 || count > 1024) throw new InvalidDataException("the GPT header is not one this installer reads");
+    ulong length = (ulong)count * size;
+    ulong rounded = (length + sector - 1) / sector * sector;
+    byte[] table = ReadDisk(disk, entries * sector, (int)rounded);
+    uint found = 0;
+    for (uint i = 0; i < count; i++) {
+      int at = (int)(i * size);
+      byte[] unique = new byte[16];
+      Array.Copy(table, at + 16, unique, 0, 16);
+      if (new Guid(unique) == partition && BitConverter.ToUInt64(table, at + 32) == firstSector) {
+        if (found != 0) throw new InvalidDataException("the area is in the partition table twice");
+        found = i + 1;
+      }
+    }
+    if (found == 0) throw new InvalidDataException("the area is not in the partition table");
+    return found;
+  }
+
+  public static byte[] LoadOption(string description, uint slot, ulong firstSector, ulong sectors, Guid signature, string file) {
+    MemoryStream path = new MemoryStream();
+    BinaryWriter w = new BinaryWriter(path);
+    w.Write((byte)4); w.Write((byte)1); w.Write((ushort)42);
+    w.Write(slot); w.Write(firstSector); w.Write(sectors); w.Write(signature.ToByteArray());
+    w.Write((byte)2); w.Write((byte)2);
+    byte[] name = System.Text.Encoding.Unicode.GetBytes(file + "\0");
+    w.Write((byte)4); w.Write((byte)4); w.Write((ushort)(4 + name.Length)); w.Write(name);
+    w.Write((byte)0x7f); w.Write((byte)0xff); w.Write((ushort)4);
+    w.Flush();
+    byte[] list = path.ToArray();
+    MemoryStream option = new MemoryStream();
+    BinaryWriter o = new BinaryWriter(option);
+    o.Write((uint)1);
+    o.Write((ushort)list.Length);
+    o.Write(System.Text.Encoding.Unicode.GetBytes(description + "\0"));
+    o.Write(list);
+    o.Flush();
+    return option.ToArray();
+  }
+
+  public static byte[] Read(string name) {
+    byte[] buffer = new byte[65536];
+    uint attributes = 0;
+    uint size = GetFirmwareEnvironmentVariableEx(name, Global, buffer, (uint)buffer.Length, ref attributes);
+    if (size == 0) return null;
+    byte[] value = new byte[size];
+    Array.Copy(buffer, value, size);
+    return value;
+  }
+
+  public static string FreeBootName() {
+    byte[] order = Read("BootOrder") ?? new byte[0];
+    for (int n = 0; n < 0x1000; n++) {
+      bool listed = false;
+      for (int i = 0; i + 1 < order.Length; i += 2) if (BitConverter.ToUInt16(order, i) == n) listed = true;
+      string name = "Boot" + n.ToString("X4");
+      if (!listed && Read(name) == null) return name;
+    }
+    throw new InvalidOperationException("every Boot#### number is in use");
+  }
+
+  public static void Write(string name, byte[] value) {
+    if (!SetFirmwareEnvironmentVariableEx(name, Global, value, (uint)value.Length, 7)) throw new IOException("the firmware refused " + name + ": " + Marshal.GetLastWin32Error());
+  }
+
+  public static void Remove(string name) {
+    SetFirmwareEnvironmentVariableEx(name, Global, null, 0, 7);
+  }
+
+  public static bool Same(byte[] one, byte[] other) {
+    if (one == null || other == null || one.Length != other.Length) return false;
+    for (int i = 0; i < one.Length; i++) if (one[i] != other[i]) return false;
+    return true;
+  }
+}
+'@;
+[AloFirmwareEntry]::SwitchOnThePrivilege();
+$firstSector = [uint64]([uint64]$area.Offset / $sector);
+$sectors = [uint64]([uint64]$area.Size / $sector);
+$slot = [AloFirmwareEntry]::GptSlot(@DISK@, [Guid]$area.Guid, $firstSector, $sector);
+$option = [AloFirmwareEntry]::LoadOption('@NAME@', $slot, $firstSector, $sectors, [Guid]$area.Guid, '@LOADER@');
+$name = [AloFirmwareEntry]::FreeBootName();
+[AloFirmwareEntry]::Write($name, $option);
+try {
+  if (-not [AloFirmwareEntry]::Same([AloFirmwareEntry]::Read($name), $option)) { throw 'the entry read back is not the entry written' };
+  $null = & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware;
+  $listed = @(Get-ChildItem -LiteralPath 'HKLM:\BCD00000000\Objects' | Where-Object {
+    $described = Get-ItemProperty -LiteralPath (Join-Path $_.PSPath 'Elements\12000004') -Name Element -ErrorAction SilentlyContinue;
+    $typed = Get-ItemProperty -LiteralPath (Join-Path $_.PSPath 'Description') -Name Type -ErrorAction SilentlyContinue;
+    $described -and $typed -and $described.Element -ceq '@NAME@' -and $typed.Type -eq 0x101fffff });
+  if ($listed.Count -ne 1) { throw ('Windows lists the entry ' + $listed.Count + ' times') };
+  ConvertTo-Json -Compress -InputObject ([ordered]@{ Identifier = [string]$listed[0].PSChildName; Option = $name; Slot = $slot })
+} catch {
+  [AloFirmwareEntry]::Remove($name);
+  throw
+}"#;
 
 /// The lines that stop a script unless the partition it names is still the
 /// one this installer made, where it made it.
@@ -480,13 +646,10 @@ mod tests {
                 partition,
                 offset: 2,
             },
-            Program::AddingTheEntry,
-            Program::PointingTheEntryAtTheArea {
-                entry: entry.clone(),
-                letter,
-            },
-            Program::PointingTheEntryAtTheLoader {
-                entry: entry.clone(),
+            Program::WritingTheEntry {
+                disk,
+                partition,
+                offset: 2,
             },
             Program::ListingTheEntry {
                 entry: entry.clone(),
@@ -597,6 +760,61 @@ mod tests {
                 .unwrap();
             assert!(check < acting, "{program:?}");
         }
+    }
+
+    /// **The entry is written, never copied from Windows' boot manager.**
+    ///
+    /// A copy of `{bootmgr}` carries 136 bytes of Windows' optional data that
+    /// shim misreads (measured, `docs/quirks.md`), and `bcdedit` has no way to
+    /// make an entry without it; so no program copies `{bootmgr}`, and the one
+    /// that writes the entry checks the area before it writes, writes a load
+    /// option that ends at its device path, reads it back, and removes what it
+    /// wrote when anything after the write fails.
+    #[test]
+    fn the_entry_is_written_without_windows_optional_data() {
+        for program in EVERY_READ.into_iter().chain(every_change()) {
+            let everything = format!(
+                "{:?} {}",
+                program.arguments(),
+                program.script().unwrap_or_default()
+            );
+            assert!(!everything.contains("/copy"), "{program:?}");
+        }
+        let script = Program::WritingTheEntry {
+            disk: DiskNumber(0),
+            partition: PartitionNumber(5),
+            offset: 66_872_934_400,
+        }
+        .script()
+        .unwrap();
+        let checked = script.find("-ne 66872934400").unwrap();
+        let written = script
+            .find("[AloFirmwareEntry]::Write($name, $option)")
+            .unwrap();
+        assert!(checked < written);
+        // The load option is attributes, length, description and the path
+        // list, and nothing after it: no optional data.
+        let option = script.find("public static byte[] LoadOption").unwrap();
+        let ends = script[option..].find("return option.ToArray();").unwrap();
+        let body = &script[option..option + ends];
+        assert_eq!(body.matches("o.Write(").count(), 4, "{body}");
+        assert!(body.contains("o.Write(list);\n    o.Flush();"), "{body}");
+        // The slot comes from the partition table, matched by GUID and place.
+        assert!(script.contains("GptSlot(0, [Guid]$area.Guid, $firstSector, $sector)"));
+        assert!(script.contains(&format!("'{THE_LOADER}'")));
+        // What it wrote is read back, and removed when anything after fails.
+        assert!(script.contains("::Same([AloFirmwareEntry]::Read($name), $option)"));
+        let caught = script.rfind("} catch {").unwrap();
+        assert!(script[caught..].contains("[AloFirmwareEntry]::Remove($name)"));
+        // Handed over whole: an encoded command has to fit a command line.
+        let arguments = Program::WritingTheEntry {
+            disk: DiskNumber(0),
+            partition: PartitionNumber(5),
+            offset: 66_872_934_400,
+        }
+        .arguments();
+        let line: usize = arguments.iter().map(|word| word.len() + 1).sum();
+        assert!(line < 32_000, "{line}");
     }
 
     /// The tools are Windows' own, at whole paths beneath the system directory.

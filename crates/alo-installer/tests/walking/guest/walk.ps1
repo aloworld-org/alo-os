@@ -119,6 +119,69 @@ function Mountvol([string[]]$words) {
 function MountTheStartPartition() { Mountvol @('S:', '/S') }
 function UnmountTheStartPartition() { Mountvol @('S:', '/D') }
 
+# ---------------------------------------------------------------------------
+# The firmware's own start-up entries, read from its variables
+# ---------------------------------------------------------------------------
+#
+# `bcdedit` reports Windows' copy of the list; the firmware starts what its own
+# `Boot####` variables hold. So every state this walk prints includes those,
+# each with its device path and the length of its optional data — which is
+# what a copy of Windows' boot manager entry got wrong (docs/quirks.md).
+Add-Type -TypeDefinition @'
+using System; using System.Runtime.InteropServices;
+public static class AloWalkFirmware {
+  [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+  public static extern uint GetFirmwareEnvironmentVariableEx(string name, string guid, byte[] buffer, uint size, ref uint attributes);
+  [StructLayout(LayoutKind.Sequential)] struct Luid { public uint Low; public int High; }
+  [StructLayout(LayoutKind.Sequential)] struct Privilege { public uint Count; public Luid Id; public uint Attributes; }
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+  [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool LookupPrivilegeValue(string system, string name, out Luid id);
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref Privilege state, uint length, IntPtr previous, IntPtr returned);
+  [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
+  // Reading a firmware variable needs the privilege switched on too: without
+  // it every read returns nothing (measured 2026-09-22).
+  public static int SwitchOn() {
+    IntPtr token; Luid id;
+    if (!OpenProcessToken(GetCurrentProcess(), 0x28, out token)) return Marshal.GetLastWin32Error();
+    if (!LookupPrivilegeValue(null, "SeSystemEnvironmentPrivilege", out id)) return Marshal.GetLastWin32Error();
+    Privilege state = new Privilege { Count = 1, Id = id, Attributes = 2 };
+    AdjustTokenPrivileges(token, false, ref state, 0, IntPtr.Zero, IntPtr.Zero);
+    return Marshal.GetLastWin32Error();
+  }
+}
+'@
+Say "firmware privilege: $([AloWalkFirmware]::SwitchOn())"
+function BootOptions() {
+  $found = @()
+  for ($n = 0; $n -lt 0x100; $n++) {
+    $name = 'Boot{0:X4}' -f $n
+    $buffer = New-Object byte[] 4096
+    $attributes = [uint32]0
+    $size = [AloWalkFirmware]::GetFirmwareEnvironmentVariableEx($name, '{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}', $buffer, 4096, [ref]$attributes)
+    if ($size -eq 0) { continue }
+    $length = [BitConverter]::ToUInt16($buffer, 4)
+    $end = 6; while (-not ($buffer[$end] -eq 0 -and $buffer[$end + 1] -eq 0)) { $end += 2 }
+    $description = [Text.Encoding]::Unicode.GetString($buffer, 6, $end - 6)
+    $at = $end + 2
+    $slot = $null; $start = $null; $file = ''
+    if ($buffer[$at] -eq 4 -and $buffer[$at + 1] -eq 1) {
+      $slot = [BitConverter]::ToUInt32($buffer, $at + 4)
+      $start = [BitConverter]::ToUInt64($buffer, $at + 8)
+      $next = $at + [BitConverter]::ToUInt16($buffer, $at + 2)
+      if ($buffer[$next] -eq 4 -and $buffer[$next + 1] -eq 4) {
+        $file = [Text.Encoding]::Unicode.GetString($buffer, $next + 4, [BitConverter]::ToUInt16($buffer, $next + 2) - 4).TrimEnd([char]0)
+      }
+    }
+    $optional = [Math]::Max(0, [int]$size - ($at + $length))
+    $found += [pscustomobject]@{ Name = $name; Description = $description; Slot = $slot; Start = $start; File = $file; Optional = $optional }
+  }
+  return $found
+}
+function TheAloOption() {
+  $mine = @(BootOptions | Where-Object { $_.Description -eq 'alo OS' })
+  if ($mine.Count -eq 1) { return $mine[0] } else { return $null }
+}
+
 function TheState([string]$why) {
   Say "--- state ($why) ---"
   Get-Disk | Sort-Object Number | ForEach-Object {
@@ -133,6 +196,8 @@ function TheState([string]$why) {
   }
   Say "--- bcdedit /enum firmware ---"
   & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | ForEach-Object { Say $_ }
+  Say "--- the firmware's own entries ---"
+  BootOptions | ForEach-Object { Say ("bootoption {0}: [{1}] slot={2} start={3} file=[{4}] optional-data={5} bytes" -f $_.Name, $_.Description, $_.Slot, $_.Start, $_.File, $_.Optional) }
   Say "--- end state ---"
 }
 
@@ -168,46 +233,6 @@ function TheArea() {
     Where-Object { $script:BaseOffsets -notcontains [uint64]$_.Offset })
   if ($new.Count -eq 0) { return $null }
   return $new[0]
-}
-
-function StepIsDone([int]$which) {
-  try {
-    switch ($which) {
-      1 { return (Get-Partition -DriveLetter C).Size -lt $script:BaseWindowsSize }
-      2 {
-        $windows = Get-Partition -DriveLetter C
-        return @(Get-Partition -DiskNumber $windows.DiskNumber).Count -gt $script:BasePartitions
-      }
-      3 {
-        $area = TheArea
-        if ($null -eq $area -or -not $area.DriveLetter) { return $false }
-        $volume = Get-Volume -Partition $area -ErrorAction SilentlyContinue
-        return ($null -ne $volume -and $volume.FileSystem -like 'FAT*')
-      }
-      4 {
-        $area = TheArea
-        if ($null -eq $area -or -not $area.DriveLetter) { return $false }
-        # chosen.cfg is the last file the copy writes and reads back.
-        return (Test-Path ("{0}:\EFI\BOOT\chosen.cfg" -f $area.DriveLetter))
-      }
-      5 {
-        $enum = & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | Out-String
-        if ($enum -notmatch 'alo OS') { return $false }
-        return ($enum -match '(?s)alo OS.*?\\EFI\\BOOT\\BOOTX64\.EFI') -or
-               ($enum -match '(?s)\\EFI\\BOOT\\BOOTX64\.EFI.*?alo OS')
-      }
-      6 {
-        $area = TheArea
-        if ($null -eq $area) { return $false }
-        return -not $area.DriveLetter
-      }
-      7 {
-        $enum = & "$env:SystemRoot\System32\bcdedit.exe" /enum '{fwbootmgr}' 2>&1 | Out-String
-        return ($enum -match 'bootsequence')
-      }
-    }
-  } catch { return $false }
-  return $false
 }
 
 # ---------------------------------------------------------------------------
@@ -304,6 +329,25 @@ if ($mode -eq 'refuse') {
   return
 }
 
+if ($mode -eq 'kill-at-consent') {
+  # The third control: the same installer, run the same way, left at the
+  # consent for as long as a kill run spends after it, and then killed —
+  # everything a kill run does to Windows except staging. What a kill leaves
+  # beyond this is staging's.
+  Say 'typing: [] (the kill control is killed at the consent)'
+  Start-Sleep -Seconds 60
+  $process.Kill()
+  Say 'killed at the consent'
+  Start-Sleep -Seconds 2
+  TheState 'after the kill at the consent'
+  $after = Manifest 'C:\alo\manifest-after.txt'
+  Say "manifest-after: digest=$($after.Digest) files=$($after.Count)"
+  if ($before.Digest -eq $after.Digest) { Say 'THE WINDOWS FILES ARE UNCHANGED' } else { Say 'THE WINDOWS FILES CHANGED' }
+  UnmountTheStartPartition
+  Say 'ALOWALK-DONE kill-at-consent'
+  return
+}
+
 if ($null -eq $offered) { Say 'FAIL: it asked, and never named a disk to type' }
 Say "typing: [$offered]"
 $process.StandardInput.WriteLine($offered)
@@ -325,23 +369,23 @@ if ($mode -eq 'whole-road') {
 # The kill, landed on the boundary and then checked
 # ---------------------------------------------------------------------------
 #
-# Measured on 2026-09-21: polling a step's effect with Get-Partition takes about
-# 300 ms a look, and the installer goes from step 4 to step 6 faster than that —
-# four bcdedit calls and one short PowerShell — so a kill *aimed* at step 4
-# landed after step 6. So the installer is **frozen** (NtSuspendProcess) the
-# moment the boundary is reached, its children are killed, and then it is; and
-# afterwards the state is read and the landing is said exactly, never assumed.
-#
 # Where each boundary is caught:
-#   1, 2, 3, 6  the step's own PowerShell child (the 1st, 2nd, 3rd and 4th after
-#               the consent): the installer is frozen while it waits on that
-#               child, the child finishes, and nothing after it can start.
-#   4           chosen.cfg — the last file the copy writes — through the letter
-#               step 3 gave the area, looked at every few milliseconds.
-#   5           the 4th PowerShell child appearing: all four bcdedit calls of
-#               step 5 are behind it, and it is killed before it can start.
-#   7           the next start set, read from bcdedit: the installer pauses for
-#               the person before it restarts, so there is time.
+#   1, 2, 3  the step's own PowerShell child (the 1st, 2nd and 3rd after the
+#            consent): the installer is frozen (NtSuspendProcess) while it waits
+#            on that child, the child finishes the step, and it is killed.
+#   4 to 7   **the first program of the next step is held before it runs.**
+#            Windows' Image File Execution Options start a stand-in in that
+#            program's place, so the installer is caught at the very moment it
+#            asks Windows to start it, and killed there:
+#              4  powershell.exe, once the 3rd child is seen: the 4th writes the entry
+#              5  powershell.exe, once the 4th child is seen: the 5th takes the letter
+#              6  bcdedit.exe,    once the 5th child is seen: bcdedit sets the next start
+#              7  shutdown.exe,   from the start: the restart
+#            Measured on 2026-09-21 that polling cannot do this for step 4: the
+#            installer gets from its last written file into the next program
+#            faster than any poll here can see and act, and four tries landed
+#            one or two steps late. Nothing in the installer knows about the
+#            hold, and it is let go before anything is read.
 
 Add-Type -Namespace AloWalk -Name Freeze -MemberDefinition @'
 [System.Runtime.InteropServices.DllImport("ntdll.dll")]
@@ -351,66 +395,68 @@ public static extern int NtSuspendProcess(System.IntPtr process);
 function Children() {
   @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($process.Id)" -ErrorAction SilentlyContinue)
 }
-function FreezeAndKill([bool]$killChildrenToo) {
-  # Terminated first and at once, and its children after: measured on
-  # 2026-09-21, freezing it and then listing its children took long enough for
-  # all four bcdedit calls of step 5 to finish, so the freeze had not held it.
-  $process.Kill()
-  if ($killChildrenToo) { Children | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } }
+
+$ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
+$held = 'C:\alo\held.txt'
+Remove-Item -LiteralPath $held -Force -ErrorAction SilentlyContinue
+Set-Content -LiteralPath 'C:\alo\held.cmd' -Encoding ASCII -Value "@echo off`r`necho %* > C:\alo\held.txt`r`nping -n 900 127.0.0.1 > nul`r`n"
+$script:Holding = $null
+$script:HoldingMadeTheKey = $false
+function Hold([string]$image) {
+  $key = Join-Path $ifeo $image
+  $script:HoldingMadeTheKey = -not (Test-Path -LiteralPath $key)
+  if ($script:HoldingMadeTheKey) { New-Item -Path $key -Force | Out-Null }
+  New-ItemProperty -LiteralPath $key -Name Debugger -Value "$env:SystemRoot\System32\cmd.exe /c C:\alo\held.cmd" -PropertyType String -Force | Out-Null
+  $script:Holding = $key
+  Say "holding the next start of $image"
+}
+function LetGo() {
+  if (-not $script:Holding) { return }
+  if ($script:HoldingMadeTheKey) { Remove-Item -LiteralPath $script:Holding -Recurse -Force -ErrorAction SilentlyContinue }
+  else { Remove-ItemProperty -LiteralPath $script:Holding -Name Debugger -ErrorAction SilentlyContinue }
+  Say "let go of $(Split-Path -Leaf $script:Holding)"
+  $script:Holding = $null
+}
+function EndTheStandIn() {
+  Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+    Where-Object { ($_.Name -eq 'cmd.exe' -and $_.CommandLine -like '*held.cmd*') -or $_.Name -eq 'PING.EXE' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 }
 
 $killed = $false
 $deadline = (Get-Date).AddSeconds(420)
 $seenShells = New-Object System.Collections.Generic.List[int]
-$areaLetter = $null
-while ((Get-Date) -lt $deadline -and -not $killed) {
-  if ($process.HasExited) { Say "the installer exited before step $step was reached"; break }
-  if ($step -eq 4 -and $null -ne $areaLetter) {
-    # Nothing but the file, as fast as it can be looked at: measured on
-    # 2026-09-21, a 200 ms process listing in this loop was long enough for
-    # the installer to get from chosen.cfg into `bcdedit /copy`.
-    $chosen = "{0}:\EFI\BOOT\chosen.cfg" -f $areaLetter
-    while (-not [System.IO.File]::Exists($chosen) -and -not $process.HasExited -and (Get-Date) -lt $deadline) { }
-    if ([System.IO.File]::Exists($chosen)) { FreezeAndKill $true; $killed = $true }
-    break
-  }
-  foreach ($child in Children) {
-    if ($child.Name -eq 'powershell.exe' -and -not $seenShells.Contains([int]$child.ProcessId)) {
+if ($step -eq 7) { Hold 'shutdown.exe' }
+try {
+  while ((Get-Date) -lt $deadline -and -not $killed) {
+    if ($script:Holding -and (Test-Path -LiteralPath $held)) {
+      $process.Kill()
+      $killed = $true
+      Say "held before it ran: $((Get-Content -LiteralPath $held -Raw).Trim())"
+      break
+    }
+    if ($process.HasExited) { Say "the installer exited before step $step was reached"; break }
+    foreach ($child in Children) {
+      if ($child.Name -ne 'powershell.exe' -or $seenShells.Contains([int]$child.ProcessId)) { continue }
       $seenShells.Add([int]$child.ProcessId)
       Say ("powershell child {0} started (pid {1})" -f $seenShells.Count, $child.ProcessId)
-      $want = @{ 1 = 1; 2 = 2; 3 = 3; 6 = 4 }
-      if ($want.ContainsKey($step) -and $seenShells.Count -eq $want[$step]) {
-        # Frozen while it waits on its own child; the child finishes the step.
+      if ($step -le 3 -and $seenShells.Count -eq $step) {
         $frozen = [AloWalk.Freeze]::NtSuspendProcess($process.Handle)
         Say ("installer frozen: status {0:X8}" -f $frozen)
         Wait-Process -Id $child.ProcessId -Timeout 120 -ErrorAction SilentlyContinue
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
         $killed = $true
-      } elseif ($step -eq 5 -and $seenShells.Count -eq 4) {
-        FreezeAndKill $true
-        $killed = $true
+        break
       }
-      if ($killed) { break }
+      if ($step -eq 4 -and $seenShells.Count -eq 3) { Hold 'powershell.exe' }
+      if ($step -eq 5 -and $seenShells.Count -eq 4) { Hold 'powershell.exe' }
+      if ($step -eq 6 -and $seenShells.Count -eq 5) { Hold 'bcdedit.exe' }
     }
+    Start-Sleep -Milliseconds 20
   }
-  if ($killed) { break }
-  if ($step -eq 4) {
-    if ($null -eq $areaLetter) {
-      $area = TheArea
-      if ($null -ne $area -and $area.DriveLetter) { $areaLetter = [string]$area.DriveLetter; Say "the area's letter: $areaLetter" }
-    } else {
-      $chosen = "{0}:\EFI\BOOT\chosen.cfg" -f $areaLetter
-      $until = (Get-Date).AddSeconds(2)
-      while ((Get-Date) -lt $until) {
-        if ([System.IO.File]::Exists($chosen)) { FreezeAndKill $true; $killed = $true; break }
-        Start-Sleep -Milliseconds 2
-      }
-      if ($killed) { break }
-      continue
-    }
-  }
-  if ($step -eq 7 -and (StepIsDone 7)) { FreezeAndKill $true; $killed = $true; break }
-  Start-Sleep -Milliseconds 50
+} finally {
+  LetGo
+  EndTheStandIn
 }
 if ($killed) {
   Say ("killed at step {0}, {1:N2} s after it started" -f $step, ((Get-Date) - $began).TotalSeconds)
@@ -430,14 +476,16 @@ if ($err) { $err -split "`r?`n" | ForEach-Object { if ($_) { Say "installer-stde
 
 TheState "after the kill at step $step"
 
-# Where the kill landed, read from Windows' own tools — each step's effect
-# present, and the next step's absent.
+# Where the kill landed, read from Windows' own tools and the firmware's own
+# variables — each step's effect present, and the next step's absent.
 $area = TheArea
 $fw = & "$env:SystemRoot\System32\bcdedit.exe" /enum '{fwbootmgr}' 2>&1 | Out-String
 $all = & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | Out-String
 $entry = $null
-if ($all -match '(?s)identifier\s+(\{[0-9a-f-]+\})\s+device[^\r\n]*\r?\n\s*path\s+\\EFI\\BOOT\\BOOTX64\.EFI\s+description\s+alo OS') { $entry = $Matches[1] }
-$hasAnyAloEntry = $all -match 'description\s+alo OS'
+foreach ($block in ($all -split '(?:\r?\n){2,}')) {
+  if ($block -match '(?m)^description\s+alo OS\s*$' -and $block -match '(?m)^identifier\s+(\{[0-9a-fA-F-]{36}\})') { $entry = $Matches[1] }
+}
+$option = TheAloOption
 $volume = if ($null -ne $area) { Get-Volume -Partition $area -ErrorAction SilentlyContinue } else { $null }
 $facts = [ordered]@{
   'windows smaller'   = ((Get-Partition -DriveLetter C).Size -lt $script:BaseWindowsSize)
@@ -445,8 +493,9 @@ $facts = [ordered]@{
   'area formatted'    = ($null -ne $volume -and $volume.FileSystem -like 'FAT*' -and $volume.FileSystemLabel -eq 'ALO-INSTALL')
   'area has a letter' = ($null -ne $area -and [bool]$area.DriveLetter)
   'choice written'    = ($null -ne $area -and [bool]$area.DriveLetter -and (Test-Path ("{0}:\EFI\BOOT\chosen.cfg" -f $area.DriveLetter)))
-  'any alo OS entry'  = [bool]$hasAnyAloEntry
-  'entry complete and listed' = ($null -ne $entry -and $fw -match [regex]::Escape($entry))
+  'any alo OS entry'  = ($null -ne $entry -or $null -ne $option)
+  'entry listed'      = ($null -ne $entry -and $fw -match [regex]::Escape($entry))
+  'entry points at the area with no optional data' = ($null -ne $option -and $null -ne $area -and $option.Start -eq [uint64]($area.Offset / 512) -and $option.File -eq '\EFI\BOOT\BOOTX64.EFI' -and $option.Optional -eq 0)
   'next start set'    = ($fw -match 'bootsequence')
 }
 $facts.GetEnumerator() | ForEach-Object { Say ("fact: {0} = {1}" -f $_.Key, $_.Value) }
@@ -456,9 +505,9 @@ $landed = switch ($step) {
   2 { $f['area made'] -and -not $f['area formatted'] }
   3 { $f['area formatted'] -and $f['area has a letter'] -and -not $f['choice written'] }
   4 { $f['choice written'] -and -not $f['any alo OS entry'] }
-  5 { $f['entry complete and listed'] -and $f['area has a letter'] -and -not $f['next start set'] }
-  6 { $f['entry complete and listed'] -and -not $f['area has a letter'] -and -not $f['next start set'] }
-  7 { $f['next start set'] }
+  5 { $f['entry listed'] -and $f['entry points at the area with no optional data'] -and $f['area has a letter'] -and -not $f['next start set'] }
+  6 { $f['entry listed'] -and $f['entry points at the area with no optional data'] -and -not $f['area has a letter'] -and -not $f['next start set'] }
+  7 { $f['next start set'] -and $f['entry points at the area with no optional data'] }
 }
 if ($landed) { Say "LANDED EXACTLY after step $step" } else { Say "DID NOT LAND after step $step exactly: see the facts above" }
 
@@ -490,115 +539,10 @@ if ($before.Digest -eq $after.Digest) {
 }
 UnmountTheStartPartition
 
-# ---------------------------------------------------------------------------
-# The probe: which way of making an entry does the firmware store rightly?
-# ---------------------------------------------------------------------------
-#
-# Measured on 2026-09-21: the entry program.rs makes — `bcdedit /copy
-# {bootmgr}`, then `device partition=<area>`, then `path` — reaches the
-# firmware's Boot#### variable with the path and **without the device**: the
-# firmware starts \EFI\BOOT\BOOTX64.EFI from Windows' own EFI system partition.
-# Each variant below makes one entry; the host then reads the firmware's
-# variable store and says what each one holds.
-if ($instruction['probe'] -eq 'entries') {
-  $area = TheArea
-  $letter = [string]$area.DriveLetter
-  Say "probe: the area is partition $($area.PartitionNumber) offset=$($area.Offset) size=$($area.Size) guid=$($area.Guid) letter=[$letter]"
-  $bcd = "$env:SystemRoot\System32\bcdedit.exe"
-  function NewEntry([string]$called) {
-    $made = & $bcd /copy '{bootmgr}' /d $called 2>&1 | Out-String
-    if ($made -match '(\{[0-9a-f-]+\})') { return $Matches[1] } else { Say "probe ${called}: /copy said $made"; return $null }
-  }
-  function Run([string[]]$words) { $out = & $bcd @words 2>&1 | Out-String; Say ("probe: bcdedit {0} -> {1}" -f ($words -join ' '), $out.Trim()) }
-  $a = NewEntry 'probe-A device then path'
-  if ($a) { Run @('/set', $a, 'device', "partition=$($letter):"); Run @('/set', $a, 'path', '\EFI\BOOT\BOOTX64.EFI') }
-  $b = NewEntry 'probe-B path then device'
-  if ($b) { Run @('/set', $b, 'path', '\EFI\BOOT\BOOTX64.EFI'); Run @('/set', $b, 'device', "partition=$($letter):") }
-  $c = NewEntry 'probe-C device path device'
-  if ($c) { Run @('/set', $c, 'device', "partition=$($letter):"); Run @('/set', $c, 'path', '\EFI\BOOT\BOOTX64.EFI'); Run @('/set', $c, 'device', "partition=$($letter):") }
-  $volume = (Get-Volume -Partition $area).Path
-  $d = NewEntry 'probe-D device by volume'
-  if ($d) { Run @('/set', $d, 'device', "partition=$($volume.TrimEnd('\'))"); Run @('/set', $d, 'path', '\EFI\BOOT\BOOTX64.EFI') }
-  foreach ($e in @($a, $b, $c, $d)) { if ($e) { Run @('/set', '{fwbootmgr}', 'displayorder', $e, '/addlast') } }
-
-  # E: the load option written directly, the way the UEFI specification lays
-  # it out, through SetFirmwareEnvironmentVariableEx.
-  try {
-    Add-Type -TypeDefinition @'
-using System; using System.Runtime.InteropServices;
-public static class AloFirmware {
-  [StructLayout(LayoutKind.Sequential)] struct Luid { public uint Low; public int High; }
-  [StructLayout(LayoutKind.Sequential)] struct Privilege { public uint Count; public Luid Id; public uint Attributes; }
-  [DllImport("advapi32.dll", SetLastError=true)] static extern bool OpenProcessToken(IntPtr p, uint access, out IntPtr token);
-  [DllImport("advapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)] static extern bool LookupPrivilegeValue(string s, string name, out Luid id);
-  [DllImport("advapi32.dll", SetLastError=true)] static extern bool AdjustTokenPrivileges(IntPtr t, bool none, ref Privilege p, uint len, IntPtr prev, IntPtr ret);
-  [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
-  [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode)] public static extern bool SetFirmwareEnvironmentVariableEx(string name, string guid, byte[] value, uint size, uint attributes);
-  public static string Enable() {
-    IntPtr token; if (!OpenProcessToken(GetCurrentProcess(), 0x28, out token)) return "OpenProcessToken " + Marshal.GetLastWin32Error();
-    Luid id; if (!LookupPrivilegeValue(null, "SeSystemEnvironmentPrivilege", out id)) return "Lookup " + Marshal.GetLastWin32Error();
-    Privilege p = new Privilege { Count = 1, Id = id, Attributes = 2 };
-    if (!AdjustTokenPrivileges(token, false, ref p, 0, IntPtr.Zero, IntPtr.Zero)) return "Adjust " + Marshal.GetLastWin32Error();
-    return "enabled " + Marshal.GetLastWin32Error();
-  }
-}
-'@
-    Say "probe E: privilege $([AloFirmware]::Enable())"
-    $sig = ([Guid]$area.Guid).ToByteArray()
-    $hd = New-Object byte[] 42
-    $hd[0] = 4; $hd[1] = 1; $hd[2] = 42; $hd[3] = 0
-    [BitConverter]::GetBytes([uint32]$area.PartitionNumber).CopyTo($hd, 4)
-    [BitConverter]::GetBytes([uint64]($area.Offset / 512)).CopyTo($hd, 8)
-    [BitConverter]::GetBytes([uint64]($area.Size / 512)).CopyTo($hd, 16)
-    $sig.CopyTo($hd, 24)
-    $hd[40] = 2; $hd[41] = 2
-    $file = [Text.Encoding]::Unicode.GetBytes("\EFI\BOOT\BOOTX64.EFI`0")
-    $fp = New-Object byte[] (4 + $file.Length)
-    $fp[0] = 4; $fp[1] = 4
-    [BitConverter]::GetBytes([uint16]$fp.Length).CopyTo($fp, 2)
-    $file.CopyTo($fp, 4)
-    $end = [byte[]](0x7f, 0xff, 4, 0)
-    [byte[]]$list = $hd + $fp + $end
-    $desc = [Text.Encoding]::Unicode.GetBytes("probe-E written directly`0")
-    [byte[]]$option = [BitConverter]::GetBytes([uint32]1) + [BitConverter]::GetBytes([uint16]$list.Length) + $desc + $list
-    Say ("probe E: load option {0} bytes: {1}" -f $option.Length, [BitConverter]::ToString($option))
-    $ok = [AloFirmware]::SetFirmwareEnvironmentVariableEx('Boot00A0', '{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}', $option, [uint32]$option.Length, 7)
-    Say "probe E: Boot00A0 written: $ok error=$([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
-  } catch { Say "probe E failed: $($_.Exception.Message)" }
-
-  & $bcd /enum firmware 2>&1 | ForEach-Object { Say "probe-enum: $_" }
-  function DumpBootVars([string]$when) {
-    for ($n = 0; $n -lt 0xB0; $n++) {
-      $name = 'Boot{0:X4}' -f $n
-      $buffer = New-Object byte[] 4096
-      $size = [AloFirmwareRead]::GetFirmwareEnvironmentVariableEx($name, '{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}', $buffer, 4096, [ref]0)
-      if ($size -eq 0) { continue }
-      $length = [BitConverter]::ToUInt16($buffer, 4)
-      $end = 6; while (-not ($buffer[$end] -eq 0 -and $buffer[$end + 1] -eq 0)) { $end += 2 }
-      $description = [Text.Encoding]::Unicode.GetString($buffer, 6, $end - 6)
-      $pathAt = $end + 2
-      $node = "type=$($buffer[$pathAt]) sub=$($buffer[$pathAt + 1])"
-      if ($buffer[$pathAt] -eq 4 -and $buffer[$pathAt + 1] -eq 1) { $node += " partition=$([BitConverter]::ToUInt32($buffer, $pathAt + 4)) start=$([BitConverter]::ToUInt64($buffer, $pathAt + 8))" }
-      $optionalAt = $pathAt + $length
-      $optional = if ($size -gt $optionalAt) { [Text.Encoding]::ASCII.GetString($buffer, $optionalAt, [Math]::Min(16, $size - $optionalAt)) -replace '[^ -~]', '.' } else { '' }
-      Say ("bootvar ($when) {0}: [{1}] {2} optional-data={3} bytes [{4}]" -f $name, $description, $node, ($size - $optionalAt), $optional)
-    }
-  }
-  try {
-    Add-Type -TypeDefinition @'
-using System; using System.Runtime.InteropServices;
-public static class AloFirmwareRead {
-  [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
-  public static extern uint GetFirmwareEnvironmentVariableEx(string name, string guid, byte[] buffer, uint size, ref uint attributes);
-}
-'@
-    DumpBootVars 'right after they were made'
-    Start-Sleep -Seconds 60
-    DumpBootVars 'a minute later'
-  } catch { Say "probe: reading the firmware's variables failed: $($_.Exception.Message)" }
-  # The letter goes back the way the installer takes it, so the disk is as a
-  # kill after step 6 would leave it apart from the probes.
-  Remove-PartitionAccessPath -DiskNumber $area.DiskNumber -PartitionNumber $area.PartitionNumber -AccessPath "$($letter):\" -ErrorAction SilentlyContinue
-  Say 'probe: done'
+# A probe, only when the instruction names one: exploration that is never part
+# of the walk itself. The probe's file travels on the walk disc beside this one.
+if ($instruction['probe']) {
+  $probeFile = "$Medium\alo-walk\probe-$($instruction['probe']).ps1"
+  if (Test-Path $probeFile) { . $probeFile } else { Say "probe: there is no $probeFile" }
 }
 Say "ALOWALK-DONE kill-at-step $step"

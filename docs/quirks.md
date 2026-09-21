@@ -6126,17 +6126,44 @@ next: the installer's entry printed
 back to default loader`, and went on to its default, `grubx64.efi` beside it.
 The same load option written directly with no optional data (a probe entry,
 `SetFirmwareEnvironmentVariableEx`) carries none.
-**Our response:** it works through shim's own fallback, which is the loader the
-environment means shim to start anyway — **measured**: on Fedora's
-`edk2-ovmf` 20250812-21 the same entry went on from the fallback to GRUB and
-Linux (`alo.installing.to=ata-QEMU_HARDDISK_ALOTARGET1` on its command line)
-and the environment found and checked the chosen disk; on Ubuntu's OVMF 2025.11
-the fallback page-faults, which is the firmware fault above and not this.
-`crate::program` says so beside `AddingTheEntry`. `bcdedit` has no way to make a firmware entry without the
-optional data, and writing the variable directly is a change of how the
-installer makes its entry — a decision, not a quirk's fix — so it is written
-up in the task's report rather than made here.
-**Date:** 2026-09-21.
+**`bcdedit` cannot make an entry without it**, measured 2026-09-22 by reading
+each variable back: a `{bootmgr}` copy with every boot-manager value deleted
+(`default`, `resumeobject`, `displayorder`, `toolsdisplayorder`, `timeout`,
+`inherit`, `locale`) still carries the 136 bytes; `bcdedit /create …
+/application firmware` is refused (*The application type switch specified is
+not valid*); and a copy of an existing firmware application accepts `device`
+and `path` and changes neither in the variable, which keeps the original's
+firmware-volume path.
+**Our response:** the installer no longer copies `{bootmgr}`.
+`crate::program`'s `WritingTheEntry` writes the load option itself through
+`SetFirmwareEnvironmentVariableEx` — attributes, length, description, the
+area's hard-drive node and `\EFI\BOOT\BOOTX64.EFI`, and nothing after — reads it
+back byte for byte, and hands `bcdedit` the identifier Windows lists it under
+(as a *Firmware Application*, `0x101fffff`) for ordering, the next start and
+removal. Its partition number is the GPT entry's slot, read from the disk's own
+partition table: Windows' partition number is not it (the area was Windows'
+partition 5 in slot 4), and a variable written with 5 was found rewritten by
+Windows to 4 twenty seconds later. **Measured with the new installer on
+2026-09-22**, the whole road run on each firmware and the variable read from
+the host after the machine stopped: `Boot0002 "alo OS"
+HD(4,GPT,<area>,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI optional-data=0
+bytes` (Windows' own entry beside it: 136). On the installer's own restart:
+- **Fedora's `edk2-ovmf` 20250812-21:** `starting Boot0002 "alo OS" from
+  HD(4,…)`, then no *Failed to open* and no *falling back* — shim started its
+  second stage directly (the firmware's own *shim is older than v16* fix-up
+  note, as before), Linux booted with
+  `alo.installing.to=ata-QEMU_HARDDISK_ALOTARGET1`, and the environment said
+  *Looking for the disk you chose: ata-QEMU_HARDDISK_ALOTARGET1*.
+- **Ubuntu's OVMF 2025.11:** `starting Boot0002 "alo OS" from HD(4,…)`, then no
+  *Failed to open* and no *falling back* — and the firmware page-faults
+  (`#PF`, `W:1 P:1`) before GRUB prints anything: the firmware's own strict
+  memory protection with a shim older than 16, measured by task 9 without any
+  entry at all, not this.
+
+A consequence: writing a firmware variable needs Windows PowerShell to compile
+a small type (`Add-Type`), which a machine locked to constrained language mode
+refuses; the step then fails and everything before it is put back.
+**Date:** 2026-09-21; rewritten 2026-09-22.
 
 ### The entry `bcdedit` makes points at the area — except once, after a shutdown with the next start pending
 **Version:** `bcdedit` of Windows 11 Enterprise Evaluation 25H2 under QEMU
@@ -6163,5 +6190,7 @@ also leaves the system partition.
 rewrote the device between the kill and the next start was not isolated. It
 fails safe — the computer starts Windows — but the install would not continue.
 A person who shuts the computer down instead of letting the installer restart
-it is the case it describes. The installer plan carries it as open work.
+it is the case it describes. The installer no longer makes its entry this way
+(the quirk above); whether the entry it now writes holds after the same kill
+and shutdown is what task 10's step 7 measures.
 **Date:** 2026-09-21.

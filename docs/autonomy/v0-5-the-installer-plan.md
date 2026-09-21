@@ -1036,3 +1036,64 @@ never pushes, signs or pins.
   the fix. No worker signs or pins a release (ADR 0036). A worker checks for 15 GB
   free before every run, and removes the run's disks and images when it ends, pass
   or fail.
+
+### 16. `bootc` stops at *Creating rootfs* when the installer's own restart reaches the environment
+
+**Status:** ready. **Depends on:** nothing — it is reproducible today.
+**Found by** task 10's walk, 2026-09-21, and not fixed there on purpose: the
+owner's laptop takes the same road, so it gets a task of its own.
+
+On the installer's own road — a Windows 11 in a QEMU/KVM machine, the installer
+run to the end, and the computer restarted by the installer — the firmware
+started the `alo OS` entry from the installer's area, shim fell back to GRUB,
+the environment's kernel booted with
+`alo.installing.to=ata-QEMU_HARDDISK_ALOTARGET1`, and the environment said, in
+order (the run's serial line, `/root/t10/logs/road-fedora-kept.log` lines
+779–804 on the development PC):
+
+```
+alo OS is being installed on this computer. Each step is written here as it happens
+Reading which disk you chose before the restart
+Looking for the disk you chose: ata-QEMU_HARDDISK_ALOTARGET1
+Checking that ata-QEMU_HARDDISK_ALOTARGET1 is safe to install onto
+Connecting to the internet
+Checking over the internet that this download is a genuine alo OS
+This is a genuine alo OS
+Installing alo OS onto ata-QEMU_HARDDISK_ALOTARGET1. Everything that was on that disk is being replaced. This takes a while, and this screen will say when it is done
+[    6.850278]  sdb: sdb1 sdb2 sdb3
+/usr/bin/bootc: error: Installing to disk: Creating rootfs: No such file or directory (os error 2)
+alo OS could not be installed onto ata-QEMU_HARDDISK_ALOTARGET1. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
+```
+
+So the image is found, verified, and the disk partitioned (`sdb1 sdb2 sdb3`),
+and `bootc install to-disk` then fails creating the root filesystem, 3–4 s
+after partitioning — **before** *Deploying container image*, which task 9's
+run reached.
+
+**What differs from task 15's run that finished**, none of it yet separated
+and each a candidate: the release (0.0.5 pinned now, 0.0.4 then); the
+filesystem (`--filesystem btrfs` since task 11; see `docs/quirks.md`, *`bootc
+install --filesystem btrfs` makes no subvolume of its own*); the disk (SATA
+`sdb` here, virtio there); the firmware (Fedora's `edk2-ovmf` 20250812-21 in
+both). **Not the road in**, measured on 2026-09-22: with the installer's entry
+written without Windows' optional data, shim started GRUB directly with no
+fallback, and `bootc` stopped at exactly the same line.
+
+**To reproduce:** on a machine with KVM and 25 GB free, check out `main`, then
+`cargo test -p alo-installer --test the_installer_walked_on_a_real_windows --
+--ignored --test-threads=1 a_windows_installs_itself_and_reaches_a_desktop_session
+the_whole_road_starts_the_environment_on_the_next_restart`, and read the serial
+line the second test prints. Faster, without Windows: task 9's
+`crates/alo-installing/tests/installed_in_a_virtual_machine.rs`
+`the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service`
+on today's pin, and — to separate the disk — the same test with its second disk
+given as SATA with a serial rather than virtio.
+
+- **Acceptance:** the cause is found by changing one of the candidates above at
+  a time and written into `docs/quirks.md` with the run's own output; the fix
+  lands with the test that shows it; and the installer's own road — task 10's
+  road test — then runs past *Creating rootfs* to *Deploying container image*
+  and on. Whether it then finishes and boots is task 12's.
+- **Constraint:** as task 12's. Secure Boot is never switched off to make a run
+  pass; no shim, loader or `bootc` is patched (ADR 0011); a worker checks for
+  15 GB free before every run and removes its disks when it ends.

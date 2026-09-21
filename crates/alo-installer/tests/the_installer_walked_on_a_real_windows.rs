@@ -27,15 +27,19 @@
 //!   `alo` *Active* on the console and `explorer.exe` running in that session,
 //!   printed on its serial line by a task that runs at sign-in — never the
 //!   machine merely still running.
-//! - **The installer was killed after a step**: on the step's own *effect*,
-//!   read from Windows' own tools every tenth of a second — not on a sentence
-//!   the installer printed.
+//! - **The installer was killed after a step**: for steps 1–3, frozen while the
+//!   step's own program finishes; for steps 4–7, caught as it asks Windows to
+//!   start the next step's first program, which Windows' Image File Execution
+//!   Options replace with a stand-in for that one run — nothing in the
+//!   installer knows. Then where it landed is read from Windows' own tools and
+//!   the firmware's variables, never assumed.
 //! - **The Windows partition's files are what they were**: every file of the
 //!   partition, and of the partition the firmware starts Windows from, hashed
 //!   from the host with the machine off ([`walking::reading`]), and held to
-//!   **two controls**, each started the same number of times: the same Windows
-//!   with the installer never run, and the same Windows with the installer run
-//!   the same way and refused at the consent. A running Windows rewrites some
+//!   **three controls**, each started the same number of times: the same
+//!   Windows with the installer never run; with the installer run the same way
+//!   and refused at the consent; and with it killed at the consent. A running
+//!   Windows rewrites some
 //!   of its own files on every start, and running any program through Windows'
 //!   own tools changes more of them (measured: the WMI repository, Defender's
 //!   scan history, the TPM's key cache) — so *identical to the installed image*
@@ -253,15 +257,44 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
     a_desktop_session(&refused_restarted.console);
     forget(&yard, "refused");
 
-    let control_once = base.changed_to(&refused.reading);
-    let control_twice = base.changed_to(&refused_restarted.reading);
+    // The third control: the installer run the same way and killed at the
+    // consent, after as long there as a kill run spends after it — everything
+    // a kill run does to Windows except staging. Measured on 2026-09-21 that
+    // the second is not enough: kills at steps 1, 5 and 7 left per-user shell
+    // caches and error reporting's temporary files that the refusal did not.
+    a_fresh_machine(&yard, "killed");
+    let chip = SecurityChip::fresh(&yard);
+    let killed_there = one_boot(&yard, "killed", &Told::KillAtTheConsent, &chip, &download);
+    assert!(
+        killed_there
+            .console
+            .contains("THE WINDOWS FILES ARE UNCHANGED")
+            && killed_there.reading.table == base.table,
+        "the installer killed at the consent changed something.\n{}",
+        killed_there.console.said()
+    );
+    let killed_restarted = one_boot(&yard, "killed", &Told::JustLook, &chip, &download);
+    a_desktop_session(&killed_restarted.console);
+    forget(&yard, "killed");
+
+    let control_once = base
+        .changed_to(&refused.reading)
+        .and(&base.changed_to(&killed_there.reading));
+    let control_twice = base
+        .changed_to(&refused_restarted.reading)
+        .and(&base.changed_to(&killed_restarted.reading));
     let noise = Noise::between(&first.reading, &second.reading)
         .and(&Noise::between(&first.reading, &refused.reading))
-        .and(&Noise::between(&second.reading, &refused_restarted.reading));
+        .and(&Noise::between(&second.reading, &refused_restarted.reading))
+        .and(&Noise::between(&refused.reading, &killed_there.reading))
+        .and(&Noise::between(
+            &refused_restarted.reading,
+            &killed_restarted.reading,
+        ));
     eprintln!(
-        "the installer run and refused changed {} paths once and {} twice; the \
-         controls disagree in {} directories; unread in the installed Windows, \
-         and so not compared: {:?}",
+        "the installer refused or killed at the consent changed {} paths once \
+         and {} twice; the controls disagree in {} directories; unread in the \
+         installed Windows, and so not compared: {:?}",
         control_once.windows.len() + control_once.start_partition.len(),
         control_twice.windows.len() + control_twice.start_partition.len(),
         noise.windows.len() + noise.start_partition.len(),
