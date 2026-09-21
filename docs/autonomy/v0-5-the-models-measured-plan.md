@@ -569,3 +569,87 @@ doing so would take a grade away from twelve entries rather than move it.
   under their own digest (ADR 0034, decision 3). Nothing is fetched that the
   catalogue does not already list, and an entry is not removed for what it
   earns.
+
+### 21. A hosted provider answers, and the person is told who and where
+
+**Status:** ready. **Depends on:** nothing — ADR 0008 is accepted and the roads
+exist. Asked for by the owner on 2026-09-21.
+
+**ADR 0008's third place, which has never been built.** That decision names
+three places inference can happen, and the repository has two of them: this
+machine, and a machine on this network. The third —
+
+> **A hosted API.** alo's EU service, the customer's own hosted endpoint, or a
+> third-party provider. The question leaves the building. The indicator fires,
+> and says **who** and **where**: a provider that will not say where it runs is
+> reported as unknown rather than assumed to be nearby.
+
+— is decided, scaffolded and unreachable. `alo-answering` already has
+`Elsewhere`, `Offer` and `RefusedThere`; `alo-proxy` has
+`Road::AskingAProvider`, *the one road on this list that an agent can cause*;
+`alo-egress` has *a provider* and *a provider somewhere* as destinations, with
+their words. **Nothing speaks to one.** `alo-driving` and `alo-answering` reach
+no provider today, which is why a machine that cannot answer locally simply
+cannot answer.
+
+- **Acceptance:** a person's machine can be given a hosted endpoint — alo's own
+  EU service, an endpoint the organisation runs, or a third party — and a
+  question they choose to send there is answered through it, with the answer
+  arriving by the same road as a local one so nothing downstream can tell which
+  kind it was except by asking; **the indicator says who answered and where they
+  run**, from what the provider itself states, and a provider that will not say
+  is shown as *unknown* rather than assumed to be nearby (ADR 0008); the road
+  out is `alo_proxy::the_way` for `Road::AskingAProvider`, so a company proxy
+  carries it like everything else; a provider that refuses, times out or answers
+  with nothing is `alo_answering::RefusedThere` in the person's words, never a
+  silent retry somewhere else; the endpoint and its credential are the
+  organisation's to set (ADR 0004, ADR 0016) and the credential never reaches an
+  agent (ADR 0049's shape); and one end-to-end test against a real HTTP service
+  the test starts, with the whole exchange in the report.
+- **Constraint:** **never a silent fallback**, which is ADR 0008's own rule and
+  the thing this task is most likely to break. A machine that cannot answer on
+  its own hardware says so; it does not quietly send the question somewhere
+  else. Where a question is answered is the person's choice and they always
+  know, which means a default that sends a first question to a provider without
+  having been chosen is out of scope of this task and of that decision. Nothing
+  here changes what `docs/features.md` promises about local inference: expected
+  inference egress over a working day is still **zero** on a machine nobody
+  pointed at a provider.
+
+### 22. The graphics card, when there is one, and the machine when there is not
+
+**Status:** ready. **Depends on:** nothing. Asked for by the owner on
+2026-09-21, who will be installing on a machine with no discrete graphics.
+
+**ADR 0007 settled the principle three weeks ago and nothing implements it.**
+*The CPU is the default; a GPU is acceleration* — *a GPU changes speed, not
+capability*. `alo-choosing` already carries `on_the_gpu_bytes`, and it is
+`None` at every site in the repository: nothing ever measures a card, so nothing
+can use one. A machine with a GPU today runs exactly as slowly as a machine
+without.
+
+The owner's laptop has no discrete graphics, so **this task's acceptance is
+written to pass on a machine with none** — the card's half is the part that
+waits for hardware, the way the chip's half of encryption does.
+
+- **Acceptance:** the machine says whether it has a graphics card the runtime
+  can use and how much memory it has, measured rather than assumed, and
+  `on_the_gpu_bytes` carries it; a machine with a usable card runs the pinned
+  model on it and a machine without runs the same model on the processor, with
+  **the same answers from both** — a GPU changes speed and not capability, so a
+  test asks one question of each road and holds the results to each other; which
+  road was taken is something a person can ask for and is said in the
+  vocabulary, never inferred from how long it took; a card the runtime cannot
+  use — the wrong vendor, no driver, too little memory for the pinned entry — is
+  **a machine that runs on its processor and says why**, not a failure and not a
+  silent slowdown; and the catalogue's `min_vram_gb`, which ADR 0007 says stopped
+  being the judge, does not come back as one — an entry this machine can hold on
+  its processor stays offerable whatever card is or is not there.
+- **Constraint:** the base is rented and the runtime is pinned (ADR 0011,
+  ADR 0006) — no driver of ours, no second runtime for the card, and nothing
+  here changes which entries the catalogue offers. **The card's half is not
+  ticked from a machine without one.** On a machine with no discrete graphics
+  the processor road is measured and the card road is `- [x] The code.` with the
+  machine that is still needed named, exactly as ADR 0056 does for the chip.
+  ADR 0007's rejected framing — the GPU workstation first, `min_vram_gb` as the
+  judge, *the GPU changes what is possible* — is not reintroduced here.
