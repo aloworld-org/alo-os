@@ -352,7 +352,18 @@ observations fill.
 - **Constraint:** nothing is ticked from this repository. A loop that
   reaches this task launches nothing and says so.
 
-### 7. Replace Windows — the road with no way back
+**The machine available has no discrete graphics, said 2026-09-21 by the owner
+before the install rather than discovered at it.** So *the GPU works on first
+boot* cannot be answered there, and it is not answered by a machine that has no
+card to fail on: the other three observations are taken, that one stays open
+with the machine still needed named beside it, and `ROADMAP.md`'s box for it
+does not move. **An observation nobody could have made is not a pass**, and a
+run that ticked it because nothing went wrong would be the same mistake as a
+build that checked an executable bit.
+
+Task 22 of `v0-5-the-models-measured-plan.md` is the code half of that line —
+written so that the processor road is measured on a machine with no card, and
+the card's road waits for hardware the way the chip's half of encryption does.
 
 **Status:** ready. **Depends on:** 4.
 
