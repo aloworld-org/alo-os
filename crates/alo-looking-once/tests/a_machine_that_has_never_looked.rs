@@ -20,11 +20,24 @@
 //! # The refusal paths are here beside the answers
 //!
 //! Every road out of [`alo_looking_once::AtAStart::look_once`] is exercised: a
-//! base that will not say what is running, a record that cannot be opened, a
-//! record that is not a record, a place that refuses each of its five ways, and
-//! an answer that cannot be kept. A check is the one thing on this machine that
-//! happens with nobody watching, and the roads where it fails are the ones
-//! nobody would otherwise see.
+//! machine whose base wrote down nothing about what is running, a record that
+//! cannot be opened, a record that is not a record, a place that refuses each
+//! of its five ways, and an answer that cannot be kept. A check is the one
+//! thing on this machine that happens with nobody watching, and the roads where
+//! it fails are the ones nobody would otherwise see.
+//!
+//! # What the check reads changed on 2026-09-21, and so did what stands in here
+//!
+//! Task 12 of the same plan: `bootc status` refuses an unprivileged caller on a
+//! real machine, so this unit — which runs as the person — reads what the base
+//! has **already written down** instead of asking it anything. The stand-in
+//! that was an `impl alo_updating::Base` is now [`a_machine_running`], a
+//! deployment and an origin file on a disk, laid out as one was measured on a
+//! real bootc machine.
+//!
+//! | Task 12's acceptance | The test |
+//! |---|---|
+//! | the check keeps an answer naming the build the origin file names, and a machine running the newest build says so rather than offering itself an update | [`a_machine_running_the_newest_build_is_not_offered_an_update`] |
 
 #![expect(
     clippy::unwrap_used,
@@ -37,13 +50,13 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use alo_image::{Service, Unit};
-use alo_keeping_up::Digest;
+use alo_keeping_up::{Digest, Running};
 use alo_looking::{Because, NoAnswer, Place, Release, SaidOnce, ThePlace};
 use alo_looking_once::{
     AtAStart, DidNotLook, THE_ANSWER, THE_PROGRAM, THE_RECORD, THE_UNIT, THE_UNITS_NAME,
 };
 use alo_record::{Asking, Only};
-use alo_updating::{Base, NotAnswered};
+use alo_updating::{BESIDE_IT, THE_KERNELS_WORDS, WrittenDown};
 
 /// Where this crate's own source is, for the tests that read it.
 const THE_SOURCE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/src");
@@ -102,38 +115,48 @@ fn what_the_record_says(at: &AtAStart) -> alo_record::Record {
         .clone()
 }
 
-/// A base that says this machine is running a build, or will not say at all.
-struct ABaseThatSays {
-    /// What it answers with, where it answers.
-    running: Option<Digest>,
+/// A machine that booted this build, laid out on a disk the way a real one is.
+///
+/// **Files rather than a stand-in for the base, since 2026-09-21.** This was an
+/// `impl alo_updating::Base` answering a status document until the real base was
+/// measured refusing the person
+/// (`docs/autonomy/updates/the-base-answers-only-root.md`), and what the check
+/// reads now is what the base has already written down: the words the kernel
+/// was started with, and the `.origin` file beside the deployment they name. A
+/// stand-in for a program nobody runs any more would agree with a machine that
+/// does not exist, so the layout here is the one measured on a real bootc
+/// machine, in a folder of this test's own.
+fn a_machine_running(named: &str, build: &Digest) -> WrittenDown {
+    let under = a_folder(&format!("{named}-machine"));
+    let deployed = under.join("ostree/deploy/default/deploy");
+    std::fs::create_dir_all(deployed.join(THE_DEPLOYMENT)).unwrap();
+    std::fs::create_dir_all(under.join("proc")).unwrap();
+    std::fs::write(
+        under.join(THE_KERNELS_WORDS),
+        format!("rw ostree=/ostree/deploy/default/deploy/{THE_DEPLOYMENT}\n"),
+    )
+    .unwrap();
+    std::fs::write(
+        deployed.join(format!("{THE_DEPLOYMENT}{BESIDE_IT}")),
+        format!(
+            "[origin]\ncontainer-image-reference=ostree-unverified-registry:\
+             ghcr.io/aloworld-org/alo-os@{}\n",
+            build.as_str()
+        ),
+    )
+    .unwrap();
+    WrittenDown::under(&under)
 }
 
-impl ABaseThatSays {
-    /// A base reporting this build as the one booted.
-    fn running(build: &Digest) -> Self {
-        Self {
-            running: Some(build.clone()),
-        }
-    }
-
-    /// A base that answers nothing at all — a machine that did not boot from an
-    /// image, or one where the base is not there.
-    fn nothing() -> Self {
-        Self { running: None }
-    }
+/// A machine that will not say what it is running: one that booted no
+/// deployment at all, which is every machine this test suite runs on.
+fn a_machine_that_will_not_say(named: &str) -> WrittenDown {
+    WrittenDown::under(&a_folder(&format!("{named}-machine")))
 }
 
-impl Base for ABaseThatSays {
-    fn asked(&self, _: &[String]) -> Result<Vec<u8>, NotAnswered> {
-        match &self.running {
-            Some(build) => Ok(a_status_naming(build).into_bytes()),
-            None => Err(NotAnswered::NotStarted {
-                program: "a base that is not there".to_owned(),
-                why: "there is no base on this machine".to_owned(),
-            }),
-        }
-    }
-}
+/// The deployment a real alo OS machine booted, as one was measured on
+/// 2026-09-21: the commit and the serial the base names its folder with.
+const THE_DEPLOYMENT: &str = "d781e71bac6e17667d63db181403d046fe02208d3a59fef118bd76c3a7c6ee02.0";
 
 /// A place that answers whatever a test needs it to.
 struct APlaceThatAnswers {
@@ -383,6 +406,53 @@ fn nothing_here_fetches_a_build_or_turns_checking_off() {
     );
 }
 
+/// **A machine running the newest build says so, rather than offering itself an
+/// update.**
+///
+/// Task 12's acceptance, and the thing task 11's machine got wrong: it read the
+/// build out of the base's `imageDigest`, which on a machine installed from a
+/// local container store is the **local** manifest digest rather than the
+/// registry's, so a machine running exactly what the place offered was told a
+/// newer version was available. What the check reads now is the build the
+/// origin file names, which is the reference the machine was installed from —
+/// so *about* and *offered* are the same value here and nothing is offered.
+///
+/// Measured on a real bootc machine as well, running the pinned release:
+/// `docs/autonomy/updates/what-the-base-has-already-written-down.md`.
+#[test]
+fn a_machine_running_the_newest_build_is_not_offered_an_update() {
+    let folder = a_folder("up-to-date");
+    let at = AtAStart::in_folder(&folder);
+    let place = the_place();
+    // The place offers exactly the build this machine's origin file names.
+    let asked = APlaceThatAnswers::offering(place.not_before().named_as(), &build("aa"));
+
+    let found = at
+        .look_once(
+            &a_machine_running("up-to-date", &build("aa")),
+            &place,
+            &asked,
+            &mut SaidOnce::new(),
+            a_moment(),
+        )
+        .unwrap();
+
+    assert!(
+        !found.is_ready(),
+        "a machine running the newest build was offered an update"
+    );
+    assert_eq!(found.about(), &build("aa"), "about the build it is running");
+
+    let kept = at.answer().read().unwrap().unwrap();
+    assert_eq!(kept.about(), &build("aa"));
+    assert_eq!(
+        kept.is_ready(&Running::reported(build("aa"))),
+        Ok(false),
+        "a surface reading the kept answer back would show an update"
+    );
+    drop(std::fs::remove_dir_all(&folder));
+}
+
 /// **The whole act: shown while it happens, written down afterwards, kept where
 /// a surface reads it back.**
 #[test]
@@ -394,7 +464,7 @@ fn the_check_is_shown_while_it_happens_and_written_down_afterwards() {
 
     let found = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("whole", &build("aa")),
             &place,
             &asked,
             &mut SaidOnce::new(),
@@ -449,7 +519,7 @@ fn a_refused_check_is_written_down_and_keeps_nothing() {
         let at = AtAStart::in_folder(&folder);
         let refused = at
             .look_once(
-                &ABaseThatSays::running(&build("aa")),
+                &a_machine_running("refused", &build("aa")),
                 &the_place(),
                 &APlaceThatAnswers::that_answers_with(refusal),
                 &mut SaidOnce::new(),
@@ -496,7 +566,7 @@ fn a_machine_with_no_way_out_says_so_once_and_keeps_nothing() {
 
     let first = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("no-way-out", &build("aa")),
             &place,
             &nowhere,
             &mut said,
@@ -511,7 +581,7 @@ fn a_machine_with_no_way_out_says_so_once_and_keeps_nothing() {
     // Asked again while the same memory is held, there is nothing left to word.
     let again = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("no-way-out-again", &build("aa")),
             &place,
             &nowhere,
             &mut said,
@@ -538,7 +608,7 @@ fn a_machine_whose_base_will_not_say_what_it_runs_asks_nothing() {
 
     let refused = at
         .look_once(
-            &ABaseThatSays::nothing(),
+            &a_machine_that_will_not_say("no-base"),
             &place,
             &asked,
             &mut SaidOnce::new(),
@@ -569,7 +639,7 @@ fn a_machine_that_cannot_open_its_record_asks_nothing() {
 
     let refused = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("no-record", &build("aa")),
             &place,
             &asked,
             &mut SaidOnce::new(),
@@ -597,7 +667,7 @@ fn a_file_that_is_not_a_record_is_refused_before_anything_is_asked() {
 
     let refused = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("not-a-record", &build("aa")),
             &place,
             &asked,
             &mut SaidOnce::new(),
@@ -628,7 +698,7 @@ fn an_answer_that_cannot_be_kept_is_its_own_refusal() {
 
     let refused = at
         .look_once(
-            &ABaseThatSays::running(&build("aa")),
+            &a_machine_running("unkeepable", &build("aa")),
             &place,
             &a_place_with_something_newer(&place),
             &mut SaidOnce::new(),
@@ -657,7 +727,7 @@ fn a_check_writes_two_files_and_changes_nothing_else() {
     let place = the_place();
 
     at.look_once(
-        &ABaseThatSays::running(&build("aa")),
+        &a_machine_running("two-files", &build("aa")),
         &place,
         &a_place_with_something_newer(&place),
         &mut SaidOnce::new(),
@@ -672,17 +742,4 @@ fn a_check_writes_two_files_and_changes_nothing_else() {
     left.sort();
     assert_eq!(left, ["an-update-was-found", "checking-for-updates.jsonl"]);
     drop(std::fs::remove_dir_all(&folder));
-}
-
-/// A base's status naming this build as the one booted.
-///
-/// The shape `alo_keeping_up::Deployments` reads, written here rather than
-/// taken from that crate's own fixtures: what this file is testing is the act
-/// around the base, and a status it writes itself is one fewer thing that has
-/// to be true for a refusal here to mean what it says.
-fn a_status_naming(build: &Digest) -> String {
-    format!(
-        "{{\"status\":{{\"booted\":{{\"image\":{{\"imageDigest\":\"{}\"}}}}}}}}",
-        build.as_str()
-    )
 }

@@ -702,6 +702,56 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### `bootc status` refuses an unprivileged caller, and `ostree admin status` will not name a container build
+**Version:** `bootc` 1.15.1 and `ostree` as shipped in the pinned base
+(Fedora Linux 42, kernel 6.19.14-101.fc42.x86_64), measured 2026-09-20 on one
+machine and again 2026-09-21 on two more — all three real bootc machines
+installed from `ghcr.io/aloworld-org/alo-os` by digest.
+**Behaviour:** `bootc status`, asked as uid 1000, exits 1 with nothing on stdout
+and `error: Status: Preparing for write: Querying root privilege: This command
+must be executed as the root user`. Every spelling does it — `--format json
+--format-version 1`, `--format yaml`, the human form, `--booted` — through
+`runuser`, through a login shell and under systemd with `User=`. The refusal is
+taken on the *write* path before anything is read, so no read-only form gets
+past it, and `bootc` is `0755 root root` with no file capabilities and not
+setuid, so there is nothing on the machine to widen. And the obvious second
+road is not one: `ostree admin status` does run as uid 1000 and does mark the
+booted deployment with `*`, but on a machine deployed from a container image it
+renders the origin as `origin: <unknown origin type>` — it names the deployment
+and never the build.
+**Our response:** the one act on an alo OS machine that must ask *which build is
+this machine running* and must **not** be root — the check at a start,
+`alo-looking-once`, running as the person under ADR 0018 and ADR 0001 §2 — reads
+what the base has **already written down** instead of asking it anything:
+`/proc/cmdline`'s `ostree=` word names the booted deployment through a symlink
+the base maintains, and the `.origin` file beside that deployment (`0644 root
+root`) names the image with its digest. `crates/alo-updating/src/booted.rs`,
+`src/origin.rs` and `src/written_down.rs`; **no program is run on that road.**
+Everything that *changes* the machine still goes through `bootc` with the
+arguments this repository decided, as root, which is ADR 0011 as amended on
+2026-09-21.
+
+### `bootc status`'s `imageDigest` is the local store's digest on a machine installed from one
+**Version:** `bootc` 1.15.1 in the pinned base, measured 2026-09-20 and
+2026-09-21.
+**Behaviour:** on a machine installed from an image sitting in the installing
+host's **local container store**, `status.booted.image.imageDigest` is the digest
+podman gave that local copy — `sha256:2e7ecd95…` — while the image reference, the
+spec and the deployment's origin file all carry the digest the **registry**
+publishes for the same image, `sha256:48bd5f31…`. Same image: identical config id
+`74a4aa15…` for both. On a machine installed from an image **pulled from the
+registry** the field agrees with the other three; measured twice, on 0.0.4 and on
+0.0.5. It is the same trap `image/pinned.toml` already warns about for signing,
+arriving by a second road.
+**Our response:** an offer is compared against what the registry publishes, so a
+machine that read `imageDigest` out of a local-store install was told *a newer
+version of this machine's system is available* about the build it was already
+running. Nothing of the base's was changed and nothing of `alo-keeping-up`'s was:
+the road that reaches a person reads the **origin file**, which carries the
+reference the machine was installed from. `alo_updating::WrittenDown`. What still
+reads `imageDigest` is `alo_updating::running`, whose callers are root and are
+about to change the machine, where the base's own view is the right one.
+
 ### `systemd-cryptenroll` — there is no way to hand it the secret it is enrolling, and `--password` waits forever
 **Version:** `systemd-cryptenroll` 257.13-1.fc42 in the pinned base
 (`quay.io/fedora/fedora-bootc`, local image `b035260f985f`), measured 2026-09-19.

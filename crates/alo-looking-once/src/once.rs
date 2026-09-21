@@ -8,10 +8,21 @@
 //!
 //! # In the order it happens, and the order is the argument
 //!
-//! 1. **What this machine is running**, asked of the base at the moment it is
-//!    wanted (`alo_updating::running`). A machine that will not say what it is
-//!    running has nothing to compare an offer against, so there is no question
-//!    to ask and nothing leaves.
+//! 1. **What this machine is running**, read at the moment it is wanted out of
+//!    what the base has already written down (`alo_updating::WrittenDown`). A
+//!    machine that will not say what it is running has nothing to compare an
+//!    offer against, so there is no question to ask and nothing leaves.
+//!
+//!    **Read rather than asked, because the base refuses to answer the
+//!    person.** Until 2026-09-21 this asked `bootc status`, and on a real bootc
+//!    machine that command answers uid 1000 with *This command must be executed
+//!    as the root user* — so this unit, which runs as the person and holds
+//!    nothing, failed at every boot and kept nothing
+//!    (`docs/autonomy/updates/the-base-answers-only-root.md`). The answer was
+//!    not to make this root, which is what this crate's own comments and
+//!    ADR 0018 spend their length refusing: the kernel's own command line names
+//!    the deployment that booted and the base's `.origin` file beside it names
+//!    the build, both world-readable, and no program is run to read either.
 //! 2. **The record is opened**, before anything is asked. A machine that cannot
 //!    write down what it is about to do does not do it.
 //! 3. **The check**, on the indicator for the whole of it, written into the
@@ -46,7 +57,7 @@ use std::time::SystemTime;
 use alo_egress::Indicator;
 use alo_keeping::Writing;
 use alo_looking::{Because, Found, Kept, Place, SaidOnce, Say, ThePlace, look};
-use alo_updating::Base;
+use alo_updating::WrittenDown;
 
 use crate::record::IntoTheRecord;
 use crate::refusing::DidNotLook;
@@ -123,13 +134,13 @@ impl AtAStart {
     /// exactly as it was.
     pub fn look_once(
         &self,
-        base: &impl Base,
+        machine: &WrittenDown,
         place: &Place,
         asking: &impl ThePlace,
         said: &mut SaidOnce,
         now: SystemTime,
     ) -> Result<Found, DidNotLook> {
-        let running = alo_updating::running(base).map_err(DidNotLook::TheBaseWouldNotSay)?;
+        let running = machine.running().map_err(DidNotLook::TheBaseWouldNotSay)?;
         let mut writing = Writing::opening(&self.record).map_err(DidNotLook::NoRecordToWriteIn)?;
 
         let mut indicator = Indicator::default();

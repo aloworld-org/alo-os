@@ -28,7 +28,7 @@ use std::time::SystemTime;
 
 use alo_looking::{Place, SaidOnce, TheRegistry};
 use alo_looking_once::{AtAStart, DidNotLook, the_road_out};
-use alo_updating::TheBase;
+use alo_updating::WrittenDown;
 
 /// What this program is called where somebody reads its lines.
 const WHAT_IT_IS_CALLED: &str = "alo-looking-once";
@@ -64,7 +64,7 @@ fn looked() -> Result<String, DidNotLook> {
     let mut said = SaidOnce::new();
 
     let found = at_a_start.look_once(
-        &TheBase::on_this_machine(),
+        &WrittenDown::on_this_machine(),
         &place,
         &asking,
         &mut said,

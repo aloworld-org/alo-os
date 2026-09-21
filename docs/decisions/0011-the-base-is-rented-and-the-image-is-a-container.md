@@ -1,7 +1,10 @@
 # ADR 0011 — The base is rented, and the image is a container
 
 **Status:** accepted — settles what `docs/features.md`'s "image built as an OCI
-container image" is actually built on, and answers *why not our own base*
+container image" is actually built on, and answers *why not our own base*.
+**Amended 2026-09-21**: *spoken to through its own command* is narrowed to the
+acts that change the machine, because the base refuses to tell the person which
+build they are running. See the amendment below.
 **Date:** 2026-09-03
 **Context:** `docs/features.md` (the system and the image), `ROADMAP.md` (v0.01's
 image line, v0.5's atomic updates), `docs/hardware.md`,
@@ -121,6 +124,66 @@ own base; it favours not choosing Ubuntu.**
 - `docs/hardware.md`'s two certified machines are unaffected: the base changes
   nothing about which hardware we stand behind.
 - Nothing here touches the kernel. *No kernel* remains a non-goal.
+
+## Amendment, 2026-09-21 — its own command, for every act that changes the machine
+
+**What this narrows.** *The base is rented and unmodified, and it is spoken to
+through its own command* held without exception until this date. It now holds
+without exception for every act that **changes** the machine — `upgrade`,
+`switch`, `rollback`, `install` — and is narrowed for exactly one question:
+*which build is this machine running*, which the base **refuses to answer to the
+person at all**.
+
+**The refusal that forced it**, measured as uid 1000 on a real bootc machine
+(`alo-lane-b-bootc`, the pinned image, `bootc` 1.15.1, 2026-09-20 —
+`docs/autonomy/updates/the-base-answers-only-root.md`):
+
+```text
+error: Status: Preparing for write: Querying root privilege: This command must be executed as the root user
+```
+
+Exit 1, nothing on stdout, for `--format json --format-version 1`, for
+`--format yaml`, for the human form and for `--booted` alike, whether asked
+through `runuser`, through a login shell or by systemd with `User=alo`. `bootc`
+is `0755 root root`, not setuid and with no file capabilities, so there is
+nothing on the machine to widen: the refusal is the program's own and is taken
+on the *write* path before it reads anything, which is why no read-only spelling
+of the question gets past it.
+
+**Why that is a problem here and not merely an inconvenience.** The one act on
+an alo OS machine that has to ask this question is the check at a start
+(`alo-looking-once`), and that act must **not** be root: ADR 0018's argument is
+that one privileged component is acceptable because of how little it is trusted
+with, and ADR 0001 §2 asks for a decision like this one before any new privilege
+is taken. As written, *updates that never interrupt* was a unit that failed at
+every boot on every real machine.
+
+**What the narrowing is.** For that one question, alo OS reads what the base has
+**already written down**, world-readable, on a stock machine:
+
+- the words the kernel was started with (`/proc/cmdline`) name the deployment
+  that booted, through the symlink the base maintains for it;
+- the `.origin` file beside that deployment (`0644 root root`) names the image it
+  was made from, with its digest.
+
+`crates/alo-updating/src/written_down.rs` is the whole of it: two files read, one
+path resolved, **no program run**. Nothing new is installed on the machine, no
+component becomes privileged and no grant is widened — ADR 0001 §2 does not fire,
+and this is an amendment rather than a decision of its own for that reason.
+
+**And it is the more truthful road, which was not the reason but is a
+consequence.** On the same machine `status.booted.image.imageDigest` was
+`sha256:2e7ecd95…` where the image reference, the spec and the origin file all
+said `sha256:48bd5f31…` — the local container store's digest against the
+registry's. Since an offer is compared against what the registry publishes, a
+machine running exactly the pinned build was told a newer version was available.
+The origin file carries the digest that matches.
+
+**What this does not permit.** Reading around the base's command to *change*
+anything, reading anything that is not world-readable, and running any program of
+the base's other than `bootc` with the arguments this repository decided. A
+second question that the base will not answer to the person is a second
+amendment here, with its own measurement — not a precedent already granted.
 
 ## The named trigger to revisit
 

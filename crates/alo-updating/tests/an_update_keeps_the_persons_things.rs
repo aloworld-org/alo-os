@@ -323,7 +323,12 @@ fn an_update_applied_in_a_virtual_machine_keeps_every_named_thing_byte_for_byte(
         "--via-loopback",
         "--wipe",
         "--filesystem",
-        "ext4",
+        // The filesystem a person's machine is really installed onto, taken
+        // from the one place that decides it rather than spelt here: what this
+        // test proves about an update keeping a person's things has to be
+        // proved about the machine alo OS ships, and until 2026-09-21 it was
+        // proved about `ext4`, which no alo OS machine has.
+        alo_image::THE_ONLY_FILESYSTEM,
         "--karg",
         "console=ttyS0,115200n8",
         "/output/disk.raw",

@@ -6,6 +6,15 @@
 //! [`running`] is the booted build out of that answer. A cached answer would
 //! be wrong for exactly the moments the question matters — after an update,
 //! after a rollback, on a machine somebody else changed.
+//!
+//! # This road is root's, and there is a second one that is not
+//!
+//! `bootc status` **refuses an unprivileged caller** — measured on a real bootc
+//! machine on 2026-09-20 — so everything here answers only a caller that is
+//! already root, which every caller that is about to *change* the machine
+//! already is. The one act that has to ask this and must not be root reads
+//! [`crate::written_down::WrittenDown`] instead, which is the same question
+//! answered out of files the base has already written.
 
 use alo_keeping_up::{Deployments, Running};
 
