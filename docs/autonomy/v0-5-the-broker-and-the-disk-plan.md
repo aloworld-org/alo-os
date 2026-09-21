@@ -387,18 +387,28 @@ property is:
 
 ### 8. Updates, through the broker, as ADR 0053 decides
 
-**Status:** blocked — on ADR 0053 being accepted by the owner, and on that alone
-as of 2026-09-19. The other two blockers are cleared, by the lanes that owed
+**Status:** ready. [ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+was **accepted by the owner on 2026-09-19, option B** — *an update is carried out
+by a unit the broker starts, never by the broker*. It is the only option that
+leaves the broker holding **no capability**, which is ADR 0001 §2 and not
+negotiable, and it puts the long networked part where systemd can bound it. All
+three blockers are now cleared, the other two by the lanes that owed
 them: `alo-egress` gained `Errand::FetchingAnUpdate`, and `alo-keeping-up` gained
 `Staging::approved(from, to, deployments, source)`, which decides `Staging::of`'s
 instruction element for element from an approved `{from, to}` and the base's
 status read now, refuses with `NotRunningABuild`, `TheMachineMovedOn`,
 `AlreadyWaiting` and the new `NotAnUpdate`, and can never carry `--apply`
 (machine-keeps-itself plan task 9, whose report is
-`updates/a-staging-decided-from-an-approval.md`). The decision file
-itself still reads *proposed, 2026-09-17*, so
-`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` still passes for
-the reason it was written; accepting it is the owner's. **Depends on:** 1, 4.
+`updates/a-staging-decided-from-an-approval.md`). **Depends on:** 1, 4.
+
+**The decision file still reads *proposed, 2026-09-17*, and that is deliberate
+until the work commit.** `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs`
+reads that line and fails the moment it stops saying so, so moving it now would
+leave the guard a lie for as long as the work took. This status line is the
+preparatory commit of the two that **task 6 sets out in full**: the plan alone, so
+the task becomes takeable while the guard still tells the truth; then one work
+commit that moves ADR 0053 to *accepted*, replaces that guard with the tests of
+what was built, and marks this task done — together.
 
 Task 4 carried storage out and found that the updates could not be carried out
 without a decision: the base's program asks for `CAP_SYS_ADMIN`, the broker holds
