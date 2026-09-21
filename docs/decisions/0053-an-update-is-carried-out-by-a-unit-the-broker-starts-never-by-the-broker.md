@@ -1,13 +1,18 @@
 # ADR 0053 — An update is carried out by a unit the broker starts, never by the broker
 
-**Status:** proposed, 2026-09-17. Written by task 4 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Updates and storage,
-through the broker*). The storage half of that task is built. The update half
-cannot be built without deciding something a worker may not decide: widening a
-privileged component's privilege, or adding a privileged component. So the update
-verbs are answered `not-carried` until this is accepted, and
-`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` fails the day
-this line stops saying *proposed*, so that what it decides is then built.
+**Status:** **accepted, option B, by the owner on 2026-09-19** — and built by
+task 8 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` on 2026-09-20,
+which is the change that moved this line. Written by task 4 of the same plan
+(*Updates and storage, through the broker*). The storage half of that task was
+built then; the update half could not be, without deciding something a worker
+may not decide: widening a privileged component's privilege, or adding a
+privileged component. Until this line moved, the update verbs were answered
+`not-carried`, held by `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs`,
+which was written to fail the day it stopped saying *proposed*. It did, and the
+change that moved it replaced that test with the tests of what was built —
+`crates/alo-brokerd/tests/the_updates_are_carried_by_a_unit.rs` and
+`crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs`. What
+remains owed by the image lane is under *Consequences* below.
 **Date:** 2026-09-17
 **Proposed by:** the broker-and-the-disk workstream
 **Context:** [ADR 0001](0001-the-capability-model.md) (§2: what needs privilege
@@ -159,9 +164,10 @@ it is.
   are v0.5 lines in `docs/features.md`, and a person could then update only from a
   root shell. That narrows a promise. **Rejected.**
 
-## The recommendation
+## The recommendation, and what was accepted
 
-**B.** It is the only option that keeps the broker holding nothing, keeps
+**B**, recommended 2026-09-17 and accepted by the owner on 2026-09-19 without
+amendment. It is the only option that keeps the broker holding nothing, keeps
 `alo-keeping-up`'s instruction exactly, and puts the long, privileged, networked
 part of an update where systemd can bound it and report on it. With it:
 
@@ -180,24 +186,36 @@ part of an update where systemd can bound it and report on it. With it:
    constructor deciding a `Staging` from an approved `{from, to}` and the base's
    status now, whose refusals are `Staging::of`'s own.
 
-## Consequences if it is accepted
+## Consequences, and which of them have happened
 
-- The task that builds it adds the second binary, its two units, the broker's
-  update carrier (start a unit, wait for its result), the handed-over update file
-  and its contract beside `machine-proxy-file.md`, and replaces
-  `the_updates_wait_on_their_decision.rs` with tests of each refusal above.
-- The image lane installs both units and the broker. It measures which
-  capabilities `bootc switch` and `bootc rollback` need on a booted machine, and
-  whether systemd lets root holding no capability start a unit. Both go into
-  `docs/quirks.md` whichever way they answer.
-- `alo-keeping-up` and `alo-egress` each gain one additive item, from their
-  owners.
+- **Done, 2026-09-20 (task 8).** The task that builds it adds the units' own
+  programs as this crate's second and third binaries, the two units, the
+  broker's update carrier (start a unit, wait for its result), the handed-over
+  update file and its contract beside `machine-proxy-file.md`
+  (`machine-update-file.md`), and replaces `the_updates_wait_on_their_decision.rs`
+  with tests of each refusal above. Two binaries rather than one, because *a
+  fixed `ExecStart` with no arguments* and two units means two programs; the
+  broker never spells a unit's name out of anything a request carried, since
+  `alo_brokerd::TheUnit` is a closed enum of two.
+- **Owed by the image lane.** It installs both units and the broker. It
+  measures which capabilities `bootc switch` and `bootc rollback` need on a
+  booted machine, and whether systemd lets root holding no capability start a
+  unit. Both go into `docs/quirks.md` whichever way they answer. Until that
+  measurement, each unit carries the list derived in task 8 — what the base's
+  own program states it requires, plus what writing an ostree deployment
+  touches — enumerated line by line in the unit with its reason, and held by
+  `crates/alo-brokerd/tests/the_updates_are_carried_by_a_unit.rs`. It is wider
+  than it will end up; what it is not is inherited.
+- **Done.** `alo-keeping-up` and `alo-egress` each gained one additive item,
+  from their owners: `Staging::approved` (the machine-keeps-itself plan's task
+  9) and `Errand::FetchingAnUpdate`.
 
-## What the code waits on
+## What the code waited on
 
-- This decision, accepted.
-- The `alo-keeping-up` constructor above, from the machine-keeps-itself lane.
-- The fetching errand, from `alo-egress`'s owner.
+All three are closed: this decision, accepted 2026-09-19; the `alo-keeping-up`
+constructor, landed 2026-09-19; the fetching errand, landed the same day.
 
-Until then, `updates.apply` and `updates.roll-back` are refused `not-carried`, in
-the broker's record, and nothing is run.
+**What is still not claimed.** No real machine has been updated through this
+road. The units are held to their lines by tests and the programs' decisions
+are held by tests against a stand-in base; a staged update and a return on a
+booted machine are the virtual-machine acceptance the image lane owns.

@@ -14,6 +14,15 @@
 //!   no shell. Every refusal ([`NotApplied`]) leaves the machine as it was.
 //! - **What am I running, at any moment** — [`running`] and [`deployments`]
 //!   ask the base each time and remember nothing.
+//! - **And the same question answered without asking the base anything** —
+//!   [`WrittenDown`], which reads the words the kernel was started with and the
+//!   `.origin` file the base wrote beside the deployment that booted. It exists
+//!   because `bootc status` **refuses an unprivileged caller**, measured on a
+//!   real machine, and the one act on an alo OS machine that has to ask this and
+//!   must not be root is the check at a start. See [`written_down`] for the
+//!   whole reason, and
+//!   [ADR 0011](../../../docs/decisions/0011-the-base-is-rented-and-the-image-is-a-container.md)
+//!   for the one sentence of it this narrows.
 //! - **The record saying the machine updated** — [`after_a_restart`], run once
 //!   at each start, writes `alo_record::Happened::Updated` from which build to
 //!   which, with no agent behind it, when a different build booted than the one
@@ -67,24 +76,30 @@
 
 pub mod across_restarts;
 pub mod applying;
+pub mod booted;
 pub mod genuine;
 pub mod going_back;
 pub mod last_known;
 mod one_build;
+pub mod origin;
 pub mod putting_back;
 pub mod refusing;
 pub mod restarted;
 pub mod status;
 pub mod the_base;
+pub mod written_down;
 pub mod yesterday;
 
 pub use across_restarts::{AcrossRestarts, THE_BUILD_TO_GO_BACK_TO, THE_LAST_KNOWN_BUILD};
 pub use applying::apply;
+pub use booted::{NotBooted, THE_KERNELS_WORDS};
 pub use genuine::refused_for_its_signature;
 pub use going_back::go_back;
+pub use origin::{BESIDE_IT, NotInTheOrigin};
 pub use putting_back::{putting_back, what_this_machine_kept, what_was_done};
 pub use refusing::{NotAnswered, NotApplied, NotGoneBack, NotRead, NotRecorded};
 pub use restarted::after_a_restart;
 pub use status::{THE_STATUS, deployments, running};
 pub use the_base::{Base, THE_PROGRAM, TheBase};
+pub use written_down::WrittenDown;
 pub use yesterday::{Yesterday, yesterday};

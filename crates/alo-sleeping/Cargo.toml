@@ -44,6 +44,17 @@ zbus = { version = "5.19", default-features = false, features = [
 ] }
 
 [dev-dependencies]
+# The screens the walk from lock to resume ends at. This plan's task 7 walks
+# one person from locking their machine to docking it at another desk, and the
+# only crate that may hold that walk is this one: `alo-leaving`,
+# `alo-notifying` and this crate each refuse, by a test over every manifest in
+# the workspace, any dependant but `alo-saying` and `alo-shell`. `alo-displays`
+# holds no such rule, so the walk lives here and reaches out to it rather than
+# the other way round. See `tests/the_walk_from_lock_to_resume_to_a_new_desk.rs`.
+alo-displays = { path = "../alo-displays" }
+# The lock image the walk's lock screen is drawn against — `alo-locking` reads
+# it and this crate does not, so the walk names it for itself.
+alo-appearance = { path = "../alo-appearance" }
 # A real sign-in under the seat, a real turn on a real disk under the hold, and
 # the record that turn writes to.
 alo-accounts = { path = "../alo-accounts" }

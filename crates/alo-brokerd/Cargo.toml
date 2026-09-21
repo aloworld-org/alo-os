@@ -36,6 +36,20 @@ alo-drives = { path = "../alo-drives" }
 # on a machine an organisation manages.
 alo-proxy = { path = "../alo-proxy" }
 
+# What an update is, and the one instruction the base may be given. Read, never
+# decided here: `alo_keeping_up::Staging::approved` and
+# `alo_keeping_up::Returning` write the arguments, and this crate hands the base
+# exactly those. A second place that assembled them would be a second answer to
+# what staging an update means (ADR 0053).
+alo-keeping-up = { path = "../alo-keeping-up" }
+
+# The base's own program, run with those arguments and no shell. **Named only by
+# `src/staging_an_update.rs` and `src/returning.rs`**, which are the two unit
+# programs' decisions — never by the broker's own process, which holds no
+# capability and could not change the machine with it
+# (`tests/the_updates_are_carried_by_a_unit.rs`).
+alo-updating = { path = "../alo-updating" }
+
 # The machine's record file for the broker's own entries, written and synced one
 # entry at a time. `src/recording.rs` is the only file that names it.
 alo-keeping = { path = "../alo-keeping" }
@@ -48,6 +62,11 @@ alo-record = { path = "../alo-record" }
 serde = { workspace = true }
 toml = { workspace = true }
 
+# What a person approved about an update, written one way so both sides of the
+# door digest the same bytes (`src/approved.rs`), and the base's status read for
+# the repository its booted build came from (`src/the_machine_now.rs`).
+serde_json = { workspace = true }
+
 [target.'cfg(unix)'.dependencies]
 # Opening what a person handed over without following a link, asking the kernel
 # who owns what was opened, and handing the folder it is handed over in to a
@@ -56,6 +75,31 @@ toml = { workspace = true }
 # dependency with the features this needs. Named only by `src/handed_over.rs`,
 # and by `src/starting.rs` to hand that folder to the person's group.
 rustix = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# systemd, asked over the system bus to start one of two units this crate names
+# itself, and nothing else: `src/units.rs` holds the three methods it calls.
+# Already in the workspace for the keyring, the portals, the network manager and
+# the disk service, at the same version and with the same runtime, so it adds no
+# crate.
+zbus = { version = "5.19", default-features = false, features = [
+    "async-io",
+    "blocking-api",
+] }
+
+# There are deliberately no dev-dependencies here, and task 7 found out why.
+# Its two tests — every sentence this workstream says, and the walk from a new
+# printer to a recovered disk — were written in this crate, because this is the
+# one crate that stands where all four verb families meet. The walk needs
+# `alo-capability`, since the sentence a person approves is an
+# `alo_capability::Call`'s own, and
+# `tests/only_the_drive_approved_is_mounted_or_ejected.rs`'s
+# `the_broker_can_make_no_grant` reads **this manifest as text** and refuses the
+# name wherever it appears — dev-dependencies included. That is the stricter
+# reading and it is the right one: *the process that mounts a drive can make no
+# grant* is a promise about a file somebody audits, not about a link graph they
+# would have to compute. So the two tests live in `alo-changing-drives`, which
+# is the crate the walk found missing.
 
 [[bin]]
 name = "alo-brokerd"

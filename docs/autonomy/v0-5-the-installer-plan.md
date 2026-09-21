@@ -251,6 +251,15 @@ which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
 > took it to zero. This task is *the largest disk of the three*, so it is the
 > one least able to ignore that. Blocked on **9 and 10, and on a disk**.
 
+> **Which program shows the start-up menu is decided, 2026-09-21:**
+> [ADR 0062](../decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md),
+> alo OS's own loader, with Windows directly behind it in the firmware's
+> order and a test that proves the fall-through. Neither ADR 0023 nor ADR
+> 0033 answered it, and this task could not be built without the answer.
+> Its three terms are part of this task's acceptance. **Fast Startup** is
+> left open there for the owner, and the test that alo OS never mounts the
+> Windows partition read-write is this task's either way.
+
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
 *by the time we test, run the two operating systems and switch from one to
@@ -364,6 +373,8 @@ build that checked an executable bit.
 Task 22 of `v0-5-the-models-measured-plan.md` is the code half of that line —
 written so that the processor road is measured on a machine with no card, and
 the card's road waits for hardware the way the chip's half of encryption does.
+
+### 7. Replace Windows — the road with no way back
 
 **Status:** ready. **Depends on:** 4.
 
@@ -658,7 +669,7 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** **done, 2026-09-21**, on the development PC.
+**Status:** **Done, 2026-09-21.** On the development PC.
 `crates/alo-installing/src/writing.rs` names `btrfs`, from the one place it is
 named (`alo_image::THE_ONLY_FILESYSTEM`); `docs/booting.md` names the same one;
 and `crates/alo-image/tests/one_filesystem_and_it_can_hold_an_undo.rs` counts

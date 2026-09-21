@@ -7,8 +7,10 @@
 //!    hand the agent's own login the key it must never hold.
 //! 3. **The record is opened**, because a broker with nowhere to write down
 //!    what it answered must answer nothing.
-//! 4. **The folder a person hands a proxy over in is made**, in that group and
-//!    nobody else's.
+//! 4. **The folder a person hands a proxy or an update over in is made**, in
+//!    that group and nobody else's, and **the folder the broker hands one on
+//!    in is made**, root's alone — a privileged unit reading from a folder the
+//!    person can write is a unit acting on bytes nobody approved.
 //! 5. **A fresh key is handed over**, so nothing issued before this start is
 //!    genuine and the turn reads the key this broker holds.
 //! 6. **Only then the door opens.**
@@ -49,8 +51,11 @@ pub struct Places {
     pub key: PathBuf,
     /// The door.
     pub door: PathBuf,
-    /// The folder a person hands a proxy over in.
+    /// The folder a person hands a proxy or an update over in.
     pub wanted: PathBuf,
+    /// The folder the broker hands a checked update on to a unit in, which is
+    /// root's alone.
+    pub approved: PathBuf,
 }
 
 impl Places {
@@ -64,6 +69,7 @@ impl Places {
             key: PathBuf::from(alo_broker::THE_KEY),
             door: PathBuf::from(alo_broker::THE_DOOR),
             wanted: wanted.parent().map(PathBuf::from).unwrap_or(wanted),
+            approved: PathBuf::from(crate::for_the_unit::THE_FOLDER),
         }
     }
 }
@@ -87,6 +93,9 @@ pub enum NotStarted {
     NoRecord(alo_keeping::NotKept),
     /// The folder a proxy is handed over in could not be made.
     NoFolderForAProxy(std::io::Error),
+    /// The folder a checked update is handed on to a unit in could not be
+    /// made, root's alone.
+    NoFolderForTheUnits(std::io::Error),
     /// The key could not be handed over.
     NoKey(NotHandedOver),
     /// The door would not open.
@@ -115,6 +124,11 @@ impl std::fmt::Display for NotStarted {
             Self::NoFolderForAProxy(why) => write!(
                 f,
                 "the folder a person hands a proxy over in could not be made: {why}"
+            ),
+            Self::NoFolderForTheUnits(why) => write!(
+                f,
+                "the folder the broker hands a checked update on to a unit in could not be made: \
+                 {why}"
             ),
             Self::NoKey(why) => write!(f, "{why}"),
             Self::NoDoor(why) => write!(f, "the broker's door would not open: {why}"),
@@ -158,6 +172,7 @@ pub fn started<C: Carrying>(
     }
     let record = Writing::opening(&places.record).map_err(NotStarted::NoRecord)?;
     folder_for_a_proxy(places, group).map_err(NotStarted::NoFolderForAProxy)?;
+    folder_for_the_units(places).map_err(NotStarted::NoFolderForTheUnits)?;
     let key = hand_over_a_fresh_key(&places.key, group).map_err(NotStarted::NoKey)?;
     let listening = Listening::at(&places.door, group).map_err(NotStarted::NoDoor)?;
     Ok(Started {
@@ -177,4 +192,21 @@ fn folder_for_a_proxy(places: &Places, group: u32) -> Result<(), std::io::Error>
     )?;
     rustix::fs::chown(&places.wanted, None, Some(rustix::fs::Gid::from_raw(group)))?;
     Ok(())
+}
+
+/// The folder a checked update is handed on to a unit in: made, emptied of
+/// anything a previous start left, at its mode, and in nobody's group but the
+/// one this process already has.
+///
+/// **Not the person's group, and that is the whole reason it is a second
+/// folder.** Between the broker digesting what a person handed over and a
+/// privileged unit reading it, anything running as that person could write the
+/// file again; a unit reading from there would act on bytes nobody approved.
+fn folder_for_the_units(places: &Places) -> Result<(), std::io::Error> {
+    drop(std::fs::remove_dir_all(&places.approved));
+    std::fs::create_dir(&places.approved)?;
+    std::fs::set_permissions(
+        &places.approved,
+        std::fs::Permissions::from_mode(crate::for_the_unit::THE_FOLDERS_MODE),
+    )
 }

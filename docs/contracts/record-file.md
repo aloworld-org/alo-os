@@ -70,7 +70,7 @@ that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
-**Every entry names whose authority it was under, except eight.** `agent` is
+**Every entry names whose authority it was under, except nine.** `agent` is
 present on all of them but these:
 
 - `left-on-its-own`, which is alo OS reaching the network with nobody having
@@ -129,6 +129,13 @@ present on all of them but these:
   It is set out in full below; what belongs here is why it names nobody. An undo
   is the person's own act, there is no verb that undoes and none that proposes
   one, so there is no agent to name and no field to name one in.
+- `let-go`, added 2026-09-21 and additive, which is the machine removing what it
+  had kept for one or more changing turns, so that none of them can be put back
+  any more ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
+  and second accepted terms). It is set out in full below; what belongs here is
+  why it names nobody. Expiry is housekeeping rather than a petition: there is
+  no verb that forgets an undo, no request, no approval and no grant, because an
+  agent that can forget an undo can erase the evidence of what it did.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
@@ -138,7 +145,7 @@ open, and a person put something back that no agent may, so a name there would
 be an authority the
 record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
-with nobody's authority looks for the entries with no `agent`; the eight are
+with nobody's authority looks for the entries with no `agent`; the nine are
 told apart by their tags, and only the first of them reached the network.
 
 **`undone` is the person putting back what an agent changed**, added 2026-09-18
@@ -167,6 +174,31 @@ table of what can never be undone, and why, is `alo-keeping-up`'s
 ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) point 1), and a reader
 of this file learns from an `undone` entry that something was put back, never
 that it could have been.
+
+**`let-go` is the machine removing what it was keeping**, added 2026-09-21 and
+additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
+and second accepted terms). It is written by a privileged unit a timer starts
+(`crates/alo-letting-go`), **after** the snapshots are gone and only for the
+turns whose snapshots actually went, so a line here is a fact about the disk
+rather than an intention about it. It carries `why`, one of
+`outside-the-window` — how far back that person asked the machine to keep what
+an agent changed no longer reached the turn — or `the-disk-needed-the-room`,
+which is the machine never filling a disk to preserve an undo and taking the
+oldest first; and `turns`, never empty, each with `done`, the moment that turn
+ran, and `did`, **the sentence the person approved at the time, copied in**.
+
+**It names the turns rather than counting them**, which is what the second term
+asks for: *what a person is told names the turns that lost it rather than a
+number*. And it copies rather than points, for `undone`'s reason — the file is
+shortened, so a position in it is not a name that lasts.
+
+**No `agent` and no field for one.** There is no verb that forgets an undo and
+there is not going to be one: an agent that can forget an undo can erase the
+evidence of what it did, and a destructive verb over the written-down past is
+the one verb whose approval a person is least able to judge. A person changes
+how far back their machine keeps things in their own settings
+(`docs/contracts/person-settings.md`, `undo.toml`), and the unit obeys it. It is
+not a departure and it is not an execution of a verb.
 
 **`slept-through` is a turn the machine went to sleep in the middle of**, added
 2026-09-17 and additive. It is written when the machine wakes, through the

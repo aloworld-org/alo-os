@@ -1,0 +1,30 @@
+[package]
+name = "alo-changing-updates"
+version = "0.0.1"
+description = "What a person reads when an update is applied or this machine goes back, through the privileged broker's two update verbs."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Four sentences, and a map from the broker's one word to the sentences
+# `alo-keeping-up` already has. The smallness is the point: everything a person
+# reads about an update was written where updates are decided, and what was
+# missing was only what the broker's door can answer — an approval that was not
+# accepted, a machine that has stopped writing changes down, and nothing there
+# to make them.
+
+[dependencies]
+# The broker's closed list, and the one word its door answers with.
+alo-broker = { path = "../alo-broker" }
+# What an update is, and every sentence a person already reads about one. Read,
+# never edited: this crate adds no sentence `alo-keeping-up` could have.
+alo-keeping-up = { path = "../alo-keeping-up" }
+# The broker answers with one of the record's own reasons.
+alo-record = { path = "../alo-record" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

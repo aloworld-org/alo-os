@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use crate::carried::Carried;
 use crate::conversion::Conversion;
-use crate::engine::LONGEST;
+use crate::engine::LONGEST_ALTOGETHER;
 use crate::wire::Refusal;
 
 /// Where the service listens on a machine, as its socket unit says.
@@ -20,9 +20,10 @@ pub const THE_SOCKET: &str = "/run/alo-convertd/socket";
 /// How long the service may take to say it is there.
 const ASKING_IF_READY: Duration = Duration::from_secs(5);
 
-/// How long a conversion may take to be answered: the engine's own limit, and
-/// time around it for the inventories and the copying.
-const ASKING_TO_CONVERT: Duration = LONGEST.saturating_add(Duration::from_secs(60));
+/// How long a conversion may take to be answered: every run of the engine it
+/// makes, at the engine's own limit each, and time around them for the
+/// inventories and the copying.
+const ASKING_TO_CONVERT: Duration = LONGEST_ALTOGETHER.saturating_add(Duration::from_secs(60));
 
 /// This machine's converting service.
 #[derive(Debug, Clone, PartialEq, Eq)]

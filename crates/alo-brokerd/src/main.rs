@@ -20,7 +20,8 @@ mod running {
 
     use alo_broker::our_group;
     use alo_brokerd::{
-        Carriers, Network, Places, Printers, Proxy, Started, Storage, THE_ACCOUNTS, started,
+        Carriers, Handing, Network, Places, Printers, Proxy, Started, Storage, THE_ACCOUNTS,
+        THE_WANTED_UPDATE, TheSystemManager, Updates, started,
     };
     use alo_drives::udisks::OnThisMachine as TheDiskService;
     use alo_networks::network_manager::OnThisMachine as TheNetworkManager;
@@ -51,6 +52,12 @@ mod running {
             .with_printers(Printers::against(PrintingService::for_the_broker(
                 THE_SOCKET,
             )))
+            .with_updates(Updates::against(
+                TheSystemManager,
+                Path::new(THE_WANTED_UPDATE),
+                Handing::on_this_machine(),
+                logins.person,
+            ))
         };
         let Started {
             listening,

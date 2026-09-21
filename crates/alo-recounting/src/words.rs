@@ -1,8 +1,8 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Thirty, and they divide in three. Twenty-three are **what became of one entry** —
-//! the short clause read at the head of a line, before the sentence the machine
-//! generated when it happened. Two are **remarks an account makes about
+//! Thirty-two, and they divide in three. Twenty-five are **what became of one
+//! entry** — the short clause read at the head of a line, before the sentence
+//! the machine generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
 //! shown is the most recent part of what does. Five are **refusals**: the ways
 //! an account cannot be put in front of anybody, and the three ways a machine
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Twenty-three clauses, and none of them is a category
+//! # Twenty-five clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -453,8 +453,35 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
      the record itself.",
 );
 
+/// The machine let go of what it had kept, because how far back an undo reaches
+/// no longer reaches this turn.
+pub const LET_GO_OUTSIDE_THE_WINDOW: Word = Word::saying(
+    "recounting.outcome.let-go-outside-the-window",
+    "this can no longer be put back: the machine keeps what an agent changed only for as long as \
+     you asked it to",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The machine holds what a person's files were \
+     before the assistant changed them for a bounded time, which the person themselves sets, and \
+     this line is read when that time has passed for the turns named beneath it. Nothing has gone \
+     wrong and nobody asked for this; say it plainly rather than as a warning.",
+);
+
+/// The machine let go of what it had kept, because the disk needed the room.
+pub const LET_GO_THE_DISK_NEEDED_THE_ROOM: Word = Word::saying(
+    "recounting.outcome.let-go-the-disk-needed-the-room",
+    "this can no longer be put back: the disk was running out of room, and the oldest of what the \
+     machine was holding went first",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The machine never fills a \
+     disk to keep something it could put back, so when free space runs low it lets go of the \
+     oldest first. The turns this happened to are named beneath the line.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 30] = [
+pub const EVERY_WORD: [Word; 32] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -478,6 +505,8 @@ pub const EVERY_WORD: [Word; 30] = [
     STOPPED_BY_SLEEP,
     PUT_BACK,
     NOT_PUT_BACK,
+    LET_GO_OUTSIDE_THE_WINDOW,
+    LET_GO_THE_DISK_NEEDED_THE_ROOM,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -492,7 +521,7 @@ pub const EVERY_WORD: [Word; 30] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 23] = [
+pub const EVERY_OUTCOME: [Word; 25] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -516,6 +545,8 @@ pub const EVERY_OUTCOME: [Word; 23] = [
     STOPPED_BY_SLEEP,
     PUT_BACK,
     NOT_PUT_BACK,
+    LET_GO_OUTSIDE_THE_WINDOW,
+    LET_GO_THE_DISK_NEEDED_THE_ROOM,
 ];
 
 /// What an account says about itself, rather than about one entry.

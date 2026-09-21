@@ -756,11 +756,11 @@ document and the copy were checked. A document or a copy that could not be
 checked is a refusal, and no copy is kept.
 
 **What converts is a closed set, and it grows only by measurement.** Today:
-a Word document, an Excel workbook and a PowerPoint presentation, and an
-OpenDocument text document, spreadsheet and presentation — each into a PDF. The
-kind is read from the file's own bytes and never from its name, so a document
-called something else converts as what it is, and a program named as a document
-converts as nothing.
+a Word document, an Excel workbook and a PowerPoint presentation; an
+OpenDocument text document, spreadsheet and presentation; and a Pages document
+— each into a PDF. The kind is read from the file's own bytes and never from its
+name, so a document called something else converts as what it is, and a program
+named as a document converts as nothing.
 
 This set is additive and will grow: ADR 0039 makes each further kind a
 registration and **a test against a real file**, so a format appears here on the
@@ -919,7 +919,11 @@ verbs until that service is supplied; the process supplies `PrintingService`
 at its own socket through PrintingService::for_the_broker. Its fixed root
 peer-credential header is verified against the actual socket UID by CUPS;
 it carries no password and gives a non-root caller no authority. The two update
-verbs are answered `not-carried` until ADR 0053, proposed, is accepted and built.
+verbs are carried out by a unit the broker starts and waits for (added
+2026-09-20, ADR 0053 accepted option B), supplied through
+`Carriers::with_updates(Updates::against(…))`; the published
+`Carriers::of(network, proxy, storage)` remains compatible and refuses them
+until that is supplied.
 
 **The list.** Eleven verbs, each with exactly one argument:
 
@@ -1031,10 +1035,24 @@ Mounting makes no grant. What an agent may read on a drive is granted in a
 picker, like any folder. **A drive's health is not a broker verb.** It is a read
 the disk service answers to anybody on the system bus (`alo_drives::Drives::now`).
 
-**The update verbs.** `updates.apply` and `updates.roll-back` are answered
-`not-carried`, and nothing is run. The base's program changes the machine only
-for a process holding `CAP_SYS_ADMIN`, and the broker holds no capability. ADR
-0053 proposes how they are carried out.
+**The update verbs carried out.** The base's program changes the machine only
+for a process holding `CAP_SYS_ADMIN`, and the broker holds none. So it carries
+neither verb out itself: it starts a unit that holds what the base asks for, and
+waits for that unit's result (ADR 0053, accepted option B). `updates.apply`
+reads the update a person handed over at `/run/alo-broker/wanted/update.json` —
+a plain file owned by the person, opened without following a link — stages
+nothing unless its bytes digest to the identity and read back as exactly two
+whole builds, writes those same bytes where only root can reach them, and starts
+`alo-applying-an-update.service`. `updates.roll-back` hands nothing over: the
+identity is the digest of the offer's `{from, to, sets_aside}`, which
+`alo-going-back.service` decides again for itself and refuses unless it digests
+the same. Each is `not-carried`, and nothing is run, when nothing was handed
+over, when what was is not the update approved, when it is not a pair of whole
+builds, or when the unit ran and did not carry it out. Both handed-over files
+are removed whichever way the act went. Neither unit takes an argument, neither
+can be enabled, and neither holds `CAP_SYS_BOOT`: no instruction on this road
+carries `--apply`, so a restart is the person's own, afterwards. The file, the
+identities and the units are `machine-update-file.md`.
 
 ## Records
 

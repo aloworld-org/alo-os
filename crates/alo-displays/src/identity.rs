@@ -29,6 +29,7 @@
 
 use alo_strings::{Filling, Said, Strings, Word};
 
+use crate::plugged_into::PluggedInto;
 use crate::words;
 
 /// Why a piece of text does not name a screen.
@@ -199,17 +200,24 @@ impl Identity {
         }
     }
 
-    /// What a person reads when this screen is named to them.
+    /// This screen's name, put into the gap of a sentence that names it.
     ///
-    /// What the screen says about itself, which is what is printed on its front
-    /// — or, for a screen that says nothing, the socket, because a person
-    /// looking at the back of a machine can find that and there is nothing else
-    /// to give them.
+    /// A screen that says what it is goes in as **data** — *Dell U2720Q* is
+    /// printed on its front and is not translated. A screen that says nothing
+    /// goes in as **words alo OS said** ([`crate::PluggedInto`]), through
+    /// `alo_strings::Filling::and_said`, so that a sentence with one inside it
+    /// is only as translated as the piece inside it.
+    ///
+    /// This is the only road from a screen's identity into something a person
+    /// reads. There is no method here that hands back the socket's own name,
+    /// and that is deliberate: `eDP-1` is what the kernel's side of a graphics
+    /// card calls a connector, and a method returning it is a method somebody
+    /// eventually puts in a sentence.
     #[must_use]
-    pub fn as_a_person_reads_it(&self) -> String {
+    pub fn named_in(&self, gap: &str, filling: Filling, strings: &Strings) -> Filling {
         match self {
-            Self::Panel(panel) => panel.as_a_person_reads_it(),
-            Self::Socket(socket) => socket.name().to_owned(),
+            Self::Panel(panel) => filling.and(gap, panel.as_a_person_reads_it()),
+            Self::Socket(socket) => filling.and_said(gap, &PluggedInto::of(socket).said(strings)),
         }
     }
 }
@@ -265,11 +273,35 @@ mod tests {
 
     /// **A screen that says nothing is remembered by its socket, and that is
     /// weaker** — which is a fact this crate answers rather than hides.
+    ///
+    /// It is remembered by the socket and **not named to a person by it**:
+    /// what they read is `crate::plugged_into`'s word for that socket.
     #[test]
     fn a_screen_that_says_nothing_is_remembered_by_its_socket_and_says_so() {
+        let strings = crate::testing::in_english();
         let built_in = Identity::Socket(Socket::named("eDP-1").unwrap());
         assert_eq!(built_in.how_stable(), Stability::WhereItIsPluggedIn);
-        assert_eq!(built_in.as_a_person_reads_it(), "eDP-1");
+
+        let filling = built_in.named_in("display", Filling::nothing(), &strings);
+        assert_eq!(filling.value("display"), Some("Built-in screen"));
+        assert!(
+            !filling.came_from("display").is_empty(),
+            "a name alo OS said goes in as words, not as data"
+        );
+    }
+
+    /// **A screen that says what it is goes into a sentence as data**, because
+    /// *Dell U2720Q* is printed on its front and nobody translates it.
+    #[test]
+    fn a_screen_that_says_what_it_is_goes_in_as_data() {
+        let strings = crate::testing::in_english();
+        let office = Identity::Panel(Panel::of("Dell", "U2720Q", Some("CN-0ABC")).unwrap());
+        let filling = office.named_in("display", Filling::nothing(), &strings);
+        assert_eq!(filling.value("display"), Some("Dell U2720Q"));
+        assert!(
+            filling.came_from("display").is_empty(),
+            "a make and a model are data, and have no language to be wrong about"
+        );
     }
 
     /// **Two screens that say exactly the same thing are told apart by where

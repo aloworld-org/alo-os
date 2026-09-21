@@ -1,0 +1,110 @@
+[Unit]
+# The privileged half of `updates.apply`, and nothing else.
+#
+# ADR 0053, accepted option B: the base's own program changes the machine only
+# for a process holding CAP_SYS_ADMIN, and the broker holds no capability and is
+# not given one. So the capability lives here, in a unit with a fixed command
+# line and one job, which the broker starts over the system bus and waits for.
+#
+# It lives beside the crate rather than in image/ until the image carries the
+# broker itself; `crates/alo-brokerd/tests/the_updates_are_carried_by_a_unit.rs`
+# holds every line below to what the program expects.
+Description=alo OS: stage the update a person approved
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md
+
+# Staging pulls a system image onto the disk, so there is no point before there
+# is a way out. Wants= rather than Requires=: a machine whose network never came
+# up answers `not-carried` in the broker's record, which is the honest failure.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# It reads one file, tells the base once, and stops. `oneshot` rather than
+# `exec` because the broker's answer is whether it worked: a start job that
+# finished at the moment the program was exec'd would tell the broker nothing.
+# Nothing waits on this unit at boot — it cannot be enabled and is started only
+# by the broker, so holding a start job open costs no target.
+Type=oneshot
+RemainAfterExit=no
+
+# No arguments, ever. What to stage is the file the broker wrote into a folder
+# only root can reach, and the repository is the one the booted build came from,
+# read from the base's own status. There is nothing on this line a request could
+# reach, which is law 2 at the one place in alo OS where a program is started
+# because an agent's proposal was approved.
+ExecStart=/usr/libexec/alo-applying-an-update
+
+User=root
+Group=root
+NoNewPrivileges=yes
+
+# **The capabilities, one per line, each with what it is for.**
+#
+# Measured on 2026-09-20 in the pinned base (`quay.io/fedora/fedora-bootc`,
+# local image b035260f985f, bootc 1.15.1): CAP_SYS_ADMIN is the only capability
+# named anywhere in the program's binary, and what it names it with is *This
+# command requires full root privileges (CAP_SYS_ADMIN)* and *Verified uid 0
+# with CAP_SYS_ADMIN*. That is the check; the rest below is what writing an
+# ostree deployment touches, and it is a derivation rather than a measurement.
+# **ADR 0053's own consequence puts the booted-machine measurement in the image
+# lane**, which narrows this list and records what it found in docs/quirks.md.
+# Until then the list is wider than it will end up and is enumerated rather than
+# inherited, which is the difference that matters: this process has the
+# capabilities named here and no others.
+#
+# Going back carries the same list deliberately. It writes less — no build is
+# fetched — but a narrower set nobody has measured would be a guess with a
+# machine that will not roll back on the other side of it.
+CapabilityBoundingSet=CAP_SYS_ADMIN
+# Files in a deployment that are not root's are written and read back.
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+# A deployment keeps the ownership, the setuid bits and the file capabilities
+# the image it came from carries.
+CapabilityBoundingSet=CAP_CHOWN
+CapabilityBoundingSet=CAP_FOWNER
+CapabilityBoundingSet=CAP_FSETID
+CapabilityBoundingSet=CAP_SETFCAP
+# Device nodes inside it.
+CapabilityBoundingSet=CAP_MKNOD
+# The helpers the base runs as somebody else.
+CapabilityBoundingSet=CAP_SETUID
+CapabilityBoundingSet=CAP_SETGID
+# It works inside the deployment's own root.
+CapabilityBoundingSet=CAP_SYS_CHROOT
+# The security labels the files carry.
+CapabilityBoundingSet=CAP_MAC_ADMIN
+# The immutable flag a deployment's root carries.
+CapabilityBoundingSet=CAP_LINUX_IMMUTABLE
+
+# **CAP_SYS_BOOT is not on that list, and its absence is a promise.** Nothing
+# this unit causes restarts the machine: the instruction never carries --apply
+# (alo_keeping_up::Staging::approved decides *at the next restart* and has no
+# argument that could say otherwise), and this process could not restart it even
+# if it were told to. *Restart now and apply it* is the person's own restart,
+# afterwards, through their session's power menu.
+#
+# Nor is CAP_NET_ADMIN, CAP_SYS_MODULE, CAP_SYS_RAWIO, CAP_SYS_PTRACE,
+# CAP_SYS_TIME, CAP_KILL, CAP_SYSLOG, CAP_AUDIT_CONTROL, CAP_AUDIT_WRITE,
+# CAP_BPF, CAP_PERFMON, CAP_SETPCAP or CAP_SYS_RESOURCE. An update writes the
+# disk; it does not configure the network, load a kernel module, look into
+# another process or change what the machine records about itself.
+
+# Nothing is read from the environment: the way out is the machine's own proxy
+# file, read by the program and set on the base explicitly, so what the base
+# honours is this machine's setting rather than whatever started this unit.
+# There is deliberately no Environment= line, and a test refuses one.
+
+# What it says about itself goes to the journal, for whoever administers the
+# machine. What a *person* reads is what the surface that asked says, in their
+# own language, from the one word the broker answered.
+StandardOutput=journal
+StandardError=journal
+
+# Deliberately not restarted. A stage that failed is a machine that is exactly
+# as it was, and the person's next approval asks again — a unit that retried by
+# itself would be one approval causing two executions.
+
+# And deliberately no install section, so it cannot be enabled. Nothing starts
+# this at boot, on a timer, or because a target wants it. It is started by the
+# broker, under an approval a person gave, and by nothing else.

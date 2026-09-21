@@ -333,11 +333,60 @@ are already frustrated, which is the moment a system is judged.
 
 ### 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained
 
-**Status:** blocked — on **one measurement**, and it is not recognition's to
-take: no Pages document has been inventoried, because the engine that reads one
-is an x86_64 build and this repository gates on aarch64. **Recognition is done:
-all three formats are recognised from their own bytes, each measured against a
-real file held to its digest.**
+**Status:** **Done, 2026-09-21.** Recognition was already done — all three
+formats from their own bytes, each measured against a real file held to its
+digest. What was left was the Pages document's **conversion**, which waited on
+an inventory nobody had taken; the measurement was taken on 2026-09-21 and the
+conversion wired in the same day, by the third PC (`AGAI01`) at the owner's
+instruction. It is not this plan's machine: the lane table gives this plan to
+the development PC, and the owner assigned this one task across because the
+engine that reads a Pages document is an **x86_64** build and this plan gates on
+aarch64. Nothing else about the plan moves.
+
+**The seventh conversion is in the set.** `Conversion::EVERY` holds it,
+`Conversion::HELD_BACK` is empty, and a Pages document is a file this machine
+opens by converting a PDF copy of it. **Its inventory is read from what the
+engine reads of it** — `crates/alo-converting/src/inventory/read_from.rs`,
+because a Pages document keeps its content in `Index/*.iwa` and nothing here
+reads one — and the copy is still made from the original, never from the
+rendering. Measured end to end against the real document and the real engine in
+`converting_a_real_document.rs`: the two families it is set in, `Helvetica` and
+`HelveticaNeue`, are named as substituted, and nothing else is, because the
+engine's own substituted declarations are not families text is set in. **Task
+5's walk gains the photograph and the Pages document**, and its table is
+republished in the report below, which the walk's test now reads. Report:
+[A Pages document is converted, and a photograph is explained](updates/a-pages-document-is-converted-and-a-photograph-is-explained.md).
+**One thing this did not settle is task 8's**: no Keynote or Numbers document
+with provenance exists on any machine this team has.
+
+**The inventory of a Pages document, measured 2026-09-21.**
+`crates/alo-opening/tests/files/document.pages`, 227,583 bytes, held to
+`sha256:1b01189904934a7c5d6b59199c9719eab111759cfea5e2a7de17d3e45ee09c4d`, read
+by **LibreOffice 26.2 on x86_64** (exit code 0, taken from a file the run wrote
+rather than from `$?`, which does not survive the Windows-to-WSL boundary). All
+six of `WHAT_AN_INVENTORY_ANSWERS`, from what the engine produced rather than
+from what the format is assumed to hold:
+
+| What an inventory answers | This document |
+|---|---|
+| every family its text is set in | **5** — `Helvetica` and `HelveticaNeue` are the document's own; `Liberation Sans`, `Liberation Serif` and `Noto Sans` are the engine's substitutes |
+| every field whose value depends on when or where it is open | **0** |
+| every kind of content taken from elsewhere | **0 taken from elsewhere**; one picture *embedded* (`Pictures/1000…7E.jpg`, the original's `Data/pasted-image-24.jpeg`) |
+| whether it has comments | **no** — and the original carries `Index/AnnotationAuthorStorage-1732609.iwa` at 23 bytes, so the part exists and is empty |
+| whether it has tracked changes | **no** |
+| whether it carries macros | **no** |
+
+The original holds 15 parts, two of them pasted images.
+
+**Two things in that measurement are the point of taking it rather than assuming
+it.** The fonts answer is a real conversion cost under ADR 0008: the document is
+set in Helvetica and the engine silently substitutes Liberation and Noto, and a
+person is owed that sentence. And *taken from elsewhere* is **0 while an embedded
+picture is present** — the first reading of this measurement counted
+`Pictures/…` as linked and reported 1, which is the opposite answer for a person
+deciding whether a copy is complete offline. Embedded and linked are separated
+here because conflating them is exactly the proxy this project has shipped
+defects from.
 [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
 is **accepted, 2026-09-20**, as option A, and what answered it is that all three
 files exist with their provenance. The fourth conversion is written whole and
@@ -660,3 +709,59 @@ their first morning; today it is recognised, named, and then refused.
   conversion that skips itself where the engine is missing is refused (ADR
   0039's own rule). Nothing is uploaded. No sentence changes without task 5's
   table changing with it, published again in a follow-up report.
+
+### 8. The iWork exclusion, measured against a real Keynote and a real Numbers document
+
+**Status:** ready — **blocked on a real file of each.** **Depends on:** 6.
+
+Written 2026-09-21, by the lane that finished task 6, because it is the one
+thing that task measured and could not close. A finished task's body is not
+where a lane looking for free work looks, and leaving it there is how a
+takeable piece of work becomes invisible (`docs/autonomy/SHARED_MAIN.md`, *A
+stale blocker is invisible work*).
+
+**What is unmeasured.** All three iWork applications write the same container:
+`Index/Document.iwa` beside a stylesheet and a metadata plist, in one zip.
+`crates/alo-opening/src/zip.rs` calls one of them a Pages document and excludes
+the other two by parts only they have — a Keynote presentation's slides, masters
+or theme, a Numbers spreadsheet's tables. **The inclusion is measured against a
+real file and the exclusion is not**, because no `.key` and no `.numbers` with
+provenance exists on any machine this team has. The rule as written says *an
+iWork document is a Pages document unless it carries a part I listed*, and
+nobody has ever handed it a document that should take the *unless*.
+
+Task 6's own note says why that matters rather than being tidy: turning the rule
+round — *unless* — is what would make it answer *this is a Pages document* about
+a Keynote presentation written by a version whose parts nobody here listed. The
+exclusion is the half that protects a person from being told their presentation
+converts and then watching it fail, and it has never been shown working.
+
+**Why it is blocked and not merely undone.** It needs one real Keynote
+presentation and one real Numbers spreadsheet, each saved by the application
+itself and each with its provenance recorded beside it, exactly as
+`crates/alo-opening/tests/files/README.md` records the three files task 6
+measured. [ADR 0057](../decisions/0057-a-format-is-recognised-on-the-evidence-of-a-real-file.md)
+is accepted as option A — **wait for a real file** — so synthesising a
+container that carries the parts the rule looks for is not a way round this. It
+would prove that the rule agrees with its own author, which is the thing that
+decision exists to refuse.
+
+**Who can unblock it:** the Mac lane, which saved `document.pages` with Pages
+15.3.1 and has both other applications available on the same terms. It is
+minutes of work on that machine and impossible on any other.
+
+- **Acceptance:** `crates/alo-opening/tests/files/` holds one real `.key` and
+  one real `.numbers`, each saved by Keynote and by Numbers on a Mac, each held
+  to its digest with its provenance in that folder's `README.md` — what wrote
+  it, when, what is in it, and what it is not. `alo-opening` is shown, against
+  each, **not** calling it a Pages document: a Keynote presentation and a
+  Numbers spreadsheet each come out as *not recognised* rather than as
+  something this machine would offer to convert, and the real `document.pages`
+  beside them is still a Pages document. Whether either becomes a `Kind` of its
+  own is **not** part of this task: naming a format is a promise about what can
+  be done with it, and that is a separate change with its own measurement.
+- **Constraint:** no synthesised container, and no rule widened to make one
+  pass. If the two real files show the exclusion is wrong — a version whose
+  parts are named differently — the finding is the deliverable and the rule
+  changes to match the evidence, never the other way round. Nothing names
+  Apple's applications where a person reads.

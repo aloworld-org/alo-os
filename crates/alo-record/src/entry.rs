@@ -51,6 +51,7 @@ use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::happened::{Happened, Stopped};
+use crate::let_go::{Forgone, WhyLetGo};
 use crate::line::Line;
 use crate::what::What;
 
@@ -436,6 +437,32 @@ impl Entry {
                 failed: Some(Line::of(why)),
             },
         ))
+    }
+
+    /// The machine let go of what it had kept for `turns`, so none of them can
+    /// be put back any more.
+    ///
+    /// [`None`] when `turns` is empty: an entry saying nothing was let go is a
+    /// line about nothing, and a unit that ran and removed nothing has nothing
+    /// to tell anybody. Written **after** the removal and for exactly what was
+    /// removed, so a person reading it is reading what is true of the disk.
+    ///
+    /// Each turn carries the moment it ran and the sentence the person approved
+    /// at the time, copied in — see [`crate::let_go`] for why it is a copy and
+    /// why it is words rather than a count.
+    ///
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn let_go(why: WhyLetGo, turns: &[Forgone], at: SystemTime) -> Option<Self> {
+        (!turns.is_empty()).then(|| {
+            Self::new(
+                at,
+                Happened::LetGo {
+                    why,
+                    turns: turns.to_vec(),
+                },
+            )
+        })
     }
 
     /// The person opened `workspace`, which answered at `answers_at` when the

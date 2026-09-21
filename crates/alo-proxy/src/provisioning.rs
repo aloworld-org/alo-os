@@ -122,7 +122,9 @@ pub enum NotProvisioned {
     NothingEncryptsIt,
     /// The tool ran and would not do it.
     ///
-    /// Carries the exit status and **nothing the program printed**.
+    /// Carries the exit status and **nothing the program printed**. It outranks
+    /// [`NotProvisioned::NotWritten`] when both could be said, because a
+    /// program that refuses before it reads takes the pipe with it.
     TheToolRefused(Option<i32>),
     /// What it wrote could not be put in place.
     NotWritten(ErrorKind),
@@ -327,8 +329,9 @@ impl TheMachinesCredentials {
         })?;
         // The password, and nowhere else. A credential shorter than
         // `LONGEST_PASSWORD` fits a pipe without anything reading it, so this
-        // cannot wait on the other end.
-        let handing_over = running.stdin.take().map_or(
+        // cannot wait on the other end — but a program that has already refused
+        // is a pipe with nobody on it, which is `what_it_came_to`'s subject.
+        let handed_over = running.stdin.take().map_or(
             Err(NotProvisioned::NotWritten(ErrorKind::BrokenPipe)),
             |mut stdin| {
                 stdin
@@ -339,13 +342,40 @@ impl TheMachinesCredentials {
         let finished = running
             .wait()
             .map_err(|why| NotProvisioned::NotWritten(why.kind()))?;
-        handing_over?;
-        if finished.success() {
-            Ok(())
-        } else {
-            Err(NotProvisioned::TheToolRefused(finished.code()))
-        }
+        what_it_came_to(handed_over, !finished.success(), finished.code())
     }
+}
+
+/// What a run of the tool came to: **the program's own answer outranks the
+/// pipe.**
+///
+/// A program that refuses before it reads anything closes the other end of the
+/// pipe on its way out, so the hand-over fails with a broken pipe *because of*
+/// the refusal. Which of the two a caller saw was a race between the write and
+/// the exit — the same refusal read as [`NotProvisioned::TheToolRefused`] when
+/// the write won and [`NotProvisioned::NotWritten`] when the exit did — and it
+/// is a race with a wrong side: `NotWritten(BrokenPipe)` sends whoever stands
+/// the machine up looking at a pipe, when what happened is that
+/// `systemd-creds` would not do it and said so in a status. So a program that
+/// finished unsuccessfully is a refusal, whatever became of the pipe.
+///
+/// The other way round is not symmetrical and is deliberately kept: a program
+/// that finished **successfully** while the password never reached it wrote a
+/// credential of something other than the password, and that is
+/// [`NotProvisioned::NotWritten`] rather than a success.
+///
+/// Kept apart from running the process for [`arguments`]' reason — so the rule
+/// is testable as a rule, on any machine and on both sides of a race no test
+/// can order.
+const fn what_it_came_to(
+    handed_over: Result<(), NotProvisioned>,
+    the_tool_refused: bool,
+    with: Option<i32>,
+) -> Result<(), NotProvisioned> {
+    if the_tool_refused {
+        return Err(NotProvisioned::TheToolRefused(with));
+    }
+    handed_over
 }
 
 /// The store held to being nobody's but its owner's, once it has been made.
@@ -573,6 +603,72 @@ mod tests {
                 .join(format!("{THE_PERSONS_PROXY_PASSWORD}.writing"))
                 .exists()
         );
+    }
+
+    /// **A refusal is the tool's answer and never the pipe's**, whichever of
+    /// the two got there first.
+    ///
+    /// The rule as a rule, which is the only way to hold both sides of it: a
+    /// program that refuses closes the pipe as it exits, so whether the
+    /// hand-over succeeded is a race, and the answer must not be. The
+    /// asymmetric half is held too — a program that finished *successfully*
+    /// while the password never reached it encrypted something other than the
+    /// password, and that is not a success.
+    #[test]
+    fn a_refusal_is_the_tools_answer_and_never_the_pipes() {
+        let broken = Err(NotProvisioned::NotWritten(ErrorKind::BrokenPipe));
+        // It refused, and the write lost the race.
+        assert_eq!(
+            what_it_came_to(broken, true, Some(1)),
+            Err(NotProvisioned::TheToolRefused(Some(1)))
+        );
+        // It refused, and the write won it. The same answer.
+        assert_eq!(
+            what_it_came_to(Ok(()), true, Some(1)),
+            Err(NotProvisioned::TheToolRefused(Some(1)))
+        );
+        // Signalled rather than exited: still the tool's answer, with no code.
+        assert_eq!(
+            what_it_came_to(broken, true, None),
+            Err(NotProvisioned::TheToolRefused(None))
+        );
+        // It finished, and the password never reached it. Not a success.
+        assert_eq!(what_it_came_to(broken, false, None), broken);
+        assert_eq!(
+            what_it_came_to(
+                Err(NotProvisioned::NotWritten(ErrorKind::WriteZero)),
+                false,
+                None
+            ),
+            Err(NotProvisioned::NotWritten(ErrorKind::WriteZero))
+        );
+        // It finished and the password reached it.
+        assert_eq!(what_it_came_to(Ok(()), false, Some(0)), Ok(()));
+    }
+
+    /// **One refusal has one answer, over and over**, which is what the rule
+    /// above buys through the real process.
+    ///
+    /// The single round in the test before this one is a coin toss against a
+    /// program that exits without reading: on a loaded machine the exit
+    /// regularly beats the write. Before this rule it failed about one run in
+    /// three inside this crate's own suite, and a refusal a caller cannot name
+    /// is a refusal nobody can act on. Rounds rather than one, because the race
+    /// is the subject.
+    #[cfg(unix)]
+    #[test]
+    fn a_tool_that_refuses_answers_the_same_way_every_time() {
+        let store = a_directory_of_its_own("the-tool-refuses-again");
+        let credentials = TheMachinesCredentials::at(&store, &something_that_is_not_the_tool());
+        let password = Password::typed("hunter2").unwrap();
+        let beside = store.join(format!("{THE_PERSONS_PROXY_PASSWORD}.writing"));
+        for round in 0..64_u32 {
+            let refused = credentials.written(&named(), &password).unwrap_err();
+            assert_eq!(refused, NotProvisioned::TheToolRefused(Some(1)), "{round}");
+            assert!(refused.nothing_was_written());
+            assert!(!beside.exists(), "{round}");
+            assert_eq!(fs::read_dir(&store).unwrap().count(), 0, "{round}");
+        }
     }
 
     /// **The credential this machine writes is one it can read back**, and

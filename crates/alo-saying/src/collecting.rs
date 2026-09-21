@@ -92,8 +92,10 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-capability",
     "alo-capturing",
     "alo-changing",
+    "alo-changing-drives",
     "alo-changing-network",
     "alo-changing-printers",
+    "alo-changing-updates",
     "alo-choosing",
     "alo-clipboard",
     "alo-context",
@@ -118,12 +120,14 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-keeping-up",
     "alo-keyboards",
     "alo-leaving",
+    "alo-letting-go",
     "alo-locking",
     "alo-looking",
     "alo-measuring",
     "alo-menus",
     "alo-models",
     "alo-nearby",
+    "alo-notifying",
     "alo-opening",
     "alo-overlay",
     "alo-picking",
@@ -239,6 +243,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-changing", alo_changing::declare_into)?;
     declare(
         &mut vocabulary,
+        "alo-changing-drives",
+        alo_changing_drives::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
         "alo-changing-network",
         alo_changing_network::declare_into,
     )?;
@@ -246,6 +255,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         &mut vocabulary,
         "alo-changing-printers",
         alo_changing_printers::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
+        "alo-changing-updates",
+        alo_changing_updates::declare_into,
     )?;
     declare(&mut vocabulary, "alo-choosing", alo_choosing::declare_into)?;
     declare(
@@ -303,6 +317,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_keyboards::words::declare_into,
     )?;
     declare(&mut vocabulary, "alo-leaving", alo_leaving::declare_into)?;
+    declare(
+        &mut vocabulary,
+        "alo-letting-go",
+        alo_letting_go::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-locking", alo_locking::declare_into)?;
     declare(&mut vocabulary, "alo-looking", alo_looking::declare_into)?;
     declare(
@@ -316,6 +335,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         &mut vocabulary,
         "alo-nearby",
         alo_nearby::words::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
+        "alo-notifying",
+        alo_notifying::declare_into,
     )?;
     declare(&mut vocabulary, "alo-opening", alo_opening::declare_into)?;
     declare(&mut vocabulary, "alo-overlay", alo_overlay::declare_into)?;
@@ -393,6 +417,7 @@ mod tests {
         ("alo-capability", "capability.grant.anonymous"),
         ("alo-capturing", "capturing.the-lock-screen"),
         ("alo-changing", "changing.not-kept"),
+        ("alo-changing-drives", "changing-drives.safe-to-unplug"),
         (
             "alo-changing-network",
             "changing-network.verb.loses-its-connection",
@@ -400,6 +425,10 @@ mod tests {
         (
             "alo-changing-printers",
             "changing-printers.refused.more-than-one-called",
+        ),
+        (
+            "alo-changing-updates",
+            "changing-updates.refused.nothing-makes-changes",
         ),
         ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-clipboard", "clipboard.nothing-copied"),
@@ -425,12 +454,14 @@ mod tests {
         ("alo-keeping-up", "keeping-up.ready"),
         ("alo-keyboards", "keyboards.compose.none"),
         ("alo-leaving", "leaving.would-not-close"),
+        ("alo-letting-go", "letting-go.kept.not-read"),
         ("alo-locking", "locking.locked"),
         ("alo-looking", "looking.no-way-out"),
         ("alo-measuring", "measuring.not-on-this-host"),
         ("alo-menus", "menus.action.ask-the-agent-about-this"),
         ("alo-models", "models.source.this-machine"),
         ("alo-nearby", "nearby.may.ask-its-models"),
+        ("alo-notifying", "notifying.sent-by"),
         ("alo-opening", "opening.cannot.damaged"),
         ("alo-overlay", "overlay.at-rest.nothing-chosen"),
         ("alo-picking", "picking.the-whole-machine"),
@@ -504,10 +535,16 @@ mod tests {
             alo_capability::capability_words().unwrap().how_many(),
             alo_capturing::capturing_words().unwrap().how_many(),
             alo_changing::changing_words().unwrap().how_many(),
+            alo_changing_drives::changing_drives_words()
+                .unwrap()
+                .how_many(),
             alo_changing_network::changing_network_words()
                 .unwrap()
                 .how_many(),
             alo_changing_printers::changing_printers_words()
+                .unwrap()
+                .how_many(),
+            alo_changing_updates::changing_updates_words()
                 .unwrap()
                 .how_many(),
             alo_choosing::choosing_words().unwrap().how_many(),
@@ -534,12 +571,14 @@ mod tests {
             alo_keeping_up::keeping_up_words().unwrap().how_many(),
             alo_keyboards::keyboard_words().unwrap().how_many(),
             alo_leaving::leaving_words().unwrap().how_many(),
+            alo_letting_go::letting_go_words().unwrap().how_many(),
             alo_locking::locking_words().unwrap().how_many(),
             alo_looking::looking_words().unwrap().how_many(),
             alo_measuring::measuring_words().unwrap().how_many(),
             alo_menus::menu_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
             alo_nearby::nearby_words().unwrap().how_many(),
+            alo_notifying::notifying_words().unwrap().how_many(),
             alo_opening::opening_words().unwrap().how_many(),
             alo_overlay::overlay_words().unwrap().how_many(),
             alo_picking::picking_words().unwrap().how_many(),

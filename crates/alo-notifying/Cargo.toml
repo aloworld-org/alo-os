@@ -1,0 +1,61 @@
+[package]
+name = "alo-notifying"
+version = "0.0.1"
+description = "Notifications and do-not-disturb: who sent it, what it says, what it offers — held while locked, held while quiet, and held while the screen is being shared."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The seat, read and never edited. A notification arriving at a locked machine
+# is task 1's decision and not this crate's: `alo_locking::Seat::arrives` holds
+# it and `alo_locking::Arrived::Held` carries nothing back to draw.
+alo-locking = { path = "../alo-locking" }
+# The one door a notification arrives by. An application's request is judged
+# against the person's grants by `alo-portals`, and what arrives here is the
+# `Allowed` that judging produced — never a name an application wrote about
+# itself.
+alo-portals = { path = "../alo-portals" }
+# Whose grant it was, and what an agent is. `Grantee::is_an_application` is
+# what stops an application wearing the agent's colour and word (ADR 0010).
+alo-capability = { path = "../alo-capability" }
+# What an application's identifier is, declared once: a notification names the
+# identifier a grant was made over and never the name a packager wrote.
+alo-applications = { path = "../alo-applications" }
+# Terracotta, which is the agent's and nobody else's (ADR 0010), and the time
+# of day quiet hours are written in.
+alo-appearance = { path = "../alo-appearance" }
+# Whether the screen is being shared or recorded, read from the machine's own
+# media server. Do-not-disturb turns itself on for it, and no setting here can
+# turn that off.
+alo-in-use = { path = "../alo-in-use" }
+# The rule `notifying.toml` is kept by: only the difference, refused whole when
+# wrong, written whole or not at all (ADR 0038).
+alo-kept = { path = "../alo-kept" }
+# Every sentence this crate can say, declared rather than written into a file.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# A real sign-in under the seat, and the overlay a lock closes.
+alo-accounts = { path = "../alo-accounts" }
+alo-overlay = { path = "../alo-overlay" }
+# A change really waiting for approval, so that *a notification cannot answer
+# one* is a proposal that is still waiting afterwards rather than a paragraph.
+alo-approving = { path = "../alo-approving" }
+alo-context = { path = "../alo-context" }
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
+alo-turn = { path = "../alo-turn" }
+# The machine's one vocabulary, for the test that asks whether what this crate
+# says is collected at all.
+alo-saying = { path = "../alo-saying" }
+# Reads the text of `notifying.toml` in `keeping.rs`'s tests, to hold the list
+# of keys to what a change writes.
+toml = { workspace = true }
+
+[lints]
+workspace = true

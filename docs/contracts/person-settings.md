@@ -71,7 +71,7 @@ and it is written whole to `<file>.new`, read back off the disk as the same
 value, and only then renamed over the old one. Which files, and their keys, are
 sections of this contract as those crates gain them.
 
-Since 2026-09-15 there are four, each read and written by the crate that
+Since 2026-09-21 there are **eleven**, each read and written by the crate that
 declares its shape, at a path that crate is handed, and by nobody else:
 
 | File | Kept by | `format` | Keys besides `format` |
@@ -80,15 +80,46 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `dock.toml` | `alo_dock::keeping` | `1` | `edge` |
 | `shortcuts.toml` | `alo_shortcuts::keeping` | `1` | `changed` — one `[[changed]]` table per action, with `action` and, unless the person wants no shortcut for it, `chord` |
 | `what-opens-what.toml` | `alo_applications::keeping` | `1` | `kinds` — a table from a kind of file to the identifier of the application the person chose to open it |
+| `sleeping.toml` | `alo_sleeping::keeping` | `1` | `keep-awake`, `lid` |
+| `displays.toml` | `alo_displays::keeping` | `1` | `arrangements` — one `[[arrangements]]` table per set of screens, each holding its own `screens`; `night-light` |
+| `leaving.toml` | `alo_leaving::keeping` | `1` | `reopen`; `was-open` — one `[[was-open]]` table per window that was open |
+| `notifying.toml` | `alo_notifying::keeping` | `1` | `do-not-disturb`, `quiet-hours` |
+| `keyboards.toml` | `alo_keyboards::keeping` | `1` | `layouts`, `compose`, `input-methods` |
+| `gestures.toml` | `alo_desktops::gesture_files` | `1` | `scroll`, `pinch`, `three-finger-swipe`, `four-finger-swipe`, `scrolling` |
+| `undo.toml` | `alo_letting_go::keeping` | `1` | `window` |
+
+**That number is true because a test reads it.** The sentence above said *four*
+from 2026-09-15 until 2026-09-21 while the folder grew to ten, and it was the
+count rather than the omission that did the damage: somebody writing a backup
+tool, a migration or an organisation's provisioning from a contract that names
+four files writes something that silently drops the rest of what a person
+chose, and has no reason to look. So the count is no longer prose. Each of
+`sleeping.toml`, `displays.toml`, `leaving.toml`, `notifying.toml` and
+`undo.toml` is held to this table by its own crate's
+`tests/the_contract_describes_this_file.rs`, and each of those five reads the
+number in the sentence above against the number of rows in the table. A row added without the number moving, or the
+number moved without a row, fails in the change that does it.
+
+**Nine of the eleven have a section of their own below.** `keyboards.toml` and
+`gestures.toml` are in the table because they exist and a reader needs to know
+they do; their sections, and the tests that would hold them, are owed by the
+crates that keep them. Those two rows are the only ones nothing yet checks —
+read them as a pointer to `alo_keyboards::keeping` and
+`alo_desktops::gesture_files`, where the two shapes are actually declared.
 
 A file that did not read is answered, by each crate's `keeping::at_sign_in`,
 with what the release ships and the refusal beside it — naming the file, and the
 key when a key was what was wrong. Nothing watches these files: a hand edit is
-read at the next sign-in. Each has a section of its own below —
+read at the next sign-in. Each section below —
 [`appearance.toml`](#appearancetoml--how-this-persons-machine-looks),
-[`dock.toml`](#docktoml--which-edge-the-dock-is-on) and
-[`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed) and
-[`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file) — with its
+[`dock.toml`](#docktoml--which-edge-the-dock-is-on),
+[`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed),
+[`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file),
+[`sleeping.toml`](#sleepingtoml--what-closing-the-lid-does-and-what-keeps-this-machine-awake),
+[`displays.toml`](#displaystoml--where-this-persons-screens-are-and-when-they-warm),
+[`leaving.toml`](#leavingtoml--whether-what-was-open-opens-again),
+[`notifying.toml`](#notifyingtoml--when-notifications-are-held) and
+[`undo.toml`](#undotoml--how-far-back-this-machine-keeps-what-the-agent-changed) — gives its
 keys, its `format`, what a missing file means and what a file that does not
 read is told, each held to the crate that keeps it by a test in that crate
 (`tests/the_contract_describes_this_file.rs`).
@@ -1130,6 +1161,930 @@ and does not read is refused (`applications.kept.not-replaced`) with the file
 byte for byte as it was.
 `alo_applications::keeping::put_back_as_shipped` is the one door that replaces
 such a file, and it writes `format = 1` alone.
+
+## `sleeping.toml` — what closing the lid does, and what keeps this machine awake
+
+Kept by `alo_sleeping::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_sleeping::Changes`: what the person changed
+about sleep, and nothing the release ships.
+
+### Keys
+
+Besides `format`, and each of them optional: a key that is not there is a
+setting the person has not changed.
+
+| Key | Meaning |
+|---|---|
+| `keep-awake` | Whether the machine stays awake when nobody is using it. |
+| `lid` | What closing the lid does. |
+
+How long *nobody is using it* is, battery thresholds and power profiles are not
+in this file and are not that crate's.
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+Both settings changed, exactly as `alo_sleeping::keeping::keep` writes it:
+
+```toml
+format = 1
+
+keep-awake = true
+lid = "stays-awake-with-a-display"
+```
+
+### Values
+
+The names a value takes are matched exactly, case included: `"sleeps"` reads
+and `"Sleeps"` does not.
+
+- **`keep-awake`** is `true` or `false`. What alo OS ships is `false`: nothing
+  keeps the machine awake on its own.
+- **`lid`** is `"sleeps"` — closing the lid always sleeps the machine, which is
+  what alo OS ships — or `"stays-awake-with-a-display"`, which sleeps the
+  machine unless another display is attached at the moment the lid closes.
+
+### What a missing file means
+
+**The person has changed nothing**: closing the lid sleeps the machine, and
+nothing keeps it awake. Not an error, and nothing is written until the person
+changes one of the two.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured** — not the lid on the line
+above the typo. `alo_sleeping::keeping::at_sign_in` answers with the release's
+sleep settings and the refusal beside it, for Settings to say in that section.
+Every sentence names the file, and each is in the vocabulary with a note for
+its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `sleeping.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `sleeping.kept.not-understood` |
+| Not TOML, from a line on | `sleeping.kept.not-understood-at`, naming the line |
+| Another `format` | `sleeping.kept.another-format` |
+| A key at the top of the file that is not on the list | `sleeping.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+lid = "stays-awake-with-a-display"
+never-sleep = true
+```
+
+Refused — `sleeping.kept.unknown-key`, naming `never-sleep` — and closing the
+lid sleeps the machine, because the good key beside it is not honoured either.
+
+```toml refused
+format = 1
+lid = "Sleeps"
+```
+
+Refused — `sleeping.kept.not-understood`. The name is matched exactly.
+
+```toml refused
+format = 1
+keep-awake = "yes"
+```
+
+Refused — `sleeping.kept.not-understood`. It is a `true` or a `false`, not a
+word for one.
+
+```toml refused
+format = 1
+lid =
+```
+
+Refused — `sleeping.kept.not-understood-at`, naming line 2.
+
+```toml refused
+format = 2
+lid = "sleeps"
+```
+
+Refused — `sleeping.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: the whole of the person's changes to `sleeping.toml.new`
+beside the file, read back off the disk as the same changes, and only then
+renamed over the old one. A change that would not read back is refused before
+the file is touched (`sleeping.kept.not-expressible`), and a disk that will not
+take it leaves the file as it was (`sleeping.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`sleeping.kept.not-replaced`) with the file byte
+for byte as it was, `alo_sleeping::FileNotWritten::did_not_read` saying what is
+wrong with it. `alo_sleeping::keeping::put_back_as_shipped` is the one door
+that replaces such a file, and it writes `format = 1` alone.
+
+## `displays.toml` — where this person's screens are, and when they warm
+
+Kept by `alo_displays::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_displays::Changes`: every arrangement the person
+has made, one per set of screens, and night light.
+
+alo OS ships **no** arrangement — it has never seen anybody's screens — so here
+the person's changes are the whole of it rather than a difference over a
+default.
+
+### Keys
+
+Besides `format`, and each of them optional:
+
+| Key | Meaning |
+|---|---|
+| `arrangements` | One `[[arrangements]]` table per set of screens, in the order they were last remembered in, oldest first. |
+| `night-light` | How warm the screens are drawn of an evening, and when. One for the machine, not one per set of screens. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+Two sets of screens arranged and night light asked for, exactly as
+`alo_displays::keeping::keep` writes it:
+
+```toml
+format = 1
+
+[[arrangements]]
+
+[[arrangements.screens]]
+at = [0, 0]
+main = true
+scale = 200
+socket = "eDP-1"
+
+[[arrangements.screens]]
+at = [-2560, 0]
+make = "Example"
+model = "U2723QE"
+scale = 150
+serial = "G4H2K7"
+
+[[arrangements]]
+
+[[arrangements.screens]]
+at = [1920, 240]
+scale = 200
+socket = "eDP-1"
+
+[[arrangements.screens]]
+at = [0, 0]
+main = true
+make = "Example"
+model = "P2419H"
+scale = 100
+
+[night-light]
+warmth = 3400
+
+[night-light.between]
+from = "21:30"
+to = "07:00"
+```
+
+A file typed by hand need not be laid out that way — TOML's inline tables say
+the same thing — and night light taken from the sun rather than from a clock
+reads too:
+
+```toml
+format = 1
+
+[night-light]
+warmth = 2700
+
+[night-light.sunset-at]
+latitude = 51.5
+longitude = -0.12
+```
+
+### Values
+
+- **An arrangement** is one `[[arrangements]]` table holding one
+  `[[arrangements.screens]]` row per screen of that set. It is remembered under
+  the set of screens it names, which is the whole of why docking at the office
+  restores the office: the office's screens are a different set from home's,
+  and nothing asked where the machine is. **A set written down twice means what
+  the file says last**, rather than one of the two at random.
+- **A screen row names its screen in one of two ways, and never both.**
+  - `make` and `model`, with `serial` where the screen reports one — what the
+    screen says about itself, which is what survives being unplugged, carried
+    to another desk and plugged into a different socket.
+  - `socket` — the name the compositor calls the socket, for a screen that says
+    nothing about itself, which a great many built-in laptop panels do not. It
+    is **weaker**, and the machine says so to the person: another screen in the
+    same socket is set up as though it were this one.
+
+  A row with neither, with both, or with a `make` and no `model`, is half a
+  screen and does not read. Every name is matched exactly; an empty one, or one
+  that begins or ends with a space, is refused.
+- **`at`** is the top left corner of that screen, `[across, down]`, two whole
+  numbers in the pixels the arrangement is laid out in. A screen to the left of
+  the main one has a negative first number, and one above it a negative second.
+- **`scale`** is how large everything on that screen is drawn, in per cent,
+  from 100 to 300. No size is written down beside it: how much room a screen
+  takes is read off the pixels it reports at the moment it is plugged in, and a
+  screen takes *less* room the larger it draws.
+- **`main`** is `true` on the one screen a new window opens on, and left out of
+  every other row. An arrangement with none, or with two, does not read — one
+  screen or a shrug, and a shrug is not an answer to *where does this window
+  go*.
+- **`night-light`** is a warmth, and at most one way of saying when.
+  - `warmth` is the colour temperature the screens are drawn at while night
+    light is on, in kelvin, from 2000 to 6500. It is **required**: a
+    `night-light` table without one does not read. 6500 is the white a screen
+    is defined against, and warms nothing.
+  - `between = { from = "21:30", to = "07:00" }` — every day, from one time to
+    another on a twenty-four hour clock, written `HH:MM` whatever the region
+    writes. A stretch that runs through midnight is written exactly that way,
+    and the two times must differ.
+  - `sunset-at = { latitude = 51.5, longitude = -0.12 }` — from sunset to
+    sunrise where the person says they are, in degrees: north and east
+    positive, south and west negative, a latitude no further than 90 and a
+    longitude no further than 180. **Typed, never looked up**: nothing in alo
+    OS arrives at a whereabouts any other way.
+  - Neither of the two means night light is set and never on.
+  - **Both does not read.** A file that asks for a clock and for the sun is a
+    file that has not said when.
+
+  A table inside `night-light` has exactly its own keys: one it does not know
+  refuses the whole file.
+
+An `[[arrangements]]` table, and each `[[arrangements.screens]]` row inside it,
+has exactly its own keys: one alo OS does not know refuses the whole file.
+There is no key for how bright a screen is, what a person calls the desk it
+stands on, which resolution it was running at or which of two identical
+monitors this one is, and a table that has one does not read rather than being
+read past. A row is where a screen is described, which is exactly the place
+something would be tempted to grow a field, and a row read past is room to put
+one nobody agreed to.
+
+### What a missing file means
+
+**The person has arranged nothing and has never asked for night light**: every
+set of screens is laid out as though the machine had never seen it, and nothing
+is warmed. Not an error, and nothing is written until somebody moves a screen.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured** — not the arrangement above
+the one with two main screens in it. `alo_displays::keeping::at_sign_in`
+answers with a machine that has arranged nothing and the refusal beside it, for
+Settings to say in that section. Every sentence names the file, and each is in
+the vocabulary with a note for its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `displays.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `displays.kept.not-understood` |
+| Not TOML, from a line on | `displays.kept.not-understood-at`, naming the line |
+| Another `format` | `displays.kept.another-format` |
+| A key at the top of the file that is not on the list | `displays.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+brightness = 50
+```
+
+Refused — `displays.kept.unknown-key`, naming `brightness`. How bright a screen
+is, is not something this file holds.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+
+[[arrangements.screens]]
+socket = "eDP-1"
+at = [0, 0]
+scale = 100
+main = true
+
+[[arrangements.screens]]
+socket = "DP-2"
+at = [1920, 0]
+scale = 100
+main = true
+```
+
+Refused — `displays.kept.not-understood`. Two main screens is not an
+arrangement, and neither is none.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+
+[[arrangements.screens]]
+make = "Example"
+at = [0, 0]
+scale = 100
+main = true
+```
+
+Refused — `displays.kept.not-understood`. A `make` with no `model` is half a
+screen, and it would match a different monitor tomorrow.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+desk = "the office"
+
+[[arrangements.screens]]
+socket = "eDP-1"
+at = [0, 0]
+scale = 100
+main = true
+```
+
+Refused — `displays.kept.not-understood`. An arrangement is its screens and
+nothing else; where the machine happens to be standing is not a key this file
+has, and nothing asks it.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+
+[[arrangements.screens]]
+socket = "eDP-1"
+at = [0, 0]
+scale = 100
+main = true
+brightness = 50
+```
+
+Refused — `displays.kept.not-understood`. How bright a screen is, is not
+something this file holds — inside a screen's row no more than at the top of
+the file.
+
+```toml refused
+format = 1
+
+[night-light]
+warmth = 3400
+
+[night-light.between]
+from = "21:30"
+to = "07:00"
+
+[night-light.sunset-at]
+latitude = 51.5
+longitude = -0.12
+```
+
+Refused — `displays.kept.not-understood`. A clock and the sun are two answers
+to one question.
+
+```toml refused
+format = 1
+
+[night-light]
+warmth =
+```
+
+Refused — `displays.kept.not-understood-at`, naming line 4.
+
+```toml refused
+format = 2
+
+[night-light]
+warmth = 3400
+```
+
+Refused — `displays.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: the whole of the person's arrangements to
+`displays.toml.new` beside the file, read back off the disk as the same
+arrangements, and only then renamed over the old one
+(`displays.kept.not-expressible`, `displays.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`displays.kept.not-replaced`) with the file byte
+for byte as it was. `alo_displays::keeping::put_back_as_shipped` is the one
+door that replaces such a file, and it writes `format = 1` alone.
+
+## `leaving.toml` — whether what was open opens again
+
+Kept by `alo_leaving::keeping`, beside `appearance.toml`, at the path the crate
+is handed. It holds `alo_leaving::Changes`: one setting, and the list that
+exists only because the person turned that setting on.
+
+### Keys
+
+Besides `format`, and both of them optional:
+
+| Key | Meaning |
+|---|---|
+| `reopen` | Whether this person's applications open again when they sign in. |
+| `was-open` | One `[[was-open]]` table per window that was open when they last logged out, oldest first. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+The setting on and three windows written down at a log-out, exactly as
+`alo_leaving::keeping::at_sign_out` writes it:
+
+```toml
+format = 1
+
+reopen = true
+
+[[was-open]]
+application = "org.example.Files"
+on = "eDP-1"
+split = "the-whole-screen"
+
+[[was-open]]
+application = "org.example.Mail"
+on = "DP-2"
+split = "left-half"
+
+[[was-open]]
+application = "org.example.Editor"
+on = "DP-2"
+split = "right-half"
+```
+
+### Values
+
+- **`reopen`** is `true` or `false`. What alo OS ships is `false`, and that is
+  a decision rather than a default nobody thought about: the list below is
+  written only for somebody who asked for it, so a machine nobody configured
+  keeps no record of what anybody had open.
+- **`was-open`** is one `[[was-open]]` table per window, in the order the
+  windows were opened. Two windows of one application are two tables, because
+  *reopen what was open* is a promise about what was on which screen. Each
+  table has three keys and no fourth:
+  - `application` — the identifier this machine knows the application by, as
+    `org.example.Editor`, which is what a grant is made over. Never the name a
+    packager wrote: two of those can claim the same one, and a file that named
+    *Mail* would reopen whichever *Mail* answered to it next. No spaces, no
+    control characters, no `/` and no `\`.
+  - `on` — the name the shell knows that screen by, matched exactly. An empty
+    name, or one that begins or ends with a space, is refused.
+  - `split` — what the window had of that screen: `"the-whole-screen"`,
+    `"left-half"`, `"right-half"`, `"top-half"`, `"bottom-half"`,
+    `"top-left-quarter"`, `"top-right-quarter"`, `"bottom-left-quarter"`,
+    `"bottom-right-quarter"` or `"part"`.
+- **A fourth key refuses the whole file**, and that is the clause to read this
+  section for. There is no key for a title, a document, a path, a URL, a window
+  identifier or a size, and a `[[was-open]]` table that has one does not read
+  rather than being read past. A window title is the name of the document
+  somebody was writing or the subject of the mail they were reading; written
+  into a file it is a record of what a person did yesterday, sitting in their
+  own folder, and on a machine with an agent on it it is context nobody offered
+  ([ADR 0001](../decisions/0001-the-capability-model.md)).
+- **The list is written at one moment, and that moment is a log-out.**
+  `alo_leaving::keeping::at_sign_out` is the only door in that crate that
+  writes one, and it can only be called by a log-out that asked every
+  application to close first. A machine that kept the file up to date as
+  windows opened and closed would be a background reader of what somebody is
+  doing. The cost is honest and worth stating: a session that ends without a
+  log-out — a power cut, a crash — leaves nothing to reopen.
+- **And only for somebody who asked.** The choice is read from the file at the
+  moment of the write: with `reopen` absent or `false`, no list is written and
+  any list that was there is taken out. A hand-written list under a `reopen`
+  that is off reads, and nothing is reopened from it —
+  `alo_leaving::restoring::at_sign_in` reopens a list only when the choice is
+  on, and the next log-out removes it.
+
+### What a missing file means
+
+**The person has changed nothing and nothing was written down**: nothing is
+reopened at the next sign-in, and the machine holds no record of what anybody
+had open. Not an error. A log-out on a machine whose owner never asked for the
+setting writes no file at all.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured** — including a list that is
+well formed inside a file that is not. `alo_leaving::keeping::at_sign_in`
+answers with the release's settings and the refusal beside it, and
+`alo_leaving::restoring::at_sign_in` reopens nothing. Every sentence names the
+file, and each is in the vocabulary with a note for its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `leaving.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `leaving.kept.not-understood` |
+| Not TOML, from a line on | `leaving.kept.not-understood-at`, naming the line |
+| Another `format` | `leaving.kept.another-format` |
+| A key at the top of the file that is not on the list | `leaving.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+restore = true
+```
+
+Refused — `leaving.kept.unknown-key`, naming `restore`. The key is `reopen`.
+
+```toml refused
+format = 1
+reopen = true
+
+[[was-open]]
+application = "org.example.Editor"
+on = "eDP-1"
+split = "the-whole-screen"
+title = "march.odt"
+```
+
+Refused — `leaving.kept.not-understood`, and nothing is reopened. There is no
+key for a title and there will not be one.
+
+```toml refused
+format = 1
+reopen = true
+
+[[was-open]]
+application = "org.example.Editor"
+on = "eDP-1"
+split = "diagonal"
+```
+
+Refused — `leaving.kept.not-understood`. The splits are the ten named above.
+
+```toml refused
+format = 1
+reopen = true
+
+[[was-open]]
+application = "org.example.Editor"
+on = ""
+split = "the-whole-screen"
+```
+
+Refused — `leaving.kept.not-understood`. A screen with no name is not a screen
+anything could be reopened on.
+
+```toml refused
+format = 1
+reopen =
+```
+
+Refused — `leaving.kept.not-understood-at`, naming line 2.
+
+```toml refused
+format = 2
+reopen = true
+```
+
+Refused — `leaving.kept.another-format` — before its keys are judged, so a file
+a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: whole, read back before it counts, and renamed over the
+old file (`leaving.kept.not-expressible`, `leaving.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change — or a log-out — over
+one that is there and does not read is refused (`leaving.kept.not-replaced`)
+with the file byte for byte as it was.
+`alo_leaving::keeping::put_back_as_shipped` is the one door that replaces such
+a file, and it writes `format = 1` alone: nothing reopened, and no list kept.
+
+## `notifying.toml` — when notifications are held
+
+Kept by `alo_notifying::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_notifying::Changes`: what the person changed
+about notifications, and nothing the release ships.
+
+### Keys
+
+Besides `format`, and both of them optional:
+
+| Key | Meaning |
+|---|---|
+| `do-not-disturb` | Whether notifications are held rather than shown. |
+| `quiet-hours` | The stretch of the clock during which they are held anyway. |
+
+**No notification is in this file, and none ever will be.** There is no key for
+a title, a body, a sender or what somebody missed. Those live in the session's
+own memory (`alo_notifying::Missed`), reach no disk, and are gone when the
+person signs out.
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+Both settings changed, exactly as `alo_notifying::keeping::keep` writes it:
+
+```toml
+format = 1
+
+do-not-disturb = true
+
+[quiet-hours.begin]
+hour = 22
+minute = 30
+
+[quiet-hours.end]
+hour = 7
+minute = 0
+```
+
+A file typed by hand need not be laid out that way, and this reads too:
+
+```toml
+format = 1
+do-not-disturb = false
+quiet-hours = { begin = { hour = 23, minute = 0 }, end = { hour = 6, minute = 30 } }
+```
+
+### Values
+
+- **`do-not-disturb`** is `true` or `false`. What alo OS ships is `false`:
+  notifications are shown. A machine that arrives silent is a machine whose
+  owner finds out a week later that nothing was ever reaching them.
+- **`quiet-hours`** is `begin` and `end`, each a time of day written
+  `{ hour = …, minute = … }` on a twenty-four hour clock whatever the region
+  writes — an hour from 0 to 23 and a minute from 0 to 59. The two must differ,
+  because one time given twice says nothing about any minute of the day. A
+  stretch that runs through midnight is written exactly that way: `begin` in
+  the evening and `end` in the morning. The minute it begins is inside it and
+  the minute it ends is outside, so two stretches laid end to end never both
+  hold the same minute. Each table has exactly its own keys.
+- **What happens while the screen is being shared or recorded is not a
+  setting.** Notifications are held then whatever this file says, decided
+  before the file is consulted (`alo_notifying::Quiet::now`), and there is
+  nothing here to turn it off with.
+
+### What a missing file means
+
+**The person has changed nothing**: notifications are shown, and no hours are
+set aside. Not an error, and nothing is written until the person changes one of
+the two.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured** — not the quiet hours on the
+line above the typo. `alo_notifying::keeping::at_sign_in` answers with the
+release's settings and the refusal beside it, for Settings to say in that
+section. Every sentence names the file, and each is in the vocabulary with a
+note for its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `notifying.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `notifying.kept.not-understood` |
+| Not TOML, from a line on | `notifying.kept.not-understood-at`, naming the line |
+| Another `format` | `notifying.kept.another-format` |
+| A key at the top of the file that is not on the list | `notifying.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+do-not-disturb = true
+missed = ["a message from anna"]
+```
+
+Refused — `notifying.kept.unknown-key`, naming `missed`. What somebody missed
+is not kept in a file, so there is no key for it to arrive by.
+
+```toml refused
+format = 1
+
+[quiet-hours]
+begin = { hour = 22, minute = 30 }
+end = { hour = 7, minute = 0 }
+until = "monday"
+```
+
+Refused — `notifying.kept.not-understood`. A table inside a value has exactly
+its own keys.
+
+```toml refused
+format = 1
+
+[quiet-hours.begin]
+hour = 22
+minute = 0
+
+[quiet-hours.end]
+hour = 22
+minute = 0
+```
+
+Refused — `notifying.kept.not-understood`. One time given twice is not a
+stretch of the clock.
+
+```toml refused
+format = 1
+
+[quiet-hours.begin]
+hour = 24
+minute = 0
+
+[quiet-hours.end]
+hour = 7
+minute = 0
+```
+
+Refused — `notifying.kept.not-understood`. The hours run from 0 to 23.
+
+```toml refused
+format = 1
+do-not-disturb =
+```
+
+Refused — `notifying.kept.not-understood-at`, naming line 2.
+
+```toml refused
+format = 2
+do-not-disturb = true
+```
+
+Refused — `notifying.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: whole, read back before it counts, and renamed over the
+old file (`notifying.kept.not-expressible`, `notifying.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`notifying.kept.not-replaced`) with the file byte
+for byte as it was. `alo_notifying::keeping::put_back_as_shipped` is the one
+door that replaces such a file, and it writes `format = 1` alone.
+
+## `undo.toml` — how far back this machine keeps what the agent changed
+
+Kept by `alo_letting_go::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_letting_go::Changes`: how far back the person
+asked their machine to keep what an agent changed to their files, and nothing
+the release ships.
+
+**It is the one setting there is over what an undo can reach**
+([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first and
+seventh accepted terms). There is no *keep this one for ever*, no *never
+expire* and no per-folder exception: the only way to keep a snapshot longer is
+to widen the window. A machine with two ways to reprieve a snapshot is one
+where nobody can answer *when will this be gone*.
+
+### Keys
+
+Besides `format`, and optional: a key that is not there is a setting the person
+has not changed.
+
+| Key | Meaning |
+|---|---|
+| `window` | How far back an undo reaches: a table of `days` and `turns`. |
+
+Where the machine keeps what it can put back, and what it removes when it no
+longer can, are not in this file: they are the machine's, in
+`docs/contracts/kept-undo-folder.md`.
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+The window changed, exactly as `alo_letting_go::keeping::keep` writes it:
+
+```toml
+format = 1
+
+[window]
+days = 30
+turns = 200
+```
+
+### Values
+
+- **`window`** is a table with two whole numbers in it, and **both must be at
+  least one**. `days` is how many days back an undo reaches and `turns` is how
+  many changing turns; **whichever ends first ends the window**. What alo OS
+  ships is seven days or fifty changing turns
+  (`alo_keeping_up::HowFarBack::AS_SHIPPED`).
+
+  **There is no maximum.** An organisation naming a long window on a machine it
+  manages is naming its own rule, and the disk is already protected by the other
+  half of the decision: below a named amount of free space the oldest go first,
+  and the machine never fills a disk to preserve an undo.
+
+  **A nought is refused**, in either half and whole. A window that reaches
+  nothing is undo switched off by arithmetic, quietly, in a settings file; the
+  honest way to hold nothing is to forget what is kept, which is one act with a
+  sentence on it.
+
+### What a missing file means
+
+**The person has changed nothing**: the machine keeps what an agent changed for
+seven days or fifty changing turns, whichever ends first. Not an error, and
+nothing is written until the person changes it.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured.**
+`alo_letting_go::keeping::at_sign_in` answers with what the release ships and
+the refusal beside it, for Settings to say in that section — and the privileged
+unit that removes an expired snapshot reads the same answer, so a file somebody
+typed wrong can only ever cost a person snapshots they would have lost anyway,
+never ones they would have kept. Every sentence names the file, and each is in
+the vocabulary with a note for its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `letting-go.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `letting-go.kept.not-understood` |
+| Not TOML, from a line on | `letting-go.kept.not-understood-at`, naming the line |
+| Another `format` | `letting-go.kept.another-format` |
+| A key at the top of the file that is not on the list | `letting-go.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+never-expire = true
+```
+
+Refused — `letting-go.kept.unknown-key`, naming `never-expire`. There is no such
+setting and there is not going to be one.
+
+```toml refused
+format = 1
+
+[window]
+days = 0
+turns = 50
+```
+
+Refused — `letting-go.kept.not-understood`. A window that reaches no days
+reaches nothing.
+
+```toml refused
+format = 1
+
+[window]
+days = 7
+turns = 0
+```
+
+Refused — `letting-go.kept.not-understood`. The same, in the other half.
+
+```toml refused
+format = 1
+
+[window]
+days =
+```
+
+Refused — `letting-go.kept.not-understood-at`, naming line 4.
+
+```toml refused
+format = 2
+
+[window]
+days = 7
+turns = 50
+```
+
+Refused — `letting-go.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: the whole of the person's changes to `undo.toml.new`
+beside the file, read back off the disk as the same changes, and only then
+renamed over the old one. A change that would not read back is refused before
+the file is touched (`letting-go.kept.not-expressible`), and a disk that will
+not take it leaves the file as it was (`letting-go.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`letting-go.kept.not-replaced`) with the file byte
+for byte as it was, `alo_letting_go::FileNotWritten::did_not_read` saying what
+is wrong with it. `alo_letting_go::keeping::put_back_as_shipped` is the one door
+that replaces such a file, and it writes `format = 1` alone.
 
 ## A Settings surface, from sign-in to the next change
 

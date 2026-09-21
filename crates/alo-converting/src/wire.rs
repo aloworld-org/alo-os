@@ -302,6 +302,9 @@ mod tests {
     /// back, so no request can ask for a conversion whose original has never
     /// been inventoried. The asymmetry is the whole of what holding one back
     /// means, and this is where it is visible.
+    ///
+    /// Nothing is held back today, so this walks an empty list; it is kept for
+    /// the next conversion that waits on a measurement.
     #[test]
     fn a_held_back_conversion_can_be_written_and_is_not_read_back() {
         for held in Conversion::HELD_BACK {
@@ -314,6 +317,19 @@ mod tests {
                 "the service answered to {held:?}, whose original it cannot inventory"
             );
         }
+    }
+
+    /// **A Pages document can be asked for over the socket**, which is the
+    /// thing that was not true while it was held back.
+    #[test]
+    fn a_pages_document_is_a_request_the_service_reads() {
+        let written = Request::Convert(Conversion::PagesDocument).written();
+        assert!(written.contains("pages-document"), "{written}");
+        assert!(written.len() <= LONGEST_REQUEST);
+        assert_eq!(
+            Request::read(&written),
+            Some(Request::Convert(Conversion::PagesDocument))
+        );
     }
 
     /// **No path crosses the wire**: a request is one of four lines.

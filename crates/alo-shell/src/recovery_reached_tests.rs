@@ -32,6 +32,7 @@ fn a_desktop_that_will_not_start<'a>(
     filling: &'a FillingWindow,
 ) -> DesktopFrame<'a> {
     DesktopFrame {
+        status: crate::desktop_testing::a_laptops_status(),
         dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings,

@@ -45,7 +45,7 @@
 use std::time::SystemTime;
 
 use alo_egress::Destination;
-use alo_record::{Entry, Happened, Line, Stopped};
+use alo_record::{Entry, Happened, Line, Stopped, WhyLetGo};
 use alo_strings::{Filling, Said, Strings};
 
 use crate::words::{self, Word};
@@ -115,6 +115,12 @@ pub enum Outcome {
     PutBack,
     /// The person asked for something to be put back and it did not happen.
     NotPutBack,
+    /// The machine let go of what it kept for these turns, because how far back
+    /// an undo reaches no longer reached them (ADR 0045, the first term).
+    LetGoOutsideTheWindow,
+    /// The machine let go of what it kept for these turns, because the disk
+    /// needed the room and the oldest went first (ADR 0045, the second term).
+    LetGoTheDiskNeededTheRoom,
 }
 
 impl Outcome {
@@ -152,6 +158,14 @@ impl Outcome {
             Happened::Undone {
                 failed: Some(_), ..
             } => Self::NotPutBack,
+            Happened::LetGo {
+                why: WhyLetGo::OutsideTheWindow,
+                ..
+            } => Self::LetGoOutsideTheWindow,
+            Happened::LetGo {
+                why: WhyLetGo::TheDiskNeededTheRoom,
+                ..
+            } => Self::LetGoTheDiskNeededTheRoom,
         }
     }
 
@@ -183,6 +197,8 @@ impl Outcome {
             Self::StoppedBySleep => words::STOPPED_BY_SLEEP,
             Self::PutBack => words::PUT_BACK,
             Self::NotPutBack => words::NOT_PUT_BACK,
+            Self::LetGoOutsideTheWindow => words::LET_GO_OUTSIDE_THE_WINDOW,
+            Self::LetGoTheDiskNeededTheRoom => words::LET_GO_THE_DISK_NEEDED_THE_ROOM,
         }
     }
 

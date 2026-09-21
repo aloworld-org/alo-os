@@ -262,13 +262,17 @@ dependencies = [
  "alo-broker",
  "alo-drives",
  "alo-keeping",
+ "alo-keeping-up",
  "alo-networks",
  "alo-printing",
  "alo-proxy",
  "alo-record",
+ "alo-updating",
  "rustix 1.1.4",
  "serde",
+ "serde_json",
  "toml",
+ "zbus",
 ]
 
 [[package]]
@@ -339,6 +343,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-changing-drives"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-capability",
+ "alo-changing-network",
+ "alo-changing-printers",
+ "alo-changing-updates",
+ "alo-drives",
+ "alo-encrypting",
+ "alo-enrolling",
+ "alo-networks",
+ "alo-printing",
+ "alo-record",
+ "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-changing-network"
 version = "0.0.1"
 dependencies = [
@@ -364,6 +388,17 @@ dependencies = [
  "alo-networks",
  "alo-printing",
  "alo-proxy",
+ "alo-record",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-changing-updates"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-keeping-up",
  "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
@@ -860,6 +895,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-letting-go"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-keeping",
+ "alo-keeping-up",
+ "alo-kept",
+ "alo-measuring",
+ "alo-record",
+ "alo-recounting",
+ "alo-strings",
+ "rustix 1.1.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-locking"
 version = "0.0.1"
 dependencies = [
@@ -976,6 +1030,32 @@ dependencies = [
  "alo-proxy",
  "serde_json",
  "zbus",
+]
+
+[[package]]
+name = "alo-notifying"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-appearance",
+ "alo-applications",
+ "alo-approving",
+ "alo-capability",
+ "alo-context",
+ "alo-egress",
+ "alo-files",
+ "alo-in-use",
+ "alo-kept",
+ "alo-locking",
+ "alo-overlay",
+ "alo-portals",
+ "alo-record",
+ "alo-saying",
+ "alo-strings",
+ "alo-turn",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
@@ -1165,8 +1245,10 @@ dependencies = [
  "alo-capability",
  "alo-capturing",
  "alo-changing",
+ "alo-changing-drives",
  "alo-changing-network",
  "alo-changing-printers",
+ "alo-changing-updates",
  "alo-choosing",
  "alo-clipboard",
  "alo-context",
@@ -1191,12 +1273,14 @@ dependencies = [
  "alo-keeping-up",
  "alo-keyboards",
  "alo-leaving",
+ "alo-letting-go",
  "alo-locking",
  "alo-looking",
  "alo-measuring",
  "alo-menus",
  "alo-models",
  "alo-nearby",
+ "alo-notifying",
  "alo-opening",
  "alo-overlay",
  "alo-picking",
@@ -1286,8 +1370,10 @@ dependencies = [
  "alo-measuring",
  "alo-models",
  "alo-nearby",
+ "alo-networks",
  "alo-overlay",
  "alo-portals",
+ "alo-power",
  "alo-record",
  "alo-recounting",
  "alo-remembering",
@@ -1295,6 +1381,7 @@ dependencies = [
  "alo-sessiond",
  "alo-setting-up",
  "alo-shortcuts",
+ "alo-sound",
  "alo-strings",
  "alo-turn",
  "cosmic-text",
@@ -1328,8 +1415,10 @@ name = "alo-sleeping"
 version = "0.0.1"
 dependencies = [
  "alo-accounts",
+ "alo-appearance",
  "alo-capability",
  "alo-context",
+ "alo-displays",
  "alo-egress",
  "alo-files",
  "alo-keeping",

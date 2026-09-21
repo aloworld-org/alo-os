@@ -175,12 +175,19 @@ pub const FORGOTTEN: Word = Word::saying(
 );
 
 /// Wi-Fi is on.
-pub const WIRELESS_ON: Word = Word::saying("changing-network.wireless-on", "Wi-Fi is on")
-    .noting("Said once Wi-Fi has been turned on.");
+pub const WIRELESS_ON: Word = Word::saying("changing-network.wireless-on", "Wi-Fi is on").noting(
+    "Said once the machine's wireless radio has been turned on. It is a statement of how the \
+         machine is now, not a congratulation and not a confirmation of an instruction. \"Wi-Fi\" \
+         is the name of the thing rather than a word to translate, wherever it is used that way.",
+);
 
 /// Wi-Fi is off.
 pub const WIRELESS_OFF: Word = Word::saying("changing-network.wireless-off", "Wi-Fi is off")
-    .noting("Said once Wi-Fi has been turned off.");
+    .noting(
+        "Said once the machine's wireless radio has been turned off. Like its counterpart, it says \
+         how the machine is now. It must not read as a warning: turning Wi-Fi off is a thing the \
+         person chose, and nothing has gone wrong.",
+    );
 
 /// The machine's proxy is set.
 pub const PROXY_SET: Word = Word::saying(

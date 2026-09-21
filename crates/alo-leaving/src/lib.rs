@@ -33,7 +33,10 @@
 //!    names in hand.
 //! 4. **Switch user locks this session first** and only then hands the screen to
 //!    the sign-in ([`switching::asked`]). It is the same session afterwards:
-//!    nothing is signed out and nothing is closed.
+//!    nothing is signed out and nothing is closed. A screen that is **already**
+//!    locked is handed over as it is, which is `alo-locking`'s rule and not this
+//!    crate's
+//!    ([ADR 0061](../../../docs/decisions/0061-a-locked-screen-offers-a-road-to-the-greeter.md)).
 //! 5. **What was open is a list of applications and which display and split each
 //!    was on** — never a document's contents, a window's title or a URL
 //!    ([`Open`] has three fields and there is no fourth).

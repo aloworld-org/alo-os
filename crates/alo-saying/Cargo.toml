@@ -33,8 +33,13 @@ alo-power = { path = "../alo-power" }
 alo-capturing = { path = "../alo-capturing" }
 alo-sound = { path = "../alo-sound" }
 alo-changing = { path = "../alo-changing" }
+# What a person reads when a drive they plugged in is opened, or finished with
+# so that it can be unplugged.
+alo-changing-drives = { path = "../alo-changing-drives" }
 alo-changing-network = { path = "../alo-changing-network" }
 alo-changing-printers = { path = "../alo-changing-printers" }
+# The three things about an update that only the broker's door can answer.
+alo-changing-updates = { path = "../alo-changing-updates" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }
@@ -60,12 +65,14 @@ alo-keeping = { path = "../alo-keeping" }
 alo-keeping-up = { path = "../alo-keeping-up" }
 alo-keyboards = { path = "../alo-keyboards" }
 alo-leaving = { path = "../alo-leaving" }
+alo-letting-go = { path = "../alo-letting-go" }
 alo-locking = { path = "../alo-locking" }
 alo-looking = { path = "../alo-looking" }
 alo-measuring = { path = "../alo-measuring" }
 alo-menus = { path = "../alo-menus" }
 alo-models = { path = "../alo-models" }
 alo-nearby = { path = "../alo-nearby" }
+alo-notifying = { path = "../alo-notifying" }
 alo-opening = { path = "../alo-opening" }
 alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }

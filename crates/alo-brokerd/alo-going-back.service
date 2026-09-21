@@ -1,0 +1,59 @@
+[Unit]
+# The privileged half of `updates.roll-back`, and nothing else.
+#
+# ADR 0053, accepted option B, exactly as its sister unit
+# `alo-applying-an-update.service`: the capability the base asks for lives here
+# rather than in the broker, in a unit with a fixed command line and one job.
+Description=alo OS: start the version before at the next restart
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md
+
+# **No network, and the absence is the point.** The build to go back to is
+# already on the disk; nothing is fetched, no proxy is read, and no credential
+# is held. Nothing here waits for a way out of the machine, and nothing here
+# should ever be made to.
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+
+# No arguments, ever. What it goes back to is what the machine itself reports
+# and what its record says, decided again by the program; all the broker hands
+# over is the identity the person approved, which the program checks what it
+# decided against.
+ExecStart=/usr/libexec/alo-going-back
+
+User=root
+Group=root
+NoNewPrivileges=yes
+
+# **The capabilities, one per line** — the same list as its sister unit, and
+# the same argument behind it: CAP_SYS_ADMIN is what the base's own program
+# requires (measured 2026-09-20, bootc 1.15.1, the only capability named in its
+# binary), and the rest is what writing an ostree deployment touches. Going back
+# writes less than staging does, and a narrower list nobody has measured would
+# be a guess with a machine that will not roll back on the other side of it. ADR
+# 0053 puts the booted-machine measurement in the image lane, which narrows both
+# lists together and records what it found in docs/quirks.md.
+CapabilityBoundingSet=CAP_SYS_ADMIN
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+CapabilityBoundingSet=CAP_CHOWN
+CapabilityBoundingSet=CAP_FOWNER
+CapabilityBoundingSet=CAP_FSETID
+CapabilityBoundingSet=CAP_SETFCAP
+CapabilityBoundingSet=CAP_MKNOD
+CapabilityBoundingSet=CAP_SETUID
+CapabilityBoundingSet=CAP_SETGID
+CapabilityBoundingSet=CAP_SYS_CHROOT
+CapabilityBoundingSet=CAP_MAC_ADMIN
+CapabilityBoundingSet=CAP_LINUX_IMMUTABLE
+
+# **CAP_SYS_BOOT is not on that list, and its absence is a promise.** The
+# instruction is one word, `rollback`, and never carries --apply. *Restart and
+# go back now* is the person's own restart, afterwards.
+
+StandardOutput=journal
+StandardError=journal
+
+# Deliberately not restarted, and deliberately not enableable: started by the
+# broker, under an approval a person gave, and by nothing else.

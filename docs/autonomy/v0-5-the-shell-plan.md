@@ -270,7 +270,35 @@ them has ever been shown.
 
 ### 7. The status area's clock, battery, network and volume
 
-**Status:** **unblocked, 2026-09-20** — all four are on `main`. **Re-read
+**Status:** **Done, 2026-09-21.** Report:
+[The status area's four](updates/the-status-areas-four.md).
+`crates/alo-shell/src/status_items.rs` holds the four as the owning crates said
+them — `alo_formats` wrote the clock's text, `alo_power::Reading` is its own
+charge and its own charging state, `alo_networks::Reaching` answers *connected*
+through `HowFar::reaches_anything`, and `alo_sound::Volume` is its own number —
+and `status_items_raster.rs` places them inside `dock_raster`'s status area,
+where `desktop_paint` paints them onto the band.
+
+**Nothing is measured in the shell.** The readings arrive on `DesktopFrame`,
+which is the arrangement `crate::lock_battery` is already under: a compositor
+that opened `/sys` to read a battery would be a compositor measuring.
+
+**Both things the drawing must not undo are held by tests.** A machine with no
+battery has **three** cells rather than four with one blank, and the three are
+wider for it. And a machine told nothing about metering is drawn as **holding
+off**, because that is what `Metered::should_hold_off` counts *nothing said* as
+— a status area showing *not metered* there would be adding a claim about
+somebody's data allowance.
+
+**What this task does not do, and who does:** putting a *running machine's*
+readings into `DesktopFrame` is **task 15**, written 2026-09-21 because nothing
+owned it — the shell is handed the four and does not fetch them, and until 15
+lands the only caller that fills that field is `examples/desktop_check.rs`, with
+fixed readings labelled as fixed.
+
+Was *ready — unblocked 2026-09-20*, all four on `main`. The word
+here is *ready* because *unblocked* is not one the supervisor reads, and a
+status it cannot parse is a task it selects for ever. **Re-read
 2026-09-20**, when a lane sent to write the four found three already there; this
 paragraph had said they did not exist, and it was written on 2026-09-15 before
 they landed. The fourth was written that day.
@@ -392,8 +420,13 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 11. Notifications, the capture tools and the in-use indicator, drawn
 
-**Status:** blocked — on `v0-5-the-session-and-the-displays-plan.md` task 6 and
-`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. **Depends on:** 5.
+**Status:** ready — **its blockers cleared on 2026-09-19, and this line outlived them.**
+It waited on `v0-5-the-session-and-the-displays-plan.md` task 6 and
+`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
+to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
+`crates/alo-notifying` — on 2026-09-19. Nothing was re-read afterwards, so a
+takeable task read as untakeable for two days and task 14 behind it with it.
+Re-read 2026-09-21. **Depends on:** 5.
 
 - **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
   locked, shared or recorded; the region selection and the annotation marks of
@@ -512,3 +545,44 @@ untakeable.
 - **Constraint:** measured under a nested compositor; the certified machine has seen
   none of it and the report says so.
 
+
+### 15. A running machine's own clock, battery, network and volume
+
+**Status:** ready. **Depends on:** 7.
+
+Written 2026-09-21 by task 7, which found it unowned. Task 7 drew the status
+area's four and was right not to measure them: the readings arrive on
+`alo_shell::DesktopFrame`, the arrangement `crate::lock_battery` is already
+under, because a compositor that opened `/sys` would be a compositor measuring.
+**What nothing does is fill that field on a running machine.**
+
+Nothing outside `crates/alo-shell` constructs a `DesktopFrame` at all, and the
+one task that puts a binary in this crate — task 13 of
+`v0-01-delivery-plan.md`, *A sign-in surface, and what starts it* — stops at the
+sign-in screen and the session opening. So the four readings sit between two
+tasks and belong to neither, and `examples/desktop_check.rs` hands over **fixed**
+ones, labelled as fixed in its source because that probe asks whether a frame
+draws rather than what this machine's battery is.
+
+**Why it is worth its own line rather than a note.** A status area on a real
+laptop showing a battery that never moves does not look unfinished, it looks
+broken — and it is the one surface a person checks to find out whether their
+machine is telling them the truth.
+
+- **Acceptance:** the four readings a status area shows on a running machine are
+  that machine's, taken from the entry points the owning crates already have —
+  `alo_power::TheBattery::on_this_machine`, the audio server `alo-sound` reaches,
+  the network monitor `alo-networks` reads, and `alo_formats::Regionally` for the
+  time — and handed to `DesktopFrame` rather than read inside the shell, which
+  stays the crate that shows; the absent cases are real rather than defaults, so
+  a machine with no battery hands over `None` and a crate that has not been told
+  hands over *nothing said*; the clock advances as the machine's clock does, held
+  by a test that moves the time and finds the drawn text moved with it; and the
+  reading a person sees is the one the crate gave, held per item the way task 7
+  holds the drawing.
+- **Constraint:** the shell still measures nothing — this task builds whatever
+  stands the desktop up and reads, and adds no call into `/sys`, the media server
+  or the network manager from `crates/alo-shell`. **What it cannot tick from a
+  machine in a nested compositor is that the numbers match what the hardware is
+  really doing**; that half needs a certified machine and is named beside the
+  tick rather than assumed, exactly as this plan's other tasks name theirs.

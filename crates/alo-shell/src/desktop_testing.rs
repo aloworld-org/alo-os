@@ -257,3 +257,28 @@ pub(crate) fn documents() -> Folder {
     std::fs::write(at.join("notes.txt"), b"hello, world").unwrap();
     Folder { _held: held, at }
 }
+
+/// The four readings a laptop hands the status area, for a test that is about
+/// something else and still has to hand them over.
+///
+/// A laptop rather than a desktop, so the battery is present and a test that
+/// accidentally dropped it would show a different number of items.
+pub(crate) fn a_laptops_status() -> &'static crate::status_items::StatusItems {
+    static ONE: std::sync::OnceLock<crate::status_items::StatusItems> = std::sync::OnceLock::new();
+    ONE.get_or_init(|| {
+        crate::status_items::StatusItems::shown(
+            "09:41".to_owned(),
+            Some(alo_power::Reading::taken(
+                alo_power::reading::Charge::reported(64).unwrap(),
+                alo_power::reading::Charging::Discharging,
+                None,
+                std::time::SystemTime::UNIX_EPOCH,
+            )),
+            alo_networks::Reaching::reported(
+                alo_networks::HowFar::AllOfIt,
+                alo_networks::Metered::NotSaid,
+            ),
+            alo_sound::Volume::of(35).unwrap(),
+        )
+    })
+}

@@ -90,13 +90,12 @@ impl Note {
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
             Self::NewHere(display) | Self::RememberedByItsSocket(display) => {
-                Filling::of("display", display.as_a_person_reads_it())
+                display.named_in("display", Filling::nothing(), strings)
             }
-            Self::SizeRounded { display, rounded } => {
-                Filling::of("display", display.as_a_person_reads_it())
-                    .and("asked", format!("{}%", rounded.asked().as_per_cent()))
-                    .and("used", format!("{}%", rounded.used().as_per_cent()))
-            }
+            Self::SizeRounded { display, rounded } => display
+                .named_in("display", Filling::nothing(), strings)
+                .and("asked", format!("{}%", rounded.asked().as_per_cent()))
+                .and("used", format!("{}%", rounded.used().as_per_cent())),
             Self::AsYouLeftThem
             | Self::ToldApartByTheirSockets
             | Self::DidNotFit
@@ -157,7 +156,9 @@ mod tests {
         );
 
         let laptop = Note::RememberedByItsSocket(the_laptop());
-        assert!(laptop.said(&strings).text().contains("eDP-1"));
+        let said = laptop.said(&strings);
+        assert!(said.text().contains("Built-in screen"), "{said}");
+        assert!(!said.text().contains("eDP-1"), "{said}");
         assert_eq!(Note::DidNotFit.about(), None);
     }
 

@@ -105,6 +105,7 @@ use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
 use crate::brokered::AtTheBroker;
+use crate::let_go::{Forgone, WhyLetGo};
 use crate::line::Line;
 use crate::what::What;
 
@@ -566,6 +567,43 @@ pub enum Happened {
         /// when it did.
         failed: Option<Line>,
     },
+    /// The machine let go of what it had kept for one or more changing turns,
+    /// so they can no longer be put back
+    /// ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md),
+    /// the owner's first and second accepted terms).
+    ///
+    /// Written by the privileged unit that removes an expired snapshot, at the
+    /// moment it removes it and for the turns it removed — never in advance and
+    /// never for a turn it decided about and could not remove, because an entry
+    /// saying an undo is gone while the snapshot is still on the disk is the one
+    /// reading of this line a person cannot check.
+    ///
+    /// **No agent, and no field for one.** Expiry is housekeeping rather than a
+    /// petition: there is no verb that forgets an undo, no request, no approval
+    /// and no grant, and ADR 0045's seventh term is explicit about why — *an
+    /// agent that can forget an undo can erase the evidence of what it did*. A
+    /// name in that position would be an authority the record invented, for the
+    /// reason [`Happened::LeftOnItsOwn`] gives.
+    ///
+    /// **It carries copies, not pointers**, and it names the turns rather than
+    /// counting them. [`crate::let_go`] has both reasons.
+    ///
+    /// **Not egress**, and not an execution of a verb: nothing left the machine,
+    /// and what ran was the machine's own housekeeping on its own folder.
+    /// [`Happened::was_stopped`] does not count it either — nothing a person
+    /// asked for was refused; what they can no longer do is stated here so that
+    /// they find out from the record rather than from an offer that is not
+    /// there.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    LetGo {
+        /// Why it was let go.
+        why: WhyLetGo,
+        /// Each turn that can no longer be put back — never empty.
+        turns: Vec<Forgone>,
+    },
 }
 
 impl Happened {
@@ -602,6 +640,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
@@ -633,6 +672,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
@@ -668,6 +708,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -756,6 +797,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -797,6 +839,7 @@ impl Happened {
             | Self::SleptThrough { stopped: None, .. }
             | Self::Undone { failed: None, .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
@@ -821,6 +864,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -846,6 +890,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -877,6 +922,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. } => None,
         }
     }
@@ -907,6 +953,7 @@ impl Happened {
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
+            | Self::LetGo { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }

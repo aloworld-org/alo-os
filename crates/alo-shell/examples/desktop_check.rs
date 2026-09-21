@@ -100,6 +100,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     filling: &FillingWindow,
                     nested: &mut Nested|
      -> Result<(), Box<dyn std::error::Error>> {
+        // **Fixed readings, and deliberately so.** This probe asks whether the
+        // compositor draws a frame on a real display, not what this machine's
+        // battery is: the numbers a person sees come from `alo-power`,
+        // `alo-sound`, `alo-networks` and `alo-formats` on their own machine,
+        // and are handed to the shell rather than read by it. A laptop's four,
+        // so the battery is present and the status area lays out all of them.
+        let status = alo_shell::StatusItems::shown(
+            "09:41".to_owned(),
+            Some(alo_power::Reading::taken(
+                alo_power::reading::Charge::reported(64)?,
+                alo_power::reading::Charging::Discharging,
+                None,
+                std::time::SystemTime::UNIX_EPOCH,
+            )),
+            alo_networks::Reaching::reported(
+                alo_networks::HowFar::AllOfIt,
+                alo_networks::Metered::NotSaid,
+            ),
+            alo_sound::Volume::of(35)?,
+        );
         for edge in Edge::ALL {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
@@ -126,6 +146,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 egress,
                                 running,
                                 filling,
+                                status: &status,
                             },
                             None,
                             None,
