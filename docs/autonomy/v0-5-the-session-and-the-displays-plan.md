@@ -359,7 +359,39 @@ sentence in front of somebody else.
 
 ### 7. Every sentence, and the walk from lock to resume to a new desk
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
+**Status:** **Done, 2026-09-20.** The audit is
+`crates/alo-sleeping/tests/every_sentence_this_workstream_says.rs` and the walk
+is `crates/alo-sleeping/tests/the_walk_from_lock_to_resume_to_a_new_desk.rs`.
+Both live in `alo-sleeping` because **no crate in this workspace may name all
+five**: `alo-sleeping`, `alo-leaving` and `alo-notifying` each hold a test that
+reads every manifest in the workspace and refuses any dependant but
+`alo-saying` and `alo-shell`, and widening one of those lists — or writing into
+`alo-saying`, which this plan's header says it reads and never edits — would
+have paid for an audit with the guarantee the audit exists to keep. So the
+audit reads the **assembled vocabulary by key area**, which is the stricter
+question (what the machine says, not what a crate claims) and is complete
+because each of the five already holds its own test that every one of its keys
+sorts under its own area; `alo-locking`, `alo-sleeping` and `alo-displays` are
+read both ways and the counts must agree.
+
+**The walk found what the audit could not.** Every sentence in `alo-displays`
+was clean, and a connector name was reaching a person anyway — through the gap:
+a screen that says nothing about itself was **named** to its owner by the
+socket's own string, *eDP-1*, which is what the kernel's side of a graphics card
+calls a connector and is the only screen most laptops have. So this task added
+`crates/alo-displays/src/plugged_into.rs`: seven declared strings — *Built-in
+screen*, *HDMI socket 1*, *DisplayPort socket 2*, *DVI socket 1*, *VGA socket
+1*, *Socket 3*, *Another screen* — and `Identity::named_in`, the one road from a
+screen into a sentence, which puts a make and model in as data and one of these
+in as words alo OS said (`Filling::and_said`), so a translated sentence is only
+as translated as the piece inside it. Nothing about **remembering** a screen by
+its socket changed: that is task 3's decision and it stands. The sixteen-row
+table a person really meets is in the report, and one test parses it out of that
+file rather than holding a copy. Report:
+`docs/autonomy/updates/every-sentence-and-the-walk-from-lock-to-resume-to-a-new-desk.md`.
+Not on hardware — no lid has closed, nothing has suspended and no screen has
+been plugged into anything; the base underneath the walk is a `Logind` in the
+test file that counts what it was asked. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 - **Acceptance:** every sentence these five crates can say — `alo-locking`,
   `alo-sleeping`, `alo-displays`, `alo-leaving` and `alo-notifying` — is in the vocabulary
@@ -370,3 +402,53 @@ sentence in front of somebody else.
   connector name or any other part of the machinery (`docs/features.md`: *a
   person never learns the name of anything we rented*).
 - **Constraint:** nothing here re-decides what the sentences describe.
+
+### 8. Switching to another person at a locked screen
+
+**Status:** ready. **Depends on:** 1, 5.
+
+Task 5 built *switch user* and then found it unreachable where a household
+actually needs it: `alo_leaving::switching::asked` locks this session and hands
+the screen to the sign-in, and **a screen that is already locked refuses it**,
+because a road to the sign-in would be a fifth thing on a lock screen and what a
+lock screen may show is task 1's decision. So two people sharing one machine
+have the first unlock — and type their own password — before the second can sign
+in at all. That is the wrong way round: the person who has to prove who they are
+is the one who wants in, not the one who has gone.
+
+**This is a decision before it is any code.** Task 1's acceptance is published
+and says *nothing that would reach a person is shown on the lock screen except
+the time, the lock image, the battery, and that the machine is locked*, and it
+gives reasons that still hold. Either that rule stands and a household is told
+plainly to unlock first, or it gains a fifth thing and the reasons for the other
+four have to survive it. Whichever way it goes, the argument is written down
+before the code is: a lock screen is the surface this product will be judged on
+by somebody standing at somebody else's desk, and *we added a button* is not a
+record anybody can audit.
+
+The shape of an answer, if the answer is yes: a road to the **greeter** is not
+the same as a fifth thing *about this session*. It shows nothing about who is
+signed in, nothing about what is waiting and nothing that was on the screen —
+`alo_greeting::Standing` is already what a greeter draws from and already refuses
+to name a session it was not built for. That is the case to make or to refuse,
+and it is the one a reviewer will look for.
+
+- **Acceptance:** the decision is recorded — as an ADR under `docs/decisions/`
+  if a lock screen may show a fifth thing, because task 1's rule is one this
+  product argues in public, and as a paragraph in the task's report if it may
+  not; **whichever it is, `alo-locking` holds it as a type rather than as
+  prose**, with the refusal path tested as carefully as the road: a locked seat
+  either produces an `alo_greeting::Standing` and nothing else about the session
+  it came from, or it answers the same `NotWhileLocked` everything else does, and
+  a test reads this crate's own source for any second road; the session that was
+  locked is **not ended, not signed out and not unlocked** by any of it, which is
+  task 1's clause 8 and stays held by
+  `tests/nothing_here_ends_a_session.rs`; nothing a person could read on the way
+  names who was signed in, what was waiting, or what was open (task 5's list is
+  never consulted); and if the answer is *no*, the sentence a household reads
+  instead is declared here with a translator's note and joins task 7's audit.
+- **Constraint:** nothing here draws, and the greeter is `alo-greeting`'s —
+  read, never edited. No second road to a password: whatever a locked screen
+  offers, signing in is still `alo_greeting::Greeting::signs_in`. This task may
+  not touch `alo-sessiond`, and it may not make switching a thing an agent can
+  ask for.

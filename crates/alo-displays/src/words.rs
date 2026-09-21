@@ -1,10 +1,11 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! They fall into four groups a person meets in four places: **what happened to
+//! They fall into five groups a person meets in five places: **what happened to
 //! their screens** when they signed in, plugged something in, or asked for
 //! night light somewhere the sun does not set; **what became of the windows**
-//! on a screen that went; the **refusals**, which are mostly about a settings
-//! file they edited by hand; and **the person's own file**.
+//! on a screen that went; **what a screen that says nothing about itself is
+//! called**; the **refusals**, which are mostly about a settings file they
+//! edited by hand; and **the person's own file**.
 //!
 //! # What is deliberately not here
 //!
@@ -24,8 +25,11 @@
 //!
 //! `{display}` is filled with what the screen says about itself — *Dell
 //! U2720Q*, which is printed on the front of it — or, for a screen that says
-//! nothing, the socket it is in, because that is the only handle a person has
-//! on it and it is written beside the port on most machines.
+//! nothing, one of the `displays.screen.*` names: *Built-in screen*, *HDMI
+//! socket 1*, *Socket 3*. It used to be filled with the socket's own name, and
+//! `crate::plugged_into` is why it no longer is: `eDP-1` is what the kernel's
+//! side of a graphics card calls a connector, and nobody bought a machine to
+//! learn that.
 
 use alo_strings::{Vocabulary, VocabularyError, WordError};
 
@@ -55,10 +59,11 @@ pub const NEW_HERE: Word = Word::saying(
      screens and chosen a size for it from how large it is",
 )
 .noting(
-    "{display} is what a screen says about itself, such as \"Dell U2720Q\", or the name of the \
-     socket it is plugged into for a screen that says nothing. It is never translated. \"alo OS\" \
-     is the product's name and is never translated. Size here means how large everything is drawn \
-     on the screen, not the screen's own dimensions.",
+    "{display} names a screen. It is either what the screen says about itself, such as \"Dell \
+     U2720Q\", which is never translated — or, for a screen that says nothing about itself, one \
+     of the names under displays.screen.*, which is already translated by the time it arrives \
+     here. \"alo OS\" is the product's name and is never translated. Size here means how large \
+     everything is drawn on the screen, not the screen's own dimensions.",
 );
 
 /// A screen that can only be remembered by where it is plugged in.
@@ -68,10 +73,11 @@ pub const REMEMBERED_BY_ITS_SOCKET: Word = Word::saying(
      plugged into — another screen plugged into that socket will be set up the same way",
 )
 .noting(
-    "{display} is the name of a socket on the machine and is never translated. Said once, when \
-     such a screen is first used. Most built-in laptop screens are like this, and so are many \
-     screens behind an adapter. The second clause is the honest consequence and should not be \
-     softened: alo OS genuinely cannot tell one such screen from another.",
+    "{display} is one of the names under displays.screen.*, such as \"Built-in screen\" or \"HDMI \
+     socket 1\", and arrives here already translated. Said once, when such a screen is first \
+     used. Most built-in laptop screens are like this, and so are many screens behind an adapter. \
+     The second clause is the honest consequence and should not be softened: alo OS genuinely \
+     cannot tell one such screen from another.",
 );
 
 /// Two screens that describe themselves identically.
@@ -130,8 +136,9 @@ pub const SIZE_ROUNDED: Word = Word::saying(
     "{display} cannot draw at {asked}, so alo OS is using {used}, the nearest size it can",
 )
 .noting(
-    "{display} names a screen and is never translated. {asked} and {used} are percentages as this \
-     machine writes them, such as \"150%\". \"alo OS\" is the product's name and is never \
+    "{display} names a screen: what it says about itself, which is never translated, or one of \
+     the already-translated names under displays.screen.*. {asked} and {used} are percentages as \
+     this machine writes them, such as \"150%\". \"alo OS\" is the product's name and is never \
      translated. The size is how large everything on the screen is drawn.",
 );
 
@@ -145,9 +152,10 @@ pub const WINDOWS_MOVED: Word = Word::saying(
     "{display} was unplugged, so what was open on it is now on {other}",
 )
 .noting(
-    "{display} and {other} each name a screen and are never translated. Said the moment a cable \
-     comes out. Nothing has been closed — the windows have moved — and the sentence should not \
-     sound like a warning.",
+    "{display} and {other} each name a screen: what that screen says about itself, which is never \
+     translated, or one of the already-translated names under displays.screen.*. Said the moment \
+     a cable comes out. Nothing has been closed — the windows have moved — and the sentence \
+     should not sound like a warning.",
 );
 
 /// A screen came back, and what was on it went back to it.
@@ -156,9 +164,86 @@ pub const WINDOWS_CAME_BACK: Word = Word::saying(
     "{display} is back, so what was open on it before has gone back to it",
 )
 .noting(
-    "{display} names a screen and is never translated. Said when a screen that was unplugged is \
-     plugged in again during the same session.",
+    "{display} names a screen: what it says about itself, which is never translated, or one of \
+     the already-translated names under displays.screen.*. Said when a screen that was unplugged \
+     is plugged in again during the same session.",
 );
+
+// ---------------------------------------------------------------------------
+// What a screen that says nothing about itself is called —
+// [`crate::PluggedInto`]. Each of these goes into the `{display}` gap of a
+// sentence above, in place of a make and a model, so each is written as a
+// **name** rather than as a clause. `crate::plugged_into` is why they exist.
+// ---------------------------------------------------------------------------
+
+/// The machine's own screen.
+pub const SCREEN_BUILT_IN: Word = Word::saying("displays.screen.built-in", "Built-in screen")
+    .noting(
+        "The name alo OS gives a laptop's or an all-in-one's own screen, used wherever a screen \
+         is named — \"Built-in screen was unplugged\", \"what was open on it is now on Built-in \
+         screen\". It is a name rather than a description, so capitalise it the way a name is \
+         capitalised in your language and keep it short enough to sit inside another sentence. It \
+         is used for a screen that does not say what make and model it is, which nearly every \
+         built-in screen does not.",
+    );
+
+/// A screen in a DisplayPort socket.
+pub const SCREEN_AT_DISPLAYPORT: Word = Word::saying(
+    "displays.screen.at-displayport",
+    "DisplayPort socket {number}",
+)
+.noting(
+    "The name alo OS gives a screen that does not say what make and model it is, by the socket it \
+     is plugged into. \"DisplayPort\" is printed beside that socket on the machine itself and is \
+     never translated. {number} is a plain whole number counted from one, which tells two \
+     DisplayPort sockets apart. It is a name and sits inside other sentences, as in \"DisplayPort \
+     socket 2 was unplugged\".",
+);
+
+/// A screen in an HDMI socket.
+pub const SCREEN_AT_HDMI: Word = Word::saying("displays.screen.at-hdmi", "HDMI socket {number}")
+    .noting(
+        "The name alo OS gives a screen that does not say what make and model it is, by the \
+         socket it is plugged into. \"HDMI\" is printed beside that socket on the machine itself \
+         and is never translated. {number} is a plain whole number counted from one, which tells \
+         two HDMI sockets apart. It is a name and sits inside other sentences.",
+    );
+
+/// A screen in a DVI socket.
+pub const SCREEN_AT_DVI: Word = Word::saying("displays.screen.at-dvi", "DVI socket {number}")
+    .noting(
+        "The name alo OS gives a screen that does not say what make and model it is, by the \
+         socket it is plugged into. \"DVI\" is printed beside that socket on the machine itself \
+         and is never translated. {number} is a plain whole number counted from one. It is a name \
+         and sits inside other sentences.",
+    );
+
+/// A screen in a VGA socket.
+pub const SCREEN_AT_VGA: Word = Word::saying("displays.screen.at-vga", "VGA socket {number}")
+    .noting(
+        "The name alo OS gives a screen that does not say what make and model it is, by the \
+         socket it is plugged into. \"VGA\" is printed beside that socket on the machine itself \
+         and is never translated. {number} is a plain whole number counted from one. It is a name \
+         and sits inside other sentences.",
+    );
+
+/// A screen in a socket alo OS has no word for.
+pub const SCREEN_AT_ANOTHER_SOCKET: Word =
+    Word::saying("displays.screen.at-another-socket", "Socket {number}").noting(
+        "The name alo OS gives a screen that does not say what make and model it is and is \
+         plugged into a kind of socket alo OS has no word for — an older or unusual one. {number} \
+         is a plain whole number counted from one, which is all there is to tell two of them \
+         apart. It is a name and sits inside other sentences.",
+    );
+
+/// A screen alo OS can say nothing more about than that it is another one.
+pub const SCREEN_SOMEWHERE_ELSE: Word =
+    Word::saying("displays.screen.somewhere-else", "Another screen").noting(
+        "The name alo OS gives a screen that does not say what make and model it is and whose \
+         socket alo OS cannot name or number either — the last resort, and rare. Two such screens \
+         would read alike, which is admitted rather than hidden. It is a name and sits inside \
+         other sentences, as in \"Another screen was unplugged\".",
+    );
 
 // ---------------------------------------------------------------------------
 // The refusals — [`crate::IdentityError`], [`crate::ScaleError`],
@@ -285,9 +370,10 @@ pub const THE_SAME_SCREEN_TWICE: Word = Word::saying(
     "{display} is in this arrangement twice, so alo OS cannot tell where you meant to put it",
 )
 .noting(
-    "{display} names a screen and is never translated. \"alo OS\" is the product's name and is \
-     never translated. Almost always a settings file somebody edited by hand and copied a block \
-     in.",
+    "{display} names a screen: what it says about itself, which is never translated, or one of \
+     the already-translated names under displays.screen.*. \"alo OS\" is the product's name and \
+     is never translated. Almost always a settings file somebody edited by hand and copied a \
+     block in.",
 );
 
 /// An arrangement with no main screen.
@@ -442,7 +528,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 42] = [
     AS_YOU_LEFT_THEM,
     NEW_HERE,
     REMEMBERED_BY_ITS_SOCKET,
@@ -453,6 +539,13 @@ pub const EVERY_WORD: [Word; 35] = [
     SIZE_ROUNDED,
     WINDOWS_MOVED,
     WINDOWS_CAME_BACK,
+    SCREEN_BUILT_IN,
+    SCREEN_AT_DISPLAYPORT,
+    SCREEN_AT_HDMI,
+    SCREEN_AT_DVI,
+    SCREEN_AT_VGA,
+    SCREEN_AT_ANOTHER_SOCKET,
+    SCREEN_SOMEWHERE_ELSE,
     NOT_A_NAME,
     NAME_SPACED,
     SIZE_OUT_OF_RANGE,
@@ -563,13 +656,19 @@ mod tests {
         }
     }
 
-    /// **Only a screen's own name, a size, a file's place, a line and a key are
-    /// ever filled in.** No sentence here has room for a resolution, a window's
-    /// title or anything else that was on somebody's screen.
+    /// **Only a screen's own name, a socket's number, a size, a file's place, a
+    /// line and a key are ever filled in.** No sentence here has room for a
+    /// resolution, a window's title or anything else that was on somebody's
+    /// screen.
+    ///
+    /// `number` is the socket's own, which is how two HDMI sockets are told
+    /// apart; it is the one gap added since this list was written, and it is on
+    /// it rather than the list being loosened.
     #[test]
     fn nothing_but_a_screen_a_size_a_path_a_line_or_a_key_is_filled_in() {
         let allowed: BTreeSet<&str> = [
-            "display", "other", "name", "asked", "used", "least", "most", "path", "line", "key",
+            "display", "other", "name", "number", "asked", "used", "least", "most", "path", "line",
+            "key",
         ]
         .into();
         for word in EVERY_WORD {

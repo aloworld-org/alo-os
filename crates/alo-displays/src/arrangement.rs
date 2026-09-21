@@ -73,7 +73,7 @@ impl NotArranged {
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
             Self::TheSameScreenTwice(identity) => {
-                Filling::of("display", identity.as_a_person_reads_it())
+                identity.named_in("display", Filling::nothing(), strings)
             }
             Self::NoScreens
             | Self::NoMainScreen
