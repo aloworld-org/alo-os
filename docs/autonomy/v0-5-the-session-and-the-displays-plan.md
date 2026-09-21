@@ -302,8 +302,44 @@ system whose agent could otherwise learn what a person was doing yesterday.
 
 ### 6. Notifications, and do-not-disturb
 
-**Status:** ready — `v0-5-capture-and-the-room-plan.md` task 1, whose `alo-in-use`
-says when the screen is shared or recorded, was published on 2026-09-16. **Depends on:** 1.
+**Status:** **Done, 2026-09-19.** `crates/alo-notifying`, new and owned by this
+plan. A `Notification` is four things — who sent it, a title, a body, and at
+most three things to do, each a name its sender knows it by and a label a person
+reads — and **there is no public constructor**: the only roads are
+`arriving::from_an_application`, which takes the `alo_portals::Allowed` that
+judging a request against the person's grants produced and refuses an `Allowed`
+for any of the other fifteen portals; `arriving::from_the_agent`, which refuses
+a grantee that is an application; and `arriving::from_alo_os`, held to the same
+rules as everybody else. `Quiet::now` asks **the screen first** — `alo_in_use`,
+read — so a screen being shared or recorded holds notifications with every
+setting a person could touch turned off, and a machine that could not ask its
+media server holds them too and says so; only then does it ask the person's own
+switch and the hours they set aside (`QuietHours`, a stretch that wraps through
+midnight, kept in `notifying.toml` through `alo-kept` (ADR 0038) alongside
+`do-not-disturb`, and refused in this crate's words when it begins and ends at
+once). `deciding::arrives` hands the notification to `alo_locking::Seat::arrives`
+**before anything else**, so task 1's rule is task 1's own code; `Became::Held`
+carries a `Why` and no notification, and none of the five sentences it can say
+has a gap anything could be put into. What a person missed waits in `Missed`
+until they dismiss it — **in the session's own memory, with no serde, no path
+and no file anywhere in it**, which is a narrowing of *until they dismiss them*
+the report states plainly: signing out empties the list as dismissing does.
+An agent's own notification carries its mark and says *the agent* in words
+before it is terracotta (ADR 0010), and no application can wear either. **An
+application cannot notify with an action that answers an approval**: an `Action`
+is a name and a label, a `Picked` is addressed to the sender and refuses an
+action the notification never offered, `alo-approving` is a dev-dependency of
+the tests and not a dependency of the crate, and
+`tests/a_notification_cannot_answer_an_approval.rs` puts a real proposal on a
+real approval surface and finds it still waiting after the person has picked
+*approve*, *yes* and *allow*. Report:
+`docs/autonomy/updates/notifications-and-do-not-disturb.md`.
+**Owed, and not this task's to pay:** `docs/contracts/person-settings.md` still
+describes four kept files and now names none of `sleeping.toml` (task 2),
+`displays.toml` (task 3), `leaving.toml` (task 5) or `notifying.toml`, which is
+four files owed to that contract rather than three. Not on hardware — nothing
+here draws, opens a device or reaches a bus; the shell draws it later.
+**Depends on:** 1.
 
 *Notifications, with do-not-disturb* (`docs/features.md` v0.5). A notification is the
 one thing on a screen that arrives uninvited, and the thing most likely to put a private
@@ -325,7 +361,8 @@ sentence in front of somebody else.
 
 **Status:** ready. **Depends on:** 1, 2, 3, 4, 5, 6.
 
-- **Acceptance:** every sentence these four crates can say is in the vocabulary
+- **Acceptance:** every sentence these five crates can say — `alo-locking`,
+  `alo-sleeping`, `alo-displays`, `alo-leaving` and `alo-notifying` — is in the vocabulary
   with a translator's note, and one walk — lock, suspend with the lid, resume,
   unlock, dock to a second display, undock — produces the exact sequence a person
   meets, recorded in the report as a table and held by one test that fails if a

@@ -77,6 +77,7 @@ members = [
   "crates/alo-models",
   "crates/alo-nearby",
   "crates/alo-networks",
+  "crates/alo-notifying",
   "crates/alo-opening",
   "crates/alo-power",
   "crates/alo-printing",
