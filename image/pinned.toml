@@ -90,11 +90,29 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # The recipe now inspects each decoder by name and fails the build when one is
 # missing, and refuses `gstreamer1-plugins-libav` — the bundle that would carry
 # formats the decision does not permit, HEVC among them, past a rule enforced
-# nowhere else at runtime. Until 0.0.5's digest is pinned below, an installer
-# still pulls 0.0.4, which opens documents and plays no video.
-next = "0.0.5"
+# nowhere else at runtime.
+#
+# **Signed by the owner on 2026-09-21** (cosign 3.1.3, by digest, no
+# transparency log), verified against `signing/alo-os.pub`; a different key was
+# refused with *Found: 0, Expected 1*.
+#
+# **It records as well as plays, and that half was missing too.** Every release
+# before this one shipped no encoder either, so a machine could neither play a
+# film nor make one, while ADR 0051 says it produces AV1 or VP9, Opus and
+# Matroska. Measured inside this image by digest, with nothing added and no
+# network: a recording made here — 18 585 bytes of AV1 in Matroska — played
+# back to 288 000 bytes of raw frames, which is ten frames of 160×120 I420 to
+# the byte; a document converted to 8 312 bytes of ODT; and no
+# `gstreamer1-plugins-libav`, no `x264enc`, no `x265enc`.
+#
+# **`pipewire-gstreamer` is in it because looking for completeness found it.**
+# GStreamer installs without `pipewiresrc` and `pipewiresink`, which are the
+# elements every screenshot and screen recording goes through — so the image
+# would have carried a media pipeline that could not reach its own media
+# server, and the capture fault fixed in code on 2026-09-20 would have returned
+# from the image side. The build demands all eleven elements by name now.
 
-version = "0.0.4"
-digest = "sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858"
-revision = "b41b4b5ed36ea29b974af0c13d2f7ed9105169a7"
+version = "0.0.5"
+digest = "sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1"
+revision = "97c970c96f2c13f2341ed94fb264247fb6837442"
 key = "signing/alo-os.pub"
