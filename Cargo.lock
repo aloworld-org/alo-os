@@ -262,13 +262,17 @@ dependencies = [
  "alo-broker",
  "alo-drives",
  "alo-keeping",
+ "alo-keeping-up",
  "alo-networks",
  "alo-printing",
  "alo-proxy",
  "alo-record",
+ "alo-updating",
  "rustix 1.1.4",
  "serde",
+ "serde_json",
  "toml",
+ "zbus",
 ]
 
 [[package]]
@@ -339,6 +343,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-changing-drives"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-capability",
+ "alo-changing-network",
+ "alo-changing-printers",
+ "alo-changing-updates",
+ "alo-drives",
+ "alo-encrypting",
+ "alo-enrolling",
+ "alo-networks",
+ "alo-printing",
+ "alo-record",
+ "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-changing-network"
 version = "0.0.1"
 dependencies = [
@@ -364,6 +388,17 @@ dependencies = [
  "alo-networks",
  "alo-printing",
  "alo-proxy",
+ "alo-record",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-changing-updates"
+version = "0.0.1"
+dependencies = [
+ "alo-broker",
+ "alo-keeping-up",
  "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
@@ -1165,8 +1200,10 @@ dependencies = [
  "alo-capability",
  "alo-capturing",
  "alo-changing",
+ "alo-changing-drives",
  "alo-changing-network",
  "alo-changing-printers",
+ "alo-changing-updates",
  "alo-choosing",
  "alo-clipboard",
  "alo-context",

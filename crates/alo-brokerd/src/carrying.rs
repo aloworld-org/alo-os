@@ -7,11 +7,13 @@
 //! wildcard, so the task that carries the updates out meets its own line in
 //! the compiler rather than a verb that fell through.
 //!
-//! **The update verbs wait on a decision.** The base's own program refuses to
-//! change the machine for anything but root holding `CAP_SYS_ADMIN`, and this
-//! process holds no capability. How an update is carried out without giving the
-//! broker that is ADR 0053, proposed; until it is accepted and built, both update
-//! verbs are answered `not-carried`, in the record, and nothing is run.
+//! **The update verbs are carried out by a unit this process starts.** The
+//! base's own program refuses to change the machine for anything but root
+//! holding `CAP_SYS_ADMIN`, and this process holds no capability. ADR 0053,
+//! accepted option B, decided how they are carried out without giving the
+//! broker that: [`crate::Updates`] checks what a person approved, hands it to a
+//! folder only root can read, asks systemd to start the one unit that holds
+//! what the base asks for, and waits for its result. Nothing here runs the base.
 
 use alo_broker::{Carrying, NotCarried, SystemVerb};
 use alo_drives::DriveService;
@@ -22,10 +24,12 @@ use crate::network::Network;
 use crate::printers::{PrintService, Printers};
 use crate::proxy::Proxy;
 use crate::storage::Storage;
+use crate::units::StartingUnits;
+use crate::updates::Updates;
 
 /// Everything that carries a verb out on this machine.
 #[derive(Debug)]
-pub struct Carriers<S, D, P = PrintingService> {
+pub struct Carriers<S, D, P = PrintingService, U = NoUnits> {
     /// The network's three verbs.
     network: Network<S>,
     /// The proxy.
@@ -34,6 +38,25 @@ pub struct Carriers<S, D, P = PrintingService> {
     storage: Storage<D>,
     /// The printers, when the caller supplies their service.
     printers: Option<Printers<P>>,
+    /// The two update verbs, when the caller supplies something that starts
+    /// their units.
+    updates: Option<Updates<U>>,
+}
+
+/// What a broker built without anything to start units has: no way to start
+/// one, and no way to make one either.
+///
+/// It exists so [`Carriers::of`] keeps its published signature and its type
+/// stays nameable. A broker holding this answers both update verbs
+/// `not-carried`, which is what a machine with no systemd to ask would do
+/// anyway.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoUnits {}
+
+impl StartingUnits for NoUnits {
+    fn start(&self, _: crate::units::TheUnit) -> Result<(), crate::units::NotDone> {
+        match *self {}
+    }
 }
 
 impl<S: NetworkService, D: DriveService> Carriers<S, D> {
@@ -46,23 +69,41 @@ impl<S: NetworkService, D: DriveService> Carriers<S, D> {
             proxy,
             storage,
             printers: None,
+            updates: None,
         }
     }
 }
 
-impl<S: NetworkService, D: DriveService, P: PrintService> Carriers<S, D, P> {
+impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits> Carriers<S, D, P, U> {
     /// Add the printer carrier, preserving the network, proxy and storage.
     ///
     /// [`Carriers::of`] keeps its published three-argument signature and refuses
     /// printer verbs until this method supplies their service. The process
     /// supplies this machine's printing service; tests can supply their own.
     #[must_use]
-    pub fn with_printers<T: PrintService>(self, printers: Printers<T>) -> Carriers<S, D, T> {
+    pub fn with_printers<T: PrintService>(self, printers: Printers<T>) -> Carriers<S, D, T, U> {
         Carriers {
             network: self.network,
             proxy: self.proxy,
             storage: self.storage,
             printers: Some(printers),
+            updates: self.updates,
+        }
+    }
+
+    /// Add the update carrier, preserving everything else.
+    ///
+    /// Additive for the same reason [`Carriers::with_printers`] is: what was
+    /// published keeps working, and a broker built without this answers both
+    /// update verbs `not-carried` rather than pretending.
+    #[must_use]
+    pub fn with_updates<T: StartingUnits>(self, updates: Updates<T>) -> Carriers<S, D, P, T> {
+        Carriers {
+            network: self.network,
+            proxy: self.proxy,
+            storage: self.storage,
+            printers: self.printers,
+            updates: Some(updates),
         }
     }
 
@@ -70,6 +111,12 @@ impl<S: NetworkService, D: DriveService, P: PrintService> Carriers<S, D, P> {
     #[must_use]
     pub const fn printers(&self) -> Option<&Printers<P>> {
         self.printers.as_ref()
+    }
+
+    /// What carries the update verbs out, if supplied.
+    #[must_use]
+    pub const fn updates(&self) -> Option<&Updates<U>> {
+        self.updates.as_ref()
     }
 
     /// What carries the network's verbs out, for a test to look at.
@@ -83,9 +130,28 @@ impl<S: NetworkService, D: DriveService, P: PrintService> Carriers<S, D, P> {
     pub const fn storage(&self) -> &Storage<D> {
         &self.storage
     }
+
+    /// One of the two update verbs, carried out — or refused by name on a
+    /// broker that was built with nothing to start their units.
+    fn updating(
+        &self,
+        verb: SystemVerb,
+        carry: impl FnOnce(&Updates<U>) -> Result<(), NotCarried>,
+    ) -> Result<(), NotCarried> {
+        match self.updates.as_ref() {
+            Some(updates) => carry(updates),
+            None => Err(NotCarried(format!(
+                "{} is not carried out on this machine: nothing here can start the unit that \
+                 does it, so nothing was run",
+                verb.name()
+            ))),
+        }
+    }
 }
 
-impl<S: NetworkService, D: DriveService, P: PrintService> Carrying for Carriers<S, D, P> {
+impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits> Carrying
+    for Carriers<S, D, P, U>
+{
     fn carry(&mut self, verb: SystemVerb, approval: u64) -> Result<(), NotCarried> {
         match verb {
             SystemVerb::JoinNetwork(identity) => self.network.join(identity),
@@ -94,11 +160,12 @@ impl<S: NetworkService, D: DriveService, P: PrintService> Carrying for Carriers<
             SystemVerb::SetProxy(identity) => self.proxy.set(identity),
             SystemVerb::MountDrive(identity) => self.storage.mount(identity),
             SystemVerb::EjectDrive(identity) => self.storage.eject(identity),
-            SystemVerb::ApplyStagedUpdate(_) | SystemVerb::RollBack(_) => Err(NotCarried(format!(
-                "{} waits on ADR 0053: the base changes the machine only for a process holding a \
-                 capability the broker does not hold, so nothing was run",
-                verb.name()
-            ))),
+            SystemVerb::ApplyStagedUpdate(identity) => {
+                self.updating(verb, |updates| updates.apply(identity))
+            }
+            SystemVerb::RollBack(identity) => {
+                self.updating(verb, |updates| updates.go_back(identity))
+            }
             SystemVerb::AddPrinter(_)
             | SystemVerb::RemovePrinter(_)
             | SystemVerb::SetDefaultPrinter(_) => match self.printers.as_mut() {

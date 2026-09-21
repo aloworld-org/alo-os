@@ -14,6 +14,7 @@ use std::time::Duration;
 use crate::answer::Answer;
 use crate::listening::PATIENCE;
 use crate::request::Request;
+use crate::verbs::SystemVerb;
 
 /// How long the asking side waits for the answer.
 ///
@@ -26,6 +27,32 @@ use crate::request::Request;
 /// up to thirty seconds each. An asker that gave up sooner would tell a person
 /// nothing was changed while the change was still being made.
 pub const WAITING_FOR_THE_ANSWER: Duration = Duration::from_secs(180);
+
+/// How long the asking side waits for the answer to one of the two update
+/// verbs.
+///
+/// [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
+/// recommendation 2: *the side that asks waits longer for the two update verbs
+/// than for any other*. Applying an update pulls a whole system onto the disk
+/// over whatever connection the machine has, and the door does not answer until
+/// the unit that did it has finished — so the three minutes that bound a
+/// network manager associating would give up on an ordinary download long
+/// before anything had gone wrong. An hour is not a claim that one takes an
+/// hour; it is the bound past which something has failed rather than is slow.
+pub const WAITING_FOR_AN_UPDATE: Duration = Duration::from_secs(3_600);
+
+/// How long the asking side waits for the answer to this verb.
+///
+/// One function rather than a caller's choice: what a verb costs is the verb's
+/// own property, and an asker that named its own patience would be one that
+/// could give up on a change the machine is still making.
+#[must_use]
+pub const fn waiting_for(verb: &SystemVerb) -> Duration {
+    match verb {
+        SystemVerb::ApplyStagedUpdate(_) | SystemVerb::RollBack(_) => WAITING_FOR_AN_UPDATE,
+        _ => WAITING_FOR_THE_ANSWER,
+    }
+}
 
 /// The most bytes an answer may be, newline included: `refused` and the
 /// longest reason, with room to spare.
@@ -60,7 +87,7 @@ impl std::error::Error for NotAsked {}
 pub fn ask(door: &Path, request: &Request) -> Result<Answer, NotAsked> {
     let connection = UnixStream::connect(door).map_err(NotAsked::NoDoor)?;
     connection
-        .set_read_timeout(Some(WAITING_FOR_THE_ANSWER))
+        .set_read_timeout(Some(waiting_for(request.verb())))
         .and_then(|()| connection.set_write_timeout(Some(PATIENCE)))
         .map_err(NotAsked::NoDoor)?;
     let mut line = request.written().into_bytes();
@@ -81,4 +108,26 @@ pub fn ask(door: &Path, request: &Request) -> Result<Answer, NotAsked> {
         .ok()
         .and_then(Answer::read)
         .ok_or(NotAsked::NoAnswer)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::arguments::{Identity, Switch};
+
+    /// **The two update verbs wait longer than every other verb**, and every
+    /// other verb waits exactly as long as it did (ADR 0053, recommendation 2).
+    #[test]
+    fn the_two_update_verbs_are_the_ones_the_asker_waits_longer_for() {
+        assert!(WAITING_FOR_AN_UPDATE > WAITING_FOR_THE_ANSWER);
+        let identity = Identity::of_what_was_reported(b"a build");
+        for verb in SystemVerb::one_of_each(identity, Switch::Off) {
+            let waited = waiting_for(&verb);
+            let expected = match verb {
+                SystemVerb::ApplyStagedUpdate(_) | SystemVerb::RollBack(_) => WAITING_FOR_AN_UPDATE,
+                _ => WAITING_FOR_THE_ANSWER,
+            };
+            assert_eq!(waited, expected, "{}", verb.name());
+        }
+    }
 }

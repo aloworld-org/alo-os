@@ -615,6 +615,13 @@ exactly the reason it was written — the broker plan's task 8 is now blocked on
 that one line and on nothing this crate owes. Accepting a decision is the
 owner's, so nothing was changed to match it. Report:
 `docs/autonomy/updates/a-staging-decided-from-an-approval.md`.
+**Cleared 2026-09-20** by the task that was blocked: ADR 0053 now reads
+*accepted*, that guard is gone, and the broker plan's task 8 is done. This
+crate's second door was walked through for the first time in
+`crates/alo-brokerd/src/staging_an_update.rs`, which decides through
+`Staging::approved` and assembles nothing of its own — the second way to stage
+that this paragraph exists to prevent was not built. Report:
+`docs/autonomy/updates/updates-through-the-broker.md`.
 
 [`Staging::of`](../../crates/alo-keeping-up/src/staging.rs) decides the one
 instruction from a `Ready`, and a `Ready` exists only inside a check **this**

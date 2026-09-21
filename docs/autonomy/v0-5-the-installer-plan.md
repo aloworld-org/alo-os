@@ -365,6 +365,8 @@ Task 22 of `v0-5-the-models-measured-plan.md` is the code half of that line —
 written so that the processor road is measured on a machine with no card, and
 the card's road waits for hardware the way the chip's half of encryption does.
 
+### 7. Replace Windows — the road with no way back
+
 **Status:** ready. **Depends on:** 4.
 
 [ADR 0023](../decisions/0023-installed-from-the-machine-it-replaces.md) §4:
@@ -631,7 +633,7 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** **done, 2026-09-21**, on the development PC.
+**Status:** **Done, 2026-09-21.** On the development PC.
 `crates/alo-installing/src/writing.rs` names `btrfs`, from the one place it is
 named (`alo_image::THE_ONLY_FILESYSTEM`); `docs/booting.md` names the same one;
 and `crates/alo-image/tests/one_filesystem_and_it_can_hold_an_undo.rs` counts
