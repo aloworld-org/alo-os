@@ -36,6 +36,9 @@ impl DesktopPicture {
     /// band is painted first and the clock, battery, network and volume are
     /// marked into its far end.
     pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
+        // The division first: its rules and the outline a drop would take sit
+        // under the dock, which is furniture over the top of everything.
+        crate::painted::paint(frame, &self.division.solids, &[])?;
         crate::painted::paint(frame, &self.dock.solids, &[])?;
         crate::painted::paint(frame, &self.status.solids, &[])?;
         for window in [&self.running, &self.filling] {

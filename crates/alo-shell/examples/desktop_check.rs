@@ -120,6 +120,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             ),
             alo_sound::Volume::of(35)?,
         );
+        // A display nobody has divided, which is what this probe's is: the
+        // Server holds no division yet and the session that will is a task of
+        // its own.
+        let division = alo_dividing::Division::of(alo_dividing::Area::of(
+            alo_dividing::area::Point::at(0, 0),
+            alo_dividing::area::Size::of(1920, 1080),
+        )?);
         for edge in Edge::ALL {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
@@ -147,6 +154,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 running,
                                 filling,
                                 status: &status,
+                                division: &division,
+                                offer: &alo_dividing::Offer::Nothing,
                             },
                             None,
                             None,

@@ -39,9 +39,13 @@ fn drawn(
     picture(
         dock,
         look,
-        &running_shows(running, &strings),
-        &filling_shows(filling, &strings),
-        crate::desktop_testing::a_laptops_status(),
+        crate::desktop_raster::Shown {
+            running: &running_shows(running, &strings),
+            filling: &filling_shows(filling, &strings),
+            status: crate::desktop_testing::a_laptops_status(),
+            division: crate::desktop_testing::an_undivided_display(),
+            offer: crate::desktop_testing::nothing_offered(),
+        },
         &mut labels.fonts,
         size,
     )
@@ -61,6 +65,9 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
     // this walk exists for — not one pixel of the desktop is the agent's
     // colour — covers the clock, the battery, the network and the volume too.
     colours.extend(solids(&picture.status.solids));
+    // And the division — its rules and the outline a drop would take are on the
+    // desktop, so the promise that none of it is the agent's colour covers them.
+    colours.extend(solids(&picture.division.solids));
     for window in [&picture.running, &picture.filling] {
         colours.extend(solids(&window.solids));
         colours.extend(inked(&window.inked));
