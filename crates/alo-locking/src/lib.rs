@@ -15,7 +15,8 @@
 //! | [`NotWhileLocked`] | The agent's key and a waiting approval, refused at a locked machine |
 //! | [`Running`], [`WhileLocked`] | What keeps running behind the lock: everything |
 //! | [`Battery`] | The battery, as the lock screen may show it |
-//! | [`words`] | The one sentence this crate says |
+//! | [`SomebodyElse`] | The road to the greeter, which carries no session at all |
+//! | [`words`] | The two things this crate says |
 //!
 //! # The rules, one clause each
 //!
@@ -40,6 +41,12 @@
 //! 8. **A locked session is not a signed-out one.** Nothing here ends a
 //!    session, and `tests/nothing_here_ends_a_session.rs` holds that it
 //!    cannot.
+//! 9. **A lock screen may offer a road to the greeter, and nothing else new**
+//!    ([`Seat::somebody_else`]). What a lock screen may *show* is clause 2 and
+//!    is unchanged — [`LockScreen`] still has room for exactly four things;
+//!    what it may *offer* is a separate question, answered by a value that
+//!    carries no session, no person and no notification
+//!    ([ADR 0061](../../../docs/decisions/0061-a-locked-screen-offers-a-road-to-the-greeter.md)).
 //!
 //! # Nothing here draws
 //!
@@ -64,6 +71,7 @@ pub mod refusing;
 pub mod running;
 pub mod screen;
 pub mod seat;
+pub mod somebody_else;
 mod summoning;
 mod the_locked_session;
 pub mod unlocking;
@@ -79,5 +87,6 @@ pub use refusing::NotWhileLocked;
 pub use running::{EVERYTHING_RUNNING, Running, WhileLocked};
 pub use screen::LockScreen;
 pub use seat::Seat;
+pub use somebody_else::SomebodyElse;
 pub use unlocking::Unlocking;
-pub use words::{EVERY_WORD, LOCKED, Word, WordsError, declare_into, locking_words};
+pub use words::{EVERY_WORD, LOCKED, SOMEBODY_ELSE, Word, WordsError, declare_into, locking_words};
