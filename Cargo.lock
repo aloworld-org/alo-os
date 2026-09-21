@@ -1014,6 +1014,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-notifying"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-appearance",
+ "alo-applications",
+ "alo-approving",
+ "alo-capability",
+ "alo-context",
+ "alo-egress",
+ "alo-files",
+ "alo-in-use",
+ "alo-kept",
+ "alo-locking",
+ "alo-overlay",
+ "alo-portals",
+ "alo-record",
+ "alo-saying",
+ "alo-strings",
+ "alo-turn",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-opening"
 version = "0.0.1"
 dependencies = [
@@ -1234,6 +1260,7 @@ dependencies = [
  "alo-menus",
  "alo-models",
  "alo-nearby",
+ "alo-notifying",
  "alo-opening",
  "alo-overlay",
  "alo-picking",

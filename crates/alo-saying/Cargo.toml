@@ -71,6 +71,7 @@ alo-measuring = { path = "../alo-measuring" }
 alo-menus = { path = "../alo-menus" }
 alo-models = { path = "../alo-models" }
 alo-nearby = { path = "../alo-nearby" }
+alo-notifying = { path = "../alo-notifying" }
 alo-opening = { path = "../alo-opening" }
 alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }

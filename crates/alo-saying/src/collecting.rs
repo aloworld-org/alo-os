@@ -126,6 +126,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-menus",
     "alo-models",
     "alo-nearby",
+    "alo-notifying",
     "alo-opening",
     "alo-overlay",
     "alo-picking",
@@ -329,6 +330,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-nearby",
         alo_nearby::words::declare_into,
     )?;
+    declare(
+        &mut vocabulary,
+        "alo-notifying",
+        alo_notifying::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-opening", alo_opening::declare_into)?;
     declare(&mut vocabulary, "alo-overlay", alo_overlay::declare_into)?;
     declare(&mut vocabulary, "alo-picking", alo_picking::declare_into)?;
@@ -448,6 +454,7 @@ mod tests {
         ("alo-menus", "menus.action.ask-the-agent-about-this"),
         ("alo-models", "models.source.this-machine"),
         ("alo-nearby", "nearby.may.ask-its-models"),
+        ("alo-notifying", "notifying.sent-by"),
         ("alo-opening", "opening.cannot.damaged"),
         ("alo-overlay", "overlay.at-rest.nothing-chosen"),
         ("alo-picking", "picking.the-whole-machine"),
@@ -563,6 +570,7 @@ mod tests {
             alo_menus::menu_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
             alo_nearby::nearby_words().unwrap().how_many(),
+            alo_notifying::notifying_words().unwrap().how_many(),
             alo_opening::opening_words().unwrap().how_many(),
             alo_overlay::overlay_words().unwrap().how_many(),
             alo_picking::picking_words().unwrap().how_many(),
