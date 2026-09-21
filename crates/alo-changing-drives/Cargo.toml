@@ -1,0 +1,57 @@
+[package]
+name = "alo-changing-drives"
+version = "0.0.1"
+description = "What a person reads when a drive they plugged in is opened or finished with through the privileged broker's two storage verbs."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# The road from an approval to the broker's door is `alo-brokerd`'s `Storage`,
+# built and tested by task 4 of the broker plan. What that road never had is a
+# person in front of it: the broker answers in one word, and until this crate
+# nothing anywhere turned that word into a sentence anybody could read. So this
+# is the words, and deliberately nothing else — no second carrier, no second
+# way to reach the door.
+
+[dependencies]
+# The broker's closed list, and the one word its door answers with.
+alo-broker = { path = "../alo-broker" }
+# What a drive is as the rented disk service reports it. Read, never extended
+# here: this crate picks among what was reported and says what happened.
+alo-drives = { path = "../alo-drives" }
+# The broker answers with one of the record's own reasons.
+alo-record = { path = "../alo-record" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# Task 7's two tests live here: the audit of every sentence this workstream can
+# say, and the one walk from a new printer to a recovered disk. They are the
+# workstream's rather than this crate's, and they are here because the walk is
+# what found this crate missing — and because `alo-brokerd`, where they were
+# written first, may not name `alo-capability` even as a dev-dependency:
+# `the_broker_can_make_no_grant` reads that manifest as text, which is the
+# stricter and the right reading.
+#
+# The other three surfaces that word the broker's one-word answer, and the
+# sentences a person meets in front of a disk that will not open.
+alo-changing-network = { path = "../alo-changing-network" }
+alo-changing-printers = { path = "../alo-changing-printers" }
+alo-changing-updates = { path = "../alo-changing-updates" }
+alo-encrypting = { path = "../alo-encrypting" }
+alo-enrolling = { path = "../alo-enrolling" }
+# A verb an agent proposes and a person approves once, so the walk's sentences
+# are the ones a person is really shown rather than ones a test wrote.
+alo-capability = { path = "../alo-capability" }
+# What a printer and a network are, for the two sentences that name one.
+alo-networks = { path = "../alo-networks" }
+alo-printing = { path = "../alo-printing" }
+# The machine's one assembled vocabulary, which is what a real process holds: a
+# sentence that reads correctly beside its own crate's words and wrongly beside
+# everybody else's is the failure these two tests exist for.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

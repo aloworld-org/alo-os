@@ -87,6 +87,20 @@ zbus = { version = "5.19", default-features = false, features = [
     "blocking-api",
 ] }
 
+# There are deliberately no dev-dependencies here, and task 7 found out why.
+# Its two tests — every sentence this workstream says, and the walk from a new
+# printer to a recovered disk — were written in this crate, because this is the
+# one crate that stands where all four verb families meet. The walk needs
+# `alo-capability`, since the sentence a person approves is an
+# `alo_capability::Call`'s own, and
+# `tests/only_the_drive_approved_is_mounted_or_ejected.rs`'s
+# `the_broker_can_make_no_grant` reads **this manifest as text** and refuses the
+# name wherever it appears — dev-dependencies included. That is the stricter
+# reading and it is the right one: *the process that mounts a drive can make no
+# grant* is a promise about a file somebody audits, not about a link graph they
+# would have to compute. So the two tests live in `alo-changing-drives`, which
+# is the crate the walk found missing.
+
 [[bin]]
 name = "alo-brokerd"
 path = "src/main.rs"

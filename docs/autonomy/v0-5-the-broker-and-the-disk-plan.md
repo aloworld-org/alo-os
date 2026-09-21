@@ -15,7 +15,11 @@ fixed verb list, its door, and nothing else — the third privileged component a
 thing) and `crates/alo-encrypting` (what full-disk encryption is on this machine:
 how it is enrolled, where the key is, and how a person recovers) — and, added by
 task 6 on 2026-09-20, `crates/alo-enrolling` (what a person is told on that road:
-one sentence per refusal, with a translator's note). The last two are separate
+one sentence per refusal, with a translator's note), and by task 7 on 2026-09-20,
+`crates/alo-changing-drives` and `crates/alo-changing-updates` (what a person
+reads when the broker's two storage verbs and its two update verbs answer — the
+surfaces the printers and the network already had and these two verb families did
+not). `alo-encrypting` and `alo-enrolling` are separate
 crates because `alo-encrypting` depends on nothing and must keep depending on
 nothing: it holds a recovery key for the length of one screen, and a vocabulary
 would bring a serialiser into reach of it. **It reads and
@@ -372,10 +376,36 @@ property is:
 
 ### 7. Every sentence, and the walk from a new printer to a recovered disk
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, and 8 for the update in the walk
+**Status:** **Done, 2026-09-20.** The audit, the walk, the table it is held to,
+and the two surfaces the walk found missing. This is code and vocabulary
+evidence, **not** a printer, a network, a drive, a machine that has been
+updated or a disk on certified hardware: every sentence was produced by the
+value that really produces it, out of the machine's one assembled vocabulary,
+and nothing here touched a rented service. Report:
+`docs/autonomy/updates/every-sentence-and-the-walk-from-a-new-printer-to-a-recovered-disk.md`.
+**Depends on:** 1, 2, 3, 4, and 8 for the update in the walk
 — **task 8 landed on 2026-09-20**, so the update in the walk is takeable: what
 a person meets is the broker's one-word answer worded by the surface that
 asked, and the broker itself adds no sentence to the vocabulary.
+
+**What the walk found, 2026-09-20.** *Worded by the surface that asked* was true
+of two verb families and not of four. The printers had `alo-changing-printers`
+and the network had `alo-changing-network`; **storage and updates had nobody**.
+`alo_brokerd::Storage` opens and ejects a drive and the two update units apply
+a build and go back, and each of them answered *carried*, *not kept* or
+*refused* into a process with no person in front of it — so a drive could be
+opened and finished with and a person would read nothing either way, and an
+update could be refused at the door with nothing anywhere to tell them their
+machine was unchanged. A vocabulary audit cannot find that, because there is no
+sentence to audit; a walk finds it, which is why the walk is the acceptance and
+not a nicety. So this task built the two missing surfaces as siblings of the two
+that exist: `crates/alo-changing-drives` (thirteen sentences, the choosing that
+goes before them, and the map from the door's word to what a person reads) and
+`crates/alo-changing-updates` (**four** sentences — everything else a person
+reads about an update was already written in `alo_keeping_up::words` and is
+*said* here rather than written again, so that one fact reads as one line
+however it reached them). Neither declares an agent verb, opens a socket or
+assembles an instruction for the base.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — the agent proposes adding a printer, the person approves,
@@ -387,6 +417,14 @@ asked, and the broker itself adds no sentence to the vocabulary.
   `tests/what_this_crate_says.rs`; no sentence names
   LUKS, TPM, CUPS, NetworkManager, a socket or *root*.
 - **Constraint:** nothing here re-decides what the sentences describe.
+- **What the desktop lane inherits from 7** (the report has the reasoning): a
+  person reads a drive's name as `alo_drives::Drive::identifier()`, which is the
+  identifier the disk service keeps across plugging in and out — the drive's own
+  name, stable, and not quite what a person would write. Giving a drive a shown
+  name is a change to `alo-drives` and to what the disk service is asked for, and
+  it belongs to whoever builds *USB drives that appear when plugged in*. It was
+  recorded rather than taken, because widening this task into task 4's crate
+  would have put two lanes in one crate for a hyphen.
 
 ### 8. Updates, through the broker, as ADR 0053 decides
 

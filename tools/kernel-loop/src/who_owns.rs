@@ -328,14 +328,17 @@ mod tests {
     }
 
     /// **The real plans are read the way a person reads them.** The broker plan
-    /// owns its three crates and not the ones its paragraph mentions in
+    /// owns its five crates and not the ones its paragraph mentions in
     /// passing.
     ///
     /// It owned two until 2026-09-20, when its task 6 added `alo-enrolling` —
     /// the sentences a person meets while their disk is being encrypted, which
     /// cannot live in `alo-encrypting` because that crate holds a recovery key
-    /// and depends on nothing. A plan that gains a crate changes this line, and
-    /// that is the point of the line.
+    /// and depends on nothing. Task 7 added two more the same day:
+    /// `alo-changing-drives` and `alo-changing-updates`, the surfaces that word
+    /// the broker's one-word answer for the two verb families that had none. A
+    /// plan that gains a crate changes this line, and that is the point of the
+    /// line.
     #[test]
     fn the_real_broker_plan_owns_what_its_header_says() {
         let written = std::fs::read_to_string(
@@ -345,7 +348,13 @@ mod tests {
         .unwrap();
         assert_eq!(
             owned(&written),
-            ["alo-broker", "alo-encrypting", "alo-enrolling"]
+            [
+                "alo-broker",
+                "alo-encrypting",
+                "alo-enrolling",
+                "alo-changing-drives",
+                "alo-changing-updates"
+            ]
         );
     }
 }

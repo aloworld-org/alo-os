@@ -92,8 +92,10 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-capability",
     "alo-capturing",
     "alo-changing",
+    "alo-changing-drives",
     "alo-changing-network",
     "alo-changing-printers",
+    "alo-changing-updates",
     "alo-choosing",
     "alo-clipboard",
     "alo-context",
@@ -239,6 +241,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-changing", alo_changing::declare_into)?;
     declare(
         &mut vocabulary,
+        "alo-changing-drives",
+        alo_changing_drives::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
         "alo-changing-network",
         alo_changing_network::declare_into,
     )?;
@@ -246,6 +253,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         &mut vocabulary,
         "alo-changing-printers",
         alo_changing_printers::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
+        "alo-changing-updates",
+        alo_changing_updates::declare_into,
     )?;
     declare(&mut vocabulary, "alo-choosing", alo_choosing::declare_into)?;
     declare(
@@ -393,6 +405,7 @@ mod tests {
         ("alo-capability", "capability.grant.anonymous"),
         ("alo-capturing", "capturing.the-lock-screen"),
         ("alo-changing", "changing.not-kept"),
+        ("alo-changing-drives", "changing-drives.safe-to-unplug"),
         (
             "alo-changing-network",
             "changing-network.verb.loses-its-connection",
@@ -400,6 +413,10 @@ mod tests {
         (
             "alo-changing-printers",
             "changing-printers.refused.more-than-one-called",
+        ),
+        (
+            "alo-changing-updates",
+            "changing-updates.refused.nothing-makes-changes",
         ),
         ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-clipboard", "clipboard.nothing-copied"),
@@ -504,10 +521,16 @@ mod tests {
             alo_capability::capability_words().unwrap().how_many(),
             alo_capturing::capturing_words().unwrap().how_many(),
             alo_changing::changing_words().unwrap().how_many(),
+            alo_changing_drives::changing_drives_words()
+                .unwrap()
+                .how_many(),
             alo_changing_network::changing_network_words()
                 .unwrap()
                 .how_many(),
             alo_changing_printers::changing_printers_words()
+                .unwrap()
+                .how_many(),
+            alo_changing_updates::changing_updates_words()
                 .unwrap()
                 .how_many(),
             alo_choosing::choosing_words().unwrap().how_many(),
