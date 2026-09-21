@@ -328,7 +328,11 @@ fn going_back_in_a_virtual_machine_runs_the_earlier_build_and_leaves_the_persons
         "--via-loopback",
         "--wipe",
         "--filesystem",
-        "ext4",
+        // The filesystem a person's machine is really installed onto, taken
+        // from the one place that decides it rather than spelt here: going
+        // back is measured on the machine alo OS ships, and until 2026-09-21
+        // it was measured on `ext4`, which no alo OS machine has.
+        alo_image::THE_ONLY_FILESYSTEM,
         "--karg",
         "console=ttyS0,115200n8",
         "/output/disk.raw",

@@ -43,6 +43,12 @@ pub enum DidNotLook {
     ///
     /// Without it there is nothing to compare an offer against, so there is no
     /// question to ask and no departure is made.
+    ///
+    /// **Read rather than asked, since 2026-09-21.** The base's own command
+    /// refuses the person outright, so what this reads is what the base has
+    /// already written down (`alo_updating::WrittenDown`) — the sentence stays
+    /// the same because what it tells whoever reads the journal is the same:
+    /// this machine does not know what it is running, and so it asked nothing.
     #[error("the base would not say which build this machine is running: {0:?}")]
     TheBaseWouldNotSay(NotRead),
     /// The record could not be opened, so nothing was asked.

@@ -11,6 +11,9 @@ use alo_keeping::NotKept;
 use alo_keeping_up::{CannotGoBack, NotStaged, words};
 use alo_strings::{Filling, Said, Strings};
 
+use crate::booted::NotBooted;
+use crate::origin::NotInTheOrigin;
+
 /// The base's program did not answer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotAnswered {
@@ -33,6 +36,13 @@ pub enum NotAnswered {
 }
 
 /// Which build is running could not be read.
+///
+/// There are two roads to that answer and this enumeration covers both: the
+/// base's own command ([`crate::status::running`]), which is the road for
+/// anything that will change the machine, and what the base has already
+/// written down ([`crate::written_down::WrittenDown`]), which is the road for
+/// the one act that must not be root. The first three members below are the
+/// first road's and the last three are the second's.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotRead {
     /// The base did not answer.
@@ -45,6 +55,18 @@ pub enum NotRead {
     },
     /// Its status names no build the machine booted from an image.
     NotRunningABuild,
+    /// Which deployment this machine booted could not be named.
+    NotBooted(NotBooted),
+    /// The deployment booted has no origin file beside it, or it could not be
+    /// read.
+    NotWrittenDown {
+        /// Where the file is.
+        path: String,
+        /// What the machine said.
+        why: String,
+    },
+    /// The origin beside the deployment booted names no build.
+    NotInTheOrigin(NotInTheOrigin),
 }
 
 /// An update was not applied, and nothing on the machine changed.

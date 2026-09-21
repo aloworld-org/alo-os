@@ -860,7 +860,42 @@ does not.
 
 ### 12. What the base has already written down
 
-**Status:** ready. **Depends on:** 11.
+**Status:** done. **Depends on:** 11.
+
+**Done, 2026-09-21.** The check no longer asks the base anything: `alo-updating`
+gained `WrittenDown`, which reads the words the kernel was started with
+(`/proc/cmdline`, naming the deployment that booted through the symlink the base
+maintains) and the `.origin` file beside that deployment (`0644 root root`,
+naming the image with its digest), and `alo-looking-once` reads it instead of
+`bootc status`. **No program is run on that road** — two files and one path
+resolved — so ADR 0011 is narrowed by less than the fix was expected to cost:
+its amendment of this date holds *spoken to through its own command* for every
+act that **changes** the machine, with the refusal that forced it quoted. The
+stand-in in `tests/a_machine_that_has_never_looked.rs` is now a deployment and an
+origin file on a disk rather than an `impl Base`, which is a more faithful test
+than the one it replaced.
+
+**The digest measurement was made before the code, and it answers the question
+task 11 left open.** A second machine was installed **straight from the
+registry** — the pinned image pulled by digest and `bootc install to-disk
+--via-loopback --wipe --filesystem btrfs`, booted under QEMU on the development
+PC — and on it the origin file, the image reference and the spec all name
+`sha256:48bd5f31…`, the digest the registry publishes and the one an offer is
+compared against. Read as uid 1000 the check kept an answer naming that build
+and said **this machine is up to date** about the build it was running, which is
+what task 11's machine got wrong. The full measurement, including what
+`status.booted.image.imageDigest` says on a registry install and how that differs
+from task 11's local-store install, is in
+`docs/autonomy/updates/what-the-base-has-already-written-down.md`, and both
+halves of it are in `docs/quirks.md` where the next person will meet them.
+
+**And the two `ext4` installs are gone.**
+`tests/an_update_keeps_the_persons_things.rs` and
+`tests/back_to_yesterdays_machine.rs` take
+[`alo_image::THE_ONLY_FILESYSTEM`](../../crates/alo-image/src/filesystem.rs) now,
+and `tests/the_filesystem_an_update_is_measured_on.rs` reads both back through
+`alo-image`'s own guard so the next filesystem decision carries them without
+anybody remembering to.
 
 Written 2026-09-20 by task 11, because the plan named nothing after it and its
 measurement leaves the unit it was about broken on every real machine. The check
