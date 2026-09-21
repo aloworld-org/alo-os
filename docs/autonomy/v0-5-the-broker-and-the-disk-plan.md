@@ -13,7 +13,12 @@ ADR 0001 §2 already decided the broker's shape; nothing has decided the disk's.
 fixed verb list, its door, and nothing else — the third privileged component after
 `alo-boundaryd` and `alo-sessiond`, and held to their rule of doing one kind of
 thing) and `crates/alo-encrypting` (what full-disk encryption is on this machine:
-how it is enrolled, where the key is, and how a person recovers). **It reads and
+how it is enrolled, where the key is, and how a person recovers) — and, added by
+task 6 on 2026-09-20, `crates/alo-enrolling` (what a person is told on that road:
+one sentence per refusal, with a translator's note). The last two are separate
+crates because `alo-encrypting` depends on nothing and must keep depending on
+nothing: it holds a recovery key for the length of one screen, and a vocabulary
+would bring a serialiser into reach of it. **It reads and
 never edits** `alo-printing` (except the exact owner release below), `alo-capability`, `alo-turn` and `alo-protocol` (a system verb is a
 verb, proposed and approved in a turn — if the verb list or the door must change,
 that is a finding and a decision), `alo-keeping-up` (the machine-keeps-itself
@@ -232,55 +237,138 @@ asserted about one road a test walked.
   — the same guard, on the question that stopped the building. The recovery key comes off the tool's **stdout**
   and its English off stderr, which is how the sentences stay task 7's.
 
-### 6. Enrolled at install, and recovered
+### 6. Enrolled at install, and recovered — everything a virtual disk can show
 
-**Status:** **blocked** — on
-[ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
-being accepted by the owner. Report:
-`docs/autonomy/updates/a-sealed-disks-promise-needs-a-machine-with-a-chip.md`.
-**Depends on:** 5.
+**Status:** **Done, 2026-09-20.** The sequence, the types the installer plan is
+handed, the sentences, and the virtual-disk acceptance — run against a real
+LUKS2 volume in the pinned base under `podman`, not a simulation of one. This is
+code and container evidence, **not** an install onto a machine with a chip:
+`docs/features.md`'s v0.5 encryption line stays unticked and the three promises
+that need a chip are task 9's. Report:
+`docs/autonomy/updates/the-enrolment-sequence-against-a-virtual-disk.md`;
+decision: [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
+**accepted, option C**, moved to *accepted* in the same change that built it. The
+earlier report
+`docs/autonomy/updates/a-sealed-disks-promise-needs-a-machine-with-a-chip.md`
+recorded the finding that led to the decision. **Depends on:** 5.
 
 [ADR 0054](../decisions/0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
 is accepted by the owner, 2026-09-19: option C falling back to B, without
 amendment. **The road is settled. What stopped this task is its acceptance, not
-its decision.** The acceptance below asks for the sequence to be run *with a
+its decision.** The acceptance below asked for the sequence to be run *with a
 software TPM in a virtual machine*, and the third PC measured on 2026-09-19 that
-**no machine in this fleet can present a TPM device to anything**: the Linux the
-gates run in is built with `CONFIG_TCG_VTPM_PROXY` unset, so there is no
-`/dev/vtpmx` for a software chip to appear through and `modprobe tpm_vtpm_proxy`
-finds no module; and the host shows neither `vmx` nor `svm`, so `qemu -accel kvm`
-refuses and every guest is emulated — the one virtual-machine acceptance this
-repository already owns took 3779 seconds. Measured in the same hour, and the
-other half of the same finding: **everything on the road that does not need a
-chip runs here in seconds**, on a real LUKS2 virtual disk in the pinned base
-(format, the recovery key at 72 bytes on stdout, a second secret added, the
-installer's first key wiped, then opened by the person's secret, opened by the
-recovery key, and refused both the wiped key and a key that was not this disk's).
+it could not present a TPM device to anything: the Linux the gates run in is
+built with `CONFIG_TCG_VTPM_PROXY` unset, so there is no `/dev/vtpmx` for a
+software chip to appear through and `modprobe tpm_vtpm_proxy` finds no module;
+and the host shows neither `vmx` nor `svm`, so `qemu -accel kvm` refuses and
+every guest is emulated — the one virtual-machine acceptance this repository
+already owns took 3779 seconds.
 
-So ADR 0056 asks the owner where the line falls: a virtual disk shows the
-sequence and every promise that is about LUKS; a machine with a chip shows the
-three that are about a chip — that the chip releases the key when the PIN is
-typed, that an update's new measurements do not stop it, and that a change to
-what PCR 7 measures does and the recovery key answers. If it is accepted this
-task becomes the first of those two and a new task becomes the second, whose
-acceptance is run on the certified laptop when it exists (`docs/hardware.md`:
-nothing is certified yet). Nothing about ADR 0054 is reopened, and
-`docs/features.md`'s v0.5 encryption line stays unticked either way.
+> **Correction, 2026-09-20.** This paragraph said **no machine in this fleet can
+> present a TPM device to anything**. That was measured on `AGAI01` and is true
+> of `AGAI01`; it is **false of the development PC**, where a guest was given a
+> TPM 2.0 through QEMU's `emulator` backend the same day and answered
+> `/dev/tpmrm0`, `MSFT0101:00`, `tpm_tis`. The module this task found missing was
+> never the obstacle: `tpm_vtpm_proxy` exposes a software chip to the **host**,
+> not to a guest. **Option C stands, and the correction strengthens it rather
+> than weakening it** — measurement 8 of ADR 0056 is why: the chip a guest gets
+> reports its manufacturer as *IBM / SW* and carries the simulator's own lockout
+> defaults, so an emulated chip is still not the chip ADR 0054's PIN argument
+> rests on, and that is now evidenced from inside a guest rather than inferred
+> from a missing module.
 
-`crates/alo-encrypting` holds the waiting rather than remembering it: its
-`tests/the_enrolment_waits_on_its_decision.rs` now reads both decisions and fails
-the day ADR 0056 stops saying *proposed*, exactly as it failed the day ADR 0054
-stopped saying so.
+The other half of the same finding stands unchanged and is what this task is
+built on: **everything on the road that does not need a chip runs here in
+seconds**, on a real LUKS2 virtual disk in the pinned base (format, the recovery
+key at 72 bytes on stdout, a second secret added, the installer's first key
+wiped, then opened by the person's secret, opened by the recovery key, and
+refused both the wiped key and a key that was not this disk's).
+
+So the line falls where ADR 0056 puts it: a virtual disk shows the sequence and
+every promise that is about LUKS, and **task 9 below** shows the three that are
+about a chip, on the certified laptop when there is one (`docs/hardware.md`:
+nothing is certified yet). Nothing about ADR 0054 is reopened. **Neither half
+ticks `docs/features.md`'s v0.5 encryption line on its own** — ADR 0056 point 2,
+accepted most deliberately of all: *enrolled at install* that has never been
+installed onto a machine with a chip is not done, and a green suite here must not
+be allowed to imply otherwise.
+
+`crates/alo-encrypting` held the waiting rather than remembering it: its
+`tests/the_enrolment_waits_on_its_decision.rs` read both decisions and failed the
+day ADR 0056 stopped saying *proposed*, exactly as it failed the day ADR 0054
+stopped saying so. It did, and this task replaced it with the tests of what it
+built.
+
+**What was built, 2026-09-20.** `crates/alo-encrypting` gained the sequence as
+closed types beside the shape task 5 gave it: `TheVolume` (a partition of a disk
+by the identity udev gave it — no free string becomes a device), `ASecretOnItsWay`
+(the four secrets an enrolment moves, each in one file under `/run`, which is
+memory and not the disk), `TheSequence` and `Run` (which rented tool with which
+arguments, for enrolling, opening, closing and changing what the person unlocks
+with), and `TheDiskRefused` (what the disk refused, read off what the tool
+answered). **The two roads differ by exactly one run**, which is ADR 0056 point 5
+held by a test rather than by a paragraph. The crate still depends on nothing,
+opens no file and starts no program: it builds the runs and takes none of them.
+
+**`crates/alo-enrolling` is new, and small**: one sentence for every refusal on
+the road, with a translator's note, plus the five the road itself asks for. It
+exists rather than living in `alo-encrypting` because that crate holds a recovery
+key for the length of one screen and may not be able to serialise, log or send
+anything — a vocabulary is a dependency that brings a serialiser with it, and the
+guard that says so is a test somebody wrote deliberately. `alo-saying` collects
+it. Each refusal maps to its sentence in an exhaustive match, so a variant added
+to any refusal stops the crate compiling until somebody has written its sentence.
+
+**The acceptance ran**, on a 64 MiB LUKS2 volume in the pinned base under
+`podman`: the six steps in order; the recovery key at 72 bytes on stdout and its
+English on stderr; a person typing it back making the `WrittenDown` that makes
+the `Enrolment`; the person's secret and the recovery key each opening the
+volume; the installer's wiped first key, a stranger's secret and a recovery key
+one character wrong each refused with exit 2; the secret changed, the new one
+opening it and the old one no longer doing so; and the recovery key nowhere in
+the disk's 64 MiB. **What is not claimed:** nothing about a chip, and nothing
+about a machine.
+
+**What task 9 inherits from 6** (its report has the reasoning): the sequence is
+one with a branch, so the chip road's five other runs are the runs this task
+ran; what task 9 adds is the sixth —
+`systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes --tpm2-pcrs=7` — and
+the three facts around it. `alo_encrypting::TheSequence::enrolling_at_install`
+already builds it for `WhatToAskFor::APin`, and
+`changing_what_the_person_unlocks_with` already builds the one run that changes a
+PIN; neither has been run anywhere, and that is exactly what task 9 is.
+
+**How an accepted decision with a waiting guard is landed, in two commits.** This
+is a general rule, not a fact about ADR 0056, and the next task to accept a
+decision guarded this way should not have to rediscover it. The instinct is to
+move the ADR's status line, the guard test and the plan together in one commit,
+so that the guard never lies. That deadlocks: **the supervisor reads the plan as
+`HEAD` has it**, so it will not take up a task whose status still says *blocked*,
+and a single commit means no worker ever starts. The split that keeps the same
+property is:
+
+1. **A preparatory commit that touches the plan alone** — *blocked* becomes
+   *ready*, recording the acceptance and what it decided. The ADR is untouched,
+   so the guard is still telling the truth: the decision it reads still says
+   *proposed*, and it still passes.
+2. **The work commit** — the ADR's *proposed* becomes *accepted*, the guard is
+   replaced by the tests of what was built, and the task is marked done, all
+   together. The guard never reads *accepted* while still guarding.
 
 - **Acceptance:** what the installer plan needs to enrol encryption during install is
   handed to it as `alo-encrypting`'s types and one tested command sequence against a
-  virtual disk — enrol, reboot, unlock, change the PIN, recover with the recovery key
-  after the TPM's measurements change; the recovery key is shown once, in a form a person
-  can write down and type back, and never stored on the disk it recovers; and **an update
-  that changes boot measurements does not lock a person out**, held by a test that updates
-  the virtual machine's boot chain and unlocks afterwards.
+  virtual disk — enrol, unlock, change the PIN, and recover with the recovery key; the
+  recovery key is shown once, in a form a person can write down and type back, and never
+  stored on the disk it recovers; every refusal on the road is a sentence in the
+  vocabulary with a translator's note; and `the_enrolment_waits_on_its_decision.rs` is
+  replaced by the tests of what this built, in the same commit that moves ADR 0056's
+  status line to *accepted*. **What is not claimed here is named here:** the three
+  promises that need a chip are task 9's, and this task's report says so rather than
+  leaving a reader to infer it from a suite that passes.
 - **Constraint:** the installer's screens are the installer plan's; this plan hands it the
-  decided sequence and the sentences.
+  decided sequence and the sentences. **No emulated chip stands in for a real one** — ADR
+  0056 rejected that as option D, and a guest's *IBM / SW* chip is evidence about a
+  simulator rather than about a machine. Nothing here ticks the v0.5 encryption line.
 
 ### 7. Every sentence, and the walk from a new printer to a recovered disk
 
@@ -290,7 +378,10 @@ stopped saying so.
   translator's note; one walk — the agent proposes adding a printer, the person approves,
   the machine joins a network, a USB drive mounts and ejects, an update is applied through
   the broker — produces the exact sequence a person meets, recorded as a table and held by
-  one test; the encryption sentences join the table once task 6 lands; no sentence names
+  one test; the encryption sentences join the table once task 6 lands — **it landed on
+  2026-09-20 and they are `alo-enrolling`'s `EVERY_WORD`**, twenty-four of them, already
+  collected by `alo-saying` and already held to this rule by that crate's own
+  `tests/what_this_crate_says.rs`; no sentence names
   LUKS, TPM, CUPS, NetworkManager, a socket or *root*.
 - **Constraint:** nothing here re-decides what the sentences describe.
 
@@ -328,3 +419,27 @@ broker. Its report and ADR 0053 have the measurements.
   installs is the installer plan's; this task hands it the units and the measured
   capability set. No test changes a real machine's deployments; the virtual
   machine is where a staged update and a return are shown.
+### 9. The three promises only a chip can keep
+
+**Status:** blocked — on a certified machine existing (`docs/hardware.md` lists
+none). Split from task 6 on 2026-09-20 by
+[ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
+accepted option C. **Depends on:** 6.
+
+Three facts about the sequence are about the chip rather than about LUKS, and no
+virtual disk can show them: that **the chip releases the key when the PIN is
+typed**, that **an update's new measurements do not stop it**, and that **a change
+to what PCR 7 measures does stop it and the recovery key answers**. An emulated
+chip cannot stand in — it reports *IBM / SW* and the simulator's own lockout
+defaults (ADR 0056, measurement 8), so a run against one would be a program
+agreeing with itself, which is the option ADR 0056 rejected by name.
+
+- **Acceptance:** the three promises are held by an `#[ignore]`d test that names
+  the certified machine it is run on, run by a person at that machine and pasted
+  into the report with what they saw; and `docs/hardware.md` gains the line saying
+  which machine showed them and when. Until that run exists, the repository says
+  in public that the v0.5 encryption line is **not shown to work on any machine**
+  — ADR 0056's own *Against*, accepted with the option.
+- **Constraint:** the `#[ignore]` is never removed to make a suite look complete,
+  and no emulated chip is ever recorded as having shown any of the three.
+

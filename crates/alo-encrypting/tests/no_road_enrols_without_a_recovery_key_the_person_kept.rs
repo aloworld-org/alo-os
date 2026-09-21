@@ -54,7 +54,7 @@ fn the_source() -> Vec<(String, String)> {
         .collect();
     files.sort();
     let names: Vec<&str> = files.iter().map(|(name, _)| name.as_str()).collect();
-    assert_eq!(files.len(), 9, "src/ could not be read: {names:?}");
+    assert_eq!(files.len(), 13, "src/ could not be read: {names:?}");
     assert!(files.iter().all(|(_, text)| !text.is_empty()));
     files
 }
@@ -344,19 +344,23 @@ fn no_other_public_function_in_this_crate_makes_one_of_the_three() {
 /// The crate's own directory, from this test, so that a file added to `src/`
 /// without this test being rewritten fails here.
 #[test]
-fn the_crate_is_the_nine_files_these_tests_read() {
+fn the_crate_is_the_thirteen_files_these_tests_read() {
     let names: Vec<String> = the_source().into_iter().map(|(name, _)| name).collect();
     assert_eq!(
         names,
         [
             "chip.rs",
             "enrolment.rs",
+            "handing_over.rs",
             "lib.rs",
             "passphrase.rs",
             "pin.rs",
             "recovery_key.rs",
+            "refusing.rs",
             "road.rs",
+            "sequence.rs",
             "unlocking.rs",
+            "volume.rs",
             "written_down.rs",
         ]
     );

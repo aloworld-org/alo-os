@@ -1,10 +1,14 @@
 # ADR 0056 — What a virtual disk shows about encryption, and what only a machine with a chip can
 
-**Status:** **proposed, 2026-09-19.** Written by task 6 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Enrolled at install, and
-recovered*), which cannot be finished as its acceptance is written: the
-acceptance asks for a software TPM in a virtual machine, and on the machine this
-was written on there was no road to one, measured below.
+**Status:** **accepted, 2026-09-19, by the owner — option C, without amendment.
+Built 2026-09-20** by task 6 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`
+(*Enrolled at install, and recovered*), which is what proposed it: the acceptance
+as first written asked for a software TPM in a virtual machine, and on the
+machine this was written on there was no road to one, measured below. The half
+this decision puts on a virtual disk is now
+`crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs`, run against
+a real LUKS2 volume in the pinned base; the half it puts on a machine with a chip
+is the plan's task 9, and is shown nowhere until that machine exists.
 
 > **Correction, 2026-09-20.** This header said **no machine in this fleet can
 > present a TPM device to anything**. That was true of the third PC and is
@@ -16,10 +20,11 @@ was written on there was no road to one, measured below.
 > the chip ADR 0054's PIN argument rests on. The certified laptop is still where
 > the three promises get shown.
 
-The code that task 6 would write waits on this, and
-`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` is what
-makes the waiting visible rather than remembered — it now fails the day this
-line stops saying *proposed*.
+The code that task 6 would write waited on this, and
+`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` was what
+made the waiting visible rather than remembered — it failed the day this line
+stopped saying *proposed*, which is the day the code was written and the day
+that test was replaced by the tests of what was built.
 **Date:** 2026-09-19
 **Proposed by:** the broker-and-the-disk workstream, on the third PC
 **Context:** [ADR 0054](0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
@@ -313,7 +318,18 @@ to the installer plan and the owner, and it stays open.
 
 ## What the code waits on
 
-- This decision, accepted. Task 6's code waits on it, and
-  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` fails the
-  day this line stops saying *proposed*, which is how a decision gets built
-  rather than remembered.
+- **Nothing any more, for the first half.** This decision was accepted, and task
+  6 built what it decided on 2026-09-20:
+  `crates/alo-encrypting` holds the sequence as closed types
+  (`TheSequence`, `Run`, `TheVolume`, `ASecretOnItsWay`, `TheDiskRefused`),
+  `crates/alo-enrolling` holds a sentence for every refusal on it with a
+  translator's note, and
+  `crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` runs the
+  sequence against a real LUKS2 volume in the pinned base under `podman`.
+  `the_enrolment_waits_on_its_decision.rs` was replaced by those tests in the
+  same change that moved this line, which is how a decision gets built rather
+  than remembered.
+- **A certified machine, for the second half.** The three promises only a chip
+  can keep are the plan's task 9, and until a machine has shown them
+  `docs/features.md`'s v0.5 encryption line is **not shown to work on any
+  machine**. That is this decision's own *Against*, accepted with it.

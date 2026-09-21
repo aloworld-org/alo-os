@@ -22,10 +22,11 @@
 //!
 //! # What is not here
 //!
-//! No command, no argument, no program name, no device. The rented tools are
-//! `cryptsetup` and `systemd-cryptenroll` and their invocations are task 6's;
-//! naming them here would put an argument list in a crate whose whole claim is
-//! that it cannot run anything.
+//! No argument, no program name, no device. This file is the order and nothing
+//! else; which rented tool carries out which step, and with what, is
+//! [`crate::TheSequence`] — kept apart so that the order can be read without an
+//! argument list in front of it, and so that a step that gained a second
+//! invocation does not become a change to the road.
 
 /// One step of enrolling encryption on this machine's disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

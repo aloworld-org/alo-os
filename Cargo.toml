@@ -44,6 +44,7 @@ members = [
   "crates/alo-driving",
   "crates/alo-egress",
   "crates/alo-encrypting",
+  "crates/alo-enrolling",
   "crates/alo-entering",
   "crates/alo-files",
   "crates/alo-formats",

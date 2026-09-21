@@ -328,7 +328,14 @@ mod tests {
     }
 
     /// **The real plans are read the way a person reads them.** The broker plan
-    /// owns its two crates and not the ones its paragraph mentions in passing.
+    /// owns its three crates and not the ones its paragraph mentions in
+    /// passing.
+    ///
+    /// It owned two until 2026-09-20, when its task 6 added `alo-enrolling` —
+    /// the sentences a person meets while their disk is being encrypted, which
+    /// cannot live in `alo-encrypting` because that crate holds a recovery key
+    /// and depends on nothing. A plan that gains a crate changes this line, and
+    /// that is the point of the line.
     #[test]
     fn the_real_broker_plan_owns_what_its_header_says() {
         let written = std::fs::read_to_string(
@@ -336,6 +343,9 @@ mod tests {
                 .join("../../docs/autonomy/v0-5-the-broker-and-the-disk-plan.md"),
         )
         .unwrap();
-        assert_eq!(owned(&written), ["alo-broker", "alo-encrypting"]);
+        assert_eq!(
+            owned(&written),
+            ["alo-broker", "alo-encrypting", "alo-enrolling"]
+        );
     }
 }
