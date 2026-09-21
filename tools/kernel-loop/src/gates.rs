@@ -354,6 +354,27 @@ pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static
 pub(crate) const NOT_READY_TO_BE_GATED: &str =
     "this machine is not ready to be gated, so nothing was published";
 
+/// **A refusal only a person can clear**, which is neither of the other two.
+///
+/// The loop had two doors and a full disk belongs to neither. It is not the
+/// work — nothing is wrong with the change — and it is not a machine that comes
+/// back on its own, because a second attempt cannot make room appear. So a
+/// refusal beginning this way **stops the run** and says what has to happen:
+/// running the gates again would wait for ever, and launching a worker spends
+/// the one repair on Rust nothing is wrong with.
+///
+/// It cost three worker attempts on three separate days before it existed. The
+/// third parked broker task 6 — twenty-five finished files, an ADR's acceptance
+/// among them — on a machine whose only fault was a 66 GB build directory.
+pub(crate) const ONLY_A_PERSON_CAN_CLEAR_THIS: &str =
+    "this machine needs somebody to clear something, so nothing was published";
+
+/// Whether a refusal is one only a person can clear.
+#[must_use]
+pub(crate) fn needs_a_person(said: &str) -> bool {
+    said.trim_start().starts_with(ONLY_A_PERSON_CAN_CLEAR_THIS)
+}
+
 /// Whether a refusal is the machine's rather than the work's.
 ///
 /// Read off the sentence, which is the one thing a refusal from the gates and

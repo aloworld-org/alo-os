@@ -128,15 +128,27 @@ pub fn chosen(at: &Path) -> &'static BuildsIn {
 /// refusal too: a reserve that passed whenever it could not measure anything
 /// would not be a reserve.
 ///
-/// *Not being able to ask at all* is a different refusal from *having asked and
-/// found too little*, and it carries [`gates::NOT_READY_TO_BE_GATED`] so that
-/// the loop reads it as the machine's rather than the work's. On 2026-09-14
-/// lane A's task 17 passed its worker, WSL then could not answer `df` about the
-/// build directory, and the loop spent its one repair attempt on a change
-/// nothing had found fault with — the same failure `blamed_the_machine` was
+/// **The two ways this refuses are different refusals, and they are not the
+/// same as the work being wrong.**
+///
+/// *Not being able to ask at all* carries [`gates::NOT_READY_TO_BE_GATED`], so
+/// the loop reads it as the machine's and runs the gates again in a moment. On
+/// 2026-09-14 lane A's task 17 passed its worker, WSL then could not answer
+/// `df` about the build directory, and the loop spent its one repair attempt on
+/// a change nothing had found fault with — the failure `blamed_the_machine` was
 /// written for, reached by a sentence that classifier had never been shown.
-/// Too little room keeps its own plain sentence: that is a determinate state a
-/// second attempt cannot improve, and retrying it would only spin.
+///
+/// *Having asked and found too little* carries
+/// [`gates::ONLY_A_PERSON_CAN_CLEAR_THIS`], which stops the run. It cannot be
+/// the first: a second attempt does not make room appear, and retrying would
+/// spin for ever. It was nothing at all until 2026-09-21, which meant it fell
+/// through to the only door left and the loop attributed a full filesystem to
+/// the change — three worker attempts on three separate days, the third of
+/// which parked twenty-five finished files, an ADR's acceptance among them,
+/// because a build directory had reached 66 GB.
+///
+/// So there are three answers here rather than two, and the third is the one
+/// that says *a person has to do something* out loud.
 pub fn there_is_room(at: &Path) -> Result<(), String> {
     let builds = chosen(at);
     let asked_about = builds.measured().to_owned();
@@ -330,14 +342,29 @@ fn room_enough(said: &str, directory: &str) -> Result<(), String> {
     if free >= THE_RESERVE {
         return Ok(());
     }
+    // **A full disk is neither the work nor a machine that comes back**, and
+    // until 2026-09-21 the loop had no third answer for it.
+    //
+    // It could not be `NOT_READY_TO_BE_GATED`: that means *run the gates again
+    // in a moment*, and a second attempt cannot make room appear — the test
+    // below this one has said so since the reserve was written. So it fell
+    // through to the only door left, and the loop attributed a full filesystem
+    // to the change: three worker attempts on three separate days, the third of
+    // which parked broker task 6 — twenty-five finished files, an ADR's
+    // acceptance among them — on a machine whose only fault was a 66 GB build
+    // directory.
+    //
+    // The sentence already said *this reads like a broken change and is not
+    // one*. It said it to a person; nothing said it to the loop.
     Err(format!(
-        "there is less than 12 GiB free on `{filesystem}`, which is the filesystem the gates \
-         build on — they build in {directory}, and `{filesystem}` has {} GiB free. A build needs \
-         more than that. Nothing was staged, committed or pushed. A build started here would not \
-         fail as a build — it fails as a linker that cannot open a file, which reads like a \
-         broken change and is not one. **Do not delete anything shared to get past this.** \
-         Caches, another worker's build directory and anything under a system folder belong to \
-         whoever owns them; ask for space to be made.",
+        "{}: there is less than 12 GiB free on `{filesystem}`, which is the filesystem the \
+         gates build on — they build in {directory}, and `{filesystem}` has {} GiB free. A \
+         build needs more than that. Nothing was staged, committed or pushed. A build started \
+         here would not fail as a build — it fails as a linker that cannot open a file, which \
+         reads like a broken change and is not one. **Do not delete anything shared to get \
+         past this.** Caches, another worker's build directory and anything under a system \
+         folder belong to whoever owns them; ask for space to be made.",
+        gates::ONLY_A_PERSON_CAN_CLEAR_THIS,
         free / (1024 * 1024 * 1024)
     ))
 }
@@ -466,6 +493,34 @@ mod tests {
             why.contains("nothing was published") || why.contains("Nothing was staged"),
             "{why}"
         );
+    }
+
+    /// **A full disk is the third answer, and the loop can now tell all three
+    /// apart.**
+    ///
+    /// It had two: *the machine will come back, run the gates again*, and
+    /// *the work is broken, spend the repair worker*. A full disk is neither —
+    /// retrying waits for ever, which the test below this one has asserted
+    /// since the reserve was written, so it fell through to the only door left
+    /// and the loop attributed a full filesystem to the change. Three worker
+    /// attempts on three separate days; the third parked twenty-five finished
+    /// files, an ADR's acceptance among them.
+    ///
+    /// The sentence already told a *person* it "reads like a broken change and
+    /// is not one". Nothing told the loop.
+    #[test]
+    fn a_full_disk_is_neither_the_work_nor_a_machine_that_comes_back() {
+        let barely = "Avail Mounted on\n4294967296 /mnt/c\n";
+        let Err(why) = room_enough(barely, "/root/alo-builds/x") else {
+            panic!("a filesystem with 4 GiB free was gated on")
+        };
+        assert!(
+            gates::needs_a_person(&why),
+            "a full disk did not say so, so the loop will spend its repair worker on work \
+             nothing is wrong with: {why}"
+        );
+        // And not the other door, which would retry for ever.
+        assert!(!gates::blamed_the_machine(&why), "{why}");
     }
 
     /// Exactly the reserve is enough, and one byte less is not.

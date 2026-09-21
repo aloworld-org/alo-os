@@ -598,6 +598,27 @@ fn one_iteration(
         return publishing::gated_and_pushed(&mut again)
             .map(|sha| journal::Went::Published(sha, task.task.clone()));
     }
+    // **And some refusals are neither.** A full disk is not the work, and it is
+    // not a machine that comes back on its own: retrying waits for ever, and a
+    // worker spends the one repair on Rust nothing is wrong with. So the run
+    // stops here and says what has to happen, with the task still in the tree
+    // and nothing parked.
+    //
+    // Three worker attempts on three separate days went this way before the
+    // branch existed. The third parked twenty-five finished files, an ADR's
+    // acceptance among them, because a build directory had reached 66 GB.
+    if gates::needs_a_person(&said) {
+        journal::note(
+            ours,
+            &format!(
+                "task {} was refused by something only a person can clear, so this run stops \
+                 rather than launching a worker on work nothing is wrong with. Nothing was \
+                 parked and the task is still in the tree. It said:\n\n{said}",
+                chosen.number
+            ),
+        );
+        return Err(said);
+    }
     if !worker::is_configured() {
         return Err(said);
     }
