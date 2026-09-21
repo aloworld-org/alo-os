@@ -57,7 +57,7 @@ fn the_source() -> Vec<(String, String)> {
         })
         .collect();
     files.sort();
-    assert_eq!(files.len(), 9, "src/ could not be read");
+    assert_eq!(files.len(), 13, "src/ could not be read");
     files
 }
 

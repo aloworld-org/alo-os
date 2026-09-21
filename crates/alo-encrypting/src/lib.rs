@@ -18,26 +18,41 @@
 //! | [`WrittenDown`] | That the person typed it back — the only proof there is, and it cannot be made any other way |
 //! | [`THE_ROAD`], [`Step`] | The order enrolment happens in, which is what makes the proof unskippable |
 //! | [`Enrolment`] | A machine whose disk is encrypted, and which cannot be described without the proof |
+//! | [`TheDisk`], [`TheVolume`] | Which volume it is enrolled on, named the way it stays named |
+//! | [`ASecretOnItsWay`] | Where a secret is put while a rented tool is given it, which is memory |
+//! | [`TheSequence`], [`Run`], [`TheTool`] | The road as the exact runs it is, built and never taken here |
+//! | [`TheDiskRefused`] | What the disk refused, read off what the rented tool answered |
 //!
-//! # The road is decided; how it is shown to work is not, and this crate waits
+//! # The road is decided, and so is how it is shown to work
 //!
-//! ADR 0054 is **accepted**, so the road above is settled. What is not settled
-//! is how an enrolment is shown to work: its acceptance asks for the sequence to
-//! run with a software TPM in a virtual machine, and no machine in this fleet
-//! can present a TPM device to anything — the Linux the gates run in is built
-//! with `CONFIG_TCG_VTPM_PROXY` unset, and the host offers no nested
-//! virtualisation, so every virtual machine on it is emulated. What a virtual
-//! disk shows about encryption and what only a machine with a chip can is
-//! therefore
+//! ADR 0054 is **accepted**: the road above is settled. How an enrolment is
+//! *shown* to work is
 //! [ADR 0056](../../../docs/decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
-//! proposed, with the measurements in it.
+//! **accepted, option C**, and it draws the line where the chip is. Everything
+//! about the sequence that is about LUKS — six steps in order, the recovery key
+//! made and kept before anything the person unlocks with exists, the installer's
+//! first key opening nothing afterwards, the person's secret and the recovery
+//! key each opening the volume, a near miss opening nothing — runs against a
+//! real LUKS2 volume in the pinned base in
+//! `tests/the_sequence_against_a_virtual_disk.rs`. The three facts that are
+//! about a chip — that it releases the key when the PIN is typed, that an
+//! update's new measurements do not stop it, and that a change to what register
+//! 7 measures does — are shown on a certified machine and nowhere else, which is
+//! task 9 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`.
 //!
-//! Until that is accepted nothing here enrols anything on any disk, virtual or
-//! real: there is no command sequence in this crate, no program is named, and no
-//! file is opened. `tests/the_enrolment_waits_on_its_decision.rs` holds that,
-//! and **fails the day ADR 0056 stops saying *proposed***, which is the
-//! instruction to turn [`THE_ROAD`] into the tested sequence against a virtual
-//! disk.
+//! **Neither half ticks `docs/features.md`'s v0.5 encryption line on its own.**
+//! *Enrolled at install* that has never been installed onto a machine with a
+//! chip is not done, and a green suite here does not say otherwise.
+//!
+//! # This crate builds the runs and takes none of them
+//!
+//! [`TheSequence`] is a description of what is to be run: which rented tool,
+//! which arguments, and which of the four named secrets has to be in its file
+//! first. Nothing here starts a program, opens a file or reaches a network — it
+//! depends on nothing, and
+//! `tests/the_key_is_never_kept_on_the_disk_it_recovers.rs` reads the source and
+//! the manifest to hold that. What runs the sequence is the installer, and what
+//! runs it against a virtual disk is this crate's own integration test.
 //!
 //! # Where the recovery key is, and for how long
 //!
@@ -59,28 +74,39 @@
 //!
 //! # This crate says nothing to anybody
 //!
-//! It declares no words, so nothing in it reaches a person's screen. The
-//! sentences a person meets while their disk is being encrypted are task 6's to
-//! write and task 7's to put in the vocabulary with a translator's note. The
-//! English on the refusals here is for a service log and a record's reason, the
-//! way `alo-drives`' is.
+//! It declares no words, so nothing in it reaches a person's screen — and it
+//! cannot, because a vocabulary is a dependency and this crate has none. The
+//! sentences a person meets on this road are `alo-enrolling`'s: one for every
+//! refusal here, each with a translator's note, declared into the machine's one
+//! vocabulary. The English on the refusals in this crate is for a service log
+//! and a record's reason, the way `alo-drives`' is.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 mod chip;
 mod enrolment;
+mod handing_over;
 mod passphrase;
 mod pin;
 mod recovery_key;
+mod refusing;
 mod road;
+mod sequence;
 mod unlocking;
+mod volume;
 mod written_down;
 
 pub use chip::TheChip;
 pub use enrolment::Enrolment;
+pub use handing_over::{ASecretOnItsWay, ONLY_ITS_OWNER_MAY_READ_IT, THE_ONE_PLACE};
 pub use passphrase::{A_PASSPHRASE_IS_AT_LEAST, NotAPassphrase, Passphrase};
 pub use pin::{A_PIN_IS_AT_LEAST, NotAPin, Pin};
 pub use recovery_key::{GROUPS, IN_A_GROUP, NotARecoveryKey, RecoveryKey, THE_ALPHABET};
+pub use refusing::TheDiskRefused;
 pub use road::{Step, THE_ROAD};
+pub use sequence::{OnTheRoad, Run, TheSequence, TheTool};
 pub use unlocking::{HowItUnlocks, NoChipToSealTo, THE_PCRS_IT_IS_SEALED_AGAINST, WhatToAskFor};
+pub use volume::{
+    BY_ID, IT_OPENS_AS, NotADisk, THE_LAST_PARTITION, TheDisk, TheVolume, WHERE_IT_OPENS,
+};
 pub use written_down::{Again, NotWhatWasShown, WrittenDown};

@@ -45,6 +45,8 @@ alo-displays = { path = "../alo-displays" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }
+# The sentences a person meets while their disk is being encrypted.
+alo-enrolling = { path = "../alo-enrolling" }
 alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-granted = { path = "../alo-granted" }

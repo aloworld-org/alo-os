@@ -760,6 +760,36 @@ those bytes and refuses anything that is not them; its unit tests are built on t
 this measurement produced.
 **Date:** 2026-09-17.
 
+### `cryptsetup` — a secret that opens nothing is exit 2, and a key file it can read is a complaint
+**Version:** `cryptsetup 2.8.4` in the pinned base
+(`quay.io/fedora/fedora-bootc:42@sha256:077182b6…`), measured on a 64 MiB LUKS2 file
+under `podman --privileged` on 2026-09-20.
+**Behaviour:** two things, both of which decide code rather than being trivia.
+
+**One.** Every way a secret can fail to open a volume is the same answer: **exit 2**, with
+*No key available with this passphrase* on stderr. Measured three ways on one volume — the
+installer's own first key after `luksRemoveKey` wiped it, a secret that was never this
+disk's, and the person's old secret after it had been replaced. `cryptsetup`'s other
+numbers are 1 for arguments it did not understand, 3 for out of memory, 4 for a device that
+is not the kind it was told, and 5 for a volume already open or busy; **only 2 is a fact
+about a secret**, and anything else read as one would tell a person their correct key was
+wrong.
+
+**Two.** `systemd-cryptenroll` complains in as many words about a key file anybody but its
+owner could read — *`…/first.key` has 0644 mode that is too permissive, please adjust the
+ownership and access mode* — and carries on anyway. A warning from a rented tool about the
+way we handed it a key is a bug of ours, not a line to filter out of a log.
+
+**Our response:** `alo_encrypting::TheDiskRefused::from_how_it_ended` reads exit 2 as
+*what was given does not open it* and every other non-zero answer as *the rented tool
+refused and did not say why* — which is deliberately vague, because guessing would mean
+telling somebody at a machine that will not open that their recovery key was wrong.
+`alo_encrypting::ONLY_ITS_OWNER_MAY_READ_IT` is `0o600` because of the second, and the
+key files live under `/run`, which is memory rather than the disk being encrypted.
+`crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` is where all of it
+is measured again on every run.
+**Date:** 2026-09-20.
+
 ### GRUB — the base's signed loader leaves `cmdpath` empty, and sets `config_directory`
 **Version:** `grub2-efi-x64-2.12-32.fc42.x86_64` as
 `quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships it, started by

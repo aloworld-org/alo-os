@@ -1,0 +1,30 @@
+[package]
+name = "alo-enrolling"
+version = "0.0.1"
+description = "What a person is told while their disk is being encrypted: one sentence for every refusal on the road, and the few the road itself asks for."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The road and its refusals. That crate depends on nothing at all — it holds a
+# recovery key for the length of one screen and may not be able to serialise,
+# log or send anything — so it cannot hold a vocabulary, and the sentences for
+# its refusals live here instead. The dependency is one way round and stays that
+# way: nothing here is reachable from a value holding a secret.
+alo-encrypting = { path = "../alo-encrypting" }
+# The sentences, named rather than written in place. Hardcoded English is a bug
+# (CLAUDE.md), and a person who cannot read what their machine is asking for
+# before it encrypts their disk is the worst case of that bug there is.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# Every sentence is read out of the machine's whole vocabulary rather than out
+# of this crate's constants, because what a person reads is what the assembled
+# machine says.
+alo-saying = { path = "../alo-saying" }

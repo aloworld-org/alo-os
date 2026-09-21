@@ -105,6 +105,45 @@ image:
 If any of those is false on a machine, that machine is not certified, whatever
 else works.
 
+## What the security chip must be able to do
+
+Added 2026-09-20 by
+[ADR 0056](decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
+points 3 and 4, which is accepted. Encryption is the other promise whose evidence
+needs a machine, and this is what is measured on the first certified one — beside
+*the GPU works on first boot*, and for the same reason.
+
+**First, which road the machine takes.**
+[ADR 0054](decisions/0054-the-disk-is-sealed-to-this-machine-and-opened-with-a-pin.md)
+seals the disk's key to the machine's own security chip and releases it when a PIN
+is typed, and falls back to a passphrase on a machine whose chip cannot hold one.
+Whether the chip is present and **ready** therefore decides what the person is
+asked for. It is a line in the acceptance rather than an assumption about business
+laptops: `systemd-cryptenroll --tpm2-device=list` naming a device is the check, and
+a chip whose manufacturer is *IBM / SW* is a simulator rather than a machine.
+
+**Then the three promises only a chip can keep**, none of which any virtual disk
+can show (ADR 0056):
+
+- the chip releases the key when the PIN is typed, and the machine reaches its
+  desktop;
+- a new deployment — a new kernel, a new initramfs, new boot entries — does not
+  stop it, which is ADR 0054's claim that an update does not lock anybody out;
+- a change to what register 7 measures **does** stop it, and the recovery key is
+  what opens the machine then.
+
+They are an `#[ignore]`d test run by a person at the machine, and this file gains
+the line saying which machine showed them and when. **Until that run exists, the
+v0.5 *Full-disk encryption, enrolled at install* line is not shown to work on any
+machine** — everything about the sequence that is about LUKS rather than about a
+chip is shown on a virtual disk by
+`crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs`, and that is
+not the same claim.
+
+| Machine | Chip, and whether it is ready | The three promises | When |
+|---|---|---|---|
+| — | — | not shown on any machine | — |
+
 ## What the kernel must be able to do
 
 A certified machine's kernel has to be able to enforce a grant, which is a
