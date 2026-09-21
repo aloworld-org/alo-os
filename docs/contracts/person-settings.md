@@ -71,7 +71,7 @@ and it is written whole to `<file>.new`, read back off the disk as the same
 value, and only then renamed over the old one. Which files, and their keys, are
 sections of this contract as those crates gain them.
 
-Since 2026-09-21 there are **ten**, each read and written by the crate that
+Since 2026-09-21 there are **eleven**, each read and written by the crate that
 declares its shape, at a path that crate is handed, and by nobody else:
 
 | File | Kept by | `format` | Keys besides `format` |
@@ -86,6 +86,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `notifying.toml` | `alo_notifying::keeping` | `1` | `do-not-disturb`, `quiet-hours` |
 | `keyboards.toml` | `alo_keyboards::keeping` | `1` | `layouts`, `compose`, `input-methods` |
 | `gestures.toml` | `alo_desktops::gesture_files` | `1` | `scroll`, `pinch`, `three-finger-swipe`, `four-finger-swipe`, `scrolling` |
+| `undo.toml` | `alo_letting_go::keeping` | `1` | `window` |
 
 **That number is true because a test reads it.** The sentence above said *four*
 from 2026-09-15 until 2026-09-21 while the folder grew to ten, and it was the
@@ -93,13 +94,13 @@ count rather than the omission that did the damage: somebody writing a backup
 tool, a migration or an organisation's provisioning from a contract that names
 four files writes something that silently drops the rest of what a person
 chose, and has no reason to look. So the count is no longer prose. Each of
-`sleeping.toml`, `displays.toml`, `leaving.toml` and `notifying.toml` is held
-to this table by its own crate's `tests/the_contract_describes_this_file.rs`,
-and each of those four reads the number in the sentence above against the
-number of rows in the table. A row added without the number moving, or the
+`sleeping.toml`, `displays.toml`, `leaving.toml`, `notifying.toml` and
+`undo.toml` is held to this table by its own crate's
+`tests/the_contract_describes_this_file.rs`, and each of those five reads the
+number in the sentence above against the number of rows in the table. A row added without the number moving, or the
 number moved without a row, fails in the change that does it.
 
-**Eight of the ten have a section of their own below.** `keyboards.toml` and
+**Nine of the eleven have a section of their own below.** `keyboards.toml` and
 `gestures.toml` are in the table because they exist and a reader needs to know
 they do; their sections, and the tests that would hold them, are owed by the
 crates that keep them. Those two rows are the only ones nothing yet checks —
@@ -116,8 +117,9 @@ read at the next sign-in. Each section below —
 [`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file),
 [`sleeping.toml`](#sleepingtoml--what-closing-the-lid-does-and-what-keeps-this-machine-awake),
 [`displays.toml`](#displaystoml--where-this-persons-screens-are-and-when-they-warm),
-[`leaving.toml`](#leavingtoml--whether-what-was-open-opens-again) and
-[`notifying.toml`](#notifyingtoml--when-notifications-are-held) — gives its
+[`leaving.toml`](#leavingtoml--whether-what-was-open-opens-again),
+[`notifying.toml`](#notifyingtoml--when-notifications-are-held) and
+[`undo.toml`](#undotoml--how-far-back-this-machine-keeps-what-the-agent-changed) — gives its
 keys, its `format`, what a missing file means and what a file that does not
 read is told, each held to the crate that keeps it by a test in that crate
 (`tests/the_contract_describes_this_file.rs`).
@@ -1932,6 +1934,157 @@ file is asked at the moment of the write, and a change over one that is there
 and does not read is refused (`notifying.kept.not-replaced`) with the file byte
 for byte as it was. `alo_notifying::keeping::put_back_as_shipped` is the one
 door that replaces such a file, and it writes `format = 1` alone.
+
+## `undo.toml` — how far back this machine keeps what the agent changed
+
+Kept by `alo_letting_go::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_letting_go::Changes`: how far back the person
+asked their machine to keep what an agent changed to their files, and nothing
+the release ships.
+
+**It is the one setting there is over what an undo can reach**
+([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first and
+seventh accepted terms). There is no *keep this one for ever*, no *never
+expire* and no per-folder exception: the only way to keep a snapshot longer is
+to widen the window. A machine with two ways to reprieve a snapshot is one
+where nobody can answer *when will this be gone*.
+
+### Keys
+
+Besides `format`, and optional: a key that is not there is a setting the person
+has not changed.
+
+| Key | Meaning |
+|---|---|
+| `window` | How far back an undo reaches: a table of `days` and `turns`. |
+
+Where the machine keeps what it can put back, and what it removes when it no
+longer can, are not in this file: they are the machine's, in
+`docs/contracts/kept-undo-folder.md`.
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+It is this file's own number: `appearance.toml` moving to another says nothing
+about this one.
+
+### What alo OS writes
+
+The window changed, exactly as `alo_letting_go::keeping::keep` writes it:
+
+```toml
+format = 1
+
+[window]
+days = 30
+turns = 200
+```
+
+### Values
+
+- **`window`** is a table with two whole numbers in it, and **both must be at
+  least one**. `days` is how many days back an undo reaches and `turns` is how
+  many changing turns; **whichever ends first ends the window**. What alo OS
+  ships is seven days or fifty changing turns
+  (`alo_keeping_up::HowFarBack::AS_SHIPPED`).
+
+  **There is no maximum.** An organisation naming a long window on a machine it
+  manages is naming its own rule, and the disk is already protected by the other
+  half of the decision: below a named amount of free space the oldest go first,
+  and the machine never fills a disk to preserve an undo.
+
+  **A nought is refused**, in either half and whole. A window that reaches
+  nothing is undo switched off by arithmetic, quietly, in a settings file; the
+  honest way to hold nothing is to forget what is kept, which is one act with a
+  sentence on it.
+
+### What a missing file means
+
+**The person has changed nothing**: the machine keeps what an agent changed for
+seven days or fifty changing turns, whichever ends first. Not an error, and
+nothing is written until the person changes it.
+
+### A file that does not read
+
+**Refused whole, and nothing in it is honoured.**
+`alo_letting_go::keeping::at_sign_in` answers with what the release ships and
+the refusal beside it, for Settings to say in that section — and the privileged
+unit that removes an expired snapshot reads the same answer, so a file somebody
+typed wrong can only ever cost a person snapshots they would have lost anyway,
+never ones they would have kept. Every sentence names the file, and each is in
+the vocabulary with a note for its translator:
+
+| What was wrong | What the person reads |
+|---|---|
+| The disk would not give the file up — a permission, or a folder where the file should be | `letting-go.kept.not-read` |
+| Not text, no `format`, or a value this shape does not take | `letting-go.kept.not-understood` |
+| Not TOML, from a line on | `letting-go.kept.not-understood-at`, naming the line |
+| Another `format` | `letting-go.kept.another-format` |
+| A key at the top of the file that is not on the list | `letting-go.kept.unknown-key`, naming the key |
+
+```toml refused
+format = 1
+never-expire = true
+```
+
+Refused — `letting-go.kept.unknown-key`, naming `never-expire`. There is no such
+setting and there is not going to be one.
+
+```toml refused
+format = 1
+
+[window]
+days = 0
+turns = 50
+```
+
+Refused — `letting-go.kept.not-understood`. A window that reaches no days
+reaches nothing.
+
+```toml refused
+format = 1
+
+[window]
+days = 7
+turns = 0
+```
+
+Refused — `letting-go.kept.not-understood`. The same, in the other half.
+
+```toml refused
+format = 1
+
+[window]
+days =
+```
+
+Refused — `letting-go.kept.not-understood-at`, naming line 4.
+
+```toml refused
+format = 2
+
+[window]
+days = 7
+turns = 50
+```
+
+Refused — `letting-go.kept.another-format` — before its keys are judged, so a
+file a later alo OS wrote is not reported as a typo.
+
+### Writing it
+
+As `appearance.toml`: the whole of the person's changes to `undo.toml.new`
+beside the file, read back off the disk as the same changes, and only then
+renamed over the old one. A change that would not read back is refused before
+the file is touched (`letting-go.kept.not-expressible`), and a disk that will
+not take it leaves the file as it was (`letting-go.kept.not-written`).
+
+**A file that does not read is not written over.** As `appearance.toml`: the
+file is asked at the moment of the write, and a change over one that is there
+and does not read is refused (`letting-go.kept.not-replaced`) with the file byte
+for byte as it was, `alo_letting_go::FileNotWritten::did_not_read` saying what
+is wrong with it. `alo_letting_go::keeping::put_back_as_shipped` is the one door
+that replaces such a file, and it writes `format = 1` alone.
 
 ## A Settings surface, from sign-in to the next change
 

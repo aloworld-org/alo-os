@@ -65,6 +65,7 @@ alo-keeping = { path = "../alo-keeping" }
 alo-keeping-up = { path = "../alo-keeping-up" }
 alo-keyboards = { path = "../alo-keyboards" }
 alo-leaving = { path = "../alo-leaving" }
+alo-letting-go = { path = "../alo-letting-go" }
 alo-locking = { path = "../alo-locking" }
 alo-looking = { path = "../alo-looking" }
 alo-measuring = { path = "../alo-measuring" }

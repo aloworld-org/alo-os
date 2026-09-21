@@ -1,0 +1,88 @@
+[Unit]
+# Letting go of what an undo could have put back, and nothing else.
+#
+# ADR 0045's seventh term, amended 2026-09-21: taking a read-only snapshot needs
+# no capability and removing one needs CAP_SYS_ADMIN, and a read-only snapshot
+# does not yield to rm -rf either. `alo-turn` runs as the person and must not
+# hold that capability all day for an act performed once a day; the broker's
+# fixed list must not gain a verb over the written-down past, because an agent
+# that can forget an undo can erase the evidence of what it did. So the
+# capability lives here, in a unit with a fixed command line and one job, which
+# a timer starts and nothing else does.
+#
+# It lives beside the crate rather than in image/ until the image carries this
+# program; `crates/alo-letting-go/tests/the_expiry_is_a_unit_on_a_timer.rs`
+# holds every line below to what the program expects.
+Description=alo OS: let go of what an undo can no longer put back
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0045-what-undoing-rewinds-to.md
+
+# It reads a disk and removes from it. Nothing about it needs a network, and it
+# is deliberately not ordered after one: a machine with no way out still has a
+# disk that fills.
+After=local-fs.target
+
+[Service]
+# It walks a folder, removes what is outside the window, writes down what it
+# removed, and stops. `oneshot` rather than `exec` because the timer's job is
+# whether it finished: a start job that finished at the moment the program was
+# exec'd would say nothing about whether anything was let go.
+Type=oneshot
+RemainAfterExit=no
+
+# No arguments, ever. Where the folder is, where the record is and how far back
+# each person asked are all read — from constants in the program and from the
+# person's own settings file. There is nothing on this line a request could
+# reach, which is law 2 at the one place in alo OS that removes a person's own
+# history.
+ExecStart=/usr/libexec/alo-letting-go
+
+User=root
+Group=root
+NoNewPrivileges=yes
+
+# **The capabilities, one per line, each with what it is for.**
+#
+# Measured on the disk the pinned release installs and written down in
+# docs/quirks.md (2026-09-21): `btrfs subvolume delete` under
+# `capsh --drop=cap_sys_admin` answers *Operation not permitted*, and with it
+# exits 0. `bootc install` sets no user_subvol_rm_allowed and we add no mount
+# options of our own, so deletion is root's on every machine this repository
+# installs.
+CapabilityBoundingSet=CAP_SYS_ADMIN
+# A person's own `undo.toml` and their own home are theirs, not root's, and
+# this reads the first to know how far back they asked.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+# What describes a kept turn is written by `alo-turn`, running as the person,
+# and is removed here.
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+
+# **CAP_SYS_BOOT is not on that list, and its absence is a promise.** Nothing
+# this unit causes restarts the machine. Nor is CAP_CHOWN, CAP_FOWNER,
+# CAP_FSETID, CAP_SETFCAP, CAP_MKNOD, CAP_SETUID, CAP_SETGID, CAP_SYS_CHROOT,
+# CAP_MAC_ADMIN, CAP_LINUX_IMMUTABLE, CAP_NET_ADMIN, CAP_SYS_MODULE,
+# CAP_SYS_RAWIO, CAP_SYS_PTRACE, CAP_SYS_TIME, CAP_KILL, CAP_SYSLOG,
+# CAP_AUDIT_CONTROL, CAP_AUDIT_WRITE, CAP_BPF, CAP_PERFMON, CAP_SETPCAP or
+# CAP_SYS_RESOURCE. This unit removes subvolumes under one folder; it does not
+# become anybody, reach the network, look into another process or change what
+# the machine records about itself.
+
+# Where it writes down which turns can no longer be put back. systemd makes it,
+# root's alone, so nothing of this crate's ever creates a directory.
+StateDirectory=alo-letting-go
+StateDirectoryMode=0700
+
+# Nothing is read from the environment: every path it uses is a constant in the
+# program, and a person's own is read from the file their own session wrote.
+# There is deliberately no Environment= line, and a test refuses one.
+
+# What it says about itself goes to the journal, for whoever administers the
+# machine. What a *person* reads is the record it wrote, in their own language.
+StandardOutput=journal
+StandardError=journal
+
+# Deliberately not restarted. A run that failed removed what it removed and
+# wrote that down; the next firing finds whatever is left. A unit that retried
+# by itself would be a machine hammering a disk that is already in trouble.
+
+# And deliberately no install section. Nothing starts this at boot and no target
+# wants it: it is started by alo-letting-go.timer, and by nothing else.
