@@ -895,11 +895,25 @@ task is a fix and how much is a fix plus a bug.
   act that changes the machine; and `ADR 0011` carries, in its own text, the one
   sentence narrowing *spoken to through its own command* to the acts that change
   the machine, with the refusal that forced it quoted.
+- **Also in this pass, because it is this crate and it is wrong today:** two of
+  `alo-updating`'s own tests install on **ext4**, and the product installs
+  `btrfs` only —
+  [`alo_image::THE_ONLY_FILESYSTEM`](../../crates/alo-image/src/filesystem.rs),
+  landed 2026-09-21, whose own header says *every writer takes it from here*.
+  `tests/an_update_keeps_the_persons_things.rs` and
+  `tests/back_to_yesterdays_machine.rs` each spell the string in place. They
+  measure a filesystem alo OS no longer ships, so what they prove about an update
+  keeping a person's things is proved about a machine nobody will own. Both take
+  the value from `alo-image` rather than spelling it, so the next filesystem
+  decision carries them without anybody remembering to.
 - **Constraint:** nothing becomes root and nothing gains a capability — a fix
   that widens a grant is the fix this plan spent task 10 and task 11 refusing.
   No setting that turns checking off, no member meaning *urgent*, and
   `alo-keeping-up` still gains no clock, no socket and no file. The unit's
-  installation remains the installer lane's.
+  installation remains the installer lane's. **The digest disagreement is
+  measured rather than reasoned about:** the origin file and `ostree admin
+  status` are read and their actual values compared, because a field believed to
+  agree is exactly the proxy this project has shipped defects from before.
 
 ### 13. The snapshot nobody removed
 
