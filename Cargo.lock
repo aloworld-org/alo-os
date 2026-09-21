@@ -1392,8 +1392,10 @@ name = "alo-sleeping"
 version = "0.0.1"
 dependencies = [
  "alo-accounts",
+ "alo-appearance",
  "alo-capability",
  "alo-context",
+ "alo-displays",
  "alo-egress",
  "alo-files",
  "alo-keeping",

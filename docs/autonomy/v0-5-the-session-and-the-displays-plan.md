@@ -405,7 +405,34 @@ test file that counts what it was asked. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 ### 8. Switching to another person at a locked screen
 
-**Status:** ready. **Depends on:** 1, 5.
+**Status:** **Done, 2026-09-21.** The answer is **yes, once**, and the argument
+is `docs/decisions/0061-a-locked-screen-offers-a-road-to-the-greeter.md`. It
+separates what a lock screen may **show** — task 1's four things, unchanged, and
+`alo_locking::LockScreen` is still the type of exactly those — from what it may
+**offer**, and it refuses the shape most desktops ship: a list of who has an
+account here is a disclosure about people who are not at the desk, and ADR 0024
+had already decided this product's greeter asks for a name typed rather than
+offering one to pick. The road is `crates/alo-locking/src/somebody_else.rs`.
+`SomebodyElse` **has no generic parameter and carries no session**, so a value
+that could hold a notification the seat is keeping does not exist; the road is
+`&self`, so *not ended, not signed out, not unlocked* is the signature rather
+than a paragraph; and the one refusal is real — a machine whose accounts stand
+at *make an account* is `NotWhileLocked`, because *make an account* offered over
+somebody's locked session is an offer to create one on their machine.
+`tests/a_road_to_the_greeter_and_no_second_one.rs` reads this crate's shipped
+code (its `cfg(test)` modules cut off, which its own header says why) and holds
+that one file names what a greeter stands at, that the road names no `Session`,
+`held`, `uid`, `Knock`, `signs_in` or `password`, and that no crate an agent's
+request is carried out in depends on `alo-locking` at all.
+`alo_leaving::switching::asked` now locks — which leaves a locked seat exactly
+as it is — and asks that road on both ways in, so *switch user* means one thing
+at a desk and at a lock screen; task 5's finding is closed rather than restated.
+One string joins the vocabulary, `locking.somebody-else`, and task 7's audit
+reads it without being edited. Report:
+`docs/autonomy/updates/switching-to-another-person-at-a-locked-screen.md`.
+Not on hardware — nothing here draws, opens a device or ends a session; the
+shell draws the road later, and `docs/contracts/lock-screen-rendering.md` gains
+it in that change rather than this one. **Depends on:** 1, 5.
 
 Task 5 built *switch user* and then found it unreachable where a household
 actually needs it: `alo_leaving::switching::asked` locks this session and hands
@@ -452,3 +479,48 @@ and it is the one a reviewer will look for.
   offers, signing in is still `alo_greeting::Greeting::signs_in`. This task may
   not touch `alo-sessiond`, and it may not make switching a thing an agent can
   ask for.
+
+### 9. The four files this plan keeps, in the contract that describes them
+
+**Status:** ready. **Depends on:** 2, 3, 5, 6.
+
+`docs/contracts/person-settings.md` is a **published surface**: it is what a
+third party writing anything that reads a person's folder builds against, and
+`CLAUDE.md` says contracts outlive code. It says *since 2026-09-15 there are
+four*, lists them in a table, and gives each a section of its own with its keys,
+its `format`, what a missing file means and what a file that will not read is
+told — each held to its crate by that crate's
+`tests/the_contract_describes_this_file.rs`.
+
+This plan has since added **four more** and described none of them:
+`sleeping.toml` (task 2), `displays.toml` (tasks 3 and 4), `leaving.toml`
+(task 5) and `notifying.toml` (task 6). Three of those four tasks said in their
+own status paragraph that the debt was owed and not theirs to pay, and the count
+in that sentence went from two to three to four while nobody paid it. It is this
+plan's to pay, because the four crates that keep those files are this plan's.
+
+**What the contract is wrong about matters more than what it is missing.** A
+reader today is not told *there may be more*; they are told there are four, with
+a date. Somebody writing a backup tool, a migration, or an organisation's
+provisioning from that sentence writes something that silently drops half of
+what a person chose.
+
+- **Acceptance:** `docs/contracts/person-settings.md` describes all eight files —
+  the table gains a row for each of `sleeping.toml`, `displays.toml`,
+  `leaving.toml` and `notifying.toml` with its keeper, its `format` number and
+  its keys, and each gains a section of its own in the shape the existing four
+  have: every key with the values it takes, what a missing file means, what a
+  file that will not read is told and in whose words, and a refused example per
+  way a file can be wrong; the sentence that counts them is true after the
+  change and says how it stays true; **each of the four crates gains
+  `tests/the_contract_describes_this_file.rs`**, reading the contract's own text
+  the way `alo-appearance`'s does rather than restating it, so a key added to a
+  file without a line in the contract fails in the change that adds it; and the
+  refusal path is held as carefully as the road — a test per crate that a file
+  the contract says is refused really is refused **whole**, with nothing in it
+  honoured (ADR 0038).
+- **Constraint:** no file's shape changes to make it easier to describe, and no
+  key is added, renamed or removed. This is a contract catching up with four
+  crates, not four crates being rewritten for a contract. `alo-kept`'s rule is
+  read and never edited, and the four existing sections are not rewritten — a
+  correction to one of them is a separate change with its own argument.
