@@ -60,18 +60,21 @@ reads and holds to the recipe's release, the committed key and `docs/booting.md`
 records why it is not yet the road. What stays the owner's: making the `ghcr.io`
 package public, so an installer pulls without an account.
 
-The owner has published four times, beginning 2026-09-15 under
+The owner has published five times, beginning 2026-09-15 under
 [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md).
-The pinned one, signed 2026-09-20, is **the first release that can open a
-document** — each one before it shipped a converter that died at launch for
-want of twelve shared libraries:
+The pinned one, signed 2026-09-21, is **the first release that is complete for
+media**: it opens a document, plays a video and makes one. 0.0.4 was the first
+that could open a document at all — each before it shipped a converter that
+died at launch for want of twelve shared libraries — and every release up to
+and including it could decode the sound of a file and nothing else, carrying no
+video decoder, no encoder and nothing to reach the media server with:
 
 | | |
 |---|---|
-| Release | `0.0.4` (`org.opencontainers.image.version`) |
-| Built from | `b41b4b5ed36ea29b974af0c13d2f7ed9105169a7` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.4` |
-| Digest | `sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858` |
+| Release | `0.0.5` (`org.opencontainers.image.version`) |
+| Built from | `97c970c96f2c13f2341ed94fb264247fb6837442` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.5` |
+| Digest | `sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1` |
 | Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
 | Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
 
