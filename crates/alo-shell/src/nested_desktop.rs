@@ -44,6 +44,10 @@ pub struct DesktopFrame<'a> {
     pub running: &'a RunningWindow,
     /// The window of what is filling the disk, open or closed.
     pub filling: &'a FillingWindow,
+    /// The clock, battery, network and volume the status area shows, as the
+    /// crates that own them said them. Handed in rather than read here: a
+    /// compositor that opened `/sys` would be a compositor measuring.
+    pub status: &'a crate::status_items::StatusItems,
 }
 
 impl Nested {
@@ -198,6 +202,7 @@ pub(crate) fn frame_pictures(
         desktop.look,
         &running,
         &filling,
+        desktop.status,
         &mut labels.fonts,
         size,
     )?;

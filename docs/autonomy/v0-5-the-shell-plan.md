@@ -270,7 +270,27 @@ them has ever been shown.
 
 ### 7. The status area's clock, battery, network and volume
 
-**Status:** ready — **unblocked 2026-09-20**, all four are on `main`. The word
+**Status:** **Done, 2026-09-21.** Report:
+[The status area's four](updates/the-status-areas-four.md).
+`crates/alo-shell/src/status_items.rs` holds the four as the owning crates said
+them — `alo_formats` wrote the clock's text, `alo_power::Reading` is its own
+charge and its own charging state, `alo_networks::Reaching` answers *connected*
+through `HowFar::reaches_anything`, and `alo_sound::Volume` is its own number —
+and `status_items_raster.rs` places them inside `dock_raster`'s status area,
+where `desktop_paint` paints them onto the band.
+
+**Nothing is measured in the shell.** The readings arrive on `DesktopFrame`,
+which is the arrangement `crate::lock_battery` is already under: a compositor
+that opened `/sys` to read a battery would be a compositor measuring.
+
+**Both things the drawing must not undo are held by tests.** A machine with no
+battery has **three** cells rather than four with one blank, and the three are
+wider for it. And a machine told nothing about metering is drawn as **holding
+off**, because that is what `Metered::should_hold_off` counts *nothing said* as
+— a status area showing *not metered* there would be adding a claim about
+somebody's data allowance.
+
+Was *ready — unblocked 2026-09-20*, all four on `main`. The word
 here is *ready* because *unblocked* is not one the supervisor reads, and a
 status it cannot parse is a task it selects for ever. **Re-read
 2026-09-20**, when a lane sent to write the four found three already there; this
