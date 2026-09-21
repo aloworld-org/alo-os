@@ -39,15 +39,14 @@
 //!   **three controls**, each started the same number of times: the same
 //!   Windows with the installer never run; with the installer run the same way
 //!   and refused at the consent; and with it killed at the consent. A running
-//!   Windows rewrites some
-//!   of its own files on every start, and running any program through Windows'
-//!   own tools changes more of them (measured: the WMI repository, Defender's
-//!   scan history, the TPM's key cache) — so *identical to the installed image*
-//!   is not a claim any start could meet. What is claimed is that **staging
-//!   changed nothing on Windows' partition that running the installer and
-//!   refusing did not also change**, outside the directories in which two such
-//!   runs disagree with each other; and it is measured, never written down by
-//!   hand.
+//!   Windows rewrites some of its own files on every start, and running any
+//!   program through Windows' own tools changes more of them (measured: the WMI
+//!   repository, Defender's scan history, the TPM's key cache) — so *identical
+//!   to the installed image* is not a claim any start could meet. What is
+//!   claimed is that **staging changed nothing on Windows' partition that
+//!   running the installer and stopping it at the consent did not also
+//!   change**, outside the directories in which the controls disagree with each
+//!   other; and it is measured, never written down by hand.
 //!
 //! # Run by name, never in the suite
 //!
@@ -67,7 +66,7 @@
 mod walking;
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use walking::console::{self, Console};
@@ -301,28 +300,30 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
         base.unread()
     );
 
+    // Every step is walked whatever an earlier one found, and the test fails
+    // once, at the end, with every finding: a run that takes a night must not
+    // stop at its first.
+    let mut findings: Vec<String> = Vec::new();
     for (step, called) in THE_SEVEN_STEPS {
         let name = format!("step{step}");
         a_fresh_machine(&yard, &name);
         let chip = SecurityChip::fresh(&yard);
 
         let killed = one_boot(&yard, &name, &Told::KillAfterStep(step), &chip, &download);
-        assert!(
-            killed.console.contains(&format!("killed at step {step}")),
-            "step {step} ({called}) was never reached, so nothing was killed \
-             there.\n{}",
-            killed.console.said()
-        );
+        if !killed.console.contains(&format!("killed at step {step}")) {
+            findings.push(format!(
+                "step {step} ({called}) was never reached, so nothing was killed there"
+            ));
+        }
         // Where the kill landed is read from Windows' own tools afterwards —
         // this step's effect there, the next one's not. Measured on 2026-09-21:
         // a kill aimed at step 4 by polling alone landed after step 6.
-        assert!(
-            killed
-                .console
-                .contains(&format!("LANDED EXACTLY after step {step}")),
-            "the kill aimed {called} did not land there.\n{}",
-            killed.console.said()
-        );
+        if !killed
+            .console
+            .contains(&format!("LANDED EXACTLY after step {step}"))
+        {
+            findings.push(format!("the kill aimed {called} did not land there"));
+        }
         // From step 5 the installer writes the start-up entry, and the entry
         // lives in the start partition's `BCD`; so there, and only there, a
         // change around the kill is the step itself.
@@ -332,19 +333,19 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
                 && (path.ends_with("\\efi\\microsoft\\boot\\bcd")
                     || path.ends_with("\\efi\\microsoft\\boot\\bcd.log"))
         };
-        assert!(
-            changed_around_the_kill.iter().all(allowed),
-            "around the kill at step {step} ({called}), the files Windows starts \
-             from changed while it ran: {changed_around_the_kill:?}\n{}",
-            killed.console.said()
-        );
-        nothing_beyond(
+        if !changed_around_the_kill.iter().all(allowed) {
+            findings.push(format!(
+                "around the kill at step {step} ({called}), the files Windows starts \
+                 from changed while it ran: {changed_around_the_kill:?}"
+            ));
+        }
+        findings.extend(beyond_the_controls(
             &base
                 .changed_to(&killed.reading)
                 .beyond(&control_once)
                 .outside(&noise),
             &format!("after the kill at step {step} ({called})"),
-        );
+        ));
 
         if step == 7 {
             // The firmware's own line says which entry it started, and from
@@ -354,29 +355,41 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
             let next = the_restart_after_the_next_start_was_set(&yard, &name, &chip);
             let area = the_areas_first_sector(&killed.console);
             let started = walking::firmware::starts(&next);
-            let alo = started
-                .iter()
-                .find(|start| start.description == "alo OS")
-                .unwrap_or_else(|| panic!("after the kill at step 7 the firmware did not start the alo OS entry.\n{next}"));
-            assert_eq!(
-                alo.first_sector, area,
-                "after the kill at step 7 the firmware started the alo OS entry from \
-                 partition {:?} at sector {:?}, and the area begins at sector {area:?}.\n{next}",
-                alo.partition, alo.first_sector
-            );
+            match started.iter().find(|start| start.description == "alo OS") {
+                None => findings.push(
+                    "after the kill at step 7 the firmware did not start the alo OS entry"
+                        .to_owned(),
+                ),
+                Some(alo) if alo.first_sector != area => findings.push(format!(
+                    "after the kill at step 7 the firmware started the alo OS entry from \
+                     partition {:?} at sector {:?}, and the area begins at sector {area:?}",
+                    alo.partition, alo.first_sector
+                )),
+                Some(_) => {}
+            }
         }
         let restarted = one_boot(&yard, &name, &Told::JustLook, &chip, &download);
         a_desktop_session(&restarted.console);
-        nothing_beyond(
+        findings.extend(beyond_the_controls(
             &base
                 .changed_to(&restarted.reading)
                 .beyond(&control_twice)
                 .outside(&noise),
             &format!("after the restart that followed the kill at step {step} ({called})"),
+        ));
+        eprintln!(
+            "step {step} ({called}) walked; findings so far: {}",
+            findings.len()
         );
         forget(&yard, &name);
     }
     forget(&yard, "control");
+    assert!(
+        findings.is_empty(),
+        "the walk found {} things:\n  {}",
+        findings.len(),
+        findings.join("\n  ")
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -582,15 +595,17 @@ fn bracket_changes(console: &Console) -> Vec<String> {
         .collect()
 }
 
-/// Fail naming every path that changed beyond what starting Windows changes.
-fn nothing_beyond(beyond: &Changed, when: &str) {
-    assert!(
-        beyond.is_nothing(),
-        "{when}, the disk changed beyond what starting Windows changes on its \
-         own.\nstart partition: {:?}\nWindows partition: {:?}",
+/// Every path that changed beyond what the controls change, as findings.
+fn beyond_the_controls(beyond: &Changed, when: &str) -> Vec<String> {
+    if beyond.is_nothing() {
+        return Vec::new();
+    }
+    vec![format!(
+        "{when}, the disk changed beyond what the controls change.\n    start partition: \
+         {:?}\n    Windows partition: {:?}",
         beyond.start_partition,
         beyond.windows.iter().take(60).collect::<Vec<_>>()
-    );
+    )]
 }
 
 /// Fail with the list of what is missing, rather than pass without running.
@@ -638,16 +653,22 @@ fn fetched_windows(yard: &Path) -> PathBuf {
     iso
 }
 
-/// The download a person would have, built from this checkout.
+/// The download a person would have, built from this checkout — once per run
+/// of these tests, which the kill test and the road test then share.
 fn the_download(yard: &Path) -> PathBuf {
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(2)
-        .expect("the repository")
-        .to_path_buf();
-    let target_directory = std::env::var_os("CARGO_TARGET_DIR")
-        .map_or_else(|| repository.join("target"), PathBuf::from);
-    download::assembled(yard, &repository, &target_directory)
+    static BUILT: OnceLock<PathBuf> = OnceLock::new();
+    BUILT
+        .get_or_init(|| {
+            let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .ancestors()
+                .nth(2)
+                .expect("the repository")
+                .to_path_buf();
+            let target_directory = std::env::var_os("CARGO_TARGET_DIR")
+                .map_or_else(|| repository.join("target"), PathBuf::from);
+            download::assembled(yard, &repository, &target_directory)
+        })
+        .clone()
 }
 
 /// An overlay of the installed Windows, an empty second disk, and the

@@ -399,14 +399,29 @@ function Children() {
 $ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
 $held = 'C:\alo\held.txt'
 Remove-Item -LiteralPath $held -Force -ErrorAction SilentlyContinue
-Set-Content -LiteralPath 'C:\alo\held.cmd' -Encoding ASCII -Value "@echo off`r`necho %* > C:\alo\held.txt`r`nping -n 900 127.0.0.1 > nul`r`n"
+# The stand-in: writes down the command line it was started with, and never
+# returns. Not `cmd.exe` running a script: measured on 2026-09-22, a held
+# PowerShell's encoded command is longer than cmd's 8 191-character line, cmd
+# failed at once, and the installer saw a failed step and began putting back
+# before it could be killed.
+$standIn = 'C:\alo\held.exe'
+if (-not (Test-Path -LiteralPath $standIn)) {
+  Add-Type -OutputType ConsoleApplication -OutputAssembly $standIn -TypeDefinition @'
+public static class Held {
+  public static void Main() {
+    System.IO.File.WriteAllText(@"C:\alo\held.txt", System.Environment.CommandLine);
+    System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+  }
+}
+'@
+}
 $script:Holding = $null
 $script:HoldingMadeTheKey = $false
 function Hold([string]$image) {
   $key = Join-Path $ifeo $image
   $script:HoldingMadeTheKey = -not (Test-Path -LiteralPath $key)
   if ($script:HoldingMadeTheKey) { New-Item -Path $key -Force | Out-Null }
-  New-ItemProperty -LiteralPath $key -Name Debugger -Value "$env:SystemRoot\System32\cmd.exe /c C:\alo\held.cmd" -PropertyType String -Force | Out-Null
+  New-ItemProperty -LiteralPath $key -Name Debugger -Value $standIn -PropertyType String -Force | Out-Null
   $script:Holding = $key
   Say "holding the next start of $image"
 }
@@ -418,9 +433,7 @@ function LetGo() {
   $script:Holding = $null
 }
 function EndTheStandIn() {
-  Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-    Where-Object { ($_.Name -eq 'cmd.exe' -and $_.CommandLine -like '*held.cmd*') -or $_.Name -eq 'PING.EXE' } |
-    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  Get-Process -Name 'held' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
 $killed = $false
@@ -487,7 +500,12 @@ foreach ($block in ($all -split '(?:\r?\n){2,}')) {
 }
 $option = TheAloOption
 $volume = if ($null -ne $area) { Get-Volume -Partition $area -ErrorAction SilentlyContinue } else { $null }
+$everythingSaid = ($said -join "`n") + "`n" + $rest
 $facts = [ordered]@{
+  # A kill that lands on a boundary finds the installer mid-road, never
+  # already undoing: an installer that had begun putting back was reacting to
+  # a step that failed, which is not the kill this walk means.
+  'installer had begun putting back' = ($everythingSaid -match 'is being put back')
   'windows smaller'   = ((Get-Partition -DriveLetter C).Size -lt $script:BaseWindowsSize)
   'area made'         = ($null -ne $area)
   'area formatted'    = ($null -ne $volume -and $volume.FileSystem -like 'FAT*' -and $volume.FileSystemLabel -eq 'ALO-INSTALL')
@@ -509,6 +527,7 @@ $landed = switch ($step) {
   6 { $f['entry listed'] -and $f['entry points at the area with no optional data'] -and -not $f['area has a letter'] -and -not $f['next start set'] }
   7 { $f['next start set'] -and $f['entry points at the area with no optional data'] }
 }
+if ($f['installer had begun putting back']) { $landed = $false }
 if ($landed) { Say "LANDED EXACTLY after step $step" } else { Say "DID NOT LAND after step $step exactly: see the facts above" }
 
 # What the installer wrote into the area, while the area still has a letter to

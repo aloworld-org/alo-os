@@ -47,6 +47,13 @@ pub fn assembled(yard: &Path, repository: &Path, target_directory: &Path) -> Pat
         ])
         .status()
         .expect("podman");
+    // The build's images are about nine gigabytes of the host's disk and are
+    // never used again; the installer plan says a worker that builds an image
+    // removes it. Measured on 2026-09-21: 41 GB free before the build, 32 GB
+    // at its end.
+    let _ = Command::new("podman")
+        .args(["system", "prune", "--all", "--force"])
+        .status();
     assert!(
         built.success(),
         "the environment did not build from its recipe"
