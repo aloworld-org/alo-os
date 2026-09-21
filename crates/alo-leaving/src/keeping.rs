@@ -34,6 +34,12 @@
 //! there is taken out — so a machine nobody configured holds no record of what
 //! anybody had open, and turning the setting off is enough to remove one.
 //!
+//! **Its section of
+//! [the contract](../../../docs/contracts/person-settings.md)** is what this
+//! file looks like to everybody outside this repository — its keys, its values,
+//! what a missing file means and what a file that will not read is told — and
+//! `tests/the_contract_describes_this_file.rs` holds the two together.
+//!
 //! **This crate does not know where the folder is.** It is handed the path, by
 //! whoever starts the session, so that there is one answer to *where is a
 //! person's folder* and it is not in a crate about logging out.

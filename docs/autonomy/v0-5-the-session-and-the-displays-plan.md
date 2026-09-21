@@ -482,7 +482,26 @@ and it is the one a reviewer will look for.
 
 ### 9. The four files this plan keeps, in the contract that describes them
 
-**Status:** ready. **Depends on:** 2, 3, 5, 6.
+**Status:** **Done, 2026-09-21.** `docs/contracts/person-settings.md` gains a
+section apiece for `sleeping.toml`, `displays.toml`, `leaving.toml` and
+`notifying.toml`, each in the shape the existing four have, and each held to
+its crate by that crate's new `tests/the_contract_describes_this_file.rs`: the
+keys the section lists are the keys the crate writes, the file the section
+shows is byte for byte the file the crate writes, every example it offers as
+reading reads, and every example it calls refused is refused in the sentence it
+names with nothing in the file honoured. **The count was worse than the
+omission**, and it was worse than the task knew: the folder held **ten** files
+and not eight — `keyboards.toml` (`alo-keyboards`) and `gestures.toml`
+(`alo-desktops`) are kept the same way and belong to no plan named here. All
+ten are in the table, the sentence says ten, and each of the four new tests
+reads that number against the rows under it, so the count can no longer drift
+from the table. Eight of the ten have a section; the two that do not are
+marked as such rather than left to look described. `alo-displays` also turns
+out not to check unknown keys *inside* an arrangement, which the contract now
+says plainly and task 10 closes. Report:
+`docs/autonomy/updates/every-file-in-a-persons-folder-in-the-contract-that-describes-them.md`.
+Not on hardware — nothing here opens a device; it is a contract and four tests.
+**Depends on:** 2, 3, 5, 6.
 
 `docs/contracts/person-settings.md` is a **published surface**: it is what a
 third party writing anything that reads a person's folder builds against, and
@@ -524,3 +543,54 @@ what a person chose.
   crates, not four crates being rewritten for a contract. `alo-kept`'s rule is
   read and never edited, and the four existing sections are not rewritten — a
   correction to one of them is a separate change with its own argument.
+
+### 10. An arrangement with a key nobody declared
+
+**Status:** ready. **Depends on:** 3, 9.
+
+Task 9 read `alo-displays` against the rule every file in a person's folder is
+kept by, and found one place the rule stops short. A key alo OS does not know
+**at the top** of `displays.toml` refuses the whole file, with the key named,
+the way it does in all seven other files. A key alo OS does not know *inside*
+an `[[arrangements]]` table, or inside one of its `screens` rows, is **read
+past**: `format = 1`, an arrangement, and `brightness = 50` on a screen row
+reads, and the arrangement is honoured.
+
+Every other nested shape in these four crates already refuses one —
+`alo_displays::night_light::Written`, `Between`, `Whereabouts`,
+`alo_leaving::open::Written` and `alo_notifying::quiet_hours::Written` all carry
+`deny_unknown_fields`. `arrangement.rs`'s two do not, and nothing suggests that
+was decided rather than missed.
+
+**It matters more here than the size of the fix suggests.** `alo-leaving`'s
+`deny_unknown_fields` is the clause that stops a `title` reaching a person's
+folder, and the argument for it is not about tidiness: a file read past is a
+file a later release, or a person's own hand, can quietly put something into.
+An arrangement row is the one place in this plan's files where a screen is
+described, and *which screen this is* is exactly the sort of thing somebody
+would be tempted to add a field to.
+
+Task 9 did not fix it, deliberately: its own constraint says the four crates are
+not rewritten for the contract, and making a hand-edited file that reads today
+stop reading tomorrow is a change to what a person experiences, which deserves
+its own sentence in `CHANGELOG.md` rather than arriving inside a documentation
+task. The contract says plainly what happens today and tells nobody to rely on
+it, which is what made it safe to leave.
+
+- **Acceptance:** an unknown key inside an `[[arrangements]]` table, and inside
+  an `[[arrangements.screens]]` row, refuses the whole file — the same
+  `displays.kept.not-understood` a bad value gives, since the key is inside a
+  value and not at the top of the file, and `alo_displays::keeping::at_sign_in`
+  then answers with a machine that has arranged nothing; the refusal path is
+  tested in `alo-displays` for both tables and for a key that *is* declared
+  still reading; `docs/contracts/person-settings.md`'s `displays.toml` section
+  loses the paragraph headed *One check `appearance.toml` has that this file
+  does not yet* and gains the ordinary sentence the other sections have, with a
+  refused example per table; and
+  `crates/alo-displays/tests/the_contract_describes_this_file.rs` goes on
+  passing without being loosened to do it.
+- **Constraint:** nothing else about the shape changes — no key added, renamed
+  or removed, and no `format` moved: a file this alo OS wrote yesterday reads
+  today. `alo-kept`'s rule is read and never edited. Say in the change
+  description that a hand-edited file with a stray key in an arrangement will
+  stop reading, and what the person is told when it does.
