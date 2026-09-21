@@ -32,9 +32,19 @@
 //! **A wrong name cannot pick a wrong disk.** Every name above carries the
 //! disk's serial number or unique identifier, so a name made wrongly names no
 //! disk at all, and the environment then says *the disk you chose is not
-//! connected, so nothing was changed*. None of these rules has yet been
-//! checked against a real disk from both sides; `docs/booting.md` says so, and
-//! the installer plan's virtual-machine test is where the first one is.
+//! connected, so nothing was changed*.
+//!
+//! # Which rules have been seen from both sides
+//!
+//! **SATA, measured on 2026-09-21** (the installer plan's task 10,
+//! `tests/the_installer_walked_on_a_real_windows.rs`): a running Windows 11
+//! reported the walk's second disk as bus `SATA`, model `QEMU HARDDISK`,
+//! serial `ALOTARGET1`; this rule wrote `ata-QEMU_HARDDISK_ALOTARGET1` into the
+//! area; and the environment, started by the firmware from that area, said
+//! *Looking for the disk you chose: ata-QEMU_HARDDISK_ALOTARGET1* and went on
+//! to check and partition exactly that disk. **NVMe and SAS/SCSI are not yet
+//! seen from the Linux side**: QEMU's NVMe device reports no identifier by
+//! default, and the machine is not Hyper-V. `docs/booting.md` says so.
 
 use alo_installing::DiskName;
 

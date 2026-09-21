@@ -106,6 +106,19 @@ pub enum Program {
         offset: u64,
     },
     /// Make a start-up entry named [`THE_ENTRYS_NAME`], and print its identifier.
+    ///
+    /// **Measured on a running Windows** (the installer plan's task 10,
+    /// 2026-09-21): the entry this and the two pointing programs make reaches
+    /// the firmware's `Boot####` variable as the area's own partition and
+    /// [`THE_LOADER`], and on the installer's own restart the firmware starts
+    /// it. It also carries the optional data every copy of `{bootmgr}`
+    /// carries — 136 bytes beginning `WINDOWS` — which shim reads as the name
+    /// of what to start next; shim fails to open it and falls back to its
+    /// default loader, `grubx64.efi` beside it, which is the loader it is meant
+    /// to start (`docs/quirks.md`). And once, after a kill with the next start
+    /// set and a *shutdown* rather than a restart, the variable was found
+    /// pointing at Windows' own EFI system partition instead — which starts
+    /// Windows (`docs/quirks.md`, not yet explained).
     AddingTheEntry,
     /// Point the entry at the area.
     PointingTheEntryAtTheArea {

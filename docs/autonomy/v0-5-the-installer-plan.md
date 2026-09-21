@@ -543,12 +543,39 @@ partition, before Linux, and hangs.
 
 ### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
 
-**Status:** scheduled — **and no longer scheduled on hardware, as of
-2026-09-20.** **Depends on:** 3.
+**Status:** in progress — **walked on the development PC on 2026-09-21, most of
+it measured, not ticked** (`updates/the-installer-walked-on-a-real-windows.md`).
+**Depends on:** 3.
 
-> **One of the two conditions this task waited on was measured away on the
-> development PC (Intel Core Ultra 7 155U), 2026-09-20. The other was not, and
-> the disk paragraph below stands.**
+**Measured:** a Windows 11 Enterprise Evaluation installed itself unattended
+into a QEMU/KVM machine (QEMU, because this account cannot manage Hyper-V;
+Secure Boot off because the shipped installer refuses it on) and reached a
+desktop session in 32 minutes. The installer, cross-built for Windows with a
+genuine environment, ran elevated there and was killed after steps 1, 2, 3, 5,
+6 and 7 — each landing read back from Windows' own tools — and Windows
+restarted to its desktop session after every one. Held to two controls (the
+installer never run; the installer run and refused at the consent), steps 2, 3
+and 6 changed no file of the Windows partition or its start partition; steps
+1, 5 and 7 left one or two user-profile cache files each that the controls do
+not explain. The cmdlets and `bcdedit` did exactly what `crate::program` asks.
+On the installer's own restart the firmware started the area's loader, and on
+Fedora's firmware the environment found `ata-QEMU_HARDDISK_ALOTARGET1` — the
+SATA name `naming.rs` makes, seen from both sides.
+
+**Still owed before this is done:** the Rust test run end to end by name with
+its run pasted (the measurements came from a shell harness running the same
+guest scripts); step 4's boundary, which the walk could not land (three tries
+landed after or inside step 5 or 6); the four unexplained cache files; the
+entry found pointing at Windows' partition after the kill at step 7 and a
+shutdown (`docs/quirks.md`, not explained); NVMe and Hyper-V SCSI names; and
+the release's MSVC build. **Found for task 12:** on the road, `bootc` stopped
+with *Creating rootfs: No such file or directory* after the environment had
+found and partitioned the disk.
+
+> *Before 2026-09-21:* **one of the two conditions this task waited on was
+> measured away on the development PC (Intel Core Ultra 7 155U), 2026-09-20.
+> The other — the disk — was then cleared too: the host had 62 GB free on
+> 2026-09-21, and the walk ran with 31–42 GB free throughout.**
 >
 > - **Disk — still a real blocker, and the plan was right.** An earlier draft of
 >   this note claimed 805 GB free. That number is `df` **inside WSL**, and it is
