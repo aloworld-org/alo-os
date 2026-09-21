@@ -123,8 +123,11 @@ impl Moved {
     pub fn said(&self, strings: &Strings) -> Said {
         strings.say(
             &self.word().key(),
-            &Filling::of("display", self.from.as_a_person_reads_it())
-                .and("other", self.onto.as_a_person_reads_it()),
+            &self.onto.named_in(
+                "other",
+                self.from.named_in("display", Filling::nothing(), strings),
+                strings,
+            ),
         )
     }
 }
@@ -185,7 +188,7 @@ impl CameBack {
         self.word().map(|word| {
             strings.say(
                 &word.key(),
-                &Filling::of("display", self.back.as_a_person_reads_it()),
+                &self.back.named_in("display", Filling::nothing(), strings),
             )
         })
     }
@@ -208,7 +211,8 @@ mod tests {
         let moved = Moved::of(the_office_screen(), the_laptop(), vec![the_home_screen()]);
         let said = moved.said(&strings);
         assert!(said.text().contains("Dell U2720Q"), "{said}");
-        assert!(said.text().contains("eDP-1"), "{said}");
+        assert!(said.text().contains("Built-in screen"), "{said}");
+        assert!(!said.text().contains("eDP-1"), "{said}");
         assert!(said.unfilled().is_empty(), "{said}");
         assert_eq!(moved.from(), &the_office_screen());
         assert_eq!(moved.onto(), &the_laptop());

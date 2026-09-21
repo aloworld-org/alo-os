@@ -26,6 +26,7 @@
 //! | [`nightly`] | When night light is on: never, a schedule, or the sun |
 //! | [`night_light`] | Night light as a person has it set, and what it is doing now |
 //! | [`wearing`] | The background, the dock edge and the warmth each screen wears |
+//! | [`plugged_into`] | What a screen that says nothing about itself is called, and never the socket's own name |
 //! | [`notes`] | What a person is told about their screens |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //! | [`keeping`] | `displays.toml` in the person's own folder, read and written here |
@@ -158,6 +159,7 @@ pub mod night_light;
 pub mod nightly;
 pub mod notes;
 pub mod placed;
+pub mod plugged_into;
 pub mod reported;
 pub mod scale;
 pub mod sun;
@@ -182,6 +184,7 @@ pub use night_light::{NightLight, Tonight};
 pub use nightly::{Nightly, NotNightly, Now};
 pub use notes::Note;
 pub use placed::{Placed, Position};
+pub use plugged_into::PluggedInto;
 pub use reported::{Millimetres, NotAScreen, Reported, Resolution, which_screens_these_are};
 pub use scale::{Rounded, Scale, ScaleError, Support};
 pub use sun::{NowhereOnEarth, Sun, Whereabouts};
