@@ -546,7 +546,35 @@ what a person chose.
 
 ### 10. An arrangement with a key nobody declared
 
-**Status:** ready. **Depends on:** 3, 9.
+**Status:** **Done, 2026-09-21.** `crates/alo-displays/src/arrangement.rs`'s two
+written shapes gain `deny_unknown_fields`, which is the whole of the code: an
+`[[arrangements]]` table and an `[[arrangements.screens]]` row now have exactly
+the keys this crate declares, and one alo OS does not know refuses the whole
+file as `displays.kept.not-understood` — the sentence a value it cannot take
+already gives, because the key is inside a value rather than at the top of the
+file, so there is no top-level key to name and `FileNotRead::key` answers
+`None`. `alo_displays::keeping::at_sign_in` then answers with a machine that has
+arranged nothing and the refusal beside it, as it does for every other way this
+file can be wrong. Five tests hold it: the two refusals, each through a real
+file on a real disk; the same file with only the declared keys reading, with its
+arrangement, its second screen's place and its main screen honoured; a file this
+alo OS wrote reading back unchanged, because nothing about the shape moved and
+yesterday's file is today's; and one in `arrangement.rs` that asks the shape
+directly for both tables at once. `docs/contracts/person-settings.md` loses the
+paragraph headed *One check `appearance.toml` has that this file does not yet*
+for the ordinary sentence the other sections have, and gains a refused example
+per table; `tests/the_contract_describes_this_file.rs` reads both of the new
+examples and holds them to the sentence they name, unloosened.
+**What a person notices, and it is a change to what they experience:** a
+hand-edited `displays.toml` with a stray key inside an arrangement stops
+reading, where yesterday it read and the arrangement was honoured. They are
+told that their screen arrangements could not be read, that nothing in the file
+has been used and that their screens have been laid out side by side; the file
+is not written over, so mending it by hand keeps everything in it, and Settings'
+*put this back as alo OS ships it* is the one door that replaces it. Report:
+`docs/autonomy/updates/an-arrangement-with-a-key-nobody-declared.md`.
+Not on hardware — nothing here opens a device; it is a serde clause, a contract
+paragraph and the tests around both. **Depends on:** 3, 9.
 
 Task 9 read `alo-displays` against the rule every file in a person's folder is
 kept by, and found one place the rule stops short. A key alo OS does not know
@@ -594,3 +622,54 @@ it, which is what made it safe to leave.
   today. `alo-kept`'s rule is read and never edited. Say in the change
   description that a hand-edited file with a stray key in an arrangement will
   stop reading, and what the person is told when it does.
+
+### 11. The desk a machine wakes up at
+
+**Status:** ready. **Depends on:** 2, 3.
+
+A laptop suspended at home and opened at the office is the commonest thing this
+workstream will be judged on, and it is the one path through it that nothing
+decides. `alo_displays::Attached` learns about screens from events —
+`unplugged` and `plugged_in`, one cable at a time — and **a machine that was
+asleep saw none of them.** It wakes holding the set it went to sleep with: two
+screens that are no longer plugged into anything, or one screen where there are
+now three.
+
+Task 7's walk docks a screen *after* the resume, which is the hotplug road
+working exactly as task 3 built it. What is missing is the step before it: the
+moment a machine comes back and the desk is not the desk it left.
+
+**This is not a new layout rule and must not become one.** Everything needed is
+already decided — a set the person has arranged is restored (task 3's second
+clause), a set nobody has arranged is laid out side by side at each screen's
+last size, and what was on a screen that has gone belongs on the main screen of
+what remains. What is missing is one door that asks all of it again from *what
+is reported now* rather than from the events nobody was awake for, and one
+sentence that tells a person the desk changed rather than leaving them to find
+out by looking for a window.
+
+- **Acceptance:** `alo-displays` gains the one road from a machine that slept to
+  the screens in front of it — the whole reported set, never a cable at a time —
+  answering an `Attached` that restores the arrangement the person made for this
+  set, lays a set nobody has arranged out side by side, and says where what was
+  on each screen that is gone belongs, by task 3's rule and in the same shape an
+  unplug answers with; a screen that is still there is not moved and nothing is
+  said about it. **The refusal path is held as carefully as the road:** a
+  machine that wakes with nothing plugged in at all is refused
+  (`NotArranged::NoScreens`) with the screens it went to sleep with left exactly
+  as they were rather than thrown away, and a machine that wakes to the same set
+  reporting itself the same way moves nothing and says nothing. A `Note` a
+  person reads when the set changed while the machine was asleep is declared
+  here with a translator's note and joins task 7's audit without that test being
+  edited. `alo-sleeping`'s `Woke` is where the road is asked, so a resume is the
+  place this happens rather than something every caller has to remember. And one
+  test suspends at one desk and resumes at another, at the same one, and at
+  none.
+- **Constraint:** no window identifier enters `alo-displays` — task 3's clause,
+  and what keeps this crate out of what a person had open: the moving is the
+  shell's and the decision of where is this crate's. Nothing polls and nothing
+  watches: the screens are read once, at the resume, from what the caller was
+  handed. The arrangement remembered for the desk the machine left is not
+  forgotten — the set it belongs to is simply not the set in front of anybody.
+  Nothing in `crates/alo-shell`, no modesetting, and `logind` is rented
+  (ADR 0011).

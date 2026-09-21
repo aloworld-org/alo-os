@@ -1420,13 +1420,14 @@ longitude = -0.12
   A table inside `night-light` has exactly its own keys: one it does not know
   refuses the whole file.
 
-**One check `appearance.toml` has that this file does not yet.** A key alo OS
-does not know **inside** an `[[arrangements]]` table, or inside one of its
-`screens` rows, is ignored rather than refusing the file; only a key at the top
-of the file, and a key inside `night-light` or a table inside it, is checked.
-Write the keys above and nothing else: this is a fault to be corrected rather
-than room to put something, and a file that leans on it will stop reading when
-it is.
+An `[[arrangements]]` table, and each `[[arrangements.screens]]` row inside it,
+has exactly its own keys: one alo OS does not know refuses the whole file.
+There is no key for how bright a screen is, what a person calls the desk it
+stands on, which resolution it was running at or which of two identical
+monitors this one is, and a table that has one does not read rather than being
+read past. A row is where a screen is described, which is exactly the place
+something would be tempted to grow a field, and a row read past is room to put
+one nobody agreed to.
 
 ### What a missing file means
 
@@ -1493,6 +1494,40 @@ main = true
 
 Refused — `displays.kept.not-understood`. A `make` with no `model` is half a
 screen, and it would match a different monitor tomorrow.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+desk = "the office"
+
+[[arrangements.screens]]
+socket = "eDP-1"
+at = [0, 0]
+scale = 100
+main = true
+```
+
+Refused — `displays.kept.not-understood`. An arrangement is its screens and
+nothing else; where the machine happens to be standing is not a key this file
+has, and nothing asks it.
+
+```toml refused
+format = 1
+
+[[arrangements]]
+
+[[arrangements.screens]]
+socket = "eDP-1"
+at = [0, 0]
+scale = 100
+main = true
+brightness = 50
+```
+
+Refused — `displays.kept.not-understood`. How bright a screen is, is not
+something this file holds — inside a screen's row no more than at the top of
+the file.
 
 ```toml refused
 format = 1
