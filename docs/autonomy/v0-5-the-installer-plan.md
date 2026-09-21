@@ -251,6 +251,15 @@ which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
 > took it to zero. This task is *the largest disk of the three*, so it is the
 > one least able to ignore that. Blocked on **9 and 10, and on a disk**.
 
+> **Which program shows the start-up menu is decided, 2026-09-21:**
+> [ADR 0062](../decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md),
+> alo OS's own loader, with Windows directly behind it in the firmware's
+> order and a test that proves the fall-through. Neither ADR 0023 nor ADR
+> 0033 answered it, and this task could not be built without the answer.
+> Its three terms are part of this task's acceptance. **Fast Startup** is
+> left open there for the owner, and the test that alo OS never mounts the
+> Windows partition read-write is this task's either way.
+
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
 *by the time we test, run the two operating systems and switch from one to
