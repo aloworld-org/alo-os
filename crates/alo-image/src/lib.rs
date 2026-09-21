@@ -32,6 +32,7 @@
 //! | [`TheNotes`] | What the Release's notes say, held to the pin and to what the installer accepts |
 //! | [`TheTryIt`] | The README's *Try it*, held to `docs/hardware.md` |
 //! | [`TheDisk`], [`TheDocument`] | The disk a machine boots from, as the recipe declares it and as `docs/booting.md` tells a person to make it |
+//! | [`THE_ONLY_FILESYSTEM`], [`TheFilesystem`] | The one filesystem a machine is installed onto, and the guard that keeps it one (ADR 0045) |
 //!
 //! # Nothing on a machine ever reads this
 //!
@@ -93,6 +94,7 @@ mod converter;
 mod converts;
 mod description;
 mod disk;
+mod filesystem;
 mod image;
 mod installing;
 mod installs;
@@ -124,6 +126,7 @@ pub use checking::{THE_DOOR, everything_wrong_with};
 pub use converter::{THE_CONVERTER, THE_CONVERTERS_BINARY, THE_CONVERTERS_SOCKET, TheConverter};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
+pub use filesystem::{THE_ONLY_FILESYSTEM, TheFilesystem};
 pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER, THE_SERVER};
 pub use installing::{
     ABOARD, SHARED, THE_CHECKER_ABOARD, THE_ENVIRONMENT, THE_PIN_ABOARD, TheEnvironment,

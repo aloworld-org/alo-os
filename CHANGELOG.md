@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A machine installed from now on has a disk that can hold an undo.** alo OS
+  is installed onto a filesystem that can keep a copy of a folder as it was a
+  moment ago, so that *undo what the agent did this afternoon* has somewhere to
+  rewind from when it arrives. Nothing about it is visible yet and undo still
+  answers *not yet on this machine* — but the filesystem is chosen when a
+  machine is installed and **cannot be changed afterwards**, so a machine
+  installed before this could only ever get an undo by being reinstalled. An
+  update, and a going back to yesterday's machine, leave your home and what the
+  machine keeps for you exactly as they were: measured on a real machine rather
+  than assumed.
+  Evidence: `docs/autonomy/updates/a-disk-that-can-hold-an-undo.md`.
+
 - **The proxy you set is the one your applications install through.** On a
   company network, setting a proxy in Settings now decides the way out for
   installing an application and updating one — not whatever the machine

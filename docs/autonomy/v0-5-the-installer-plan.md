@@ -620,7 +620,45 @@ firmware starts.
 
 ### 11. The disk alo OS is installed onto can hold an undo
 
-**Status:** ready. **Depends on:** 2, 15 — its acceptance boots a virtual-machine
+**Status:** **done, 2026-09-21**, on the development PC.
+`crates/alo-installing/src/writing.rs` names `btrfs`, from the one place it is
+named (`alo_image::THE_ONLY_FILESYSTEM`); `docs/booting.md` names the same one;
+and `crates/alo-image/tests/one_filesystem_and_it_can_hold_an_undo.rs` counts
+both, so a second filesystem on the road to a person's disk is a failing test.
+
+**What the base makes of it was measured, not assumed**, on the pinned release
+`0.0.5` installed with `--filesystem btrfs` and booted with KVM. Four entries in
+`docs/quirks.md` carry the commands: **the base makes no subvolume of its own** —
+`btrfs subvolume list -a -p -u /sysroot` prints nothing, and `/boot`, `/etc`,
+`/sysroot` and `/var` are four binds of four directories in subvolume 5;
+**a person's home lands in `/var/home`, which is an ordinary directory** and
+empty until somebody signs in, so making each home a subvolume is still the
+accounts lane's; and **taking a read-only snapshot needs no capability while
+removing one needs `CAP_SYS_ADMIN`**, because `bootc install` sets no
+`user_subvol_rm_allowed` and we add no mount option of our own. That last one is
+a cost ADR 0045 did not anticipate: its expiry window, its oldest-go-first under
+disk pressure and its *forgetting is one act* all need a privileged remover. The
+fourth entry is the trap that cost this task two boots and a wrong reading — a
+snapshot into a destination that already exists is made *inside* it and answers
+`Read-only file system`.
+
+**The machine did it, not a document.** `alo-agentd` came up `ActiveState=active
+SubState=running` on the btrfs install; a read-only snapshot of a home subvolume
+was taken, held its bytes, refused a write, and was removed again, with the whole
+run in `updates/a-disk-that-can-hold-an-undo.md`. And
+`crates/alo-installing/tests/a_btrfs_disk_keeps_what_an_update_passes_over.rs`
+holds the rest: a btrfs install, known bytes written into a home subvolume and
+into `/var/lib/alo`, a `bootc switch` to a second build, a `bootc rollback` back,
+and every byte, the subvolume and the read-only snapshot found on both sides.
+`test result: ok. 1 passed; 0 failed`, in 161.84 s with KVM, exit 0. The run's
+disks and images were removed and `fstrim` returned 12.5 GiB.
+
+**A machine already on ext4 is not converted and does not claim an undo**:
+`crates/alo-keeping-up/src/putting_back.rs` answers *not yet on this machine*,
+and goes on doing so until the home subvolume, the bracket and the broker's verb
+land in their own lanes.
+
+*Before it was done:* ready. **Depends on:** 2, 15 — its acceptance boots a virtual-machine
 install to `alo-agentd`: task 13 saw an install finish and the disk boot under
 Secure Boot on 2026-09-16, and `alo-agentd` failed there. Task 14 found why and
 fixed the image, and a release carrying that fix is task 15.
