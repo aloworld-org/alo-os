@@ -20,6 +20,17 @@
 //! Nothing a request carries is an argument: the document's own name is never
 //! passed on, because a name is whatever the sender wrote.
 //!
+//! # Twice, for one conversion out of seven
+//!
+//! An original whose format nothing here reads is inventoried out of a
+//! rendering the engine makes of it (`crate::inventory::read_from`), so that
+//! conversion starts the engine twice: once for the rendering, once for the
+//! copy. Both are the same fixed argument list with a different export, and
+//! [`LONGEST_ALTOGETHER`] is what the service waits for either way.
+//!
+//! The copy is always made from the **original**, never from the rendering, so
+//! nobody's PDF is a conversion of a conversion.
+//!
 //! # And a clean environment
 //!
 //! The engine is started with **no inherited environment**: its home is the
@@ -38,8 +49,15 @@ use crate::conversion::Conversion;
 /// on the image and on the machine this repository is gated on.
 pub const THE_ENGINE: &str = "/opt/libreoffice26.2/program/soffice";
 
-/// The longest a conversion may take before it is stopped.
+/// The longest one run of the engine may take before it is stopped.
 pub const LONGEST: Duration = Duration::from_secs(120);
+
+/// The most times the engine is started for one conversion: once for a
+/// rendering the inventory reads, and once for the copy.
+pub const MOST_RUNS: u64 = 2;
+
+/// The longest all of one conversion's runs of the engine may take.
+pub const LONGEST_ALTOGETHER: Duration = Duration::from_secs(LONGEST.as_secs() * MOST_RUNS);
 
 /// How often a running conversion is looked at.
 const LOOKING: Duration = Duration::from_millis(50);
@@ -58,28 +76,62 @@ pub enum NotConverted {
     NoCopy,
 }
 
+/// What the engine is asked to produce out of a document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Export {
+    /// The copy a person keeps: a PDF (ADR 0039 §1), through the writer the
+    /// document's own kind belongs to.
+    TheCopy,
+    /// A rendering this crate can inventory, of an original whose own format it
+    /// does not read: the engine's own text document.
+    ///
+    /// One value and not one per kind, because one conversion needs it and it
+    /// is a text document. A rendering of another shape is another value here
+    /// and another line in `crate::inventory::read_from`, and that crate's
+    /// `every_rendering_the_engine_is_asked_for_is_a_text_document` is what
+    /// fails until both exist.
+    SomethingThisMachineReads,
+}
+
 /// What the engine is asked to export each conversion with.
 ///
 /// **A filter names the export, not the document.** Which reader opens the
 /// document is decided by the document, from the ending its scratch name
-/// carries; this says which of the engine's writers produces the PDF. So two
-/// conversions of text documents share one filter, and that is not a collision:
-/// a Pages document and a Word document are both pages of text, and both come
-/// out of the same writer.
-const fn filter(conversion: Conversion) -> &'static str {
-    match conversion {
-        Conversion::WordDocument | Conversion::OpenDocumentText | Conversion::PagesDocument => {
-            "pdf:writer_pdf_Export"
-        }
-        Conversion::ExcelWorkbook | Conversion::OpenDocumentSpreadsheet => "pdf:calc_pdf_Export",
-        Conversion::PowerPointPresentation | Conversion::OpenDocumentPresentation => {
-            "pdf:impress_pdf_Export"
-        }
+/// carries; this says which of the engine's writers produces what comes out. So
+/// two conversions of text documents share one filter, and that is not a
+/// collision: a Pages document and a Word document are both pages of text, and
+/// both come out of the same writer.
+const fn filter(conversion: Conversion, export: Export) -> &'static str {
+    match export {
+        Export::SomethingThisMachineReads => THE_RENDERING,
+        Export::TheCopy => match conversion {
+            Conversion::WordDocument | Conversion::OpenDocumentText | Conversion::PagesDocument => {
+                "pdf:writer_pdf_Export"
+            }
+            Conversion::ExcelWorkbook | Conversion::OpenDocumentSpreadsheet => {
+                "pdf:calc_pdf_Export"
+            }
+            Conversion::PowerPointPresentation | Conversion::OpenDocumentPresentation => {
+                "pdf:impress_pdf_Export"
+            }
+        },
     }
 }
 
-/// Convert the document at `scratch`/[`Conversion::scratch_name`] into a PDF
-/// beside it, and say where the PDF is.
+/// The engine's own text document, which this crate reads, and the filter that
+/// writes one.
+const THE_RENDERING: &str = "odt:writer8";
+
+/// What an export leaves behind it, as a file ending.
+const fn ending(export: Export) -> &'static str {
+    match export {
+        Export::TheCopy => "pdf",
+        Export::SomethingThisMachineReads => "odt",
+    }
+}
+
+/// Export the document at `scratch`/[`Conversion::scratch_name`] into `export`
+/// beside it, and say where what came out is.
 ///
 /// `engine` is [`THE_ENGINE`] on a machine; it is an argument so that the
 /// refusal paths can be tested with one that is not there.
@@ -90,6 +142,7 @@ pub fn convert(
     engine: &Path,
     scratch: &Path,
     conversion: Conversion,
+    export: Export,
 ) -> Result<PathBuf, NotConverted> {
     let profile = scratch.join("profile");
     let into = scratch.join("out");
@@ -105,7 +158,7 @@ pub fn convert(
             profile.display()
         ))
         .arg("--convert-to")
-        .arg(filter(conversion))
+        .arg(filter(conversion, export))
         .arg("--outdir")
         .arg(&into)
         .arg(&document)
@@ -134,14 +187,14 @@ pub fn convert(
         }
     }
 
-    let copy = into.join(
+    let came_out = into.join(
         Path::new(conversion.scratch_name())
-            .with_extension("pdf")
+            .with_extension(ending(export))
             .file_name()
             .unwrap_or_default(),
     );
-    if copy.is_file() {
-        Ok(copy)
+    if came_out.is_file() {
+        Ok(came_out)
     } else {
         Err(NotConverted::NoCopy)
     }
@@ -166,7 +219,10 @@ mod tests {
     /// have.
     #[test]
     fn every_conversion_exports_into_a_pdf_through_one_of_three_writers() {
-        let filters: Vec<&str> = Conversion::EVERY.into_iter().map(filter).collect();
+        let filters: Vec<&str> = Conversion::EVERY
+            .into_iter()
+            .map(|conversion| filter(conversion, Export::TheCopy))
+            .collect();
         assert!(filters.iter().all(|filter| filter.starts_with("pdf:")));
         let mut writers = filters.clone();
         writers.sort_unstable();
@@ -181,32 +237,57 @@ mod tests {
         );
     }
 
-    /// **A held-back conversion already has its filter, and it is one this
-    /// engine is asked for anyway.**
-    ///
-    /// The argument list is the whole of what `convert` varies between two
-    /// conversions, so deciding it now is what makes offering this one later a
-    /// one-line change rather than a design. Asserting it is a filter already
-    /// in use is what stops a plausible-looking name nobody has run being
-    /// written here: `pdf:pages_pdf_Export` would pass a test that only
-    /// checked the prefix, and there is no such filter.
+    /// **A Pages document comes out of the same writer a Word document does**,
+    /// because both are pages of text — and there is no `pdf:pages_pdf_Export`,
+    /// which is what a plausible-looking name nobody had run would have been.
     #[test]
-    fn a_held_back_conversion_exports_through_a_filter_already_in_use() {
-        let in_use: Vec<&str> = Conversion::EVERY.into_iter().map(filter).collect();
-        for held in Conversion::HELD_BACK {
-            let exports_with = filter(held);
-            assert!(exports_with.starts_with("pdf:"), "{held:?}");
-            assert!(
-                in_use.contains(&exports_with),
-                "{held:?} exports with {exports_with}, which no conversion this machine \
-                 makes has ever asked the engine for"
-            );
-        }
+    fn a_pages_document_exports_through_a_filter_already_in_use() {
         assert_eq!(
-            filter(Conversion::PagesDocument),
-            filter(Conversion::WordDocument),
+            filter(Conversion::PagesDocument, Export::TheCopy),
+            filter(Conversion::WordDocument, Export::TheCopy),
             "both are text documents and come out of the same writer"
         );
+    }
+
+    /// **A rendering the inventory reads is one export, whatever it is of** —
+    /// the engine's own text document, through the writer that makes one, and
+    /// never a PDF.
+    ///
+    /// A PDF is the copy: inventorying one as though it were the original
+    /// would compare a document with itself and report that every conversion
+    /// carried everything.
+    #[test]
+    fn a_rendering_is_the_engines_own_text_document_and_never_a_pdf() {
+        for conversion in Conversion::EVERY {
+            let rendering = filter(conversion, Export::SomethingThisMachineReads);
+            assert_eq!(rendering, THE_RENDERING, "{conversion:?}");
+            assert!(!rendering.starts_with("pdf:"), "{conversion:?}");
+            assert_ne!(rendering, filter(conversion, Export::TheCopy));
+        }
+        assert_eq!(ending(Export::TheCopy), "pdf");
+        assert_eq!(ending(Export::SomethingThisMachineReads), "odt");
+        assert_eq!(
+            ending(Export::SomethingThisMachineReads),
+            Path::new(Conversion::OpenDocumentText.scratch_name())
+                .extension()
+                .and_then(std::ffi::OsStr::to_str)
+                .unwrap(),
+            "a rendering is read as an OpenDocument text document and must end like one"
+        );
+    }
+
+    /// **All of one conversion's runs of the engine fit inside
+    /// [`LONGEST_ALTOGETHER`]**, which is what the service waits for.
+    ///
+    /// A conversion that starts the engine twice inside a limit written for one
+    /// run would be stopped halfway by the client rather than by the engine's
+    /// own limit, and a person would be told the service did not answer about a
+    /// conversion that was still going.
+    #[test]
+    fn what_the_service_waits_for_covers_every_run_of_the_engine() {
+        assert_eq!(MOST_RUNS, 2);
+        assert_eq!(LONGEST_ALTOGETHER, LONGEST * 2);
+        assert!(LONGEST_ALTOGETHER >= LONGEST);
     }
 
     /// **An engine that is not there is a refusal**, not a copy.
@@ -219,9 +300,20 @@ mod tests {
             convert(
                 &scratch.join("no-such-engine"),
                 &scratch,
-                Conversion::WordDocument
+                Conversion::WordDocument,
+                Export::TheCopy
             ),
             Err(NotConverted::NotStarted)
+        );
+        assert_eq!(
+            convert(
+                &scratch.join("no-such-engine"),
+                &scratch,
+                Conversion::PagesDocument,
+                Export::SomethingThisMachineReads
+            ),
+            Err(NotConverted::NotStarted),
+            "a rendering nobody could make is a refusal too"
         );
         std::fs::remove_dir_all(&scratch).unwrap();
     }

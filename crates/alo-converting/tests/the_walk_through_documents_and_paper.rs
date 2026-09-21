@@ -14,12 +14,16 @@
 //! 3. the agent proposes converting it, and the person approves the sentence;
 //! 4. the real service converts it through the pinned engine, and says what the
 //!    copy could not carry;
-//! 5. a printer on the network is found and set up;
-//! 6. the agent proposes printing the copy, the indicator shows the document
+//! 5. a real Pages document arrives from somebody on a Mac, and converts too —
+//!    at the cost of the two families it is set in;
+//! 6. a printer on the network is found and set up;
+//! 7. the agent proposes printing the copy, the indicator shows the document
 //!    leaving for the printer, and it prints;
-//! 7. the printer stops for want of paper, the person puts some in, and it is
+//! 8. the printer stops for want of paper, the person puts some in, and it is
 //!    ready again;
-//! 8. a Word document that was cut short in the post arrives, and is explained.
+//! 9. a Word document that was cut short in the post arrives, and is explained;
+//! 10. a photograph from a telephone arrives, and is explained — recognised for
+//!     exactly what it is, with nothing here that opens one.
 //!
 //! # The table is the report's, and this test reads it
 //!
@@ -37,11 +41,16 @@
 //!
 //! # It does not skip itself
 //!
-//! Step 4 runs the pinned engine through `alo-convertd`, as
-//! `converting_a_real_document.rs` does, and fails where the engine is missing
+//! Steps 4 and 5 run the pinned engine through `alo-convertd`, as
+//! `converting_a_real_document.rs` does, and fail where the engine is missing
 //! (ADR 0039). Every other step is the real code against a printing service on
 //! this machine's loopback that speaks the protocol; a real printer is owed,
 //! and the report says so.
+//!
+//! Steps 5 and 10 are real files rather than bytes assembled here: the Pages
+//! document was saved by Pages on a Mac and the photograph written by a
+//! telephone's own library, and both live in `alo-opening`'s `tests/files/`
+//! with their provenance beside them.
 
 #![cfg(target_os = "linux")]
 #![expect(
@@ -82,7 +91,7 @@ use serving::{
 
 /// The report the walk is recorded in, relative to the repository.
 const THE_REPORT: &str =
-    "docs/autonomy/updates/every-sentence-about-documents-and-paper-and-the-walk-through-them.md";
+    "docs/autonomy/updates/a-pages-document-is-converted-and-a-photograph-is-explained.md";
 
 /// The heading the table is under.
 const THE_WALK: &str = "## The walk, sentence by sentence";
@@ -157,6 +166,20 @@ fn the_owners(named: &str) -> Vec<u8> {
             .join(named),
     )
     .unwrap()
+}
+
+/// One of the real files `alo-opening`'s recognition is measured against, as
+/// its bytes — a Pages document saved by Pages on a Mac, a photograph written
+/// by a telephone's own library. Where each came from is in
+/// `crates/alo-opening/tests/files/README.md`, beside the files.
+fn the_recognised(named: &str) -> Vec<u8> {
+    let at = the_repository()
+        .join("crates")
+        .join("alo-opening")
+        .join("tests")
+        .join("files")
+        .join(named);
+    fs::read(&at).unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()))
 }
 
 /// The converting service, started as its socket unit starts it, and stopped
@@ -337,7 +360,50 @@ fn the_walk() -> Vec<(&'static str, String)> {
         .to_path_buf();
     met.at("It is converted", done.said(&strings));
 
-    // 5. A printer on the network is found, and the person sets it up.
+    // 5. A Pages document arrives from somebody on a Mac, and converts too —
+    // the seventh conversion, and the one whose cost is two families this
+    // machine does not have.
+    let notes = downloads.join("notes.pages");
+    fs::write(&notes, the_recognised("document.pages")).unwrap();
+    let decided = decide(
+        &mut File::open(&notes).unwrap(),
+        OsStr::new("notes.pages"),
+        &machine,
+    )
+    .unwrap();
+    met.at("A Pages document arrives", decided.said(&strings));
+
+    let call = converting_verbs()
+        .unwrap()
+        .call(
+            "convert_document",
+            &[
+                ("file", Given::text(notes.to_string_lossy().into_owned())),
+                (
+                    "into",
+                    Given::text(documents.to_string_lossy().into_owned()),
+                ),
+            ],
+        )
+        .unwrap();
+    assert!(call.waits_for_approval());
+    met.at(
+        "The agent asks to convert the Pages document",
+        [call.sentence(&strings)],
+    );
+    let touching = Touching::of(approved(&call, &grants), &grants, &OnThisMachine, &strings)
+        .expect("the grants cover the document and the folder");
+    let notes_done: Done =
+        convert(&converting_service, touching, &grants).expect("the copy's own path is granted");
+    notes_done.converted().unwrap_or_else(|| {
+        panic!(
+            "the Pages document was not converted: {:?}",
+            notes_done.said(&strings)
+        )
+    });
+    met.at("The Pages document is converted", notes_done.said(&strings));
+
+    // 6. A printer on the network is found, and the person sets it up.
     let out_of_paper = Arc::new(AtomicBool::new(false));
     let serving = an_office_printer(Arc::clone(&out_of_paper));
     let printing_service = serving.service();
@@ -354,7 +420,7 @@ fn the_walk() -> Vec<(&'static str, String)> {
         printer.called()
     );
 
-    // 6. The agent proposes printing the copy, which leaves for the printer.
+    // 7. The agent proposes printing the copy, which leaves for the printer.
     let call = printing_verbs()
         .unwrap()
         .call(
@@ -397,7 +463,7 @@ fn the_walk() -> Vec<(&'static str, String)> {
         "the document reached the printer"
     );
 
-    // 7. The printer stops for want of paper; paper goes in; it is ready.
+    // 8. The printer stops for want of paper; paper goes in; it is ready.
     out_of_paper.store(true, Ordering::SeqCst);
     let condition = how_is(&printing_service, &printer);
     assert_eq!(condition, Condition::Stopped(Stopped::OutOfPaper));
@@ -410,7 +476,7 @@ fn the_walk() -> Vec<(&'static str, String)> {
         [condition.said(&strings)],
     );
 
-    // 8. A Word document cut short on its way arrives, and is explained.
+    // 9. A Word document cut short on its way arrives, and is explained.
     let owners = the_owners("sample.docx");
     let cut = owners.get(..owners.len() / 2).unwrap();
     let minutes = downloads.join("minutes.docx");
@@ -422,6 +488,19 @@ fn the_walk() -> Vec<(&'static str, String)> {
     )
     .unwrap();
     met.at("A damaged Word document arrives", decided.said(&strings));
+
+    // 10. A photograph from a telephone arrives, and is explained: this
+    // machine knows exactly what it is and has nothing that opens one, which
+    // is a different sentence from not recognising it.
+    let photo = downloads.join("IMG_4021.heic");
+    fs::write(&photo, the_recognised("photo.heic")).unwrap();
+    let decided = decide(
+        &mut File::open(&photo).unwrap(),
+        OsStr::new("IMG_4021.heic"),
+        &machine,
+    )
+    .unwrap();
+    met.at("A photo from a telephone arrives", decided.said(&strings));
 
     drop(running);
     drop(fs::remove_dir_all(&home));

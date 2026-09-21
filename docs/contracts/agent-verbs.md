@@ -756,11 +756,11 @@ document and the copy were checked. A document or a copy that could not be
 checked is a refusal, and no copy is kept.
 
 **What converts is a closed set, and it grows only by measurement.** Today:
-a Word document, an Excel workbook and a PowerPoint presentation, and an
-OpenDocument text document, spreadsheet and presentation — each into a PDF. The
-kind is read from the file's own bytes and never from its name, so a document
-called something else converts as what it is, and a program named as a document
-converts as nothing.
+a Word document, an Excel workbook and a PowerPoint presentation; an
+OpenDocument text document, spreadsheet and presentation; and a Pages document
+— each into a PDF. The kind is read from the file's own bytes and never from its
+name, so a document called something else converts as what it is, and a program
+named as a document converts as nothing.
 
 This set is additive and will grow: ADR 0039 makes each further kind a
 registration and **a test against a real file**, so a format appears here on the

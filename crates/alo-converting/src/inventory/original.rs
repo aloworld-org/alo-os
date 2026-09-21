@@ -5,6 +5,12 @@
 //! relationships name, and the macros `alo-opening` already found. **Every part
 //! an inventory needs is read in full or the inventory does not complete**;
 //! there is no partial [`Original`].
+//!
+//! **These are the original's own bytes**, and one conversion's original is not
+//! read from them: a Pages document is inventoried out of what the engine
+//! reads of it, so [`Original::of`] refuses one rather than answering about it.
+//! [`crate::inventory::read_from`] is what knows which is which, and
+//! `crate::serving` is what asks.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -36,10 +42,11 @@ pub enum NotInventoried {
     /// More fonts than are kept.
     #[error("the document sets text in more fonts than are listed")]
     TooManyFonts,
-    /// The format's parts are known and nothing in one has ever been read on a
-    /// machine this repository gates on, so there is nothing to inventory by.
-    #[error("no {0} has been inventoried on this machine")]
-    NotMeasured(&'static str),
+    /// Nothing here reads this format, so an original of it is inventoried out
+    /// of what the engine reads of it (`crate::inventory::read_from`) and never
+    /// out of these bytes.
+    #[error("a {0} is not inventoried from its own bytes")]
+    NotFromItsOwnBytes(&'static str),
 }
 
 impl From<NotLinked> for NotInventoried {
@@ -94,7 +101,14 @@ impl Original {
             | Conversion::OpenDocumentPresentation => {
                 opendocument::inventory(&mut zipped, &mut original)?;
             }
-            Conversion::PagesDocument => pages::inventory(&mut zipped, &mut original)?,
+            // Nothing here reads an `Index/*.iwa`. The service renders one with
+            // the engine and inventories the rendering as the kind
+            // `pages::RENDERED_AS` names; reaching here with a Pages document
+            // means that step was skipped, and an empty inventory would then
+            // say a copy lost nothing.
+            Conversion::PagesDocument => {
+                return Err(NotInventoried::NotFromItsOwnBytes(pages::THE_FORMAT));
+            }
         }
         // Where a document says what it links differs by format. The three
         // Office formats each keep a relationships part beside every part, and
@@ -195,6 +209,7 @@ impl Original {
 )]
 mod tests {
     use super::*;
+    use crate::inventory::read_from::{ReadFrom, read_from};
     use crate::testing::{a_zip, the_document};
 
     /// The families of some inventory, as names.
@@ -323,17 +338,30 @@ mod tests {
 
     /// **A document without the part its format cannot be without is not
     /// inventoried**, rather than inventoried as holding nothing.
+    ///
+    /// Every conversion read from its own bytes answers `Missing`. The one
+    /// that is not read from its own bytes answers that, which is the same
+    /// promise reached one step earlier: no conversion in the set can come out
+    /// of here as an inventory that found nothing.
     #[test]
     fn a_document_missing_its_main_part_is_not_inventoried() {
         let bytes = a_zip(&[("[Content_Types].xml", b"<Types/>")]);
         for conversion in Conversion::EVERY {
-            assert!(
-                matches!(
-                    Original::of(&bytes, conversion, Macros::NoneSeen),
-                    Err(NotInventoried::Missing(_))
-                ),
-                "{conversion:?}"
-            );
+            let not = Original::of(&bytes, conversion, Macros::NoneSeen);
+            match read_from(conversion) {
+                ReadFrom::ItsOwnBytes => {
+                    assert!(
+                        matches!(not, Err(NotInventoried::Missing(_))),
+                        "{conversion:?}"
+                    );
+                }
+                ReadFrom::WhatTheEngineReadsOfIt(_) => {
+                    assert!(
+                        matches!(not, Err(NotInventoried::NotFromItsOwnBytes(_))),
+                        "{conversion:?}"
+                    );
+                }
+            }
         }
     }
 
