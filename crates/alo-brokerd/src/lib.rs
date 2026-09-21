@@ -14,7 +14,11 @@
 //! | [`Proxy`] | Setting the machine's proxy, and the password it signs in with, to the ones a person handed over, exactly |
 //! | [`Storage`] | A removable drive mounted for the signed-in person, or ejected, against what the disk service reports now |
 //! | [`Printers`], [`PrintService`] | The printers' three verbs, carried out against what the printing service reports now |
+//! | [`Updates`], [`StartingUnits`], [`TheUnit`] | The two update verbs, carried out by starting a unit that holds what the base asks for |
+//! | [`AnUpdate`], [`GoingBackApproved`], [`Handing`] | What a person approved about an update, and the folder only root can read that carries it to the unit |
+//! | [`stage_the_update_approved`], [`set_going_back`] | What the two units' own programs do, which is every decision in them |
 //! | `alo-brokerd.service` | The unit, beside this manifest, held to what the process expects by a test |
+//! | `alo-applying-an-update.service`, `alo-going-back.service` | The two units the broker starts, held to their fixed command line and their capabilities line by line |
 //!
 //! # Root, holding nothing
 //!
@@ -32,9 +36,12 @@
 //! What carries a verb out is handed the verb only after the door has decided
 //! it is exactly one a person approved, once, and written that down. The network
 //! and storage, and the printers supplied to the carriers, are carried out here.
-//! The updates are answered `not-carried` until ADR 0053 decides how they are carried out without this
-//! process holding the capability the base's program asks for. Each of those
-//! answers is written down like every other.
+//! **The updates are carried out by a unit this process starts and waits for**
+//! — ADR 0053, accepted option B — because the base's own program changes the
+//! machine only for a process holding `CAP_SYS_ADMIN`, and this one holds none
+//! and is not given one. The units' own programs are this crate's second and
+//! third binaries, and they are where the base is named. Each answer is written
+//! down like every other.
 //!
 //! # And it runs on Linux
 //!
@@ -44,9 +51,13 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(unix)]
+pub mod approved;
+#[cfg(unix)]
 mod carrying;
 #[cfg(unix)]
 mod describing;
+#[cfg(unix)]
+pub mod for_the_unit;
 #[cfg(unix)]
 mod handed_over;
 mod network;
@@ -57,13 +68,29 @@ mod proxy;
 #[cfg(unix)]
 mod recording;
 #[cfg(unix)]
+mod returning;
+#[cfg(unix)]
+mod staging_an_update;
+#[cfg(unix)]
 mod starting;
 mod storage;
+#[cfg(unix)]
+pub mod the_machine_now;
+#[cfg(unix)]
+mod the_road_out;
+#[cfg(unix)]
+pub mod units;
+#[cfg(unix)]
+mod updates;
 
+#[cfg(unix)]
+pub use approved::{AnUpdate, GoingBackApproved, NotAnUpdate};
 #[cfg(unix)]
 pub use carrying::Carriers;
 #[cfg(unix)]
 pub use describing::{Logins, NotDescribed, logins};
+#[cfg(unix)]
+pub use for_the_unit::{Handing, NotHanded};
 pub use network::Network;
 pub use printers::{PrintService, Printers, Reported};
 #[cfg(unix)]
@@ -71,5 +98,19 @@ pub use proxy::Proxy;
 #[cfg(unix)]
 pub use recording::{MachinesRecord, THE_RECORD};
 #[cfg(unix)]
+pub use returning::{NotSetByTheUnit, THE_MACHINES_RECORD, carried_out as set_going_back};
+#[cfg(unix)]
+pub use staging_an_update::{NotStagedByTheUnit, carried_out as stage_the_update_approved};
+#[cfg(unix)]
 pub use starting::{NotStarted, Places, Started, THE_DESCRIPTION, started};
 pub use storage::{Storage, THE_ACCOUNTS};
+#[cfg(unix)]
+pub use the_machine_now::TheMachineNow;
+#[cfg(unix)]
+pub use the_road_out::{NoRoad, the_road_out};
+#[cfg(target_os = "linux")]
+pub use units::systemd::{OnThisMachine as TheSystemManager, Systemd};
+#[cfg(unix)]
+pub use units::{EVERY_UNIT, StartingUnits, TheUnit};
+#[cfg(unix)]
+pub use updates::{THE_WANTED_UPDATE, Updates};

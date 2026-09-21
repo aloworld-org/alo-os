@@ -85,12 +85,13 @@ fn a_machine(what: &str, person: u32, agents_group: u32) -> Places {
         key: root.join("run").join("approving.key"),
         door: root.join("run").join("door.sock"),
         wanted: root.join("run").join("wanted"),
+        approved: root.join("run").join("approved"),
     }
 }
 
 /// Nothing a refused start could have left behind is there.
 fn nothing_opened(places: &Places) {
-    for left in [&places.key, &places.door, &places.wanted] {
+    for left in [&places.key, &places.door, &places.wanted, &places.approved] {
         assert!(
             std::fs::symlink_metadata(left).is_err(),
             "{} was left behind by a start that was refused",

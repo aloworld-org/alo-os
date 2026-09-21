@@ -262,13 +262,17 @@ dependencies = [
  "alo-broker",
  "alo-drives",
  "alo-keeping",
+ "alo-keeping-up",
  "alo-networks",
  "alo-printing",
  "alo-proxy",
  "alo-record",
+ "alo-updating",
  "rustix 1.1.4",
  "serde",
+ "serde_json",
  "toml",
+ "zbus",
 ]
 
 [[package]]

@@ -5791,6 +5791,29 @@ is written down as such; if the base ever gives a distinct code, the reading
 should move to it.
 **Date:** 2026-09-19.
 
+### `bootc` names one capability, and names it only to refuse
+**Version:** bootc 1.15.1 in the pinned base `quay.io/fedora/fedora-bootc`
+(local image `b035260f985f`). Measured 2026-09-20 under `podman`.
+**Behaviour:** `CAP_SYS_ADMIN` is the **only** capability named anywhere in the
+program's binary — `grep -a -o -E 'CAP_[A-Z_]+' /usr/bin/bootc` finds it and
+nothing else — and the two strings it appears in are *This command requires
+full root privileges (CAP_SYS_ADMIN)* and *Verified uid 0 with CAP_SYS_ADMIN*.
+So the program states the capability it **checks for** and says nothing at all
+about the capabilities its work actually needs, which for staging a deployment
+are whatever writing an ostree tree with its ownership, its device nodes, its
+file capabilities and its security labels happens to touch.
+**Our response:** `alo-applying-an-update.service` and `alo-going-back.service`
+(ADR 0053, accepted option B) enumerate a derived list — that capability plus
+what writing a deployment touches — **one per line, each with its reason**,
+held by `crates/alo-brokerd/tests/the_updates_are_carried_by_a_unit.rs`. The
+list is wider than it will end up and is written down as such: ADR 0053 puts
+the booted-machine measurement in the image lane, which narrows it and records
+what it finds here. What the derivation does buy now is that the units hold an
+enumerated set rather than root's whole set, and that neither holds
+`CAP_SYS_BOOT` — so nothing on the update road can restart the machine, which
+is the promise *an update never interrupts* rests on.
+**Date:** 2026-09-20.
+
 ### `bootc install --filesystem btrfs` makes no subvolume of its own
 **Version:** bootc 1.15.1 out of the pinned release 0.0.5
 (`ghcr.io/aloworld-org/alo-os@sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1`),

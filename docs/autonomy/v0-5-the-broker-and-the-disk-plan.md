@@ -372,7 +372,10 @@ property is:
 
 ### 7. Every sentence, and the walk from a new printer to a recovered disk
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4, and 8 for the update in the walk.
+**Status:** ready. **Depends on:** 1, 2, 3, 4, and 8 for the update in the walk
+— **task 8 landed on 2026-09-20**, so the update in the walk is takeable: what
+a person meets is the broker's one-word answer worded by the surface that
+asked, and the broker itself adds no sentence to the vocabulary.
 
 - **Acceptance:** every sentence these crates can say is in the vocabulary with a
   translator's note; one walk — the agent proposes adding a printer, the person approves,
@@ -387,8 +390,18 @@ property is:
 
 ### 8. Updates, through the broker, as ADR 0053 decides
 
-**Status:** ready. [ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
-was **accepted by the owner on 2026-09-19, option B** — *an update is carried out
+**Status:** **Done, 2026-09-20.** The units, their programs, the broker's
+carrier, the handed-over file and its contract, and the refusals beside the
+carried case. This is code and unit-file evidence, **not** a machine that has
+been updated: no real deployment was changed and no virtual machine was
+staged into, which is the image lane's under ADR 0053's own consequences and
+is said again in the report rather than left to be inferred from a green
+suite. Report: `docs/autonomy/updates/updates-through-the-broker.md`; decision:
+[ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md),
+**accepted, option B**, moved to *accepted* in the same change that built it —
+the two-commit shape task 6 sets out.
+
+It was **accepted by the owner on 2026-09-19, option B** — *an update is carried out
 by a unit the broker starts, never by the broker*. It is the only option that
 leaves the broker holding **no capability**, which is ADR 0001 §2 and not
 negotiable, and it puts the long networked part where systemd can bound it. All
@@ -401,14 +414,13 @@ status read now, refuses with `NotRunningABuild`, `TheMachineMovedOn`,
 (machine-keeps-itself plan task 9, whose report is
 `updates/a-staging-decided-from-an-approval.md`). **Depends on:** 1, 4.
 
-**The decision file still reads *proposed, 2026-09-17*, and that is deliberate
-until the work commit.** `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs`
-reads that line and fails the moment it stops saying so, so moving it now would
-leave the guard a lie for as long as the work took. This status line is the
-preparatory commit of the two that **task 6 sets out in full**: the plan alone, so
-the task becomes takeable while the guard still tells the truth; then one work
-commit that moves ADR 0053 to *accepted*, replaces that guard with the tests of
-what was built, and marks this task done — together.
+**The two-commit shape task 6 sets out was followed.** Until the work commit the
+decision file still read *proposed, 2026-09-17*, and
+`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` read that line
+and passed; the work commit moved ADR 0053 to *accepted*, replaced that guard
+with `tests/the_updates_are_carried_by_a_unit.rs` and
+`tests/only_the_update_approved_is_carried_out.rs`, and marked this task done,
+together. The guard never read *accepted* while still guarding.
 
 Task 4 carried storage out and found that the updates could not be carried out
 without a decision: the base's program asks for `CAP_SYS_ADMIN`, the broker holds
@@ -429,6 +441,19 @@ broker. Its report and ADR 0053 have the measurements.
   installs is the installer plan's; this task hands it the units and the measured
   capability set. No test changes a real machine's deployments; the virtual
   machine is where a staged update and a return are shown.
+- **What was handed to the image lane, 2026-09-20** (the report has the
+  reasoning): two units beside `crates/alo-brokerd/alo-brokerd.service` —
+  `alo-applying-an-update.service` and `alo-going-back.service` — and their
+  programs, `/usr/libexec/alo-applying-an-update` and
+  `/usr/libexec/alo-going-back`, which are this crate's second and third
+  binaries. The capability set in them is **derived, not measured on a booted
+  machine**: what the base's own program states it requires (`CAP_SYS_ADMIN`,
+  the only capability named in its binary — `docs/quirks.md`, 2026-09-20) plus
+  what writing an ostree deployment touches. Narrowing it is the image lane's
+  measurement, which ADR 0053's consequences already own, and the list is
+  enumerated one per line so that narrowing is a visible edit. The virtual
+  machine staging a real update and returning from it is the same lane's, and
+  **nothing here claims it**.
 ### 9. The three promises only a chip can keep
 
 **Status:** blocked — on a certified machine existing (`docs/hardware.md` lists
