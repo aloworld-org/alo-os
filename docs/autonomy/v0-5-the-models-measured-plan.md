@@ -572,8 +572,48 @@ doing so would take a grade away from twelve entries rather than move it.
 
 ### 21. A hosted provider answers, and the person is told who and where
 
-**Status:** ready. **Depends on:** nothing — ADR 0008 is accepted and the roads
-exist. Asked for by the owner on 2026-09-21.
+**Status:** **Done, 2026-09-21** — and **most of it was already built**, which
+is the finding rather than a footnote. **Depends on:** nothing — ADR 0008 is
+accepted and the roads exist. Asked for by the owner on 2026-09-21.
+
+Report:
+[What a person reads while the question leaves](updates/what-a-person-reads-while-the-question-leaves.md).
+
+**The premise below is stale, and by eighteen days.** *Nothing speaks to one*
+was not true when this task was written: `832ac90`, **2026-09-03**, added
+`alo-asking`'s `openai.rs` and `hosted.rs` and an end-to-end test against a real
+HTTP service the test starts, and `crates/alo-turn/src/asking.rs:236` has called
+`to_a_provider` since. Building the speaking part again would have been a second
+answer to *how does a question reach a provider*, which is the thing this
+repository refuses.
+
+**What was measured instead**, clause by clause, before anything was written:
+a question a person chooses to send to a hosted endpoint is answered through it
+and comes back by the same road as a local one (`from_a_question_to_what_left.rs`);
+the road out is `alo_proxy::the_way` for `Road::AskingAProvider`, with
+`Hosted::taking` documenting why a road decided by `HTTP_PROXY` in a process's
+environment is a road nobody chose; a provider that refuses on the wire is
+`RefusedThere` and anything else is another of `WentWrong`'s refusals in the
+person's words, each carrying **offers a person approves** rather than a retry,
+which is *never a silent fallback* held structurally; the credential is held to
+one endpoint (`a_key_reaches_one_provider_only.rs`) and kept from an agent
+(`nothing_here_keeps_the_key.rs`).
+
+**The one thing genuinely missing was the sentence itself.** Every test on that
+road asserts the indicator is **quiet once the answer is home** — the second half
+of law 1 — and none read the line **while the question was still out**, which is
+where ADR 0008's *who and where* lives. `what_a_person_reads_while_the_question_leaves.rs`
+reads it against a real service on a real socket, in the two states that decision
+distinguishes:
+
+| The provider | What a person reads |
+|---|---|
+| says where it runs | `@mail is asking a question of Mistral, in the EU` |
+| will not say | `@mail is asking a question of Aurora, which has not said where it runs` |
+
+and asserts of the second what it must **not** say — not `127.0.0.1`, which is
+where that service really was, and not any of the words that would place it
+nearby.
 
 **ADR 0008's third place, which has never been built.** That decision names
 three places inference can happen, and the repository has two of them: this
