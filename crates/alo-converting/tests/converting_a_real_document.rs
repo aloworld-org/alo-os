@@ -98,6 +98,26 @@ fn the_document(named: &str) -> Vec<u8> {
     .unwrap()
 }
 
+/// The one real Pages document, as its bytes.
+///
+/// It belongs to `alo-opening`, whose `tests/files/README.md` records where it
+/// came from — saved by Pages 15.3.1 on a Mac, its heading set in Helvetica and
+/// its body in HelveticaNeue on purpose, so that what a conversion substitutes
+/// could be measured. It is read from there rather than copied here: two copies
+/// of a 227 KB document would be two things to keep true.
+fn the_pages_document() -> Vec<u8> {
+    let at = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("this crate is two directories below the repository")
+        .join("crates")
+        .join("alo-opening")
+        .join("tests")
+        .join("files")
+        .join("document.pages");
+    fs::read(&at).unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()))
+}
+
 /// The converting service, started as its socket unit starts it, and stopped
 /// when the test ends.
 struct Running {
@@ -201,9 +221,19 @@ fn font(named: &str) -> NotCarried {
 /// list its README gives, the original to its bytes, and the record to what the
 /// person was told.
 fn a_real_document_loses_exactly(named: &str, expected: &[NotCarried]) {
+    a_document_loses_exactly(named, &the_document(named), expected, "Garamond");
+}
+
+/// The same, for a document that is not one of the three in `tests/documents/`:
+/// its bytes, and a family the sentences a person reads must name.
+fn a_document_loses_exactly(
+    named: &str,
+    original: &[u8],
+    expected: &[NotCarried],
+    named_in_a_sentence: &str,
+) {
     let running = Running::started();
-    let original = the_document(named);
-    let (file, chosen, grants) = sent(named, &original);
+    let (file, chosen, grants) = sent(named, original);
 
     let done = converting(&running.service(), &file, &chosen, &grants).unwrap();
     let strings = in_english();
@@ -233,7 +263,7 @@ fn a_real_document_loses_exactly(named: &str, expected: &[NotCarried]) {
         .collect();
     assert_eq!(said.len(), 2 + expected.len(), "{said:?}");
     assert!(
-        said.iter().any(|line| line.contains("Garamond")),
+        said.iter().any(|line| line.contains(named_in_a_sentence)),
         "{said:?}"
     );
 
@@ -352,6 +382,41 @@ fn a_document_with_a_macro_library_says_the_macros_were_not_run() {
             NotCarried::Comments,
             NotCarried::Macros,
         ],
+    );
+}
+
+/// **A Pages document is converted on this machine, and the two families it is
+/// set in are named as substituted.**
+///
+/// The seventh conversion, and the first whose original this crate does not
+/// read for itself: `inventory::read_from` sends it through a rendering the
+/// engine makes, and `inventory::opendocument` — measured against four real
+/// files — inventories that.
+///
+/// # What this test is, exactly
+///
+/// It is **the measurement of 2026-09-21**, run again on every gate that has
+/// the engine. Taken on this machine, LibreOffice 26.2 on x86_64, against this
+/// document held to its digest: the rendering names five families and text is
+/// set in two of them, `Helvetica` and `HelveticaNeue`, which are the
+/// document's own; the other three are the engine's substitutes and are
+/// declared and used by nothing. The copy contains `NimbusSans-Bold` and
+/// `NotoSans-Regular`, so neither family the document was set in survives, and
+/// both are named.
+///
+/// **Exactly two findings and no others** is the half that matters. The
+/// document has no field that changes, takes nothing from elsewhere — its one
+/// picture is embedded — and carries no comment, no tracked change and no
+/// macro, and a reader that counted the engine's substituted declarations
+/// would report five losses of which three are not losses at all. That is why
+/// the list is asserted whole rather than searched for Helvetica.
+#[test]
+fn a_pages_document_is_converted_and_the_families_it_is_set_in_are_named() {
+    a_document_loses_exactly(
+        "notes.pages",
+        &the_pages_document(),
+        &[font("Helvetica"), font("HelveticaNeue")],
+        "Helvetica",
     );
 }
 

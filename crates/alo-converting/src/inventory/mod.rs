@@ -12,7 +12,8 @@
 //! | [`copy`] | The PDF, read for the fonts it contains |
 //! | [`difference`] | The two inventories, compared into a [`crate::Carried`] |
 //! | [`formula`] | What a spreadsheet formula calls for, in either kind of spreadsheet |
-//! | [`pages`] | A fourth format, whose shape is written and whose contents nobody here has read |
+//! | [`read_from`] | Which bytes an inventory reads: the original's own, or what the engine reads of it |
+//! | [`pages`] | The one format this crate does not read for itself, and the measurement that settled its inventory |
 //!
 //! # Set on text, not merely declared
 //!
@@ -31,9 +32,11 @@ pub mod opendocument;
 pub mod original;
 pub mod pages;
 pub mod powerpoint;
+pub mod read_from;
 pub mod theme;
 pub mod word;
 
 pub use copy::Copy;
 pub use difference::carried;
 pub use original::Original;
+pub use read_from::{ReadFrom, read_from};

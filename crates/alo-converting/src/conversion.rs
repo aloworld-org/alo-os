@@ -18,22 +18,24 @@
 //! **The copy is always a PDF** (ADR 0039 §1): it is the one kind whose
 //! rendering does not depend on another engine interpreting the copy again.
 //!
-//! # Why a fourth is written here and is not in the set
+//! # The seventh, and why [`Conversion::HELD_BACK`] is empty
 //!
-//! [`Conversion::HELD_BACK`] is a conversion whose every part is decided — what
-//! it is from, what the engine is asked to export it with, what the document is
-//! called in the scratch folder — and whose original has never been
-//! inventoried, because the engine that reads it runs on an architecture this
-//! repository is not gated on. ADR 0039 §4 makes the inventory the step before
-//! any copy, and §1 forbids *this converts* followed by a failure. A machine
-//! that offered this one would say it converts and then refuse at the
-//! inventory, which is the exact shape both clauses forbid.
+//! A Pages document was written here whole and kept out of the set, because
+//! ADR 0039 §4 makes the inventory of the original the step before any copy and
+//! nobody had inventoried one: the engine that reads a Pages document is an
+//! x86_64 build and this plan gates on aarch64. It is in the set now, on the
+//! measurement of 2026-09-21 recorded in `inventory::pages`, taken on a machine
+//! with the engine against the one real Pages document this repository holds.
 //!
-//! So it is written and held back, and the holding is what
-//! [`Conversion::EVERY`] not containing it means. The day somebody measures a
-//! real one on a real engine, one line moves it into the set and
-//! `crate::inventory::pages` stops refusing; nothing else here changes, which
-//! is the point of writing it now.
+//! **It is the first conversion whose original this crate does not read for
+//! itself**, and `inventory::read_from` is where that is said rather than here:
+//! what a conversion *is* and where its inventory comes *from* are two
+//! questions, and this file answers the first.
+//!
+//! [`Conversion::HELD_BACK`] stays, empty, because empty is the finished state
+//! and the tests holding a held-back conversion unreachable are what the next
+//! one will need. A conversion leaves it by being measured, never by being
+//! decided to be fine.
 
 use alo_opening::Kind;
 
@@ -52,8 +54,7 @@ pub enum Conversion {
     OpenDocumentSpreadsheet,
     /// An OpenDocument presentation into a PDF.
     OpenDocumentPresentation,
-    /// A Pages document into a PDF. Written, and in [`Conversion::HELD_BACK`]
-    /// rather than [`Conversion::EVERY`], until one is inventoried.
+    /// A Pages document into a PDF.
     PagesDocument,
 }
 
@@ -65,13 +66,14 @@ impl Conversion {
     /// decides what this machine offers reads this and not the variants:
     /// `crate::machine` announces these, `Self::asked` answers to these, and a
     /// request naming any other word is not a request.
-    pub const EVERY: [Self; 6] = [
+    pub const EVERY: [Self; 7] = [
         Self::WordDocument,
         Self::ExcelWorkbook,
         Self::PowerPointPresentation,
         Self::OpenDocumentText,
         Self::OpenDocumentSpreadsheet,
         Self::OpenDocumentPresentation,
+        Self::PagesDocument,
     ];
 
     /// Every conversion that is written here and that this machine does not
@@ -79,7 +81,7 @@ impl Conversion {
     ///
     /// Empty is the finished state. A conversion leaves here by being measured,
     /// never by being decided to be fine.
-    pub const HELD_BACK: [Self; 1] = [Self::PagesDocument];
+    pub const HELD_BACK: [Self; 0] = [];
 
     /// The conversion for a file of this kind, if this machine makes one.
     ///
@@ -95,11 +97,7 @@ impl Conversion {
             Kind::OpenDocumentText => Some(Self::OpenDocumentText),
             Kind::OpenDocumentSpreadsheet => Some(Self::OpenDocumentSpreadsheet),
             Kind::OpenDocumentPresentation => Some(Self::OpenDocumentPresentation),
-            // A Pages document is recognised, and `Self::PagesDocument` is
-            // written; naming it here is what would make a verb reach it, so
-            // this stays the same answer as for any other kind until one is
-            // inventoried.
-            Kind::PagesDocument => None,
+            Kind::PagesDocument => Some(Self::PagesDocument),
             _ => None,
         }
     }
@@ -171,8 +169,8 @@ impl Conversion {
 mod tests {
     use super::*;
 
-    /// **Three conversions, each from its own kind, each into a PDF**, and a
-    /// word that names none of them names nothing.
+    /// **Every conversion is from its own kind and into a PDF**, and a word
+    /// that names none of them names nothing.
     #[test]
     fn each_conversion_is_from_its_own_kind_and_no_other_kind_converts() {
         for conversion in Conversion::EVERY {
@@ -241,6 +239,12 @@ mod tests {
     /// into a conversion goes near it: not the verb's, which asks
     /// [`Conversion::of`] what a document's kind converts as, and not the
     /// socket's, which asks [`Conversion::asked`] what a request's word names.
+    ///
+    /// **[`Conversion::HELD_BACK`] is empty today**, so this walks nothing and
+    /// is kept for the next conversion that waits on a measurement rather than
+    /// deleted with the one that stopped waiting. Deleting it would mean the
+    /// next worker writing the holding rule again from the report of the one
+    /// who wrote it first, which is how a rule comes back weaker.
     #[test]
     fn a_held_back_conversion_is_written_and_reached_by_nothing() {
         for held in Conversion::HELD_BACK {
@@ -263,13 +267,30 @@ mod tests {
         }
     }
 
-    /// **The Pages document is the held-back one**, from a Pages document, and
-    /// its scratch name ends in what tells the engine to read it as one.
+    /// **Nothing is held back**, which is the finished state — and the Pages
+    /// document, which was the one that had been, is a conversion this machine
+    /// makes, from a Pages document, under the scratch name whose ending tells
+    /// the engine to read it as one.
+    ///
+    /// The empty list is asserted rather than left to be noticed: a conversion
+    /// slipped back into [`Conversion::HELD_BACK`] by a later change is
+    /// something a person is not offered, and the test that says so should be
+    /// this one rather than a surprise at the far end of the machine.
     #[test]
-    fn the_pages_document_is_written_from_a_pages_document() {
-        assert_eq!(Conversion::HELD_BACK, [Conversion::PagesDocument]);
+    fn nothing_is_held_back_and_the_pages_document_is_one_this_machine_makes() {
+        assert_eq!(Conversion::HELD_BACK, []);
+        assert!(Conversion::EVERY.contains(&Conversion::PagesDocument));
+        assert_eq!(
+            Conversion::of(Kind::PagesDocument),
+            Some(Conversion::PagesDocument)
+        );
         assert_eq!(Conversion::PagesDocument.from(), Kind::PagesDocument);
+        assert_eq!(Conversion::PagesDocument.into(), Kind::Pdf);
         assert_eq!(Conversion::PagesDocument.asked_as(), "pages-document");
         assert_eq!(Conversion::PagesDocument.scratch_name(), "document.pages");
+        assert_eq!(
+            Conversion::asked("pages-document"),
+            Some(Conversion::PagesDocument)
+        );
     }
 }

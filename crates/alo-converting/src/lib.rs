@@ -11,7 +11,7 @@
 //! | [`verbs`] | `convert_document(file, into)`, the one thing an agent may ask for |
 //! | [`convert()`], [`Done`], [`Converted`], [`NotConverted`] | The verb, carried out |
 //! | [`Carried`], [`NotCarried`] | Everything, or not everything and exactly what |
-//! | [`Conversion`] | The closed set of three conversions |
+//! | [`Conversion`] | The closed set of conversions this machine makes |
 //! | [`ConvertingService`] | This machine's converting service, on this machine only |
 //! | [`with_what_converts`] | What `alo-opening` is told this machine converts |
 //! | [`serving`], [`engine`] | The service's side, and the one file naming the engine |
@@ -24,6 +24,11 @@
 //! the documents themselves. [`Carried::Everything`] is reached only when both
 //! inventories completed and nothing differs; an inventory that cannot complete
 //! is a refusal to show the copy. There is no third answer.
+//!
+//! One format's original is not read here at all: a Pages document keeps its
+//! content in a form nothing in this repository reads, so it is inventoried out
+//! of a rendering the engine makes of it. `inventory::read_from` is the file
+//! that says which originals those are, what it buys and what it cannot see.
 //!
 //! # The copy is never the original
 //!
@@ -44,9 +49,9 @@
 //! **It draws nothing.** Which window shows the copy, and where the sentences
 //! appear, is the shell's.
 //!
-//! **It converts only the three current formats.** `alo-opening` recognises
-//! older Office and OpenDocument files; each further kind is a registration and
-//! a test against a real file, in a later change (ADR 0039).
+//! **It converts only what has been measured.** `alo-opening` recognises older
+//! Office files this crate does not convert; each further kind is a
+//! registration and a test against a real file, in a later change (ADR 0039).
 //!
 //! [ADR 0039]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md
 

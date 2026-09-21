@@ -9,8 +9,10 @@
 //! 3. **Check it is what the request named**, from its bytes, with
 //!    `alo-opening` — the verb decided that already, and the service does not
 //!    take a client's word for it.
-//! 4. **Inventory the original**, before anything converts. One that cannot be
-//!    inventoried is not converted.
+//! 4. **Inventory the original**, before the copy is made. One that cannot be
+//!    inventoried is not converted. An original whose format nothing here reads
+//!    is rendered by the engine first and the rendering is inventoried —
+//!    `inventory::read_from` says which originals those are, and why.
 //! 5. **Convert** in a scratch folder of the service's own, with the engine's
 //!    one argument list.
 //! 6. **Inventory the copy**, before a byte of it is written anywhere the person
@@ -30,8 +32,8 @@ use std::time::Duration;
 use alo_opening::{Decided, Kind, Outcome, ThisMachine, decide};
 
 use crate::conversion::Conversion;
-use crate::engine;
-use crate::inventory::{Copy, Original, carried};
+use crate::engine::{self, Export};
+use crate::inventory::{Copy, Original, ReadFrom, carried, read_from};
 use crate::passing::receive;
 use crate::wire::{Answer, LONGEST_REQUEST, Refusal, Request};
 
@@ -113,23 +115,25 @@ impl Serving {
     ) -> Result<crate::carried::Carried, Refusal> {
         let bytes = read_capped(&mut original, LARGEST_ORIGINAL)?;
         let macros = what_it_is(&bytes, conversion)?;
-        let before =
-            Original::of(&bytes, conversion, macros).map_err(|_| Refusal::OriginalNotChecked)?;
 
         let scratch = Scratch::made_in(&self.scratch).map_err(|_| Refusal::CouldNotConvert)?;
         fs::write(scratch.path().join(conversion.scratch_name()), &bytes)
             .map_err(|_| Refusal::CouldNotConvert)?;
-        let converted =
-            engine::convert(&self.engine, scratch.path(), conversion).map_err(|not| match not {
-                engine::NotConverted::TooSlow => Refusal::TooSlow,
-                engine::NotConverted::NotStarted | engine::NotConverted::NoCopy => {
-                    Refusal::CouldNotConvert
-                }
-            })?;
-        let pdf = read_capped(
-            &mut File::open(converted).map_err(|_| Refusal::CouldNotConvert)?,
-            LARGEST_COPY,
-        )?;
+
+        // Step 4, and for one conversion in seven it runs the engine: an
+        // original this crate does not read is inventoried out of a rendering
+        // the engine makes of it. The rendering never becomes the copy.
+        let before = match read_from(conversion) {
+            ReadFrom::ItsOwnBytes => Original::of(&bytes, conversion, macros),
+            ReadFrom::WhatTheEngineReadsOfIt(as_if) => {
+                let rendering =
+                    self.exported(&scratch, conversion, Export::SomethingThisMachineReads)?;
+                Original::of(&rendering, as_if, macros)
+            }
+        }
+        .map_err(|_| Refusal::OriginalNotChecked)?;
+
+        let pdf = self.exported(&scratch, conversion, Export::TheCopy)?;
         let after = Copy::of(&pdf).map_err(|_| Refusal::CopyNotChecked)?;
         let carried = carried(&before, &after);
 
@@ -139,6 +143,32 @@ impl Serving {
             .and_then(|()| copy.sync_all())
             .map_err(|_| Refusal::CopyNotWritten)?;
         Ok(carried)
+    }
+
+    /// Start the engine over the document already in `scratch` and read back
+    /// what it exported, refusing more than [`LARGEST_COPY`] bytes of it.
+    ///
+    /// Both of a conversion's runs come through here, so a rendering and a copy
+    /// are held to the same limits and the same refusals.
+    fn exported(
+        &self,
+        scratch: &Scratch,
+        conversion: Conversion,
+        export: Export,
+    ) -> Result<Vec<u8>, Refusal> {
+        let came_out =
+            engine::convert(&self.engine, scratch.path(), conversion, export).map_err(|not| {
+                match not {
+                    engine::NotConverted::TooSlow => Refusal::TooSlow,
+                    engine::NotConverted::NotStarted | engine::NotConverted::NoCopy => {
+                        Refusal::CouldNotConvert
+                    }
+                }
+            })?;
+        read_capped(
+            &mut File::open(came_out).map_err(|_| Refusal::CouldNotConvert)?,
+            LARGEST_COPY,
+        )
     }
 }
 
