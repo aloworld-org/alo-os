@@ -120,6 +120,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-keeping-up",
     "alo-keyboards",
     "alo-leaving",
+    "alo-letting-go",
     "alo-locking",
     "alo-looking",
     "alo-measuring",
@@ -316,6 +317,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_keyboards::words::declare_into,
     )?;
     declare(&mut vocabulary, "alo-leaving", alo_leaving::declare_into)?;
+    declare(
+        &mut vocabulary,
+        "alo-letting-go",
+        alo_letting_go::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-locking", alo_locking::declare_into)?;
     declare(&mut vocabulary, "alo-looking", alo_looking::declare_into)?;
     declare(
@@ -448,6 +454,7 @@ mod tests {
         ("alo-keeping-up", "keeping-up.ready"),
         ("alo-keyboards", "keyboards.compose.none"),
         ("alo-leaving", "leaving.would-not-close"),
+        ("alo-letting-go", "letting-go.kept.not-read"),
         ("alo-locking", "locking.locked"),
         ("alo-looking", "looking.no-way-out"),
         ("alo-measuring", "measuring.not-on-this-host"),
@@ -564,6 +571,7 @@ mod tests {
             alo_keeping_up::keeping_up_words().unwrap().how_many(),
             alo_keyboards::keyboard_words().unwrap().how_many(),
             alo_leaving::leaving_words().unwrap().how_many(),
+            alo_letting_go::letting_go_words().unwrap().how_many(),
             alo_locking::locking_words().unwrap().how_many(),
             alo_looking::looking_words().unwrap().how_many(),
             alo_measuring::measuring_words().unwrap().how_many(),

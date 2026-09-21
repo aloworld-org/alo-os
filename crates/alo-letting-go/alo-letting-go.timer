@@ -1,0 +1,34 @@
+[Unit]
+# The one thing that starts alo-letting-go.service.
+#
+# ADR 0045's seventh term: expiry is housekeeping, not a petition. There is no
+# request, no approval, no grant and no entry point — a person changes the
+# window in their settings and this obeys it. A timer is the whole of what
+# decides when.
+Description=alo OS: let go of expired undo snapshots, daily
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0045-what-undoing-rewinds-to.md
+
+[Timer]
+Unit=alo-letting-go.service
+
+# **Once a day.** The window is counted in days (alo_keeping_up::HowFarBack),
+# so a machine that asked oftener would be asking a question whose answer
+# cannot have changed. What a person notices is a disk that stays tidy, which
+# is a day's granularity.
+OnCalendar=daily
+
+# A machine that was off when the timer was due runs it at the next start.
+# Without this a laptop that is shut every evening would never let go of
+# anything, which is exactly the machine ADR 0045's owner's question was about.
+Persistent=true
+
+# Not at midnight on the dot, so a fleet of machines does not all reach for
+# their disks at the same moment.
+RandomizedDelaySec=30m
+
+# Not `WakeSystem=true`. Nothing about letting go of a snapshot is worth waking
+# a machine somebody closed the lid on — it waits for the next start, which is
+# what Persistent= is for.
+
+[Install]
+WantedBy=timers.target

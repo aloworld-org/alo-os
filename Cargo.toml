@@ -68,6 +68,7 @@ members = [
   "crates/alo-kept",
   "crates/alo-keeping",
   "crates/alo-keeping-up",
+  "crates/alo-letting-go",
   "crates/alo-looking",
   "crates/alo-looking-once",
   "crates/alo-updating",

@@ -85,14 +85,17 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         }
         // Nobody's agent did it: the machine starting on another build, going
         // back to the build before, a pairing kept, a workspace opened, grants
-        // it could not read again, an errand of its own, and an undo already
-        // done.
+        // it could not read again, an errand of its own, an undo already
+        // done — and the machine letting go of what it was keeping, which is
+        // housekeeping on a timer and not anything an agent may ask for
+        // (ADR 0045's seventh term).
         Happened::Updated { .. }
         | Happened::RolledBack { .. }
         | Happened::Paired { .. }
         | Happened::WorkspaceOpened { .. }
         | Happened::GrantsNotReadAgain { .. }
         | Happened::LeftOnItsOwn { .. }
+        | Happened::LetGo { .. }
         | Happened::Undone { .. } => WhatWasDone::NotAnAgents,
     }
 }

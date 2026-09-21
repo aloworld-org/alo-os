@@ -952,10 +952,39 @@ task is a fix and how much is a fix plus a bug.
 
 ### 13. The snapshot nobody removed
 
-**Status:** ready. **Depends on:** nothing in this plan — installer task 11
+**Status:** done. **Depends on:** nothing in this plan — installer task 11
 landed the `btrfs` install on 2026-09-21 and that was the only thing it waited
 on. Written 2026-09-21 from [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s
 seventh term.
+
+**Done, 2026-09-21.** Report:
+[`updates/the-snapshot-nobody-removed.md`](updates/the-snapshot-nobody-removed.md).
+A new `crates/alo-letting-go` and a privileged unit a timer starts: it reads the
+folder, asks each person's own window (`undo.toml`, their eleventh settings file)
+what is outside it, removes exactly that with the base's own
+`btrfs subvolume delete --commit-after`, and writes an `alo_record::Happened::LetGo`
+entry naming the turns that lost their undo **in the words the person approved**
+— never a number, and never before the snapshot is actually gone. Under the
+named floor of ten gibibytes the oldest go first, one at a time with the
+filesystem asked again after each. `alo-keeping-up` gains nothing: `how_far_back.rs`
+is asked and never re-decided, and it keeps its four dependencies, no clock, no
+socket and no file.
+
+**Measured on a real `btrfs` filesystem**, twice, with `btrfs subvolume list`
+asked before and after and the output in the report: five subvolumes down to
+three when the window no longer reached one turn, and seven down to one when the
+disk was under the floor with every turn inside the window. **And the refusal
+was measured beside it:** `capsh --drop=cap_sys_admin` answers *Operation not
+permitted* and the machine is exactly as it was, which is the whole reason this
+is a unit rather than a line in `alo-turn`.
+
+**Nothing an agent can reach.** `alo_broker::SystemVerb` gained nothing, no name
+on its list begins `undo.`, and the crate's own manifest names no door, no
+capability and no agent service — each held by a test. `alo-turn` gains no
+capability. The folder two lanes meet in is now a contract
+(`docs/contracts/kept-undo-folder.md`) rather than a shared assumption, and
+`docs/contracts/record-file.md` and `docs/contracts/person-settings.md` each
+gained their additive section.
 
 **Terms 1 and 2 of ADR 0045 are not built, and the reason they read as built is
 that the deciding half is.** `crates/alo-keeping-up/src/how_far_back.rs` works
@@ -998,3 +1027,59 @@ already uses.
   exactly that. A machine on `ext4` answers *not yet on this machine* as it
   does for every other part of undo (term 6), and the unit does nothing there
   rather than failing every timer.
+
+### 14. Forgetting what is kept, as one act a person asks for
+
+**Status:** ready. **Depends on:** 13.
+
+Written 2026-09-21 by task 13, because the plan named nothing after it and its
+change leaves ADR 0045's fifth point the last term of the seven that nothing
+builds. **Term 1 and term 2 are now obeyed by a machine** — a window a person
+sets, a floor the disk enforces, a unit that removes and a record that names
+what it removed. Point 5 is the other half of the same sentence: *what an undo
+may keep is visible and forgettable*, and **forgetting it is one act**.
+
+**Half of it exists and the wrong half.**
+`alo_keeping_up::WhatWasKept::forgetting` is the sentence a person approves, in
+their own language, saying both of the things point 5 asks it to say — that
+nothing an agent has changed can be put back afterwards, and that the space it
+holds is freed. Nothing carries it out. So a person can be shown a sentence
+their machine cannot act on, which is worse than not offering it.
+
+**Its first line is a decision, and the task is finished by writing it if it
+goes that way.** The removal needs `CAP_SYS_ADMIN` and a person's session holds
+none, so the act has to cross into something privileged — and the two roads this
+repository already has are both closed here. `alo-letting-go`'s unit is started
+**by a timer and by nothing else**, which is exactly what its own test holds.
+The broker starts units under an approval (ADR 0053), but ADR 0045's seventh
+term says `SystemVerb` gains nothing and gives the reason: *an agent that can
+forget an undo can erase the evidence of what it did.* That reason is about
+**agents**, and this act is the person's own — so whether the broker's road may
+carry a person's act that no agent can propose is a real question with a real
+answer, and it is not a worker's to assume. Weigh at least: a second unit with
+a handed-over file the way `alo-brokerd` hands over an update; a
+`polkit`-authorised action; and widening the timer unit to notice a file the
+person's session wrote. Name what each costs the *afternoon's audit* that
+ADR 0001 §2 is about.
+
+- **Acceptance:** a person's one act really removes everything their machine was
+  keeping for them, **measured on a real `btrfs` machine** — snapshots made, the
+  act carried out, `btrfs subvolume list` asked afterwards and the output in the
+  report; the record says which turns can no longer be undone, in the person's
+  words and not as a number, with its own reason told apart from the window's
+  and the disk's (`alo_record::WhyLetGo` gains a third member, additively); what
+  the person approved is the sentence `WhatWasKept::forgetting` already says,
+  rendered from the vocabulary rather than written again; **one approval causes
+  exactly one execution**, held by a test as every other approval is; it is
+  **one act and not one per turn or per folder** (point 5); and the refusal path
+  is tested beside it — an act that arrives for somebody else's folder, one
+  whose approval was spent, and a machine that keeps nothing answering *not yet
+  on this machine* rather than pretending it forgot something.
+- **Constraint:** **no agent verb, and no road an agent can reach** — ADR 0045's
+  seventh term is not narrowed by this, and the test that holds no name on
+  `alo_broker::SystemVerb`'s list begins `undo.` stays exactly as it is. Nothing
+  becomes root that was not, and no existing privileged component widens: if the
+  only road runs through one of those, the ADR **is** this task. `alo-keeping-up`
+  still gains no clock, no socket and no file, and `how_far_back.rs` is not
+  touched — forgetting is not a window of nought, which that module refuses by
+  name and for this exact reason.

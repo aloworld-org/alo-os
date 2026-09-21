@@ -1,0 +1,63 @@
+[package]
+name = "alo-letting-go"
+version = "0.0.1"
+description = "Letting go of what an undo could have put back: which brackets fall outside the person's window, and the privileged unit that removes them."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Six dependencies, and `tests/nothing_here_is_a_verb.rs` reads this list.
+# There is deliberately no `alo-broker`, no `alo-capability` and no
+# `alo-agentd`: expiry is housekeeping and not a petition (ADR 0045's seventh
+# term), so nothing here can be asked for, approved or granted, and a crate
+# that could name a verb would be the beginning of one.
+
+[dependencies]
+# How far back an undo reaches, and how many of a machine's changing turns a
+# window still reaches. **Read, never re-decided**: `HowFarBack` is ADR 0045's
+# first accepted term and `how_far_back.rs` is where the arithmetic lives. This
+# crate asks it what is outside and removes exactly that.
+alo-keeping-up = { path = "../alo-keeping-up" }
+# How a file in a person's own folder is kept (ADR 0038). `undo.toml` is this
+# crate's to declare and nobody else's to write.
+alo-kept = { path = "../alo-kept" }
+# The sentences Settings says when that file did not read. Nothing the unit
+# itself prints is one of these: what it says goes to the journal in English,
+# for whoever administers the machine.
+alo-strings = { path = "../alo-strings" }
+# The entry that says which turns can no longer be put back (ADR 0045's second
+# term), and the file it is appended to.
+alo-record = { path = "../alo-record" }
+alo-keeping = { path = "../alo-keeping" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# What the filesystem under a folder is, and how much room is left on it —
+# `statfs`, which `std` has no spelling of and which this workspace forbids
+# `unsafe` for. Already a workspace dependency with the `fs` feature this
+# needs. Named only by `src/the_disk.rs`.
+rustix = { workspace = true }
+
+[dev-dependencies]
+# Every verb alo OS ships behind the privileged broker, asked rather than
+# copied: *the unit is not reachable from any verb* is a promise about that
+# list, and a second copy of it here could quietly come to disagree with it.
+alo-broker = { path = "../alo-broker" }
+# What the record says afterwards, in the words a person reads.
+alo-recounting = { path = "../alo-recounting" }
+# What is filling the disk, asked rather than imitated: ADR 0045's fourth term
+# is a promise about `alo-measuring`'s own answer, and a test that counted the
+# folder itself would be checking its own arithmetic. This lane does not own
+# that crate and does not edit it (ADR 0028) — it asks it.
+alo-measuring = { path = "../alo-measuring" }
+toml = { workspace = true }
+
+[[bin]]
+name = "alo-letting-go"
+path = "src/bin/alo-letting-go.rs"
+
+[lints]
+workspace = true

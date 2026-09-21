@@ -324,8 +324,16 @@ the disk is already full.
 
 ### What this amendment changes
 
+**Built, 2026-09-21**, by task 13 of
+`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` — `crates/alo-letting-go`
+and `alo-letting-go.service`, started by `alo-letting-go.timer` and by nothing
+else. Terms 1 and 2 are obeyed by a machine rather than decided by one, measured
+on a real `btrfs` filesystem, and `crates/alo-broker/src/verbs.rs` gained
+nothing. Point 5 — forgetting, as one act — is the last of the seven that
+nothing builds, and is task 14 of the same plan.
+
 - `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` gains a task for the
-  remover. Terms 1 and 2 are **not built** until it lands, and
+  remover. Terms 1 and 2 were **not built** until it landed, and
   `how_far_back.rs` deciding a window is not the same as a machine obeying one.
 - `crates/alo-broker/src/verbs.rs` gains nothing. `SystemVerb` is a closed
   enum and stays closed here; a test should hold that no verb's name begins
