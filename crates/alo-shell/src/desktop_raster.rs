@@ -30,6 +30,28 @@ pub(crate) struct DesktopPicture {
     pub(crate) filling: ListPicture,
     /// The clock, battery, network and volume, inside the dock's status area.
     pub(crate) status: crate::status_items_raster::StatusPicture,
+    /// How this display is divided, and what a drop would do.
+    pub(crate) division: crate::division_raster::DivisionPicture,
+}
+
+/// What a desktop has on it, as the crates that decide each said it.
+///
+/// One value rather than five arguments, because they are one thing: what is on
+/// this display now. A raster that took them loose would grow a sixth the next
+/// time a surface is added, and the order of five references is a mistake
+/// waiting to be made.
+#[derive(Clone, Copy)]
+pub(crate) struct Shown<'a> {
+    /// The window of what is running.
+    pub(crate) running: &'a ListShows,
+    /// The window of what is filling the disk.
+    pub(crate) filling: &'a ListShows,
+    /// The clock, battery, network and volume.
+    pub(crate) status: &'a crate::status_items::StatusItems,
+    /// How this display is divided.
+    pub(crate) division: &'a alo_dividing::Division,
+    /// What letting go of a dragged window would do.
+    pub(crate) offer: &'a alo_dividing::Offer,
 }
 
 /// What the running window shows, as a panel.
@@ -75,12 +97,17 @@ pub(crate) fn filling_shows(window: &FillingWindow, strings: &Strings) -> ListSh
 pub(crate) fn picture(
     dock: &Dock,
     look: DesktopLook,
-    running: &ListShows,
-    filling: &ListShows,
-    status: &crate::status_items::StatusItems,
+    shown: Shown<'_>,
     fonts: &mut FontSystem,
     size: (i32, i32),
 ) -> Result<DesktopPicture, RenderError> {
+    let Shown {
+        running,
+        filling,
+        status,
+        division,
+        offer,
+    } = shown;
     let dock_picture = crate::dock_raster::picture(dock, look, size)?;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
@@ -100,12 +127,17 @@ pub(crate) fn picture(
     let filling = crate::desktop_list::picture(filling, fonts, size, filling_room, list)?;
     let status =
         crate::status_items_raster::picture(status, &dock_picture, palette.ink, palette.dock);
+    // One is the scale this display is laid out at. A division is in logical
+    // units and knows nothing about scale, so the multiplication happens here,
+    // once, at the boundary.
+    let division = crate::division_raster::picture(division, offer, 1, palette.ink, palette.accent);
     Ok(DesktopPicture {
         size,
         dock: dock_picture,
         running,
         filling,
         status,
+        division,
     })
 }
 

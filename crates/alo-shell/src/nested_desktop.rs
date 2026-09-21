@@ -48,6 +48,14 @@ pub struct DesktopFrame<'a> {
     /// crates that own them said them. Handed in rather than read here: a
     /// compositor that opened `/sys` would be a compositor measuring.
     pub status: &'a crate::status_items::StatusItems,
+    /// How this display is divided, as `alo-dividing` decided it. Handed in for
+    /// the same reason the readings are, and because nothing holds one yet —
+    /// the `Server`'s division is task 16's, on the session that stands the
+    /// desktop up. A display nobody has divided is `Division::of` its own area.
+    pub division: &'a alo_dividing::Division,
+    /// What letting go of a dragged window would do, as `alo-dividing`
+    /// proposed it, or `Offer::Nothing` while nothing is being dragged.
+    pub offer: &'a alo_dividing::Offer,
 }
 
 impl Nested {
@@ -200,9 +208,13 @@ pub(crate) fn frame_pictures(
     let drawn = crate::desktop_raster::picture(
         desktop.dock,
         desktop.look,
-        &running,
-        &filling,
-        desktop.status,
+        crate::desktop_raster::Shown {
+            running: &running,
+            filling: &filling,
+            status: desktop.status,
+            division: desktop.division,
+            offer: desktop.offer,
+        },
         &mut labels.fonts,
         size,
     )?;

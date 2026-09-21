@@ -108,6 +108,7 @@ mod direct_seat;
 mod direct_session;
 mod direct_target;
 mod display_resources;
+mod division_raster;
 mod dock_raster;
 mod drawing;
 mod drm_events;

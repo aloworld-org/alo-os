@@ -282,3 +282,27 @@ pub(crate) fn a_laptops_status() -> &'static crate::status_items::StatusItems {
         )
     })
 }
+
+/// A display nobody has divided, for a test that is about something else.
+///
+/// Not an empty value with a special meaning — `Division::of` its own area is
+/// exactly what a display nobody has divided is, and the shares it reports are
+/// the honest none.
+pub(crate) fn an_undivided_display() -> &'static alo_dividing::Division {
+    static ONE: std::sync::OnceLock<alo_dividing::Division> = std::sync::OnceLock::new();
+    ONE.get_or_init(|| {
+        alo_dividing::Division::of(
+            alo_dividing::Area::of(
+                alo_dividing::area::Point::at(0, 0),
+                alo_dividing::area::Size::of(1920, 1080),
+            )
+            .unwrap(),
+        )
+    })
+}
+
+/// Nothing being dragged, which is what a desktop nobody is dropping on offers.
+pub(crate) fn nothing_offered() -> &'static alo_dividing::Offer {
+    static NONE: alo_dividing::Offer = alo_dividing::Offer::Nothing;
+    &NONE
+}
