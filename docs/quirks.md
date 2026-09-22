@@ -1032,6 +1032,87 @@ the environment says *You can turn this computer off or restart it now*.
 `Task` could say which program it could not start. Not filed from here.
 **Date:** 2026-09-16.
 
+### bootc 1.15.1 — `bootc install` stops at "Creating rootfs" when the environment lacks the file system's maker
+**Version:** bootc 1.15.1 and btrfs-progs 6.19.1-1.fc42 as
+`quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships them, inside
+`image/installing/`'s initramfs; kernel 6.19.14-101.fc42 (btrfs built in:
+`modules.builtin` lists `fs/btrfs/btrfs.ko`, and there is no module to load);
+release `0.0.5`; the installer's own road — Windows 11 in QEMU/KVM, the
+installer run to the end, Fedora's `edk2-ovmf` 20250812-21, Secure Boot off
+because the Windows side's installer refuses it on (ADR 0033 §4). 2026-09-22.
+**Behaviour:** the environment found the chosen disk, checked the release,
+and `bootc install to-disk --filesystem btrfs` partitioned the disk and then
+stopped 3–4 s later, naming no program:
+
+```
+Installing alo OS onto ata-QEMU_HARDDISK_ALOTARGET1. Everything that was on that disk is being replaced. …
+[    6.850278]  sdb: sdb1 sdb2 sdb3
+/usr/bin/bootc: error: Installing to disk: Creating rootfs: No such file or directory (os error 2)
+alo OS could not be installed onto ata-QEMU_HARDDISK_ALOTARGET1. That disk may now hold part of alo OS; …
+```
+
+**Located:** *Creating rootfs* is the context bootc puts around making the
+root file system, and it starts `mkfs.<filesystem>` by name — the same bare
+spawn as `fstrim` above, so a missing program is exactly *No such file or
+directory*. The installer has asked for btrfs since the installer plan's task
+11 (`alo_image::THE_ONLY_FILESYSTEM`). That task measured btrfs by running
+`bootc install` from the release image, which has `mkfs.btrfs`, not through the
+environment. The environment's initramfs, read back from the built image, had
+`usr/bin/mkfs.ext4`, `mkfs.fat`, `mkfs.vfat` and `mkfs.xfs`, and btrfs's
+`btrfs`, `btrfsck` and `fsck.btrfs` from dracut's own module. It had **no
+`mkfs.btrfs`**, although the base has it at `/usr/sbin/mkfs.btrfs`.
+**Our response:** none to the engines (ADR 0011). `alo-installing.conf` carries
+`/usr/sbin/mkfs.btrfs`, and
+`crates/alo-installing/tests/what_the_environment_carries.rs` holds the list to
+`mkfs.` followed by `alo_image::THE_ONLY_FILESYSTEM`, so a change of file system
+is also a change of the list, and refuses a list without it. That was the
+only change, and on the same road the install finished and the installed
+system started from the chosen disk:
+
+```
+Installing alo OS onto ata-QEMU_HARDDISK_ALOTARGET1. …
+Still installing alo OS. Leave the computer on            (12 times, one a minute)
+alo OS is installed. This computer restarts in a few seconds
+BdsDxe: starting Boot000B "Fedora" from HD(2,GPT,…,0x1000,0x100000)/\EFI\fedora\shimx64.efi
+/dev/sdb3 btrfs                                              (findmnt /sysroot)
+└─sdb ALOTARGET1
+```
+
+(`crates/alo-installer/tests/the_installer_walked_on_a_real_windows.rs`,
+`the_whole_road_installs_alo_os_and_the_installed_system_starts`. It passed by
+name at `891ec5de` in 1 815 s. The first run showed the same thing and failed
+only on the test's own reading. A second run stalled in the download, which is
+the installer plan's task 20.)
+**Upstream:** as above, a missing program named in the error would have saved
+this one too. Not filed from here.
+**Date:** 2026-09-22.
+
+### bootupd, as bootc 1.15.1 runs it — after an install, the firmware's first entry is called *Fedora*, and the installer's own entry is left behind
+**Version:** bootc 1.15.1 and the bootupd it runs, inside `image/installing/`'s
+initramfs; release `0.0.5`; QEMU q35 with Fedora's `edk2-ovmf` 20250812-21 and
+no boot order given to the machine. 2026-09-22.
+**Behaviour:** after `bootc install to-disk`, the firmware's variables, decoded
+from the machine's variable store once it was off, held a new entry and a new
+order:
+
+```
+Boot000A: "alo OS"  HD(4,GPT,…,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI   optional-data=0 bytes
+Boot000B: "Fedora"  HD(2,GPT,…,0x1000,0x100000)/\EFI\fedora\shimx64.efi   optional-data=0 bytes
+BootOrder: 000B 0004 0003 0000 0001 0002 0005 0006 0007 0008 0009 000A
+```
+
+The installed system's loader is first, ahead of Windows Boot Manager (`0004`),
+and the computer's next start went to it. A person looking at the firmware's
+boot menu would see it called **Fedora**, not alo OS. The installer's own entry
+from staging, *alo OS*, is still there, last. It points at the installer's area
+on the Windows disk, which is also still there.
+**Our response:** measured and not changed here. The installer plan's task 4
+owns what the machine starts after an install and what a person sees in the
+firmware's menu (ADR 0062). That task has to decide the entry's name
+(bootupd's configuration, never a patch; ADR 0011) and when the staging entry
+and the area are removed.
+**Date:** 2026-09-22.
+
 ### systemd 257 — systemd mounts the BPF filesystem so only root can pass through it
 **Version:** systemd 257.13-1.fc42, kernel 6.19.14-101.fc42, selinux-policy
 42.24-1.fc42, as release `0.0.1` (`ghcr.io/aloworld-org/alo-os@sha256:d3f05b60…`)

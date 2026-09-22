@@ -422,6 +422,46 @@ fn the_initramfs_carries_what_the_installer_finishes_with() {
     );
 }
 
+/// The program that makes the one file system the installer asks for, where
+/// the initramfs list installs it: `mkfs.` and `alo_image::THE_ONLY_FILESYSTEM`,
+/// so a change of file system is a change of this list too.
+fn the_maker_of_the_one_filesystem() -> String {
+    format!("/usr/sbin/mkfs.{}", alo_image::THE_ONLY_FILESYSTEM)
+}
+
+/// **The initramfs carries the maker of the file system the installer asks
+/// for.** `bootc install to-disk --filesystem btrfs` starts `mkfs.btrfs` by name
+/// as it makes the disk's root, and says nothing around a failure to start it.
+/// Measured on the installer's own road on 2026-09-22: without it the install
+/// stopped *Creating rootfs: No such file or directory (os error 2)* 3–4 s after
+/// the disk was partitioned (`docs/quirks.md`).
+#[test]
+fn the_initramfs_carries_the_maker_of_the_one_filesystem() {
+    let maker = the_maker_of_the_one_filesystem();
+    assert!(
+        installed_by(&the_recipes("alo-installing.conf")).contains(&maker),
+        "alo-installing.conf does not install {maker}"
+    );
+}
+
+/// **A list without it is caught**, whether dropped or commented out.
+#[test]
+fn a_list_missing_the_maker_of_the_one_filesystem_is_caught() {
+    let maker = the_maker_of_the_one_filesystem();
+    let list = the_recipes("alo-installing.conf");
+    let line = format!("install_items+=\" {maker} \"");
+    assert!(
+        list.contains(&line),
+        "the list names {maker} on its own line"
+    );
+    for changed in [
+        list.replace(&line, ""),
+        list.replace(&line, &format!("# {line}")),
+    ] {
+        assert!(!installed_by(&changed).contains(&maker));
+    }
+}
+
 /// **A list that dropped one of them is caught**, each on its own — `fstrim`
 /// first, because it is the one the install of 2026-09-16 stopped at.
 #[test]
