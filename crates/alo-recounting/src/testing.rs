@@ -394,6 +394,18 @@ pub(crate) fn not_put_back() -> Entry {
     .unwrap()
 }
 
+/// The machine letting go of one kept turn, for one of the three reasons there
+/// are (ADR 0045, the first and second terms and point 5).
+///
+/// One turn and one sentence, because what this crate has to get right about a
+/// `let-go` entry is the **clause** — which of the three reasons it was, and
+/// whether a person can tell *your machine tidied up* from *you asked for this*.
+/// How many turns are named is `alo-record`'s and `alo-letting-go`'s.
+pub(crate) fn let_go(why: alo_record::WhyLetGo) -> Entry {
+    let went = alo_record::Forgone::of(noon(), "archive Old letters").unwrap();
+    Entry::let_go(why, &[went], noon() + hour()).unwrap()
+}
+
 /// One of every kind of entry there is, in the order it happened.
 ///
 /// Thirteen entries and twelve outcomes — two of them ran, and everything else

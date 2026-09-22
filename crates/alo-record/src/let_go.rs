@@ -34,11 +34,18 @@ use crate::line::Line;
 
 /// Why the machine let go of what it was keeping.
 ///
-/// The two reasons a machine of its own accord stops being able to undo a turn.
-/// A person forgetting everything an undo could put back
-/// (`alo_keeping_up::WhatWasKept::forgetting`) is a third and is **not** here:
-/// it is the person's own deliberate act, written down when something builds
-/// it, and adding a member for it then is additive.
+/// Three reasons, and the third is told apart from the first two because it is
+/// of a different kind. A machine stops being able to undo a turn of its own
+/// accord for two reasons — a window and a disk — and a person forgets
+/// everything their machine was keeping for them because they asked to
+/// (`alo_keeping_up::WhatWasKept::forgetting`, ADR 0045 point 5). A reader who
+/// found all three under one word could not tell *your machine tidied up* from
+/// *you asked for this*, which is the one difference a person reading their own
+/// record acts on.
+///
+/// [`WhyLetGo::ThePersonAskedToForget`] was added on 2026-09-22 and is
+/// additive, exactly as this enum's own documentation said adding it would be.
+/// `format` stays `1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WhyLetGo {
@@ -49,6 +56,16 @@ pub enum WhyLetGo {
     /// oldest went first (ADR 0045's second term). **The machine never fills a
     /// disk to preserve an undo.**
     TheDiskNeededTheRoom,
+    /// The person asked their machine to forget everything it was keeping for
+    /// them, as one act, and it did (ADR 0045 point 5).
+    ///
+    /// **It still names no agent**, and for the seventh term's reason rather
+    /// than by omission: there is no verb that forgets an undo and there is not
+    /// going to be one, because an agent that can forget an undo can erase the
+    /// evidence of what it did. What this member adds is a person at their own
+    /// machine asking — so an entry written for this reason is the answer to a
+    /// question they asked, rather than housekeeping they are being told about.
+    ThePersonAskedToForget,
 }
 
 /// One turn that can no longer be put back.
@@ -61,8 +78,24 @@ pub struct Forgone {
 }
 
 impl WhyLetGo {
-    /// Both of them, for a test that walks the pair.
-    pub const EVERY: [Self; 2] = [Self::OutsideTheWindow, Self::TheDiskNeededTheRoom];
+    /// All three of them, for a test that walks them.
+    pub const EVERY: [Self; 3] = [
+        Self::OutsideTheWindow,
+        Self::TheDiskNeededTheRoom,
+        Self::ThePersonAskedToForget,
+    ];
+
+    /// Whether this was the person's own act rather than the machine's
+    /// housekeeping.
+    ///
+    /// Asked by whoever is deciding what to say about the line, so that the
+    /// difference a person acts on is a question put to the reason itself —
+    /// never a second list somewhere else that has to be kept in step with this
+    /// one.
+    #[must_use]
+    pub const fn is_the_persons_own(self) -> bool {
+        matches!(self, Self::ThePersonAskedToForget)
+    }
 }
 
 impl Forgone {
@@ -140,6 +173,27 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&WhyLetGo::TheDiskNeededTheRoom).unwrap(),
             r#""the-disk-needed-the-room""#
+        );
+        assert_eq!(
+            serde_json::to_string(&WhyLetGo::ThePersonAskedToForget).unwrap(),
+            r#""the-person-asked-to-forget""#
+        );
+    }
+
+    /// **The person's own act is told apart from the machine's housekeeping**,
+    /// which is the difference a person reading their own record acts on — and
+    /// exactly one of the three reasons is theirs.
+    #[test]
+    fn the_persons_own_act_is_told_apart_from_the_machines_housekeeping() {
+        assert!(WhyLetGo::ThePersonAskedToForget.is_the_persons_own());
+        assert!(!WhyLetGo::OutsideTheWindow.is_the_persons_own());
+        assert!(!WhyLetGo::TheDiskNeededTheRoom.is_the_persons_own());
+        assert_eq!(
+            WhyLetGo::EVERY
+                .iter()
+                .filter(|why| why.is_the_persons_own())
+                .count(),
+            1
         );
     }
 }

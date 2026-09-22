@@ -132,10 +132,12 @@ present on all of them but these:
 - `let-go`, added 2026-09-21 and additive, which is the machine removing what it
   had kept for one or more changing turns, so that none of them can be put back
   any more ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
-  and second accepted terms). It is set out in full below; what belongs here is
-  why it names nobody. Expiry is housekeeping rather than a petition: there is
-  no verb that forgets an undo, no request, no approval and no grant, because an
-  agent that can forget an undo can erase the evidence of what it did.
+  and second accepted terms, and since 2026-09-22 point 5). It is set out in full
+  below; what belongs here is why it names nobody. Expiry is housekeeping rather
+  than a petition and forgetting is the person's own act at their own machine:
+  there is no verb that forgets an undo, no request an agent can make, no
+  approval it could hold and no grant, because an agent that can forget an undo
+  can erase the evidence of what it did.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
@@ -175,30 +177,48 @@ table of what can never be undone, and why, is `alo-keeping-up`'s
 of this file learns from an `undone` entry that something was put back, never
 that it could have been.
 
-**`let-go` is the machine removing what it was keeping**, added 2026-09-21 and
+**`let-go` is what the machine was keeping being removed**, added 2026-09-21 and
 additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
-and second accepted terms). It is written by a privileged unit a timer starts
+and second accepted terms). It is written by a privileged unit
 (`crates/alo-letting-go`), **after** the snapshots are gone and only for the
 turns whose snapshots actually went, so a line here is a fact about the disk
-rather than an intention about it. It carries `why`, one of
-`outside-the-window` — how far back that person asked the machine to keep what
-an agent changed no longer reached the turn — or `the-disk-needed-the-room`,
-which is the machine never filling a disk to preserve an undo and taking the
-oldest first; and `turns`, never empty, each with `done`, the moment that turn
-ran, and `did`, **the sentence the person approved at the time, copied in**.
+rather than an intention about it. It carries `why`, one of three, and `turns`,
+never empty, each with `done`, the moment that turn ran, and `did`, **the
+sentence the person approved at the time, copied in**.
+
+| `why` | What it means |
+|---|---|
+| `outside-the-window` | how far back that person asked the machine to keep what an agent changed no longer reached the turn |
+| `the-disk-needed-the-room` | the machine never fills a disk to preserve an undo, and the oldest went first |
+| `the-person-asked-to-forget` | the person asked their machine to forget everything it was keeping for them, as one act (point 5, added 2026-09-22 and additive; `format` stays `1`) |
+
+**The third is told apart from the first two because it is of a different
+kind**, and it is the one difference a person reading their own record acts on:
+the first two are the machine tidying up and being told about it, and the third
+is the answer to something they asked for. A reader that found all three under
+one word would have lost that. The first two are written by
+`alo-letting-go.service`, which a timer starts and nothing else does, to
+`/var/lib/alo-letting-go/record.jsonl`; the third by `alo-forgetting.service`,
+which a person's own act starts and nothing else does
+(`docs/contracts/asked-to-forget-folder.md`), to
+`/var/lib/alo-forgetting/record.jsonl`. **Two files, because a record file has
+one writer** and those are two units a machine may run in the same second.
 
 **It names the turns rather than counting them**, which is what the second term
 asks for: *what a person is told names the turns that lost it rather than a
 number*. And it copies rather than points, for `undone`'s reason — the file is
 shortened, so a position in it is not a name that lasts.
 
-**No `agent` and no field for one.** There is no verb that forgets an undo and
-there is not going to be one: an agent that can forget an undo can erase the
-evidence of what it did, and a destructive verb over the written-down past is
-the one verb whose approval a person is least able to judge. A person changes
-how far back their machine keeps things in their own settings
-(`docs/contracts/person-settings.md`, `undo.toml`), and the unit obeys it. It is
-not a departure and it is not an execution of a verb.
+**No `agent` and no field for one**, whichever of the three reasons it carries.
+There is no verb that forgets an undo and there is not going to be one: an agent
+that can forget an undo can erase the evidence of what it did, and a destructive
+verb over the written-down past is the one verb whose approval a person is least
+able to judge. A person changes how far back their machine keeps things in their
+own settings (`docs/contracts/person-settings.md`, `undo.toml`), and the unit
+obeys it; and a person forgets everything it is keeping by approving one
+sentence in Settings, which their own session leaves for the machine as a file
+that names nobody and nothing. It is not a departure and it is not an execution
+of a verb.
 
 **`slept-through` is a turn the machine went to sleep in the middle of**, added
 2026-09-17 and additive. It is written when the machine wakes, through the

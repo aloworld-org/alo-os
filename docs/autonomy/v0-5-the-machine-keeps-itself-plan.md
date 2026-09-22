@@ -20,7 +20,10 @@ maintains**, which is exactly what ADR 0011 asks of a rented engine.
 **Crates this plan owns:** a new `crates/alo-keeping-up` for what an update
 is, when it may happen, and what rolling back means, a new `crates/alo-looking`
 for finding out there is one — added by task 6 on 2026-09-19, because the asking
-needs a client and a disk and `alo-keeping-up` is held to neither — and — from task 4, taken by
+needs a client and a disk and `alo-keeping-up` is held to neither — a new
+`crates/alo-letting-go` for the two privileged units that remove what an undo
+would have put back, added by task 13 on 2026-09-21 and written down here by
+task 14 on 2026-09-22, which found the line missing — and — from task 4, taken by
 the third PC on 2026-09-19 — the **undo entry in `crates/alo-record`** and the
 sentence `crates/alo-recounting` reads it back with. ADR 0045 point 3 asks for
 a record entry an undo writes, no existing kind fits one, and the crate is
@@ -1030,7 +1033,43 @@ already uses.
 
 ### 14. Forgetting what is kept, as one act a person asks for
 
-**Status:** ready. **Depends on:** 13.
+**Status:** done. **Depends on:** 13.
+
+**Done, 2026-09-22.** Report:
+[`updates/forgetting-what-is-kept.md`](updates/forgetting-what-is-kept.md).
+A second privileged unit in `crates/alo-letting-go` — `alo-forgetting.service`,
+which `alo-forgetting.path` starts when a person's own session leaves an asking
+in `/run/alo/asked-to-forget`, and which nothing else starts. **The asking names
+nobody and nothing**: whose act it is, is the user the filesystem records as
+having written it, matched against the owner of the settings folder that
+person's own session wrote down — so somebody else's undo is not a refusal that
+had to be got right, it is not expressible. Every asking is **taken before
+anything is decided**, so one approval is one execution and a fault cannot leave
+an approval lying about; an asking older than an hour is taken and refused. What
+the person approves is `WhatWasKept::forgetting`, rendered from the vocabulary,
+and this crate declares no second wording of it. `alo_record::WhyLetGo` gained
+`ThePersonAskedToForget`, additively, with `alo-recounting`'s clause beside it;
+`format` stays `1`.
+
+**Measured on a real `btrfs` filesystem**, twice, with `btrfs subvolume list`
+before and after and the output in the report: seven subvolumes down to one when
+a person asked, with every turn inside their window and the disk with room to
+spare — and, with two people on the machine, six down to four, the asker's undo
+gone and the other person's two snapshots exactly where they were. The refusal
+was measured beside it: `capsh --drop=cap_sys_admin` answers *Operation not
+permitted* and the machine is unchanged.
+
+**The road is not a verb, and a test now holds the wider sentence the task asked
+for by name.** `alo_broker::SystemVerb` gained nothing and task 13's tests are
+untouched and still pass; `tests/a_turn_cannot_arrive_at_this_road.rs` walks the
+workspace's manifests from `alo-agentd` and `alo-turn` and holds that **the only
+road into this crate from where a turn runs is its vocabulary** — the crate is
+linked, by `alo-saying`, and that is said plainly rather than tested away. New
+contract: `docs/contracts/asked-to-forget-folder.md`.
+
+**What it does not do**, said rather than left to be discovered: nothing draws
+this in Settings yet. The person's half is a function their session calls, and
+the pane that calls it is task 15.
 
 Written 2026-09-21 by task 13, because the plan named nothing after it and its
 change leaves ADR 0045's fifth point the last term of the seven that nothing
@@ -1098,3 +1137,62 @@ keep passing; this is added beside them.
   still gains no clock, no socket and no file, and `how_far_back.rs` is not
   touched — forgetting is not a window of nought, which that module refuses by
   name and for this exact reason.
+
+### 15. What a person sees of what their machine is keeping
+
+**Status:** ready. **Depends on:** 14.
+
+Written 2026-09-22 by task 14, because the plan named nothing after it and its
+change leaves ADR 0045 point 5 half kept. The point has two halves — *what an
+undo may keep is **visible** and forgettable* — and the forgetting is now a
+machine's act a person can cause. **Nothing shows them any of it.**
+
+Today a person on an alo OS machine cannot find out how far back their machine
+keeps what the agent changed, cannot see how much of their disk that is holding,
+and has no way to ask for it back short of writing `undo.toml` by hand. Every
+piece is built and none of it is in front of anybody: `alo_keeping_up::HowFarBack`
+is the window and `alo_letting_go::keeping` reads and writes their file;
+`alo-measuring` already counts what undo is holding as a line of its own (term
+4); `alo_letting_go::ask` is the one act, and `WhatWasKept::forgetting` is the
+sentence they approve. This task is the pane, and it is the shape
+`alo-changing-updates` already has — *a person in front of it*, and deliberately
+nothing more.
+
+**Its first decision is where the pane's crate goes.** `crates/alo-changing-undo`
+is the obvious name and matches `alo-changing-updates`, `alo-changing-network`,
+`alo-changing-printers` and `alo-changing-drives`. Weigh against it putting the
+pane in `alo-letting-go` — fewer crates, but a crate that both removes a person's
+history as root and draws a window would be one file-set with two audiences, and
+law 4 is why that is refused. A worker who chooses the new crate collects it into
+`alo-saying` and `alo-declared` as every crate with words is.
+
+**One test beyond the acceptance below, asked for by name:** that the pane's
+crate is **not** on the road — the same walk
+`crates/alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs` makes, with
+the new crate held to the same answer, so a Settings pane cannot become a way in
+from a turn by being linked somewhere convenient.
+
+- **Acceptance:** a person can read, in their own language, **how far back this
+  machine keeps what the agent changed** and **how much room that is holding** —
+  the second asked of `alo-measuring` rather than counted again, held by a test
+  that the number the pane shows is the number that crate answers; they can
+  widen or narrow the window and the machine really obeys the changed file,
+  measured by letting go with the new window rather than by reading it back; the
+  one act is offered with `WhatWasKept::forgetting` as its sentence and **one
+  approval**, and nothing happens until they give it — held by a test, with the
+  refusal beside it: an act they declined leaves every snapshot where it was and
+  writes nothing; a machine that keeps nothing says *not yet on this machine*
+  rather than offering an act it cannot carry out; and an asking that could not
+  be left says so in the person's own language and changes nothing
+  (`alo_letting_go::NotAsked`). Every string is declared with a note for a
+  translator and no sentence is a second wording of one that exists.
+- **Constraint:** **no second copy of anything.** The window is
+  `alo_keeping_up::HowFarBack` and the file is `alo_letting_go::keeping`; what
+  undo is holding is `alo-measuring`'s answer; the act is `alo_letting_go::ask`
+  and its sentence is `WhatWasKept::forgetting`. A pane that worked out a window,
+  counted a folder or worded that sentence would be the second answer this
+  repository refuses everywhere else. **No agent verb and no road an agent can
+  reach** — ADR 0045's seventh term is not narrowed by a pane, and
+  `docs/contracts/asked-to-forget-folder.md` is not changed by one. Drawing is
+  the shell's: this is the pane's model, as `alo-changing-updates` is, and a
+  raster test belongs wherever that lane keeps them.

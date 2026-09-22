@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Thirty-two, and they divide in three. Twenty-five are **what became of one
+//! Thirty-three, and they divide in three. Twenty-six are **what became of one
 //! entry** — the short clause read at the head of a line, before the sentence
 //! the machine generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Twenty-five clauses, and none of them is a category
+//! # Twenty-six clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -480,8 +480,23 @@ pub const LET_GO_THE_DISK_NEEDED_THE_ROOM: Word = Word::saying(
      oldest first. The turns this happened to are named beneath the line.",
 );
 
+/// The machine let go of what it had kept, because the person asked it to
+/// forget everything it was keeping for them.
+pub const LET_GO_THE_PERSON_ASKED_TO_FORGET: Word = Word::saying(
+    "recounting.outcome.let-go-the-person-asked-to-forget",
+    "this can no longer be put back: you asked this machine to forget everything it was keeping \
+     so that the agent's changes could be undone",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. Said only when the person themselves asked for \
+     it, as one act, and it is deliberately addressed to them in the second person: the two lines \
+     above it are the machine tidying up and this one is the answer to something they did. \
+     Nothing has gone wrong; say it plainly rather than as a warning or an apology.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 32] = [
+pub const EVERY_WORD: [Word; 33] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -507,6 +522,7 @@ pub const EVERY_WORD: [Word; 32] = [
     NOT_PUT_BACK,
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
+    LET_GO_THE_PERSON_ASKED_TO_FORGET,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -521,7 +537,7 @@ pub const EVERY_WORD: [Word; 32] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 25] = [
+pub const EVERY_OUTCOME: [Word; 26] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -547,6 +563,7 @@ pub const EVERY_OUTCOME: [Word; 25] = [
     NOT_PUT_BACK,
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
+    LET_GO_THE_PERSON_ASKED_TO_FORGET,
 ];
 
 /// What an account says about itself, rather than about one entry.

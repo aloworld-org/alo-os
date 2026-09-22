@@ -1,10 +1,15 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Eight, and all eight are about one file: `undo.toml`, the person's own
-//! window, when it is there and does not read or a change to it could not be
-//! written. The shape is `alo-sleeping`'s and is copied rather than re-decided,
-//! because a person meeting the same refusal about two of their own files
-//! should meet the same sentence.
+//! Nine. Eight are about one file: `undo.toml`, the person's own window, when
+//! it is there and does not read or a change to it could not be written. The
+//! shape is `alo-sleeping`'s and is copied rather than re-decided, because a
+//! person meeting the same refusal about two of their own files should meet the
+//! same sentence.
+//!
+//! The ninth is the one act a person asks for ([`crate::asking`]) failing to
+//! leave their own session — and it is the refusal rather than the act. What
+//! they approve is `alo_keeping_up::WhatWasKept::forgetting`, said where
+//! forgetting is decided, and this crate declares no second wording of it.
 //!
 //! # What is deliberately not on this list
 //!
@@ -123,8 +128,31 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
      gives the two ways on.",
 );
 
+/// The machine could not be asked to forget what it is keeping, so nothing has
+/// changed.
+///
+/// The one sentence here that is not about `undo.toml`. It is **not** the
+/// sentence a person approves — that is
+/// `alo_keeping_up::WhatWasKept::forgetting`, said where the act is decided and
+/// never written a second time (`crate::asking::Asked::the_sentence`). This is
+/// what they read when the act never left their own session.
+pub const FORGETTING_NOT_ASKED_FOR: Word = Word::saying(
+    "letting-go.asking.not-left",
+    "this machine could not be asked to forget what it is keeping, so nothing has changed and \
+     everything the agent changed can still be put back — try again, and if it keeps happening, \
+     restart this machine",
+)
+.noting(
+    "Read when a person has approved forgetting everything their machine holds so that the \
+     assistant's changes could be undone, and the request could not be left for the part of the \
+     machine that carries it out. The agent is the assistant built into alo OS and not a person. \
+     The important clause is the second: nothing was forgotten and nothing was lost, so this is \
+     not a warning. There is deliberately no file named in it — where the request would have gone \
+     is on this machine's journal, for whoever administers it, and is nothing a person acts on.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 8] = [
+pub const EVERY_WORD: [Word; 9] = [
     KEPT_NOT_READ,
     KEPT_NOT_UNDERSTOOD,
     KEPT_NOT_UNDERSTOOD_AT,
@@ -133,6 +161,7 @@ pub const EVERY_WORD: [Word; 8] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
+    FORGETTING_NOT_ASKED_FOR,
 ];
 
 /// Why this crate's own words could not be declared.

@@ -30,8 +30,24 @@
 use alo_keeping::Writing;
 use alo_record::Entry;
 
-/// Where this unit's record is on a machine.
+/// Where the expiry unit's record is on a machine.
 pub const THE_RECORD: &str = "/var/lib/alo-letting-go/record.jsonl";
+
+/// And where the forgetting unit's is.
+///
+/// **A second file, for the same reason there is a first one.** `alo-keeping`
+/// says it outright: *two appending to one file would interleave*, so a record
+/// file has one writer. These are two units — one a timer starts and one a
+/// person's act starts — and systemd will happily run them in the same second,
+/// which is two writers whatever either of them intends. A record whose lines
+/// can be cut in half is worse than a record in two places, because a reader
+/// can open two files and cannot mend one line.
+///
+/// What it costs is one more file for a surface to read, and that cost was
+/// already paid: `crate::writing_it_down` says a surface putting *what this
+/// machine did* in front of a person reads more than one record file, and has
+/// had to since the broker gained one.
+pub const THE_FORGETTING_RECORD: &str = "/var/lib/alo-forgetting/record.jsonl";
 
 /// Something that keeps an entry — a record file on a machine, and a test's
 /// stand-in that keeps them in memory.
@@ -79,5 +95,16 @@ mod tests {
         assert_ne!(THE_RECORD, "/var/lib/alo-broker/record.jsonl");
         assert!(THE_RECORD.starts_with("/var/lib/"));
         assert!(THE_RECORD.ends_with("/record.jsonl"));
+    }
+
+    /// **The two units write two files**, because a record file has one writer
+    /// and these are two processes a machine may run in the same second.
+    #[test]
+    fn the_two_units_do_not_share_one_record_file() {
+        assert_ne!(THE_RECORD, THE_FORGETTING_RECORD);
+        assert_ne!(THE_FORGETTING_RECORD, "/var/lib/alo/record.jsonl");
+        assert_ne!(THE_FORGETTING_RECORD, "/var/lib/alo-broker/record.jsonl");
+        assert!(THE_FORGETTING_RECORD.starts_with("/var/lib/"));
+        assert!(THE_FORGETTING_RECORD.ends_with("/record.jsonl"));
     }
 }
