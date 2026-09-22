@@ -6194,3 +6194,48 @@ it is the case it describes. The installer no longer makes its entry this way
 (the quirk above); whether the entry it now writes holds after the same kill
 and shutdown is what task 10's step 7 measures.
 **Date:** 2026-09-21.
+
+### A stand-in started through Image File Execution Options gets the held program's whole command line, and `cmd` cannot hold it
+**Version:** Windows 11 Enterprise Evaluation 25H2, the `Debugger` value under
+`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution
+Options\<image>`, 2026-09-22.
+**Behaviour:** with a `Debugger` set for `powershell.exe`, Windows starts the
+debugger instead, passing it the held program's full command line. A held
+PowerShell that runs an encoded script has a command line longer than `cmd`'s
+8 191 characters, so a stand-in written as `cmd.exe /c held.cmd` failed at once,
+the program that asked for PowerShell saw a failed step — the installer said
+*Something went wrong, so everything changed so far is being put back* — and
+only then was killed. The state after it happened to look like the step the
+kill was aimed at.
+**Our response:** the walk's stand-in is a small program of its own that writes
+down the command line it was started with and never returns, and a kill after
+which the installer had begun putting back is never counted as landed. With it,
+steps 4, 5, 6 and 7 each landed exactly, the stand-in having caught the entry's
+PowerShell, the letter's PowerShell, `bcdedit /set {fwbootmgr} bootsequence`
+and `shutdown.exe /r /t 0` before they ran.
+**Date:** 2026-09-22.
+
+### Reading a firmware variable needs the firmware privilege switched on, and says nothing when it is not
+**Version:** `GetFirmwareEnvironmentVariableEx` on Windows 11 25H2, from an
+elevated Windows PowerShell, 2026-09-22.
+**Behaviour:** an administrator holds `SeSystemEnvironmentPrivilege` but has
+it switched off. With it off, every read returns 0 bytes — the same answer as a
+variable that does not exist — so a reader that does not switch it on reports
+*no start-up entries at all* on a machine that has five.
+**Our response:** every reader switches it on first (`AdjustTokenPrivileges`),
+the installer's `WritingTheEntry` fails rather than carries on when it cannot,
+and the walk prints the privilege's result before any reading.
+**Date:** 2026-09-22.
+
+### Windows rewrites a start-up entry written into the firmware, within seconds, with its own partition number
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1 and OVMF,
+2026-09-22.
+**Behaviour:** a `Boot####` written directly with a hard-drive node naming
+partition 5 — Windows' own number for the area — was found twenty seconds later
+naming partition 4, the area's GPT slot, with nothing else changed and no
+optional data added; Windows lists such a variable as a *Firmware Application*
+(`0x101fffff`) in its BCD store and keeps the two in step.
+**Our response:** the installer writes the GPT slot itself, read from the
+disk's partition table, rather than relying on Windows to correct it; a
+firmware matches a hard-drive node by slot and signature.
+**Date:** 2026-09-22.

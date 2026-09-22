@@ -124,7 +124,7 @@ const THE_SECOND_DISKS_NAME: &str = "ata-QEMU_HARDDISK_ALOTARGET1";
 #[test]
 #[ignore = "installs a Windows into a virtual machine; run by name"]
 fn a_windows_installs_itself_and_reaches_a_desktop_session() {
-    let _one = ONE_MACHINE.lock().expect("the machine");
+    let _one = one_machine_at_a_time();
     the_host_has_what_this_needs();
     let yard = needs::the_yard();
     walking::machine::stop();
@@ -157,7 +157,10 @@ fn a_windows_installs_itself_and_reaches_a_desktop_session() {
     // seconds, and the firmware then waits on the network for ever.
     machine.hold_a_key_down(25);
 
-    let said = console.wait_for(&[console::BEGINS], AN_INSTALL);
+    // The sign-in's whole account, not its first line: measured on
+    // 2026-09-22, judging the session on `ALOWALK-BEGIN` read the table before
+    // the guest had printed the shell's own line.
+    let said = console.wait_for(&[console::SESSION_SAID], AN_INSTALL);
     assert!(
         said.is_some(),
         "the install never reached a sign-in. The screen was kept at {} and the \
@@ -216,7 +219,7 @@ fn a_windows_installs_itself_and_reaches_a_desktop_session() {
 #[test]
 #[ignore = "starts over twenty virtual machines; run by name"]
 fn killed_at_every_step_the_computer_still_starts_windows() {
-    let _one = ONE_MACHINE.lock().expect("the machine");
+    let _one = one_machine_at_a_time();
     the_host_has_what_this_needs();
     let yard = needs::the_yard();
     let download = the_download(&yard);
@@ -402,7 +405,7 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
 #[test]
 #[ignore = "starts virtual machines and installs; run by name"]
 fn the_whole_road_starts_the_environment_on_the_next_restart() {
-    let _one = ONE_MACHINE.lock().expect("the machine");
+    let _one = one_machine_at_a_time();
     the_host_has_what_this_needs();
     let yard = needs::the_yard();
     let download = the_download(&yard);
@@ -606,6 +609,16 @@ fn beyond_the_controls(beyond: &Changed, when: &str) -> Vec<String> {
         beyond.start_partition,
         beyond.windows.iter().take(60).collect::<Vec<_>>()
     )]
+}
+
+/// The one machine, whichever test holds it — and still the next test's when
+/// an earlier one panicked holding it: each test here stands on its own, and a
+/// poisoned lock would otherwise fail every test after the first failure
+/// without running it (measured on 2026-09-22).
+fn one_machine_at_a_time() -> std::sync::MutexGuard<'static, ()> {
+    ONE_MACHINE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// Fail with the list of what is missing, rather than pass without running.

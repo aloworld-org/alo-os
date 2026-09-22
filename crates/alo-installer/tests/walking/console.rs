@@ -16,6 +16,11 @@ pub const BEGINS: &str = "ALOWALK-BEGIN";
 /// The line it prints when the boot has done what it was told.
 pub const DONE: &str = "ALOWALK-DONE";
 
+/// The line the every-start script prints once it has printed the session
+/// table and the shell's own process — after which a desktop session can be
+/// judged. It prints one of two lines here; both begin with this.
+pub const SESSION_SAID: &str = "ALOWALK-END";
+
 /// The line it prints when it found nothing to do.
 pub const NOTHING_TO_DO: &str = "ALOWALK-NO-INSTRUCTION";
 
