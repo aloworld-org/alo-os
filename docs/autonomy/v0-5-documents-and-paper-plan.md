@@ -768,10 +768,47 @@ minutes of work on that machine and impossible on any other.
 
 ### 9. A machine with no engine says so, instead of failing
 
-**Status:** ready — **taken by the third PC on 2026-09-21 at the owner's
-instruction**, which is not this plan's machine: the lane table gives this plan
-to the development PC. It is taken here because the condition can be *produced*
-here. **Depends on:** 2.
+**Status:** **Done, 2026-09-22**, by the third PC (`AGAI01`) at the owner's
+instruction — not this plan's machine: the lane table gives this plan to the
+development PC, and it was taken here because the condition can be *produced*
+here. **Depends on:** 2. Report:
+[A machine with no engine says so](updates/a-machine-with-no-engine-says-so.md).
+
+**It is ten, and the nine below were a truncated measurement.**
+`which-tests-need-the-engine.sh` runs `cargo test -p alo-converting`, which
+**stops at the first test binary that fails** — so the run ended inside
+`converting_a_real_document.rs` and never reached
+`the_walk_through_documents_and_paper.rs`. Measured again on 2026-09-22 with
+`--no-fail-fast`, the two machines agree: the tenth is
+`the_walk_from_a_file_arriving_to_one_that_cannot_be_opened_reads_as_the_table`,
+which runs the engine at steps 4 and 5. Nothing about the Mac's architecture
+was involved, and the difference this plan left open is closed.
+
+**What was built.** `crates/alo-converting/tests/asking/mod.rs` asks whether
+this machine can run the engine by **running it** — `engine.rs`'s own argument
+list and cleared environment, with the question *what are you* — and answers a
+run that could not be started, one that never answered, one that ended badly
+and one that said nothing as four named reasons, each naming where the engine
+was looked for. Each of the ten asks it first and, where it cannot, skips itself
+and prints what was missing. `a_machine_that_cannot_run_the_engine_says_so.rs`
+holds the four refusals, a wrapper over a binary that cannot run — the aarch64
+shape, and the case `test -x` gets wrong — a program stopped for never
+answering, and the list itself: exactly the tests that need the engine ask, read
+off the sources both ways, so neither a conversion test without the ask nor an
+ask on a test that does not need one can be added quietly.
+
+**The decision it needed.** ADR 0039 forbade this in as many words, so the code
+could not be written without amending it:
+[ADR 0063](../decisions/0063-a-machine-that-cannot-run-the-engine-says-so-rather-than-failing.md),
+recording the owner's decision in this task and amending ADR 0039's last two
+sentences on skipping and nothing else. An engine that starts and then converts
+badly still fails loudly, which is the part of ADR 0039 that was always right.
+
+**Measured, on this machine, with the engine moved aside and put back on every
+exit path:** the whole crate green — 120 passed, 0 failed across its ten test
+targets — with exactly ten `skipped:` lines, each naming where the engine was
+looked for. With the engine present: the same 120 passed, 0 failed, and nothing
+skipped.
 
 Every run on the Mac fails the same tests, because the engine `alo-converting`
 drives is an **x86_64 build** and the Mac is aarch64. A suite that is red on one
@@ -815,3 +852,51 @@ the sets are the same.
   passed, and the next architecture would inherit the silence. Nothing about
   what the tests assert changes; only what they do when the engine is not there.
   The engine is still never named where a person reads.
+
+### 10. Older `.doc`, `.xls` and `.ppt` — converted, and what each copy lost
+
+**Status:** ready — **blocked on a real file of each.** **Depends on:** 2, 7.
+
+Written 2026-09-22 by the lane that finished task 9, because nothing followed it
+and a plan that names no next task sends the loop back at work already done
+(`docs/autonomy/SHARED_MAIN.md`).
+
+The last half of a sentence this plan has already honoured once. ADR 0039's
+*What this does not decide* names **older `.doc`, `.xls`, `.ppt` and
+OpenDocument files** together, and says each further kind is *a registration and
+a test with a real file, in a later change*. Task 7 did the OpenDocument three
+exactly that way — `Conversion::EVERY` went from three to six, each with its own
+word on the socket, its scratch name and its export filter, and no new engine.
+These three are what is left of it, and task 2's own *Owed* line names them.
+
+`alo-opening` already recognises all three from their bytes; nothing there needs
+to change. What is missing is the conversion, and the engine's readers for the
+older formats are writers this repository has not measured — a `.doc` comes out
+of the same writer a `.docx` does, and that is a claim rather than a measurement
+until a real file goes through it.
+
+**What it is blocked on, precisely.** One real `.doc`, one real `.xls` and one
+real `.ppt`, saved by the office application people send them from and owned by
+the repository's owner so they can be published, with their provenance in the
+`README.md` beside the three already in `crates/alo-converting/tests/documents/`.
+The same blocker task 2 carried and the owner cleared on 2026-09-16, and the
+same one task 8 carries now. Nothing synthesised: a container this repository
+assembled would measure the assembler.
+
+- **Acceptance:** each of the three is converted through the real service and
+  the pinned engine on a machine that has one, into a PDF beside the original,
+  which is unchanged byte-for-byte; what each copy could not carry is asserted
+  **whole**, as the list its `README.md` records, and not searched for one
+  entry; `Conversion::EVERY` grows to nine with a word on the socket, a scratch
+  name and an export filter each, and the closed set stays closed — no `exec`,
+  no filter chosen from anything a request carries. Each of the three new tests
+  asks whether the engine runs and skips itself saying why where it cannot
+  (task 9, ADR 0063), and `THE_TEN` in
+  `crates/alo-converting/tests/a_machine_that_cannot_run_the_engine_says_so.rs`
+  grows with them — that test fails until it does, which is the point of it.
+- **Constraint:** the engine is rented and unpatched (ADR 0011), and a format
+  it converts badly is a **finding and a sentence**, never a reader of our own
+  guessing at the difference. If one of the three cannot be converted honestly,
+  the deliverable is *this machine cannot open it* with the reason (task 4), and
+  the format does not join `Conversion::EVERY`. Nothing is uploaded, and nothing
+  names the engine where a person reads.
