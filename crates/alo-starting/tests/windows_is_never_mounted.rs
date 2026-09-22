@@ -1,11 +1,12 @@
 //! **alo OS never mounts the Windows partition read-write.**
 //!
 //! [ADR 0062](../../../docs/decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
-//! leaves Fast Startup open — a Windows that was shut down rather than
-//! restarted leaves its volume hibernated on the disk — and says that this
-//! sentence *holds either way*. So it is written here, where the way across to
-//! Windows lives, and it decides nothing about Fast Startup: whether the
-//! installer turns it off is the owner's question and is still open.
+//! left Fast Startup open — a Windows that was shut down rather than
+//! restarted leaves its volume hibernated on the disk — and said that this
+//! sentence *holds either way*. It was decided on 2026-09-22, after this test
+//! was written: ADR 0064 term 9, **the installer asks**, with `HiberbootEnabled`
+//! set to `0` when the person says *Turn off*. This sentence holds whichever
+//! they answer, and the asking itself is the installer plan's task 4.
 //!
 //! # What this proves, exactly
 //!

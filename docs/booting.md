@@ -533,10 +533,13 @@ directly.
   measured.
 - **Fast Startup.** The settled Windows reads `HiberbootEnabled 0x1`, so *Shut
   down* leaves the Windows volume hibernated rather than closed. A restart is a
-  full shutdown, so the switches in step 4 are safe. Whether the installer turns
-  Fast Startup off, and tells the person why, is open and is the owner's (ADR
-  0062, *what this does not decide*). **alo OS never mounts the Windows
-  partition read-write**, which holds either way, and
+  full shutdown, so the switches in step 4 are safe. **The installer asks**
+  (ADR 0064 term 9, decided 2026-09-22): *Windows' Fast Startup is on. It can
+  make Windows and alo OS disagree about the disk. Turn it off? (Recommended
+  when sharing a disk.)*, with **Turn off** and **Leave on**. *Turn off* sets
+  `HiberbootEnabled` to `0`; it never runs `powercfg /h off`, which would
+  remove hibernation altogether. **alo OS never mounts the Windows partition
+  read-write**, which holds whichever the person answers, and
   `crates/alo-starting/tests/windows_is_never_mounted.rs` is that test.
 
 ## What a virtual machine cannot show
