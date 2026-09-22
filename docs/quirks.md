@@ -6191,9 +6191,14 @@ rewrote the device between the kill and the next start was not isolated. It
 fails safe — the computer starts Windows — but the install would not continue.
 A person who shuts the computer down instead of letting the installer restart
 it is the case it describes. The installer no longer makes its entry this way
-(the quirk above); whether the entry it now writes holds after the same kill
-and shutdown is what task 10's step 7 measures.
-**Date:** 2026-09-21.
+(the quirk above). **The entry it now writes held, 2026-09-22:** in the Rust
+walk's run, after the kill at step 7 and the same `shutdown /s`, the firmware
+printed `starting Boot#### "alo OS"` from partition 4 at sector 130 611 200
+(`0x7C8F800`) — the area, which the road run on the same installed Windows
+printed at byte offset 66 872 934 400 — and not from Windows' partition. One
+run; what rewrote the `bcdedit`-made entry is still not isolated, and no longer
+matters to the installer.
+**Date:** 2026-09-21; the new entry measured 2026-09-22.
 
 ### A stand-in started through Image File Execution Options gets the held program's whole command line, and `cmd` cannot hold it
 **Version:** Windows 11 Enterprise Evaluation 25H2, the `Debugger` value under

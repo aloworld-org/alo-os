@@ -554,34 +554,39 @@ partition, before Linux, and hangs.
 
 ### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
 
-**Status:** in progress — **walked on the development PC on 2026-09-21, most of
-it measured, not ticked** (`updates/the-installer-walked-on-a-real-windows.md`).
+**Status:** in progress — **walked on the development PC on 2026-09-21 and
+2026-09-22, the Rust test run by name, not ticked**
+(`updates/the-installer-walked-on-a-real-windows.md`).
 **Depends on:** 3.
 
-**Measured:** a Windows 11 Enterprise Evaluation installed itself unattended
-into a QEMU/KVM machine (QEMU, because this account cannot manage Hyper-V;
-Secure Boot off because the shipped installer refuses it on) and reached a
-desktop session in 32 minutes. The installer, cross-built for Windows with a
-genuine environment, ran elevated there and was killed after steps 1, 2, 3, 5,
-6 and 7 — each landing read back from Windows' own tools — and Windows
-restarted to its desktop session after every one. Held to two controls (the
-installer never run; the installer run and refused at the consent), steps 2, 3
-and 6 changed no file of the Windows partition or its start partition; steps
-1, 5 and 7 left one or two user-profile cache files each that the controls do
-not explain. The cmdlets and `bcdedit` did exactly what `crate::program` asks.
-On the installer's own restart the firmware started the area's loader, and on
-Fedora's firmware the environment found `ata-QEMU_HARDDISK_ALOTARGET1` — the
-SATA name `naming.rs` makes, seen from both sides.
+**Measured, under the Rust test run by name:**
+- **The install.** A Windows 11 Enterprise Evaluation installed itself
+  unattended into a QEMU/KVM machine and reached a desktop session (the test
+  passed). It is QEMU because this account cannot manage Hyper-V. Secure Boot is
+  off because the shipped installer refuses it on.
+- **The kills.** The installer, cross-built for Windows with a genuine
+  environment, ran elevated there. It was killed after each of the seven steps,
+  and all seven landed exactly: 1–3 by freezing, and 4–7 by holding the next
+  program it starts. Windows restarted to its desktop session after every kill.
+- **The start partition** never changed beyond the controls.
+- **The entry.** The installer now writes its start-up entry itself, with no
+  optional data, and reads it back from the firmware variable. On its own
+  restart the firmware started it from the area, and shim went straight to
+  GRUB.
+- **The road.** It passed: the environment found
+  `ata-QEMU_HARDDISK_ALOTARGET1`, the name the installer wrote.
 
-**Still owed before this is done:** the Rust test run end to end by name with
-its run pasted (the measurements came from a shell harness running the same
-guest scripts); step 4's boundary, which the walk could not land (three tries
-landed after or inside step 5 or 6); the four unexplained cache files; the
-entry found pointing at Windows' partition after the kill at step 7 and a
-shutdown (`docs/quirks.md`, not explained); NVMe and Hyper-V SCSI names; and
-the release's MSVC build. **Found for task 12:** on the road, `bootc` stopped
-with *Creating rootfs: No such file or directory* after the environment had
-found and partitioned the disk.
+**Still owed before this is done:**
+- **The kill test fails on 14 findings.** Each is a Windows partition file
+  that Windows itself writes over time, in per-user shell and web caches,
+  Defender's scan history, Terminal's state and one WMI file. The census
+  explains them; no control does yet. The next measure is an offline guest or
+  a control taken next to each step. Neither is a hand-made ignore rule.
+- **NVMe and Hyper-V SCSI names.**
+- **The release's MSVC build.**
+
+**Found for task 16:** on the road, `bootc` stops with *Creating rootfs: No
+such file or directory* after the environment has found the disk.
 
 > *Before 2026-09-21:* **one of the two conditions this task waited on was
 > measured away on the development PC (Intel Core Ultra 7 155U), 2026-09-20.
