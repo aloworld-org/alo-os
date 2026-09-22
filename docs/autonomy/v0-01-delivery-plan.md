@@ -276,9 +276,12 @@ the compositor's, and *On the machine* does not move.
 
 ### 10. The image carries the shell, the session and the daemon
 
-**Status:** blocked — on task 13 alone now. ADR 0024 was accepted on
-2026-09-11, so what this waits on is the surface itself rather than the
-decision about it. **Depends on:** 5, 9, 13.
+**Status:** blocked — on **task 38** now, not 13. Task 13 was marked done for
+the surface on 2026-09-22: shell task 1 drew the sign-in screen on 2026-09-14
+and nothing starts it on a machine, which is 38's. **A shell to boot *to* is a
+compositor that boots, not a surface that has been drawn**, so this waits on the
+boot path rather than on the screen. ADR 0024 was accepted on 2026-09-11, so it
+has never waited on the decision. **Depends on:** 5, 9, 38.
 
 Phase 7. `image/` builds and boots in QEMU with the daemon running; it does not
 yet carry a shell to boot *to*, a session to sign in to, or the vocabulary and
@@ -367,7 +370,27 @@ knows not to start.
 
 ### 13. A sign-in surface, and what starts it
 
-**Status:** ready, and **being built since 2026-09-14 as task 1 of**
+**Status:** **Done, 2026-09-22** — **for the surface**, which is the half its
+own text hands to another task. **The boot path and the privilege check are
+task 38**, and until that lands nothing starts this screen on a machine.
+
+This line is the one this task asked for: *when the shell plan's task 1
+publishes, this is marked done by that report*. That was
+**2026-09-14** — `crates/alo-shell/src/sign_in_*.rs` and `nested_sign_in.rs`,
+written up in
+[the sign-in screen drawn on the nested compositor](updates/the-sign-in-screen-drawn-on-the-nested-compositor.md)
+— and the marking never happened, so this sat *ready* for eight days describing
+work that was done. Found 2026-09-22 by the lane sent to build it.
+
+**What shell task 1 did and did not do.** It draws the name and the password on
+the compositor this crate already is, takes keystrokes through the seat it
+already has, and calls `alo_greeting::Greeting` — never `alo-accounts` or
+`alo-sessiond` directly, because the order is the composition's. It is measured
+**under a nested compositor**. What it does not do is start at boot, open the
+session, or hold a privilege; those three are this task's other half and are
+task 38's.
+
+Was *ready, and being built since 2026-09-14 as task 1 of*
 `docs/autonomy/v0-5-the-shell-plan.md` — whoever runs *this* plan must not
 take it up as well. It sat ready for three days with nobody assigned: it was
 the away desktop lane's, and the rule reserving `crates/alo-shell` was not
@@ -1984,3 +2007,69 @@ a branch already here.
   branch is a local branch here like any parked one, and nothing deletes it;
   the recovery after the fetch is the existing one, unchanged; and
   `git checkout -- .` and `git restore -- .` remain the thing the test refuses.
+
+### 38. The compositor a machine boots to, and the one privilege it holds
+
+**Status:** ready. **Depends on:** 13.
+
+Written 2026-09-22 by task 13, which was marked done for the surface and had a
+second half nothing owned. Shell task 1 drew the sign-in screen under a nested
+compositor on 2026-09-14; **nothing starts it on a machine.** `crates/alo-shell`
+has no binary — no `src/main.rs`, no `src/bin/`, no `[[bin]]` — and the image
+ships six units, none of which is a compositor. So a machine that boots today
+reaches a console, and every surface this repository has drawn is invisible on
+it.
+
+**The privilege is the part to get right.** ADR 0024 chose Option B: alo OS has
+its own sign-in surface and `alo-accounts` is the authenticator rather than a
+PAM module, measured against `logind` — a privileged caller that is not
+`pam_systemd` is *authorised* and only its contents refused. So something has to
+hold whatever opens a session, and the whole value of that decision is that it
+holds **nothing else**.
+
+- **Acceptance:** a binary in `crates/alo-shell` starts the compositor on the
+  real display backend and draws the sign-in surface shell task 1 built, without
+  a session and before anybody has signed in; a correct password opens the
+  session the machine description names and `alo-agentd` comes up inside it, and
+  the surface hands over and stops drawing so two things never own the screen at
+  once; a machine with no store shows *make an account* rather than a sign-in,
+  in `alo-setting-up`'s own sentence; a wrong password is refused in
+  `alo-greeting`'s words with no way to tell an unknown name from a wrong one;
+  and **whatever holds the privilege holds nothing else**, said in a
+  `crates/alo-image` check beside the loader's so a unit that grew a second
+  capability fails the build rather than the review.
+- **Constraint:** nothing here re-implements the composition —
+  `alo_greeting::Greeting` decides the order, and a surface that authenticates
+  and then knocks itself is the bug that crate exists to prevent. **Proof is
+  owed on a machine with a real display**: a VM with a display device on the
+  development PC, or the laptop. A nested compositor shows the surface and
+  cannot show that a machine *boots to* it, so that half is named beside the
+  tick rather than assumed.
+
+### 39. After sign-in, the session stands the desktop up
+
+**Status:** ready. **Depends on:** 38.
+
+Written 2026-09-22 alongside task 38. Task 38 ends where a session opens; this
+is what is on the screen afterwards, and today the answer is **nothing**.
+Nothing outside `crates/alo-shell` constructs an `alo_shell::DesktopFrame` at
+all, so the dock, the status area, the windows and the egress indicator — every
+one of them drawn, rastered and tested — are reachable only from this crate's
+own tests and its display probe.
+
+**Why it is separate from 38.** Signing in and drawing a desktop fail
+differently and are proved differently: one is *a machine reaches a password
+prompt*, the other is *a person sees their dock*. A task that claimed both would
+be a task whose half-done state nobody could read.
+
+- **Acceptance:** the session task 38 opens stands a desktop up on the real
+  display backend — a `DesktopFrame` with the dock, the status area and the
+  windows that are open — started by the session rather than by a test or the
+  display probe; what the status area shows is that machine's own readings
+  (task 15 of `v0-5-the-shell-plan.md`) rather than the fixed ones the probe
+  hands over; and the egress indicator is on it, because a desktop where nothing
+  can be seen leaving is the one surface this product may not ship without.
+- **Constraint:** the shell still measures nothing and decides no layout. **What
+  cannot be ticked from a nested compositor** is that a person signing in on a
+  machine arrives at a desktop; that is owed to a VM with a real display device
+  or to the laptop, and is named beside the tick.

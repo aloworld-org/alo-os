@@ -99,6 +99,7 @@ members = [
   "crates/alo-software",
   "crates/alo-sessiond",
   "crates/alo-sound",
+  "crates/alo-starting",
   "crates/alo-strings",
   "crates/alo-telling",
   "crates/alo-turn",

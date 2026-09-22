@@ -554,9 +554,12 @@ partition, before Linux, and hangs.
 
 ### 10. The installer, walked on a real Windows in a virtual machine and killed at every step
 
-**Status:** in progress — **walked on the development PC on 2026-09-21 and
-2026-09-22, the Rust test run by name, not ticked**
-(`updates/the-installer-walked-on-a-real-windows.md`).
+**Status:** **Done, 2026-09-22.** **For the part it ends at since its split** —
+everything below under *Measured*. The Windows partition byte for byte after
+each kill is **task 19** and is **not** done, and so are the NVMe and Hyper-V
+SCSI names and the MSVC build, carried there; this line carries the mark the
+supervisor reads, and the qualifier beside it so no person reads the mark as
+the whole task (`updates/the-installer-walked-on-a-real-windows.md`).
 **Depends on:** 3.
 
 **Measured, under the Rust test run by name:**
@@ -568,7 +571,8 @@ partition, before Linux, and hangs.
   environment, ran elevated there. It was killed after each of the seven steps,
   and all seven landed exactly: 1–3 by freezing, and 4–7 by holding the next
   program it starts. Windows restarted to its desktop session after every kill.
-- **The start partition** never changed beyond the controls.
+- **The start partition** never changed beyond the controls, and nothing on
+  either partition was unreadable.
 - **The entry.** The installer now writes its start-up entry itself, with no
   optional data, and reads it back from the firmware variable. On its own
   restart the firmware started it from the area, and shim went straight to
@@ -576,16 +580,14 @@ partition, before Linux, and hangs.
 - **The road.** It passed: the environment found
   `ata-QEMU_HARDDISK_ALOTARGET1`, the name the installer wrote.
 
-**Still owed before this is done:**
-- **The kill test fails on 14 findings.** Each is a Windows partition file
-  that Windows itself writes over time, in per-user shell and web caches,
-  Defender's scan history, Terminal's state and one WMI file. The census
-  explains them; no control does yet. The next measure is an offline guest or
-  a control taken next to each step. Neither is a hand-made ignore rule.
-- **NVMe and Hyper-V SCSI names.**
-- **The release's MSVC build.**
+**Split off, not done — task 19:** the Windows partition byte for byte. The
+run found 14 changes beyond the controls, under the user's profile and also
+under `ProgramData` and `Windows\` (Defender's scan history, a WMI file), which
+no control explains yet. The kill test no longer asserts that claim; it prints
+what it finds for task 19. Also carried there: the NVMe and Hyper-V SCSI
+names, and the release's MSVC build.
 
-**Found for task 16:** on the road, `bootc` stops with *Creating rootfs: No
+**Found for task 18:** on the road, `bootc` stops with *Creating rootfs: No
 such file or directory* after the environment has found the disk.
 
 > *Before 2026-09-21:* **one of the two conditions this task waited on was
@@ -1042,7 +1044,171 @@ never pushes, signs or pins.
   free before every run, and removes the run's disks and images when it ends, pass
   or fail.
 
-### 16. `bootc` stops at *Creating rootfs* when the installer's own restart reaches the environment
+### 16. Restarting into Windows, and the menu a machine starts at
+
+**Status:** **Done, 2026-09-22.** On the third PC
+(`updates/restarting-into-windows-and-the-menu-a-machine-starts-at.md`).
+**Nothing in it is ticked on a machine**, which is what this task's own
+constraint asks: it is built so it can be walked, and the walk is the
+development PC's.
+
+**What landed.** A new crate `crates/alo-starting` — the generated menu, the
+loader's environment block read and written, which system starts when nobody
+chooses, what the firmware reports and the one thing it is ever told, and every
+sentence a person reads with a translator's note on each. `alo_broker::SystemVerb`
+gained a twelfth member, `starting.windows-next`, carried out by
+`alo_brokerd::NextStart` against `alo_starting::Firmware`; `docs/contracts/agent-verbs.md`
+carries it additively and `docs/booting.md` carries the alongside journey with
+term 2's honest line and the boot-menu key named. `alo-letting-go`'s count of the
+broker's list moved from eleven to twelve, in this change, with the reason beside
+it.
+
+**Three decisions a reader should know were made rather than found.**
+**(a) The identity of a start-up entry does not include the number the firmware
+keeps it under** — an entry names what it starts, not the slot it is in — so a
+firmware that renumbers does not turn an approval into a refusal, and the same
+entry written twice is one identity and two matches, which is refused rather
+than guessed at. **(b) Windows is recognised by the program its entry starts and
+never by the entry's name**, because a firmware's names are whatever was typed
+when the entries were made and on a reinstalled machine they are regularly
+wrong. **(c) The menu's Windows entry is found by searching for Windows's own
+loader** rather than by a partition identifier written into the configuration:
+an identifier learned once at install and never checked again would be a second
+copy of a fact about somebody's disk, of exactly the kind term 3 refuses.
+
+**What the alo OS side owes, and who owes it.** No agent verb was declared:
+declaring one requires a promise in `docs/features.md` with a tier for
+`alo-by-hand` to answer against (ADR 0009), and adding a promise there is the
+owner's rather than a worker's. The broker verb is the road, which is the shape
+`updates.apply` and `storage.mount` already have. And whether `GRUB_SAVEDEFAULT`
+behaves as this configuration expects across a `bootupd` update is **not
+measured** — ADR 0062's consequences already put that answer in
+`docs/quirks.md` when task 4 walks it.
+
+Formerly: ready — **taken by the third PC on 2026-09-22 at the owner's
+instruction**, to get the certified laptop installed by the evening of
+2026-09-23. It is **the part of task 4 that needs no virtual machine**, split
+out so that what is this machine's and what stays with the development PC is
+plain rather than inferred. **Depends on:**
+[ADR 0062](../decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md),
+accepted 2026-09-21.
+
+**What is here.** The alo OS side of *alongside Windows*: the way out of alo OS,
+the menu a machine starts at, and the journey written down.
+
+- **a. *Restart into Windows*, from inside alo OS.** A setting, and a verb an
+  agent may ask for under a grant, with the person's confirmation as any verb
+  has. It sets the firmware's **`BootNext`** to Windows Boot Manager for **one
+  restart** and leaves the default untouched, so the choice is for that restart
+  and nothing about the machine's ordinary behaviour changes.
+  `alo_broker::SystemVerb` is a closed enum and adding a member is a deliberate
+  act (ADR 0001 §1–2): it gets its name, its words in the vocabulary with a
+  translator's note, and **the same tests every other verb has** — approved in a
+  turn, one approval causing exactly one execution, recorded permitted or
+  refused, and its refusal path tested as carefully as its happy one.
+- **b. The start-up menu, as ADR 0062 decided it.** The base's own GRUB,
+  **configured and never patched** (ADR 0011), offering alo OS and Windows, the
+  latter by chainloading `\EFI\Microsoft\Boot\bootmgfw.efi`; a short countdown;
+  and **term 3** — the last choice kept as GRUB's own saved default, in its
+  environment block, as **the only copy**. The default is changeable from alo
+  OS's settings, which read and write *that* and keep **no second copy**: two
+  copies drift, and a menu that preselects one thing while a setting says
+  another is the bug the term exists to prevent.
+- **c. `docs/booting.md`'s alongside journey.** The steps a person takes, in
+  order, with what they see at each — including **term 2's honest line**: a
+  loader that *starts* and is then broken is not passed over by the firmware,
+  because to the firmware it started, so the machine's boot-menu key is named as
+  the way to Windows in that case, and nothing claims the fall-through reaches
+  it.
+- **And the test that holds either way on Fast Startup:** alo OS **never mounts
+  the Windows partition read-write**. Fast Startup is the owner's open decision
+  (ADR 0062), and this test is task 4's whatever is decided, so it is written
+  here and nothing in this task decides that question.
+
+**What is not here, and stays with the development PC.** `crates/alo-installer`
+and `crates/alo-installing` are **not edited by this task** — that machine is
+working in both, on the Windows-side program and on a *Creating rootfs* failure,
+and two lanes in one crate is the collision the lane table exists to prevent. If
+this part needs a change there, it is **written down and passed across**, never
+made here. Also that machine's, because each needs a virtual machine: **term
+1's** firmware-order fall-through test, the install beside a real Windows, the
+*Restart into alo OS* side from within Windows, the Windows-unchanged hash test,
+*remove alo OS*, and the full Windows → alo OS → Windows → alo OS walk through
+the in-system switches alone. **This part is built so it can be walked there.**
+
+- **Acceptance:** the verb exists with its name, words and the full set of tests
+  every `SystemVerb` has, and sets `BootNext` for one restart with the default
+  provably untouched; GRUB's configuration is generated rather than patched,
+  offers both systems, chainloads Windows by the path above, counts down, and
+  saves the last choice in its own environment block; alo OS's setting reads and
+  writes that one place, held by a test that **finds no second copy** anywhere;
+  `docs/booting.md` carries the journey with term 2's line in it; and alo OS
+  never mounts the Windows partition read-write, held by its own test.
+- **Constraint:** nothing here is ticked *on the machine* — none of this has run
+  on the certified laptop, and the walk that proves it belongs to the virtual
+  machine on the development PC. GRUB is configured and never patched. No change
+  to `crates/alo-installer` or `crates/alo-installing`. **Fast Startup is not
+  decided here.**
+
+### 17. The default a machine starts at, changed by the person who owns it
+
+**Status:** ready. **Depends on:** 16.
+
+**What is here.** The half of ADR 0062's third term that task 16 could not
+finish: **the road a person's choice travels to reach the loader's own file.**
+Task 16 built the reader and the writer over GRUB's environment block
+(`alo_starting::TheStartingChoice`), and a test that nothing anywhere in the
+crates or the image keeps a second copy of the answer. What it did not build is
+how a person in Settings, who is not root, changes a file under `/boot` that is.
+
+- **a. The decision, if one is needed — and it probably is.** The obvious road
+  is a thirteenth member of `alo_broker::SystemVerb`, and **adding a member of
+  that enum is a deliberate act** (ADR 0001 §1–2): `alo-letting-go`'s count of
+  the list is the tripwire, and moving it takes a decision named beside it. The
+  alternatives are real and should be weighed rather than skipped: a verb whose
+  argument is a `Switch` naming which of the two systems; the person's own act
+  going through the broker under `alo_broker::BY_HAND` with no agent verb at
+  all; or the loader's saved default being writable only by the loader, with
+  Settings offering nothing but *choose at the menu*. **If the answer is a new
+  member, write the ADR first**, with the options, a recommendation and the
+  consequences, and hand that over as this task — that is a finished piece of
+  work, and it is what the next worker needs.
+- **b. The road itself, whatever a. decides**, with the full set of tests every
+  change to the machine has: approved once, one approval causing exactly one
+  execution, recorded permitted and refused, and each refusal path tested as
+  carefully as the happy one. The refusals are already known and each is a
+  sentence task 16 wrote or owes: a file that is not an environment block, one
+  that will not hold another setting, one that could not be written, and a
+  machine with no Windows on it to start.
+- **c. The surface in Settings.** *This computer starts alo OS / Windows when
+  nobody chooses*, from `alo_starting::starts_at_said`, with the change beside
+  it. It reads what is in the loader's file at the moment it is shown — never a
+  value kept anywhere else, which is the whole of term 3 — and it says what a
+  person reads when the change was refused.
+
+**What is not here.** `crates/alo-installer` and `crates/alo-installing` are not
+edited: **who writes `custom.cfg` and the environment block onto a machine at
+install time, and what happens to them across a `bootupd` update**, is task 4's
+and belongs with the machine that has the virtual machine to walk it. Nor is the
+*Restart into Windows* verb, which task 16 built and which is a different act: it
+sets the next start, and this one sets the default. Nothing here is ticked on a
+machine.
+
+- **Acceptance:** a person's change to which system the machine starts at
+  reaches `/boot/grub2/grubenv` and nothing else, under one approval, recorded
+  either way; the test that finds no second copy of the answer still passes and
+  now covers the new road; every refusal on the road is a sentence in the
+  vocabulary with a translator's note; and if a member was added to
+  `alo_broker::SystemVerb`, the ADR that decided it is in `docs/decisions/` and
+  `alo-letting-go`'s count moved in the same change with the reason beside it.
+- **Constraint:** GRUB is configured and never patched (ADR 0011). **No second
+  copy of the last choice** — not a file of ours, not a cache, not a value
+  carried in a session (ADR 0062 term 3). No change to `crates/alo-installer` or
+  `crates/alo-installing`. No verb that writes the machine's start-up **order**,
+  adds a start-up entry or removes one. Nothing is ticked on the certified
+  laptop.
+
+### 18. `bootc` stops at *Creating rootfs* when the installer's own restart reaches the environment
 
 **Status:** ready. **Depends on:** nothing — it is reproducible today.
 **Found by** task 10's walk, 2026-09-21, and not fixed there on purpose: the
@@ -1102,3 +1268,111 @@ given as SATA with a serial rather than virtio.
 - **Constraint:** as task 12's. Secure Boot is never switched off to make a run
   pass; no shim, loader or `bootc` is patched (ADR 0011); a worker checks for
   15 GB free before every run and removes its disks when it ends.
+
+### 19. Killed at every step, Windows' own partition byte for byte — or the reason it is not
+
+**Status:** ready. **Depends on:** 10.
+**Split from** task 10 on 2026-09-22. Task 10 is done for what it proved: all
+seven kills landing exactly, Windows restarting to its desktop after each, the
+start partition unchanged beyond the controls, nothing unreadable, and the
+install and road tests passing. The claim this task owns is the one task 10's
+run could not make: **the Windows partition is unchanged, byte for byte,
+beyond what the controls change.** `killed_at_every_step_the_computer_still_starts_windows`
+no longer asserts it; it prints what it finds for this task.
+
+**What the run of 2026-09-22 found** (the fourth start of the Rust walk, head
+`cdee38b6`, 17 261 s, no host sleep; the controls changed 5 331 paths after one
+start and 5 424 after two and disagreed in 721 directories; nothing unread).
+After every kill and every restart that followed — 14 findings — the Windows
+partition changed beyond the controls:
+
+| after | kill | restart |
+|---|---|---|
+| step 1 | 7 paths | 50 |
+| step 2 | 21 | 46 |
+| step 3 | 19 | 41 |
+| step 4 | 51 | 60 |
+| step 5 | 60 | 60 |
+| step 6 | 60 | 60 |
+| step 7 | 20 | 41 |
+
+(60 is where that run's test stopped listing, so those findings may hold more.)
+Every distinct path, with the number of the 14 findings that name it
+(random 8-character directories written `<8>`; files under one cache folded):
+
+| path | findings |
+|---|---|
+| `ProgramData/Microsoft/Windows Defender/Scans/History/ReportLatency/Latency/…` | 8 |
+| `ProgramData/Microsoft/Windows Defender/Scans/History/Results/Resource/{…}` | 8 |
+| `ProgramData/Microsoft/Windows/SystemData/<SID>/ReadOnly/LockScreen_O/…` | 1 |
+| `ProgramData/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/<SID>/SystemAppData/Helium/Cache/…` | 7 |
+| `Windows/System32/wbem/Performance/WmiApRpl_new.ini` | 2 |
+| `Users/alo/AppData/Local/Microsoft/OneDrive/StandaloneUpdater/*.json` | 2 |
+| `Users/alo/AppData/Local/Microsoft/Windows/ActionCenterCache/microsoft-skydrive-desktop_3_0.png` | 4 |
+| `Users/alo/AppData/Local/Microsoft/Windows/INetCache/IE/<8>/08b7573ae3ef7b6b30f35fd702bdfa9bf754ff1f[1].xml` | 14 |
+| `Users/alo/…/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/TargetedContentCache/v3/8800016{1,3,5}/…` | 4 |
+| `Users/alo/…/Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy/Settings/{roaming.lock,settings.dat}` | 10 |
+| `Users/alo/…/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/{settings,state}.json` | 7 |
+| `Users/alo/…/Microsoft.WindowsTerminal_8wekyb3d8bbwe/SystemAppData/Helium/{User,UserClasses}.dat*` | 7 |
+| `Users/alo/…/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/AC/INetCache/<8>/th[1].svg` | 14 |
+| `Users/alo/…/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/AC/Temp/edge_BITS_*/…` | 3 |
+| `Users/alo/…/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/LocalState/EBWebView/Default/Service Worker/CacheStorage/…` | 14 |
+| `Users/alo/…/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/LocalState/EBWebView/Speech Recognition/1.15.0.1/…` | 3 |
+| `Users/alo/…/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/LocalState/EBWebView/ZxcvbnData/3.2.0.0/…` | 6 |
+
+**Not only the user's profile.** Defender's scan history and a lock screen
+image are under `ProgramData`, and `WmiApRpl_new.ini` is under `Windows\`.
+They are not waved away as caches: a file under `Windows\` that changes after a
+kill and not after a control is exactly what this claim is about, until a
+control shows otherwise.
+
+**The census** (the shell harness's 21 readings of 2026-09-21/22 — base, two
+plain boots, two refusals, four kills at the consent, twelve step readings):
+every kind above is also in the base or the controls. `settings.dat`,
+`state.json`, `ZxcvbnData`, `TargetedContentCache` and
+`OneDrive/…/ECSConfig.json` are in all 21; the IE-cache `.xml` is in all six
+refusal and kill-at-consent readings, each time under a *different* random
+directory; Defender's latency history is in every reading in which the
+installer ran and in neither plain control; `WmiApRpl_new.ini` is in both
+refusal readings and after steps 5 and 7, and not in the kill-at-consent
+controls. So these are files Windows itself writes over time. What no control
+yet shows is that *these* changes are Windows' schedule and not the kills.
+
+**Two hypotheses, neither proved.**
+1. **Random directory names.** The IE cache and the `AC/INetCache` directory
+   are named with random 8 characters, like the TPM key hash that made the
+   `<id>` rule necessary; the rule does not cover them, so the same file under
+   a new directory reads as a new path.
+2. **The guest is online, and the controls ran hours before the later steps.**
+   The walk's guest has QEMU's user-mode network. Edge WebView's components,
+   the content delivery cache, OneDrive's updater and BITS downloads
+   (`edge_BITS_*`) arrive from Microsoft's servers when Windows chooses, and in
+   the fourth start the controls ran around 08:10–09:00 and step 7 around
+   12:20.
+
+**The run that decides it.** Change one thing at a time, each a run of about
+five hours on the development PC:
+- **The guest offline** — the machine started with no network device
+  (`walking::machine`), since the installer and the walk need none; if the
+  findings under the user's profile vanish, hypothesis 2 held for them.
+- **A control beside each step** — a plain boot and a kill-at-the-consent boot
+  of a fresh overlay immediately before each step's kill, the step held to its
+  own neighbours' controls; if the remaining findings vanish, they were
+  Windows' schedule.
+- Only then, if a random directory is still all that differs, **a measured
+  rule**: the random-name shape added to `reading::directory_of`'s
+  identifiers, with the run that shows it — never a path listed by hand.
+
+**Also carried from task 10**, unmeasured there: the NVMe and Hyper-V SCSI
+names `naming.rs` makes, seen from the Linux side (an NVMe device that reports
+an identifier, and a Hyper-V machine); and the installer's own MSVC release
+build walked the same way (the walk cross-builds `x86_64-pc-windows-gnu`).
+
+- **Acceptance:** `killed_at_every_step_the_computer_still_starts_windows`
+  asserts the Windows partition beyond the controls again, and passes, run by
+  name end to end with its run pasted; or, if a change survives both runs, it
+  is named with its evidence in `docs/quirks.md` and `staging.rs` is fixed or
+  the claim is narrowed in the product's own words, in the same change.
+- **Constraint:** the ignore rule is never widened by hand; nothing the
+  release installer obeys exists only for the test; nothing runs against the
+  host's own disks; a worker keeps 15 GB free on the host.

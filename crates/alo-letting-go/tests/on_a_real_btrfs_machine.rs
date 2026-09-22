@@ -47,8 +47,8 @@ use std::time::{Duration, SystemTime};
 
 use alo_letting_go::the_folder::{AFTER, BEFORE, THE_TURN, THEIRS, TheTurn, Theirs};
 use alo_letting_go::{
-    AskingTheDisk, Changes, OnThisMachine, Swept, WhatItIs, WithTheBase, WritingItDown, keeping,
-    sweep,
+    AskingTheDisk, Changes, OnThisMachine, Swept, WhatItIs, WhoOwns, WithTheBase, WritingItDown,
+    keeping, sweep,
 };
 use alo_record::{Entry, Happened, WhyLetGo};
 
@@ -401,6 +401,267 @@ fn on_a_real_btrfs_machine_under_the_floor_the_oldest_go_first() {
                 ["archive March", "move April.pdf", "rename May.pdf"],
                 "the oldest did not go first"
             );
+        }
+        other => panic!("the record kept {other:?}"),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The one act a person asks for (ADR 0045 point 5), on the same filesystem.
+//
+// Everything above is the machine's own housekeeping — a window and a disk,
+// firing off a timer. What follows is the other half: a person approving one
+// sentence, and everything their machine was keeping for them going, whatever
+// the window says. It is measured here for the same reason the expiry is, which
+// is that a stand-in cannot show a read-only snapshot really being removed.
+// ---------------------------------------------------------------------------
+
+/// One more person on that machine: a home subvolume of their own, their own
+/// window on the disk, and their directory under the undo folder.
+///
+/// Answers with their home, their directory under the folder, and their
+/// settings folder — which is what decides whose an asking is, so a test that
+/// wants two people needs it back.
+fn another_person_on_it(mounted: &Path, named: &str) -> (PathBuf, PathBuf, PathBuf) {
+    let home = mounted.join("home").join(named);
+    must("btrfs", &["subvolume", "create", home.to_str().unwrap()]);
+    std::fs::write(home.join("March.pdf"), b"an invoice").unwrap();
+
+    let settings = mounted.join("settings").join(named);
+    std::fs::create_dir_all(&settings).unwrap();
+    keeping::keep(&settings.join(keeping::THE_FILE), &Changes::untouched()).unwrap();
+
+    let theirs_at = mounted.join("undo").join(named);
+    std::fs::create_dir_all(&theirs_at).unwrap();
+    let says = theirs_at.join(THEIRS);
+    let theirs = Theirs::at(&settings, &says).unwrap();
+    std::fs::write(&says, serde_json::to_string(&theirs).unwrap()).unwrap();
+    (home, theirs_at, settings)
+}
+
+/// The folder a person's session leaves an asking in, made on this filesystem.
+fn a_folder_to_ask_in(mounted: &Path) -> PathBuf {
+    let at = mounted.join("asked-to-forget");
+    std::fs::create_dir_all(&at).unwrap();
+    at
+}
+
+/// **A real `btrfs` machine: one act a person asked for removes everything
+/// their machine was keeping for them, and `btrfs subvolume list` says so
+/// afterwards** — ADR 0045 point 5, measured.
+///
+/// Every kept turn here is **inside** the shipped window and the disk has room
+/// to spare, so neither the window nor the disk would take any of them. What
+/// goes, goes because the person asked — and all of it goes, in one act.
+#[test]
+#[ignore = "needs root, a loop device, btrfs-progs and capsh"]
+fn on_a_real_btrfs_machine_one_act_forgets_everything_that_was_kept() {
+    as_root();
+
+    let filesystem = AFilesystem::made(ROOM_TO_SPARE);
+    let mounted = filesystem.at.clone();
+    assert_eq!(
+        OnThisMachine.what_it_is(&mounted).unwrap(),
+        WhatItIs::OneThatKeeps
+    );
+    assert!(
+        OnThisMachine.free(&mounted).unwrap() > alo_letting_go::THE_FLOOR,
+        "this filesystem is under the floor, so the disk would decide as well"
+    );
+
+    let (home, ada) = a_machine_with_a_person_on_it(&mounted);
+    let under = mounted.join("undo");
+    let asking = a_folder_to_ask_in(&mounted);
+
+    let now = SystemTime::now();
+    let newest = one_kept_turn(&ada, &home, "c", now - A_DAY, "rename May.pdf");
+    let middle = one_kept_turn(&ada, &home, "b", now - A_DAY * 2, "move April.pdf");
+    let oldest = one_kept_turn(&ada, &home, "a", now - A_DAY * 3, "archive March");
+
+    let before = filesystem.subvolumes();
+    println!("--- btrfs subvolume list, before ---\n{before}");
+    assert_eq!(
+        before.lines().count(),
+        7,
+        "the home and six snapshots were not all made: {before}"
+    );
+
+    // **Without CAP_SYS_ADMIN nothing goes**, which is the whole reason this is
+    // a privileged unit and not a line in the person's own session.
+    let (worked, said) = run(
+        "capsh",
+        &[
+            "--drop=cap_sys_admin",
+            "--",
+            "-c",
+            &format!(
+                "btrfs subvolume delete --commit-after {}",
+                oldest.join(BEFORE).display()
+            ),
+        ],
+    );
+    println!("--- without CAP_SYS_ADMIN ---\n{said}");
+    assert!(!worked, "a snapshot was removed without CAP_SYS_ADMIN");
+    assert_eq!(filesystem.subvolumes().lines().count(), 7);
+
+    // The person approves the one sentence, and their own session leaves the
+    // act for the machine. Nothing in what it leaves names a person, a folder
+    // or a turn.
+    let left = alo_letting_go::ask(&asking, now).unwrap();
+    assert!(left.exists());
+
+    let mut record = InHand::default();
+    let forgotten = alo_letting_go::forget(
+        &under,
+        &asking,
+        &OnThisMachine,
+        &OnThisMachine,
+        &WithTheBase,
+        &mut record,
+        now,
+    );
+    let alo_letting_go::Forgotten::Done(did) = forgotten else {
+        panic!("a btrfs machine answered that it keeps nothing")
+    };
+    for line in did.said() {
+        println!("alo-forgetting: {line}");
+    }
+
+    let after = filesystem.subvolumes();
+    println!("--- btrfs subvolume list, after ---\n{after}");
+
+    assert_eq!(did.people(), 1);
+    assert_eq!(did.turns(), 3, "{:?}", did.said());
+    assert_eq!(after.lines().count(), 1, "only the home is left: {after}");
+    for one in [&oldest, &middle, &newest] {
+        assert!(!one.exists(), "{} was kept", one.display());
+    }
+    assert!(
+        home.join("March.pdf").exists(),
+        "the person's own home was touched"
+    );
+
+    // **One approval is one execution.** The asking was taken before anything
+    // was removed, so the same act run again does nothing at all.
+    assert!(!left.exists(), "the approval outlived being acted on");
+    let again = alo_letting_go::forget(
+        &under,
+        &asking,
+        &OnThisMachine,
+        &OnThisMachine,
+        &WithTheBase,
+        &mut record,
+        now,
+    );
+    assert_eq!(
+        again,
+        alo_letting_go::Forgotten::Done(alo_letting_go::WhatWasForgotten::default())
+    );
+
+    // **And the record names the turns that can no longer be put back, in the
+    // person's own words, under a reason of its own.**
+    assert_eq!(record.0.len(), 1);
+    match record.0[0].happened() {
+        Happened::LetGo { why, turns } => {
+            assert_eq!(*why, WhyLetGo::ThePersonAskedToForget);
+            assert!(why.is_the_persons_own());
+            let named: Vec<&str> = turns.iter().map(|turn| turn.did().as_str()).collect();
+            assert_eq!(named, ["archive March", "move April.pdf", "rename May.pdf"]);
+        }
+        other => panic!("the record kept {other:?}"),
+    }
+}
+
+/// **A real `btrfs` machine with two people on it: the one who asked forgets
+/// their undo, and the other keeps every snapshot they had.**
+///
+/// The refusal, measured rather than reasoned about. The asking names nobody —
+/// whose act it is, is the user the filesystem records as having written it —
+/// so what is measured here is that the machine really asks the disk who owns
+/// each person's settings folder, and really walks past the one it does not
+/// match.
+#[test]
+#[ignore = "needs root, a loop device, btrfs-progs and capsh"]
+fn on_a_real_btrfs_machine_nobody_elses_undo_is_forgotten() {
+    as_root();
+
+    let filesystem = AFilesystem::made(ROOM_TO_SPARE);
+    let mounted = filesystem.at.clone();
+    std::fs::create_dir_all(mounted.join("home")).unwrap();
+    std::fs::create_dir_all(mounted.join("settings")).unwrap();
+
+    let (ada_home, ada, ada_settings) = another_person_on_it(&mounted, "ada");
+    let (bo_home, bo, bo_settings) = another_person_on_it(&mounted, "bo");
+
+    // Ada is whoever is running this, and Bo is somebody else — which on a real
+    // filesystem is what owning a folder means.
+    let (chowned, said) = run(
+        "chown",
+        &["-R", "65534:65534", bo_settings.to_str().unwrap()],
+    );
+    assert!(chowned, "bo's settings folder was not made bo's: {said}");
+    assert_eq!(
+        OnThisMachine.of(&bo_settings).unwrap(),
+        65534,
+        "bo's settings folder is not somebody else's"
+    );
+    assert_ne!(
+        OnThisMachine.of(&ada_settings).unwrap(),
+        OnThisMachine.of(&bo_settings).unwrap()
+    );
+
+    let under = mounted.join("undo");
+    let asking = a_folder_to_ask_in(&mounted);
+    let now = SystemTime::now();
+    let hers = one_kept_turn(&ada, &ada_home, "one", now, "move March.pdf");
+    let his = one_kept_turn(&bo, &bo_home, "one", now, "archive Old letters");
+
+    let before = filesystem.subvolumes();
+    println!("--- btrfs subvolume list, before ---\n{before}");
+    assert_eq!(before.lines().count(), 6, "{before}");
+
+    // Ada asks. Nothing she can write says whose act it is.
+    alo_letting_go::ask(&asking, now).unwrap();
+
+    let mut record = InHand::default();
+    let forgotten = alo_letting_go::forget(
+        &under,
+        &asking,
+        &OnThisMachine,
+        &OnThisMachine,
+        &WithTheBase,
+        &mut record,
+        now,
+    );
+    let alo_letting_go::Forgotten::Done(did) = forgotten else {
+        panic!("a btrfs machine answered that it keeps nothing")
+    };
+    for line in did.said() {
+        println!("alo-forgetting: {line}");
+    }
+
+    let after = filesystem.subvolumes();
+    println!("--- btrfs subvolume list, after ---\n{after}");
+
+    assert_eq!(did.people(), 1);
+    assert_eq!(did.turns(), 1, "{:?}", did.said());
+    assert!(!hers.exists(), "the person who asked kept their undo");
+    assert!(
+        his.join(BEFORE).exists() && his.join(AFTER).exists(),
+        "somebody else's undo was forgotten"
+    );
+    assert_eq!(
+        after.lines().count(),
+        4,
+        "the two homes and bo's two snapshots are what is left: {after}"
+    );
+
+    assert_eq!(record.0.len(), 1);
+    match record.0[0].happened() {
+        Happened::LetGo { why, turns } => {
+            assert_eq!(*why, WhyLetGo::ThePersonAskedToForget);
+            let named: Vec<&str> = turns.iter().map(|turn| turn.did().as_str()).collect();
+            assert_eq!(named, ["move March.pdf"]);
         }
         other => panic!("the record kept {other:?}"),
     }

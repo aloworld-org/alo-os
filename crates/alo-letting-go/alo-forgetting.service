@@ -1,0 +1,86 @@
+[Unit]
+# Forgetting everything this machine was keeping so that an undo could put it
+# back, because a person asked it to — and nothing else.
+#
+# ADR 0045 point 5: *what an undo may keep is visible and forgettable, and
+# forgetting it is one act.* The sentence a person approves has existed since
+# that point was built and nothing carried it out; this is the half that does.
+#
+# **It is not a verb, and the road cannot become one.** The owner narrowed this
+# on 2026-09-22: the road is a person's act in Settings, and never a broker
+# verb. The seventh term's reason stands unchanged — an agent that can forget an
+# undo can erase the evidence of what it did — and what starts this is a file a
+# person's own session left, which names nobody and nothing.
+Description=alo OS: forget what this machine was keeping, because a person asked
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0045-what-undoing-rewinds-to.md
+
+# It reads a disk and removes from it. Nothing about it needs a network, and it
+# is deliberately not ordered after one: what a person asked for on a machine
+# with no way out is still what they asked for.
+After=local-fs.target
+
+[Service]
+# It takes what was asked, removes what that person's machine was keeping for
+# them, writes down what it removed, and stops. `oneshot` rather than `exec`
+# because what the path unit's job is about is whether it finished.
+Type=oneshot
+RemainAfterExit=no
+
+# No arguments, ever. Where the folder is, where the askings are and where the
+# record goes are all constants in the program. There is nothing on this line a
+# request could reach, which is law 2 at the one place in alo OS where a person
+# removes their own history in one act — and there is nothing in the folder it
+# reads either: an asking carries a format number and a moment, and no person,
+# folder, path or turn.
+ExecStart=/usr/libexec/alo-forgetting
+
+User=root
+Group=root
+NoNewPrivileges=yes
+
+# **The capabilities, one per line, and they are the expiry unit's three.**
+#
+# The same act on the same snapshots by the same program: measured on the disk
+# the pinned release installs and written down in docs/quirks.md (2026-09-21),
+# `btrfs subvolume delete` under `capsh --drop=cap_sys_admin` answers
+# *Operation not permitted*, and with it exits 0.
+CapabilityBoundingSet=CAP_SYS_ADMIN
+# A person's own settings folder is theirs, not root's, and this asks the disk
+# who owns it — which is the whole of what decides whose act an asking is.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+# What describes a kept turn is written by `alo-turn`, running as the person,
+# and is removed here.
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+
+# **CAP_SYS_BOOT is not on that list, and its absence is a promise.** Nothing
+# this unit causes restarts the machine. Nor is CAP_CHOWN, CAP_FOWNER,
+# CAP_FSETID, CAP_SETFCAP, CAP_MKNOD, CAP_SETUID, CAP_SETGID, CAP_SYS_CHROOT,
+# CAP_MAC_ADMIN, CAP_LINUX_IMMUTABLE, CAP_NET_ADMIN, CAP_SYS_MODULE,
+# CAP_SYS_RAWIO, CAP_SYS_PTRACE, CAP_SYS_TIME, CAP_KILL, CAP_SYSLOG,
+# CAP_AUDIT_CONTROL, CAP_AUDIT_WRITE, CAP_BPF, CAP_PERFMON, CAP_SETPCAP or
+# CAP_SYS_RESOURCE. **CAP_SETUID and CAP_SETGID matter twice here**: this unit
+# asks the disk who owns a folder and never becomes anybody.
+
+# Where it writes down which turns can no longer be put back. Its own, and not
+# the expiry unit's: a record file has one writer, and a timer's firing and a
+# person's act can land in the same second. systemd makes it, root's alone, so
+# nothing of this crate's ever creates a directory.
+StateDirectory=alo-forgetting
+StateDirectoryMode=0700
+
+# Nothing is read from the environment. There is deliberately no Environment=
+# line, and a test refuses one.
+
+# What it says about itself goes to the journal, for whoever administers the
+# machine. What a *person* reads is the record it wrote, in their own language.
+StandardOutput=journal
+StandardError=journal
+
+# Deliberately not restarted. A run that failed took the askings it looked at
+# and removed what it removed, and wrote that down; a person who was not
+# answered asks again, which is one click and is theirs to decide. A unit that
+# retried by itself would be a machine removing somebody's history on a schedule
+# nobody chose.
+
+# And deliberately no install section. Nothing starts this at boot and no target
+# wants it: it is started by alo-forgetting.path, and by nothing else.

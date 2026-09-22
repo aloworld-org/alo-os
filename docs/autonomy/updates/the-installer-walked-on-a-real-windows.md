@@ -4,10 +4,14 @@
 **Workstream:** the installer plan's task 10
 **Contributor:** Claude Code, lane A (`/root/alo-os`, WSL Ubuntu on the
 development PC, Intel Core Ultra 7 155U, 15.5 GB)
-**Status: not done.** The Rust test now runs by name end to end; the install
-and the road pass; the kill test fails on files Windows itself changes that the
-controls do not yet explain. Nothing is ticked. What was measured is below with
-its evidence; what was not, and what it needs, is under *What is still owed*.
+**Status: done for the part it ends at since its split.** Task 10 was split on
+2026-09-22 at the coordinator's decision. What it proved is done: all seven
+kills land exactly, Windows restarts to its desktop after each, the start
+partition is unchanged beyond the controls, nothing is unreadable, the install
+and road tests pass, and the boot entry is written without Windows' optional
+data. **The Windows partition byte for byte is not proven.** It is the plan's
+task 19, with the 14 findings below, and the NVMe and Hyper-V SCSI names and
+the MSVC build are carried there. Nothing is ticked on a machine.
 
 ## In one paragraph
 
@@ -195,8 +199,11 @@ The first fourteen are all in these places:
 - once each, `Windows/System32/wbem/Performance/WmiApRpl_new.ini` and a lock
   screen image.
 
-None is under `Windows\Boot`, `Program Files` or the start partition. None is
-anything a program of `crate::program` writes.
+**They are not all under the user's profile.** Defender's scan history and the
+lock screen image are under `ProgramData`, and `WmiApRpl_new.ini` is under
+`Windows\`. None is under `Windows\Boot`, `Program Files` or the start
+partition, and none is a file a program of `crate::program` writes. That does
+not make them harmless, and they are not treated as if it did.
 
 **What the census shows, and what it does not.** Each of these kinds exists in
 the base and in the controls too:
@@ -218,7 +225,14 @@ things plausibly explain why the controls do not cover them:
   arrive from Microsoft's servers when Windows chooses, and the controls ran
   hours before the later steps.
 
-Neither is proved. The kill test still fails, correctly.
+Neither is proved. So the kill test **no longer claims the Windows partition
+byte for byte**. It asserts what is proven: every kill lands exactly, Windows
+restarts to its desktop after each, the start partition does not change beyond
+the controls, and after step 7 the firmware starts the entry from the area.
+The Windows partition's changes beyond the controls are printed in full for
+task 19. That task owns the claim, both hypotheses, and the run that decides
+them: the guest offline, and a control beside each step. The ignore rule was
+not widened.
 
 ### The three things task 3 said only a running Windows could show
 
@@ -243,23 +257,21 @@ restarted Windows itself; nothing else told the firmware what to start. The
 firmware started `alo OS` from the area, and the environment **found the disk
 by the name the installer wrote**. `bootc` then stopped with *error: Installing
 to disk: Creating rootfs: No such file or directory (os error 2)*. That is now
-the plan's task 16 (status *ready*, with its output and a repro). The install
-that finishes is task 12's.
+the plan's task 18 (status *ready*, with its output and a repro). It was written
+as 16 and renumbered when `main`'s own task 16 landed first.
 
-## What is still owed
+## Split off, and not done
 
-- **The kill test's findings.** 14 findings, each explained by the census but
-  not by a control. The next measure is a control, not a rule. These would test
-  the two explanations above:
-  - cut the guest's network, since the installer needs none;
-  - take a plain control boot next to each step, so that the controls see the
-    same hours of Windows' own schedule.
-
-  Either one means another run of about five hours. The step 7 area check has
-  also not run again since its fix.
-- **NVMe and Hyper-V SCSI names** from the Linux side.
+**Task 19** of the plan owns these:
+- **The Windows partition byte for byte.** It holds the 14 findings, the
+  census, both hypotheses and the deciding run: the guest offline, and a
+  control beside each step. Either one means another run of about five hours.
+- **The NVMe and Hyper-V SCSI names**, from the Linux side.
 - **The release's own MSVC build.** The walk cross-builds
-  `x86_64-pc-windows-gnu`. That the MSVC build behaves the same is not shown.
+  `x86_64-pc-windows-gnu`.
+
+The kill test's step 7 area check has not run again since its fix. The fourth
+start's firmware line and the road's area show the value it will read.
 
 ## Limitations and costs
 

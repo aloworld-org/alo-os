@@ -54,6 +54,8 @@ alo-displays = { path = "../alo-displays" }
 alo-power = { path = "../alo-power" }
 alo-sound = { path = "../alo-sound" }
 alo-networks = { path = "../alo-networks" }
+alo-dividing = { path = "../alo-dividing" }
+alo-desktops = { path = "../alo-desktops" }
 alo-dock = { path = "../alo-dock" }
 # The list of grants a person sees: rows derived from the machine's own grants,
 # and the words for revoking one. Read, and revoked only through `alo-changing`.

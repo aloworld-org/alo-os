@@ -32,6 +32,7 @@ alo-cameras = { path = "../alo-cameras" }
 alo-power = { path = "../alo-power" }
 alo-capturing = { path = "../alo-capturing" }
 alo-sound = { path = "../alo-sound" }
+alo-starting = { path = "../alo-starting" }
 alo-changing = { path = "../alo-changing" }
 # What a person reads when a drive they plugged in is opened, or finished with
 # so that it can be unplugged.

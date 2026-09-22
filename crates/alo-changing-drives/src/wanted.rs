@@ -41,7 +41,8 @@ impl Change {
             | SystemVerb::SetRadio(_)
             | SystemVerb::SetProxy(_)
             | SystemVerb::ApplyStagedUpdate(_)
-            | SystemVerb::RollBack(_) => None,
+            | SystemVerb::RollBack(_)
+            | SystemVerb::RestartIntoWindows(_) => None,
         }
     }
 }

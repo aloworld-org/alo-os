@@ -39,7 +39,8 @@ impl Change {
             | SystemVerb::SetRadio(_)
             | SystemVerb::SetProxy(_)
             | SystemVerb::MountDrive(_)
-            | SystemVerb::EjectDrive(_) => None,
+            | SystemVerb::EjectDrive(_)
+            | SystemVerb::RestartIntoWindows(_) => None,
         }
     }
 }

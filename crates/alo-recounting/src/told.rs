@@ -121,6 +121,14 @@ pub enum Outcome {
     /// The machine let go of what it kept for these turns, because the disk
     /// needed the room and the oldest went first (ADR 0045, the second term).
     LetGoTheDiskNeededTheRoom,
+    /// The machine let go of what it kept for these turns because the person
+    /// asked it to forget everything it was keeping for them, as one act
+    /// (ADR 0045, point 5).
+    ///
+    /// Told apart from the two above because the difference is the one a person
+    /// acts on: the machine tidying up is something they are informed of, and
+    /// this is the answer to something they asked for.
+    LetGoThePersonAskedToForget,
 }
 
 impl Outcome {
@@ -166,6 +174,10 @@ impl Outcome {
                 why: WhyLetGo::TheDiskNeededTheRoom,
                 ..
             } => Self::LetGoTheDiskNeededTheRoom,
+            Happened::LetGo {
+                why: WhyLetGo::ThePersonAskedToForget,
+                ..
+            } => Self::LetGoThePersonAskedToForget,
         }
     }
 
@@ -199,6 +211,7 @@ impl Outcome {
             Self::NotPutBack => words::NOT_PUT_BACK,
             Self::LetGoOutsideTheWindow => words::LET_GO_OUTSIDE_THE_WINDOW,
             Self::LetGoTheDiskNeededTheRoom => words::LET_GO_THE_DISK_NEEDED_THE_ROOM,
+            Self::LetGoThePersonAskedToForget => words::LET_GO_THE_PERSON_ASKED_TO_FORGET,
         }
     }
 
@@ -455,7 +468,7 @@ mod tests {
     use super::*;
     use crate::testing::{
         an_afternoon, answered_here, archived, declined, fetched_a_model, held_back, hour,
-        in_english, left, never_asked, never_put_anywhere, noon, not_bounded, not_put_back,
+        in_english, left, let_go, never_asked, never_put_anywhere, noon, not_bounded, not_put_back,
         put_back, ran_a_read, refused_at_the_moment, translated, turned_away,
     };
 
@@ -800,6 +813,50 @@ mod tests {
             outcomes.len(),
             12,
             "an afternoon that does not hold one of every kind of entry proves less than it looks"
+        );
+    }
+
+    /// **Each of the three reasons an undo was let go reads as its own clause,
+    /// and the person's own act is not one of the other two.**
+    ///
+    /// ADR 0045's first two terms are the machine tidying up and telling
+    /// somebody; point 5 is the answer to something they asked for. That is the
+    /// one difference a person reading their own record acts on, so it is the
+    /// one this crate must not lose — and a clause shared between them, or a
+    /// reason with no clause at all, would lose it.
+    #[test]
+    fn each_reason_an_undo_was_let_go_reads_as_its_own_clause() {
+        let strings = in_english();
+
+        let mut said: Vec<String> = Vec::new();
+        for why in WhyLetGo::EVERY {
+            let told = Told::of(&let_go(why));
+            let clause = told.outcome().said(&strings);
+            assert!(!clause.is_a_bug(), "{why:?}: {clause}");
+            assert!(
+                clause.text().contains("can no longer be put back"),
+                "{why:?}: {clause}"
+            );
+            assert!(
+                !said.contains(&clause.text().to_owned()),
+                "two say {clause}"
+            );
+            said.push(clause.text().to_owned());
+
+            assert_eq!(
+                told.outcome() == Outcome::LetGoThePersonAskedToForget,
+                why.is_the_persons_own(),
+                "{why:?}"
+            );
+            assert_eq!(told.agent(), None, "{why:?}");
+        }
+        assert_eq!(said.len(), 3);
+
+        // And the person's own is the one addressed to them.
+        let theirs = Told::of(&let_go(WhyLetGo::ThePersonAskedToForget));
+        assert!(
+            theirs.outcome().said(&strings).text().contains("you asked"),
+            "the person's own act does not read as theirs"
         );
     }
 

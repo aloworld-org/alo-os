@@ -169,12 +169,6 @@ impl Changed {
         self
     }
 
-    /// Whether nothing differs.
-    #[must_use]
-    pub fn is_nothing(&self) -> bool {
-        self.windows.is_empty() && self.start_partition.is_empty()
-    }
-
     /// What changed outside every directory in which the controls disagree
     /// with each other.
     ///

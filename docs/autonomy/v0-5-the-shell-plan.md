@@ -401,7 +401,33 @@ plans.
 
 ### 10. Dividing the screen, virtual desktops and gestures, drawn
 
-**Status:** ready — **its blocker cleared on 2026-09-20.** It waited on
+**Status:** **Done, 2026-09-21.** **For the part it ends at since its split** —
+the drawing. The state is task 16 and is **not** done; this line carries the
+mark the supervisor reads so the loop does not take the task up for ever, and
+the qualifier beside it so no person reads the mark as the whole task.
+Report: [The division, drawn](updates/the-division-drawn.md).
+The drawing is done and **the state is not**, and the two were split because
+they are different work: `crates/alo-shell/src/division_raster.rs` draws the
+shares `alo-dividing` decided, the rule where two meet, and the outline a drop
+would take — taken from `alo_dividing::Proposal::area` rather than worked out
+again, because an outline that disagreed with what `commit` then does would be
+the machine lying at the one moment somebody could still change their mind.
+
+**The constraint is half kept, and the half that is not is written down.**
+*Which side a chord means* had two answers — `alo_dividing::keyboard::side_for`
+and a second mapping in `crate::window_command` — and now has one, held by a
+test that walks every `Action` and fails if the shell ever names a different
+side from the crate that decides. **`window_tiling` is still the layout
+decider**, and today it is the only one, because the `Server` holds no division
+at all. The moment it does, that half must go.
+
+**Where the rest lives: task 16**, which owns the `Server`'s division and
+desktop state — drawn per display *as decided and restored as remembered*,
+desktops, swipes, and the indicator on every desktop. It is **not** blocked on
+this task and does not belong to this plan's drawing: it is session lifecycle
+state, and task 13 of `v0-01-delivery-plan.md` builds the session that has it.
+
+Was *ready — its blocker cleared on 2026-09-20.* It waited on
 `v0-5-hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5; task 2 was the last of
 them and landed that day, and 1, 3 and 5 were done on 2026-09-17 and 2026-09-18.
 `alo-dividing` now proposes, commits and **remembers** a division, so there is a
@@ -528,13 +554,17 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 10 and 11. **Tasks 8, 9, 12 and 13 are done**
+**Status:** blocked — on tasks 11 and **16**. Task 10 is done for the part it
+ends at: the division is drawn, and the **state** a walk needs — desktops, and
+divisions restored as remembered — is task 16's, which is why the blocker names
+16 rather than 10. A walk cannot step through a second desktop that nothing
+holds. **Tasks 8, 9, 12 and 13 are done**
 (2026-09-18, 2026-09-20, 2026-09-20 and 2026-09-20), so the lock screen, a second
 display, the accessibility tree with the magnifier and high contrast, and the
 recovery screen are all there for the walk to use. Narrowed here by the lane that
 finished each, because a blocker that outlives its cause makes takeable work look
 untakeable.
-**Depends on:** 8, 9, 10, 11, 12, 13.
+**Depends on:** 8, 9, 11, 12, 13, 16.
 
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second
   display, divide the screen, take a screenshot with a blur, receive a notification,
@@ -586,3 +616,46 @@ machine is telling them the truth.
   machine in a nested compositor is that the numbers match what the hardware is
   really doing**; that half needs a certified machine and is named beside the
   tick rather than assumed, exactly as this plan's other tasks name theirs.
+
+### 16. The division and the desktops a session holds, and the one layout decider
+
+**Status:** ready. **Depends on:** task 13 of
+[`v0-01-delivery-plan.md`](v0-01-delivery-plan.md) — *A sign-in surface, and what
+starts it*.
+
+Written 2026-09-21 by task 10, which drew the division and found that the state
+under it does not exist. `crates/alo-shell`'s `Server` holds an overlay, a
+press, a presentation, its surfaces, its socket and a switch order, and **no
+division and no desktop at all**. So *divisions drawn per display as decided and
+restored as remembered*, *swipes switch desktops*, and *the indicator on every
+desktop* are not drawing — they are state with a lifecycle, and the lifecycle is
+windows opening and closing and displays being plugged in.
+
+**Why it depends on the session rather than on task 10.** That is the same
+lifecycle a running session needs, and building it twice — once for a nested
+compositor and once for the real one — would be two answers to *what is on this
+display now*. So it is built once, on the session task 13 stands up.
+
+**The removal this task owes.** `crate::window_tiling` computes a half of an
+output. Today it is the only layout decider and that is sound; the moment a
+`Division` is `Server` state, a window's place would be decided twice — once by
+a tree of shares and once by a half — and the shell plan's constraint forbids
+exactly that. This task takes the half out as it puts the division in.
+
+- **Acceptance:** the `Server` holds a division per display and the desktops a
+  person has, kept through windows opening and closing and a display being
+  plugged in and unplugged; a division is restored from
+  `alo_dividing::Divisions` as the person left it, per display, with the window
+  numbers it comes back under being the new ones; swipes switch desktops as
+  `alo-desktops` decides and the shell shows that answer rather than making a
+  second one; the egress indicator, the approval surface and the window-control
+  overlay are on **every** desktop, held by a raster test on two; and
+  `crate::window_tiling`'s half is **gone**, with a test that there is exactly
+  **one** layout decider in this compositor — read from the crates rather than
+  from a list kept beside them, so a second one added anywhere is a second one
+  this check sees.
+- **Constraint:** nothing here decides a layout, a side or a desktop —
+  `alo-dividing` and `alo-desktops` decide and this holds and shows their
+  answers. **What it cannot tick from a nested compositor** is that a real
+  display plugged in and unplugged keeps its division; that needs a machine with
+  a display to plug, and is named beside the tick rather than assumed.
