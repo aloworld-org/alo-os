@@ -5991,3 +5991,256 @@ that does not exist yet and checks the result, rather than reading `EROFS` as a
 mount problem; and any measurement of this is made on a destination nothing
 has touched.
 **Date:** 2026-09-21.
+
+### A Windows guest and a release build together starve WSL's own relay, and the machine inside keeps running
+**Version:** WSL 2 Ubuntu (`6.6.87.2-microsoft-standard-WSL2`) on Windows 11 Pro
+10.0.26200 with 15.5 GB of memory, QEMU 10.2.1 under KVM, 2026-09-21.
+**Behaviour:** a Windows 11 guest given 4096 MiB was installing while
+`cargo build --release -j 2` ran in the same distribution. The host's free
+physical memory fell to 0.24 GB with `vmmemWSL` at 6.39 GB, and every
+`wsl -d Ubuntu -- …` then returned `Wsl/Service/0x8007274c` (*the connected
+party did not properly respond*) for over an hour, while
+`wsl.exe --list --running` still listed the distribution and QEMU kept running
+inside it; `\\wsl.localhost\…` did not answer either. `wsl.exe --shutdown`
+recovered it and lost the install. With the guest at 3072 MiB and nothing
+built beside it, the same error still came and went for minutes at a time
+whenever the host's free memory was near half a gigabyte, and cleared on its
+own. The disk was never the constraint.
+**Our response:** the walk's guest is given 3072 MiB
+(`crates/alo-installer/tests/walking/machine.rs`), nothing is built while it
+runs, and a command that meets `0x8007274c` is tried again after thirty seconds
+rather than answered with `wsl --shutdown`, which throws away whatever was
+running inside. Look at `vmmemWSL` and the host's free memory first.
+**Date:** 2026-09-21.
+
+### The first start of an overlay of a freshly installed Windows takes about 1 000 s, and of a settled one about 140 s
+**Version:** Windows 11 Enterprise Evaluation 25H2 (26100.6584 as it reports
+itself) under QEMU 10.2.1 and KVM, each walk on a `qemu-img create -b` overlay
+of one installed disk, 2026-09-21.
+**Behaviour:** an overlay of the Windows as its unattended install left it took
+1 011 s and 1 015 s from power-on to its sign-in task's first line, and the
+first Windows PowerShell of that start took four minutes to print its version.
+The same overlay restarted took 102–161 s. The installed Windows was then
+started once on its own disk, left ten minutes, and shut down by itself; an
+overlay of *that* reached its sign-in in 141 s on its first start.
+**Our response:** the walk settles the installed Windows once before it becomes
+the base (`the_installer_walked_on_a_real_windows.rs`, the install test), and
+switches hibernation off while it is there, so that a shutdown leaves NTFS as a
+reader on the host can trust (fast startup cannot run without hibernation; the
+`HiberbootEnabled` value still reads `1`).
+**Date:** 2026-09-21.
+
+### Windows 11 puts its recovery partition after `C:`, so the partition after `C:` is not one an installer made
+**Version:** Windows 11 Enterprise Evaluation 25H2, installed unattended by an
+answer file that makes three partitions (EFI, MSR, `C:` extended to the end of
+the disk), 2026-09-21.
+**Behaviour:** after the first start the disk held four. Windows had shrunk
+`C:` and put a 770 703 360-byte recovery partition
+(`{de94bba4-06d1-4d40-a16a-bfd50179d6ac}`) at the end of the disk, so `C:` ends
+at 67 946 676 224 and the recovery partition begins there. Shrinking `C:` frees
+space *between* `C:` and Windows' own recovery partition, and "the first
+partition after `C:`" is Windows' recovery partition.
+**Our response:** `crate::windows_volume` already places the area at `C:`'s old
+end rather than at the end of the disk, which is right for this layout. The
+walk's guest script names the area as the partition that was not there before
+the installer ran, never by position.
+**Date:** 2026-09-21.
+
+### .NET Framework will not open `\\.\COM1`
+**Version:** Windows PowerShell 5.1 (.NET Framework 4.8) on Windows 11 25H2,
+2026-09-21.
+**Behaviour:** `New-Object System.IO.StreamWriter('\\.\COM1')` throws —
+.NET Framework's `FileStream` refuses every `\\.\` device path — so a script
+that swallows the exception writes nothing to the serial line and looks exactly
+like a hung guest. `System.IO.Ports.SerialPort` opens it; `cmd`'s
+`echo … > COM1` works one line at a time. A second redirection to a file a
+parent `cmd` already redirects to is refused with *being used by another
+process*, and the program behind it never runs.
+**Our response:** the walk's guest script writes through `SerialPort`, appends
+every line to a file on `C:` the host can read off the disk with the machine
+off, and never shares a redirection target with its caller.
+**Date:** 2026-09-21.
+
+### A PowerShell function returns everything it writes with `Write-Output`
+**Version:** Windows PowerShell 5.1, 2026-09-21.
+**Behaviour:** a logging helper that used `Write-Output`, called inside a
+function ending in `return @{ Digest = …; Count = … }`, made the function return
+an array of log lines followed by the table. The caller read the array's
+`.Count` — 5 — as the number of files hashed, and the digest as nothing.
+**Our response:** the walk's logging writes with `[Console]::Out.WriteLine`.
+**Date:** 2026-09-21.
+
+### This Windows guest sometimes stops at its start-up spinner, with the installer never run
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1, `q35`,
+KVM, OVMF 2025.11's Secure Boot build with nothing enrolled, `swtpm` 0.10.1,
+2026-09-21.
+**Behaviour:** some starts stop at the spinner below the firmware's logo:
+nothing on the serial line, no writes to the disk, QEMU idle or spinning one
+processor. It happened in the control, which never runs the installer, and
+after a `swtpm` left over from a machine stopped hard (then QEMU printed not
+even the firmware's first line). One `system_reset` brought the guest up each
+time — except once, on the first start of a fresh overlay before the installer
+had run, when two resets did not: after the second, QEMU itself had stopped.
+Its monitor did not answer, every one of its threads waited on a futex, its
+resident memory was 56 MB of a 3 GB guest, and the serial line held not even
+the firmware's first line. It was killed with `SIGKILL` and the step was walked
+again from a fresh overlay.
+**Our response:** every machine gets a security chip of its own, and a start
+that has not signed in after 480 s is reset, at most twice, with every reset
+printed and counted in the report; a machine that still has not signed in is
+stopped and its walk started again, and that is counted too.
+**Date:** 2026-09-21.
+
+### Two readings of a disk that share a mount point read a tree that is neither
+**Version:** `qemu-nbd` 10.2.1, `ntfs-3g` 2022.10.3, Linux 6.6 (WSL 2),
+2026-09-21.
+**Behaviour:** `qemu-nbd --connect` onto a device that had just been
+disconnected returned success, and then `sfdisk` and `ntfs-3g` met
+*Input/output error* on it — twice. Separately, an `ntfs-3g` whose script had
+ended was still mounted when the next reading mounted another disk on the same
+directory, and that reading listed 143 339 files, 28 unreadable and 7
+directories unlistable, where every other reading of these disks listed about
+250 000. That disk had also been cut off rather than shut down, so the two
+causes were not separated; the reading was thrown away and the step walked
+again.
+**Our response:** each reading takes an `nbd` device whose size is zero, waits
+until it has a size and its partitions and answers `sfdisk`, tries another
+device before failing, and mounts on directories of its own that it checks are
+not already mount points. A file that cannot be read stands in the reading as
+`UNREADABLE` and a directory that cannot be listed as `UNLISTABLE`, so nothing
+unread is dropped; the settled Windows read with none of either.
+**Date:** 2026-09-21.
+
+### An entry copied from `{bootmgr}` carries Windows' optional data, and shim reads it as a file to start
+**Version:** `bcdedit` of Windows 11 Enterprise Evaluation 25H2; Fedora 42's
+signed shim as `image/installing/Containerfile` copies it; OVMF 2025.11 under
+QEMU 10.2.1; 2026-09-21.
+**Behaviour:** the firmware's own variable, read from inside Windows with
+`GetFirmwareEnvironmentVariableEx`, shows that every entry `bcdedit /copy
+{bootmgr}` makes carries 136 bytes of optional data beginning `WINDOWS`, as
+Windows' own boot manager entry does. When the firmware starts such an entry
+pointing at shim, shim takes the optional data as the name of what to start
+next: the installer's entry printed
+`Failed to open \EFI\BOOT\䥗䑎坏S - Invalid Parameter` (the ASCII bytes
+`WINDOWS` read as UTF-16), `start_image() returned Invalid Parameter, falling
+back to default loader`, and went on to its default, `grubx64.efi` beside it.
+The same load option written directly with no optional data (a probe entry,
+`SetFirmwareEnvironmentVariableEx`) carries none.
+**`bcdedit` cannot make an entry without it**, measured 2026-09-22 by reading
+each variable back: a `{bootmgr}` copy with every boot-manager value deleted
+(`default`, `resumeobject`, `displayorder`, `toolsdisplayorder`, `timeout`,
+`inherit`, `locale`) still carries the 136 bytes; `bcdedit /create …
+/application firmware` is refused (*The application type switch specified is
+not valid*); and a copy of an existing firmware application accepts `device`
+and `path` and changes neither in the variable, which keeps the original's
+firmware-volume path.
+**Our response:** the installer no longer copies `{bootmgr}`.
+`crate::program`'s `WritingTheEntry` writes the load option itself through
+`SetFirmwareEnvironmentVariableEx` — attributes, length, description, the
+area's hard-drive node and `\EFI\BOOT\BOOTX64.EFI`, and nothing after — reads it
+back byte for byte, and hands `bcdedit` the identifier Windows lists it under
+(as a *Firmware Application*, `0x101fffff`) for ordering, the next start and
+removal. Its partition number is the GPT entry's slot, read from the disk's own
+partition table: Windows' partition number is not it (the area was Windows'
+partition 5 in slot 4), and a variable written with 5 was found rewritten by
+Windows to 4 twenty seconds later. **Measured with the new installer on
+2026-09-22**, the whole road run on each firmware and the variable read from
+the host after the machine stopped: `Boot0002 "alo OS"
+HD(4,GPT,<area>,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI optional-data=0
+bytes` (Windows' own entry beside it: 136). On the installer's own restart:
+- **Fedora's `edk2-ovmf` 20250812-21:** `starting Boot0002 "alo OS" from
+  HD(4,…)`, then no *Failed to open* and no *falling back* — shim started its
+  second stage directly (the firmware's own *shim is older than v16* fix-up
+  note, as before), Linux booted with
+  `alo.installing.to=ata-QEMU_HARDDISK_ALOTARGET1`, and the environment said
+  *Looking for the disk you chose: ata-QEMU_HARDDISK_ALOTARGET1*.
+- **Ubuntu's OVMF 2025.11:** `starting Boot0002 "alo OS" from HD(4,…)`, then no
+  *Failed to open* and no *falling back* — and the firmware page-faults
+  (`#PF`, `W:1 P:1`) before GRUB prints anything: the firmware's own strict
+  memory protection with a shim older than 16, measured by task 9 without any
+  entry at all, not this.
+
+A consequence: writing a firmware variable needs Windows PowerShell to compile
+a small type (`Add-Type`), which a machine locked to constrained language mode
+refuses; the step then fails and everything before it is put back.
+**Date:** 2026-09-21; rewritten 2026-09-22.
+
+### The entry `bcdedit` makes points at the area — except once, after a shutdown with the next start pending
+**Version:** `bcdedit` of Windows 11 Enterprise Evaluation 25H2 under QEMU
+10.2.1 and OVMF 2025.11; the firmware's variable store decoded on the host
+from the machine's variable file, and read from inside Windows with
+`GetFirmwareEnvironmentVariableEx`; 2026-09-21.
+**Behaviour:** `bcdedit /copy {bootmgr}`, then `/set {id} device partition=D:`
+and `/set {id} path \EFI\BOOT\BOOTX64.EFI` — `crate::program`'s order, and
+path-first, and device twice — each reach the firmware's `Boot####` as
+`HD(4,GPT,<the area's GUID>,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI`: the
+area, exactly. They stay so a minute later and across a full shutdown. The
+installer's own entry held the same after the kills at steps 4 (which landed
+after 6), 5 and 6, and after the whole road — where the firmware, on the
+installer's own restart, printed `starting Boot0002 "alo OS" from
+HD(4,…,0x7C8F800,0x200000)/\EFI\BOOT\BOOTX64.EFI`. **After the kill at step
+7** — the next start set, the installer killed in its pause before restarting,
+and Windows then *shut down* (`shutdown /s`) rather than restarted — the same
+entry held `HD(1,…,0x800,0x96000)/\EFI\BOOT\BOOTX64.EFI`: Windows' own EFI
+system partition, whose `\EFI\BOOT\BOOTX64.EFI` is Windows' fallback loader.
+On the next start the firmware honoured the next start, loaded that, and
+Windows came up. A `device` given as a volume path (`partition=\\?\Volume{…}`)
+also leaves the system partition.
+**Our response:** measured and **not explained**: one machine, and what
+rewrote the device between the kill and the next start was not isolated. It
+fails safe — the computer starts Windows — but the install would not continue.
+A person who shuts the computer down instead of letting the installer restart
+it is the case it describes. The installer no longer makes its entry this way
+(the quirk above). **The entry it now writes held, 2026-09-22:** in the Rust
+walk's run, after the kill at step 7 and the same `shutdown /s`, the firmware
+printed `starting Boot#### "alo OS"` from partition 4 at sector 130 611 200
+(`0x7C8F800`) — the area, which the road run on the same installed Windows
+printed at byte offset 66 872 934 400 — and not from Windows' partition. One
+run; what rewrote the `bcdedit`-made entry is still not isolated, and no longer
+matters to the installer.
+**Date:** 2026-09-21; the new entry measured 2026-09-22.
+
+### A stand-in started through Image File Execution Options gets the held program's whole command line, and `cmd` cannot hold it
+**Version:** Windows 11 Enterprise Evaluation 25H2, the `Debugger` value under
+`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution
+Options\<image>`, 2026-09-22.
+**Behaviour:** with a `Debugger` set for `powershell.exe`, Windows starts the
+debugger instead, passing it the held program's full command line. A held
+PowerShell that runs an encoded script has a command line longer than `cmd`'s
+8 191 characters, so a stand-in written as `cmd.exe /c held.cmd` failed at once,
+the program that asked for PowerShell saw a failed step — the installer said
+*Something went wrong, so everything changed so far is being put back* — and
+only then was killed. The state after it happened to look like the step the
+kill was aimed at.
+**Our response:** the walk's stand-in is a small program of its own that writes
+down the command line it was started with and never returns, and a kill after
+which the installer had begun putting back is never counted as landed. With it,
+steps 4, 5, 6 and 7 each landed exactly, the stand-in having caught the entry's
+PowerShell, the letter's PowerShell, `bcdedit /set {fwbootmgr} bootsequence`
+and `shutdown.exe /r /t 0` before they ran.
+**Date:** 2026-09-22.
+
+### Reading a firmware variable needs the firmware privilege switched on, and says nothing when it is not
+**Version:** `GetFirmwareEnvironmentVariableEx` on Windows 11 25H2, from an
+elevated Windows PowerShell, 2026-09-22.
+**Behaviour:** an administrator holds `SeSystemEnvironmentPrivilege` but has
+it switched off. With it off, every read returns 0 bytes — the same answer as a
+variable that does not exist — so a reader that does not switch it on reports
+*no start-up entries at all* on a machine that has five.
+**Our response:** every reader switches it on first (`AdjustTokenPrivileges`),
+the installer's `WritingTheEntry` fails rather than carries on when it cannot,
+and the walk prints the privilege's result before any reading.
+**Date:** 2026-09-22.
+
+### Windows rewrites a start-up entry written into the firmware, within seconds, with its own partition number
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1 and OVMF,
+2026-09-22.
+**Behaviour:** a `Boot####` written directly with a hard-drive node naming
+partition 5 — Windows' own number for the area — was found twenty seconds later
+naming partition 4, the area's GPT slot, with nothing else changed and no
+optional data added; Windows lists such a variable as a *Firmware Application*
+(`0x101fffff`) in its BCD store and keeps the two in step.
+**Our response:** the installer writes the GPT slot itself, read from the
+disk's partition table, rather than relying on Windows to correct it; a
+firmware matches a hard-drive node by slot and signature.
+**Date:** 2026-09-22.

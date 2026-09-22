@@ -8,8 +8,10 @@
 //! 3. format it with the installer's label and give it a drive letter;
 //! 4. write the environment's files and the person's choice onto it, and read
 //!    each one back;
-//! 5. add a start-up entry named alo OS pointing at the area's loader, listed
-//!    last so Windows stays the one the computer starts normally;
+//! 5. write a start-up entry named alo OS pointing at the area's loader into
+//!    the firmware — with none of the optional data a copy of Windows' own
+//!    entry carries — and list it last so Windows stays the one the computer
+//!    starts normally;
 //! 6. take the area's letter away again;
 //! 7. make the entry the next start, once — the firmware's next-boot choice,
 //!    which never changes the default (`docs/booting.md`).
@@ -86,6 +88,14 @@ struct MadeTheArea {
 struct PreparedTheArea {
     /// The letter it was given.
     drive_letter: String,
+}
+
+/// What writing the entry printed.
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct WroteTheEntry {
+    /// The identifier Windows lists it under.
+    identifier: String,
 }
 
 /// Prepare the computer for the disk the person chose.
@@ -224,25 +234,26 @@ fn steps(
         words::ADDING_THE_ENTRY,
         &Filling::nothing(),
     );
-    let printed = succeeded(machine, &Program::AddingTheEntry)?;
-    let Some(entry) = Entry::first_in(&printed) else {
+    // Written into the firmware itself rather than copied from Windows' boot
+    // manager, so it carries none of Windows' optional data (`program.rs`).
+    // The program removes what it wrote when it fails after writing, so a
+    // failure here leaves no entry to put back.
+    let printed = succeeded(
+        machine,
+        &Program::WritingTheEntry {
+            disk: windows.disk,
+            partition,
+            offset: made.offset,
+        },
+    )?;
+    let Some(entry) = serde_json::from_str::<WroteTheEntry>(&printed)
+        .ok()
+        .and_then(|wrote| Entry::of(&wrote.identifier))
+    else {
         journal.push(Made::AnEntryNotIdentified);
         return Err(());
     };
     journal.push(Made::TheEntry(entry.clone()));
-    succeeded(
-        machine,
-        &Program::PointingTheEntryAtTheArea {
-            entry: entry.clone(),
-            letter,
-        },
-    )?;
-    succeeded(
-        machine,
-        &Program::PointingTheEntryAtTheLoader {
-            entry: entry.clone(),
-        },
-    )?;
     succeeded(
         machine,
         &Program::ListingTheEntry {

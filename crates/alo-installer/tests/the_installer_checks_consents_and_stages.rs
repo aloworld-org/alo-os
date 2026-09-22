@@ -73,9 +73,7 @@ fn kind(program: &Program) -> &'static str {
         Program::Shrinking { .. } => "shrink",
         Program::MakingTheArea { .. } => "make-area",
         Program::PreparingTheArea { .. } => "prepare-area",
-        Program::AddingTheEntry => "add-entry",
-        Program::PointingTheEntryAtTheArea { .. } => "point-area",
-        Program::PointingTheEntryAtTheLoader { .. } => "point-loader",
+        Program::WritingTheEntry { .. } => "write-entry",
         Program::ListingTheEntry { .. } => "list-entry",
         Program::TakingAwayTheLetter { .. } => "take-letter",
         Program::StartingTheEntryNext { .. } => "next",
@@ -162,13 +160,11 @@ impl Scripted {
             ),
             ("prepare-area", printed(r#"{"DriveLetter":"E"}"#)),
             (
-                "add-entry",
+                "write-entry",
                 printed(&format!(
-                    "The entry was successfully copied to {THE_ENTRY}."
+                    r#"{{"Identifier":"{THE_ENTRY}","Option":"Boot0005","Slot":4}}"#
                 )),
             ),
-            ("point-area", printed("")),
-            ("point-loader", printed("")),
             ("list-entry", printed("")),
             ("take-letter", printed("")),
             ("next", printed("")),
@@ -354,9 +350,7 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
             "shrink",
             "make-area",
             "prepare-area",
-            "add-entry",
-            "point-area",
-            "point-loader",
+            "write-entry",
             "list-entry",
             "take-letter",
             "next",
@@ -736,15 +730,7 @@ fn a_failure_at_each_step_puts_back_everything_before_it() {
         ("shrink", vec![]),
         ("make-area", vec!["grow-back"]),
         ("prepare-area", vec!["remove-area", "grow-back"]),
-        ("add-entry", vec!["remove-area", "grow-back"]),
-        (
-            "point-area",
-            vec!["remove-entry", "remove-area", "grow-back"],
-        ),
-        (
-            "point-loader",
-            vec!["remove-entry", "remove-area", "grow-back"],
-        ),
+        ("write-entry", vec!["remove-area", "grow-back"]),
         (
             "list-entry",
             vec!["remove-entry", "remove-area", "grow-back"],
@@ -812,7 +798,7 @@ fn a_copy_that_does_not_read_back_is_put_back() {
     ));
     let (ended, machine) = run(machine, released);
     assert_eq!(ended, Ended::Refused(Refusal::PutBack));
-    assert!(!machine.kinds().contains(&"add-entry"));
+    assert!(!machine.kinds().contains(&"write-entry"));
     assert!(machine.kinds().ends_with(&["remove-area", "grow-back"]));
 }
 

@@ -371,6 +371,15 @@ the `ALO-INSTALL` partition as its boot device, a second empty disk of at least
 disks the name under `/dev/disk/by-id/` is the disk's `scsi-` or `wwn-` name,
 and that is what `chosen.cfg` must hold.
 
+**The name the installer writes, seen from both sides — for SATA only.** On
+2026-09-21 the installer ran on a Windows 11 in a QEMU machine (the installer
+plan's task 10): Windows reported the empty disk as bus `SATA`, model `QEMU
+HARDDISK`, serial `ALOTARGET1`; the installer wrote
+`set alo_installing_to=ata-QEMU_HARDDISK_ALOTARGET1` into `chosen.cfg`; and
+after the installer's own restart the environment said *Looking for the disk
+you chose: ata-QEMU_HARDDISK_ALOTARGET1*, checked it, and partitioned that
+disk. The NVMe and Hyper-V SCSI names are still unseen from the Linux side.
+
 ## Attaching it to Hyper-V
 
 alo OS is installed for UEFI, so it is a **generation 2** virtual machine, and
