@@ -1,6 +1,8 @@
 # ADR 0003 — Being on the same network is not authority
 
-**Status:** accepted
+**Status:** accepted — **the rejection of a trusted-network setting is reversed
+as an opt-in by [ADR 0064](0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md), 2026-09-22.** Pairing stays the default. A person
+may opt in on their own network, told that it also trusts every device on it.
 **Date:** 2026-09-02
 **Context:** machine discovery, shared local inference, self-hosted workspace
 discovery, fleet enrollment; extends the grant model of

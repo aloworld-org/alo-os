@@ -13,7 +13,7 @@ repository is the system underneath both: the shell a person signs
 into, the service that lets an agent reach the machine, and the image
 that boots.
 
-## The four laws
+## The five laws
 
 1. **Nothing leaves silently.** Every network egress an agent causes
    is visible at the moment it happens and afterwards in a record. On
@@ -21,14 +21,17 @@ that boots.
    diagnostic. With a local model a working day produces **zero**
    inference egress, measured at the network boundary — and we
    publish the measurement rather than the promise.
-2. **No verb runs an arbitrary command.** Every capability is an
-   enumerated verb with typed, validated arguments. No `exec`, no
-   shell, no script the model authored, no "advanced" escape hatch.
-   A model that can write code that runs has escaped every other
-   control in this repository, so this law is what makes the rest
-   true rather than decorative. It binds the **agent**, never the
-   person: alo OS ships a terminal, because a system that does not
-   trust its owner with a shell is a toy.
+2. **No code runs unless the person chose it.** Every capability on
+   the broker's list is an enumerated verb with typed, validated
+   arguments. No `exec`, no shell and no "advanced" escape hatch is
+   ever added to that list, because a model that can write code that
+   runs has escaped every other control in this repository. Running
+   code is a separate grant that only the person gives, at one of three
+   levels (ADR 0064): a sealed box the kernel locks down (the default),
+   asking each time, or full trust. At every level each run is recorded
+   and can be undone. The law binds the **agent**, never the person:
+   alo OS ships a terminal, because a system that does not trust its
+   owner with a shell is a toy.
 3. **Done means the machine still works.** Input → validation →
    policy → execution → record → error paths, on real hardware. An
    OS that boots but cannot print is not a released OS. No `todo!()`,
@@ -43,6 +46,20 @@ that boots.
    open is where the security bug lives. Small files are how the
    capability model stays reviewable by somebody who did not write
    it.
+5. **The person chooses. alo never takes the choice away.** On their
+   own machine, a person decides what alo OS does. Every protection is
+   a default they can change, not a wall. Anything with a risk is
+   offered with the risk in plain words and switched on by the person.
+   It is never removed from them "for their own good". Two kinds of
+   protection stay on at every setting, because neither takes a choice
+   away: those that restrict nothing (the record, undo, the egress
+   indicator, plain warnings), and those that guard the person from
+   others (no telemetry, never a silent fallback, helpdesk only when
+   invited). Only the law, or an organisation's policy on machines it
+   owns (ADR 0016), may truly forbid. A change that takes a choice
+   away from the person is a bug, whatever the reason given for it.
+   The review question for every feature: *can the person choose this,
+   knowing what it costs?* (ADR 0064)
 
 ## The gate — nothing is done until all of this passes
 
