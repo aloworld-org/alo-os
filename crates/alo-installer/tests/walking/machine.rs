@@ -42,6 +42,34 @@ pub const THE_SECOND_DISK: &str = "32G";
 /// host can spare.
 pub const THE_MEMORY: &str = "3072";
 
+/// What decides which device a machine starts.
+enum Starting {
+    /// The Windows disk first, through QEMU's own boot order, as every walk of
+    /// Windows needs: the firmware otherwise falls through to the network.
+    WindowsDiskFirst,
+    /// Nothing put first, so the firmware's own variables decide every start;
+    /// with these systemd credentials, by name and content.
+    AsItsVariablesDecide(Vec<(String, String)>),
+}
+
+/// Standard base64, for a credential in the firmware's tables.
+fn base64(bytes: &[u8]) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for chunk in bytes.chunks(3) {
+        let byte = |at: usize| u32::from(chunk.get(at).copied().unwrap_or(0));
+        let n = (byte(0) << 16) | (byte(1) << 8) | byte(2);
+        for (i, shift) in [18_u32, 12, 6, 0].into_iter().enumerate() {
+            let sextet = usize::try_from((n >> shift) & 63).unwrap_or(0);
+            match ALPHABET.get(sextet) {
+                Some(letter) if i <= chunk.len() => out.push(char::from(*letter)),
+                _ => out.push('='),
+            }
+        }
+    }
+    out
+}
+
 /// A running machine.
 #[derive(Debug)]
 pub struct Machine {
@@ -160,7 +188,72 @@ impl Machine {
         console: &Console,
         chip: &SecurityChip,
     ) -> Self {
+        Self::launch(
+            firmware,
+            yard,
+            name,
+            medium,
+            installing_from,
+            console,
+            chip,
+            &Starting::WindowsDiskFirst,
+        )
+    }
+
+    /// Start it on this firmware with **no device put first**, so that every
+    /// start — including the ones the machine makes itself — is decided by the
+    /// firmware's own variables alone, as on a computer; and with these systemd
+    /// credentials in the firmware's tables, which only a system that reads
+    /// them acts on (the walk's installed alo OS).
+    ///
+    /// # Panics
+    /// When the machine does not come up far enough to answer its monitor.
+    #[must_use]
+    pub fn start_as_its_variables_decide(
+        firmware: &Path,
+        yard: &Path,
+        name: &str,
+        medium: Option<&Path>,
+        console: &Console,
+        chip: &SecurityChip,
+        credentials: &[(&str, &str)],
+    ) -> Self {
+        Self::launch(
+            firmware,
+            yard,
+            name,
+            medium,
+            None,
+            console,
+            chip,
+            &Starting::AsItsVariablesDecide(
+                credentials
+                    .iter()
+                    .map(|(named, content)| ((*named).to_owned(), (*content).to_owned()))
+                    .collect(),
+            ),
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "each is one fact about the machine, and the two public ways in name them"
+    )]
+    fn launch(
+        firmware: &Path,
+        yard: &Path,
+        name: &str,
+        medium: Option<&Path>,
+        installing_from: Option<&Path>,
+        console: &Console,
+        chip: &SecurityChip,
+        starting: &Starting,
+    ) -> Self {
         chip.answering();
+        let first = match starting {
+            Starting::WindowsDiskFirst => ",bootindex=1",
+            Starting::AsItsVariablesDecide(_) => "",
+        };
         let monitor = yard.join("monitor.sock");
         let _ = std::fs::remove_file(&monitor);
         let mut arguments: Vec<String> = [
@@ -201,7 +294,7 @@ impl Machine {
                 Self::windows_of(yard, name).display()
             ),
             "-device".to_owned(),
-            format!("ide-hd,drive=d0,bus=ahci.0,serial={THE_WINDOWS_DISKS_SERIAL},bootindex=1"),
+            format!("ide-hd,drive=d0,bus=ahci.0,serial={THE_WINDOWS_DISKS_SERIAL}{first}"),
             "-drive".to_owned(),
             format!(
                 "file={},if=none,id=d1,format=qcow2,cache=writeback",
@@ -256,6 +349,17 @@ impl Machine {
             "-monitor".to_owned(),
             format!("unix:{},server,nowait", monitor.display()),
         ]);
+        if let Starting::AsItsVariablesDecide(credentials) = starting {
+            for (named, content) in credentials {
+                arguments.extend([
+                    "-smbios".to_owned(),
+                    format!(
+                        "type=11,value=io.systemd.credential.binary:{named}={}",
+                        base64(content.as_bytes())
+                    ),
+                ]);
+            }
+        }
         let log = std::fs::File::create(yard.join("qemu.log")).expect("a place for QEMU's own log");
         let process = Command::new("qemu-system-x86_64")
             .args(&arguments)

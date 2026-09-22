@@ -490,6 +490,150 @@ fn the_whole_road_starts_the_environment_on_the_next_restart() {
     );
 }
 
+/// What the installed alo OS says on the serial line once it is up, then turns
+/// itself off: handed over as a systemd credential in the firmware's tables,
+/// which Windows and the environment never act on (nothing they start wants
+/// it), so nothing on any disk is changed to make it say this.
+const THE_INSTALLED_SYSTEM_SAYS: &str = "[Unit]\n\
+     Description=What the installed system started from, said on the serial line for the walk\n\
+     After=multi-user.target\n\
+     [Service]\n\
+     Type=oneshot\n\
+     ExecStart=/usr/bin/echo ALO-INSTALLED-BEGIN\n\
+     ExecStart=-/usr/bin/findmnt --noheadings --output SOURCE,FSTYPE /sysroot\n\
+     ExecStart=-/usr/bin/sh -c 'lsblk --noheadings --inverse --output NAME,SERIAL \"$$(findmnt --noheadings --output SOURCE /sysroot | cut -d[ -f1)\"'\n\
+     ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release: $$NAME $$VERSION_ID\"'\n\
+     ExecStart=-/usr/bin/systemctl show --property=Id,ActiveState,SubState alo-boundaryd.service alo-agentd.service\n\
+     ExecStart=/usr/bin/echo ALO-INSTALLED-END\n\
+     ExecStartPost=/usr/bin/systemctl --no-block poweroff\n\
+     StandardOutput=file:/dev/ttyS0\n\
+     StandardError=file:/dev/ttyS0\n";
+
+/// The English of one of the environment's sentences, with the walk's disk in
+/// its gap.
+fn the_environment_says(named: &str) -> String {
+    alo_installing::EVERY_WORD
+        .iter()
+        .find(|word| word.named() == named)
+        .unwrap_or_else(|| panic!("{named} is one of the environment's sentences"))
+        .says()
+        .replace("{disk}", THE_SECOND_DISKS_NAME)
+}
+
+/// **Run all the way through, the road installs alo OS onto the disk the
+/// person chose, and the computer then starts the installed alo OS from that
+/// disk.**
+///
+/// Nothing here says what to start at any point: the machine is given no boot
+/// order, so each of its three starts — Windows, the environment, the
+/// installed system — is the firmware's own choice from its variables, as on a
+/// computer. The installed system is known by what it says about itself: its
+/// root is btrfs on the disk with the walk's second serial.
+#[test]
+#[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
+fn the_whole_road_installs_alo_os_and_the_installed_system_starts() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+
+    a_fresh_machine(&yard, "installed");
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+    let disc = medium::the_walk_disc(&yard, &Told::TheWholeRoad, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let mut machine = Machine::start_as_its_variables_decide(
+        &firmware,
+        &yard,
+        "installed",
+        Some(&disc),
+        &console,
+        &chip,
+        &[
+            (
+                "systemd.extra-unit.alo-walk-installed.service",
+                THE_INSTALLED_SYSTEM_SAYS,
+            ),
+            (
+                "systemd.unit-dropin.multi-user.target~alo-walk-installed",
+                "[Unit]\nWants=alo-walk-installed.service\n",
+            ),
+        ],
+    );
+
+    let done = the_environment_says("installing.installed");
+    let not_done = the_environment_says("installing.not-installed");
+    let refused = the_environment_says("installing.restart-when-ready");
+    let ended = console.wait_for(
+        &[done.as_str(), not_done.as_str(), refused.as_str()],
+        A_WALK + A_SIGN_IN + AN_INSTALL,
+    );
+    let installed = ended.as_deref() == Some(done.as_str());
+    let reached = installed && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
+    let screen = machine.screen("the-installed-system");
+    let stopped = machine.has_stopped_within(Duration::from_secs(120));
+    let said = console.said();
+    drop(machine);
+    forget(&yard, "installed");
+
+    assert!(
+        installed,
+        "the environment did not say alo OS is installed; it said {ended:?}. The screen \
+         is at {}.\n{said}",
+        screen.display()
+    );
+    let mut sentences = said.find(&the_environment_says("installing.starting"));
+    for named in [
+        "installing.reading-the-choice",
+        "installing.looking-for-the-disk",
+        "installing.checking-the-disk",
+        "installing.connecting",
+        "installing.checking-it-is-genuine",
+        "installing.genuine",
+        "installing.installing",
+        "installing.installed",
+    ] {
+        let at = sentences.and_then(|from| {
+            said[from..]
+                .find(&the_environment_says(named))
+                .map(|found| from + found)
+        });
+        assert!(
+            at.is_some(),
+            "the environment never said {named} in order.\n{said}"
+        );
+        sentences = at;
+    }
+    assert!(
+        reached,
+        "the installed alo OS never said what it started from. The screen is at {}.\n{said}",
+        screen.display()
+    );
+    let after_the_install = &said[sentences.unwrap_or_default()..];
+    let account = after_the_install
+        .split("ALO-INSTALLED-BEGIN")
+        .nth(1)
+        .and_then(|rest| rest.split("ALO-INSTALLED-END").next())
+        .unwrap_or_default();
+    assert!(
+        account
+            .lines()
+            .any(|line| line.trim_end().ends_with(" btrfs")),
+        "the installed system's root is not btrfs:\n{account}"
+    );
+    assert!(
+        account
+            .lines()
+            .any(|line| line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)),
+        "the installed system did not start from the disk the person chose:\n{account}"
+    );
+    assert!(stopped, "the installed system did not turn itself off");
+    eprintln!(
+        "after the install the firmware started: {:?}\nthe installed system said:\n{account}",
+        walking::firmware::starts(after_the_install)
+    );
+}
+
 /// The first sector of the installer's area, from the state the guest printed:
 /// the partition labelled as the installer labels it.
 fn the_areas_first_sector(console: &Console) -> Option<u64> {
