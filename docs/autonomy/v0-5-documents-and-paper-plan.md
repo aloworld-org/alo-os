@@ -765,3 +765,53 @@ minutes of work on that machine and impossible on any other.
   parts are named differently — the finding is the deliverable and the rule
   changes to match the evidence, never the other way round. Nothing names
   Apple's applications where a person reads.
+
+### 9. A machine with no engine says so, instead of failing
+
+**Status:** ready — **taken by the third PC on 2026-09-21 at the owner's
+instruction**, which is not this plan's machine: the lane table gives this plan
+to the development PC. It is taken here because the condition can be *produced*
+here. **Depends on:** 2.
+
+Every run on the Mac fails the same tests, because the engine `alo-converting`
+drives is an **x86_64 build** and the Mac is aarch64. A suite that is red on one
+machine for a reason nobody can fix there is a suite people learn to read past,
+and the next real failure hides inside it.
+
+**Which tests, measured rather than read.** Guessing from the sources which
+tests need the engine is the kind of proxy this plan exists to refuse, so the
+condition was reproduced on x86_64: the engine's directory was moved aside, the
+suite run, and the failures recorded — then the engine was put back, on every
+exit path including an interrupt.
+`C:\dev\setup\which-tests-need-the-engine.sh` on the third PC is the run. **Nine
+tests need it**, all in `tests/converting_a_real_document.rs`:
+`a_document_that_loses_nothing_says_so`,
+`a_document_with_a_macro_library_says_the_macros_were_not_run`,
+`a_pages_document_is_converted_and_the_families_it_is_set_in_are_named`,
+`a_word_document_is_converted_and_what_it_lost_is_named`,
+`an_excel_workbook_is_converted_and_what_it_lost_is_named`,
+`a_powerpoint_presentation_is_converted_and_what_it_lost_is_named`, and the
+three `an_opendocument_*_is_converted_and_what_it_lost_is_named`.
+
+**The Mac reports ten and this measured nine, and the difference is not
+resolved.** The tenth may fail there for a reason that is not the engine's
+absence — a different architecture, not merely a missing file. So the check is
+written against **the engine being unavailable**, which covers both, and the
+worker reconciles the list against a real run on the Mac rather than assuming
+the sets are the same.
+
+- **Acceptance:** each of those tests asks whether the engine can be run, and
+  when it cannot, **skips itself and prints why**, in the shape
+  `crates/alo-in-use/tests/a_stream_through_the_media_server_is_listed.rs`
+  already uses — whose own words are the rule: *a skip nobody can see is the
+  same colour as a pass*. The reason names what was missing, so a person reading
+  a green suite on the Mac can tell it is green for a stated reason. **On
+  x86_64 every one of them still runs and still passes**, held by a run on a
+  machine that has the engine. The asking is **not `test -x`**: this plan has
+  already shipped a defect from exactly that proxy, where the executable bit
+  stood in for *the converter runs*. It runs the engine and reads what it says.
+- **Constraint:** **no blanket `cfg(target_arch)`** that makes the tests vanish
+  on aarch64 — a test that disappears is indistinguishable from a test that
+  passed, and the next architecture would inherit the silence. Nothing about
+  what the tests assert changes; only what they do when the engine is not there.
+  The engine is still never named where a person reads.
