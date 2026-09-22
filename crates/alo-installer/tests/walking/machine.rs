@@ -160,6 +160,7 @@ impl Machine {
         console: &Console,
         chip: &SecurityChip,
     ) -> Self {
+        chip.answering();
         let monitor = yard.join("monitor.sock");
         let _ = std::fs::remove_file(&monitor);
         let mut arguments: Vec<String> = [
@@ -390,23 +391,35 @@ pub fn stop() {
 }
 
 /// The guest's own security chip, which Windows 11 asks for.
+///
+/// **`swtpm` ends when the machine it served disconnects** — at every
+/// shutdown — so a chip is started again, on the same state, before each
+/// machine that uses it ([`Self::answering`]). Measured on 2026-09-22: a test
+/// that started one `swtpm` and two machines on it found the second refused
+/// with *Failed to connect to tpm.sock: No such file or directory*.
 #[derive(Debug)]
 pub struct SecurityChip {
     /// Where QEMU talks to it.
     pub socket: PathBuf,
-    /// `swtpm` itself, stopped and reaped when the chip is dropped.
-    process: Child,
+    /// Where it keeps itself between machines.
+    state: PathBuf,
+    /// `swtpm` itself, while one is running.
+    process: std::sync::Mutex<Option<Child>>,
 }
 
 impl Drop for SecurityChip {
     fn drop(&mut self) {
-        let _ = self.process.kill();
-        let _ = self.process.wait();
+        if let Ok(mut running) = self.process.lock()
+            && let Some(mut process) = running.take()
+        {
+            let _ = process.kill();
+            let _ = process.wait();
+        }
     }
 }
 
 impl SecurityChip {
-    /// A chip of its own, made fresh.
+    /// A chip of its own, made fresh, and answering.
     ///
     /// # Panics
     /// When it does not come up.
@@ -434,12 +447,40 @@ impl SecurityChip {
                 "--lock-nvram",
             ],
         );
+        let chip = Self {
+            socket,
+            state,
+            process: std::sync::Mutex::new(None),
+        };
+        chip.answering();
+        chip
+    }
+
+    /// Make sure `swtpm` is running on this chip's state, starting it again
+    /// when the last machine's shutdown ended it.
+    ///
+    /// # Panics
+    /// When it does not come up.
+    pub fn answering(&self) {
+        let mut running = self.process.lock().expect("the chip");
+        let alive = running
+            .as_mut()
+            .is_some_and(|process| process.try_wait().is_ok_and(|ended| ended.is_none()));
+        if alive && self.socket.exists() {
+            return;
+        }
+        if let Some(mut process) = running.take() {
+            let _ = process.kill();
+            let _ = process.wait();
+        }
+        let _ = std::fs::remove_file(&self.socket);
         let process = Command::new("swtpm")
             .args([
                 "socket",
-                &format!("--tpmstate=dir={}", state.display()),
+                "--tpmstate",
+                &format!("dir={}", self.state.display()),
                 "--ctrl",
-                &format!("type=unixio,path={}", socket.display()),
+                &format!("type=unixio,path={}", self.socket.display()),
                 "--tpm2",
             ])
             .stdin(std::process::Stdio::null())
@@ -448,11 +489,11 @@ impl SecurityChip {
             .spawn()
             .expect("the chip");
         let until = Instant::now() + Duration::from_secs(20);
-        while Instant::now() < until && !socket.exists() {
+        while Instant::now() < until && !self.socket.exists() {
             std::thread::sleep(Duration::from_millis(250));
         }
-        assert!(socket.exists(), "the security chip never answered");
-        Self { socket, process }
+        assert!(self.socket.exists(), "the security chip never answered");
+        *running = Some(process);
     }
 }
 
