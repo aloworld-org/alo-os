@@ -23,7 +23,7 @@
 use std::path::Path;
 
 use alo_image::{ACCEPTED, THE_IMAGE, THE_NOTES, THE_SECURE_BOOT, TheNotes};
-use alo_installer::{BitLocker, Found, Refusal, SecurityChip, Starting, decide};
+use alo_installer::{BitLocker, FastStartup, Found, Refusal, SecurityChip, Starting, decide};
 
 /// What the notes of the Release this repository publishes say.
 fn the_notes() -> TheNotes {
@@ -53,6 +53,7 @@ fn a_machine_whose_secure_boot_is(secure_boot: Option<bool>) -> Found {
         windows: None,
         disks: None,
         an_entry_is_named_alo_os: None,
+        fast_startup: FastStartup::NotRead,
     }
 }
 

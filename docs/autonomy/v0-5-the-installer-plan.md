@@ -234,9 +234,18 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** scheduled — **and no longer scheduled on hardware.** It installs
+**Status:** in progress — **and no longer scheduled on hardware.** It installs
 beside a real Windows in a virtual machine and walks the switching both ways,
 which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
+
+**Landed so far, 2026-09-22:** the Fast Startup question. The installer reads
+Windows' own `HiberbootEnabled`, says what it found like every other check,
+and — only when it is on — asks the owner's words after the consent and before
+anything is changed. *Turn off* sets the value to `0`, is journalled, and is
+put back if a later step fails; what could not be put back is said. No program
+of the installer may name `powercfg`, and a test holds that. Both answers go on
+with the install. Against the scripted Windows;
+**not yet walked on a real one**, whose base has Fast Startup off already.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the

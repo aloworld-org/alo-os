@@ -9,6 +9,7 @@ use alo_strings::{Filling, Said, Strings, Word};
 
 use crate::bitlocker::BitLocker;
 use crate::disks::{Disks, Standing};
+use crate::fast_startup::FastStartup;
 use crate::memory::MADE_FOR;
 use crate::security_chip::SecurityChip;
 use crate::sizes;
@@ -34,6 +35,8 @@ pub struct Found {
     /// Whether the firmware already lists an entry named alo OS; [`None`] when
     /// the list could not be read.
     pub an_entry_is_named_alo_os: Option<bool>,
+    /// Whether Windows' Fast Startup is on.
+    pub fast_startup: FastStartup,
 }
 
 impl Found {
@@ -85,6 +88,18 @@ impl Found {
                     .and("size", sizes::had(windows.size)),
             ));
         }
+
+        // Said whichever it is, like every other finding; what is done about
+        // it is the person's answer to a question, and only when it is on
+        // (ADR 0064 term 9, `crate::asking`).
+        said.push(say(
+            match self.fast_startup {
+                FastStartup::On => words::FOUND_FAST_STARTUP_ON,
+                FastStartup::Off => words::FOUND_FAST_STARTUP_OFF,
+                FastStartup::NotRead => words::FOUND_FAST_STARTUP_NOT_READ,
+            },
+            Filling::nothing(),
+        ));
 
         said.push(match self.memory {
             Some(bytes) if bytes >= MADE_FOR => say(
