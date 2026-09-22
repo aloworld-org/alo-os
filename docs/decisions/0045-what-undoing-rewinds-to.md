@@ -135,6 +135,14 @@ worker who builds after the answer does not reopen them.
    how long; the machine ships the mechanism and a stated default, not a
    default that decides for them.
 
+   **Narrowed by the owner, 2026-09-22, and built the same day:** the road for
+   that act is **a person's act in Settings, and never a broker verb**. The
+   seventh term's reason is why — the broker's road exists to carry acts an
+   agent may propose under an approval, so a road that can carry this act at all
+   is a road worth attacking, and keeping it off that list costs a person
+   nothing, because a person is already at their own machine. See the amendment
+   below and `docs/contracts/asked-to-forget-folder.md`.
+
 ## The options
 
 ### Option A — the base's snapshot: btrfs, a subvolume per home, a snapshot either side of a changing turn *(recommended)*
@@ -329,8 +337,18 @@ the disk is already full.
 and `alo-letting-go.service`, started by `alo-letting-go.timer` and by nothing
 else. Terms 1 and 2 are obeyed by a machine rather than decided by one, measured
 on a real `btrfs` filesystem, and `crates/alo-broker/src/verbs.rs` gained
-nothing. Point 5 — forgetting, as one act — is the last of the seven that
-nothing builds, and is task 14 of the same plan.
+nothing.
+
+**And point 5 with it, 2026-09-22**, by task 14 of the same plan:
+`alo-forgetting.service`, which `alo-forgetting.path` starts when a person's own
+session leaves an asking in `/run/alo/asked-to-forget`, and which nothing else
+starts. The owner narrowed the road on 2026-09-22 — **a person's act in
+Settings, and never a broker verb** — and this is that road:
+`docs/contracts/asked-to-forget-folder.md`. What a person leaves **names nobody
+and nothing**; whose act it is, is the user the filesystem records as having
+written it. `alo_broker::SystemVerb` still gained nothing, and a test now holds
+the wider sentence too — that the only road into `alo-letting-go` from where a
+turn runs is its vocabulary. All seven terms are built.
 
 - `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` gains a task for the
   remover. Terms 1 and 2 were **not built** until it landed, and

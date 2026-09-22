@@ -1,0 +1,36 @@
+[Unit]
+# The one thing that starts alo-forgetting.service.
+#
+# A person approves the sentence in Settings; their own session leaves a small
+# file in /run/alo/asked-to-forget; this notices, within moments, and starts the
+# privileged half. That is the whole road, and there is nothing else on it — no
+# door, no verb, no approval crossing a process boundary, and no authority in
+# the file.
+#
+# **Why a path unit and not the daily timer.** Widening the expiry unit to
+# notice a file was the cheapest of the three roads weighed and it makes a
+# person wait up to a day for space they asked for now, which is a machine that
+# looks broken. **Why not polkit.** It is an authorisation mechanism this
+# repository does not otherwise have, and it would end in a person's session
+# being able to start a privileged unit — a road worth attacking, for one act
+# that needs none of it.
+Description=alo OS: notice that somebody asked this machine to forget what it is keeping
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0045-what-undoing-rewinds-to.md
+
+[Path]
+Unit=alo-forgetting.service
+
+# The folder anybody may leave a name in and nobody may read. It is made by
+# systemd-tmpfiles (alo-forgetting.conf), 1733 root:root, so that one person
+# cannot read, replace or remove another's — and nothing in it carries any
+# authority in the first place, because whose act an asking is, is the user the
+# filesystem records as having written it.
+DirectoryNotEmpty=/run/alo/asked-to-forget
+
+# **Not MakeDirectory=true.** systemd would make it 0755 root:root, which no
+# person could write to, and the mode of a folder that is not any one person's
+# is a decision rather than a default — the same reason /run/alo itself is a
+# tmpfiles line and not a RuntimeDirectory=.
+
+[Install]
+WantedBy=paths.target

@@ -570,17 +570,20 @@ pub enum Happened {
     /// The machine let go of what it had kept for one or more changing turns,
     /// so they can no longer be put back
     /// ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md),
-    /// the owner's first and second accepted terms).
+    /// the owner's first and second accepted terms — and, since 2026-09-22,
+    /// point 5, where the person asks for it themselves).
     ///
-    /// Written by the privileged unit that removes an expired snapshot, at the
-    /// moment it removes it and for the turns it removed — never in advance and
-    /// never for a turn it decided about and could not remove, because an entry
-    /// saying an undo is gone while the snapshot is still on the disk is the one
-    /// reading of this line a person cannot check.
+    /// Written by the privileged unit that removes the snapshots, at the
+    /// moment it removes them and for the turns it removed — never in advance
+    /// and never for a turn it decided about and could not remove, because an
+    /// entry saying an undo is gone while the snapshot is still on the disk is
+    /// the one reading of this line a person cannot check.
     ///
-    /// **No agent, and no field for one.** Expiry is housekeeping rather than a
-    /// petition: there is no verb that forgets an undo, no request, no approval
-    /// and no grant, and ADR 0045's seventh term is explicit about why — *an
+    /// **No agent, and no field for one**, whichever of the three reasons it
+    /// carries. Expiry is housekeeping rather than a petition, and forgetting is
+    /// the person's own act at their own machine: there is no verb that forgets
+    /// an undo, no request from an agent, no approval it could hold and no
+    /// grant, and ADR 0045's seventh term is explicit about why — *an
     /// agent that can forget an undo can erase the evidence of what it did*. A
     /// name in that position would be an authority the record invented, for the
     /// reason [`Happened::LeftOnItsOwn`] gives.

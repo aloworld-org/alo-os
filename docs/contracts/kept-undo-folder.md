@@ -19,6 +19,12 @@ snapshot needs `CAP_SYS_ADMIN` and taking one does not (`docs/quirks.md`). That
 asymmetry is the whole reason this is a written contract rather than a shared
 constant.
 
+**Since 2026-09-22 a third reads it**, and it is the same crate as the second
+under another unit: `alo-forgetting.service`, which a person's own act starts,
+removes **everything** one person's machine was keeping for them when they ask
+(ADR 0045 point 5, `docs/contracts/asked-to-forget-folder.md`). Everything below
+about what a reader may and may not do holds for it unchanged.
+
 **Nothing an agent can reach is in it.** There is no verb over this folder and
 there is not going to be one (ADR 0045's seventh term): an agent that can
 forget an undo can erase the evidence of what it did.
@@ -143,7 +149,15 @@ removed like any other.
 - **No record.** What the machine let go of is written to
   `/var/lib/alo-letting-go/record.jsonl` as a `let-go` entry
   (`docs/contracts/record-file.md`), which is not inside the folder being
-  removed from.
+  removed from. What a person's **own act** forgot is written the same way to
+  `/var/lib/alo-forgetting/record.jsonl`, by the other unit that removes from
+  this folder (`docs/contracts/asked-to-forget-folder.md`): two record files,
+  because a record file has one writer and those are two units a machine may run
+  in the same second.
+- **No asking.** How a person asks their machine to forget everything it is
+  keeping for them is `/run/alo/asked-to-forget`, which is not in here and is
+  not on a disk that survives a restart
+  (`docs/contracts/asked-to-forget-folder.md`).
 - **Nothing of any other person's.** A person's directory holds that person's
   home and nothing else, and no reader ever crosses from one into another.
 
