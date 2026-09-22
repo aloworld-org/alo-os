@@ -27,6 +27,7 @@ use alo_entering::TheSessionsEnvironment;
 use alo_keeping::Keeping;
 use alo_models::{Catalogue, OnCpu};
 
+use crate::arrives_with::{ArrivesWith, THE_CERTIFIED_LAPTOP_GB};
 use crate::image::Image;
 use crate::service::ROOT;
 use crate::wrong::Wrong;
@@ -91,16 +92,6 @@ const ONLY_THIS_MACHINE: &str = "localhost";
 
 /// What it says to mean *everywhere*.
 const ANYWHERE: &str = "any";
-
-/// The memory of the machine the weights on this image are sized for.
-///
-/// `docs/hardware.md` certifies two machines and says which of them matters
-/// more: *an ordinary business laptop — no discrete graphics, 16 GB of memory*,
-/// because the Windows 10 fleet this product exists to catch has almost no
-/// discrete GPUs in it. One image is built, so the model it carries is sized for
-/// that machine rather than for the workstation; a GPU workstation runs the same
-/// weights and can fetch something larger, which is a choice its owner makes.
-const THE_CERTIFIED_LAPTOP_GB: f32 = 16.0;
 
 /// The four questions `docs/booting.md` is answerable for, as its headings.
 ///
@@ -366,8 +357,49 @@ fn the_model_runtime_is_aboard_and_pinned(image: &Image, wrong: &mut Vec<Wrong>)
 /// redistribution: a licence with conditions would attach those conditions to
 /// every holder of alo OS, which is a thing to do deliberately in an ADR and
 /// never a thing to do by changing a build argument.
+///
+/// **And which model is the catalogue's answer, not this file's.** Since
+/// 2026-09-22 the recipe's entry is held to
+/// [`alo_models::Catalogue::agent_for_cpu`] for the class in
+/// [`THE_CERTIFIED_LAPTOP_GB`] — see [`crate::arrives_with`] for why the
+/// image asks that method rather than keeping a name. The refusal that method
+/// gives is a state of this check rather than an error inside it: where no
+/// entry a machine of that class can run has been measured driving the verbs,
+/// **the image carries nothing**, every question below is moot, and the one
+/// thing that is wrong is an image that carried something anyway.
 fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wrong>) {
+    the_weights_a_class_arrives_with(image, THE_CERTIFIED_LAPTOP_GB, wrong);
+}
+
+/// The same question asked about a machine of any class, which is how the
+/// *no entry clears the bar* half is shown happening.
+///
+/// The built-in catalogue has a recommendation for the certified laptop and
+/// none for a machine with eight gigabytes, so a test can put the recipe that
+/// really ships to a class that really has nothing — rather than to a catalogue
+/// invented for the occasion, which would be a test of the fixture.
+fn the_weights_a_class_arrives_with(image: &Image, ram_gb: f32, wrong: &mut Vec<Wrong>) {
     let weights = image.weights();
+    let catalogue = match Catalogue::built_in() {
+        Ok(catalogue) => catalogue,
+        Err(why) => {
+            wrong.push(Wrong::TheCatalogueDidNotRead {
+                why: why.to_string(),
+            });
+            return;
+        }
+    };
+    let arrives_with = ArrivesWith::of(&catalogue, ram_gb);
+    let Some(recommended) = arrives_with.id() else {
+        if weights.land() || weights.model().is_some() {
+            wrong.push(Wrong::TheWeightsCannotDriveAnything {
+                carried: weights.model().unwrap_or(NOTHING).to_owned(),
+                why: arrives_with.why().unwrap_or(NOTHING).to_owned(),
+                machine_gb: ram_gb.to_string(),
+            });
+        }
+        return;
+    };
 
     if !weights.land() {
         wrong.push(Wrong::TheWeightsAreNotOnTheImage {
@@ -395,15 +427,20 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
         wrong.push(Wrong::TheImageDoesNotSayWhichModelItCarries);
         return;
     };
-    let catalogue = match Catalogue::built_in() {
-        Ok(catalogue) => catalogue,
-        Err(why) => {
-            wrong.push(Wrong::TheCatalogueDidNotRead {
-                why: why.to_string(),
-            });
-            return;
-        }
-    };
+    if !weights.carries_its_template_pinned() {
+        wrong.push(Wrong::TheTemplateIsNotPinned {
+            model: model.to_owned(),
+            from: weights.template().unwrap_or(NOTHING).to_owned(),
+            digest: weights.template_digest().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+    if model != recommended {
+        wrong.push(Wrong::TheWeightsAreNotWhatTheCatalogueRecommends {
+            carried: model.to_owned(),
+            recommended: recommended.to_owned(),
+            machine_gb: ram_gb.to_string(),
+        });
+    }
     let Some(entry) = catalogue.get(model) else {
         wrong.push(Wrong::TheWeightsNameAModelTheCatalogueDoesNotHave {
             model: model.to_owned(),
@@ -432,12 +469,12 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
         });
     }
 
-    if entry.min_ram_gb > THE_CERTIFIED_LAPTOP_GB || entry.on_cpu == OnCpu::Slow {
+    if entry.min_ram_gb > ram_gb || entry.on_cpu == OnCpu::Slow {
         wrong.push(Wrong::TheWeightsAreMoreThanTheMachineCanDrive {
             model: model.to_owned(),
             needs_gb: entry.min_ram_gb.to_string(),
             on_cpu: format!("{:?}", entry.on_cpu).to_lowercase(),
-            machine_gb: THE_CERTIFIED_LAPTOP_GB.to_string(),
+            machine_gb: ram_gb.to_string(),
         });
     }
 
@@ -453,7 +490,7 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
 /// and is pointed at the weights and at the address this machine looks for a
 /// runtime at.**
 ///
-/// ADR 0025 put a runtime and 2.23 GiB of weights on every machine we build, and
+/// ADR 0025 put a runtime and 4.87 GiB of weights on every machine we build, and
 /// until `alo-modeld.service` existed nothing started either of them — so
 /// `alo-models` knocked at the loopback address and found what a machine with no
 /// model at all would have offered it. A unit is not a `COPY` line's worth of
@@ -1133,6 +1170,11 @@ mod tests {
         THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
         a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
+
+    /// A machine of the class the catalogue has nothing measured for: eight
+    /// gigabytes and no card, which is where every entry that clears the bar
+    /// stops fitting.
+    const EIGHT_GIGABYTES: f32 = 8.0;
 
     /// **The image this repository ships says one thing.** Everything below
     /// breaks one file of it and asks whether that is noticed, and none of those
@@ -2081,8 +2123,8 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "resolve/a64113399c2f6b8ad3e11c394733a2ddadaa7f33/",
-            "resolve/main/",
+            "/blobs/sha256:a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f",
+            "/blobs/main/a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f",
         );
 
         let wrong = everything_wrong_with(&image_at(&root));
@@ -2120,7 +2162,7 @@ mod tests {
 
     /// **Weights carried twice are caught.** This is what the first build of
     /// the real recipe shipped: the runtime's copy of the checked file left in
-    /// the store beside the blob the manifest names, 2.23 GiB referenced by
+    /// the store beside the blob the manifest names, 4.87 GiB referenced by
     /// nothing on a read-only `/usr`. The edit that brings it back is the
     /// removal turned into a no-op, which is what a tidy-up of a shell line
     /// looks like.
@@ -2179,6 +2221,159 @@ mod tests {
         );
     }
 
+    /// **The image carries the entry the catalogue recommends for the machine
+    /// it is built for.** Which model gets the agent is
+    /// `Catalogue::agent_for_cpu`'s answer, and this is the line that stops the
+    /// recipe from holding a second one.
+    #[test]
+    fn the_image_carries_the_model_the_catalogue_recommends() {
+        let recommended = Catalogue::built_in().ok().and_then(|catalogue| {
+            ArrivesWith::of(&catalogue, THE_CERTIFIED_LAPTOP_GB)
+                .id()
+                .map(str::to_owned)
+        });
+        assert!(
+            recommended.is_some(),
+            "the catalogue recommends nothing for the certified laptop, which is a different \
+             image from the one this test is about"
+        );
+
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        assert_eq!(image.weights().model(), recommended.as_deref());
+        assert!(
+            !everything_wrong_with(&image)
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsAreNotWhatTheCatalogueRecommends { .. })),
+            "{:?}",
+            everything_wrong_with(&image)
+        );
+    }
+
+    /// **And a model that is catalogued, measured, small enough and freely
+    /// licensed — and is not the recommendation — is caught.** The twin is the
+    /// entry this image really carried until 2026-09-22: `phi-3-mini-instruct`
+    /// passes every other question in this check and is graded `rarely`, so a
+    /// machine arriving with it arrives with a model that cannot drive
+    /// anything. Nothing but this line sees the difference.
+    #[test]
+    fn weights_that_are_not_the_catalogues_recommendation_are_caught() {
+        let root = a_copy_of_the_image("not-the-recommendation");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=qwen3-8b",
+            "ARG THE_MODEL=phi-3-mini-instruct",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong.iter().find(|it| {
+            matches!(
+                it,
+                Wrong::TheWeightsAreNotWhatTheCatalogueRecommends { carried, .. }
+                    if carried == "phi-3-mini-instruct"
+            )
+        });
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("agent_for_cpu"), "{said}");
+    }
+
+    /// **A machine whose class has nothing that clears the bar arrives with no
+    /// weights**, and the recipe that ships is refused when it is asked about
+    /// one — with the reason a person is shown rather than a sentence of this
+    /// checker's own.
+    ///
+    /// The class is real and so is the catalogue: five entries a machine with
+    /// eight gigabytes and no card can run have been measured, and not one of
+    /// them clears the bar. Nothing here is invented for the occasion.
+    #[test]
+    fn a_class_with_nothing_that_clears_the_bar_arrives_with_no_weights() {
+        let refused = Catalogue::built_in()
+            .ok()
+            .map(|catalogue| ArrivesWith::of(&catalogue, EIGHT_GIGABYTES).why());
+        assert_eq!(
+            refused.as_ref().map(Option::is_some),
+            Some(true),
+            "the class this test needs has changed: something now clears the bar at eight \
+             gigabytes, and the image may carry it"
+        );
+        let refused = refused.flatten().unwrap_or_default();
+
+        let mut wrong = Vec::new();
+        the_weights_a_class_arrives_with(
+            &image_at(Path::new(crate::THE_IMAGE)),
+            EIGHT_GIGABYTES,
+            &mut wrong,
+        );
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheWeightsCannotDriveAnything { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(
+            said.contains(refused),
+            "the image's refusal says something other than what a person is shown: {said}"
+        );
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsAreNotOnTheImage { .. })),
+            "carrying nothing is the right answer for this class, not a second fault: {wrong:?}"
+        );
+    }
+
+    /// **And an image that carries nothing is right for that class**, which is
+    /// the half that makes the refusal above a rule rather than a complaint:
+    /// strip the weights out and the same class has nothing to say about them.
+    #[test]
+    fn a_class_with_nothing_that_clears_the_bar_is_content_with_an_image_carrying_none() {
+        let root = a_copy_of_the_image("no-weights-no-bar");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "COPY --from=weights /models/ /usr/share/alo/models/",
+            "",
+        );
+        edited(&root, THE_CONTAINERFILE, "ARG THE_MODEL=qwen3-8b", "");
+
+        let mut wrong = Vec::new();
+        the_weights_a_class_arrives_with(&image_at(&root), EIGHT_GIGABYTES, &mut wrong);
+
+        assert!(wrong.is_empty(), "{wrong:?}");
+    }
+
+    /// **A template that is not pinned the way the weights are is caught.** A
+    /// grade is earned against a model as it was served, and the runtime's
+    /// template is what decides where one turn ends — so the same weights under
+    /// a template nobody pinned are a different machine answering, and every
+    /// other check here would pass.
+    #[test]
+    fn a_template_that_is_not_pinned_is_caught() {
+        let root = a_copy_of_the_image("unpinned-template");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheTemplateIsNotPinned { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsArriveUnverified { .. })),
+            "the weights' own digest is a different line and is still checked: {wrong:?}"
+        );
+    }
+
     /// **A model the catalogue does not have is caught.** Weights nothing can
     /// look up are weights nobody can be told the licence, the cost or the
     /// measurement of, and the catalogue is where all three live.
@@ -2188,7 +2383,7 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=qwen3-8b",
             "ARG THE_MODEL=something-somebody-liked",
         );
 
@@ -2213,7 +2408,7 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=qwen3-8b",
             "ARG THE_MODEL=",
         );
 
@@ -2260,7 +2455,7 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=qwen3-8b",
             &format!("ARG THE_MODEL={unmeasured}"),
         );
 
@@ -2310,7 +2505,7 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=qwen3-8b",
             "ARG THE_MODEL=mixtral-8x7b-instruct",
         );
 
@@ -2336,7 +2531,7 @@ mod tests {
         edited(
             &root,
             THE_CONTAINERFILE,
-            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=qwen3-8b",
             "ARG THE_MODEL=llama-3.2-3b-instruct",
         );
 
@@ -2463,7 +2658,7 @@ mod tests {
 
     /// **A model service told nothing about where the weights are is caught.**
     /// Without the line the runtime uses its own default — a home directory
-    /// this image does not make — and a machine carrying 2.23 GiB of model
+    /// this image does not make — and a machine carrying 4.87 GiB of model
     /// reports nothing installed.
     #[test]
     fn a_model_service_pointed_at_no_store_is_caught() {
@@ -2624,7 +2819,7 @@ mod tests {
 
     /// **A model service nothing pulls in is caught**, which is this task's own
     /// failure mode: the unit is in the image, `systemctl cat` shows it, and a
-    /// machine boots with 2.23 GiB of model and nothing serving it — the exact
+    /// machine boots with 4.87 GiB of model and nothing serving it — the exact
     /// state the image really shipped in until this unit existed.
     #[test]
     fn a_model_service_nothing_starts_is_caught() {

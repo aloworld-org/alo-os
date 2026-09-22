@@ -537,6 +537,56 @@ pub enum Wrong {
         /// The licence the catalogue states.
         licence: String,
     },
+    /// The recipe carries a model other than the one the catalogue recommends
+    /// for the machine this image is built for.
+    #[error(
+        "this image carries `{carried}`, and the catalogue recommends `{recommended}` for a \
+         machine with {machine_gb} GB and no card — which model gets the agent is \
+         `alo_models::Catalogue::agent_for_cpu`'s answer, and a second answer kept in a build \
+         argument is a machine that arrives with weights the rest of alo OS would not have chosen"
+    )]
+    TheWeightsAreNotWhatTheCatalogueRecommends {
+        /// What the recipe names.
+        carried: String,
+        /// What the catalogue recommends for this machine.
+        recommended: String,
+        /// What the certified laptop has, in gigabytes.
+        machine_gb: String,
+    },
+    /// The recipe carries weights on a machine class where nothing the
+    /// catalogue offers has been measured driving the verbs.
+    #[error(
+        "this image carries `{carried}`, and no entry a machine with {machine_gb} GB and no card \
+         can run has been measured driving the verbs (`{why}`) — a machine whose class has \
+         nothing that clears the bar arrives with no weights and says so in those words, rather \
+         than with gigabytes of a model that cannot drive anything"
+    )]
+    TheWeightsCannotDriveAnything {
+        /// What the recipe names, or `-` where it names nothing and merely
+        /// lands a store.
+        carried: String,
+        /// The key of the sentence a person is shown for it, which is
+        /// `alo_models::NoAgentHere`'s own.
+        why: String,
+        /// What the certified laptop has, in gigabytes.
+        machine_gb: String,
+    },
+    /// The template the model is served with is not pinned, checked before
+    /// anything read it, and handed to the import.
+    #[error(
+        "this image serves `{model}` under a template that is not pinned and checked the way its \
+         weights are (`{from}`, `{digest}`) — a grade is earned against a model as it was served, \
+         and the same weights under another template are a different machine answering"
+    )]
+    TheTemplateIsNotPinned {
+        /// What the recipe names.
+        model: String,
+        /// Where the template is fetched from, or `-` where the recipe says
+        /// nothing.
+        from: String,
+        /// The digest the recipe pins for it, or `-` where it pins none.
+        digest: String,
+    },
     /// The catalogue itself would not read, so nothing here can be checked
     /// against it.
     #[error(
