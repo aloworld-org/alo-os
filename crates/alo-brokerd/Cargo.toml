@@ -50,6 +50,12 @@ alo-keeping-up = { path = "../alo-keeping-up" }
 # (`tests/the_updates_are_carried_by_a_unit.rs`).
 alo-updating = { path = "../alo-updating" }
 
+# The menu a machine starts at, the firmware this machine runs on, and the one
+# thing it is ever told: which entry to start next, once. Read and told, never
+# decided here — `alo_starting::Firmware` is the whole of what this process can
+# ask a firmware, and `src/next_start.rs` is the only file that names it.
+alo-starting = { path = "../alo-starting" }
+
 # The machine's record file for the broker's own entries, written and synced one
 # entry at a time. `src/recording.rs` is the only file that names it.
 alo-keeping = { path = "../alo-keeping" }

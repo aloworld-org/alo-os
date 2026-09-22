@@ -923,9 +923,13 @@ verbs are carried out by a unit the broker starts and waits for (added
 2026-09-20, ADR 0053 accepted option B), supplied through
 `Carriers::with_updates(Updates::against(…))`; the published
 `Carriers::of(network, proxy, storage)` remains compatible and refuses them
-until that is supplied.
+until that is supplied. `starting.windows-next` is carried out against the
+machine's firmware (added 2026-09-22, ADR 0062), supplied through
+`Carriers::with_next_start(NextStart::against(…))`, and the published
+`Carriers::of(network, proxy, storage)` likewise remains compatible and
+refuses it until that is supplied.
 
-**The list.** Eleven verbs, each with exactly one argument:
+**The list.** Twelve verbs, each with exactly one argument:
 
 | Verb | Argument |
 |---|---|
@@ -934,11 +938,12 @@ until that is supplied.
 | `network.radio` | `on` or `off` |
 | `updates.apply`, `updates.roll-back` | an identity |
 | `storage.mount`, `storage.eject` | an identity |
+| `starting.windows-next` | an identity |
 
 An **identity** is the SHA-256 of the identity the rented service reported for
 the thing — the printer the print service found, the network the network manager
 reported, the drive or filesystem the disk service reported, the build the base
-staged — written as
+staged, the start-up entry the firmware reported — written as
 sixty-four lowercase hexadecimal characters. The broker never interprets one; the
 verb compares it with what the service reports at that moment and acts on the
 match or on nothing. There is no argument of any other shape: no text, no path,
@@ -1053,6 +1058,28 @@ are removed whichever way the act went. Neither unit takes an argument, neither
 can be enabled, and neither holds `CAP_SYS_BOOT`: no instruction on this road
 carries `--apply`, so a restart is the person's own, afterwards. The file, the
 identities and the units are `machine-update-file.md`.
+
+**Restarting into Windows, carried out.** On a machine installed alongside
+Windows (ADR 0023 §4, ADR 0033), `starting.windows-next` sets the firmware's
+**next start** — the UEFI `BootNext` variable — to the Windows already on the
+disk, for **one** start, and leaves the machine's ordinary start-up order
+exactly as it was (ADR 0062, *what stays as it was*). A start-up entry's
+identity is the SHA-256 of `alo-starting entry 1`, a zero byte, and exactly the
+bytes the firmware reported for that entry — its whole load option, description
+and path together (`alo_starting::Entry::as_reported`). The number the firmware
+keeps an entry under is deliberately **not** part of the identity: an entry
+names what it starts, not the slot it is in. The broker asks the firmware for
+its entries now, digests each, and acts on the one that matches. It is
+`not-carried`, and nothing is changed, when: the firmware could not be asked; no
+entry matches, or more than one does; the entry that matches does not start
+Windows — checked by looking for `\EFI\Microsoft\Boot\bootmgfw.efi` in the path
+the firmware reported, never by the entry's name, which is whatever was typed
+when it was made; or the firmware would not be written. **It restarts nothing**:
+the restart is the person's own, afterwards, like the update verbs. There is no
+verb for the machine's start-up **order**, none for adding or removing a
+start-up entry, and none for the menu's default — the last of those is GRUB's
+own saved entry in its environment block and is read and written there and
+nowhere else (`alo_starting::TheStartingChoice`, ADR 0062 term 3).
 
 ## Records
 

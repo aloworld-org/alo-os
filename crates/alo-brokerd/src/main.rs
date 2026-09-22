@@ -20,8 +20,8 @@ mod running {
 
     use alo_broker::our_group;
     use alo_brokerd::{
-        Carriers, Handing, Network, Places, Printers, Proxy, Started, Storage, THE_ACCOUNTS,
-        THE_WANTED_UPDATE, TheSystemManager, Updates, started,
+        Carriers, Handing, Network, NextStart, Places, Printers, Proxy, Started, Storage,
+        THE_ACCOUNTS, THE_WANTED_UPDATE, TheSystemManager, Updates, started,
     };
     use alo_drives::udisks::OnThisMachine as TheDiskService;
     use alo_networks::network_manager::OnThisMachine as TheNetworkManager;
@@ -29,6 +29,7 @@ mod running {
     use alo_networks::proxy_password::THE_WANTED_PASSWORD;
     use alo_printing::{PrintingService, THE_SOCKET};
     use alo_proxy::TheMachinesCredentials;
+    use alo_starting::TheFirmware;
 
     /// Open the door and answer whoever knocks, until this service is stopped.
     ///
@@ -58,6 +59,7 @@ mod running {
                 Handing::on_this_machine(),
                 logins.person,
             ))
+            .with_next_start(NextStart::against(TheFirmware::of_this_machine()))
         };
         let Started {
             listening,

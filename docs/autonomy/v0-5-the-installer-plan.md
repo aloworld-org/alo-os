@@ -1012,7 +1012,46 @@ never pushes, signs or pins.
 
 ### 16. Restarting into Windows, and the menu a machine starts at
 
-**Status:** ready — **taken by the third PC on 2026-09-22 at the owner's
+**Status:** **Done, 2026-09-22.** On the third PC
+(`updates/restarting-into-windows-and-the-menu-a-machine-starts-at.md`).
+**Nothing in it is ticked on a machine**, which is what this task's own
+constraint asks: it is built so it can be walked, and the walk is the
+development PC's.
+
+**What landed.** A new crate `crates/alo-starting` — the generated menu, the
+loader's environment block read and written, which system starts when nobody
+chooses, what the firmware reports and the one thing it is ever told, and every
+sentence a person reads with a translator's note on each. `alo_broker::SystemVerb`
+gained a twelfth member, `starting.windows-next`, carried out by
+`alo_brokerd::NextStart` against `alo_starting::Firmware`; `docs/contracts/agent-verbs.md`
+carries it additively and `docs/booting.md` carries the alongside journey with
+term 2's honest line and the boot-menu key named. `alo-letting-go`'s count of the
+broker's list moved from eleven to twelve, in this change, with the reason beside
+it.
+
+**Three decisions a reader should know were made rather than found.**
+**(a) The identity of a start-up entry does not include the number the firmware
+keeps it under** — an entry names what it starts, not the slot it is in — so a
+firmware that renumbers does not turn an approval into a refusal, and the same
+entry written twice is one identity and two matches, which is refused rather
+than guessed at. **(b) Windows is recognised by the program its entry starts and
+never by the entry's name**, because a firmware's names are whatever was typed
+when the entries were made and on a reinstalled machine they are regularly
+wrong. **(c) The menu's Windows entry is found by searching for Windows's own
+loader** rather than by a partition identifier written into the configuration:
+an identifier learned once at install and never checked again would be a second
+copy of a fact about somebody's disk, of exactly the kind term 3 refuses.
+
+**What the alo OS side owes, and who owes it.** No agent verb was declared:
+declaring one requires a promise in `docs/features.md` with a tier for
+`alo-by-hand` to answer against (ADR 0009), and adding a promise there is the
+owner's rather than a worker's. The broker verb is the road, which is the shape
+`updates.apply` and `storage.mount` already have. And whether `GRUB_SAVEDEFAULT`
+behaves as this configuration expects across a `bootupd` update is **not
+measured** — ADR 0062's consequences already put that answer in
+`docs/quirks.md` when task 4 walks it.
+
+Formerly: ready — **taken by the third PC on 2026-09-22 at the owner's
 instruction**, to get the certified laptop installed by the evening of
 2026-09-23. It is **the part of task 4 that needs no virtual machine**, split
 out so that what is this machine's and what stays with the development PC is
@@ -1076,3 +1115,61 @@ the in-system switches alone. **This part is built so it can be walked there.**
   machine on the development PC. GRUB is configured and never patched. No change
   to `crates/alo-installer` or `crates/alo-installing`. **Fast Startup is not
   decided here.**
+
+### 17. The default a machine starts at, changed by the person who owns it
+
+**Status:** ready. **Depends on:** 16.
+
+**What is here.** The half of ADR 0062's third term that task 16 could not
+finish: **the road a person's choice travels to reach the loader's own file.**
+Task 16 built the reader and the writer over GRUB's environment block
+(`alo_starting::TheStartingChoice`), and a test that nothing anywhere in the
+crates or the image keeps a second copy of the answer. What it did not build is
+how a person in Settings, who is not root, changes a file under `/boot` that is.
+
+- **a. The decision, if one is needed — and it probably is.** The obvious road
+  is a thirteenth member of `alo_broker::SystemVerb`, and **adding a member of
+  that enum is a deliberate act** (ADR 0001 §1–2): `alo-letting-go`'s count of
+  the list is the tripwire, and moving it takes a decision named beside it. The
+  alternatives are real and should be weighed rather than skipped: a verb whose
+  argument is a `Switch` naming which of the two systems; the person's own act
+  going through the broker under `alo_broker::BY_HAND` with no agent verb at
+  all; or the loader's saved default being writable only by the loader, with
+  Settings offering nothing but *choose at the menu*. **If the answer is a new
+  member, write the ADR first**, with the options, a recommendation and the
+  consequences, and hand that over as this task — that is a finished piece of
+  work, and it is what the next worker needs.
+- **b. The road itself, whatever a. decides**, with the full set of tests every
+  change to the machine has: approved once, one approval causing exactly one
+  execution, recorded permitted and refused, and each refusal path tested as
+  carefully as the happy one. The refusals are already known and each is a
+  sentence task 16 wrote or owes: a file that is not an environment block, one
+  that will not hold another setting, one that could not be written, and a
+  machine with no Windows on it to start.
+- **c. The surface in Settings.** *This computer starts alo OS / Windows when
+  nobody chooses*, from `alo_starting::starts_at_said`, with the change beside
+  it. It reads what is in the loader's file at the moment it is shown — never a
+  value kept anywhere else, which is the whole of term 3 — and it says what a
+  person reads when the change was refused.
+
+**What is not here.** `crates/alo-installer` and `crates/alo-installing` are not
+edited: **who writes `custom.cfg` and the environment block onto a machine at
+install time, and what happens to them across a `bootupd` update**, is task 4's
+and belongs with the machine that has the virtual machine to walk it. Nor is the
+*Restart into Windows* verb, which task 16 built and which is a different act: it
+sets the next start, and this one sets the default. Nothing here is ticked on a
+machine.
+
+- **Acceptance:** a person's change to which system the machine starts at
+  reaches `/boot/grub2/grubenv` and nothing else, under one approval, recorded
+  either way; the test that finds no second copy of the answer still passes and
+  now covers the new road; every refusal on the road is a sentence in the
+  vocabulary with a translator's note; and if a member was added to
+  `alo_broker::SystemVerb`, the ADR that decided it is in `docs/decisions/` and
+  `alo-letting-go`'s count moved in the same change with the reason beside it.
+- **Constraint:** GRUB is configured and never patched (ADR 0011). **No second
+  copy of the last choice** — not a file of ours, not a cache, not a value
+  carried in a session (ADR 0062 term 3). No change to `crates/alo-installer` or
+  `crates/alo-installing`. No verb that writes the machine's start-up **order**,
+  adds a start-up entry or removes one. Nothing is ticked on the certified
+  laptop.

@@ -39,7 +39,8 @@ impl Change {
             | SystemVerb::ApplyStagedUpdate(_)
             | SystemVerb::RollBack(_)
             | SystemVerb::MountDrive(_)
-            | SystemVerb::EjectDrive(_) => None,
+            | SystemVerb::EjectDrive(_)
+            | SystemVerb::RestartIntoWindows(_) => None,
         }
     }
 

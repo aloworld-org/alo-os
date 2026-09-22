@@ -47,6 +47,27 @@ published.
 and a pinned digest. If that has not landed, the first task here is a finding
 rather than a guess.
 
+**One test released to the installer plan, owner-authorized 2026-09-22.** The
+owner instructed the third PC to add a `SystemVerb` for restarting into Windows.
+This plan's task 13 holds the broker's verb list to a count, deliberately, so
+that the list cannot grow unnoticed — *a plan that gains a verb changes this
+line, and that is the point of the line*. So the count moves from eleven to
+twelve, and the release below is that one test file.
+
+**What does not move is what the count was protecting.** ADR 0045's seventh term
+is about **undo**: no name on the broker's list may be a verb over the
+written-down past, because an agent that can forget an undo can erase the
+evidence of what it did. `no_verb_on_the_brokers_list_begins_undo` is unchanged
+and still passes; `starting.windows-next` is a verb over the *next start*, not
+over the record.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-installer-plan.md
+task = 16
+files =
+  crates/alo-letting-go/tests/nothing_here_is_a_verb.rs
+```
+
 ## Tasks
 
 ### 1. What an update is, and what it may never do
