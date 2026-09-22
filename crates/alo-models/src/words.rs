@@ -38,6 +38,23 @@
 //! exactly those words, and `alo-models`' integration test reads them again in
 //! the vocabulary the whole machine loads.
 //!
+//! # And seven answer a question rather than anything else
+//!
+//! [`ABOUT_THE_ROAD`] is what somebody reads when they ask **which part of
+//! this machine is running the model**. Nothing was stopped, nothing is being
+//! offered, and nothing failed: a machine with no graphics card is the machine
+//! this operating system is built for
+//! ([ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md)).
+//!
+//! Two rules hold across all seven and each is a test at the bottom of this
+//! file. **None of them says how long anything took** — the road is asked for
+//! and answered, and a sentence that described it by speed would teach a
+//! person to go back to inferring it from a stopwatch. **None of them
+//! apologises**: ADR 0007 rejected CPU support as a degraded mode with
+//! warnings, on the grounds that a default which apologises for itself teaches
+//! people the product is not for them, and a translation that made *running on
+//! the processor* sound like a consolation would put that back.
+//!
 //! Three more are refusals of a **path** rather than of weights — nothing is
 //! there, it is a folder, the disk would not say — and each names the path,
 //! because the path is the thing a person acts on.
@@ -856,11 +873,114 @@ pub const GRADED_ANOTHER_WAY: Word = Word::saying(
      what is missing, not that the model would do badly if it were measured.",
 );
 
+// ---------------------------------------------------------------------------
+// Which road this machine's answers take — [`crate::Road`].
+//
+// Read by somebody who asked *is this machine using its graphics card*, which
+// ADR 0007 says is a question about speed and never about what the machine can
+// do. Two rules hold across all seven, and there is a test for each.
+//
+// **None of them says how long anything took.** The road is asked for and
+// answered; a sentence that described it by speed would teach a person to infer
+// it from a stopwatch, which is the thing being replaced.
+//
+// **None of them apologises.** ADR 0007 rejected CPU support as a degraded mode
+// with warnings — *a default that apologises for itself teaches people the
+// product is not for them* — and the fleet this product exists for has no
+// graphics card at all. *Runs on the processor* is what this operating system
+// does, stated; it is not a consolation.
+// ---------------------------------------------------------------------------
+
+/// The runtime put the weights on a graphics card.
+pub const ANSWERED_ON_THE_CARD: Word = Word::saying(
+    "models.road.on-the-card",
+    "this machine is running the model on its graphics card",
+)
+.noting(
+    "Shown to somebody who asked which part of the machine is running the model. How much of the \
+     model is on the card is a number, shown beside this line rather than inside it. It is a \
+     statement about where the work happens, not a claim that the answers are better.",
+);
+
+/// No card on the bus at all.
+pub const THE_PROCESSOR_NO_CARD: Word = Word::saying(
+    "models.road.the-processor-no-card",
+    "this machine has no graphics card, so it is running the model on its processor",
+)
+.noting(
+    "Shown to somebody who asked which part of the machine is running the model. This is the \
+     ordinary machine this operating system is built for, and the line states a fact about the \
+     hardware. It is not a warning, not a complaint and not an invitation to buy anything — a \
+     translation that made it sound like either would be saying something the original does not.",
+);
+
+/// A card is here and nothing can reach it.
+pub const THE_PROCESSOR_NO_DRIVER: Word = Word::saying(
+    "models.road.the-processor-no-driver",
+    "this machine has a graphics card made by {vendor} and no driver that can reach it, so it is \
+     running the model on its processor",
+)
+.noting(
+    "{vendor} is the name of the company that made the card — NVIDIA, AMD, Intel — and is never \
+     translated. The distinction this line exists for: the card is there. A person told their \
+     machine had no card would go looking for hardware they already own. \"Driver\" is the piece \
+     of software a machine needs before it can use a particular piece of hardware.",
+);
+
+/// A card the pinned runtime does not put weights on.
+pub const THE_PROCESSOR_ANOTHER_VENDOR: Word = Word::saying(
+    "models.road.the-processor-another-vendor",
+    "this machine's graphics card, made by {vendor}, is not one the model runtime puts models on, \
+     so it is running the model on its processor",
+)
+.noting(
+    "{vendor} is the name of the company that made the card and is never translated. \"The model \
+     runtime\" is the program that runs models on this machine. The line says what this pair of \
+     things does, not that the card is poor or that the machine is the wrong one.",
+);
+
+/// A card with less memory than the weights need.
+pub const THE_PROCESSOR_NOT_ENOUGH_ON_THE_CARD: Word = Word::saying(
+    "models.road.the-processor-not-enough-on-the-card",
+    "this machine's graphics card has less memory than this model needs, so it is running the \
+     model on its processor",
+)
+.noting(
+    "How much the card has and how much the model needs are numbers, shown beside this line \
+     rather than inside it — see this file's note about counting. The model still runs: the line \
+     says where, and nothing here is refused.",
+);
+
+/// A card the runtime could use, and it used the processor.
+pub const THE_PROCESSOR_THE_RUNTIME_LEFT_IT_THERE: Word = Word::saying(
+    "models.road.the-processor-the-runtime-left-it-there",
+    "this machine has a graphics card the model runtime can use, and the model is running on the \
+     processor",
+)
+.noting(
+    "Shown when the machine has a usable card and the model runtime put the model on the \
+     processor anyway. The line states both halves and draws no conclusion, because this \
+     operating system does not manage the runtime's own decision about that.",
+);
+
+/// This machine's own list of what draws was not there to read.
+pub const THE_PROCESSOR_THE_MACHINE_WOULD_NOT_SAY: Word = Word::saying(
+    "models.road.the-processor-the-machine-would-not-say",
+    "this machine did not say what graphics hardware it has, and it is running the model on its \
+     processor",
+)
+.noting(
+    "Shown when the machine keeps no list of its graphics hardware for this operating system to \
+     read. It says nothing about whether there is a card — that is the point of the line, and a \
+     translation that turned it into \"there is no card\" would be stating something nobody \
+     checked.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 58] = [
+pub const EVERY_WORD: [Word; 65] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -919,6 +1039,32 @@ pub const EVERY_WORD: [Word; 58] = [
     UNMEASURED_NOT_PUBLISHED,
     GRADED_AS_A_TURN_ASKS,
     GRADED_ANOTHER_WAY,
+    ANSWERED_ON_THE_CARD,
+    THE_PROCESSOR_NO_CARD,
+    THE_PROCESSOR_NO_DRIVER,
+    THE_PROCESSOR_ANOTHER_VENDOR,
+    THE_PROCESSOR_NOT_ENOUGH_ON_THE_CARD,
+    THE_PROCESSOR_THE_RUNTIME_LEFT_IT_THERE,
+    THE_PROCESSOR_THE_MACHINE_WOULD_NOT_SAY,
+];
+
+/// Every sentence a person reads about **which road this machine's answers
+/// take**.
+///
+/// Written down as a list so that the two rules those sentences are held to —
+/// nothing about how long a road took, and nothing that apologises for the
+/// machine somebody owns — are read against the same seven strings by the test
+/// beside [`crate::road`] and by the integration test that reads them again in
+/// the machine's own vocabulary. A word added to the road area and left out
+/// here is a sentence those rules stop reading.
+pub const ABOUT_THE_ROAD: [Word; 7] = [
+    ANSWERED_ON_THE_CARD,
+    THE_PROCESSOR_NO_CARD,
+    THE_PROCESSOR_NO_DRIVER,
+    THE_PROCESSOR_ANOTHER_VENDOR,
+    THE_PROCESSOR_NOT_ENOUGH_ON_THE_CARD,
+    THE_PROCESSOR_THE_RUNTIME_LEFT_IT_THERE,
+    THE_PROCESSOR_THE_MACHINE_WOULD_NOT_SAY,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -1121,6 +1267,33 @@ mod tests {
             );
         }
         assert_eq!(listed.len(), ABOUT_BROUGHT_WEIGHTS.len());
+    }
+
+    /// **Every sentence about which road this machine takes is on the list the
+    /// two road rules read**, and nothing else is.
+    ///
+    /// The same guard as the brought-weights list above, for the same reason:
+    /// a word added to the area and left off the list is a sentence that
+    /// stops being read for a stopwatch and for an apology.
+    #[test]
+    fn every_sentence_about_the_road_is_on_the_list_the_road_rules_read() {
+        let listed: BTreeSet<&str> = ABOUT_THE_ROAD.iter().map(Word::named).collect();
+        for word in EVERY_WORD {
+            let in_the_area = word.named().starts_with("models.road.");
+            assert_eq!(
+                in_the_area,
+                listed.contains(word.named()),
+                "{} is {} the road area and {} the list",
+                word.named(),
+                if in_the_area { "in" } else { "not in" },
+                if listed.contains(word.named()) {
+                    "on"
+                } else {
+                    "not on"
+                },
+            );
+        }
+        assert_eq!(listed.len(), ABOUT_THE_ROAD.len());
     }
 
     /// **Nothing said beside somebody's own weights nudges them** toward a

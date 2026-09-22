@@ -53,9 +53,25 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
+use crate::card::Vendor;
 use crate::catalogue::Catalogue;
+use crate::road::WhichRoad;
 use crate::runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
 use crate::weights::Weights;
+
+/// **Which graphics cards the pinned runtime puts weights on.**
+///
+/// Ollama's own answer, which is why it lives in the file that knows Ollama
+/// exists (ADR 0006): its releases ship CUDA and ROCm libraries and nothing
+/// for anybody else's card, so an integrated Intel processor is a device on
+/// the bus that this runtime will not load a model onto — which is a sentence
+/// a person reads ([`crate::WhyTheProcessor::TheRuntimeCannotUseThatCard`])
+/// rather than a slow afternoon.
+///
+/// It says nothing about whether a card was used. That is
+/// [`ModelRuntime::loaded`], measured, and this list is only ever the reason a
+/// machine gives for the road it took.
+const CARDS_THE_PINNED_RUNTIME_USES: &[Vendor] = &[Vendor::Nvidia, Vendor::Amd];
 
 /// Where Ollama listens by default. The same endpoint `alo-workplace`'s
 /// `AiConfig` has documented since 2025, which is why pointing the agents at a
@@ -219,8 +235,13 @@ struct PsEntry {
     /// Ollama's `family:tag` name.
     #[serde(default)]
     name: String,
-    /// Video memory held. The same object also carries the disk size, which is
-    /// the wrong number for this question.
+    /// What the runtime loaded in all, wherever it put it. Not the disk size
+    /// `/api/tags` reports for the same weights, which is a third number.
+    #[serde(default)]
+    size: u64,
+    /// How much of that is on the graphics processor. Nought on a machine that
+    /// loaded the weights onto its own processor, which is ADR 0007's ordinary
+    /// case rather than a failure.
     #[serde(default)]
     size_vram: u64,
 }
@@ -246,6 +267,25 @@ struct ChatRequest<'a> {
     /// Absent on every question a person puts to a model.
     #[serde(skip_serializing_if = "Option::is_none")]
     format: Option<serde_json::Value>,
+    /// Which road to put the question on, where the caller named one. Absent
+    /// on every question that did not, so the request a person's turn sends is
+    /// byte for byte the request it sent before this field existed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    options: Option<ChatOptions>,
+}
+
+/// The runtime's own options block, of which this crate sets one field.
+///
+/// Ollama's spelling, here for [`crate::ollama`]'s reason and nowhere else:
+/// `num_gpu` is how many of a model's layers it puts on a graphics card, and
+/// nought is the processor road asked for rather than waited for. That is the
+/// only way to put one question to both roads on one machine — restarting the
+/// runtime with its card hidden is an operation on the machine, not something
+/// alo OS does to somebody's computer to answer a question about it.
+#[derive(Serialize)]
+struct ChatOptions {
+    /// How many layers go on a graphics card. Nought is the processor.
+    num_gpu: u32,
 }
 
 /// One message in that call.
@@ -453,7 +493,8 @@ impl ModelRuntime for Ollama {
             .into_iter()
             .map(|m| Loaded {
                 id: Self::catalogue_id(&m.name),
-                vram_bytes: m.size_vram,
+                loaded_bytes: m.size,
+                on_the_gpu_bytes: m.size_vram,
             })
             .collect())
     }
@@ -573,7 +614,11 @@ impl ModelRuntime for Ollama {
     }
 
     fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError> {
-        self.chat(question, of_model, None)
+        self.chat(question, of_model, None, WhichRoad::AsTheMachineIs)
+    }
+
+    fn cards_it_can_use(&self) -> &'static [Vendor] {
+        CARDS_THE_PINNED_RUNTIME_USES
     }
 
     fn bring(&self, weights: &Weights) -> Result<(), RuntimeError> {
@@ -638,19 +683,57 @@ impl Ollama {
         question: &str,
         of_model: &str,
     ) -> Result<String, RuntimeError> {
+        self.answers_in_the_envelope_on(question, of_model, WhichRoad::AsTheMachineIs)
+    }
+
+    /// **The same question, put on a road the caller names.**
+    ///
+    /// [`WhichRoad::AsTheMachineIs`] is what every other door here asks and
+    /// sends no option at all. [`WhichRoad::TheProcessor`] asks the runtime for
+    /// the processor whatever is on the bus, and exists for one reason:
+    /// [ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md) says
+    /// *a GPU changes speed, not capability*, and the only way to hold that
+    /// claim rather than assert it is to put one question to each road **on the
+    /// same machine, to the same weights** and compare what comes back.
+    /// `alo_driving::BothRoads` is what compares them.
+    ///
+    /// # Errors
+    /// The same as [`ModelRuntime::answers`].
+    pub fn answers_in_the_envelope_on(
+        &self,
+        question: &str,
+        of_model: &str,
+        road: WhichRoad,
+    ) -> Result<String, RuntimeError> {
         self.chat(
             question,
             of_model,
             Some(crate::in_the_envelope::the_envelope()),
+            road,
         )
     }
 
-    /// One question put to the runtime, held to `format` where one is given.
+    /// A question in a person's own words, put on a road the caller names.
+    ///
+    /// # Errors
+    /// The same as [`ModelRuntime::answers`].
+    pub fn answers_on(
+        &self,
+        question: &str,
+        of_model: &str,
+        road: WhichRoad,
+    ) -> Result<String, RuntimeError> {
+        self.chat(question, of_model, None, road)
+    }
+
+    /// One question put to the runtime, held to `format` where one is given,
+    /// on the road the caller named.
     fn chat(
         &self,
         question: &str,
         of_model: &str,
         format: Option<serde_json::Value>,
+        road: WhichRoad,
     ) -> Result<String, RuntimeError> {
         let body = ChatRequest {
             model: Self::runtime_name(of_model),
@@ -660,6 +743,10 @@ impl Ollama {
             }],
             stream: false,
             format,
+            options: match road {
+                WhichRoad::AsTheMachineIs => None,
+                WhichRoad::TheProcessor => Some(ChatOptions { num_gpu: 0 }),
+            },
         };
         let response = ureq::post(format!("{}/api/chat", self.endpoint))
             .config()
@@ -1017,10 +1104,12 @@ mod tests {
         );
     }
 
+    /// **Both halves of a residency are read**, which is the pair a grade
+    /// records and what says which road a machine took.
     #[test]
-    fn loaded_reads_video_memory_not_disk() {
+    fn loaded_reads_what_was_loaded_and_how_much_of_it_is_on_the_card() {
         let (url, server) = serving(
-            r#"{"models":[{"name":"teuken-7b-instruct:latest","size":4600000000,"size_vram":6100000000}]}"#,
+            r#"{"models":[{"name":"teuken-7b-instruct:latest","size":6100000000,"size_vram":4563287407}]}"#,
             200,
         );
         let got = Ollama::at(&url, catalogue()).loaded().unwrap();
@@ -1029,9 +1118,29 @@ mod tests {
             got,
             vec![Loaded {
                 id: "teuken-7b-instruct".to_owned(),
-                // The disk size is right there in the same object and is the
-                // wrong number: what a loaded model costs is VRAM.
-                vram_bytes: 6_100_000_000,
+                loaded_bytes: 6_100_000_000,
+                on_the_gpu_bytes: 4_563_287_407,
+            }]
+        );
+    }
+
+    /// **A machine that loaded the weights onto its processor reports nought
+    /// on the card**, and that is a reading rather than a missing one: it is
+    /// what makes the processor road measured instead of assumed.
+    #[test]
+    fn a_model_loaded_onto_the_processor_reports_nothing_on_the_card() {
+        let (url, server) = serving(
+            r#"{"models":[{"name":"mistral-7b-instruct:latest","size":4600000000,"size_vram":0}]}"#,
+            200,
+        );
+        let got = Ollama::at(&url, catalogue()).loaded().unwrap();
+        server.join().unwrap();
+        assert_eq!(
+            got,
+            vec![Loaded {
+                id: "mistral-7b-instruct".to_owned(),
+                loaded_bytes: 4_600_000_000,
+                on_the_gpu_bytes: 0,
             }]
         );
     }

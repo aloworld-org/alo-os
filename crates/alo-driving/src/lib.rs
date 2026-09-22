@@ -25,6 +25,7 @@
 //! | [`Attempt`] | What a model produced for one exercise, put through the daemon's door |
 //! | [`Outcome`] | What became of it: five ways to fail, and one to drive |
 //! | [`Measured`] | A whole run, and the grade it earns |
+//! | [`BothRoads`] | One set of weights measured on each road, held to each other |
 //! | [`Instructions`] | How a model is told to answer, and the digest a grade names them by |
 //!
 //! # Three decisions, and each is in the file that makes it
@@ -40,6 +41,13 @@
 //!
 //! **A run that skipped an exercise is not a measurement.** [`measured`] has
 //! it, together with the bar — nine attempts in ten.
+//!
+//! **A graphics card is allowed to change how long an answer took and nothing
+//! else**, which is
+//! [ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md)'s *a GPU
+//! changes speed, not capability* held rather than asserted. [`both_roads`] has
+//! it, and has why *the same answers* is the same **grade** rather than the
+//! same text.
 //!
 //! # What this crate does not do
 //!
@@ -65,6 +73,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod attempt;
+pub mod both_roads;
 pub mod exercise;
 pub mod exercises;
 pub mod measured;
@@ -80,6 +89,7 @@ mod testing;
 /// grade names its instructions and every reader of a grade arrives here first.
 pub use alo_instructing::{HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use attempt::{Attempt, Outcome};
+pub use both_roads::{BothRoads, NotAComparison, OnARoad};
 pub use exercise::{Exercise, prompt, prompt_under};
 pub use exercises::{Exercises, NotComparable, THE_SET};
 pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};

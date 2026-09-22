@@ -46,14 +46,26 @@ pub struct Installed {
     pub quantisation: Option<String>,
 }
 
-/// A model in video memory, answering now.
+/// A model in memory, answering now — **and where that memory is**.
+///
+/// The two figures are the pair [`crate::MeasuredOn`] records and refuses half
+/// of: what the runtime loaded in all, and how much of that it put on a
+/// graphics card. They are what answers *which road did this machine take*
+/// (see [`crate::Road`]), and until 2026-09-22 only the second was carried, so
+/// the residency beside every grade in the catalogue had been copied out by
+/// hand.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Loaded {
     /// The catalogue id.
     pub id: String,
-    /// Video memory this is holding. On a machine with one card, this is the
-    /// number that decides whether anything else can be loaded at all.
-    pub vram_bytes: u64,
+    /// **What the runtime loaded in all**, wherever it put it.
+    pub loaded_bytes: u64,
+    /// **How much of that is on a graphics processor.** Nought on a machine
+    /// running the weights on its own processor, which is the ordinary state of
+    /// the fleet this product exists for (ADR 0007) and not a failure. On a
+    /// machine with one card, it is also the number that decides whether
+    /// anything else can be loaded at all.
+    pub on_the_gpu_bytes: u64,
 }
 
 /// How far a download has got.
@@ -273,11 +285,29 @@ pub trait ModelRuntime: fmt::Debug + Send + Sync {
     /// [`RuntimeError::Unreachable`] if the runtime is not answering.
     fn installed(&self) -> Result<Vec<Installed>, RuntimeError>;
 
-    /// Which models are in video memory now.
+    /// Which models are in memory now, and where that memory is.
     ///
     /// # Errors
     /// [`RuntimeError::Unreachable`] if the runtime is not answering.
     fn loaded(&self) -> Result<Vec<Loaded>, RuntimeError>;
+
+    /// **Which graphics cards this runtime can put weights on.**
+    ///
+    /// Asked of the runtime rather than assumed anywhere else, for this
+    /// trait's own reason: which cards a runtime accelerates is as much a fact
+    /// about that runtime as an endpoint path is, and a table of it kept
+    /// outside the adapter would be a second statement of what the runtime
+    /// does — stale on the day the pinned release changes (ADR 0006).
+    ///
+    /// **None, by default**, so that a runtime which has not said is read as
+    /// having said nothing rather than as agreeing to a list somebody else
+    /// wrote. It is not a claim that such a runtime is slow: it is what
+    /// [`crate::Road`] uses to say *why* a machine ran on its processor, and
+    /// whether a card was actually used is answered by
+    /// [`loaded`](ModelRuntime::loaded) rather than by this.
+    fn cards_it_can_use(&self) -> &'static [crate::card::Vendor] {
+        &[]
+    }
 
     /// Fetch a model's weights from upstream, reporting progress.
     ///

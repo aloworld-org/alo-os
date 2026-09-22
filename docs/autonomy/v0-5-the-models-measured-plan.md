@@ -658,12 +658,27 @@ cannot answer.
 
 ### 22. The graphics card, when there is one, and the machine when there is not
 
-**Status:** ready — **taken by the third PC on 2026-09-22 at the owner's
-instruction**, moved across from the Mac because this machine is x86_64 with
-**no discrete graphics**, which is the condition this acceptance was written for
-and the condition the owner's laptop is in. Measured here before starting: no
-VGA or 3D device on the bus, no `/dev/dri`, no `nvidia-smi`. **Depends on:**
+**Status:** **Done, 2026-09-22**, on the third PC — the processor road
+measured, every refusal on the way to a card tested, and the card road
+`- [x] The code.` with the machine it still needs named in the report.
+**Taken by the third PC at the owner's instruction**, moved across from the Mac
+because this machine is x86_64 with **no discrete graphics**, which is the
+condition this acceptance was written for and the condition the owner's laptop
+is in. Measured here before starting, and again by the test that ships: no VGA
+or 3D device on the bus, no `/dev/dri`, no `nvidia-smi`. **Depends on:**
 nothing. Asked for by the owner on 2026-09-21.
+
+Report:
+[Which part of this machine runs the model](updates/which-part-of-this-machine-runs-the-model.md).
+
+**What it left for task 23, said here so nobody reads this as the whole line.**
+A card *being used* is shown nowhere: no machine in this fleet has one, and no
+emulated device stands in for one (ADR 0056's reason, unchanged). The code for
+it is written and runs from a machine that has one — `alo_models::Road::of`
+reads the runtime's own residency, `Ollama::answers_in_the_envelope_on` puts
+one question on a named road, and `alo_driving::BothRoads` holds the two runs
+to each other and **refuses** a pair that is not one of each, which is what
+stops a machine with no card reporting agreement with itself.
 
 **Split, 2026-09-22, the way [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
 split the chip's half.** This task is the road a machine without a card takes,
@@ -714,11 +729,32 @@ waits for hardware, the way the chip's half of encryption does.
 
 ### 23. The card road, on a machine that has one
 
-**Status:** blocked — on a machine with a discrete graphics card the pinned
-runtime can use, and a driver for it. `docs/hardware.md` lists none, and the
-machine this plan's lane runs on has no VGA or 3D device at all. Split from task
-22 on 2026-09-22, the way [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
-split the chip's half from the disk's. **Depends on:** 22.
+**Status:** blocked — **on hardware only.** Task 22 is done (2026-09-22) and
+this task's dependency on it is cleared: what remains is a machine with a
+discrete graphics card the pinned runtime can use, and a driver for it.
+`docs/hardware.md` lists none, and the machine this plan's lane runs on has no
+VGA or 3D device at all. Split from task 22 on 2026-09-22, the way
+[ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
+split the chip's half from the disk's. **Depends on:** 22, which is finished.
+
+**The instrument is written and waiting.** Task 22 left
+`crates/alo-driving/tests/the_same_question_on_each_road.rs`, whose
+`one_question_on_each_road_of_a_machine_that_has_both` is `#[ignore]`d and runs
+with `ALO_DRIVING_MODEL` set on a machine that has a card: it puts the fixed
+set on each road through `Ollama::answers_in_the_envelope_on`, reads the road
+each run really took from the runtime's own residency rather than from what was
+asked for, and holds the two grades to each other. It refuses before it starts
+on a machine with no usable card, naming what is missing. What this task adds
+is the hardware, the run, and the lines in the report and `docs/hardware.md`.
+
+**One thing to confirm on that machine before trusting a result:**
+`"options":{"num_gpu":0}` — how the processor road is asked for — has never
+been put to a real pinned runtime, because this machine has neither a runtime
+nor a card. It is Ollama's own documented option and the ordinary path sends no
+`options` field at all, but a road *asked for* and not *taken* would make the
+comparison a comparison of one road with itself. `Road::of` reads what actually
+happened, so the check is that the two runs report different roads; if the
+release disagrees, `docs/quirks.md` gains the line.
 
 Task 22 measures the road a machine without a card takes, and every refusal on
 the way to a card that cannot be used. What it cannot show is a card **being

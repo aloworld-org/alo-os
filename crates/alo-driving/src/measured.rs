@@ -164,7 +164,7 @@ pub fn owes_a_second_round(drove: usize, how_many: usize, one_round: usize) -> b
 )]
 mod tests {
     use super::*;
-    use crate::testing::{answering, the_verbs};
+    use crate::testing::{right_answer, the_verbs};
 
     /// A run where the first `driving` exercises are answered correctly and the
     /// rest are answered with prose — the failure this whole item is about.
@@ -183,80 +183,6 @@ mod tests {
             })
             .collect();
         Measured::of(&exercises, attempts).unwrap()
-    }
-
-    /// One correct answer per exercise, written out here rather than generated,
-    /// because a generated one would be this crate marking its own homework.
-    fn right_answer(named: &str) -> String {
-        match named {
-            "list" => answering(
-                "read",
-                "list_folder",
-                &[("folder", "\"/home/anna/Invoices\"")],
-            ),
-            "read" => answering(
-                "read",
-                "read_file",
-                &[("file", "\"/home/anna/Invoices/march.pdf\"")],
-            ),
-            "find" => answering(
-                "read",
-                "find_in_folder",
-                &[
-                    ("folder", "\"/home/anna/Invoices\""),
-                    ("named", "\"october\""),
-                    ("most", "20"),
-                ],
-            ),
-            "rename" => answering(
-                "propose",
-                "rename_file",
-                &[
-                    ("file", "\"/home/anna/Invoices/scan001.pdf\""),
-                    ("name", "\"march.pdf\""),
-                ],
-            ),
-            "move" => answering(
-                "propose",
-                "move_file",
-                &[
-                    ("file", "\"/home/anna/Invoices/march.pdf\""),
-                    ("into", "\"/home/anna/Archive\""),
-                ],
-            ),
-            "archive" => answering(
-                "propose",
-                "archive_folder",
-                &[
-                    ("folder", "\"/home/anna/Invoices\""),
-                    ("into", "\"/home/anna/Archive\""),
-                    ("name", "\"invoices\""),
-                ],
-            ),
-            "open" => answering(
-                "propose",
-                "open_application",
-                &[("application", "\"org.alo.Writer\"")],
-            ),
-            "focus" => answering(
-                "propose",
-                "focus_application",
-                &[("application", "\"org.alo.Writer\"")],
-            ),
-            "close" => answering(
-                "propose",
-                "close_application",
-                &[("application", "\"org.alo.Writer\"")],
-            ),
-            _ => answering(
-                "propose",
-                "arrange_application",
-                &[
-                    ("application", "\"org.alo.Writer\""),
-                    ("where", "\"left_half\""),
-                ],
-            ),
-        }
     }
 
     /// **A model that drives every verb is the only one given the agent**, and
