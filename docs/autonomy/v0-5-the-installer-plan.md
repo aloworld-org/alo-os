@@ -1210,7 +1210,27 @@ machine.
 
 ### 18. `bootc` stops at *Creating rootfs* when the installer's own restart reaches the environment
 
-**Status:** ready. **Depends on:** nothing — it is reproducible today.
+**Status:** **Done, 2026-09-22.** On the development PC
+(`updates/the-install-finishes-on-the-installers-own-road.md`). **The cause:**
+the environment's initramfs had no `mkfs.btrfs`. The base has it at
+`/usr/sbin/mkfs.btrfs`, and bootc starts it by name for `--filesystem btrfs`,
+which task 11 asked for. Task 11 had measured btrfs by running `bootc install`
+from the release image, not through the environment. `alo-installing.conf` now
+carries it, and a test holds the list to `mkfs.` followed by
+`alo_image::THE_ONLY_FILESYSTEM`. That was the only change. **Then, on the
+installer's own road** (Windows 11 in QEMU/KVM, Fedora's firmware, Secure Boot
+off because the Windows side refuses it on, no boot order given):
+the install finished (*alo OS is installed*), the firmware started the
+installed system on its own (`Boot000B "Fedora"`), and the installed system
+said its root was `/dev/sdb3 btrfs` on the disk with serial `ALOTARGET1`. The
+test that shows it,
+`the_whole_road_installs_alo_os_and_the_installed_system_starts`, passed by
+name in 1 815 s. **Found on the way:**
+- One run's download stalled for over 30 minutes, with no disk or network
+  traffic, and the environment said *Still installing* for ever. That is task 20.
+- bootupd's entry is named *Fedora* and is put first in `BootOrder`, and the
+  installer's own *alo OS* entry is left behind, last. That belongs to task 4.
+**Depends on:** nothing.
 **Found by** task 10's walk, 2026-09-21, and not fixed there on purpose: the
 owner's laptop takes the same road, so it gets a task of its own.
 
@@ -1376,3 +1396,44 @@ build walked the same way (the walk cross-builds `x86_64-pc-windows-gnu`).
 - **Constraint:** the ignore rule is never widened by hand; nothing the
   release installer obeys exists only for the test; nothing runs against the
   host's own disks; a worker keeps 15 GB free on the host.
+
+### 20. A download that stops arriving ends the install in words, rather than *Still installing* for ever
+
+**Status:** ready. **Depends on:** 18.
+**Found by** task 18's second run on 2026-09-22
+(`updates/the-install-finishes-on-the-installers-own-road.md`). On the
+installer's own road, with the environment carrying `mkfs.btrfs`, `bootc
+install` went quiet after about 20 minutes. It did not end. The environment said
+*Still installing alo OS. Leave the computer on* 65 times, and the screen showed
+`Job alo-installing.service/start running (54min … / no limit)`. For the last 30
+minutes of that the machine did no disk I/O: QEMU's `read_bytes` and
+`write_bytes` moved by a few kilobytes, and the target disk's image stayed at
+6 762 MB. The host received nothing for it either. QEMU's own table of the
+guest's connections showed three TCP connections `ESTABLISHED` with empty
+queues, one of them to `185.199.110.154:443`. The host itself reached `ghcr.io`
+in 0.19 s. The first and third runs of the same test, on the same PC the same
+afternoon, finished in about 12 minutes and 8 minutes of *Still installing*.
+Kept on the development PC: `/root/t10/logs/installed-second/`.
+
+A person's laptop would show *Still installing* until the battery ran out. The
+environment has no point after which it says anything else.
+
+**What is here.**
+- Find where the pull waits with no deadline: `skopeo` or `podman`'s copy
+  under bootc, or the TCP connection itself.
+- Decide, as configuration of the engines and never a patch (ADR 0011), what
+  bounds it. Candidates: a registry or containers configuration timeout, a
+  `TimeoutStartSec=` on `alo-installing.service`, or the environment's own
+  watch on progress.
+- Make the environment say a sentence of its own when the bound is reached,
+  with a translator's note, and end as the refusals already end: nothing else
+  on the computer changed, and restart to try again.
+
+- **Acceptance:** a test holds the bound. It is shown with a download stopped
+  on purpose in a virtual machine, and the environment says the new sentence
+  within the bound, not *Still installing* after it. The road test from task 18
+  still passes.
+- **Constraint:** no engine is patched (ADR 0011). A bound short enough to cut
+  off a slow but moving download is a bug too, so the bound is on *no
+  progress*, not on total time, unless measurement shows the two cannot be
+  told apart.
