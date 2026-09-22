@@ -1062,6 +1062,21 @@ a handed-over file the way `alo-brokerd` hands over an update; a
 person's session wrote. Name what each costs the *afternoon's audit* that
 ADR 0001 §2 is about.
 
+**Narrowed by the owner, 2026-09-22: the road is a person's act in Settings, and
+never a broker verb.** The question above is answered before it is weighed —
+`alo_broker::SystemVerb` is out — and what remains to choose between is a second
+unit with a handed-over file, a `polkit`-authorised action, and widening the
+timer unit to notice a file the person's session wrote. The reasoning is the
+seventh term's own: the broker's road exists to carry acts an agent may propose
+under an approval, so a road that can carry this act **at all** is a road worth
+attacking. Keeping it off that list costs a person nothing, because a person is
+already at their own machine.
+
+**One test beyond the acceptance below, asked for by name:** that this road is
+**unreachable from an agent's turn** — not merely absent from the verb list, but
+that a turn cannot arrive at it. Task 13's tests stay exactly as they are and
+keep passing; this is added beside them.
+
 - **Acceptance:** a person's one act really removes everything their machine was
   keeping for them, **measured on a real `btrfs` machine** — snapshots made, the
   act carried out, `btrfs subvolume list` asked afterwards and the output in the
