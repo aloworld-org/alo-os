@@ -84,6 +84,8 @@ pub enum Remains {
     TheEntry,
     /// The next start is the installer's.
     TheNextStart,
+    /// Fast Startup was turned off at the person's word and not put back.
+    FastStartupOff,
 }
 
 impl Refusal {
@@ -142,6 +144,7 @@ impl Remains {
             Self::TheArea(disk) => (words::REMAINS_THE_AREA, Filling::of("disk", disk.as_str())),
             Self::TheEntry => (words::REMAINS_THE_ENTRY, Filling::nothing()),
             Self::TheNextStart => (words::REMAINS_THE_NEXT_START, Filling::nothing()),
+            Self::FastStartupOff => (words::REMAINS_FAST_STARTUP_OFF, Filling::nothing()),
         }
     }
 }

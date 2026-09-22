@@ -22,11 +22,13 @@
 
 use alo_strings::{Filling, Strings, Word};
 
+use crate::asking::{self, Answer};
 use crate::checking;
 use crate::consent;
 use crate::deciding::decide;
 use crate::ended::{Ended, Refusal};
 use crate::environment::{NotStaged, Released, TheEnvironment};
+use crate::fast_startup::FastStartup;
 use crate::machine::{BEFORE_RESTARTING, TheMachine};
 use crate::program::Program;
 use crate::sizes;
@@ -121,7 +123,13 @@ fn installing(
     let typed = machine.ask(&strings.say(&words::TYPE_THE_DISKS_NAME.key(), &Filling::nothing()));
     let chosen = consent::chosen(&typed, &offer.disks_for_alo_os).map_err(Ended::Refused)?;
 
-    staging::stage(machine, strings, &offer, chosen, &the_environment)?;
+    // Asked after the consent and before anything is changed, and only when
+    // Fast Startup is on (ADR 0064 term 9). Either answer goes on with the
+    // install: this is a setting of the person's Windows, not a condition of
+    // installing alo OS.
+    let answer = ask_about_fast_startup(machine, strings, found.fast_startup);
+
+    staging::stage(machine, strings, &offer, chosen, &the_environment, answer)?;
 
     say(machine, strings, words::RESTARTING, &Filling::nothing());
     machine.pause(BEFORE_RESTARTING);
@@ -137,6 +145,52 @@ fn installing(
         );
     }
     Ok(Ended::Staged { restarted })
+}
+
+/// How many times a question is asked again before it is left alone.
+///
+/// A question asked for ever is a computer a person cannot get out of, and the
+/// answer that changes nothing is a safe one to end at.
+const ASKED_AGAIN: usize = 3;
+
+/// The person's answer about Fast Startup, asked only when it is on.
+///
+/// Anything that is not one of the two answers is asked again, [`ASKED_AGAIN`]
+/// times; after that Fast Startup is left on and that is said. Neither answer
+/// stops the install, and the value is only ever changed by *turn off*.
+fn ask_about_fast_startup(
+    machine: &mut impl TheMachine,
+    strings: &Strings,
+    fast_startup: FastStartup,
+) -> Answer {
+    if !fast_startup.is_asked_about() {
+        return Answer::LeaveOn;
+    }
+    let answers = Filling::of(
+        "off",
+        strings
+            .say(&words::ANSWER_TURN_OFF.key(), &Filling::nothing())
+            .into_text(),
+    )
+    .and(
+        "on",
+        strings
+            .say(&words::ANSWER_LEAVE_ON.key(), &Filling::nothing())
+            .into_text(),
+    );
+    for _ in 0..ASKED_AGAIN {
+        say(
+            machine,
+            strings,
+            words::ASK_FAST_STARTUP,
+            &Filling::nothing(),
+        );
+        let typed = machine.ask(&strings.say(&words::TYPE_ONE_OF_THESE_ANSWERS.key(), &answers));
+        if let Some(answer) = asking::answered(&typed, strings) {
+            return answer;
+        }
+    }
+    Answer::LeaveOn
 }
 
 /// One sentence, looked up and put in front of the person.

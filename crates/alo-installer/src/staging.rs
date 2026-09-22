@@ -32,6 +32,7 @@
 use alo_strings::{Filling, Strings, Word};
 use serde::Deserialize;
 
+use crate::asking::Answer;
 use crate::deciding::{ForAloOs, Offer};
 use crate::ended::{Ended, Refusal, Remains};
 use crate::environment::{self, TheEnvironment};
@@ -70,6 +71,11 @@ enum Made {
     AnEntryNotIdentified,
     /// The next start was set.
     TheNextStart,
+    /// Fast Startup was turned off, from this value.
+    FastStartupOff {
+        /// What Windows' own value held before it was turned off.
+        was: u32,
+    },
 }
 
 /// What the area's making printed.
@@ -110,6 +116,7 @@ pub fn stage(
     offer: &Offer,
     chosen: &ForAloOs,
     the_environment: &TheEnvironment,
+    fast_startup: Answer,
 ) -> Result<(), Ended> {
     let mut journal = Vec::new();
     match steps(
@@ -118,6 +125,7 @@ pub fn stage(
         offer,
         chosen,
         the_environment,
+        fast_startup,
         &mut journal,
     ) {
         Ok(()) => Ok(()),
@@ -125,15 +133,41 @@ pub fn stage(
     }
 }
 
-/// Steps 1 to 7, each change journalled as it succeeds.
+/// The person's answer about Fast Startup, and then steps 1 to 7, each change
+/// journalled as it succeeds.
 fn steps(
     machine: &mut impl TheMachine,
     strings: &Strings,
     offer: &Offer,
     chosen: &ForAloOs,
     the_environment: &TheEnvironment,
+    fast_startup: Answer,
     journal: &mut Vec<Made>,
 ) -> Result<(), ()> {
+    // The only step that changes a setting of Windows rather than a disk, and
+    // the first: the person answered this question themselves (ADR 0064 term
+    // 9), a failure here is a failure before any disk has changed, and it is
+    // journalled so that putting the computer back puts the setting back too.
+    match fast_startup {
+        Answer::LeaveOn => say(
+            machine,
+            strings,
+            words::FAST_STARTUP_LEFT_ON,
+            &Filling::nothing(),
+        ),
+        Answer::TurnOff => {
+            say(
+                machine,
+                strings,
+                words::TURNING_FAST_STARTUP_OFF,
+                &Filling::nothing(),
+            );
+            let was = was_on(machine);
+            succeeded(machine, &Program::TurningFastStartupOff)?;
+            journal.push(Made::FastStartupOff { was });
+        }
+    }
+
     let windows = offer.windows;
     let volume = Filling::of("volume", windows.letter.drive()).and("area", sizes::needed(THE_AREA));
 
@@ -294,6 +328,14 @@ fn put_back(
     let mut area_remains = false;
     for made in journal.into_iter().rev() {
         match made {
+            // Put back to the value Windows held, not to a value this
+            // installer chose: a computer whose value was something else is
+            // left as it was found.
+            Made::FastStartupOff { was } => {
+                if succeeded(machine, &Program::TurningFastStartupBackOn { was }).is_err() {
+                    remains.push(Remains::FastStartupOff);
+                }
+            }
             Made::TheNextStart => {
                 if succeeded(machine, &Program::ForgettingTheNextStart).is_err() {
                     remains.push(Remains::TheNextStart);
@@ -355,6 +397,29 @@ fn put_back(
     } else {
         Ended::NotPutBack(remains)
     }
+}
+
+/// What Windows' Fast Startup value held before it was turned off.
+///
+/// The value is read again here rather than carried from the checks: the
+/// question was asked about a value read minutes ago, and putting a setting
+/// back means putting back what was actually there. A value that cannot be
+/// read now is put back as Windows' own default, `1`, which is what *on*
+/// means — the answer was given about a computer whose Fast Startup was on.
+fn was_on(machine: &mut impl TheMachine) -> u32 {
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct Read {
+        /// The value.
+        hiberboot_enabled: Option<u32>,
+    }
+
+    succeeded(machine, &Program::ReadingFastStartup)
+        .ok()
+        .and_then(|printed| serde_json::from_str::<Read>(&printed).ok())
+        .and_then(|read| read.hiberboot_enabled)
+        .filter(|value| *value != 0)
+        .unwrap_or(1)
 }
 
 /// What a change printed, when it ran and succeeded.

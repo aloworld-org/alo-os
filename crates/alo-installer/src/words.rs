@@ -305,6 +305,84 @@ pub const WILL_RESTART: Word = Word::saying(
      person types the name of.",
 );
 
+/// Fast Startup is on.
+pub const FOUND_FAST_STARTUP_ON: Word = Word::saying(
+    "installer.found.fast-startup-on",
+    "Windows' Fast Startup is on",
+)
+.noting(
+    "Fast Startup is the name of the setting as Windows' own settings show it; use the name \
+         those settings use in this language.",
+);
+
+/// Fast Startup is off.
+pub const FOUND_FAST_STARTUP_OFF: Word = Word::saying(
+    "installer.found.fast-startup-off",
+    "Windows' Fast Startup is off",
+)
+.noting("Fast Startup is the name of the setting as Windows' own settings show it.");
+
+/// Fast Startup could not be read.
+pub const FOUND_FAST_STARTUP_NOT_READ: Word = Word::saying(
+    "installer.found.fast-startup-not-read",
+    "Whether Windows' Fast Startup is on could not be found out",
+)
+.noting("Fast Startup is the name of the setting as Windows' own settings show it.");
+
+/// The question about Fast Startup, asked only when it is on.
+pub const ASK_FAST_STARTUP: Word = Word::saying(
+    "installer.ask.fast-startup",
+    "Windows' Fast Startup is on. It can make Windows and alo OS disagree about the disk. Turn it \
+     off? (Recommended when sharing a disk.)",
+)
+.noting(
+    "The owner's words (ADR 0064). Fast Startup is the name Windows' own settings use. The two \
+     answers are the two short sentences below, and the person types one of them.",
+);
+
+/// How the two answers are typed.
+pub const TYPE_ONE_OF_THESE_ANSWERS: Word = Word::saying(
+    "installer.ask.type-one-of-these-answers",
+    "Type {off} or {on}, and press Enter",
+)
+.noting(
+    "The gaps hold the two answers below, in this language. A person types one of them; anything \
+     else is not an answer and the question is asked again.",
+);
+
+/// The answer that turns Fast Startup off.
+pub const ANSWER_TURN_OFF: Word = Word::saying("installer.answer.turn-off", "turn off").noting(
+    "One of the two answers to the Fast Startup question, typed by the person. Keep it to two \
+     words at most, and unlike the other answer.",
+);
+
+/// The answer that leaves Fast Startup on.
+pub const ANSWER_LEAVE_ON: Word = Word::saying("installer.answer.leave-on", "leave on").noting(
+    "The other answer to the Fast Startup question, typed by the person. Keep it to two words at \
+     most.",
+);
+
+/// Fast Startup stays as it is.
+pub const FAST_STARTUP_LEFT_ON: Word = Word::saying(
+    "installer.fast-startup-left-on",
+    "Windows' Fast Startup is being left on, and nothing about it is changed",
+)
+.noting(
+    "Said when the person answers that it should be left on, and when nothing that is an answer \
+     was typed.",
+);
+
+/// Turning Fast Startup off, said before it is done.
+pub const TURNING_FAST_STARTUP_OFF: Word = Word::saying(
+    "installer.turning-fast-startup-off",
+    "Turning Windows' Fast Startup off. Windows keeps hibernation, and starts and shuts down as \
+     before",
+)
+.noting(
+    "Said before the setting is changed. Hibernation itself is not removed; only Fast Startup is \
+     switched off.",
+);
+
 /// The question.
 pub const TYPE_THE_DISKS_NAME: Word = Word::saying(
     "installer.type-the-disks-name",
@@ -574,6 +652,16 @@ pub const REMAINS_THE_NEXT_START: Word = Word::saying(
 )
 .noting("Said only when the one-time choice of what starts next could not be taken back.");
 
+/// Fast Startup is still off.
+pub const REMAINS_FAST_STARTUP_OFF: Word = Word::saying(
+    "installer.remains.fast-startup-off",
+    "Windows' Fast Startup is still off. You can turn it back on in Windows' own power settings",
+)
+.noting(
+    "Said only when the setting the person asked to be turned off could not be put back. Fast \
+     Startup is the name Windows' own settings use.",
+);
+
 /// Closing.
 pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
     "installer.press-enter-to-close",
@@ -582,7 +670,7 @@ pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
 .noting("The last line after the installer has stopped without restarting.");
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 63] = [
+pub const EVERY_WORD: [Word; 73] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -615,6 +703,15 @@ pub const EVERY_WORD: [Word; 63] = [
     WILL_MAKE_THE_AREA,
     WILL_ADD_THE_ENTRY,
     WILL_RESTART,
+    FOUND_FAST_STARTUP_ON,
+    FOUND_FAST_STARTUP_OFF,
+    FOUND_FAST_STARTUP_NOT_READ,
+    ASK_FAST_STARTUP,
+    TYPE_ONE_OF_THESE_ANSWERS,
+    ANSWER_TURN_OFF,
+    ANSWER_LEAVE_ON,
+    FAST_STARTUP_LEFT_ON,
+    TURNING_FAST_STARTUP_OFF,
     TYPE_THE_DISKS_NAME,
     SHRINKING_WINDOWS,
     MAKING_THE_AREA,
@@ -645,6 +742,7 @@ pub const EVERY_WORD: [Word; 63] = [
     REMAINS_THE_AREA,
     REMAINS_THE_ENTRY,
     REMAINS_THE_NEXT_START,
+    REMAINS_FAST_STARTUP_OFF,
     PRESS_ENTER_TO_CLOSE,
 ];
 
