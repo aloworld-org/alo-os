@@ -289,9 +289,10 @@ above the tasks, which says what your plan may not do; `docs/autonomy/LOOP.md`;
 and the ADRs your plan cites. `docs/features.md` is the only list of what gets
 built and `ROADMAP.md` the only order.
 
-**The four laws you are held to.** Nothing leaves the machine silently. No verb
-runs an arbitrary command. Done means the machine still works — on real
-hardware, not in a test. One file, one responsibility. A change that breaks one
+**The five laws you are held to.** Nothing leaves the machine silently. No code
+runs unless the person chose it. Done means the machine still works — on real
+hardware, not in a test. One file, one responsibility. The person chooses, and
+alo never takes the choice away. A change that breaks one
 of these is wrong however well it is written.
 
 **Git, and the others.**

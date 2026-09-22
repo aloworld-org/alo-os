@@ -175,8 +175,12 @@ entry, written in full.
 - **Never tick an item it did not finish.** `ROADMAP.md` says a tick means done,
   not written; the same rule applies here, and the loop is exactly where that
   rule would erode first.
-- **Never add a verb that runs an arbitrary command** (law 2), or an escape
-  hatch that amounts to one.
+- **Never let code run that the person did not choose** (law 2, ADR 0064).
+  The broker's verb list stays typed and closed. Running code is only ever the
+  person's grant, at one of ADR 0064's three levels, and never an escape hatch
+  a lane adds on its own.
+- **Never take a choice away from the person** (law 5). A protection is a
+  default the person can change, with its cost said plainly, not a wall.
 - **Never claim hardware verification it did not do.** Most of v0.01 ends on a
   certified machine that this loop does not have. Code that is built and unit
   tested is *built and unit tested*, and the item says so.
@@ -479,7 +483,7 @@ runtime sees it, and the image has no `/bin/sh` on its `PATH` for
 | `docs/autonomy/QUEUE.md` | The work, in order, with what each is blocked on |
 | `docs/autonomy/STATE.md` | The journal: one entry per iteration, newest last |
 | `ROADMAP.md` | What a person outside the loop reads to know where the product is. Moved every iteration, per step 6 |
-| `CLAUDE.md` | The four laws and the gate |
+| `CLAUDE.md` | The five laws and the gate |
 | `docs/decisions/` | Why things are the way they are. Read before proposing otherwise |
 
 ## Running it

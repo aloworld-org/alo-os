@@ -76,7 +76,7 @@ Nothing here is a differentiator. All of it is required.
 - [v0.5] **Keyboard layouts, switched easily** — and dead keys and a compose key that work. "Müller" and "Liège" are test cases in a European product, not edge cases
 - [v0.5] Input methods for non-Latin scripts
 - [v0.5] Virtual desktops
-- [v1] Clipboard history, on the machine and never synced anywhere
+- [v1] Clipboard history, on the machine and never synced to any server. Sharing one copied item directly between a person's own paired devices is an opt-in: end to end encrypted, gone after about two minutes, never readable by the agent (ADR 0064)
 
 **Capture**
 
@@ -117,7 +117,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v1] **Location services**, off by default, per-application, with an indicator when in use
 - [v1] Applications contribute to search — one place to look, not one per program
 - [v1] Realtime scheduling for audio work, which is what a workstation is often bought for
-- [v1] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine
+- [v0.5] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine. Brought forward from v1 by ADR 0064: developers need their own tools from the first day
 
 **Devices and media**
 
@@ -343,6 +343,20 @@ told so at first sign-in. There is no silent enrollment.
 
 ---
 
+## The person chooses (ADR 0064)
+
+Law 5: on their own machine a person decides, and every protection is a default
+they can change with its cost said plainly. These are decided and not yet built.
+
+- [v1] ★ **Running code, at the level the person picks** — a sealed box the kernel locks down (the default), asking each time, or full trust. At every level each run is recorded and a snapshot taken first, so it can be undone
+- [v1] Update checking can be turned off, saying that security fixes stop arriving while it is off
+- [v1] *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
+- [v1] A provider address that is not https can be allowed after a plain warning that the key crosses the network readable
+- [v1] A **details** view that shows each rented component's own name as data, for the person who wants to know; plain words stay the default everywhere
+- [v1] Screenshot-and-click switched on by the person for their own machine
+- [v1] At full trust, a turn whose kernel boundary cannot be applied may run if the person chooses, told that the kernel is not watching it, and the record says so
+- [v0.5] **Fast Startup: the installer asks.** Turning it off is recommended when a disk is shared, and both answers are safe because alo OS never mounts the Windows partition read-write
+
 ## Non-goals
 
 **No kernel.** Linux, unmodified — hardware support is where OS projects die and
@@ -354,10 +368,11 @@ without packaging them. **No third-party device management** — fleet features
 exist for alo OS machines; an MDM product is a different company. **No phone or
 tablet** — not in v1, possibly never. **No directory service** — we do not
 rebuild Active Directory or LDAP, and we do not become the place a company's
-identities live; alo identities and pairing are what we offer. **No trusted
-network setting**, ever (ADR 0003) — the switch that would turn pairing off is
-the vulnerability, not a convenience we have not got round to. **No arbitrary command verb**, ever
-(ADR 0001 §1); this one is not a scope decision and is not revisitable without
-replacing that ADR.
+identities live; alo identities and pairing are what we offer. **No trusted-network
+setting by default** (ADR 0003) — pairing stays how machines trust each other; a
+person may opt in on their own network, told that it also trusts every device on
+it (ADR 0064). **No code runs unless the person chose it** (ADR 0064, replacing
+ADR 0001 §1): the verb list stays typed and closed, and running code is the
+person's grant — a sealed box by default, asking each time, or full trust.
 
 Every absence here is a sales argument.
