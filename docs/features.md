@@ -359,6 +359,33 @@ choice like everything else.
 - [v1] **An alo typeface** covering all 24 official EU languages, drawn once for every screen
 - [v1] **Motion that feels physical** — animations that move like real objects and never stutter, within the frame budget the shell already holds itself to
 
+## The interface (ADR 0065)
+
+The v1 interface, decided on 2026-09-22 and not yet built. The v0.5 shell is
+its foundation and stays as the familiar option a person can keep (Law 5).
+
+- [v1] ★ **Every goal is a canvas** — a Place is an endless surface, and objects **and applications alike open as panels on it**, where the person put them. Arranging is placing; nothing is stacked, so nothing is minimised. **Zoom** and **pan** move through it — by pinch, by wheel with a modifier, and by key — and the canvas replaces window switching, tiling and virtual desktops
+- [v1] ★ **Frames, dragged and resized like a design canvas** — a frame shows nothing but its content while the person works, and its name and few controls appear when they point at it, select it or zoom out — the name is also what it is dragged by, so a click inside always belongs to the application. Handles resize it and the application is told its size as it happens, dragging moves it, several can be taken at once, guides and snapping line them up, and each frame carries a name shown when the canvas is far out. Fit the Place to the screen, fill the screen with what is selected, double-click to work inside — each with a keyboard form
+- [v1] ★ **A frame arrives the shape its work is** — a messaging application opens as a narrow column of conversations, a spreadsheet wide, a video sixteen by nine — declared by the application and remembered per Place once the person changes it
+- [v1] ★ **Compact instead of minimised** — dragging a frame small enough, or one key, leaves a live tile that still shows what matters (the last messages, the track playing, the build at four of six) and can be acted on without growing back. Nothing is swallowed into a bar; a small thing is still on the canvas and still says what it is doing
+- [v1] **Tidy this canvas** — alignment and distribution for the person who wants them, and the same asked of alo as a proposal shown before anything moves
+- [v1] **A frame can be dragged out of one Place and into another**, and the work goes with it
+- [v1] ★ **A frame simplifies as it shrinks** — application, then compact form, then its name and what it is doing, chosen by how large it is on screen. Zoomed out a person reads *three new from Anna* and *the build at four of six*, never a wall of unreadable miniatures
+- [v1] ★ **Zones that mean something** — name a region *drafting*, *waiting on Anna*, *done*, and dragging a frame into it does what the name says; a zone can be handed to alo whole
+- [v1] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was on Tuesday, from the snapshots undo already takes
+- [v1] **Every screen is a view onto the canvas** — two displays are two viewports at their own zoom, not two desktops; on a small screen, focus shows one frame at a time
+- [v1] **The habits people arrive with still work** — the keys that cycle windows, close one and switch desktops become cycle frames, remove from canvas, and move between Places
+- [v1] **A panel out of view costs nothing** — it is a still picture until it is reached, so a Place holding forty things is not forty programs running
+- [v1] **Every canvas also answers as a list** — its panels in order, by keyboard and to a screen reader, because a surface that needs a touchpad excludes people (EN 301 549)
+- [v1] ★ **The alo Bar** — ask, find, open, create or hand over, from one place. **It works with no model at all**: applications open, files are found, settings change, arithmetic is exact, commands run
+- [v1] ★ **Give it to alo** — anything selected can be done by hand or handed over, and **a whole goal can be handed over**: alo shows its plan, works under one capsule, and returns only the decisions that must be the person's. The person may step in, take over a piece or stop it
+- [v1] ★ **History** — what happened, why, and undo. Agent actions come from the kernel-watched record; a person's own work is shown from file versions, never from watching them
+- [v1] **Content is the interface** — an open object fills the screen and tools appear when something is selected
+- [v1] **No dock by default** — the alo key, the bottom edge or a swipe reveals the alo Edge. Its replacement must be found by somebody who has never seen it within thirty seconds, tested with people; a person may pin a dock
+- [v1] ★ **The privacy symbol is always visible and can never be hidden** — *private*, *local activity*, *data leaving*, *camera or microphone on*
+- [v1] **Notifications are decisions** — *requires you*, *working*, *finished*, and *finished* only for work the person walked away from
+- [v1] **Every application lives in a Place**, including the ones with ordinary windows, so there is one world rather than a modern half and an old half
+
 ## alo's visual language
 
 Adopted by the owner on 2026-09-22 and not yet built. One rule runs through all
