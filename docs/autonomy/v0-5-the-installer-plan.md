@@ -1009,3 +1009,70 @@ never pushes, signs or pins.
   the fix. No worker signs or pins a release (ADR 0036). A worker checks for 15 GB
   free before every run, and removes the run's disks and images when it ends, pass
   or fail.
+
+### 16. Restarting into Windows, and the menu a machine starts at
+
+**Status:** ready — **taken by the third PC on 2026-09-22 at the owner's
+instruction**, to get the certified laptop installed by the evening of
+2026-09-23. It is **the part of task 4 that needs no virtual machine**, split
+out so that what is this machine's and what stays with the development PC is
+plain rather than inferred. **Depends on:**
+[ADR 0062](../decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md),
+accepted 2026-09-21.
+
+**What is here.** The alo OS side of *alongside Windows*: the way out of alo OS,
+the menu a machine starts at, and the journey written down.
+
+- **a. *Restart into Windows*, from inside alo OS.** A setting, and a verb an
+  agent may ask for under a grant, with the person's confirmation as any verb
+  has. It sets the firmware's **`BootNext`** to Windows Boot Manager for **one
+  restart** and leaves the default untouched, so the choice is for that restart
+  and nothing about the machine's ordinary behaviour changes.
+  `alo_broker::SystemVerb` is a closed enum and adding a member is a deliberate
+  act (ADR 0001 §1–2): it gets its name, its words in the vocabulary with a
+  translator's note, and **the same tests every other verb has** — approved in a
+  turn, one approval causing exactly one execution, recorded permitted or
+  refused, and its refusal path tested as carefully as its happy one.
+- **b. The start-up menu, as ADR 0062 decided it.** The base's own GRUB,
+  **configured and never patched** (ADR 0011), offering alo OS and Windows, the
+  latter by chainloading `\EFI\Microsoft\Boot\bootmgfw.efi`; a short countdown;
+  and **term 3** — the last choice kept as GRUB's own saved default, in its
+  environment block, as **the only copy**. The default is changeable from alo
+  OS's settings, which read and write *that* and keep **no second copy**: two
+  copies drift, and a menu that preselects one thing while a setting says
+  another is the bug the term exists to prevent.
+- **c. `docs/booting.md`'s alongside journey.** The steps a person takes, in
+  order, with what they see at each — including **term 2's honest line**: a
+  loader that *starts* and is then broken is not passed over by the firmware,
+  because to the firmware it started, so the machine's boot-menu key is named as
+  the way to Windows in that case, and nothing claims the fall-through reaches
+  it.
+- **And the test that holds either way on Fast Startup:** alo OS **never mounts
+  the Windows partition read-write**. Fast Startup is the owner's open decision
+  (ADR 0062), and this test is task 4's whatever is decided, so it is written
+  here and nothing in this task decides that question.
+
+**What is not here, and stays with the development PC.** `crates/alo-installer`
+and `crates/alo-installing` are **not edited by this task** — that machine is
+working in both, on the Windows-side program and on a *Creating rootfs* failure,
+and two lanes in one crate is the collision the lane table exists to prevent. If
+this part needs a change there, it is **written down and passed across**, never
+made here. Also that machine's, because each needs a virtual machine: **term
+1's** firmware-order fall-through test, the install beside a real Windows, the
+*Restart into alo OS* side from within Windows, the Windows-unchanged hash test,
+*remove alo OS*, and the full Windows → alo OS → Windows → alo OS walk through
+the in-system switches alone. **This part is built so it can be walked there.**
+
+- **Acceptance:** the verb exists with its name, words and the full set of tests
+  every `SystemVerb` has, and sets `BootNext` for one restart with the default
+  provably untouched; GRUB's configuration is generated rather than patched,
+  offers both systems, chainloads Windows by the path above, counts down, and
+  saves the last choice in its own environment block; alo OS's setting reads and
+  writes that one place, held by a test that **finds no second copy** anywhere;
+  `docs/booting.md` carries the journey with term 2's line in it; and alo OS
+  never mounts the Windows partition read-write, held by its own test.
+- **Constraint:** nothing here is ticked *on the machine* — none of this has run
+  on the certified laptop, and the walk that proves it belongs to the virtual
+  machine on the development PC. GRUB is configured and never patched. No change
+  to `crates/alo-installer` or `crates/alo-installing`. **Fast Startup is not
+  decided here.**
