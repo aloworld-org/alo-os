@@ -18,6 +18,7 @@
 //! | [`changes`] | Everything a person has changed about their screens, which is all that is written down |
 //! | [`attached`] | The screens plugged in at this moment, laid out |
 //! | [`coming_and_going`] | A screen unplugged and plugged back in: where the windows belong |
+//! | [`resuming`] | The desk a machine wakes up at, when it is not the desk it left |
 //! | [`time_of_day`] | A time on the clock the person is looking at |
 //! | [`between`] | A stretch of that clock, which nearly always runs through midnight |
 //! | [`moment`] | What the machine's clock says, handed in rather than read |
@@ -117,7 +118,8 @@
 //!    or one worked out from its own glass — never 100% by default — and then
 //!    the nearest size the machine can actually draw ([`scale`]).
 //! 4. **Where the windows of a screen that went belong**, and that they come
-//!    back ([`coming_and_going`]).
+//!    back ([`coming_and_going`]) — asked one cable at a time, or all at once
+//!    for a machine that was asleep while the cables moved ([`resuming`]).
 //! 5. **How warm each one is drawn**, on a schedule a person set or from
 //!    sunset to sunrise worked out on this machine from two numbers they typed
 //!    ([`night_light`], [`sun`]).
@@ -161,6 +163,7 @@ pub mod notes;
 pub mod placed;
 pub mod plugged_into;
 pub mod reported;
+pub mod resuming;
 pub mod scale;
 pub mod sun;
 pub mod time_of_day;
@@ -186,6 +189,7 @@ pub use notes::Note;
 pub use placed::{Placed, Position};
 pub use plugged_into::PluggedInto;
 pub use reported::{Millimetres, NotAScreen, Reported, Resolution, which_screens_these_are};
+pub use resuming::Resumed;
 pub use scale::{Rounded, Scale, ScaleError, Support};
 pub use sun::{NowhereOnEarth, Sun, Whereabouts};
 pub use time_of_day::{NotATime, TimeOfDay};
