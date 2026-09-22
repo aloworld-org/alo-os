@@ -343,6 +343,22 @@ told so at first sign-in. There is no silent enrollment.
 
 ---
 
+## Designs worth learning from HarmonyOS
+
+Huawei's HarmonyOS does several everyday things well. These are the ones that
+fit a PC and fit alo, adopted on 2026-09-22 and not yet built. Each is alo's own
+version, not a copy: it runs through the grants, the record and the person's
+choice like everything else.
+
+- [v1] ★ **Live capsules for work in progress** — a small live pill in the status area for anything under way, **the agent's work first of all**: *building your site, 3 of 5*, *waiting for your approval*. What the agent is doing, visible at a glance without opening anything
+- [v1] ★ **A privacy centre with history** — one page answering *who used what, and when*: which applications **and the agent** used the camera, the microphone, files and the network. Built from the record alo OS already keeps, which most systems do not have to draw on
+- [v1] **Cards from dock icons** — hover over or long-press an application's icon and a small card shows what matters in it and what can be done, without opening it
+- [v1] **A collection shelf** — gather text, pictures and files from several applications into one shelf, then drop them where they are needed, including on another of the person's paired devices. The agent may fill it when asked, and only then
+- [v1] **Snap devices together** — drag one paired device's icon onto another's to connect them. A drag is deliberate, and the other device still asks (ADR 0003)
+- [v1] **One design language on every screen** — when alo's phone applications come, the same design and the same behaviour on the phone as on the PC, adapting to the size of the screen rather than being redrawn for it
+- [v1] **An alo typeface** covering all 24 official EU languages, drawn once for every screen
+- [v1] **Motion that feels physical** — animations that move like real objects and never stutter, within the frame budget the shell already holds itself to
+
 ## The person chooses (ADR 0064)
 
 Law 5: on their own machine a person decides, and every protection is a default
