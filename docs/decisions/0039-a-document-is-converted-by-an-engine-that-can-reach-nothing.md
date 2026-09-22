@@ -229,6 +229,19 @@ measured. C is a narrowed promise.
    where it is absent, and are never `#[ignore]`d and never skipped. A test that
    skips itself when the engine is missing reports green on exactly the machines
    where nothing converts.
+
+   **Amended 2026-09-22 by
+   [ADR 0063](0063-a-machine-that-cannot-run-the-engine-says-so-rather-than-failing.md),
+   in these last two sentences only.** They were written when absence of the
+   engine meant a machine nobody had finished setting up, and failing loudly is
+   right about one of those. The fleet now includes an aarch64 machine, where
+   the pinned engine is an x86_64 build and no release of it can ever be
+   installed; ten tests failed there on every run for a reason nobody on that
+   machine could fix. Under ADR 0063 those ten ask whether the engine **runs** —
+   by running it, never by `test -x` — and where it cannot, skip and say what
+   was missing. Everything else here stands, including the part this repository
+   still holds to: an engine that starts and then converts badly fails loudly,
+   on the machine that has one.
 3. **Three real documents** reach `crates/alo-converting/tests/documents/`:
    one each of `.docx`, `.xlsx` and `.pptx`, saved by the office applications
    people send them from, owned by the repository's owner so they can be
