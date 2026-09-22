@@ -48,6 +48,30 @@ done; nothing is left in `/root` or `/tmp` between runs; and a worker checks tha
 at least 15 GB is free on the drive the distribution's disk lives on before it
 starts a virtual machine, and says so and stops if not.
 
+**The weights on the image, released to the v0.01 lane-B plan, owner-authorized
+2026-09-22.** The owner instructed the third PC to build that plan's task 10, *a
+model on the disk, sized for the machine it lands on*, and **that task's own
+acceptance names this plan's crate**: the weights are put on the image and
+`crates/alo-image` holds the recipe to them, digest-checked the way the runtime
+already is. There is nowhere else they could go — the recipe is what the image
+is made from — so the task cannot be built at all without these files.
+
+This plan keeps `image/` and `crates/alo-image`, and nothing else moves: the
+files below are the weights' own additions, and the checks that hold the recipe
+to them. A change to the image for any other reason is still this plan's alone.
+
+```owner-release
+plan = docs/autonomy/v0-01-lane-b-plan.md
+task = 10
+files =
+  image/Containerfile
+  crates/alo-image/src/arrives_with.rs
+  crates/alo-image/src/checking.rs
+  crates/alo-image/src/lib.rs
+  crates/alo-image/src/weights.rs
+  crates/alo-image/src/wrong.rs
+```
+
 ## Tasks
 
 ### 1. The image is published from GitHub, signed, and pinned

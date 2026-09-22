@@ -3546,6 +3546,17 @@ catalogue never heard of, one nobody measured, and one whose licence was not our
 to hand on. **Nothing here has been built**: no `docker build` of this recipe has
 been run in this lane, and the import step in particular is a recipe rather than
 a measurement until somebody builds it.
+
+**Superseded on 2026-09-22, and the model is no longer this one.** The three
+facts above decided *which model* while no catalogued entry cleared the
+verb-driving bar; since ADR 0034 and ADR 0037 one does, in the words a turn
+shows a model, and `Catalogue::agent_for_cpu` is what the recipe is now held
+to. The image carries `qwen3-8b` from the runtime library's own blob, and the
+weights above — measured `rarely`, which is a model that cannot drive anything
+— are the twin `crates/alo-image` refuses. Everything this entry says about
+*carried, not fetched*, about the licence being ours to hand on, and about the
+digest being checked before anything reads the file is unchanged and still
+holds. See *The image sized for the machine it lands on* below.
 **Date:** 2026-09-11
 
 ### Two models trained for tool calls, put to the same ten requests
@@ -3948,6 +3959,73 @@ them does, the test fails and sends whoever sees it back here — to name the
 model, its size and its grade, and to turn the sentence into carry or fetch
 for real.
 **Date:** 2026-09-11.
+
+### The image sized for the machine it lands on: 8.79 GiB, and two GGUFs that are not the same file
+**Version:** `image/Containerfile` as of 2026-09-22, against
+`crates/alo-models/data/catalogue.toml` of the same day. The artefact is the
+model layer of `qwen3:8b-q4_K_M` in the pinned runtime's own library —
+**5_225_374_496 bytes**, sha256
+`a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f`, with that
+artefact's template blob (1_723 bytes, sha256 `ae370d88…`) beside it.
+**Behaviour:** the entry above measured a catalogue in which nothing cleared
+the verb-driving bar, and the image accordingly carried the largest measured
+entry that fitted — `phi-3-mini-instruct`, graded `rarely`. Since ADR 0034 and
+ADR 0037 an entry clears the bar **in the words a turn shows a model**, and
+`Catalogue::agent_for_cpu(16.0)` answers `qwen3-8b`, so that is what the image
+carries. Two numbers follow from it, and one of them is arithmetic rather than
+a measurement:
+
+| | phi-3-mini-instruct | qwen3-8b |
+|---|---|---|
+| The weights the recipe fetches | 2_393_231_072 bytes (2.23 GiB) | **5_225_374_496 bytes (4.87 GiB)** |
+| Difference | | **+2_832_143_424 bytes (2.64 GiB)** |
+| The image, measured 2026-09-12 | 6_607_474_716 bytes (6.15 GiB) | — |
+| The image, **predicted** | | **≈ 9_439_619_791 bytes (8.79 GiB)** |
+
+**The 8.79 GiB is arithmetic and is written here as arithmetic**: the image
+measured on 2026-09-12 with the weights carried once, plus the difference
+between two pinned blobs whose sizes their registries state, plus 1_651 bytes
+of template and parameters. **No build of this recipe has been made in this
+lane**, so nothing here says the image is that size — it says what it will be
+if nothing else about the recipe changed, and the number is owed a build the
+way the first one was.
+
+**And the finding that decided where the weights are fetched from.** The first
+version of this recipe fetched the publisher's own GGUF from Hugging Face and
+said in a comment that *a registry tag is not a digest*. That is true of tags
+and not of registries: a blob under `/v2/library/<model>/blobs/sha256:…` names
+one file and no other. What matters more is that the two files are **not the
+same file**. Read on 2026-09-22:
+
+| | Publisher's own GGUF | The runtime library's |
+|---|---|---|
+| `qwen3-8b`, Q4_K_M | `Qwen/Qwen3-8B-GGUF`, 5_027_783_488 bytes | 5_225_374_496 bytes |
+| `phi-3-mini-instruct`, Q4_K_M | `microsoft/Phi-3-mini-4k-instruct-gguf`, 2_393_231_072 bytes | 2_393_231_808 bytes |
+
+197 megabytes apart for one and 736 bytes for the other, because they were
+quantised by different hands. **Every grade in this catalogue was earned
+against the runtime library's file**, which is what `artefact` names — so the
+image fetching the publisher's would put weights on every machine that nobody
+here has measured, under a grade earned on weights nobody ships. That is the
+gap `docs/features.md`'s *measured by us, not claimed by the publisher* is
+about, and until 2026-09-22 this recipe was on the wrong side of it by 736
+bytes without anybody noticing. The template is fetched the same way and for
+the same reason: a grade is earned against a model **as it was served**, and
+the same weights under a hand-copied template are a different machine
+answering.
+**Our response:** `crates/alo-image/src/arrives_with.rs` asks the catalogue
+which entry a machine of the certified class arrives with, rather than holding
+a name of its own, and `everything_wrong_with` refuses a recipe carrying
+anything else — `phi-3-mini-instruct`, which passes every other check here, is
+the twin that proves it. Where the catalogue recommends **nothing** for a
+class, the image must carry **nothing**, and the refusal names the same reason
+a person is shown (`alo_models::NoAgentHere`) rather than a sentence of the
+checker's own; that half is shown happening against the real recipe at eight
+gigabytes, where five measured entries fit and none clears the bar. Nothing
+here says the machine can be given an agent turn: the grade `qwen3-8b` earned
+was earned **in the envelope**, and wiring a shipped machine's turn to ask that
+way is lane A's work.
+**Date:** 2026-09-22.
 
 ### Phi-3 Mini gets the envelope right and loses the argument list
 **Version:** `phi3:3.8b-mini-4k-instruct-q4_K_M` — Microsoft's Phi-3-mini-4k-
