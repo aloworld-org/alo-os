@@ -63,11 +63,20 @@ Nothing else about `alo-broker` moves: the enum stays closed, the verb takes an
 same tests every other verb has. ADR 0045's seventh term is untouched — no name
 on the list begins `undo.`, and the test that holds that is unchanged.
 
+**And what a closed enum costs, which is the point of it.** `SystemVerb` is
+matched exhaustively by every carrier, so a new member obliges each of them to
+say what it does with it — here, one line apiece saying *not mine*. That is the
+enum working as ADR 0001 §1 intends: a verb cannot be added anywhere without
+every carrier being made to consider it. The files below are those lines and
+nothing else.
+
 ```owner-release
 plan = docs/autonomy/v0-5-the-installer-plan.md
 task = 16
 files =
   crates/alo-broker/src/verbs.rs
+  crates/alo-changing-drives/src/wanted.rs
+  crates/alo-changing-updates/src/wanted.rs
 ```
 
 ## Tasks
