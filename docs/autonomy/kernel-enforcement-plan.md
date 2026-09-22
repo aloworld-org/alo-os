@@ -706,6 +706,36 @@ really has can be started and ended here at all — and only then whether the th
 cases below can be observed. It is scheduled rather than blocked, and neither
 word may be used to imply the work was done.
 
+**That first question was put to the machine on 2026-09-22, and the answer is
+no.** `C:\dev\setup\can-a-real-session-end-here.sh` on the third PC makes a
+throwaway person, opens a session as them through `pam_systemd`, and asks
+`logind` what it made:
+
+| | |
+|---|---|
+| the session already here | `class=user` — but it is WSL's own, not a login |
+| a session opened with `su -` | registered as `c2`, **`class=background`** |
+| its state, while open | `active`, runtime directory present, **session bus present** |
+| after it ended | no sessions for them, `linger=no` |
+
+So `su` does reach `logind` on this machine — a session is registered and a
+session bus exists, which the earlier text doubted — but **what it registers is
+`background`, not the `user` class a person's login has**. The three cases are
+about what a *person's* logout does, and a background session ending is not
+that. Nothing here can be measured into the answer without the kind of session
+this machine cannot make.
+
+**One observation in that run is inconclusive and is recorded as such.**
+`/run/user/1001` was still present immediately after the session ended and gone
+when asked again later — but the probe had removed the throwaway person in
+between, so whether the logout took the directory or `userdel` did is not
+distinguished. It is not evidence either way, and the first reading of it —
+taken a moment too early — said the opposite of the second.
+
+**What would answer it:** a machine that registers a `user`-class login, which
+is the certified laptop or any ordinary Linux desktop, plus the helper that
+reports across the logout for the held-handle half. Not this one.
+
 `connections_come_and_go.rs` proves **disconnection handling**: a keyring handle
 whose bus has stopped refuses, promptly, and hands back no key. Its fixture stops
 the private bus and keyring daemon **that the fixture itself started**, and that
