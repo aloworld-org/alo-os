@@ -106,6 +106,22 @@ pub const DID_NOT_FIT: Word = Word::saying(
      thrown away.",
 );
 
+/// The screens are not the ones the machine went to sleep with.
+pub const THE_DESK_CHANGED: Word = Word::saying(
+    "displays.the-desk-changed",
+    "Your screens have changed since this machine went to sleep, so alo OS has set up the ones in \
+     front of you now — the arrangement you made at the other desk is still here for when you are \
+     back at it",
+)
+.noting(
+    "\"alo OS\" is the product's name and is never translated. Said once, when a machine that was \
+     asleep is woken and the screens plugged into it are not the ones it went to sleep with: a \
+     laptop closed at home and opened at the office is the everyday case. It is not a fault and \
+     should not read like one — it says why the screens are laid out differently than they were a \
+     moment ago. The last clause matters: nothing the person arranged at another desk has been \
+     thrown away.",
+);
+
 /// The sun does not set today, so night light has nothing to start at.
 pub const THE_SUN_DOES_NOT_SET: Word = Word::saying(
     "displays.the-sun-does-not-set",
@@ -528,12 +544,13 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 43] = [
     AS_YOU_LEFT_THEM,
     NEW_HERE,
     REMEMBERED_BY_ITS_SOCKET,
     TOLD_APART_BY_THEIR_SOCKETS,
     DID_NOT_FIT,
+    THE_DESK_CHANGED,
     THE_SUN_DOES_NOT_SET,
     THE_SUN_DOES_NOT_RISE,
     SIZE_ROUNDED,

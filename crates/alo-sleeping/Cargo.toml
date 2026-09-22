@@ -23,6 +23,12 @@ alo-capability = { path = "../alo-capability" }
 # became of it when the machine woke is written down through its own door.
 alo-turn = { path = "../alo-turn" }
 alo-keeping = { path = "../alo-keeping" }
+# The desk a machine wakes up at. A machine that was asleep saw no cable go in
+# or come out, so a resume asks `alo-displays` for the whole reported set at
+# once (`crate::the_desk`). Read and never edited: which screens there are and
+# where each goes is that crate's decision, and this one only decides that a
+# resume is where it is asked.
+alo-displays = { path = "../alo-displays" }
 # The rule `sleeping.toml` is kept by: only the difference, refused whole when
 # wrong, written whole or not at all (ADR 0038).
 alo-kept = { path = "../alo-kept" }
@@ -44,14 +50,15 @@ zbus = { version = "5.19", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-# The screens the walk from lock to resume ends at. This plan's task 7 walks
-# one person from locking their machine to docking it at another desk, and the
-# only crate that may hold that walk is this one: `alo-leaving`,
-# `alo-notifying` and this crate each refuse, by a test over every manifest in
-# the workspace, any dependant but `alo-saying` and `alo-shell`. `alo-displays`
-# holds no such rule, so the walk lives here and reaches out to it rather than
-# the other way round. See `tests/the_walk_from_lock_to_resume_to_a_new_desk.rs`.
-alo-displays = { path = "../alo-displays" }
+# The screens the walk from lock to resume ends at are `alo-displays`', which
+# is a dependency above rather than a dev-dependency since a resume asks it for
+# the desk the machine woke at. This plan's task 7 walks one person from
+# locking their machine to docking it at another desk, and the only crate that
+# may hold that walk is this one: `alo-leaving`, `alo-notifying` and this crate
+# each refuse, by a test over every manifest in the workspace, any dependant
+# but `alo-saying` and `alo-shell`. `alo-displays` holds no such rule, so the
+# walk lives here and reaches out to it rather than the other way round. See
+# `tests/the_walk_from_lock_to_resume_to_a_new_desk.rs`.
 # The lock image the walk's lock screen is drawn against — `alo-locking` reads
 # it and this crate does not, so the walk names it for itself.
 alo-appearance = { path = "../alo-appearance" }

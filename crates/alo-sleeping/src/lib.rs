@@ -9,6 +9,7 @@
 //! | [`asked`], [`Why`], [`Decided`] | Whether the machine sleeps, decided before anything reaches `logind` |
 //! | [`Going`], [`Slept`], [`Asleep`] | A sleep carried out: the seat locked, then the machine asked |
 //! | [`Woke`], [`AfterSleep`] | Waking locked, and what became of a turn that was running |
+//! | [`Woke::the_desk`] | The screens in front of the person at a resume, asked all at once |
 //! | [`Lid`], [`Displays`] | What closing the lid does, and the person's choice |
 //! | [`Keeper`], [`Holding`] | The closed list of what may keep the machine awake, each named |
 //! | [`TheLidIsOurs`], [`UntilLocked`] | The two holds alo OS keeps for a signed-in session |
@@ -37,6 +38,9 @@
 //!    (`tests/an_agent_cannot_keep_this_machine_awake.rs`).
 //! 5. **A turn running when the machine slept is resumed or refused with a
 //!    sentence, and written down** ([`Woke::a_turn`]), never silently lost.
+//! 6. **A resume asks what the screens are now**, as one whole set rather than
+//!    a cable at a time, because a machine that was asleep saw no cable move
+//!    ([`Woke::the_desk`], and `alo-displays` decides everything about them).
 //!
 //! # What is not here
 //!
@@ -58,6 +62,7 @@ pub mod logind;
 mod machine;
 pub mod refusing;
 pub mod session_holds;
+pub mod the_desk;
 pub mod unkept;
 pub mod waking;
 pub mod words;
