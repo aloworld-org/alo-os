@@ -355,8 +355,10 @@ fn killed_at_every_step_the_computer_still_starts_windows() {
             // which partition. Measured on 2026-09-21: it started the alo OS
             // entry — and from Windows' own EFI system partition, not the area
             // (`docs/quirks.md`), so Windows came up. This holds it to the area.
-            let next = the_restart_after_the_next_start_was_set(&yard, &name, &chip);
+            // The area is read off the killed boot's console before the
+            // restart, which starts its console afresh in the same file.
             let area = the_areas_first_sector(&killed.console);
+            let next = the_restart_after_the_next_start_was_set(&yard, &name, &chip);
             let started = walking::firmware::starts(&next);
             match started.iter().find(|start| start.description == "alo OS") {
                 None => findings.push(

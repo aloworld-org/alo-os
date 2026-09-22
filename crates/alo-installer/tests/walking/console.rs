@@ -85,12 +85,17 @@ impl Console {
         None
     }
 
-    /// The one line beginning with this, and what follows it.
+    /// What follows this on the first line that says it.
+    ///
+    /// Found anywhere in the line and not only at its start: the walk stamps
+    /// every line with its own clock (`  223.1s the-name-written: ...`), and a
+    /// match on the start alone found nothing in the run of 2026-09-22.
     #[must_use]
-    pub fn after(&self, beginning: &str) -> Option<String> {
-        self.said()
-            .lines()
-            .find_map(|line| line.trim().strip_prefix(beginning).map(str::to_owned))
+    pub fn after(&self, marker: &str) -> Option<String> {
+        self.said().lines().find_map(|line| {
+            line.split_once(marker)
+                .map(|(_, rest)| rest.trim_end().to_owned())
+        })
     }
 
     /// Whether the guest said this, anywhere.
