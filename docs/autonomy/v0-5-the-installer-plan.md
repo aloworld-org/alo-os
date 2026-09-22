@@ -256,9 +256,12 @@ which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
 > alo OS's own loader, with Windows directly behind it in the firmware's
 > order and a test that proves the fall-through. Neither ADR 0023 nor ADR
 > 0033 answered it, and this task could not be built without the answer.
-> Its three terms are part of this task's acceptance. **Fast Startup** is
-> left open there for the owner, and the test that alo OS never mounts the
-> Windows partition read-write is this task's either way.
+> Its three terms are part of this task's acceptance. **Fast Startup is
+> decided, 2026-09-22:**
+> [ADR 0064](../decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
+> term 9 — **the installer asks**. The words are in the acceptance below. And
+> the test that alo OS never mounts the Windows partition read-write holds
+> whichever the person answers.
 
 ADR 0023 §4 and ADR 0033 §2: *Windows is retained alongside* — the default,
 and on the certified laptop the only mode. **The owner's words on 2026-09-14:
@@ -290,6 +293,26 @@ point of no return* — which, alongside Windows, is nothing destroyed.
   must be able to uninstall from one; and the whole journey is recorded in
   `docs/booting.md` as the steps a person takes, in order, with what they
   see at each.
+- **Fast Startup, and what the installer asks** (ADR 0064 term 9, the owner's
+  decision of 2026-09-22). When Windows' Fast Startup is on, the installer
+  **asks**, in these words, externalised like every other sentence:
+
+  > Windows' Fast Startup is on. It can make Windows and alo OS disagree about
+  > the disk. Turn it off? (Recommended when sharing a disk.)
+
+  with **[Turn off]** and **[Leave on]**. *Turn off* sets `HiberbootEnabled` to
+  `0` and **never** runs `powercfg /h off`, which removes hibernation
+  altogether and is a different act from the one the person agreed to. Both
+  answers are safe, because alo OS never mounts the Windows partition
+  read-write (`crates/alo-starting/tests/windows_is_never_mounted.rs`, task
+  16). The question is only asked when the value is on, the answer is the
+  person's, and neither answer stops the install.
+- **What the install leaves behind, tidied.** Measured on 2026-09-22
+  (`docs/quirks.md`): after the install the firmware's first entry is bootupd's,
+  named *Fedora*, and the installer's staging entry *alo OS* and its area are
+  left behind. This task names the entry as alo OS, puts Windows Boot Manager
+  directly behind it (term 2), and removes the staging area once the installed
+  system has started.
 - **Constraint:** replacing Windows is not built here. It is an explicit,
   twice-confirmed mode ADR 0023 allows, and it waits for a task of its own
   after the alongside road has been certified.
@@ -1120,10 +1143,11 @@ the menu a machine starts at, and the journey written down.
   because to the firmware it started, so the machine's boot-menu key is named as
   the way to Windows in that case, and nothing claims the fall-through reaches
   it.
-- **And the test that holds either way on Fast Startup:** alo OS **never mounts
-  the Windows partition read-write**. Fast Startup is the owner's open decision
-  (ADR 0062), and this test is task 4's whatever is decided, so it is written
-  here and nothing in this task decides that question.
+- **And the test that holds whichever way Fast Startup is answered:** alo OS
+  **never mounts the Windows partition read-write**. Fast Startup was decided
+  on 2026-09-22, after this task landed — ADR 0064 term 9, *the installer
+  asks* — and the asking is task 4's, on the Windows side. This test holds for
+  either answer.
 
 **What is not here, and stays with the development PC.** `crates/alo-installer`
 and `crates/alo-installing` are **not edited by this task** — that machine is
@@ -1147,8 +1171,9 @@ the in-system switches alone. **This part is built so it can be walked there.**
 - **Constraint:** nothing here is ticked *on the machine* — none of this has run
   on the certified laptop, and the walk that proves it belongs to the virtual
   machine on the development PC. GRUB is configured and never patched. No change
-  to `crates/alo-installer` or `crates/alo-installing`. **Fast Startup is not
-  decided here.**
+  to `crates/alo-installer` or `crates/alo-installing`. Fast Startup was not
+  decided here; the owner decided it on 2026-09-22 (ADR 0064 term 9) and the
+  asking is task 4's.
 
 ### 17. The default a machine starts at, changed by the person who owns it
 

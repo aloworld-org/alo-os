@@ -47,8 +47,9 @@
 //!
 //! # It mounts nothing, and could not
 //!
-//! ADR 0062 leaves Fast Startup open, and **alo OS never mounts the Windows
-//! partition read-write** holds either way. This crate is where the way across
+//! Fast Startup is the person's answer to a question the installer asks
+//! (ADR 0064 term 9, decided 2026-09-22), and **alo OS never mounts the
+//! Windows partition read-write** holds whichever they answer. This crate is where the way across
 //! to Windows lives, and it reaches Windows by handing Windows's own start-up
 //! program to the firmware. It depends on no disk service, names no filesystem,
 //! and has no method that could mount anything —
