@@ -520,6 +520,56 @@ fn the_environment_says(named: &str) -> String {
         .replace("{disk}", THE_SECOND_DISKS_NAME)
 }
 
+/// The serial line without the kernel's own messages, which arrive in the
+/// middle of the environment's sentences: measured on 2026-09-22,
+/// `alo OS is being installed on thi[   10.517276] e1000e …` and the rest of the
+/// sentence on the line after. Each message is cut from its stamp through the
+/// end of its line.
+fn without_the_kernels_messages(said: &str) -> String {
+    let mut kept = String::with_capacity(said.len());
+    let mut rest = said;
+    while let Some(at) = rest.find('[') {
+        let (before, from) = rest.split_at(at);
+        kept.push_str(before);
+        let stamp = from
+            .get(1..)
+            .and_then(|inside| inside.split_once(']'))
+            .map(|(inside, _)| inside.trim_start());
+        let is_the_kernels = stamp.is_some_and(|stamp| {
+            stamp.split_once('.').is_some_and(|(seconds, micros)| {
+                !seconds.is_empty()
+                    && seconds.chars().all(|c| c.is_ascii_digit())
+                    && micros.len() == 6
+                    && micros.chars().all(|c| c.is_ascii_digit())
+            })
+        });
+        if is_the_kernels {
+            rest = from.split_once('\n').map_or("", |(_, after)| after);
+        } else {
+            kept.push('[');
+            rest = from.get(1..).unwrap_or_default();
+        }
+    }
+    kept.push_str(rest);
+    kept
+}
+
+/// **The kernel's messages are cut from the middle of a sentence, and nothing
+/// else is**: the line measured on 2026-09-22, and a bracket that is not a
+/// kernel's stamp.
+#[test]
+fn a_sentence_the_kernel_broke_is_read_whole() {
+    let said = "alo OS is being installed on thi[   10.517276] e1000e 0000:00:03.0: \
+                Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode\r\n\
+                s computer. Each step is written here as it happens\r\n\
+                [  OK  ] Reached target alo-installing.target\r\n";
+    assert_eq!(
+        without_the_kernels_messages(said),
+        "alo OS is being installed on this computer. Each step is written here as it \
+         happens\r\n[  OK  ] Reached target alo-installing.target\r\n"
+    );
+}
+
 /// **Run all the way through, the road installs alo OS onto the disk the
 /// person chose, and the computer then starts the installed alo OS from that
 /// disk.**
@@ -582,6 +632,7 @@ fn the_whole_road_installs_alo_os_and_the_installed_system_starts() {
          is at {}.\n{said}",
         screen.display()
     );
+    let said = without_the_kernels_messages(&said);
     let mut sentences = said.find(&the_environment_says("installing.starting"));
     for named in [
         "installing.reading-the-choice",
