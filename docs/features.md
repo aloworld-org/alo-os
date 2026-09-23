@@ -382,6 +382,7 @@ its foundation and stays as the familiar option a person can keep (Law 5).
 - [v1] ★ **History** — what happened, why, and undo. Agent actions come from the kernel-watched record; a person's own work is shown from file versions, never from watching them
 - [v1] **Content is the interface** — an open object fills the screen and tools appear when something is selected
 - [v1] **No dock by default** — the alo key, the bottom edge or a swipe reveals the alo Edge. Its replacement must be found by somebody who has never seen it within thirty seconds, tested with people; a person may pin a dock
+- [v0.5] **Which system the machine starts by default** — changed from alo OS's settings or from Windows, kept in one place both can reach (the EFI system partition), so both sides always show the same answer (ADR 0066). alo OS changes it through a verb on the broker's list, never by a person writing under /boot
 - [v1] ★ **The privacy symbol is always visible and can never be hidden** — *private*, *local activity*, *data leaving*, *camera or microphone on*
 - [v1] **Notifications are decisions** — *requires you*, *working*, *finished*, and *finished* only for work the person walked away from
 - [v1] **Every application lives in a Place**, including the ones with ordinary windows, so there is one world rather than a modern half and an old half
