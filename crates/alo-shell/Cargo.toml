@@ -147,5 +147,13 @@ wayland-protocols = { version = "0.32", features = ["client"] }
 name = "alo-compositor"
 path = "src/bin/alo-compositor.rs"
 
+# The desktop a person arrives at after they sign in. A second process rather
+# than a mode of the first, because the two belong to different people: the
+# greeter is the machine's, standing in front of somebody who has not signed in,
+# and this is the person's.
+[[bin]]
+name = "alo-desktop"
+path = "src/bin/alo-desktop.rs"
+
 [lints]
 workspace = true
