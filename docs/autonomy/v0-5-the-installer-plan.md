@@ -1210,10 +1210,24 @@ the in-system switches alone. **This part is built so it can be walked there.**
 
 ### 17. The default a machine starts at, changed by the person who owns it
 
-**Status:** **Done, 2026-09-22.** On the third PC
+**Status:** **Done, 2026-09-23.** On the third PC
 (`updates/the-default-a-machine-starts-at-changed-by-the-person-who-owns-it.md`).
 **Nothing in it is ticked on a machine**, which is what this task's own
-constraint asks.
+constraint asks: no hardware, no certified laptop, and no acceptance claimed
+from a machine.
+
+What *was* run on a machine, and is written down rather than ticked, is the
+base's own half. ADR 0066 term 1 puts the last choice on the EFI system
+partition, and where that file lives on the pinned base was measured instead of
+assumed: the base was installed by its own `bootc install to-disk`, read, and
+booted under OVMF with no KVM. It keeps `grubenv` as a plain file on `/boot`
+rather than as the symlink onto the ESP older Fedora layouts have, carries no
+block on the ESP at all, and **mounts the ESP nowhere**. The loader's ability to
+save on that partition's FAT was proved rather than believed, and the generated
+drop-in was booted verbatim. `docs/quirks.md` has the measurement, the versions
+and the date. What it costs — the ESP mounted at `/boot/efi`, and the block
+created at install time, neither of which the base does — is written above as
+owed by the lane that owns the installer.
 
 **The decision a. asked for was already made, and it is not this task's.**
 [ADR 0066](../decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md),
@@ -1423,7 +1437,11 @@ given as SATA with a serial rather than virtio.
 
 ### 19. Killed at every step, Windows' own partition byte for byte — or the reason it is not
 
-**Status:** ready. **Depends on:** 10.
+**Status:** ready — **and it is the development PC's**, recorded 2026-09-22 at
+the owner's word. It needs the Windows guest, and the third PC has no working
+`/dev/kvm`: every guest there is emulated, and one virtual-machine acceptance on
+it has already cost 3 779 seconds. Written here so that no lane picks it up
+merely because it is the next ready task in this plan. **Depends on:** 10.
 **Split from** task 10 on 2026-09-22. Task 10 is done for what it proved: all
 seven kills landing exactly, Windows restarting to its desktop after each, the
 start partition unchanged beyond the controls, nothing unreadable, and the
