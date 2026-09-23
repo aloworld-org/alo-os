@@ -666,9 +666,19 @@ recommendation is explicitly not an approval.
 
 ### 10. What a credential does when a session really ends
 
-**Status:** scheduled — the three cases are measured; the held-handle half
-below is what remains, and it waits on a network service this machine does not
-run (see below). Stepped over until then. **Depends on:** the credential store — done.
+**Status:** **blocked — on a machine that registers a `user`-class login**, which
+means a real greeter or a `getty`, and which neither WSL nor `su` can give.
+Measured on the third PC on 2026-09-22 rather than assumed; the run and its
+numbers are below. The three cases of 2026-09-10 stand; the held-handle half
+below is what remains. **Depends on:** the credential store — done.
+
+**Who can take it.** The development PC, inside a KVM guest with a real login —
+it has working hardware virtualisation, measured 2026-09-20 — or the owner's
+certified laptop once alo OS is installed on it. **Not the third PC**, and not
+by installing a network service there: `sshd` was the earlier guess and it is
+the wrong shape, because the class of the session is what matters and a
+listener does not change it. Recorded here so the next machine does not repeat
+the probe or reach for `sshd` again.
 
 **Measured, 2026-09-10.** All three cases observed on this machine's `logind`,
 in `crates/alo-secrets/tests/a_session_that_really_ended.rs`: one login logged
@@ -725,7 +735,7 @@ about what a *person's* logout does, and a background session ending is not
 that. Nothing here can be measured into the answer without the kind of session
 this machine cannot make.
 
-**One observation in that run is inconclusive and is recorded as such.**
+**INCONCLUSIVE — one observation in that run proves nothing, either way.**
 `/run/user/1001` was still present immediately after the session ended and gone
 when asked again later — but the probe had removed the throwaway person in
 between, so whether the logout took the directory or `userdel` did is not
