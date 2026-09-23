@@ -25,8 +25,41 @@
 use crate::saved::{EnvironmentBlock, NotAnEnvironmentBlock};
 use crate::systems::{System, THE_WINDOWS_ENTRY};
 
-/// The one file the last choice is kept in, on a machine.
-pub const THE_ENVIRONMENT_BLOCK: &str = "/boot/grub2/grubenv";
+/// The one file the last choice is kept in, as alo OS reaches it.
+///
+/// On the **EFI system partition**, which
+/// [ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)
+/// term 1 decided it: *the one filesystem both systems can read and write, and
+/// the one the loader already reads at start.* A machine that starts Windows
+/// tomorrow is told so from Windows as often as from here, and a default kept
+/// under `/boot` could only ever be changed from one side — the other half of
+/// ADR 0066 would be a promise this repository could not keep.
+///
+/// It is **not** beside [`crate::THE_MENU`], and that is the point rather than
+/// an oversight: the menu is alo OS's own file and belongs on alo OS's own
+/// filesystem, while the answer to *which system* belongs to both systems.
+///
+/// # What was measured, on the base this image is built from
+///
+/// The base keeps no default here. `quay.io/fedora/fedora-bootc:42` at the
+/// pinned digest was installed to a disk by its own installer, and its
+/// `/boot/grub2/grubenv` came out a **regular file** — not the symlink onto
+/// the ESP that older Fedora layouts had — holding nothing at all, while the
+/// ESP had no environment block on it. So there was no file of the base's to
+/// adopt and none left behind keeping a second answer. `docs/quirks.md` has
+/// the measurement, including that the loader can save into this one.
+pub const THE_ENVIRONMENT_BLOCK: &str = "/boot/efi/EFI/fedora/grubenv";
+
+/// The same one file, named from inside the partition it is on.
+///
+/// alo OS mounts that partition at `/boot/efi` and so names the file from `/`;
+/// the loader is already running on it and names it from the partition's own
+/// root; the Windows program mounts it at a letter of its own choosing. Three
+/// names for one file, which is what ADR 0066 term 1 asks for and also the way
+/// it could quietly become two — so
+/// `the_file_alo_os_opens_is_the_file_the_loader_saves_into` in this crate's
+/// tests holds the two of them in this repository together.
+pub const THE_BLOCK_ON_THE_ESP: &str = "/EFI/fedora/grubenv";
 
 /// The one name it is kept under, which is the loader's own.
 pub const SAVED_ENTRY: &str = "saved_entry";

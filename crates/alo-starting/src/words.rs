@@ -58,6 +58,30 @@ pub const WINDOWS_NEXT_TIME: Word = Word::saying(
      the person restarts when they are ready.",
 );
 
+/// alo OS now starts when nobody chooses.
+pub const NOW_STARTS_ALO_OS: Word = Word::saying(
+    "starting.now-starts-alo-os",
+    "alo OS now starts on this computer whenever nobody chooses. You can change that here at any \
+     time",
+)
+.noting(
+    "Said once a person has changed which of the two operating systems on this computer starts on \
+     its own after the short wait. It is for every time from now on, which is what separates it \
+     from starting.windows-next; \"here\" is the same place in Settings they are reading it. \
+     \"alo OS\" is this system's name and is never translated.",
+);
+
+/// Windows now starts when nobody chooses.
+pub const NOW_STARTS_WINDOWS: Word = Word::saying(
+    "starting.now-starts-windows",
+    "Windows now starts on this computer whenever nobody chooses. You can change that here at any \
+     time",
+)
+.noting(
+    "The counterpart of starting.now-starts-alo-os, for the other operating system. \"Windows\" \
+     is that system's maker's name for it and is left as it is in most languages.",
+);
+
 /// This computer starts alo OS when nobody chooses.
 pub const STARTS_AT_ALO_OS: Word = Word::saying(
     "starting.starts-at-alo-os",
@@ -142,6 +166,20 @@ pub const WOULD_NOT_BE_TOLD: Word = Word::saying(
      remembered.",
 );
 
+/// This computer would not keep the answer.
+pub const NOT_REMEMBERED: Word = Word::saying(
+    "starting.refused.not-remembered",
+    "This computer would not keep which system it should start, so nothing was changed. It still \
+     starts the one it started before, and you can choose the other from the list it shows when \
+     it is switched on",
+)
+.noting(
+    "Said when the answer to \"which of the two operating systems starts on its own\" could not \
+     be kept. Nothing about the computer has changed, and the second sentence is the way across \
+     that needs nothing kept. The counterpart of starting.refused.would-not-be-told, for the \
+     setting that lasts rather than the one-off.",
+);
+
 /// The approval was not accepted.
 pub const APPROVAL_NOT_ACCEPTED: Word = Word::saying(
     "starting.refused.approval-not-accepted",
@@ -189,8 +227,10 @@ pub const NOT_A_STARTING_CHANGE: Word = Word::saying(
 );
 
 /// Every word that is a sentence a person reads about a change.
-pub const THE_SENTENCES: [Word; 10] = [
+pub const THE_SENTENCES: [Word; 12] = [
     WINDOWS_NEXT_TIME,
+    NOW_STARTS_ALO_OS,
+    NOW_STARTS_WINDOWS,
     STARTS_AT_ALO_OS,
     STARTS_AT_WINDOWS,
     NO_WINDOWS_HERE,
@@ -204,12 +244,13 @@ pub const THE_SENTENCES: [Word; 10] = [
 
 /// Every refusal a person can read, which is what the road answers with when it
 /// answers with anything but *done*.
-pub const EVERY_REFUSAL: [Word; 9] = [
+pub const EVERY_REFUSAL: [Word; 10] = [
     NO_WINDOWS_HERE,
     MORE_THAN_ONE_WINDOWS,
     DOES_NOT_START_WINDOWS,
     NOT_ANSWERING,
     WOULD_NOT_BE_TOLD,
+    NOT_REMEMBERED,
     APPROVAL_NOT_ACCEPTED,
     NOT_BEING_KEPT,
     NOTHING_MAKES_CHANGES,
@@ -217,9 +258,11 @@ pub const EVERY_REFUSAL: [Word; 9] = [
 ];
 
 /// Every sentence this crate can say.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 16] = [
     THE_WINDOWS_ENTRY_TITLE,
     WINDOWS_NEXT_TIME,
+    NOW_STARTS_ALO_OS,
+    NOW_STARTS_WINDOWS,
     STARTS_AT_ALO_OS,
     STARTS_AT_WINDOWS,
     NO_WINDOWS_HERE,
@@ -227,6 +270,7 @@ pub const EVERY_WORD: [Word; 13] = [
     DOES_NOT_START_WINDOWS,
     NOT_ANSWERING,
     WOULD_NOT_BE_TOLD,
+    NOT_REMEMBERED,
     APPROVAL_NOT_ACCEPTED,
     NOT_BEING_KEPT,
     NOTHING_MAKES_CHANGES,
@@ -400,6 +444,22 @@ mod tests {
         let said = WINDOWS_NEXT_TIME.says().to_lowercase();
         assert!(said.contains("next time"), "{said}");
         assert!(said.contains("the time after that"), "{said}");
+    }
+
+    /// **The two sentences said once the default changed say that it lasts**,
+    /// which is what separates them from the one-start sentence. A person who
+    /// read *Windows will start next time* as *from now on* would restart later
+    /// and find alo OS; a person who read this as *once* would wait for a
+    /// change back that never comes.
+    #[test]
+    fn what_is_read_after_the_default_changed_says_it_lasts() {
+        for word in [NOW_STARTS_ALO_OS, NOW_STARTS_WINDOWS] {
+            let said = word.says().to_lowercase();
+            assert!(said.contains("whenever nobody chooses"), "{said}");
+            assert!(said.contains("change that"), "{said}");
+            assert!(!said.contains("next time"), "{said}");
+        }
+        assert_ne!(NOW_STARTS_ALO_OS.says(), NOW_STARTS_WINDOWS.says());
     }
 
     /// **The menu's title will go into the file the menu is written in.** It is

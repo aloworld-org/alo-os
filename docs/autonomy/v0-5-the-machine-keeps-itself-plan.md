@@ -68,6 +68,26 @@ files =
   crates/alo-letting-go/tests/nothing_here_is_a_verb.rs
 ```
 
+**And again for that plan's task 17, owner-authorized 2026-09-22 by
+[ADR 0066](../decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md),**
+which puts the change of the default system on the broker's list as a verb. The
+list goes from twelve to thirteen, so this count moves again — which is the line
+working, not an obstacle to it.
+
+**What the count is for does not move.** ADR 0045's seventh term is about
+**undo**: no name on the broker's list may be a verb over the written-down past,
+because an agent that can forget an undo can erase the evidence of what it did.
+`starting.default` says which system a machine starts; it reaches nothing that
+was written down. `no_verb_on_the_brokers_list_begins_undo` is unchanged and
+still passes.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-installer-plan.md
+task = 17
+files =
+  crates/alo-letting-go/tests/nothing_here_is_a_verb.rs
+```
+
 ## Tasks
 
 ### 1. What an update is, and what it may never do

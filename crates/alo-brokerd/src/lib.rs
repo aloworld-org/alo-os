@@ -16,6 +16,7 @@
 //! | [`Printers`], [`PrintService`] | The printers' three verbs, carried out against what the printing service reports now |
 //! | [`Updates`], [`StartingUnits`], [`TheUnit`] | The two update verbs, carried out by starting a unit that holds what the base asks for |
 //! | [`NextStart`], [`the_identity_of`] | *Restart into Windows*, carried out by setting the firmware's next start — once, and leaving the order alone |
+//! | [`ByDefault`] | *Start this system when nobody chooses*, carried out by changing the one place that answer is kept — and leaving the next start alone |
 //! | [`AnUpdate`], [`GoingBackApproved`], [`Handing`] | What a person approved about an update, and the folder only root can read that carries it to the unit |
 //! | [`stage_the_update_approved`], [`set_going_back`] | What the two units' own programs do, which is every decision in them |
 //! | `alo-brokerd.service` | The unit, beside this manifest, held to what the process expects by a test |
@@ -53,6 +54,7 @@
 
 #[cfg(unix)]
 pub mod approved;
+mod by_default;
 #[cfg(unix)]
 mod carrying;
 #[cfg(unix)]
@@ -87,8 +89,9 @@ mod updates;
 
 #[cfg(unix)]
 pub use approved::{AnUpdate, GoingBackApproved, NotAnUpdate};
+pub use by_default::ByDefault;
 #[cfg(unix)]
-pub use carrying::{Carriers, NoFirmware, NoUnits};
+pub use carrying::{Carriers, NoFirmware, NoLoader, NoUnits};
 #[cfg(unix)]
 pub use describing::{Logins, NotDescribed, logins};
 #[cfg(unix)]

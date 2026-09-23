@@ -38,10 +38,24 @@ use std::collections::BTreeSet;
 /// from anybody's undo: it writes one firmware variable, reads no record, and
 /// removes nothing.
 ///
+/// **Thirteen since 2026-09-22**, for `starting.default` — which of the two
+/// systems on a machine installed alongside Windows starts when nobody chooses
+/// at the menu.
+/// [ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md),
+/// accepted 2026-09-23, decided that it is a verb and why: the answer is kept
+/// in **one** place both systems read (ADR 0062 term 3), that place is under
+/// `/boot` and therefore root's, and a person in Settings is not root. Its
+/// argument is the identity of one of the two systems the menu already offers —
+/// no path, no file, no loader — and task 17 of
+/// `docs/autonomy/v0-5-the-installer-plan.md` says in as many words that the
+/// member is added with the ADR beside it and this number moved in the same
+/// change. It takes nothing away from anybody's undo either: it writes one
+/// setting in one file, reads no record, and removes nothing.
+///
 /// Moving this number is what a verb costs. It is a line in this file, in the
 /// change that adds the verb, with the decision it rests on named beside it —
 /// which is the point: the list cannot grow quietly.
-const AS_MANY_AS_IT_HAD: usize = 12;
+const AS_MANY_AS_IT_HAD: usize = 13;
 
 /// **No name on the broker's list begins `undo.`** — the sentence ADR 0045's
 /// seventh term asks a test to hold, over the one list there is.

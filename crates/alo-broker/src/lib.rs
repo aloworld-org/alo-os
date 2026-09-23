@@ -10,7 +10,7 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`SystemVerb`] | The closed list: eleven verbs, one argument each |
+//! | [`SystemVerb`] | The closed list: thirteen verbs, one argument each |
 //! | [`Identity`], [`Switch`] | The only two shapes an argument has, and neither holds text |
 //! | [`ApprovingKey`], [`Token`] | The token a turn issues for one approval of one exact verb |
 //! | [`Request`], [`Answer`] | One line in, one line out |

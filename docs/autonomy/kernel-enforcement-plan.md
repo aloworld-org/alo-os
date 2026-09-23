@@ -666,9 +666,19 @@ recommendation is explicitly not an approval.
 
 ### 10. What a credential does when a session really ends
 
-**Status:** scheduled — the three cases are measured; the held-handle half
-below is what remains, and it waits on a network service this machine does not
-run (see below). Stepped over until then. **Depends on:** the credential store — done.
+**Status:** **blocked — on a machine that registers a `user`-class login**, which
+means a real greeter or a `getty`, and which neither WSL nor `su` can give.
+Measured on the third PC on 2026-09-22 rather than assumed; the run and its
+numbers are below. The three cases of 2026-09-10 stand; the held-handle half
+below is what remains. **Depends on:** the credential store — done.
+
+**Who can take it.** The development PC, inside a KVM guest with a real login —
+it has working hardware virtualisation, measured 2026-09-20 — or the owner's
+certified laptop once alo OS is installed on it. **Not the third PC**, and not
+by installing a network service there: `sshd` was the earlier guess and it is
+the wrong shape, because the class of the session is what matters and a
+listener does not change it. Recorded here so the next machine does not repeat
+the probe or reach for `sshd` again.
 
 **Measured, 2026-09-10.** All three cases observed on this machine's `logind`,
 in `crates/alo-secrets/tests/a_session_that_really_ended.rs`: one login logged
@@ -705,6 +715,36 @@ first thing this task establishes is whether a session of the kind a person
 really has can be started and ended here at all — and only then whether the three
 cases below can be observed. It is scheduled rather than blocked, and neither
 word may be used to imply the work was done.
+
+**That first question was put to the machine on 2026-09-22, and the answer is
+no.** `C:\dev\setup\can-a-real-session-end-here.sh` on the third PC makes a
+throwaway person, opens a session as them through `pam_systemd`, and asks
+`logind` what it made:
+
+| | |
+|---|---|
+| the session already here | `class=user` — but it is WSL's own, not a login |
+| a session opened with `su -` | registered as `c2`, **`class=background`** |
+| its state, while open | `active`, runtime directory present, **session bus present** |
+| after it ended | no sessions for them, `linger=no` |
+
+So `su` does reach `logind` on this machine — a session is registered and a
+session bus exists, which the earlier text doubted — but **what it registers is
+`background`, not the `user` class a person's login has**. The three cases are
+about what a *person's* logout does, and a background session ending is not
+that. Nothing here can be measured into the answer without the kind of session
+this machine cannot make.
+
+**INCONCLUSIVE — one observation in that run proves nothing, either way.**
+`/run/user/1001` was still present immediately after the session ended and gone
+when asked again later — but the probe had removed the throwaway person in
+between, so whether the logout took the directory or `userdel` did is not
+distinguished. It is not evidence either way, and the first reading of it —
+taken a moment too early — said the opposite of the second.
+
+**What would answer it:** a machine that registers a `user`-class login, which
+is the certified laptop or any ordinary Linux desktop, plus the helper that
+reports across the logout for the held-handle half. Not this one.
 
 `connections_come_and_go.rs` proves **disconnection handling**: a keyring handle
 whose bus has stopped refuses, promptly, and hands back no key. Its fixture stops
