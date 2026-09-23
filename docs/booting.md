@@ -490,10 +490,37 @@ reaches Windows by handing its own loader over, not by reading its disk.
 
 ### 3. What the machine starts when nobody chooses
 
-The loader remembers the last choice, in its own environment block at
-`/boot/grub2/grubenv`. alo OS's Settings reads and writes **that file**, and
-keeps no copy of its own: two copies drift, and a menu that preselects one thing
-while a setting says another is the bug ADR 0062's third term exists to prevent.
+The loader remembers the last choice, in its own environment block on the **EFI
+system partition** — `\EFI\fedora\grubenv`, which alo OS reaches at
+`/boot/efi/EFI/fedora/grubenv` and Windows reaches at whatever letter it mounts
+that partition on. alo OS's Settings reads and writes **that file**, and keeps no
+copy of its own: two copies drift, and a menu that preselects one thing while a
+setting says another is the bug ADR 0062's third term exists to prevent.
+
+It is on that partition and not under `/boot` for the reason
+[ADR 0066](decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)
+term 1 gives: it is the one filesystem both systems can read and write, and the
+one the loader already reads at start. A default kept on alo OS's own filesystem
+could only ever be changed from alo OS, and the Windows half of this setting
+would be a promise we could not keep. The base does not put it there — the base
+keeps an empty block under `/boot` and mounts the ESP nowhere at all — so what is
+written down about that, and what the installer owes because of it, is in
+[quirks](quirks.md).
+
+The menu is still alo OS's own file under `/boot`; the two are deliberately not
+beside each other.
+
+Settings says *This computer starts alo OS when nobody chooses*, or the same
+sentence about Windows, and offers the change beside it. **It does not write
+that file itself**, because a person is not root:
+changing it is `starting.default`, a verb on the privileged broker's list
+([ADR 0066](decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)),
+with the person's own approval behind it and an entry in the record either way.
+What crosses is thirty-two bytes naming one of the two systems — no file, no
+path — and the broker refuses it on a machine whose menu does not offer that
+system, which is what a machine alo OS replaced Windows on is. The Windows side
+of the same setting is the small program the installer leaves behind, writing
+the same file: **one setting, one place, two sides** (ADR 0066 §3, task 4).
 
 ### 4. Going across without waiting for the menu
 
@@ -503,7 +530,8 @@ they are ready, lands in Windows, and the start after that is the ordinary one
 again. From inside Windows, *Restart into alo OS* is the same switch the other
 way (`bcdedit /set {fwbootmgr} bootsequence`, which
 `crates/alo-installer/src/program.rs` already sets for the install). Neither
-changes which system the machine starts at by default.
+changes which system the machine starts at by default — that is step 3, a
+different act and a different verb, and each leaves the other alone.
 
 ### 5. If alo OS's loader will not start
 

@@ -702,6 +702,71 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### The base keeps the loader's saved default on `/boot`, not on the ESP, and mounts the ESP nowhere
+**Version:** `quay.io/fedora/fedora-bootc:42` at the digest
+`sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3` — the
+one `image/Containerfile` pins — carrying GRUB 2.12-32.fc42 and shim 15.8-3,
+installed by its own `bootc install to-disk` and booted under OVMF in QEMU 8.2.2
+with no KVM. Measured 2026-09-23.
+
+**Behaviour:** four things, none of them what the older Fedora layout would
+suggest.
+
+1. `/boot/grub2/grubenv` is a **regular file of 1024 bytes**, not a symlink onto
+   the EFI system partition. The symlink some Fedora/UEFI installs have is not
+   in this base: `rpm -qlv grub2-common` gives `-rw-r--r--` with no link target,
+   and the installed disk agrees.
+2. **The ESP carries no environment block at all.** Its whole tree after an
+   install is `EFI/BOOT/BOOTX64.EFI`, `EFI/BOOT/fbx64.efi` and, under
+   `EFI/fedora/`, `BOOTX64.CSV`, `bootuuid.cfg`, `grub.cfg`, `grubx64.efi`,
+   `mmx64.efi`, `shim.efi` and `shimx64.efi`. No `grubenv`.
+3. The block the base does install holds **nothing** — header and padding only.
+   So there is no default of the base's to adopt, and none left behind to drift.
+4. **Nothing mounts the ESP.** On the booted machine there is no `/etc/fstab` at
+   all, `/efi` does not exist, `/boot/efi` is an empty directory, and `findmnt`
+   shows no vfat mounted anywhere — `/boot` is `/dev/sda3[/boot]`, ext4, on the
+   root partition. `systemd-gpt-auto-generator` is present and generates no
+   mount for it.
+
+Two more, measured because the design turns on them rather than taken from
+GRUB's manual:
+
+- **`$cmdpath` is empty** by the time the base's configuration chain reaches a
+  drop-in, so it cannot be used to name the ESP. `$prefix` there is
+  `(hd0,gpt3)/boot/grub2` — alo OS's own filesystem, which is exactly where a
+  bare `load_env` or `save_env` writes.
+- **GRUB can save into an environment block on the ESP's FAT.** With the block
+  pre-allocated by `grub2-editenv create`, the base's own `grubx64.efi` read a
+  value the host had written, `save_env -f` reported success, the loader re-read
+  its own new value, and the changed value was on the partition with the machine
+  powered off.
+
+**Our response:** `alo_starting::THE_ENVIRONMENT_BLOCK` is
+`/boot/efi/EFI/fedora/grubenv` — the single copy, on the one filesystem both
+systems can read and write, as ADR 0066 term 1 requires. The generated drop-in
+(`/boot/grub2/custom.cfg`, which the base's own configuration sources last)
+finds that partition with `search --no-floppy --set=esp --file
+/EFI/fedora/grubenv` — by the file itself, so no disk, slot or identifier of
+somebody's machine is written down anywhere — and then names the block
+explicitly in both directions, `load_env -f` and `save_env -f`. Nothing in the
+base is edited.
+
+That was proved on the artifact rather than on a retyping of it: the drop-in the
+generator emits was copied onto an installed disk unchanged (md5 matched on both
+sides), the block was set to `2`, and the machine drew its menu with `*Windows`
+preselected, auto-booted that entry, and left `saved_entry=alo-windows` on the
+ESP with `/boot`'s own block still holding nothing.
+
+**What is still owed, and by whom.** The path is right *once alo OS mounts the
+ESP at `/boot/efi`*, and this base mounts it nowhere — so on a machine installed
+today the file is missing and the verb refuses, which is a named and tested
+refusal rather than a wrong answer. **The installer lane owes that mount**, and
+owes a `grub2-editenv create` for the block at install time: GRUB's `save_env`
+writes a block in place and cannot make one, so a machine whose ESP has no block
+has nothing for either system to write. `crates/alo-installer` and
+`crates/alo-installing` are the development PC's and were not edited here.
+**Date:** 2026-09-23.
+
 ### `bootc status` refuses an unprivileged caller, and `ostree admin status` will not name a container build
 **Version:** `bootc` 1.15.1 and `ostree` as shipped in the pinned base
 (Fedora Linux 42, kernel 6.19.14-101.fc42.x86_64), measured 2026-09-20 on one

@@ -1,5 +1,6 @@
-//! What a person reads when this machine was set to start Windows next time,
-//! and when it was not.
+//! What a person reads when this machine's starting was changed, and when it
+//! was not — for both changes on this road: *start Windows next time*, and
+//! *start this system whenever nobody chooses*.
 //!
 //! The broker answers in one word from a closed list and has no person in front
 //! of it; this is where that word becomes words, in the reader's language. The
@@ -14,11 +15,12 @@ use alo_record::AtTheBroker;
 use alo_strings::{Filling, Said, Strings};
 
 use crate::firmware::NotAnswering;
+use crate::offered::the_system_named;
 use crate::systems::System;
 use crate::wanted::Change;
 use crate::words;
 
-/// Why this machine was not set to start Windows next time.
+/// Why what this machine starts was not changed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotChanged {
     /// What was handed over was not an approved change to which system starts.
@@ -35,6 +37,8 @@ pub enum NotChanged {
     ApprovalNotAccepted,
     /// It was accepted, and this machine would not be told.
     WouldNotBeTold,
+    /// It was accepted, and this machine would not keep which system it starts.
+    NotRemembered,
     /// The machine has stopped writing down changes, so it makes none.
     NotBeingKept,
     /// Nothing was there to make the change.
@@ -59,6 +63,7 @@ impl NotChanged {
             Self::DoesNotStartWindows => words::DOES_NOT_START_WINDOWS,
             Self::ApprovalNotAccepted => words::APPROVAL_NOT_ACCEPTED,
             Self::WouldNotBeTold => words::WOULD_NOT_BE_TOLD,
+            Self::NotRemembered => words::NOT_REMEMBERED,
             Self::NotBeingKept => words::NOT_BEING_KEPT,
             Self::NothingMakesChanges => words::NOTHING_MAKES_CHANGES,
         };
@@ -67,13 +72,24 @@ impl NotChanged {
 
     /// What the broker's answer to this change means.
     ///
+    /// **The change is asked for as well as the answer**, because the door's
+    /// one word for *it was not carried out* has to become two different
+    /// sentences: a person whose machine would not be told to start Windows
+    /// once can switch it off and on and choose Windows, and a person whose
+    /// machine would not keep which system it starts has a computer that
+    /// behaves exactly as it did. One sentence for both would tell one of them
+    /// something untrue about their own machine.
+    ///
     /// # Errors
     /// The refusal, for every answer but `carried`.
-    pub fn from_the_brokers(answer: Answer) -> Result<(), Self> {
+    pub fn from_the_brokers(change: Change, answer: Answer) -> Result<(), Self> {
         match answer {
             Answer::Carried => Ok(()),
             Answer::NotKept => Err(Self::NotBeingKept),
-            Answer::Refused(AtTheBroker::NotCarried) => Err(Self::WouldNotBeTold),
+            Answer::Refused(AtTheBroker::NotCarried) => Err(match change {
+                Change::RestartIntoWindows => Self::WouldNotBeTold,
+                Change::StartByDefault => Self::NotRemembered,
+            }),
             // Everything else the door refuses is about the approval, or about
             // who asked — which, for the one process that asks, is the same
             // fact: this approval did not make this change. Named one by one so
@@ -93,11 +109,22 @@ impl NotChanged {
 /// What a person reads once the change was carried out.
 ///
 /// Nothing, for a verb that is not this road's: a surface with no sentence says
-/// nothing rather than the wrong thing.
+/// nothing rather than the wrong thing. And nothing for a `starting.default`
+/// naming neither of the two systems, which is a verb that could not have been
+/// carried out — the identity is compared here exactly as it is where the
+/// change is made, so the sentence and the act cannot disagree.
 #[must_use]
 pub fn changed_said(verb: &SystemVerb, strings: &Strings) -> Option<Said> {
-    let word = match Change::of(verb)? {
-        Change::RestartIntoWindows => words::WINDOWS_NEXT_TIME,
+    let word = match (Change::of(verb)?, verb) {
+        (Change::RestartIntoWindows, _) => words::WINDOWS_NEXT_TIME,
+        (Change::StartByDefault, SystemVerb::StartByDefault(identity)) => {
+            match the_system_named(*identity)? {
+                System::AloOs => words::NOW_STARTS_ALO_OS,
+                System::Windows => words::NOW_STARTS_WINDOWS,
+            }
+        }
+        // `Change::of` answered `StartByDefault`, which only that verb is.
+        (Change::StartByDefault, _) => return None,
     };
     Some(strings.say(&word.key(), &Filling::nothing()))
 }
@@ -120,11 +147,12 @@ pub fn starts_at_said(system: System, strings: &Strings) -> Said {
 )]
 mod tests {
     use super::*;
+    use crate::by_hand::to_start_by_default;
     use alo_broker::Identity;
     use alo_strings::Vocabulary;
 
     /// Every refusal there is, for the walks below.
-    const EVERY_REFUSAL: [NotChanged; 9] = [
+    const EVERY_REFUSAL: [NotChanged; 10] = [
         NotChanged::NotAStartingChange,
         NotChanged::NotAnswering,
         NotChanged::NoWindowsHere,
@@ -132,6 +160,7 @@ mod tests {
         NotChanged::DoesNotStartWindows,
         NotChanged::ApprovalNotAccepted,
         NotChanged::WouldNotBeTold,
+        NotChanged::NotRemembered,
         NotChanged::NotBeingKept,
         NotChanged::NothingMakesChanges,
     ];
@@ -185,29 +214,54 @@ mod tests {
     /// is a refusal a person can read.
     #[test]
     fn only_carried_is_carried_out_and_every_other_answer_is_read() {
-        assert_eq!(NotChanged::from_the_brokers(Answer::Carried), Ok(()));
-        assert_eq!(
-            NotChanged::from_the_brokers(Answer::NotKept),
-            Err(NotChanged::NotBeingKept)
-        );
-        assert_eq!(
-            NotChanged::from_the_brokers(Answer::Refused(AtTheBroker::NotCarried)),
-            Err(NotChanged::WouldNotBeTold)
-        );
-        for why in [
-            AtTheBroker::NotTheAgentService,
-            AtTheBroker::NotARequest,
-            AtTheBroker::NotOneOfItsVerbs,
-            AtTheBroker::NotApproved,
-            AtTheBroker::ApprovalSpent,
-            AtTheBroker::ApprovalLapsed,
-        ] {
+        for change in [Change::RestartIntoWindows, Change::StartByDefault] {
             assert_eq!(
-                NotChanged::from_the_brokers(Answer::Refused(why)),
-                Err(NotChanged::ApprovalNotAccepted),
-                "{why:?}"
+                NotChanged::from_the_brokers(change, Answer::Carried),
+                Ok(())
             );
+            assert_eq!(
+                NotChanged::from_the_brokers(change, Answer::NotKept),
+                Err(NotChanged::NotBeingKept)
+            );
+            for why in [
+                AtTheBroker::NotTheAgentService,
+                AtTheBroker::NotARequest,
+                AtTheBroker::NotOneOfItsVerbs,
+                AtTheBroker::NotApproved,
+                AtTheBroker::ApprovalSpent,
+                AtTheBroker::ApprovalLapsed,
+            ] {
+                assert_eq!(
+                    NotChanged::from_the_brokers(change, Answer::Refused(why)),
+                    Err(NotChanged::ApprovalNotAccepted),
+                    "{why:?}"
+                );
+            }
         }
+    }
+
+    /// **The one word the door has for *it was not carried out* becomes the
+    /// sentence of the road it was on.** A machine that would not be told to
+    /// start Windows once is a different fact from one that would not keep
+    /// which system it starts, and a person reading the wrong one of those is
+    /// being told something untrue about their own computer.
+    #[test]
+    fn not_carried_reads_as_the_road_it_was_on() {
+        let strings = in_english();
+        let once = NotChanged::from_the_brokers(
+            Change::RestartIntoWindows,
+            Answer::Refused(AtTheBroker::NotCarried),
+        );
+        let always = NotChanged::from_the_brokers(
+            Change::StartByDefault,
+            Answer::Refused(AtTheBroker::NotCarried),
+        );
+        assert_eq!(once, Err(NotChanged::WouldNotBeTold));
+        assert_eq!(always, Err(NotChanged::NotRemembered));
+        assert_ne!(
+            NotChanged::WouldNotBeTold.said(&strings).text(),
+            NotChanged::NotRemembered.said(&strings).text()
+        );
     }
 
     /// **A machine that will not answer is that refusal and no other**, however
@@ -231,6 +285,49 @@ mod tests {
         assert!(
             changed_said(&SystemVerb::MountDrive(an_entry()), &strings).is_none(),
             "a storage verb said something about which system starts"
+        );
+    }
+
+    /// **What is read after the default changed names the system it now
+    /// starts, and says that it lasts.** The two changes on this road are one
+    /// approval apart and mean entirely different things to a person, so their
+    /// sentences must not be able to be each other's.
+    #[test]
+    fn what_is_read_after_the_default_changed_names_the_system() {
+        let strings = in_english();
+        let once = changed_said(&Change::RestartIntoWindows.to(an_entry()), &strings).unwrap();
+        for system in System::BOTH {
+            let said = changed_said(&to_start_by_default(system), &strings).unwrap();
+            assert!(!said.is_a_bug(), "{said}");
+            assert!(said.unfilled().is_empty(), "{said}");
+            assert!(
+                said.text()
+                    .to_lowercase()
+                    .contains("whenever nobody chooses"),
+                "{said}"
+            );
+            assert_ne!(said.text(), once.text());
+        }
+        assert_ne!(
+            changed_said(&to_start_by_default(System::AloOs), &strings)
+                .unwrap()
+                .text(),
+            changed_said(&to_start_by_default(System::Windows), &strings)
+                .unwrap()
+                .text()
+        );
+    }
+
+    /// **A `starting.default` naming neither system says nothing.** It is a
+    /// verb that could not have been carried out, and a surface that said
+    /// something about it would be saying it about a change that never
+    /// happened.
+    #[test]
+    fn a_default_naming_neither_system_says_nothing() {
+        let strings = in_english();
+        assert!(
+            changed_said(&SystemVerb::StartByDefault(an_entry()), &strings).is_none(),
+            "a verb naming no system said something about which system starts"
         );
     }
 
