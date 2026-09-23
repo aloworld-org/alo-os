@@ -2010,7 +2010,10 @@ a branch already here.
 
 ### 38. The compositor a machine boots to, and the one privilege it holds
 
-**Status:** ready. **Depends on:** 13.
+**Status:** ready — **built and landed on 2026-09-23 except for the one thing a
+machine is needed for**, which is somebody seeing it on a display. Not ticked:
+see *What is landed* and *What is owed* below, which replace the acceptance this
+task was written with. **Depends on:** 13.
 
 Written 2026-09-22 by task 13, which was marked done for the surface and had a
 second half nothing owned. Shell task 1 drew the sign-in screen under a nested
@@ -2030,14 +2033,11 @@ holds **nothing else**.
 - **Acceptance:** a binary in `crates/alo-shell` starts the compositor on the
   real display backend and draws the sign-in surface shell task 1 built, without
   a session and before anybody has signed in; a correct password opens the
-  session the machine description names and `alo-agentd` comes up inside it, and
-  the surface hands over and stops drawing so two things never own the screen at
-  once; a machine with no store shows *make an account* rather than a sign-in,
-  in `alo-setting-up`'s own sentence; a wrong password is refused in
-  `alo-greeting`'s words with no way to tell an unknown name from a wrong one;
-  and **whatever holds the privilege holds nothing else**, said in a
-  `crates/alo-image` check beside the loader's so a unit that grew a second
-  capability fails the build rather than the review.
+  session the machine description names, and the surface hands over and stops
+  drawing so two things never own the screen at once; a machine with no store
+  shows *make an account* rather than a sign-in, in `alo-setting-up`'s own
+  sentence; a wrong password is refused in `alo-greeting`'s words with no way to
+  tell an unknown name from a wrong one.
 - **Constraint:** nothing here re-implements the composition —
   `alo_greeting::Greeting` decides the order, and a surface that authenticates
   and then knocks itself is the bug that crate exists to prevent. **Proof is
@@ -2045,6 +2045,60 @@ holds **nothing else**.
   development PC, or the laptop. A nested compositor shows the surface and
   cannot show that a machine *boots to* it, so that half is named beside the
   tick rather than assumed.
+
+#### What the acceptance said that this task cannot hold
+
+Two clauses were moved rather than dropped, because each turned out to belong to
+somebody else's work:
+
+- *`alo-agentd` comes up inside the session* is `alo-sessiond`'s and the
+  session's, not the compositor's. This process asks for a session and is told
+  *opened*; what systemd then starts in it is a different component's promise,
+  and a task that claimed it would be ticking somebody else's test.
+- *A `crates/alo-image` check that whatever holds the privilege holds nothing
+  else* needs a unit to check, and there is no unit until the image can carry
+  the binary. It moves to task 40 with the unit it is about.
+
+#### What is landed
+
+- **A compositor can draw at all.** It could not before, and the reason is a law
+  rather than a gap: every road to a GLES renderer in the pinned Smithay runs
+  through `EGLDisplay::new` and `GlesRenderer::new`, both `unsafe fn`, and the
+  workspace forbids `unsafe_code` at `forbid` — which no crate lifts with an
+  `allow`. The nested backend never met this because `winit::init` does that
+  work behind a safe door. The door taken is the one this workspace already
+  names for something whose only spelling is `unsafe`: rent it. Smithay's
+  `PixmanRenderer::new` is safe, and the sign-in screen is flat rectangles and
+  inked text with no client under it, so nothing is lost by drawing it on the
+  processor — a frame has always reached the display as bytes uploaded into a
+  dumb buffer, which was never the graphics card's work either.
+- **`DirectSession::sign_in`**: the display taken from the login seat, the
+  seat's keys intercepted and handed to the screen, the screen drawn until a
+  session opens. A second driver on the one display loop, never a second loop.
+- **`alo_shell::stand_the_sign_in_screen_up`** and the `alo-compositor` binary:
+  the order a machine performs at boot, and a process that refuses to start
+  without the three things a machine differs by — which card, whose machine,
+  which keyboard — said in its unit file.
+- **Proved without a display:** the bytes the card is handed carry the screen,
+  are not one flat colour, differ with the name typed and do **not** differ with
+  the password; every layer this painter cannot import is refused by its own
+  name; nothing is drawn once a session opens. On the gate machine, which has no
+  graphics card at all, the binary reads its configuration, binds its socket,
+  builds its keymap, loads its font and this machine's vocabulary, reaches the
+  login seat and fails on the card by name.
+
+#### What is owed
+
+- **A photograph of a screen.** Nobody has seen this drawn on a display. It is
+  owed to a VM with a real display device on the development PC, or to the
+  laptop, and it is a photograph rather than a test result.
+- **The image carrying it**, which is task 40.
+- **Three gaps named in the files rather than left to be found.** Nothing in
+  this repository decides a keyboard layout, so the layout must be passed and a
+  person whose keyboard is not the one named cannot type their password. The
+  screen is drawn light at the ordinary scale, because what a person chose is
+  kept in a session nobody has opened yet. And a client's window cannot be drawn
+  by this painter at all — see task 39.
 
 ### 39. After sign-in, the session stands the desktop up
 
@@ -2073,3 +2127,57 @@ be a task whose half-done state nobody could read.
   cannot be ticked from a nested compositor** is that a person signing in on a
   machine arrives at a desktop; that is owed to a VM with a real display device
   or to the laptop, and is named beside the tick.
+- **What task 38 found that this task has to answer.** The dock, the status area
+  and the desktop windows are this shell's own rectangles and text, so the
+  software painter task 38 landed draws them exactly as it draws the sign-in
+  screen. **A window a client mapped is different**: it arrives as a buffer to
+  import, and importing is the half of a renderer nothing here has — because
+  every way of building a GLES renderer in the pinned Smithay is an `unsafe fn`
+  and this workspace forbids `unsafe_code` outright. So a desktop with nothing
+  open on it is reachable today and an application's window is not, and that is
+  the question this task has to answer rather than discover: either the
+  processor imports shared-memory buffers too (`ImportMemWl` is implemented for
+  the same renderer, and a client that offers only a dmabuf is then refused by
+  name), or somebody decides in an ADR how this repository rents a safe door to
+  the graphics card. **Do not answer it by relaxing the lint quietly**: it is
+  four lines of the constitution, and the whole workspace reads it.
+
+### 40. The image carries the compositor a machine boots to
+
+**Status:** ready. **Depends on:** 38.
+
+Written 2026-09-23 by task 38, which built the binary and then found that the
+recipe cannot put it in an image. This is not a `COPY` line, and the task it was
+assumed to be does not exist.
+
+**Why.** `image/Containerfile`'s build stage compiles four packages for
+`x86_64-unknown-linux-musl`, statically, and installs no development package for
+Wayland, libinput, libseat, xkbcommon or pixman. A compositor cannot be built
+that way at all: it links the machine's own display and input libraries, which
+is the opposite of what a static musl binary is. Nor can it be built dynamically
+in the same stage — the builder is Ubuntu 26.04 and the base is Fedora bootc 42,
+so the binary would be linked against a glibc newer than the one it has to run
+on. And the final image installs none of those libraries either, so there would
+be nothing for it to link against.
+
+- **Acceptance:** an image built from the recipe carries `alo-compositor` and a
+  unit that starts it, and a machine installed from that image reaches the
+  sign-in screen instead of a console. That means: a build stage on the **base's
+  own distribution** so the binary is linked against the glibc it will run on,
+  with the development packages for Wayland, libinput, libseat, xkbcommon and
+  pixman; those libraries installed in the final image; the unit below; and
+  `crates/alo-image` reading the unit the way it reads the other six —
+  including **whatever holds the privilege holds nothing else**, the check task
+  38's acceptance asked for and could not make without a unit to make it about.
+- **The unit, as task 38's binary expects it.** Three things differ from machine
+  to machine and the process refuses to start without them, so they are lines in
+  the unit rather than guesses in the code: `ALO_DISPLAY` (the card),
+  `ALO_PERSON` (the uid `/etc/alo/agentd.toml` names, which `alo-image` should
+  hold the unit to, as it does for the others) and `ALO_KEYBOARD` (the XKB
+  layout). `RuntimeDirectory=alo-compositor` with `RuntimeDirectoryMode=0700`,
+  because the socket refuses a runtime directory anybody else can read.
+- **Constraint:** the pins are the installer plan's own (ADR 0033, ADR 0036). A
+  new builder stage takes a **pinned digest** like every other stage, and a
+  release is pinned in the same change that its digest is known — which is what
+  stopped task 38 from declaring a candidate it could not build.
+
