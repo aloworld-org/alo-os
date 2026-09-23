@@ -42,7 +42,8 @@ impl Change {
             | SystemVerb::SetProxy(_)
             | SystemVerb::ApplyStagedUpdate(_)
             | SystemVerb::RollBack(_)
-            | SystemVerb::RestartIntoWindows(_) => None,
+            | SystemVerb::RestartIntoWindows(_)
+            | SystemVerb::StartByDefault(_) => None,
         }
     }
 }

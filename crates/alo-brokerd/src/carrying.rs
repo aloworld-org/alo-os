@@ -19,8 +19,11 @@ use alo_broker::{Carrying, NotCarried, SystemVerb};
 use alo_drives::DriveService;
 use alo_networks::NetworkService;
 use alo_printing::PrintingService;
-use alo_starting::{Entry, Firmware, NotAnswering, NotDone};
+use alo_starting::{
+    Entry, Firmware, NotAnswering, NotDone, NotRead, NotWritten, System, TheLoader,
+};
 
+use crate::by_default::ByDefault;
 use crate::network::Network;
 use crate::next_start::NextStart;
 use crate::printers::{PrintService, Printers};
@@ -31,7 +34,7 @@ use crate::updates::Updates;
 
 /// Everything that carries a verb out on this machine.
 #[derive(Debug)]
-pub struct Carriers<S, D, P = PrintingService, U = NoUnits, F = NoFirmware> {
+pub struct Carriers<S, D, P = PrintingService, U = NoUnits, F = NoFirmware, L = NoLoader> {
     /// The network's three verbs.
     network: Network<S>,
     /// The proxy.
@@ -45,6 +48,33 @@ pub struct Carriers<S, D, P = PrintingService, U = NoUnits, F = NoFirmware> {
     updates: Option<Updates<U>>,
     /// *Restart into Windows*, when the caller supplies a firmware.
     next_start: Option<NextStart<F>>,
+    /// Which system starts when nobody chooses, when the caller supplies the
+    /// loader's files.
+    by_default: Option<ByDefault<L>>,
+}
+
+/// What a broker built without the loader's files has: no file to change, and
+/// no way to make one either.
+///
+/// The counterpart of [`NoFirmware`], for the same reason: [`Carriers::of`]
+/// keeps its published signature and its type stays nameable. A broker holding
+/// this answers *start this system when nobody chooses* `not-carried`, which is
+/// what a machine with no loader to ask would do anyway.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoLoader {}
+
+impl TheLoader for NoLoader {
+    fn offering(&self) -> Result<Vec<System>, NotRead> {
+        match *self {}
+    }
+
+    fn saved(&self) -> Result<Vec<u8>, NotRead> {
+        match *self {}
+    }
+
+    fn save(&self, _: &[u8]) -> Result<(), NotWritten> {
+        match *self {}
+    }
 }
 
 /// What a broker built without a firmware has: no firmware to ask, and no way
@@ -95,12 +125,19 @@ impl<S: NetworkService, D: DriveService> Carriers<S, D> {
             printers: None,
             updates: None,
             next_start: None,
+            by_default: None,
         }
     }
 }
 
-impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: Firmware>
-    Carriers<S, D, P, U, F>
+impl<
+    S: NetworkService,
+    D: DriveService,
+    P: PrintService,
+    U: StartingUnits,
+    F: Firmware,
+    L: TheLoader,
+> Carriers<S, D, P, U, F, L>
 {
     /// Add the printer carrier, preserving the network, proxy and storage.
     ///
@@ -108,7 +145,10 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
     /// printer verbs until this method supplies their service. The process
     /// supplies this machine's printing service; tests can supply their own.
     #[must_use]
-    pub fn with_printers<T: PrintService>(self, printers: Printers<T>) -> Carriers<S, D, T, U, F> {
+    pub fn with_printers<T: PrintService>(
+        self,
+        printers: Printers<T>,
+    ) -> Carriers<S, D, T, U, F, L> {
         Carriers {
             network: self.network,
             proxy: self.proxy,
@@ -116,6 +156,7 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
             printers: Some(printers),
             updates: self.updates,
             next_start: self.next_start,
+            by_default: self.by_default,
         }
     }
 
@@ -125,7 +166,7 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
     /// published keeps working, and a broker built without this answers both
     /// update verbs `not-carried` rather than pretending.
     #[must_use]
-    pub fn with_updates<T: StartingUnits>(self, updates: Updates<T>) -> Carriers<S, D, P, T, F> {
+    pub fn with_updates<T: StartingUnits>(self, updates: Updates<T>) -> Carriers<S, D, P, T, F, L> {
         Carriers {
             network: self.network,
             proxy: self.proxy,
@@ -133,6 +174,7 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
             printers: self.printers,
             updates: Some(updates),
             next_start: self.next_start,
+            by_default: self.by_default,
         }
     }
 
@@ -143,7 +185,7 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
     /// verb `not-carried` rather than pretending. The process supplies this
     /// machine's own firmware; tests supply their own.
     #[must_use]
-    pub fn with_next_start<T: Firmware>(self, next: NextStart<T>) -> Carriers<S, D, P, U, T> {
+    pub fn with_next_start<T: Firmware>(self, next: NextStart<T>) -> Carriers<S, D, P, U, T, L> {
         Carriers {
             network: self.network,
             proxy: self.proxy,
@@ -151,6 +193,31 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
             printers: self.printers,
             updates: self.updates,
             next_start: Some(next),
+            by_default: self.by_default,
+        }
+    }
+
+    /// Add the carrier for *start this system when nobody chooses*, preserving
+    /// everything else.
+    ///
+    /// Additive for the same reason [`Carriers::with_next_start`] is, and
+    /// separate from it for a reason of its own: the next start and the default
+    /// are two acts, and a machine may be able to carry out one of them and not
+    /// the other. The process supplies this machine's own loader files; tests
+    /// supply their own.
+    #[must_use]
+    pub fn with_by_default<T: TheLoader>(
+        self,
+        by_default: ByDefault<T>,
+    ) -> Carriers<S, D, P, U, F, T> {
+        Carriers {
+            network: self.network,
+            proxy: self.proxy,
+            storage: self.storage,
+            printers: self.printers,
+            updates: self.updates,
+            next_start: self.next_start,
+            by_default: Some(by_default),
         }
     }
 
@@ -158,6 +225,12 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
     #[must_use]
     pub const fn next_start(&self) -> Option<&NextStart<F>> {
         self.next_start.as_ref()
+    }
+
+    /// What carries *start this system when nobody chooses* out, if supplied.
+    #[must_use]
+    pub const fn by_default(&self) -> Option<&ByDefault<L>> {
+        self.by_default.as_ref()
     }
 
     /// What carries printer verbs out, if supplied.
@@ -202,8 +275,14 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
     }
 }
 
-impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: Firmware> Carrying
-    for Carriers<S, D, P, U, F>
+impl<
+    S: NetworkService,
+    D: DriveService,
+    P: PrintService,
+    U: StartingUnits,
+    F: Firmware,
+    L: TheLoader,
+> Carrying for Carriers<S, D, P, U, F, L>
 {
     fn carry(&mut self, verb: SystemVerb, approval: u64) -> Result<(), NotCarried> {
         match verb {
@@ -224,6 +303,14 @@ impl<S: NetworkService, D: DriveService, P: PrintService, U: StartingUnits, F: F
                 None => Err(NotCarried(format!(
                     "{} is not carried out on this machine: nothing here can ask its firmware, so \
                      nothing was changed",
+                    verb.name()
+                ))),
+            },
+            SystemVerb::StartByDefault(identity) => match self.by_default.as_ref() {
+                Some(by_default) => by_default.set(identity),
+                None => Err(NotCarried(format!(
+                    "{} is not carried out on this machine: nothing here can reach the files that \
+                     say which system it starts, so nothing was changed",
                     verb.name()
                 ))),
             },

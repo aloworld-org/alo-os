@@ -927,9 +927,12 @@ until that is supplied. `starting.windows-next` is carried out against the
 machine's firmware (added 2026-09-22, ADR 0062), supplied through
 `Carriers::with_next_start(NextStart::against(…))`, and the published
 `Carriers::of(network, proxy, storage)` likewise remains compatible and
-refuses it until that is supplied.
+refuses it until that is supplied. `starting.default` is carried out against
+the loader's own two files (added 2026-09-22, ADR 0066), supplied through
+`Carriers::with_by_default(ByDefault::against(…))`, and that published
+`Carriers::of` again remains compatible and refuses it until it is.
 
-**The list.** Twelve verbs, each with exactly one argument:
+**The list.** Thirteen verbs, each with exactly one argument:
 
 | Verb | Argument |
 |---|---|
@@ -938,12 +941,13 @@ refuses it until that is supplied.
 | `network.radio` | `on` or `off` |
 | `updates.apply`, `updates.roll-back` | an identity |
 | `storage.mount`, `storage.eject` | an identity |
-| `starting.windows-next` | an identity |
+| `starting.windows-next`, `starting.default` | an identity |
 
 An **identity** is the SHA-256 of the identity the rented service reported for
 the thing — the printer the print service found, the network the network manager
 reported, the drive or filesystem the disk service reported, the build the base
-staged, the start-up entry the firmware reported — written as
+staged, the start-up entry the firmware reported, the system the machine's own
+menu offers — written as
 sixty-four lowercase hexadecimal characters. The broker never interprets one; the
 verb compares it with what the service reports at that moment and acts on the
 match or on nothing. There is no argument of any other shape: no text, no path,
@@ -1076,10 +1080,28 @@ Windows — checked by looking for `\EFI\Microsoft\Boot\bootmgfw.efi` in the pat
 the firmware reported, never by the entry's name, which is whatever was typed
 when it was made; or the firmware would not be written. **It restarts nothing**:
 the restart is the person's own, afterwards, like the update verbs. There is no
-verb for the machine's start-up **order**, none for adding or removing a
-start-up entry, and none for the menu's default — the last of those is GRUB's
-own saved entry in its environment block and is read and written there and
-nowhere else (`alo_starting::TheStartingChoice`, ADR 0062 term 3).
+verb for the machine's start-up **order**, and none for adding or removing a
+start-up entry.
+
+**Which system starts when nobody chooses, carried out.** `starting.default`
+sets the loader's **own saved default** — the one place that answer is kept,
+which both systems read (ADR 0062 term 3) — to one of the two systems on the
+machine. Its argument is the identity of a **system the menu already offers**:
+the SHA-256 of `alo-starting system 1`, a zero byte, and the word the generated
+menu knows that system by (`alo_starting::the_identity_of`). So nothing on this
+road names a file, a path, a partition or a loader, here or at the door. The
+broker asks the machine's own menu which systems it offers **now**, matches, and
+writes the answer into the loader's file beside whatever else is already in it,
+at exactly the length that file was read at. It is `not-carried`, and nothing is
+changed, when: the identity names neither system; this machine's menu does not
+offer the one it names — which is what a machine alo OS replaced Windows on is;
+either file could not be read; the file the answer is kept in is not one alo OS
+wrote; it will not hold the answer; or it would not be written. **It is the
+default and not the next start**: it leaves `BootNext` alone, exactly as
+`starting.windows-next` leaves the default alone, and they are two verbs
+because they are two acts (ADR 0066). It restarts nothing either. The Windows
+side of the same setting is the program the installer leaves behind, writing
+the same file on the same partition (ADR 0066 §3).
 
 ## Records
 

@@ -40,7 +40,8 @@ impl Change {
             | SystemVerb::RollBack(_)
             | SystemVerb::MountDrive(_)
             | SystemVerb::EjectDrive(_)
-            | SystemVerb::RestartIntoWindows(_) => None,
+            | SystemVerb::RestartIntoWindows(_)
+            | SystemVerb::StartByDefault(_) => None,
         }
     }
 
