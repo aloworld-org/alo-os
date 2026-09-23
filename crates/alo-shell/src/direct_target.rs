@@ -81,6 +81,30 @@ impl FrameTarget for DirectTarget<'_, '_> {
     }
 }
 
+impl crate::presentation::NativeTarget for DirectTarget<'_, '_> {
+    /// The same seam the shared target has, reached through the public one.
+    ///
+    /// `DirectTarget` is the GLES display this crate has always exported;
+    /// nothing about a native scene is decided here, so it hands the whole
+    /// question — which scenes are wired, and what a refusal is called — to the
+    /// one implementation that answers it.
+    fn submit_native_layers(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[Popup],
+        cursor: &Cursor,
+        scene: crate::scene_native::NativeScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        crate::presentation::NativeTarget::submit_native_layers(
+            &mut self.target,
+            roots,
+            popups,
+            cursor,
+            scene,
+        )
+    }
+}
+
 /// Shutdown preserves both a post-commit cleanup error and any disable failure.
 #[derive(Debug, thiserror::Error)]
 #[error("direct target retirement failed: {errors:?}")]
@@ -92,12 +116,17 @@ pub struct DirectShutdownError {
 /// Renderer seam keeps tests on the identical submission and FrameTarget path.
 pub(crate) trait ScenePainter {
     /// Return immutable pixels and drawn identities without completing callbacks.
+    ///
+    /// `scene` is one of this shell's own surfaces painted over the clients, or
+    /// [`None`] for an ordinary frame. It is the same layer `crate::nested`
+    /// submits through a parent's EGL, prepared here for scanout instead.
     fn paint(
         &mut self,
         size: Size<i32, Physical>,
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
+        scene: Option<crate::scene_native::NativeScene<'_>>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError>;
 }
 
@@ -110,8 +139,9 @@ impl ScenePainter for GlesPainter<'_> {
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
+        scene: Option<crate::scene_native::NativeScene<'_>>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
-        crate::render_scanout(self.0, size, roots, popups, cursor)
+        crate::offscreen::render_native_scanout(self.0, size, roots, popups, cursor, scene)
             .map(crate::PreparedScanout::into_parts)
     }
 }
@@ -204,10 +234,31 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
         popups: &[Popup],
         cursor: &Cursor,
     ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_with_scene(roots, popups, cursor, None)
+    }
+}
+
+impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
+    /// Prepare and submit one frame, with a native scene over the clients or
+    /// without one.
+    ///
+    /// **One road, not two.** An ordinary frame and a frame with a sign-in
+    /// screen on it differ by one layer and nothing else — the same painter,
+    /// the same allocation, the same commit — and a second submission path for
+    /// native scenes would be the place the two drifted.
+    fn submit_with_scene(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[Popup],
+        cursor: &Cursor,
+        scene: Option<crate::scene_native::NativeScene<'_>>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
         if self.halted {
             return Err(RenderError::DirectHalted);
         }
-        let prepared = self.painter.paint(self.size(), roots, popups, cursor)?;
+        let prepared = self
+            .painter
+            .paint(self.size(), roots, popups, cursor, scene)?;
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;
@@ -227,6 +278,51 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
             self.halted |= !error.cleanup.is_empty();
             RenderError::Scanout(error)
         })
+    }
+}
+
+impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarget for Target<R, D> {
+    fn submit_native_layers(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[Popup],
+        cursor: &Cursor,
+        scene: crate::scene_native::NativeScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        // **Wired one scene at a time, and the rest refused by name.** The
+        // painter underneath draws all six — `crate::scene_drawing::paint`
+        // always has — so what a refusal here reports is that nobody has stood
+        // this scene on a real display and looked at it yet. Answering with
+        // something near it, or dropping the layer and submitting the clients
+        // underneath, would on a sign-in screen be a machine showing an empty
+        // desktop to somebody who has not signed in.
+        match not_wired_yet(&scene) {
+            Some(scene) => Err(RenderError::SceneNotOnThisBackend { scene }),
+            None => self.submit_with_scene(roots, popups, cursor, Some(scene)),
+        }
+    }
+}
+
+/// Which scenes this backend has not been stood on a real display and looked
+/// at, and what to call each in the refusal.
+///
+/// A decision rather than a drawing, so it can be read and tested without six
+/// rasters — and so adding a scene to the enum makes this stop compiling, which
+/// is the reminder that a new surface is invisible on a machine until somebody
+/// wires it here and looks at it.
+pub(crate) const fn not_wired_yet(
+    scene: &crate::scene_native::NativeScene<'_>,
+) -> Option<&'static str> {
+    use crate::scene_native::NativeScene;
+    match scene {
+        // The one this backend is wired for. **Not yet seen on a real
+        // display** — the seam is tested, the drawing is not, and this comment
+        // says so rather than dating something that has not happened.
+        NativeScene::SignIn(_) => None,
+        NativeScene::Lock(_) => Some("the lock screen"),
+        NativeScene::Recovery(_) => Some("the recovery screen"),
+        NativeScene::Controls(_) => Some("the window controls"),
+        NativeScene::Reader(_) => Some("the reader"),
     }
 }
 

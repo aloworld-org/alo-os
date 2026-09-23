@@ -87,13 +87,26 @@ alo-recounting = { path = "../alo-recounting" }
 alo-remembering = { path = "../alo-remembering" }
 # The four ways alo OS runs, in the order and the words setup offers them.
 alo-setting-up = { path = "../alo-setting-up" }
+# Every sentence this machine can say, for the one caller that has nobody to be
+# handed them by: the compositor a machine boots to, which must word a refusal
+# at a sign-in screen before any session exists to carry words into it.
+alo-saying = { path = "../alo-saying" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 # The turn a question was asked inside, borrowed for the length of one call so
 # an answer reaches the one road that carries a change out and records it.
 alo-turn = { path = "../alo-turn" }
+# The engine the sign-in screen is drawn with on a machine whose graphics card
+# this shell has no renderer on. Smithay's `PixmanRenderer` is a safe API over
+# it, which is why it is here at all: every road to a GLES renderer runs through
+# an `unsafe fn` and `unsafe_code` is forbidden above, so the engine is rented
+# the way `signal-hook` and `getrandom` are. Pinned to the version Smithay's own
+# `renderer_pixman` resolves to; named here only because `Offscreen` must be
+# asked for a `pixman::Image` by its type. Reached only by
+# `crates/alo-shell/src/software_scanout.rs`.
+pixman = "=0.2.1"
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
-smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop"] }
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 thiserror.workspace = true
 # The accessibility bus the tree is answered on. The bus is the rented
@@ -103,9 +116,6 @@ zbus = { version = "5.19", default-features = false, features = ["async-io", "bl
 drm = "=0.14.1"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-# The machine's one vocabulary, so the sign-in screen's sentences are checked
-# against what is really collected rather than a list kept here.
-alo-saying = { path = "../alo-saying" }
 # The agent's own reader, used to read this machine's tree back off the bus:
 # one description, read by the reader a blind person uses and by the one an
 # agent uses, is the claim `alo_access::tree` makes and this measures it.
@@ -129,6 +139,13 @@ tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"
 wayland-protocols = { version = "0.32", features = ["client"] }
+
+# The compositor a machine boots to. One binary, and it is the only thing in
+# this package that is a process rather than a library: everything it does is
+# `crate::booting`'s, and what is in the file is the order and the exit codes.
+[[bin]]
+name = "alo-compositor"
+path = "src/bin/alo-compositor.rs"
 
 [lints]
 workspace = true

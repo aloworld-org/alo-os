@@ -98,8 +98,39 @@ pub fn render_control_scanout(
     cursor: &Cursor,
     controls: Option<crate::WindowControlScene<'_>>,
 ) -> Result<PreparedScanout, RenderError> {
+    render_native_scanout(
+        renderer,
+        size,
+        roots,
+        popups,
+        cursor,
+        controls.map(crate::scene_native::NativeScene::Controls),
+    )
+}
+
+/// The same, for any native scene rather than the window controls alone.
+///
+/// **`crate::scene_drawing::paint` has painted all six scenes since it was
+/// written**; what restricted this path to one was this call site, which named
+/// `NativeScene::Controls` and passed `None` for the rest. A backend that can
+/// scan out a strip of window controls can scan out a sign-in screen, a lock
+/// screen or a recovery screen, because they are the same pixels prepared the
+/// same way — and the shell drew all of them long before anything but a nested
+/// parent could put one on a display.
+///
+/// # Errors
+/// Everything [`render_control_scanout`] refuses, and a scene whose geometry
+/// does not fit the output — refused before any graphics allocation.
+pub(crate) fn render_native_scanout(
+    renderer: &mut GlesRenderer,
+    size: Size<i32, Physical>,
+    roots: &[WlSurface],
+    popups: &[Popup],
+    cursor: &Cursor,
+    scene: Option<crate::scene_native::NativeScene<'_>>,
+) -> Result<PreparedScanout, RenderError> {
     validate_size(size)?;
-    if let Some(controls) = controls {
+    if let Some(crate::scene_native::NativeScene::Controls(controls)) = scene {
         controls.validate(size)?;
     }
     let mut buffer: GlesRenderbuffer = renderer
@@ -116,7 +147,7 @@ pub fn render_control_scanout(
         cursor,
         Transform::Normal,
         crate::scene_native::NativeLayers {
-            scene: controls.map(crate::scene_native::NativeScene::Controls),
+            scene,
             desktop: None,
             record: None,
             settings: None,
@@ -132,7 +163,7 @@ pub fn render_control_scanout(
 }
 
 /// Refuse extents before reaching upstream allocation and signed byte arithmetic.
-fn validate_size(size: Size<i32, Physical>) -> Result<(), RenderError> {
+pub(crate) fn validate_size(size: Size<i32, Physical>) -> Result<(), RenderError> {
     if size.w <= 0 || size.h <= 0 {
         return Err(RenderError::EmptySize);
     }

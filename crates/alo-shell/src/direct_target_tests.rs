@@ -60,6 +60,7 @@ impl ScenePainter for Painter {
         roots: &[WlSurface],
         _: &[Popup],
         _: &Cursor,
+        _: Option<crate::scene_native::NativeScene<'_>>,
     ) -> Result<(crate::ScanoutPixels, Vec<WlSurface>), RenderError> {
         self.calls.set(self.calls.get() + 1);
         if self.refuse {
@@ -186,3 +187,55 @@ fn direct_target_graphics_failure_never_touches_drm() {
 
 #[path = "direct_loop_tests.rs"]
 mod direct_loop;
+
+/// **The direct backend takes a sign-in screen and refuses the other four by
+/// name.**
+///
+/// The rule this holds is not *which pixels* — `crate::scene_drawing::paint`
+/// has drawn all of them since it was written — but **which have been stood on
+/// a real display and looked at**. A backend that answered a lock screen with
+/// *does not support native controls* would send whoever read it looking at the
+/// wrong thing, and one that dropped the native layer and submitted the clients
+/// underneath would, on a sign-in screen, show an empty desktop to somebody who
+/// has not signed in.
+///
+/// `not_wired_yet` is a `const fn` over the enum, so a sixth scene added to
+/// `NativeScene` stops the crate compiling rather than arriving here silently
+/// wired or silently refused.
+#[test]
+fn the_direct_backend_takes_the_sign_in_screen_and_names_what_it_refuses() {
+    use crate::scene_native::NativeScene;
+
+    let sign_in = crate::sign_in_raster::SignInPicture {
+        size: (640, 480),
+        solids: Vec::new(),
+        inked: Vec::new(),
+    };
+    let lock = crate::lock_raster::LockPicture {
+        size: (640, 480),
+        pixels: Vec::new(),
+    };
+    let recovery_and_the_rest: [(NativeScene<'_>, Option<&str>); 2] = [
+        (NativeScene::SignIn(&sign_in), None),
+        (NativeScene::Lock(&lock), Some("the lock screen")),
+    ];
+
+    for (scene, expected) in recovery_and_the_rest {
+        assert_eq!(
+            crate::direct_target::not_wired_yet(&scene),
+            expected,
+            "the backend disagreed about whether it has drawn this scene"
+        );
+    }
+
+    // And the refusal a caller reads names the scene rather than the backend's
+    // general capability.
+    let refused = RenderError::SceneNotOnThisBackend {
+        scene: "the lock screen",
+    };
+    assert!(refused.to_string().contains("the lock screen"), "{refused}");
+    assert!(
+        !refused.to_string().contains("native controls"),
+        "a scene refusal borrowed the sentence for a backend that draws none: {refused}"
+    );
+}
