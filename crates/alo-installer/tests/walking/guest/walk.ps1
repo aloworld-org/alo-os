@@ -359,26 +359,33 @@ $process.StandardInput.Flush()
 # whose Fast Startup is on (ADR 0064 term 9). The answer arrives in the
 # instruction, and lines are read until the question is asked or until staging
 # has plainly begun, so a boot with nothing to answer waits for nothing.
-$answer = ''
-if ($instruction.ContainsKey('answer')) { $answer = $instruction['answer'] }
-if ($answer -ne '') {
-  $answered = $false
-  while (-not $process.HasExited) {
-    $line = $process.StandardOutput.ReadLine()
-    if ($null -eq $line) { break }
-    $said.Add($line)
-    Say "installer: $line"
-    if ($line -match 'and press Enter') {
-      Say "typing: [$answer]"
-      $process.StandardInput.WriteLine($answer)
-      $process.StandardInput.Flush()
-      $answered = $true
-      break
-    }
-    if ($line -match 'Shrinking|being left on') { break }
-  }
-  if (-not $answered) { Say 'the installer never asked about Fast Startup' }
+#
+# **Every walk answers it**, because this Windows' own value reads as on even
+# with hibernation off (`docs/quirks.md`): the settled base keeps
+# `HiberbootEnabled` at 1 after `powercfg /h off`. A walk that did not answer
+# would leave the installer waiting at the question for ever. The answer is
+# *leave on* unless the instruction names another, so nothing about Windows is
+# changed by walks that are not about this question.
+$answer = 'leave on'
+if ($instruction.ContainsKey('answer') -and $instruction['answer'] -ne '') {
+  $answer = $instruction['answer']
 }
+$answered = $false
+# At most three lines: when the question is asked it is the first thing said
+# after the consent, so a computer that is not asked is not waited on.
+for ($read = 0; $read -lt 3 -and -not $answered -and -not $process.HasExited; $read++) {
+  $line = $process.StandardOutput.ReadLine()
+  if ($null -eq $line) { break }
+  $said.Add($line)
+  Say "installer: $line"
+  if ($line -match 'and press Enter') {
+    Say "typing: [$answer]"
+    $process.StandardInput.WriteLine($answer)
+    $process.StandardInput.Flush()
+    $answered = $true
+  }
+}
+if (-not $answered) { Say 'the installer did not ask about Fast Startup' }
 
 if ($mode -eq 'answer-fast-startup') {
   # The answer is acted on before anything on a disk changes, so this boot ends

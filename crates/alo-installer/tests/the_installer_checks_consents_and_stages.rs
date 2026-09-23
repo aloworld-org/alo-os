@@ -165,7 +165,10 @@ impl Scripted {
             // Off on this scripted computer, so the question is not asked and
             // no test here answers it by accident; the tests that are about
             // the question turn it on (`fast_startup_is_asked_about`).
-            ("fast-startup", printed(r#"{"HiberbootEnabled":0}"#)),
+            (
+                "fast-startup",
+                printed(r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#),
+            ),
             (
                 "shortcut",
                 printed(r#"{"Shortcut":"C:\\ProgramData\\Restart into alo OS.lnk"}"#),
@@ -973,6 +976,14 @@ fn the_way_back_sets_the_next_start_and_nothing_else() {
             .said
             .contains(&sentence(alo_installer::SWITCH_WILL_RESTART))
     );
+    // The question names the word to type, and says it rather than leaving the
+    // gap: measured on 2026-09-23, it asked for `{word}` on a real Windows.
+    let asked = machine.asked.last().expect("it asked");
+    assert!(!asked.contains('{'), "{asked}");
+    assert!(
+        asked.contains(alo_installer::SWITCH_AGREED.says()),
+        "{asked}"
+    );
 }
 
 /// **A person who types nothing changes nothing.**
@@ -1071,7 +1082,10 @@ fn the_installer_leaves_a_copy_of_itself_and_a_shortcut() {
 /// the disk's name.
 fn with_fast_startup_on(answers: &[&str]) -> (Scripted, Released) {
     let (mut machine, released) = Scripted::installable();
-    machine = machine.answering("fast-startup", r#"{"HiberbootEnabled":1}"#);
+    machine = machine.answering(
+        "fast-startup",
+        r#"{"HiberbootEnabled":1,"HibernateEnabled":1}"#,
+    );
     machine.then_typed = answers.iter().map(|typed| format!("{typed}\n")).collect();
     (machine, released)
 }
@@ -1157,7 +1171,12 @@ fn an_answer_that_is_neither_is_asked_again_and_then_left_on() {
 /// changed about it.**
 #[test]
 fn fast_startup_that_is_off_or_unread_is_not_asked_about() {
-    for read in [r#"{"HiberbootEnabled":0}"#, "not an answer"] {
+    for read in [
+        r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#,
+        // `powercfg /h off` leaves the first value at 1 (`docs/quirks.md`).
+        r#"{"HiberbootEnabled":1,"HibernateEnabled":0}"#,
+        "not an answer",
+    ] {
         let (machine, released) = Scripted::installable();
         let (ended, machine) = run(machine.answering("fast-startup", read), released);
         assert_eq!(ended, Ended::Staged { restarted: true });

@@ -95,7 +95,14 @@ pub fn restart_into_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> 
         words::SWITCH_WILL_RESTART,
         &Filling::nothing(),
     );
-    let typed = machine.ask(&strings.say(&words::SWITCH_TYPE_TO_AGREE.key(), &Filling::nothing()));
+    // The question names the word to type, in the language it is read in.
+    let word = strings
+        .say(&words::SWITCH_AGREED.key(), &Filling::nothing())
+        .into_text();
+    let typed = machine.ask(&strings.say(
+        &words::SWITCH_TYPE_TO_AGREE.key(),
+        &Filling::of("word", word),
+    ));
     if !agreed(&typed, strings) {
         say(
             machine,

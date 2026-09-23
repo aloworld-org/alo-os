@@ -72,6 +72,13 @@ const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session 
 /// The value under it that Fast Startup is.
 const FAST_STARTUP: &str = "HiberbootEnabled";
 
+/// The value under it that says whether this computer hibernates at all.
+///
+/// Fast Startup is hibernation of the kernel's own session, so a computer
+/// whose hibernation is off does not do it whatever the value above says —
+/// and `powercfg /h off` leaves that value at 1 (`docs/quirks.md`).
+const HIBERNATION: &str = "HibernateEnabled";
+
 /// Where, on the area, the firmware starts the environment from.
 pub const THE_LOADER: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
 
@@ -385,10 +392,12 @@ impl Program {
             // exactly that value and reads it back, so a write that did not
             // take is a step that failed rather than one believed.
             Self::ReadingFastStartup => format!(
-                "$value = (Get-ItemProperty -Path '{THE_POWER_KEY}' \
-                   -Name '{FAST_STARTUP}' -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
+                "$power = Get-ItemProperty -Path '{THE_POWER_KEY}' -ErrorAction SilentlyContinue; \
+                 $value = $power.'{FAST_STARTUP}'; \
+                 $hibernation = $power.'{HIBERNATION}'; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
-                   HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}) }})"
+                   HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}); \
+                   HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}) }})"
             ),
             // The shortcut is made through Windows' own shell object, which is
             // how a shortcut is made on Windows, and read back: a shortcut that
@@ -825,7 +834,11 @@ mod tests {
         for program in EVERY_READ.into_iter().chain(every_change()) {
             let script = program.script().unwrap_or_default();
             let said = format!("{script} {}", program.arguments().join(" ")).to_lowercase();
-            for never in ["powercfg", "/h off", "hibernate"] {
+            // The value that says whether the computer hibernates is read by
+            // its own name (`HibernateEnabled`), which is why the name alone
+            // is not on this list — what is forbidden is the tool that turns
+            // hibernation off.
+            for never in ["powercfg", "/h off"] {
                 assert!(!said.contains(never), "{program:?} names {never}");
             }
         }

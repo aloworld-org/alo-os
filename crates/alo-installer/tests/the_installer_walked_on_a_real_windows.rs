@@ -340,7 +340,17 @@ fn the_way_back_into_alo_os_is_offered_from_inside_windows() {
     let console = Console::fresh(&yard.join("console.log"));
     let machine = Machine::start(&yard, "switch", Some(&disc), None, &console, &chip);
     let switched = console.wait_for(&["ALOWALK-DONE switch"], A_SIGN_IN + A_WALK);
-    let started = console.wait_for(&["BdsDxe: starting"], Duration::from_secs(300));
+    // What the firmware starts *after* the switch, and never a line from
+    // before it: this console already holds the start that brought Windows up.
+    let until = Instant::now() + Duration::from_secs(300);
+    let mut started = false;
+    while Instant::now() < until && !started {
+        started = console
+            .said()
+            .split_once("ALOWALK-DONE switch")
+            .is_some_and(|(_, after)| after.contains("BdsDxe: starting"));
+        std::thread::sleep(Duration::from_secs(2));
+    }
     let screen = machine.screen("the-way-back");
     let said = console.said();
     drop(machine);
@@ -356,7 +366,7 @@ fn the_way_back_into_alo_os_is_offered_from_inside_windows() {
         "the installer left no shortcut for it.\n{said}"
     );
     assert!(
-        started.is_some(),
+        started,
         "the computer never restarted after the way back.\n{said}"
     );
     // Everything before the restart is one boot's account: the firmware's line

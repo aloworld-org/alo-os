@@ -35,6 +35,9 @@ pub enum FastStartup {
 struct Printed {
     /// The value, as Windows holds it; [`None`] when there is no such value.
     hiberboot_enabled: Option<u32>,
+    /// Whether this computer hibernates at all; [`None`] when there is no such
+    /// value.
+    hibernate_enabled: Option<u32>,
 }
 
 impl FastStartup {
@@ -42,22 +45,26 @@ impl FastStartup {
     ///
     /// **Any value but zero is on.** Windows writes `1`, and a machine whose
     /// value somebody else set to something else has not turned it off.
+    ///
+    /// **A computer that does not hibernate does not do Fast Startup**,
+    /// whatever the first value says: Fast Startup is hibernation of the
+    /// kernel's own session. `powercfg /h off` turns hibernation off and leaves
+    /// `HiberbootEnabled` at 1 (`docs/quirks.md`), and a person on such a
+    /// computer would otherwise be asked about something that cannot happen.
     #[must_use]
     pub fn read(printed: Option<&str>) -> Self {
-        match printed.and_then(|printed| serde_json::from_str::<Printed>(printed).ok()) {
-            Some(Printed {
-                hiberboot_enabled: Some(0),
-            }) => Self::Off,
-            Some(Printed {
-                hiberboot_enabled: Some(_),
-            }) => Self::On,
+        let Some(printed) =
+            printed.and_then(|printed| serde_json::from_str::<Printed>(printed).ok())
+        else {
+            return Self::NotRead;
+        };
+        match (printed.hiberboot_enabled, printed.hibernate_enabled) {
+            (Some(0), _) | (_, Some(0)) => Self::Off,
+            (Some(_), Some(_)) => Self::On,
             // No value at all is Windows' own default, which is on — but
             // *read* is a stronger word than *worked out*, and this installer
             // says what it read.
-            Some(Printed {
-                hiberboot_enabled: None,
-            })
-            | None => Self::NotRead,
+            (None, _) | (_, None) => Self::NotRead,
         }
     }
 
@@ -72,23 +79,28 @@ impl FastStartup {
 mod tests {
     use super::*;
 
-    /// **Zero is off, anything else is on, and anything unreadable is neither.**
+    /// **Zero is off, anything else is on, and anything unreadable is
+    /// neither** — and a computer that does not hibernate is off whatever the
+    /// first value says.
     #[test]
     fn the_value_is_read_as_windows_writes_it() {
-        assert_eq!(
-            FastStartup::read(Some(r#"{"HiberbootEnabled":1}"#)),
-            FastStartup::On
-        );
-        assert_eq!(
-            FastStartup::read(Some(r#"{"HiberbootEnabled":2}"#)),
-            FastStartup::On
-        );
-        assert_eq!(
-            FastStartup::read(Some(r#"{"HiberbootEnabled":0}"#)),
-            FastStartup::Off
-        );
+        for on in [
+            r#"{"HiberbootEnabled":1,"HibernateEnabled":1}"#,
+            r#"{"HiberbootEnabled":2,"HibernateEnabled":1}"#,
+        ] {
+            assert_eq!(FastStartup::read(Some(on)), FastStartup::On, "{on}");
+        }
+        for off in [
+            r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#,
+            // `powercfg /h off` leaves the first value at 1 (`docs/quirks.md`).
+            r#"{"HiberbootEnabled":1,"HibernateEnabled":0}"#,
+            r#"{"HiberbootEnabled":0,"HibernateEnabled":0}"#,
+        ] {
+            assert_eq!(FastStartup::read(Some(off)), FastStartup::Off, "{off}");
+        }
         for neither in [
-            Some(r#"{"HiberbootEnabled":null}"#),
+            Some(r#"{"HiberbootEnabled":null,"HibernateEnabled":1}"#),
+            Some(r#"{"HiberbootEnabled":1,"HibernateEnabled":null}"#),
             Some("{}"),
             Some("1"),
             Some(""),
