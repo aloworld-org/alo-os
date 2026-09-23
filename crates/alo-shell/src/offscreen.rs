@@ -104,7 +104,10 @@ pub fn render_control_scanout(
         roots,
         popups,
         cursor,
-        controls.map(crate::scene_native::NativeScene::Controls),
+        crate::scene_native::NativeLayers {
+            scene: controls.map(crate::scene_native::NativeScene::Controls),
+            ..crate::scene_native::NativeLayers::nothing()
+        },
     )
 }
 
@@ -127,10 +130,10 @@ pub(crate) fn render_native_scanout(
     roots: &[WlSurface],
     popups: &[Popup],
     cursor: &Cursor,
-    scene: Option<crate::scene_native::NativeScene<'_>>,
+    layers: crate::scene_native::NativeLayers<'_>,
 ) -> Result<PreparedScanout, RenderError> {
     validate_size(size)?;
-    if let Some(crate::scene_native::NativeScene::Controls(controls)) = scene {
+    if let Some(crate::scene_native::NativeScene::Controls(controls)) = layers.scene {
         controls.validate(size)?;
     }
     let mut buffer: GlesRenderbuffer = renderer
@@ -146,14 +149,7 @@ pub(crate) fn render_native_scanout(
         popups,
         cursor,
         Transform::Normal,
-        crate::scene_native::NativeLayers {
-            scene,
-            desktop: None,
-            record: None,
-            settings: None,
-            approval: None,
-            status: None,
-        },
+        layers,
     )?;
     let pixels = crate::readback_xrgb(renderer, &target, RowOrder::TopToBottom)?;
     Ok(PreparedScanout {

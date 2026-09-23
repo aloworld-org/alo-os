@@ -93,14 +93,14 @@ impl crate::presentation::NativeTarget for DirectTarget<'_, '_> {
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: crate::scene_native::NativeScene<'_>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         crate::presentation::NativeTarget::submit_native_layers(
             &mut self.target,
             roots,
             popups,
             cursor,
-            scene,
+            layers,
         )
     }
 }
@@ -117,16 +117,18 @@ pub struct DirectShutdownError {
 pub(crate) trait ScenePainter {
     /// Return immutable pixels and drawn identities without completing callbacks.
     ///
-    /// `scene` is one of this shell's own surfaces painted over the clients, or
-    /// [`None`] for an ordinary frame. It is the same layer `crate::nested`
-    /// submits through a parent's EGL, prepared here for scanout instead.
+    /// `layers` is everything of this shell's own painted over the clients —
+    /// a whole-output scene, the desktop above it, the record, Settings, a
+    /// question and the egress indicator — or `NativeLayers::nothing()` for an
+    /// ordinary frame. They are the same layers `crate::nested` submits through
+    /// a parent's EGL, prepared here for scanout instead.
     fn paint(
         &mut self,
         size: Size<i32, Physical>,
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: Option<crate::scene_native::NativeScene<'_>>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError>;
 }
 
@@ -139,9 +141,9 @@ impl ScenePainter for GlesPainter<'_> {
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: Option<crate::scene_native::NativeScene<'_>>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
-        crate::offscreen::render_native_scanout(self.0, size, roots, popups, cursor, scene)
+        crate::offscreen::render_native_scanout(self.0, size, roots, popups, cursor, layers)
             .map(crate::PreparedScanout::into_parts)
     }
 }
@@ -234,7 +236,12 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
         popups: &[Popup],
         cursor: &Cursor,
     ) -> Result<Vec<WlSurface>, RenderError> {
-        self.submit_with_scene(roots, popups, cursor, None)
+        self.submit_with_layers(
+            roots,
+            popups,
+            cursor,
+            crate::scene_native::NativeLayers::nothing(),
+        )
     }
 }
 
@@ -246,19 +253,19 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
     /// screen on it differ by one layer and nothing else — the same painter,
     /// the same allocation, the same commit — and a second submission path for
     /// native scenes would be the place the two drifted.
-    fn submit_with_scene(
+    fn submit_with_layers(
         &mut self,
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: Option<crate::scene_native::NativeScene<'_>>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         if self.halted {
             return Err(RenderError::DirectHalted);
         }
         let prepared = self
             .painter
-            .paint(self.size(), roots, popups, cursor, scene)?;
+            .paint(self.size(), roots, popups, cursor, layers)?;
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;
@@ -287,7 +294,7 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarge
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: crate::scene_native::NativeScene<'_>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         // **Wired one scene at a time, and the rest refused by name.** The
         // painter underneath draws all six — `crate::scene_drawing::paint`
@@ -296,9 +303,9 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarge
         // something near it, or dropping the layer and submitting the clients
         // underneath, would on a sign-in screen be a machine showing an empty
         // desktop to somebody who has not signed in.
-        match not_wired_yet(&scene) {
+        match layers.scene.as_ref().and_then(not_wired_yet) {
             Some(scene) => Err(RenderError::SceneNotOnThisBackend { scene }),
-            None => self.submit_with_scene(roots, popups, cursor, Some(scene)),
+            None => self.submit_with_layers(roots, popups, cursor, layers),
         }
     }
 }
