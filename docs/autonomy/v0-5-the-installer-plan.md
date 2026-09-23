@@ -1437,11 +1437,17 @@ given as SATA with a serial rather than virtio.
 
 ### 19. Killed at every step, Windows' own partition byte for byte — or the reason it is not
 
-**Status:** ready — **and it is the development PC's**, recorded 2026-09-22 at
-the owner's word. It needs the Windows guest, and the third PC has no working
+**Status:** scheduled — **on the development PC**, recorded 2026-09-22 at the
+owner's word. It needs the Windows guest, and the third PC has no working
 `/dev/kvm`: every guest there is emulated, and one virtual-machine acceptance on
-it has already cost 3 779 seconds. Written here so that no lane picks it up
-merely because it is the next ready task in this plan. **Depends on:** 10.
+it has already cost 3 779 seconds. The work is ready; the machine that can run
+it is what it waits for.
+
+*scheduled* rather than *ready* is deliberate and is the word the supervisor
+reads: a lane skips a task only on `blocked` or `scheduled` in this line, so a
+sentence naming the machine — however plain — would be read by a person and
+stepped over by the program, and the next lane to start on this plan would take
+this task merely because it is next. **Depends on:** 10.
 **Split from** task 10 on 2026-09-22. Task 10 is done for what it proved: all
 seven kills landing exactly, Windows restarting to its desktop after each, the
 start partition unchanged beyond the controls, nothing unreadable, and the
