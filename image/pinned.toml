@@ -113,6 +113,19 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # from the image side. The build demands all eleven elements by name now.
 
 version = "0.0.5"
+
+# **A candidate is being built, and nothing here is pinned to it.** Declared
+# 2026-09-23 in the same change that moved the recipe's label, which is what the
+# header above requires. `version`, `digest`, `revision` and `key` all still name
+# 0.0.5 — the release the owner signed — so an installer keeps pulling that and
+# not this.
+#
+# It carries the first compositor binary this image has ever had: until it,
+# `crates/alo-shell` had no binary at all and a machine booted to a console.
+#
+# **This line stays until 0.0.6 is pinned.** If it never is — if the candidate is
+# only ever a screenshot — whoever prepares the next release removes it.
+next = "0.0.6"
 digest = "sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1"
 revision = "97c970c96f2c13f2341ed94fb264247fb6837442"
 key = "signing/alo-os.pub"

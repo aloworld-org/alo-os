@@ -529,7 +529,7 @@ LABEL alo.disk.file="alo-os.raw"
 # it is one that cannot say which release it is, and a digest pinned against it
 # is a digest held to nothing. Three numbers, never `latest` — a tag that moves
 # is the one thing a pin exists to refuse. `crates/alo-image` holds it to that.
-LABEL org.opencontainers.image.version="0.0.5"
+LABEL org.opencontainers.image.version="0.0.6"
 
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
