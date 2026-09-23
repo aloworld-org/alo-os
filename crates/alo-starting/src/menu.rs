@@ -44,8 +44,16 @@
 
 use std::fmt::Write as _;
 
-use crate::chosen::SAVED_ENTRY;
+use crate::chosen::{SAVED_ENTRY, THE_BLOCK_ON_THE_ESP};
 use crate::systems::{THE_WINDOWS_ENTRY, THE_WINDOWS_LOADER};
+
+/// What this configuration calls the EFI system partition while it is using it.
+///
+/// A loader variable, not a name anything outside this file knows: the
+/// partition is found at every start by the one file on it this configuration
+/// wants, so nothing here keeps a disk, a number or a label of somebody's
+/// machine ([`crate::THE_BLOCK_ON_THE_ESP`]).
+const PARTITION: &str = "esp";
 
 /// The one file this menu is written to, on a machine.
 ///
@@ -148,6 +156,23 @@ impl Menu {
         self.countdown
     }
 
+    /// Whether this configuration offers Windows.
+    ///
+    /// The one question anything asks of a menu after it is written, and it is
+    /// asked of the **file** rather than of a setting beside it: a machine alo
+    /// OS replaced Windows on has no Windows entry, and a record of that kept
+    /// anywhere else would be a second copy of a fact about somebody's disk
+    /// ([ADR 0062](../../../docs/decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
+    /// term 3).
+    ///
+    /// What is looked for is the identifier [`Menu::written`] gives the entry,
+    /// never its title: the title is a sentence somebody translated, and a
+    /// machine whose menu is in Greek offers exactly the same Windows.
+    #[must_use]
+    pub fn offers_windows(configuration: &str) -> bool {
+        configuration.contains(&format!("--id '{THE_WINDOWS_ENTRY}'"))
+    }
+
     /// The configuration, as the file holds it.
     #[must_use]
     pub fn written(&self) -> String {
@@ -162,8 +187,14 @@ impl Menu {
              # The loader itself is the base's, configured and never changed (ADR 0011). This\n\
              # is the configuration: the menu a machine with two systems on it starts at,\n\
              # which ADR 0062 decided is alo OS's, with Windows standing behind it.\n\
+             #\n\
+             # The last choice is on the EFI system partition (ADR 0066 term 1), which is\n\
+             # found here by the block itself rather than by an identifier of somebody's\n\
+             # disk written down once — the same answer computed at every start. A machine\n\
+             # whose block is not there sets nothing, and starts the first entry: alo OS.\n\
              \n\
-             load_env\n\
+             search --no-floppy --set={PARTITION} --file {block}\n\
+             load_env -f (${{{PARTITION}}}){block} {SAVED_ENTRY}\n\
              set default=\"${{{SAVED_ENTRY}}}\"\n\
              set timeout_style=menu\n\
              set timeout={countdown}\n\
@@ -175,12 +206,13 @@ impl Menu {
              \tsearch --no-floppy --set=root --file {loader}\n\
              \tchainloader {loader}\n\
              \tset {SAVED_ENTRY}='{entry}'\n\
-             \tsave_env {SAVED_ENTRY}\n\
+             \tsave_env -f (${{{PARTITION}}}){block} {SAVED_ENTRY}\n\
              }}\n",
             countdown = self.countdown,
             title = self.windows_titled,
             entry = THE_WINDOWS_ENTRY,
             loader = THE_WINDOWS_LOADER,
+            block = THE_BLOCK_ON_THE_ESP,
         );
         debug_assert!(written.is_ok());
         out
@@ -212,16 +244,81 @@ mod tests {
         );
         assert!(written.contains("set timeout=5"), "{written}");
         assert!(written.contains("set timeout_style=menu"), "{written}");
-        assert!(written.contains("load_env"), "{written}");
+        assert!(
+            written.contains(&format!("load_env -f (${{esp}}){THE_BLOCK_ON_THE_ESP}")),
+            "{written}"
+        );
         assert!(
             written.contains("set default=\"${saved_entry}\""),
             "{written}"
         );
-        assert!(written.contains("save_env saved_entry"), "{written}");
+        assert!(
+            written.contains(&format!(
+                "save_env -f (${{esp}}){THE_BLOCK_ON_THE_ESP} saved_entry"
+            )),
+            "{written}"
+        );
         assert!(
             written.contains(&format!("set saved_entry='{THE_WINDOWS_ENTRY}'")),
             "{written}"
         );
+    }
+
+    /// **Neither environment line goes anywhere but the EFI system partition.**
+    ///
+    /// A bare `load_env` or `save_env` reads and writes `$prefix/grubenv`,
+    /// which is the loader's directory under `/boot` — alo OS's own filesystem,
+    /// which Windows cannot write. That is where this file kept the last choice
+    /// before ADR 0066, and the way back to it is a line somebody shortens.
+    #[test]
+    fn no_environment_line_falls_back_to_the_loaders_own_directory() {
+        for line in a_menu().written().lines().map(str::trim) {
+            if line.starts_with("load_env") || line.starts_with("save_env") {
+                assert!(
+                    line.contains(&format!("(${{esp}}){THE_BLOCK_ON_THE_ESP}")),
+                    "{line:?} keeps the last choice somewhere Windows cannot reach"
+                );
+            }
+        }
+    }
+
+    /// **The partition is found by the file on it**, never by a disk, a
+    /// partition number or a label written down when the machine was installed.
+    #[test]
+    fn the_partition_is_found_by_the_block_and_not_by_an_identifier() {
+        let written = a_menu().written();
+        assert!(
+            written.contains(&format!(
+                "search --no-floppy --set=esp --file {THE_BLOCK_ON_THE_ESP}"
+            )),
+            "{written}"
+        );
+        assert!(!written.contains("--fs-uuid"), "{written}");
+        assert!(!written.contains("hd0"), "{written}");
+    }
+
+    /// **A generated menu offers Windows, and anything else does not.** The
+    /// question is asked of the file, in the identifier the menu itself writes,
+    /// so a menu whose title was translated still answers yes and a machine alo
+    /// OS replaced Windows on answers no.
+    #[test]
+    fn a_generated_menu_offers_windows_and_nothing_else_does() {
+        assert!(Menu::offers_windows(&a_menu().written()));
+        for title in ["Παράθυρα", "ウィンドウズ"] {
+            let menu = Menu::offering(title, THE_COUNTDOWN).unwrap();
+            assert!(Menu::offers_windows(&menu.written()), "{title}");
+        }
+        for not_a_menu in [
+            "",
+            "# nothing to choose between\n",
+            "menuentry 'Windows' {\n\tchainloader /somewhere/else.efi\n}\n",
+            &format!("# {THE_WINDOWS_ENTRY}\n"),
+        ] {
+            assert!(
+                !Menu::offers_windows(not_a_menu),
+                "{not_a_menu:?} was read as offering Windows"
+            );
+        }
     }
 
     /// **The file says it is generated, in its first two lines**, so whoever

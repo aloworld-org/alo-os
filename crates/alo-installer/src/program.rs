@@ -27,9 +27,11 @@
 //! | [`Program::ReadingTheWindowsVolume`] | where Windows is, its size, how far it can shrink |
 //! | [`Program::ListingTheDisks`] | every disk and its partitions |
 //! | [`Program::ListingTheStartEntries`] | the systems the firmware can start |
+//! | [`Program::ReadingFastStartup`] | whether Windows' Fast Startup is on |
 //!
 //! | Changes, in the order they are made | Put back by |
 //! |---|---|
+//! | [`Program::TurningFastStartupOff`] | [`Program::TurningFastStartupBackOn`] |
 //! | [`Program::Shrinking`] | [`Program::GrowingWindowsBack`] |
 //! | [`Program::MakingTheArea`] | [`Program::RemovingTheArea`] |
 //! | [`Program::PreparingTheArea`] | removing the area |
@@ -48,6 +50,12 @@ pub const BASIC_DATA: &str = "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}";
 
 /// What the entry is called among the systems a computer can start.
 pub const THE_ENTRYS_NAME: &str = "alo OS";
+
+/// Where Windows keeps the setting behind Fast Startup.
+const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
+
+/// The value under it that Fast Startup is.
+const FAST_STARTUP: &str = "HiberbootEnabled";
 
 /// Where, on the area, the firmware starts the environment from.
 pub const THE_LOADER: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
@@ -78,6 +86,21 @@ pub enum Program {
     ListingTheDisks,
     /// The firmware's list of systems.
     ListingTheStartEntries,
+    /// Whether Windows' Fast Startup is on, from Windows' own value.
+    ReadingFastStartup,
+
+    /// Turn Windows' Fast Startup off, and read the value back.
+    ///
+    /// **`HiberbootEnabled`, and never `powercfg /h off`** (ADR 0064 term 9):
+    /// the person agreed to turn Fast Startup off, and `powercfg /h off`
+    /// removes hibernation from the computer altogether — a different act,
+    /// which also throws away whatever is hibernated at the time.
+    TurningFastStartupOff,
+    /// Put Windows' Fast Startup back to the value it had, and read it back.
+    TurningFastStartupBackOn {
+        /// The value Windows held before the installer changed it.
+        was: u32,
+    },
 
     /// Shrink the Windows partition to this many bytes.
     Shrinking {
@@ -242,6 +265,18 @@ impl Program {
                 | Self::ReadingTheWindowsVolume
                 | Self::ListingTheDisks
                 | Self::ListingTheStartEntries
+                | Self::ReadingFastStartup
+        )
+    }
+
+    /// Setting Fast Startup's own value to exactly this, and reading it back.
+    fn setting_fast_startup(to: u32) -> String {
+        format!(
+            "Set-ItemProperty -Path '{THE_POWER_KEY}' -Name '{FAST_STARTUP}' \
+               -Value {to} -Type DWord; \
+             $value = (Get-ItemProperty -Path '{THE_POWER_KEY}' -Name '{FAST_STARTUP}').'{FAST_STARTUP}'; \
+             if ([uint32]$value -ne {to}) {{ throw 'the value did not take' }}; \
+             ConvertTo-Json -Compress -InputObject ([ordered]@{{ HiberbootEnabled = [uint32]$value }})"
         )
     }
 
@@ -321,6 +356,18 @@ impl Program {
                      Partitions = $partitions } }); \
                  ConvertTo-Json -Compress -Depth 4 -InputObject $disks"
                 .to_owned(),
+            // The one value, read and written where Windows keeps it. Reading
+            // it says what is there and changes nothing; writing it sets
+            // exactly that value and reads it back, so a write that did not
+            // take is a step that failed rather than one believed.
+            Self::ReadingFastStartup => format!(
+                "$value = (Get-ItemProperty -Path '{THE_POWER_KEY}' \
+                   -Name '{FAST_STARTUP}' -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
+                   HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}) }})"
+            ),
+            Self::TurningFastStartupOff => Self::setting_fast_startup(0),
+            Self::TurningFastStartupBackOn { was } => Self::setting_fast_startup(*was),
             Self::Shrinking {
                 disk,
                 partition,
@@ -631,6 +678,8 @@ mod tests {
         let letter = Letter::of("E").unwrap();
         let (disk, partition) = (DiskNumber(0), PartitionNumber(3));
         vec![
+            Program::TurningFastStartupOff,
+            Program::TurningFastStartupBackOn { was: 1 },
             Program::Shrinking {
                 disk,
                 partition,
@@ -679,7 +728,8 @@ mod tests {
     }
 
     /// Every read, which is every program that does not change anything.
-    const EVERY_READ: [Program; 8] = [
+    const EVERY_READ: [Program; 9] = [
+        Program::ReadingFastStartup,
         Program::AskingWhetherThisIsAnAdministrator,
         Program::ReadingHowItStarts,
         Program::ReadingTheTpm,
@@ -713,6 +763,32 @@ mod tests {
         for change in every_change() {
             assert!(change.changes(), "{change:?}");
         }
+    }
+
+    /// **Fast Startup is switched off by its own value, and hibernation is
+    /// never removed.**
+    ///
+    /// ADR 0064 term 9: the person agreed to turn Fast Startup off.
+    /// `powercfg /h off` removes hibernation from the computer altogether and
+    /// throws away anything hibernated at the time, which is not what they
+    /// agreed to — so no program of this installer may name it.
+    #[test]
+    fn fast_startup_is_the_value_and_never_powercfg() {
+        for program in EVERY_READ.into_iter().chain(every_change()) {
+            let script = program.script().unwrap_or_default();
+            let said = format!("{script} {}", program.arguments().join(" ")).to_lowercase();
+            for never in ["powercfg", "/h off", "hibernate"] {
+                assert!(!said.contains(never), "{program:?} names {never}");
+            }
+        }
+        let off = Program::TurningFastStartupOff.script().unwrap();
+        assert!(off.contains("HiberbootEnabled") && off.contains("-Value 0"));
+        assert!(
+            Program::TurningFastStartupBackOn { was: 1 }
+                .script()
+                .unwrap()
+                .contains("-Value 1")
+        );
     }
 
     /// **Every program has arguments, and a PowerShell one is only ever an

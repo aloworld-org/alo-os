@@ -16,27 +16,36 @@
 //! |---|---|
 //! | [`System`], [`THE_WINDOWS_LOADER`] | The two a machine can start, and the file Windows is started by |
 //! | [`Menu`], [`THE_MENU`] | The menu, generated as configuration for the base's own loader |
-//! | [`EnvironmentBlock`], [`THE_ENVIRONMENT_BLOCK`] | The loader's own file, read and written |
+//! | [`EnvironmentBlock`], [`THE_ENVIRONMENT_BLOCK`], [`THE_BLOCK_ON_THE_ESP`] | The loader's own file on the partition both systems share, read and written |
 //! | [`TheStartingChoice`] | Which system starts when nobody chooses — kept there, and nowhere else |
+//! | [`TheLoader`], [`TheLoadersFiles`] | Those two files as whoever changes them reaches them |
+//! | [`start_by_default`], [`NotSet`] | A person's approved choice, carried out into that file |
+//! | [`the_identity_of`], [`the_system_named`], [`to_start_by_default`] | Which system, named the one way both sides of the door name it |
 //! | [`Entry`], [`Firmware`], [`TheFirmware`] | What the firmware reports, and the one thing it is ever told |
-//! | [`Change`] | *Restart into Windows*, and the broker verb it is |
+//! | [`Change`] | The two changes on this road, and the broker verbs they are |
 //! | [`NotChanged`], [`changed_said`], [`starts_at_said`] | What a person reads, either way |
 //! | [`words`] | Every sentence, with a note for whoever translates it |
 //!
-//! # It changes one thing about how a machine starts, and it is not the
-//! default
+//! # Two changes, and they are two on purpose
 //!
 //! *Restart into Windows* sets the firmware's **next start**, for one start,
-//! and leaves the machine's ordinary order exactly as it was. It is
-//! `alo_broker::SystemVerb::RestartIntoWindows`, because writing a firmware
-//! variable is privileged and
-//! [ADR 0001](../../../docs/decisions/0001-the-capability-model.md)
-//! §2 puts privilege behind the broker; what carries it out is
-//! `alo_brokerd::NextStart`, against [`Firmware`].
+//! and leaves the machine's ordinary order exactly as it was. *This computer
+//! starts this system when nobody chooses* changes the loader's own saved
+//! default and touches the next start not at all. One is *take me across once*;
+//! the other is *this is what this computer does from now on*, and a single
+//! verb doing both would be a sentence a person approved that meant two things.
 //!
-//! **And it restarts nothing.** The restart is the person's own, afterwards,
-//! exactly as it is for the update verbs: nothing in this workspace holds
-//! `CAP_SYS_BOOT` and nothing here asks for it.
+//! Both are verbs on the broker's list, because writing a firmware variable and
+//! writing a file under `/boot` are both privileged and
+//! [ADR 0001](../../../docs/decisions/0001-the-capability-model.md)
+//! §2 puts privilege behind the broker. What carries them out is
+//! `alo_brokerd::NextStart` against [`Firmware`], and `alo_brokerd::ByDefault`
+//! against [`TheLoader`]
+//! ([ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)).
+//!
+//! **And neither restarts anything.** The restart is the person's own,
+//! afterwards, exactly as it is for the update verbs: nothing in this workspace
+//! holds `CAP_SYS_BOOT` and nothing here asks for it.
 //!
 //! # Configured, never patched
 //!
@@ -61,7 +70,10 @@
 //! **No second copy of the last choice.** It is the loader's saved default, in
 //! the loader's own file, and [`TheStartingChoice`] is the only reader and the
 //! only writer of it in alo OS — ADR 0062's third term, held by
-//! `tests/the_last_choice_has_one_place_and_no_copy.rs`.
+//! `tests/the_last_choice_has_one_place_and_no_copy.rs`. The road a person's
+//! change travels through the broker does not add one: what crosses the door is
+//! thirty-two bytes naming a system, and the file is read and written on this
+//! side of it.
 //!
 //! **No way to change the machine's start-up order**, to add a start-up entry
 //! or to remove one. There is no method for any of them, which is a stronger
@@ -81,10 +93,15 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod by_default;
+mod by_hand;
 mod chosen;
 mod efi_variables;
 mod firmware;
+mod loader;
 mod menu;
+mod offered;
+mod on_this_machine;
 mod refusing;
 mod saved;
 mod systems;
@@ -92,13 +109,18 @@ pub mod testing;
 mod wanted;
 pub mod words;
 
-pub use chosen::{SAVED_ENTRY, THE_ENVIRONMENT_BLOCK, TheStartingChoice};
+pub use by_default::{NotSet, start_by_default};
+pub use by_hand::to_start_by_default;
+pub use chosen::{SAVED_ENTRY, THE_BLOCK_ON_THE_ESP, THE_ENVIRONMENT_BLOCK, TheStartingChoice};
 pub use efi_variables::{
     NEXT_START, THE_GLOBAL_GROUP, THE_VARIABLES, TheFirmware, the_entry_named,
     the_next_start_written,
 };
 pub use firmware::{AS_REPORTED, Entry, Firmware, NotAnEntry, NotAnswering, NotDone};
+pub use loader::{NotRead, NotWritten, TheLoader};
 pub use menu::{LONGEST_COUNTDOWN, LONGEST_TITLE, Menu, NotAMenu, THE_COUNTDOWN, THE_MENU};
+pub use offered::{AS_OFFERED, the_identity_of, the_system_named};
+pub use on_this_machine::TheLoadersFiles;
 pub use refusing::{NotChanged, changed_said, starts_at_said};
 pub use saved::{EnvironmentBlock, LENGTH, NotAnEnvironmentBlock, SIGNATURE};
 pub use systems::{System, THE_WINDOWS_ENTRY, THE_WINDOWS_LOADER, THE_WINDOWS_LOADER_IN_A_PATH};

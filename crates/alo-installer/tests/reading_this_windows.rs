@@ -91,7 +91,7 @@ fn this_windows_answers_every_check_and_nothing_is_changed() {
         "{:?}",
         machine.asked_for
     );
-    assert_eq!(machine.asked_for.len(), 8, "{:?}", machine.asked_for);
+    assert_eq!(machine.asked_for.len(), 9, "{:?}", machine.asked_for);
 
     // What Windows answers without an administrator, it answers here.
     assert!(

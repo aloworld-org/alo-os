@@ -79,6 +79,38 @@ files =
   crates/alo-changing-updates/src/wanted.rs
 ```
 
+**A second verb, released to the same plan's task 17, owner-authorized
+2026-09-22 by [ADR 0066](../decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md).**
+That decision is explicit about where the change belongs: *Settings does not
+write `/boot`. It asks the broker, as it does for printers, the network and
+updates (ADR 0001 §2). The verb takes the identity of a system the menu already
+offers — not a path, not a string — so the closed, typed verb list stays closed
+and typed.* So `SystemVerb` gains `StartByDefault`, named `starting.default`,
+and the carriers each gain the line that says it is not theirs.
+
+Twelve verbs became thirteen, so `alo-letting-go`'s count test moves again — but
+that test is the machine-keeps-itself plan's, and **its release is recorded
+there**, not here. What the count protects is untouched either way: no name on
+the list begins `undo.`, and this verb is over which system starts, not over the
+written-down past.
+
+`alo-changing-printers` gains the same one line and **is not in the record
+below**, because no plan's header claims it: a release may only name a file its
+own plan owns, and naming one it does not would be this record saying something
+it has no standing to say. The task-16 record above leaves it out for the same
+reason. A crate nobody claims is refused by neither ownership check, which is
+why that line needs no release in order to land.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-installer-plan.md
+task = 17
+files =
+  crates/alo-broker/src/lib.rs
+  crates/alo-broker/src/verbs.rs
+  crates/alo-changing-drives/src/wanted.rs
+  crates/alo-changing-updates/src/wanted.rs
+```
+
 ## Tasks
 
 ### 1. The broker: a closed list, a door, and nothing else

@@ -1,8 +1,8 @@
 //! The broker's verbs: a closed list, and the only list there is.
 //!
-//! Twelve verbs across the operations ADR 0001 §2 calls genuinely privileged —
-//! printers, the network, updates, storage, and which system this machine
-//! starts next — and each takes exactly one argument of one of
+//! Thirteen verbs across the operations ADR 0001 §2 calls genuinely privileged
+//! — printers, the network, updates, storage, and which system this machine
+//! starts — and each takes exactly one argument of one of
 //! `crate::arguments`' two shapes. This file is the list's **shape**; none of
 //! the verbs is carried out by this crate. What carries each out is written by
 //! the task that owns it (`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`,
@@ -23,7 +23,8 @@
 //! all, **no verb runs anything, and none takes a path, a command, a device
 //! name or a line of configuration.**
 //!
-//! # The twelfth, and why it belongs on a list that had eleven
+//! # The twelfth and the thirteenth, and why they belong on a list that had
+//! eleven
 //!
 //! [`SystemVerb::RestartIntoWindows`] sets the firmware's next start to the
 //! Windows already on the disk, for **one** start, and leaves the machine's
@@ -34,6 +35,16 @@
 //! start-up entry **the firmware itself reported**, so nothing here names a
 //! loader, a path or a disk. And it **restarts nothing**: the restart is the
 //! person's own, afterwards, exactly as it is for the update verbs.
+//!
+//! [`SystemVerb::StartByDefault`] says which of the two systems on the machine
+//! starts when nobody chooses at the menu. The answer lives in **one** place —
+//! the loader's own saved default, which both systems read (ADR 0062, term 3)
+//! — and that place is root's, while a person in Settings is not.
+//! [ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)
+//! decided the road: a verb on this list, whose argument is **the identity of a
+//! system the menu already offers**, so nothing here names a file, a path or a
+//! loader either. It is the **default**, not the next start: the two are
+//! different acts, and they are two verbs on purpose.
 //!
 //! # The names are a contract
 //!
@@ -75,6 +86,9 @@ pub enum SystemVerb {
     /// Start the Windows this machine already has, once, at the next start —
     /// by the identity the firmware reported for its start-up entry.
     RestartIntoWindows(Identity),
+    /// Start this system whenever nobody chooses at the menu — by the identity
+    /// of one of the systems the menu already offers.
+    StartByDefault(Identity),
 }
 
 /// The compiler, walking every argument of every verb: nothing that is not
@@ -86,7 +100,7 @@ const _EVERY_ARGUMENT_IS_COPY: () = {
 };
 
 /// Every name on the list, in the order the enum declares the verbs.
-pub const EVERY_NAME: [&str; 12] = [
+pub const EVERY_NAME: [&str; 13] = [
     "printers.add",
     "printers.remove",
     "printers.set-default",
@@ -99,6 +113,7 @@ pub const EVERY_NAME: [&str; 12] = [
     "storage.mount",
     "storage.eject",
     "starting.windows-next",
+    "starting.default",
 ];
 
 impl SystemVerb {
@@ -118,6 +133,7 @@ impl SystemVerb {
             Self::MountDrive(_) => "storage.mount",
             Self::EjectDrive(_) => "storage.eject",
             Self::RestartIntoWindows(_) => "starting.windows-next",
+            Self::StartByDefault(_) => "starting.default",
         }
     }
 
@@ -135,7 +151,8 @@ impl SystemVerb {
             | Self::RollBack(identity)
             | Self::MountDrive(identity)
             | Self::EjectDrive(identity)
-            | Self::RestartIntoWindows(identity) => Argument::Identity(identity),
+            | Self::RestartIntoWindows(identity)
+            | Self::StartByDefault(identity) => Argument::Identity(identity),
             Self::SetRadio(switch) => Argument::Switch(switch),
         }
     }
@@ -161,6 +178,7 @@ impl SystemVerb {
             "storage.mount" => identity().map(Self::MountDrive),
             "storage.eject" => identity().map(Self::EjectDrive),
             "starting.windows-next" => identity().map(Self::RestartIntoWindows),
+            "starting.default" => identity().map(Self::StartByDefault),
             _ => None,
         }
     }
@@ -172,7 +190,7 @@ impl SystemVerb {
     /// [`EVERY_NAME`], so a verb added to the enum and not here is a test that
     /// fails rather than a verb nothing walked.
     #[must_use]
-    pub const fn one_of_each(identity: Identity, switch: Switch) -> [Self; 12] {
+    pub const fn one_of_each(identity: Identity, switch: Switch) -> [Self; 13] {
         [
             Self::AddPrinter(identity),
             Self::RemovePrinter(identity),
@@ -186,6 +204,7 @@ impl SystemVerb {
             Self::MountDrive(identity),
             Self::EjectDrive(identity),
             Self::RestartIntoWindows(identity),
+            Self::StartByDefault(identity),
         ]
     }
 }
@@ -248,6 +267,9 @@ mod tests {
             "storage.partition",
             "starting.windows",
             "starting.windows-next ",
+            "starting.default ",
+            "starting.defaults",
+            "starting.Default",
             "starting",
             "",
         ] {

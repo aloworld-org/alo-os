@@ -39,6 +39,7 @@
 //! is where it is tested; the program says so and ends.
 
 mod administrator;
+mod asking;
 mod bitlocker;
 mod checking;
 mod consent;
@@ -48,6 +49,7 @@ mod encoded;
 mod ended;
 mod entries;
 mod environment;
+mod fast_startup;
 mod found;
 mod identities;
 mod machine;
@@ -74,6 +76,7 @@ pub use environment::{
     EVERY_FILE_IT_NEEDS, NotStaged, Released, THE_CHOICE, THE_CHOICE_BEGINS, THE_DIRECTORY,
     THE_LIST, THE_RELEASED_LIST, TheEnvironment, sha256_hex,
 };
+pub use fast_startup::FastStartup;
 pub use found::Found;
 pub use identities::{DiskNumber, Entry, Letter, PartitionNumber};
 pub use machine::{BEFORE_RESTARTING, Ran, TheMachine};
@@ -87,5 +90,6 @@ pub use sizes::{GIB, MIB, THE_AREA, THE_LEAST_DISK, WINDOWS_KEEPS_FREE};
 pub use starting::Starting;
 pub use windows_volume::{NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
-    EVERY_REFUSAL, EVERY_WORD, PRESS_ENTER_TO_CLOSE, WordsError, declare_into, installer_words,
+    ASK_FAST_STARTUP, EVERY_REFUSAL, EVERY_WORD, FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE,
+    REMAINS_FAST_STARTUP_OFF, WordsError, declare_into, installer_words,
 };

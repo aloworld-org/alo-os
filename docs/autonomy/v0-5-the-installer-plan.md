@@ -258,9 +258,18 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** scheduled — **and no longer scheduled on hardware.** It installs
+**Status:** in progress — **and no longer scheduled on hardware.** It installs
 beside a real Windows in a virtual machine and walks the switching both ways,
 which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
+
+**Landed so far, 2026-09-22:** the Fast Startup question. The installer reads
+Windows' own `HiberbootEnabled`, says what it found like every other check,
+and — only when it is on — asks the owner's words after the consent and before
+anything is changed. *Turn off* sets the value to `0`, is journalled, and is
+put back if a later step fails; what could not be put back is said. No program
+of the installer may name `powercfg`, and a test holds that. Both answers go on
+with the install. Against the scripted Windows;
+**not yet walked on a real one**, whose base has Fast Startup off already.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
@@ -1201,7 +1210,65 @@ the in-system switches alone. **This part is built so it can be walked there.**
 
 ### 17. The default a machine starts at, changed by the person who owns it
 
-**Status:** ready. **Depends on:** 16.
+**Status:** **Done, 2026-09-22.** On the third PC
+(`updates/the-default-a-machine-starts-at-changed-by-the-person-who-owns-it.md`).
+**Nothing in it is ticked on a machine**, which is what this task's own
+constraint asks.
+
+**The decision a. asked for was already made, and it is not this task's.**
+[ADR 0066](../decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md),
+accepted 2026-09-23, weighs the alternatives this task lists and decides: one
+copy of the answer, on the partition both systems can read, and **a thirteenth
+member of `alo_broker::SystemVerb`** whose argument is the identity of a system
+the menu already offers. So this task is b. and c. — the road and the surface —
+built on that decision, with `alo-letting-go`'s count moved from twelve to
+thirteen in this change and the reason beside it.
+
+**What landed.** `starting.default`, the broker's thirteenth verb, carried out
+by `alo_brokerd::ByDefault` against a new `alo_starting::TheLoader` — three
+methods over bytes, so that nothing on the privileged side knows the shape of
+the loader's files. `alo_starting::TheLoadersFiles` is that trait over
+`/boot/grub2/`, writing the environment block **in place**: opened for writing,
+never truncated, never created, never written to a new file and renamed over,
+because the loader saves into that file from inside the loader and a file it
+can no longer reach is the last choice silently stopping being kept.
+`to_start_by_default(System)` is the person's half in Settings, and
+`starts_at_said` reads what is in the file at the moment it is shown. Five new
+sentences in the vocabulary, each with a translator's note.
+
+**The verb is not this plan's crate, and the change carries the records that
+say who released it.** `v0-5-the-broker-and-the-disk-plan.md` releases the
+broker's two files and the two carriers' lines to this task, and
+`v0-5-the-machine-keeps-itself-plan.md` releases the count test — both as
+owner-release blocks in their own headers, both naming ADR 0066 as the owner
+decision they record, and neither transferring a crate. The first handover of
+this task was refused for want of them: they existed in the working tree and
+were not among the files the handoff named, and the check reads what a task
+publishes. A release block is part of the change that uses it.
+
+**Three decisions a reader should know were made rather than found.**
+**(a) The identity is over what the *menu* offers, not over what the firmware
+reports** — it is the same on every machine, deliberately, because what is being
+named is *which of the two systems* and not *which entry on this computer*;
+whether this machine has that system at all is asked of the machine's own menu
+where the change is made. **(b) Whether the machine offers Windows is read off
+the generated menu file**, not from a setting beside it: a record of *there is a
+Windows here* kept anywhere else would be a second copy of a fact about
+somebody's disk, of exactly the kind term 3 refuses. **(c) The change is carried
+out even when the file already says so.** An execution that quietly did nothing
+would make what the record shows depend on a state nobody can see.
+
+**What it does not do.** The asking road — a surface issuing a token at the
+broker's door under `alo_broker::BY_HAND` — is **not** built here, which is the
+shape `updates.apply`, `storage.mount` and `starting.windows-next` already have:
+those crates produce the verb and the sentences, and something else asks. And no
+agent verb was declared — **but not for task 16's reason any more.** The promise
+it was waiting on now exists: the change that accepted ADR 0066 added a `[v0.5]`
+line to `docs/features.md`, and ADR 0066 §2 says an agent may ask for this under
+a grant. What stops it here is ownership — `alo-capability`, `alo-agentd` and
+`alo-by-hand` are named on this plan's own first page as lane A's — so it is
+**written down and passed across**: everything the agent verb needs on this side
+is in place, and declaring it is a small change in lane A's crates.
 
 **What is here.** The half of ADR 0062's third term that task 16 could not
 finish: **the road a person's choice travels to reach the loader's own file.**
@@ -1238,13 +1305,29 @@ how a person in Settings, who is not root, changes a file under `/boot` that is.
 **What is not here.** `crates/alo-installer` and `crates/alo-installing` are not
 edited: **who writes `custom.cfg` and the environment block onto a machine at
 install time, and what happens to them across a `bootupd` update**, is task 4's
-and belongs with the machine that has the virtual machine to walk it. Nor is the
+and belongs with the machine that has the virtual machine to walk it.
+
+**Two things the installer is owed, measured here and written down rather than
+built.** Both come out of the base itself, on the pinned digest, installed and
+booted — `docs/quirks.md` carries the measurement.
+
+1. **The EFI system partition has to be mounted at `/boot/efi`.** The base
+   mounts it nowhere: no `/etc/fstab` at all, no `/efi`, `/boot/efi` an empty
+   directory, and no vfat mounted anywhere on a booted machine. Until something
+   mounts it, the block is missing and this road refuses — correctly, and with a
+   sentence a person can read, but it refuses.
+2. **The block has to be created at install time**, with `grub2-editenv create`
+   or the same 1024 bytes by another name. GRUB's `save_env` writes a block *in
+   place* and cannot make one, and neither does anything here: a file that is
+   not there is not created, which is this crate's rule and its test. A machine
+   whose ESP has no block has nothing for either system to write. Nor is the
 *Restart into Windows* verb, which task 16 built and which is a different act: it
 sets the next start, and this one sets the default. Nothing here is ticked on a
 machine.
 
 - **Acceptance:** a person's change to which system the machine starts at
-  reaches `/boot/grub2/grubenv` and nothing else, under one approval, recorded
+  reaches the loader's one environment block on the EFI system partition
+  (`/boot/efi/EFI/fedora/grubenv`) and nothing else, under one approval, recorded
   either way; the test that finds no second copy of the answer still passes and
   now covers the new road; every refusal on the road is a sentence in the
   vocabulary with a translator's note; and if a member was added to
