@@ -195,7 +195,8 @@ function TheState([string]$why) {
       $_.DiskNumber, $_.PartitionNumber, $_.Offset, $_.Size, $_.DriveLetter, $_.GptType, $fs, $label)
   }
   $hiberboot = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled -ErrorAction SilentlyContinue).HiberbootEnabled
-  Say ("fast-startup: HiberbootEnabled=[{0}]" -f $hiberboot)
+  $hibernate = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name HibernateEnabled -ErrorAction SilentlyContinue).HibernateEnabled
+  Say ("fast-startup: HiberbootEnabled=[{0}] HibernateEnabled=[{1}]" -f $hiberboot, $hibernate)
   Say "--- bcdedit /enum firmware ---"
   & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | ForEach-Object { Say $_ }
   Say "--- the firmware's own entries ---"

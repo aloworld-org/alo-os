@@ -72,7 +72,15 @@ const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session 
 /// The value under it that Fast Startup is.
 const FAST_STARTUP: &str = "HiberbootEnabled";
 
-/// The value under it that says whether this computer hibernates at all.
+/// Where Windows keeps whether this computer hibernates at all.
+///
+/// **A different key from the one above**, measured on 2026-09-23: asked for
+/// `HibernateEnabled` under the session manager's key, Windows answers
+/// nothing, and a computer whose Fast Startup was on then read as *not known*
+/// and its person was never asked.
+const THE_HIBERNATION_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power";
+
+/// The value under that key that says whether this computer hibernates at all.
 ///
 /// Fast Startup is hibernation of the kernel's own session, so a computer
 /// whose hibernation is off does not do it whatever the value above says —
@@ -392,9 +400,10 @@ impl Program {
             // exactly that value and reads it back, so a write that did not
             // take is a step that failed rather than one believed.
             Self::ReadingFastStartup => format!(
-                "$power = Get-ItemProperty -Path '{THE_POWER_KEY}' -ErrorAction SilentlyContinue; \
-                 $value = $power.'{FAST_STARTUP}'; \
-                 $hibernation = $power.'{HIBERNATION}'; \
+                "$value = (Get-ItemProperty -Path '{THE_POWER_KEY}' -Name '{FAST_STARTUP}' \
+                   -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
+                 $hibernation = (Get-ItemProperty -Path '{THE_HIBERNATION_KEY}' \
+                   -Name '{HIBERNATION}' -ErrorAction SilentlyContinue).'{HIBERNATION}'; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
                    HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}); \
                    HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}) }})"
