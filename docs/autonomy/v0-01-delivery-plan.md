@@ -2136,6 +2136,36 @@ be a task whose half-done state nobody could read.
   cannot be ticked from a nested compositor** is that a person signing in on a
   machine arrives at a desktop; that is owed to a VM with a real display device
   or to the laptop, and is named beside the tick.
+#### What already exists for this task's nouns, read on 2026-09-23 before starting
+
+Taken before any code was written, because four tasks in two days turned out to
+be largely built already.
+
+- **Nothing outside `crates/alo-shell` constructs a `DesktopFrame`.** The only
+  constructor anywhere is `examples/desktop_check.rs`, the display probe. The
+  gap this task names is real and it is the whole of it.
+- **`frame_pictures` is already backend-independent.** It turns a
+  `DesktopFrame` into every picture one frame needs — the dock and windows, the
+  egress indicator, the record window, a question — with no backend in sight. It
+  is reused, not rewritten.
+- **The direct seam carries one scene and no layers.** `Nested::submit_with_desktop`
+  builds a `NativeLayers` with four layers beyond the scene; task 38's
+  `ScenePainter::paint` takes a single `Option<NativeScene>` and
+  `offscreen::render_native_scanout` hardcodes the rest to [`None`]. Widening
+  that seam from one scene to a `NativeLayers` is this task's first piece, and
+  it is the same shape of change as the one task 38 landed.
+- **Every native layer paints through `crate::painted::paint` — solids and
+  inked, nothing imported.** The dock, the status area with the egress
+  indicator, the record window, the approval surface and Settings are all flat
+  rectangles and text. So the software painter draws the **whole** desktop, and
+  the renderer wall task 38 found does not block this task's acceptance at all.
+  It blocks a client application's window, which this task does not claim.
+- **Who starts it is already decided by this task's own text** — *started by the
+  session* — and that is the session's unit, in `image/`. So the same wall task
+  40 exists for stands between this task and its proof on a machine: everything
+  but *the session started it* can be built and shown without an image; that
+  clause cannot.
+
 - **What task 38 found that this task has to answer.** The dock, the status area
   and the desktop windows are this shell's own rectangles and text, so the
   software painter task 38 landed draws them exactly as it draws the sign-in
