@@ -92,8 +92,17 @@ alo-strings = { path = "../alo-strings" }
 # The turn a question was asked inside, borrowed for the length of one call so
 # an answer reaches the one road that carries a change out and records it.
 alo-turn = { path = "../alo-turn" }
+# The engine the sign-in screen is drawn with on a machine whose graphics card
+# this shell has no renderer on. Smithay's `PixmanRenderer` is a safe API over
+# it, which is why it is here at all: every road to a GLES renderer runs through
+# an `unsafe fn` and `unsafe_code` is forbidden above, so the engine is rented
+# the way `signal-hook` and `getrandom` are. Pinned to the version Smithay's own
+# `renderer_pixman` resolves to; named here only because `Offscreen` must be
+# asked for a `pixman::Image` by its type. Reached only by
+# `crates/alo-shell/src/software_scanout.rs`.
+pixman = "=0.2.1"
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
-smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop"] }
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 thiserror.workspace = true
 # The accessibility bus the tree is answered on. The bus is the rented

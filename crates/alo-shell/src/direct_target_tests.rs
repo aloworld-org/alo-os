@@ -233,10 +233,7 @@ fn the_direct_backend_takes_the_sign_in_screen_and_names_what_it_refuses() {
     let refused = RenderError::SceneNotOnThisBackend {
         scene: "the lock screen",
     };
-    assert!(
-        refused.to_string().contains("the lock screen"),
-        "{refused}"
-    );
+    assert!(refused.to_string().contains("the lock screen"), "{refused}");
     assert!(
         !refused.to_string().contains("native controls"),
         "a scene refusal borrowed the sentence for a backend that draws none: {refused}"

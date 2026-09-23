@@ -40,7 +40,12 @@ impl Server {
 }
 
 /// Extract evdev codes (not Smithay's already-offset XKB keycodes).
-fn translate(event: &Event) -> Result<Option<DirectSeatEvent>, InputError> {
+///
+/// Shared with `crate::direct_sign_in`, which takes the keys out of the same
+/// events and hands them to a screen instead of to a client: one reading of
+/// what libinput said, so a machine cannot disagree with itself about which key
+/// a person pressed depending on whether they are signed in.
+pub(crate) fn translate(event: &Event) -> Result<Option<DirectSeatEvent>, InputError> {
     let pointer = match event {
         Event::Device(DeviceEvent::Removed(_)) => return Ok(Some(DirectSeatEvent::Removed)),
         Event::Keyboard(KeyboardEvent::Key(key)) => {

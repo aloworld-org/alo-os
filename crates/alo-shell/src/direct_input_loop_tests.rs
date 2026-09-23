@@ -42,6 +42,11 @@ impl FrameTarget for Target {
         }
     }
 }
+impl crate::presentation::NativeTarget for Target {}
+/// A stand-in display refuses every one of this shell's own screens, by the
+/// sentence `NativeTarget` refuses them with by default. These tests are about
+/// the loop's ordering, and a fake that drew a sign-in screen would be proving
+/// something about the fake.
 impl LoopTarget for Target {
     fn check(&self) -> Result<(), RenderError> {
         Ok(())

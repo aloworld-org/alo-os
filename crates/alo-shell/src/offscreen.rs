@@ -163,7 +163,7 @@ pub(crate) fn render_native_scanout(
 }
 
 /// Refuse extents before reaching upstream allocation and signed byte arithmetic.
-fn validate_size(size: Size<i32, Physical>) -> Result<(), RenderError> {
+pub(crate) fn validate_size(size: Size<i32, Physical>) -> Result<(), RenderError> {
     if size.w <= 0 || size.h <= 0 {
         return Err(RenderError::EmptySize);
     }

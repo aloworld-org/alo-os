@@ -81,6 +81,30 @@ impl FrameTarget for DirectTarget<'_, '_> {
     }
 }
 
+impl crate::presentation::NativeTarget for DirectTarget<'_, '_> {
+    /// The same seam the shared target has, reached through the public one.
+    ///
+    /// `DirectTarget` is the GLES display this crate has always exported;
+    /// nothing about a native scene is decided here, so it hands the whole
+    /// question — which scenes are wired, and what a refusal is called — to the
+    /// one implementation that answers it.
+    fn submit_native_layers(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[Popup],
+        cursor: &Cursor,
+        scene: crate::scene_native::NativeScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        crate::presentation::NativeTarget::submit_native_layers(
+            &mut self.target,
+            roots,
+            popups,
+            cursor,
+            scene,
+        )
+    }
+}
+
 /// Shutdown preserves both a post-commit cleanup error and any disable failure.
 #[derive(Debug, thiserror::Error)]
 #[error("direct target retirement failed: {errors:?}")]
@@ -232,7 +256,9 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
         if self.halted {
             return Err(RenderError::DirectHalted);
         }
-        let prepared = self.painter.paint(self.size(), roots, popups, cursor, scene)?;
+        let prepared = self
+            .painter
+            .paint(self.size(), roots, popups, cursor, scene)?;
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;
@@ -255,9 +281,7 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
     }
 }
 
-impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarget
-    for Target<R, D>
-{
+impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarget for Target<R, D> {
     fn submit_native_layers(
         &mut self,
         roots: &[WlSurface],
@@ -286,7 +310,9 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::presentation::NativeTarge
 /// rasters — and so adding a scene to the enum makes this stop compiling, which
 /// is the reminder that a new surface is invisible on a machine until somebody
 /// wires it here and looks at it.
-pub(crate) const fn not_wired_yet(scene: &crate::scene_native::NativeScene<'_>) -> Option<&'static str> {
+pub(crate) const fn not_wired_yet(
+    scene: &crate::scene_native::NativeScene<'_>,
+) -> Option<&'static str> {
     use crate::scene_native::NativeScene;
     match scene {
         // The one this backend is wired for. **Not yet seen on a real
