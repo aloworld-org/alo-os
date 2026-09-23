@@ -6403,3 +6403,29 @@ optional data added; Windows lists such a variable as a *Firmware Application*
 disk's partition table, rather than relying on Windows to correct it; a
 firmware matches a hard-drive node by slot and signature.
 **Date:** 2026-09-22.
+
+### A test that writes a program and then runs it is refused it, *Text file busy*
+**Version:** `alo-software`'s
+`road::tests::the_program_really_receives_the_credential_for_the_proxy_the_file_named`,
+Rust 1.98 on Linux 6.6 under WSL 2, `cargo test --workspace` on the development
+PC, 2026-09-22. **Whose:** `alo-software` is not this lane's crate; this entry
+is the report, and the fix is its owner's.
+**Behaviour:** the test writes `tool.sh` with `File::create`, drops the handle,
+sets its mode to `0o700` and starts it. On one gate run of `main` it failed:
+
+```
+the program answers: DidNotAnswer { said: "/tmp/alo-software-road-really-received-tool/tool.sh could not be started: Text file busy (os error 26)" }
+test result: FAILED. 85 passed; 1 failed
+```
+
+Run again on the same tree it passed three times alone and once in its whole
+crate's suite, so this is a race and not a broken test. `ETXTBSY` is the kernel
+refusing to execute a file that some process still holds open for writing, and
+the suite runs its tests in parallel: another test in the same binary holding a
+descriptor to this file across a spawn is the shape that explains it. That was
+not isolated here.
+**Our response:** none from this lane, and nothing was changed in that crate.
+It is written down so that the next worker who meets a red gate on this test
+knows it has been seen, on what, and that a re-run passes — the workflow's
+*a flaky test is re-run three times* applies.
+**Date:** 2026-09-22.

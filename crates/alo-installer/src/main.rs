@@ -24,11 +24,18 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installer::{
-        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, TheMachine, install, installer_words,
+        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Switched, THE_SWITCHS_WORD,
+        TheMachine, install, installer_words, restart_into_alo_os,
     };
     use alo_strings::{Filling, Strings};
 
     /// Install, and say how it ended in the exit code as well as on the screen.
+    ///
+    /// **Started with `THE_SWITCHS_WORD` as its only argument it does one other
+    /// thing instead**: it offers to restart this computer into alo OS. That is
+    /// how the copy the installer leaves behind is started, a start with no
+    /// argument is an install as it always was, and any other argument is
+    /// refused rather than guessed at.
     pub(crate) fn run() -> ExitCode {
         let vocabulary = match installer_words() {
             Ok(vocabulary) => vocabulary,
@@ -45,6 +52,28 @@ mod running {
                 return ExitCode::FAILURE;
             }
         };
+        let arguments: Vec<String> = std::env::args().skip(1).collect();
+        match arguments.as_slice() {
+            [] => {}
+            [one] if one == THE_SWITCHS_WORD => {
+                let switched = restart_into_alo_os(&mut machine, &strings);
+                if switched == (Switched::Restarting { restarted: true }) {
+                    return ExitCode::SUCCESS;
+                }
+                let _read =
+                    machine.ask(&strings.say(&PRESS_ENTER_TO_CLOSE.key(), &Filling::nothing()));
+                return match switched {
+                    Switched::Restarting { .. } | Switched::NotAgreed => ExitCode::SUCCESS,
+                    Switched::NotThere | Switched::NotRead | Switched::NotSet => ExitCode::FAILURE,
+                };
+            }
+            _ => {
+                eprintln!(
+                    "alo-installer: it takes no argument, or {THE_SWITCHS_WORD} and nothing else."
+                );
+                return ExitCode::FAILURE;
+            }
+        }
         let ended = install(&mut machine, &strings, Released::this_build());
         if ended == (Ended::Staged { restarted: true }) {
             return ExitCode::SUCCESS;

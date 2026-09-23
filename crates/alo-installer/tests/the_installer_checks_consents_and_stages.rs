@@ -73,6 +73,8 @@ fn kind(program: &Program) -> &'static str {
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
         Program::ReadingFastStartup => "fast-startup",
+        Program::MakingTheShortcut => "shortcut",
+        Program::RemovingWhatWasLeft => "remove-what-was-left",
         Program::TurningFastStartupOff => "fast-startup-off",
         Program::TurningFastStartupBackOn { .. } => "fast-startup-back-on",
         Program::Shrinking { .. } => "shrink",
@@ -130,6 +132,11 @@ impl Scripted {
             files.insert(beneath(&directory, inside), bytes);
         }
         files.insert(directory.join(THE_LIST), list.clone().into_bytes());
+        // The program itself, which staging copies to where a person finds it.
+        files.insert(
+            Path::new(DOWNLOADED).join("alo-installer.exe"),
+            b"the bytes of the installer".to_vec(),
+        );
         let released = Released::of(Some(&sha256_hex(list.as_bytes())));
 
         let answers = BTreeMap::from([
@@ -159,6 +166,11 @@ impl Scripted {
             // no test here answers it by accident; the tests that are about
             // the question turn it on (`fast_startup_is_asked_about`).
             ("fast-startup", printed(r#"{"HiberbootEnabled":0}"#)),
+            (
+                "shortcut",
+                printed(r#"{"Shortcut":"C:\\ProgramData\\Restart into alo OS.lnk"}"#),
+            ),
+            ("remove-what-was-left", printed("")),
             ("fast-startup-off", printed(r#"{"HiberbootEnabled":0}"#)),
             ("fast-startup-back-on", printed(r#"{"HiberbootEnabled":1}"#)),
             ("shrink", printed("")),
@@ -277,6 +289,10 @@ impl TheMachine for Scripted {
         Ok(PathBuf::from(DOWNLOADED))
     }
 
+    fn this_program(&mut self) -> std::io::Result<PathBuf> {
+        Ok(PathBuf::from(DOWNLOADED).join("alo-installer.exe"))
+    }
+
     fn read(&mut self, file: &Path) -> std::io::Result<Vec<u8>> {
         let bytes = self
             .files
@@ -370,6 +386,7 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
             "shrink",
             "make-area",
             "prepare-area",
+            "shortcut",
             "write-entry",
             "list-entry",
             "take-letter",
@@ -750,18 +767,38 @@ fn a_failure_at_each_step_puts_back_everything_before_it() {
         ("shrink", vec![]),
         ("make-area", vec!["grow-back"]),
         ("prepare-area", vec!["remove-area", "grow-back"]),
-        ("write-entry", vec!["remove-area", "grow-back"]),
+        ("shortcut", vec!["remove-area", "grow-back"]),
+        (
+            "write-entry",
+            vec!["remove-what-was-left", "remove-area", "grow-back"],
+        ),
         (
             "list-entry",
-            vec!["remove-entry", "remove-area", "grow-back"],
+            vec![
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
         (
             "take-letter",
-            vec!["remove-entry", "remove-area", "grow-back"],
+            vec![
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
         (
             "next",
-            vec!["forget-next", "remove-entry", "remove-area", "grow-back"],
+            vec![
+                "forget-next",
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
     ];
     for (failing, put_back) in every_step {
@@ -896,6 +933,134 @@ fn checking_the_computer_changes_nothing() {
     assert!(!machine.changed_anything());
     assert_eq!(found.starting.secure_boot, Some(false));
     assert_eq!(found.memory, Some(34_190_917_632));
+}
+
+// ---------------------------------------------------------------------------
+// The way back into alo OS, from inside Windows.
+// ---------------------------------------------------------------------------
+
+/// The firmware's list on a computer alo OS was installed onto.
+const ENTRIES_WITH_ALO_OS: &str = "identifier              {bootmgr}\n\
+     description             Windows Boot Manager\n\
+     \n\
+     identifier              {6b1d5c2a-0f3e-11ef-9a1b-00155d012345}\n\
+     description             alo OS\n";
+
+/// A machine whose firmware lists alo OS, and whose person types this.
+fn asked_to_switch(typed: &str) -> (Scripted, Released) {
+    let (mut machine, released) = Scripted::installable();
+    machine = machine.answering("entries", ENTRIES_WITH_ALO_OS);
+    machine.typed = format!("{typed}\n");
+    (machine, released)
+}
+
+/// **The switch sets the next start and nothing else**, once the person has
+/// typed the word — never the order, never the default, no disk.
+#[test]
+fn the_way_back_sets_the_next_start_and_nothing_else() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine;
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(
+        switched,
+        alo_installer::Switched::Restarting { restarted: true },
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(machine.kinds(), ["entries", "next", "restart"]);
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_WILL_RESTART))
+    );
+}
+
+/// **A person who types nothing changes nothing.**
+#[test]
+fn the_way_back_asks_first_and_takes_no_for_an_answer() {
+    for typed in ["", "   ", "yes", "alo OS", "restart now"] {
+        let (machine, _) = asked_to_switch(typed);
+        let mut machine = machine;
+        let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+        assert_eq!(switched, alo_installer::Switched::NotAgreed, "{typed:?}");
+        assert_eq!(machine.kinds(), ["entries"], "{typed:?}");
+        assert!(!machine.changed_anything(), "{typed:?}");
+        assert!(
+            machine
+                .said
+                .contains(&sentence(alo_installer::SWITCH_NOT_AGREED)),
+            "{typed:?}"
+        );
+    }
+}
+
+/// **With no entry for alo OS it says so and changes nothing**, and the same
+/// when the firmware's list could not be read at all.
+#[test]
+fn the_way_back_says_when_there_is_nothing_to_start() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.answering(
+        "entries",
+        "identifier              {bootmgr}\ndescription             Windows Boot Manager\n",
+    );
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotThere);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_THERE))
+    );
+
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.failing("entries");
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotRead);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_READ))
+    );
+}
+
+/// **A next start that could not be set is forgotten rather than left half
+/// set**, and the computer is not restarted.
+#[test]
+fn a_next_start_that_failed_is_forgotten_and_said() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.failing("next");
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotSet);
+    assert_eq!(machine.kinds(), ["entries", "next", "forget-next"]);
+    assert!(!machine.kinds().contains(&"restart"));
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_SET))
+    );
+}
+
+/// **The installer leaves the way back where a person finds it**: its own
+/// bytes under Windows' place for programs, and a shortcut that starts them
+/// with the switch's word.
+#[test]
+fn the_installer_leaves_a_copy_of_itself_and_a_shortcut() {
+    let (machine, released) = Scripted::installable();
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    let left = Path::new(alo_installer::THE_PROGRAMS_HOME).join(alo_installer::THE_PROGRAMS_NAME);
+    assert_eq!(
+        machine.files.get(&left).map(Vec::as_slice),
+        Some(b"the bytes of the installer".as_slice())
+    );
+    assert!(machine.kinds().contains(&"shortcut"));
+    let script = Program::MakingTheShortcut.script().unwrap();
+    assert!(script.contains(alo_installer::THE_SWITCHS_WORD), "{script}");
+    assert!(
+        script.contains(alo_installer::THE_PROGRAMS_NAME),
+        "{script}"
+    );
 }
 
 // ---------------------------------------------------------------------------

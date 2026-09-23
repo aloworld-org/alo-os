@@ -86,6 +86,8 @@ pub enum Remains {
     TheNextStart,
     /// Fast Startup was turned off at the person's word and not put back.
     FastStartupOff,
+    /// The copy of this program left in place could not be taken away again.
+    TheWayBack,
 }
 
 impl Refusal {
@@ -145,6 +147,7 @@ impl Remains {
             Self::TheEntry => (words::REMAINS_THE_ENTRY, Filling::nothing()),
             Self::TheNextStart => (words::REMAINS_THE_NEXT_START, Filling::nothing()),
             Self::FastStartupOff => (words::REMAINS_FAST_STARTUP_OFF, Filling::nothing()),
+            Self::TheWayBack => (words::REMAINS_THE_WAY_BACK, Filling::nothing()),
         }
     }
 }

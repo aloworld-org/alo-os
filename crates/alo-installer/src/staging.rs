@@ -71,6 +71,8 @@ enum Made {
     AnEntryNotIdentified,
     /// The next start was set.
     TheNextStart,
+    /// The copy of this program and its shortcut were left in place.
+    TheWayBack,
     /// Fast Startup was turned off, from this value.
     FastStartupOff {
         /// What Windows' own value held before it was turned off.
@@ -262,6 +264,28 @@ fn steps(
         }
     }
 
+    // The way back in, left where a person finds it: a copy of this program,
+    // which does one other thing when it is started with the switch's own word
+    // (`crate::switching`), and a shortcut in the Start menu. A copy rather
+    // than a second program, so there is nothing else to build, to sign or to
+    // keep in step with this one.
+    say(
+        machine,
+        strings,
+        words::LEAVING_THE_WAY_BACK,
+        &Filling::nothing(),
+    );
+    let mine = machine.this_program().map_err(|_| ())?;
+    let bytes = machine.read(&mine).map_err(|_| ())?;
+    let left = std::path::Path::new(crate::program::THE_PROGRAMS_HOME)
+        .join(crate::program::THE_PROGRAMS_NAME);
+    machine.write(&left, &bytes).map_err(|_| ())?;
+    if machine.read(&left).map_err(|_| ())? != bytes {
+        return Err(());
+    }
+    succeeded(machine, &Program::MakingTheShortcut)?;
+    journal.push(Made::TheWayBack);
+
     say(
         machine,
         strings,
@@ -334,6 +358,11 @@ fn put_back(
             Made::FastStartupOff { was } => {
                 if succeeded(machine, &Program::TurningFastStartupBackOn { was }).is_err() {
                     remains.push(Remains::FastStartupOff);
+                }
+            }
+            Made::TheWayBack => {
+                if succeeded(machine, &Program::RemovingWhatWasLeft).is_err() {
+                    remains.push(Remains::TheWayBack);
                 }
             }
             Made::TheNextStart => {

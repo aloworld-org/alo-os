@@ -51,6 +51,21 @@ pub const BASIC_DATA: &str = "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}";
 /// What the entry is called among the systems a computer can start.
 pub const THE_ENTRYS_NAME: &str = "alo OS";
 
+/// Where the copy of this program that offers *Restart into alo OS* is left.
+///
+/// Under Windows' own place for installed programs, in a directory of its own,
+/// so a person looking for it finds it where they look for everything else and
+/// *remove alo OS* has one directory to take away.
+pub const THE_PROGRAMS_HOME: &str = "C:\\Program Files\\alo OS";
+
+/// What the copy is called there.
+pub const THE_PROGRAMS_NAME: &str = "alo-restart-into-alo-os.exe";
+
+/// The shortcut a person starts it from, in the Start menu of every account on
+/// the computer.
+pub const THE_SHORTCUT: &str =
+    "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Restart into alo OS.lnk";
+
 /// Where Windows keeps the setting behind Fast Startup.
 const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
 
@@ -88,6 +103,15 @@ pub enum Program {
     ListingTheStartEntries,
     /// Whether Windows' Fast Startup is on, from Windows' own value.
     ReadingFastStartup,
+
+    /// Make the shortcut that starts the copy left in place, and read it back.
+    ///
+    /// Its target and its argument are [`THE_PROGRAMS_HOME`],
+    /// [`THE_PROGRAMS_NAME`] and the switch's own word, which this crate holds:
+    /// there is no path and no line of text a caller could put into it.
+    MakingTheShortcut,
+    /// Take away the copy left in place, and its shortcut.
+    RemovingWhatWasLeft,
 
     /// Turn Windows' Fast Startup off, and read the value back.
     ///
@@ -365,6 +389,28 @@ impl Program {
                    -Name '{FAST_STARTUP}' -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
                    HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}) }})"
+            ),
+            // The shortcut is made through Windows' own shell object, which is
+            // how a shortcut is made on Windows, and read back: a shortcut that
+            // was not written is a step that failed.
+            Self::MakingTheShortcut => format!(
+                "New-Item -ItemType Directory -Path '{THE_PROGRAMS_HOME}' -Force | Out-Null; \
+                 $shell = New-Object -ComObject WScript.Shell; \
+                 $shortcut = $shell.CreateShortcut('{THE_SHORTCUT}'); \
+                 $shortcut.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $shortcut.Arguments = '{}'; \
+                 $shortcut.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $shortcut.Description = 'Restart this computer into alo OS'; \
+                 $shortcut.Save(); \
+                 if (-not (Test-Path -LiteralPath '{THE_SHORTCUT}')) {{ throw 'no shortcut' }}; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ Shortcut = '{THE_SHORTCUT}' }})",
+                crate::switching::THE_SWITCHS_WORD
+            ),
+            Self::RemovingWhatWasLeft => format!(
+                "Remove-Item -LiteralPath '{THE_SHORTCUT}' -Force -ErrorAction SilentlyContinue; \
+                 Remove-Item -LiteralPath '{THE_PROGRAMS_HOME}' -Recurse -Force \
+                   -ErrorAction SilentlyContinue; \
+                 if (Test-Path -LiteralPath '{THE_SHORTCUT}') {{ throw 'the shortcut is still there' }}"
             ),
             Self::TurningFastStartupOff => Self::setting_fast_startup(0),
             Self::TurningFastStartupBackOn { was } => Self::setting_fast_startup(*was),
@@ -678,6 +724,8 @@ mod tests {
         let letter = Letter::of("E").unwrap();
         let (disk, partition) = (DiskNumber(0), PartitionNumber(3));
         vec![
+            Program::MakingTheShortcut,
+            Program::RemovingWhatWasLeft,
             Program::TurningFastStartupOff,
             Program::TurningFastStartupBackOn { was: 1 },
             Program::Shrinking {

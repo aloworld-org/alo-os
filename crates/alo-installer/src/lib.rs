@@ -63,6 +63,7 @@ mod sequence;
 mod sizes;
 mod staging;
 mod starting;
+mod switching;
 mod windows_volume;
 mod words;
 
@@ -83,13 +84,19 @@ pub use machine::{BEFORE_RESTARTING, Ran, TheMachine};
 pub use memory::MADE_FOR;
 #[cfg(windows)]
 pub use on_windows::OnThisMachine;
-pub use program::{BASIC_DATA, Program, THE_ENTRYS_NAME, THE_LOADER, Tool};
+pub use program::{
+    BASIC_DATA, Program, THE_ENTRYS_NAME, THE_LOADER, THE_PROGRAMS_HOME, THE_PROGRAMS_NAME,
+    THE_SHORTCUT, Tool,
+};
 pub use security_chip::SecurityChip;
 pub use sequence::install;
 pub use sizes::{GIB, MIB, THE_AREA, THE_LEAST_DISK, WINDOWS_KEEPS_FREE};
 pub use starting::Starting;
+pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use windows_volume::{NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
-    ASK_FAST_STARTUP, EVERY_REFUSAL, EVERY_WORD, FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE,
-    REMAINS_FAST_STARTUP_OFF, WordsError, declare_into, installer_words,
+    ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, EVERY_REFUSAL, EVERY_WORD,
+    FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE, REMAINS_FAST_STARTUP_OFF, SWITCH_AGREED,
+    SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART,
+    WordsError, declare_into, installer_words,
 };

@@ -35,6 +35,33 @@ pub enum Told {
     KillAfterStep(u8),
     /// Run the installer all the way, and let it restart the computer.
     TheWholeRoad,
+    /// Run the installer, kill it once its sixth step has happened — the entry
+    /// written and the area's letter taken away, and no next start set — and
+    /// then start the way back in that it left, and agree to it.
+    ///
+    /// The paths, the argument and the word to type travel in the instruction
+    /// rather than being written into the guest's script, so what the guest
+    /// starts is what this crate says it left (`alo_installer`).
+    SwitchingIntoAloOs {
+        /// Where the copy was left.
+        left_at: String,
+        /// What it is called there.
+        left_as: String,
+        /// The shortcut a person starts it from.
+        shortcut: String,
+        /// The argument that makes it the switch.
+        argument: String,
+        /// The word that agrees to the restart.
+        agree: String,
+    },
+    /// Run the installer, answer the Fast Startup question with these words,
+    /// and stop it once the answer has been acted on — before the disk is
+    /// changed, which is what the question is asked before.
+    AnsweringFastStartup {
+        /// What the person types at the question — one of the installer's own
+        /// two answers.
+        answer: String,
+    },
 }
 
 impl Told {
@@ -47,6 +74,19 @@ impl Told {
             Self::KillAtTheConsent => "mode=kill-at-consent\nstep=0\n".to_owned(),
             Self::KillAfterStep(step) => format!("mode=kill-at-step\nstep={step}\n"),
             Self::TheWholeRoad => "mode=whole-road\nstep=0\n".to_owned(),
+            Self::SwitchingIntoAloOs {
+                left_at,
+                left_as,
+                shortcut,
+                argument,
+                agree,
+            } => format!(
+                "mode=switch\nstep=6\nleft-at={left_at}\nleft-as={left_as}\n\
+                 shortcut={shortcut}\nargument={argument}\nagree={agree}\n"
+            ),
+            Self::AnsweringFastStartup { answer } => {
+                format!("mode=answer-fast-startup\nstep=0\nanswer={answer}\n")
+            }
         }
     }
 }
@@ -107,6 +147,21 @@ pub fn the_settle_disc(yard: &Path) -> PathBuf {
     std::fs::create_dir_all(&inside).expect("somewhere for the settling");
     write_for_windows(&inside.join("walk.cmd"), guest::SETTLING);
     an_iso(yard, &tree, "settle.iso", "ALOWALK")
+}
+
+/// Build the disc that makes the second base from the settled one: hibernation
+/// on and Fast Startup on.
+///
+/// # Panics
+/// When the disc cannot be written.
+#[must_use]
+pub fn the_fast_startup_disc(yard: &Path) -> PathBuf {
+    let tree = yard.join("fast-startup");
+    let _ = std::fs::remove_dir_all(&tree);
+    let inside = tree.join(WHERE_THE_INSTRUCTION_IS);
+    std::fs::create_dir_all(&inside).expect("somewhere for the variant");
+    write_for_windows(&inside.join("walk.cmd"), guest::TURNING_FAST_STARTUP_ON);
+    an_iso(yard, &tree, "fast-startup.iso", "ALOWALK")
 }
 
 /// A file Windows reads, with the line endings Windows' own shell wants.

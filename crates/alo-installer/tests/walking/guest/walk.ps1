@@ -194,6 +194,8 @@ function TheState([string]$why) {
     Say ("partition {0}/{1}: offset={2} size={3} letter=[{4}] type={5} fs=[{6}] label=[{7}]" -f `
       $_.DiskNumber, $_.PartitionNumber, $_.Offset, $_.Size, $_.DriveLetter, $_.GptType, $fs, $label)
   }
+  $hiberboot = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled -ErrorAction SilentlyContinue).HiberbootEnabled
+  Say ("fast-startup: HiberbootEnabled=[{0}]" -f $hiberboot)
   Say "--- bcdedit /enum firmware ---"
   & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | ForEach-Object { Say $_ }
   Say "--- the firmware's own entries ---"
@@ -352,6 +354,58 @@ if ($null -eq $offered) { Say 'FAIL: it asked, and never named a disk to type' }
 Say "typing: [$offered]"
 $process.StandardInput.WriteLine($offered)
 $process.StandardInput.Flush()
+
+# The one question after the consent: Fast Startup, asked only on a computer
+# whose Fast Startup is on (ADR 0064 term 9). The answer arrives in the
+# instruction, and lines are read until the question is asked or until staging
+# has plainly begun, so a boot with nothing to answer waits for nothing.
+$answer = ''
+if ($instruction.ContainsKey('answer')) { $answer = $instruction['answer'] }
+if ($answer -ne '') {
+  $answered = $false
+  while (-not $process.HasExited) {
+    $line = $process.StandardOutput.ReadLine()
+    if ($null -eq $line) { break }
+    $said.Add($line)
+    Say "installer: $line"
+    if ($line -match 'and press Enter') {
+      Say "typing: [$answer]"
+      $process.StandardInput.WriteLine($answer)
+      $process.StandardInput.Flush()
+      $answered = $true
+      break
+    }
+    if ($line -match 'Shrinking|being left on') { break }
+  }
+  if (-not $answered) { Say 'the installer never asked about Fast Startup' }
+}
+
+if ($mode -eq 'answer-fast-startup') {
+  # The answer is acted on before anything on a disk changes, so this boot ends
+  # at the first sentence after it: the installer says what it did about Fast
+  # Startup, and the sentence after that is staging's first. Matched on the
+  # order rather than on any English: measured on 2026-09-23, matching the
+  # shrink's own words missed them and the installer ran to its restart.
+  $saidAboutFastStartup = $false
+  while (-not $process.HasExited) {
+    $line = $process.StandardOutput.ReadLine()
+    if ($null -eq $line) { break }
+    $said.Add($line)
+    Say "installer: $line"
+    if ($line -match 'Fast Startup') { $saidAboutFastStartup = $true; continue }
+    if ($saidAboutFastStartup) { break }
+  }
+  Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+  Say 'stopped the installer once the answer had been acted on'
+  Start-Sleep -Seconds 2
+  TheState 'after the answer about Fast Startup'
+  $after = Manifest 'C:\alo\manifest-after.txt'
+  Say "manifest-after: digest=$($after.Digest) files=$($after.Count)"
+  if ($before.Digest -eq $after.Digest) { Say 'THE WINDOWS FILES ARE UNCHANGED' } else { Say 'THE WINDOWS FILES CHANGED' }
+  UnmountTheStartPartition
+  Say 'ALOWALK-DONE answer-fast-startup'
+  return
+}
 
 if ($mode -eq 'whole-road') {
   $rest = $process.StandardOutput.ReadToEnd()
@@ -564,4 +618,43 @@ if ($instruction['probe']) {
   $probeFile = "$Medium\alo-walk\probe-$($instruction['probe']).ps1"
   if (Test-Path $probeFile) { . $probeFile } else { Say "probe: there is no $probeFile" }
 }
+# The way back in, started as a person starts it: the copy the installer left
+# in Windows' own place for programs, with the switch's word as its argument,
+# and the word typed at its question. It sets the firmware's next start and
+# restarts this computer, so nothing after this line runs.
+if ($mode -eq 'switch') {
+  $left = Join-Path $instruction['left-at'] $instruction['left-as']
+  Say "the way back: $left"
+  if (-not (Test-Path -LiteralPath $left)) {
+    Say 'FAIL: the installer left no way back'
+  } else {
+    $shortcut = $instruction['shortcut']
+    Say ("the shortcut: {0} exists={1}" -f $shortcut, (Test-Path -LiteralPath $shortcut))
+    $switch = New-Object System.Diagnostics.ProcessStartInfo
+    $switch.FileName = $left
+    $switch.Arguments = $instruction['argument']
+    $switch.UseShellExecute = $false
+    $switch.RedirectStandardInput = $true
+    $switch.RedirectStandardOutput = $true
+    $switch.RedirectStandardError = $true
+    $running = [System.Diagnostics.Process]::Start($switch)
+    Say "the way back's pid: $($running.Id)"
+    $typed = $false
+    while (-not $running.HasExited -or -not $running.StandardOutput.EndOfStream) {
+      $line = $running.StandardOutput.ReadLine()
+      if ($null -eq $line) { break }
+      Say "switch: $line"
+      if (-not $typed -and $line -match 'and press Enter') {
+        Say "typing: [$($instruction['agree'])]"
+        $running.StandardInput.WriteLine($instruction['agree'])
+        $running.StandardInput.Flush()
+        $typed = $true
+      }
+    }
+    Say "the way back exited: $($running.WaitForExit(120000)); code=$($running.ExitCode)"
+  }
+  Say 'ALOWALK-DONE switch'
+  return
+}
+
 Say "ALOWALK-DONE kill-at-step $step"

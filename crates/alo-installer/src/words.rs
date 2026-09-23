@@ -662,6 +662,109 @@ pub const REMAINS_FAST_STARTUP_OFF: Word = Word::saying(
      Startup is the name Windows' own settings use.",
 );
 
+/// The copy left in place is still there.
+pub const REMAINS_THE_WAY_BACK: Word = Word::saying(
+    "installer.remains.the-way-back",
+    "The program that restarts this computer into alo OS is still installed. You can remove it in \
+     Windows' own settings",
+)
+.noting("Said only when the copy the installer left in place could not be taken away again.");
+
+// ---------------------------------------------------------------------------
+// The way back into alo OS, from inside Windows.
+// ---------------------------------------------------------------------------
+
+/// Leaving the way back in place, said before it is done.
+pub const LEAVING_THE_WAY_BACK: Word = Word::saying(
+    "installer.leaving-the-way-back",
+    "Putting a program in the Start menu that restarts this computer into alo OS",
+)
+.noting(
+    "Said during the steps, before the copy is made. The Start menu is Windows' own name for \
+     where a person finds their programs.",
+);
+
+/// The switch's first line.
+pub const SWITCH_STARTING: Word = Word::saying(
+    "installer.switch.starting",
+    "This restarts this computer into alo OS. Nothing else about this computer is changed",
+)
+.noting(
+    "The first line of the small program the installer leaves in place, which does one thing: \
+     restart into alo OS once.",
+);
+
+/// What will happen, before the person agrees to it.
+pub const SWITCH_WILL_RESTART: Word = Word::saying(
+    "installer.switch.will-restart",
+    "This computer restarts into alo OS once. Windows stays the one it starts normally, and \
+     restarting again comes back to Windows",
+)
+.noting(
+    "Said before the person agrees. The choice is for one restart: it does not change which \
+     system the computer starts by default.",
+);
+
+/// The question.
+pub const SWITCH_TYPE_TO_AGREE: Word = Word::saying(
+    "installer.switch.type-to-agree",
+    "To restart into alo OS now, type {word} and press Enter. To leave everything as it is, press \
+     Enter without typing anything",
+)
+.noting("{word} holds the word below, in this language.");
+
+/// The word that agrees, which the person types.
+pub const SWITCH_AGREED: Word = Word::saying("installer.switch.agreed", "restart").noting(
+    "The word a person types to agree to restarting into alo OS. Keep it to one word, and to a \
+     word that means starting the computer again.",
+);
+
+/// The person did not agree.
+pub const SWITCH_NOT_AGREED: Word = Word::saying(
+    "installer.switch.not-agreed",
+    "Nothing was changed, and this computer starts as it did",
+)
+.noting("Said when the person pressed Enter without typing the word.");
+
+/// alo OS is not among the systems this computer can start.
+pub const SWITCH_NOT_THERE: Word = Word::saying(
+    "installer.switch.not-there",
+    "alo OS is not among the systems this computer can start, so there is nothing to restart \
+     into. Nothing was changed",
+)
+.noting(
+    "Said when the firmware lists no entry for alo OS — on a computer where alo OS was never \
+     installed, or was removed.",
+);
+
+/// The firmware's list could not be read.
+pub const SWITCH_NOT_READ: Word = Word::saying(
+    "installer.switch.not-read",
+    "The systems this computer can start could not be read, so nothing was changed",
+)
+.noting("Said when Windows' own start-up tool did not answer.");
+
+/// The next start could not be set.
+pub const SWITCH_NOT_SET: Word = Word::saying(
+    "installer.switch.not-set",
+    "This computer could not be told to start alo OS next, so nothing was changed",
+)
+.noting("Said when setting the one-time choice failed; the computer starts as it did.");
+
+/// Restarting.
+pub const SWITCH_RESTARTING: Word = Word::saying(
+    "installer.switch.restarting",
+    "Starting alo OS. This computer restarts in a few seconds",
+)
+.noting("The last line before the restart.");
+
+/// The restart did not happen.
+pub const SWITCH_RESTART_IT_YOURSELF: Word = Word::saying(
+    "installer.switch.restart-it-yourself",
+    "This computer is set to start alo OS next. Restart it yourself when you are ready",
+)
+.noting("Said when the restart could not be asked for; the one-time choice is set and waits.");
+
 /// Closing.
 pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
     "installer.press-enter-to-close",
@@ -670,7 +773,7 @@ pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
 .noting("The last line after the installer has stopped without restarting.");
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 73] = [
+pub const EVERY_WORD: [Word; 85] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -743,6 +846,18 @@ pub const EVERY_WORD: [Word; 73] = [
     REMAINS_THE_ENTRY,
     REMAINS_THE_NEXT_START,
     REMAINS_FAST_STARTUP_OFF,
+    REMAINS_THE_WAY_BACK,
+    LEAVING_THE_WAY_BACK,
+    SWITCH_STARTING,
+    SWITCH_WILL_RESTART,
+    SWITCH_TYPE_TO_AGREE,
+    SWITCH_AGREED,
+    SWITCH_NOT_AGREED,
+    SWITCH_NOT_THERE,
+    SWITCH_NOT_READ,
+    SWITCH_NOT_SET,
+    SWITCH_RESTARTING,
+    SWITCH_RESTART_IT_YOURSELF,
     PRESS_ENTER_TO_CLOSE,
 ];
 
