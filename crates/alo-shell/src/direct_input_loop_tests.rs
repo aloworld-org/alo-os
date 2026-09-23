@@ -11,6 +11,7 @@ use smithay::{
 };
 use std::{
     cell::RefCell,
+    io,
     os::{
         fd::OwnedFd,
         unix::{fs::PermissionsExt, net::UnixStream},
@@ -256,7 +257,33 @@ fn direct_input_loop_real_empty_seat_latched_pause_and_descriptor_order()
         let mut peers = manager.peers.borrow_mut();
         let peer = peers.first_mut().ok_or("missing descriptor peer")?;
         peer.set_nonblocking(true)?;
-        assert_eq!(peer.read(&mut [0])?, 0);
+        // **The claim is that the descriptor was closed, not that it was closed
+        // before the next statement ran.** libinput holds its own duplicate of
+        // it and lets go during the context's own shutdown, so on a loaded
+        // machine this read can reach the peer before that has happened and
+        // answer `WouldBlock` rather than end-of-file. It did exactly that once
+        // in a whole-workspace gate run on 2026-09-23, and passed eleven runs of
+        // this crate alone either side of it.
+        //
+        // So the read is given a bounded moment rather than a weaker
+        // assertion: a descriptor that is really leaked never reaches
+        // end-of-file, however long this waits, and the test still fails.
+        let mut closed = None;
+        for _ in 0..200 {
+            match peer.read(&mut [0]) {
+                Err(again) if again.kind() == io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                read => {
+                    closed = Some(read?);
+                    break;
+                }
+            }
+        }
+        assert_eq!(
+            closed.ok_or("the session's descriptor never reached end-of-file")?,
+            0
+        );
     }
     Ok(())
 }
