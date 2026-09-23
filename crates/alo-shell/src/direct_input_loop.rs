@@ -66,6 +66,13 @@ impl crate::DirectSession {
 }
 
 /// Loop injection boundary; production always uses the real SeatInput owner.
+///
+/// **This is also what one display lifetime is being driven *for*.** The
+/// ordinary lane routes a person's keys to the clients they are signed in to
+/// and draws those clients; the sign-in lane routes them to a screen nobody is
+/// past yet and draws that. Both run on the one loop in `crate::direct_loop`,
+/// so there is a single answer to how a display is polled, paused, retired and
+/// flushed — two of those would be two ways for a machine to end a session.
 pub(crate) trait LoopInput {
     /// Route ready events synchronously under the active scope's latched poll.
     fn dispatch(
@@ -73,6 +80,33 @@ pub(crate) trait LoopInput {
         server: &mut Server,
         poll: &mut dyn FnMut() -> Result<(), SessionError>,
     ) -> Result<(), DirectLoopError>;
+
+    /// Draw and submit one frame.
+    ///
+    /// The ordinary lane submits the clients, which is what a compositor with
+    /// somebody signed in to it is for. A lane that draws one of this shell's
+    /// own screens instead overrides this.
+    fn present<T: crate::direct_loop::LoopTarget + crate::presentation::NativeTarget>(
+        &mut self,
+        server: &mut Server,
+        target: &mut T,
+        time: u32,
+    ) -> Result<(), DirectLoopError> {
+        server.render(target, time)?;
+        Ok(())
+    }
+
+    /// Whether this lane's work is over, asked after every dispatch.
+    ///
+    /// A session does not end because the compositor decided so — the
+    /// scheduler says `DirectFrame::Stop` — so the ordinary lane is never
+    /// finished. A sign-in screen is: the moment a session opens there is
+    /// nothing left for it to draw, and drawing one more frame of it would
+    /// show a password field to somebody already signed in.
+    fn finished(&self) -> bool {
+        false
+    }
+
     /// Consume input before output retirement, retaining callback close errors.
     fn shutdown(self, server: &mut Server) -> Option<io::Result<()>>;
 }

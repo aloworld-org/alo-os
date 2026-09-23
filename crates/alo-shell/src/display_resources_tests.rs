@@ -19,6 +19,9 @@ mod scene_scanout_tests;
 #[path = "direct_target_tests.rs"]
 mod direct_target_tests;
 
+#[path = "direct_sign_in_tests.rs"]
+mod direct_sign_in_tests;
+
 /// A public-metadata buffer standing in for a kernel dumb allocation.
 struct FakeBuffer {
     /// Advertised dimensions.

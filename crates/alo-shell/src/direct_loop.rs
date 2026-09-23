@@ -97,7 +97,7 @@ impl crate::DirectSession {
 /// Own the target so its destructor runs before the enclosing device scope closes.
 pub(crate) fn run(
     server: &mut Server,
-    target: impl LoopTarget,
+    target: impl LoopTarget + crate::presentation::NativeTarget,
     poll: &mut dyn FnMut() -> Result<(), SessionError>,
     next: &mut dyn FnMut() -> DirectFrame,
 ) -> DirectLoopResult {
@@ -113,7 +113,7 @@ pub(crate) fn run(
 /// Input lifetime is consumed so suspension and reset precede target retirement.
 pub(crate) fn run_with_input(
     server: &mut Server,
-    mut target: impl LoopTarget,
+    mut target: impl LoopTarget + crate::presentation::NativeTarget,
     poll: &mut dyn FnMut() -> Result<(), SessionError>,
     next: &mut dyn FnMut() -> DirectFrame,
     mut input: impl crate::direct_input_loop::LoopInput,
@@ -127,9 +127,14 @@ pub(crate) fn run_with_input(
                 return Ok(());
             }
             input.dispatch(server, poll)?;
+            // A lane that has finished stops before drawing again: the sign-in
+            // screen's last frame is the one before the session opened.
+            if input.finished() {
+                return Ok(());
+            }
             server.dispatch()?;
             if let DirectFrame::Render(time) = frame {
-                server.render(&mut target, time)?;
+                input.present(server, &mut target, time)?;
                 target.check()?;
             }
         }
