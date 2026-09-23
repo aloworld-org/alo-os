@@ -90,6 +90,7 @@ mod approval_testing;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
+mod booting;
 mod cursor;
 mod default_cursor;
 mod desktop_list;
@@ -296,6 +297,9 @@ pub use approval_keys::ApprovalKey;
 pub use approval_raster::ApprovalLook;
 pub use approval_screen::{ApprovalAnswer, ApprovalOutcome, ApprovalScreen, ApprovalShows};
 pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};
+pub use booting::{
+    AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
+};
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
 pub use direct_keyboard::DirectKeyEvent;
