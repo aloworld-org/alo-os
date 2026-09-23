@@ -23,6 +23,18 @@ pub enum RenderError {
     /// This backend has not implemented native scene submission.
     #[error("target does not support native controls")]
     ControlsUnsupported,
+    /// This backend can submit a native scene and not **this** one yet.
+    ///
+    /// **Named rather than lumped with `ControlsUnsupported`**, because the two
+    /// are different facts: that one says a backend paints no native scene at
+    /// all, and this says which of the six it has not been wired for. A
+    /// compositor that refused a lock screen with *does not support native
+    /// controls* would send whoever reads it looking in the wrong place.
+    #[error("{scene} is not yet drawn on this backend")]
+    SceneNotOnThisBackend {
+        /// Which scene, in the name this crate's own files use for it.
+        scene: &'static str,
+    },
     /// The backend omitted the root whose strip it was asked to compose.
     #[error("native control target omitted from submitted scene")]
     ControlTargetOmitted,
@@ -297,3 +309,40 @@ impl Presentation {
 
 impl smithay::wayland::output::OutputHandler for Surfaces {}
 smithay::delegate_output!(Surfaces);
+
+/// A backend that can paint one of this shell's own scenes over its clients.
+///
+/// Separate from [`FrameTarget`] and **crate-internal on purpose**: the scenes
+/// are this crate's pictures, the backends are this crate's, and a public trait
+/// naming them would make every raster's private shape part of the shell's
+/// published surface. `crate::direct_loop::LoopTarget` is the same arrangement
+/// one seam over.
+pub(crate) trait NativeTarget: FrameTarget {
+    /// Submit clients with one native scene painted over them.
+    ///
+    /// **The seam every surface this shell draws has to cross.** Each
+    /// `*_raster.rs` produces its picture from state and is backend
+    /// independent, and until this existed the only way one reached a display
+    /// was `crate::nested`'s submission through a Wayland parent's EGL — so a
+    /// sign-in screen, a lock screen and a recovery screen were drawn, tested,
+    /// and invisible on a machine that boots.
+    ///
+    /// A backend that has not been wired for a scene refuses it **by name**
+    /// with [`RenderError::SceneNotOnThisBackend`], rather than drawing
+    /// something near it or silently dropping the native layer and submitting
+    /// the clients underneath — which on a sign-in screen would be a machine
+    /// showing an empty desktop to somebody who has not signed in.
+    ///
+    /// # Errors
+    /// [`RenderError::ControlsUnsupported`] from a backend that submits no
+    /// native scene at all, which is this default.
+    fn submit_native_layers(
+        &mut self,
+        _roots: &[WlSurface],
+        _popups: &[crate::Popup],
+        _cursor: &crate::Cursor,
+        _scene: crate::scene_native::NativeScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        Err(RenderError::ControlsUnsupported)
+    }
+}
