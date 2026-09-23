@@ -76,7 +76,7 @@ Nothing here is a differentiator. All of it is required.
 - [v0.5] **Keyboard layouts, switched easily** — and dead keys and a compose key that work. "Müller" and "Liège" are test cases in a European product, not edge cases
 - [v0.5] Input methods for non-Latin scripts
 - [v0.5] Virtual desktops
-- [v1] Clipboard history, on the machine and never synced anywhere
+- [v1] Clipboard history, on the machine and never synced to any server. Sharing one copied item directly between a person's own paired devices is an opt-in: end to end encrypted, gone after about two minutes, never readable by the agent (ADR 0064)
 
 **Capture**
 
@@ -117,7 +117,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v1] **Location services**, off by default, per-application, with an indicator when in use
 - [v1] Applications contribute to search — one place to look, not one per program
 - [v1] Realtime scheduling for audio work, which is what a workstation is often bought for
-- [v1] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine
+- [v0.5] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine. Brought forward from v1 by ADR 0064: developers need their own tools from the first day
 
 **Devices and media**
 
@@ -343,6 +343,104 @@ told so at first sign-in. There is no silent enrollment.
 
 ---
 
+## Designs worth learning from HarmonyOS
+
+Huawei's HarmonyOS does several everyday things well. These are the ones that
+fit a PC and fit alo, adopted on 2026-09-22 and not yet built. Each is alo's own
+version, not a copy: it runs through the grants, the record and the person's
+choice like everything else.
+
+- [v1] ★ **Live capsules for work in progress** — a small live pill in the status area for anything under way, **the agent's work first of all**: *building your site, 3 of 5*, *waiting for your approval*. What the agent is doing, visible at a glance without opening anything
+- [v1] ★ **A privacy centre with history** — one page answering *who used what, and when*: which applications **and the agent** used the camera, the microphone, files and the network. Built from the record alo OS already keeps, which most systems do not have to draw on
+- [v1] **Cards from dock icons** — hover over or long-press an application's icon and a small card shows what matters in it and what can be done, without opening it
+- [v1] **A collection shelf** — gather text, pictures and files from several applications into one shelf, then drop them where they are needed, including on another of the person's paired devices. The agent may fill it when asked, and only then
+- [v1] **Snap devices together** — drag one paired device's icon onto another's to connect them. A drag is deliberate, and the other device still asks (ADR 0003)
+- [v1] **One design language on every screen** — when alo's phone applications come, the same design and the same behaviour on the phone as on the PC, adapting to the size of the screen rather than being redrawn for it
+- [v1] **An alo typeface** covering all 24 official EU languages, drawn once for every screen
+- [v1] **Motion that feels physical** — animations that move like real objects and never stutter, within the frame budget the shell already holds itself to
+
+## The interface (ADR 0065)
+
+The v1 interface, decided on 2026-09-22 and not yet built. The v0.5 shell is
+its foundation and stays as the familiar option a person can keep (Law 5).
+
+- [v1] ★ **Every goal is a canvas** — a Place is an endless surface, and objects **and applications alike open as panels on it**, where the person put them. Arranging is placing; nothing is stacked, so nothing is minimised. **Zoom** and **pan** move through it — by pinch, by wheel with a modifier, and by key — and the canvas replaces window switching, tiling and virtual desktops
+- [v1] ★ **Frames, dragged and resized like a design canvas** — a frame shows nothing but its content while the person works, and its name and few controls appear when they point at it, select it or zoom out — the name is also what it is dragged by, so a click inside always belongs to the application. Handles resize it and the application is told its size as it happens, dragging moves it, several can be taken at once, guides and snapping line them up, and each frame carries a name shown when the canvas is far out. Fit the Place to the screen, fill the screen with what is selected, double-click to work inside — each with a keyboard form
+- [v1] ★ **A frame arrives the shape its work is** — a messaging application opens as a narrow column of conversations, a spreadsheet wide, a video sixteen by nine — declared by the application and remembered per Place once the person changes it
+- [v1] ★ **Compact instead of minimised** — dragging a frame small enough, or one key, leaves a live tile that still shows what matters (the last messages, the track playing, the build at four of six) and can be acted on without growing back. Nothing is swallowed into a bar; a small thing is still on the canvas and still says what it is doing
+- [v1] **Tidy this canvas** — alignment and distribution for the person who wants them, and the same asked of alo as a proposal shown before anything moves
+- [v1] **A frame can be dragged out of one Place and into another**, and the work goes with it
+- [v1] ★ **A frame simplifies as it shrinks** — application, then compact form, then its name and what it is doing, chosen by how large it is on screen. Zoomed out a person reads *three new from Anna* and *the build at four of six*, never a wall of unreadable miniatures
+- [v1] ★ **Zones that mean something** — name a region *drafting*, *waiting on Anna*, *done*, and dragging a frame into it does what the name says; a zone can be handed to alo whole
+- [v1] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was on Tuesday, from the snapshots undo already takes
+- [v1] **Every screen is a view onto the canvas** — two displays are two viewports at their own zoom, not two desktops; on a small screen, focus shows one frame at a time
+- [v1] **The habits people arrive with still work** — the keys that cycle windows, close one and switch desktops become cycle frames, remove from canvas, and move between Places
+- [v1] **A panel out of view costs nothing** — it is a still picture until it is reached, so a Place holding forty things is not forty programs running
+- [v1] **Every canvas also answers as a list** — its panels in order, by keyboard and to a screen reader, because a surface that needs a touchpad excludes people (EN 301 549)
+- [v1] ★ **The alo Bar** — ask, find, open, create or hand over, from one place. **It works with no model at all**: applications open, files are found, settings change, arithmetic is exact, commands run
+- [v1] ★ **Give it to alo** — anything selected can be done by hand or handed over, and **a whole goal can be handed over**: alo shows its plan, works under one capsule, and returns only the decisions that must be the person's. The person may step in, take over a piece or stop it
+- [v1] ★ **History** — what happened, why, and undo. Agent actions come from the kernel-watched record; a person's own work is shown from file versions, never from watching them
+- [v1] **Content is the interface** — an open object fills the screen and tools appear when something is selected
+- [v1] **No dock by default** — the alo key, the bottom edge or a swipe reveals the alo Edge. Its replacement must be found by somebody who has never seen it within thirty seconds, tested with people; a person may pin a dock
+- [v0.5] **Which system the machine starts by default** — changed from alo OS's settings or from Windows, kept in one place both can reach (the EFI system partition), so both sides always show the same answer (ADR 0066). alo OS changes it through a verb on the broker's list, never by a person writing under /boot
+- [v1] ★ **The privacy symbol is always visible and can never be hidden** — *private*, *local activity*, *data leaving*, *camera or microphone on*
+- [v1] **Notifications are decisions** — *requires you*, *working*, *finished*, and *finished* only for work the person walked away from
+- [v1] **Every application lives in a Place**, including the ones with ordinary windows, so there is one world rather than a modern half and an old half
+
+## alo's visual language
+
+Adopted by the owner on 2026-09-22 and not yet built. One rule runs through all
+of it, so a person can read at a glance what is real, what is proposed, and who
+is acting: **a ghost is proposed, solid is real, and terracotta is the agent** —
+terracotta always with its mark and its word, never by colour alone.
+
+- [v1] ★ **Ghost previews** — before the agent changes anything, a translucent ghost of the result appears in place: the files with their new names, the draft, the edited design. Accepting makes it solid; declining fades it away
+- [v1] **The agent's presence** — a thin terracotta edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up
+- [v1] **The trust dial** — ADR 0064's three levels for running code as one dial in the agent's capsule, set per project
+- [v1] ★ **The time ribbon** — a ribbon at the bottom edge; dragging it back fades the whole desktop into the past, with what changed glowing, and letting go restores what the person picks
+- [v1] **The approval stack** — what the agent wants to do arrives as cards to accept or decline, each showing a real before and after: marked-up text, two versions of a design side by side, a difference in code
+- [v1] ★ **Where the data went, on a map** — a small map on which a line is drawn to wherever anything leaves the machine for: *Paris*, *Frankfurt*. On most days nothing moves, and that stillness is the point
+- [v1] **Explain mode** — hold one key and point at anything, and a card says what it is, what it does and what it can reach. For everyone arriving from another system
+- [v1] **One bar for everything** — search, settings, commands and the agent are one bar, typed or spoken, and every action says exactly what it will do before it runs
+- [v1] **Project spaces** — moving between projects rather than applications; the dock becomes the project's tools, with its people, files and the agent's memory of it
+- [v1] **Calm notifications** — delivered in batches at times the person chooses, summarised by the agent, with a capsule saying how many are waiting
+
+## What makes a person want it
+
+Adopted by the owner on 2026-09-22 and not yet built. Each builds on something
+alo OS already owns — the record, undo, the egress indicator, the model on the
+machine — and each is a choice the person makes (Law 5), never a thing done to
+them.
+
+- [v1] ★ **Projects instead of applications** — open *the client's website* and its mail, meetings, tasks, design, code and the agent's memory of it are one place, not six windows. The agent's one project memory made visible
+- [v1] ★ **Windows applications, and Android applications**, run through a compatibility layer, sandboxed and asking for what they need like any application — the largest single reason a person cannot leave Windows, removed. macOS applications are not promised: Apple's licence forbids it
+- [v1] ★ **A throwaway box for anything downloaded** — run it in a box that closing erases without trace, built on the same sealed box ADR 0064 gives the agent
+- [v1] ★ **Scroll the machine back in time** — a timeline to drag back to *Tuesday, 10:32*, see files and settings exactly as they were, and bring back only what is wanted. Built on the snapshots undo already takes
+- [v1] ★ **Replay what the agent did** — every file it touched and every connection it made, step by step like a recording, with any single step undoable
+- [v1] ★ **The machine works while the person sleeps** — tasks queued at night run on the machine's own model while it is charging, and the morning brings *here is what I did — approve or undo*. No paid cloud; the person's own hardware
+- [v1] ★ **Live translation of anything, on the machine** — any window, document, subtitle or call, between the 24 official EU languages, with nothing sent anywhere. It works on a plane
+- [v1] **"Why did my computer do that?"** — *why is it slow*, *why did the network drop at three*, *what changed since yesterday*, answered with evidence from the record rather than a guess
+- [v1] ★ **Leave Windows in one evening, and come back if you want** — files, bookmarks, network passwords and the wallpaper brought across; the agent shows where each thing now lives; thirty days in which going back to Windows is one click, on the road *remove alo OS* already provides
+- [v1] ★ **A monthly privacy receipt** — *this month, nothing you wrote went to an AI company; this much went to system updates; here is every destination*, signed so it can be shown to someone else
+- [v1] **Settings in one sentence** — *warmer screen after eight, silence during meetings* becomes a set of rules the person can read and change, never hidden behaviour
+- [v1] **Remember everything, if the person wants it** — a searchable memory of what was on screen, off by default, kept only on the machine and encrypted, with applications that can be excluded, and never readable by the agent without a grant. It is what *context offered, never watched* allows a person to choose, and it records other people's words too, which the switch says plainly
+- [v1] **The machine suggests a workspace**, it never rearranges one — *switch to your photo editing space?* when a camera is plugged in, and nothing moves unless the person says so
+- [v1] **Self-healing by going back** — when something breaks after a change, the machine says what happened and offers yesterday's working system in one click, on the rollback the image already has. Never a silent fix
+
+## The person chooses (ADR 0064)
+
+Law 5: on their own machine a person decides, and every protection is a default
+they can change with its cost said plainly. These are decided and not yet built.
+
+- [v1] ★ **Running code, at the level the person picks** — a sealed box the kernel locks down (the default), asking each time, or full trust. At every level each run is recorded and a snapshot taken first, so it can be undone
+- [v1] Update checking can be turned off, saying that security fixes stop arriving while it is off
+- [v1] *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
+- [v1] A provider address that is not https can be allowed after a plain warning that the key crosses the network readable
+- [v1] A **details** view that shows each rented component's own name as data, for the person who wants to know; plain words stay the default everywhere
+- [v1] Screenshot-and-click switched on by the person for their own machine
+- [v1] At full trust, a turn whose kernel boundary cannot be applied may run if the person chooses, told that the kernel is not watching it, and the record says so
+- [v0.5] **Fast Startup: the installer asks.** Turning it off is recommended when a disk is shared, and both answers are safe because alo OS never mounts the Windows partition read-write
+
 ## Non-goals
 
 **No kernel.** Linux, unmodified — hardware support is where OS projects die and
@@ -354,10 +452,11 @@ without packaging them. **No third-party device management** — fleet features
 exist for alo OS machines; an MDM product is a different company. **No phone or
 tablet** — not in v1, possibly never. **No directory service** — we do not
 rebuild Active Directory or LDAP, and we do not become the place a company's
-identities live; alo identities and pairing are what we offer. **No trusted
-network setting**, ever (ADR 0003) — the switch that would turn pairing off is
-the vulnerability, not a convenience we have not got round to. **No arbitrary command verb**, ever
-(ADR 0001 §1); this one is not a scope decision and is not revisitable without
-replacing that ADR.
+identities live; alo identities and pairing are what we offer. **No trusted-network
+setting by default** (ADR 0003) — pairing stays how machines trust each other; a
+person may opt in on their own network, told that it also trusts every device on
+it (ADR 0064). **No code runs unless the person chose it** (ADR 0064, replacing
+ADR 0001 §1): the verb list stays typed and closed, and running code is the
+person's grant — a sealed box by default, asking each time, or full trust.
 
 Every absence here is a sales argument.

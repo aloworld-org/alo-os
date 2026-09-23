@@ -1032,6 +1032,87 @@ the environment says *You can turn this computer off or restart it now*.
 `Task` could say which program it could not start. Not filed from here.
 **Date:** 2026-09-16.
 
+### bootc 1.15.1 — `bootc install` stops at "Creating rootfs" when the environment lacks the file system's maker
+**Version:** bootc 1.15.1 and btrfs-progs 6.19.1-1.fc42 as
+`quay.io/fedora/fedora-bootc:42@sha256:077182b6…` ships them, inside
+`image/installing/`'s initramfs; kernel 6.19.14-101.fc42 (btrfs built in:
+`modules.builtin` lists `fs/btrfs/btrfs.ko`, and there is no module to load);
+release `0.0.5`; the installer's own road — Windows 11 in QEMU/KVM, the
+installer run to the end, Fedora's `edk2-ovmf` 20250812-21, Secure Boot off
+because the Windows side's installer refuses it on (ADR 0033 §4). 2026-09-22.
+**Behaviour:** the environment found the chosen disk, checked the release,
+and `bootc install to-disk --filesystem btrfs` partitioned the disk and then
+stopped 3–4 s later, naming no program:
+
+```
+Installing alo OS onto ata-QEMU_HARDDISK_ALOTARGET1. Everything that was on that disk is being replaced. …
+[    6.850278]  sdb: sdb1 sdb2 sdb3
+/usr/bin/bootc: error: Installing to disk: Creating rootfs: No such file or directory (os error 2)
+alo OS could not be installed onto ata-QEMU_HARDDISK_ALOTARGET1. That disk may now hold part of alo OS; …
+```
+
+**Located:** *Creating rootfs* is the context bootc puts around making the
+root file system, and it starts `mkfs.<filesystem>` by name — the same bare
+spawn as `fstrim` above, so a missing program is exactly *No such file or
+directory*. The installer has asked for btrfs since the installer plan's task
+11 (`alo_image::THE_ONLY_FILESYSTEM`). That task measured btrfs by running
+`bootc install` from the release image, which has `mkfs.btrfs`, not through the
+environment. The environment's initramfs, read back from the built image, had
+`usr/bin/mkfs.ext4`, `mkfs.fat`, `mkfs.vfat` and `mkfs.xfs`, and btrfs's
+`btrfs`, `btrfsck` and `fsck.btrfs` from dracut's own module. It had **no
+`mkfs.btrfs`**, although the base has it at `/usr/sbin/mkfs.btrfs`.
+**Our response:** none to the engines (ADR 0011). `alo-installing.conf` carries
+`/usr/sbin/mkfs.btrfs`, and
+`crates/alo-installing/tests/what_the_environment_carries.rs` holds the list to
+`mkfs.` followed by `alo_image::THE_ONLY_FILESYSTEM`, so a change of file system
+is also a change of the list, and refuses a list without it. That was the
+only change, and on the same road the install finished and the installed
+system started from the chosen disk:
+
+```
+Installing alo OS onto ata-QEMU_HARDDISK_ALOTARGET1. …
+Still installing alo OS. Leave the computer on            (12 times, one a minute)
+alo OS is installed. This computer restarts in a few seconds
+BdsDxe: starting Boot000B "Fedora" from HD(2,GPT,…,0x1000,0x100000)/\EFI\fedora\shimx64.efi
+/dev/sdb3 btrfs                                              (findmnt /sysroot)
+└─sdb ALOTARGET1
+```
+
+(`crates/alo-installer/tests/the_installer_walked_on_a_real_windows.rs`,
+`the_whole_road_installs_alo_os_and_the_installed_system_starts`. It passed by
+name at `891ec5de` in 1 815 s. The first run showed the same thing and failed
+only on the test's own reading. A second run stalled in the download, which is
+the installer plan's task 20.)
+**Upstream:** as above, a missing program named in the error would have saved
+this one too. Not filed from here.
+**Date:** 2026-09-22.
+
+### bootupd, as bootc 1.15.1 runs it — after an install, the firmware's first entry is called *Fedora*, and the installer's own entry is left behind
+**Version:** bootc 1.15.1 and the bootupd it runs, inside `image/installing/`'s
+initramfs; release `0.0.5`; QEMU q35 with Fedora's `edk2-ovmf` 20250812-21 and
+no boot order given to the machine. 2026-09-22.
+**Behaviour:** after `bootc install to-disk`, the firmware's variables, decoded
+from the machine's variable store once it was off, held a new entry and a new
+order:
+
+```
+Boot000A: "alo OS"  HD(4,GPT,…,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI   optional-data=0 bytes
+Boot000B: "Fedora"  HD(2,GPT,…,0x1000,0x100000)/\EFI\fedora\shimx64.efi   optional-data=0 bytes
+BootOrder: 000B 0004 0003 0000 0001 0002 0005 0006 0007 0008 0009 000A
+```
+
+The installed system's loader is first, ahead of Windows Boot Manager (`0004`),
+and the computer's next start went to it. A person looking at the firmware's
+boot menu would see it called **Fedora**, not alo OS. The installer's own entry
+from staging, *alo OS*, is still there, last. It points at the installer's area
+on the Windows disk, which is also still there.
+**Our response:** measured and not changed here. The installer plan's task 4
+owns what the machine starts after an install and what a person sees in the
+firmware's menu (ADR 0062). That task has to decide the entry's name
+(bootupd's configuration, never a patch; ADR 0011) and when the staging entry
+and the area are removed.
+**Date:** 2026-09-22.
+
 ### systemd 257 — systemd mounts the BPF filesystem so only root can pass through it
 **Version:** systemd 257.13-1.fc42, kernel 6.19.14-101.fc42, selinux-policy
 42.24-1.fc42, as release `0.0.1` (`ghcr.io/aloworld-org/alo-os@sha256:d3f05b60…`)
@@ -3465,6 +3546,17 @@ catalogue never heard of, one nobody measured, and one whose licence was not our
 to hand on. **Nothing here has been built**: no `docker build` of this recipe has
 been run in this lane, and the import step in particular is a recipe rather than
 a measurement until somebody builds it.
+
+**Superseded on 2026-09-22, and the model is no longer this one.** The three
+facts above decided *which model* while no catalogued entry cleared the
+verb-driving bar; since ADR 0034 and ADR 0037 one does, in the words a turn
+shows a model, and `Catalogue::agent_for_cpu` is what the recipe is now held
+to. The image carries `qwen3-8b` from the runtime library's own blob, and the
+weights above — measured `rarely`, which is a model that cannot drive anything
+— are the twin `crates/alo-image` refuses. Everything this entry says about
+*carried, not fetched*, about the licence being ours to hand on, and about the
+digest being checked before anything reads the file is unchanged and still
+holds. See *The image sized for the machine it lands on* below.
 **Date:** 2026-09-11
 
 ### Two models trained for tool calls, put to the same ten requests
@@ -3867,6 +3959,73 @@ them does, the test fails and sends whoever sees it back here — to name the
 model, its size and its grade, and to turn the sentence into carry or fetch
 for real.
 **Date:** 2026-09-11.
+
+### The image sized for the machine it lands on: 8.79 GiB, and two GGUFs that are not the same file
+**Version:** `image/Containerfile` as of 2026-09-22, against
+`crates/alo-models/data/catalogue.toml` of the same day. The artefact is the
+model layer of `qwen3:8b-q4_K_M` in the pinned runtime's own library —
+**5_225_374_496 bytes**, sha256
+`a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f`, with that
+artefact's template blob (1_723 bytes, sha256 `ae370d88…`) beside it.
+**Behaviour:** the entry above measured a catalogue in which nothing cleared
+the verb-driving bar, and the image accordingly carried the largest measured
+entry that fitted — `phi-3-mini-instruct`, graded `rarely`. Since ADR 0034 and
+ADR 0037 an entry clears the bar **in the words a turn shows a model**, and
+`Catalogue::agent_for_cpu(16.0)` answers `qwen3-8b`, so that is what the image
+carries. Two numbers follow from it, and one of them is arithmetic rather than
+a measurement:
+
+| | phi-3-mini-instruct | qwen3-8b |
+|---|---|---|
+| The weights the recipe fetches | 2_393_231_072 bytes (2.23 GiB) | **5_225_374_496 bytes (4.87 GiB)** |
+| Difference | | **+2_832_143_424 bytes (2.64 GiB)** |
+| The image, measured 2026-09-12 | 6_607_474_716 bytes (6.15 GiB) | — |
+| The image, **predicted** | | **≈ 9_439_619_791 bytes (8.79 GiB)** |
+
+**The 8.79 GiB is arithmetic and is written here as arithmetic**: the image
+measured on 2026-09-12 with the weights carried once, plus the difference
+between two pinned blobs whose sizes their registries state, plus 1_651 bytes
+of template and parameters. **No build of this recipe has been made in this
+lane**, so nothing here says the image is that size — it says what it will be
+if nothing else about the recipe changed, and the number is owed a build the
+way the first one was.
+
+**And the finding that decided where the weights are fetched from.** The first
+version of this recipe fetched the publisher's own GGUF from Hugging Face and
+said in a comment that *a registry tag is not a digest*. That is true of tags
+and not of registries: a blob under `/v2/library/<model>/blobs/sha256:…` names
+one file and no other. What matters more is that the two files are **not the
+same file**. Read on 2026-09-22:
+
+| | Publisher's own GGUF | The runtime library's |
+|---|---|---|
+| `qwen3-8b`, Q4_K_M | `Qwen/Qwen3-8B-GGUF`, 5_027_783_488 bytes | 5_225_374_496 bytes |
+| `phi-3-mini-instruct`, Q4_K_M | `microsoft/Phi-3-mini-4k-instruct-gguf`, 2_393_231_072 bytes | 2_393_231_808 bytes |
+
+197 megabytes apart for one and 736 bytes for the other, because they were
+quantised by different hands. **Every grade in this catalogue was earned
+against the runtime library's file**, which is what `artefact` names — so the
+image fetching the publisher's would put weights on every machine that nobody
+here has measured, under a grade earned on weights nobody ships. That is the
+gap `docs/features.md`'s *measured by us, not claimed by the publisher* is
+about, and until 2026-09-22 this recipe was on the wrong side of it by 736
+bytes without anybody noticing. The template is fetched the same way and for
+the same reason: a grade is earned against a model **as it was served**, and
+the same weights under a hand-copied template are a different machine
+answering.
+**Our response:** `crates/alo-image/src/arrives_with.rs` asks the catalogue
+which entry a machine of the certified class arrives with, rather than holding
+a name of its own, and `everything_wrong_with` refuses a recipe carrying
+anything else — `phi-3-mini-instruct`, which passes every other check here, is
+the twin that proves it. Where the catalogue recommends **nothing** for a
+class, the image must carry **nothing**, and the refusal names the same reason
+a person is shown (`alo_models::NoAgentHere`) rather than a sentence of the
+checker's own; that half is shown happening against the real recipe at eight
+gigabytes, where five measured entries fit and none clears the bar. Nothing
+here says the machine can be given an agent turn: the grade `qwen3-8b` earned
+was earned **in the envelope**, and wiring a shipped machine's turn to ask that
+way is lane A's work.
+**Date:** 2026-09-22.
 
 ### Phi-3 Mini gets the envelope right and loses the argument list
 **Version:** `phi3:3.8b-mini-4k-instruct-q4_K_M` — Microsoft's Phi-3-mini-4k-
@@ -5991,3 +6150,256 @@ that does not exist yet and checks the result, rather than reading `EROFS` as a
 mount problem; and any measurement of this is made on a destination nothing
 has touched.
 **Date:** 2026-09-21.
+
+### A Windows guest and a release build together starve WSL's own relay, and the machine inside keeps running
+**Version:** WSL 2 Ubuntu (`6.6.87.2-microsoft-standard-WSL2`) on Windows 11 Pro
+10.0.26200 with 15.5 GB of memory, QEMU 10.2.1 under KVM, 2026-09-21.
+**Behaviour:** a Windows 11 guest given 4096 MiB was installing while
+`cargo build --release -j 2` ran in the same distribution. The host's free
+physical memory fell to 0.24 GB with `vmmemWSL` at 6.39 GB, and every
+`wsl -d Ubuntu -- …` then returned `Wsl/Service/0x8007274c` (*the connected
+party did not properly respond*) for over an hour, while
+`wsl.exe --list --running` still listed the distribution and QEMU kept running
+inside it; `\\wsl.localhost\…` did not answer either. `wsl.exe --shutdown`
+recovered it and lost the install. With the guest at 3072 MiB and nothing
+built beside it, the same error still came and went for minutes at a time
+whenever the host's free memory was near half a gigabyte, and cleared on its
+own. The disk was never the constraint.
+**Our response:** the walk's guest is given 3072 MiB
+(`crates/alo-installer/tests/walking/machine.rs`), nothing is built while it
+runs, and a command that meets `0x8007274c` is tried again after thirty seconds
+rather than answered with `wsl --shutdown`, which throws away whatever was
+running inside. Look at `vmmemWSL` and the host's free memory first.
+**Date:** 2026-09-21.
+
+### The first start of an overlay of a freshly installed Windows takes about 1 000 s, and of a settled one about 140 s
+**Version:** Windows 11 Enterprise Evaluation 25H2 (26100.6584 as it reports
+itself) under QEMU 10.2.1 and KVM, each walk on a `qemu-img create -b` overlay
+of one installed disk, 2026-09-21.
+**Behaviour:** an overlay of the Windows as its unattended install left it took
+1 011 s and 1 015 s from power-on to its sign-in task's first line, and the
+first Windows PowerShell of that start took four minutes to print its version.
+The same overlay restarted took 102–161 s. The installed Windows was then
+started once on its own disk, left ten minutes, and shut down by itself; an
+overlay of *that* reached its sign-in in 141 s on its first start.
+**Our response:** the walk settles the installed Windows once before it becomes
+the base (`the_installer_walked_on_a_real_windows.rs`, the install test), and
+switches hibernation off while it is there, so that a shutdown leaves NTFS as a
+reader on the host can trust (fast startup cannot run without hibernation; the
+`HiberbootEnabled` value still reads `1`).
+**Date:** 2026-09-21.
+
+### Windows 11 puts its recovery partition after `C:`, so the partition after `C:` is not one an installer made
+**Version:** Windows 11 Enterprise Evaluation 25H2, installed unattended by an
+answer file that makes three partitions (EFI, MSR, `C:` extended to the end of
+the disk), 2026-09-21.
+**Behaviour:** after the first start the disk held four. Windows had shrunk
+`C:` and put a 770 703 360-byte recovery partition
+(`{de94bba4-06d1-4d40-a16a-bfd50179d6ac}`) at the end of the disk, so `C:` ends
+at 67 946 676 224 and the recovery partition begins there. Shrinking `C:` frees
+space *between* `C:` and Windows' own recovery partition, and "the first
+partition after `C:`" is Windows' recovery partition.
+**Our response:** `crate::windows_volume` already places the area at `C:`'s old
+end rather than at the end of the disk, which is right for this layout. The
+walk's guest script names the area as the partition that was not there before
+the installer ran, never by position.
+**Date:** 2026-09-21.
+
+### .NET Framework will not open `\\.\COM1`
+**Version:** Windows PowerShell 5.1 (.NET Framework 4.8) on Windows 11 25H2,
+2026-09-21.
+**Behaviour:** `New-Object System.IO.StreamWriter('\\.\COM1')` throws —
+.NET Framework's `FileStream` refuses every `\\.\` device path — so a script
+that swallows the exception writes nothing to the serial line and looks exactly
+like a hung guest. `System.IO.Ports.SerialPort` opens it; `cmd`'s
+`echo … > COM1` works one line at a time. A second redirection to a file a
+parent `cmd` already redirects to is refused with *being used by another
+process*, and the program behind it never runs.
+**Our response:** the walk's guest script writes through `SerialPort`, appends
+every line to a file on `C:` the host can read off the disk with the machine
+off, and never shares a redirection target with its caller.
+**Date:** 2026-09-21.
+
+### A PowerShell function returns everything it writes with `Write-Output`
+**Version:** Windows PowerShell 5.1, 2026-09-21.
+**Behaviour:** a logging helper that used `Write-Output`, called inside a
+function ending in `return @{ Digest = …; Count = … }`, made the function return
+an array of log lines followed by the table. The caller read the array's
+`.Count` — 5 — as the number of files hashed, and the digest as nothing.
+**Our response:** the walk's logging writes with `[Console]::Out.WriteLine`.
+**Date:** 2026-09-21.
+
+### This Windows guest sometimes stops at its start-up spinner, with the installer never run
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1, `q35`,
+KVM, OVMF 2025.11's Secure Boot build with nothing enrolled, `swtpm` 0.10.1,
+2026-09-21.
+**Behaviour:** some starts stop at the spinner below the firmware's logo:
+nothing on the serial line, no writes to the disk, QEMU idle or spinning one
+processor. It happened in the control, which never runs the installer, and
+after a `swtpm` left over from a machine stopped hard (then QEMU printed not
+even the firmware's first line). One `system_reset` brought the guest up each
+time — except once, on the first start of a fresh overlay before the installer
+had run, when two resets did not: after the second, QEMU itself had stopped.
+Its monitor did not answer, every one of its threads waited on a futex, its
+resident memory was 56 MB of a 3 GB guest, and the serial line held not even
+the firmware's first line. It was killed with `SIGKILL` and the step was walked
+again from a fresh overlay.
+**Our response:** every machine gets a security chip of its own, and a start
+that has not signed in after 480 s is reset, at most twice, with every reset
+printed and counted in the report; a machine that still has not signed in is
+stopped and its walk started again, and that is counted too.
+**Date:** 2026-09-21.
+
+### Two readings of a disk that share a mount point read a tree that is neither
+**Version:** `qemu-nbd` 10.2.1, `ntfs-3g` 2022.10.3, Linux 6.6 (WSL 2),
+2026-09-21.
+**Behaviour:** `qemu-nbd --connect` onto a device that had just been
+disconnected returned success, and then `sfdisk` and `ntfs-3g` met
+*Input/output error* on it — twice. Separately, an `ntfs-3g` whose script had
+ended was still mounted when the next reading mounted another disk on the same
+directory, and that reading listed 143 339 files, 28 unreadable and 7
+directories unlistable, where every other reading of these disks listed about
+250 000. That disk had also been cut off rather than shut down, so the two
+causes were not separated; the reading was thrown away and the step walked
+again.
+**Our response:** each reading takes an `nbd` device whose size is zero, waits
+until it has a size and its partitions and answers `sfdisk`, tries another
+device before failing, and mounts on directories of its own that it checks are
+not already mount points. A file that cannot be read stands in the reading as
+`UNREADABLE` and a directory that cannot be listed as `UNLISTABLE`, so nothing
+unread is dropped; the settled Windows read with none of either.
+**Date:** 2026-09-21.
+
+### An entry copied from `{bootmgr}` carries Windows' optional data, and shim reads it as a file to start
+**Version:** `bcdedit` of Windows 11 Enterprise Evaluation 25H2; Fedora 42's
+signed shim as `image/installing/Containerfile` copies it; OVMF 2025.11 under
+QEMU 10.2.1; 2026-09-21.
+**Behaviour:** the firmware's own variable, read from inside Windows with
+`GetFirmwareEnvironmentVariableEx`, shows that every entry `bcdedit /copy
+{bootmgr}` makes carries 136 bytes of optional data beginning `WINDOWS`, as
+Windows' own boot manager entry does. When the firmware starts such an entry
+pointing at shim, shim takes the optional data as the name of what to start
+next: the installer's entry printed
+`Failed to open \EFI\BOOT\䥗䑎坏S - Invalid Parameter` (the ASCII bytes
+`WINDOWS` read as UTF-16), `start_image() returned Invalid Parameter, falling
+back to default loader`, and went on to its default, `grubx64.efi` beside it.
+The same load option written directly with no optional data (a probe entry,
+`SetFirmwareEnvironmentVariableEx`) carries none.
+**`bcdedit` cannot make an entry without it**, measured 2026-09-22 by reading
+each variable back: a `{bootmgr}` copy with every boot-manager value deleted
+(`default`, `resumeobject`, `displayorder`, `toolsdisplayorder`, `timeout`,
+`inherit`, `locale`) still carries the 136 bytes; `bcdedit /create …
+/application firmware` is refused (*The application type switch specified is
+not valid*); and a copy of an existing firmware application accepts `device`
+and `path` and changes neither in the variable, which keeps the original's
+firmware-volume path.
+**Our response:** the installer no longer copies `{bootmgr}`.
+`crate::program`'s `WritingTheEntry` writes the load option itself through
+`SetFirmwareEnvironmentVariableEx` — attributes, length, description, the
+area's hard-drive node and `\EFI\BOOT\BOOTX64.EFI`, and nothing after — reads it
+back byte for byte, and hands `bcdedit` the identifier Windows lists it under
+(as a *Firmware Application*, `0x101fffff`) for ordering, the next start and
+removal. Its partition number is the GPT entry's slot, read from the disk's own
+partition table: Windows' partition number is not it (the area was Windows'
+partition 5 in slot 4), and a variable written with 5 was found rewritten by
+Windows to 4 twenty seconds later. **Measured with the new installer on
+2026-09-22**, the whole road run on each firmware and the variable read from
+the host after the machine stopped: `Boot0002 "alo OS"
+HD(4,GPT,<area>,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI optional-data=0
+bytes` (Windows' own entry beside it: 136). On the installer's own restart:
+- **Fedora's `edk2-ovmf` 20250812-21:** `starting Boot0002 "alo OS" from
+  HD(4,…)`, then no *Failed to open* and no *falling back* — shim started its
+  second stage directly (the firmware's own *shim is older than v16* fix-up
+  note, as before), Linux booted with
+  `alo.installing.to=ata-QEMU_HARDDISK_ALOTARGET1`, and the environment said
+  *Looking for the disk you chose: ata-QEMU_HARDDISK_ALOTARGET1*.
+- **Ubuntu's OVMF 2025.11:** `starting Boot0002 "alo OS" from HD(4,…)`, then no
+  *Failed to open* and no *falling back* — and the firmware page-faults
+  (`#PF`, `W:1 P:1`) before GRUB prints anything: the firmware's own strict
+  memory protection with a shim older than 16, measured by task 9 without any
+  entry at all, not this.
+
+A consequence: writing a firmware variable needs Windows PowerShell to compile
+a small type (`Add-Type`), which a machine locked to constrained language mode
+refuses; the step then fails and everything before it is put back.
+**Date:** 2026-09-21; rewritten 2026-09-22.
+
+### The entry `bcdedit` makes points at the area — except once, after a shutdown with the next start pending
+**Version:** `bcdedit` of Windows 11 Enterprise Evaluation 25H2 under QEMU
+10.2.1 and OVMF 2025.11; the firmware's variable store decoded on the host
+from the machine's variable file, and read from inside Windows with
+`GetFirmwareEnvironmentVariableEx`; 2026-09-21.
+**Behaviour:** `bcdedit /copy {bootmgr}`, then `/set {id} device partition=D:`
+and `/set {id} path \EFI\BOOT\BOOTX64.EFI` — `crate::program`'s order, and
+path-first, and device twice — each reach the firmware's `Boot####` as
+`HD(4,GPT,<the area's GUID>,0x7c8f800,0x200000)/\EFI\BOOT\BOOTX64.EFI`: the
+area, exactly. They stay so a minute later and across a full shutdown. The
+installer's own entry held the same after the kills at steps 4 (which landed
+after 6), 5 and 6, and after the whole road — where the firmware, on the
+installer's own restart, printed `starting Boot0002 "alo OS" from
+HD(4,…,0x7C8F800,0x200000)/\EFI\BOOT\BOOTX64.EFI`. **After the kill at step
+7** — the next start set, the installer killed in its pause before restarting,
+and Windows then *shut down* (`shutdown /s`) rather than restarted — the same
+entry held `HD(1,…,0x800,0x96000)/\EFI\BOOT\BOOTX64.EFI`: Windows' own EFI
+system partition, whose `\EFI\BOOT\BOOTX64.EFI` is Windows' fallback loader.
+On the next start the firmware honoured the next start, loaded that, and
+Windows came up. A `device` given as a volume path (`partition=\\?\Volume{…}`)
+also leaves the system partition.
+**Our response:** measured and **not explained**: one machine, and what
+rewrote the device between the kill and the next start was not isolated. It
+fails safe — the computer starts Windows — but the install would not continue.
+A person who shuts the computer down instead of letting the installer restart
+it is the case it describes. The installer no longer makes its entry this way
+(the quirk above). **The entry it now writes held, 2026-09-22:** in the Rust
+walk's run, after the kill at step 7 and the same `shutdown /s`, the firmware
+printed `starting Boot#### "alo OS"` from partition 4 at sector 130 611 200
+(`0x7C8F800`) — the area, which the road run on the same installed Windows
+printed at byte offset 66 872 934 400 — and not from Windows' partition. One
+run; what rewrote the `bcdedit`-made entry is still not isolated, and no longer
+matters to the installer.
+**Date:** 2026-09-21; the new entry measured 2026-09-22.
+
+### A stand-in started through Image File Execution Options gets the held program's whole command line, and `cmd` cannot hold it
+**Version:** Windows 11 Enterprise Evaluation 25H2, the `Debugger` value under
+`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution
+Options\<image>`, 2026-09-22.
+**Behaviour:** with a `Debugger` set for `powershell.exe`, Windows starts the
+debugger instead, passing it the held program's full command line. A held
+PowerShell that runs an encoded script has a command line longer than `cmd`'s
+8 191 characters, so a stand-in written as `cmd.exe /c held.cmd` failed at once,
+the program that asked for PowerShell saw a failed step — the installer said
+*Something went wrong, so everything changed so far is being put back* — and
+only then was killed. The state after it happened to look like the step the
+kill was aimed at.
+**Our response:** the walk's stand-in is a small program of its own that writes
+down the command line it was started with and never returns, and a kill after
+which the installer had begun putting back is never counted as landed. With it,
+steps 4, 5, 6 and 7 each landed exactly, the stand-in having caught the entry's
+PowerShell, the letter's PowerShell, `bcdedit /set {fwbootmgr} bootsequence`
+and `shutdown.exe /r /t 0` before they ran.
+**Date:** 2026-09-22.
+
+### Reading a firmware variable needs the firmware privilege switched on, and says nothing when it is not
+**Version:** `GetFirmwareEnvironmentVariableEx` on Windows 11 25H2, from an
+elevated Windows PowerShell, 2026-09-22.
+**Behaviour:** an administrator holds `SeSystemEnvironmentPrivilege` but has
+it switched off. With it off, every read returns 0 bytes — the same answer as a
+variable that does not exist — so a reader that does not switch it on reports
+*no start-up entries at all* on a machine that has five.
+**Our response:** every reader switches it on first (`AdjustTokenPrivileges`),
+the installer's `WritingTheEntry` fails rather than carries on when it cannot,
+and the walk prints the privilege's result before any reading.
+**Date:** 2026-09-22.
+
+### Windows rewrites a start-up entry written into the firmware, within seconds, with its own partition number
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1 and OVMF,
+2026-09-22.
+**Behaviour:** a `Boot####` written directly with a hard-drive node naming
+partition 5 — Windows' own number for the area — was found twenty seconds later
+naming partition 4, the area's GPT slot, with nothing else changed and no
+optional data added; Windows lists such a variable as a *Firmware Application*
+(`0x101fffff`) in its BCD store and keeps the two in step.
+**Our response:** the installer writes the GPT slot itself, read from the
+disk's partition table, rather than relying on Windows to correct it; a
+firmware matches a hard-drive node by slot and signature.
+**Date:** 2026-09-22.

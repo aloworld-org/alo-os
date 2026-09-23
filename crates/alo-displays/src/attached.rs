@@ -41,6 +41,7 @@ use crate::identity::{Identity, Socket};
 use crate::notes::Note;
 use crate::placed::{Placed, Position};
 use crate::reported::{Reported, which_screens_these_are};
+use crate::resuming::Resumed;
 use crate::scale::{Rounded, Scale, Support};
 
 /// One screen as it is plugged in now, in the place the arrangement gives it.
@@ -262,6 +263,104 @@ impl Attached {
             .map(|at| self.away.remove(at).1)
             .filter(|sitting| self.on(sitting).is_some());
         Ok(CameBack::of(back, were_on))
+    }
+
+    /// The machine has woken from a sleep, and these are the screens in front
+    /// of the person now.
+    ///
+    /// The **whole** reported set, never a cable at a time: a machine that was
+    /// asleep saw no cable go in or come out, so this asks everything again
+    /// from what is reported rather than from events nobody was awake for.
+    /// `crate::resuming` is the argument for it, and nothing about how screens
+    /// are laid out is decided differently here than at a sign-in.
+    ///
+    /// The screens that are still there are not moved unless the set they are
+    /// part of changed; a set the person has arranged is restored; a set
+    /// nobody has arranged goes side by side; and what was open on a screen
+    /// that is gone belongs on the main screen of what remains, in the same
+    /// [`Moved`] an unplugged cable answers with.
+    ///
+    /// # Errors
+    /// [`NotArranged::NoScreens`] when nothing at all is reported, and
+    /// [`NotArranged`] for anything else the set cannot be — and then
+    /// **nothing here changes**: the screens the machine went to sleep with
+    /// are still its screens, because the next resume is compared against
+    /// them.
+    pub fn resumed_to(
+        &mut self,
+        reported: Vec<Reported>,
+        remembered: &Changes,
+    ) -> Result<Resumed, NotArranged> {
+        let arriving = which_screens_these_are(&reported);
+        if self.is_exactly(&arriving, &reported) {
+            return Ok(Resumed::the_same_desk_as_before());
+        }
+        let gone: Vec<Identity> = self
+            .on
+            .iter()
+            .map(|held| held.identity.clone())
+            .filter(|identity| !arriving.contains(identity))
+            .collect();
+        let arrived: Vec<Identity> = arriving
+            .iter()
+            .filter(|identity| !self.on.iter().any(|held| &held.identity == *identity))
+            .cloned()
+            .collect();
+
+        let (on, arrangement, mut notes) = settled(reported, remembered, self.support)?;
+        self.on = on;
+        self.arrangement = arrangement;
+        notes.insert(0, Note::TheDeskChanged);
+        self.notes = notes;
+
+        let onto = self.arrangement.main_screen().clone();
+        let moved = gone
+            .into_iter()
+            .map(|screen| self.what_was_on(screen, &onto))
+            .collect();
+        let came_back = arrived
+            .into_iter()
+            .filter_map(|screen| self.what_goes_back_to(screen))
+            .collect();
+        Ok(Resumed::at_another_desk(moved, came_back))
+    }
+
+    /// Whether these are exactly the screens this machine already has, each
+    /// reporting itself exactly as it did.
+    fn is_exactly(&self, arriving: &[Identity], reported: &[Reported]) -> bool {
+        self.on.len() == reported.len()
+            && self.on.iter().all(|held| {
+                arriving.iter().zip(reported).any(|(identity, screen)| {
+                    identity == &held.identity && screen == &held.reported
+                })
+            })
+    }
+
+    /// What was open on a screen that has gone belongs on `onto`, and so does
+    /// whatever was already sitting on the screen that went.
+    fn what_was_on(&mut self, gone: Identity, onto: &Identity) -> Moved {
+        let carrying: Vec<Identity> = self
+            .away
+            .iter()
+            .filter(|(_, sitting)| sitting == &gone)
+            .map(|(from, _)| from.clone())
+            .collect();
+        for (_, sitting) in &mut self.away {
+            if *sitting == gone {
+                *sitting = onto.clone();
+            }
+        }
+        self.away.push((gone.clone(), onto.clone()));
+        Moved::of(gone, onto.clone(), carrying)
+    }
+
+    /// What goes back to a screen that is here again, if anything was away
+    /// from it.
+    fn what_goes_back_to(&mut self, back: Identity) -> Option<CameBack> {
+        let at = self.away.iter().position(|(from, _)| from == &back)?;
+        let were_on = self.away.remove(at).1;
+        let were_on = self.on(&were_on).map(|_| were_on);
+        Some(CameBack::of(back, were_on))
     }
 
     /// These screens, laid out again, keeping what is away from home.
@@ -556,6 +655,232 @@ mod tests {
         let office = attached.on(&the_office_screen()).unwrap();
         assert_eq!(office.rounded(), None);
         assert_eq!(office.drawn_at(), Scale::a_hundred());
+    }
+
+    /// **A machine that slept at one desk and woke at another is set up for
+    /// the desk it woke at**: the arrangement the person made for exactly this
+    /// set is restored, and what was open on the screen that is gone belongs
+    /// on the main screen of what remains.
+    #[test]
+    fn a_machine_that_woke_at_another_desk_is_set_up_for_it() {
+        let mut remembered = Changes::untouched();
+        remembered.remember(an_arrangement(&[
+            (the_laptop(), 0, 175),
+            (the_office_screen(), -2560, 150),
+        ]));
+        remembered.remember(an_arrangement(&[
+            (the_laptop(), 0, 175),
+            (the_home_screen(), 1920, 100),
+        ]));
+
+        // It went to sleep at the office, with the office screen on the left.
+        let mut attached = Attached::now(
+            vec![a_reported_laptop(), a_reported_office_screen()],
+            &remembered,
+            Support::Fractional,
+        )
+        .unwrap();
+        assert_eq!(
+            attached
+                .on(&the_office_screen())
+                .unwrap()
+                .placed()
+                .position(),
+            Position::at(-2560, 0)
+        );
+
+        // It is opened at home, where a different second screen is plugged in.
+        let resumed = attached
+            .resumed_to(
+                vec![a_reported_laptop(), a_reported_home_screen()],
+                &remembered,
+            )
+            .unwrap();
+
+        assert!(!resumed.the_same_desk());
+        assert_eq!(resumed.note(), Some(&Note::TheDeskChanged));
+        assert!(
+            attached.notes().contains(&Note::TheDeskChanged),
+            "the person is told the desk changed, beside what happened to it"
+        );
+        assert!(
+            attached.notes().contains(&Note::AsYouLeftThem),
+            "and home's own arrangement is the one they left"
+        );
+        assert_eq!(
+            attached.on(&the_home_screen()).unwrap().placed().position(),
+            Position::at(1920, 0),
+            "the arrangement made for this set, not the one made for the office"
+        );
+
+        assert_eq!(
+            resumed.moved().count(),
+            1,
+            "one screen went while it was asleep"
+        );
+        let moved = resumed.moved().next().unwrap();
+        assert_eq!(moved.from(), &the_office_screen());
+        assert_eq!(
+            moved.onto(),
+            attached.main_screen(),
+            "what was open on the office screen belongs on the main screen of what remains"
+        );
+        assert_eq!(resumed.came_back().count(), 0);
+        assert!(
+            remembered
+                .for_screens(&Screens::of([the_laptop(), the_office_screen()]).unwrap())
+                .is_some(),
+            "the desk it left is still remembered for the day it is back at it"
+        );
+    }
+
+    /// **A set nobody has arranged is laid out side by side at a resume too**,
+    /// by the same rule a sign-in uses — nothing about layout is decided
+    /// differently because the machine was asleep.
+    #[test]
+    fn a_desk_nobody_has_arranged_is_laid_out_side_by_side_at_a_resume() {
+        let remembered = Changes::untouched();
+        let mut attached =
+            Attached::now(vec![a_reported_laptop()], &remembered, Support::Fractional).unwrap();
+
+        let resumed = attached
+            .resumed_to(
+                vec![a_reported_laptop(), a_reported_office_screen()],
+                &remembered,
+            )
+            .unwrap();
+
+        assert!(!resumed.the_same_desk());
+        assert_eq!(resumed.moved().count(), 0, "no screen went");
+        assert_eq!(attached.main_screen(), &the_laptop());
+        let laptop = attached.on(&the_laptop()).unwrap();
+        assert_eq!(
+            laptop.placed().position(),
+            Position::the_origin(),
+            "a screen that is still there is not moved"
+        );
+        let office = attached.on(&the_office_screen()).unwrap();
+        assert_eq!(
+            office.placed().position(),
+            Position::at(
+                i32::try_from(Scale::per_cent(175).unwrap().laid_out(1920)).unwrap(),
+                0,
+            ),
+            "and the one that arrived is beside it"
+        );
+        assert!(
+            attached
+                .notes()
+                .contains(&Note::NewHere(the_office_screen()))
+        );
+    }
+
+    /// **A machine that wakes to the same screens moves nothing and says
+    /// nothing.** The ordinary morning is the commonest resume there is, and a
+    /// sentence about it every day is a sentence nobody reads.
+    #[test]
+    fn the_same_desk_at_a_resume_moves_nothing_and_says_nothing() {
+        let mut remembered = Changes::untouched();
+        let mut attached = Attached::now(
+            vec![a_reported_laptop(), a_reported_office_screen()],
+            &remembered,
+            Support::Fractional,
+        )
+        .unwrap();
+        remembered.remember(attached.arrangement().clone());
+        let before = attached.clone();
+
+        let resumed = attached
+            .resumed_to(
+                vec![a_reported_laptop(), a_reported_office_screen()],
+                &remembered,
+            )
+            .unwrap();
+
+        assert!(resumed.the_same_desk());
+        assert_eq!(resumed.note(), None);
+        assert_eq!(resumed.moved().count(), 0);
+        assert_eq!(resumed.came_back().count(), 0);
+        assert_eq!(attached, before, "nothing about the desk changed");
+        assert!(!attached.notes().contains(&Note::TheDeskChanged));
+    }
+
+    /// **A machine that wakes with nothing plugged in at all is refused**, and
+    /// keeps the screens it went to sleep with rather than throwing them away:
+    /// the next resume is compared against them.
+    #[test]
+    fn a_machine_that_wakes_to_nothing_is_refused_and_keeps_its_screens() {
+        let remembered = Changes::untouched();
+        let mut attached = Attached::now(
+            vec![a_reported_laptop(), a_reported_office_screen()],
+            &remembered,
+            Support::Fractional,
+        )
+        .unwrap();
+        let before = attached.clone();
+
+        assert_eq!(
+            attached.resumed_to(Vec::new(), &remembered),
+            Err(NotArranged::NoScreens)
+        );
+        assert_eq!(attached, before, "the screens it slept with are still here");
+        assert_eq!(attached.each().count(), 2);
+        assert!(!attached.notes().contains(&Note::TheDeskChanged));
+    }
+
+    /// **The chain holds across a sleep.** A screen unplugged before the
+    /// machine slept, whose windows are sitting on a screen that is gone by
+    /// the time it wakes, moves with them — and goes home when it is plugged
+    /// back in.
+    #[test]
+    fn what_was_already_away_moves_with_the_screen_it_was_sitting_on() {
+        let remembered = Changes::untouched();
+        let mut attached = Attached::now(
+            vec![
+                a_reported_laptop(),
+                a_reported_office_screen(),
+                a_reported_home_screen(),
+            ],
+            &remembered,
+            Support::Fractional,
+        )
+        .unwrap();
+
+        // Before the sleep, the home screen goes and its windows sit on the
+        // main screen of what remains.
+        let moved = attached
+            .unplugged(a_reported_home_screen().socket(), &remembered)
+            .unwrap();
+        let sitting_on = moved.onto().clone();
+        assert_eq!(&sitting_on, attached.main_screen());
+
+        // It sleeps, and wakes with only the office screen plugged in — so the
+        // screen those windows were sitting on has gone too.
+        let resumed = attached
+            .resumed_to(vec![a_reported_office_screen()], &remembered)
+            .unwrap();
+        assert_eq!(resumed.moved().count(), 1);
+        let moved = resumed.moved().next().unwrap();
+        assert_eq!(moved.from(), &sitting_on);
+        assert_eq!(moved.onto(), &the_office_screen());
+        assert!(
+            moved.carrying().any(|also| also == &the_home_screen()),
+            "what was already sitting on it moves with it"
+        );
+
+        // The laptop is back with it, and what was open on the laptop goes
+        // back to the laptop.
+        let resumed = attached
+            .resumed_to(
+                vec![a_reported_laptop(), a_reported_office_screen()],
+                &remembered,
+            )
+            .unwrap();
+        assert_eq!(resumed.came_back().count(), 1);
+        let back = resumed.came_back().next().unwrap();
+        assert_eq!(back.back(), &the_laptop());
+        assert!(back.anything_goes_back());
+        assert_eq!(back.were_on(), Some(&the_office_screen()));
     }
 
     /// **A machine with nothing plugged into it is not an arrangement.**

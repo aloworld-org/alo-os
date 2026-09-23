@@ -24,6 +24,7 @@
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
 //! | [`TheWeights`] | The weights a machine arrives with, and whether the catalogue measured them |
+//! | [`ArrivesWith`], [`THE_CERTIFIED_LAPTOP_GB`] | Which entry the catalogue recommends for the machine this image is built for, or nothing and why |
 //! | [`TheConverter`] | The converting service and the office engine inside it, pinned and reaching nothing (ADR 0039) |
 //! | [`TheVersion`] | Which release the recipe says it builds, which a published image is pinned against |
 //! | [`ThePin`], [`THE_REGISTRY`] | The published release an installer pulls, by digest, and the key it was signed with |
@@ -87,6 +88,7 @@
 //! leaves to `alo-agentd`.
 
 mod accounts;
+mod arrives_with;
 mod asserted;
 mod booting;
 mod checking;
@@ -120,6 +122,7 @@ mod workflow;
 mod wrong;
 
 pub use accounts::{TheStore, where_a_sign_in_looks};
+pub use arrives_with::{ArrivesWith, THE_CERTIFIED_LAPTOP_GB};
 pub use asserted::Asserted;
 pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};

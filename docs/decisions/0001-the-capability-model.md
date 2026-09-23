@@ -1,6 +1,9 @@
 # ADR 0001 — The capability model: what an agent may reach, and under whose authority
 
-**Status:** accepted — the foundation the rest of this repository rests on
+**Status:** accepted — the foundation the rest of this repository rests on.
+**§1 replaced by [ADR 0064](0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md), 2026-09-22:** running code becomes the person's
+grant at three levels. The broker's verb list stays typed and closed, and the
+rest of this decision stands.
 **Date:** 2026-09-02
 **Context:** `alo-agentd`, the application adapters, `docs/contracts/`;
 carries forward the propose-then-approve and intent-layer decisions made in

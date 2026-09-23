@@ -7,13 +7,23 @@
 //! started the way systemd starts it, with its listening socket on standard
 //! input — converting through the engine at `alo_converting::engine::THE_ENGINE`.
 //!
-//! # These tests do not skip themselves
+//! # A machine that cannot run the engine says so, and the rest still fails
 //!
-//! ADR 0039: *a test that skips itself when the engine is missing reports green
-//! on exactly the machines where nothing converts.* On a machine without the
-//! pinned engine the conversions below fail, loudly, with the refusal that
-//! machine would give a person. The report for this task says which engine the
-//! gate machine has and how it got there.
+//! ADR 0039 said these must never skip: *a test that skips itself when the
+//! engine is missing reports green on exactly the machines where nothing
+//! converts.* ADR 0063 amends that for the one case the fleet then met — a
+//! machine where the engine **cannot** exist, because it is an x86_64 build and
+//! that machine is aarch64. Nine tests here failed there on every run, for a
+//! reason nobody on that machine could fix, and a permanently red suite is one
+//! people learn to read past.
+//!
+//! So each of those nine asks [`asking::this_machine_cannot_run_the_engine`]
+//! first — which **runs** the engine rather than looking for its file — and
+//! where it cannot, says what was missing and skips itself. Nothing else
+//! changes: every assertion below is what it was, every other test in this file
+//! still runs everywhere, and on a machine with the engine all nine still run
+//! and still pass. An engine that starts and then converts badly is still a
+//! loud failure, because the ask is only whether the engine runs at all.
 //!
 //! # The refusals are tested as carefully
 //!
@@ -29,6 +39,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+mod asking;
 mod making;
 
 use std::collections::BTreeSet;
@@ -281,6 +292,9 @@ fn a_document_loses_exactly(
 /// the owner's own disk, and the comment.
 #[test]
 fn a_word_document_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly(
         "sample.docx",
         &[
@@ -295,6 +309,9 @@ fn a_word_document_is_converted_and_what_it_lost_is_named() {
 /// **An Excel workbook**: Garamond, `=NOW()`, and the threaded comment.
 #[test]
 fn an_excel_workbook_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly(
         "sample.xlsx",
         &[
@@ -308,6 +325,9 @@ fn an_excel_workbook_is_converted_and_what_it_lost_is_named() {
 /// **A PowerPoint presentation**: Garamond, and the modern comment.
 #[test]
 fn a_powerpoint_presentation_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly("sample.pptx", &[font("Garamond"), NotCarried::Comments]);
 }
 
@@ -333,6 +353,9 @@ fn a_powerpoint_presentation_is_converted_and_what_it_lost_is_named() {
 /// runs on a machine with the engine**, and until then that is what they are.
 #[test]
 fn an_opendocument_text_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly(
         "sample.odt",
         &[
@@ -347,6 +370,9 @@ fn an_opendocument_text_is_converted_and_what_it_lost_is_named() {
 /// **An OpenDocument spreadsheet**: Garamond, `NOW()`, and the comment.
 #[test]
 fn an_opendocument_spreadsheet_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly(
         "sample.ods",
         &[
@@ -360,6 +386,9 @@ fn an_opendocument_spreadsheet_is_converted_and_what_it_lost_is_named() {
 /// **An OpenDocument presentation**: Garamond, and the comment.
 #[test]
 fn an_opendocument_presentation_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly("sample.odp", &[font("Garamond"), NotCarried::Comments]);
 }
 
@@ -373,6 +402,9 @@ fn an_opendocument_presentation_is_converted_and_what_it_lost_is_named() {
 /// one.
 #[test]
 fn a_document_with_a_macro_library_says_the_macros_were_not_run() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_real_document_loses_exactly(
         "sample-with-a-macro.odt",
         &[
@@ -412,6 +444,9 @@ fn a_document_with_a_macro_library_says_the_macros_were_not_run() {
 /// the list is asserted whole rather than searched for Helvetica.
 #[test]
 fn a_pages_document_is_converted_and_the_families_it_is_set_in_are_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     a_document_loses_exactly(
         "notes.pages",
         &the_pages_document(),
@@ -425,6 +460,9 @@ fn a_pages_document_is_converted_and_the_families_it_is_set_in_are_named() {
 /// font the engine carries.
 #[test]
 fn a_document_that_loses_nothing_says_so() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     let running = Running::started();
     let (file, chosen, grants) = sent(
         "letter.docx",

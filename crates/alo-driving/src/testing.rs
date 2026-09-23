@@ -67,3 +67,100 @@ pub(crate) fn answering(door: &str, verb: &str, given: &[(&str, &str)]) -> Strin
         arguments.join(",")
     )
 }
+/// One correct answer per exercise, written out here rather than generated,
+/// because a generated one would be this crate marking its own homework.
+pub(crate) fn right_answer(named: &str) -> String {
+    match named {
+        "list" => answering(
+            "read",
+            "list_folder",
+            &[("folder", "\"/home/anna/Invoices\"")],
+        ),
+        "read" => answering(
+            "read",
+            "read_file",
+            &[("file", "\"/home/anna/Invoices/march.pdf\"")],
+        ),
+        "find" => answering(
+            "read",
+            "find_in_folder",
+            &[
+                ("folder", "\"/home/anna/Invoices\""),
+                ("named", "\"october\""),
+                ("most", "20"),
+            ],
+        ),
+        "rename" => answering(
+            "propose",
+            "rename_file",
+            &[
+                ("file", "\"/home/anna/Invoices/scan001.pdf\""),
+                ("name", "\"march.pdf\""),
+            ],
+        ),
+        "move" => answering(
+            "propose",
+            "move_file",
+            &[
+                ("file", "\"/home/anna/Invoices/march.pdf\""),
+                ("into", "\"/home/anna/Archive\""),
+            ],
+        ),
+        "archive" => answering(
+            "propose",
+            "archive_folder",
+            &[
+                ("folder", "\"/home/anna/Invoices\""),
+                ("into", "\"/home/anna/Archive\""),
+                ("name", "\"invoices\""),
+            ],
+        ),
+        "open" => answering(
+            "propose",
+            "open_application",
+            &[("application", "\"org.alo.Writer\"")],
+        ),
+        "focus" => answering(
+            "propose",
+            "focus_application",
+            &[("application", "\"org.alo.Writer\"")],
+        ),
+        "close" => answering(
+            "propose",
+            "close_application",
+            &[("application", "\"org.alo.Writer\"")],
+        ),
+        _ => answering(
+            "propose",
+            "arrange_application",
+            &[
+                ("application", "\"org.alo.Writer\""),
+                ("where", "\"left_half\""),
+            ],
+        ),
+    }
+}
+
+/// A complete run of the fixed set against [`the_verbs`], answered the same
+/// way every time: correctly, or with the prose this whole measurement exists
+/// to refuse.
+///
+/// Here rather than beside one file's tests because two files need a whole
+/// run — `crate::measured` and `crate::both_roads` — and this file's own
+/// rule about the answers applies to both: they are written out, never built
+/// from the registry they are scored against.
+pub(crate) fn a_whole_run(well: bool) -> crate::Measured {
+    let exercises = crate::Exercises::over(&the_verbs()).unwrap();
+    let attempts = exercises
+        .all()
+        .map(|exercise| {
+            let produced = if well {
+                right_answer(exercise.named())
+            } else {
+                "Of course — I'll take care of that for you.".to_owned()
+            };
+            exercises.attempt(exercise, &produced)
+        })
+        .collect();
+    crate::Measured::of(&exercises, attempts).unwrap()
+}

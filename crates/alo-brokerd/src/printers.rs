@@ -120,7 +120,8 @@ impl<S: PrintService> Carrying for Printers<S> {
             | SystemVerb::ApplyStagedUpdate(_)
             | SystemVerb::RollBack(_)
             | SystemVerb::MountDrive(_)
-            | SystemVerb::EjectDrive(_) => Err(NotCarried(format!(
+            | SystemVerb::EjectDrive(_)
+            | SystemVerb::RestartIntoWindows(_) => Err(NotCarried(format!(
                 "{} is not carried out on this machine yet, so nothing was changed",
                 verb.name()
             ))),

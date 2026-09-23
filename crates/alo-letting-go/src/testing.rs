@@ -25,6 +25,7 @@ use alo_strings::Strings;
 use crate::removing::{NotRemoved, Removing};
 use crate::the_disk::{AskingTheDisk, THE_FLOOR, WhatItIs};
 use crate::the_folder::{AFTER, BEFORE, THE_TURN, THEIRS, TheTurn, Theirs};
+use crate::whose::WhoOwns;
 use crate::words::letting_go_words;
 use crate::writing_it_down::WritingItDown;
 
@@ -34,6 +35,18 @@ pub(crate) const A_DAY: Duration = Duration::from_secs(24 * 60 * 60);
 /// This crate's own words, with nothing translated.
 pub(crate) fn in_english() -> Strings {
     Strings::of(letting_go_words().unwrap())
+}
+
+/// This crate's own words **and `alo-keeping-up`'s**, with nothing translated.
+///
+/// What a person approves before the one act is
+/// `alo_keeping_up::WhatWasKept::forgetting`, which is that crate's sentence
+/// and not this one's — so a test of it needs the vocabulary it is declared in,
+/// exactly as the machine's own session does.
+pub(crate) fn in_english_with_the_undo_words() -> Strings {
+    let mut vocabulary = letting_go_words().unwrap();
+    alo_keeping_up::declare_into(&mut vocabulary).unwrap();
+    Strings::of(vocabulary)
 }
 
 /// A moment far enough from the epoch to read as a real one.
@@ -160,6 +173,16 @@ impl ARemover {
         }
     }
 
+    /// One that refuses everything, which is exactly what a unit started
+    /// without `CAP_SYS_ADMIN` does.
+    pub(crate) fn refusing_everything() -> Self {
+        Self {
+            asked: RefCell::new(Vec::new()),
+            refuses: Some(EVERYTHING.to_owned()),
+            gives_back: None,
+        }
+    }
+
     /// One that removes, and gives `bytes` back to a disk's `purse` each time
     /// it does.
     pub(crate) fn giving_back(purse: Rc<RefCell<u64>>, bytes: u64) -> Self {
@@ -176,10 +199,16 @@ impl ARemover {
     }
 }
 
+/// What [`ARemover::refusing_everything`] answers to, which no directory is
+/// named.
+const EVERYTHING: &str = "*";
+
 impl Removing for ARemover {
     fn remove(&self, at: &Path) -> Result<(), NotRemoved> {
         self.asked.borrow_mut().push(at.to_owned());
-        if self.refuses.as_deref() == at.file_name().and_then(|named| named.to_str()) {
+        if self.refuses.as_deref() == Some(EVERYTHING)
+            || self.refuses.as_deref() == at.file_name().and_then(|named| named.to_str())
+        {
             return Err(NotRemoved::Refused {
                 at: at.to_owned(),
                 said: "Operation not permitted".to_owned(),
@@ -193,6 +222,71 @@ impl Removing for ARemover {
             *purse.borrow_mut() += bytes;
         }
         Ok(())
+    }
+}
+
+/// Who owns what, as a test arranged it — standing in for the one thing a
+/// developer's machine cannot arrange without being several people, which is
+/// two home folders with two owners.
+#[derive(Debug, Default)]
+pub(crate) struct AnOwner {
+    /// The names it has an answer for.
+    these: Vec<(PathBuf, u32)>,
+    /// What it answers for everything else.
+    everything_else: Option<u32>,
+    /// Whether it refuses a directory, the way a machine that cannot be asked
+    /// about a folder does.
+    refuses_folders: bool,
+}
+
+impl AnOwner {
+    /// One that says the same person owns everything.
+    pub(crate) fn everything_owned_by(uid: u32) -> Self {
+        Self {
+            these: Vec::new(),
+            everything_else: Some(uid),
+            refuses_folders: false,
+        }
+    }
+
+    /// One that answers for exactly these names.
+    pub(crate) fn these(these: &[(&Path, u32)]) -> Self {
+        Self {
+            these: these
+                .iter()
+                .map(|(at, uid)| ((*at).to_owned(), *uid))
+                .collect(),
+            everything_else: None,
+            refuses_folders: false,
+        }
+    }
+
+    /// And this person for everything it has no answer for.
+    pub(crate) fn and_everything_else(mut self, uid: u32) -> Self {
+        self.everything_else = Some(uid);
+        self
+    }
+
+    /// One that answers about a file and refuses about a folder.
+    pub(crate) fn refusing_folders() -> Self {
+        Self {
+            these: Vec::new(),
+            everything_else: Some(1000),
+            refuses_folders: true,
+        }
+    }
+}
+
+impl WhoOwns for AnOwner {
+    fn of(&self, at: &Path) -> io::Result<u32> {
+        if self.refuses_folders && at.is_dir() {
+            return Err(io::Error::from(io::ErrorKind::PermissionDenied));
+        }
+        if let Some((_, uid)) = self.these.iter().find(|(named, _)| named == at) {
+            return Ok(*uid);
+        }
+        self.everything_else
+            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))
     }
 }
 

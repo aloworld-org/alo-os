@@ -20,10 +20,28 @@
 
 use std::collections::BTreeSet;
 
-/// How many verbs the broker's list had when this was written, and the number
-/// ADR 0053's amendment says it keeps: *`crates/alo-broker/src/verbs.rs` gains
-/// nothing. `SystemVerb` is a closed enum and stays closed here.*
-const AS_MANY_AS_IT_HAD: usize = 11;
+/// How many verbs the broker's list has, and the number every change to it has
+/// to move on purpose.
+///
+/// It was eleven when this was written, which is what ADR 0053's amendment
+/// asked of the change that wrote it: *`crates/alo-broker/src/verbs.rs` gains
+/// nothing. `SystemVerb` is a closed enum and stays closed here.* That sentence
+/// was about **undo**, and it still is: nothing on the list may be a verb over
+/// the written-down past, which is what the two tests below actually hold.
+///
+/// **Twelve since 2026-09-22**, for `starting.windows-next` — setting the
+/// firmware's next start to the Windows already on the disk, for one start.
+/// [ADR 0062](../../../docs/decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
+/// names it as the alo OS half of the two one-restart switches, and task 16 of
+/// `docs/autonomy/v0-5-the-installer-plan.md` says in as many words that the
+/// verb is added and gets the tests every other verb has. It takes nothing away
+/// from anybody's undo: it writes one firmware variable, reads no record, and
+/// removes nothing.
+///
+/// Moving this number is what a verb costs. It is a line in this file, in the
+/// change that adds the verb, with the decision it rests on named beside it —
+/// which is the point: the list cannot grow quietly.
+const AS_MANY_AS_IT_HAD: usize = 12;
 
 /// **No name on the broker's list begins `undo.`** — the sentence ADR 0045's
 /// seventh term asks a test to hold, over the one list there is.

@@ -19,7 +19,7 @@
 //! fetches them at setup*. It is carried. A machine that fetches at setup has
 //! not arrived ready when it is offline at setup, and the promise is about what
 //! is in the box rather than about the network somebody unpacks it beside. The
-//! price is an image 2.23 GiB larger and an update channel that moves those
+//! price is an image 4.87 GiB larger and an update channel that moves those
 //! bytes whenever this pin moves, which is a cost paid by us; the other answer's
 //! price is paid by a person on their first morning, in a place where we cannot
 //! help them. `docs/quirks.md` carries the measurement.
@@ -37,7 +37,7 @@
 //! manifest before the store leaves the stage. [`TheWeights::drops_the_source`]
 //! and [`TheWeights::holds_the_store_to_its_manifest`] read those two lines, so
 //! a recipe that quietly went back to carrying the weights twice is a red test
-//! rather than an image 2.23 GiB larger than its own comment.
+//! rather than an image twice the model's size larger than its own comment.
 //!
 //! # It is not enough for the recipe to name *a* model
 //!
@@ -46,6 +46,18 @@
 //! not name weights the catalogue has never heard of, or an entry nobody has put
 //! to `alo-driving` — the check is `crate::checking`'s, against
 //! [`alo_models::Catalogue`], and this file is only what the recipe says.
+//!
+//! # And the template is part of the weights, not a detail beside them
+//!
+//! A grade is earned against a model **as it was served**, and what decides
+//! where one turn ends and the next begins is the runtime's template. The same
+//! weights under another template are a different machine answering, so the
+//! recipe pins the template the way it pins the file — one exact artefact, a
+//! whole digest, checked before anything reads it — and
+//! [`TheWeights::carries_its_template_pinned`] reads that line. It is one
+//! question rather than two because it moves for one reason: the day the model
+//! this image carries changes, both pins change together or the image serves a
+//! model in another model's words.
 //!
 //! # Read leniently, judged strictly
 //!
@@ -79,11 +91,31 @@ const THE_ARTEFACT_ARG: &str = "ARG THE_MODELS_ARTEFACT=";
 /// The build argument that names where the weights are fetched from.
 const THE_SOURCE_ARG: &str = "ARG THE_MODELS_WEIGHTS=";
 
+/// The name of that argument alone, for finding the fetch that uses it.
+const THE_SOURCE_NAME: &str = "THE_MODELS_WEIGHTS";
+
 /// The build argument that holds the weights' digest.
 const THE_DIGEST_ARG: &str = "ARG THE_MODELS_SHA256=";
 
 /// The name of the digest argument alone, for finding the line that checks it.
 const THE_DIGEST_NAME: &str = "THE_MODELS_SHA256";
+
+/// The build argument that names where the runtime's template for this model is
+/// fetched from.
+const THE_TEMPLATE_ARG: &str = "ARG THE_MODELS_TEMPLATE=";
+
+/// The name of that argument alone, for finding the fetch that uses it.
+const THE_TEMPLATE_NAME: &str = "THE_MODELS_TEMPLATE";
+
+/// The build argument that holds the template's digest.
+const THE_TEMPLATE_DIGEST_ARG: &str = "ARG THE_MODELS_TEMPLATE_SHA256=";
+
+/// The name of that digest argument alone, for finding the line that checks it.
+const THE_TEMPLATE_DIGEST_NAME: &str = "THE_MODELS_TEMPLATE_SHA256";
+
+/// The file the import is told to read, which is where the template has to
+/// arrive to be the template this model is served with.
+const THE_MODELFILE: &str = "/Modelfile";
 
 /// What the checking of a digest looks like in a build step.
 const A_DIGEST_CHECKED: &str = "sha256sum --check";
@@ -139,6 +171,15 @@ pub struct TheWeights {
     digest: Option<String>,
     /// Whether that digest is checked before anything else reads the file.
     checked_first: bool,
+    /// Where the runtime's template for this model is fetched from, or
+    /// [`None`].
+    template: Option<String>,
+    /// The digest the recipe pins for it, or [`None`].
+    template_digest: Option<String>,
+    /// Whether that digest is checked before anything else reads the template.
+    template_checked_first: bool,
+    /// Whether the fetched template is what the import is handed.
+    template_reaches_the_import: bool,
     /// Whether the weights are copied onto the machine.
     lands: bool,
     /// Whether the blob the runtime left the checked file under is removed
@@ -163,6 +204,10 @@ impl TheWeights {
             from: None,
             digest: None,
             checked_first: false,
+            template: None,
+            template_digest: None,
+            template_checked_first: false,
+            template_reaches_the_import: false,
             lands: false,
             source_dropped: false,
             held_to_manifest: false,
@@ -179,6 +224,8 @@ impl TheWeights {
                 (THE_ARTEFACT_ARG, &mut weights.artefact),
                 (THE_SOURCE_ARG, &mut weights.from),
                 (THE_DIGEST_ARG, &mut weights.digest),
+                (THE_TEMPLATE_ARG, &mut weights.template),
+                (THE_TEMPLATE_DIGEST_ARG, &mut weights.template_digest),
             ] {
                 if let Some(said) = argument(line, named) {
                     *into = Some(said.to_owned());
@@ -189,7 +236,11 @@ impl TheWeights {
             }
         }
 
-        weights.checked_first = checked_before_anything_read_it(containerfile);
+        weights.checked_first =
+            checked_before_it_was_read(containerfile, THE_SOURCE_NAME, THE_DIGEST_NAME);
+        weights.template_checked_first =
+            checked_before_it_was_read(containerfile, THE_TEMPLATE_NAME, THE_TEMPLATE_DIGEST_NAME);
+        weights.template_reaches_the_import = the_template_reaches_the_import(containerfile);
         let (source_dropped, held_to_manifest) = carried_once(containerfile);
         weights.source_dropped = source_dropped;
         weights.held_to_manifest = held_to_manifest;
@@ -252,6 +303,38 @@ impl TheWeights {
         said(&self.digest)
     }
 
+    /// Where the runtime's template for this model is fetched from, or [`None`]
+    /// where the recipe says nothing.
+    #[must_use]
+    pub fn template(&self) -> Option<&str> {
+        said(&self.template)
+    }
+
+    /// The digest the recipe names for that template, or [`None`].
+    #[must_use]
+    pub fn template_digest(&self) -> Option<&str> {
+        said(&self.template_digest)
+    }
+
+    /// Whether the template this model is served with is one exact artefact,
+    /// held to a whole digest checked **before anything reads it**, and handed
+    /// to the import.
+    ///
+    /// Four conditions and not three, because the fourth is the one that fails
+    /// silently: a template fetched, pinned and checked, and then not used, is
+    /// a build that passes every check in this file while the machine serves
+    /// the model under whatever the runtime guessed. What this reads is that
+    /// some line after the check names the fetched file and that the import is
+    /// handed a Modelfile; it cannot read that the two are the same command,
+    /// and does not claim to.
+    #[must_use]
+    pub fn carries_its_template_pinned(&self) -> bool {
+        self.template_checked_first
+            && self.template_reaches_the_import
+            && self.template().is_some_and(|from| !moves(from))
+            && self.template_digest().is_some_and(is_a_whole_digest)
+    }
+
     /// Whether the weights are copied onto the machine at all.
     #[must_use]
     pub const fn land(&self) -> bool {
@@ -265,8 +348,7 @@ impl TheWeights {
     /// branch is not a revision, and `latest` is not a version.
     #[must_use]
     pub fn is_pinned(&self) -> bool {
-        self.from()
-            .is_some_and(|from| !MOVING.iter().any(|moving| from.contains(moving)))
+        self.from().is_some_and(|from| !moves(from))
     }
 
     /// Whether the weights are held to a whole digest that the build checks
@@ -289,22 +371,32 @@ fn said(what: &Option<String>) -> Option<&str> {
     what.as_deref().map(str::trim).filter(|it| !it.is_empty())
 }
 
-/// Whether the stage that fetches the weights checks their digest before any
-/// other line in it touches the file it fetched.
+/// Whether this source names *whatever is there today* rather than one file.
+fn moves(from: &str) -> bool {
+    MOVING.iter().any(|moving| from.contains(moving))
+}
+
+/// Whether the weights stage checks the digest of the file it fetched from
+/// `source` before any other line in it touches that file.
 ///
 /// Order is the whole question, so it is asked inside one stage: which file was
 /// fetched is what the fetch itself says, and every later line naming that file
 /// is something reading it.
-fn checked_before_anything_read_it(containerfile: &str) -> bool {
+///
+/// **The fetch is found by the argument that names its source**, rather than by
+/// being the first fetch in the stage, because the stage fetches more than one
+/// thing and *the first one* would answer about the wrong file the day the
+/// order changed.
+fn checked_before_it_was_read(containerfile: &str, source: &str, digest: &str) -> bool {
     let lines = in_stage(containerfile, THE_STAGE);
 
-    let Some(fetched) = lines.iter().copied().find_map(fetched_to) else {
+    let Some(fetched) = fetched_from(&lines, source) else {
         return false;
     };
 
     let mut checked = false;
     for line in lines {
-        if line.contains(THE_DIGEST_NAME) && line.contains(A_DIGEST_CHECKED) {
+        if line.contains(digest) && line.contains(A_DIGEST_CHECKED) {
             checked = true;
             continue;
         }
@@ -316,6 +408,45 @@ fn checked_before_anything_read_it(containerfile: &str) -> bool {
         }
     }
     checked
+}
+
+/// Where the fetch that reads the argument `source` puts what it fetched.
+///
+/// A line that merely mentions the argument — the `ARG` line that declares it,
+/// or the check that reads its digest — is not a fetch, so what is looked for
+/// is a line that both names the argument and says where it wrote.
+fn fetched_from<'a>(lines: &[&'a str], source: &str) -> Option<&'a str> {
+    lines
+        .iter()
+        .copied()
+        .filter(|line| line.contains(source))
+        .find_map(fetched_to)
+}
+
+/// Whether the template the recipe fetched is what the import is handed.
+///
+/// Two lines, in order: something after the digest check reads the fetched
+/// file, and the import is given a Modelfile to read. Neither alone is the
+/// answer — a template fetched and never read is the failure this exists for,
+/// and an import with no Modelfile is not this model being served at all.
+fn the_template_reaches_the_import(containerfile: &str) -> bool {
+    let lines = in_stage(containerfile, THE_STAGE);
+    let Some(fetched) = fetched_from(&lines, THE_TEMPLATE_NAME) else {
+        return false;
+    };
+    let Some(checked) = lines.iter().position(|line| {
+        line.contains(THE_TEMPLATE_DIGEST_NAME) && line.contains(A_DIGEST_CHECKED)
+    }) else {
+        return false;
+    };
+    let read = lines
+        .iter()
+        .skip(checked + 1)
+        .any(|line| line.contains(fetched) && fetched_to(line).is_none());
+    let imported = lines
+        .iter()
+        .any(|line| line.contains(IMPORTED) && line.contains(THE_MODELFILE));
+    read && imported
 }
 
 /// Whether the weights stage, after the import, removes the source blob and
@@ -385,10 +516,16 @@ mod tests {
             "ARG THE_MODELS_ARTEFACT=phi3:3.8b-mini-4k-instruct-q4_K_M".to_owned(),
             "ARG THE_MODELS_WEIGHTS=https://example.test/resolve/a64113/it.gguf".to_owned(),
             format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
+            "ARG THE_MODELS_TEMPLATE=https://example.test/resolve/a64113/it.gotmpl".to_owned(),
+            format!("ARG THE_MODELS_TEMPLATE_SHA256={}", "cd".repeat(32)),
             "FROM builder AS weights".to_owned(),
             "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\" \\".to_owned(),
-            " && echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check -".to_owned(),
-            "RUN ollama create it -f /weights.gguf \\".to_owned(),
+            " && curl --output /template.gotmpl \"${THE_MODELS_TEMPLATE}\" \\".to_owned(),
+            " && echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check - \\".to_owned(),
+            " && echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -"
+                .to_owned(),
+            "RUN cat /template.gotmpl > /Modelfile; \\".to_owned(),
+            "    ollama create it -f /Modelfile; \\".to_owned(),
             " && rm -f /models/blobs/sha256-${THE_MODELS_SHA256} \\".to_owned(),
             " && for blob in /models/blobs/*; do \\".to_owned(),
             "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || exit 1; \\".to_owned(),
@@ -423,6 +560,74 @@ mod tests {
         assert!(read.is_verified());
         assert!(read.drops_the_source());
         assert!(read.holds_the_store_to_its_manifest());
+        assert_eq!(
+            read.template(),
+            Some("https://example.test/resolve/a64113/it.gotmpl")
+        );
+        assert_eq!(read.template_digest(), Some("cd".repeat(32).as_str()));
+        assert!(read.carries_its_template_pinned());
+    }
+
+    /// **A template nothing pins is not a template this model was graded
+    /// under**, and each of the four ways it comes loose is one line of an
+    /// otherwise correct recipe.
+    #[test]
+    fn a_template_that_is_not_pinned_checked_and_used_reads_as_none() {
+        let moving = with(
+            "https://example.test/resolve/a64113/it.gotmpl",
+            "https://example.test/resolve/main/it.gotmpl",
+        );
+        assert!(!moving.carries_its_template_pinned());
+        assert!(
+            moving.is_verified(),
+            "and the weights beside it are untouched, because they are a separate pin"
+        );
+
+        let half = with(&"cd".repeat(32), &"cd".repeat(16));
+        assert!(!half.carries_its_template_pinned());
+
+        let unchecked = with(
+            " && echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -",
+            " && true",
+        );
+        assert!(!unchecked.carries_its_template_pinned());
+        assert!(
+            unchecked.is_verified(),
+            "the weights' own check is a different line and is still there"
+        );
+
+        let unused = with("RUN cat /template.gotmpl > /Modelfile; \\", "RUN true; \\");
+        assert!(!unused.carries_its_template_pinned());
+    }
+
+    /// **A template checked after something read it is not a check**, which is
+    /// the same mistake as the weights' and the one that leaves the wrong
+    /// words in a layer.
+    #[test]
+    fn a_template_checked_after_it_was_read_is_not_a_check() {
+        let afterwards = saying(&[
+            &format!("ARG THE_MODELS_TEMPLATE_SHA256={}", "cd".repeat(32)),
+            "FROM builder AS weights",
+            "RUN curl --output /template.gotmpl \"${THE_MODELS_TEMPLATE}\"",
+            "RUN cat /template.gotmpl > /Modelfile",
+            "RUN echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -",
+            "RUN ollama create it -f /Modelfile",
+        ]);
+        assert!(!afterwards.carries_its_template_pinned());
+    }
+
+    /// **A recipe that fetches no template at all reads as one that pins
+    /// none**, rather than as a refusal — this file reports, and
+    /// `crate::checking` judges.
+    #[test]
+    fn a_recipe_with_no_template_in_it_pins_none() {
+        let read = saying(&[
+            "FROM builder AS weights",
+            "RUN ollama create it -f /Modelfile",
+        ]);
+        assert_eq!(read.template(), None);
+        assert_eq!(read.template_digest(), None);
+        assert!(!read.carries_its_template_pinned());
     }
 
     /// **A stage that leaves the runtime's copy of the checked file in the
@@ -465,7 +670,7 @@ mod tests {
         let early = saying(&[
             &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
             "FROM builder AS weights",
-            "RUN curl --output /weights.gguf https://example.test/resolve/a64113/it.gguf",
+            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
             "RUN rm -f /models/blobs/sha256-${THE_MODELS_SHA256}",
             "RUN ollama create it -f /weights.gguf",
         ]);
@@ -534,7 +739,7 @@ mod tests {
         let afterwards = saying(&[
             &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
             "FROM builder AS weights",
-            "RUN curl --output /weights.gguf https://example.test/resolve/a64113/it.gguf",
+            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
             "RUN ollama create it -f /weights.gguf",
             "RUN echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check -",
         ]);
@@ -551,7 +756,7 @@ mod tests {
             "FROM builder AS runtime",
             "RUN echo \"${THE_MODELS_SHA256}  /it\" | sha256sum --check -",
             "FROM builder AS weights",
-            "RUN curl --output /weights.gguf https://example.test/resolve/a64113/it.gguf",
+            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
             "RUN ollama create it -f /weights.gguf",
         ]);
         assert!(!elsewhere.is_verified());

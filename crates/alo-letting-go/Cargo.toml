@@ -59,5 +59,12 @@ toml = { workspace = true }
 name = "alo-letting-go"
 path = "src/bin/alo-letting-go.rs"
 
+# The second unit's program. Two binaries rather than one, for ADR 0053's
+# reason: *a fixed `ExecStart` with no arguments* and two units means two
+# programs. The expiry obeys a window on a timer; this obeys a person.
+[[bin]]
+name = "alo-forgetting"
+path = "src/bin/alo-forgetting.rs"
+
 [lints]
 workspace = true

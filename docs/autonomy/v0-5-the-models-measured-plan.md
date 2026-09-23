@@ -658,8 +658,41 @@ cannot answer.
 
 ### 22. The graphics card, when there is one, and the machine when there is not
 
-**Status:** ready. **Depends on:** nothing. Asked for by the owner on
-2026-09-21, who will be installing on a machine with no discrete graphics.
+**Status:** **Done, 2026-09-22**, on the third PC — the processor road
+measured, every refusal on the way to a card tested, and the card road
+`- [x] The code.` with the machine it still needs named in the report.
+**Taken by the third PC at the owner's instruction**, moved across from the Mac
+because this machine is x86_64 with **no discrete graphics**, which is the
+condition this acceptance was written for and the condition the owner's laptop
+is in. Measured here before starting, and again by the test that ships: no VGA
+or 3D device on the bus, no `/dev/dri`, no `nvidia-smi`. **Depends on:**
+nothing. Asked for by the owner on 2026-09-21.
+
+Report:
+[Which part of this machine runs the model](updates/which-part-of-this-machine-runs-the-model.md).
+
+**What it left for task 23, said here so nobody reads this as the whole line.**
+A card *being used* is shown nowhere: no machine in this fleet has one, and no
+emulated device stands in for one (ADR 0056's reason, unchanged). The code for
+it is written and runs from a machine that has one — `alo_models::Road::of`
+reads the runtime's own residency, `Ollama::answers_in_the_envelope_on` puts
+one question on a named road, and `alo_driving::BothRoads` holds the two runs
+to each other and **refuses** a pair that is not one of each, which is what
+stops a machine with no card reporting agreement with itself.
+
+**Split, 2026-09-22, the way [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
+split the chip's half.** This task is the road a machine without a card takes,
+and **task 23** below is the road a machine with one takes. Neither ticks
+`docs/features.md`'s line alone. A machine with no card cannot show that a card
+is used, and saying so is the work rather than a gap in it.
+
+**The distinction the owner named, and it is not a detail.** A machine that has
+an NVIDIA card and no NVIDIA driver must read as **no driver**, never as *no
+card*. The base is rented and unmodified (ADR 0011) and **does not ship that
+driver**, so this is the likely state of every NVIDIA machine alo OS meets
+today — not an edge case. A person told *no card* would go looking for hardware
+they already own; a person told *no usable driver for the card you have* knows
+what is true. The two readings send them to different shops.
 
 **ADR 0007 settled the principle three weeks ago and nothing implements it.**
 *The CPU is the default; a GPU is acceleration* — *a GPU changes speed, not
@@ -693,3 +726,54 @@ waits for hardware, the way the chip's half of encryption does.
   machine that is still needed named, exactly as ADR 0056 does for the chip.
   ADR 0007's rejected framing — the GPU workstation first, `min_vram_gb` as the
   judge, *the GPU changes what is possible* — is not reintroduced here.
+
+### 23. The card road, on a machine that has one
+
+**Status:** blocked — **on hardware only.** Task 22 is done (2026-09-22) and
+this task's dependency on it is cleared: what remains is a machine with a
+discrete graphics card the pinned runtime can use, and a driver for it.
+`docs/hardware.md` lists none, and the machine this plan's lane runs on has no
+VGA or 3D device at all. Split from task 22 on 2026-09-22, the way
+[ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
+split the chip's half from the disk's. **Depends on:** 22, which is finished.
+
+**The instrument is written and waiting.** Task 22 left
+`crates/alo-driving/tests/the_same_question_on_each_road.rs`, whose
+`one_question_on_each_road_of_a_machine_that_has_both` is `#[ignore]`d and runs
+with `ALO_DRIVING_MODEL` set on a machine that has a card: it puts the fixed
+set on each road through `Ollama::answers_in_the_envelope_on`, reads the road
+each run really took from the runtime's own residency rather than from what was
+asked for, and holds the two grades to each other. It refuses before it starts
+on a machine with no usable card, naming what is missing. What this task adds
+is the hardware, the run, and the lines in the report and `docs/hardware.md`.
+
+**One thing to confirm on that machine before trusting a result:**
+`"options":{"num_gpu":0}` — how the processor road is asked for — has never
+been put to a real pinned runtime, because this machine has neither a runtime
+nor a card. It is Ollama's own documented option and the ordinary path sends no
+`options` field at all, but a road *asked for* and not *taken* would make the
+comparison a comparison of one road with itself. `Road::of` reads what actually
+happened, so the check is that the two runs report different roads; if the
+release disagrees, `docs/quirks.md` gains the line.
+
+Task 22 measures the road a machine without a card takes, and every refusal on
+the way to a card that cannot be used. What it cannot show is a card **being
+used**: that the runtime loads onto it, that `on_the_gpu_bytes` carries a number
+a real device reported, and that the same question answered on the card and on
+the processor comes back **the same** — ADR 0007's *a GPU changes speed, not
+capability*, which is the claim this task exists to hold rather than assert.
+
+- **Acceptance:** on a named machine with a card the runtime can use, the pinned
+  model runs on it; `on_the_gpu_bytes` carries what that device reported, not a
+  catalogue figure; one question is asked on the card road and on the processor
+  road and **the two answers are held to each other**; the road taken is said in
+  the vocabulary and never inferred from how long it took; and the run is pasted
+  into the report with the machine named, as ADR 0056 asks of the chip's three
+  promises. `docs/hardware.md` gains the line saying which machine showed it and
+  when.
+- **Constraint:** the card road is **never ticked from a machine without a
+  card**, and no emulated or software device stands in for one — the same reason
+  ADR 0056 rejected a simulated chip: a run against something that agrees with
+  itself is evidence about the simulator. No driver of ours and no second runtime
+  (ADR 0011, ADR 0006). `min_vram_gb` does not return as a judge of what is
+  offerable.

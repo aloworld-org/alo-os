@@ -364,22 +364,27 @@ heavier — **a model on the disk of every machine we ship, sized for that
 machine** (ADR 0007) — and that is what the image now declares.
 
 The recipe says **which weights a certified machine arrives with**:
-phi-3-mini-instruct, Q4\_K\_M, the publisher's own GGUF at one pinned revision,
-held to a sha256 that is checked before any other step reads the file. The open
+qwen3-8b, Q4\_K\_M, the pinned runtime library's own blob addressed by content,
+held to a sha256 that is checked before any other step reads the file, with that
+artefact's own template pinned and checked beside it. The open
 question ADR 0025 left is **decided — the weights ride on the image** — because a
 machine that fetches at setup has not arrived ready when it is offline at setup;
 docs/quirks.md carries what that costs and what the other answer would have cost.
-Which model is not a preference either: it is the largest catalogue entry
-somebody has actually put to alo-driving, that fits the 16 GB laptop
-docs/hardware.md certifies first, and whose licence is ours to hand on — the last
-of which matters because carrying weights in an image is redistributing them.
-Seven refusals hold each of those, each a disagreement naming the decision it
+**Which model is not a preference and is not written in the recipe**: since
+2026-09-22 it is the answer alo_models::Catalogue::agent_for_cpu gives for the
+16 GB laptop docs/hardware.md certifies first — run here, may be used without
+reading a licence first, and measured driving the verbs the way a turn asks —
+and crates/alo-image refuses a recipe that names anything else. **And where that
+method recommends nothing, the image carries nothing** and the machine says so
+through the answer alo-telling already gives, rather than shipping gigabytes of
+a model that cannot drive anything. Ten refusals hold each of those, each a
+disagreement naming the decision it
 breaks. The four setup choices, local first and nothing pre-selected, are the
 crate added for them and the settings nothing writes on a person's behalf.
 
 **Something now serves them, 2026-09-11.** image/usr/lib/systemd/system/alo-modeld.service
 is the one thing on the machine that serves the model it arrived with, and until
-it existed a machine built from this recipe booted with 2.23 GiB of model on its
+it existed a machine built from this recipe booted with gigabytes of model on its
 disk and no process serving it — which is the answer a machine with no model at
 all gives. It runs as alo-model (60991), a login and a group of its own that is
 neither the person's nor the agent's; it holds no capability and both lines say
@@ -411,10 +416,16 @@ started by the image's own systemd under a container, sixteen packets to the
 publisher's port were attempted by its login and none reached the host side of
 the bridge while an unfiltered process in the same container was answered.
 `docs/quirks.md` carries all of it with versions and dates. A packet counter
-beside a *booted* image is still owed, with the boot. **No catalogued model clears the verb-driving bar**, this one included —
-every entry anybody has measured is graded *rarely*, so what a machine arrives
-able to do is load and answer with a local model rather than be handed an agent
-turn. And **who on the machine may ask the model anything is not decided**: a
+beside a *booted* image is still owed, with the boot. **The bar is cleared and
+the road to it is not finished, 2026-09-22.** `qwen3-8b` drove 20 of 20 in the
+words a turn shows a model, which is why the image carries it — but that grade
+was earned **in the envelope**, and a shipped machine's agent turn does not yet
+ask that way. So what a machine arrives able to do is load and answer with a
+local model, and the last step between that and an agent turn is lane A's
+wiring of `alo-asking`'s local door rather than another model. The image's
+predicted size with those weights aboard, and the arithmetic it is predicted
+from, are in `docs/quirks.md`; no build of the recipe carrying them has been
+made. And **who on the machine may ask the model anything is not decided**: a
 loopback TCP port has no owner and no mode, so no line in any unit gates it, and
 `docs/decisions/0027-who-may-ask-the-model-anything.md` is where that is argued
 and priced. That last one does not block this promise — it is about v0.5's

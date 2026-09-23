@@ -485,7 +485,15 @@ below is written from this outcome and was written in the same change.
 
 ### 10. A model on the disk, sized for the machine it lands on
 
-**Status:** ready — **unblocked 2026-09-14.** **Depends on:** 9.
+**Status:** ready — **its precondition was met on 2026-09-14.** **Depends on:** 9.
+
+> **Do not write *unblocked* in a status line.** This one said it from
+> 2026-09-14 until 2026-09-22, and the loop skipped the task for eight days: it
+> marks a task not-yet-runnable when the status line **contains** the word
+> *blocked*, and *unblocked* contains it. The task was ready the whole time and
+> read as blocked to every machine that surveyed the plans — a stale blocker of
+> the worst kind, because the word announcing it was cleared is the word that
+> kept it shut. Say *its precondition was met* instead.
 
 **The precondition this waited on has been met.** It said *the catalogue
 having an entry that clears the verb-driving bar*, and since ADR 0034 the
@@ -549,6 +557,56 @@ worker taking this task would be choosing which model to ship by wishing.
 - **Constraint:** nothing here chooses for a person (ADR 0016, ADR 0025) — what
   the machine arrives *able* to do is not a value in anybody's settings file.
   Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-22.** The image carries **`qwen3-8b`** at four bits — the entry
+`Catalogue::agent_for_cpu(16.0)` recommends — and the recipe no longer says
+which model that is. `crates/alo-image/src/arrives_with.rs` asks the catalogue
+the same method the rest of alo OS asks, so a name typed into
+`image/Containerfile` that the catalogue does not recommend is a red test rather
+than an image; the twin is `phi-3-mini-instruct`, **the entry this image really
+carried until today**, which passes every other check in
+`everything_wrong_with` — catalogued, measured, small enough, MIT — and is
+graded `rarely`, so a machine arriving with it arrives with a model that cannot
+drive anything.
+
+**Where no entry clears the bar the image carries nothing**, and that half is
+shown against the real recipe rather than a fixture: the built-in catalogue has
+five measured entries a machine with eight gigabytes can run and none of them
+clears the bar, so the recipe that ships is refused when it is asked about that
+class — with `alo_models::NoAgentHere`'s own reason, which is the sentence
+`alo-telling` already walks, rather than a sentence of the checker's own. Strip
+the weights out and the same class has nothing to say about them.
+
+**Two findings decided where the weights are fetched from, and the second is
+the one worth carrying.** The first recipe fetched the publisher's GGUF and
+objected that *a registry tag is not a digest* — true of tags, and not of a
+blob addressed by content. The second is that **the publisher's GGUF and the
+runtime library's are not the same file**: 5_027_783_488 bytes against
+5_225_374_496 for this model, and 736 bytes apart for the old one. Every grade
+in this catalogue was earned against the library's file, which is what
+`artefact` names, so the recipe now fetches that blob by its own digest — and
+the artefact's published template beside it, pinned and checked the same way,
+because a grade is earned against a model **as it was served** and the same
+weights under a hand-copied template are a different machine answering.
+
+**The image's size is arithmetic and is written as arithmetic**: 4.87 GiB of
+weights where there were 2.23, and a predicted **8.79 GiB** image over the
+6.15 GiB measured on 2026-09-12. **No build of this recipe has been made**, so
+the fetch, the two digest checks, the template and the import are a recipe
+rather than a measurement — which is task 17 below, written from this outcome
+in the same change. And as the task said it must: the grade `qwen3-8b` earned
+was earned **in the envelope**, lane A's wiring of a shipped machine's turn to
+ask that way has not landed, and the catalogue's recommendation still reads the
+free grade (ADR 0032 §5).
+
+Measured in `crates/alo-image/src/arrives_with.rs`,
+`crates/alo-image/src/checking.rs` and `crates/alo-image/src/weights.rs`.
+`docs/quirks.md` carries the size and both findings beside task 8's
+measurement, and `docs/autonomy/v0-01-evidence.md` is rewritten to say what is
+now shown. Report:
+`docs/autonomy/updates/a-model-on-the-disk-sized-for-the-machine-it-lands-on.md`.
+The matching task in `v0-01-delivery-plan.md` is its task 31, already marked
+done on 2026-09-11 and now carrying a dated note saying what superseded it.
 
 ### 11. What a person is asked at setup, before there is anywhere to ask it
 
@@ -1009,3 +1067,53 @@ is `crates/alo-models`' own — a person asking for a model in one command, whic
   `crates/alo-shell`. A check that downloads five gigabytes in a unit test is
   not a check; the measurement against a real runtime is an integration test,
   `#[ignore]`d for the reasons the existing ones are.
+
+### 17. The recipe built with the model it now carries
+
+**Status:** ready. **Depends on:** 10.
+
+Task 10 changed what every machine we build arrives with — a different model, a
+different registry, a second pinned file and a Modelfile assembled out of it —
+and **not one byte of that has been built**. The numbers it wrote down say so
+in as many words: 8.79 GiB is the 6.15 GiB measured on 2026-09-12 plus the
+difference between two blobs, which is arithmetic over a build of a different
+recipe. Task 33 and task 34 of `v0-01-delivery-plan.md` are the precedent for
+what a build is worth here: the first one found that the runtime carried the
+weights twice, and nothing short of running it would have.
+
+Three things in the new recipe can fail in a way no test in this repository can
+see. The blob at `registry.ollama.ai/v2/library/qwen3/blobs/sha256:a3de86cd…`
+may not be a file `ollama create` will import from a `FROM` line. The template
+is fetched and wrapped in `TEMPLATE """…"""` by a shell that has never run, and
+a Go template inside a heredoc-free `printf` is exactly where a quoting fault
+hides. And the store's *carried once* assertions — one manifest, every blob
+named by it — were written against an import of a publisher's GGUF and have
+never been run against this one.
+
+- **Acceptance:** `podman build` (or the fleet's equivalent) of
+  `image/Containerfile` completes on this machine with the weights stage
+  running rather than cached from an earlier model; the built image's size is
+  measured and written into `docs/quirks.md` **beside the predicted figure, as
+  a correction to it if they differ**, with the difference explained rather
+  than rounded away; the runtime is started out of the built image and asked to
+  `show` the artefact the recipe names, so that the template the machine will
+  serve is read back from the store rather than assumed; the store is inspected
+  for exactly one manifest and no blob the manifest does not name, which is the
+  assertion the build already makes and which nobody has watched pass for this
+  model; and what was found is written into `docs/quirks.md` whether or not it
+  is a surprise.
+- **Constraint:** no grade may be earned here and none may move — a model
+  answering inside a build is not `alo-driving`'s measurement. Nothing is
+  loosened to make the build pass: a template that will not parse is a finding
+  and a fix to the recipe, never a template rewritten by hand until the engine
+  accepts it. No setup flow, nothing in `crates/alo-shell`, and the image is
+  **not** pushed or pinned — `image/pinned.toml` is the owner's, under ADR 0036,
+  and a build is not a release.
+- **And the honest outcome if the machine cannot build it:** the image needs
+  about ten gigabytes of layers and a five-gigabyte download, and this lane's
+  guest has been taken down by less. If the build cannot be made here, that is
+  the deliverable: the attempt recorded with what stopped it, the predicted
+  figure left standing and labelled as prediction, and the build named as work
+  owed to a machine with room — which is an owner's decision under
+  `docs/autonomy/SHARED_MAIN.md`, not something to guess around.
+

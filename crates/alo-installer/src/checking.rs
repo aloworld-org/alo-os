@@ -8,6 +8,7 @@
 use crate::bitlocker::BitLocker;
 use crate::disks::Disks;
 use crate::entries;
+use crate::fast_startup::FastStartup;
 use crate::found::Found;
 use crate::machine::TheMachine;
 use crate::memory;
@@ -39,6 +40,7 @@ pub fn check(machine: &mut impl TheMachine) -> Found {
         disks: Disks::read(answered(machine, &Program::ListingTheDisks).as_deref()),
         an_entry_is_named_alo_os: answered(machine, &Program::ListingTheStartEntries)
             .map(|printed| entries::one_is_named_alo_os(&printed)),
+        fast_startup: FastStartup::read(answered(machine, &Program::ReadingFastStartup).as_deref()),
     }
 }
 

@@ -1,5 +1,7 @@
 # ADR 0062 — The menu a machine starts at is alo OS's, and Windows stands behind it
 
+**Fast Startup, left open below, is decided by [ADR 0064](0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md):** the installer asks
+the person.
 **Status:** **accepted, 2026-09-21, by the owner**, with the three terms under
 *As the owner accepted it*, which are part of the decision rather than
 commentary on it. Written for task 4 of `docs/autonomy/v0-5-the-installer-plan.md`

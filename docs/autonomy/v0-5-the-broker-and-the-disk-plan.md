@@ -48,6 +48,37 @@ and never patched, ADR 0011); or make any verb that could lock a person out of t
 own disk without the recovery road task 5 decides. Before writing the next task,
 `git pull` and read the plan as published.
 
+**One verb released to the installer plan, owner-authorized 2026-09-22.** The
+owner instructed the third PC to build the alo OS side of installing alongside
+Windows, and said of it: *"`SystemVerb` is a closed enum: adding a verb is
+deliberate, so give it its name, its words and the same tests the other verbs
+have."* That verb is `RestartIntoWindows`, which sets the firmware's next start
+for **one** start and leaves the default untouched. It belongs in this plan's
+crate, and this plan is unfinished — its task 9 waits on a certified machine —
+so the supervisor's ownership check refuses it, correctly. This block is the
+record that the owner authorized it, and it releases **one file and no others**.
+
+Nothing else about `alo-broker` moves: the enum stays closed, the verb takes an
+`Identity` the firmware reported rather than a path or a string, and it gets the
+same tests every other verb has. ADR 0045's seventh term is untouched — no name
+on the list begins `undo.`, and the test that holds that is unchanged.
+
+**And what a closed enum costs, which is the point of it.** `SystemVerb` is
+matched exhaustively by every carrier, so a new member obliges each of them to
+say what it does with it — here, one line apiece saying *not mine*. That is the
+enum working as ADR 0001 §1 intends: a verb cannot be added anywhere without
+every carrier being made to consider it. The files below are those lines and
+nothing else.
+
+```owner-release
+plan = docs/autonomy/v0-5-the-installer-plan.md
+task = 16
+files =
+  crates/alo-broker/src/verbs.rs
+  crates/alo-changing-drives/src/wanted.rs
+  crates/alo-changing-updates/src/wanted.rs
+```
+
 ## Tasks
 
 ### 1. The broker: a closed list, a door, and nothing else

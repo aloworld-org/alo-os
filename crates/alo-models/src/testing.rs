@@ -192,3 +192,80 @@ pub(crate) fn a_machine() -> crate::MeasuredOn {
         instructions: None,
     }
 }
+
+/// **A kernel's list of what draws**, written by a test rather than by a
+/// kernel, and removed when the test is done with it.
+///
+/// Here rather than beside one file's tests because two files need it —
+/// [`crate::card`] reads it, and [`crate::road`] decides from what it read —
+/// and two copies of a fixture drift into two fixtures, which is this file's
+/// own rule about the server above.
+///
+/// It is a folder of real files because that is what
+/// [`crate::card::WhatDrawsHere::among`] takes: a machine whose cards could be
+/// stated instead of read would be a reader nobody had checked against a
+/// machine.
+pub(crate) struct ADrmList(std::path::PathBuf);
+
+/// An empty list, under this machine's temporary folder, with a name no other
+/// test shares.
+pub(crate) fn a_list_of_what_draws() -> ADrmList {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    static NEXT: AtomicU32 = AtomicU32::new(0);
+    let at = loop {
+        let at = std::env::temp_dir().join(format!(
+            "alo-models-drm-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        match std::fs::create_dir(&at) {
+            Ok(()) => break at,
+            Err(why) => {
+                assert!(
+                    why.kind() == std::io::ErrorKind::AlreadyExists,
+                    "a folder for this test: {why}"
+                );
+            }
+        }
+    };
+    // The kernel's own list carries this file beside the devices, and a reader
+    // that counted it as one would report a machine with no card as having one.
+    std::fs::write(at.join("version"), "drm 1.1.0 20060810\n").unwrap();
+    ADrmList(at)
+}
+
+impl ADrmList {
+    /// Where the list is.
+    pub(crate) fn at(&self) -> &std::path::Path {
+        &self.0
+    }
+
+    /// One device written the way the kernel writes one: its vendor on the bus,
+    /// the driver bound to it where one is, and the memory it publishes where
+    /// it publishes any.
+    pub(crate) fn holding(
+        &self,
+        named: &str,
+        vendor: &str,
+        driver: Option<&str>,
+        memory: Option<u64>,
+    ) {
+        let device = self.0.join(named).join("device");
+        std::fs::create_dir_all(&device).unwrap();
+        std::fs::write(device.join("vendor"), format!("{vendor}\n")).unwrap();
+        let uevent = match driver {
+            Some(driver) => format!("DRIVER={driver}\nPCI_ID={vendor}:0001\n"),
+            None => format!("PCI_ID={vendor}:0001\n"),
+        };
+        std::fs::write(device.join("uevent"), uevent).unwrap();
+        if let Some(memory) = memory {
+            std::fs::write(device.join("mem_info_vram_total"), format!("{memory}\n")).unwrap();
+        }
+    }
+}
+
+impl Drop for ADrmList {
+    fn drop(&mut self) {
+        drop(std::fs::remove_dir_all(&self.0));
+    }
+}

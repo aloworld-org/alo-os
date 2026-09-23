@@ -15,6 +15,7 @@
 //! | [`Storage`] | A removable drive mounted for the signed-in person, or ejected, against what the disk service reports now |
 //! | [`Printers`], [`PrintService`] | The printers' three verbs, carried out against what the printing service reports now |
 //! | [`Updates`], [`StartingUnits`], [`TheUnit`] | The two update verbs, carried out by starting a unit that holds what the base asks for |
+//! | [`NextStart`], [`the_identity_of`] | *Restart into Windows*, carried out by setting the firmware's next start — once, and leaving the order alone |
 //! | [`AnUpdate`], [`GoingBackApproved`], [`Handing`] | What a person approved about an update, and the folder only root can read that carries it to the unit |
 //! | [`stage_the_update_approved`], [`set_going_back`] | What the two units' own programs do, which is every decision in them |
 //! | `alo-brokerd.service` | The unit, beside this manifest, held to what the process expects by a test |
@@ -61,6 +62,7 @@ pub mod for_the_unit;
 #[cfg(unix)]
 mod handed_over;
 mod network;
+mod next_start;
 mod printers;
 mod printing_service;
 #[cfg(unix)]
@@ -86,12 +88,13 @@ mod updates;
 #[cfg(unix)]
 pub use approved::{AnUpdate, GoingBackApproved, NotAnUpdate};
 #[cfg(unix)]
-pub use carrying::Carriers;
+pub use carrying::{Carriers, NoFirmware, NoUnits};
 #[cfg(unix)]
 pub use describing::{Logins, NotDescribed, logins};
 #[cfg(unix)]
 pub use for_the_unit::{Handing, NotHanded};
 pub use network::Network;
+pub use next_start::{NextStart, the_identity_of};
 pub use printers::{PrintService, Printers, Reported};
 #[cfg(unix)]
 pub use proxy::Proxy;

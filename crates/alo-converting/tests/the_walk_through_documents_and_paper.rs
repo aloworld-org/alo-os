@@ -39,13 +39,26 @@
 //! names a path. So the folder the walk runs in is written as `/home/anna` in
 //! the table, and nothing else in any sentence is touched.
 //!
-//! # It does not skip itself
+//! # The walk skips itself where the engine cannot be run, and nowhere else
 //!
 //! Steps 4 and 5 run the pinned engine through `alo-convertd`, as
-//! `converting_a_real_document.rs` does, and fail where the engine is missing
-//! (ADR 0039). Every other step is the real code against a printing service on
-//! this machine's loopback that speaks the protocol; a real printer is owed,
-//! and the report says so.
+//! `converting_a_real_document.rs` does. It used to fail where the engine was
+//! missing (ADR 0039); ADR 0063 amends that for a machine where the engine
+//! **cannot** exist, and the walk asks
+//! [`asking::this_machine_cannot_run_the_engine`] first and says what was
+//! missing.
+//!
+//! **This test is the tenth**, and the one task 9's plan could not name.
+//! `C:\dev\setup\which-tests-need-the-engine.sh` measured nine and the Mac
+//! reported ten, and the difference was the measurement rather than the
+//! machines: `cargo test` stops at the first test binary that fails, so the run
+//! ended inside `converting_a_real_document.rs` and never reached this file.
+//! Measured again with `--no-fail-fast` on 2026-09-22, the two agree at ten.
+//!
+//! Every other step is the real code against a printing service on this
+//! machine's loopback that speaks the protocol; a real printer is owed, and the
+//! report says so. The second test in this file reads only text and runs
+//! everywhere.
 //!
 //! Steps 5 and 10 are real files rather than bytes assembled here: the Pages
 //! document was saved by Pages on a Mac and the photograph written by a
@@ -59,6 +72,8 @@
     clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
+
+mod asking;
 
 #[path = "../../alo-printing/tests/serving/mod.rs"]
 mod serving;
@@ -568,6 +583,9 @@ fn as_read(walk: &[(&str, String)]) -> Vec<(String, String)> {
 /// changing.
 #[test]
 fn the_walk_from_a_file_arriving_to_one_that_cannot_be_opened_reads_as_the_table() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
     let walk = the_walk();
     assert!(
         as_read(&walk) == the_table(),

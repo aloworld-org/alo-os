@@ -43,8 +43,10 @@ struct Scripted {
     answers: BTreeMap<&'static str, Ran>,
     /// Programs that fail, by kind.
     failing: Vec<&'static str>,
-    /// What the person types.
+    /// What the person types for the first question, which is the disk's name.
     typed: String,
+    /// What the person types for the questions after it, in order.
+    then_typed: Vec<String>,
     /// The files on the machine.
     files: BTreeMap<PathBuf, Vec<u8>>,
     /// Files whose writes read back as something else.
@@ -70,12 +72,13 @@ fn kind(program: &Program) -> &'static str {
         Program::ReadingTheWindowsVolume => "volume",
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
+        Program::ReadingFastStartup => "fast-startup",
+        Program::TurningFastStartupOff => "fast-startup-off",
+        Program::TurningFastStartupBackOn { .. } => "fast-startup-back-on",
         Program::Shrinking { .. } => "shrink",
         Program::MakingTheArea { .. } => "make-area",
         Program::PreparingTheArea { .. } => "prepare-area",
-        Program::AddingTheEntry => "add-entry",
-        Program::PointingTheEntryAtTheArea { .. } => "point-area",
-        Program::PointingTheEntryAtTheLoader { .. } => "point-loader",
+        Program::WritingTheEntry { .. } => "write-entry",
         Program::ListingTheEntry { .. } => "list-entry",
         Program::TakingAwayTheLetter { .. } => "take-letter",
         Program::StartingTheEntryNext { .. } => "next",
@@ -152,6 +155,12 @@ impl Scripted {
                 "entries",
                 printed("identifier {bootmgr}\ndescription Windows Boot Manager\n"),
             ),
+            // Off on this scripted computer, so the question is not asked and
+            // no test here answers it by accident; the tests that are about
+            // the question turn it on (`fast_startup_is_asked_about`).
+            ("fast-startup", printed(r#"{"HiberbootEnabled":0}"#)),
+            ("fast-startup-off", printed(r#"{"HiberbootEnabled":0}"#)),
+            ("fast-startup-back-on", printed(r#"{"HiberbootEnabled":1}"#)),
             ("shrink", printed("")),
             (
                 "make-area",
@@ -162,13 +171,11 @@ impl Scripted {
             ),
             ("prepare-area", printed(r#"{"DriveLetter":"E"}"#)),
             (
-                "add-entry",
+                "write-entry",
                 printed(&format!(
-                    "The entry was successfully copied to {THE_ENTRY}."
+                    r#"{{"Identifier":"{THE_ENTRY}","Option":"Boot0005","Slot":4}}"#
                 )),
             ),
-            ("point-area", printed("")),
-            ("point-loader", printed("")),
             ("list-entry", printed("")),
             ("take-letter", printed("")),
             ("next", printed("")),
@@ -183,6 +190,7 @@ impl Scripted {
                 answers,
                 failing: Vec::new(),
                 typed: "Msft Virtual Disk\n".to_owned(),
+                then_typed: Vec::new(),
                 files,
                 corrupting: Vec::new(),
                 ran: Vec::new(),
@@ -233,6 +241,13 @@ impl TheMachine for Scripted {
 
     fn ask(&mut self, said: &Said) -> String {
         self.asked.push(said.text().to_owned());
+        // The first question is the disk's name; anything asked after it is
+        // answered from `then_typed`, in order, and an empty list means the
+        // person typed the same thing again — which no second question here
+        // accepts.
+        if self.asked.len() > 1 && !self.then_typed.is_empty() {
+            return self.then_typed.remove(0);
+        }
         self.typed.clone()
     }
 
@@ -351,12 +366,11 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
             "volume",
             "disks",
             "entries",
+            "fast-startup",
             "shrink",
             "make-area",
             "prepare-area",
-            "add-entry",
-            "point-area",
-            "point-loader",
+            "write-entry",
             "list-entry",
             "take-letter",
             "next",
@@ -736,15 +750,7 @@ fn a_failure_at_each_step_puts_back_everything_before_it() {
         ("shrink", vec![]),
         ("make-area", vec!["grow-back"]),
         ("prepare-area", vec!["remove-area", "grow-back"]),
-        ("add-entry", vec!["remove-area", "grow-back"]),
-        (
-            "point-area",
-            vec!["remove-entry", "remove-area", "grow-back"],
-        ),
-        (
-            "point-loader",
-            vec!["remove-entry", "remove-area", "grow-back"],
-        ),
+        ("write-entry", vec!["remove-area", "grow-back"]),
         (
             "list-entry",
             vec!["remove-entry", "remove-area", "grow-back"],
@@ -812,7 +818,7 @@ fn a_copy_that_does_not_read_back_is_put_back() {
     ));
     let (ended, machine) = run(machine, released);
     assert_eq!(ended, Ended::Refused(Refusal::PutBack));
-    assert!(!machine.kinds().contains(&"add-entry"));
+    assert!(!machine.kinds().contains(&"write-entry"));
     assert!(machine.kinds().ends_with(&["remove-area", "grow-back"]));
 }
 
@@ -890,6 +896,152 @@ fn checking_the_computer_changes_nothing() {
     assert!(!machine.changed_anything());
     assert_eq!(found.starting.secure_boot, Some(false));
     assert_eq!(found.memory, Some(34_190_917_632));
+}
+
+// ---------------------------------------------------------------------------
+// Fast Startup: the one question with two answers.
+// ---------------------------------------------------------------------------
+
+/// A computer whose Fast Startup is on, whose person types these answers after
+/// the disk's name.
+fn with_fast_startup_on(answers: &[&str]) -> (Scripted, Released) {
+    let (mut machine, released) = Scripted::installable();
+    machine = machine.answering("fast-startup", r#"{"HiberbootEnabled":1}"#);
+    machine.then_typed = answers.iter().map(|typed| format!("{typed}\n")).collect();
+    (machine, released)
+}
+
+/// The English of one of the installer's sentences.
+fn sentence(word: alo_strings::Word) -> String {
+    strings()
+        .say(&word.key(), &alo_strings::Filling::nothing())
+        .text()
+        .to_owned()
+}
+
+/// **With Fast Startup on, the person is asked in the owner's words, and
+/// *turn off* sets Windows' own value** — and never removes hibernation
+/// (ADR 0064 term 9).
+#[test]
+fn fast_startup_on_is_asked_about_and_turned_off_when_the_person_says_so() {
+    let (machine, released) = with_fast_startup_on(&["turn off"]);
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::ASK_FAST_STARTUP)),
+        "{:#?}",
+        machine.said
+    );
+    assert!(machine.kinds().contains(&"fast-startup-off"));
+    // Turned off before any disk was touched, and once.
+    let kinds = machine.kinds();
+    let off = kinds.iter().position(|kind| *kind == "fast-startup-off");
+    let shrink = kinds.iter().position(|kind| *kind == "shrink");
+    assert!(off < shrink && off.is_some());
+    assert_eq!(
+        kinds
+            .iter()
+            .filter(|kind| **kind == "fast-startup-off")
+            .count(),
+        1
+    );
+}
+
+/// **Leaving it on changes nothing about it**, and the install goes on.
+#[test]
+fn fast_startup_left_on_changes_nothing_about_it() {
+    let (machine, released) = with_fast_startup_on(&["leave on"]);
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    assert!(!machine.kinds().contains(&"fast-startup-off"));
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::FAST_STARTUP_LEFT_ON))
+    );
+}
+
+/// **An answer that is neither is asked again, and after that it is left on.**
+#[test]
+fn an_answer_that_is_neither_is_asked_again_and_then_left_on() {
+    let (machine, released) = with_fast_startup_on(&["", "maybe", "leave on"]);
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    assert!(!machine.kinds().contains(&"fast-startup-off"));
+    let asked = machine
+        .asked
+        .iter()
+        .filter(|said| said.contains("turn off"))
+        .count();
+    assert_eq!(asked, 3, "{:#?}", machine.asked);
+
+    let (machine, released) = with_fast_startup_on(&["", "", ""]);
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    assert!(!machine.kinds().contains(&"fast-startup-off"));
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::FAST_STARTUP_LEFT_ON))
+    );
+}
+
+/// **With Fast Startup off, or unreadable, nothing is asked and nothing is
+/// changed about it.**
+#[test]
+fn fast_startup_that_is_off_or_unread_is_not_asked_about() {
+    for read in [r#"{"HiberbootEnabled":0}"#, "not an answer"] {
+        let (machine, released) = Scripted::installable();
+        let (ended, machine) = run(machine.answering("fast-startup", read), released);
+        assert_eq!(ended, Ended::Staged { restarted: true });
+        assert!(!machine.kinds().contains(&"fast-startup-off"), "{read}");
+        assert!(
+            !machine
+                .said
+                .contains(&sentence(alo_installer::ASK_FAST_STARTUP)),
+            "{read}"
+        );
+        assert_eq!(machine.asked.len(), 1, "{read}");
+    }
+}
+
+/// **A Fast Startup that was turned off is put back when staging fails**, to
+/// the value Windows held, and what could not be put back is said.
+#[test]
+fn fast_startup_is_put_back_when_a_later_step_fails() {
+    let (machine, released) = with_fast_startup_on(&["turn off"]);
+    let (ended, machine) = run(machine.failing("shrink"), released);
+    assert_eq!(
+        ended,
+        Ended::Refused(Refusal::PutBack),
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        machine.kinds().last(),
+        Some(&"fast-startup-back-on"),
+        "{:?}",
+        machine.kinds()
+    );
+
+    let (machine, released) = with_fast_startup_on(&["turn off"]);
+    let (ended, machine) = run(
+        machine.failing("shrink").failing("fast-startup-back-on"),
+        released,
+    );
+    assert_eq!(
+        ended,
+        Ended::NotPutBack(vec![Remains::FastStartupOff]),
+        "{:#?}",
+        machine.said
+    );
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::REMAINS_FAST_STARTUP_OFF))
+    );
 }
 
 /// **The choice the installer writes is the line the environment's loader

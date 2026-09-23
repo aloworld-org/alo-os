@@ -371,6 +371,15 @@ the `ALO-INSTALL` partition as its boot device, a second empty disk of at least
 disks the name under `/dev/disk/by-id/` is the disk's `scsi-` or `wwn-` name,
 and that is what `chosen.cfg` must hold.
 
+**The name the installer writes, seen from both sides — for SATA only.** On
+2026-09-21 the installer ran on a Windows 11 in a QEMU machine (the installer
+plan's task 10): Windows reported the empty disk as bus `SATA`, model `QEMU
+HARDDISK`, serial `ALOTARGET1`; the installer wrote
+`set alo_installing_to=ata-QEMU_HARDDISK_ALOTARGET1` into `chosen.cfg`; and
+after the installer's own restart the environment said *Looking for the disk
+you chose: ata-QEMU_HARDDISK_ALOTARGET1*, checked it, and partitioned that
+disk. The NVMe and Hyper-V SCSI names are still unseen from the Linux side.
+
 ## Attaching it to Hyper-V
 
 alo OS is installed for UEFI, so it is a **generation 2** virtual machine, and
@@ -440,6 +449,98 @@ that is the honest state of v0.01 and not a machine that came up wrong.
   no accounts (ADR 0024), so nobody can log in at that console to ask systemd;
   the heartbeat proves the kernel and nothing about the units. That stays owed
   until there is a sign-in.
+
+## Alongside Windows: the journey, step by step
+
+A machine installed *alongside* the Windows it came with
+([ADR 0023](decisions/0023-installed-from-the-machine-it-replaces.md) §4,
+[ADR 0033](decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md))
+has two operating systems on one disk.
+[ADR 0062](decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
+decided how a person moves between them: **the menu a machine starts at is alo
+OS's, and Windows stands behind it.** This is that journey, in order, with what
+a person sees at each step.
+
+**None of it has run on a machine.** What is below is what the code writes and
+what the decision says it means; the walk that proves it is the virtual machine
+on the development PC, and it is owed. Nothing here may be read as a
+measurement.
+
+### 1. The machine is switched on
+
+The firmware starts alo OS's loader — the base's signed shim and GRUB 2.12, the
+same pair the rest of this page describes. It draws a short list:
+
+    alo OS
+    Windows
+
+with a **five-second countdown**, starting at whichever was chosen last. Doing
+nothing starts that one. This list is `/boot/grub2/custom.cfg`, written whole by
+alo OS and read by the base's own configuration: the loader is **configured,
+never patched** ([ADR 0011](decisions/0011-the-base-is-rented-and-the-image-is-a-container.md)),
+and `crates/alo-starting` is where the file is generated.
+
+### 2. Choosing Windows
+
+The Windows entry hands the machine to `\EFI\Microsoft\Boot\bootmgfw.efi` — the
+signed program Windows installed for itself — and Windows starts as it always
+did. Nothing of alo OS's runs inside it, nothing of Windows's is copied,
+replaced or signed by us, and **the Windows volume is never mounted**: alo OS
+reaches Windows by handing its own loader over, not by reading its disk.
+
+### 3. What the machine starts when nobody chooses
+
+The loader remembers the last choice, in its own environment block at
+`/boot/grub2/grubenv`. alo OS's Settings reads and writes **that file**, and
+keeps no copy of its own: two copies drift, and a menu that preselects one thing
+while a setting says another is the bug ADR 0062's third term exists to prevent.
+
+### 4. Going across without waiting for the menu
+
+From inside alo OS, *Restart into Windows* sets the firmware's next start to
+Windows **for one start** and leaves the default alone; a person restarts when
+they are ready, lands in Windows, and the start after that is the ordinary one
+again. From inside Windows, *Restart into alo OS* is the same switch the other
+way (`bcdedit /set {fwbootmgr} bootsequence`, which
+`crates/alo-installer/src/program.rs` already sets for the install). Neither
+changes which system the machine starts at by default.
+
+### 5. If alo OS's loader will not start
+
+Windows stands **directly behind alo OS in the firmware's own start order**, so
+a loader the firmware cannot start at all is passed over and Windows starts with
+nothing typed (ADR 0062, term 1).
+
+**The case that does not cover, said plainly.** A loader that *starts* and is
+then broken — a configuration it cannot read, a prompt instead of a menu — is
+**not** passed over, because to the firmware it started. Nothing here claims the
+fall-through reaches it. In that case the way to Windows is **the machine's own
+boot-menu key, pressed while it starts** — on most machines `F12`, `F9`, `F11`
+or `Esc`, and the machine's own manual is what says which. That menu is the
+firmware's, it owes nothing to alo OS, and it lists Windows Boot Manager
+directly.
+
+### What is owed on this, and to whom
+
+- **The walk itself**, in the virtual machine task 10 built: Windows → alo OS →
+  Windows → alo OS through the in-system switches alone, the firmware-order
+  fall-through of term 1, the install beside a real Windows, the
+  Windows-unchanged hash, and *remove alo OS*. That is the development PC's.
+- **What the base's loader does with a saved default across an update** —
+  whether `bootupd` replacing the loader keeps `custom.cfg` and the environment
+  block, and what its own entry identifiers look like after a new kernel. ADR
+  0062's consequences put the answer in [`quirks.md`](quirks.md) when it is
+  measured.
+- **Fast Startup.** The settled Windows reads `HiberbootEnabled 0x1`, so *Shut
+  down* leaves the Windows volume hibernated rather than closed. A restart is a
+  full shutdown, so the switches in step 4 are safe. **The installer asks**
+  (ADR 0064 term 9, decided 2026-09-22): *Windows' Fast Startup is on. It can
+  make Windows and alo OS disagree about the disk. Turn it off? (Recommended
+  when sharing a disk.)*, with **Turn off** and **Leave on**. *Turn off* sets
+  `HiberbootEnabled` to `0`; it never runs `powercfg /h off`, which would
+  remove hibernation altogether. **alo OS never mounts the Windows partition
+  read-write**, which holds whichever the person answers, and
+  `crates/alo-starting/tests/windows_is_never_mounted.rs` is that test.
 
 ## What a virtual machine cannot show
 

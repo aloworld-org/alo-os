@@ -625,7 +625,34 @@ it, which is what made it safe to leave.
 
 ### 11. The desk a machine wakes up at
 
-**Status:** ready. **Depends on:** 2, 3.
+**Status:** **Done, 2026-09-22.** `crates/alo-displays/src/resuming.rs` is the
+argument and `Attached::resumed_to` is the one door: the whole reported set at
+once, answering a `Resumed` that names every screen that has gone with the
+`Moved` an unplug already answers with, every screen that is back with its
+`CameBack`, and the one `Note::TheDeskChanged` a person reads. Nothing about
+layout is decided there — the set the person arranged for exactly these screens
+is restored, a set nobody has arranged goes side by side at each screen's own
+size, and what was open on a screen that has gone belongs on the main screen of
+what remains, all of it task 3's. A machine that wakes to the same screens
+reporting themselves the same way returns before touching anything: nothing
+moved, nothing said, the arrangement unchanged down to the places in it. A
+machine that wakes with nothing plugged in at all is `NotArranged::NoScreens`
+and keeps the screens it went to sleep with, because the next resume is
+compared against them and a dock that has not woken yet must not cost somebody
+their arrangement. `alo-sleeping`'s `Woke::the_desk`
+(`crates/alo-sleeping/src/the_desk.rs`) is where it is asked, so a resume is the
+place it happens; that makes `alo-displays` a dependency of `alo-sleeping`
+rather than a dev-dependency, which breaks no rule — the three crates that
+refuse dependants refuse *theirs*, and `alo-displays` holds no such rule.
+`displays.the-desk-changed` is declared with a translator's note and joined
+task 7's audit with that test unedited, because the audit reads the assembled
+vocabulary by area. One test in `alo-sleeping` walks one laptop through four
+resumes — at another desk, at a desk nobody has arranged, at the same one, at
+none — and back to the first, with a real sign-in, a real lock and a real sleep
+under each. Report: `docs/autonomy/updates/the-desk-a-machine-wakes-up-at.md`.
+Not on hardware — no machine has suspended and no cable has moved; the base
+underneath the walk is a `Logind` in the test file that counts what it was
+asked. **Depends on:** 2, 3.
 
 A laptop suspended at home and opened at the office is the commonest thing this
 workstream will be judged on, and it is the one path through it that nothing
@@ -673,3 +700,54 @@ out by looking for a window.
   forgotten — the set it belongs to is simply not the set in front of anybody.
   Nothing in `crates/alo-shell`, no modesetting, and `logind` is rented
   (ADR 0011).
+
+### 12. Every sentence at a desk that changed, and what this plan still owes
+
+**Status:** ready. **Depends on:** 7, 11.
+
+Task 7 walks one person from locking their machine to docking it at another
+desk and holds the **sequence** they meet to a table in its report, because
+each crate's own tests hold its sentences one at a time and none of them can
+ask whether the sentences read as one account. That walk sleeps and wakes at
+the same desk: its steps 6 and 7 say nothing, which was right when nothing had
+been decided about a desk that changed while the machine was asleep.
+
+Task 11 decided it, and added a sentence — `displays.the-desk-changed` — that
+**no recorded sequence meets.** The audit has it, the crate's own tests have
+it, and the one thing this workstream holds itself to beyond those is the
+thing it is missing: what a person reads, in order, on the morning the desk is
+not the desk they left. A resume at a new desk can say four things at once —
+the desk changed, what was open on the screen that is gone is now here, this
+screen has never been used with this machine, and this one is back — and
+whether those four read as an account or as four crates talking past each
+other is not a question any of the tests written so far can ask.
+
+And this plan is otherwise finished, which is worth writing down rather than
+leaving somebody to work out by reading eleven status paragraphs. One promise
+it named is **not met**: `docs/features.md`'s *Per display, so the dock can sit
+along the bottom of the laptop and down the side of the external screen*.
+`alo_dock::Dock` holds one edge for the machine, this plan reads `alo-dock` and
+never edits it, and `alo-dock` belongs to
+`v0-5-where-a-persons-settings-are-kept-plan.md`. Task 3 said so in its status
+paragraph and `alo_displays::Wearing::of` is named as the one function that
+changes when that plan decides otherwise. A promise owed to another plan is
+still owed; it is not narrowed, and the place it is recorded should be
+somewhere a person reads before this plan is called done.
+
+- **Acceptance:** one walk in `alo-sleeping` — signed in at one desk with a
+  screen the person arranged, the lid closed, the machine woken at another desk
+  where a screen it has never seen is plugged in, and woken again back at the
+  first — produces the exact sequence a person meets, recorded in that task's
+  report as a table and held by one test that reads the table out of the report
+  rather than a copy of it, exactly as task 7's does; every sentence comes out
+  of the machine's one assembled vocabulary through the value that really
+  produces it, whole, with no gap unfilled and **no connector name in any gap**;
+  task 7's own walk and its table are not edited, because a published report is
+  never rewritten and that walk is still true; and the report says in plain
+  words what this plan leaves owed — the per-display dock edge, to which plan,
+  and what changes in `alo-displays` when it is paid.
+- **Constraint:** nothing here re-decides what the sentences describe, and no
+  sentence is added or reworded to make the table read better — a sequence that
+  reads badly is a finding for a later task with its own argument, not
+  something this one edits away. Nothing in `crates/alo-shell`, nothing on the
+  machine, and `logind` stays rented (ADR 0011).

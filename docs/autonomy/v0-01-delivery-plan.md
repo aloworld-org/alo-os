@@ -1637,6 +1637,15 @@ nothing yet starts the runtime. Report:
 `docs/autonomy/updates/the-weights-a-machine-arrives-with.md`. The next task (32)
 is written below.
 
+**Superseded on 2026-09-22 by lane B's task 10**, which is this task's stricter
+form and was written for the day the catalogue had something that cleared the
+verb-driving bar. It has one now, so the image carries `qwen3-8b` rather than
+`phi-3-mini-instruct`, the recipe no longer holds a model's name at all —
+`alo_models::Catalogue::agent_for_cpu` is what it is held to — and a class the
+catalogue recommends nothing for ships **no** weights. Everything this task
+delivered stands; what changed is which entry, and who decides it. Report:
+`docs/autonomy/updates/a-model-on-the-disk-sized-for-the-machine-it-lands-on.md`.
+
 ### 32. The one thing that serves the model, and what it may reach
 
 **Status:** ready. **Depends on:** nothing.
