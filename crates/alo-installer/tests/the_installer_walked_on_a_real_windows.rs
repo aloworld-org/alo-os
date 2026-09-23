@@ -338,7 +338,22 @@ fn the_way_back_into_alo_os_is_offered_from_inside_windows() {
     walking::machine::stop();
     let disc = medium::the_walk_disc(&yard, &told, &download);
     let console = Console::fresh(&yard.join("console.log"));
-    let machine = Machine::start(&yard, "switch", Some(&disc), None, &console, &chip);
+    // On the firmware that can start what the entry points at. Measured on
+    // 2026-09-23: on the walk's own OVMF the environment's shim page-faults
+    // (task 9's firmware fault), and a start that faults leaves the one-time
+    // choice unconsumed — so every restart after it went to alo OS again and
+    // the computer never came back to Windows. That is the firmware's fault
+    // and not the switch's, and this test is about the switch.
+    let firmware = walking::firmware::fedoras(&yard);
+    let machine = Machine::start_on(
+        &firmware,
+        &yard,
+        "switch",
+        Some(&disc),
+        None,
+        &console,
+        &chip,
+    );
     let switched = console.wait_for(&["ALOWALK-DONE switch"], A_SIGN_IN + A_WALK);
     // What the firmware starts *after* the switch, and never a line from
     // before it: this console already holds the start that brought Windows up.
@@ -383,9 +398,30 @@ fn the_way_back_into_alo_os_is_offered_from_inside_windows() {
     );
 
     // And the start after that is Windows: the switch set the next start only.
-    let back = one_boot(&yard, "switch", &Told::JustLook, &chip, &download);
-    let came_back = back.console.said();
-    a_desktop_session(&back.console);
+    // On the same firmware build as the start before it, since the machine's
+    // variables are that firmware's.
+    let looking = medium::the_walk_disc(&yard, &Told::JustLook, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let back = Machine::start_on(
+        &firmware,
+        &yard,
+        "switch",
+        Some(&looking),
+        None,
+        &console,
+        &chip,
+    );
+    let signed_in = console.wait_for(&[console::SESSION_SAID], A_SIGN_IN + A_WALK);
+    let screen = back.screen("the-way-back-came-back");
+    let came_back = console.said();
+    drop(back);
+    walking::machine::stop();
+    assert!(
+        signed_in.is_some(),
+        "Windows did not come up after the way back. The screen is at {}.\n{came_back}",
+        screen.display()
+    );
+    a_desktop_session(&console);
     let windows = walking::firmware::starts(&came_back)
         .into_iter()
         .any(|start| start.description == "Windows Boot Manager");
