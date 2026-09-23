@@ -14,8 +14,8 @@
 )]
 
 use alo_starting::{
-    LONGEST_TITLE, Menu, NotAMenu, SAVED_ENTRY, THE_COUNTDOWN, THE_MENU, THE_WINDOWS_ENTRY,
-    THE_WINDOWS_LOADER, words,
+    LONGEST_TITLE, Menu, NotAMenu, SAVED_ENTRY, THE_BLOCK_ON_THE_ESP, THE_COUNTDOWN, THE_MENU,
+    THE_WINDOWS_ENTRY, THE_WINDOWS_LOADER, words,
 };
 
 /// The menu a machine would write, with the title from the machine's own
@@ -66,11 +66,18 @@ fn it_counts_down_visibly_and_briefly() {
 }
 
 /// **It starts at the last choice, and writes the choice where it read it.**
-/// One place, read and written by the loader itself — ADR 0062's third term.
+/// One place, read and written by the loader itself — ADR 0062's third term —
+/// and since [ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md)
+/// term 1 that place is named in full, on the partition both systems share,
+/// rather than left to the loader's own directory under `/boot`.
 #[test]
 fn it_starts_at_the_last_choice_and_saves_the_next_one() {
     let written = the_menu();
-    assert!(written.contains("load_env"), "{written}");
+    let block = format!("(${{esp}}){THE_BLOCK_ON_THE_ESP}");
+    assert!(
+        written.contains(&format!("load_env -f {block} {SAVED_ENTRY}")),
+        "{written}"
+    );
     assert!(
         written.contains(&format!("set default=\"${{{SAVED_ENTRY}}}\"")),
         "{written}"
@@ -80,9 +87,29 @@ fn it_starts_at_the_last_choice_and_saves_the_next_one() {
         "{written}"
     );
     assert!(
-        written.contains(&format!("save_env {SAVED_ENTRY}")),
+        written.contains(&format!("save_env -f {block} {SAVED_ENTRY}")),
         "{written}"
     );
+}
+
+/// **The partition holding the last choice is found by that file**, at every
+/// start, and never by an identifier of somebody's disk kept in this one.
+///
+/// The same reasoning the Windows entry is written under: an identifier learned
+/// once and never checked again is a second copy of a fact about a machine, and
+/// this crate exists to have one copy of that fact.
+#[test]
+fn the_partition_is_found_by_the_file_rather_than_by_an_identifier() {
+    let written = the_menu();
+    assert!(
+        written.contains(&format!(
+            "search --no-floppy --set=esp --file {THE_BLOCK_ON_THE_ESP}"
+        )),
+        "{written}"
+    );
+    for never in ["--fs-uuid", "--label", "hd0", "(hd", "/dev/"] {
+        assert!(!written.contains(never), "{never} is named in {written}");
+    }
 }
 
 /// **It is a file of ours beside the base's, not an edit to the base's.**
