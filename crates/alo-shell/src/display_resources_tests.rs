@@ -22,6 +22,9 @@ mod direct_target_tests;
 #[path = "direct_sign_in_tests.rs"]
 mod direct_sign_in_tests;
 
+#[path = "direct_desktop_tests.rs"]
+mod direct_desktop_tests;
+
 /// A public-metadata buffer standing in for a kernel dumb allocation.
 struct FakeBuffer {
     /// Advertised dimensions.

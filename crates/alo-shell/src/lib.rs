@@ -100,6 +100,7 @@ mod desktop_raster;
 mod desktop_seat;
 #[cfg(test)]
 mod desktop_testing;
+mod direct_desktop;
 mod direct_input_loop;
 mod direct_keyboard;
 mod direct_loop;
@@ -302,6 +303,7 @@ pub use booting::{
 };
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
+pub use direct_desktop::TheDesktop;
 pub use direct_keyboard::DirectKeyEvent;
 pub use direct_loop::{DirectFrame, DirectLoopError, DirectLoopResult};
 pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
