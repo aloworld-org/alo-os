@@ -454,6 +454,35 @@ to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
 takeable task read as untakeable for two days and task 14 behind it with it.
 Re-read 2026-09-21. **Depends on:** 5.
 
+#### What already exists for this task's nouns, read on 2026-09-24 before starting
+
+- **Nothing in the shell draws any of the three.** None of `alo-notifying`,
+  `alo-capturing` or `alo-in-use` is a dependency of `crates/alo-shell`, and
+  there is no raster for any of them. The gap this task names is the whole of
+  it.
+- **Every decision is already made, in the crate that owns it.**
+  `alo_notifying::deciding::arrives` hands back `Became::Shown(Shown)` or
+  `Became::Held(Why)` **having already asked** whether the seat is locked — the
+  notification waits behind the lock screen and comes back at the unlock — and
+  whether quiet hours hold it. `Shown` is that crate's own words for *what a
+  shell draws*. So *never while locked* is a test that this crate draws only
+  what `Became::shown()` gives it, and never a second judgement here.
+- **`alo_in_use::Line` is shaped like the egress indicator's.** It hands over
+  the mark, the position, the colour, the word and the sentence, decided — which
+  is what `alo_indicator` hands the egress indicator that
+  `egress_status_raster.rs` already draws. The in-use indicator is that file's
+  twin rather than a new invention, and `egress_status_place.rs` is where room
+  is made for it beside — never as — the egress indicator.
+- **Blur is already destructive inside `alo-capturing`.** `Marks::flatten`
+  composes the taken picture with the hidden regions before anything is saved,
+  so *destructive in what is saved* is not this crate's to implement. What is
+  drawn here is the marks a person is making, and what is held is that the
+  shell saves nothing.
+- **They can reach a real display now.** Task 39 of `v0-01-delivery-plan.md`
+  widened the direct seam from one scene to every layer on 2026-09-24. Before
+  that, anything drawn here could only ever have been seen in a nested
+  compositor.
+
 - **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
   locked, shared or recorded; the region selection and the annotation marks of
   `alo-capturing` are drawn with blur destructive in what is saved; the in-use
