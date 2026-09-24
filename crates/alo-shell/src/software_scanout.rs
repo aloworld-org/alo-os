@@ -156,6 +156,9 @@ fn validate_layers(
     if let Some(status) = layers.status {
         status.validate(size)?;
     }
+    if let Some(in_use) = layers.in_use {
+        in_use.validate(size)?;
+    }
     Ok(())
 }
 
@@ -185,6 +188,9 @@ fn paint_layers(
     }
     if let Some(status) = layers.status.filter(|status| !status.is_empty()) {
         status.paint(frame)?;
+    }
+    if let Some(in_use) = layers.in_use.filter(|in_use| !in_use.is_empty()) {
+        in_use.paint(frame)?;
     }
     Ok(())
 }

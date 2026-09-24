@@ -48,6 +48,9 @@ pub struct DesktopFrame<'a> {
     /// crates that own them said them. Handed in rather than read here: a
     /// compositor that opened `/sys` would be a compositor measuring.
     pub status: &'a crate::status_items::StatusItems,
+    /// What on this machine is watching or listening, as `alo-in-use` read it
+    /// off the media server. Empty while nothing is, which draws nothing.
+    pub in_use: &'a [alo_in_use::Line],
     /// How this display is divided, as `alo-dividing` decided it. Handed in for
     /// the same reason the readings are, and because nothing holds one yet —
     /// the `Server`'s division is task 16's, on the session that stands the
@@ -166,6 +169,7 @@ impl Nested {
                 settings: None,
                 approval: pictures.approval.as_ref(),
                 status: Some(&pictures.status),
+                in_use: Some(&pictures.in_use),
             },
         )
     }
@@ -175,6 +179,8 @@ impl Nested {
 pub(crate) struct DesktopPictures {
     /// The egress indicator.
     pub(crate) status: EgressStatusPicture,
+    /// What on this machine is watching or listening.
+    pub(crate) in_use: crate::in_use_raster::InUsePicture,
     /// The dock and the desktop windows.
     pub(crate) desktop: DesktopPicture,
     /// The record window, when the frame carries one.
@@ -184,8 +190,12 @@ pub(crate) struct DesktopPictures {
 }
 
 /// Every picture for one frame, or the refusal that stops the whole frame —
-/// the indicator's first, because a frame that cannot say what is leaving is
-/// refused whatever else it holds.
+/// the two indicators' first, because a frame that cannot say what is leaving
+/// this machine, or that its camera is on, is refused whatever else it holds.
+///
+/// **The in-use indicator is laid out before what is leaving**, because it has
+/// the status area's corner and the egress rows stack beyond it
+/// (`crate::in_use_raster` says why).
 pub(crate) fn frame_pictures(
     desktop: DesktopFrame<'_>,
     record: Option<RecordFrame<'_>>,
@@ -193,6 +203,14 @@ pub(crate) fn frame_pictures(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
 ) -> Result<DesktopPictures, RenderError> {
+    let in_use = crate::in_use_raster::picture(
+        desktop.in_use,
+        desktop.strings,
+        desktop.dock,
+        labels,
+        size,
+        desktop.look.in_use(),
+    )?;
     let status = status_picture(
         EgressStatusFrame {
             status: desktop.egress,
@@ -202,6 +220,7 @@ pub(crate) fn frame_pictures(
         },
         labels,
         size,
+        in_use.height,
     )?;
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);
@@ -240,6 +259,7 @@ pub(crate) fn frame_pictures(
     };
     Ok(DesktopPictures {
         status,
+        in_use,
         desktop: drawn,
         record,
         approval,

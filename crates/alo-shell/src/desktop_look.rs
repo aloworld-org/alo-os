@@ -114,6 +114,19 @@ impl DesktopLook {
         }
     }
 
+    /// The same look, for the in-use indicator beside it in that status area.
+    ///
+    /// The same four answers: the two indicators sit side by side and a person
+    /// reads them as one surface, so neither has a look of its own.
+    pub(crate) const fn in_use(self) -> crate::in_use_raster::InUseLook {
+        crate::in_use_raster::InUseLook {
+            scheme: self.scheme,
+            scale: self.scale,
+            reading: self.reading,
+            contrast: self.contrast,
+        }
+    }
+
     /// Measures at this look's text size.
     pub(crate) fn measure(self) -> Measure {
         Measure::of(self.scale)

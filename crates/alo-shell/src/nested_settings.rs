@@ -121,6 +121,7 @@ impl Nested {
                 settings: Some(&sections),
                 approval: question.as_ref(),
                 status: Some(&status),
+                in_use: None,
             },
         )
     }
@@ -143,7 +144,7 @@ fn frame_pictures(
     ),
     RenderError,
 > {
-    let status = status_picture(egress, labels, size)?;
+    let status = status_picture(egress, labels, size, 0)?;
     let sections = picture(
         settings.window,
         settings.strings,

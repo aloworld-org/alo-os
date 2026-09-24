@@ -18,6 +18,7 @@ use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn
 use alo_indicator::{Drew, Indicating};
 use alo_models::InferenceSource;
 use alo_strings::Vocabulary;
+use smithay::utils::{Physical, Rectangle};
 
 /// The ordinary light look, read left to right.
 fn light() -> EgressStatusLook {
@@ -51,6 +52,7 @@ fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPictur
         &mut labels,
         (1920, 1080),
         look,
+        0,
     )
     .unwrap()
 }
@@ -217,12 +219,13 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
         &mut labels,
         (3840, 2160),
         light(),
+        0,
     )
     .unwrap();
     assert_eq!(drawn.rows.len(), lines);
     assert_eq!(drawn.inked.len(), lines);
 
-    let palette = Palette::of(Scheme::Light, Contrast::AsDesigned);
+    let palette = crate::egress_status_raster::palette(Scheme::Light, Contrast::AsDesigned);
     let metrics = Measure { percent: 100 }.metrics();
     for ((row, line), inked) in drawn.rows.iter().zip(indicator.showing()).zip(&drawn.inked) {
         let said = line.said(&strings);
@@ -259,6 +262,7 @@ fn a_vocabulary_without_the_lines_still_draws_them() {
         &mut labels,
         (1920, 1080),
         light(),
+        0,
     )
     .unwrap();
     assert_eq!(drawn.rows.len(), 1);
@@ -290,7 +294,7 @@ fn terracotta_never_arrives_alone() {
                 reading: Direction::LeftToRight,
             };
             let drawn = drawn_as(&indicator, look);
-            let palette = Palette::of(scheme, Contrast::AsDesigned);
+            let palette = crate::egress_status_raster::palette(scheme, Contrast::AsDesigned);
             assert!(!drawn.rows.is_empty());
             let terracottas: Vec<&Solid> = drawn
                 .solids
@@ -363,6 +367,7 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
                 &mut labels,
                 (width, height),
                 look,
+                0,
             )
             .unwrap();
             let row = drawn.rows.first().unwrap().area;
@@ -441,8 +446,16 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
                         scale: TextScale::percent(percent).unwrap(),
                         reading,
                     };
-                    let drawn = picture(&drawn_on, &words(), &dock, &mut labels, (1366, 768), look)
-                        .unwrap();
+                    let drawn = picture(
+                        &drawn_on,
+                        &words(),
+                        &dock,
+                        &mut labels,
+                        (1366, 768),
+                        look,
+                        0,
+                    )
+                    .unwrap();
                     let at = (look, edge);
                     assert_eq!(drawn.rows.len(), 1, "{at:?}");
                     assert!(!drawn.inked.is_empty(), "{at:?}");
@@ -491,6 +504,7 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
         &mut labels,
         (1366, 768),
         look,
+        0,
     )
     .unwrap();
     assert!(drawn.rows.len() < 40, "{} rows fit", drawn.rows.len());
@@ -523,7 +537,15 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
     for size in [(100, 100), (0, 0), (-5, 800), (1920, -1), (20_000, 1080)] {
         assert!(
             matches!(
-                picture(&lit, &words(), &Dock::shipped(), &mut labels, size, light()),
+                picture(
+                    &lit,
+                    &words(),
+                    &Dock::shipped(),
+                    &mut labels,
+                    size,
+                    light(),
+                    0
+                ),
                 Err(RenderError::EgressStatusScene)
             ),
             "{size:?}"
@@ -535,7 +557,8 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
                 &Dock::shipped(),
                 &mut labels,
                 size,
-                light()
+                light(),
+                0,
             )
             .unwrap()
             .is_empty(),
@@ -548,7 +571,7 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
 #[test]
 fn the_words_are_readable_on_their_ground() {
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let palette = Palette::of(scheme, Contrast::AsDesigned);
+        let palette = crate::egress_status_raster::palette(scheme, Contrast::AsDesigned);
         let colour = |[red, green, blue]: [u8; 3]| alo_appearance::Colour::of(red, green, blue);
         let contrast = colour(palette.ink).contrast_with(colour(palette.ground));
         assert!(

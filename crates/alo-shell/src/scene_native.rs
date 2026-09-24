@@ -39,6 +39,9 @@ pub(crate) struct NativeLayers<'a> {
     pub(crate) approval: Option<&'a crate::approval_raster::ApprovalPicture>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
+    /// What on this machine is watching or listening, beside the egress
+    /// indicator in the same status area and never drawn as it.
+    pub(crate) in_use: Option<&'a crate::in_use_raster::InUsePicture>,
 }
 
 impl NativeLayers<'_> {
@@ -55,6 +58,7 @@ impl NativeLayers<'_> {
             settings: None,
             approval: None,
             status: None,
+            in_use: None,
         }
     }
 
@@ -66,6 +70,7 @@ impl NativeLayers<'_> {
             && self.settings.is_none()
             && self.approval.is_none()
             && self.status.is_none()
+            && self.in_use.is_none()
     }
 }
 

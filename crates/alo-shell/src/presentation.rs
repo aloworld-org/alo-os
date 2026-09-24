@@ -57,6 +57,13 @@ pub enum RenderError {
     /// drawn now could not say whether anything is.
     #[error("the egress indicator has not been told what is leaving")]
     EgressStatusUnknown,
+    /// Something on this machine is watching or listening and the in-use
+    /// indicator cannot be laid out for this output, or was laid out for a
+    /// different one. The frame is refused rather than drawn without it: a
+    /// machine that could not say its camera was on may not put a desktop up
+    /// instead.
+    #[error("the in-use indicator does not fit this output")]
+    InUseScene,
     /// A question or a refusal is open and the approval surface cannot hold
     /// the whole of it on this output, or was laid out for a different one.
     /// The frame is refused rather than drawn with the sentence cut.

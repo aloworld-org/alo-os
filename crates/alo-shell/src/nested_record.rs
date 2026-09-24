@@ -119,6 +119,7 @@ impl Nested {
                 settings: None,
                 approval: question.as_ref(),
                 status: Some(&status),
+                in_use: None,
             },
         )
     }
@@ -134,7 +135,7 @@ fn frame_pictures(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
 ) -> Result<(EgressStatusPicture, RecordPicture, Option<ApprovalPicture>), RenderError> {
-    let status = status_picture(egress, labels, size)?;
+    let status = status_picture(egress, labels, size, 0)?;
     let account = picture(
         record.window.shows(),
         record.strings,

@@ -49,6 +49,9 @@ pub(crate) fn paint(
     if let Some(status) = native.status {
         status.validate(size)?;
     }
+    if let Some(in_use) = native.in_use {
+        in_use.validate(size)?;
+    }
     let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
@@ -106,6 +109,11 @@ pub(crate) fn paint(
     // covers a line of what is leaving this machine.
     if let Some(status) = native.status.filter(|status| !status.is_empty()) {
         status.paint(&mut frame)?;
+    }
+    // Beside it, and as high: nothing covers the line that says the camera is
+    // on either.
+    if let Some(in_use) = native.in_use.filter(|in_use| !in_use.is_empty()) {
+        in_use.paint(&mut frame)?;
     }
     if let Some(cursor_drawing) = &cursor_drawing {
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
