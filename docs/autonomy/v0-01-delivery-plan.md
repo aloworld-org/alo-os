@@ -2111,7 +2111,9 @@ somebody else's work:
 
 ### 39. After sign-in, the session stands the desktop up
 
-**Status:** ready. **Depends on:** 38.
+**Status:** ready — **built and landed on 2026-09-24 except for the two things a
+machine is needed for**: somebody seeing it, and a session that can hold a
+display. Not ticked; see *What is owed* below. **Depends on:** 38.
 
 Written 2026-09-22 alongside task 38. Task 38 ends where a session opens; this
 is what is on the screen afterwards, and today the answer is **nothing**.
@@ -2136,6 +2138,36 @@ be a task whose half-done state nobody could read.
   cannot be ticked from a nested compositor** is that a person signing in on a
   machine arrives at a desktop; that is owed to a VM with a real display device
   or to the laptop, and is named beside the tick.
+#### What is landed, and what is owed
+
+**Landed.** The seam carries every layer rather than one scene; the desktop
+draws on the real display backend through `Server::render_frame`, so clients
+keep their frame callbacks; `stand_the_desktop_up` is the order a session
+performs and `alo-desktop` is the process that runs it — a second program
+rather than a mode of the greeter, because the two belong to different people.
+
+**Proved without a display:** a dock reaches the bytes a card is handed, and
+**what is leaving this machine changes them** — the one surface this product may
+not ship without, checked at the pixels rather than at the call.
+
+**Owed, and none of it is drawing.**
+
+- **A photograph**, as task 38 owes one: the dock on its edge, the status area
+  with this machine's clock, and the indicator when something is leaving.
+- **The four readings** — task 15 of `v0-5-the-shell-plan.md`. What is handed
+  today is the clock and the honest absent value for the battery and the
+  network. **The volume is a claim**: `StatusItems` has no absent case for it,
+  so a desktop that has asked nothing still shows one. Said in the code, in the
+  service's log line, and in that task's acceptance.
+- **A session that can hold a display.** `alo-sessiond` passes an empty seat and
+  a zero VT to `CreateSession` deliberately, and its own text says the task that
+  starts a compositor is the one to change that argument. This is that task and
+  the argument is still theirs: a seatless session cannot take a display through
+  libseat, so this runs as the person only once it does. It works on a gate
+  machine because libseat's builtin backend lets **root** take a card outside any
+  logind session, which is not how a person's session works. So *started by the
+  session* cannot be shown yet, and it needs that change and task 40's unit.
+
 #### What already exists for this task's nouns, read on 2026-09-23 before starting
 
 Taken before any code was written, because four tasks in two days turned out to
