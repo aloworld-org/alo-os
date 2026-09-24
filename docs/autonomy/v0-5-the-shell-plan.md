@@ -610,6 +610,14 @@ machine is telling them the truth.
   by a test that moves the time and finds the drawn text moved with it; and the
   reading a person sees is the one the crate gave, held per item the way task 7
   holds the drawing.
+- **And one reading has no absent case to give**, found by task 39 of
+  `v0-01-delivery-plan.md` while standing the desktop up. `StatusItems` says
+  [`None`] for a machine with no battery and *nothing said* for a network
+  nobody asked, and has **no such value for the volume** — so a desktop that has
+  asked nothing still shows one, and `alo-desktop` shows silence, which is a
+  claim rather than an absence. Giving the volume an absent case is part of this
+  task's *the absent cases are real rather than defaults*, and until it exists
+  that acceptance cannot be met for the fourth reading.
 - **Constraint:** the shell still measures nothing — this task builds whatever
   stands the desktop up and reads, and adds no call into `/sys`, the media server
   or the network manager from `crates/alo-shell`. **What it cannot tick from a

@@ -41,6 +41,34 @@ pub(crate) struct NativeLayers<'a> {
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
 }
 
+impl NativeLayers<'_> {
+    /// A frame with none of this shell's own surfaces on it.
+    ///
+    /// The base every caller builds from, so a layer added to this struct
+    /// arrives as *absent* at every call site rather than as a compile error
+    /// each one answers its own way.
+    pub(crate) const fn nothing() -> Self {
+        Self {
+            scene: None,
+            desktop: None,
+            record: None,
+            settings: None,
+            approval: None,
+            status: None,
+        }
+    }
+
+    /// Whether there is anything of this shell's own on this frame at all.
+    pub(crate) const fn is_empty(&self) -> bool {
+        self.scene.is_none()
+            && self.desktop.is_none()
+            && self.record.is_none()
+            && self.settings.is_none()
+            && self.approval.is_none()
+            && self.status.is_none()
+    }
+}
+
 impl NativeScene<'_> {
     /// Refuse mismatched target geometry before importing clients.
     pub(crate) fn validate(self, size: Size<i32, Physical>) -> Result<(), RenderError> {

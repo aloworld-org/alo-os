@@ -61,21 +61,22 @@ impl SoftwarePainter {
 }
 
 impl crate::direct_target::ScenePainter for SoftwarePainter {
-    /// Paint one native scene, the arrow above it, and refuse everything that
-    /// would have to be imported.
+    /// Paint this shell's own surfaces, the arrow above them, and refuse
+    /// everything that would have to be imported.
     ///
-    /// The order is `crate::scene_drawing::paint`'s own — the scene, then the
-    /// arrow above it — for the layers this painter can carry. The layers it
-    /// cannot are not silently skipped: they cannot arrive, because
-    /// `ScenePainter` is handed one scene and the rest of `NativeLayers` is
-    /// [`None`] on every direct frame.
+    /// **The order is `crate::scene_drawing::paint`'s own**, layer for layer:
+    /// the whole-output scene, the desktop above it, the record above that,
+    /// Settings, the question, the egress indicator above every one of them,
+    /// and the arrow last. Two orders would be two answers to what covers what,
+    /// and one of the two would let a window cover what is leaving this
+    /// machine.
     fn paint(
         &mut self,
         size: Size<i32, Physical>,
         roots: &[WlSurface],
         popups: &[Popup],
         cursor: &Cursor,
-        scene: Option<crate::scene_native::NativeScene<'_>>,
+        layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
         crate::offscreen::validate_size(size)?;
         let carried = ToImport {
@@ -83,15 +84,15 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
             menus: !popups.is_empty(),
             pointer: matches!(cursor, Cursor::Surface { .. }),
         };
-        if let Some(scene) = refused_layer(carried, scene) {
+        if let Some(scene) = refused_layer(carried, layers.scene) {
             return Err(RenderError::SceneNotOnThisBackend { scene });
         }
-        let Some(scene) = scene else {
+        if layers.is_empty() {
             return Err(RenderError::SceneNotOnThisBackend {
                 scene: "a frame with nothing of this shell's own in it",
             });
-        };
-        scene.validate(size)?;
+        }
+        validate_layers(layers, size)?;
         let mut buffer: Image<'static, 'static> = self
             .0
             .create_buffer(READBACK, (size.w, size.h).into())
@@ -111,7 +112,7 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
             frame
                 .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
                 .map_err(paint_failed)?;
-            scene.paint(&mut frame)?;
+            paint_layers(layers, &mut frame)?;
             // Last, so the arrow stays above the screen it points at.
             for (pixel, colour) in crate::default_cursor::pixels(cursor, damage)? {
                 frame
@@ -126,6 +127,66 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
         // frame was shown. An empty list is the honest answer, not an omission.
         Ok((readback(&mut self.0, &target)?, Vec::new()))
     }
+}
+
+/// Refuse a layer this display was not laid out for, before anything is drawn.
+///
+/// Every picture checks its own extent, and each one is asked before the first
+/// pixel: half a frame on a display and a refusal for the other half is a
+/// picture nobody laid out.
+fn validate_layers(
+    layers: crate::scene_native::NativeLayers<'_>,
+    size: Size<i32, Physical>,
+) -> Result<(), RenderError> {
+    if let Some(scene) = layers.scene {
+        scene.validate(size)?;
+    }
+    if let Some(desktop) = layers.desktop {
+        desktop.validate(size)?;
+    }
+    if let Some(record) = layers.record {
+        record.validate(size)?;
+    }
+    if let Some(settings) = layers.settings {
+        settings.validate(size)?;
+    }
+    if let Some(approval) = layers.approval {
+        approval.validate(size)?;
+    }
+    if let Some(status) = layers.status {
+        status.validate(size)?;
+    }
+    Ok(())
+}
+
+/// Paint each layer this frame carries, lowest first.
+///
+/// An empty picture is not painted at all, which is `crate::scene_drawing`'s
+/// own rule: a record with nothing in it, a question nobody asked and an
+/// indicator with nothing leaving are absences rather than empty panels.
+fn paint_layers(
+    layers: crate::scene_native::NativeLayers<'_>,
+    frame: &mut impl Frame,
+) -> Result<(), RenderError> {
+    if let Some(scene) = layers.scene {
+        scene.paint(frame)?;
+    }
+    if let Some(desktop) = layers.desktop {
+        desktop.paint(frame)?;
+    }
+    if let Some(record) = layers.record.filter(|record| !record.is_empty()) {
+        record.paint(frame)?;
+    }
+    if let Some(settings) = layers.settings.filter(|settings| !settings.is_empty()) {
+        settings.paint(frame)?;
+    }
+    if let Some(approval) = layers.approval.filter(|approval| !approval.is_empty()) {
+        approval.paint(frame)?;
+    }
+    if let Some(status) = layers.status.filter(|status| !status.is_empty()) {
+        status.paint(frame)?;
+    }
+    Ok(())
 }
 
 /// The one format asked for on the way out, in DRM's spelling: four bytes per
