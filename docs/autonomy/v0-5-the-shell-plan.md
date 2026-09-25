@@ -566,6 +566,14 @@ finished each, because a blocker that outlives its cause makes takeable work loo
 untakeable.
 **Depends on:** 8, 9, 11, 12, 13, 16.
 
+**This asks nothing of the owner**, recorded 2026-09-25 in [what closes this
+release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md),
+because it was briefly described as waiting on a display. It waits on tasks 11
+and 16 of this plan and unblocks itself when they land. Its constraint asks
+only that the report say the certified machine has seen none of it. A blocker
+described as hardware when it is really an unfinished task sends the owner
+shopping and leaves the task where it was.
+
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second
   display, divide the screen, take a screenshot with a blur, receive a notification,
   lock, unlock by keyboard with the screen reader on — produces a raster at each step
@@ -610,6 +618,14 @@ machine is telling them the truth.
   by a test that moves the time and finds the drawn text moved with it; and the
   reading a person sees is the one the crate gave, held per item the way task 7
   holds the drawing.
+- **And one reading has no absent case to give**, found by task 39 of
+  `v0-01-delivery-plan.md` while standing the desktop up. `StatusItems` says
+  [`None`] for a machine with no battery and *nothing said* for a network
+  nobody asked, and has **no such value for the volume** — so a desktop that has
+  asked nothing still shows one, and `alo-desktop` shows silence, which is a
+  claim rather than an absence. Giving the volume an absent case is part of this
+  task's *the absent cases are real rather than defaults*, and until it exists
+  that acceptance cannot be met for the fourth reading.
 - **Constraint:** the shell still measures nothing — this task builds whatever
   stands the desktop up and reads, and adds no call into `/sys`, the media server
   or the network manager from `crates/alo-shell`. **What it cannot tick from a

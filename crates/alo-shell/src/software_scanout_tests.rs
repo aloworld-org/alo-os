@@ -17,6 +17,14 @@ use crate::painted::{Inked, Solid};
 use crate::scene_native::NativeScene;
 use crate::sign_in_raster::SignInPicture;
 
+/// One frame carrying just this scene and nothing else of the shell's.
+fn only(scene: NativeScene<'_>) -> crate::scene_native::NativeLayers<'_> {
+    crate::scene_native::NativeLayers {
+        scene: Some(scene),
+        ..crate::scene_native::NativeLayers::nothing()
+    }
+}
+
 /// A size Smithay's constructor would accept, built the way this crate's other
 /// tests build one.
 fn extent((w, h): (i32, i32)) -> Size<i32, Physical> {
@@ -60,7 +68,7 @@ fn the_sign_in_screen_is_drawn_into_the_bytes_a_display_would_scan_out() {
             &[],
             &[],
             &Cursor::Default,
-            Some(NativeScene::SignIn(&screen)),
+            only(NativeScene::SignIn(&screen)),
         )
         .expect("the sign-in screen refused on the processor");
 
@@ -107,7 +115,7 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
             &Cursor::Arrow {
                 location: (8.0, 8.0).into(),
             },
-            Some(NativeScene::SignIn(&screen)),
+            only(NativeScene::SignIn(&screen)),
         )
         .expect("the arrow refused on the processor");
     let (without, _) = painter
@@ -116,7 +124,7 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
             &[],
             &[],
             &Cursor::Default,
-            Some(NativeScene::SignIn(&screen)),
+            only(NativeScene::SignIn(&screen)),
         )
         .expect("the same screen refused without an arrow");
 
@@ -208,7 +216,13 @@ fn a_frame_with_nothing_of_this_shells_own_in_it_is_refused_rather_than_drawn_bl
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
 
     let refused = painter
-        .paint(extent((8, 4)), &[], &[], &Cursor::Default, None)
+        .paint(
+            extent((8, 4)),
+            &[],
+            &[],
+            &Cursor::Default,
+            crate::scene_native::NativeLayers::nothing(),
+        )
         .err()
         .expect("an empty frame was drawn rather than refused");
 
@@ -235,8 +249,94 @@ fn an_extent_no_display_has_is_refused_before_anything_is_allocated() {
             &[],
             &[],
             &Cursor::Default,
-            Some(NativeScene::SignIn(&screen))
+            only(NativeScene::SignIn(&screen))
         ),
         Err(RenderError::EmptySize)
     ));
+}
+
+/// **What is leaving this machine is drawn above everything else.**
+///
+/// The one surface this product may not ship without, checked where the pixels
+/// are rather than in the order of some `if`s: a sign-in screen fills the frame
+/// with its ground, the egress indicator puts a mark on top of it, and the byte
+/// a display would scan out at that spot is the indicator's. A layer painted
+/// underneath, or dropped because the frame already had a scene on it, fails
+/// here.
+#[test]
+fn what_is_leaving_is_drawn_above_the_screen_under_it() {
+    let size = (8, 4);
+    let screen = a_screen(size);
+    let leaving = crate::egress_status_raster::EgressStatusPicture {
+        size,
+        rows: Vec::new(),
+        solids: vec![Solid {
+            area: Rectangle::new((6, 0).into(), (2, 1).into()),
+            colour: [200, 100, 50],
+        }],
+        inked: Vec::new(),
+    };
+    let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
+
+    let (pixels, _) = painter
+        .paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            crate::scene_native::NativeLayers {
+                scene: Some(NativeScene::SignIn(&screen)),
+                status: Some(&leaving),
+                ..crate::scene_native::NativeLayers::nothing()
+            },
+        )
+        .expect("a frame carrying both a screen and the indicator was refused");
+
+    assert_eq!(
+        pixel_at(&pixels, (6, 0)),
+        [200, 100, 50],
+        "the egress indicator is not on the frame a display would scan out"
+    );
+    assert_eq!(
+        pixel_at(&pixels, (0, 0)),
+        [20, 30, 40],
+        "the indicator painted where it has nothing to say"
+    );
+}
+
+/// **A frame with no whole-output scene still carries the desktop's layers.**
+///
+/// The seam took one scene and nothing else until the desktop needed it, and a
+/// desktop is not a scene: it is a dock and its windows above whatever clients
+/// are mapped. A frame carrying only an indicator is the smallest case of that,
+/// and it is drawn rather than refused for having no scene.
+#[test]
+fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
+    let leaving = crate::egress_status_raster::EgressStatusPicture {
+        size: (8, 4),
+        rows: Vec::new(),
+        solids: vec![Solid {
+            area: Rectangle::new((1, 1).into(), (2, 2).into()),
+            colour: [10, 200, 10],
+        }],
+        inked: Vec::new(),
+    };
+    let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
+
+    let (pixels, _) = painter
+        .paint(
+            extent((8, 4)),
+            &[],
+            &[],
+            &Cursor::Default,
+            crate::scene_native::NativeLayers {
+                status: Some(&leaving),
+                ..crate::scene_native::NativeLayers::nothing()
+            },
+        )
+        .expect("a frame with a layer and no scene was refused");
+
+    assert_eq!(pixel_at(&pixels, (1, 1)), [10, 200, 10]);
+    // The clear underneath is the neutral one, not a scene nobody asked for.
+    assert_eq!(pixel_at(&pixels, (7, 3)), [0, 0, 0]);
 }

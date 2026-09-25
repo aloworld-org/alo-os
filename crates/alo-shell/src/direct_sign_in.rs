@@ -21,7 +21,7 @@ use crate::{
     Cursor, DirectFrame, DirectLoopError, DirectLoopResult, InputError, InputUpdate, RenderError,
     SeatInput, Server, SessionError, SignInScreen, Signing, WindowControlLabels,
     direct_input_loop::LoopInput,
-    scene_native::NativeScene,
+    scene_native::{NativeLayers, NativeScene},
     sign_in_raster::{SignInLook, picture},
 };
 
@@ -185,7 +185,15 @@ impl<'a, K: Knocking> Lane<'a, K> {
         };
         let size = target.size();
         let drawn = picture(screen.shows(), self.labels, (size.w, size.h), self.look)?;
-        target.submit_native_layers(&[], &[], &Cursor::Default, NativeScene::SignIn(&drawn))?;
+        target.submit_native_layers(
+            &[],
+            &[],
+            &Cursor::Default,
+            NativeLayers {
+                scene: Some(NativeScene::SignIn(&drawn)),
+                ..NativeLayers::nothing()
+            },
+        )?;
         Ok(())
     }
 

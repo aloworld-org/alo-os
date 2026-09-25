@@ -60,7 +60,7 @@ impl ScenePainter for Painter {
         roots: &[WlSurface],
         _: &[Popup],
         _: &Cursor,
-        _: Option<crate::scene_native::NativeScene<'_>>,
+        _: crate::scene_native::NativeLayers<'_>,
     ) -> Result<(crate::ScanoutPixels, Vec<WlSurface>), RenderError> {
         self.calls.set(self.calls.get() + 1);
         if self.refuse {

@@ -318,7 +318,7 @@ smithay::delegate_output!(Surfaces);
 /// published surface. `crate::direct_loop::LoopTarget` is the same arrangement
 /// one seam over.
 pub(crate) trait NativeTarget: FrameTarget {
-    /// Submit clients with one native scene painted over them.
+    /// Submit clients with this shell's own surfaces painted over them.
     ///
     /// **The seam every surface this shell draws has to cross.** Each
     /// `*_raster.rs` produces its picture from state and is backend
@@ -341,7 +341,7 @@ pub(crate) trait NativeTarget: FrameTarget {
         _roots: &[WlSurface],
         _popups: &[crate::Popup],
         _cursor: &crate::Cursor,
-        _scene: crate::scene_native::NativeScene<'_>,
+        _layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         Err(RenderError::ControlsUnsupported)
     }

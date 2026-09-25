@@ -398,6 +398,12 @@ installed before it lands could never undo what an agent did without being
 reinstalled ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), accepted
 2026-09-16). **Depends on:** 4, 5.
 
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
+
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their
 observations fill.
@@ -1210,10 +1216,24 @@ the in-system switches alone. **This part is built so it can be walked there.**
 
 ### 17. The default a machine starts at, changed by the person who owns it
 
-**Status:** **Done, 2026-09-22.** On the third PC
+**Status:** **Done, 2026-09-23.** On the third PC
 (`updates/the-default-a-machine-starts-at-changed-by-the-person-who-owns-it.md`).
 **Nothing in it is ticked on a machine**, which is what this task's own
-constraint asks.
+constraint asks: no hardware, no certified laptop, and no acceptance claimed
+from a machine.
+
+What *was* run on a machine, and is written down rather than ticked, is the
+base's own half. ADR 0066 term 1 puts the last choice on the EFI system
+partition, and where that file lives on the pinned base was measured instead of
+assumed: the base was installed by its own `bootc install to-disk`, read, and
+booted under OVMF with no KVM. It keeps `grubenv` as a plain file on `/boot`
+rather than as the symlink onto the ESP older Fedora layouts have, carries no
+block on the ESP at all, and **mounts the ESP nowhere**. The loader's ability to
+save on that partition's FAT was proved rather than believed, and the generated
+drop-in was booted verbatim. `docs/quirks.md` has the measurement, the versions
+and the date. What it costs — the ESP mounted at `/boot/efi`, and the block
+created at install time, neither of which the base does — is written above as
+owed by the lane that owns the installer.
 
 **The decision a. asked for was already made, and it is not this task's.**
 [ADR 0066](../decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md),
@@ -1423,7 +1443,17 @@ given as SATA with a serial rather than virtio.
 
 ### 19. Killed at every step, Windows' own partition byte for byte — or the reason it is not
 
-**Status:** ready. **Depends on:** 10.
+**Status:** scheduled — **on the development PC**, recorded 2026-09-22 at the
+owner's word. It needs the Windows guest, and the third PC has no working
+`/dev/kvm`: every guest there is emulated, and one virtual-machine acceptance on
+it has already cost 3 779 seconds. The work is ready; the machine that can run
+it is what it waits for.
+
+*scheduled* rather than *ready* is deliberate and is the word the supervisor
+reads: a lane skips a task only on `blocked` or `scheduled` in this line, so a
+sentence naming the machine — however plain — would be read by a person and
+stepped over by the program, and the next lane to start on this plan would take
+this task merely because it is next. **Depends on:** 10.
 **Split from** task 10 on 2026-09-22. Task 10 is done for what it proved: all
 seven kills landing exactly, Windows restarting to its desktop after each, the
 start partition unchanged beyond the controls, nothing unreadable, and the
