@@ -712,7 +712,37 @@ their first morning; today it is recognised, named, and then refused.
 
 ### 8. The iWork exclusion, measured against a real Keynote and a real Numbers document
 
-**Status:** ready — **blocked on a real file of each.** **Depends on:** 6.
+**Status:** **Done, 2026-09-25.** Both files exist, saved by Keynote 15.3.1 and
+Numbers 15.3.1 themselves on this Mac, and the exclusion is measured against
+them: each carries `Index/Document.iwa`, so a rule without the exclusion would
+call both Pages documents, and each is refused by name. **One arm of three is
+measured** — see below. **Depends on:** 6.
+
+#### What was measured, and the arm that was not
+
+The applications were installed from the App Store on 2026-09-25 and **wrote
+their own files**: a new presentation and a new spreadsheet, their text set
+through each application's AppleScript dictionary, then saved by Keynote and by
+Numbers. Nothing was assembled — ADR 0057 accepts option A, wait for a real
+file, and a container this repository built to carry the parts the rule looks
+for would prove only that it can build one.
+
+Both are genuine iWork containers stored uncompressed, 56 and 43 entries, and
+**both carry `Index/Document.iwa`**. That is what makes them evidence: the part
+the rule keys on is really there, so a rule reading *an iWork document is a
+Pages document* would have claimed both. What excludes them is
+`Index/Slide.iwa` and `Index/Slide-2652176.iwa` in the presentation, and thirty
+entries under `Index/Tables/` in the spreadsheet. A machine told it converts
+Pages documents offers neither as a conversion, which is the failure this half
+exists to prevent.
+
+**The Keynote exclusion has three arms and this file exercises one.** It looks
+for `Index/Slide*`, `Index/MasterSlide*` **or** `Index/Theme*`; a presentation
+made from a blank document carries slides and neither of the other two. A
+presentation built from one of Keynote's themes would carry them, and until one
+is saved those two prefixes rest on the same reading of the format that all
+three did before today. The assembled containers in
+`tests/a_document_from_pages.rs` stay for exactly that reason, and say so.
 
 **One route that does not need the Mac's applications**, recorded on
 2026-09-25 in [what closes this release, and in what

@@ -19,12 +19,16 @@
 //!
 //! All three iWork applications write the same container. `Index/Document.iwa`
 //! means *one of these three* and not which, so the rule also requires the
-//! absence of the parts the other two have. **That half is reasoned and not
-//! measured**: this team has no Keynote or Numbers document to check it
-//! against, and `tests/files/README.md` records the ask. What is tested here is
-//! that the exclusion does what it says — a container carrying those parts is
-//! refused rather than called a Pages document — which is the logic, not the
-//! format.
+//! absence of the parts the other two have.
+//!
+//! **That half is measured, since 2026-09-25.** A real Keynote presentation and
+//! a real Numbers spreadsheet sit beside the Pages document, saved by those
+//! applications themselves, with their provenance in `tests/files/README.md`.
+//! Both carry `Index/Document.iwa` — so a rule that said *an iWork document is a
+//! Pages document* would call both of them one — and both are refused by name.
+//! Until they existed this half was reasoned from the format and checked against
+//! containers this repository assembled, which proved the logic and nothing
+//! about Keynote or Numbers.
 
 #![expect(
     clippy::expect_used,
@@ -41,6 +45,33 @@ use sha2::{Digest as _, Sha256};
 
 /// The real document, and where it came from.
 const THE_DOCUMENT: &str = "document.pages";
+
+/// The real presentation, which is **not** one, and its provenance.
+const THE_PRESENTATION: &str = "presentation.key";
+
+/// The digest its provenance records.
+const THE_PRESENTATIONS_DIGEST: &str =
+    "47e0b3ef473a5f854a07a98f452cc8a5bc1791f733a870ea713a2565e2f41f4e";
+
+/// What it weighs.
+const THE_PRESENTATIONS_SIZE: usize = 491_152;
+
+/// The real spreadsheet, which is not one either.
+const THE_SPREADSHEET: &str = "spreadsheet.numbers";
+
+/// The digest its provenance records.
+const THE_SPREADSHEETS_DIGEST: &str =
+    "7c999a1693d32b0ade722ca8f3bf01016aaa9286c2ebd351b64ad2e6403ecb45";
+
+/// What it weighs.
+const THE_SPREADSHEETS_SIZE: usize = 112_072;
+
+/// The part every iWork document carries, whichever application wrote it.
+///
+/// Searched for in the file's own bytes. All three applications store their
+/// entries uncompressed, so an entry's name is in the file as plain bytes —
+/// which is enough to show that the part the rule keys on is really there.
+const THE_IWORK_PART: &[u8] = b"Index/Document.iwa";
 
 /// The digest its provenance records.
 const ITS_DIGEST: &str = "1b01189904934a7c5d6b59199c9719eab111759cfea5e2a7de17d3e45ee09c4d";
@@ -181,6 +212,93 @@ fn the_document_is_the_one_its_provenance_records() {
     );
 }
 
+/// **The two files that are not Pages documents are the ones their provenance
+/// records.**
+#[test]
+fn the_other_iwork_files_are_the_ones_their_provenance_records() {
+    let provenance =
+        fs::read_to_string(the_files().join(THE_PROVENANCE)).expect("the provenance beside them");
+    for (named, digest, size) in [
+        (
+            THE_PRESENTATION,
+            THE_PRESENTATIONS_DIGEST,
+            THE_PRESENTATIONS_SIZE,
+        ),
+        (
+            THE_SPREADSHEET,
+            THE_SPREADSHEETS_DIGEST,
+            THE_SPREADSHEETS_SIZE,
+        ),
+    ] {
+        let bytes = the_file(named);
+        assert_eq!(bytes.len(), size, "{named} is not the file recorded");
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&bytes)),
+            digest,
+            "{named}'s digest is not the one recorded"
+        );
+        assert!(
+            provenance.contains(named) && provenance.contains(digest),
+            "{named} has no provenance beside it"
+        );
+    }
+}
+
+/// **A real Keynote presentation is not called a Pages document** — and it
+/// would have been, without the exclusion.
+///
+/// The two assertions are the whole measurement. The first shows the file
+/// really carries the part the rule keys on, so *an iWork document is a Pages
+/// document* would have claimed it. The second shows what this machine actually
+/// answers: nothing. Somebody sent a presentation is told the truth rather than
+/// told it converts and left watching it fail.
+#[test]
+fn a_real_keynote_presentation_is_not_called_a_pages_document() {
+    let bytes = the_file(THE_PRESENTATION);
+    assert!(
+        bytes
+            .windows(THE_IWORK_PART.len())
+            .any(|at| at == THE_IWORK_PART),
+        "the presentation does not carry the part the rule keys on, so it proves nothing"
+    );
+    assert_eq!(appears(&bytes), Appears::Unrecognised);
+}
+
+/// **A real Numbers spreadsheet is not called a Pages document either.**
+#[test]
+fn a_real_numbers_spreadsheet_is_not_called_a_pages_document() {
+    let bytes = the_file(THE_SPREADSHEET);
+    assert!(
+        bytes
+            .windows(THE_IWORK_PART.len())
+            .any(|at| at == THE_IWORK_PART),
+        "the spreadsheet does not carry the part the rule keys on, so it proves nothing"
+    );
+    assert_eq!(appears(&bytes), Appears::Unrecognised);
+}
+
+/// **Neither is offered as something that converts**, on a machine that
+/// converts Pages documents.
+///
+/// The failure this exclusion exists to prevent, stated as what a person would
+/// have met: a machine told it converts Pages documents must not offer to
+/// convert a presentation, because the offer would be kept by nothing.
+#[test]
+fn neither_is_offered_as_a_conversion_by_a_machine_that_converts_pages_documents() {
+    let machine = ThisMachine::with_nothing()
+        .opens(Kind::Pdf)
+        .expect("a machine may open a PDF")
+        .converts(Kind::PagesDocument, Kind::Pdf)
+        .expect("a machine may convert a Pages document");
+    for named in [THE_PRESENTATION, THE_SPREADSHEET] {
+        let outcome = outcome_of(&the_file(named), &machine);
+        assert!(
+            !matches!(outcome, Outcome::Converts { .. }),
+            "{named} was offered as a conversion: {outcome:?}"
+        );
+    }
+}
+
 /// **A real Pages document is a Pages document.**
 #[test]
 fn a_real_pages_document_is_recognised() {
@@ -244,12 +362,12 @@ fn a_zip_that_holds_nothing_of_the_sort_is_an_archive() {
 
 /// **A container carrying the other two applications' parts is refused.**
 ///
-/// The exclusion doing what it says. These are assembled, and they are not
-/// evidence about Keynote or Numbers — no real file of either exists here, and
-/// `tests/files/README.md` records the ask. What they show is that a document
-/// carrying those parts is **not claimed to be a Pages document**, which is the
-/// half a wrong guess about those formats would otherwise turn into a confident
-/// wrong answer.
+/// The exclusion doing what it says, on containers this repository assembled.
+/// The real files above are the evidence about Keynote and Numbers; these stay
+/// because they reach the arms of the rule no real file here exercises — a
+/// presentation made from a blank document carries slides and **neither a
+/// master slide nor a theme**, so those two prefixes are still only reasoned
+/// from the format, exactly as all three were before 2026-09-25.
 #[test]
 fn an_iwork_container_with_another_applications_parts_is_not_called_pages() {
     let keynote = a_zip_holding(&[

@@ -69,6 +69,62 @@ Its words and its picture are this repository's own, so it carries no licence
 anybody has to honour and is published here with the rest. It holds nothing
 private.
 
+
+## `presentation.key`
+
+| | |
+|---|---|
+| Written by | **Keynote 15.3.1** (`com.apple.Keynote`, Mac App Store id 361285480), on macOS 26.5.2, on an Apple M3 with 8 GB |
+| When | 2026-09-25 |
+| How | a new Keynote presentation, its slides' text set by AppleScript, then **saved by Keynote itself** |
+| What is in it | two slides of our own words — *A short presentation* over *Made to be opened, not to be read*, and *Three things* over three lines about reading a file from its bytes |
+| Size | 491 152 bytes |
+| SHA-256 | `47e0b3ef473a5f854a07a98f452cc8a5bc1791f733a870ea713a2565e2f41f4e` |
+
+## `spreadsheet.numbers`
+
+| | |
+|---|---|
+| Written by | **Numbers 15.3.1** (`com.apple.Numbers`, Mac App Store id 361304891), on macOS 26.5.2, on an Apple M3 with 8 GB |
+| When | 2026-09-25 |
+| How | a new Numbers spreadsheet, its table named and filled by AppleScript, then **saved by Numbers itself** |
+| What is in it | one table, *A short spreadsheet*, with a header row — Thing, Count, Note — and three rows under it |
+| Size | 112 072 bytes |
+| SHA-256 | `7c999a1693d32b0ade722ca8f3bf01016aaa9286c2ebd351b64ad2e6403ecb45` |
+
+### What these two are for, and what they are not
+
+They are here for the **exclusion**, which is the half of the Pages rule that had
+never been shown working. `document.pages` above shows that a Pages document is
+recognised; these two show that the other two iWork applications' documents are
+**not** — and they are the only things that can show it, because the rule is
+about parts a real Keynote and a real Numbers file carry.
+
+Both are genuine iWork containers, saved by the applications themselves through
+their own AppleScript dictionaries. Nothing here was assembled: ADR 0057 accepts
+option A — wait for a real file — and a container this repository built to carry
+the parts the rule looks for would prove only that it can build one.
+
+**Both carry `Index/Document.iwa`**, which is the part that says *an iWork
+document*. That is the whole point of them: a rule that said *an iWork document
+is a Pages document* would call both of these Pages documents, and a person
+would be told their presentation converts and then watch it fail.
+
+| | `presentation.key` | `spreadsheet.numbers` |
+|---|---|---|
+| entries | 56, stored uncompressed | 43, stored uncompressed |
+| `Index/Document.iwa` | yes | yes |
+| what excludes it | `Index/Slide.iwa` and `Index/Slide-2652176.iwa` | 30 entries under `Index/Tables/` |
+| recognised as | nothing — not a Pages document | nothing — not a Pages document |
+
+**One arm of the rule is measured and two are not.** The Keynote exclusion looks
+for `Index/Slide*`, `Index/MasterSlide*` **or** `Index/Theme*`; this file carries
+slides and neither of the other two, so it exercises the first alone. A
+presentation made from one of Keynote's themes rather than from a new blank
+document would carry them, and until one is saved those two arms rest on the
+same reading of the format that the first arm did before today. Recorded here
+rather than left for somebody to assume it was all measured.
+
 ## `drawing.dwg`
 
 | | |

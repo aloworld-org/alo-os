@@ -18,3 +18,11 @@ Thumbs.db
 
 # The private half of the image signing key never enters the repository (ADR 0036).
 *.key
+# **A Keynote presentation ends in `.key` too**, and one is a test fixture this
+# repository publishes: `crates/alo-opening` is measured against a real one to
+# show that a presentation is **not** called a Pages document. It was swallowed
+# silently by the rule above on 2026-09-25 — the test passed on the machine that
+# made the file and would have failed on every other — so the exception is
+# written here rather than the file being forced in, where the next person
+# adding a fixture will see it.
+!crates/alo-opening/tests/files/presentation.key
