@@ -1,0 +1,45 @@
+[package]
+name = "alo-desktop"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+# **The process that stands a person's desktop up, and the one that reads their
+# machine to fill it.**
+#
+# A package of its own rather than another binary inside `alo-shell`, and the
+# reason is a rule rather than tidiness: the shell shows and never measures, and
+# shell task 15's constraint is that no call into `/sys`, the media server or
+# the network manager is added *from `crates/alo-shell`*. A binary living in
+# that directory reading a battery would be that call, whatever the module
+# boundary said. So the reading lives here, beside the process it is for, and
+# `alo-shell` keeps taking its readings as data.
+[target.'cfg(target_os = "linux")'.dependencies]
+# Everything a desktop is drawn from, and the loop that draws it.
+alo-shell = { path = "../alo-shell" }
+# The four readings a status area shows, each from the entry point the crate
+# that owns it already has. Read here and handed over; none of them is decided.
+alo-power = { path = "../alo-power" }
+alo-sound = { path = "../alo-sound" }
+alo-networks = { path = "../alo-networks" }
+alo-formats = { path = "../alo-formats" }
+# What the desktop itself is made of, handed to the shell the same way.
+alo-appearance = { path = "../alo-appearance" }
+alo-access = { path = "../alo-access" }
+alo-dividing = { path = "../alo-dividing" }
+alo-dock = { path = "../alo-dock" }
+alo-egress = { path = "../alo-egress" }
+alo-indicator = { path = "../alo-indicator" }
+alo-saying = { path = "../alo-saying" }
+alo-strings = { path = "../alo-strings" }
+# The machine's own clock, for the one reading that has no device to ask.
+jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
+
+[[bin]]
+name = "alo-desktop"
+path = "src/main.rs"
+
+[lints]
+workspace = true

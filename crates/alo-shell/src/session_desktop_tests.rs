@@ -35,7 +35,7 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
             socket: "a-desktop-with-no-seat",
             layout: "gb",
         },
-        &NoDesktop,
+        &mut NoDesktop,
         || DirectFrame::Stop,
     )
     .err()

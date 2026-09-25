@@ -36,6 +36,19 @@ use smithay::{
 pub trait TheDesktop {
     /// Everything one frame of the ordinary desktop needs.
     fn now(&self) -> DesktopFrame<'_>;
+
+    /// Read anything that changes, before the next frame is drawn.
+    ///
+    /// **A status area whose clock never moves looks broken rather than
+    /// unfinished**, and it is the one surface a person checks to find out
+    /// whether their machine is telling them the truth. So the lane asks before
+    /// every frame, and whatever is on the other side decides how often that is
+    /// worth acting on — this crate does not know what a reading costs and must
+    /// not decide how often one is taken.
+    ///
+    /// Nothing by default: a desktop of fixed values is a real one, and the
+    /// display probe is exactly that.
+    fn refreshed(&mut self) {}
 }
 
 impl crate::DirectSession {
@@ -53,7 +66,7 @@ impl crate::DirectSession {
     pub fn desktop(
         &mut self,
         server: &mut Server,
-        desktop: &dyn TheDesktop,
+        desktop: &mut dyn TheDesktop,
         labels: &mut WindowControlLabels,
         mut next: impl FnMut() -> crate::DirectFrame,
     ) -> Result<crate::ActiveSessionResult<crate::DirectLoopResult>, SessionError> {
@@ -104,7 +117,7 @@ struct Desk<'a> {
     /// The ordinary routing, unchanged — a client hears the keyboard here.
     input: crate::direct_input_loop::RoutedInput,
     /// What the crates that decide each of these say is on the display now.
-    desktop: &'a dyn TheDesktop,
+    desktop: &'a mut dyn TheDesktop,
     /// The bundled font every word on the desktop is laid out with.
     labels: &'a mut WindowControlLabels,
 }
@@ -130,6 +143,9 @@ impl LoopInput for Desk<'_> {
         target: &mut T,
         time: u32,
     ) -> Result<(), DirectLoopError> {
+        // Asked before the frame is made, never after: a frame drawn from
+        // readings taken after it would show a person the moment before.
+        self.desktop.refreshed();
         let size = target.size();
         let pictures = crate::nested_desktop::frame_pictures(
             self.desktop.now(),

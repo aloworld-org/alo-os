@@ -526,6 +526,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-desktop"
+version = "0.1.0"
+dependencies = [
+ "alo-access",
+ "alo-appearance",
+ "alo-dividing",
+ "alo-dock",
+ "alo-egress",
+ "alo-formats",
+ "alo-indicator",
+ "alo-networks",
+ "alo-power",
+ "alo-saying",
+ "alo-shell",
+ "alo-sound",
+ "alo-strings",
+ "jiff",
+]
+
+[[package]]
 name = "alo-desktops"
 version = "0.0.1"
 dependencies = [
