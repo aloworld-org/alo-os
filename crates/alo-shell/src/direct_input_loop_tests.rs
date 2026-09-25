@@ -187,7 +187,6 @@ impl Session for Manager {
 #[test]
 fn direct_input_loop_real_empty_seat_latched_pause_and_descriptor_order()
 -> Result<(), Box<dyn std::error::Error>> {
-    use std::io::Read;
     for pause in [false, true] {
         let dir = tempfile::tempdir()?;
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700))?;
