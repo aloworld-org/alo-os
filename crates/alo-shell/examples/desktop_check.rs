@@ -156,6 +156,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 status: &status,
                                 in_use: &[],
                                 notifications: &[],
+                                capturing: None,
                                 division: &division,
                                 offer: &alo_dividing::Offer::Nothing,
                             },

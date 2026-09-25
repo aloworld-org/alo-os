@@ -55,6 +55,9 @@ pub(crate) fn paint(
     if let Some(notifications) = native.notifications {
         notifications.validate(size)?;
     }
+    if let Some(capturing) = native.capturing {
+        capturing.validate(size)?;
+    }
     let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
@@ -122,6 +125,12 @@ pub(crate) fn paint(
     // not cover a message that arrived either.
     if let Some(cards) = native.notifications.filter(|cards| !cards.is_empty()) {
         cards.paint(&mut frame)?;
+    }
+    // Above every one of them: a notification arriving while somebody is
+    // choosing what to capture must not land on top of the thing they are
+    // drawing a box around.
+    if let Some(capturing) = native.capturing.filter(|tools| !tools.is_empty()) {
+        capturing.paint(&mut frame)?;
     }
     if let Some(cursor_drawing) = &cursor_drawing {
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])

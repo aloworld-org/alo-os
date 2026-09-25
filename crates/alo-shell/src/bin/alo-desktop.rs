@@ -205,6 +205,7 @@ mod running {
                 // yet. A portal that lets an application send one is the
                 // applications plan's, not this binary's.
                 notifications: &[],
+                capturing: None,
                 division: &self.division,
                 offer: &alo_dividing::Offer::Nothing,
             }

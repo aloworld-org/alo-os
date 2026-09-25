@@ -68,6 +68,9 @@ pub enum RenderError {
     /// for this output, or was laid out for a different one.
     #[error("a notification does not fit this output")]
     NotificationScene,
+    /// Somebody is capturing and the tools cannot be laid out for this output.
+    #[error("the capture tools do not fit this output")]
+    CaptureScene,
     /// A question or a refusal is open and the approval surface cannot hold
     /// the whole of it on this output, or was laid out for a different one.
     /// The frame is refused rather than drawn with the sentence cut.

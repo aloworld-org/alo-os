@@ -92,6 +92,8 @@ mod atomic_output;
 mod atomic_test;
 mod booting;
 mod capture_flatten;
+mod capture_paint;
+mod capture_raster;
 mod cursor;
 mod default_cursor;
 mod desktop_list;

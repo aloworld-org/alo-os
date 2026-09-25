@@ -45,6 +45,10 @@ pub(crate) struct NativeLayers<'a> {
     /// The notifications `alo-notifying` handed over, at the other end of the
     /// dock from both indicators.
     pub(crate) notifications: Option<&'a crate::notification_raster::NotificationPicture>,
+    /// The capture tools, while somebody is choosing what to capture or
+    /// marking what they captured. Above everything, because what a person is
+    /// drawing on must not be covered by what arrives while they draw.
+    pub(crate) capturing: Option<&'a crate::capture_raster::CapturePicture>,
 }
 
 impl NativeLayers<'_> {
@@ -63,6 +67,7 @@ impl NativeLayers<'_> {
             status: None,
             in_use: None,
             notifications: None,
+            capturing: None,
         }
     }
 
@@ -76,6 +81,7 @@ impl NativeLayers<'_> {
             && self.status.is_none()
             && self.in_use.is_none()
             && self.notifications.is_none()
+            && self.capturing.is_none()
     }
 }
 

@@ -55,6 +55,9 @@ pub struct DesktopFrame<'a> {
     /// notification a locked, shared or quiet machine is holding never becomes
     /// one of these, so there is nothing here to decide.
     pub notifications: &'a [alo_notifying::Shown],
+    /// The capture tools, while somebody is choosing what to capture or marking
+    /// what they captured, and [`None`] when nobody is.
+    pub capturing: Option<crate::capture_raster::Capturing<'a>>,
     /// How this display is divided, as `alo-dividing` decided it. Handed in for
     /// the same reason the readings are, and because nothing holds one yet —
     /// the `Server`'s division is task 16's, on the session that stands the
@@ -175,6 +178,7 @@ impl Nested {
                 status: Some(&pictures.status),
                 in_use: Some(&pictures.in_use),
                 notifications: Some(&pictures.notifications),
+                capturing: pictures.capturing.as_ref(),
             },
         )
     }
@@ -188,6 +192,8 @@ pub(crate) struct DesktopPictures {
     pub(crate) in_use: crate::in_use_raster::InUsePicture,
     /// The notifications on this frame.
     pub(crate) notifications: crate::notification_raster::NotificationPicture,
+    /// The capture tools, when somebody is capturing.
+    pub(crate) capturing: Option<crate::capture_raster::CapturePicture>,
     /// The dock and the desktop windows.
     pub(crate) desktop: DesktopPicture,
     /// The record window, when the frame carries one.
@@ -218,6 +224,10 @@ pub(crate) fn frame_pictures(
         size,
         desktop.look.in_use(),
     )?;
+    let capturing = desktop
+        .capturing
+        .map(|tools| crate::capture_raster::picture(tools, size, desktop.look.capture()))
+        .transpose()?;
     let notifications = crate::notification_raster::picture(
         desktop.notifications,
         desktop.strings,
@@ -276,6 +286,7 @@ pub(crate) fn frame_pictures(
         status,
         in_use,
         notifications,
+        capturing,
         desktop: drawn,
         record,
         approval,

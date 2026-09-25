@@ -137,6 +137,15 @@ impl DesktopLook {
         }
     }
 
+    /// The same look, for the capture tools drawn over everything.
+    pub(crate) const fn capture(self) -> crate::capture_raster::CaptureLook {
+        crate::capture_raster::CaptureLook {
+            scheme: self.scheme,
+            scale: self.scale,
+            contrast: self.contrast,
+        }
+    }
+
     /// Measures at this look's text size.
     pub(crate) fn measure(self) -> Measure {
         Measure::of(self.scale)

@@ -162,6 +162,9 @@ fn validate_layers(
     if let Some(notifications) = layers.notifications {
         notifications.validate(size)?;
     }
+    if let Some(capturing) = layers.capturing {
+        capturing.validate(size)?;
+    }
     Ok(())
 }
 
@@ -199,6 +202,12 @@ fn paint_layers(
     // not cover a message that arrived either.
     if let Some(cards) = layers.notifications.filter(|cards| !cards.is_empty()) {
         cards.paint(frame)?;
+    }
+    // Above every one of them: a notification arriving while somebody is
+    // choosing what to capture must not land on top of the thing they are
+    // drawing a box around.
+    if let Some(capturing) = layers.capturing.filter(|tools| !tools.is_empty()) {
+        capturing.paint(frame)?;
     }
     Ok(())
 }

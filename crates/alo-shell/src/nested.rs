@@ -382,6 +382,7 @@ impl Nested {
                 // does. Named in shell task 11 rather than left to be found.
                 in_use: None,
                 notifications: None,
+                capturing: None,
             },
         )
     }
