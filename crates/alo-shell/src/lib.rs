@@ -91,8 +91,13 @@ mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
 mod booting;
+mod capture_flatten;
+mod capture_paint;
+mod capture_raster;
 mod cursor;
 mod default_cursor;
+#[cfg(test)]
+mod descriptor_testing;
 mod desktop_list;
 mod desktop_look;
 mod desktop_paint;
@@ -127,6 +132,9 @@ mod filling_keys;
 mod filling_rows;
 mod filling_window;
 mod flip_gate;
+mod in_use_mark;
+mod in_use_paint;
+mod in_use_raster;
 mod keyboard;
 mod libinput_routing;
 mod libinput_scroll;
@@ -151,6 +159,8 @@ mod nested_record;
 mod nested_recovery;
 mod nested_settings;
 mod nested_sign_in;
+mod notification_paint;
+mod notification_raster;
 mod offscreen;
 mod output_metadata;
 mod output_retirement;
@@ -231,6 +241,7 @@ mod socket;
 mod software_scanout;
 pub mod status_items;
 mod status_items_raster;
+mod status_row;
 mod surfaces;
 mod window_activation;
 mod window_close;
@@ -302,6 +313,7 @@ pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output}
 pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
+pub use capture_flatten::{NotFlattened, burnt_in};
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
 pub use direct_desktop::TheDesktop;

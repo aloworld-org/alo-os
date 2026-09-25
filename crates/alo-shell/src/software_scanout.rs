@@ -156,6 +156,15 @@ fn validate_layers(
     if let Some(status) = layers.status {
         status.validate(size)?;
     }
+    if let Some(in_use) = layers.in_use {
+        in_use.validate(size)?;
+    }
+    if let Some(notifications) = layers.notifications {
+        notifications.validate(size)?;
+    }
+    if let Some(capturing) = layers.capturing {
+        capturing.validate(size)?;
+    }
     Ok(())
 }
 
@@ -185,6 +194,20 @@ fn paint_layers(
     }
     if let Some(status) = layers.status.filter(|status| !status.is_empty()) {
         status.paint(frame)?;
+    }
+    if let Some(in_use) = layers.in_use.filter(|in_use| !in_use.is_empty()) {
+        in_use.paint(frame)?;
+    }
+    // At the other end of the dock, and as high: a window a client maps does
+    // not cover a message that arrived either.
+    if let Some(cards) = layers.notifications.filter(|cards| !cards.is_empty()) {
+        cards.paint(frame)?;
+    }
+    // Above every one of them: a notification arriving while somebody is
+    // choosing what to capture must not land on top of the thing they are
+    // drawing a box around.
+    if let Some(capturing) = layers.capturing.filter(|tools| !tools.is_empty()) {
+        capturing.paint(frame)?;
     }
     Ok(())
 }

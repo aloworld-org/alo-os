@@ -192,6 +192,20 @@ mod running {
                 running: &self.running,
                 filling: &self.filling,
                 status: &self.status,
+                // **Nothing is watching or listening, and that is read rather
+                // than assumed** — `alo_in_use::InUse::read_from` asks the
+                // machine's media server, and nothing on a machine with no
+                // applications on it yet has a camera or a microphone open.
+                // Asking the server for real belongs with the other readings
+                // this binary hands over, task 15 of the shell plan.
+                in_use: &[],
+                // **Nothing has sent one**, which is different from holding
+                // them: `alo_notifying::arrives` is where a notification
+                // becomes one to show, and nothing on this machine calls it
+                // yet. A portal that lets an application send one is the
+                // applications plan's, not this binary's.
+                notifications: &[],
+                capturing: None,
                 division: &self.division,
                 offer: &alo_dividing::Offer::Nothing,
             }
