@@ -23,6 +23,15 @@
 /// has to be pointed at whatever the entry is called.
 pub const THE_LOADER_THE_BASE_INSTALLS: &str = "\\EFI\\fedora\\shimx64.efi";
 
+/// The loader the installer stages on its own area, which its entry starts.
+///
+/// `crates/alo-installer` writes that entry into the firmware itself and names
+/// it alo OS (`alo_installer::THE_LOADER`). Once alo OS is installed, that
+/// entry points at an area this environment is about to remove, so it goes
+/// with it — and what tells the two apart is the file each one starts, never
+/// the name they share.
+pub const THE_LOADER_THE_INSTALLER_STAGED: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
+
 /// What the entry for alo OS is called once this environment has tidied up.
 ///
 /// The installer's staging entry carries the same name
@@ -91,6 +100,14 @@ impl Entries {
             // say — and it is left exactly as it is.
             _ => None,
         }
+    }
+
+    /// The entry the installer staged, by the file it starts.
+    #[must_use]
+    pub fn the_staged_installer(&self) -> Option<&Entry> {
+        self.every
+            .iter()
+            .find(|entry| entry.starts(THE_LOADER_THE_INSTALLER_STAGED))
     }
 
     /// The entry that starts Windows, by the file it starts.

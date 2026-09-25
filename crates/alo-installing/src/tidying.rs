@@ -49,13 +49,16 @@ pub struct Tidied {
     pub ordered: bool,
     /// Whether the installer's area is gone.
     pub area_removed: bool,
+    /// Whether the entry the installer staged, which points at that area, is
+    /// gone with it.
+    pub staging_entry_removed: bool,
 }
 
 impl Tidied {
     /// Whether everything that had to be done was done.
     #[must_use]
     pub const fn whole(&self) -> bool {
-        self.named && self.ordered && self.area_removed
+        self.named && self.ordered && self.area_removed && self.staging_entry_removed
     }
 }
 
@@ -80,23 +83,17 @@ pub fn tidy_up(
     };
 
     // 1. The name. An entry that already carries it is left exactly as it is.
-    let mut alo_os = installed.number.clone();
     if installed.named == THE_ENTRYS_NAME {
         tidied.named = true;
     } else if let Some(partition) = installed.partition {
         let disk: PathBuf = installed_on.path();
-        let made = ran(
+        if ran(
             machine,
             &Program::NamingTheEntry { disk, partition },
             strings,
-        );
-        if let Some(made) = made {
-            // The tool prints the entry it made, and the number in that line
-            // is the entry that now has to be ordered and the one the old must
-            // not be confused with.
-            if let Some(new) = crate::entries::Entry::read(made.printed.trim()) {
-                alo_os = new.number;
-            }
+        )
+        .is_some()
+        {
             tidied.named = ran(
                 machine,
                 &Program::RemovingTheEntry {
@@ -108,12 +105,39 @@ pub fn tidy_up(
         }
     }
 
-    // 2. The order.
-    let windows = entries.windows().map(|entry| entry.number.clone());
-    let order = entries.with_alo_os_first(&alo_os, windows.as_deref());
-    tidied.ordered = ran(machine, &Program::OrderingTheEntries { order }, strings).is_some();
+    // 2. The entry the installer staged, which points at an area that is about
+    //    to stop existing. A person who has installed once should see one
+    //    alo OS in their firmware's menu, and it should be the one that starts.
+    if let Some(staged) = entries.the_staged_installer().cloned() {
+        tidied.staging_entry_removed = ran(
+            machine,
+            &Program::RemovingTheEntry {
+                number: staged.number,
+            },
+            strings,
+        )
+        .is_some();
+    } else {
+        tidied.staging_entry_removed = true;
+    }
 
-    // 3. The area. A machine with none is a machine with nothing to remove,
+    // 3. The order, from the list as it is *now*: the tool prints the whole
+    //    list when it makes an entry, and numbers that were right a moment ago
+    //    are not the numbers to order by. Measured on 2026-09-25, ordering by
+    //    the old number was refused — *Invalid BootOrder order entry value* —
+    //    and left the machine starting what the install had left.
+    if let Some(listed) = ran(machine, &Program::ListingTheStartEntries, strings) {
+        let now = Entries::read(&listed.printed);
+        let alo_os = now
+            .the_installed_system()
+            .map(|entry| entry.number.clone())
+            .unwrap_or(installed.number.clone());
+        let windows = now.windows().map(|entry| entry.number.clone());
+        let order = now.with_alo_os_first(&alo_os, windows.as_deref());
+        tidied.ordered = ran(machine, &Program::OrderingTheEntries { order }, strings).is_some();
+    }
+
+    // 4. The area. A machine with none is a machine with nothing to remove,
     //    which is the whole of this act being done.
     let area = ran(machine, &Program::ListingTheDisks, strings)
         .and_then(|listed| Disks::read(&listed.printed).ok())

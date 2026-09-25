@@ -54,6 +54,15 @@ const THE_START_ENTRIES: &str = "BootCurrent: 000B\n\
      Boot0004* Windows Boot Manager\tHD(1,GPT,0506f28d-c7cb-426e-ad7b-b9ec92014753,0x800,0x96000)/File(\\EFI\\Microsoft\\Boot\\bootmgfw.efi)\n\
      Boot000B* Fedora\tHD(2,GPT,1505d88b-67da-4187-b683-f36a1169e81e,0x1000,0x100000)/File(\\EFI\\fedora\\shimx64.efi)\n";
 
+/// The list as it is once the entry has been made again and the old one taken
+/// away — which is what the tidying orders by, rather than by numbers that
+/// were right a moment earlier.
+const THE_START_ENTRIES_AFTER_NAMING: &str = "BootCurrent: 000C\n\
+     BootOrder: 0004,0000\n\
+     Boot0000* BootManagerMenuApp\tFvVol(5c60f367-a505-419a-859e-2a4ff6ca6fe5)\n\
+     Boot0004* Windows Boot Manager\tHD(1,GPT,0506f28d-c7cb-426e-ad7b-b9ec92014753,0x800,0x96000)/File(\\EFI\\Microsoft\\Boot\\bootmgfw.efi)\n\
+     Boot000C* alo OS\tHD(2,GPT,1505d88b-67da-4187-b683-f36a1169e81e,0x1000,0x100000)/File(\\EFI\\fedora\\shimx64.efi)\n";
+
 /// What the tool prints when it has made the entry this environment asks for.
 const THE_ENTRY_IT_MADE: &str = "Boot000C* alo OS\tHD(2,GPT,1505d88b-67da-4187-b683-f36a1169e81e,0x1000,0x100000)/File(\\EFI\\fedora\\shimx64.efi)";
 
@@ -270,11 +279,12 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         )))
         .answering(succeeded(""))
         // What the tidying runs, in its own order: the firmware's list, the
-        // entry made, the old one taken away, the order, the disks again, and
-        // the area removed.
+        // entry made, the old one taken away, the list again, the order, the
+        // disks, and the area removed.
         .answering(succeeded(THE_START_ENTRIES))
         .answering(succeeded(THE_ENTRY_IT_MADE))
         .answering(succeeded(""))
+        .answering(succeeded(THE_START_ENTRIES_AFTER_NAMING))
         .answering(succeeded(""))
         .answering(succeeded(THE_DISKS))
         .answering(succeeded(""));
@@ -313,7 +323,7 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         "the write's three, and the area removal's three"
     );
 
-    assert_eq!(machine.ran.len(), 11);
+    assert_eq!(machine.ran.len(), 12);
     assert_eq!(machine.ran[0], Program::ListingTheDisks);
     assert_eq!(machine.ran[1], Program::WaitingForTheNetwork);
     assert!(matches!(machine.ran[2], Program::Verifying(_)));
@@ -340,21 +350,22 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
             number: "000B".to_owned(),
         }
     );
+    assert_eq!(machine.ran[7], Program::ListingTheStartEntries);
     assert_eq!(
-        machine.ran[7],
+        machine.ran[8],
         Program::OrderingTheEntries {
-            order: ["000C", "0004", "000B", "0000"].map(str::to_owned).to_vec(),
+            order: ["000C", "0004", "0000"].map(str::to_owned).to_vec(),
         }
     );
-    assert_eq!(machine.ran[8], Program::ListingTheDisks);
+    assert_eq!(machine.ran[9], Program::ListingTheDisks);
     assert_eq!(
-        machine.ran[9],
+        machine.ran[10],
         Program::RemovingTheArea {
             disk: "/dev/vda".to_owned(),
             partition: 5,
         }
     );
-    assert_eq!(machine.ran[10], Program::Restarting);
+    assert_eq!(machine.ran[11], Program::Restarting);
     assert_eq!(
         machine.noted,
         Vec::<String>::new(),
@@ -728,6 +739,7 @@ fn an_entry_that_already_carries_the_name_is_not_made_again() {
     let already = THE_START_ENTRIES.replace("Fedora", "alo OS");
     let mut machine = tidying_with(vec![
         succeeded(&already),
+        succeeded(&already),
         succeeded(""),
         succeeded(THE_DISKS),
         succeeded(""),
@@ -735,7 +747,7 @@ fn an_entry_that_already_carries_the_name_is_not_made_again() {
     let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
 
     assert!(tidied.whole(), "{tidied:?}");
-    assert_eq!(machine.ran.len(), 4, "{:?}", machine.ran);
+    assert_eq!(machine.ran.len(), 5, "{:?}", machine.ran);
     assert!(
         !machine
             .ran
@@ -745,7 +757,7 @@ fn an_entry_that_already_carries_the_name_is_not_made_again() {
         machine.ran
     );
     assert_eq!(
-        machine.ran[1],
+        machine.ran[2],
         Program::OrderingTheEntries {
             order: ["000B", "0004", "0000"].map(str::to_owned).to_vec(),
         }
@@ -756,9 +768,11 @@ fn an_entry_that_already_carries_the_name_is_not_made_again() {
 /// tidying is whole.
 #[test]
 fn a_machine_without_an_area_is_tidied_whole() {
+    let already = THE_START_ENTRIES.replace("Fedora", "alo OS");
     let without = THE_DISKS.replace("\"ALO-INSTALL\"", "null");
     let mut machine = tidying_with(vec![
-        succeeded(&THE_START_ENTRIES.replace("Fedora", "alo OS")),
+        succeeded(&already),
+        succeeded(&already),
         succeeded(""),
         succeeded(&without),
     ]);
@@ -779,8 +793,10 @@ fn a_machine_without_an_area_is_tidied_whole() {
 /// why where a technician reads it, and leaves the machine installed.
 #[test]
 fn what_could_not_be_tidied_is_said_without_taking_the_install_back() {
+    let already = THE_START_ENTRIES.replace("Fedora", "alo OS");
     let mut machine = tidying_with(vec![
-        succeeded(&THE_START_ENTRIES.replace("Fedora", "alo OS")),
+        succeeded(&already),
+        succeeded(&already),
         failed("the firmware refused the order"),
         succeeded(THE_DISKS),
         failed("the partition would not go"),
@@ -809,5 +825,45 @@ fn a_firmware_that_says_nothing_is_not_guessed_at() {
     assert_eq!(
         machine.said.last().map(String::as_str),
         Some(english(word("installing.tidy-entries-not-read"), "").as_str())
+    );
+}
+
+/// **The entry the installer staged goes with the area it points at**, so a
+/// person who has installed once sees one alo OS in their firmware's menu and
+/// it is the one that starts.
+#[test]
+fn the_entry_the_installer_staged_is_taken_away_with_its_area() {
+    let staged = format!(
+        "{THE_START_ENTRIES}Boot000A* alo OS\tHD(4,GPT,dd778bbc-0e04-4fb9-b3d1-079b24daf0be,0x7c8f800,0x200000)/\\EFI\\BOOT\\BOOTX64.EFI\n"
+    );
+    let mut machine = tidying_with(vec![
+        succeeded(&staged),
+        succeeded(THE_ENTRY_IT_MADE),
+        succeeded(""),
+        succeeded(""),
+        succeeded(THE_START_ENTRIES_AFTER_NAMING),
+        succeeded(""),
+        succeeded(THE_DISKS),
+        succeeded(""),
+    ]);
+    let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
+
+    assert!(tidied.whole(), "{tidied:?}");
+    let removed: Vec<&Program> = machine
+        .ran
+        .iter()
+        .filter(|program| matches!(program, Program::RemovingTheEntry { .. }))
+        .collect();
+    assert_eq!(
+        removed,
+        [
+            &Program::RemovingTheEntry {
+                number: "000B".to_owned()
+            },
+            &Program::RemovingTheEntry {
+                number: "000A".to_owned()
+            },
+        ],
+        "the entry the install left and the entry the installer staged both go"
     );
 }
