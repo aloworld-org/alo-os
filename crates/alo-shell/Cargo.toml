@@ -71,6 +71,10 @@ alo-indicator = { path = "../alo-indicator" }
 # beside the egress indicator to say so: the mark, the word and the position
 # ADR 0010 asks for beside a colour. Read, never decided — which thing is in
 # use, who has it and where its line sits are all that crate's answers.
+# The marks a person puts on a picture of their screen, and the areas they hid.
+# Which areas are hidden is that crate's answer; burning them into the bytes is
+# this crate's, because it is the one that holds pixels (`capture_flatten.rs`).
+alo-capturing = { path = "../alo-capturing" }
 alo-in-use = { path = "../alo-in-use" }
 # What a notification says and who sent it. Whether it is shown at all is that
 # crate's answer — a locked machine, a shared screen or the hours a person set

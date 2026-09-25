@@ -91,6 +91,7 @@ mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
 mod booting;
+mod capture_flatten;
 mod cursor;
 mod default_cursor;
 mod desktop_list;
@@ -308,6 +309,7 @@ pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output}
 pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
+pub use capture_flatten::{NotFlattened, burnt_in};
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
 pub use direct_desktop::TheDesktop;

@@ -1356,6 +1356,7 @@ dependencies = [
  "alo-applications",
  "alo-approving",
  "alo-capability",
+ "alo-capturing",
  "alo-changing",
  "alo-choosing",
  "alo-context",
