@@ -729,7 +729,8 @@ waits for hardware, the way the chip's half of encryption does.
 
 ### 23. The card road, on a machine that has one
 
-**Status:** blocked — **on hardware only.** Task 22 is done (2026-09-22) and
+**Status:** scheduled — **carried to 0.0.6 by the owner's decision of
+2026-09-25**, and on hardware only. Task 22 is done (2026-09-22) and
 this task's dependency on it is cleared: what remains is a machine with a
 discrete graphics card the pinned runtime can use, and a driver for it.
 `docs/hardware.md` lists none, and the machine this plan's lane runs on has no
