@@ -6640,3 +6640,32 @@ That is why `crate::engine::the_rendering` is shaped like the document it is of
 rather than always text, and it is a fact about which reader opens a workbook
 rather than about a version.
 **Date:** 2026-09-25.
+
+### A conversion test names one substituted font on its own machine and two on this one
+**Version:** `alo-converting`'s
+`converting_a_real_document::an_older_word_document_is_converted_and_what_it_lost_is_named`,
+landed with *The three formats Office saved in before 2007* (#129); the engine
+as `image/` pins it; Ubuntu under WSL 2 on the development PC, 2026-09-25.
+**Whose:** `alo-converting` is not this lane's crate; this entry is the report,
+and the fix is its owner's.
+**Behaviour:** the third gate is red on `main` itself on this machine, before
+any branch is merged into it:
+
+```
+assertion `left == right` failed
+  left:  {FontSubstituted(FontName("Garamond")), FontSubstituted(FontName("Liberation Serif")), FieldFixed(Date), Comments}
+  right: {FontSubstituted(FontName("Garamond")), FieldFixed(Date), Comments}
+```
+
+Asked three times it answers the same, so it is not a race. **It is not a missing
+font either**: this machine had no Liberation family at all, and installing
+`fonts-liberation` — after which `fc-list` shows Liberation Serif, Sans, Sans
+Narrow and Mono — changed nothing; the engine still reports *Liberation Serif*
+as a font it substituted, and the test expects only *Garamond*. Checked in a
+worktree of `origin/main` (`cf641d5d`) with nothing of this lane's branch in
+it, and this lane's branch touches no file of that crate.
+**Our response:** none from this lane, and nothing was changed in that crate.
+It is written down so the next worker who meets a red third gate on this
+machine knows what it is, that a re-run does not clear it, and that the
+question for its owner is which font set their expectation was measured on.
+**Date:** 2026-09-25.
