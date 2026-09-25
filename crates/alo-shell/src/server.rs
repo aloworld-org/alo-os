@@ -95,6 +95,9 @@ impl Server {
         }
         self.display.dispatch_clients(&mut self.surfaces)?;
         self.surfaces.prune();
+        // The division follows the windows: one that closed loses its share
+        // here rather than leaving a tree holding a window nobody can see.
+        self.desk.windows_are_now(self.surfaces.mapped());
         self.switch_order.refresh(self.surfaces.buffered());
         self.display.flush_clients()
     }

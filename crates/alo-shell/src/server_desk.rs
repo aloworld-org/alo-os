@@ -48,6 +48,10 @@ pub(crate) struct Desk {
     /// What each display's division was when it last went away, keyed the way
     /// `alo-dividing` keys them.
     remembered: Divisions,
+    /// The number each window is known by outside this crate.
+    numbers: crate::window_number::Numbers,
+    /// How big each display is, as it was when it arrived.
+    areas: BTreeMap<DisplayId, Area>,
 }
 
 impl Desk {
@@ -80,6 +84,7 @@ impl Desk {
         open: &impl Fn(&HeldBy) -> Option<alo_dividing::Window>,
     ) -> Result<(), NotADisplay> {
         self.desktops.plug_in(display, area, promises)?;
+        self.areas.insert(display, area);
         if let Some(division) = self
             .remembered
             .on(named)
@@ -109,6 +114,7 @@ impl Desk {
         {
             self.remembered.remember(named, remembered);
         }
+        self.areas.remove(&display);
         self.desktops.unplug(display)
     }
 
@@ -116,6 +122,16 @@ impl Desk {
     /// it.
     pub(crate) fn dividing(&self, display: DisplayId) -> Option<&Division> {
         self.dividing.get(&display)
+    }
+
+    /// The division to change, for a caller `alo-dividing` has given an answer
+    /// to.
+    ///
+    /// Borrowed rather than handed back, because **a `Division` is not
+    /// `Clone`**: it carries an identity and a count of its changes, and two
+    /// copies would both claim to be the one a proposal was made against.
+    pub(crate) fn dividing_mut(&mut self, display: DisplayId) -> Option<&mut Division> {
+        self.dividing.get_mut(&display)
     }
 
     /// Divide a display that nothing had divided, or replace what divides it.
@@ -151,6 +167,50 @@ impl Desk {
             .on_mut(display)
             .ok_or(NotADisplay::Unknown(display))?;
         Ok(on.switch(switch))
+    }
+
+    /// The number this window is known by where a division holds it.
+    pub(crate) fn number_of(
+        &mut self,
+        surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    ) -> alo_dividing::WindowId {
+        alo_dividing::WindowId::from_compositor(self.numbers.of(surface))
+    }
+
+    /// These are the windows that are open now; the rest have closed.
+    ///
+    /// **A division is kept true to what is open, once a frame.** A window that
+    /// closed loses its share and the rest of the tree collapses onto it, which
+    /// is `alo_dividing::Division::close`'s own behaviour — and its number is
+    /// never given to anything else, so a share cannot come to belong to a
+    /// different window. That is the whole reason `crate::window_number` hands
+    /// out a number and never takes one back.
+    pub(crate) fn windows_are_now<'a>(
+        &mut self,
+        open: impl Iterator<
+            Item = &'a smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+        >,
+    ) {
+        let alive: std::collections::HashSet<u32> =
+            open.map(crate::window_number::Numbers::identity).collect();
+        for number in self.numbers.keep_only(&alive) {
+            let window = alo_dividing::WindowId::from_compositor(number);
+            for division in self.dividing.values_mut() {
+                // A division that does not hold it says so, and that is not a
+                // failure: a window can close on a display nobody divided.
+                let _ = division.close(window);
+            }
+        }
+    }
+
+    /// Every display here, in the order `alo-desktops` holds them.
+    pub(crate) fn displays(&self) -> impl Iterator<Item = DisplayId> + '_ {
+        self.desktops.displays()
+    }
+
+    /// The area of a display, as it was when it arrived.
+    pub(crate) fn area_of(&self, display: DisplayId) -> Option<Area> {
+        self.areas.get(&display).copied()
     }
 
     /// Whether any display is here at all.
