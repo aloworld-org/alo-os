@@ -6468,3 +6468,89 @@ optional data added; Windows lists such a variable as a *Firmware Application*
 disk's partition table, rather than relying on Windows to correct it; a
 firmware matches a hard-drive node by slot and signature.
 **Date:** 2026-09-22.
+
+### A test that writes a program and then runs it is refused it, *Text file busy*
+**Version:** `alo-software`'s
+`road::tests::the_program_really_receives_the_credential_for_the_proxy_the_file_named`,
+Rust 1.98 on Linux 6.6 under WSL 2, `cargo test --workspace` on the development
+PC, 2026-09-22. **Whose:** `alo-software` is not this lane's crate; this entry
+is the report, and the fix is its owner's.
+**Behaviour:** the test writes `tool.sh` with `File::create`, drops the handle,
+sets its mode to `0o700` and starts it. On one gate run of `main` it failed:
+
+```
+the program answers: DidNotAnswer { said: "/tmp/alo-software-road-really-received-tool/tool.sh could not be started: Text file busy (os error 26)" }
+test result: FAILED. 85 passed; 1 failed
+```
+
+Run again on the same tree it passed three times alone and once in its whole
+crate's suite, so this is a race and not a broken test. `ETXTBSY` is the kernel
+refusing to execute a file that some process still holds open for writing, and
+the suite runs its tests in parallel: another test in the same binary holding a
+descriptor to this file across a spawn is the shape that explains it. That was
+not isolated here.
+**Our response:** none from this lane, and nothing was changed in that crate.
+It is written down so that the next worker who meets a red gate on this test
+knows it has been seen, on what, and that a re-run passes — the workflow's
+*a flaky test is re-run three times* applies.
+**Date:** 2026-09-22.
+
+### Windows keeps `HibernateEnabled` under a different key from `HiberbootEnabled`
+**Version:** Windows 11 Enterprise Evaluation 25H2, 2026-09-23.
+**Behaviour:** Fast Startup is `HiberbootEnabled` under
+`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power`, and whether the
+computer hibernates at all is `HibernateEnabled` under
+`HKLM\SYSTEM\CurrentControlSet\Control\Power` — **not** under the session
+manager's key beside the first. Asked for it in the wrong place, Windows
+answers nothing at all rather than an error, so an installer that reads both
+from one key reads *not known* on every computer and never asks its question.
+Measured in the walk's guest: `HiberbootEnabled=[1]` and `HibernateEnabled=[]`
+from the session manager's key, and `1` from the other one.
+**Our response:** `crate::program`'s `ReadingFastStartup` reads each value from
+the key Windows keeps it under, and `crate::fast_startup` treats a computer
+that does not hibernate as one whose Fast Startup is off, because Fast Startup
+is hibernation of the kernel's own session.
+**Date:** 2026-09-23.
+
+### This QEMU guest does not keep hibernation on across a restart
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1 q35 with
+OVMF, 2026-09-23.
+**Behaviour:** `powercfg /h on` succeeds in the guest — `powercfg /a` goes from
+*Hibernate: hibernation has not been enabled* to listing **Hibernate** and
+**Fast Startup** as available, and both registry values read 1:
+
+```
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Power
+    HiberbootEnabled    REG_DWORD    0x1
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power
+    HibernateEnabled    REG_DWORD    0x1
+```
+
+After the next start, `HibernateEnabled` reads **0** again and Fast Startup is
+off. The same guest's `powercfg /a` reports S1, S2 and S0 low power idle as
+unsupported by the firmware and S3 as disabled by *Graphics*, so the machine
+has no sleep state at all beyond the hibernation it will not keep.
+**Our response:** the walk keeps its second base — the one made with
+hibernation on — because everything else about it is what the question needs,
+and **the one walk that answers the question turns Fast Startup on in the boot
+it asks in**, says so on the serial line, and then measures what the installer
+read, asked and wrote. What is measured there is the installer's behaviour on a
+real Windows; that a machine can hold Fast Startup on across a restart is the
+certified laptop's to show, not this guest's.
+**Date:** 2026-09-23.
+
+### A detached run inside WSL dies when no Windows process holds the distro open
+**Version:** WSL 2 on Windows 11 Pro 26200, Ubuntu with `systemd`, 2026-09-23.
+**Behaviour:** a long run started with `systemd-run --unit=…` inside the
+distro is stopped part way through, with systemd logging *Stopping …* and the
+unit deactivating cleanly, when the last `wsl.exe` invocation from Windows
+ends. Five walks of 25 to 40 minutes were lost this way, each ending within
+about a minute of the last Windows-side command: WSL shuts an idle virtual
+machine down, and *idle* means no Windows client is attached — the work
+running inside it does not count.
+**Our response:** a run of that length is started with a Windows-side
+`wsl.exe -d <distro> -- sleep <longer than the run>` held open beside it, and
+the run is watched through files as before. The alternative, `vmIdleTimeout`
+in `.wslconfig`, is a change to the developer's own machine rather than to
+this repository and is not made here.
+**Date:** 2026-09-23.

@@ -77,6 +77,10 @@ impl TheMachine for OnThisMachine {
             .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))
     }
 
+    fn this_program(&mut self) -> std::io::Result<PathBuf> {
+        std::env::current_exe()
+    }
+
     fn read(&mut self, file: &Path) -> std::io::Result<Vec<u8>> {
         std::fs::read(file)
     }

@@ -194,6 +194,9 @@ function TheState([string]$why) {
     Say ("partition {0}/{1}: offset={2} size={3} letter=[{4}] type={5} fs=[{6}] label=[{7}]" -f `
       $_.DiskNumber, $_.PartitionNumber, $_.Offset, $_.Size, $_.DriveLetter, $_.GptType, $fs, $label)
   }
+  $hiberboot = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled -ErrorAction SilentlyContinue).HiberbootEnabled
+  $hibernate = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name HibernateEnabled -ErrorAction SilentlyContinue).HibernateEnabled
+  Say ("fast-startup: HiberbootEnabled=[{0}] HibernateEnabled=[{1}]" -f $hiberboot, $hibernate)
   Say "--- bcdedit /enum firmware ---"
   & "$env:SystemRoot\System32\bcdedit.exe" /enum firmware 2>&1 | ForEach-Object { Say $_ }
   Say "--- the firmware's own entries ---"
@@ -255,6 +258,22 @@ if ($mode -eq 'manifest-only') {
   UnmountTheStartPartition
   Say 'ALOWALK-DONE manifest-only'
   return
+}
+
+# Fast Startup on, in this boot, when the instruction asks for it.
+#
+# The second base has hibernation on, and **this guest does not keep it across
+# a restart**: `powercfg /h on` succeeds and `powercfg /a` then lists Hibernate
+# and Fast Startup as available, and after the next start Windows has put
+# `HibernateEnabled` back to 0 (measured 2026-09-23, `docs/quirks.md`). So the
+# one walk that answers the question turns it on in the same boot it asks in,
+# and says so. Everything after this line is the installer's own doing.
+if ($instruction['fast-startup'] -eq 'on') {
+  Say 'turning Fast Startup on for this boot, because this guest does not keep it across a restart'
+  $turned = C:\Windows\System32\powercfg.exe /h on 2>&1
+  if ($turned) { $turned | ForEach-Object { Say "powercfg: $_" } }
+  New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name HibernateEnabled -Value 1 -PropertyType DWord -Force | Out-Null
+  New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled -Value 1 -PropertyType DWord -Force | Out-Null
 }
 
 $before = Manifest 'C:\alo\manifest-before.txt'
@@ -352,6 +371,38 @@ if ($null -eq $offered) { Say 'FAIL: it asked, and never named a disk to type' }
 Say "typing: [$offered]"
 $process.StandardInput.WriteLine($offered)
 $process.StandardInput.Flush()
+
+# The one question after the consent: Fast Startup, asked only on a computer
+# whose Fast Startup is on (ADR 0064 term 9). The answer arrives in the
+# instruction, and lines are read until the question is asked or until staging
+# has plainly begun, so a boot with nothing to answer waits for nothing.
+#
+# **Every walk answers it**, because this Windows' own value reads as on even
+# with hibernation off (`docs/quirks.md`): the settled base keeps
+# `HiberbootEnabled` at 1 after `powercfg /h off`. A walk that did not answer
+# would leave the installer waiting at the question for ever. The answer is
+# *leave on* unless the instruction names another, so nothing about Windows is
+# changed by walks that are not about this question.
+$answer = 'leave on'
+if ($instruction.ContainsKey('answer') -and $instruction['answer'] -ne '') {
+  $answer = $instruction['answer']
+}
+$answered = $false
+# At most three lines: when the question is asked it is the first thing said
+# after the consent, so a computer that is not asked is not waited on.
+for ($read = 0; $read -lt 3 -and -not $answered -and -not $process.HasExited; $read++) {
+  $line = $process.StandardOutput.ReadLine()
+  if ($null -eq $line) { break }
+  $said.Add($line)
+  Say "installer: $line"
+  if ($line -match 'and press Enter') {
+    Say "typing: [$answer]"
+    $process.StandardInput.WriteLine($answer)
+    $process.StandardInput.Flush()
+    $answered = $true
+  }
+}
+if (-not $answered) { Say 'the installer did not ask about Fast Startup' }
 
 if ($mode -eq 'whole-road') {
   $rest = $process.StandardOutput.ReadToEnd()
@@ -564,4 +615,51 @@ if ($instruction['probe']) {
   $probeFile = "$Medium\alo-walk\probe-$($instruction['probe']).ps1"
   if (Test-Path $probeFile) { . $probeFile } else { Say "probe: there is no $probeFile" }
 }
+# The way back in, started as a person starts it: the copy the installer left
+# in Windows' own place for programs, with the switch's word as its argument,
+# and the word typed at its question. It sets the firmware's next start and
+# restarts this computer, so nothing after this line runs.
+if ($mode -eq 'switch') {
+  $left = Join-Path $instruction['left-at'] $instruction['left-as']
+  Say "the way back: $left"
+  if (-not (Test-Path -LiteralPath $left)) {
+    Say 'FAIL: the installer left no way back'
+  } else {
+    $shortcut = $instruction['shortcut']
+    Say ("the shortcut: {0} exists={1}" -f $shortcut, (Test-Path -LiteralPath $shortcut))
+    $switch = New-Object System.Diagnostics.ProcessStartInfo
+    $switch.FileName = $left
+    $switch.Arguments = $instruction['argument']
+    $switch.UseShellExecute = $false
+    $switch.RedirectStandardInput = $true
+    $switch.RedirectStandardOutput = $true
+    $switch.RedirectStandardError = $true
+    $running = [System.Diagnostics.Process]::Start($switch)
+    Say "the way back's pid: $($running.Id)"
+    $typed = $false
+    while (-not $running.HasExited -or -not $running.StandardOutput.EndOfStream) {
+      $line = $running.StandardOutput.ReadLine()
+      if ($null -eq $line) { break }
+      Say "switch: $line"
+      if (-not $typed -and $line -match 'and press Enter') {
+        Say "typing: [$($instruction['agree'])]"
+        $running.StandardInput.WriteLine($instruction['agree'])
+        $running.StandardInput.Flush()
+        $typed = $true
+      }
+    }
+    Say "the way back exited: $($running.WaitForExit(120000)); code=$($running.ExitCode)"
+  }
+  Say 'ALOWALK-DONE switch'
+  return
+}
+
+# What this boot turned on, it turns off again: the base has hibernation off,
+# and a machine left with it on is not the machine the next boot expects.
+if ($instruction['fast-startup'] -eq 'on') {
+  $back = C:\Windows\System32\powercfg.exe /h off 2>&1
+  if ($back) { $back | ForEach-Object { Say "powercfg: $_" } }
+  Say 'hibernation is off again, as the base has it'
+}
+
 Say "ALOWALK-DONE kill-at-step $step"

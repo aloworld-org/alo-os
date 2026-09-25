@@ -15,6 +15,13 @@ repository.workspace = true
 # disagree about which disk is safe.
 alo-installing = { path = "../alo-installing" }
 
+# The loader's own environment block, and which system the machine starts when
+# nobody chooses. ADR 0066 keeps that answer once, on the EFI system partition,
+# and says the Windows program writes the same file the loader reads — so the
+# Windows side calls the crate that owns the format rather than carrying a
+# second copy of it, which is how one answer becomes two.
+alo-starting = { path = "../alo-starting" }
+
 # Every sentence the person reads.
 alo-strings = { path = "../alo-strings" }
 

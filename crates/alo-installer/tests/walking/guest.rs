@@ -46,6 +46,11 @@ pub const AT_EVERY_START: &str = include_str!("guest/at-every-start.cmd");
 /// Windows' own first-start work, and a shutdown Windows asks for itself.
 pub const SETTLING: &str = include_str!("guest/settle.cmd");
 
+/// What makes the second base, from the settled one: hibernation on and Fast
+/// Startup on, for the one walk that answers the question the installer asks
+/// about Fast Startup.
+pub const TURNING_FAST_STARTUP_ON: &str = include_str!("guest/fast-startup-on.cmd");
+
 /// What the every-start script calls on the walk disc.
 pub const THE_WALKS_COMMAND: &str = include_str!("guest/walk.cmd");
 
