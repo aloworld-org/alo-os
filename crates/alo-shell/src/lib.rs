@@ -210,6 +210,7 @@ mod screens_raster;
 mod screens_testing;
 mod seat_input;
 mod server;
+mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;

@@ -34,6 +34,13 @@ pub struct Server {
     pub(crate) presentation: crate::presentation::Presentation,
     /// Stable mapped-root order for trusted window cycling.
     pub(crate) switch_order: crate::window_switch::SwitchOrder,
+    /// **How each display is divided and what desktops are on it.**
+    ///
+    /// Held here because it is a session's, and kept across windows opening
+    /// and closing and displays arriving and leaving. Nothing about a layout
+    /// or a desktop is decided in this crate: `crate::server_desk` says what
+    /// that means and which crate answers which question.
+    pub(crate) desk: crate::server_desk::Desk,
 }
 
 impl Server {
@@ -61,6 +68,7 @@ impl Server {
             socket,
             presentation: Default::default(),
             switch_order: Default::default(),
+            desk: crate::server_desk::Desk::new(),
         })
     }
 
