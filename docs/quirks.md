@@ -2442,6 +2442,60 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### A guest filesystem's free space says nothing about the drive underneath it, and a guard that asks the guest will let that drive reach zero
+**Version:** WSL 2 on Windows Server 2022 (10.0.20348), Ubuntu 24.04.5 in a
+dynamically expanding `ext4.vhdx`; measured on the third PC 2026-09-23, guard
+corrected 2026-09-25. Nothing in it is particular to WSL: it is true of any
+sparse or thin-provisioned disk, which includes every virtual machine the tests
+in this repository boot.
+
+**Behaviour:** such an image is a sparse file with a large virtual size. The
+guest sees the virtual size; the host sees what has actually been allocated, and
+that only ever goes up. On the day this was measured the guest reported **858 GB
+free** while the drive holding the image was at **0 bytes**. The two numbers
+disagree by design, and the guest's is the one that is useless.
+
+What follows from a drive at zero is worse than a failed write. The guest began
+returning `Input/output error` on plain reads — `df` and `dmesg` among them —
+and the image could not then be shrunk back: `fstrim` inside the guest reported
+*920.7 GiB trimmed* and returned **nothing** to the host, because WSL here
+refuses to forward discards. `wsl --manage <distro> --set-sparse true` answers
+*Sparse VHD support is currently disabled due to potential data corruption* and
+offers only `--allow-unsafe`. So **the image stays at its high-water mark for
+ever**, and the cure is to destroy and rebuild it.
+
+**The part worth carrying to other machines.** The first guard written against
+this asked `df` about the directory it was about to write into — which is inside
+the guest. Tested rather than assumed, on the machine that had just filled:
+
+    needs 20 GB on /root/esp-probe                       exit=0
+          ROOM: /root has 954 GB free, which is enough to start.
+
+It would have allowed the exact run that broke the machine. Corrected to ask the
+host drive under the image as well, which is visible from inside at `/mnt/d`:
+
+    needs 20 GB on /root/esp-probe                       exit=1
+          ROOM: /root has 954 GB free, which is enough to start.
+          ROOM: the drive under this machine's image, /mnt/d, has 0 GB free
+          ROOM: this run does not start.
+
+**A check that stands in for the thing is not the thing.** Asking the guest for
+free space is the same defect as `test -x` standing in for *the converter runs*,
+and as reading `$?` through a shell that expanded it before the command ran:
+each reads something next to the truth, and each is wrong in the direction that
+lets the work proceed. **Every lane that writes a disk image is one guest
+filesystem away from this.**
+
+**Our response:** a run that writes disk images does not start unless the drive
+it writes to — *the host drive, not the guest* — has 20 GB free, and every image
+is deleted the moment its measurement has been read and written down. On the
+third PC that is `C:\dev\setup\room-to-work.sh`, sourced by all six probe
+scripts, with the incident in its own header so the next reader knows what it is
+for; its deleting function takes *where the measurement was recorded* as an
+argument, because an image may only be deleted on the grounds that its numbers
+outlive it.
+**Date:** 2026-09-25.
+
 ### A socket already open, and a datagram sent without connecting, are inside the boundary
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`
