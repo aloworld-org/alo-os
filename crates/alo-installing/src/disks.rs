@@ -113,6 +113,26 @@ impl Disks {
         serde_json::from_str(printed)
     }
 
+    /// Where the installer's own staging area is, when this machine has one:
+    /// the disk it is on, and the partition's number within that disk.
+    ///
+    /// Found by the label the installer gives it ([`THIS_INSTALLER`]) and by
+    /// nothing else, which is the same thing [`Disks::may_receive`] refuses a
+    /// disk for. The number is the partition's place in its disk's own list,
+    /// counted from one, because that is what the partitioner takes.
+    #[must_use]
+    pub fn the_staging_area(&self) -> Option<(String, u32)> {
+        for disk in &self.blockdevices {
+            for (at, partition) in disk.children.iter().enumerate() {
+                if partition.label.as_deref() == Some(THIS_INSTALLER) {
+                    let number = u32::try_from(at + 1).ok()?;
+                    return Some((disk.name.clone(), number));
+                }
+            }
+        }
+        None
+    }
+
     /// Whether the device at this path may be written by a whole-disk install.
     ///
     /// # Errors

@@ -16,6 +16,12 @@ repository.workspace = true
 alo-image = { path = "../alo-image" }
 
 # Every sentence the person watching the console reads.
+# Windows own loader, named once in the crate that owns the menu both systems
+# stand behind (ADR 0062), so the entry this environment orders behind alo OS
+# is recognised by the same path alo OS recognises it by.
+alo-starting = { path = "../alo-starting" }
+
+# Every sentence the person reads.
 alo-strings = { path = "../alo-strings" }
 
 # Two things arrive as JSON and nothing else: what the disk lister says about

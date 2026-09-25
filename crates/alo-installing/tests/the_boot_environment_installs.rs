@@ -44,6 +44,19 @@ fn the_owners_verification(digest: &str) -> String {
 /// The machine the virtual-machine test builds, as the disk lister prints it:
 /// Windows' partitions and the staged installer on the first disk, and an empty
 /// second disk.
+/// What the firmware's own tool prints after an install, on the walk's
+/// machine: the entry `bootc` left named *Fedora*, Windows' own, and the
+/// firmware's two.
+const THE_START_ENTRIES: &str = "BootCurrent: 000B\n\
+     Timeout: 0 seconds\n\
+     BootOrder: 000B,0004,0000\n\
+     Boot0000* BootManagerMenuApp\tFvVol(5c60f367-a505-419a-859e-2a4ff6ca6fe5)\n\
+     Boot0004* Windows Boot Manager\tHD(1,GPT,0506f28d-c7cb-426e-ad7b-b9ec92014753,0x800,0x96000)/File(\\EFI\\Microsoft\\Boot\\bootmgfw.efi)\n\
+     Boot000B* Fedora\tHD(2,GPT,1505d88b-67da-4187-b683-f36a1169e81e,0x1000,0x100000)/File(\\EFI\\fedora\\shimx64.efi)\n";
+
+/// What the tool prints when it has made the entry this environment asks for.
+const THE_ENTRY_IT_MADE: &str = "Boot000C* alo OS\tHD(2,GPT,1505d88b-67da-4187-b683-f36a1169e81e,0x1000,0x100000)/File(\\EFI\\fedora\\shimx64.efi)";
+
 const THE_DISKS: &str = r#"{"blockdevices": [
    {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "children": [
       {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
@@ -255,6 +268,15 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         .answering(succeeded(&the_owners_verification(
             environment.pin().digest(),
         )))
+        .answering(succeeded(""))
+        // What the tidying runs, in its own order: the firmware's list, the
+        // entry made, the old one taken away, the order, the disks again, and
+        // the area removed.
+        .answering(succeeded(THE_START_ENTRIES))
+        .answering(succeeded(THE_ENTRY_IT_MADE))
+        .answering(succeeded(""))
+        .answering(succeeded(""))
+        .answering(succeeded(THE_DISKS))
         .answering(succeeded(""));
 
     let ended = install(&mut machine, &strings(), Ok(&environment));
@@ -276,12 +298,22 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
             still.clone(),
             still.clone(),
             still,
+            english(word("installing.tidying"), ""),
+            // Taking the area away is a write, and a write says its own
+            // sentence while it runs, as the install's does.
+            english(word("installing.tidying"), ""),
+            english(word("installing.tidying"), ""),
+            english(word("installing.tidying"), ""),
+            english(word("installing.tidied"), ""),
             english(word("installing.installed"), ""),
         ]
     );
-    assert_eq!(machine.stills, 3);
+    assert_eq!(
+        machine.stills, 6,
+        "the write's three, and the area removal's three"
+    );
 
-    assert_eq!(machine.ran.len(), 5);
+    assert_eq!(machine.ran.len(), 11);
     assert_eq!(machine.ran[0], Program::ListingTheDisks);
     assert_eq!(machine.ran[1], Program::WaitingForTheNetwork);
     assert!(matches!(machine.ran[2], Program::Verifying(_)));
@@ -293,7 +325,36 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         writing.arguments().last().map(String::as_str),
         Some("/dev/disk/by-id/virtio-alo-target")
     );
-    assert_eq!(machine.ran[4], Program::Restarting);
+    // Step 6, in order, and then the restart.
+    assert_eq!(machine.ran[4], Program::ListingTheStartEntries);
+    assert_eq!(
+        machine.ran[5],
+        Program::NamingTheEntry {
+            disk: std::path::PathBuf::from("/dev/disk/by-id/virtio-alo-target"),
+            partition: 2,
+        }
+    );
+    assert_eq!(
+        machine.ran[6],
+        Program::RemovingTheEntry {
+            number: "000B".to_owned(),
+        }
+    );
+    assert_eq!(
+        machine.ran[7],
+        Program::OrderingTheEntries {
+            order: ["000C", "0004", "000B", "0000"].map(str::to_owned).to_vec(),
+        }
+    );
+    assert_eq!(machine.ran[8], Program::ListingTheDisks);
+    assert_eq!(
+        machine.ran[9],
+        Program::RemovingTheArea {
+            disk: "/dev/vda".to_owned(),
+            partition: 5,
+        }
+    );
+    assert_eq!(machine.ran[10], Program::Restarting);
     assert_eq!(
         machine.noted,
         Vec::<String>::new(),
@@ -639,5 +700,114 @@ fn with_no_connection_nothing_is_checked_or_written() {
     assert_eq!(
         machine.ran,
         [Program::ListingTheDisks, Program::WaitingForTheNetwork]
+    );
+}
+
+// ---------------------------------------------------------------------------
+// What the install leaves behind.
+// ---------------------------------------------------------------------------
+
+/// A machine that has just installed, with these answers for the tidying.
+fn tidying_with(answers: Vec<std::io::Result<alo_installing::Ran>>) -> Scripted {
+    let mut machine = Scripted::choosing("virtio-alo-target");
+    for answer in answers {
+        machine = machine.answering(answer);
+    }
+    machine
+}
+
+/// The disk alo OS was installed onto, by its own name.
+fn the_installed_disk() -> alo_installing::DiskName {
+    alo_installing::DiskName::named("virtio-alo-target").expect("a disk")
+}
+
+/// **An entry already named alo OS is left exactly as it is**, and the order
+/// and the area are still put right.
+#[test]
+fn an_entry_that_already_carries_the_name_is_not_made_again() {
+    let already = THE_START_ENTRIES.replace("Fedora", "alo OS");
+    let mut machine = tidying_with(vec![
+        succeeded(&already),
+        succeeded(""),
+        succeeded(THE_DISKS),
+        succeeded(""),
+    ]);
+    let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
+
+    assert!(tidied.whole(), "{tidied:?}");
+    assert_eq!(machine.ran.len(), 4, "{:?}", machine.ran);
+    assert!(
+        !machine
+            .ran
+            .iter()
+            .any(|program| matches!(program, Program::NamingTheEntry { .. })),
+        "{:?}",
+        machine.ran
+    );
+    assert_eq!(
+        machine.ran[1],
+        Program::OrderingTheEntries {
+            order: ["000B", "0004", "0000"].map(str::to_owned).to_vec(),
+        }
+    );
+}
+
+/// **A machine with no staging area has nothing to remove**, and says the
+/// tidying is whole.
+#[test]
+fn a_machine_without_an_area_is_tidied_whole() {
+    let without = THE_DISKS.replace("\"ALO-INSTALL\"", "null");
+    let mut machine = tidying_with(vec![
+        succeeded(&THE_START_ENTRIES.replace("Fedora", "alo OS")),
+        succeeded(""),
+        succeeded(&without),
+    ]);
+    let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
+
+    assert!(tidied.whole(), "{tidied:?}");
+    assert!(
+        !machine
+            .ran
+            .iter()
+            .any(|program| matches!(program, Program::RemovingTheArea { .. })),
+        "a machine with no area had one removed: {:?}",
+        machine.ran
+    );
+}
+
+/// **A tidying that could not finish says alo OS is installed first**, notes
+/// why where a technician reads it, and leaves the machine installed.
+#[test]
+fn what_could_not_be_tidied_is_said_without_taking_the_install_back() {
+    let mut machine = tidying_with(vec![
+        succeeded(&THE_START_ENTRIES.replace("Fedora", "alo OS")),
+        failed("the firmware refused the order"),
+        succeeded(THE_DISKS),
+        failed("the partition would not go"),
+    ]);
+    let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
+
+    assert!(!tidied.whole());
+    assert!(tidied.named);
+    assert!(!tidied.ordered);
+    assert!(!tidied.area_removed);
+    assert_eq!(
+        machine.said.last().map(String::as_str),
+        Some(english(word("installing.tidy-not-whole"), "").as_str())
+    );
+    assert_eq!(machine.noted.len(), 2, "{:?}", machine.noted);
+}
+
+/// **A firmware that will not say what it can start is left alone.**
+#[test]
+fn a_firmware_that_says_nothing_is_not_guessed_at() {
+    let mut machine = tidying_with(vec![failed("no efi variables")]);
+    let tidied = alo_installing::tidy_up(&mut machine, &strings(), &the_installed_disk());
+
+    assert!(!tidied.whole());
+    assert_eq!(machine.ran.len(), 1);
+    assert_eq!(
+        machine.said.last().map(String::as_str),
+        Some(english(word("installing.tidy-entries-not-read"), "").as_str())
     );
 }
