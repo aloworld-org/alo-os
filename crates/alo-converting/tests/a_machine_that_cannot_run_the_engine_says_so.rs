@@ -22,7 +22,8 @@
 //! binary that fails, so the original run ended inside
 //! `converting_a_real_document.rs` and never reached
 //! `the_walk_through_documents_and_paper.rs`. With nothing stopping it the two
-//! machines agree, at [`THE_TEN`].
+//! machines agree, at [`EVERY_TEST_THAT_NEEDS_THE_ENGINE`] — ten when that was
+//! measured, thirteen now.
 //!
 //! # A wrapper is why this is not `test -x`
 //!
@@ -52,9 +53,13 @@ use asking::{NoEngine, asking as ask, the_engine_on_this_machine};
 
 /// Every test on this machine that needs the engine, and the file it is in.
 ///
+/// Thirteen since 2026-09-25, when the three formats Office saved in before
+/// 2007 were measured. It was ten, and the name said so; a list whose name is a
+/// count is a name that goes stale the first time the list is right to grow.
+///
 /// Load-bearing: [`exactly_these_tests_ask_whether_the_engine_runs`] holds the
 /// sources to it in both directions.
-const THE_TEN: [(&str, &str); 10] = [
+const EVERY_TEST_THAT_NEEDS_THE_ENGINE: [(&str, &str); 13] = [
     (
         "converting_a_real_document.rs",
         "a_word_document_is_converted_and_what_it_lost_is_named",
@@ -92,6 +97,18 @@ const THE_TEN: [(&str, &str); 10] = [
         "a_document_that_loses_nothing_says_so",
     ),
     (
+        "converting_a_real_document.rs",
+        "an_older_word_document_is_converted_and_what_it_lost_is_named",
+    ),
+    (
+        "converting_a_real_document.rs",
+        "an_older_excel_workbook_is_converted_and_what_it_lost_is_named",
+    ),
+    (
+        "converting_a_real_document.rs",
+        "an_older_powerpoint_presentation_is_converted_and_what_it_lost_is_named",
+    ),
+    (
         "the_walk_through_documents_and_paper.rs",
         "the_walk_from_a_file_arriving_to_one_that_cannot_be_opened_reads_as_the_table",
     ),
@@ -102,7 +119,7 @@ const THE_TEN: [(&str, &str); 10] = [
 /// Asserted so that a parser which quietly found nothing cannot report that
 /// every test asks correctly.
 const ALTOGETHER: [(&str, usize); 2] = [
-    ("converting_a_real_document.rs", 14),
+    ("converting_a_real_document.rs", 17),
     ("the_walk_through_documents_and_paper.rs", 2),
 ];
 
@@ -316,7 +333,7 @@ fn exactly_these_tests_ask_whether_the_engine_runs() {
             found.len()
         );
         for (name, body) in found {
-            let expected = THE_TEN.contains(&(file, name.as_str()));
+            let expected = EVERY_TEST_THAT_NEEDS_THE_ENGINE.contains(&(file, name.as_str()));
             let asks = body.contains("this_machine_cannot_run_the_engine");
             assert_eq!(
                 asks,

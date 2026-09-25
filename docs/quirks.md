@@ -6554,3 +6554,35 @@ the run is watched through files as before. The alternative, `vmIdleTimeout`
 in `.wslconfig`, is a change to the developer's own machine rather than to
 this repository and is not made here.
 **Date:** 2026-09-23.
+
+### The pinned converting engine has no aarch64 build, so no aarch64 machine can measure a conversion
+**Version:** LibreOffice 26.2.6, pinned in `image/Containerfile` as the
+`x86_64` RPM tarball from The Document Foundation, 2026-09-25.
+**Behaviour:** `alo_converting::engine::THE_ENGINE` is
+`/opt/libreoffice26.2/program/soffice`, and the archive the image fetches is
+published only at `.../stable/26.2.6/rpm/x86_64/`. There is no aarch64 Linux
+build at that address. So on an aarch64 gate every test that needs the engine
+answers *this machine has nothing at /opt/libreoffice26.2/program/soffice* and
+skips itself, which is what task 9 and ADR 0063 built that answer for. This is
+the standing reason the converter tests were an accepted failing set on the Mac
+lane's gate before #103 turned them into honest skips — **not** a fault in the
+tests or in that machine.
+
+It is easy to look installed when it is not. Ubuntu's own
+`libreoffice` package puts a **different build** — 24.2.7.2, aarch64 — at
+`/usr/bin/soffice`, and that one runs. A measurement taken with it is a
+measurement of that build, and ADR 0011 does not let one pinned engine stand in
+for another.
+
+**Our response:** the three conversions for the formats Office saved in before
+2007 are wired, worded and asserted here, and their assertions run on an x86_64
+machine with the pinned engine — the development PC — where they are
+measurements. What *was* measured on this aarch64 gate, with the distro's
+build and said to be that build, is which of the engine's writers carries which
+loss out of a `.doc`, a `.xls` and a `.ppt`: rendering a workbook through the
+prose writer returns an OpenDocument with the substituted family, the comment
+and **no formula at all**, while the spreadsheet's own writer keeps all three.
+That is why `crate::engine::the_rendering` is shaped like the document it is of
+rather than always text, and it is a fact about which reader opens a workbook
+rather than about a version.
+**Date:** 2026-09-25.

@@ -109,6 +109,16 @@ impl Original {
             Conversion::PagesDocument => {
                 return Err(NotInventoried::NotFromItsOwnBytes(pages::THE_FORMAT));
             }
+            // The same, for the three formats saved before 2007: an OLE2
+            // compound file is not a zip, and reaching here with one means the
+            // rendering step was skipped.
+            older @ (Conversion::OlderWordDocument
+            | Conversion::OlderExcelWorkbook
+            | Conversion::OlderPowerPointPresentation) => {
+                return Err(NotInventoried::NotFromItsOwnBytes(
+                    super::older_office::the_format(older),
+                ));
+            }
         }
         // Where a document says what it links differs by format. The three
         // Office formats each keep a relationships part beside every part, and
