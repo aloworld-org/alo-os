@@ -798,6 +798,7 @@ version = "0.0.1"
 dependencies = [
  "alo-image",
  "alo-saying",
+ "alo-starting",
  "alo-strings",
  "ring",
  "serde",

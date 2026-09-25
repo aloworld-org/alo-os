@@ -125,6 +125,42 @@ pub const INSTALLED: Word = Word::saying(
 .noting("The last line of a successful installation. The restart happens by itself.");
 
 // ---------------------------------------------------------------------------
+// Putting right what the install leaves behind.
+// ---------------------------------------------------------------------------
+
+/// Tidying up, said before it begins.
+pub const TIDYING: Word = Word::saying(
+    "installing.tidying",
+    "Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the      installer's own space back",
+)
+.noting(
+    "Said after alo OS is installed and before the computer restarts. The start-up menu is the      computer's own, which it shows before either system starts.",
+);
+
+/// Tidying up finished.
+pub const TIDIED: Word = Word::saying(
+    "installing.tidied",
+    "This computer now starts alo OS, with Windows behind it, and the installer's space is back",
+)
+.noting("Said when everything above was done.");
+
+/// Some of it could not be done.
+pub const TIDY_NOT_WHOLE: Word = Word::saying(
+    "installing.tidy-not-whole",
+    "alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started",
+)
+.noting(
+    "Said when one of those three could not be done. alo OS is installed either way, and the      sentence says so first.",
+);
+
+/// The firmware's list could not be read.
+pub const TIDY_ENTRIES_NOT_READ: Word = Word::saying(
+    "installing.tidy-entries-not-read",
+    "The list of systems this computer can start could not be read, so it was left as it is",
+)
+.noting("Said when the firmware's own tool did not answer, or answered with nothing to act on.");
+
+// ---------------------------------------------------------------------------
 // The refusals. Every one of them before the disk is written says that nothing
 // was changed, because that is the first thing a person needs to know.
 // ---------------------------------------------------------------------------
@@ -259,8 +295,12 @@ pub const RESTART_WHEN_READY: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 27] = [
     STARTING,
+    TIDYING,
+    TIDIED,
+    TIDY_NOT_WHOLE,
+    TIDY_ENTRIES_NOT_READ,
     READING_THE_CHOICE,
     LOOKING_FOR_THE_DISK,
     CHECKING_THE_DISK,
