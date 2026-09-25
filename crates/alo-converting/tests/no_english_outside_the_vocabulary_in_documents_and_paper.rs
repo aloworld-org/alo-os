@@ -128,6 +128,24 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "alo-converting",
+        "inventory/older_office.rs",
+        "Word document saved before 2007",
+        A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
+        "inventory/older_office.rs",
+        "Excel workbook saved before 2007",
+        A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
+        "inventory/older_office.rs",
+        "PowerPoint presentation saved before 2007",
+        A_MISSING_PART,
+    ),
+    (
+        "alo-converting",
         "inventory/original.rs",
         "is not inventoried from its own bytes",
         MAPPED_TO_A_REFUSAL,

@@ -32,6 +32,7 @@
 //! copy itself. The copy is made from the original, so a person's PDF is not a
 //! conversion of a conversion.
 
+use super::older_office;
 use crate::conversion::Conversion;
 use crate::inventory::pages;
 
@@ -57,6 +58,13 @@ pub const fn read_from(conversion: Conversion) -> ReadFrom {
         | Conversion::OpenDocumentSpreadsheet
         | Conversion::OpenDocumentPresentation => ReadFrom::ItsOwnBytes,
         Conversion::PagesDocument => ReadFrom::WhatTheEngineReadsOfIt(pages::RENDERED_AS),
+        // Three OLE2 compound files, which nothing in this crate reads and
+        // nothing in it is going to: `crate::inventory::older_office` says why.
+        Conversion::OlderWordDocument
+        | Conversion::OlderExcelWorkbook
+        | Conversion::OlderPowerPointPresentation => {
+            ReadFrom::WhatTheEngineReadsOfIt(older_office::rendered_as(conversion))
+        }
     }
 }
 
@@ -64,23 +72,38 @@ pub const fn read_from(conversion: Conversion) -> ReadFrom {
 mod tests {
     use super::*;
 
-    /// **Six conversions are inventoried from the document, and the seventh is
-    /// the one whose format nothing here reads.**
+    /// **Six conversions are inventoried from the document's own bytes, and
+    /// four are not — the formats nothing in this crate reads.**
     ///
-    /// Counted rather than listed, so a conversion added without a line in
-    /// [`read_from`] cannot pass by resembling one that is already there — the
-    /// match is exhaustive, so it would not compile, and this says what the
-    /// answer should have been.
+    /// The four are the Pages document and the three Office saved in before
+    /// 2007. A `.docx` is a zip this crate walks; a `.doc` is an OLE2 compound
+    /// file and an `Index/*.iwa` is Apple's own, and ADR 0011 says a reader for
+    /// either is not ours to write.
+    ///
+    /// Listed rather than counted for the four, so a conversion that quietly
+    /// stopped being read from its own bytes is caught by name.
     #[test]
-    fn only_a_pages_document_is_inventoried_from_what_the_engine_reads() {
+    fn the_formats_this_crate_cannot_read_are_inventoried_from_what_the_engine_reads() {
         let from_the_document = Conversion::EVERY
             .into_iter()
             .filter(|conversion| read_from(*conversion) == ReadFrom::ItsOwnBytes)
             .count();
-        assert_eq!(from_the_document, Conversion::EVERY.len() - 1);
+        assert_eq!(from_the_document, Conversion::EVERY.len() - 4);
         assert_eq!(
             read_from(Conversion::PagesDocument),
             ReadFrom::WhatTheEngineReadsOfIt(Conversion::OpenDocumentText)
+        );
+        assert_eq!(
+            read_from(Conversion::OlderWordDocument),
+            ReadFrom::WhatTheEngineReadsOfIt(Conversion::OpenDocumentText)
+        );
+        assert_eq!(
+            read_from(Conversion::OlderExcelWorkbook),
+            ReadFrom::WhatTheEngineReadsOfIt(Conversion::OpenDocumentSpreadsheet)
+        );
+        assert_eq!(
+            read_from(Conversion::OlderPowerPointPresentation),
+            ReadFrom::WhatTheEngineReadsOfIt(Conversion::OpenDocumentPresentation)
         );
     }
 
@@ -101,21 +124,28 @@ mod tests {
         }
     }
 
-    /// **The engine is asked for one rendering and it is the text one.**
+    /// **Every rendering the engine is asked for is an OpenDocument this crate
+    /// reads, shaped like the document it is of.**
     ///
-    /// `crate::engine` has a single argument list for a rendering, and it
-    /// writes the engine's own text format. A conversion rendered as a
-    /// spreadsheet or as slides would come out of another writer, so the day
-    /// one arrives it is a value in `crate::engine::Export` and a line here,
-    /// and this is what fails until both exist.
+    /// That day the older note here waited for arrived on 2026-09-25 with the
+    /// three formats Office saved in before 2007: a workbook rendered as prose
+    /// came back with its formulas already fixed to their values, so a copy of
+    /// somebody's spreadsheet would have reported a lost font and said nothing
+    /// about `=NOW()`. `crate::engine::the_rendering` is now shaped, and this
+    /// holds that every rendering asked for is one of the three this crate can
+    /// open.
     #[test]
-    fn every_rendering_the_engine_is_asked_for_is_a_text_document() {
+    fn every_rendering_the_engine_is_asked_for_is_an_opendocument_of_its_own_shape() {
         for conversion in Conversion::EVERY {
             if let ReadFrom::WhatTheEngineReadsOfIt(as_if) = read_from(conversion) {
-                assert_eq!(
-                    as_if,
-                    Conversion::OpenDocumentText,
-                    "{conversion:?} asks the engine for a rendering it has no argument list for"
+                assert!(
+                    matches!(
+                        as_if,
+                        Conversion::OpenDocumentText
+                            | Conversion::OpenDocumentSpreadsheet
+                            | Conversion::OpenDocumentPresentation
+                    ),
+                    "{conversion:?} asks the engine for a rendering this crate cannot read"
                 );
             }
         }

@@ -101,32 +101,79 @@ pub enum Export {
 /// two conversions of text documents share one filter, and that is not a
 /// collision: a Pages document and a Word document are both pages of text, and
 /// both come out of the same writer.
+/// What the engine is asked to export each conversion with.
 const fn filter(conversion: Conversion, export: Export) -> &'static str {
     match export {
-        Export::SomethingThisMachineReads => THE_RENDERING,
-        Export::TheCopy => match conversion {
-            Conversion::WordDocument | Conversion::OpenDocumentText | Conversion::PagesDocument => {
-                "pdf:writer_pdf_Export"
-            }
-            Conversion::ExcelWorkbook | Conversion::OpenDocumentSpreadsheet => {
-                "pdf:calc_pdf_Export"
-            }
-            Conversion::PowerPointPresentation | Conversion::OpenDocumentPresentation => {
-                "pdf:impress_pdf_Export"
-            }
+        Export::SomethingThisMachineReads => the_rendering(conversion),
+        Export::TheCopy => match the_shape(conversion) {
+            Shape::Prose => "pdf:writer_pdf_Export",
+            Shape::Spreadsheet => "pdf:calc_pdf_Export",
+            Shape::Slides => "pdf:impress_pdf_Export",
         },
     }
 }
 
-/// The engine's own text document, which this crate reads, and the filter that
-/// writes one.
-const THE_RENDERING: &str = "odt:writer8";
+/// The engine's own format for a document of this shape, and the filter that
+/// writes one — prose as prose, a spreadsheet as a spreadsheet, slides as
+/// slides.
+///
+/// **Shaped like the document rather than always text, and that was measured.**
+/// Rendering `sample.xls` through the writer produced an OpenDocument carrying
+/// the substituted family and the comment and **no formula at all**: a
+/// spreadsheet read by the prose reader has had its cells fixed to their
+/// values before anything could count them. So a copy of somebody's workbook
+/// would have reported a lost font and a lost comment and said nothing about
+/// `=NOW()` becoming a number — the exact thing ADR 0039 §5 exists to prevent.
+/// The same file through the spreadsheet's own writer keeps all three.
+/// Measured on the pinned engine, 2026-09-25.
+const fn the_rendering(conversion: Conversion) -> &'static str {
+    match the_shape(conversion) {
+        Shape::Prose => "odt:writer8",
+        Shape::Spreadsheet => "ods:calc8",
+        Shape::Slides => "odp:impress8",
+    }
+}
 
 /// What an export leaves behind it, as a file ending.
-const fn ending(export: Export) -> &'static str {
+const fn ending(conversion: Conversion, export: Export) -> &'static str {
     match export {
         Export::TheCopy => "pdf",
-        Export::SomethingThisMachineReads => "odt",
+        Export::SomethingThisMachineReads => match the_shape(conversion) {
+            Shape::Prose => "odt",
+            Shape::Spreadsheet => "ods",
+            Shape::Slides => "odp",
+        },
+    }
+}
+
+/// Which of the engine's three readers and writers a document belongs to.
+///
+/// The one place this is decided. Both the filter a copy is exported with and
+/// the format a rendering is made in follow from it, so the two cannot come to
+/// disagree about what kind of document is being handled.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Shape {
+    /// Pages of text.
+    Prose,
+    /// Rows and columns.
+    Spreadsheet,
+    /// Slides.
+    Slides,
+}
+
+/// The shape of the document a conversion is of.
+const fn the_shape(conversion: Conversion) -> Shape {
+    match conversion {
+        Conversion::WordDocument
+        | Conversion::OpenDocumentText
+        | Conversion::PagesDocument
+        | Conversion::OlderWordDocument => Shape::Prose,
+        Conversion::ExcelWorkbook
+        | Conversion::OpenDocumentSpreadsheet
+        | Conversion::OlderExcelWorkbook => Shape::Spreadsheet,
+        Conversion::PowerPointPresentation
+        | Conversion::OpenDocumentPresentation
+        | Conversion::OlderPowerPointPresentation => Shape::Slides,
     }
 }
 
@@ -189,7 +236,7 @@ pub fn convert(
 
     let came_out = into.join(
         Path::new(conversion.scratch_name())
-            .with_extension(ending(export))
+            .with_extension(ending(conversion, export))
             .file_name()
             .unwrap_or_default(),
     );
@@ -249,30 +296,44 @@ mod tests {
         );
     }
 
-    /// **A rendering the inventory reads is one export, whatever it is of** —
-    /// the engine's own text document, through the writer that makes one, and
-    /// never a PDF.
+    /// **A rendering is one of the engine's own documents, shaped like the one
+    /// it is of, and never a PDF.**
     ///
     /// A PDF is the copy: inventorying one as though it were the original
     /// would compare a document with itself and report that every conversion
     /// carried everything.
+    ///
+    /// Shaped like its document because a spreadsheet read by the prose reader
+    /// arrives with its cells already fixed to their values — measured on the
+    /// pinned engine, and `the_rendering` carries the measurement.
     #[test]
-    fn a_rendering_is_the_engines_own_text_document_and_never_a_pdf() {
+    fn a_rendering_is_one_of_the_engines_own_documents_shaped_like_it_and_never_a_pdf() {
         for conversion in Conversion::EVERY {
             let rendering = filter(conversion, Export::SomethingThisMachineReads);
-            assert_eq!(rendering, THE_RENDERING, "{conversion:?}");
             assert!(!rendering.starts_with("pdf:"), "{conversion:?}");
             assert_ne!(rendering, filter(conversion, Export::TheCopy));
+            assert_eq!(
+                rendering,
+                the_rendering(conversion),
+                "{conversion:?} is rendered by a writer that is not its shape's"
+            );
+            // Every rendering ends the way the OpenDocument kind of its own
+            // shape ends, so the file the inventory opens is read by the
+            // reader that wrote it.
+            let ends = ending(conversion, Export::SomethingThisMachineReads);
+            assert!(
+                rendering.starts_with(ends),
+                "{conversion:?} writes a {rendering} into a .{ends}"
+            );
         }
-        assert_eq!(ending(Export::TheCopy), "pdf");
-        assert_eq!(ending(Export::SomethingThisMachineReads), "odt");
+        assert_eq!(ending(Conversion::WordDocument, Export::TheCopy), "pdf");
         assert_eq!(
-            ending(Export::SomethingThisMachineReads),
+            ending(Conversion::PagesDocument, Export::SomethingThisMachineReads),
             Path::new(Conversion::OpenDocumentText.scratch_name())
                 .extension()
                 .and_then(std::ffi::OsStr::to_str)
                 .unwrap(),
-            "a rendering is read as an OpenDocument text document and must end like one"
+            "a Pages document is read as an OpenDocument text document and must end like one"
         );
     }
 
