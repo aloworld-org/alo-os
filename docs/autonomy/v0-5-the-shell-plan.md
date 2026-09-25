@@ -764,6 +764,28 @@ output. Today it is the only layout decider and that is sound; the moment a
 a tree of shares and once by a half — and the shell plan's constraint forbids
 exactly that. This task takes the half out as it puts the division in.
 
+#### What already exists for this task's nouns, read on 2026-09-26 before starting
+
+- **Both deciding crates already hold the lifecycle.**
+  `alo_desktops::Desktops` has `plug_in`, `unplug` and `on(display)`;
+  `alo_dividing::Divisions` has `remember`, `on`, `forget` and `restored` — the
+  last taking the window numbers a division comes back under. So the `Server`'s
+  work is to **hold** an instance of each and route what happens to them, which
+  is what *this holds and shows their answers* already asks for. Neither a
+  state machine nor a restore needs writing here.
+- **The `Server` holds neither today.** It has an overlay, a press, a
+  presentation, its surfaces, its socket and a switch order, exactly as task 10
+  found.
+- **The removal depends on the state, so it comes second.**
+  `window_tiling`'s half is reached from `window_command.rs` (a chord),
+  `window_mode.rs` (`Mode::Tiled` and the geometry) and `lib.rs`'s exports.
+  `set_window_tiled(side)` can only become *the share the division gives for
+  that side* once a division is `Server` state, so the state lands first and
+  the half goes out after it — not the other way round.
+- **Which side a chord means is already `alo-dividing`'s**, since task 10 on
+  2026-09-22. What is left in the shell is the mechanism that turns a side into
+  half an output, and that is what goes.
+
 - **Acceptance:** the `Server` holds a division per display and the desktops a
   person has, kept through windows opening and closing and a display being
   plugged in and unplugged; a division is restored from
