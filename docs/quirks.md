@@ -2443,9 +2443,11 @@ apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
 ### A guest filesystem's free space says nothing about the drive underneath it, and a guard that asks the guest will let that drive reach zero
-**Version:** WSL 2 on Windows Server 2022 (10.0.20348), Ubuntu 24.04.5 in a
-dynamically expanding `ext4.vhdx`; measured on the third PC 2026-09-23, guard
-corrected 2026-09-25. Nothing in it is particular to WSL: it is true of any
+**Version:** WSL 2.7.14 on Windows Server 2022 (10.0.20348), Ubuntu 24.04.5 in a
+dynamically expanding `ext4.vhdx`; measured on the third PC 2026-09-23, the guard
+corrected twice — once to ask the host at all, and again when asking it through a
+path turned out to be asking the guest — both on 2026-09-25. Nothing in it is
+particular to WSL: it is true of any
 sparse or thin-provisioned disk, which includes every virtual machine the tests
 in this repository boot.
 
@@ -2494,6 +2496,40 @@ scripts, with the incident in its own header so the next reader knows what it is
 for; its deleting function takes *where the measurement was recorded* as an
 argument, because an image may only be deleted on the grounds that its numbers
 outlive it.
+
+**And then the corrected guard fell to the same class of error, one level down.**
+Reading the host drive "which is visible from inside at `/mnt/d`" is only true
+while `/mnt/d` is mounted. This machine's `/etc/wsl.conf` unmounts it at boot —
+`command = "umount -l /mnt/d"`, because a Windows-backed mount is somewhere a
+walk from `/` can wedge (see *A walk from `/` can wedge for good* below) — and a
+lazy unmount leaves `/mnt/d` an ordinary empty **directory on the guest's root
+filesystem**. `df` then answers for the guest again, under a heading that says it
+is the host. Measured on the rebuilt machine, 2026-09-25, both questions asked
+one second apart:
+
+    Windows says D: has 90 GB free
+    df /mnt/d would have said 60 GB   (the guest, because /mnt/d is not mounted)
+
+So the guard read the guest, announced *the drive under this machine's image has
+60 GB free*, and was believed. Worse, it **skipped** a drive whose free space it
+could not read — `[ -d "$drive" ] || continue` — so an unreadable answer became
+permission to write 72 GB of disk images.
+
+Two rules, and they generalise past WSL: **ask the host for the host's free
+space** — here `powershell.exe -Command "(Get-PSDrive -Name D).Free"` through
+interop, which answers whatever is or is not mounted, and returns bytes rather
+than anything localised — and **refuse when the answer cannot be had**, because a
+drive whose free space is unknown is not a drive with room on it. A guard's
+unknown must never be a yes.
+
+The path-shaped question is the trap worth naming. `/mnt/d` *looks* like the D:
+drive at every glance, it is spelled like it, and on a machine where it happens
+to be mounted it even answers correctly — which is how this survived review and a
+test suite. The four cases that tested the guard all exercised the guest half;
+the host half had no case of its own, and that is how it stayed wrong. It has
+three now, including one where a stub stands in for Windows and reports 5 GB,
+because asking for more space than the machine has refuses on the guest half
+first and proves nothing about the half that actually ran out.
 **Date:** 2026-09-25.
 
 ### A socket already open, and a datagram sent without connecting, are inside the boundary
