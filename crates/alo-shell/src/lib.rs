@@ -154,6 +154,8 @@ mod nested_record;
 mod nested_recovery;
 mod nested_settings;
 mod nested_sign_in;
+mod notification_paint;
+mod notification_raster;
 mod offscreen;
 mod output_metadata;
 mod output_retirement;

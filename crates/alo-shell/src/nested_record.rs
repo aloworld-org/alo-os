@@ -120,6 +120,7 @@ impl Nested {
                 approval: question.as_ref(),
                 status: Some(&status),
                 in_use: None,
+                notifications: None,
             },
         )
     }

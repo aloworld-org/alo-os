@@ -165,6 +165,7 @@ impl Nested {
                         approval: pictures.approval.as_ref(),
                         status: Some(&pictures.status),
                         in_use: None,
+                        notifications: None,
                     },
                 )
                 .map(Reached::TheDesktop),

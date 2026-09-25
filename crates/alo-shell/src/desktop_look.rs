@@ -127,6 +127,16 @@ impl DesktopLook {
         }
     }
 
+    /// The same look, for the notifications at the other end of the dock.
+    pub(crate) const fn notifications(self) -> crate::notification_raster::NotificationLook {
+        crate::notification_raster::NotificationLook {
+            scheme: self.scheme,
+            scale: self.scale,
+            reading: self.reading,
+            contrast: self.contrast,
+        }
+    }
+
     /// Measures at this look's text size.
     pub(crate) fn measure(self) -> Measure {
         Measure::of(self.scale)

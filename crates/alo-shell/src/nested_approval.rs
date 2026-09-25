@@ -126,6 +126,7 @@ impl Nested {
                 approval: Some(&question),
                 status: Some(&status),
                 in_use: None,
+                notifications: None,
             },
         )
     }

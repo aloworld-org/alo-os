@@ -51,6 +51,10 @@ pub struct DesktopFrame<'a> {
     /// What on this machine is watching or listening, as `alo-in-use` read it
     /// off the media server. Empty while nothing is, which draws nothing.
     pub in_use: &'a [alo_in_use::Line],
+    /// The notifications to show, as `alo-notifying` handed them over. A
+    /// notification a locked, shared or quiet machine is holding never becomes
+    /// one of these, so there is nothing here to decide.
+    pub notifications: &'a [alo_notifying::Shown],
     /// How this display is divided, as `alo-dividing` decided it. Handed in for
     /// the same reason the readings are, and because nothing holds one yet —
     /// the `Server`'s division is task 16's, on the session that stands the
@@ -170,6 +174,7 @@ impl Nested {
                 approval: pictures.approval.as_ref(),
                 status: Some(&pictures.status),
                 in_use: Some(&pictures.in_use),
+                notifications: Some(&pictures.notifications),
             },
         )
     }
@@ -181,6 +186,8 @@ pub(crate) struct DesktopPictures {
     pub(crate) status: EgressStatusPicture,
     /// What on this machine is watching or listening.
     pub(crate) in_use: crate::in_use_raster::InUsePicture,
+    /// The notifications on this frame.
+    pub(crate) notifications: crate::notification_raster::NotificationPicture,
     /// The dock and the desktop windows.
     pub(crate) desktop: DesktopPicture,
     /// The record window, when the frame carries one.
@@ -210,6 +217,14 @@ pub(crate) fn frame_pictures(
         labels,
         size,
         desktop.look.in_use(),
+    )?;
+    let notifications = crate::notification_raster::picture(
+        desktop.notifications,
+        desktop.strings,
+        desktop.dock,
+        labels,
+        size,
+        desktop.look.notifications(),
     )?;
     let status = status_picture(
         EgressStatusFrame {
@@ -260,6 +275,7 @@ pub(crate) fn frame_pictures(
     Ok(DesktopPictures {
         status,
         in_use,
+        notifications,
         desktop: drawn,
         record,
         approval,

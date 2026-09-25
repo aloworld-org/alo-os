@@ -64,6 +64,10 @@ pub enum RenderError {
     /// instead.
     #[error("the in-use indicator does not fit this output")]
     InUseScene,
+    /// A notification is waiting to be shown and its card cannot be laid out
+    /// for this output, or was laid out for a different one.
+    #[error("a notification does not fit this output")]
+    NotificationScene,
     /// A question or a refusal is open and the approval surface cannot hold
     /// the whole of it on this output, or was laid out for a different one.
     /// The frame is refused rather than drawn with the sentence cut.

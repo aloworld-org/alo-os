@@ -42,6 +42,9 @@ pub(crate) struct NativeLayers<'a> {
     /// What on this machine is watching or listening, beside the egress
     /// indicator in the same status area and never drawn as it.
     pub(crate) in_use: Option<&'a crate::in_use_raster::InUsePicture>,
+    /// The notifications `alo-notifying` handed over, at the other end of the
+    /// dock from both indicators.
+    pub(crate) notifications: Option<&'a crate::notification_raster::NotificationPicture>,
 }
 
 impl NativeLayers<'_> {
@@ -59,6 +62,7 @@ impl NativeLayers<'_> {
             approval: None,
             status: None,
             in_use: None,
+            notifications: None,
         }
     }
 
@@ -71,6 +75,7 @@ impl NativeLayers<'_> {
             && self.approval.is_none()
             && self.status.is_none()
             && self.in_use.is_none()
+            && self.notifications.is_none()
     }
 }
 

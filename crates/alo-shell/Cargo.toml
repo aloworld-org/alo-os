@@ -72,6 +72,10 @@ alo-indicator = { path = "../alo-indicator" }
 # ADR 0010 asks for beside a colour. Read, never decided — which thing is in
 # use, who has it and where its line sits are all that crate's answers.
 alo-in-use = { path = "../alo-in-use" }
+# What a notification says and who sent it. Whether it is shown at all is that
+# crate's answer — a locked machine, a shared screen or the hours a person set
+# aside hold it there — and this crate can only be handed the ones that are.
+alo-notifying = { path = "../alo-notifying" }
 # What is running and what is filling the disk: the readings and the count the
 # two desktop windows draw, every number as the kernel or the count gave it.
 # Read, never acted on — `tests/desktop_source.rs` holds the windows to that.

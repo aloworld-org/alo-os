@@ -381,6 +381,7 @@ impl Nested {
                 // in-use indicator yet; `crate::nested_desktop` is the one that
                 // does. Named in shell task 11 rather than left to be found.
                 in_use: None,
+                notifications: None,
             },
         )
     }

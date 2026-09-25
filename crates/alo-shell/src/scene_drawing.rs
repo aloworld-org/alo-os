@@ -52,6 +52,9 @@ pub(crate) fn paint(
     if let Some(in_use) = native.in_use {
         in_use.validate(size)?;
     }
+    if let Some(notifications) = native.notifications {
+        notifications.validate(size)?;
+    }
     let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
@@ -114,6 +117,11 @@ pub(crate) fn paint(
     // on either.
     if let Some(in_use) = native.in_use.filter(|in_use| !in_use.is_empty()) {
         in_use.paint(&mut frame)?;
+    }
+    // At the other end of the dock, and as high: a window a client maps does
+    // not cover a message that arrived either.
+    if let Some(cards) = native.notifications.filter(|cards| !cards.is_empty()) {
+        cards.paint(&mut frame)?;
     }
     if let Some(cursor_drawing) = &cursor_drawing {
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])

@@ -1377,6 +1377,7 @@ dependencies = [
  "alo-models",
  "alo-nearby",
  "alo-networks",
+ "alo-notifying",
  "alo-overlay",
  "alo-portals",
  "alo-power",

@@ -159,6 +159,9 @@ fn validate_layers(
     if let Some(in_use) = layers.in_use {
         in_use.validate(size)?;
     }
+    if let Some(notifications) = layers.notifications {
+        notifications.validate(size)?;
+    }
     Ok(())
 }
 
@@ -191,6 +194,11 @@ fn paint_layers(
     }
     if let Some(in_use) = layers.in_use.filter(|in_use| !in_use.is_empty()) {
         in_use.paint(frame)?;
+    }
+    // At the other end of the dock, and as high: a window a client maps does
+    // not cover a message that arrived either.
+    if let Some(cards) = layers.notifications.filter(|cards| !cards.is_empty()) {
+        cards.paint(frame)?;
     }
     Ok(())
 }
