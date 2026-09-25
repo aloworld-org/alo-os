@@ -92,9 +92,17 @@ fn fixture() -> (SessionDevice<Fake>, Rc<RefCell<State>>) {
 }
 
 /// Every acquired descriptor has really closed, not just lost its tracking entry.
+///
+/// The close can be on its way when this asks — a scope's unwinding runs the
+/// destructors that do it — so the read waits a bounded moment
+/// (`crate::descriptor_testing`). A leaked descriptor never reaches
+/// end-of-file however long it waits.
 fn assert_closed(state: &Rc<RefCell<State>>) {
     for peer in &mut state.borrow_mut().peers {
-        assert_eq!(peer.read(&mut [0_u8]).unwrap(), 0);
+        assert_eq!(
+            crate::descriptor_testing::reached_end_of_file(peer).unwrap(),
+            0
+        );
     }
 }
 

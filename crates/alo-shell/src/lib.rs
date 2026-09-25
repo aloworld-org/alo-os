@@ -96,6 +96,8 @@ mod capture_paint;
 mod capture_raster;
 mod cursor;
 mod default_cursor;
+#[cfg(test)]
+mod descriptor_testing;
 mod desktop_list;
 mod desktop_look;
 mod desktop_paint;
