@@ -446,7 +446,12 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 11. Notifications, the capture tools and the in-use indicator, drawn
 
-**Status:** ready — **its blockers cleared on 2026-09-19, and this line outlived them.**
+**Status:** **Done, 2026-09-25.** All three surfaces are drawn and reach a real
+display. **Two things are named rather than ticked**: one arm of the in-use
+mark's colour rule cannot be carried by colour at all in high contrast, and the
+two indicators are on the desktop frame and not yet on Settings, a question or
+the record. Both are below. **It was ready, and its blockers cleared on 2026-09-19 —
+that line outlived them.**
 It waited on `v0-5-the-session-and-the-displays-plan.md` task 6 and
 `v0-5-capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
 to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
@@ -482,6 +487,49 @@ Re-read 2026-09-21. **Depends on:** 5.
   widened the direct seam from one scene to every layer on 2026-09-24. Before
   that, anything drawn here could only ever have been seen in a nested
   compositor.
+
+#### What was built, and the two things that are named rather than ticked
+
+**Notifications.** A card for each one the crate handed over, at the end of the
+dock **opposite** the status area — the two indicators own that corner and are
+permanent, and a notification that covered *what is leaving this machine* would
+be trading a promise for a convenience. *Never while locked, shared or
+recorded* is carried by the **type**: the drawing takes `alo_notifying::Shown`,
+and only that crate's `arrives` makes one, having already asked about the lock,
+the quiet hours, a screen being read, and a machine that cannot tell whether its
+screen is being read. There is no path here that could draw a held one.
+
+**The in-use indicator.** One row per line `alo-in-use` wrote, in the status
+area, ordered by that crate's `Position` and never by who is using something —
+a test holds that an agent picking up the camera does not move it. It takes the
+status corner and the egress indicator stacks beyond it, because ADR 0010 makes
+this indicator's position one of the three things given besides a colour and
+that only holds while its origin does not move. The three marks are compared as
+**pixels**: two shapes that happened to rasterise the same would fail.
+
+**The capture tools.** The region as an outline with its middle untouched and
+nothing outside it dimmed, and the marks a person is making. **A blur is drawn
+as the flat block it will be saved as**, because `capture_flatten` destroys what
+is under it for good; drawing it soft would show a person one thing and save
+another at the moment they are deciding whether a colleague may see it.
+
+Two indicators sit in that status area and a person reads them as one surface,
+so the row moved into `status_row.rs`: its height, the padding round its words,
+the side its mark sits on and the way words are cut at the screen's edge are
+decided once rather than twice in two files that would drift.
+
+**Named, not ticked.**
+
+- **In high contrast, colour cannot say *the agent* at all.** `Contrast::High`
+  collapses every accent to one, on purpose, so the agent's terracotta and an
+  application's navy are identical there. ADR 0010 is why that is safe — the
+  mark and the word carry it — and the test asserts the equality rather than
+  demanding high contrast stop being high contrast.
+- **Both indicators are on the desktop frame only.** Settings, a waiting
+  question and the record window are submitted by their own paths, which carry
+  the egress indicator and not yet the in-use one. A person who opens Settings
+  while their camera is on should not lose the line that says so; that is the
+  remaining wiring and it is named here rather than left to be found.
 
 - **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
   locked, shared or recorded; the region selection and the annotation marks of
