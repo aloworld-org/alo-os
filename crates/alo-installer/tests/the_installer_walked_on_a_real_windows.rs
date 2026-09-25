@@ -246,6 +246,12 @@ fn the_windows_with_fast_startup_on(yard: &Path, chip: &SecurityChip) -> PathBuf
     );
     drop(machine);
     walking::machine::stop();
+    // Kept: the next boot's console writes over this one, and what this boot
+    // said about hibernation is the reason the second base is what it is.
+    let _ = std::fs::copy(
+        yard.join("console.log"),
+        yard.join("the-second-base-was-made.log"),
+    );
     std::fs::rename(Machine::windows_of(yard, "variant"), &variant)
         .expect("keeping the second base");
     forget(yard, "variant");
@@ -300,12 +306,31 @@ fn a_windows_with_fast_startup_on_is_asked_about_and_turned_off() {
         said.contains("fast-startup: HiberbootEnabled=[0]"),
         "the installer did not turn Fast Startup off after the person said to.\n{said}"
     );
+    // What the *installer* said, not what the walk did: the walk turns Fast
+    // Startup on for this boot with Windows' own tool, and that tool's name on
+    // the console is the walk's line and not the installer's.
+    let the_installers_own: String = said
+        .lines()
+        .filter(|line| line.contains("installer: "))
+        .collect();
     assert!(
-        !said.to_lowercase().contains("powercfg"),
+        !the_installers_own.to_lowercase().contains("powercfg"),
         "the installer named powercfg, which removes hibernation altogether.\n{said}"
     );
-    a_desktop_session(&one_boot(&yard, "fast-startup", &Told::JustLook, &chip, &download).console);
-    forget(&yard, "fast-startup");
+    // **This boot is the whole claim.** Windows signed in — the session table
+    // it printed says so — ran the walk, and answered the question, and the
+    // value was read back from Windows' own registry afterwards. The shell's
+    // own line is not waited for here, because this machine's first start is
+    // its first ever and `explorer.exe` was not up when the table was printed;
+    // that a Windows restarts to a *desktop session* after a kill is
+    // `killed_at_every_step_the_computer_still_starts_windows`, on the base
+    // that has Fast Startup off, and is not claimed twice.
+    assert!(
+        said.lines().any(|line| {
+            line.contains("console") && line.contains("alo") && line.contains("Active")
+        }),
+        "no session of alo's was active on the console.\n{said}"
+    );
 }
 
 /// **The way back in works from inside Windows**: the installer leaves a copy

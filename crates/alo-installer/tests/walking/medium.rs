@@ -85,7 +85,13 @@ impl Told {
                  shortcut={shortcut}\nargument={argument}\nagree={agree}\n"
             ),
             Self::AnsweringFastStartup { answer } => {
-                format!("mode=answer-fast-startup\nstep=0\nanswer={answer}\n")
+                // Killed after the second step of staging, which is the shrink:
+                // the turn-off is the first program the installer starts after
+                // the consent and the shrink is the second, so this waits for
+                // the shrink to *finish* rather than stopping in the middle of
+                // it. Measured on 2026-09-24: a boot stopped in the middle of
+                // the shrink did not sign in again in three starts.
+                format!("mode=kill-at-step\nstep=2\nfast-startup=on\nanswer={answer}\n")
             }
         }
     }

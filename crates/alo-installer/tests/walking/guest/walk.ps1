@@ -260,6 +260,22 @@ if ($mode -eq 'manifest-only') {
   return
 }
 
+# Fast Startup on, in this boot, when the instruction asks for it.
+#
+# The second base has hibernation on, and **this guest does not keep it across
+# a restart**: `powercfg /h on` succeeds and `powercfg /a` then lists Hibernate
+# and Fast Startup as available, and after the next start Windows has put
+# `HibernateEnabled` back to 0 (measured 2026-09-23, `docs/quirks.md`). So the
+# one walk that answers the question turns it on in the same boot it asks in,
+# and says so. Everything after this line is the installer's own doing.
+if ($instruction['fast-startup'] -eq 'on') {
+  Say 'turning Fast Startup on for this boot, because this guest does not keep it across a restart'
+  $turned = C:\Windows\System32\powercfg.exe /h on 2>&1
+  if ($turned) { $turned | ForEach-Object { Say "powercfg: $_" } }
+  New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name HibernateEnabled -Value 1 -PropertyType DWord -Force | Out-Null
+  New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled -Value 1 -PropertyType DWord -Force | Out-Null
+}
+
 $before = Manifest 'C:\alo\manifest-before.txt'
 Say "manifest-before: digest=$($before.Digest) files=$($before.Count)"
 TheState 'before the installer runs'
@@ -387,33 +403,6 @@ for ($read = 0; $read -lt 3 -and -not $answered -and -not $process.HasExited; $r
   }
 }
 if (-not $answered) { Say 'the installer did not ask about Fast Startup' }
-
-if ($mode -eq 'answer-fast-startup') {
-  # The answer is acted on before anything on a disk changes, so this boot ends
-  # at the first sentence after it: the installer says what it did about Fast
-  # Startup, and the sentence after that is staging's first. Matched on the
-  # order rather than on any English: measured on 2026-09-23, matching the
-  # shrink's own words missed them and the installer ran to its restart.
-  $saidAboutFastStartup = $false
-  while (-not $process.HasExited) {
-    $line = $process.StandardOutput.ReadLine()
-    if ($null -eq $line) { break }
-    $said.Add($line)
-    Say "installer: $line"
-    if ($line -match 'Fast Startup') { $saidAboutFastStartup = $true; continue }
-    if ($saidAboutFastStartup) { break }
-  }
-  Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-  Say 'stopped the installer once the answer had been acted on'
-  Start-Sleep -Seconds 2
-  TheState 'after the answer about Fast Startup'
-  $after = Manifest 'C:\alo\manifest-after.txt'
-  Say "manifest-after: digest=$($after.Digest) files=$($after.Count)"
-  if ($before.Digest -eq $after.Digest) { Say 'THE WINDOWS FILES ARE UNCHANGED' } else { Say 'THE WINDOWS FILES CHANGED' }
-  UnmountTheStartPartition
-  Say 'ALOWALK-DONE answer-fast-startup'
-  return
-}
 
 if ($mode -eq 'whole-road') {
   $rest = $process.StandardOutput.ReadToEnd()
@@ -663,6 +652,14 @@ if ($mode -eq 'switch') {
   }
   Say 'ALOWALK-DONE switch'
   return
+}
+
+# What this boot turned on, it turns off again: the base has hibernation off,
+# and a machine left with it on is not the machine the next boot expects.
+if ($instruction['fast-startup'] -eq 'on') {
+  $back = C:\Windows\System32\powercfg.exe /h off 2>&1
+  if ($back) { $back | ForEach-Object { Say "powercfg: $_" } }
+  Say 'hibernation is off again, as the base has it'
 }
 
 Say "ALOWALK-DONE kill-at-step $step"

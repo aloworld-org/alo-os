@@ -9,9 +9,15 @@ rem This makes a second base from it, with hibernation on and Fast Startup on,
 rem for the one walk that answers the question. Nothing reads this machine's
 rem disk from the host.
 echo ALOWALK-VARIANT-BEGIN %TIME% > COM1
-powercfg /h on > C:\alo\variant.txt 2>&1
+rem What this computer can do at all, before and after asking: a machine whose
+rem firmware offers no S4 cannot hibernate, and Fast Startup cannot then be on
+rem however the values are written.
+powercfg /a > C:\alo\variant.txt 2>&1
+powercfg /h on >> C:\alo\variant.txt 2>&1
+powercfg /a >> C:\alo\variant.txt 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 1 /f >> C:\alo\variant.txt 2>&1
 reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled >> C:\alo\variant.txt 2>&1
+reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled >> C:\alo\variant.txt 2>&1
 type C:\alo\variant.txt > COM1
 echo ALOWALK-VARIANT-DONE %TIME% > COM1
 rem Restarted rather than shut down, and the host stops the machine once the
