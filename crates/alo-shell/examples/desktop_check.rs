@@ -118,7 +118,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 alo_networks::HowFar::AllOfIt,
                 alo_networks::Metered::NotSaid,
             ),
-            alo_sound::Volume::of(35)?,
+            Some(alo_sound::Volume::of(35)?),
         );
         // A display nobody has divided, which is what this probe's is: the
         // Server holds no division yet and the session that will is a task of

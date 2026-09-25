@@ -230,16 +230,10 @@ mod running {
                 alo_networks::HowFar::NotSaid,
                 alo_networks::Metered::NotSaid,
             ),
-            // **This one is a claim, and the type leaves no way to avoid making
-            // it.** `StatusItems` can say *nothing said* about the network and
-            // [`None`] about the battery, and has no absent case for the
-            // volume — so a desktop that has asked nothing still shows a volume,
-            // and silence is the least wrong thing to show. Task 15 of the
-            // shell plan owns the readings, and giving the volume an absent
-            // case belongs with them: *the absent cases are real rather than
-            // defaults* is that task's own acceptance, and this is the one
-            // reading that cannot meet it yet.
-            alo_sound::Volume::of(0).map_err(|why| format!("a volume of nothing: {why:?}"))?,
+            // Nothing has asked the media server, so there is no volume to
+            // show — an absence now, rather than the silence this used to
+            // claim. Asking it for real is task 15's.
+            None,
         ))
     }
 

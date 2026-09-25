@@ -278,7 +278,7 @@ pub(crate) fn a_laptops_status() -> &'static crate::status_items::StatusItems {
                 alo_networks::HowFar::AllOfIt,
                 alo_networks::Metered::NotSaid,
             ),
-            alo_sound::Volume::of(35).unwrap(),
+            Some(alo_sound::Volume::of(35).unwrap()),
         )
     })
 }
