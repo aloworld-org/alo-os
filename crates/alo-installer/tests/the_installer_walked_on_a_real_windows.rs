@@ -77,7 +77,7 @@ use walking::console::{self, Console};
 use walking::machine::{Machine, SecurityChip};
 use walking::medium::{self, Told};
 use walking::reading::{Changed, Noise, Reading};
-use walking::{download, needs};
+use walking::{damaging, download, needs};
 
 /// One virtual machine at a time: every test here shares a directory, a
 /// security chip and a monitor socket.
@@ -977,6 +977,124 @@ fn the_whole_road_installs_alo_os_and_the_installed_system_starts() {
     eprintln!(
         "after the install the firmware started: {:?}\nthe installed system said:\n{account}",
         walking::firmware::starts(after_the_install)
+    );
+}
+
+/// **A computer that cannot start alo OS starts Windows, with nobody at the
+/// keyboard** (ADR 0062 term 1: Windows stands directly behind alo OS, and a
+/// person who does nothing ends up in a system that runs).
+///
+/// This is measured on a computer that really has alo OS installed and really
+/// starts it first: the whole road is walked, and only then — with the machine
+/// off and from outside the guest — is alo OS's loader taken away from the
+/// partition its firmware entry names. The restart after that is given no
+/// disc, no boot order and no keypress at all; what the firmware does with a
+/// first entry it cannot start is read off its own serial line, and Windows is
+/// known to have come up because its own start-up said so.
+#[test]
+#[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
+fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+
+    a_fresh_machine(&yard, "fallthrough");
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+    let disc = medium::the_walk_disc(&yard, &Told::TheWholeRoad, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let machine = Machine::start_as_its_variables_decide(
+        &firmware,
+        &yard,
+        "fallthrough",
+        Some(&disc),
+        &console,
+        &chip,
+        &[],
+    );
+    let done = the_environment_says("installing.installed");
+    let not_done = the_environment_says("installing.not-installed");
+    let refused = the_environment_says("installing.restart-when-ready");
+    let ended = console.wait_for(
+        &[done.as_str(), not_done.as_str(), refused.as_str()],
+        A_WALK + A_SIGN_IN + AN_INSTALL,
+    );
+    let installed = ended.as_deref() == Some(done.as_str());
+    let installing_said = without_the_kernels_messages(&console.said());
+    drop(machine);
+    walking::machine::stop();
+    assert!(
+        installed,
+        "the environment did not say alo OS is installed, so there is nothing here to \
+         make unstartable; it said {ended:?}.\n{installing_said}"
+    );
+
+    // The damage, from outside the guest with nothing running: one file — the
+    // one the firmware's own entry starts — renamed on the disk alo OS was
+    // installed on.
+    let taken = damaging::take_the_loader_away(&Machine::second_of(&yard, "fallthrough"), &yard);
+    assert!(
+        taken.gone,
+        "alo OS's loader is still where the firmware looks for it: {taken:?}"
+    );
+    eprintln!(
+        "alo OS's loader was taken away from {} ({} bytes); nothing else was changed",
+        taken.partition, taken.was_bytes
+    );
+
+    // The restart. No disc is put in, no boot order is given and no key is
+    // held down: whatever comes up, the firmware chose it from its own
+    // variables while a person did nothing.
+    let console = Console::fresh(&yard.join("console.log"));
+    let mut machine = Machine::start_as_its_variables_decide(
+        &firmware,
+        &yard,
+        "fallthrough",
+        None,
+        &console,
+        &chip,
+        &[],
+    );
+    let came_up = console.wait_for(&[console::NOTHING_TO_DO, console::DONE], A_SIGN_IN + A_WALK);
+    let screen = machine.screen("after-the-loader-was-taken-away");
+    let stopped = machine.shut_down(Duration::from_secs(240));
+    drop(machine);
+    walking::machine::stop();
+    let said = without_the_kernels_messages(&console.said());
+    forget(&yard, "fallthrough");
+
+    let starts = walking::firmware::starts(&said);
+    eprintln!(
+        "with alo OS's loader gone, the firmware started: {starts:?}\n\
+         the serial line of that restart, whole:\n{said}"
+    );
+    assert!(
+        came_up.is_some(),
+        "nothing came up on the restart after alo OS's loader was taken away, so this \
+         computer was left with no system a person could use. The screen is at {} and \
+         the serial line said:\n{said}",
+        screen.display()
+    );
+    assert!(
+        starts
+            .iter()
+            .any(|started| started.description.contains("Windows Boot Manager")),
+        "the firmware never started Windows Boot Manager, so what came up was not \
+         Windows falling in behind alo OS. It started {starts:?}.\n{said}"
+    );
+    assert!(
+        !said.contains(&the_environment_says("installing.starting")),
+        "the environment started again, so what was taken away was not what this \
+         computer starts alo OS with.\n{said}"
+    );
+    eprintln!(
+        "Windows came up by itself and {}",
+        if stopped {
+            "shut down when it was asked to"
+        } else {
+            "was cut off"
+        }
     );
 }
 

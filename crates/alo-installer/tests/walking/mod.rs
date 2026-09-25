@@ -9,6 +9,10 @@
 //! walk is `the_installer_walked_on_a_real_windows.rs`, and it says what is
 //! done with all of this.
 //!
+//! One module writes rather than reads: [`damaging`] takes alo OS's loader
+//! away from a disk, because a computer that cannot start alo OS has to be
+//! made before it can be watched starting Windows instead.
+//!
 //! # It is QEMU, and not Hyper-V
 //!
 //! The installer plan's task 10 names a Hyper-V generation-2 machine. The
@@ -28,6 +32,7 @@
 //! the other half of the road.
 
 pub mod console;
+pub mod damaging;
 pub mod download;
 pub mod firmware;
 pub mod guest;
