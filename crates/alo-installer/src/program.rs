@@ -66,6 +66,11 @@ pub const THE_PROGRAMS_NAME: &str = "alo-restart-into-alo-os.exe";
 pub const THE_SHORTCUT: &str =
     "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Restart into alo OS.lnk";
 
+/// The other shortcut: which system this computer starts when nobody
+/// chooses (ADR 0066 term 3, `crate::defaulting`).
+pub const THE_DEFAULTS_SHORTCUT: &str =
+    "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Which system starts.lnk";
+
 /// Where Windows keeps the setting behind Fast Startup.
 const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
 
@@ -118,6 +123,23 @@ pub enum Program {
     ListingTheStartEntries,
     /// Whether Windows' Fast Startup is on, from Windows' own value.
     ReadingFastStartup,
+
+    /// Give the EFI system partition a drive letter, so the one file both
+    /// systems keep the default in can be read and written.
+    ///
+    /// Through `mountvol`, Windows' own way to that partition and the one its
+    /// own documentation shows. Nothing else on it is touched
+    /// (`crate::defaulting`).
+    GivingTheStartPartitionALetter {
+        /// The letter it is given.
+        letter: Letter,
+    },
+    /// Take that letter away again, so nothing else on the computer can write
+    /// to the partition both systems share.
+    TakingTheStartPartitionsLetterAway {
+        /// The letter it was given.
+        letter: Letter,
+    },
 
     /// Make the shortcut that starts the copy left in place, and read it back.
     ///
@@ -270,6 +292,8 @@ pub enum Tool {
     Whoami,
     /// The tool that restarts the computer.
     Shutdown,
+    /// The tool that gives a partition a drive letter and takes it away.
+    Mountvol,
 }
 
 impl Tool {
@@ -284,6 +308,7 @@ impl Tool {
             Self::Bcdedit => "bcdedit.exe",
             Self::Whoami => "whoami.exe",
             Self::Shutdown => "shutdown.exe",
+            Self::Mountvol => "mountvol.exe",
         }
     }
 }
@@ -325,6 +350,8 @@ impl Program {
         match self {
             Self::AskingWhetherThisIsAnAdministrator => Tool::Whoami,
             Self::Restarting => Tool::Shutdown,
+            Self::GivingTheStartPartitionALetter { .. }
+            | Self::TakingTheStartPartitionsLetterAway { .. } => Tool::Mountvol,
             Self::ListingTheStartEntries
             | Self::ListingTheEntry { .. }
             | Self::StartingTheEntryNext { .. }
@@ -414,18 +441,29 @@ impl Program {
             Self::MakingTheShortcut => format!(
                 "New-Item -ItemType Directory -Path '{THE_PROGRAMS_HOME}' -Force | Out-Null; \
                  $shell = New-Object -ComObject WScript.Shell; \
-                 $shortcut = $shell.CreateShortcut('{THE_SHORTCUT}'); \
-                 $shortcut.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
-                 $shortcut.Arguments = '{}'; \
-                 $shortcut.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
-                 $shortcut.Description = 'Restart this computer into alo OS'; \
-                 $shortcut.Save(); \
+                 $one = $shell.CreateShortcut('{THE_SHORTCUT}'); \
+                 $one.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $one.Arguments = '{}'; \
+                 $one.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $one.Description = 'Restart this computer into alo OS'; \
+                 $one.Save(); \
+                 $other = $shell.CreateShortcut('{THE_DEFAULTS_SHORTCUT}'); \
+                 $other.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $other.Arguments = '{}'; \
+                 $other.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $other.Description = 'Which system this computer starts'; \
+                 $other.Save(); \
+                 if (-not (Test-Path -LiteralPath '{THE_DEFAULTS_SHORTCUT}')) \
+                   {{ throw 'no shortcut for the default' }}; \
                  if (-not (Test-Path -LiteralPath '{THE_SHORTCUT}')) {{ throw 'no shortcut' }}; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ Shortcut = '{THE_SHORTCUT}' }})",
-                crate::switching::THE_SWITCHS_WORD
+                crate::switching::THE_SWITCHS_WORD,
+                crate::defaulting::THE_DEFAULTS_WORD
             ),
             Self::RemovingWhatWasLeft => format!(
-                "Remove-Item -LiteralPath '{THE_SHORTCUT}' -Force -ErrorAction SilentlyContinue; \
+                "Remove-Item -LiteralPath '{THE_DEFAULTS_SHORTCUT}' -Force \
+                   -ErrorAction SilentlyContinue; \
+                 Remove-Item -LiteralPath '{THE_SHORTCUT}' -Force -ErrorAction SilentlyContinue; \
                  Remove-Item -LiteralPath '{THE_PROGRAMS_HOME}' -Recurse -Force \
                    -ErrorAction SilentlyContinue; \
                  if (Test-Path -LiteralPath '{THE_SHORTCUT}') {{ throw 'the shortcut is still there' }}"
@@ -503,6 +541,8 @@ impl Program {
             | Self::StartingTheEntryNext { .. }
             | Self::Restarting
             | Self::ForgettingTheNextStart
+            | Self::GivingTheStartPartitionALetter { .. }
+            | Self::TakingTheStartPartitionsLetterAway { .. }
             | Self::RemovingTheEntry { .. } => return None,
         };
         Some(format!("{EVERY_SCRIPT_BEGINS}{body}"))
@@ -550,6 +590,16 @@ impl Program {
                 vec!["/delete".to_owned(), entry.as_str().to_owned()]
             }
             Self::Restarting => ["/r", "/t", "0"].map(str::to_owned).to_vec(),
+            // `mountvol <letter>: /S` gives the EFI system partition that
+            // letter and `/D` takes it away; the letter is one this crate
+            // checked (`crate::identities::Letter`) and never text a caller
+            // handed over.
+            Self::GivingTheStartPartitionALetter { letter } => {
+                vec![letter.drive(), "/S".to_owned()]
+            }
+            Self::TakingTheStartPartitionsLetterAway { letter } => {
+                vec![letter.drive(), "/D".to_owned()]
+            }
             _ => Vec::new(),
         };
         words
@@ -874,7 +924,7 @@ mod tests {
                     assert!(arguments.contains(&"-EncodedCommand".to_owned()));
                     assert!(!arguments.contains(&"-Command".to_owned()));
                 }
-                Tool::Bcdedit | Tool::Whoami | Tool::Shutdown => {
+                Tool::Bcdedit | Tool::Whoami | Tool::Shutdown | Tool::Mountvol => {
                     assert!(program.script().is_none(), "{program:?}");
                 }
             }

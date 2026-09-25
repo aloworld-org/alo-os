@@ -765,6 +765,81 @@ pub const SWITCH_RESTART_IT_YOURSELF: Word = Word::saying(
 )
 .noting("Said when the restart could not be asked for; the one-time choice is set and waits.");
 
+// ---------------------------------------------------------------------------
+// Which system this computer starts when nobody chooses.
+// ---------------------------------------------------------------------------
+
+/// alo OS, as a person reads it.
+pub const THE_SYSTEM_ALO_OS: Word = Word::saying("installer.system.alo-os", "alo OS")
+    .noting("The product's name. It is not translated.");
+
+/// Windows, as a person reads it.
+pub const THE_SYSTEM_WINDOWS: Word = Word::saying("installer.system.windows", "Windows")
+    .noting("Microsoft's name for their system, as their own installer shows it.");
+
+/// The first line of the program that shows the default.
+pub const DEFAULT_STARTING: Word = Word::saying(
+    "installer.default.starting",
+    "This shows which system this computer starts when nobody chooses, and can change it",
+)
+.noting("The first line of the small program started to see or change the default.");
+
+/// Which system starts now.
+pub const DEFAULT_IS: Word = Word::saying(
+    "installer.default.is",
+    "This computer starts {system} when nobody chooses at the start-up menu",
+)
+.noting("{system} is one of the two system names above.");
+
+/// The question.
+pub const DEFAULT_TYPE_TO_CHANGE: Word = Word::saying(
+    "installer.default.type-to-change",
+    "To make this computer start {system} instead, type {change} and press Enter. To leave it as      it is, press Enter without typing anything",
+)
+.noting(
+    "{system} is the other system's name and {change} is the word below, in this language. The      change is for every start from now on, and not for one restart.",
+);
+
+/// The word that changes it.
+pub const DEFAULT_CHANGE_IT: Word = Word::saying("installer.default.change-it", "change").noting(
+    "The word a person types to change which system the computer starts by default. One word.",
+);
+
+/// It was changed.
+pub const DEFAULT_CHANGED: Word = Word::saying(
+    "installer.default.changed",
+    "Done. This computer now starts the other system when nobody chooses, and you can change it      back here or in alo OS's own settings",
+)
+.noting("Said after the change was written and read back.");
+
+/// It was left as it was.
+pub const DEFAULT_KEPT: Word = Word::saying(
+    "installer.default.kept",
+    "Nothing was changed, and this computer starts the same system it did",
+)
+.noting("Said when the person pressed Enter without typing the word.");
+
+/// The loader's file is not there.
+pub const DEFAULT_NOT_THERE: Word = Word::saying(
+    "installer.default.not-there",
+    "This computer keeps no choice of which system starts, so there is nothing to change here.      Nothing was changed",
+)
+.noting("Said when the file both systems keep the answer in is not on the start partition.");
+
+/// The file could not be read or written.
+pub const DEFAULT_NOT_READ: Word = Word::saying(
+    "installer.default.not-read",
+    "Which system this computer starts could not be read or changed, so nothing was changed",
+)
+.noting("Said when the file is not what it should be, or a change could not be written.");
+
+/// The start partition could not be reached.
+pub const DEFAULT_NOT_REACHED: Word = Word::saying(
+    "installer.default.not-reached",
+    "The part of the disk this computer starts from could not be reached, so nothing was changed",
+)
+.noting("Said when Windows would not give the start partition a drive letter.");
+
 /// Closing.
 pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
     "installer.press-enter-to-close",
@@ -773,7 +848,7 @@ pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
 .noting("The last line after the installer has stopped without restarting.");
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 85] = [
+pub const EVERY_WORD: [Word; 96] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -858,6 +933,17 @@ pub const EVERY_WORD: [Word; 85] = [
     SWITCH_NOT_SET,
     SWITCH_RESTARTING,
     SWITCH_RESTART_IT_YOURSELF,
+    THE_SYSTEM_ALO_OS,
+    THE_SYSTEM_WINDOWS,
+    DEFAULT_STARTING,
+    DEFAULT_IS,
+    DEFAULT_TYPE_TO_CHANGE,
+    DEFAULT_CHANGE_IT,
+    DEFAULT_CHANGED,
+    DEFAULT_KEPT,
+    DEFAULT_NOT_THERE,
+    DEFAULT_NOT_READ,
+    DEFAULT_NOT_REACHED,
     PRESS_ENTER_TO_CLOSE,
 ];
 

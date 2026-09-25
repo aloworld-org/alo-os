@@ -44,6 +44,7 @@ mod bitlocker;
 mod checking;
 mod consent;
 mod deciding;
+mod defaulting;
 mod disks;
 mod encoded;
 mod ended;
@@ -71,6 +72,9 @@ pub use administrator::HIGH_MANDATORY_LEVEL;
 pub use bitlocker::BitLocker;
 pub use checking::{check, is_an_administrator};
 pub use deciding::{ForAloOs, Offer, decide};
+pub use defaulting::{
+    THE_DEFAULTS_WORD, THE_START_PARTITIONS_LETTER, TheDefault, the_block, which_system_starts,
+};
 pub use disks::{Disk, Disks, Standing};
 pub use ended::{Ended, Refusal, Remains};
 pub use environment::{
@@ -95,8 +99,9 @@ pub use starting::Starting;
 pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use windows_volume::{NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
-    ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, EVERY_REFUSAL, EVERY_WORD,
-    FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE, REMAINS_FAST_STARTUP_OFF, SWITCH_AGREED,
-    SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART,
-    WordsError, declare_into, installer_words,
+    ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, DEFAULT_CHANGE_IT, DEFAULT_CHANGED,
+    DEFAULT_IS, DEFAULT_KEPT, DEFAULT_NOT_REACHED, DEFAULT_NOT_READ, DEFAULT_NOT_THERE,
+    EVERY_REFUSAL, EVERY_WORD, FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE,
+    REMAINS_FAST_STARTUP_OFF, SWITCH_AGREED, SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET,
+    SWITCH_NOT_THERE, SWITCH_WILL_RESTART, WordsError, declare_into, installer_words,
 };

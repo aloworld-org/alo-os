@@ -24,8 +24,9 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installer::{
-        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Switched, THE_SWITCHS_WORD,
-        TheMachine, install, installer_words, restart_into_alo_os,
+        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Switched, THE_DEFAULTS_WORD,
+        THE_SWITCHS_WORD, TheDefault, TheMachine, install, installer_words, restart_into_alo_os,
+        which_system_starts,
     };
     use alo_strings::{Filling, Strings};
 
@@ -67,9 +68,20 @@ mod running {
                     Switched::NotThere | Switched::NotRead | Switched::NotSet => ExitCode::FAILURE,
                 };
             }
+            [one] if one == THE_DEFAULTS_WORD => {
+                let ended = which_system_starts(&mut machine, &strings);
+                let _read =
+                    machine.ask(&strings.say(&PRESS_ENTER_TO_CLOSE.key(), &Filling::nothing()));
+                return match ended {
+                    TheDefault::Changed(_) | TheDefault::Kept(_) => ExitCode::SUCCESS,
+                    TheDefault::NotThere | TheDefault::NotRead | TheDefault::NotReached => {
+                        ExitCode::FAILURE
+                    }
+                };
+            }
             _ => {
                 eprintln!(
-                    "alo-installer: it takes no argument, or {THE_SWITCHS_WORD} and nothing else."
+                    "alo-installer: it takes no argument, or {THE_SWITCHS_WORD} or                      {THE_DEFAULTS_WORD} and nothing else."
                 );
                 return ExitCode::FAILURE;
             }

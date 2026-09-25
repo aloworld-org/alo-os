@@ -73,6 +73,8 @@ fn kind(program: &Program) -> &'static str {
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
         Program::ReadingFastStartup => "fast-startup",
+        Program::GivingTheStartPartitionALetter { .. } => "give-esp-letter",
+        Program::TakingTheStartPartitionsLetterAway { .. } => "take-esp-letter",
         Program::MakingTheShortcut => "shortcut",
         Program::RemovingWhatWasLeft => "remove-what-was-left",
         Program::TurningFastStartupOff => "fast-startup-off",
@@ -936,6 +938,186 @@ fn checking_the_computer_changes_nothing() {
     assert!(!machine.changed_anything());
     assert_eq!(found.starting.secure_boot, Some(false));
     assert_eq!(found.memory, Some(34_190_917_632));
+}
+
+// ---------------------------------------------------------------------------
+// Which system this computer starts when nobody chooses.
+// ---------------------------------------------------------------------------
+
+/// A machine whose start partition holds the loader's environment block, with
+/// this saved in it, and whose person types this.
+fn asked_which_system_starts(saved: &str, typed: &str) -> Scripted {
+    let (mut machine, _) = Scripted::installable();
+    let mut block = alo_starting::EnvironmentBlock::empty();
+    block.keep(alo_starting::SAVED_ENTRY, saved).unwrap();
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    machine
+        .files
+        .insert(alo_installer::the_block(letter), block.written().unwrap());
+    machine.answers.insert("give-esp-letter", printed(""));
+    machine.answers.insert("take-esp-letter", printed(""));
+    machine.typed = format!("{typed}\n");
+    machine
+}
+
+/// The one file, as the loader's own side reads it afterwards.
+fn what_the_loaders_side_reads(machine: &Scripted) -> alo_starting::System {
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let bytes = machine
+        .files
+        .get(&alo_installer::the_block(letter))
+        .unwrap();
+    let block = alo_starting::EnvironmentBlock::read(bytes).unwrap();
+    alo_starting::TheStartingChoice::read(&block)
+}
+
+/// **Both sides read the same answer, because there is one answer.** What the
+/// Windows program writes, the crate that owns the loader's side reads back as
+/// the system the person chose — and the file keeps the length it had.
+#[test]
+fn the_default_windows_writes_is_the_default_alo_os_reads() {
+    let machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says());
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let was = machine
+        .files
+        .get(&alo_installer::the_block(letter))
+        .unwrap()
+        .len();
+    let mut machine = machine;
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+
+    assert_eq!(
+        ended,
+        alo_installer::TheDefault::Changed(alo_starting::System::Windows),
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::Windows
+    );
+    assert_eq!(
+        machine
+            .files
+            .get(&alo_installer::the_block(letter))
+            .unwrap()
+            .len(),
+        was,
+        "the block was written at a different length than it was read at"
+    );
+    // The partition is reached and let go again, and nothing else is run.
+    assert_eq!(machine.kinds(), ["give-esp-letter", "take-esp-letter"]);
+}
+
+/// **And the other way round**: a computer that starts Windows is changed to
+/// start alo OS, which the loader's side reads as alo OS.
+#[test]
+fn the_same_holds_the_other_way_round() {
+    let mut machine = asked_which_system_starts(
+        alo_starting::THE_WINDOWS_ENTRY,
+        alo_installer::DEFAULT_CHANGE_IT.says(),
+    );
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(
+        ended,
+        alo_installer::TheDefault::Changed(alo_starting::System::AloOs)
+    );
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::AloOs
+    );
+}
+
+/// **A person who types nothing changes nothing**, and the answer they were
+/// shown is the one the file holds.
+#[test]
+fn the_default_is_shown_and_left_alone_unless_the_word_is_typed() {
+    for typed in ["", "   ", "yes", "windows", "alo OS"] {
+        let mut machine = asked_which_system_starts(alo_starting::THE_WINDOWS_ENTRY, typed);
+        let ended = alo_installer::which_system_starts(&mut machine, &strings());
+        assert_eq!(
+            ended,
+            alo_installer::TheDefault::Kept(alo_starting::System::Windows),
+            "{typed:?}"
+        );
+        assert_eq!(
+            what_the_loaders_side_reads(&machine),
+            alo_starting::System::Windows,
+            "{typed:?}"
+        );
+        assert!(
+            machine
+                .said
+                .iter()
+                .any(|said| said.contains("Windows") && said.contains("nobody chooses")),
+            "{typed:?}: {:#?}",
+            machine.said
+        );
+    }
+}
+
+/// **The file is on the partition both systems share, at the path the loader's
+/// own side names**, and the Windows side spells it with Windows' separators.
+#[test]
+fn the_file_is_the_one_the_loader_reads() {
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let file = alo_installer::the_block(letter);
+    let named = file.to_string_lossy().replace('\\', "/");
+    assert!(
+        named.ends_with(alo_starting::THE_BLOCK_ON_THE_ESP),
+        "{named} is not {}",
+        alo_starting::THE_BLOCK_ON_THE_ESP
+    );
+    assert!(named.starts_with("S:/"), "{named}");
+}
+
+/// **Nothing to read is said rather than guessed at**, and a file that is not
+/// an environment block is never written over.
+#[test]
+fn a_start_partition_without_the_block_is_said() {
+    let mut machine = Scripted::installable().0;
+    machine.answers.insert("give-esp-letter", printed(""));
+    machine.answers.insert("take-esp-letter", printed(""));
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotThere);
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::DEFAULT_NOT_THERE))
+    );
+
+    let mut machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says());
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let file = alo_installer::the_block(letter);
+    machine
+        .files
+        .insert(file.clone(), b"something else".to_vec());
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotRead);
+    assert_eq!(
+        machine.files.get(&file).map(Vec::as_slice),
+        Some(b"something else".as_slice()),
+        "a file that is not an environment block was written over"
+    );
+}
+
+/// **A start partition Windows will not reach is said, and nothing is
+/// written.**
+#[test]
+fn a_start_partition_that_cannot_be_reached_is_said() {
+    let mut machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says())
+        .failing("give-esp-letter");
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotReached);
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::AloOs
+    );
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::DEFAULT_NOT_REACHED))
+    );
 }
 
 // ---------------------------------------------------------------------------
