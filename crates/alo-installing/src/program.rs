@@ -16,6 +16,8 @@
 //! | [`Program::Writing`] | replaces the chosen disk with alo OS |
 //! | [`Program::Restarting`] | restarts the machine after a successful install |
 
+use std::path::PathBuf;
+
 use crate::verifying::Verifying;
 use crate::writing::Writing;
 
@@ -38,6 +40,40 @@ pub enum Program {
     Writing(Writing),
     /// Restart the machine.
     Restarting,
+
+    /// Ask the firmware which systems it can start.
+    ListingTheStartEntries,
+    /// Make the entry for the installed alo OS, named as a person reads it.
+    ///
+    /// The firmware's own tool cannot rename an entry, so the way to a named
+    /// one is to make it again and take the old one away
+    /// (`crate::tidying`). The file it starts is
+    /// [`crate::entries::THE_LOADER_THE_BASE_INSTALLS`] and the name is
+    /// [`crate::entries::THE_ENTRYS_NAME`]; neither is a value a caller passes.
+    NamingTheEntry {
+        /// The disk alo OS was installed onto, by its own name.
+        disk: PathBuf,
+        /// The partition its loader is on, read from the entry the install
+        /// left behind.
+        partition: u32,
+    },
+    /// Take one entry away, by its number.
+    RemovingTheEntry {
+        /// The number, as in `000B`.
+        number: String,
+    },
+    /// Put the firmware's entries in this order.
+    OrderingTheEntries {
+        /// Every number, in the order they are to be started in.
+        order: Vec<String>,
+    },
+    /// Take the installer's staging area off the disk it was made on.
+    RemovingTheArea {
+        /// The disk it is on.
+        disk: String,
+        /// Its number within that disk's own table.
+        partition: u32,
+    },
 }
 
 /// What a program did.
@@ -58,12 +94,14 @@ pub struct Ran {
 /// to carrying every one of them: a program the environment runs and the
 /// initramfs does not hold is a refusal nobody sees until a machine restarts
 /// into it.
-pub const EVERY_PROGRAM: [&str; 5] = [
+pub const EVERY_PROGRAM: [&str; 7] = [
     "/usr/bin/lsblk",
     "/usr/bin/nm-online",
     "/usr/bin/cosign",
     "/usr/bin/bootc",
     "/usr/bin/systemctl",
+    "/usr/sbin/efibootmgr",
+    "/usr/sbin/sfdisk",
 ];
 
 impl Program {
@@ -79,6 +117,11 @@ impl Program {
             Self::Verifying(_) => "/usr/bin/cosign",
             Self::Writing(_) => "/usr/bin/bootc",
             Self::Restarting => "/usr/bin/systemctl",
+            Self::ListingTheStartEntries
+            | Self::NamingTheEntry { .. }
+            | Self::RemovingTheEntry { .. }
+            | Self::OrderingTheEntries { .. } => "/usr/sbin/efibootmgr",
+            Self::RemovingTheArea { .. } => "/usr/sbin/sfdisk",
         }
     }
 
@@ -100,6 +143,31 @@ impl Program {
             Self::Verifying(verifying) => verifying.arguments(),
             Self::Writing(writing) => writing.arguments(),
             Self::Restarting => vec!["reboot".to_owned()],
+            // `--quiet` is never passed: what the tool prints is the entry it
+            // made, and `crate::tidying` reads the number out of it.
+            Self::ListingTheStartEntries => Vec::new(),
+            Self::NamingTheEntry { disk, partition } => vec![
+                "--create".to_owned(),
+                "--disk".to_owned(),
+                disk.display().to_string(),
+                "--part".to_owned(),
+                partition.to_string(),
+                "--loader".to_owned(),
+                crate::entries::THE_LOADER_THE_BASE_INSTALLS.to_owned(),
+                "--label".to_owned(),
+                crate::entries::THE_ENTRYS_NAME.to_owned(),
+            ],
+            Self::RemovingTheEntry { number } => vec![
+                "--bootnum".to_owned(),
+                number.clone(),
+                "--delete-bootnum".to_owned(),
+            ],
+            Self::OrderingTheEntries { order } => {
+                vec!["--bootorder".to_owned(), order.join(",")]
+            }
+            Self::RemovingTheArea { disk, partition } => {
+                vec!["--delete".to_owned(), disk.clone(), partition.to_string()]
+            }
         }
     }
 
@@ -109,7 +177,13 @@ impl Program {
     /// and it goes to the machine's log rather than to the person's screen.
     #[must_use]
     pub fn is_read(&self) -> bool {
-        matches!(self, Self::ListingTheDisks | Self::Verifying(_))
+        matches!(
+            self,
+            Self::ListingTheDisks
+                | Self::Verifying(_)
+                | Self::ListingTheStartEntries
+                | Self::NamingTheEntry { .. }
+        )
     }
 
     /// Whether it writes to a disk.
@@ -118,7 +192,7 @@ impl Program {
     /// which this never ran.
     #[must_use]
     pub fn writes(&self) -> bool {
-        matches!(self, Self::Writing(_))
+        matches!(self, Self::Writing(_) | Self::RemovingTheArea { .. })
     }
 }
 

@@ -96,7 +96,13 @@ fn installing(
             let disk = writing.disk().clone();
             let program = Program::Writing(writing);
             match machine.run(&program, &still, STILL_EVERY) {
-                Ok(ran) if ran.succeeded => Ended::Installed(disk),
+                Ok(ran) if ran.succeeded => {
+                    // Step 6: what the install leaves behind, put right. alo OS
+                    // is installed by this line whatever happens next, and
+                    // `crate::tidying` says so in every road out of it.
+                    let _tidied = crate::tidying::tidy_up(machine, strings, &disk);
+                    Ended::Installed(disk)
+                }
                 Ok(ran) => {
                     noted(machine, &program, &ran.complained);
                     Ended::NotInstalled(disk)

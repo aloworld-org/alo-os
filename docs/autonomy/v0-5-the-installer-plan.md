@@ -287,18 +287,27 @@ each walked in the guest except where it says otherwise:
   keeps the length it was read at. **Against the scripted Windows**; the guest
   walk of a person changing it is owed.
 
-**Still owed here, and this task is not done until they are:**
+- **What the install leaves behind, put right** (ADR 0062 term 1). The
+  environment has a sixth step, after alo OS is on the disk and before the
+  restart: the entry named *alo OS* rather than the base's own name, Windows
+  Boot Manager directly behind it, the entry the installer staged taken away
+  with its area, and the area itself removed from the Windows disk. alo OS is
+  installed before any of it runs and stays installed if all of it fails.
+  **Walked**, 2026-09-25: the installed machine read its own firmware and its
+  own disks back —
 
-1. **Tidying what the install leaves.** Measured on 2026-09-22
-   (`docs/quirks.md`): after the install the firmware's first entry is
-   bootupd's, named *Fedora*, and the installer's staging entry and its 1 GB
-   area are left behind. This task names the entry as alo OS, puts Windows Boot
-   Manager directly behind it (ADR 0062 term 1) and removes the area — in the
-   environment, right after `bootc install` succeeds.
-2. **The fall-through test** ADR 0062 term 1 asks for: the area's loader made
+  ```
+  BootOrder: 000C,0004,0003,0000,0001,0002,0005,0006,0007,0008,0009
+  Boot0004* Windows Boot Manager  HD(1,GPT,…)/\EFI\Microsoft\Boot\bootmgfw.efi
+  Boot000C* alo OS               HD(2,GPT,…)/\EFI\fedora\shimx64.efi
+  sda   ├─sda1 SYSTEM  ├─sda2  ├─sda3 Windows  └─sda5      (no ALO-INSTALL)
+  ```
+
+**Still owed here, and this task is not done until they are:**
+1. **The fall-through test** ADR 0062 term 1 asks for: alo OS's loader made
    unstartable, the computer restarted, and Windows coming up **with no
    keypress**, read from the machine's own console rather than counted.
-3. The rest of the acceptance below that neither piece covers: *remove alo OS*,
+2. The rest of the acceptance below that neither piece covers: *remove alo OS*,
    and the walk of the default being changed from either side.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
