@@ -865,16 +865,25 @@ the sets are the same.
 
 **Status:** ready — **blocked on a real file of each.** **Depends on:** 2, 7.
 
-**Moved to the development PC by the owner's decision of 2026-09-25** ([what
-closes this release, and in what
-order](updates/what-closes-v0-0-5-and-in-what-order.md)), which has Word,
-Excel and PowerPoint installed. Two things that machine needs, and neither was
-obvious from this task's text: three files **the repository's owner wrote**,
-saved from those applications in their 97-2003 formats — the legacy files
-already on it are a published standards list and company invoice data, and
-neither may be published in the fixtures; and **the pinned conversion engine,
-which is not installed there yet**, so standing it up is a step of this task
-rather than an assumption inside it.
+**Two machines, decided 2026-09-25** and corrected the same day, in
+[what closes this release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md):
+**the three files are made on the development PC and the conversion is measured
+on the Mac.** That is the split the fixtures' own `README.md` already records,
+and it was checked against it rather than assumed:
+
+- **The files:** saved by the repository's owner, from Word, Excel and
+  PowerPoint, in their 97-2003 formats — exactly as `sample.docx`, `sample.xlsx`
+  and `sample.pptx` were saved on that machine on 2026-09-16, each recording its
+  own version in its own parts. The legacy files already on that machine are a
+  published standards list and company invoice data; **neither may be published
+  in the fixtures**, which is what this task requires, so three of the owner's
+  own are written instead. Nothing synthesised.
+- **The conversion:** the pinned engine **is already standing on the Mac**,
+  which saved task 7's four OpenDocument fixtures with LibreOffice 24.2.7.2
+  headless in the Lima VM that gates this repository. #122 said the engine was
+  not installed and that standing it up was a step of this task; it is
+  installed, on the machine that has run every conversion this plan has
+  measured, and no second copy is stood up to avoid a handoff.
 
 Written 2026-09-22 by the lane that finished task 9, because nothing followed it
 and a plan that names no next task sends the loop back at work already done
