@@ -47,6 +47,12 @@ image, which is the part this line used to deny.** A supervisor cannot start wha
 is left, so this says so in the one word it reads: a status it cannot parse is a
 finished task it selects again for ever, which is how this line was found.
 
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
+
 **Corrected 2026-09-20 by reading release `0.0.4` itself.** This line said the
 block was a machine *and nothing else*. It is not. Measured inside the published
 image (config `74a4aa1563c0`) on the development PC:
@@ -222,6 +228,12 @@ not make*~~ is **withdrawn** — the session manager's own
 permission store, so a portal does not link, it grants the permission without
 which no link is offered. That is a reading of the engine's script and not yet
 a measurement. `docs/quirks.md` carries all of it.
+
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
 
 **Two explanations, and how to tell them apart, 2026-09-20 (later the same
 day).** A second measurement in the Lima VM, on WirePlumber **0.4.17**, found

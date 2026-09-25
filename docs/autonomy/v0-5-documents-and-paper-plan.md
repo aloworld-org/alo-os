@@ -714,6 +714,14 @@ their first morning; today it is recognised, named, and then refused.
 
 **Status:** ready — **blocked on a real file of each.** **Depends on:** 6.
 
+**One route that does not need the Mac's applications**, recorded on
+2026-09-25 in [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md): Keynote and Numbers
+on iCloud, in a browser on any machine, are the real applications writing the
+real container. If that route is taken the provenance line says it was the web
+version — which writer wrote a fixture is the whole value of recording
+provenance. This stays inside v0.0.5.
+
 Written 2026-09-21, by the lane that finished task 6, because it is the one
 thing that task measured and could not close. A finished task's body is not
 where a lane looking for free work looks, and leaving it there is how a
@@ -856,6 +864,17 @@ the sets are the same.
 ### 10. Older `.doc`, `.xls` and `.ppt` — converted, and what each copy lost
 
 **Status:** ready — **blocked on a real file of each.** **Depends on:** 2, 7.
+
+**Moved to the development PC by the owner's decision of 2026-09-25** ([what
+closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md)), which has Word,
+Excel and PowerPoint installed. Two things that machine needs, and neither was
+obvious from this task's text: three files **the repository's owner wrote**,
+saved from those applications in their 97-2003 formats — the legacy files
+already on it are a published standards list and company invoice data, and
+neither may be published in the fixtures; and **the pinned conversion engine,
+which is not installed there yet**, so standing it up is a step of this task
+rather than an assumption inside it.
 
 Written 2026-09-22 by the lane that finished task 9, because nothing followed it
 and a plan that names no next task sends the loop back at work already done

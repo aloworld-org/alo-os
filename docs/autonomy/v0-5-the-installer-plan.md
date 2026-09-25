@@ -398,6 +398,12 @@ installed before it lands could never undo what an agent did without being
 reinstalled ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), accepted
 2026-09-16). **Depends on:** 4, 5.
 
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
+
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their
 observations fill.
