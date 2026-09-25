@@ -47,11 +47,24 @@ image, which is the part this line used to deny.** A supervisor cannot start wha
 is left, so this says so in the one word it reads: a status it cannot parse is a
 finished task it selects again for ever, which is how this line was found.
 
-**Sequenced by the owner on 2026-09-25 as one of the last two things in the
-release** — see [what closes this release, and in what
-order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
-this until it is unblocked; it closes nothing else, and it is the owner's to
-perform.
+**Not the owner's, and not hardware — corrected 2026-09-25**, the same day
+[what closes this release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md)
+mislabelled it as one of the release's last two things. This task's own text
+already says why: the published image carries **no video codec ADR 0058 says we
+ship in software and no media pipeline at all**, so no machine — certified
+laptop included — has anything to play an AV1, VP9 or H.264 sample with. The
+unblocking is **a change to the image or a change to the decision**, and both
+are this repository's:
+
+- **the image gains a pipeline and the three software video codecs**, and an
+  encoder to make the samples with, or
+- **ADR 0058 is amended** to say which formats alo OS plays at v0.5 and which it
+  refuses in words, and the task measures what the amended decision promises.
+
+Whichever is chosen is written down before the work, because *the image does not
+match the decision* is a finding about one of the two and the choice of which is
+not a lane's to make quietly. The audio half is measurable today: every audio
+codec the decision names is in the image.
 
 **Corrected 2026-09-20 by reading release `0.0.4` itself.** This line said the
 block was a machine *and nothing else*. It is not. Measured inside the published
@@ -229,11 +242,22 @@ permission store, so a portal does not link, it grants the permission without
 which no link is offered. That is a reading of the engine's script and not yet
 a measurement. `docs/quirks.md` carries all of it.
 
-**Sequenced by the owner on 2026-09-25 as one of the last two things in the
-release** — see [what closes this release, and in what
-order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
-this until it is unblocked; it closes nothing else, and it is the owner's to
-perform.
+**Not the owner's, and not a camera — corrected 2026-09-25**, the same day
+[what closes this release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md)
+mislabelled it as one of the release's last two things. The status above already
+names the cheaper of the two roads, and both are this repository's to walk on
+the development PC:
+
+- **the portal road:** the session manager's own `client/access-portal.lua`
+  gates exactly the nodes a camera is on the portal permission store. That is a
+  reading of a rented engine's script; granting the permission and seeing
+  whether a link is then offered turns it into a measurement.
+- **the linkable road**, named cheaper to decide: why a V4L2 node never becomes
+  a linkable at all.
+
+A machine with a real camera is needed only for the last step — a picture out of
+a real device. Deciding *which of the two explanations is true* needs no camera,
+and until it is decided, buying a machine buys nothing.
 
 **Two explanations, and how to tell them apart, 2026-09-20 (later the same
 day).** A second measurement in the Lima VM, on WirePlumber **0.4.17**, found

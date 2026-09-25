@@ -586,11 +586,12 @@ policy accepts, and on the shipped image carrying a `policy.json` at all. Both
 are the installer lane's under ADR 0036; task 2 handed over the second and task
 7 the first. **Depends on:** 2, 7.
 
-**Sequenced by the owner on 2026-09-25 as one of the last two things in the
-release** — see [what closes this release, and in what
-order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
-this until it is unblocked; it closes nothing else, and it is the owner's to
-perform.
+**Half of this is the owner's, and half is not — corrected 2026-09-25.** The
+status above names two blockers and only one of them is the signature: **the
+shipped image does not carry a `policy.json` at all**, which is the installer
+lane's under ADR 0036 and needs no key, no release and nobody at a machine. That
+half can be finished now, and should be, so that when the owner signs a second
+release the only thing left is the run itself.
 
 Every crate in this plan is finished and **no alo OS machine can apply an
 update today**. Task 7 measured why, on the base's own tooling: the signature
