@@ -25,7 +25,11 @@ does touches the disk layout.
      --features llvm-22`;
    - `build-essential pkg-config libwayland-dev libegl1-mesa-dev
      libgles2-mesa-dev libxkbcommon-dev libudev-dev libinput-dev libgbm-dev
-     libseat-dev`, or clippy stops at `libudev-sys`;
+     libseat-dev`, or clippy stops at `libudev-sys`; and **`libpixman-1-dev`**,
+     without which the workspace's tests stop at *rust-lld: error: unable to
+     find library -lpixman-1* while linking `alo-shell` and
+     `tools/graphics-check` — needed since *The compositor a machine boots to*
+     (#119) and met on this PC on 2026-09-25;
    - `gnome-keyring` and `dbus`, with Ubuntu's `org.freedesktop.secrets`
      activation file set aside as `docs/quirks.md` describes;
    - `bpffs` mounted at `/sys/fs/bpf`, in `/etc/fstab` so a restart keeps it.

@@ -262,14 +262,44 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 beside a real Windows in a virtual machine and walks the switching both ways,
 which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
 
-**Landed so far, 2026-09-22:** the Fast Startup question. The installer reads
-Windows' own `HiberbootEnabled`, says what it found like every other check,
-and — only when it is on — asks the owner's words after the consent and before
-anything is changed. *Turn off* sets the value to `0`, is journalled, and is
-put back if a later step fails; what could not be put back is said. No program
-of the installer may name `powercfg`, and a test holds that. Both answers go on
-with the install. Against the scripted Windows;
-**not yet walked on a real one**, whose base has Fast Startup off already.
+**Landed so far, 2026-09-22 to 2026-09-25**, three pieces of the Windows side,
+each walked in the guest except where it says otherwise:
+
+- **The Fast Startup question** (ADR 0064 term 9). The installer reads Windows'
+  own values, says what it found like every other check, and — only when Fast
+  Startup is on — asks the owner's words after the consent and before anything
+  is changed. *Turn off* sets `HiberbootEnabled` to `0`, is journalled, and is
+  put back if a later step fails. No program of the installer may name
+  `powercfg`, and a test holds that. **Walked on a real Windows** on a second
+  base with hibernation on: the question asked, *turn off* typed, and the value
+  read back `1 → 0` (`docs/quirks.md` carries what that guest will and will not
+  keep).
+- **The way back in**, from inside Windows. Staging leaves a copy of the
+  installer under Windows' own place for programs with shortcuts in the Start
+  menu; started with the switch's word it sets the firmware's **next start**
+  only and restarts. **Walked**: the firmware started alo OS, and the start
+  after that was Windows, so the default was never touched.
+- **Which system starts by default, from Windows** (ADR 0066 term 3). It calls
+  `alo-starting` rather than copying the format: the environment block, the
+  path on the EFI system partition, the name the choice is kept under and the
+  two systems all come from the crate that owns them. Six tests, including that
+  what Windows writes is what alo OS's own reader reads back, and that the file
+  keeps the length it was read at. **Against the scripted Windows**; the guest
+  walk of a person changing it is owed.
+
+**Still owed here, and this task is not done until they are:**
+
+1. **Tidying what the install leaves.** Measured on 2026-09-22
+   (`docs/quirks.md`): after the install the firmware's first entry is
+   bootupd's, named *Fedora*, and the installer's staging entry and its 1 GB
+   area are left behind. This task names the entry as alo OS, puts Windows Boot
+   Manager directly behind it (ADR 0062 term 1) and removes the area — in the
+   environment, right after `bootc install` succeeds.
+2. **The fall-through test** ADR 0062 term 1 asks for: the area's loader made
+   unstartable, the computer restarted, and Windows coming up **with no
+   keypress**, read from the machine's own console rather than counted.
+3. The rest of the acceptance below that neither piece covers: *remove alo OS*,
+   and the walk of the default being changed from either side.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
@@ -391,12 +421,24 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — on tasks 1–5, 8, 9, 10 **and 11**, and on the owner at the
-laptop; nothing in this repository can tick it. Task 11 is not optional before
+**Status:** blocked — **on task 4 alone**, and on the owner at the laptop;
+nothing in this repository can tick it. **Narrowed 2026-09-25:** this line named
+tasks 1–5, 8, 9, 10 and 11, and eight of those nine are finished — 1, 2, 3, 5,
+8 and 9 on 2026-09-15 and 2026-09-16, 11 on 2026-09-21 and 10 on 2026-09-22.
+Only task 4 is unfinished, and it is in progress on the development PC. A
+blocker that outlives its cause makes takeable work look untakeable; this one
+also made the laptop look far away when one task stands between this repository
+and being ready for one. Task 11 is not optional before
 this one: a filesystem is chosen at install and cannot be converted, so a laptop
 installed before it lands could never undo what an agent did without being
 reinstalled ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), accepted
 2026-09-16). **Depends on:** 4, 5.
+
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
 
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their

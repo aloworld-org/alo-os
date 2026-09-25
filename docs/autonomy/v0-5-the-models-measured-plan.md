@@ -729,13 +729,23 @@ waits for hardware, the way the chip's half of encryption does.
 
 ### 23. The card road, on a machine that has one
 
-**Status:** blocked — **on hardware only.** Task 22 is done (2026-09-22) and
+**Status:** scheduled — **carried to 0.0.6 by the owner's decision of
+2026-09-25**, and on hardware only. Task 22 is done (2026-09-22) and
 this task's dependency on it is cleared: what remains is a machine with a
 discrete graphics card the pinned runtime can use, and a driver for it.
 `docs/hardware.md` lists none, and the machine this plan's lane runs on has no
 VGA or 3D device at all. Split from task 22 on 2026-09-22, the way
 [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
 split the chip's half from the disk's. **Depends on:** 22, which is finished.
+
+**Carried to 0.0.6 by the owner's decision of 2026-09-25**, recorded in [what
+closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). Task 22 already
+measures the processor road and every refusal on the way to a card that cannot
+be used; what this task adds needs a machine with a discrete card, and v0.0.5
+reaches developers on integrated graphics. **The release notes say plainly
+that the card road is unmeasured** — the claim is named rather than made
+quietly. The NVIDIA image decision stays open and is 0.0.6's.
 
 **The instrument is written and waiting.** Task 22 left
 `crates/alo-driving/tests/the_same_question_on_each_road.rs`, whose

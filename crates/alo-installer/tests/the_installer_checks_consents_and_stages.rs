@@ -73,6 +73,10 @@ fn kind(program: &Program) -> &'static str {
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
         Program::ReadingFastStartup => "fast-startup",
+        Program::GivingTheStartPartitionALetter { .. } => "give-esp-letter",
+        Program::TakingTheStartPartitionsLetterAway { .. } => "take-esp-letter",
+        Program::MakingTheShortcut => "shortcut",
+        Program::RemovingWhatWasLeft => "remove-what-was-left",
         Program::TurningFastStartupOff => "fast-startup-off",
         Program::TurningFastStartupBackOn { .. } => "fast-startup-back-on",
         Program::Shrinking { .. } => "shrink",
@@ -130,6 +134,11 @@ impl Scripted {
             files.insert(beneath(&directory, inside), bytes);
         }
         files.insert(directory.join(THE_LIST), list.clone().into_bytes());
+        // The program itself, which staging copies to where a person finds it.
+        files.insert(
+            Path::new(DOWNLOADED).join("alo-installer.exe"),
+            b"the bytes of the installer".to_vec(),
+        );
         let released = Released::of(Some(&sha256_hex(list.as_bytes())));
 
         let answers = BTreeMap::from([
@@ -158,7 +167,15 @@ impl Scripted {
             // Off on this scripted computer, so the question is not asked and
             // no test here answers it by accident; the tests that are about
             // the question turn it on (`fast_startup_is_asked_about`).
-            ("fast-startup", printed(r#"{"HiberbootEnabled":0}"#)),
+            (
+                "fast-startup",
+                printed(r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#),
+            ),
+            (
+                "shortcut",
+                printed(r#"{"Shortcut":"C:\\ProgramData\\Restart into alo OS.lnk"}"#),
+            ),
+            ("remove-what-was-left", printed("")),
             ("fast-startup-off", printed(r#"{"HiberbootEnabled":0}"#)),
             ("fast-startup-back-on", printed(r#"{"HiberbootEnabled":1}"#)),
             ("shrink", printed("")),
@@ -277,6 +294,10 @@ impl TheMachine for Scripted {
         Ok(PathBuf::from(DOWNLOADED))
     }
 
+    fn this_program(&mut self) -> std::io::Result<PathBuf> {
+        Ok(PathBuf::from(DOWNLOADED).join("alo-installer.exe"))
+    }
+
     fn read(&mut self, file: &Path) -> std::io::Result<Vec<u8>> {
         let bytes = self
             .files
@@ -370,6 +391,7 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
             "shrink",
             "make-area",
             "prepare-area",
+            "shortcut",
             "write-entry",
             "list-entry",
             "take-letter",
@@ -750,18 +772,38 @@ fn a_failure_at_each_step_puts_back_everything_before_it() {
         ("shrink", vec![]),
         ("make-area", vec!["grow-back"]),
         ("prepare-area", vec!["remove-area", "grow-back"]),
-        ("write-entry", vec!["remove-area", "grow-back"]),
+        ("shortcut", vec!["remove-area", "grow-back"]),
+        (
+            "write-entry",
+            vec!["remove-what-was-left", "remove-area", "grow-back"],
+        ),
         (
             "list-entry",
-            vec!["remove-entry", "remove-area", "grow-back"],
+            vec![
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
         (
             "take-letter",
-            vec!["remove-entry", "remove-area", "grow-back"],
+            vec![
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
         (
             "next",
-            vec!["forget-next", "remove-entry", "remove-area", "grow-back"],
+            vec![
+                "forget-next",
+                "remove-entry",
+                "remove-what-was-left",
+                "remove-area",
+                "grow-back",
+            ],
         ),
     ];
     for (failing, put_back) in every_step {
@@ -899,6 +941,322 @@ fn checking_the_computer_changes_nothing() {
 }
 
 // ---------------------------------------------------------------------------
+// Which system this computer starts when nobody chooses.
+// ---------------------------------------------------------------------------
+
+/// A machine whose start partition holds the loader's environment block, with
+/// this saved in it, and whose person types this.
+fn asked_which_system_starts(saved: &str, typed: &str) -> Scripted {
+    let (mut machine, _) = Scripted::installable();
+    let mut block = alo_starting::EnvironmentBlock::empty();
+    block.keep(alo_starting::SAVED_ENTRY, saved).unwrap();
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    machine
+        .files
+        .insert(alo_installer::the_block(letter), block.written().unwrap());
+    machine.answers.insert("give-esp-letter", printed(""));
+    machine.answers.insert("take-esp-letter", printed(""));
+    machine.typed = format!("{typed}\n");
+    machine
+}
+
+/// The one file, as the loader's own side reads it afterwards.
+fn what_the_loaders_side_reads(machine: &Scripted) -> alo_starting::System {
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let bytes = machine
+        .files
+        .get(&alo_installer::the_block(letter))
+        .unwrap();
+    let block = alo_starting::EnvironmentBlock::read(bytes).unwrap();
+    alo_starting::TheStartingChoice::read(&block)
+}
+
+/// **Both sides read the same answer, because there is one answer.** What the
+/// Windows program writes, the crate that owns the loader's side reads back as
+/// the system the person chose — and the file keeps the length it had.
+#[test]
+fn the_default_windows_writes_is_the_default_alo_os_reads() {
+    let machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says());
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let was = machine
+        .files
+        .get(&alo_installer::the_block(letter))
+        .unwrap()
+        .len();
+    let mut machine = machine;
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+
+    assert_eq!(
+        ended,
+        alo_installer::TheDefault::Changed(alo_starting::System::Windows),
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::Windows
+    );
+    assert_eq!(
+        machine
+            .files
+            .get(&alo_installer::the_block(letter))
+            .unwrap()
+            .len(),
+        was,
+        "the block was written at a different length than it was read at"
+    );
+    // The partition is reached and let go again, and nothing else is run.
+    assert_eq!(machine.kinds(), ["give-esp-letter", "take-esp-letter"]);
+}
+
+/// **And the other way round**: a computer that starts Windows is changed to
+/// start alo OS, which the loader's side reads as alo OS.
+#[test]
+fn the_same_holds_the_other_way_round() {
+    let mut machine = asked_which_system_starts(
+        alo_starting::THE_WINDOWS_ENTRY,
+        alo_installer::DEFAULT_CHANGE_IT.says(),
+    );
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(
+        ended,
+        alo_installer::TheDefault::Changed(alo_starting::System::AloOs)
+    );
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::AloOs
+    );
+}
+
+/// **A person who types nothing changes nothing**, and the answer they were
+/// shown is the one the file holds.
+#[test]
+fn the_default_is_shown_and_left_alone_unless_the_word_is_typed() {
+    for typed in ["", "   ", "yes", "windows", "alo OS"] {
+        let mut machine = asked_which_system_starts(alo_starting::THE_WINDOWS_ENTRY, typed);
+        let ended = alo_installer::which_system_starts(&mut machine, &strings());
+        assert_eq!(
+            ended,
+            alo_installer::TheDefault::Kept(alo_starting::System::Windows),
+            "{typed:?}"
+        );
+        assert_eq!(
+            what_the_loaders_side_reads(&machine),
+            alo_starting::System::Windows,
+            "{typed:?}"
+        );
+        assert!(
+            machine
+                .said
+                .iter()
+                .any(|said| said.contains("Windows") && said.contains("nobody chooses")),
+            "{typed:?}: {:#?}",
+            machine.said
+        );
+    }
+}
+
+/// **The file is on the partition both systems share, at the path the loader's
+/// own side names**, and the Windows side spells it with Windows' separators.
+#[test]
+fn the_file_is_the_one_the_loader_reads() {
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let file = alo_installer::the_block(letter);
+    let named = file.to_string_lossy().replace('\\', "/");
+    assert!(
+        named.ends_with(alo_starting::THE_BLOCK_ON_THE_ESP),
+        "{named} is not {}",
+        alo_starting::THE_BLOCK_ON_THE_ESP
+    );
+    assert!(named.starts_with("S:/"), "{named}");
+}
+
+/// **Nothing to read is said rather than guessed at**, and a file that is not
+/// an environment block is never written over.
+#[test]
+fn a_start_partition_without_the_block_is_said() {
+    let mut machine = Scripted::installable().0;
+    machine.answers.insert("give-esp-letter", printed(""));
+    machine.answers.insert("take-esp-letter", printed(""));
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotThere);
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::DEFAULT_NOT_THERE))
+    );
+
+    let mut machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says());
+    let letter = alo_installer::Letter::of(alo_installer::THE_START_PARTITIONS_LETTER).unwrap();
+    let file = alo_installer::the_block(letter);
+    machine
+        .files
+        .insert(file.clone(), b"something else".to_vec());
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotRead);
+    assert_eq!(
+        machine.files.get(&file).map(Vec::as_slice),
+        Some(b"something else".as_slice()),
+        "a file that is not an environment block was written over"
+    );
+}
+
+/// **A start partition Windows will not reach is said, and nothing is
+/// written.**
+#[test]
+fn a_start_partition_that_cannot_be_reached_is_said() {
+    let mut machine = asked_which_system_starts("", alo_installer::DEFAULT_CHANGE_IT.says())
+        .failing("give-esp-letter");
+    let ended = alo_installer::which_system_starts(&mut machine, &strings());
+    assert_eq!(ended, alo_installer::TheDefault::NotReached);
+    assert_eq!(
+        what_the_loaders_side_reads(&machine),
+        alo_starting::System::AloOs
+    );
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::DEFAULT_NOT_REACHED))
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The way back into alo OS, from inside Windows.
+// ---------------------------------------------------------------------------
+
+/// The firmware's list on a computer alo OS was installed onto.
+const ENTRIES_WITH_ALO_OS: &str = "identifier              {bootmgr}\n\
+     description             Windows Boot Manager\n\
+     \n\
+     identifier              {6b1d5c2a-0f3e-11ef-9a1b-00155d012345}\n\
+     description             alo OS\n";
+
+/// A machine whose firmware lists alo OS, and whose person types this.
+fn asked_to_switch(typed: &str) -> (Scripted, Released) {
+    let (mut machine, released) = Scripted::installable();
+    machine = machine.answering("entries", ENTRIES_WITH_ALO_OS);
+    machine.typed = format!("{typed}\n");
+    (machine, released)
+}
+
+/// **The switch sets the next start and nothing else**, once the person has
+/// typed the word — never the order, never the default, no disk.
+#[test]
+fn the_way_back_sets_the_next_start_and_nothing_else() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine;
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(
+        switched,
+        alo_installer::Switched::Restarting { restarted: true },
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(machine.kinds(), ["entries", "next", "restart"]);
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_WILL_RESTART))
+    );
+    // The question names the word to type, and says it rather than leaving the
+    // gap: measured on 2026-09-23, it asked for `{word}` on a real Windows.
+    let asked = machine.asked.last().expect("it asked");
+    assert!(!asked.contains('{'), "{asked}");
+    assert!(
+        asked.contains(alo_installer::SWITCH_AGREED.says()),
+        "{asked}"
+    );
+}
+
+/// **A person who types nothing changes nothing.**
+#[test]
+fn the_way_back_asks_first_and_takes_no_for_an_answer() {
+    for typed in ["", "   ", "yes", "alo OS", "restart now"] {
+        let (machine, _) = asked_to_switch(typed);
+        let mut machine = machine;
+        let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+        assert_eq!(switched, alo_installer::Switched::NotAgreed, "{typed:?}");
+        assert_eq!(machine.kinds(), ["entries"], "{typed:?}");
+        assert!(!machine.changed_anything(), "{typed:?}");
+        assert!(
+            machine
+                .said
+                .contains(&sentence(alo_installer::SWITCH_NOT_AGREED)),
+            "{typed:?}"
+        );
+    }
+}
+
+/// **With no entry for alo OS it says so and changes nothing**, and the same
+/// when the firmware's list could not be read at all.
+#[test]
+fn the_way_back_says_when_there_is_nothing_to_start() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.answering(
+        "entries",
+        "identifier              {bootmgr}\ndescription             Windows Boot Manager\n",
+    );
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotThere);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_THERE))
+    );
+
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.failing("entries");
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotRead);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_READ))
+    );
+}
+
+/// **A next start that could not be set is forgotten rather than left half
+/// set**, and the computer is not restarted.
+#[test]
+fn a_next_start_that_failed_is_forgotten_and_said() {
+    let (machine, _) = asked_to_switch(alo_installer::SWITCH_AGREED.says());
+    let mut machine = machine.failing("next");
+    let switched = alo_installer::restart_into_alo_os(&mut machine, &strings());
+    assert_eq!(switched, alo_installer::Switched::NotSet);
+    assert_eq!(machine.kinds(), ["entries", "next", "forget-next"]);
+    assert!(!machine.kinds().contains(&"restart"));
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::SWITCH_NOT_SET))
+    );
+}
+
+/// **The installer leaves the way back where a person finds it**: its own
+/// bytes under Windows' place for programs, and a shortcut that starts them
+/// with the switch's word.
+#[test]
+fn the_installer_leaves_a_copy_of_itself_and_a_shortcut() {
+    let (machine, released) = Scripted::installable();
+    let (ended, machine) = run(machine, released);
+    assert_eq!(ended, Ended::Staged { restarted: true });
+    let left = Path::new(alo_installer::THE_PROGRAMS_HOME).join(alo_installer::THE_PROGRAMS_NAME);
+    assert_eq!(
+        machine.files.get(&left).map(Vec::as_slice),
+        Some(b"the bytes of the installer".as_slice())
+    );
+    assert!(machine.kinds().contains(&"shortcut"));
+    let script = Program::MakingTheShortcut.script().unwrap();
+    assert!(script.contains(alo_installer::THE_SWITCHS_WORD), "{script}");
+    assert!(
+        script.contains(alo_installer::THE_PROGRAMS_NAME),
+        "{script}"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Fast Startup: the one question with two answers.
 // ---------------------------------------------------------------------------
 
@@ -906,7 +1264,10 @@ fn checking_the_computer_changes_nothing() {
 /// the disk's name.
 fn with_fast_startup_on(answers: &[&str]) -> (Scripted, Released) {
     let (mut machine, released) = Scripted::installable();
-    machine = machine.answering("fast-startup", r#"{"HiberbootEnabled":1}"#);
+    machine = machine.answering(
+        "fast-startup",
+        r#"{"HiberbootEnabled":1,"HibernateEnabled":1}"#,
+    );
     machine.then_typed = answers.iter().map(|typed| format!("{typed}\n")).collect();
     (machine, released)
 }
@@ -992,7 +1353,12 @@ fn an_answer_that_is_neither_is_asked_again_and_then_left_on() {
 /// changed about it.**
 #[test]
 fn fast_startup_that_is_off_or_unread_is_not_asked_about() {
-    for read in [r#"{"HiberbootEnabled":0}"#, "not an answer"] {
+    for read in [
+        r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#,
+        // `powercfg /h off` leaves the first value at 1 (`docs/quirks.md`).
+        r#"{"HiberbootEnabled":1,"HibernateEnabled":0}"#,
+        "not an answer",
+    ] {
         let (machine, released) = Scripted::installable();
         let (ended, machine) = run(machine.answering("fast-startup", read), released);
         assert_eq!(ended, Ended::Staged { restarted: true });

@@ -41,15 +41,24 @@ pub fn answered(typed: &str, strings: &Strings) -> Option<Answer> {
         (words::ANSWER_TURN_OFF, Answer::TurnOff),
         (words::ANSWER_LEAVE_ON, Answer::LeaveOn),
     ] {
-        if is_the_word(&typed, word, strings) {
+        if is_it(&typed, word, strings) {
             return Some(answer);
         }
     }
     None
 }
 
-/// Whether what was typed is this answer, in this language or in the source.
-fn is_the_word(typed: &str, word: Word, strings: &Strings) -> bool {
+/// Whether what a person typed is this word, in their language or in the
+/// source — the one rule every typed answer in this program is read by
+/// (`crate::defaulting` asks its own question with it).
+#[must_use]
+pub fn is_the_word(typed: &str, word: Word, strings: &Strings) -> bool {
+    let typed = normalised(typed);
+    !typed.is_empty() && is_it(&typed, word, strings)
+}
+
+/// The same, for something already normalised.
+fn is_it(typed: &str, word: Word, strings: &Strings) -> bool {
     let in_this_language = strings.say(&word.key(), &Filling::nothing()).into_text();
     typed == normalised(&in_this_language) || typed == normalised(word.says())
 }

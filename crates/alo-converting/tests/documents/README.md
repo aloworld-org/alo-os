@@ -130,3 +130,48 @@ They are **not edited to make a test pass**. A conversion that loses something
 these files do not contain is a finding and a new document, added beside these
 with its own provenance — never a change to one of these, which would quietly
 move the bar the earlier measurements were made against.
+
+## The three older files, and why they were made last
+
+Task 10 of `docs/autonomy/v0-5-documents-and-paper-plan.md` adds `.doc`, `.xls`
+and `.ppt` — the shapes people still send, and the ones ADR 0039's *What this
+does not decide* left for a later change.
+
+Saved by the repository's owner on 2026-09-25, **on the development PC**, by
+**Microsoft Office 365 build `16.0.20326.20140`**, each from the application that
+writes that shape: Word saved the `.doc` as *Word 97-2003*, Excel the `.xls` as
+*Excel 97-2003*, PowerPoint the `.ppt` as *PowerPoint 97-2003*. They hold nothing
+private and are published with this repository.
+
+Each is a real **OLE2 compound file** and not an OOXML file under an older name,
+which is checked by its own bytes rather than by its extension: all three begin
+`d0 cf 11 e0 a1 b1 1a e1`, and each carries the stream its application writes —
+`WordDocument` and `1Table`, `Workbook`, `PowerPoint Document` and
+`Current User`. A `.docx` renamed would begin `50 4b`, and checking the name is
+what this repository refuses everywhere else.
+
+| File | Bytes | SHA-256 |
+|---|---|---|
+| `sample.doc` | 25 600 | `e739e9ea52e3e02378fc444cf234149db8d2e5cdec7334edfb9e0972df6ef78c` |
+| `sample.xls` | 26 624 | `5d85b816888d8afbf353e5cc56440306b68e583ada76bace9153e0164471a7c7` |
+| `sample.ppt` | 259 072 | `0127224de5102d88cb20afa21ed34040f1c494d9213f70a774b0ef8af4eb93c6` |
+
+### What each one is for
+
+| What the conversion must report | What is in the files |
+|---|---|
+| **a font substituted** | all three set their text in **Garamond**, which the image does not ship |
+| **a field shown as its value at conversion** | `sample.doc` carries a Word `DATE` field with *update automatically*; `sample.xls` has `=NOW()` in `B4` and `=COUNTA()` in `B5` |
+| **comments not shown** | `sample.doc` and `sample.xls` each carry one |
+
+**What these three deliberately do not carry, and why.** No linked picture.
+Word raises a **modal security notice** when it saves a document holding a
+picture linked by absolute path, and a fixture is not worth answering a security
+prompt for — the prompt was met on 2026-09-25 and the step was removed rather
+than clicked through. `sample.docx` already carries that case, and each
+fixture's row above lists only the losses that fixture really produces, so a
+test asserts the list whole rather than searching it for one entry.
+
+PowerPoint's own comments are not in the 97-2003 shape either, so `sample.ppt`
+carries the substituted face alone. A loss a fixture cannot produce is not
+written down as one.

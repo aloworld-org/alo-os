@@ -28,6 +28,7 @@ pub mod difference;
 pub mod excel;
 pub mod formula;
 pub mod linked;
+pub mod older_office;
 pub mod opendocument;
 pub mod original;
 pub mod pages;

@@ -712,7 +712,45 @@ their first morning; today it is recognised, named, and then refused.
 
 ### 8. The iWork exclusion, measured against a real Keynote and a real Numbers document
 
-**Status:** ready — **blocked on a real file of each.** **Depends on:** 6.
+**Status:** **Done, 2026-09-25.** Both files exist, saved by Keynote 15.3.1 and
+Numbers 15.3.1 themselves on this Mac, and the exclusion is measured against
+them: each carries `Index/Document.iwa`, so a rule without the exclusion would
+call both Pages documents, and each is refused by name. **One arm of three is
+measured** — see below. **Depends on:** 6.
+
+#### What was measured, and the arm that was not
+
+The applications were installed from the App Store on 2026-09-25 and **wrote
+their own files**: a new presentation and a new spreadsheet, their text set
+through each application's AppleScript dictionary, then saved by Keynote and by
+Numbers. Nothing was assembled — ADR 0057 accepts option A, wait for a real
+file, and a container this repository built to carry the parts the rule looks
+for would prove only that it can build one.
+
+Both are genuine iWork containers stored uncompressed, 56 and 43 entries, and
+**both carry `Index/Document.iwa`**. That is what makes them evidence: the part
+the rule keys on is really there, so a rule reading *an iWork document is a
+Pages document* would have claimed both. What excludes them is
+`Index/Slide.iwa` and `Index/Slide-2652176.iwa` in the presentation, and thirty
+entries under `Index/Tables/` in the spreadsheet. A machine told it converts
+Pages documents offers neither as a conversion, which is the failure this half
+exists to prevent.
+
+**The Keynote exclusion has three arms and this file exercises one.** It looks
+for `Index/Slide*`, `Index/MasterSlide*` **or** `Index/Theme*`; a presentation
+made from a blank document carries slides and neither of the other two. A
+presentation built from one of Keynote's themes would carry them, and until one
+is saved those two prefixes rest on the same reading of the format that all
+three did before today. The assembled containers in
+`tests/a_document_from_pages.rs` stay for exactly that reason, and say so.
+
+**One route that does not need the Mac's applications**, recorded on
+2026-09-25 in [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md): Keynote and Numbers
+on iCloud, in a browser on any machine, are the real applications writing the
+real container. If that route is taken the provenance line says it was the web
+version — which writer wrote a fixture is the whole value of recording
+provenance. This stays inside v0.0.5.
 
 Written 2026-09-21, by the lane that finished task 6, because it is the one
 thing that task measured and could not close. A finished task's body is not
@@ -855,7 +893,58 @@ the sets are the same.
 
 ### 10. Older `.doc`, `.xls` and `.ppt` — converted, and what each copy lost
 
-**Status:** ready — **blocked on a real file of each.** **Depends on:** 2, 7.
+**Status:** **Done, 2026-09-25.** Wired, worded and asserted; the three
+assertions **run on an x86_64 machine with the pinned engine and skip on an
+aarch64 one**, which is what task 9 built that answer for. See *What was
+measured and where* below. **Depends on:** 2, 7.
+
+#### What was measured and where
+
+**The pinned engine has no aarch64 build.** `THE_ENGINE` is
+`/opt/libreoffice26.2/program/soffice` and `image/Containerfile` fetches the
+`x86_64` RPM tarball; The Document Foundation publishes no aarch64 Linux build
+at that address. So on the Mac lane's gate these three skip themselves by name,
+exactly as the other ten do — and that, rather than any fault in the tests, is
+the standing reason the converter tests were an accepted failing set there
+before #103. `docs/quirks.md` carries it.
+
+It is easy to look installed when it is not: Ubuntu's own package puts
+**24.2.7.2, aarch64** at `/usr/bin/soffice`, and that one runs. ADR 0011 does
+not let one pinned engine stand in for another, so what was measured with it is
+reported as that build and not as the pin.
+
+**What that build did measure, and what it changed.** Each of the three renders,
+and the rendering carries exactly what the fixtures' README records: the Word
+document's, the substituted family, one comment and a live date field; the
+workbook's, the family, one comment and a formula; the presentation's, the
+family alone. Rendering the workbook through the **prose** writer instead
+returned no formula at all — a spreadsheet read by the prose reader has had its
+cells fixed to their values before anything could count them. So
+`engine::the_rendering` is shaped like the document it is of, and the test that
+held every rendering to being a text document has become the one that holds each
+to being an OpenDocument of its own shape. Without that, a copy of somebody's
+workbook would have reported a lost font and said nothing about `=NOW()`
+becoming a number.
+
+**Two machines, decided 2026-09-25** and corrected the same day, in
+[what closes this release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md):
+**the three files are made on the development PC and the conversion is measured
+on the Mac.** That is the split the fixtures' own `README.md` already records,
+and it was checked against it rather than assumed:
+
+- **The files:** saved by the repository's owner, from Word, Excel and
+  PowerPoint, in their 97-2003 formats — exactly as `sample.docx`, `sample.xlsx`
+  and `sample.pptx` were saved on that machine on 2026-09-16, each recording its
+  own version in its own parts. The legacy files already on that machine are a
+  published standards list and company invoice data; **neither may be published
+  in the fixtures**, which is what this task requires, so three of the owner's
+  own are written instead. Nothing synthesised.
+- **The conversion:** the pinned engine **is already standing on the Mac**,
+  which saved task 7's four OpenDocument fixtures with LibreOffice 24.2.7.2
+  headless in the Lima VM that gates this repository. #122 said the engine was
+  not installed and that standing it up was a step of this task; it is
+  installed, on the machine that has run every conversion this plan has
+  measured, and no second copy is stood up to avoid a handoff.
 
 Written 2026-09-22 by the lane that finished task 9, because nothing followed it
 and a plan that names no next task sends the loop back at work already done

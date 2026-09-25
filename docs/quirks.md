@@ -2442,6 +2442,60 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### A guest filesystem's free space says nothing about the drive underneath it, and a guard that asks the guest will let that drive reach zero
+**Version:** WSL 2 on Windows Server 2022 (10.0.20348), Ubuntu 24.04.5 in a
+dynamically expanding `ext4.vhdx`; measured on the third PC 2026-09-23, guard
+corrected 2026-09-25. Nothing in it is particular to WSL: it is true of any
+sparse or thin-provisioned disk, which includes every virtual machine the tests
+in this repository boot.
+
+**Behaviour:** such an image is a sparse file with a large virtual size. The
+guest sees the virtual size; the host sees what has actually been allocated, and
+that only ever goes up. On the day this was measured the guest reported **858 GB
+free** while the drive holding the image was at **0 bytes**. The two numbers
+disagree by design, and the guest's is the one that is useless.
+
+What follows from a drive at zero is worse than a failed write. The guest began
+returning `Input/output error` on plain reads — `df` and `dmesg` among them —
+and the image could not then be shrunk back: `fstrim` inside the guest reported
+*920.7 GiB trimmed* and returned **nothing** to the host, because WSL here
+refuses to forward discards. `wsl --manage <distro> --set-sparse true` answers
+*Sparse VHD support is currently disabled due to potential data corruption* and
+offers only `--allow-unsafe`. So **the image stays at its high-water mark for
+ever**, and the cure is to destroy and rebuild it.
+
+**The part worth carrying to other machines.** The first guard written against
+this asked `df` about the directory it was about to write into — which is inside
+the guest. Tested rather than assumed, on the machine that had just filled:
+
+    needs 20 GB on /root/esp-probe                       exit=0
+          ROOM: /root has 954 GB free, which is enough to start.
+
+It would have allowed the exact run that broke the machine. Corrected to ask the
+host drive under the image as well, which is visible from inside at `/mnt/d`:
+
+    needs 20 GB on /root/esp-probe                       exit=1
+          ROOM: /root has 954 GB free, which is enough to start.
+          ROOM: the drive under this machine's image, /mnt/d, has 0 GB free
+          ROOM: this run does not start.
+
+**A check that stands in for the thing is not the thing.** Asking the guest for
+free space is the same defect as `test -x` standing in for *the converter runs*,
+and as reading `$?` through a shell that expanded it before the command ran:
+each reads something next to the truth, and each is wrong in the direction that
+lets the work proceed. **Every lane that writes a disk image is one guest
+filesystem away from this.**
+
+**Our response:** a run that writes disk images does not start unless the drive
+it writes to — *the host drive, not the guest* — has 20 GB free, and every image
+is deleted the moment its measurement has been read and written down. On the
+third PC that is `C:\dev\setup\room-to-work.sh`, sourced by all six probe
+scripts, with the incident in its own header so the next reader knows what it is
+for; its deleting function takes *where the measurement was recorded* as an
+argument, because an image may only be deleted on the grounds that its numbers
+outlive it.
+**Date:** 2026-09-25.
+
 ### A socket already open, and a datagram sent without connecting, are inside the boundary
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`
@@ -6468,3 +6522,121 @@ optional data added; Windows lists such a variable as a *Firmware Application*
 disk's partition table, rather than relying on Windows to correct it; a
 firmware matches a hard-drive node by slot and signature.
 **Date:** 2026-09-22.
+
+### A test that writes a program and then runs it is refused it, *Text file busy*
+**Version:** `alo-software`'s
+`road::tests::the_program_really_receives_the_credential_for_the_proxy_the_file_named`,
+Rust 1.98 on Linux 6.6 under WSL 2, `cargo test --workspace` on the development
+PC, 2026-09-22. **Whose:** `alo-software` is not this lane's crate; this entry
+is the report, and the fix is its owner's.
+**Behaviour:** the test writes `tool.sh` with `File::create`, drops the handle,
+sets its mode to `0o700` and starts it. On one gate run of `main` it failed:
+
+```
+the program answers: DidNotAnswer { said: "/tmp/alo-software-road-really-received-tool/tool.sh could not be started: Text file busy (os error 26)" }
+test result: FAILED. 85 passed; 1 failed
+```
+
+Run again on the same tree it passed three times alone and once in its whole
+crate's suite, so this is a race and not a broken test. `ETXTBSY` is the kernel
+refusing to execute a file that some process still holds open for writing, and
+the suite runs its tests in parallel: another test in the same binary holding a
+descriptor to this file across a spawn is the shape that explains it. That was
+not isolated here.
+**Our response:** none from this lane, and nothing was changed in that crate.
+It is written down so that the next worker who meets a red gate on this test
+knows it has been seen, on what, and that a re-run passes — the workflow's
+*a flaky test is re-run three times* applies.
+**Date:** 2026-09-22.
+
+### Windows keeps `HibernateEnabled` under a different key from `HiberbootEnabled`
+**Version:** Windows 11 Enterprise Evaluation 25H2, 2026-09-23.
+**Behaviour:** Fast Startup is `HiberbootEnabled` under
+`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power`, and whether the
+computer hibernates at all is `HibernateEnabled` under
+`HKLM\SYSTEM\CurrentControlSet\Control\Power` — **not** under the session
+manager's key beside the first. Asked for it in the wrong place, Windows
+answers nothing at all rather than an error, so an installer that reads both
+from one key reads *not known* on every computer and never asks its question.
+Measured in the walk's guest: `HiberbootEnabled=[1]` and `HibernateEnabled=[]`
+from the session manager's key, and `1` from the other one.
+**Our response:** `crate::program`'s `ReadingFastStartup` reads each value from
+the key Windows keeps it under, and `crate::fast_startup` treats a computer
+that does not hibernate as one whose Fast Startup is off, because Fast Startup
+is hibernation of the kernel's own session.
+**Date:** 2026-09-23.
+
+### This QEMU guest does not keep hibernation on across a restart
+**Version:** Windows 11 Enterprise Evaluation 25H2 under QEMU 10.2.1 q35 with
+OVMF, 2026-09-23.
+**Behaviour:** `powercfg /h on` succeeds in the guest — `powercfg /a` goes from
+*Hibernate: hibernation has not been enabled* to listing **Hibernate** and
+**Fast Startup** as available, and both registry values read 1:
+
+```
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Power
+    HiberbootEnabled    REG_DWORD    0x1
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power
+    HibernateEnabled    REG_DWORD    0x1
+```
+
+After the next start, `HibernateEnabled` reads **0** again and Fast Startup is
+off. The same guest's `powercfg /a` reports S1, S2 and S0 low power idle as
+unsupported by the firmware and S3 as disabled by *Graphics*, so the machine
+has no sleep state at all beyond the hibernation it will not keep.
+**Our response:** the walk keeps its second base — the one made with
+hibernation on — because everything else about it is what the question needs,
+and **the one walk that answers the question turns Fast Startup on in the boot
+it asks in**, says so on the serial line, and then measures what the installer
+read, asked and wrote. What is measured there is the installer's behaviour on a
+real Windows; that a machine can hold Fast Startup on across a restart is the
+certified laptop's to show, not this guest's.
+**Date:** 2026-09-23.
+
+### A detached run inside WSL dies when no Windows process holds the distro open
+**Version:** WSL 2 on Windows 11 Pro 26200, Ubuntu with `systemd`, 2026-09-23.
+**Behaviour:** a long run started with `systemd-run --unit=…` inside the
+distro is stopped part way through, with systemd logging *Stopping …* and the
+unit deactivating cleanly, when the last `wsl.exe` invocation from Windows
+ends. Five walks of 25 to 40 minutes were lost this way, each ending within
+about a minute of the last Windows-side command: WSL shuts an idle virtual
+machine down, and *idle* means no Windows client is attached — the work
+running inside it does not count.
+**Our response:** a run of that length is started with a Windows-side
+`wsl.exe -d <distro> -- sleep <longer than the run>` held open beside it, and
+the run is watched through files as before. The alternative, `vmIdleTimeout`
+in `.wslconfig`, is a change to the developer's own machine rather than to
+this repository and is not made here.
+**Date:** 2026-09-23.
+
+### The pinned converting engine has no aarch64 build, so no aarch64 machine can measure a conversion
+**Version:** LibreOffice 26.2.6, pinned in `image/Containerfile` as the
+`x86_64` RPM tarball from The Document Foundation, 2026-09-25.
+**Behaviour:** `alo_converting::engine::THE_ENGINE` is
+`/opt/libreoffice26.2/program/soffice`, and the archive the image fetches is
+published only at `.../stable/26.2.6/rpm/x86_64/`. There is no aarch64 Linux
+build at that address. So on an aarch64 gate every test that needs the engine
+answers *this machine has nothing at /opt/libreoffice26.2/program/soffice* and
+skips itself, which is what task 9 and ADR 0063 built that answer for. This is
+the standing reason the converter tests were an accepted failing set on the Mac
+lane's gate before #103 turned them into honest skips — **not** a fault in the
+tests or in that machine.
+
+It is easy to look installed when it is not. Ubuntu's own
+`libreoffice` package puts a **different build** — 24.2.7.2, aarch64 — at
+`/usr/bin/soffice`, and that one runs. A measurement taken with it is a
+measurement of that build, and ADR 0011 does not let one pinned engine stand in
+for another.
+
+**Our response:** the three conversions for the formats Office saved in before
+2007 are wired, worded and asserted here, and their assertions run on an x86_64
+machine with the pinned engine — the development PC — where they are
+measurements. What *was* measured on this aarch64 gate, with the distro's
+build and said to be that build, is which of the engine's writers carries which
+loss out of a `.doc`, a `.xls` and a `.ppt`: rendering a workbook through the
+prose writer returns an OpenDocument with the substituted family, the comment
+and **no formula at all**, while the spreadsheet's own writer keeps all three.
+That is why `crate::engine::the_rendering` is shaped like the document it is of
+rather than always text, and it is a fact about which reader opens a workbook
+rather than about a version.
+**Date:** 2026-09-25.

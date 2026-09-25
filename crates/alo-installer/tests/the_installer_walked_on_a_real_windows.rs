@@ -200,6 +200,264 @@ fn a_windows_installs_itself_and_reaches_a_desktop_session() {
         .expect("keeping the firmware's variables");
 }
 
+/// The second base: the settled Windows with hibernation and Fast Startup on.
+///
+/// The base every other walk uses has Fast Startup **off** — a shutdown with
+/// it on hibernates the Windows volume, and every reading of a disk here is
+/// taken from the host with the machine off. So the question the installer
+/// asks about Fast Startup cannot be reached from that base at all, and this
+/// is a second base beside it: an overlay of the first, which is kept, with
+/// the setting turned on and the machine stopped once the firmware starts
+/// again — a restart closes the volume whatever Fast Startup says.
+///
+/// Made once and kept; a run that has it uses it.
+const THE_WINDOWS_WITH_FAST_STARTUP_ON: &str = "windows-fast-startup-on.qcow2";
+
+/// That base, made from the settled one if it is not there yet.
+fn the_windows_with_fast_startup_on(yard: &Path, chip: &SecurityChip) -> PathBuf {
+    let variant = yard.join(THE_WINDOWS_WITH_FAST_STARTUP_ON);
+    if variant.exists() {
+        return variant;
+    }
+    Machine::fresh(
+        yard,
+        "variant",
+        &yard.join(THE_INSTALLED_WINDOWS),
+        &yard.join(THE_FIRMWARES_VARIABLES),
+    );
+    let disc = medium::the_fast_startup_disc(yard);
+    let console = Console::fresh(&yard.join("console.log"));
+    let machine = Machine::start(yard, "variant", Some(&disc), None, &console, chip);
+    let turned = console.wait_for(&["ALOWALK-VARIANT-DONE"], A_SIGN_IN + A_WALK);
+    assert!(
+        turned.is_some(),
+        "Fast Startup was never turned on. The screen is at {} and the serial line \
+         said:\n{}",
+        machine.screen("the-variant-stopped").display(),
+        console.said()
+    );
+    // Stopped as the firmware starts again: by then Windows has closed the
+    // volume, and nothing of the second base is a session left hibernated.
+    let restarted = console.wait_for(&["BdsDxe: starting"], Duration::from_secs(300));
+    assert!(
+        restarted.is_some(),
+        "the machine never restarted after turning Fast Startup on.\n{}",
+        console.said()
+    );
+    drop(machine);
+    walking::machine::stop();
+    // Kept: the next boot's console writes over this one, and what this boot
+    // said about hibernation is the reason the second base is what it is.
+    let _ = std::fs::copy(
+        yard.join("console.log"),
+        yard.join("the-second-base-was-made.log"),
+    );
+    std::fs::rename(Machine::windows_of(yard, "variant"), &variant)
+        .expect("keeping the second base");
+    forget(yard, "variant");
+    variant
+}
+
+/// **On a Windows whose Fast Startup is on, the installer asks the owner's
+/// question, and *turn off* turns it off** — read back from Windows' own value,
+/// on a real Windows rather than a scripted one (ADR 0064 term 9).
+#[test]
+#[ignore = "starts virtual machines and installs; run by name"]
+fn a_windows_with_fast_startup_on_is_asked_about_and_turned_off() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+    let chip = SecurityChip::fresh(&yard);
+    let base = the_windows_with_fast_startup_on(&yard, &chip);
+
+    Machine::fresh(
+        &yard,
+        "fast-startup",
+        &base,
+        &yard.join(THE_FIRMWARES_VARIABLES),
+    );
+    let chip = SecurityChip::fresh(&yard);
+    // Stopped as staging's first sentence about the disk appears: the question
+    // is asked and answered before anything on a disk changes, and what the
+    // answer did is read from Windows' own value.
+    let answered = one_boot(
+        &yard,
+        "fast-startup",
+        &Told::AnsweringFastStartup {
+            answer: alo_installer::ANSWER_TURN_OFF.says().to_owned(),
+        },
+        &chip,
+        &download,
+    );
+    let said = answered.console.said();
+    forget(&yard, "fast-startup");
+
+    let asked = alo_installer::ASK_FAST_STARTUP.says();
+    assert!(
+        said.contains(asked),
+        "the installer did not ask about Fast Startup on a computer that has it on.\n{said}"
+    );
+    assert!(
+        said.contains("fast-startup: HiberbootEnabled=[1]"),
+        "this Windows' Fast Startup was not on before the installer ran.\n{said}"
+    );
+    assert!(
+        said.contains("fast-startup: HiberbootEnabled=[0]"),
+        "the installer did not turn Fast Startup off after the person said to.\n{said}"
+    );
+    // What the *installer* said, not what the walk did: the walk turns Fast
+    // Startup on for this boot with Windows' own tool, and that tool's name on
+    // the console is the walk's line and not the installer's.
+    let the_installers_own: String = said
+        .lines()
+        .filter(|line| line.contains("installer: "))
+        .collect();
+    assert!(
+        !the_installers_own.to_lowercase().contains("powercfg"),
+        "the installer named powercfg, which removes hibernation altogether.\n{said}"
+    );
+    // **This boot is the whole claim.** Windows signed in — the session table
+    // it printed says so — ran the walk, and answered the question, and the
+    // value was read back from Windows' own registry afterwards. The shell's
+    // own line is not waited for here, because this machine's first start is
+    // its first ever and `explorer.exe` was not up when the table was printed;
+    // that a Windows restarts to a *desktop session* after a kill is
+    // `killed_at_every_step_the_computer_still_starts_windows`, on the base
+    // that has Fast Startup off, and is not claimed twice.
+    assert!(
+        said.lines().any(|line| {
+            line.contains("console") && line.contains("alo") && line.contains("Active")
+        }),
+        "no session of alo's was active on the console.\n{said}"
+    );
+}
+
+/// **The way back in works from inside Windows**: the installer leaves a copy
+/// of itself and a shortcut, the copy sets the firmware's next start to alo OS
+/// and restarts, the firmware starts alo OS — and the start after that is
+/// Windows again, because the default was never touched.
+///
+/// The installer is killed after its sixth step, so the entry is written and no
+/// next start is set: what sets the next start here is the switch and nothing
+/// else.
+#[test]
+#[ignore = "starts virtual machines and installs; run by name"]
+fn the_way_back_into_alo_os_is_offered_from_inside_windows() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+    a_fresh_machine(&yard, "switch");
+    let chip = SecurityChip::fresh(&yard);
+
+    let told = Told::SwitchingIntoAloOs {
+        left_at: alo_installer::THE_PROGRAMS_HOME.to_owned(),
+        left_as: alo_installer::THE_PROGRAMS_NAME.to_owned(),
+        shortcut: alo_installer::THE_SHORTCUT.to_owned(),
+        argument: alo_installer::THE_SWITCHS_WORD.to_owned(),
+        agree: alo_installer::SWITCH_AGREED.says().to_owned(),
+    };
+    // The machine restarts itself at the end of this boot, so it is watched
+    // rather than waited on: what the firmware starts next is the measurement.
+    walking::machine::stop();
+    let disc = medium::the_walk_disc(&yard, &told, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    // On the firmware that can start what the entry points at. Measured on
+    // 2026-09-23: on the walk's own OVMF the environment's shim page-faults
+    // (task 9's firmware fault), and a start that faults leaves the one-time
+    // choice unconsumed — so every restart after it went to alo OS again and
+    // the computer never came back to Windows. That is the firmware's fault
+    // and not the switch's, and this test is about the switch.
+    let firmware = walking::firmware::fedoras(&yard);
+    let machine = Machine::start_on(
+        &firmware,
+        &yard,
+        "switch",
+        Some(&disc),
+        None,
+        &console,
+        &chip,
+    );
+    let switched = console.wait_for(&["ALOWALK-DONE switch"], A_SIGN_IN + A_WALK);
+    // What the firmware starts *after* the switch, and never a line from
+    // before it: this console already holds the start that brought Windows up.
+    let until = Instant::now() + Duration::from_secs(300);
+    let mut started = false;
+    while Instant::now() < until && !started {
+        started = console
+            .said()
+            .split_once("ALOWALK-DONE switch")
+            .is_some_and(|(_, after)| after.contains("BdsDxe: starting"));
+        std::thread::sleep(Duration::from_secs(2));
+    }
+    let screen = machine.screen("the-way-back");
+    let said = console.said();
+    drop(machine);
+    walking::machine::stop();
+
+    assert!(
+        switched.is_some(),
+        "the way back never ran. The screen is at {}.\n{said}",
+        screen.display()
+    );
+    assert!(
+        said.contains("exists=True"),
+        "the installer left no shortcut for it.\n{said}"
+    );
+    assert!(
+        started,
+        "the computer never restarted after the way back.\n{said}"
+    );
+    // Everything before the restart is one boot's account: the firmware's line
+    // after it is what the switch actually did.
+    let after_the_switch = said
+        .split_once("ALOWALK-DONE switch")
+        .map_or("", |(_, after)| after);
+    let alo = walking::firmware::starts(after_the_switch)
+        .into_iter()
+        .find(|start| start.description == alo_installer::THE_ENTRYS_NAME);
+    assert!(
+        alo.is_some(),
+        "the firmware did not start alo OS after the way back said it would.\n{said}"
+    );
+
+    // And the start after that is Windows: the switch set the next start only.
+    // On the same firmware build as the start before it, since the machine's
+    // variables are that firmware's.
+    let looking = medium::the_walk_disc(&yard, &Told::JustLook, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let back = Machine::start_on(
+        &firmware,
+        &yard,
+        "switch",
+        Some(&looking),
+        None,
+        &console,
+        &chip,
+    );
+    let signed_in = console.wait_for(&[console::SESSION_SAID], A_SIGN_IN + A_WALK);
+    let screen = back.screen("the-way-back-came-back");
+    let came_back = console.said();
+    drop(back);
+    walking::machine::stop();
+    assert!(
+        signed_in.is_some(),
+        "Windows did not come up after the way back. The screen is at {}.\n{came_back}",
+        screen.display()
+    );
+    a_desktop_session(&console);
+    let windows = walking::firmware::starts(&came_back)
+        .into_iter()
+        .any(|start| start.description == "Windows Boot Manager");
+    assert!(
+        windows,
+        "the computer did not come back to Windows on its own, so the switch \
+         changed more than the next start.\n{came_back}"
+    );
+    forget(&yard, "switch");
+}
+
 // ---------------------------------------------------------------------------
 // The seven kills, read against the control
 // ---------------------------------------------------------------------------

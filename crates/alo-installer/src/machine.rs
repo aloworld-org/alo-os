@@ -49,6 +49,13 @@ pub trait TheMachine {
     /// When Windows will not say where this program is.
     fn downloaded_into(&mut self) -> std::io::Result<PathBuf>;
 
+    /// This program's own file, so a copy of it can be left where a person
+    /// finds it (`crate::switching`).
+    ///
+    /// # Errors
+    /// When Windows will not say where this program is.
+    fn this_program(&mut self) -> std::io::Result<PathBuf>;
+
     /// A whole file.
     ///
     /// # Errors

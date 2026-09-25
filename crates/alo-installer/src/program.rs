@@ -51,11 +51,46 @@ pub const BASIC_DATA: &str = "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}";
 /// What the entry is called among the systems a computer can start.
 pub const THE_ENTRYS_NAME: &str = "alo OS";
 
+/// Where the copy of this program that offers *Restart into alo OS* is left.
+///
+/// Under Windows' own place for installed programs, in a directory of its own,
+/// so a person looking for it finds it where they look for everything else and
+/// *remove alo OS* has one directory to take away.
+pub const THE_PROGRAMS_HOME: &str = "C:\\Program Files\\alo OS";
+
+/// What the copy is called there.
+pub const THE_PROGRAMS_NAME: &str = "alo-restart-into-alo-os.exe";
+
+/// The shortcut a person starts it from, in the Start menu of every account on
+/// the computer.
+pub const THE_SHORTCUT: &str =
+    "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Restart into alo OS.lnk";
+
+/// The other shortcut: which system this computer starts when nobody
+/// chooses (ADR 0066 term 3, `crate::defaulting`).
+pub const THE_DEFAULTS_SHORTCUT: &str =
+    "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Which system starts.lnk";
+
 /// Where Windows keeps the setting behind Fast Startup.
 const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
 
 /// The value under it that Fast Startup is.
 const FAST_STARTUP: &str = "HiberbootEnabled";
+
+/// Where Windows keeps whether this computer hibernates at all.
+///
+/// **A different key from the one above**, measured on 2026-09-23: asked for
+/// `HibernateEnabled` under the session manager's key, Windows answers
+/// nothing, and a computer whose Fast Startup was on then read as *not known*
+/// and its person was never asked.
+const THE_HIBERNATION_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power";
+
+/// The value under that key that says whether this computer hibernates at all.
+///
+/// Fast Startup is hibernation of the kernel's own session, so a computer
+/// whose hibernation is off does not do it whatever the value above says —
+/// and `powercfg /h off` leaves that value at 1 (`docs/quirks.md`).
+const HIBERNATION: &str = "HibernateEnabled";
 
 /// Where, on the area, the firmware starts the environment from.
 pub const THE_LOADER: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
@@ -88,6 +123,32 @@ pub enum Program {
     ListingTheStartEntries,
     /// Whether Windows' Fast Startup is on, from Windows' own value.
     ReadingFastStartup,
+
+    /// Give the EFI system partition a drive letter, so the one file both
+    /// systems keep the default in can be read and written.
+    ///
+    /// Through `mountvol`, Windows' own way to that partition and the one its
+    /// own documentation shows. Nothing else on it is touched
+    /// (`crate::defaulting`).
+    GivingTheStartPartitionALetter {
+        /// The letter it is given.
+        letter: Letter,
+    },
+    /// Take that letter away again, so nothing else on the computer can write
+    /// to the partition both systems share.
+    TakingTheStartPartitionsLetterAway {
+        /// The letter it was given.
+        letter: Letter,
+    },
+
+    /// Make the shortcut that starts the copy left in place, and read it back.
+    ///
+    /// Its target and its argument are [`THE_PROGRAMS_HOME`],
+    /// [`THE_PROGRAMS_NAME`] and the switch's own word, which this crate holds:
+    /// there is no path and no line of text a caller could put into it.
+    MakingTheShortcut,
+    /// Take away the copy left in place, and its shortcut.
+    RemovingWhatWasLeft,
 
     /// Turn Windows' Fast Startup off, and read the value back.
     ///
@@ -231,6 +292,8 @@ pub enum Tool {
     Whoami,
     /// The tool that restarts the computer.
     Shutdown,
+    /// The tool that gives a partition a drive letter and takes it away.
+    Mountvol,
 }
 
 impl Tool {
@@ -245,6 +308,7 @@ impl Tool {
             Self::Bcdedit => "bcdedit.exe",
             Self::Whoami => "whoami.exe",
             Self::Shutdown => "shutdown.exe",
+            Self::Mountvol => "mountvol.exe",
         }
     }
 }
@@ -286,6 +350,8 @@ impl Program {
         match self {
             Self::AskingWhetherThisIsAnAdministrator => Tool::Whoami,
             Self::Restarting => Tool::Shutdown,
+            Self::GivingTheStartPartitionALetter { .. }
+            | Self::TakingTheStartPartitionsLetterAway { .. } => Tool::Mountvol,
             Self::ListingTheStartEntries
             | Self::ListingTheEntry { .. }
             | Self::StartingTheEntryNext { .. }
@@ -361,10 +427,46 @@ impl Program {
             // exactly that value and reads it back, so a write that did not
             // take is a step that failed rather than one believed.
             Self::ReadingFastStartup => format!(
-                "$value = (Get-ItemProperty -Path '{THE_POWER_KEY}' \
-                   -Name '{FAST_STARTUP}' -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
+                "$value = (Get-ItemProperty -Path '{THE_POWER_KEY}' -Name '{FAST_STARTUP}' \
+                   -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
+                 $hibernation = (Get-ItemProperty -Path '{THE_HIBERNATION_KEY}' \
+                   -Name '{HIBERNATION}' -ErrorAction SilentlyContinue).'{HIBERNATION}'; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
-                   HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}) }})"
+                   HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}); \
+                   HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}) }})"
+            ),
+            // The shortcut is made through Windows' own shell object, which is
+            // how a shortcut is made on Windows, and read back: a shortcut that
+            // was not written is a step that failed.
+            Self::MakingTheShortcut => format!(
+                "New-Item -ItemType Directory -Path '{THE_PROGRAMS_HOME}' -Force | Out-Null; \
+                 $shell = New-Object -ComObject WScript.Shell; \
+                 $one = $shell.CreateShortcut('{THE_SHORTCUT}'); \
+                 $one.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $one.Arguments = '{}'; \
+                 $one.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $one.Description = 'Restart this computer into alo OS'; \
+                 $one.Save(); \
+                 $other = $shell.CreateShortcut('{THE_DEFAULTS_SHORTCUT}'); \
+                 $other.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $other.Arguments = '{}'; \
+                 $other.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $other.Description = 'Which system this computer starts'; \
+                 $other.Save(); \
+                 if (-not (Test-Path -LiteralPath '{THE_DEFAULTS_SHORTCUT}')) \
+                   {{ throw 'no shortcut for the default' }}; \
+                 if (-not (Test-Path -LiteralPath '{THE_SHORTCUT}')) {{ throw 'no shortcut' }}; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ Shortcut = '{THE_SHORTCUT}' }})",
+                crate::switching::THE_SWITCHS_WORD,
+                crate::defaulting::THE_DEFAULTS_WORD
+            ),
+            Self::RemovingWhatWasLeft => format!(
+                "Remove-Item -LiteralPath '{THE_DEFAULTS_SHORTCUT}' -Force \
+                   -ErrorAction SilentlyContinue; \
+                 Remove-Item -LiteralPath '{THE_SHORTCUT}' -Force -ErrorAction SilentlyContinue; \
+                 Remove-Item -LiteralPath '{THE_PROGRAMS_HOME}' -Recurse -Force \
+                   -ErrorAction SilentlyContinue; \
+                 if (Test-Path -LiteralPath '{THE_SHORTCUT}') {{ throw 'the shortcut is still there' }}"
             ),
             Self::TurningFastStartupOff => Self::setting_fast_startup(0),
             Self::TurningFastStartupBackOn { was } => Self::setting_fast_startup(*was),
@@ -439,6 +541,8 @@ impl Program {
             | Self::StartingTheEntryNext { .. }
             | Self::Restarting
             | Self::ForgettingTheNextStart
+            | Self::GivingTheStartPartitionALetter { .. }
+            | Self::TakingTheStartPartitionsLetterAway { .. }
             | Self::RemovingTheEntry { .. } => return None,
         };
         Some(format!("{EVERY_SCRIPT_BEGINS}{body}"))
@@ -486,6 +590,16 @@ impl Program {
                 vec!["/delete".to_owned(), entry.as_str().to_owned()]
             }
             Self::Restarting => ["/r", "/t", "0"].map(str::to_owned).to_vec(),
+            // `mountvol <letter>: /S` gives the EFI system partition that
+            // letter and `/D` takes it away; the letter is one this crate
+            // checked (`crate::identities::Letter`) and never text a caller
+            // handed over.
+            Self::GivingTheStartPartitionALetter { letter } => {
+                vec![letter.drive(), "/S".to_owned()]
+            }
+            Self::TakingTheStartPartitionsLetterAway { letter } => {
+                vec![letter.drive(), "/D".to_owned()]
+            }
             _ => Vec::new(),
         };
         words
@@ -678,6 +792,8 @@ mod tests {
         let letter = Letter::of("E").unwrap();
         let (disk, partition) = (DiskNumber(0), PartitionNumber(3));
         vec![
+            Program::MakingTheShortcut,
+            Program::RemovingWhatWasLeft,
             Program::TurningFastStartupOff,
             Program::TurningFastStartupBackOn { was: 1 },
             Program::Shrinking {
@@ -777,7 +893,11 @@ mod tests {
         for program in EVERY_READ.into_iter().chain(every_change()) {
             let script = program.script().unwrap_or_default();
             let said = format!("{script} {}", program.arguments().join(" ")).to_lowercase();
-            for never in ["powercfg", "/h off", "hibernate"] {
+            // The value that says whether the computer hibernates is read by
+            // its own name (`HibernateEnabled`), which is why the name alone
+            // is not on this list — what is forbidden is the tool that turns
+            // hibernation off.
+            for never in ["powercfg", "/h off"] {
                 assert!(!said.contains(never), "{program:?} names {never}");
             }
         }
@@ -804,7 +924,7 @@ mod tests {
                     assert!(arguments.contains(&"-EncodedCommand".to_owned()));
                     assert!(!arguments.contains(&"-Command".to_owned()));
                 }
-                Tool::Bcdedit | Tool::Whoami | Tool::Shutdown => {
+                Tool::Bcdedit | Tool::Whoami | Tool::Shutdown | Tool::Mountvol => {
                     assert!(program.script().is_none(), "{program:?}");
                 }
             }

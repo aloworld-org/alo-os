@@ -595,6 +595,14 @@ finished each, because a blocker that outlives its cause makes takeable work loo
 untakeable.
 **Depends on:** 8, 9, 11, 12, 13, 16.
 
+**This asks nothing of the owner**, recorded 2026-09-25 in [what closes this
+release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md),
+because it was briefly described as waiting on a display. It waits on tasks 11
+and 16 of this plan and unblocks itself when they land. Its constraint asks
+only that the report say the certified machine has seen none of it. A blocker
+described as hardware when it is really an unfinished task sends the owner
+shopping and leaves the task where it was.
+
 - **Acceptance:** one walk through the nested compositor — sign in, dock a second
   display, divide the screen, take a screenshot with a blur, receive a notification,
   lock, unlock by keyboard with the screen reader on — produces a raster at each step

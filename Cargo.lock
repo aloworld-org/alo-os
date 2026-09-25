@@ -784,6 +784,7 @@ dependencies = [
  "alo-image",
  "alo-installing",
  "alo-saying",
+ "alo-starting",
  "alo-strings",
  "ring",
  "serde",

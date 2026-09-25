@@ -56,6 +56,12 @@ pub enum Conversion {
     OpenDocumentPresentation,
     /// A Pages document into a PDF.
     PagesDocument,
+    /// A Word document saved in the format before 2007, into a PDF.
+    OlderWordDocument,
+    /// An Excel workbook saved in the format before 2007, into a PDF.
+    OlderExcelWorkbook,
+    /// A PowerPoint presentation saved in the format before 2007, into a PDF.
+    OlderPowerPointPresentation,
 }
 
 impl Conversion {
@@ -66,7 +72,7 @@ impl Conversion {
     /// decides what this machine offers reads this and not the variants:
     /// `crate::machine` announces these, `Self::asked` answers to these, and a
     /// request naming any other word is not a request.
-    pub const EVERY: [Self; 7] = [
+    pub const EVERY: [Self; 10] = [
         Self::WordDocument,
         Self::ExcelWorkbook,
         Self::PowerPointPresentation,
@@ -74,6 +80,9 @@ impl Conversion {
         Self::OpenDocumentSpreadsheet,
         Self::OpenDocumentPresentation,
         Self::PagesDocument,
+        Self::OlderWordDocument,
+        Self::OlderExcelWorkbook,
+        Self::OlderPowerPointPresentation,
     ];
 
     /// Every conversion that is written here and that this machine does not
@@ -98,6 +107,9 @@ impl Conversion {
             Kind::OpenDocumentSpreadsheet => Some(Self::OpenDocumentSpreadsheet),
             Kind::OpenDocumentPresentation => Some(Self::OpenDocumentPresentation),
             Kind::PagesDocument => Some(Self::PagesDocument),
+            Kind::OlderWordDocument => Some(Self::OlderWordDocument),
+            Kind::OlderExcelWorkbook => Some(Self::OlderExcelWorkbook),
+            Kind::OlderPowerPointPresentation => Some(Self::OlderPowerPointPresentation),
             _ => None,
         }
     }
@@ -113,6 +125,9 @@ impl Conversion {
             Self::OpenDocumentSpreadsheet => Kind::OpenDocumentSpreadsheet,
             Self::OpenDocumentPresentation => Kind::OpenDocumentPresentation,
             Self::PagesDocument => Kind::PagesDocument,
+            Self::OlderWordDocument => Kind::OlderWordDocument,
+            Self::OlderExcelWorkbook => Kind::OlderExcelWorkbook,
+            Self::OlderPowerPointPresentation => Kind::OlderPowerPointPresentation,
         }
     }
 
@@ -137,6 +152,9 @@ impl Conversion {
             Self::OpenDocumentSpreadsheet => "opendocument-spreadsheet",
             Self::OpenDocumentPresentation => "opendocument-presentation",
             Self::PagesDocument => "pages-document",
+            Self::OlderWordDocument => "older-word-document",
+            Self::OlderExcelWorkbook => "older-excel-workbook",
+            Self::OlderPowerPointPresentation => "older-powerpoint-presentation",
         }
     }
 
@@ -161,6 +179,12 @@ impl Conversion {
             Self::OpenDocumentSpreadsheet => "document.ods",
             Self::OpenDocumentPresentation => "document.odp",
             Self::PagesDocument => "document.pages",
+            // The ending is what tells the engine which reader opens the file,
+            // and these three are read by a different reader from the 2007
+            // formats above even though they come out of the same writer.
+            Self::OlderWordDocument => "document.doc",
+            Self::OlderExcelWorkbook => "document.xls",
+            Self::OlderPowerPointPresentation => "document.ppt",
         }
     }
 }
@@ -201,7 +225,7 @@ mod tests {
     }
 
     /// Every conversion there is, offered or held back.
-    const EVERY_VARIANT: [Conversion; 7] = [
+    const EVERY_VARIANT: [Conversion; 10] = [
         Conversion::WordDocument,
         Conversion::ExcelWorkbook,
         Conversion::PowerPointPresentation,
@@ -209,6 +233,9 @@ mod tests {
         Conversion::OpenDocumentSpreadsheet,
         Conversion::OpenDocumentPresentation,
         Conversion::PagesDocument,
+        Conversion::OlderWordDocument,
+        Conversion::OlderExcelWorkbook,
+        Conversion::OlderPowerPointPresentation,
     ];
 
     /// **A conversion is offered or held back, never both and never neither.**

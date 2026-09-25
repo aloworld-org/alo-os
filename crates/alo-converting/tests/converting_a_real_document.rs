@@ -392,6 +392,71 @@ fn an_opendocument_presentation_is_converted_and_what_it_lost_is_named() {
     a_real_document_loses_exactly("sample.odp", &[font("Garamond"), NotCarried::Comments]);
 }
 
+/// **A Word document saved before 2007**: Garamond, the date field, and the
+/// comment.
+///
+/// # These three are inventoried out of a rendering, and that was measured
+///
+/// A `.doc` is an OLE2 compound file and nothing in `alo-converting` reads one
+/// (`inventory::older_office`), so the engine renders it into the OpenDocument
+/// kind of its own shape and the inventory reads that. On 2026-09-25 the
+/// pinned engine was asked for all three renderings and each was examined:
+/// the Word document's carried the substituted family, one comment and a live
+/// `text:date`; the workbook's carried the family, one comment and a
+/// `table:formula`; the presentation's carried the family alone.
+///
+/// **The workbook is why the rendering is shaped like its document.** Rendered
+/// as prose it came back with no formula at all — a spreadsheet read by the
+/// prose reader has had its cells fixed to their values before anything could
+/// count them — so a copy would have reported a lost font and said nothing
+/// about `=NOW()` becoming a number.
+#[test]
+fn an_older_word_document_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
+    a_real_document_loses_exactly(
+        "sample.doc",
+        &[
+            font("Garamond"),
+            NotCarried::FieldFixed(Field::Date),
+            NotCarried::Comments,
+        ],
+    );
+}
+
+/// **An Excel workbook saved before 2007**: Garamond, the moment its formulas
+/// were fixed at, and the comment.
+#[test]
+fn an_older_excel_workbook_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
+    a_real_document_loses_exactly(
+        "sample.xls",
+        &[
+            font("Garamond"),
+            NotCarried::FieldFixed(Field::TheCurrentMoment),
+            NotCarried::Comments,
+        ],
+    );
+}
+
+/// **A PowerPoint presentation saved before 2007**: the substituted face, and
+/// nothing else.
+///
+/// The short list is the point. PowerPoint's own comments are not in the
+/// 97-2003 shape and nothing in this fixture is a linked picture, so this copy
+/// really does lose one thing — and the list is asserted whole rather than
+/// searched, so a loss this file cannot produce cannot be written down as one.
+#[test]
+fn an_older_powerpoint_presentation_is_converted_and_what_it_lost_is_named() {
+    if asking::this_machine_cannot_run_the_engine() {
+        return;
+    }
+    a_real_document_loses_exactly("sample.ppt", &[font("Garamond")]);
+}
+
 /// **A document carrying a macro library says the macros were not run.**
 ///
 /// The one thing none of the other documents in this folder can show: the three

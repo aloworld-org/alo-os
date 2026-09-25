@@ -562,6 +562,12 @@ none). Split from task 6 on 2026-09-20 by
 [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md),
 accepted option C. **Depends on:** 6.
 
+**Sequenced by the owner on 2026-09-25 as one of the last two things in the
+release** — see [what closes this release, and in what
+order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
+this until it is unblocked; it closes nothing else, and it is the owner's to
+perform.
+
 Three facts about the sequence are about the chip rather than about LUKS, and no
 virtual disk can show them: that **the chip releases the key when the PIN is
 typed**, that **an update's new measurements do not stop it**, and that **a change
