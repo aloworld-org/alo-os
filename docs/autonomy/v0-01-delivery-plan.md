@@ -2240,6 +2240,12 @@ be nothing for it to link against.
   `crates/alo-image` reading the unit the way it reads the other six —
   including **whatever holds the privilege holds nothing else**, the check task
   38's acceptance asked for and could not make without a unit to make it about.
+- **The desktop's binary moved on 2026-09-26.** Shell task 15 took it out of
+  `crates/alo-shell` into `crates/alo-desktop`, because the shell shows and does
+  not measure and a binary in that directory reading a battery would be the call
+  its constraint forbids. So the stage builds **two packages** —
+  `alo-shell` for `alo-compositor` and `alo-desktop` for `alo-desktop` — and the
+  second needs the crates that read the machine.
 - **The unit, as task 38's binary expects it.** Three things differ from machine
   to machine and the process refuses to start without them, so they are lines in
   the unit rather than guesses in the code: `ALO_DISPLAY` (the card),

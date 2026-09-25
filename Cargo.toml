@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/alo-shell",
+  "crates/alo-desktop",
   "tools/graphics-check",
   "crates/alo-access",
   "crates/alo-playing",

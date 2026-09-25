@@ -46,8 +46,14 @@ pub struct StatusItems {
     battery: Option<Reading>,
     /// How far this machine reaches, and whether it is metered.
     network: Reaching,
-    /// How loud it is.
-    volume: Volume,
+    /// How loud it is, or [`None`] where nothing has asked — a machine whose
+    /// media server did not answer, or one nobody has asked yet.
+    ///
+    /// **An absence rather than silence.** A volume of nothing is a claim that
+    /// the machine is muted, and a status area that made it would be telling a
+    /// person something nobody measured. An absent volume is drawn the way an
+    /// absent battery is: not at all.
+    volume: Option<Volume>,
 }
 
 impl StatusItems {
@@ -56,7 +62,7 @@ impl StatusItems {
         clock: String,
         battery: Option<Reading>,
         network: Reaching,
-        volume: Volume,
+        volume: Option<Volume>,
     ) -> Self {
         Self {
             clock,
@@ -111,8 +117,14 @@ impl StatusItems {
     }
 
     /// How loud, as `alo_sound::Volume` counts it.
-    pub(crate) fn volume_hundredths(&self) -> u16 {
-        self.volume.hundredths()
+    pub(crate) fn volume_hundredths(&self) -> Option<u16> {
+        self.volume.map(Volume::hundredths)
+    }
+
+    /// How loud it is, or [`None`] where nothing has asked.
+    #[must_use]
+    pub fn volume(&self) -> Option<Volume> {
+        self.volume
     }
 
     /// How many items there are to draw, which is four on a laptop and three on
@@ -154,7 +166,7 @@ mod tests {
             "09:41".to_owned(),
             Some(a_battery(64, Charging::Discharging)),
             reaching(),
-            Volume::of(35).expect("a volume"),
+            Some(Volume::of(35).expect("a volume")),
         )
     }
 
@@ -172,7 +184,7 @@ mod tests {
             written.clone(),
             None,
             reaching(),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         assert_eq!(items.clock(), written);
     }
@@ -189,7 +201,7 @@ mod tests {
             "09:41".to_owned(),
             Some(a_battery(64, Charging::Charging)),
             reaching(),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         assert!(filling.is_charging());
 
@@ -199,7 +211,7 @@ mod tests {
             "09:41".to_owned(),
             Some(a_battery(100, Charging::Full)),
             reaching(),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         assert_eq!(full.battery_hundredths(), Some(100));
         assert!(!full.is_charging(), "a full battery was drawn as filling");
@@ -212,7 +224,7 @@ mod tests {
             "09:41".to_owned(),
             None,
             reaching(),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         assert_eq!(desktop.battery(), None);
         assert_eq!(
@@ -234,7 +246,7 @@ mod tests {
                 "09:41".to_owned(),
                 None,
                 Reaching::reported(how_far, Metered::NotSaid),
-                Volume::of(0).expect("a volume"),
+                Some(Volume::of(0).expect("a volume")),
             );
             assert_eq!(
                 items.reaches_anything(),
@@ -255,7 +267,7 @@ mod tests {
             "09:41".to_owned(),
             None,
             Reaching::reported(HowFar::AllOfIt, Metered::NotSaid),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         assert_eq!(
             unknown.should_hold_off(),
@@ -269,8 +281,29 @@ mod tests {
     fn the_volume_is_the_sound_crates_own_number() {
         for hundredths in [0, 1, 35, Volume::LOUDEST] {
             let volume = Volume::of(hundredths).expect("a volume");
-            let items = StatusItems::shown("09:41".to_owned(), None, reaching(), volume);
-            assert_eq!(items.volume_hundredths(), volume.hundredths());
+            let items = StatusItems::shown("09:41".to_owned(), None, reaching(), Some(volume));
+            assert_eq!(items.volume_hundredths(), Some(volume.hundredths()));
         }
+    }
+
+    /// **A volume nothing has asked for is an absence, not a silence.**
+    ///
+    /// The two are different answers and a person acts on them differently: a
+    /// muted machine is one they turned down, and a machine that has not asked
+    /// is one whose media server did not answer. Told apart here so the status
+    /// area can leave the second one out rather than draw a bar at nothing.
+    #[test]
+    fn an_unasked_volume_is_told_apart_from_a_muted_one() {
+        let muted = StatusItems::shown(
+            "09:41".to_owned(),
+            None,
+            reaching(),
+            Some(Volume::of(0).expect("a volume")),
+        );
+        let unasked = StatusItems::shown("09:41".to_owned(), None, reaching(), None);
+
+        assert_eq!(muted.volume_hundredths(), Some(0));
+        assert_eq!(unasked.volume_hundredths(), None);
+        assert_ne!(muted.volume_hundredths(), unasked.volume_hundredths());
     }
 }
