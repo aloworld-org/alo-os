@@ -421,8 +421,14 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — on tasks 1–5, 8, 9, 10 **and 11**, and on the owner at the
-laptop; nothing in this repository can tick it. Task 11 is not optional before
+**Status:** blocked — **on task 4 alone**, and on the owner at the laptop;
+nothing in this repository can tick it. **Narrowed 2026-09-25:** this line named
+tasks 1–5, 8, 9, 10 and 11, and eight of those nine are finished — 1, 2, 3, 5,
+8 and 9 on 2026-09-15 and 2026-09-16, 11 on 2026-09-21 and 10 on 2026-09-22.
+Only task 4 is unfinished, and it is in progress on the development PC. A
+blocker that outlives its cause makes takeable work look untakeable; this one
+also made the laptop look far away when one task stands between this repository
+and being ready for one. Task 11 is not optional before
 this one: a filesystem is chosen at install and cannot be converted, so a laptop
 installed before it lands could never undo what an agent did without being
 reinstalled ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), accepted
