@@ -663,7 +663,36 @@ shopping and leaves the task where it was.
 
 ### 15. A running machine's own clock, battery, network and volume
 
-**Status:** ready. **Depends on:** 7.
+**Status:** **Done, 2026-09-26.** The four are taken from this machine, in a
+package of its own — `crates/alo-desktop`, which the binary moved to so that no
+call into `/sys`, the media server or the network manager is made from
+`crates/alo-shell`. **What cannot be ticked here is that the numbers match the
+hardware**, which needs a certified machine; what was measured on the gate is
+below. **Depends on:** 7.
+
+#### What was measured, and what is owed
+
+**Measured on the gate machine, by running the binary.** It read that machine's
+**battery**, and reported — with the reason for each — that the machine has no
+network manager (`org.freedesktop.NetworkManager was not provided by any
+.service files`) and nothing that handles sound (`pw-dump failed: can't
+connect`). Three readings taken and two honest absences, none of them invented.
+
+**The volume asked for is the chosen output's**, not the loudest device plugged
+in: a machine with headphones and speakers has two volumes and a person hears
+one of them, and `alo-sound` already answers which.
+
+**The clock advances**, held by the test this acceptance names — move the time,
+find the text moved with it. The readings are taken again once a second rather
+than once a frame: a frame is drawn sixty times a second and a battery does not
+move sixty times a second. A refusal does not clear what was there, because the
+reading it would replace is a second old and truth arriving late beats an
+absence arriving early.
+
+**Owed: that the numbers match the hardware.** Nothing on a gate can show that
+the battery drawn is the charge in the machine — that is a certified machine's
+to show, and it is named here rather than assumed, as this plan's other tasks
+name theirs.
 
 Written 2026-09-21 by task 7, which found it unowned. Task 7 drew the status
 area's four and was right not to measure them: the readings arrive on
