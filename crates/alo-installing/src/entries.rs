@@ -158,11 +158,23 @@ impl Entry {
     }
 }
 
-/// The file a device path names, as in `File(\EFI\fedora\shimx64.efi)`.
+/// The file a device path names.
+///
+/// **Two shapes, both measured on the walk's own machines, 2026-09-25**: this
+/// `efibootmgr` prints the file straight after the hard-drive node —
+/// `HD(2,GPT,…,0x1000,0x100000)/\EFI\fedora\shimx64.efi` — and older ones
+/// wrap it as `File(\EFI\fedora\shimx64.efi)`. And an entry that carries
+/// optional data has it appended to the line as hex **with no separator**
+/// (Windows' own entry ends `…\bootmgfw.efi57494e444f5753…`), so the file ends
+/// where `.efi` ends and not where the line does.
 fn file_in(path: &str) -> Option<String> {
-    let (_, rest) = path.split_once("File(")?;
-    let (file, _) = rest.split_once(')')?;
-    Some(file.to_owned())
+    let rest = match path.split_once("File(") {
+        Some((_, inside)) => inside.split_once(')').map(|(file, _)| file)?,
+        None => path.rsplit(')').next()?,
+    };
+    let file = rest.trim().trim_start_matches('/');
+    let at = file.to_lowercase().find(".efi")? + ".efi".len();
+    file.get(..at).map(str::to_owned)
 }
 
 /// The partition a device path names, as in `HD(2,GPT,…)`.
@@ -180,6 +192,50 @@ fn partition_in(path: &str) -> Option<u32> {
 )]
 mod tests {
     use super::*;
+
+    /// What the firmware's own tool printed on the walk's machine after an
+    /// install, 2026-09-25 — the shape this `efibootmgr` really uses, with the
+    /// file straight after the hard-drive node and Windows' optional data
+    /// appended to its line as hex.
+    const AS_THE_MACHINE_PRINTS_IT: &str = "BootCurrent: 000B\n\
+         Timeout: 0 seconds\n\
+         BootOrder: 000B,0004,0003,0000,000A\n\
+         Boot0000* BootManagerMenuApp\tFvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(eec25bdc-67f2-4d95-b1d5-f81b2039d11d)\n\
+         Boot0003* UEFI QEMU HARDDISK ALOWINDOWS1 \tPciRoot(0x0)/Pci(0x2,0x0)/Sata(0,65535,0){auto_created_boot_option}\n\
+         Boot0004* Windows Boot Manager\tHD(1,GPT,0506f28d-c7cb-426e-ad7b-b9ec92014753,0x800,0x96000)/\\EFI\\Microsoft\\Boot\\bootmgfw.efi57494e444f57530001000000880000007800\n\
+         Boot000A* alo OS\tHD(4,GPT,dd778bbc-0e04-4fb9-b3d1-079b24daf0be,0x7c8f800,0x200000)/\\EFI\\BOOT\\BOOTX64.EFI\n\
+         Boot000B* Fedora\tHD(2,GPT,90b78a78-2ebf-4f8c-a21a-26a20683fc2b,0x1000,0x100000)/\\EFI\\fedora\\shimx64.efi\n";
+
+    /// **The shape the machine really prints is read**, including a file with
+    /// optional data stuck to the end of its line, which is Windows' own.
+    #[test]
+    fn the_list_the_machine_prints_is_read() {
+        let entries = Entries::read(AS_THE_MACHINE_PRINTS_IT);
+        let installed = entries
+            .the_installed_system()
+            .expect("the entry the install left");
+        assert_eq!(installed.number, "000B");
+        assert_eq!(installed.named, "Fedora");
+        assert_eq!(installed.partition, Some(2));
+
+        let windows = entries.windows().expect("Windows' own entry");
+        assert_eq!(windows.number, "0004");
+        assert_eq!(
+            windows.file.as_deref(),
+            Some("\\EFI\\Microsoft\\Boot\\bootmgfw.efi"),
+            "the optional data stuck to the line was read as part of the file"
+        );
+
+        // The installer's own staging entry is on the list too, and is not the
+        // installed system: it starts the area's loader, not the base's.
+        let staging = entries
+            .every
+            .iter()
+            .find(|entry| entry.number == "000A")
+            .expect("the staging entry");
+        assert_eq!(staging.named, "alo OS");
+        assert!(!staging.starts(THE_LOADER_THE_BASE_INSTALLS));
+    }
 
     /// What the firmware's own tool printed on the walk's machine after an
     /// install, 2026-09-23 — the entry `bootc` left, Windows, and the

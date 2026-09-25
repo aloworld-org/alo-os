@@ -762,6 +762,8 @@ const THE_INSTALLED_SYSTEM_SAYS: &str = "[Unit]\n\
      ExecStart=-/usr/bin/sh -c 'lsblk --noheadings --inverse --output NAME,SERIAL \"$$(findmnt --noheadings --output SOURCE /sysroot | cut -d[ -f1)\"'\n\
      ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release: $$NAME $$VERSION_ID\"'\n\
      ExecStart=-/usr/bin/systemctl show --property=Id,ActiveState,SubState alo-boundaryd.service alo-agentd.service\n\
+     ExecStart=-/usr/sbin/efibootmgr\n\
+     ExecStart=-/usr/bin/lsblk --noheadings --output NAME,LABEL,SIZE\n\
      ExecStart=/usr/bin/echo ALO-INSTALLED-END\n\
      ExecStartPost=/usr/bin/systemctl --no-block poweroff\n\
      StandardOutput=file:/dev/ttyS0\n\
@@ -935,6 +937,41 @@ fn the_whole_road_installs_alo_os_and_the_installed_system_starts() {
             .lines()
             .any(|line| line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)),
         "the installed system did not start from the disk the person chose:\n{account}"
+    );
+    // What the install left behind, read by the installed system itself: the
+    // entry named as a person reads it, Windows directly behind it, and no
+    // staging area left on any disk (ADR 0062 term 1).
+    let entries = alo_installing::Entries::read(account);
+    let alo_os = entries
+        .every
+        .iter()
+        .find(|entry| entry.named == alo_installing::THE_ENTRYS_NAME)
+        .cloned();
+    assert!(
+        alo_os.is_some(),
+        "the firmware lists no entry named {}, so the install left its own name behind:\n{account}",
+        alo_installing::THE_ENTRYS_NAME
+    );
+    let windows = entries
+        .every
+        .iter()
+        .find(|entry| entry.named.contains("Windows Boot Manager"))
+        .cloned();
+    if let (Some(alo_os), Some(windows)) = (alo_os, windows) {
+        assert_eq!(
+            entries.order.first().map(String::as_str),
+            Some(alo_os.number.as_str()),
+            "alo OS is not the system this computer starts:\n{account}"
+        );
+        assert_eq!(
+            entries.order.get(1).map(String::as_str),
+            Some(windows.number.as_str()),
+            "Windows Boot Manager is not directly behind alo OS:\n{account}"
+        );
+    }
+    assert!(
+        !account.contains(alo_installing::THIS_INSTALLER),
+        "the installer's own area is still on a disk:\n{account}"
     );
     assert!(stopped, "the installed system did not turn itself off");
     eprintln!(
