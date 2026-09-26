@@ -1,5 +1,11 @@
 # ADR 0010 — Terracotta is reserved for the agent, and the agent is never signalled by colour alone
 
+**Amended by [ADR 0067](0067-the-agents-colour-is-deep-teal-and-the-colour-it-vacates-is-given-back.md) on 2026-09-26: the agent's colour is
+deep teal `#0F6B72`, terracotta becomes a selectable accent and verdigris is
+retired. Everything below about *why* a reserved colour is reserved, and why
+a mark and a word must accompany it, stands unchanged — read that there and
+the colours here as history.**
+
 **Status:** accepted — resolves a contradiction between `docs/features.md` and
 `docs/design/figma-brief.md`, and unblocks queue item 8a
 **Date:** 2026-09-02
