@@ -6924,10 +6924,47 @@ when it reached something rather than nothing, so the two answers are a race
 between the thread ending and its door going away — which a machine running the
 whole workspace's tests at once widens. `--no-fail-fast` means one such flake
 does not hide anything behind it.
-**Our response:** none from this lane, and nothing was changed in that crate. It
-is written down so the next worker who meets a red third gate on this machine
-knows what it is, that a re-run clears it, and that the question for its owner
-is what the test should hold when the broker's door is torn down under load.
+**What the chase found, which is bigger than the flake.** The test asserts the
+**stronger** of two refusals, and it is right to. `NothingMakesChanges` promises
+*nothing happened*; `CouldNotFinish` warns that *something may have*, and its
+sentence to a person is
+
+> This machine could not finish the change to its network, **for example because
+> a password was not accepted**. Open the networks in Settings to see how they
+> are now
+
+Every cause that sentence offers is about the network. But `CouldNotFinish` is
+also what the machine says when the **broker never answered** — which is not
+about the network at all, and which establishes neither that the change was
+accepted nor that it was carried out. `alo_broker`'s own words for that case are
+*whether the verb was carried out is not known: the broker writes a request down
+before carrying it out, so its record says.* So a person whose broker was gone or
+overloaded is told her password may have been declined, and goes to retype one
+that was never wrong.
+
+**The obvious repair is the wrong one.** Letting the test accept either refusal
+would write down that a machine may blame a password when nothing was ever
+asked, and would throw away the distinction a person acts on. That is
+[ADR 0069](decisions/0069-a-request-the-broker-never-answered-is-its-own-refusal.md),
+proposed rather than decided, because what a person is told is not a lane's call.
+
+**What this lane could not establish** is the mechanism. After the broker thread
+is joined its listening descriptor is closed, so a connect should fail cleanly
+and `NoAnswer` needs a connect that succeeded or a peer that answered; neither is
+accounted for. Ruled out in writing: it is not the shared-path collision found in
+`alo-proxy` (#155) — this fixture's directory carries the process id and its
+eight names are unique; and it is not a door file outliving its broker, which
+does happen (`alo_broker::Listening` has no `Drop`) but gives `ECONNREFUSED`,
+which is `NoDoor` exactly as a missing file is.
+
+**Not reproducible on demand**, and the attempts are worth recording so nobody
+repeats them: 30 runs of that target at eight threads, all green; 30 more under
+twelve busy loops on six CPUs, all green. It needs the whole suite's file and
+socket pressure, which is why it is invisible at a desk and why both sightings
+were in a gate.
+**Our response:** none from this lane, and nothing was changed in that crate.
+The finding is ADR 0069; the flake closes when whichever option it names is
+chosen and the mechanism is found.
 
 
 ### Reading a guest back while Windows restarts leaves a machine that never comes up
