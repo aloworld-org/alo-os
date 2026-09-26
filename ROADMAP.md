@@ -1739,7 +1739,7 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 79 boxes: 31 promises, twenty-four of which carry the two boxes the
+**This gate is 89 boxes: 31 promises, twenty-nine of which carry the two boxes the
 section above describes.** It was 45 boxes over 29 promises before the
 reconciliation began on 2026-09-26, and it keeps growing as promises are
 split and as promises `docs/features.md` makes with nowhere to be are given a
@@ -1840,6 +1840,17 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         owed to the certified machine and a second screen, after the code
 - [ ] Recovery and rollback screen
+  - [x] **The code.**
+        `alo-keeping-up` — going back to the build the machine ran before, the
+        decisions such a screen draws, and what a person is told on the way; the
+        broker's `RollBack` carries it out and `alo-changing-updates` is what they
+        read when it answers. Tasks 2 and 3 of
+        `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` —
+        `updates/back-to-yesterdays-machine.md`,
+        `updates/the-recovery-and-rollback-screen.md`
+  - [ ] **On the machine.**
+        the screen itself, drawn when the workspace is not reachable — the
+        shell's, and owed a machine that has actually failed to start
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
 - [ ] ★ **Run a model we never catalogued** — point alo OS at weights you
@@ -2007,6 +2018,16 @@ sorted the same way v0.01 now is.
         chooser and the other dialogs a person actually sees, and an application
         installed sandboxed on the certified machine
 - [ ] ★ The agent answers in the language it was asked in
+  - [x] **The code.**
+        `alo-instructing` — which of the 24 languages a request is written in,
+        decided **on this machine**, and the answer instructed in that one. The
+        language is the *question's* and not the shell's: a person whose machine
+        is in English may ask in German, and answering them in English would be
+        the machine deciding which language they think in. Task 5 of
+        `docs/autonomy/v0-5-access-and-language-plan.md`, 7 of 7
+  - [ ] **On the machine.**
+        a model answering, on the certified machine, in a language it was asked
+        in — owed to the machine rather than to any decision
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
   - [x] **The code.**
@@ -2083,6 +2104,19 @@ sorted the same way v0.01 now is.
       built, since a bootc image rolls back with one command (ADR 0011). What
       is ours is the policy around it, and *undo what the agent did*, which is
       the one agent capability the base rather than our code provides
+  - [x] **The code.**
+        What is ours of it: `alo-keeping-up` on what an update **is** and what it
+        may never do, an update applied and the same machine afterwards, going
+        back to the one before; the broker's `ApplyStagedUpdate` and `RollBack`
+        with a unit carrying each out (ADR 0053), so the broker itself holds no
+        capability; and `alo-looking` for finding out there is one, asked and
+        shown rather than watched. Tasks 1, 2, 3, 6 and 8 of the keeps-itself plan
+        and task 8 of the broker plan, with a report each
+  - [ ] **On the machine.**
+        the atomicity itself is `bootc`'s and is **inherited rather than built**,
+        so what is owed here is a real staged update applied and rolled back on
+        the certified machine — the one thing no amount of code here substitutes
+        for
 - [ ] **Installer** — download, click, reboot (ADR 0023). **On the critical
       path since 2026-09-14** (ADR 0033): the certified laptop is installed
       this way and no other, so every on-the-machine box in v0.01 waits on
@@ -2265,7 +2299,40 @@ sorted the same way v0.01 now is.
         the image's, and is queue item 28. The machine that proved the mechanism
         is a development one, and this half is about the certified machine
 - [ ] ★ **Undo what the agent did**
+  - [ ] **The code.**
+        **Decided, built around, and honestly answering *not yet on this
+        machine*.** ADR 0045 settles what undoing rewinds to, with six accepted
+        terms and a seventh amendment; `alo-keeping-up` holds the window
+        (`HowFarBack`), what can and cannot be undone and why in words a person
+        reads, and the record entry an undo writes; `alo-letting-go` holds the two
+        privileged units that remove what an undo would have put back and the one
+        act a person approves to forget it; `alo-changing-undo` is the pane they
+        read it in. Tasks 4, 13, 14 and 15 of the keeps-itself plan, with a report
+        each.
+        **What is not there is the bracket.** `alo-keeping-up/src/undoing.rs`
+        says it plainly: *on a machine, every one of these three answers not yet
+        on this machine*. Nothing snapshots a folder before a turn changes it,
+        because ADR 0045's sixth term puts the filesystem at install —
+        **installer task 11, `btrfs`, has not landed** — and
+        `updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md` is the
+        finding that says so. Every verb refuses honestly rather than pretending,
+        which is the right behaviour and is not the promise
+  - [ ] **On the machine.**
+        a machine installed on a filesystem that can hold a snapshot, and a
+        person putting something back
 - [ ] Updates that never interrupt
+  - [x] **The code.**
+        `alo-keeping-up`'s `never.rs` — the three things applying an update may
+        never do, as a closed list rather than a habit: **restart the machine**,
+        **close an application**, **interrupt the person**. Each is refused with
+        its own sentence, and an update that is ready waits for the next restart
+        the person chooses. Tasks 1 and 2 of the keeps-itself plan —
+        `updates/what-an-update-is-and-may-never-do.md`,
+        `updates/an-update-applied-and-the-same-machine-afterwards.md`
+  - [ ] **On the machine.**
+        a working day on the certified machine with an update staged through it,
+        which is the only way *never interrupted* is a measurement rather than a
+        list of refusals
 - [ ] **Machines find each other** on a local network, with pairing
   - [x] **The code.** `alo-nearby` — a machine
         advertises presence and nothing else over DNS-SD, with an identity that
@@ -2491,6 +2558,55 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### Updates, recovery, the language and undo, reconciled, 2026-09-26
+
+Five promises, none of them split before. **Four ticked, one refused**, and the
+refusal is the one this project has been most careful about.
+
+**Ticked, code half:** *Recovery and rollback screen* — going back to the build
+before, and the decisions such a screen draws. *Atomic updates with rollback* —
+what is ours of it, the atomicity itself being `bootc`'s and inherited. *Updates
+that never interrupt* — `alo-keeping-up`'s `never.rs`, the three things applying an
+update may never do as a **closed list rather than a habit**: restart the machine,
+close an application, interrupt the person, each refused with its own sentence.
+*The agent answers in the language it was asked in* — `alo-instructing`, and the
+language is the **question's**, not the shell's, because answering a German
+question in English is the machine deciding which language somebody thinks in.
+
+**Refused: *Undo what the agent did*.** Everything around it is built and it
+cannot happen. ADR 0045 settles what undoing rewinds to over six accepted terms and
+an amendment; the window, what can and cannot be undone and why, the record entry an
+undo writes, the two privileged units that remove what it kept, the one act a person
+approves to forget it, and the pane they read it in are all there — four tasks and
+four reports.
+
+**What is missing is the bracket.** `alo-keeping-up/src/undoing.rs` says it in its
+own words: *on a machine, every one of these three answers not yet on this machine*.
+Nothing snapshots a folder before a turn changes it, because ADR 0045's sixth term
+puts the filesystem at install and **installer task 11, `btrfs`, has not landed**.
+
+That refusal is *correct behaviour* — every verb says so honestly rather than
+pretending — and it is not the promise. It is worth being exact about the shape,
+because this is the most decided, most argued, most thoroughly built thing in the
+release that a person still cannot do.
+
+**And a second plan's statuses lag its work, ten tasks deep.**
+`v0-5-the-machine-keeps-itself-plan.md` shows tasks 1 to 6 among ten reading
+**ready**, in a plan whose task 15 was finished today and whose task 14 is marked
+done. Five of those six have **published reports**:
+`what-an-update-is-and-may-never-do.md`,
+`an-update-applied-and-the-same-machine-afterwards.md`,
+`back-to-yesterdays-machine.md`, `undo-what-the-agent-did.md`,
+`finding-out-there-is-an-update.md`. Task 5 alone has none and may genuinely be
+open.
+
+With the documents plan's four, that is **two plans and fourteen tasks** whose
+status lines are behind their own published evidence. It is the same failure as the
+gate's, one level down, and it is why the gate could not be read from the plans: the
+plans are not a reliable index of themselves. Neither plan is edited here — they
+belong to other lanes — and both are named for those lanes to correct.
+
 
 ### The desktop, capture, input and access, reconciled, 2026-09-26
 
