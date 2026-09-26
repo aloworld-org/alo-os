@@ -101,6 +101,19 @@ release rather than reaching somebody who cannot read it:
    real screen, and if the two read as one colour the answer is to separate them
    in lightness, never to drop the mark.
 
+   **How it is measured is [who is acting](../design/who-is-acting.md)**, added
+   2026-09-26 on the owner's direction, and it is stricter than this ADR was.
+   No alo state may be a small teal dot alone at any size: the teal arrives with
+   the four-corner mark or a written **alo**. Work in progress is a named cursor
+   and a boundary around the affected object. Human selection differs in
+   **shape and control treatment**, not in being the navy version of the alo
+   indicator. Both roles are tested on real displays at dock, window-control and
+   selected-object sizes, in light, dark and **grayscale** — and the criterion is
+   that a person can say who is acting **without naming the colour**, so an
+   interface where the only difference is which blue it is has failed even when
+   the observer answers correctly. If it fails, the lightness of the treatments
+   or the surfaces behind them moves; the two brand anchors do not.
+
 ## Consequences
 
 - `docs/design/palette.toml` is the source and changes there first; `token.rs`
