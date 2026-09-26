@@ -2532,6 +2532,89 @@ because asking for more space than the machine has refuses on the guest half
 first and proves nothing about the half that actually ran out.
 **Date:** 2026-09-25.
 
+### A fresh clone does not bring a branch no remote has, and ten pieces of work were one command from gone
+**Version:** git 2.53.0 on Windows and 2.43.0 in WSL, on the third PC,
+2026-09-25. Nothing in it is particular to git's version or to this machine.
+
+**Behaviour:** rebuilding the third PC's WSL image ended with an ordinary
+instruction — *clone the repository fresh from origin*. `C:\dev\alo-os-3` was to
+be replaced by that clone. It held **five local branches that no remote had**:
+
+    backup/pre-rebase-task7          3 commits, 42 files, ~6,250 insertions
+    held/kernel-10-cannot-run-here    2 commits, a held task and why it is held
+    orphan/task-17-before-adr-0066    1 commit, ~2,240 insertions
+    parked/task-10-1790104409         2 commits, ~1,770 insertions
+    supervisor-per-checkout-copy      1 commit, tools/kernel-loop
+
+A clone brings what a remote has. None of that was on one, so the clone would
+have been correct, complete, and would have destroyed about eleven thousand
+inserted lines — a whole feature, a held task's finding, and an unpushed fix to
+the supervisor every lane runs. Nothing would have reported a loss, because from
+the clone's point of view nothing was lost.
+
+The step before it — destroying and re-importing the WSL image on D: — was
+**safe** for all of it, because those branches live on C:. That is the trap. The
+dangerous step was the innocuous one, and the careful audit had already been
+spent on the drive that was being deliberately destroyed.
+
+Auditing every other checkout on the same drive then found five more things.
+`C:\dev\alo-os` had two display branches, the larger 37 files and ~9,270
+insertions, **and three stashes** — session task 2, software task 8, session
+task 1. A stash is the most droppable thing git has: no branch, nothing pushes
+it, and `git stash drop` or a `gc` after the reflog expires ends it. It is also
+invisible to every audit that only walks branches. `alo-os-2`, `alo-os-4` and
+`alo-os-fix` were clean; `alo-os-work` and `moved-from-d` are no longer git
+checkouts at all, which is its own answer about what happens to a checkout
+nobody is watching.
+
+**Our response — a checkout is audited before it is replaced, and the audit is
+a restore that was tried.** Both halves are the rule; the first alone is a good
+intention.
+
+1. Find what no remote has. Branches, and then stashes, which the first loop
+   cannot see:
+
+       for b in $(git for-each-ref --format='%(refname:short)' refs/heads); do
+         [ -z "$(git branch -r --contains "$b" | grep -v HEAD)" ] && echo "$b"
+       done
+       git stash list
+
+   `git fetch` first, or a branch that *is* on a remote you have not heard about
+   reads as unpushed and wastes the attention the real ones need.
+2. Each one travels twice: a `git bundle`, which is exact, and a
+   `git format-patch`, which is readable and is what a person reads to decide
+   whether they want the branch at all. A bundle is opaque to a secret scan; the
+   patch beside it is the same content in text.
+3. A thin bundle (`--not origin/main`) names a commit it needs. **Check every
+   prerequisite is an ancestor of `origin/main` before relying on one** — a thin
+   bundle whose base is gone restores nothing, and this repository's history was
+   rewritten once already, on 2026-09-04.
+4. **`git bundle verify` says a bundle is well formed. It does not say the branch
+   comes back.** That is the whole finding in one sentence, and it is the same
+   defect as asking the guest for the host's free space in the entry above: a
+   check standing next to the thing, answering yes in the direction that lets
+   the work proceed. Fetch the bundle into a clone that holds **none of its
+   objects** and compare the tip to the sha it was made from. All ten were, and
+   all ten came back; the five from `alo-os-3` were additionally restored into
+   the clone taken fresh from GitHub, which is the case that mattered for them,
+   because that clone is what replaced their checkout.
+5. To bundle a stash, point a real ref at the stash commit, bundle that ref, and
+   delete it again, so the checkout is left exactly as it was found. A restored
+   stash still applies with `git stash apply <sha>`; that was run, not assumed,
+   and brought back all seven of that stash's files.
+
+Where they went is a private repository that is not the machine being rescued —
+on this machine `aloworld-org/alo-lane-records`. A rescue kept on the drive being
+rebuilt is not a rescue, and a rescue kept in a message to somebody is not one
+either.
+
+**The next machine to rebuild a disk will do exactly this.** It will take the
+care the destructive step obviously deserves, and then run one ordinary command
+that quietly needs the same care. The audit is cheap — it took minutes against
+the hours the rebuild took — and it is the only thing standing between a routine
+`clone` and work nobody will know is missing until they look for it.
+**Date:** 2026-09-25.
+
 ### A socket already open, and a datagram sent without connecting, are inside the boundary
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`
