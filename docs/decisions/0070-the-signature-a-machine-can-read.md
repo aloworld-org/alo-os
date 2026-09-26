@@ -83,10 +83,11 @@ is a road closing with nothing behind it.
 **2. The machine reads the bundle form** — **the only exit.** Given the
 deprecation above, this stops being the elegant long-term option and becomes the
 one road that still exists once the flag is gone — a `containers/image` new enough
-to verify Sigstore bundles. That is the **pinned rented base**, and
-[ADR 0011](0011-engines-are-configured-never-written-in.md) says engines are
-configured, never patched: this means a newer base or a patch, and either needs
-its own ADR. **Not proposed here**, and deliberately not measured — whether any
+to verify Sigstore bundles. That is the **pinned rented base**, which
+[ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md) rents under
+`CLAUDE.md`'s rule that **engines are configured, never patched** — the rule is
+the constitution's and ADR 0011 is where it was applied to the base. So this
+means a newer base or a patch, and either needs its own ADR. **Not proposed here**, and deliberately not measured — whether any
 base version can read bundles belongs in the build on x86_64, not in a reading of
 release notes.
 
