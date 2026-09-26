@@ -1014,13 +1014,32 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     // one the firmware's own entry starts — renamed on the disk alo OS was
     // installed on.
     let taken = damaging::take_the_loader_away(&Machine::second_of(&yard, "fallthrough"), &yard);
+    eprintln!(
+        "what alo OS's start partition held, before:\n{:#?}\nand after:\n{:#?}",
+        taken.before, taken.after
+    );
     assert!(
         taken.gone,
         "alo OS's loader is still where the firmware looks for it: {taken:?}"
     );
+    // **And the path the firmware falls back to by itself.** A machine whose
+    // named loader is renamed still starts alo OS from `\EFI\BOOT\BOOTX64.EFI`
+    // if a copy is there, so a fall-through watched without taking that one
+    // away as well would be a fall-through that never happened.
+    assert!(
+        taken.fallback_gone,
+        "the firmware's own fallback path still holds a loader: {taken:?}"
+    );
     eprintln!(
-        "alo OS's loader was taken away from {} ({} bytes); nothing else was changed",
-        taken.partition, taken.was_bytes
+        "alo OS's loader was taken away from {} ({} bytes), and the fallback path {}; \
+         nothing else was changed",
+        taken.partition,
+        taken.was_bytes,
+        if taken.fallback_was_there {
+            "held a copy, which was taken away too"
+        } else {
+            "held nothing"
+        }
     );
 
     // The restart. No disc is put in, no boot order is given and no key is
@@ -1196,9 +1215,11 @@ fn the_whole_road_installs(
 /// with the removal's word, as a person would run it from the Start menu, and
 /// the disk's name is typed back from the sentence the removal itself printed.
 ///
-/// Windows is reached by starting its disk first, which is the harness's way of
-/// making the choice a person makes at the menu; nothing else about the start
-/// is arranged. The restart after the removal is given no boot order at all.
+/// Windows is reached without arranging anything about the start: the loaders
+/// on alo OS's own start partition are taken away, so the firmware falls
+/// through to Windows by itself (ADR 0062 term 1). That is also the computer a
+/// person is most likely to be removing alo OS from. No start in this walk is
+/// given a boot order.
 #[test]
 #[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
 fn alo_os_is_removed_again_and_windows_is_what_is_left() {
@@ -1223,7 +1244,22 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
         the_variables_name_alo_os(&yard, "removal")
     );
 
-    // Windows, and the removal run from inside it.
+    // Windows, reached the way ADR 0062 term 1 says a person reaches it when
+    // alo OS will not start: both of the loaders on alo OS's own start
+    // partition are taken away — the one the firmware's entry names and the
+    // one it falls back to by itself — and the firmware goes to Windows.
+    let taken = damaging::take_the_loader_away(&Machine::second_of(&yard, "removal"), &yard);
+    eprintln!(
+        "what alo OS's start partition held, before:\n{:#?}\nand after:\n{:#?}",
+        taken.before, taken.after
+    );
+    assert!(
+        taken.gone && taken.fallback_gone,
+        "alo OS can still be started from this disk, so this machine will not fall \
+         through to Windows: {taken:?}"
+    );
+
+    // And the removal, run from inside Windows.
     let told = Told::RemovingAloOs {
         left_at: alo_installer::THE_PROGRAMS_HOME.to_owned(),
         left_as: alo_installer::THE_PROGRAMS_NAME.to_owned(),
