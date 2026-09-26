@@ -1,5 +1,48 @@
 # Native compositor development
 
+## A nested parent needs no WSLg and no display (2026-09-26)
+
+**Every nested fixture in `crates/alo-shell/examples/` runs against
+`weston --backend=headless`, with real GLES through Mesa's llvmpipe.** This was
+written down as the opposite: `DELIVERY.md` said a Wayland socket is available
+*through WSLg*, and the shell plan's task 14 was scoped around the belief that a
+lane without WSLg has no parent and therefore no way to run any of them. That is
+not true, it was never true, and it cost this lane the assumption that every
+nested fixture was somebody else's to run.
+
+The invocation, checked on an Apple M3's Lima VM — Ubuntu 24.04.4 aarch64, no
+display, no GPU:
+
+```
+sudo apt-get install -y weston libgl1-mesa-dri libegl-mesa0
+sudo mkdir -p /run/weston && sudo chmod 700 /run/weston
+sudo env XDG_RUNTIME_DIR=/run/weston weston --backend=headless \
+    --width=1366 --height=768 --socket=alo-parent --idle-time=0 &
+```
+
+Then any fixture with `XDG_RUNTIME_DIR=/run/weston WAYLAND_DISPLAY=alo-parent
+LIBGL_ALWAYS_SOFTWARE=1`. Six ran first time — `nested_check` in every sub-mode
+(plain, `--offscreen`, `--grabs`, `--cursor`, `--popups`, `--controls`,
+`--reader`), `desktop_check`, `sign_in_check`, `lock_screen`, `approval_check`,
+`record_check` and `egress_status_check` — together submitting over six hundred
+frames through the parent's own EGL.
+
+**What this does not give anybody is a photograph.** A headless parent composites
+to nothing; there is no panel and no scanout, so every *physical display
+unverified* in the sections below still stands, and so does every owed screenshot
+of a real display. What it gives is the frames: a surface that draws nothing, or
+refuses, or lays itself out off the output, now fails somewhere other than on a
+machine nobody has.
+
+**And it found a real fault immediately.** `nested_check --offscreen` asserts a
+hardcoded count of the stages it walked. The v0.5 shell plan's task 16 removed
+six of those stages on 2026-09-26 and left the count at thirty, so the probe was
+broken on `main` for a day and all nine gates passed twice over it — because no
+gate runs this example. An example no gate runs is an example that rots, and the
+day somebody edits it is the day it rots. The count is corrected and the gap in
+the numbering is deliberate, so a stage number in an old log still means what it
+meant.
+
 ## Native window placement (2026-09-08)
 
 `Server::place_window(surface, (x, y))` places a live same-display mapped root's

@@ -163,5 +163,14 @@ wayland-protocols = { version = "0.32", features = ["client"] }
 name = "alo-compositor"
 path = "src/bin/alo-compositor.rs"
 
+# The nested fixtures need winit's event loop, and winit refuses to build one
+# off the main thread — *a significant cross-platform compatibility hazard*, in
+# its own words. libtest runs every `#[test]` on a worker thread, so a harnessed
+# test can never construct a `Nested`; this is why these checks were examples
+# nobody ran rather than tests. Its own `fn main()` runs on the main thread.
+[[test]]
+name = "the_nested_fixtures"
+harness = false
+
 [lints]
 workspace = true

@@ -273,7 +273,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 30);
+    // Twenty-four, not thirty: stages 23 to 28 put a window on half an output
+    // and went with `window_tiling` on 2026-09-26. **This number was left at
+    // thirty and this probe was broken on main for a day.** Nothing caught it,
+    // because no gate runs this example — it needs a Wayland parent, and until
+    // one was found for this lane on 2026-09-26 there was no machine here that
+    // could run it at all. The numbering above keeps its gap deliberately, so
+    // a stage number in an old log still means what it meant.
+    assert_eq!(stages, 24);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

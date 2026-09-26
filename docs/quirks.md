@@ -6897,3 +6897,35 @@ should not drag a whole crate into every daemon, or the libinput extraction
 should not live in a crate that every daemon reaches. An instruction in a
 manifest that cannot be followed is worse than no instruction.
 **Date:** 2026-09-26.
+
+### A network test fails about one time in two under the full workspace run
+**Version:** `alo-changing-network`'s
+`the_network_changes_only_through_the_broker::no_broker_or_no_key_changes_nothing`;
+Lima VM, Ubuntu 24.04.4 aarch64 on an Apple M3; 2026-09-26.
+**Whose:** `alo-changing-network` is not this lane's crate; this entry is the
+report, and the fix is its owner's.
+**Behaviour:** the third gate went red on `main` at `c876b9c` with
+
+```
+assertion `left == right` failed
+  left: Err(CouldNotFinish)
+ right: Err(NothingMakesChanges)
+```
+
+It is a flake and not a regression, held to evidence rather than reasoning:
+the tree it failed on, `5acff28`, is **byte for byte** the tree that had passed
+the same gate twice within the hour; the test passed three times out of three
+run on its own; and the very next full-workspace run on that same tree passed
+it. Nothing this lane landed reaches that crate — its last change was #85.
+
+The fixture spawns a broker thread, joins it, and then asserts that a verb is
+refused as *nothing makes changes*. *Could not finish* is what a request gets
+when it reached something rather than nothing, so the two answers are a race
+between the thread ending and its door going away — which a machine running the
+whole workspace's tests at once widens. `--no-fail-fast` means one such flake
+does not hide anything behind it.
+**Our response:** none from this lane, and nothing was changed in that crate. It
+is written down so the next worker who meets a red third gate on this machine
+knows what it is, that a re-run clears it, and that the question for its owner
+is what the test should hold when the broker's door is torn down under load.
+**Date:** 2026-09-26.
