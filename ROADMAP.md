@@ -1739,14 +1739,19 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 89 boxes: 31 promises, twenty-nine of which carry the two boxes the
-section above describes.** It was 45 boxes over 29 promises before the
-reconciliation began on 2026-09-26, and it keeps growing as promises are
-split and as promises `docs/features.md` makes with nowhere to be are given a
-box — **two have been added so far**, *Night light and display colour* and *The
-dock's size, and per display*, and the first of those had finished code and no
-box to tick it in. A gate that grows while work is being counted is a gate that
-was under-describing the work, not a gate getting further away.
+**This gate is 93 boxes: 31 promises, and every one of them now carries the two
+boxes the section above describes.** It read *8 of 49* on 2026-09-26 before it was
+reconciled promise by promise, and it reads **22 of 93** after — 31 promises where
+four had been split, and two promises `docs/features.md` makes that had no box here
+at all: *Night light and display colour* and *The dock's size, and per display*. The
+first of those had finished code and nothing to tick it in.
+
+**A gate that grows while the work is counted was under-describing the work.** It is
+not getting further away. Most of the growth is the same promises with the
+code-and-machine distinction finally drawn, which is the distinction this gate exists
+for — and a single box had been letting *it compiles* be read as *it works* on
+twenty-seven of them. The reconciliation log below records, group by group, what
+ticked, what did not, and what nobody had counted.
 
 Two were reached early because v0.01 work ran through
 them or beside it — *Making it yours* (`alo-appearance`) and *Run a model we
@@ -1853,6 +1858,23 @@ sorted the same way v0.01 now is.
         shell's, and owed a machine that has actually failed to start
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
+  - [x] **The code.**
+        **All nine areas are decided, each in its own crate**: network
+        (`alo-changing-network`), display (`alo-displays`), sound (`alo-sound`),
+        printers (`alo-changing-printers`), storage (`alo-changing-drives`),
+        keyboard (`alo-keyboards`), accounts (`alo-accounts`), privacy — the
+        grants a person can see and revoke — (`alo-granted`), and updates
+        (`alo-changing-updates`). Each holds what a person reads and what they may
+        change, with its own words and a translator's note on each.
+        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, 7 of 7,
+        and ADR 0038 gives each file to the crate that declares its shape
+  - [ ] **On the machine.**
+        **the one place does not exist.** Nine crates are nine models, and the
+        promise `docs/features.md` makes is *not a scattering of dialogues a
+        person has to know* — a single Settings a person opens, which is a
+        compositor surface and has not been drawn. A person cannot open Settings
+        on any machine today; what they could open, once there is one, is all
+        nine of these
 - [ ] ★ **Run a model we never catalogued** — point alo OS at weights you
       already have and it runs them; the catalogue recommends and does not
       gate. What you bring is yours, including its licence, and a model too
@@ -2125,6 +2147,25 @@ sorted the same way v0.01 now is.
       tested in a VM; the installer program with typed consent and a tested
       bail-out; alongside Windows and back again; a GitHub Release; and the
       laptop, firmware to the daemon
+      *The plan is twenty tasks now rather than six, and the count below is read
+      from it rather than from this sentence*
+  - [ ] **The code.**
+        **Fifteen of twenty, and the five that are left are not all waiting on a
+        machine.** Built: the image published and signed, the boot environment
+        that installs and is tested in a VM, the installer program with typed
+        consent and a tested bail-out, a GitHub Release, the disk that boots
+        afterwards, and `alo-agentd` running on the installed disk.
+        Not built, and each for its own reason — **task 7, *Replace Windows, the
+        road with no way back*, is `ready` and unstarted**, and it is code;
+        **task 20, *a download that stops arriving ends the install*, is finished
+        and held off `main`** until task 4 lands, so the gate cannot count it and
+        should not; task 4 is in progress and no longer scheduled on hardware here;
+        tasks 6 and 19 are scheduled on other machines. A promise on the critical
+        path for every on-the-machine box in v0.01 has **one unstarted code task
+        and one finished one that nothing can see**
+  - [ ] **On the machine.**
+        the laptop, firmware to the daemon — task 6, which the owner walks, and
+        the first physical install
 - [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded
   - [x] **The code.**
         `alo-finding` — an index a person owns, in a file under their own
@@ -2558,6 +2599,58 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### Settings and the installer, reconciled — and the gate is read, 2026-09-26
+
+The last two promises, and both are grouped boxes over many things.
+
+**Ticked, code half: *Settings, as one place*.** All nine areas are decided, each
+in its own crate — network, display, sound, printers, storage, keyboard, accounts,
+privacy (the grants a person can see and revoke), updates. ADR 0038 gives each file
+to the crate that declares its shape, and the settings plan is 7 of 7.
+**The machine box says the sharper thing:** nine crates are nine models, and the
+promise is *not a scattering of dialogues a person has to know*. **The one place
+does not exist** — a person cannot open Settings on any machine today. What is
+ready is everything it would contain.
+
+**Refused: *Installer*.** Fifteen of twenty tasks are built. The five that remain
+are not all waiting on a machine, which is the finding: **task 7, *Replace
+Windows, the road with no way back*, is `ready` and unstarted, and it is code**;
+and **task 20, *a download that stops arriving ends the install*, is finished and
+held off `main`** until task 4 lands, so the gate cannot count it and should not.
+A promise on the critical path for every on-the-machine box in v0.01 has one
+unstarted code task and one finished one that nothing can see.
+
+## The gate, read
+
+It read **8 of 49**. It reads **22 of 93**.
+
+Every one of the 31 promises now carries both boxes; **27 of them did not before**,
+and a single box had been letting *it compiles* be read as *it works*. No
+on-the-machine box is ticked and none could be — the first physical install is
+Friday.
+
+**What ticked: 22 code halves.** What did not, and why, in the box rather than
+blank: *Software* (no portal backend service exists), *A web browser* (no browser
+pinned in the image), *The ordinary desktop* (no file manager, editor, viewer or
+terminal anywhere), *Input* (no touch gestures), *EN 301 549* (not assessed), *Undo
+what the agent did* (built all round and waiting on `btrfs` at install), *The
+dock's size and per display* (one edge for the machine, not one per screen), and
+*Installer* (one unstarted task, one held).
+
+**What nobody had counted.** The cut left four boxes and two ticks on the wrong
+promises. Three `docs/features.md` promises had no box at all, one of them with
+finished code. The gate denied twelve days of finished pairing work by task number.
+Two plans and fourteen tasks read `ready` over their own published reports. And the
+arithmetic that would catch all of it — `crates/alo-reconciling`, which fails the
+gate when `docs/features.md` and a ledger disagree — **exists for v0.01 and not for
+v0.5**, where 92 promises are checked by eye.
+
+**The one thing to do next, if this is to stay true:** a `v0-5-evidence.md` and
+`alo-reconciling` extended to read it. This pass took a day and will be stale in a
+fortnight. The v0.01 half of that crate exists because the same audit was done
+seven times by reading; this is the eighth.
+
 
 ### Updates, recovery, the language and undo, reconciled, 2026-09-26
 
