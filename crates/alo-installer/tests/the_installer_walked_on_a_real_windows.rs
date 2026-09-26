@@ -980,6 +980,122 @@ fn the_whole_road_installs_alo_os_and_the_installed_system_starts() {
     );
 }
 
+/// The name the kept computer goes by: a Windows that has had alo OS installed
+/// beside it, tidied, and turned off — three files that are the whole machine.
+const A_COMPUTER_WITH_ALO_OS_ON_IT: &str = "installed-base";
+
+/// A machine that already has alo OS installed on it.
+///
+/// **The whole road is walked once and kept.** Every walk that tests something
+/// *after* an install spent half an hour and eleven gigabytes reaching the
+/// first line of what it was testing; from the kept computer it is an overlay
+/// of two disks and a copy of a flash image, which is seconds. The overlay is
+/// thrown away with the run, so each walk still starts from the same computer
+/// rather than from the one the last walk left.
+///
+/// Gives back whether the machine has alo OS on it, and what the install said
+/// if it had to be made here.
+fn a_machine_with_alo_os_on_it(
+    yard: &Path,
+    name: &str,
+    firmware: &Path,
+    chip: &SecurityChip,
+    download: &Path,
+) -> (bool, String) {
+    if Machine::is_kept(yard, A_COMPUTER_WITH_ALO_OS_ON_IT) {
+        Machine::fresh_from(yard, name, A_COMPUTER_WITH_ALO_OS_ON_IT);
+        return (
+            true,
+            format!("started from the computer kept as {A_COMPUTER_WITH_ALO_OS_ON_IT}"),
+        );
+    }
+    let making = "making-the-base";
+    a_fresh_machine(yard, making);
+    let (installed, said) = the_whole_road_installs(yard, making, firmware, chip, download, false);
+    if installed {
+        assert!(
+            Machine::keep_as(yard, making, A_COMPUTER_WITH_ALO_OS_ON_IT),
+            "alo OS was installed and the computer could not be kept, so the next walk \
+             would install it again"
+        );
+    }
+    forget(yard, making);
+    if installed {
+        Machine::fresh_from(yard, name, A_COMPUTER_WITH_ALO_OS_ON_IT);
+    }
+    (installed, said)
+}
+
+/// **The kept computer is the same computer every time it is started from.**
+///
+/// The loop this stands on: a walk that begins after an install must find the
+/// same machine the install left, twice running, or every walk built on it is
+/// measuring the last walk instead. Both starts are given nothing to do, and
+/// each is asked what the firmware starts and what is on its disks.
+#[test]
+#[ignore = "starts a virtual machine; run by name"]
+fn the_kept_computer_is_the_same_computer_twice() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+
+    let mut told_twice = Vec::new();
+    for round in ["once", "again"] {
+        let name = format!("kept-{round}");
+        let (there, said) = a_machine_with_alo_os_on_it(&yard, &name, &firmware, &chip, &download);
+        assert!(
+            there,
+            "there is no computer with alo OS on it to start from.\n{said}"
+        );
+        let disc = medium::the_walk_disc(&yard, &Told::JustLook, &download);
+        let console = Console::fresh(&yard.join("console.log"));
+        let machine = Machine::start_as_its_variables_decide(
+            &firmware,
+            &yard,
+            &name,
+            Some(&disc),
+            &console,
+            &chip,
+            &[],
+        );
+        // The firmware starts alo OS on this computer, so what comes up is
+        // read from the serial line rather than from Windows.
+        let came_up = console.wait_for(&[console::DONE, console::NOTHING_TO_DO], A_SIGN_IN);
+        let screen = machine.screen(&format!("kept-{round}"));
+        drop(machine);
+        walking::machine::stop();
+        let said = without_the_kernels_messages(&console.said());
+        forget(&yard, &name);
+        let started: Vec<String> = walking::firmware::starts(&said)
+            .into_iter()
+            .map(|it| format!("{} {}", it.description, it.file))
+            .collect();
+        eprintln!(
+            "the kept computer, started {round}: {started:?} (came up: {came_up:?}, screen {})",
+            screen.display()
+        );
+        told_twice.push(started);
+    }
+    let mut both = told_twice.into_iter();
+    let (Some(first), Some(second)) = (both.next(), both.next()) else {
+        panic!("the kept computer was not started twice");
+    };
+    assert_eq!(
+        first, second,
+        "the kept computer started two different things on two starts from the same \
+         three files"
+    );
+    assert!(
+        first
+            .iter()
+            .any(|started| started.contains(alo_installing::THE_ENTRYS_NAME)),
+        "the kept computer does not start alo OS: {first:?}"
+    );
+}
+
 /// **A computer that cannot start alo OS starts Windows, with nobody at the
 /// keyboard** (ADR 0062 term 1: Windows stands directly behind alo OS, and a
 /// person who does nothing ends up in a system that runs).
@@ -1228,15 +1344,13 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     let yard = needs::the_yard();
     let download = the_download(&yard);
 
-    a_fresh_machine(&yard, "removal");
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
     let (installed, installing_said) =
-        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download, false);
+        a_machine_with_alo_os_on_it(&yard, "removal", &firmware, &chip, &download);
     assert!(
         installed,
-        "the environment did not say alo OS is installed, so there is nothing here to \
-         remove.\n{installing_said}"
+        "there is no computer with alo OS on it to remove it from.\n{installing_said}"
     );
 
     eprintln!(
