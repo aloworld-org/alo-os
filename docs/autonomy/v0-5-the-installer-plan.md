@@ -447,7 +447,8 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** blocked — **on task 4 alone**, and on the owner at the laptop;
+**Status:** scheduled — **the owner walks it on the testing PC on Friday
+2 October 2026**, decided 2026-09-26. Still on task 4 alone, and on the owner;
 nothing in this repository can tick it. **Narrowed 2026-09-25:** this line named
 tasks 1–5, 8, 9, 10 and 11, and eight of those nine are finished — 1, 2, 3, 5,
 8 and 9 on 2026-09-15 and 2026-09-16, 11 on 2026-09-21 and 10 on 2026-09-22.
@@ -465,6 +466,38 @@ release** — see [what closes this release, and in what
 order](updates/what-closes-v0-0-5-and-in-what-order.md). No lane is sent at
 this until it is unblocked; it closes nothing else, and it is the owner's to
 perform.
+
+### The walk of 2026-10-02
+
+**The machine is the testing PC, not the certified laptop and not the
+development PC.** The laptop stays clean for the certification run that follows,
+and the development PC is the only machine here with hardware virtualisation —
+losing it would cost the lane and the ability to diagnose whatever the walk
+finds. The testing PC can be reinstalled as many times as the first walk needs,
+which is the property that matters most on a first attempt.
+
+**What must be true by then:**
+
+- **Task 4 has landed, fall-through included.** That test is *Windows still
+  comes up when alo OS's loader is broken*, and it is the one failure nobody
+  wants to meet first on a physical machine. If it has not landed by the day,
+  the walk can still go ahead — the machine is disposable — but the report says
+  the recovery road was unproven when it was walked, rather than discovering it
+  afterwards.
+- **The machine's own facts are recorded** before anything is installed: make,
+  model, memory, firmware type, Secure Boot state, TPM presence, and whether
+  its Windows is the original installation. `docs/hardware.md` names machines;
+  a walk on an unnamed one produces evidence nobody can repeat.
+- **The machine is reachable**, so the Windows side of the install can be read
+  as it happens rather than transcribed from a screen. The firmware, shim and
+  GRUB moments cannot be captured on any machine and are watched by a person.
+
+**What is knowingly missing on the day, and is not a failure of the walk:** no
+video plays (the image carries no pipeline — devices 1), no update can be
+applied (the image ships no signature policy — the machine keeps itself 8), the
+camera and microphone are refused (devices 4), and the three promises only a
+chip can keep are unmeasured (broker 9). The walk tests **the install and the
+first start**, and the report says so rather than letting silence imply more.
 
 ADR 0033 §1: hardware acceptance goes through the installer. This task is the
 document the owner follows at the laptop and the ledger entries their
