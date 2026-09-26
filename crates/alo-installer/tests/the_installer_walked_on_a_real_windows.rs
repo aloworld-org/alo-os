@@ -1003,7 +1003,7 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
     let (installed, installing_said) =
-        the_whole_road_installs(&yard, "fallthrough", &firmware, &chip, &download);
+        the_whole_road_installs(&yard, "fallthrough", &firmware, &chip, &download, false);
     assert!(
         installed,
         "the environment did not say alo OS is installed, so there is nothing here to \
@@ -1108,6 +1108,7 @@ fn the_whole_road_installs(
     firmware: &Path,
     chip: &SecurityChip,
     download: &Path,
+    and_let_it_start: bool,
 ) -> (bool, String) {
     let disc = medium::the_walk_disc(yard, &Told::TheWholeRoad, download);
     let console = Console::fresh(&yard.join("console.log"));
@@ -1148,13 +1149,22 @@ fn the_whole_road_installs(
     let after = installed
         .then(|| console.wait_for(&[tidied.as_str(), not_whole.as_str()], A_WALK))
         .flatten();
-    // And then the installed system comes up, says what it started from and
-    // turns itself off. Waiting for that is not politeness: a machine killed a
-    // second after the environment wrote to the firmware is a machine whose
-    // variable store nobody has closed, and what the next start finds in it is
-    // not what was written (2026-09-26, three walks whose entry for alo OS was
-    // gone by the next boot).
-    let reached = after.is_some() && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
+    // And then, when the caller wants it, the installed system comes up, says
+    // what it started from and turns itself off.
+    //
+    // **A walk that needs the firmware's entry afterwards must not let it.**
+    // Measured on 2026-09-26: after the environment tidied up, the installed
+    // alo OS read its own firmware and found `Boot000C* alo OS` first in the
+    // order — and the next start of that same machine, from the same variable
+    // file, listed only the four entries it had before alo OS was ever
+    // installed. A machine stopped before that first boot keeps the entry
+    // (the fall-through walk starts from one). Whether alo OS's own first boot
+    // undoes it, or this firmware never wrote it down, is written up in
+    // `docs/quirks.md`; either way the walk says which of the two machines it
+    // is asking for.
+    let reached = and_let_it_start
+        && after.is_some()
+        && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
     let stopped = reached && machine.has_stopped_within(Duration::from_secs(180));
     let said = without_the_kernels_messages(&console.said());
     drop(machine);
@@ -1201,7 +1211,7 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
     let (installed, installing_said) =
-        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download);
+        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download, false);
     assert!(
         installed,
         "the environment did not say alo OS is installed, so there is nothing here to \

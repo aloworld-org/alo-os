@@ -6951,3 +6951,37 @@ guest's script does nothing but unmount and say it is done. What that boot did
 is in the lines above; what the install did is the next boot's to say. A
 machine is not read while it is going down.
 **Date:** 2026-09-26.
+
+### The start entry the environment writes is gone once alo OS has booted once
+**Version:** QEMU 8.2 `q35,smm=on` with Fedora's `edk2-ovmf` 20250812-21, its
+own variable file per machine; the installer walk; 2026-09-26.
+**Behaviour:** after the boot environment installs alo OS and tidies up, the
+installed alo OS reads its own firmware and finds exactly what the tidy wrote:
+
+```
+BootCurrent: 000C
+BootOrder: 000C,0004,0003,0000,0001,0002,0005,0006,0007,0008,0009
+Boot000C* alo OS	HD(2,GPT,…)/\EFI\fedora\shimx64.efi
+```
+
+It then powers itself off, QEMU exits by itself, and **the next start of that
+same machine, from that same variable file, lists only the four entries the
+machine had before alo OS was ever installed** — no `alo OS`, and none of the
+auto-created entries the firmware had added either. The store has gone back to
+what it was.
+
+A machine stopped *before* that first boot of alo OS keeps the entry: the
+fall-through walk starts from one, and its firmware tried `Boot000C "alo OS"`
+and fell through to Windows when the loader was taken away.
+
+**What is not known** is which of two things it is: alo OS's own first boot
+undoing what the environment wrote, or this firmware never writing the
+session's variables down at all. Both are worth knowing and neither is proven
+here. It matters beyond the walk: if it is the first, a computer that installs
+alo OS loses its own start entry the first time it runs.
+**Our response:** the walk says which machine it wants — the install stops
+before that first boot when what follows needs the entry. The question itself
+is written down rather than worked around, because a start entry that does not
+survive the system's first boot would be the installer's most serious bug and
+nothing here yet rules it out.
+**Date:** 2026-09-26.
