@@ -1739,19 +1739,25 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**Eight lines here have code**, and each carries the two boxes the section
-above describes. Three were reached early because v0.01 work ran through them
-or beside it — *Making it yours* (`alo-appearance`), *Language*
-(`alo-strings`), *Run a model we never catalogued* (`alo-models`). Five were
-built between 2026-09-13 and 2026-09-14 under ADR 0028, while v0.01 waited on
-a machine: *The plain way to do what the agent does*, *"Where is that file?"*,
-*"Why is it slow?" and "what is filling my disk?"*, *One GPU box serves the
-office* and *Zero inference egress over a working day* — by
-`docs/autonomy/v0-5-the-local-network-plan.md` and
-`docs/autonomy/v0-5-the-machine-measured-plan.md`, with a report per task in
-`docs/autonomy/updates/`. A sixth, *Machines find each other*, is most of the
-way and says below exactly what is not. **No on-the-machine box in this
-section is ticked**, and none can be until the certified machine exists.
+**This gate is 45 boxes: 29 promises, eight of which carry the two boxes the
+section above describes.** Two were reached early because v0.01 work ran through
+them or beside it — *Making it yours* (`alo-appearance`) and *Run a model we
+never catalogued* (`alo-models`). Three were built between 2026-09-13 and
+2026-09-14 under ADR 0028, while v0.01 waited on a machine: *The plain way to do
+what the agent does*, *"Where is that file?"*, and *"Why is it slow?" and "what
+is filling my disk?"* — by `docs/autonomy/v0-5-the-machine-measured-plan.md`,
+with a report per task in `docs/autonomy/updates/`. *Zero inference egress over a
+working day* was built beside them by
+`docs/autonomy/v0-5-the-local-network-plan.md`. *Machines find each other* is
+most of the way and says below exactly what is not, and *The grant enforced by
+the kernel* is proved and not yet in front of a turn. **No on-the-machine box in
+this section is ticked**, and none can be until the certified machine exists.
+
+**Two of those lines are no longer here**, and this paragraph said they were
+until 2026-09-26. *Language* (`alo-strings`) and *One GPU box serves the office*
+moved to v1 with the cut (#162), and the paragraph naming them was not part of
+what moved. The reconciliation log below records what that cut left behind, which
+was worse than a stale sentence.
 
 Unlike v0.01, this list is **not** ordered by what was built. It is a plan, and
 it is grouped by subject so it can be read; when work begins here it will be
@@ -1846,79 +1852,6 @@ sorted the same way v0.01 now is.
       XDG portal backend against our own shell; one grant list covering agents
       and applications alike; secret storage; session management; corporate
       proxy support
-      media playback, power management, night light
-      formats, timezones and a keyboard layout offered alongside each; RTL-ready
-      even though no official EU language needs it yet
-  - [x] **The code.**
-        `alo-strings` — every sentence named, translation checked against
-        what the system says, the 24 languages listed each in its own
-        language, English unable to hide, and a sentence that counts
-        something counted with its reader's own plural rules, read from CLDR
-        rather than recalled; and six crates whose own English has moved
-        onto it — `alo-files` (every file refusal, the six verbs, and the
-        sentence a person approves before a file is renamed, moved or
-        archived), `alo-shortcuts` (every row of the shortcuts panel, and
-        every key named the way the reader's own keyboard prints it rather
-        than the way an English one does), `alo-appearance` (the eleven
-        colour names a person picks from, each with the note a translator
-        needs where the word does not travel, and every refusal about a
-        value they chose), `alo-capability` (every way the capability model
-        says no — the grant that could not be made, the argument that did
-        not survive the boundary, the change nobody was asked about, and the
-        grants themselves, which now refuse with a value that is worded in
-        the reader's language wherever it is shown or written down),
-        `alo-models` (where an answer is about to come from, which is read
-        before somebody decides whether to send a document at all; the rule
-        an organisation set and why it refused; and every refusal about a
-        provider, a key or the runtime) and `alo-egress` (the line a person
-        reads while something is leaving their machine — the visible half of
-        law 1 — the place it names, and every refusal the egress policy
-        makes) — and, since 9g, **the sentence a person approves is one
-        string rather than two renderings of it**: a verb is declared from
-        the words a translator is handed, a call carries what names its
-        sentence and the values that fill it, and the screen, the approval
-        and the record all ask the reader's own vocabulary for the words.
-        Since 11a that holds for what goes *into* the sentence as well: an
-        option a verb offers is a word somebody translates rather than the
-        identifier a model sent, and **a sentence is only as translated as
-        its least translated piece**, so a finished sentence with an
-        unfinished word in it cannot pass for a translated line. Since
-        **15** that rule is true of every sentence this system composes
-        rather than only of the one a person approves: the place inside the
-        line law 1 shows while something is leaving, the grant inside a
-        refusal, the key inside a shortcut, the colour inside a settings
-        refusal, and another crate's whole refusal inside `alo-files`' —
-        each of them answers for itself, at any depth, so a half-translated
-        line says it is half translated wherever the half is. What stayed
-        data stayed data: a path, a hostname, a window's identifier, a
-        colour somebody typed and the fifty-three keys that print a mark are
-        nobody's to translate and never count a line as unfinished.
-        Since **21g** there is somewhere for another language to come
-        from: `alo-saying` collects every crate's words into **one
-        vocabulary for the machine** — not one per program, because a
-        translation is checked against the vocabulary it is loaded into
-        and a program that declared only its own strings would read a
-        translator's correct line for another part of the system as a
-        mistake — and loads the translations an image ships with, in
-        `docs/contracts/translations.md`. Nothing about a translation can
-        stop a machine: one that is missing, half written or from a later
-        alo OS leaves it speaking English with what went wrong in the
-        service log, because a machine that would not start could not say
-        why. And a line that would come out wrong is left out rather than
-        costing the language, so a string renamed in a release cannot turn
-        somebody's language off in the release that renamed it.
-        Since **24** holding the whole list is what makes one more promise
-        checkable rather than a habit: **no name of anything alo OS rents
-        reaches a person.** Ollama, Flatpak, Wayland, systemd, Podman and
-        nine more are none of them things the person who bought the machine
-        chose, and a test walks every sentence, every note a translator
-        works from and every key against that list. It finds nothing today,
-        which is the point — it costs nothing now and catches the first one
-        later, on the day somebody mid-refusal writes what the log in front
-        of them said
-  - [ ] **On the machine.**
-        a shell to translate, and every translation — there are still
-        none, and now there is a file for the first one to arrive in
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
@@ -2105,27 +2038,6 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         two physical machines on one office network, which nothing here has
         had; every test puts both sides on one host
-      **Still egress, and the indicator still fires** (ADR 0003): the pairing is
-      what makes it wanted, not what makes it silent
-  - [x] **The code.**
-        A question to a paired machine goes through the same door a provider
-        does — the departure made before anything is sent, the indicator shown
-        it while it happens, the answer naming the machine by the name the
-        person gave it — and an unpaired machine offering inference is refused
-        however convenient, so it is never a fallback. A verb arriving from a
-        paired machine is evaluated against the **receiving** machine's grants,
-        shown to the receiving machine's person, recorded there with the origin
-        named, and refused even where the asking machine's person granted it
-        (ADR 0003's sharpest line, five tests). A verb crossing between two
-        machines is proven at the door (ADR 0031), and the daemon answers a
-        paired machine's question with this machine's own model and writes
-        *answered for another machine* with the origin named. Tasks 3, 4, 8
-        and 11 of `v0-5-the-local-network-plan.md`;
-        `updates/the-machine-down-the-corridor-is-still-an-egress.md`,
-        `updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
-  - [ ] **On the machine.**
-        a machine with a GPU and one without, in one building — owed to two
-        machines and the certified one
 - [ ] **Zero inference egress over a working day**, measured and published —
       *with a local model*, which is the claim `docs/features.md` makes and the
       only one that is true. A machine using the office GPU box or a hosted
@@ -2164,12 +2076,106 @@ want them, and a developer trying it will not.
 
 - [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
 - [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
+      media playback, power management, night light
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
+      formats, timezones and a keyboard layout offered alongside each; RTL-ready
+      even though no official EU language needs it yet
+  - [x] **The code.**
+        `alo-strings` — every sentence named, translation checked against
+        what the system says, the 24 languages listed each in its own
+        language, English unable to hide, and a sentence that counts
+        something counted with its reader's own plural rules, read from CLDR
+        rather than recalled; and six crates whose own English has moved
+        onto it — `alo-files` (every file refusal, the six verbs, and the
+        sentence a person approves before a file is renamed, moved or
+        archived), `alo-shortcuts` (every row of the shortcuts panel, and
+        every key named the way the reader's own keyboard prints it rather
+        than the way an English one does), `alo-appearance` (the eleven
+        colour names a person picks from, each with the note a translator
+        needs where the word does not travel, and every refusal about a
+        value they chose), `alo-capability` (every way the capability model
+        says no — the grant that could not be made, the argument that did
+        not survive the boundary, the change nobody was asked about, and the
+        grants themselves, which now refuse with a value that is worded in
+        the reader's language wherever it is shown or written down),
+        `alo-models` (where an answer is about to come from, which is read
+        before somebody decides whether to send a document at all; the rule
+        an organisation set and why it refused; and every refusal about a
+        provider, a key or the runtime) and `alo-egress` (the line a person
+        reads while something is leaving their machine — the visible half of
+        law 1 — the place it names, and every refusal the egress policy
+        makes) — and, since 9g, **the sentence a person approves is one
+        string rather than two renderings of it**: a verb is declared from
+        the words a translator is handed, a call carries what names its
+        sentence and the values that fill it, and the screen, the approval
+        and the record all ask the reader's own vocabulary for the words.
+        Since 11a that holds for what goes *into* the sentence as well: an
+        option a verb offers is a word somebody translates rather than the
+        identifier a model sent, and **a sentence is only as translated as
+        its least translated piece**, so a finished sentence with an
+        unfinished word in it cannot pass for a translated line. Since
+        **15** that rule is true of every sentence this system composes
+        rather than only of the one a person approves: the place inside the
+        line law 1 shows while something is leaving, the grant inside a
+        refusal, the key inside a shortcut, the colour inside a settings
+        refusal, and another crate's whole refusal inside `alo-files`' —
+        each of them answers for itself, at any depth, so a half-translated
+        line says it is half translated wherever the half is. What stayed
+        data stayed data: a path, a hostname, a window's identifier, a
+        colour somebody typed and the fifty-three keys that print a mark are
+        nobody's to translate and never count a line as unfinished.
+        Since **21g** there is somewhere for another language to come
+        from: `alo-saying` collects every crate's words into **one
+        vocabulary for the machine** — not one per program, because a
+        translation is checked against the vocabulary it is loaded into
+        and a program that declared only its own strings would read a
+        translator's correct line for another part of the system as a
+        mistake — and loads the translations an image ships with, in
+        `docs/contracts/translations.md`. Nothing about a translation can
+        stop a machine: one that is missing, half written or from a later
+        alo OS leaves it speaking English with what went wrong in the
+        service log, because a machine that would not start could not say
+        why. And a line that would come out wrong is left out rather than
+        costing the language, so a string renamed in a release cannot turn
+        somebody's language off in the release that renamed it.
+        Since **24** holding the whole list is what makes one more promise
+        checkable rather than a habit: **no name of anything alo OS rents
+        reaches a person.** Ollama, Flatpak, Wayland, systemd, Podman and
+        nine more are none of them things the person who bought the machine
+        chose, and a test walks every sentence, every note a translator
+        works from and every key against that list. It finds nothing today,
+        which is the point — it costs nothing now and catches the first one
+        later, on the day somebody mid-refusal writes what the log in front
+        of them said
+  - [ ] **On the machine.**
+        a shell to translate, and every translation — there are still
+        none, and now there is a file for the first one to arrive in
 - [ ] **Printing**
 - [ ] **Application adapters**, and the accessibility fallback for applications without one
 - [ ] **Guided fine-tune**, with the dataset never leaving the machine
 - [ ] Full-disk encryption
 - [ ] **One GPU box serves the office** — shared local inference over a pairing.
+      **Still egress, and the indicator still fires** (ADR 0003): the pairing is
+      what makes it wanted, not what makes it silent
+  - [x] **The code.**
+        A question to a paired machine goes through the same door a provider
+        does — the departure made before anything is sent, the indicator shown
+        it while it happens, the answer naming the machine by the name the
+        person gave it — and an unpaired machine offering inference is refused
+        however convenient, so it is never a fallback. A verb arriving from a
+        paired machine is evaluated against the **receiving** machine's grants,
+        shown to the receiving machine's person, recorded there with the origin
+        named, and refused even where the asking machine's person granted it
+        (ADR 0003's sharpest line, five tests). A verb crossing between two
+        machines is proven at the door (ADR 0031), and the daemon answers a
+        paired machine's question with this machine's own model and writes
+        *answered for another machine* with the origin named. Tasks 3, 4, 8
+        and 11 of `v0-5-the-local-network-plan.md`;
+        `updates/the-machine-down-the-corridor-is-still-an-egress.md`,
+        `updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
+  - [ ] **On the machine.**
+        a machine with a GPU and one without, in one building — owed to two
+        machines and the certified one
 - [ ] A self-hosted workspace on the network is discovered, not configured
 
 Not only a fifty-seat firm. v1 is the release a security team, a compliance
@@ -2231,6 +2237,44 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### The v0.5 cut left four boxes behind, and two ticks on the wrong promises, 2026-09-26
+
+**Found while reconciling the v0.5 gate**, which is the first time anybody has read
+it box by box. The cut to a developer preview (#162) moved nine promises to v1 by
+deleting nine parent lines and adding nine new ones there. Two of those nine had
+sub-boxes, and a third had a body that ran onto a second line. **Only the parent
+lines moved.** What stayed behind, in v0.5, was:
+
+| stranded | what it was | where it then appeared to belong |
+|---|---|---|
+| 1 line | the tail of **Devices** | *Software* |
+| 2 lines, `- [x] The code`, `- [ ] On the machine` | **Language** (`alo-strings`) | *Software* |
+| 2 lines, `- [x] The code`, `- [ ] On the machine` | **One GPU box serves the office** | *Machines find each other* |
+
+Markdown does not mind. A reader does. *Software* had **no code box of its own
+before the cut and none after it**, and what the gate showed under it was
+`alo-strings` ticked — so the list claimed the sandboxed-application work was built.
+*Machines find each other* appeared to carry four boxes, one of them a tick
+belonging to a promise that is now in v1.
+
+So the gate read **8 of 49**. Four of those boxes were not v0.5's and two of the
+eight ticks were not either. It reads **6 of 45** now, and the difference is not
+progress in either direction — it is the instrument having been wrong.
+
+The v1 section said *nothing was deleted — each promise below keeps its words and
+its boxes*. That was the intention and not what happened: two promises arrived in
+v1 stripped of the evidence that their code is finished, so **v1 under-reported at
+the same time as v0.5 over-reported**. Both halves are repaired — the blocks are
+moved under their parents in v1, with their ticks — and that sentence is now true.
+
+**The lesson is about the shape rather than the mistake.** A promise and its boxes
+are one thing in meaning and several separate lines in the file, so moving a promise
+by cutting its first line looks complete and is not. Anything that moves a promise
+between milestones moves the whole block, and **the count of boxes before and after
+is the cheapest check that it did**: 58 before the cut, and it should have been 45
+after rather than 49.
+
 
 Each entry records what a contributor's report claimed and what this file
 accepted from it — including, deliberately, what was *not* independently
