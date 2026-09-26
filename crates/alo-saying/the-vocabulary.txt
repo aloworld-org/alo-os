@@ -1,0 +1,1492 @@
+# Every key this machine can say, and the English under it.
+#
+# GENERATED. Do not edit by hand:
+#   UPDATE_VOCABULARY_SNAPSHOT=1 cargo test -p alo-saying \
+#     --test a_published_sentence_keeps_its_key
+#
+# It exists so that the English under a published key cannot move without somebody
+# answering whether the meaning moved with it. A translation is keyed, so editing the
+# English under a key leaves every translation of it rendering perfectly and saying
+# something this product no longer says. ADR 0068 decides what may change; reworded.txt
+# beside this file is where a rewording that kept its key says why the meaning held.
+#
+# One line per key: the key, a tab, then the English exactly as the crate declares it.
+
+access.a-setting	a setting
+access.an-application	an application
+access.approve-it	approve
+access.arrange-this-window	move this window
+access.ask-the-agent	ask the agent
+access.bounce-keys	ignore the same key pressed twice quickly
+access.close-this-window	close this window
+access.focus-always-visible	always show where the keyboard is
+access.go-back-at-the-next-restart	go back the next time this machine starts
+access.go-back-now	go back now, restarting this machine
+access.high-contrast	use strong colours that are easier to read
+access.larger-text	make all text larger
+access.magnifier	magnify what is under the pointer
+access.one-thing-that-happened	one thing that happened
+access.reduced-motion	stop things sliding and fading
+access.say-no	no
+access.screen-reader	read the screen aloud
+access.settings	settings
+access.settings-here	settings for seeing, hearing and typing
+access.sign-in	signing in
+access.sign-in-now	sign in
+access.slow-keys	ignore a key unless it is held for a moment
+access.something-is-asked	the machine is asking you something
+access.something-is-leaving	something is leaving this machine
+access.sticky-keys	press keys one at a time instead of holding them together
+access.the-agent-is-working	the agent is working
+access.the-choices	what you can choose
+access.the-desktop	the desktop
+access.the-dock	the dock
+access.the-launcher	open something
+access.the-password	password
+access.the-record	the record
+access.the-recovery-screen	getting this machine started again
+access.the-status-area	what this machine is doing
+access.the-windows-open	the windows that are open
+access.what-can-be-changed	what can be changed
+access.what-happened	what has happened
+access.what-is-running	the version of this machine you are running
+access.what-it-replaced	the version it replaced
+access.what-the-turn-wrote	what will happen if you approve
+access.who-is-signing-in	who is signing in
+accounts.not-signed-in	that name and password do not sign anyone in on this machine — check both and try again
+accounts.not-this-machines-person	this machine is set up for a different account, so you were not signed in — its description and its accounts disagree, and whoever installed it has to put that right
+adapters.fallback.activate-control.application	the application the control is in
+adapters.fallback.activate-control.by-hand	Press the control in the application's window, with the pointer or from the keyboard
+adapters.fallback.activate-control.kind	what kind of control it is
+adapters.fallback.activate-control.name	the name the control shows
+adapters.fallback.activate-control.purpose	press a button or another control in an application's window
+adapters.fallback.activate-control.sentence	press the {kind} named “{name}” in {application}
+adapters.fallback.cannot-be-pressed	The {kind} named “{name}” in {application} cannot be pressed from outside the application, so nothing was pressed
+adapters.fallback.cannot-be-used-now	The {kind} named “{name}” in {application} cannot be used right now, so it was not pressed
+adapters.fallback.did-not-answer-pressing	{application} did not answer in time, so whether the {kind} named “{name}” was pressed is not known
+adapters.fallback.did-not-answer-reading	{application} did not answer in time, so nothing was read or pressed in it
+adapters.fallback.did-not-press	{application} did not press the {kind} named “{name}”
+adapters.fallback.has-its-own	{application} has its own list of what the agent can do in it, so nothing was read or pressed in its windows instead
+adapters.fallback.kind.button	button
+adapters.fallback.kind.check-box	check box
+adapters.fallback.kind.link	link
+adapters.fallback.kind.menu-item	menu item
+adapters.fallback.kind.radio-button	radio button
+adapters.fallback.kind.switch	switch
+adapters.fallback.kind.tab	tab
+adapters.fallback.limit.another-program	a part of the window shown by another program, which was not read
+adapters.fallback.limit.no-name	a control with no name, which the agent can neither describe nor press
+adapters.fallback.limit.not-described	an area the application draws itself and does not describe, which the agent cannot read
+adapters.fallback.more-than-one	{application} shows more than one {kind} named “{name}”, so nothing was pressed rather than guessing which
+adapters.fallback.no-such-control	{application} shows no {kind} named “{name}” now, so nothing was pressed
+adapters.fallback.no-window	{application} has no window on the screen, so there was nothing to read or press
+adapters.fallback.not-all-read	{application} shows more than can be read at once, so not all of it was read
+adapters.fallback.not-readable-here	What applications show could not be read on this machine just now, so nothing was read or pressed in {application}
+adapters.fallback.not-this-verb	{verb} is not reading or pressing something in an application's window, so nothing was done
+adapters.fallback.read-window.application	the application whose windows to read
+adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
+adapters.fallback.read-window.purpose	read what an application's windows show
+adapters.fallback.read-window.sentence	read what {application} shows in its windows
+adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
+adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
+adapters.not-carried-out.does-not-offer	{application} does not offer what was approved, so nothing was done in it. This release of it may not be one this machine knows how to ask
+adapters.not-carried-out.not-an-adapters-verb	{verb} is not something an application on this machine was asked to do, so nothing was sent
+adapters.not-carried-out.not-built	What was approved could not be put to {application}, so nothing was done in it
+adapters.not-carried-out.not-there	{application} could not be reached, so nothing was done in it
+adapters.not-carried-out.refused	{application} refused what was approved, and nothing was done in it
+adapters.text-editor.new-window.by-hand	In GNOME Text Editor, open its menu and choose New Window
+adapters.text-editor.new-window.purpose	open a new, empty GNOME Text Editor window
+adapters.text-editor.new-window.sentence	open a new GNOME Text Editor window
+adapters.text-editor.open-document.by-hand	In GNOME Text Editor, choose Open and pick the document
+adapters.text-editor.open-document.document	the document to open
+adapters.text-editor.open-document.purpose	open a document in GNOME Text Editor
+adapters.text-editor.open-document.sentence	open {document} in GNOME Text Editor
+adapting.delete-the-adapter	delete what these documents taught
+adapting.deleting-this-adapter	Delete this adapter and your model no longer has what these documents taught it. Everything else it learned stays.
+adapting.keep-it-or-not	keep what it learned?
+adapting.not-trained-on	found and not used
+adapting.revoking-a-trained-folder	This stops new training on these documents. What they already taught your model is kept in an adapter you can delete.
+adapting.start-teaching	teach it from these documents
+adapting.what-it-cost	how long it took, and how much of this machine it used
+adapting.what-it-should-learn	what should it get better at?
+adapting.what-it-will-learn-from	what your model will learn from
+adapting.which-folder	which folder should your model learn from?
+answering.not-on-offer	that was offered for a different question, so nothing was sent — ask again
+answering.nothing-was-sent	nothing was sent anywhere, and nothing will be unless you say so
+answering.nowhere-else	there is nowhere else set up to answer this question
+answering.offer.here	have this question answered {source} instead, just this once — it would not leave this machine
+answering.offer.in-the-building	have this question answered {source} instead, just this once — the question would leave this machine and stay on your network
+answering.offer.outside	have this question answered {source} instead, just this once — the question would leave this machine and the building
+answering.there.answers-elsewhere	nothing was answered {source} — that machine's own questions go to a provider, and it never passes a question from another machine on to one
+answering.there.not-permitted	nothing was answered {source} — the pairing with that machine does not let this one ask its models, so it would not take the question
+answering.there.nothing-chosen	nothing was answered {source} — nothing on that machine is chosen and running to answer questions at the moment
+answering.wrong.having-trouble	nothing was answered {source} — it answered {status}, which is a problem at that end rather than yours
+answering.wrong.key-not-accepted	the key for this provider was not accepted, so nothing was answered {source}
+answering.wrong.no-model-there	the model this question needed was not there to answer {source}
+answering.wrong.no-way-there	nothing was answered {source} — there is no way there from the network this machine is on, so the question was not sent
+answering.wrong.nothing-answered	nothing answered {source}
+answering.wrong.nothing-usable	something answered {source}, but not with anything this machine could use
+answering.wrong.ran-out	nothing was answered {source} — the account there has run out, so nothing will be answered until it is paid for, and nothing else about this machine has changed
+answering.wrong.sent-somewhere-else	nothing was answered {source} — that address sends this machine somewhere nobody agreed to, and the question was not carried there
+answering.wrong.took-too-long	nothing answered {source} within the time this machine waits
+appearance.accent.indigo	Indigo
+appearance.accent.moss	Moss
+appearance.accent.not-an-accent	{colour} is a ground or a structure colour rather than an accent — choose verdigris, indigo, violet, moss or rose
+appearance.accent.not-offered	{colour} is not one of the accents this system offers — choose verdigris, indigo, violet, moss or rose, each of which is drawn to read on a light ground and on a dark one
+appearance.accent.reserved	terracotta is how this machine says alo is present or acting, so it is not offered as a personal accent — choose verdigris, indigo, violet, moss or rose
+appearance.accent.rose	Rose
+appearance.accent.verdigris	Verdigris
+appearance.accent.violet	Violet
+appearance.colour.not-a-colour	a colour is a hash and six hexadecimal digits, as in #102A43 — {text} is not
+appearance.colour.not-a-digit	{character} is not a hexadecimal digit — a colour uses 0 to 9 and A to F, as in #102A43
+appearance.display.spaced	{name} begins or ends with a space, and a display is matched exactly — give the name without it
+appearance.display.unnamed	name the display — it is the name the shell shows for the screen
+appearance.kept.another-format	your appearance settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and this machine looks the way alo OS ships it
+appearance.kept.not-expressible	this alo OS could not write that change into appearance settings at {path} it can read back again, so nothing about how this machine looks has been changed
+appearance.kept.not-read	your appearance settings at {path} could not be read, so this machine looks the way alo OS ships it
+appearance.kept.not-replaced	your appearance settings at {path} could not be read, so that change has not been written over them and nothing about how this machine looks has been changed — correct the file, or put appearance back as alo OS ships it
+appearance.kept.not-understood	your appearance settings at {path} are not settings alo OS can read, so nothing in the file has been used and this machine looks the way alo OS ships it
+appearance.kept.not-understood-at	your appearance settings at {path} stop making sense at line {line}, so nothing in the file has been used and this machine looks the way alo OS ships it
+appearance.kept.not-written	your appearance settings at {path} could not be written, so nothing about how this machine looks has been changed
+appearance.kept.unknown-key	your appearance settings at {path} say {key}, which is not something alo OS can change about how this machine looks, so nothing in the file has been used
+appearance.picture.name-is-a-path	{name} is a path, and a wallpaper that came with alo OS is named rather than pathed — use your own picture instead if it is a file on this disk
+appearance.picture.not-a-whole-path	give the whole path to {path}, starting from the top of the disk — where a relative path leads depends on where the shell was started from
+appearance.picture.unnamed	name the wallpaper — it is how the image is asked for the picture it shipped
+appearance.rotating.not-a-whole-path	give the whole path to {folder}, starting from the top of the disk — where a relative path leads depends on where the shell was started from
+appearance.rotating.too-quick	leave each picture up for at least a minute — anything quicker is a flicker
+appearance.schedule.the-same-moment	give two different times — a day that turns dark and light at {time} is a day that never changes
+appearance.text.too-large	{percent}% is larger than the shell has room for — {largest}% is as large as it goes
+appearance.text.too-small	{percent}% is smaller than this screen can be read at — {smallest}% is as small as it goes
+appearance.time.no-such-hour	{hour} is not an hour of the day — the day runs from 0 to 23
+appearance.time.no-such-minute	{minute} is not a minute of the hour — an hour runs from 0 to 59
+appearance.token.charcoal	Charcoal
+appearance.token.cream	Cream
+appearance.token.navy	Navy
+appearance.token.porcelain	Porcelain
+appearance.token.terracotta	Terracotta
+appearance.token.warm-stone	Warm stone
+applications.called	{called} ({application})
+applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
+applications.entry.not-an-identifier	{application} is not an identifier — an identifier has no spaces and no folders in it, so this one could never arrive as an argument
+applications.kept.another-format	your choices of what opens each kind of file, at {path}, were written for a different alo OS than this one, so nothing in the file has been used and each kind opens in the application that says it can
+applications.kept.not-expressible	this alo OS could not write that change into your choices of what opens each kind of file, at {path}, in a form it can read back again, so nothing about what opens what has been changed
+applications.kept.not-read	your choices of what opens each kind of file, at {path}, could not be read, so each kind opens in the application that says it can
+applications.kept.not-replaced	your choices of what opens each kind of file, at {path}, could not be read, so that change has not been written over them and nothing about what opens what has been changed — correct the file, or put these choices back as alo OS ships them
+applications.kept.not-understood	your choices of what opens each kind of file, at {path}, are not settings alo OS can read, so nothing in the file has been used and each kind opens in the application that says it can
+applications.kept.not-understood-at	your choices of what opens each kind of file, at {path}, stop making sense at line {line}, so nothing in the file has been used and each kind opens in the application that says it can
+applications.kept.not-written	your choices of what opens each kind of file, at {path}, could not be written, so nothing about what opens what has been changed
+applications.kept.unknown-key	your choices of what opens each kind of file, at {path}, say {key}, which is not something alo OS can change about what opens what, so nothing in the file has been used
+applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
+applications.opens.chosen	{application} opens {what}, because you chose it for that
+applications.opens.declared	{application} opens {what}, because it says it can and you have not chosen an application for it
+applications.opens.declared-instead	{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no longer installed
+applications.opens.nothing	nothing on this machine opens {what} — no application installed says it can, and you have not chosen one
+applications.opens.nothing-choice-not-installed	nothing on this machine opens {what} — {chosen}, which you chose for it, is no longer installed, and no other application installed says it can
+applications.verb.arrange-application.argument.application	which application's window to move
+applications.verb.arrange-application.argument.where	where on the screen the window goes
+applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
+applications.verb.arrange-application.sentence	put {application} {where}
+applications.verb.close-application.argument.application	which application to ask to close
+applications.verb.close-application.purpose	ask an application to close, exactly as pressing its close button does
+applications.verb.close-application.sentence	ask {application} to close
+applications.verb.focus-application.argument.application	which application to bring to the front
+applications.verb.focus-application.purpose	bring an application that is already running to the front
+applications.verb.focus-application.sentence	bring {application} to the front
+applications.verb.open-application.argument.application	which application to start
+applications.verb.open-application.purpose	start an application, so it is running and on the screen
+applications.verb.open-application.sentence	open {application}
+applications.where.left-half	on the left half of the screen
+applications.where.right-half	on the right half of the screen
+applications.where.whole-screen	across the whole screen
+approving.approve	Approve
+approving.no	No
+approving.no-compositor	The agent has a change waiting for your answer and it cannot be put to you: the desktop is not running. Sign in to the desktop, and ask the agent again
+approving.nothing-to-answer	No change is waiting for your answer here. Ask the agent again if you still want it
+approving.nothing-to-show-on	The agent has a change waiting for your answer and it cannot be put to you: no screen is connected. Connect a screen, and ask the agent again
+asking.question.no-model	choose a model for this question to be answered by
+asking.question.nothing	there is nothing to ask yet — write the question first
+asking.vetting.cannot-be-tested-from-here	this provider cannot be tested from here, so nothing was sent — save it if you are sure of it, and the first question put to it will say whether it answers
+bluetooth.forget-this-device	Forget this device. Its keys are removed from this machine and it will have to be paired again
+bluetooth.its-own-code	Type the code that came with the device
+bluetooth.none-here	This machine has no Bluetooth. Nothing found is not the same as nothing to find
+bluetooth.not-a-machine	This is a device, not another computer. Pairing it gives it nothing on this machine
+bluetooth.nothing-found-yet	Nothing found yet. Put your device into pairing mode and it will appear here
+bluetooth.pair-with-this	Pair with this device?
+bluetooth.radio-off	Bluetooth is off. Nothing is connected and nothing can connect until you turn it on
+bluetooth.radio-on	Bluetooth is on
+bluetooth.the-same-on-both	Check that the device shows these same digits, then say yes on both
+bluetooth.type-this-on-it	Type this on the device, then press enter on it
+cameras.camera-is-off	The camera is off. Nothing on this machine can use it, whatever you have allowed it
+cameras.let-go	This machine has let go of the camera. There is nothing for a program to open until you turn it back on
+cameras.microphone-is-off	The microphone is off. Nothing on this machine can use it, whatever you have allowed it
+cameras.none-here	This machine has no camera
+cameras.only-the-door	This machine cannot release this device, so off is kept at the door. A program you run yourself outside the workspace could still reach it
+cameras.what-it-has-of-its-own	This machine cannot tell whether this camera has a shutter or a light of its own
+capability.agent.off	this machine has no agent — turn one on whenever you like, and nothing is reinstalled
+capability.agent.on	this machine has an agent — turn it off whenever you like, and everything it has been granted ends at once
+capability.answer.lapsed	"{sentence}" was proposed too long ago to answer — ask again if it is still wanted
+capability.answer.nothing-waiting	nothing is waiting to be approved under number {number} — it has been answered already, or it was never asked
+capability.argument.could-lead-elsewhere	a path with .. in it can lead somewhere else — give {argument} as the path you mean
+capability.argument.empty	say what {argument} is — it cannot be blank
+capability.argument.not-a-full-path	give {argument} as a full path, so it means the same thing wherever it is read
+capability.argument.not-an-identifier	give {argument} as an application identifier, like org.blender.Blender
+capability.argument.not-on-the-list	{argument} has to be one of: {options}
+capability.argument.not-one-name	{argument} is one name, not a path — give the name on its own, without folders in it
+capability.argument.not-printable	{argument} contains a character that cannot be shown — retype it in ordinary text
+capability.argument.out-of-range	give {argument} as a number between {least} and {most}
+capability.argument.wanted-number	give {argument} as a number, not as text
+capability.argument.wanted-text	give {argument} as text, not as a number
+capability.call.missing	{verb} needs {argument} — {purpose}
+capability.call.no-such-argument	{verb} does not take {argument}
+capability.call.no-such-verb	there is no verb called {verb} — the list is closed, so a verb that is not on it does not exist
+capability.call.same-argument-twice	{argument} was given twice — a call gives each argument one value
+capability.facility.appearance-settings	your appearance settings
+capability.facility.camera	the camera
+capability.facility.clipboard	what you copied
+capability.facility.desktop-background	the desktop background
+capability.facility.microphone	the microphone
+capability.facility.network-state	the state of the network
+capability.facility.notifications	sending you notifications
+capability.facility.power-profile	the power profile
+capability.facility.screen-continuously	the screen, continuously
+capability.facility.screen-once	one picture of the screen
+capability.facility.secrets	a place for its own passwords in your keyring
+capability.facility.sleep	keeping the machine awake
+capability.grant.a-persons-own	a terminal is yours alone — whatever is typed into it runs, so no agent can be granted one
+capability.grant.anonymous	say which agent this grant is for — a grant to nobody reaches nothing
+capability.grant.could-lead-elsewhere	a path with .. in it can lead somewhere else — grant the folder you mean by its own path
+capability.grant.no-application-named	say which application this grant is for — a grant to no application reaches nothing
+capability.grant.no-end	a grant has to end — choose how long this one should last
+capability.grant.no-time	say how long the grant should last — a grant for no time reaches nothing
+capability.grant.not-a-full-path	grant a folder by its full path, so it means the same thing wherever it is asked about
+capability.grant.not-for-an-agent	the camera, the microphone, the screen and the like are granted only to applications — an agent is offered what it needs at the moment you ask it
+capability.grant.nothing-named	choose the folder, file or application this grant is over
+capability.grant.the-whole-machine	there is no grant to the whole machine — pick the folder you actually mean
+capability.proposal.no-end	a question has to lapse — choose how long this one stands for
+capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
+capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it
+capability.reach.application	the application {application}
+capability.reach.file	the file {path}
+capability.reach.folder	{path} and everything in it
+capability.refused.application-expired	{application} was granted {reach} and that has expired — grant it again to let {application} use {wanted}
+capability.refused.application-never-granted	{application} has not been granted {wanted} — an application reaches only what you grant it, never what it asks for
+capability.refused.change-waits	{verb} changes something — propose it with the sentence describing it and let one person approve that, rather than running it in the turn
+capability.refused.expired	{agent} had a grant to {reach} and it has expired — grant it again to let {agent} reach {wanted}
+capability.refused.never-granted	{agent} has not been granted {wanted} — grants are made by picking a folder, never by asking for one
+capability.refused.no-agent	{agent} cannot reach {wanted} — this machine has no agent, so there is nothing granted and nothing to grant to
+capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
+capturing.copied	A picture of your screen was copied, ready to paste
+capturing.mark.arrow	Arrow
+capturing.mark.blur	Hide this — it cannot be brought back once you save
+capturing.mark.box	Box
+capturing.mark.freehand	Draw
+capturing.mark.text	Add words
+capturing.no-picture	A picture of the screen could not be taken: the part of alo OS that reads the screen did not answer. Sign out and back in to start it again
+capturing.no-room-for-a-name	The picture could not be saved: that folder already holds one under every name this second can make. Move some of them somewhere else, and try again
+capturing.not-a-folder-for-pictures	Pictures cannot be kept there. Choose a folder inside your own files, and try again
+capturing.not-an-area-of-the-screen	That is not an area of the screen. Choose an area that is on the screen, and try again
+capturing.not-copied	The picture could not be copied. Take it again, and report it if it happens a second time
+capturing.not-written	The picture could not be saved in that folder. Check that the folder is still there and that the disk has room, and try again
+capturing.nothing-came-back	A picture of the screen could not be taken: the part of alo OS that reads the screen answered with nothing at all. Report this, because until it is fixed this machine cannot take a picture of anything
+capturing.nothing-reads-the-screen	A picture of the screen could not be taken: the part of alo OS that reads the screen is not running. Sign out and back in, and it comes back with it
+capturing.recording.too-much-to-encode	This machine cannot record this screen as fast as it happens, so nothing was started. Record a smaller part of the screen, or record this screen on a machine that can keep up.
+capturing.recording.too-much-to-encode-but	This machine cannot record this screen as fast as it happens, so nothing was started. It can record a smaller picture — choose that size and start again.
+capturing.saved	A picture of your screen was saved as {name}
+capturing.saved-and-copied	A picture of your screen was saved as {name}, and copied ready to paste
+capturing.sharing.a-part-of-the-screen	This call can see one part of your screen, and nothing outside it
+capturing.sharing.nothing	This call cannot see your screen
+capturing.sharing.one-window	This call can see one window, and nothing else on your screen
+capturing.sharing.the-whole-screen	This call can see your whole screen, including anything that appears on it
+capturing.sound.both	This machine's sound and the microphone — this records anyone speaking near this machine
+capturing.sound.none	No sound
+capturing.sound.the-room	The microphone — this records anyone speaking near this machine, not only you
+capturing.sound.this-machine	This machine's sound — nobody in the room is recorded
+capturing.the-lock-screen	A picture of the lock screen cannot be taken. Sign in, and take the picture then
+capturing.verb.purpose	Take a picture of the screen, for the question being answered
+capturing.verb.sentence	Take a picture of your screen
+changing-drives.ready	{drive} is ready, and what is on it is yours to open
+changing-drives.refused.already-open	{drive} is already open, so nothing was changed. What is on it is yours to open
+changing-drives.refused.approval-not-accepted	This was not done, because its approval was not accepted: it was used already, came too late, or was not given for this. Nothing was changed. Ask again, and approve it when you are asked
+changing-drives.refused.could-not-finish	This machine could not finish what was asked of {drive}. Do not unplug it yet: try again, and close anything you have open on it first
+changing-drives.refused.drives-not-answering	This machine is not answering about what is plugged into it, so nothing was changed. Restart the machine, then try again
+changing-drives.refused.more-than-one-called	More than one thing plugged into this machine is called {drive}, so nothing was opened. Take one of them out, then try again
+changing-drives.refused.none-plugged-in-called	Nothing called {drive} is plugged into this machine, so nothing was opened. Plug it in again, then try once more
+changing-drives.refused.not-a-drive-change	This was not about a drive, so nothing was changed
+changing-drives.refused.not-being-kept	This machine has stopped keeping its record of changes to its settings, so it makes none. Nothing was changed. Restart the machine
+changing-drives.refused.nothing-makes-changes	The part of this machine that changes its settings is not running, so nothing was changed. Restart the machine
+changing-drives.refused.nothing-to-open	There is nothing on {drive} this machine can open. It may be empty, or prepared for a machine of another kind
+changing-drives.refused.part-of-this-machine	{drive} is part of this machine rather than something plugged into it, so nothing was changed
+changing-drives.safe-to-unplug	{drive} is finished with, and safe to unplug
+changing-network.forgotten	{network} is forgotten. This machine no longer joins it on its own
+changing-network.joined	This machine is connected to {network}
+changing-network.proxy-set	This machine's proxy is set, for everything on it that reaches the internet
+changing-network.refused.approval-not-accepted	This change was not made, because its approval was not accepted: it was used already, came too late, or was not given for this change. Nothing was changed. Ask for it again, and approve it when you are asked
+changing-network.refused.asks-for-a-sign-in	{network} asks for an organisation's sign-in, which this machine cannot set up yet, so nothing was changed. Ask whoever runs that network how to connect
+changing-network.refused.connection-changed	This machine's connection changed after you approved this, so what the change would do to this conversation is no longer what you approved. Nothing was changed. Ask for it again
+changing-network.refused.could-not-finish	This machine could not finish the change to its network, for example because a password was not accepted. Open the networks in Settings to see how they are now
+changing-network.refused.more-than-one-called	More than one Wi-Fi network is called {network}, so nothing was changed. Choose the one you mean from the networks in Settings, where each shows whether it asks for a password
+changing-network.refused.network-not-answering	This machine's network settings are not answering, so nothing was changed. Restart the machine, then try again
+changing-network.refused.none-saved-called	No Wi-Fi network called {network} is saved on this machine, so nothing was changed. The networks in Settings show the ones that are
+changing-network.refused.none-visible-called	No Wi-Fi network called {network} is in range, so nothing was changed. Move closer to it, then choose it from the networks in Settings
+changing-network.refused.not-a-network-change	This was not a change to the network, so nothing was changed
+changing-network.refused.not-being-kept	This machine has stopped keeping its record of changes to its settings, so it makes none. Nothing was changed. Restart the machine
+changing-network.refused.nothing-makes-changes	The part of this machine that changes its settings is not running, so nothing was changed. Restart the machine
+changing-network.refused.proxy-not-set	This machine's proxy was not set. If your organisation manages this machine, it sets the proxy. Otherwise open the proxy in Settings, check it, and set it again
+changing-network.refused.says-the-wrong-thing	This change was not put to you, because it did not say correctly what it does to this conversation's connection. Nothing was changed. Ask for it again
+changing-network.verb.forget-network.purpose	propose forgetting a Wi-Fi network this machine has saved
+changing-network.verb.forget-network.sentence	forget the Wi-Fi network {network}, so this machine no longer joins it on its own, and {this_conversation}
+changing-network.verb.join-network.purpose	propose joining a Wi-Fi network this machine can see
+changing-network.verb.join-network.sentence	join the Wi-Fi network {network}, and {this_conversation}
+changing-network.verb.keeps-its-connection	this conversation keeps its connection
+changing-network.verb.loses-its-connection	this conversation loses its connection until this machine is connected again
+changing-network.verb.network	the Wi-Fi network, by the name it announces
+changing-network.verb.off	off
+changing-network.verb.on	on
+changing-network.verb.switch-wireless.purpose	propose turning this machine's Wi-Fi on or off
+changing-network.verb.switch-wireless.sentence	turn Wi-Fi {wireless}, and {this_conversation}
+changing-network.verb.this-conversation	what the change does to this conversation's connection
+changing-network.verb.wireless	whether Wi-Fi is turned on or off
+changing-network.wireless-off	Wi-Fi is off
+changing-network.wireless-on	Wi-Fi is on
+changing-printers.made-default	This machine prints on {printer} from now on
+changing-printers.refused.approval-not-accepted	This change was not made, because its approval was not accepted: it was used already, came too late, or was not given for this change. Nothing was changed. Ask for it again, and approve it when you are asked
+changing-printers.refused.could-not-finish	This machine could not finish the change to {printer}. Open the printers in Settings to see how they are now
+changing-printers.refused.more-than-one-called	More than one printer is called {printer}, so nothing was changed. Choose the one you mean from the printers in Settings
+changing-printers.refused.none-found-called	No printer called {printer} was found, so nothing was changed. Check that it is switched on and connected, then choose it from the printers in Settings
+changing-printers.refused.none-set-up-called	No printer called {printer} is set up on this machine, so nothing was changed. The printers in Settings show the ones that are
+changing-printers.refused.not-a-printer-change	This was not a change to the printers, so nothing was changed
+changing-printers.refused.not-being-kept	This machine has stopped keeping its record of changes to its settings, so it makes none. Nothing was changed. Restart the machine
+changing-printers.refused.nothing-makes-changes	The part of this machine that changes its settings is not running, so nothing was changed. Restart the machine
+changing-printers.refused.printing-not-answering	This machine's printing is not answering, so nothing was changed. Restart the machine, then try again
+changing-printers.removed	{printer} is removed from this machine. Nothing more can be printed on it until it is set up again
+changing-printers.verb.add-printer.purpose	propose setting up a printer this machine found, so it can print on it
+changing-printers.verb.add-printer.sentence	set up the printer {printer}, so this machine can print on it
+changing-printers.verb.printer	the printer, by the name it gave itself
+changing-printers.verb.remove-printer.purpose	propose removing a printer that is set up on this machine
+changing-printers.verb.remove-printer.sentence	remove the printer {printer} from this machine
+changing-printers.verb.set-default-printer.purpose	propose which of the printers set up on this machine it prints on
+changing-printers.verb.set-default-printer.sentence	print on {printer} from now on
+changing-undo.holding	Keeping these changes so they can be put back is using {size}
+changing-undo.holding-nothing	Nothing has needed keeping yet, so this is using no space
+changing-undo.how-far-back	Changes the agent makes can be put back for {days} days, or for the last {changes} changes — whichever ends first
+changing-updates.refused.approval-not-accepted	Nothing was changed, because the approval for it was not accepted: it was used already, came too late, or was not given for this. Ask again, and approve it when you are asked
+changing-updates.refused.not-an-update-change	This was not about an update, so nothing was changed
+changing-updates.refused.not-being-kept	This machine has stopped keeping its record of changes to its system, so it makes none. Nothing was changed. Restart the machine
+changing-updates.refused.nothing-makes-changes	The part of this machine that changes its system is not running, so nothing was changed. Restart the machine
+changing.at-the-next-sign-in	The change is saved. Nothing is running to hear about it right now, so it takes effect at the next sign-in — there is nothing more to do
+changing.nobody-keeps-pairings	The pairing was not revoked: the service that keeps this machine's pairings is not running, and nothing else may change them. It stands as it was
+changing.not-kept	The change was not saved: the file this machine keeps its grants in would not take it. Everything is as it was — nothing was granted and nothing was revoked
+changing.pairing-not-answered	This machine's agent service did not say whether the pairing was revoked. Look at the list of pairings again before relying on it
+changing.pairing-refused	The pairing was not revoked. This machine's agent service said: {told}
+changing.until-a-restart	The pairing is revoked for now, but this machine could not write that down. After a restart the pairing will stand again, and it will have to be revoked again
+choosing.change.no-such-provider	your settings at {path} would say {provider} answers your questions and would list no provider of that name, so nothing in your settings has been changed
+choosing.change.not-brought	your settings at {path} would say {model} answers your questions and would list no weights of that name, so nothing in your settings has been changed
+choosing.change.not-expressible	this alo OS could not write that choice into settings at {path} it can read back again, so nothing in your settings has been changed
+choosing.change.not-kept	your settings at {path} could not be written, so nothing in your settings has been changed
+choosing.change.not-paired-to-answer	your settings at {path} would say the machine {machine} answers your questions, and no pairing with it lets it answer them at the moment, so nothing in your settings has been changed
+choosing.change.nothing-to-change	your settings at {path} list no provider called {provider} to change, so nothing in your settings has been changed
+choosing.change.nothing-to-measure	your settings at {path} list no weights called {model} to write a measurement beside, so nothing in your settings has been changed
+choosing.session.no-folder	this session has no home directory; changes take effect now, but nothing you change now will be kept once you sign out
+choosing.settings.another-format	your settings at {path} were written by a newer alo OS than this one, so nothing in the file has been used
+choosing.settings.no-model	your settings at {path} name a list of models and no model in it, so nothing has been chosen to answer questions
+choosing.settings.no-such-provider	your settings at {path} say {provider} answers your questions and do not list a provider of that name, so nothing in the file has been used
+choosing.settings.not-a-language	your settings at {path} ask to be read in {language}, which is not written the way a language is named, so nothing in the file has been used
+choosing.settings.not-brought	your settings at {path} say {model} answers your questions and do not list weights of that name, so nothing in the file has been used
+choosing.settings.not-read	your settings at {path} could not be read, so nothing has been chosen to answer questions
+choosing.settings.not-understood	your settings at {path} are not settings alo OS can read, so nothing has been chosen to answer questions — nothing in the file has been used
+choosing.settings.provider-needs-a-newer-shape	your settings at {path} choose a provider, which settings must say format {reads} to do, and they say format {format} — so nothing in the file has been used
+choosing.settings.setup-needs-a-newer-shape	your settings at {path} say you have been asked what this machine should do, which settings must say format {reads} to record, and they say format {format} — so nothing in the file has been used
+choosing.settings.weights-twice	your settings at {path} list weights called {model} twice, so nothing said which of them answered a question, and nothing in the file has been used
+choosing.settings.weights-unnamed	your settings at {path} list weights with no name, and there would be nothing to ask for, so nothing in the file has been used
+clipboard.copied-over	What you copied is no longer there to paste: something else has been copied since
+clipboard.could-not-give	The application this was copied from did not hand it over. Try copying it again
+clipboard.form.an-image	an image
+clipboard.form.files	files
+clipboard.form.text	text
+clipboard.no-longer-offered	What you copied is no longer there to paste: the application it was copied from has given it up
+clipboard.not-that-form	This cannot be pasted as {as_what}: the application it was copied from did not offer it in that form
+clipboard.nothing-copied	There is nothing to paste: nothing has been copied yet
+context.document.could-lead-elsewhere	{document} has .. in it and could lead somewhere else — offer the path the document really has
+context.document.not-a-full-path	{document} is not a full path — offer the whole path to the open document, because a path that starts anywhere else means a different file depending on where it is read
+context.document.nothing-named	there is no document to offer — offer the file that is open, or offer nothing
+context.document.the-whole-machine	{document} is the whole machine rather than a document — offer the file that is open, because what is offered at invocation becomes a grant over exactly that file
+context.nothing-offered	nothing from your screen was offered with this question
+context.the-document	the document you have open: {document}
+context.the-selection	the text you had selected
+context.the-window	the window in front of you: {window}
+context.window-called	{title} ({application})
+context.window.no-application	a window with no application cannot be offered — name the application the window belongs to, which is what a verb would have to name to reach it
+context.window.not-an-identifier	{application} is not an identifier — an identifier has no spaces and no folders in it, so no verb could ever name this window
+converting.carried.everything	Nothing was lost: every font, field, comment and linked picture in the original was checked, and the copy carries all of it
+converting.carried.not-everything	The copy does not carry everything in the original. This is what is different
+converting.converted	{copy} is a PDF copy of {file}, made on this machine. {file} is exactly as it was
+converting.copy-not-checked	The copy could not be checked for what it left out, so it was not kept: a copy is never given without saying what it lost. The original is exactly as it was
+converting.copy-not-created	A copy could not be made in that folder, so nothing was converted. Check that the folder is still there and has room
+converting.copy-not-written	The copy could not be written into that folder, so it was not kept. Check that the folder has room, and try again
+converting.could-not-convert	This document could not be converted, so no copy was made and the original is exactly as it was. Whoever sent it can save it again, or send it as a PDF
+converting.field.a-random-number	a formula using a random number
+converting.field.author	a person's name
+converting.field.date	a date
+converting.field.file-name	the document's file name
+converting.field.merge	a mail merge field
+converting.field.the-current-moment	a formula using today's date or the time now
+converting.field.time	a time
+converting.more-than-one-name	This document also appears under another name somewhere else on this machine, so it was not read and nothing was converted. Copy it into the folder first, and convert the copy
+converting.name-taken	There is already a file called {copy} in that folder, so nothing was converted and nothing was replaced. Choose another folder, or rename that file first
+converting.not-a-kind-this-converts	This is {what}, which this machine does not convert, so nothing was converted and the file is exactly as it was
+converting.not-carried.comments	The original has comments. The copy does not show them; open the original on a machine with an office application to read them
+converting.not-carried.field	The original has {field} that changes by itself when the document is opened. The copy shows it as it was at the moment it was converted, and it will not change
+converting.not-carried.font	The font {font} is not on this machine, so the text set in it is shown in a similar font instead, and lines and pages can break in different places
+converting.not-carried.linked-data	The original takes some of its contents from another file kept somewhere else. It was not fetched, so the copy shows what the original held when it was last saved
+converting.not-carried.linked-picture	The original shows a picture kept somewhere else rather than inside the document. It was not fetched, so the copy does not have it. Whoever sent the document can send the picture itself
+converting.not-carried.linked-something-else	The original includes something kept somewhere else rather than inside the document. It was not fetched, so the copy does not have it
+converting.not-carried.linked-template	The original is attached to a template kept somewhere else. It was not fetched, so anything the document takes from it is not in the copy
+converting.not-carried.macros	The original contains macros. They were not run, and they are not in the copy
+converting.not-carried.tracked-changes	The original has tracked changes. The copy does not show which parts were changed, or by whom
+converting.not-converting	What was approved was not converting a document, so nothing was converted
+converting.nothing-here-converts	The part of this machine that converts documents did not respond, so nothing was converted. Restarting this machine starts it again
+converting.nothing-was-converted	Nothing was converted, and the file is exactly as it was
+converting.original-not-checked	What is inside this document could not be checked, so this machine could not say what a copy would lose, and no copy was made. The original is exactly as it was
+converting.too-large	This document is too large to convert on this machine, so no copy was made and the original is exactly as it was. Whoever sent it can send it as a PDF
+converting.too-slow	Converting this document took too long and was stopped, so no copy was made and the original is exactly as it was
+converting.unreadable	The document could not be read, so nothing was converted. Check that it is still where it was and try again
+converting.verb.convert-document.file	the document to convert
+converting.verb.convert-document.into	the folder the copy is put in
+converting.verb.convert-document.purpose	convert a document into a PDF copy, and say what the copy could not carry over
+converting.verb.convert-document.sentence	convert {file} into a PDF copy in {into}, leaving the original as it is
+corridor.at-the-door.another-turn-is-open	{machine} is busy with another machine at the moment. Try again shortly.
+corridor.at-the-door.machine-could-not	{machine} could not do this — the file may be gone, or its disk may be full.
+corridor.at-the-door.no-proof	{machine} received this with nothing to show it came from here. Nothing was done.
+corridor.at-the-door.not-a-verb	{machine} could not read what was sent as a verb. Nothing was done.
+corridor.at-the-door.not-bounded	{machine} could not put a boundary around this, so it did not run.
+corridor.at-the-door.not-for-this-wire	{machine} did not recognise the request. Its alo OS may be older or newer than this one.
+corridor.at-the-door.not-granted-there	This has not been granted on {machine}. Only the person at that machine can grant it.
+corridor.at-the-door.the-wrong-door	{machine} refused this: a change has to wait for approval there, and a read does not wait.
+corridor.at-the-door.turned-away	{machine} does not do that, or not with what was given. Nothing was done.
+corridor.not-crossed.not-an-answer	{machine} answered with something this machine could not read. Nothing is known about what happened there.
+desktops.always.approval-surface	What is waiting for your approval
+desktops.always.egress-indicator	What is leaving this machine
+desktops.always.the-agent	The agent
+desktops.desktop.numbered	Desktop {number}
+desktops.gestures.not-read	Your gesture settings could not be read. The file has been kept for you to repair.
+desktops.gestures.not-written	Your gesture settings could not be saved. The previous file has been kept.
+desktops.name.not-words	that name has something in it that is not writing, so it has been left as it was — it would not read as what you typed
+desktops.name.nothing	a desktop's name needs at least one letter, so it has been left as it was
+desktops.name.too-long	a desktop's name can be {most} characters at most, so it has been left as it was
+desktops.refused.a-promise	this is part of alo OS itself and is on every desktop, so it cannot be put on one or closed
+desktops.refused.chord-is-a-switch	another desktop already answers to that combination, so it has been left as it was — choose another
+desktops.refused.chord-is-taken	one of your keyboard shortcuts already uses that combination, so it has been left as it was — change that shortcut first, or choose another combination
+desktops.refused.name-is-taken	another desktop on this screen is already called that, so the name has been left as it was
+desktops.refused.no-desktop-that-way	there is no desktop that way — this is the end of the row
+desktops.refused.no-such-desktop	that desktop is no longer there, so nothing has changed
+desktops.refused.no-such-position	there is no desktop at that number on this screen, so nothing has changed
+desktops.refused.no-such-window	that window is not on any desktop of this screen, so nothing has changed
+desktops.refused.the-last-desktop	this is the only desktop on this screen, and a screen always has one — add another before removing this
+desktops.refused.too-many-desktops	there is no room for another desktop on this screen — alo OS holds {most}
+desktops.switch.next	Next desktop
+desktops.switch.previous	Previous desktop
+displays.a-schedule-or-the-sun	night light follows a schedule or the sun, and this asks for both
+displays.already-plugged-in	there is already a screen plugged in there
+displays.as-you-left-them	Your screens are arranged the way you last left them
+displays.begins-and-ends-at-once	night light cannot begin and end at the same moment — choose two different times
+displays.did-not-fit	Your screens have changed since you arranged them, so alo OS has put them side by side again. Your arrangement is still here for when they change back.
+displays.half-a-screen	one screen in this arrangement is written down as neither what a screen says about itself nor the socket it is plugged into, so alo OS cannot tell which screen it is
+displays.kept.another-format	your screen arrangements at {path} were written for a different alo OS than this one, so nothing in the file has been used and your screens have been laid out side by side
+displays.kept.not-expressible	this alo OS could not write that change into your screen arrangements at {path} in a way it can read back again, so nothing about your screens has been changed
+displays.kept.not-read	your screen arrangements at {path} could not be read, so your screens have been laid out side by side
+displays.kept.not-replaced	your screen arrangements at {path} could not be read, so that change has not been written over them and nothing about your screens has been changed — correct the file, or put your screen arrangements back as alo OS ships them
+displays.kept.not-understood	your screen arrangements at {path} are not arrangements alo OS can read, so nothing in the file has been used and your screens have been laid out side by side
+displays.kept.not-understood-at	your screen arrangements at {path} stop making sense at line {line}, so nothing in the file has been used and your screens have been laid out side by side
+displays.kept.not-written	your screen arrangements at {path} could not be written, so nothing about your screens has been changed
+displays.kept.unknown-key	your screen arrangements at {path} say {key}, which is not something alo OS knows about screens, so nothing in the file has been used
+displays.more-than-one-main-screen	only one of your screens can be the main one, and this arrangement names more than one
+displays.name-spaced	{name} begins or ends with a space, so it would never match the screen it looks like — take the space out
+displays.new-here	{display} has not been used with this machine before, so alo OS has put it beside your other screens and chosen a size for it from how large it is
+displays.no-main-screen	one of your screens has to be the main one, and this arrangement names none
+displays.no-screens	there are no screens here, so there is nothing to arrange
+displays.not-a-latitude	{asked} is not a latitude — a latitude runs from -90 in the far south to 90 in the far north
+displays.not-a-longitude	{asked} is not a longitude — a longitude runs from -180 in the far west to 180 in the far east
+displays.not-a-name	name the screen — it is what the screen says about itself, or the socket it is plugged into
+displays.not-a-time	{name} is not a time of day — write it as 22:00, on a twenty-four hour clock
+displays.not-a-warmth	{asked} is not a warmth a screen can be drawn at — choose between {least} and {most}
+displays.not-plugged-in	there is no screen plugged in there
+displays.nothing-remains	that is the only screen this machine has, so what is open on it has nowhere to go
+displays.remembered-by-its-socket	{display} does not say which screen it is, so alo OS remembers it by the socket it is plugged into — another screen plugged into that socket will be set up the same way
+displays.screen.at-another-socket	Socket {number}
+displays.screen.at-displayport	DisplayPort socket {number}
+displays.screen.at-dvi	DVI socket {number}
+displays.screen.at-hdmi	HDMI socket {number}
+displays.screen.at-vga	VGA socket {number}
+displays.screen.built-in	Built-in screen
+displays.screen.somewhere-else	Another screen
+displays.size-out-of-range	{asked} is not a size a screen can be set to — choose between {least} and {most}
+displays.size-rounded	{display} cannot draw at {asked}, so alo OS is using {used}, the nearest size it can
+displays.the-other-desks-arrangement-is-kept	The arrangement you made at your other desk is still here for when you are back at it
+displays.the-same-screen-twice	{display} is in this arrangement twice, so alo OS cannot tell where you meant to put it
+displays.the-sun-does-not-rise	the sun does not rise where you are today, so your screens are being warmed all day — they will stop on the first morning it does
+displays.the-sun-does-not-set	the sun does not set where you are today, so your screens are not being warmed — they will be again on the first evening it does
+displays.told-apart-by-their-sockets	Two of your screens say exactly the same thing about themselves, so alo OS tells them apart by which socket each is plugged into — swapping their cables swaps the two
+displays.windows-came-back	{display} is back, so what was open on it before has gone back to it
+displays.windows-moved	{display} was unplugged, so what was open on it is now on {other}
+displays.woke-to-other-screens	Your screens have changed since this machine went to sleep, so alo OS has set up the ones in front of you now
+dividing.place.bottom-half	Bottom half
+dividing.place.bottom-left-quarter	Bottom-left quarter
+dividing.place.bottom-right-quarter	Bottom-right quarter
+dividing.place.left-half	Left half
+dividing.place.part	Part of the screen
+dividing.place.right-half	Right half
+dividing.place.top-half	Top half
+dividing.place.top-left-quarter	Top-left quarter
+dividing.place.top-right-quarter	Top-right quarter
+dividing.refused.changed	the screen changed before the window was let go, so nothing has moved — drag it again
+dividing.refused.no-neighbour	that edge is the edge of the screen, so there is no window beside it to make room for
+dividing.refused.not-divided	this window is not part of the divided screen, so nothing has moved — drag it to an edge of the screen to add it
+dividing.refused.nothing-to-share-with	there is no other window open to share the screen with, so nothing has moved
+dividing.refused.too-narrow	this window cannot be made that narrow, so the screen has been left as it was
+dividing.refused.too-short	this window cannot be made that short, so the screen has been left as it was
+dock.edge.bottom	Bottom
+dock.edge.left	Left
+dock.edge.right	Right
+dock.edge.top	Top
+dock.kept.another-format	your dock settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and the dock is where alo OS puts it
+dock.kept.not-expressible	this alo OS could not write that change into dock settings at {path} it can read back again, so nothing about the dock has been changed
+dock.kept.not-read	your dock settings at {path} could not be read, so the dock is where alo OS puts it
+dock.kept.not-replaced	your dock settings at {path} could not be read, so that change has not been written over them and nothing about the dock has been changed — correct the file, or put the dock back as alo OS ships it
+dock.kept.not-understood	your dock settings at {path} are not settings alo OS can read, so nothing in the file has been used and the dock is where alo OS puts it
+dock.kept.not-understood-at	your dock settings at {path} stop making sense at line {line}, so nothing in the file has been used and the dock is where alo OS puts it
+dock.kept.not-written	your dock settings at {path} could not be written, so nothing about the dock has been changed
+dock.kept.unknown-key	your dock settings at {path} say {key}, which is not something alo OS can change about the dock, so nothing in the file has been used
+dock.labels.beside	each icon has its name beside it
+dock.labels.gave-way	there is no room for names at {percent}% text, so the dock shows icons — resting on one still gives its name, and a screen reader still reads it
+dock.labels.under	each icon has its name under it
+dock.screen.not-a-screen	a screen has a width and a height — {width} by {height} is not one
+dock.screen.too-small	{width} by {height} is smaller than alo OS lays out for — a screen needs at least {least} each way, or the dock would take the screen rather than sit on it
+egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody
+egress.destination.not-printable	the address contains a character that cannot be shown — the indicator has to be readable in one line
+egress.destination.nothing-leaves	an answer on this machine goes nowhere — ask whether the source causes egress before making a destination of it
+egress.destination.paired-machine	{machine}, on your network
+egress.destination.provider	{provider}, in {region}
+egress.destination.provider-somewhere	{provider}, which has not said where it runs
+egress.destination.too-long	that address is longer than an address can be — check it is a hostname and nothing more
+egress.itself.checking-for-an-update	alo OS is checking for an update at {destination}
+egress.itself.checking-for-application-updates	alo OS is checking for application updates at {destination}
+egress.itself.fetching-a-model	alo OS is fetching a model from {destination}
+egress.itself.fetching-an-update	alo OS is downloading an update from {destination}
+egress.itself.installing-an-application	alo OS is installing an application from {destination}
+egress.itself.nothing-else	alo OS reaches the network for these reasons and no others, and never to say anything about how you use this machine
+egress.itself.signing-in	alo OS is signing you in at {destination}
+egress.itself.updating-an-application	alo OS is updating an application from {destination}
+egress.leaving.asking	{agent} is asking a question of {destination}
+egress.leaving.fetching	{agent} is fetching something from {destination}
+egress.leaving.sending	{agent} is sending something to {destination}
+egress.policy.nothing-leaves	this machine is set to let nothing leave, and {destination} is somewhere else
+egress.policy.outside-the-building	this machine is set to keep everything in the building, and {destination} is outside it
+egress.policy.outside-the-region	this machine is set to reach {region} only, and {destination} does not meet that
+enrolling.choose-a-passphrase	choose a passphrase you will type when this machine starts
+enrolling.choose-a-pin	choose a PIN you will type when this machine starts
+enrolling.it-is-already-open	this disk is already open
+enrolling.no-chip-for-the-key	this machine has no security chip that can hold the key, so you will type a passphrase every time it starts
+enrolling.no-passphrase-was-typed	type a passphrase to go on
+enrolling.no-pin-was-typed	type a PIN to go on
+enrolling.no-recovery-key-was-made	this machine could not make a recovery key, so its disk has not been encrypted
+enrolling.no-such-part-of-the-disk	there is no such part of that disk
+enrolling.part-of-this-machine-is-missing	part of this machine is missing, so its disk cannot be encrypted
+enrolling.that-does-not-open-this-machine	that does not open this machine — try again, or use the key you wrote down
+enrolling.that-is-not-a-disk	this machine cannot use the disk that was chosen
+enrolling.that-is-not-the-key-shown	that is not the key on the screen — check it and try again
+enrolling.that-is-part-of-a-disk	that is part of a disk rather than a whole one
+enrolling.the-disk-is-encrypted	this machine's disk is encrypted
+enrolling.the-key-was-not-typed-back	type the key back to go on
+enrolling.the-passphrase-is-too-short	that passphrase is too short
+enrolling.the-pin-is-too-short	that PIN is too short
+enrolling.the-recovery-key-is-the-wrong-shape	the recovery key this machine made is not one it can show you, so its disk has not been encrypted
+enrolling.the-two-passphrases-differ	the two passphrases are not the same
+enrolling.the-two-pins-differ	the two PINs are not the same
+enrolling.this-disk-is-not-encrypted	this disk is not an encrypted one
+enrolling.this-machine-could-not-do-it	this machine could not do that to its disk
+enrolling.type-it-back	type the key back, so we know you have it
+enrolling.write-this-down	write this key down and keep it away from this machine
+files.failed.already-in	{path} is already in that folder — nothing was moved
+files.failed.already-there	there is already something at {path} — nothing here replaces a file that was not named, so choose another name
+files.failed.gone	{path} was there when it was checked and is not there now — nothing was done, so ask again
+files.failed.has-another-name	{path} is one of several names this machine has for the same file, and the others could be anywhere — so what is in it was not read. Make a copy and read that, or grant the folder the other name is in
+files.failed.into-itself	the archive would be written inside {folder}, which is the folder it is an archive of — put it somewhere that is not inside it
+files.failed.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
+files.failed.not-a-file	{path} is not a file — list it if it is a folder
+files.failed.not-a-file-verb	nothing in the file half does {verb} — it lists, reads, finds, renames, moves and archives, and anything else is somewhere else's to do
+files.failed.not-a-folder	{path} is not a folder — read it if it is a file, or list the folder it is in
+files.failed.not-a-zip-name	call the archive something ending in .zip — alo OS makes zip archives, and a name saying otherwise would be a file whose name lies about what is in it
+files.failed.not-text	{path} is not text — this verb answers with what a person could read, and reading this one needs an application that knows what it is
+files.failed.the-machine-said-no	{path} could not be {doing} ({why}) — nothing else was attempted
+files.failed.too-many	{folder} holds more than {most} things — archive one of the folders inside it instead, so that what is in the archive is something a person can still recognise
+files.failed.too-much	{folder} holds more than {most} bytes and one archive holds at most that — archive one of the folders inside it instead
+files.real.nothing	there is nothing at {path} — a verb reaches what is there, so name something that exists
+files.real.unreadable	{path} could not be followed ({why}) — nothing is done to a path this machine cannot resolve
+files.refused.really-leads-elsewhere	{path} really leads to {really} — a grant covers where a file is, not where a link to it sits, and {who} has not been granted where this one leads
+files.refused.would-create	{verb} would put something at {path}, and {why} — a grant covers where a file goes, not only where it comes from
+files.verb.archive-folder.argument.folder	the folder to make an archive of
+files.verb.archive-folder.argument.into	the folder the archive goes into
+files.verb.archive-folder.argument.name	what to call the archive, ending in .zip
+files.verb.archive-folder.purpose	make one archive file out of a folder
+files.verb.archive-folder.sentence	make an archive of {folder} called {name}, in {into}
+files.verb.find-in-folder.argument.folder	the folder to look in
+files.verb.find-in-folder.argument.most	how many files to answer with at most
+files.verb.find-in-folder.argument.named	the words a file's name has to contain
+files.verb.find-in-folder.purpose	find files in a folder by what they are called
+files.verb.find-in-folder.sentence	find up to {most} files in {folder} whose name contains {named}
+files.verb.list-folder.argument.folder	the folder to list
+files.verb.list-folder.purpose	list what is in a folder
+files.verb.list-folder.sentence	list what is in {folder}
+files.verb.move-file.argument.file	the file to move
+files.verb.move-file.argument.into	the folder it goes into
+files.verb.move-file.purpose	move a file into a folder
+files.verb.move-file.sentence	move {file} into {into}
+files.verb.read-file.argument.file	the file to read
+files.verb.read-file.purpose	read what is in a file
+files.verb.read-file.sentence	read what is in {file}
+files.verb.rename-file.argument.file	the file to rename
+files.verb.rename-file.argument.name	what to call it instead
+files.verb.rename-file.purpose	give a file a different name, where it already is
+files.verb.rename-file.sentence	rename {file} to {name}
+finding.contents.not-all-kept	More different words than the {most} an index keeps, so only the first {most} were kept.
+finding.contents.not-read	Its words could not be read: {why}
+finding.contents.not-text	Not a kind of file whose words can be read.
+finding.contents.too-big	Larger than the {most} bytes an index reads, so its words were not read.
+finding.kind.bytes	A file of a kind this machine does not know
+finding.kind.empty	An empty file
+finding.kind.folder	A folder
+finding.kind.gif	A GIF image
+finding.kind.jpeg	A JPEG image
+finding.kind.link	A link
+finding.kind.other	Something that is not a file or a folder
+finding.kind.pdf	A PDF document
+finding.kind.png	A PNG image
+finding.kind.program	A program
+finding.kind.text	Text
+finding.kind.unread	A file that could not be read
+finding.kind.zip	A zip archive
+finding.list-not-kept	The list of indexed folders could not be written to {at}: {why}
+finding.list-not-read	The list of indexed folders at {at} could not be read: {why}
+finding.never-indexed	{at} was never indexed, so there is no index of it to search.
+finding.not-a-list	{at} is not a list of indexed folders this machine can read: {why}
+finding.not-absolute	{at} does not say where it is from the root of the machine, so it cannot be indexed.
+finding.not-an-index	{at} is not an index this machine can read: {why}
+finding.not-asked.longer-than-a-name	{chars} characters is longer than any file name, and a search takes at most {most}.
+finding.not-asked.more-than-a-sentence	{words} words is more than a sentence, and a search takes at most {most}.
+finding.not-asked.nothing	Nothing was asked, so nothing was searched: a search needs a name, a kind, a date or some words.
+finding.not-kept	The index could not be written to {at}: {why}
+finding.not-opened	The index at {at} could not be read: {why}
+finding.not-removed	The index at {at} could not be removed: {why}
+finding.not-searched.elsewhere	{below} is on another disk, so nothing in it was searched.
+finding.not-searched.file-unread	{below} could not be read, so it was not searched: {why}
+finding.not-searched.folder-unread	{below} could not be read, so nothing in it was searched: {why}
+finding.not-searched.not-entered	The index stopped before it had finished {below}, so not all of it was searched.
+finding.not-searched.outside	Nothing outside {folder} was searched.
+finding.not-the-same-folder	The index at hand is of {indexed}, not of {asked}.
+finding.not-walked	{at} could not be indexed. {why}
+finding.nowhere-to-keep-it	There is no home directory to keep an index in.
+finding.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
+finding.verb.not-this-crates	nothing in the index does {verb} — it searches, and anything else is somewhere else's to do
+finding.verb.search-files.argument.folder	the folder whose index to search
+finding.verb.search-files.argument.named	the words a file's name has to contain
+finding.verb.search-files.purpose	search the index of a folder for files by what they are called
+finding.verb.search-files.sentence	search the index of {folder} for files whose name contains {named}
+granted.already-gone	That grant is no longer held: it has expired or was already revoked. Nothing was changed — the list here was out of date, so look at it again
+granted.nothing-granted	Nothing is granted right now. No agent and no application has been granted anything on this machine, and there is nothing here to revoke
+granted.one-grant	{who} has been granted {what}
+granted.revoked	The grant was revoked. It has already stopped: the next thing asked under it is refused, with nothing to wait for
+greeting.accounts-unreadable	Nobody can sign in here: this machine's list of accounts is there and cannot be trusted to be read. Whoever installed this machine has to put that right
+greeting.make-an-account	Nobody has an account on this machine yet. Make one to sign in — the account you make here is this machine's own, and it is not sent anywhere
+greeting.nothing-listening	Signing in did not finish: the part of this machine that starts a session is not running. Nothing you typed was wrong
+greeting.nothing-said	Signing in did not finish: the part of this machine that starts a session was reached and did not answer. Nothing you typed was wrong
+handing.offered-for-this-question	offered for this question only — the agent has not been given the file, or the folder it is in
+handing.refused.did-not-hand-it-over	the application this came from did not hand it over, so nothing has moved
+handing.refused.not-a-file-list	these files could not be handed over, because the application they came from did not say properly which files they were
+handing.refused.not-that-form	this cannot be handed over in that form, so nothing has moved
+handing.refused.nothing-here	there is nothing here to drop this on, so it has stayed where it was
+handing.refused.the-question-is-over	the question this was dropped into is over, so it has not been read
+handing.refused.will-not-take-it	this window does not take what you dropped on it, so nothing has moved
+handing.would.ask-about-this	Ask about this
+handing.would.copy-here	Copy here
+handing.would.move-here	Move here
+handing.would.not-take-it	This window does not take this
+in-use.alo-os-itself	alo OS itself
+in-use.no-answer	What is watching or listening cannot be shown: the part of alo OS that handles sound and video did not answer. Sign out and back in to start it again
+in-use.not-understood	What is watching or listening cannot be shown: the part of alo OS that handles sound and video answered something this machine could not read. Report this, because what is watching or listening cannot be trusted until it is fixed
+in-use.nothing-handles-sound-and-video	What is watching or listening cannot be shown: the part of alo OS that handles sound and video is not running. Sign out and back in, and this comes back with it
+in-use.nothing-is-in-use	Nothing is watching or listening right now
+in-use.something-on-this-machine	something on this machine
+in-use.the-agent	{agent}, the agent on this machine
+in-use.the-camera	The camera is in use by {who}
+in-use.the-microphone	The microphone is in use by {who}
+in-use.the-screen	The screen is in use by {who}
+indicator.no-compositor	What is leaving this machine cannot be shown: the desktop is not running. Sign in to the desktop, and the indicator appears with it
+indicator.nothing-is-leaving	Nothing is leaving this machine right now
+indicator.nothing-to-show-on	What is leaving this machine cannot be shown: no screen is connected. Connect a screen, and the indicator appears on it
+installer.adding-the-entry	Adding alo OS to the systems this computer can start
+installer.already-started	An earlier start of this installer left its area or its entry on this computer, so nothing was changed
+installer.answer.leave-on	leave on
+installer.answer.turn-off	turn off
+installer.ask.fast-startup	Windows' Fast Startup is on. It can make Windows and alo OS disagree about the disk. Turn it off? (Recommended when sharing a disk.)
+installer.ask.type-one-of-these-answers	Type {off} or {on}, and press Enter
+installer.bitlocker-changing	BitLocker is still encrypting or decrypting Windows on {volume}, so nothing was changed. Run this installer again when it has finished
+installer.checking-the-computer	Checking this computer. This only reads, and changes nothing
+installer.checking-the-download	Checking that this download is a genuine alo OS
+installer.copying-the-installer	Copying the installer into its area, and checking the copy
+installer.default.change-it	change
+installer.default.changed	Done. This computer now starts the other system when nobody chooses, and you can change it      back here or in alo OS's own settings
+installer.default.is	This computer starts {system} when nobody chooses at the start-up menu
+installer.default.kept	Nothing was changed, and this computer starts the same system it did
+installer.default.not-reached	The part of the disk this computer starts from could not be reached, so nothing was changed
+installer.default.not-read	Which system this computer starts could not be read or changed, so nothing was changed
+installer.default.not-there	This computer keeps no choice of which system starts, so there is nothing to change here.      Nothing was changed
+installer.default.starting	This shows which system this computer starts when nobody chooses, and can change it
+installer.default.type-to-change	To make this computer start {system} instead, type {change} and press Enter. To leave it as      it is, press Enter without typing anything
+installer.disks-not-read	The disks in this computer could not be read, so nothing was changed
+installer.entries-not-read	The list of systems this computer can start could not be read, so nothing was changed
+installer.fast-startup-left-on	Windows' Fast Startup is being left on, and nothing about it is changed
+installer.found.a-disk-for-alo-os	The disk {disk} ({size} GB) is empty, and alo OS can be installed onto it
+installer.found.a-disk-in-use	The disk {disk} ({size} GB) already holds files or a system, so alo OS does not use it
+installer.found.a-disk-not-usable	The disk {disk} ({size} GB) cannot be written to, or is connected in a way this installer does not recognise yet, so alo OS does not use it
+installer.found.a-disk-too-small	The disk {disk} ({size} GB) is smaller than the {least} GB alo OS needs
+installer.found.bitlocker-changing	BitLocker is encrypting or decrypting Windows on {volume} right now
+installer.found.bitlocker-not-read	Whether Windows on {volume} is encrypted with BitLocker could not be found out
+installer.found.bitlocker-off	Windows on {volume} is not encrypted with BitLocker
+installer.found.bitlocker-on	Windows on {volume} is encrypted with BitLocker. It stays encrypted, and the installer does not read what is on it
+installer.found.fast-startup-not-read	Whether Windows' Fast Startup is on could not be found out
+installer.found.fast-startup-off	Windows' Fast Startup is off
+installer.found.fast-startup-on	Windows' Fast Startup is on
+installer.found.little-memory	This computer has {memory} GB of memory. alo OS is made for 16 GB or more, and is slow with less
+installer.found.memory	This computer has {memory} GB of memory
+installer.found.memory-not-read	How much memory this computer has could not be found out
+installer.found.no-tpm	This computer has no security chip (TPM)
+installer.found.not-uefi	This computer starts in the older BIOS way
+installer.found.secure-boot-not-read	Whether Secure Boot is on could not be found out
+installer.found.secure-boot-off	Secure Boot is off
+installer.found.secure-boot-on	Secure Boot is on
+installer.found.space	Windows on {volume} has {free} GB free of {size} GB
+installer.found.starting-not-read	How this computer starts could not be found out
+installer.found.tpm-not-read	Whether this computer has a security chip (TPM) could not be found out
+installer.found.tpm-not-ready	This computer has a security chip (TPM), and it is not ready for use
+installer.found.tpm-ready	This computer has a security chip (TPM), and it is ready
+installer.found.uefi	This computer starts with UEFI, which alo OS needs
+installer.found.windows-disk	Windows is on the disk {disk} ({size} GB)
+installer.genuine	This download is a genuine alo OS
+installer.incomplete	This download is incomplete, so nothing was changed. Download alo OS again
+installer.leaving-the-way-back	Putting a program in the Start menu that restarts this computer into alo OS
+installer.making-the-area	Making the installer's area on the disk {disk}
+installer.no-disk-for-alo-os	This computer has no empty disk of at least {least} GB beside the one Windows is on, and this installer puts alo OS on a disk of its own, so nothing was changed
+installer.not-a-disks-name	What was typed is not the name of a disk alo OS can be installed onto, so nothing was changed
+installer.not-agreed	You stopped the installer, so nothing was changed
+installer.not-an-administrator	This installer needs permission to change how this computer starts, so nothing was changed. Start it again by choosing Run as administrator
+installer.not-enough-space	Windows on {volume} needs {needed} GB free for this and has {free} GB, so nothing was changed
+installer.not-genuine	This download is not a genuine alo OS, so nothing was changed
+installer.not-put-back	Preparing this computer did not finish, and not everything could be put back. Windows still starts. This remains:
+installer.not-uefi	alo OS needs a computer that starts with UEFI, and this one starts in the older BIOS way, so nothing was changed
+installer.nothing-changed-yet	Nothing on this computer has been changed yet. If you agree, this is what happens, in this order:
+installer.press-enter-to-close	Press Enter to close this window
+installer.put-back	Preparing this computer did not finish. Everything that was changed has been put back, so nothing was changed
+installer.putting-it-back	Something went wrong, so everything changed so far is being put back
+installer.remains.fast-startup-off	Windows' Fast Startup is still off. You can turn it back on in Windows' own power settings
+installer.remains.smaller	Windows on {volume} is {area} GB smaller than it was
+installer.remains.the-area	An area labelled ALO-INSTALL remains on the disk {disk}
+installer.remains.the-entry	An entry named alo OS remains among the systems this computer can start
+installer.remains.the-next-start	The next restart starts the alo OS installer, which installs onto the disk you named
+installer.remains.the-way-back	The program that restarts this computer into alo OS is still installed. You can remove it in Windows' own settings
+installer.remove.disk-not-cleared	This computer no longer starts alo OS, but the disk alo OS is on could not be erased. Its files are still there, and you can erase it in Windows' own disk management
+installer.remove.entry-not-removed	alo OS could not be taken out of the systems this computer starts, so nothing was erased and alo OS is still here
+installer.remove.erasing	Erasing {disk}. This takes a moment
+installer.remove.gone	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it did before alo OS was installed
+installer.remove.gone-but-the-copy-stays	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it did. This program is still on this computer, because it cannot delete itself while it is running; you can delete it yourself
+installer.remove.not-agreed	Nothing was changed. alo OS is still on this computer
+installer.remove.not-found	The disk alo OS is on could not be found, so nothing was changed. Nothing was erased
+installer.remove.not-read	This computer's disks, or the systems it can start, could not be read, so nothing was changed
+installer.remove.not-there	alo OS is not among the systems this computer can start, so there is nothing to remove. Nothing was changed
+installer.remove.starting	This removes alo OS from this computer. Windows, and your files on it, are not touched
+installer.remove.type-the-disks-name	To remove alo OS, type the name of that disk, exactly as it is written above, and press Enter. To leave everything as it is, press Enter without typing anything
+installer.remove.will-erase	alo OS is on the disk {disk}. Removing it erases that disk: alo OS itself, and everything kept in it. The space becomes free again, and Windows starts as it does now
+installer.restart-it-yourself	Everything is ready, and this computer could not restart by itself. Restart it to continue installing alo OS
+installer.restarting	Everything is ready. This computer restarts in a few seconds, and installing continues after the restart
+installer.secure-boot-not-read	Whether Secure Boot is on could not be found out, so nothing was changed
+installer.secure-boot-on	Secure Boot is on, and the part of alo OS that starts a computer is not yet approved to start with it, so nothing was changed
+installer.shrinking-windows	Making Windows on {volume} {area} GB smaller
+installer.starting	This is the alo OS installer. It checks this computer first, and changes nothing until you agree
+installer.starting-not-read	How this computer starts could not be found out, so nothing was changed
+installer.switch.agreed	restart
+installer.switch.not-agreed	Nothing was changed, and this computer starts as it did
+installer.switch.not-read	The systems this computer can start could not be read, so nothing was changed
+installer.switch.not-set	This computer could not be told to start alo OS next, so nothing was changed
+installer.switch.not-there	alo OS is not among the systems this computer can start, so there is nothing to restart into. Nothing was changed
+installer.switch.restart-it-yourself	This computer is set to start alo OS next. Restart it yourself when you are ready
+installer.switch.restarting	Starting alo OS. This computer restarts in a few seconds
+installer.switch.starting	This restarts this computer into alo OS. Nothing else about this computer is changed
+installer.switch.type-to-agree	To restart into alo OS now, type {word} and press Enter. To leave everything as it is, press Enter without typing anything
+installer.switch.will-restart	This computer restarts into alo OS once. Windows stays the one it starts normally, and restarting again comes back to Windows
+installer.system.alo-os	alo OS
+installer.system.windows	Windows
+installer.turning-fast-startup-off	Turning Windows' Fast Startup off. Windows keeps hibernation, and starts and shuts down as before
+installer.type-the-disks-name	To agree, type the name of the disk alo OS replaces, exactly as it is written above, and press Enter. Everything on that disk is replaced. To stop, press Enter without typing anything
+installer.will.add-the-entry	An entry named alo OS is added to the systems this computer can start. Windows stays the one it starts normally
+installer.will.make-the-area	A {area} GB area for the installer is made in that space, on the disk {disk}
+installer.will.restart	This computer restarts once into the installer, which replaces everything on the disk you name below with alo OS, then restarts again
+installer.will.shrink-windows	Windows on {volume} is made {area} GB smaller. Your files and applications stay where they are
+installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
+installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed
+installing.checking-it-is-genuine	Checking over the internet that this download is a genuine alo OS
+installing.checking-the-disk	Checking that {disk} is safe to install onto
+installing.choice-not-understood	The disk chosen for alo OS could not be understood, so nothing was changed
+installing.connecting	Connecting to the internet
+installing.damaged	This installer is damaged, so nothing was changed. Download alo OS again
+installing.disk-not-connected	The disk you chose, {disk}, is not connected to this computer, so nothing was changed
+installing.disks-not-read	The disks in this computer could not be read, so nothing was changed
+installing.genuine	This is a genuine alo OS
+installing.holds-another-system	The disk you chose, {disk}, holds another operating system, so nothing was changed
+installing.holds-this-installer	The disk you chose, {disk}, holds this installer itself, so nothing was changed
+installing.installed	alo OS is installed. This computer restarts in a few seconds
+installing.installing	Installing alo OS onto {disk}. Everything that was on that disk is being replaced. This takes a while, and this screen will say when it is done
+installing.looking-for-the-disk	Looking for the disk you chose: {disk}
+installing.no-disk-chosen	No disk was chosen for alo OS, so nothing was changed
+installing.not-a-whole-disk	{disk} is part of a disk rather than a whole disk, so nothing was changed
+installing.not-genuine	This download is not a genuine alo OS, so nothing was changed
+installing.not-installed	alo OS could not be installed onto {disk}. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
+installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
+installing.reading-the-choice	Reading which disk you chose before the restart
+installing.restart-when-ready	You can turn this computer off or restart it now
+installing.starting	alo OS is being installed on this computer. Each step is written here as it happens
+installing.still-installing	Still installing alo OS. Leave the computer on
+installing.tidied	This computer now starts alo OS, with Windows behind it, and the installer's space is back
+installing.tidy-entries-not-read	The list of systems this computer can start could not be read, so it was left as it is
+installing.tidy-not-whole	alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started
+installing.tidying	Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the      installer's own space back
+keeping-up.already-waiting	This update is already waiting for your next restart
+keeping-up.answer-not-understood	The answer about whether there is an update could not be understood, so nothing on this machine has changed
+keeping-up.changed-since-it-was-found	This machine changed after the update was found, so nothing was changed. Check for the update again
+keeping-up.going-back.already-waiting	This machine will already go back to the version it ran before the next time you restart
+keeping-up.going-back.at-the-next-restart	Go back the next time I restart
+keeping-up.going-back.changed-since-it-was-offered	This machine changed after going back was offered, so nothing was changed. Look again at what it can go back to
+keeping-up.going-back.no-longer-kept	The version of its system this machine ran before is no longer kept on it, so it cannot go back to it
+keeping-up.going-back.not-prepared	Going back could not be prepared, so nothing was changed. The next restart starts this machine as it is now
+keeping-up.going-back.nothing-before	This machine has no earlier version of its system to go back to
+keeping-up.going-back.now	Restart now and go back, which closes the applications that are open
+keeping-up.going-back.offered	This machine can go back to the version of its system it ran before its last update. Your files and your own settings stay as they are. Accounts, passwords and settings for the whole machine that changed since that update go back to how they were
+keeping-up.going-back.sets-aside-an-update	This machine can go back to the version of its system it ran before its last update. Your files and your own settings stay as they are. Accounts, passwords and settings for the whole machine that changed since that update go back to how they were. The update waiting for your next restart will not apply
+keeping-up.going-back.waiting-for-the-restart	This machine will go back to the version it ran before the next time you restart. Your files stay as they are
+keeping-up.never.closes-an-application	An update never closes an application you have open
+keeping-up.never.interrupts	An update never interrupts what you are doing
+keeping-up.never.restarts	An update never restarts this machine. It applies when you restart
+keeping-up.not-an-update	This machine was asked to change its system from one version to that same version, so there was nothing to do and nothing was changed
+keeping-up.not-genuine	This machine could not confirm that the new version came from alo OS, so it was not installed and nothing was changed. The next restart starts this machine as it is now
+keeping-up.not-prepared	The update could not be prepared, so nothing was changed. The next restart starts this machine as it is now
+keeping-up.not-written-down	This machine could not write down whether it started on an updated version of its system. Nothing else was changed
+keeping-up.ready	An update is ready. It will apply when you choose, and nothing you are doing will be interrupted until then
+keeping-up.ready-not-vouched-for	A new version of this machine's system is available, but this machine cannot confirm that it came from alo OS. It will not be applied unless it can be confirmed
+keeping-up.running-not-known	Which version of its system this machine is running could not be read, so nothing was changed
+keeping-up.undo.a-model-was-told	A model was told this, and nothing can untell it
+keeping-up.undo.an-application	Opening, arranging or closing an application is not something your machine puts back, and an application that closed may have let go of what was open in it
+keeping-up.undo.an-application-installed	Removing an application is yours to do, where you install and remove them, rather than something put back here
+keeping-up.undo.changed-since	Something this would put back has changed since, so putting it back would take away that newer change too
+keeping-up.undo.forgetting	Forget what your files were before the changes the agent made, so that none of them can be put back afterwards. This frees the space it is holding
+keeping-up.undo.it-left	This left your machine, and nothing here can call it back
+keeping-up.undo.it-only-looked	This only looked at something, so nothing changed that could be put back
+keeping-up.undo.it-was-printed	This was printed on paper, which your machine cannot take back
+keeping-up.undo.no-longer-kept	What your files were before this change is no longer kept, so it cannot be put back
+keeping-up.undo.not-a-window	How far back changes can be put back has to be at least one day and at least one change, so this was not kept
+keeping-up.undo.not-an-agents	No agent did this, so there is nothing of an agent's to put back
+keeping-up.undo.not-one-of-the-changes	This is not one of the changes your machine can put back
+keeping-up.undo.nothing-happened	Nothing happened here, so there is nothing to put back
+keeping-up.undo.nothing-keeps-what-was-there	This machine does not keep what your files were before the agent changed them, so it cannot put them back
+keeping-up.undo.nothing-left	Nothing of this change is left to put back
+keeping-up.undo.offered	Put back {what}, as it was before the agent changed it on {when}
+keeping-up.undo.the-turn-was-not-kept	There was not enough room to keep what your files were before this change, so it cannot be put back
+keeping-up.up-to-date	This machine is up to date
+keeping-up.waiting-for-the-restart	The update will apply the next time you restart. Your files and settings stay as they are
+keeping-up.when.at-the-next-restart	Apply it the next time I restart
+keeping-up.when.now	Restart now and apply it, which closes the applications that are open
+keeping.a-link	nothing was read from {path}, because it is a link to somewhere else rather than this machine's own record — what a record says is what everybody is told happened here, so it is read where it is kept and nowhere a link points
+keeping.could-not-be-added-to	something that happened could not be added to the record at {path}, so the record is no longer all of what happened — {why}
+keeping.could-not-be-opened	the record at {path} could not be opened, so nothing this machine's agent does can be written down — {why}
+keeping.could-not-be-read	the record at {path} could not be read — {why}
+keeping.could-not-be-shortened	the record at {path} could not be shortened, and nothing was removed from it — {why}
+keeping.damage.unfinished	the last thing written here did not finish being written, which is what a machine losing power in the middle of something looks like
+keeping.damage.unreadable	part of what was written here cannot be read, so this record is not all of what happened — nothing more will be removed from it until somebody has looked at it
+keeping.damaged	nothing was removed from the record at {path}, because part of it cannot be read — a record with something wrong in it is looked at before it is shortened, not tidied up
+keeping.disagreement.before-it-begins	this record is not what it says it is — something in it happened before the moment it says it starts at, and a shortening never leaves anything from before where it cut
+keeping.disagreement.runs-backwards	this record is not what it says it is — what is written in it does not run in the order it happened, and this machine only ever writes down what happened next
+keeping.forever	everything this machine's agent has done is kept
+keeping.from-a-newer-alo	the record at {path} was written by a newer alo OS than this one, so nothing has been written to it — adding to a record in a shape this version does not know would leave one neither version can read
+keeping.no-days-at-all	say how many days this record is kept for, or that it is kept for good — no days at all is a machine that keeps no evidence of what its agent did
+keeping.not-a-record	{path} is not an alo OS record, so nothing has been written to it — every record begins with a line saying what it is
+keeping.not-there	there is no record at {path} — a machine with no record is not a machine that has done nothing, so this is worth finding out about before it is replaced with an empty one
+keeping.record.shortened	this record does not go all the way back — what happened before it starts has aged out and been removed
+keeping.record.whole	this is everything that has happened on this machine — nothing has been removed from it
+keeping.somebody-elses	nothing was read from {path}, because it belongs to somebody other than you and this machine — a record of what happened here is only worth reading while nobody else could have written it
+keeping.writable-by-others	nothing was read from {path}, because anybody signed in to this machine could write to it — a record of what happened here is only worth reading while nobody else could have written it
+keyboards.compose.caps-lock	Caps Lock, which then stops locking capitals
+keyboards.compose.menu	The Menu key
+keyboards.compose.none	No compose key
+keyboards.compose.right-ctrl	The right-hand Ctrl key
+keyboards.compose.right-super	The right-hand key with the Windows logo on it
+keyboards.compose.scroll-lock	Scroll Lock
+keyboards.kept.another-format	your keyboard settings at {path} were written for a different alo OS than this one, so nothing in the file has been used
+keyboards.kept.not-expressible	this alo OS could not write that change into keyboard settings at {path} it can read back again, so nothing about your keyboards has changed
+keyboards.kept.not-read	your keyboard settings at {path} could not be read, so you are typing on the keyboard alo OS ships
+keyboards.kept.not-replaced	your keyboard settings at {path} could not be read, so that change has not been written over them and nothing about your keyboards has changed — correct the file, or put keyboards back as alo OS ships them
+keyboards.kept.not-understood	your keyboard settings at {path} are not settings alo OS can read, so nothing in the file has been used and you are typing on the keyboard alo OS ships
+keyboards.kept.not-understood-at	your keyboard settings at {path} stop making sense at line {line}, so nothing in the file has been used and you are typing on the keyboard alo OS ships
+keyboards.kept.not-written	your keyboard settings at {path} could not be written, so nothing about your keyboards has changed
+keyboards.kept.unknown-key	your keyboard settings at {path} say {key}, which is not something alo OS can change about keyboards, so nothing in the file has been used
+keyboards.machine.not-there	the list of keyboards this machine has could not be read from {path}, so no keyboard can be added — the keyboard you are typing on is unchanged
+keyboards.machine.nothing-composes	the table that turns a sequence of keys into one letter could not be read from {path}, so accents typed with a dead key or a compose key will not appear — the letters printed on your keyboard are unaffected
+keyboards.refused.already-typing	you can already type that way, so nothing has been added
+keyboards.refused.already-yours	that keyboard is already one of yours, so nothing has been added
+keyboards.refused.no-keyboard-for-this-language	alo OS does not yet know which keyboard {language} is typed on, so nothing has been added — you can still add the keyboard yourself from the list
+keyboards.refused.not-one-we-have	this machine does not have that keyboard, so nothing has been added
+keyboards.refused.not-yours	that keyboard is not one of yours, so nothing has been removed
+keyboards.refused.the-last-one	this is your only keyboard and you need one to type, so it has been kept — add another first, then remove this one
+keyboards.refused.typed-on-a-keyboard	{language} is typed on a keyboard rather than by choosing characters as you type, so nothing has been added — add the keyboard for it instead
+keyboards.switch.shadowed	{chord} switches between your keyboards, and you have also given it to {action}, so it will do that instead — change one of them to switch keyboards with it again
+leaving.kept.another-format	what you chose about signing out, at {path}, was written for a different alo OS than this one, so nothing in the file has been used and nothing has been reopened
+leaving.kept.not-expressible	this alo OS could not write that into {path} in a way it can read back again, so nothing has been changed
+leaving.kept.not-read	what you chose about signing out, at {path}, could not be read, so nothing has been reopened
+leaving.kept.not-replaced	what you chose about signing out, at {path}, could not be read, so that change has not been written over it and nothing has been changed — correct the file, or put this back as alo OS ships it
+leaving.kept.not-understood	what you chose about signing out, at {path}, is not something alo OS can read, so nothing in the file has been used and nothing has been reopened
+leaving.kept.not-understood-at	what you chose about signing out, at {path}, stops making sense at line {line}, so nothing in the file has been used and nothing has been reopened
+leaving.kept.not-written	what you chose about signing out could not be written to {path}, so nothing has been changed
+leaving.kept.unknown-key	what you chose about signing out, at {path}, says {key}, which is not something alo OS keeps about signing out, so nothing in the file has been used
+leaving.log-out-anyway	Log out anyway, and lose whatever has not been saved
+leaving.setting.reopen	Open my applications again when I sign in
+leaving.some-have-already-closed	Some of your applications have already closed
+leaving.would-not-close	{application} has not closed, and may have work you have not saved
+letting-go.asking.not-left	this machine could not be asked to forget what it is keeping, so nothing has changed and everything the agent changed can still be put back — try again, and if it keeps happening, restart this machine
+letting-go.kept.another-format	how far back you asked this machine to keep what the agent changed, at {path}, was written for a different alo OS than this one, so nothing in the file has been used and it keeps what alo OS ships
+letting-go.kept.not-expressible	this alo OS could not write that change to {path} in a way it can read back again, so nothing about how far back it keeps what the agent changed has changed
+letting-go.kept.not-read	how far back you asked this machine to keep what the agent changed, at {path}, could not be read, so it keeps what alo OS ships
+letting-go.kept.not-replaced	how far back you asked this machine to keep what the agent changed, at {path}, could not be read, so that change has not been written over it and nothing has changed — correct the file, or put this back as alo OS ships it
+letting-go.kept.not-understood	how far back you asked this machine to keep what the agent changed, at {path}, is not something alo OS can read, so nothing in the file has been used and it keeps what alo OS ships
+letting-go.kept.not-understood-at	how far back you asked this machine to keep what the agent changed, at {path}, stops making sense at line {line}, so nothing in the file has been used and it keeps what alo OS ships
+letting-go.kept.not-written	how far back this machine keeps what the agent changed could not be written to {path}, so nothing about it has changed
+letting-go.kept.unknown-key	how far back you asked this machine to keep what the agent changed, at {path}, says {key}, which is not something alo OS can change about it, so nothing in the file has been used
+locking.locked	This machine is locked
+locking.somebody-else	Somebody else
+looking.it-refused	The place this machine's updates come from would not answer this machine, so nothing on this machine has changed
+looking.no-way-out	This machine cannot reach the place its updates come from, so it cannot tell whether there is a newer version. Nothing on this machine has changed
+looking.nothing-came-back	The place this machine's updates come from did not answer, so nothing on this machine has changed
+looking.nothing-is-offered	The place this machine's updates come from is offering no version of this system, so nothing on this machine has changed
+measuring.filling.another-filesystem	On another filesystem, so what is inside it is not counted here.
+measuring.filling.counted-elsewhere	Counted under another of its names, {at}.
+measuring.filling.not-counted	What is filling {at} could not be counted. {why}
+measuring.filling.not-finished	The count stopped before everything inside it was seen.
+measuring.filling.not-read	Could not be read, so nothing inside it is counted.
+measuring.network.this-process-alone	Network traffic counted for this process alone.
+measuring.no-interval	Two readings need time between them.
+measuring.not-on-this-host	What is running can only be read on alo OS itself.
+measuring.number.not-said	Not counted for this process.
+measuring.number.not-yet	Started since the last reading.
+measuring.number.withheld	The kernel did not show this.
+measuring.process.gone	Ended since the last reading.
+measuring.same-moment	Both readings are from the same moment, so nothing can be said about a rate.
+measuring.unreadable	What is running could not be read from {at}.
+measuring.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
+measuring.verb.not-this-crates	nothing here measures {verb} — it says what is running and what is filling a folder, and anything else is somewhere else's to do
+measuring.verb.what-is-filling.argument.folder	the folder to count
+measuring.verb.what-is-filling.purpose	count what is filling a folder, as a tree of sizes
+measuring.verb.what-is-filling.sentence	count what is filling {folder}
+measuring.verb.what-is-running.argument.proc	the kernel's own directory of what is running, which on this machine is /proc
+measuring.verb.what-is-running.purpose	list what is running on this machine and what each process is using
+measuring.verb.what-is-running.sentence	list what is running and what it is using, read from {proc}
+menus.action.ask-the-agent-about-this	Ask the agent about this
+menus.action.change-the-background	Change desktop background
+menus.action.close-the-window	Close
+menus.action.copy	Copy
+menus.action.cut	Cut
+menus.action.move-to-the-wastebasket	Move to wastebasket
+menus.action.open	Open
+menus.action.open-settings	Settings
+menus.action.open-with	Open with…
+menus.action.paste	Paste
+menus.action.rename	Rename
+menus.action.select-all	Select all
+menus.action.the-left-half	Left half of screen
+menus.action.the-right-half	Right half of screen
+menus.refused.not-on-this-menu	that is not something this menu offers, so nothing has happened
+models.agent.elsewhere	you can use a model on a machine you have paired with on your network, or a provider you add — whichever you prefer, and alo OS will not choose for you
+models.agent.none-clears-the-bar	the models that run on this machine do not produce a workable instruction often enough to be given the agent
+models.agent.none-measured	no model that runs on this machine has been measured driving the verbs, so alo OS will not give one the agent
+models.agent.nothing-to-choose-from	no model in this catalogue both runs on this machine and can be used without reading a licence first
+models.agent.weights-you-already-have	you can point alo OS at weights you already have on this machine, and it will run them — this catalogue is what alo OS offers, not everything it can run
+models.brought.already-brought	you already have weights called {name}
+models.brought.file-not-read	the file at {path} could not be looked at, so nothing has been added
+models.brought.fits	these weights fit in the memory this machine has
+models.brought.grade-not-placed	the weights called {name} carry a grade that does not say which machine measured them, so it is not used
+models.brought.larger-than-memory	these weights are larger than the memory this machine has — alo OS will still run them, and this machine will be slow
+models.brought.licence-is-yours	these weights are yours, and so are their terms — alo OS states the licence of what it offers and has not read the licence of a model it did not offer you
+models.brought.measured-not-the-agent	these weights have been measured driving the agent's verbs, not often enough to be given agent turns — they still answer your questions
+models.brought.measured-the-agent	these weights have been measured driving the agent's verbs dependably, so they can be given agent turns
+models.brought.no-file-there	there is no file at {path}, so nothing has been added
+models.brought.not-a-file	{path} is not a file, so nothing has been added
+models.brought.not-measured	nobody has measured whether these weights can drive the agent's verbs, and alo OS has not guessed — they answer your questions now, and get an agent turn once a measurement says they can
+models.brought.unnamed	say which weights: the name the model runtime on this machine knows them by
+models.graded.another-way	not measured the way an agent turn asks: it was measured another way, or not at all, and neither says what this machine would get
+models.graded.as-a-turn-asks	measured the way an agent turn asks: shown the words this machine shows a model, and held to the shape of the request it must answer with
+models.key.blank	paste the key this provider gave you, or leave it out if it does not need one
+models.key.not-sendable	that key has something in it that cannot be sent — copy it again, without the line around it
+models.not-tried.key-not-accepted	that key was not accepted — check it is the whole key, and that it is this provider's
+models.not-tried.needs-a-key	this provider will not answer without a key — add the one it gave you
+models.not-tried.not-understood	that address answered, but not like a provider this system can use — check it is the address of the API rather than of the website
+models.not-tried.not-well	the provider answered {status}, which is a problem at their end — try again in a moment
+models.not-tried.redirected	that address sends this machine somewhere else, and a key is not carried to an address nobody agreed to — use the address the provider documents
+models.not-tried.unreachable	nothing answered at that address — check the address, and that this machine is online
+models.policy.not-this-machine	this machine is set to answer only on itself, and {source} is somewhere else
+models.policy.outside-the-building	this machine is set to keep questions in the building, and {source} would send this one outside it
+models.policy.outside-the-region	this machine is set to use inference in {region} only, and {source} does not meet that
+models.policy.region-unstated	this machine is set to use inference in {region} only, and {provider} has not said where it runs — unknown does not count as there
+models.provider.already-added	you already have a provider called {name}
+models.provider.insecure-endpoint	this address is not https, so your key and your questions would travel unencrypted — use https, or a service on this machine
+models.provider.not-an-address	that does not look like an address: it should start with https://
+models.provider.unnamed	give the provider a name — it is what you will see when it answers
+models.road.on-the-card	this machine is running the model on its graphics card
+models.road.the-processor-another-vendor	this machine's graphics card, made by {vendor}, is not one the model runtime puts models on, so it is running the model on its processor
+models.road.the-processor-no-card	this machine has no graphics card, so it is running the model on its processor
+models.road.the-processor-no-driver	this machine has a graphics card made by {vendor} and no driver that can reach it, so it is running the model on its processor
+models.road.the-processor-not-enough-on-the-card	this machine's graphics card has less memory than this model needs, so it is running the model on its processor
+models.road.the-processor-the-machine-would-not-say	this machine did not say what graphics hardware it has, and it is running the model on its processor
+models.road.the-processor-the-runtime-left-it-there	this machine has a graphics card the model runtime can use, and the model is running on the processor
+models.runtime.download-incomplete	the download stopped before it finished, and nothing was installed
+models.runtime.not-a-path-on-this-disk	{path} is not a file on this machine, and only a file on this machine is offered to the model runtime
+models.runtime.not-enough-disk	there is not enough room on this disk for that download
+models.runtime.not-installed	{model} is not installed
+models.runtime.not-offered	{model} is not a model this system offers
+models.runtime.not-the-pinned-file	the file that arrived for {model} is not the one this system checked, so nothing was installed. {expected} was expected, and {arrived} arrived
+models.runtime.nothing-to-bring	{model} names no file on this machine, so there is nothing to tell the model runtime about
+models.runtime.pin-not-checked	the model runtime would not say which file it has for {model}, so it could not be checked against the one this system vouches for, and nothing was installed
+models.runtime.took-too-long	the model on this machine did not answer in the time alo OS waits — a smaller model, or a shorter question, answers sooner
+models.runtime.unreachable	the model runtime is not reachable
+models.runtime.unusable	the model runtime gave an answer that could not be used
+models.source.hosted	by {provider}, in {region}
+models.source.hosted-unstated	by {provider}, which has not said where it runs
+models.source.paired-machine	on {machine}, on your network
+models.source.this-machine	on this machine
+models.source.this-machines-address	by a service at this machine's address — alo cannot verify where it was processed
+models.tried.list-was-cut	the list is longer than this and was cut
+models.tried.some-names-left-out	some names could not be shown and were left out
+models.tried.worked	that worked, and this provider says what it offers
+models.tried.worked-with-nothing	that worked, and this provider offers no models to choose from
+models.unmeasured.the-runtime-refused-the-file	not measured yet: the model runtime alo OS ships could not answer with this file
+models.unmeasured.too-large-for-the-measuring-machine	not measured yet: it needs more memory than the machine that measured this catalogue has
+models.unmeasured.weights-not-published	not measured yet: there are no published weights this catalogue can point at
+nearby.may.ask-its-models	Ask questions of the models on this machine
+nearby.may.reach-its-workspace	Reach the workspace this machine serves
+nearby.not-paired.both-have-not-agreed	Both machines have to agree. Confirm this on the other machine as well.
+nearby.not-paired.has-to-end	Choose how long this pairing lasts. Pairings always end, and can be renewed.
+nearby.not-paired.not-with-the-one-that-asked	This machine is not paired with the one that asked, so nothing it asked for was considered.
+nearby.not-paired.permits-nothing	Choose at least one thing the other machine may ask for.
+nearby.not-paired.start-again	The two machines could not agree a key between them. Start the pairing again.
+nearby.not-paired.with-itself	This is the machine you are using.
+nearby.not-proposed.already-waiting	A proposal between these two machines is already waiting. Answer that one, or let it lapse.
+nearby.not-proposed.could-not-be-reached	The other machine could not be reached, or did not answer as an alo machine would. Try again.
+nearby.not-proposed.for-another-machine	The proposal named a different machine from the one it reached, so nobody there was shown it. Choose the machine again.
+nearby.not-proposed.from-an-address-not-seen	The other machine has not seen this one on the network, so nobody there was shown the proposal. Make sure both machines can see each other, then try again.
+nearby.not-proposed.nobody-at-the-other-machine	Nobody is at the other machine to show the proposal to.
+nearby.not-proposed.not-accepted-there	The other machine did not accept the proposal. Start the pairing again.
+nearby.not-proposed.not-answered-yet	The other machine has not answered yet, so there is no code to confirm.
+nearby.not-proposed.not-confirmed-by-that-machine	A confirmation arrived that did not come from the machine being paired with, so it was not counted.
+nearby.not-proposed.nothing-waiting	No proposal is waiting between these two machines. Start the pairing again.
+nearby.not-proven.already-used	The same message from a paired machine arrived a second time, so the second was not considered.
+nearby.not-proven.from-another-moment	A message from a paired machine was stamped with a time more than two minutes from this machine's, so it was not considered. Check both machines' clocks.
+nearby.not-proven.not-from-the-machine-it-names	Something arrived naming a paired machine but could not prove it came from there, so nothing it asked for was considered.
+notifying.held.cannot-tell-about-the-screen	Held because this machine cannot tell whether your screen is being shared or recorded
+notifying.held.locked	Held until you unlock this machine
+notifying.held.quiet-hours	Held because this is inside the hours you set aside
+notifying.held.screen-is-shared	Held because your screen is being shared or recorded
+notifying.held.you-asked-for-quiet	Held because you turned notifications off
+notifying.kept.another-format	your notification settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and notifications behave as alo OS ships them
+notifying.kept.not-expressible	this alo OS could not write that change into notification settings at {path} it can read back again, so nothing about notifications has been changed
+notifying.kept.not-read	your notification settings at {path} could not be read, so notifications behave as alo OS ships them
+notifying.kept.not-replaced	your notification settings at {path} could not be read, so that change has not been written over them and nothing about notifications has been changed — correct the file, or put notifications back as alo OS ships them
+notifying.kept.not-understood	your notification settings at {path} are not settings alo OS can read, so nothing in the file has been used and notifications behave as alo OS ships them
+notifying.kept.not-understood-at	your notification settings at {path} stop making sense at line {line}, so nothing in the file has been used and notifications behave as alo OS ships them
+notifying.kept.not-written	your notification settings at {path} could not be written, so nothing about notifications has been changed
+notifying.kept.unknown-key	your notification settings at {path} say {key}, which is not something alo OS can change about notifications, so nothing in the file has been used
+notifying.not-sent.no-action-name	A notification from {application} offered something it has no name for, so nothing has been shown
+notifying.not-sent.no-label	A notification from {application} offered something with no words on it, so nothing has been shown
+notifying.not-sent.no-title	A notification from {application} had nothing to read on it, so nothing has been shown
+notifying.not-sent.not-a-notification	{application} did not ask to send a notification, so nothing has been shown
+notifying.not-sent.too-many-things-to-do	A notification from {application} offered {offered} things to do and a notification may offer {most}, so nothing has been shown
+notifying.nothing-waiting	Nothing is waiting
+notifying.quiet-hours.begins-and-ends-at-once	hours that begin and end at the same time would say nothing about any part of the day
+notifying.sender.alo-os-itself	alo OS itself
+notifying.sender.the-agent	{agent}, the agent on this machine
+notifying.sent-by	Sent by {who}
+opening.appears.a-password-protected-document	an Office document protected with a password
+opening.appears.a-program	a program
+opening.cannot.a-program	This file is a program. Opening a file never runs a program, so it has not been opened
+opening.cannot.damaged	This file is damaged: it is {what}, but it has been cut short or does not hold together inside, so it cannot be opened as it is
+opening.cannot.empty	This file is empty: there is nothing in it to open
+opening.cannot.nothing-here-opens-it	This is {what}, and nothing on this machine opens it or converts it into something that does
+opening.cannot.password-protected	This is an Office document protected with a password, and this machine cannot open a document protected that way
+opening.cannot.unrecognised	This machine does not recognise what this file is, so it has not opened it
+opening.container.compressed	a compressed file
+opening.container.older-office	a file in the format older Office documents are stored in
+opening.converts-a-copy	This is {what}, and this machine opens it by converting a copy into {into}. The original stays exactly as it was, and what the copy could not carry over is said once it has been converted
+opening.kind.autocad-drawing	an AutoCAD drawing
+opening.kind.avi-video	an AVI video
+opening.kind.excel-workbook	an Excel spreadsheet
+opening.kind.flac-audio	a FLAC sound recording
+opening.kind.gif-image	a GIF image
+opening.kind.heic-photo	a photo in the format telephones save
+opening.kind.jpeg-image	a JPEG image
+opening.kind.matroska-video	a Matroska video
+opening.kind.mp3-audio	an MP3 sound recording
+opening.kind.mp4-audio	a sound recording in an MP4 file
+opening.kind.mp4-video	an MP4 video
+opening.kind.ogg-media	an Ogg file
+opening.kind.older-excel-workbook	an Excel spreadsheet in the older format
+opening.kind.older-powerpoint-presentation	a PowerPoint presentation in the older format
+opening.kind.older-word-document	a Word document in the older format
+opening.kind.opendocument-presentation	an OpenDocument presentation
+opening.kind.opendocument-spreadsheet	an OpenDocument spreadsheet
+opening.kind.opendocument-text	an OpenDocument text document
+opening.kind.pages-document	a Pages document
+opening.kind.pdf	a PDF document
+opening.kind.png-image	a PNG image
+opening.kind.powerpoint-presentation	a PowerPoint presentation
+opening.kind.rich-text	a rich text document
+opening.kind.text	plain text
+opening.kind.text-in-an-older-character-set	plain text written in an older character set
+opening.kind.wave-audio	a WAVE sound recording
+opening.kind.webm-video	a WebM video
+opening.kind.webp-image	a WebP image
+opening.kind.word-document	a Word document
+opening.kind.zip-archive	a zip archive
+opening.macros.will-not-be-carried	It contains macros: they will not run, and they will not be carried into the copy
+opening.macros.will-not-run	It contains macros, and they will not run
+opening.named-as-something-else	This file is named as {named}, but it is {what}
+opening.named-as-what-it-is-not	This file is named as {named}, but it is not one
+opening.opens-as-it-is	This is {what}, and this machine opens it as it is
+opening.unreadable	This file could not be read, so nothing has been decided about it
+opening.would.a-complete-copy	What would open is a complete copy, which whoever has the original can send again
+opening.would.a-copy-without-the-password	What would open is a copy saved without the password, which whoever sent it can make
+opening.would.another-machine-or-format	What would open it is a machine with a program for this kind of file, or a copy saved in a different format by whoever sent it
+opening.would.the-document-itself	If a document was expected, whoever sent it can send the document itself instead
+opening.would.whoever-made-it	Whoever sent it can say which program made it, or send a copy saved in a different format
+overlay.answers.nothing	no model or provider has been chosen
+overlay.answers.something	{model} answers, {where}
+overlay.at-rest.nothing-chosen	Nothing has been chosen to answer questions yet. Choose a model to run on this machine, or add a provider to send questions to, and the agent can start
+overlay.at-rest.nothing-granted	The agent can reach nothing on this machine yet. Grant it a folder, and it can work with what is in that folder and with nothing else
+overlay.at-rest.ready	Ask the agent anything
+overlay.egress.nothing-is-leaving	nothing is leaving this machine
+overlay.granted.nothing	nothing is granted
+overlay.summon.no-compositor	The agent has nowhere to appear: the desktop is not running. Sign in to the desktop and press the key again
+overlay.summon.nothing-to-show-on	The agent has nowhere to appear: no screen is connected. Connect a screen and press the key again
+picking.ask	Pick a folder for the agent to reach
+picking.could-lead-elsewhere	That place is named in a way that could lead somewhere else. Start the picker at the folder itself
+picking.covers	The agent will be able to reach {folder} and everything inside it, and nothing outside it
+picking.more-than-shown	There are more folders here than can be shown. Open one of these to narrow it down, or start somewhere further in
+picking.not-a-folder	That is not a folder, so there is nothing in it to pick. Pick a folder instead
+picking.not-a-full-path	That is not a place on this machine. Start the picker at a folder named in full, such as your home folder
+picking.not-shown-here	There is no folder of that name here. Pick one of the folders shown
+picking.nothing-above	This is as far up as the picker goes. Open one of the folders shown, and pick from there
+picking.nothing-there	That folder is not there any more. Go back, and pick another one
+picking.the-whole-machine	The agent is never granted the whole machine. Open a folder, and pick the folder you actually mean
+picking.would-not-be-read	This machine would not open that folder. Pick a folder you can open yourself, or ask whoever looks after this machine
+portals.answered.appearance-read	{application} read your appearance settings, such as light or dark
+portals.answered.appearance-sent	{application} was told your appearance settings changed, such as from light to dark
+portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
+portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
+portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.not-a-request.could-lead-elsewhere	A path with .. in it can lead somewhere else, so a request names a file by its own path
+portals.not-a-request.needs-a-path	This portal is about a file, so a request to it has to say which file
+portals.not-a-request.no-application	A request has to say which application is asking, and this one said none
+portals.not-a-request.not-a-full-path	A request names a file by its full path, so it means the same thing wherever it is read
+portals.not-a-request.not-an-identifier	A request names an application by an identifier like org.gnome.Cheese, with no spaces in it
+portals.not-a-request.not-over-a-path	This portal is not about a file, so a request to it names none
+portals.portal.camera	Lets an application use the camera
+portals.portal.clipboard	Lets an application read what you copied, and copy something for you
+portals.portal.file-chooser	Lets an application open or save a file you choose, and reach that file and nothing beside it
+portals.portal.inhibit	Lets an application keep the machine awake, for example during a presentation
+portals.portal.microphone	Lets an application use the microphone
+portals.portal.network-monitor	Lets an application know whether the machine is connected to a network, and never what is sent over it
+portals.portal.notifications	Lets an application send you notifications
+portals.portal.open-with	Lets an application open a file you have granted it in the application that opens that kind of file
+portals.portal.power-profile-monitor	Lets an application know the power profile, so it can use less power while you are saving it
+portals.portal.print	Lets an application print a document you have granted it
+portals.portal.screen-capture	Lets an application record or share the screen for as long as the grant lasts
+portals.portal.screenshot	Lets an application take one picture of the screen
+portals.portal.secret	Lets an application keep its own passwords in your keyring, and read back only its own
+portals.portal.settings	Lets an application read your appearance settings, such as light or dark, so it can match them
+portals.portal.trash	Lets an application move a file you have granted it to the trash
+portals.portal.wallpaper	Lets an application set the desktop background
+portals.read-back.asked-by	Asked by {application}
+portals.read-back.file-not-read	The file could not be read, so nothing was opened
+portals.read-back.nobody-named	an application that could not be named
+portals.read-back.not-a-kind-anything-opens	The file was not a kind anything opens — a program, empty, damaged, protected with a password or not recognised — so nothing was opened
+portals.read-back.shortened	What applications on this machine were answered does not go all the way back — older answers were removed under how long this machine keeps its record
+portals.read-back.that-kind-of-file	that kind of file
+portals.read-back.what-it-asked-for	what it asked for
+portals.read-back.whole	Nothing has been removed from what applications on this machine were answered
+portals.refused.nothing-granted	{application} has not been granted anything on this machine, so what it asked for was refused without asking you
+portals.unanswered.appearance-unread	Your appearance settings could not be read, so the application was not told them
+portals.unanswered.applications-unread	Which application opens a kind of file could not be read, so nothing was opened
+portals.unanswered.grants-unread	The grants on this machine could not be read, so the request was refused
+portals.unanswered.keyring-unavailable	Your keyring could not be reached or is locked, so the application was not given its secret
+portals.unanswered.network-unread	This machine could not tell whether it is connected, so the application was not told
+portals.unanswered.no-such-setting	An application asked for a setting this machine does not share with applications, and was told there is none
+portals.unanswered.not-a-file	An application can ask for a file to be opened, and what it handed over was not a file
+portals.unanswered.not-a-token	A request names itself with letters, digits and underscores, and this one did not
+portals.unanswered.not-decided-here	This machine does not yet decide what opens a web link or a folder, so nothing was opened
+portals.unanswered.not-identified	A request came from a program that is not a sandboxed application, so no application could be named and it was refused
+portals.unanswered.not-opened	{opener} did not open the file when it was asked to, so nothing was opened
+portals.unanswered.not-written	The application stopped listening before its secret could be handed over
+power.getting-low	The battery is getting low
+power.how-long-is-left	About this long at what this machine is doing now
+power.how-long-is-not-said	This machine will not guess how long is left while what it is doing keeps changing
+power.nearly-gone	The battery is nearly gone. Save what you are doing
+power.profile.balanced	Balanced
+power.profile.performance	Everything it has
+power.profile.saver	Save power
+power.something-is-why	This is what is using this machine
+power.stops-charging-at	Stop charging at this much, which makes a battery last years longer
+power.the-model-is-why	Your model is what is using this machine
+printing.a-printer-without-a-name	a printer that has not given a name this machine can show
+printing.document.cannot-be-opened	Nothing was printed, because this file cannot be opened
+printing.document.not-a-kind-printers-take	This is {what}, and this machine prints PDF documents, pictures and plain text but not this kind of file as it is, so nothing was printed
+printing.document.not-what-its-name-says	Nothing was printed, because this file is not what its name says
+printing.document.unreadable	This file could not be read, so nothing was printed
+printing.found.on-the-network	{printer}, on your network
+printing.found.on-this-machine	{printer}, connected to this machine
+printing.no-printer-yet	No printer is set up on this machine yet. Open Printers in Settings to find one
+printing.not-printing	Nothing was printed, because what was approved was not printing a document
+printing.not-shown-leaving	Nothing was printed, because sending the document to a printer on the network had not been shown as leaving this machine
+printing.not-taken	The printer did not take this document, so it will not print by itself. Once that is put right, print it again
+printing.printed	The document has been sent to the printer
+printing.ready	The printer is ready
+printing.set-up.did-not-answer	{printer} did not answer when this machine asked how to print on it, so it has not been set up. Check that it is switched on and connected, then set it up again
+printing.set-up.done	{printer} is set up, and this machine prints on it
+printing.set-up.needs-its-makers-program	{printer} can only be set up with a program from the company that made it, and this machine does not install programs like that, so it has not been set up. A printer that prints without one, as most printers sold in recent years do, sets up here by itself
+printing.set-up.not-permitted	This machine does not allow printers to be added from this account, so {printer} has not been set up. Someone who looks after this machine can set it up
+printing.set-up.proposed	Set up {printer}, so this machine can print on it
+printing.set-up.service-not-answering	The part of this machine that prints did not respond, so {printer} has not been set up. Restarting this machine starts it again
+printing.stopped.jammed	Paper is stuck in the printer. Open it where its own screen or lights point, gently take the stuck paper out, and close it again
+printing.stopped.not-answering.not-set-up	The printer is not answering: this machine looked for how it was set up and did not find it. Set it up again in Printers, in Settings
+printing.stopped.not-answering.the-printer	The printer is not answering: this machine asked how it is, and it said nothing this machine can act on. Check that it is switched on and connected, by its cable or to the same network as this machine, and look at its own screen or lights
+printing.stopped.not-answering.the-service	The printer is not answering: the part of this machine that prints did not respond when it was asked. Restarting this machine starts it again
+printing.stopped.out-of-ink	The printer has run out of ink or toner. Put in a new cartridge, and documents it has already taken print once it has one
+printing.stopped.out-of-paper	The printer is out of paper. Put paper in its tray, and documents it has already taken print once it has some
+printing.stopped.refused-the-job	The printer refused this document, so nothing was printed. Sending it again will not change that: check in Printers, in Settings, that the printer is taking documents, and if it is, print a PDF copy of the document instead
+printing.verb.print-document.document	the document to print
+printing.verb.print-document.purpose	print a document on this machine's printer
+printing.verb.print-document.sentence	print {document} on this machine's printer
+protocol.from-a-newer-alo-os	that message comes from a newer alo OS than this one — update this machine
+protocol.more-than-one-message	send one message per line — that was more than one
+protocol.not-a-format	that message names a format no alo OS has ever written
+protocol.not-an-answer-for-a-person	that answer was meant for an agent, and a person's screen was given it
+protocol.not-an-answer-for-an-agent	that answer was meant for a person's screen, and an agent was given it
+protocol.not-for-a-person	that is something an agent asks during a turn, not an answer a person gives
+protocol.not-for-an-agent	an agent cannot answer a question that was put to a person
+protocol.not-readable	this machine could not read that message
+protocol.too-long	that message is longer than this machine will read — send a shorter one
+proxy.address.carries-a-password	That proxy address has a name and a password written into it. Type the address on its own, and the name and the password in their own fields — the password is then kept safely and never written into a file
+proxy.address.no-place-for-the-password	Type the name the proxy asks for, or leave both the name and the password empty
+proxy.address.no-port	Type the port the proxy answers on, beside its address
+proxy.address.not-a-host	That is not the name of a proxy. Type the name of the machine on its own, without http:// in front of it and without anything after it
+proxy.address.not-one-line	That proxy address is not one line. Type the name of the proxy on its own
+proxy.address.nowhere	Type the address of the proxy, or choose to reach the network directly
+proxy.address.too-long	That proxy address is longer than any host can be. Check it against what you were given
+proxy.configuration.carries-a-password	That address has a name and a password written into it. Type the address on its own — a password written into it would be written into this machine's settings with it
+proxy.configuration.not-fetchable	That is not an address this machine can fetch the network's rule from. Type the whole address, beginning with http:// or https://
+proxy.configuration.not-one-line	That address is not one line. Type the address this network publishes its rule at on its own
+proxy.configuration.nowhere	Type the address this network publishes its rule at, or choose to reach the network directly
+proxy.configuration.too-long	That address is longer than this machine accepts. Check it against what you were given
+proxy.exception.no-domain	One of the places to reach directly names no domain. Type a name such as example.com, with or without a dot in front of it
+proxy.exception.not-one-line	One of the places to reach directly is not one name. Type each machine or domain as an entry of its own
+proxy.exception.nothing	One of the places to reach directly is empty. Type the name of a machine or a domain there, or remove it
+proxy.exception.too-long	One of the places to reach directly is longer than any machine's name can be. Check it against what you were given
+proxy.not-changed.an-organisation-set-it	Your organisation set the proxy for this machine, so it cannot be changed here. Ask whoever manages it
+proxy.not-signed-in.no-password	This machine does not have the password the proxy for this network asks for, so nothing was sent. Ask whoever manages this machine
+proxy.not-signed-in.not-usable	This machine could not use the password it has for this network's proxy, so nothing was sent. Ask whoever manages this machine
+proxy.not-signed-in.readable-by-anybody	The password for this network's proxy is kept on this machine where other people using it could read it, so nothing was sent. Ask whoever manages this machine to set it again
+proxy.password.blank	Type the password the proxy asks for, or leave the name empty as well
+proxy.password.not-sendable	That password holds something that cannot be sent. Type it again rather than pasting it
+proxy.refused.could-not-be-worked-out	This machine could not work out how to reach that, so nothing was sent. Ask whoever runs this network
+proxy.refused.nothing-works-it-out	This machine cannot read the rule this network publishes, so nothing was sent. Ask whoever runs this network for the address of its proxy
+proxy.set-by.an-organisation	Your organisation set this
+proxy.set-by.this-person	You set this
+proxy.the-proxy.automatic	This machine asks the network where each connection should go
+proxy.the-proxy.manual	This machine reaches the network through the proxy set here
+proxy.the-proxy.none	This machine reaches the network directly
+recounting.description-not-read	What this machine did cannot be shown to you: what this machine says about itself could not be read. Ask whoever set it up
+recounting.no-compositor	What this machine's record says cannot be put in front of you: the desktop is not running. Sign in to the desktop, and ask again
+recounting.no-description	What this machine did cannot be shown to you: this machine does not say where it keeps a record of what its agent has done. Ask whoever set it up
+recounting.not-a-description	What this machine did cannot be shown to you: what this machine says about itself cannot be read by this version of alo OS. Ask whoever set it up
+recounting.nothing-to-show-on	What this machine's record says cannot be put in front of you: no screen is connected. Connect a screen, and ask again
+recounting.nothing-to-tell	nothing in this machine's record answers that question
+recounting.only-the-most-recent	this is the most recent part of what answers that question, and not all of it
+recounting.outcome.answered-for-another-machine	a machine you paired with asked a question and it was answered on this machine
+recounting.outcome.answered-here	the agent asked a question and it was answered on this machine
+recounting.outcome.carried-on-after-sleep	the machine went to sleep while the agent was working on this, and the work carried on when it woke
+recounting.outcome.grants-not-read-again	what you have granted could not be read again, so this machine went on with the list it already had
+recounting.outcome.held-back	something would have left this machine and was not allowed to, so nothing left
+recounting.outcome.left	something left this machine
+recounting.outcome.left-on-its-own	alo OS reached the network itself, with nobody having asked it to
+recounting.outcome.let-go-outside-the-window	this can no longer be put back: the machine keeps what an agent changed only for as long as you asked it to
+recounting.outcome.let-go-the-disk-needed-the-room	this can no longer be put back: the disk was running out of room, and the oldest of what the machine was holding went first
+recounting.outcome.let-go-the-person-asked-to-forget	this can no longer be put back: you asked this machine to forget everything it was keeping so that the agent's changes could be undone
+recounting.outcome.machine-change-handed-on	a change to settings for the whole machine was passed on to be made, as the person approved
+recounting.outcome.machine-change-refused	a request to change settings for the whole machine was refused, and nothing was changed
+recounting.outcome.never-became-a-call	the agent asked for something this machine does not offer, so nothing was done
+recounting.outcome.never-put-anywhere	the agent asked a question and it was not put anywhere, so nothing was sent
+recounting.outcome.nobody-was-asked	the agent asked to do this and it was refused before anybody was asked about it
+recounting.outcome.not-bounded	the agent asked for this and nothing was done, because this machine could not hold the agent      inside what was granted
+recounting.outcome.not-put-back	you asked for this to be put back as it was, and it could not be
+recounting.outcome.paired	this machine was paired with another machine
+recounting.outcome.put-back	you put this back as it was before the agent changed it
+recounting.outcome.ran	the agent did this
+recounting.outcome.rolled-back	this machine went back to the version of its system it ran before, as the person asked, after they restarted it
+recounting.outcome.stopped-by-sleep	the machine went to sleep while the agent was working on this, and the work was stopped when it woke
+recounting.outcome.the-grants-said-no	the agent asked to do this and it was refused at the moment it would have happened
+recounting.outcome.the-person-said-no	the agent asked to do this and the person at this machine said no
+recounting.outcome.updated	this machine started on an updated version of its system, after the person restarted it
+recounting.outcome.workspace-opened	the person at this machine opened a workspace found on the network
+setup.choice.not-at-all	not at all
+setup.choice.not-at-all.is	nothing answers questions, and everything else on this computer works the same way
+setup.choice.on-a-machine-on-this-network	on a machine on your network
+setup.choice.on-a-machine-on-this-network.is	another computer you have paired with this one answers, and your question leaves this computer
+setup.choice.on-this-machine	on this machine
+setup.choice.on-this-machine.is	a model already on this computer answers, and your question does not leave it
+setup.choice.with-a-provider	with a provider you add
+setup.choice.with-a-provider.is	a service you name and give an address and a key answers, and your question leaves this network
+setup.not-answered.already-answered	setup has already been answered on this computer, so it was not answered again — what answers your questions is in settings
+setup.not-answered.another-choice	that answer is not the choice that is selected, so nothing has been chosen and setup is still waiting for an answer
+setup.not-answered.no-paired-machine	this computer has not been paired with another one, so nothing has been chosen and setup is still waiting for an answer
+setup.not-answered.nothing-selected	nothing is selected, so nothing has been chosen and setup is still waiting for an answer
+setup.not-answered.nothing-to-ask-for	that service has not been given a model to answer with, so nothing has been chosen and setup is still waiting for an answer
+setup.the-question	where should your questions be answered?
+shortcuts.action.close-window	Close the window
+shortcuts.action.launcher	Open the launcher
+shortcuts.action.maximise-window	Maximise the window, or put it back
+shortcuts.action.minimise-window	Minimise the window
+shortcuts.action.next-application	Next application
+shortcuts.action.next-window	Next window
+shortcuts.action.previous-application	Previous application
+shortcuts.action.previous-window	Previous window
+shortcuts.action.snap-left	Put the window on the left half
+shortcuts.action.snap-right	Put the window on the right half
+shortcuts.action.the-agent	Ask the agent
+shortcuts.chord.nothing-held	hold Super, Ctrl or Alt as well — a shortcut on {key} by itself would take that key away from everything you type
+shortcuts.chord.shift-is-not-enough	Shift only changes which character {key} prints — hold Super, Ctrl or Alt as well
+shortcuts.chord.the-clipboard-copies	Ctrl+C is how copying works in every application — pick another key
+shortcuts.chord.the-clipboard-cuts	Ctrl+X is how cutting works in every application — pick another key
+shortcuts.chord.the-clipboard-pastes	Ctrl+V is how pasting works in every application — pick another key
+shortcuts.clash.more-than-one-thing	{chord} is set to do more than one thing — change one of them
+shortcuts.clash.taken	{chord} is already {action} — change that one first, or use another key
+shortcuts.kept.another-format	your shortcut settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and every shortcut is the one alo OS ships
+shortcuts.kept.not-expressible	this alo OS could not write that change into shortcut settings at {path} it can read back again, so no shortcut has been changed
+shortcuts.kept.not-read	your shortcut settings at {path} could not be read, so every shortcut is the one alo OS ships
+shortcuts.kept.not-replaced	your shortcut settings at {path} could not be read, so that change has not been written over them and no shortcut has been changed — correct the file, or put shortcuts back as alo OS ships them
+shortcuts.kept.not-understood	your shortcut settings at {path} are not settings alo OS can read, so nothing in the file has been used and every shortcut is the one alo OS ships
+shortcuts.kept.not-understood-at	your shortcut settings at {path} stop making sense at line {line}, so nothing in the file has been used and every shortcut is the one alo OS ships
+shortcuts.kept.not-written	your shortcut settings at {path} could not be written, so no shortcut has been changed
+shortcuts.kept.unknown-key	your shortcut settings at {path} say {key}, which is not something alo OS can change about shortcuts, so nothing in the file has been used
+shortcuts.key.backspace	Backspace
+shortcuts.key.delete	Delete
+shortcuts.key.down	Down
+shortcuts.key.end	End
+shortcuts.key.enter	Enter
+shortcuts.key.escape	Escape
+shortcuts.key.home	Home
+shortcuts.key.insert	Insert
+shortcuts.key.left	Left
+shortcuts.key.page-down	Page Down
+shortcuts.key.page-up	Page Up
+shortcuts.key.print	Print
+shortcuts.key.right	Right
+shortcuts.key.space	Space
+shortcuts.key.tab	Tab
+shortcuts.key.up	Up
+shortcuts.modifier.alt	Alt
+shortcuts.modifier.ctrl	Ctrl
+shortcuts.modifier.shift	Shift
+shortcuts.modifier.super	Super
+signing-in.already-signed-in	This machine is already signed in. Sign out of the session that is open before starting another one
+signing-in.nobody-here	Signing in did not finish: this machine has no account with that number. The accounts on this machine and the screen you signed in at disagree about who you are
+signing-in.not-opened	Signing in did not finish: this machine would not start a session. Nothing you typed was wrong, and nothing about your account has changed
+signing-in.not-yours-to-ask	Something asked this machine to start a session, and it is not the screen people sign in at. Nothing was started
+sleeping.after.stopped	The agent stopped working on what you asked, because its time ran out while this machine was asleep. Ask again to start over.
+sleeping.holding.the-lid	Deciding what closing the lid does
+sleeping.holding.until-locked	Locking this machine before it sleeps
+sleeping.kept-awake.by-an-application	This machine is staying awake because {application} asked to keep it awake
+sleeping.kept-awake.by-the-agent	This machine is staying awake because the agent is still working on what you asked
+sleeping.kept-awake.by-your-setting	This machine is staying awake because you set it to stay awake
+sleeping.kept.another-format	your sleep settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and this machine sleeps as alo OS ships it
+sleeping.kept.not-expressible	this alo OS could not write that change into sleep settings at {path} it can read back again, so nothing about sleep has been changed
+sleeping.kept.not-read	your sleep settings at {path} could not be read, so this machine sleeps as alo OS ships it
+sleeping.kept.not-replaced	your sleep settings at {path} could not be read, so that change has not been written over them and nothing about sleep has been changed — correct the file, or put sleep back as alo OS ships it
+sleeping.kept.not-understood	your sleep settings at {path} are not settings alo OS can read, so nothing in the file has been used and this machine sleeps as alo OS ships it
+sleeping.kept.not-understood-at	your sleep settings at {path} stop making sense at line {line}, so nothing in the file has been used and this machine sleeps as alo OS ships it
+sleeping.kept.not-written	your sleep settings at {path} could not be written, so nothing about sleep has been changed
+sleeping.kept.unknown-key	your sleep settings at {path} say {key}, which is not something alo OS can change about sleep, so nothing in the file has been used
+sleeping.lid.stays-awake	This machine is staying awake with its lid closed because another display is attached and you chose that
+sleeping.not-asleep	This machine did not go to sleep. It is locked and still running.
+sleeping.not-held.by-the-machine	This machine would not agree to stay awake, so it may still go to sleep
+sleeping.not-held.not-asking-to-stay-awake	{application} did not ask to keep this machine awake, so it is not keeping it awake
+sleeping.not-held.the-agent-is-not-working	The agent is no longer working on what you asked, so it is not keeping this machine awake
+sleeping.setting.keep-awake	Keep this machine awake
+sleeping.setting.lid-sleeps	Sleep when the lid is closed
+sleeping.setting.lid-stays-awake-with-a-display	Stay awake when the lid is closed and another display is attached
+software.installed	{application} is installed. It has been given nothing: it asks when it needs a file, the camera or anything else, and you answer
+software.refused.already-installed	{application} is already installed on this machine, so it was not installed again. Updates for it are offered in Software
+software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
+software.refused.not-enabled	{source} is not a place this machine installs applications from, so nothing was installed. Choose one of the places listed under Software in Settings
+software.refused.not-installed	{application} is not installed on this machine, so there is nothing to update or remove. Check the application's name
+software.refused.not-offered	{source} does not offer {application}, so nothing was installed. Check the application's name, or choose another place it comes from
+software.refused.not-verified	{source} is set up without checking that what it sends really comes from it, so this machine does not install or update anything from it. Nothing was installed
+software.refused.nowhere-to-reach	{source} is not set up with an address on the network this machine can reach, so nothing was installed or updated from it. Whoever set it up can give it one
+software.refused.outside-the-bound.administrator	The organisation that manages this machine does not permit installing applications from {source}, so nothing was installed or updated from it. Someone who looks after this machine can say which places are permitted
+software.refused.outside-the-bound.this-person	This machine's own settings do not permit installing applications from {source}, so nothing was installed or updated from it. No organisation set this: it was set on this machine, and can be changed there
+software.refused.signature-not-shown	What {source} sent for {application} could not be shown to come from {source}, so nothing was installed and nothing it sent was kept. Try again later, or ask whoever runs {source}
+software.refused.still-open	{application} is open, so it was not updated. Close it and choose to update it again: an update never closes an application by itself
+software.removed	{application} is removed. Everything it was allowed has ended, and so has every permission to use it
+software.update-offered	A newer version of {application} is ready. It is updated when you choose, and never while it is open
+software.updated	{application} is updated. Nothing else was closed or restarted
+software.verb.install-application.application	the application to install, by its identifier
+software.verb.install-application.purpose	install an application from a place this machine installs applications from
+software.verb.install-application.sentence	install {application} from {source}
+software.verb.install-application.source	the place to install it from, by the name this machine gives that place
+software.web.nothing-opens	No application on this machine opens web addresses, so nothing was opened. Install a web browser, and it opens them
+software.web.nothing-opens.choice-gone	{chosen}, which you chose to open web addresses, is not installed, and nothing else on this machine opens them. Install it again, or install another web browser
+software.web.opens.chosen	{application} opens web addresses, because you chose it
+software.web.opens.instead	{application} opens web addresses, because {chosen}, which you chose, is not installed. Install it again, or choose another
+software.web.opens.instead-of-a-persons-own	{application} opens web addresses. {chosen}, which you chose, is yours alone, and a web address written by somebody else is never handed to it
+software.web.opens.shipped	{application} opens web addresses. It came with this machine, and you can choose another or remove it
+software.web.refused.carries-a-password	That web address carries a name and a password inside it, so nothing was opened. Open the site and sign in there instead
+software.web.refused.not-a-web-address	That is not a web address, so nothing was opened. A web address begins with http:// or https://
+software.web.refused.not-an-application	Something asked to open a web address without saying which application it is, so nothing was opened. An application that cannot name itself cannot be allowed anything either
+software.web.refused.nothing-granted	{application} has not been allowed anything on this machine, so the web address was not opened. Allow it the web browser you want it to open addresses in, and it can ask again
+sound.muted	Muted — nothing is heard from it
+sound.not-muted	On
+sound.pinned	Always use this one when it is here
+sound.pinned-one-is-away	The device you always use is not connected, so this machine chose another
+starting.menu.windows	Windows
+starting.now-starts-alo-os	alo OS now starts on this computer whenever nobody chooses. You can change that here at any time
+starting.now-starts-windows	Windows now starts on this computer whenever nobody chooses. You can change that here at any time
+starting.refused.approval-not-accepted	This was not done, because its approval was not accepted: it was used already, came too late, or was not given for this. Nothing was changed. Ask again, and approve it when you are asked
+starting.refused.does-not-start-windows	What was chosen does not start Windows, so nothing was changed. Switch the computer off and on, and choose Windows from the list it starts at
+starting.refused.more-than-one-windows	More than one thing on this computer starts Windows, so nothing was changed. Switch the computer off and on, and choose Windows from the list it starts at
+starting.refused.no-windows-here	There is no Windows on this computer to start, so nothing was changed. A computer alo OS replaced has only alo OS on it
+starting.refused.not-a-starting-change	This was not about which system starts, so nothing was changed
+starting.refused.not-answering	This computer will not say what it can start, so nothing was changed. Restart it, then try again
+starting.refused.not-being-kept	This machine has stopped keeping its record of changes to its settings, so it makes none. Nothing was changed. Restart the machine
+starting.refused.not-remembered	This computer would not keep which system it should start, so nothing was changed. It still starts the one it started before, and you can choose the other from the list it shows when it is switched on
+starting.refused.nothing-makes-changes	The part of this machine that changes its settings is not running, so nothing was changed. Restart the machine
+starting.refused.would-not-be-told	This computer would not be told to start Windows next time, so nothing was changed. Switch it off and on, and choose Windows from the list it starts at
+starting.starts-at-alo-os	This computer starts alo OS when nobody chooses
+starting.starts-at-windows	This computer starts Windows when nobody chooses
+starting.windows-next	Windows will start the next time you switch this computer on. Nothing else changed: the time after that, it starts the way it always does
+telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
+telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
+telling.the-agent-cannot-answer	The agent cannot answer right now
+turn.closed	this turn has stopped, because what happened on it could not be written down
+turn.grant-here-expired	{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach {wanted} — nothing granted on another machine stands in for it
+turn.no-longer-paired	this machine is no longer paired with {machine}, so nothing more it asked for is considered
+turn.not-bounded	nothing was done: this machine cannot hold an agent inside what you granted it, so it will not let one act at all — ask whoever set this machine up to look at it
+turn.not-granted-here	{machine} has not been granted {wanted} on this machine — what was granted on another machine does not reach here, and only a grant made here would

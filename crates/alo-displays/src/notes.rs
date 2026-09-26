@@ -41,6 +41,16 @@ pub enum Note {
     /// with, so the set in front of the person now was set up from what is
     /// reported rather than from what it was holding.
     TheDeskChanged,
+    /// The screens now in front of the person are not a set they have arranged,
+    /// so whatever they arranged where they were is being held for them.
+    ///
+    /// Said beside [`Self::TheDeskChanged`] and **only when it is true of the
+    /// moment**: arriving somewhere they have arranged, they are losing no
+    /// arrangement and [`Self::AsYouLeftThem`] is the sentence. It was the last
+    /// clause of that one until session task 13 split it under ADR 0068, because
+    /// as one sentence it promised somebody standing at their own desk that their
+    /// own desk was waiting for them.
+    TheOtherDesksArrangementIsKept,
     /// Night light follows the sun, and the sun does not set here today, so the
     /// screens are not being warmed.
     TheSunDoesNotSet,
@@ -67,7 +77,8 @@ impl Note {
             Self::RememberedByItsSocket(_) => words::REMEMBERED_BY_ITS_SOCKET,
             Self::ToldApartByTheirSockets => words::TOLD_APART_BY_THEIR_SOCKETS,
             Self::DidNotFit => words::DID_NOT_FIT,
-            Self::TheDeskChanged => words::THE_DESK_CHANGED,
+            Self::TheDeskChanged => words::WOKE_TO_OTHER_SCREENS,
+            Self::TheOtherDesksArrangementIsKept => words::THE_OTHER_DESKS_ARRANGEMENT_IS_KEPT,
             Self::TheSunDoesNotSet => words::THE_SUN_DOES_NOT_SET,
             Self::TheSunDoesNotRise => words::THE_SUN_DOES_NOT_RISE,
             Self::SizeRounded { .. } => words::SIZE_ROUNDED,
@@ -86,6 +97,7 @@ impl Note {
             | Self::DidNotFit
             | Self::TheDeskChanged
             | Self::TheSunDoesNotSet
+            | Self::TheOtherDesksArrangementIsKept
             | Self::TheSunDoesNotRise => None,
         }
     }
@@ -107,6 +119,7 @@ impl Note {
             | Self::DidNotFit
             | Self::TheDeskChanged
             | Self::TheSunDoesNotSet
+            | Self::TheOtherDesksArrangementIsKept
             | Self::TheSunDoesNotRise => Filling::nothing(),
         };
         strings.say(&self.word().key(), &filling)
@@ -137,6 +150,7 @@ mod tests {
             Note::ToldApartByTheirSockets,
             Note::DidNotFit,
             Note::TheDeskChanged,
+            Note::TheOtherDesksArrangementIsKept,
             Note::TheSunDoesNotSet,
             Note::TheSunDoesNotRise,
             Note::SizeRounded {
