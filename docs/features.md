@@ -82,7 +82,7 @@ Nothing here is a differentiator. All of it is required.
 
 - [v0.5] Screenshots: whole screen, one window, a selected region — to a file or the clipboard
 - [v0.5] Annotate a screenshot without opening anything else
-- [v0.5] **Screen recording**, with audio, to a file
+- [v2] **Screen recording**, with audio, to a file
 - [v0.5] Screen sharing for calls
 - [v0.5] ★ **A visible indicator whenever the screen, camera or microphone is in use** — by any application, including ours. Law 1 is about egress; this is the same instinct applied to the room you are sitting in
 

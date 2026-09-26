@@ -42,9 +42,20 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** ready — **the owner decided on 2026-09-26 that alo OS ships with
-video and with images**, which is the choice this task was blocked on and could
-not make for itself. [ADR 0058](../decisions/0058-which-software-decoders-the-image-ships.md)
+**Status:** scheduled — **carried to v2 by the owner's decision of 2026-09-26**,
+later the same day: the launch film leads with the canvas, and nobody trying a
+developer preview needs video. The decision earlier that day — that alo OS
+ships with video and images — stands as the eventual answer; what moved is
+when.
+
+**What waiting costs, so nobody meets it by surprise.** With no pipeline the
+machine **plays nothing compressed**: no video, and no MP3 or AAC either, even
+though all five audio decoders are in the image with nothing to drive them.
+PipeWire's own `pw-cat` still reads WAV, FLAC and OGG through libsndfile, so it
+is not silent. **Screen recording is not possible** — that needs an encoder
+(AV1 or VP9, Opus, Matroska, [ADR 0051](../decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md)),
+which no release has ever shipped. All three belong in the preview's published
+list of what it does not do. [ADR 0058](../decisions/0058-which-software-decoders-the-image-ships.md)
 stands unamended: it already promises AV1, VP9 and VP8 in software and
 `openh264` behind hardware for H.264. **The image is the thing that is wrong**,
 and it is the image that changes.
