@@ -75,7 +75,13 @@ use alo_sleeping::{
 use alo_strings::{Said, Strings};
 
 /// The report the walk is recorded in, relative to the repository.
-const THE_REPORT: &str = "docs/autonomy/updates/every-sentence-at-a-desk-that-changed.md";
+///
+/// It moved when task 13 split `displays.the-desk-changed`: the sequence changed,
+/// so the table was **republished in a follow-up report** and this points at that
+/// one. Task 12 published the first table and it is not edited — it was true of
+/// the sentence as it then was, and a published report is never rewritten. The
+/// table this reads is always the newest publication of it.
+const THE_REPORT: &str = "docs/autonomy/updates/the-reassurance-said-only-when-it-is-true.md";
 
 /// The heading the table is under.
 const THE_WALK: &str = "## The walk, sentence by sentence";
@@ -373,11 +379,19 @@ fn the_walk_is_the_sequence_the_report_records() {
     }
 }
 
-/// **The sentence task 11 added is met.** That is the whole reason this walk
-/// exists: `displays.the-desk-changed` was decided, built and tested one
-/// sentence at a time, and no recorded sequence had it.
+/// **The fact task 11 decided is met.** That is the whole reason this walk
+/// exists: a machine waking to screens it did not sleep with was decided, built
+/// and tested one sentence at a time, and no recorded sequence had it.
+///
+/// The sentence has since changed hands. Task 11 added
+/// `displays.the-desk-changed`, which said this **and** promised that the
+/// arrangement made elsewhere was waiting — a promise it made to somebody
+/// standing at the desk in question, which this walk is what found. Task 13 split
+/// it under ADR 0068 and that key retired, so what is held here is
+/// `Note::TheDeskChanged`, the fact rather than the wording: whichever sentence
+/// carries it, the walk must meet it.
 #[test]
-fn the_sentence_task_eleven_added_is_met() {
+fn the_fact_task_eleven_decided_is_met() {
     let strings = in_english();
     let the_desk_changed = alo_displays::Note::TheDeskChanged.said(&strings);
     let walked = the_walk();

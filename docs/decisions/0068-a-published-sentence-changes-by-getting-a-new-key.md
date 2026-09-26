@@ -1,6 +1,7 @@
 # ADR 0068 — A published sentence changes by getting a new key, never by being edited under the old one
 
-**Status:** proposed, 2026-09-26.
+**Status:** accepted, 2026-09-26 — with the two amendments under *As the owner
+accepted it*, which are part of the decision rather than commentary on it.
 
 Written by task 13 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`,
 which cannot be built until it is answered: it has to change a sentence a person
@@ -12,6 +13,50 @@ The key of a user-facing string is a public surface, because every translation i
 keyed to it — so **a sentence whose meaning changes gets a new key and the old key
 is retired**, and only a change that leaves the meaning alone may be made under the
 key it already has.
+
+## As the owner accepted it
+
+**Amendment one — the rule is about meaning, not text, and there is one test for
+it.** A new key is required when the meaning changes; the same key is kept when the
+wording improves and the claim does not. The question to apply, every time:
+
+> **Would a correct translation of the old English still be a correct translation
+> of the new one?**
+
+Yes — the same key, and translators are told it was reworded. No — a new key, and
+the old one retires.
+
+This is not a softening. Without it a comma costs every language its translation,
+and *a rule that expensive gets worked around rather than followed* — which would
+leave the repository worse off than the silence this decision replaces, because a
+rule nobody keeps also tells nobody the truth. The question is the rule; the
+paragraphs below are how it is applied.
+
+**Amendment two — it is enforced in the same change that accepts it.** Three
+commits had already moved a `Word`'s text with nothing to consult, so this will be
+broken again by somebody in a hurry unless something catches it. `alo-saying` now
+carries a snapshot of every key and the English under it, and a test that fails
+when the text under a key moves **unless the change declares the meaning
+unchanged**. The declaration is the point: it makes somebody answer the question
+above rather than skip it.
+
+The snapshot is `crates/alo-saying/the-vocabulary.txt` — 1,477 keys at the time of
+writing, generated, one line per key. The declarations are
+`crates/alo-saying/reworded.txt`, where a rewording that kept its key records the
+key, the exact English it now reads, and why a translation of the old one still
+fits. `crates/alo-saying/tests/a_published_sentence_keeps_its_key.rs` holds both,
+and the refusal was seen before it was believed: a comma added to
+`displays.as-you-left-them` fails the comparison with the question printed, and
+**regenerating the snapshot refuses to write at all** until the declaration exists.
+`now:` is checked against what the machine actually says, so a record cannot drift
+from the sentence it is about.
+
+What it is not: proof. Whether a translation of the old English still fits the new
+one is a judgement in every language the sentence exists in, and nothing mechanical
+reaches it. What the check removes is the case that actually happened — the text
+moving with **nobody asked at all** — and what it leaves is a reviewer who is
+asked, in a changed line of a generated file beside a declaration saying why the
+meaning held.
 
 ## What forced the question
 
@@ -73,11 +118,14 @@ against ours exactly as an adapter author is.
 1. **A key's meaning is fixed once it is published.** A sentence whose meaning
    changes — narrowed, widened, split, or conditioned on something new — is a
    **new key**. The old key is retired in the same change.
-2. **An edit under the existing key is allowed only where the meaning is
+2. **An edit under the existing key is allowed wherever the meaning is
    unchanged**: a typo, grammar, punctuation, a clearer word for the same fact, or
    the translator's note (which is instruction to a translator, not a claim to a
-   person). If a translator would have written the same sentence in their language
-   before and after, it is the same meaning.
+   person). The test is amendment one's question and nothing else — *would a
+   correct translation of the old English still be a correct translation of the
+   new one?* — and it is deliberately generous, because the cost of the answer
+   being *no* is every language's translation of that key and the cost of the
+   answer being *yes* is a line in `reworded.txt`.
 3. **Splitting a sentence is two new keys and one retirement**, because the
    remaining half no longer means what the whole did. It does not matter that the
    text of one half is a substring of the original.

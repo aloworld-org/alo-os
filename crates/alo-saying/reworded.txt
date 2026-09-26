@@ -1,0 +1,28 @@
+# Sentences whose English was reworded and whose key was kept, and why the
+# meaning held.
+#
+# ADR 0068: a sentence whose MEANING changes gets a new key and the old key
+# retires; a rewording that leaves the claim alone keeps the key it has. The test
+# is one question, and the `why:` line below answers it:
+#
+#   Would a correct translation of the OLD English still be a correct
+#   translation of the NEW one?
+#
+# Yes, and the key stays — a comma, a clearer word for the same fact, grammar.
+# No, and it is a new key, because every existing translation of the old key
+# would otherwise go on rendering perfectly while saying something this product
+# no longer says.
+#
+# One record per rewording, three lines and a blank line after it:
+#
+#   key: the-area.the-key
+#   now: the exact English as it now reads
+#   why: why a correct translation of the old English still fits this one
+#
+# `now:` is checked against what the machine actually says, so a record cannot
+# drift from the sentence it is about. Adding a key needs no record here, and
+# neither does retiring one: a new sentence is additive, and a retired key's
+# translations are never consulted again.
+#
+# Nothing has been reworded under this rule yet. The first record goes below.
+

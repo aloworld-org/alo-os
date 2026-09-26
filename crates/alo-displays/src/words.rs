@@ -107,19 +107,48 @@ pub const DID_NOT_FIT: Word = Word::saying(
 );
 
 /// The screens are not the ones the machine went to sleep with.
-pub const THE_DESK_CHANGED: Word = Word::saying(
-    "displays.the-desk-changed",
+///
+/// This replaced `displays.the-desk-changed`, which said this **and** promised
+/// that the arrangement made at the other desk was still waiting — a promise it
+/// made on the return leg too, to somebody standing at the desk in question.
+/// Session task 12's walk found it; task 13 split it under ADR 0068, so the
+/// reassurance is [`THE_OTHER_DESKS_ARRANGEMENT_IS_KEPT`] and is said only when
+/// it is true of the moment. The old key retired rather than being edited,
+/// because a translation of it would otherwise have gone on promising something
+/// this sentence no longer says.
+pub const WOKE_TO_OTHER_SCREENS: Word = Word::saying(
+    "displays.woke-to-other-screens",
     "Your screens have changed since this machine went to sleep, so alo OS has set up the ones in \
-     front of you now — the arrangement you made at the other desk is still here for when you are \
-     back at it",
+     front of you now",
 )
 .noting(
     "\"alo OS\" is the product's name and is never translated. Said once, when a machine that was \
      asleep is woken and the screens plugged into it are not the ones it went to sleep with: a \
      laptop closed at home and opened at the office is the everyday case. It is not a fault and \
      should not read like one — it says why the screens are laid out differently than they were a \
-     moment ago. The last clause matters: nothing the person arranged at another desk has been \
-     thrown away.",
+     moment ago. It says nothing about what was kept: where anything the person arranged is being \
+     held for them, displays.the-other-desks-arrangement-is-kept says so, and it is a sentence of \
+     its own because it is not true every time this one is.",
+);
+
+/// What the person arranged where they were is still there for them.
+///
+/// Said **only when the screens now in front of them are not a set they have
+/// arranged** — so it reassures about something that is actually at risk. Coming
+/// back to their own desk it is not said at all: they are not losing an
+/// arrangement, they are getting one back, and
+/// [`AS_YOU_LEFT_THEM`] is the sentence for that.
+pub const THE_OTHER_DESKS_ARRANGEMENT_IS_KEPT: Word = Word::saying(
+    "displays.the-other-desks-arrangement-is-kept",
+    "The arrangement you made at your other desk is still here for when you are back at it",
+)
+.noting(
+    "Said beside displays.woke-to-other-screens, on a machine woken somewhere it has not been \
+     arranged before — a laptop opened at a hotel or a borrowed desk. It is reassurance: nothing \
+     the person set up elsewhere has been thrown away by being somewhere else. It is NOT said when \
+     they arrive somewhere they have arranged, because then they are not losing anything and \
+     displays.as-you-left-them is the true sentence. \"Other desk\" means wherever they were when \
+     they last arranged their screens, and needs no name for a place.",
 );
 
 /// The sun does not set today, so night light has nothing to start at.
@@ -544,13 +573,14 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 43] = [
+pub const EVERY_WORD: [Word; 44] = [
     AS_YOU_LEFT_THEM,
     NEW_HERE,
     REMEMBERED_BY_ITS_SOCKET,
     TOLD_APART_BY_THEIR_SOCKETS,
     DID_NOT_FIT,
-    THE_DESK_CHANGED,
+    WOKE_TO_OTHER_SCREENS,
+    THE_OTHER_DESKS_ARRANGEMENT_IS_KEPT,
     THE_SUN_DOES_NOT_SET,
     THE_SUN_DOES_NOT_RISE,
     SIZE_ROUNDED,

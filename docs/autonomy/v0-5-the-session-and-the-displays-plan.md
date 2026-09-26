@@ -804,8 +804,30 @@ somewhere a person reads before this plan is called done.
 
 ### 13. The reassurance that is wrong on the way home
 
-**Status:** blocked — on [ADR 0068](../decisions/0068-a-published-sentence-changes-by-getting-a-new-key.md),
-proposed 2026-09-26. **Depends on:** 12.
+**Status:** done. **Depends on:** 12, and [ADR 0068](../decisions/0068-a-published-sentence-changes-by-getting-a-new-key.md),
+accepted 2026-09-26 with two amendments.
+
+**Done, 2026-09-26.** Report:
+[`updates/the-reassurance-said-only-when-it-is-true.md`](updates/the-reassurance-said-only-when-it-is-true.md).
+
+`displays.the-desk-changed` retired; `displays.woke-to-other-screens` carries the
+plain fact and `displays.the-other-desks-arrangement-is-kept` the reassurance, said
+only when `Changes::for_screens` finds no arrangement for the set she has arrived
+at — the same question that already chose between a kept layout and a worked-out
+one, so nothing new decides what counts as a desk of hers. Two new keys and a
+retirement rather than an edit: ADR 0068's question answers *no* here without
+argument, because the old sentence made two claims and the new one makes one.
+
+On the office morning she reads what happened, that what she arranged elsewhere is
+safe, the new screen placed, and where her open work went. On the morning she comes
+home **the wrong promise is gone and nothing replaced it** — and the two sentences
+left are a sequence rather than a duplicate: one says the set differs from the one
+it slept with, the other that this set is as she left it.
+
+The walk's table moved to the follow-up report and the test repoints at it, because
+task 12's report is published and was true of the sentence as it then was. One test
+claimed *the sentence task 11 added is met*; that key has retired, so it holds the
+fact rather than the wording and says why.
 
 Written 2026-09-26 by task 12, whose walk found it. `displays.the-desk-changed`
 ends *the arrangement you made at the other desk is still here for when you are

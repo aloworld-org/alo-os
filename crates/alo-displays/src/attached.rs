@@ -352,6 +352,24 @@ impl Attached {
         let (on, arrangement, mut notes) = settled(reported, remembered, self.support)?;
         self.on = on;
         self.arrangement = arrangement;
+        // What happened leads the account, always. The reassurance that what they
+        // arranged elsewhere is being held follows it **only when they have not
+        // arranged the screens now in front of them** — because that is when they
+        // are losing an arrangement. Arriving somewhere they have arranged, they
+        // are getting one back, and `Note::AsYouLeftThem` is already saying so;
+        // the two together told somebody standing at their own desk that their own
+        // desk was waiting for them. Session task 12's walk found it and task 13
+        // split the sentence under ADR 0068.
+        //
+        // `Changes::for_screens` is the same question that chose between the kept
+        // arrangement and a worked-out one a few lines above, so this adds no
+        // second opinion about what counts as a desk of theirs.
+        if remembered
+            .for_screens(&self.arrangement.screens())
+            .is_none()
+        {
+            notes.insert(0, Note::TheOtherDesksArrangementIsKept);
+        }
         notes.insert(0, Note::TheDeskChanged);
         self.notes = notes;
 
