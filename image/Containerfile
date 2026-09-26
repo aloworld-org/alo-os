@@ -495,6 +495,15 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 # Matroska; an image that can play a film and not make one keeps half of that
 # decision. Every element a promise depends on is named here, and a build that
 # cannot find one fails rather than shipping the gap.
+#
+# **What this block checks is that each element registers, and nothing more.**
+# It has never decoded a sample, and its own closing line said *this image
+# decodes* until 2026-09-26, which was not true of what it had just done. An
+# element that answers `gst-inspect-1.0` and a file that plays are two claims;
+# only the first is made here. Making the build encode a sample with these
+# encoders and decode it back is task 1 of
+# `../docs/autonomy/v0-5-devices-and-media-plan.md`, and until it lands no
+# release has been measured for playback at all.
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       dav1d libvpx openh264 \
       gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good \
@@ -510,7 +519,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       gst-inspect-1.0 "${element}" > /dev/null \
         || { echo "the image carries no ${element}"; exit 1; }; \
     done \
- && echo "this image decodes, encodes, and can reach the media server"
+ && echo "every decoder, encoder and media-server element the decision names registers"
 
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
