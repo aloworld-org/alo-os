@@ -41,6 +41,13 @@ pub struct Server {
     /// or a desktop is decided in this crate: `crate::server_desk` says what
     /// that means and which crate answers which question.
     pub(crate) desk: crate::server_desk::Desk,
+    /// **What a person is looking at on the canvas.**
+    ///
+    /// The plane moves under the viewport, so this is the whole of what a pan
+    /// changes. Nothing that draws the dock, the status area or a window's
+    /// controls reads it — see `crate::scene::trees`, which is the one seam it is
+    /// applied at.
+    pub(crate) camera: alo_canvas::Camera,
     /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
     ///
     /// One recogniser for the seat: at most one gesture is in flight at a
@@ -74,6 +81,7 @@ impl Server {
             socket,
             presentation: Default::default(),
             switch_order: Default::default(),
+            camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),
         })
@@ -151,6 +159,9 @@ impl Server {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
             self.surfaces.popups.output_size = Some(size);
+            // Beside the extent, and for the same reason: a popup is constrained
+            // to the screen, so placing one has to know where the plane is.
+            self.surfaces.popups.camera = self.camera;
         }
         self.surfaces.prune();
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();

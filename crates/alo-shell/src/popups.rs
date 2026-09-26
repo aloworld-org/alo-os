@@ -48,6 +48,16 @@ pub(crate) struct Popups {
     entries: Vec<Entry>,
     /// Last positive framebuffer extent, at compositor scale one.
     pub(crate) output_size: Option<Size<i32, Physical>>,
+    /// Where the canvas's plane sits, copied from the `Server` beside
+    /// `output_size` and for the same reason.
+    ///
+    /// **The `Server`'s camera is the truth; this is a copy kept in step at the
+    /// one moment the output's extent is.** A popup is constrained to the
+    /// *screen*, so placing one needs to know where the plane is — a popup
+    /// constrained against an unpanned parent lands off the display once somebody
+    /// has panned. Holding it here follows `output_size`'s own precedent: this
+    /// struct already keeps the piece of the viewport it cannot ask for.
+    pub(crate) camera: alo_canvas::Camera,
 }
 
 impl crate::Server {
@@ -165,7 +175,14 @@ impl Popups {
         roots: &[WlSurface],
     ) -> Option<Rectangle<i32, Logical>> {
         let popups: Vec<_> = self.mapped().cloned().collect();
-        crate::popup_placement::geometry(positioner, parent, roots, &popups, self.output_size)
+        crate::popup_placement::geometry(
+            positioner,
+            parent,
+            roots,
+            &popups,
+            self.output_size,
+            self.camera,
+        )
     }
 
     /// Apply configure-before-buffer and terminal unmap semantics.

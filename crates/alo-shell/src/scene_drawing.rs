@@ -11,16 +11,36 @@ use smithay::{
     utils::{Rectangle, Transform},
 };
 
+/// What is on the plane, and where it is being looked at from.
+///
+/// One value rather than three arguments because they are one thing: the frames a
+/// person's applications are in, and the camera that says where those land on a
+/// screen. Separating them invites a caller to pass windows with somebody else's
+/// camera, which is a frame drawn where its clicks are not.
+///
+/// The viewport's own surfaces are **not** here. They arrive as
+/// `crate::scene_native::NativeLayers` and are painted above this, from the
+/// output's size, which is the whole of task 1's separation.
+#[derive(Clone, Copy)]
+pub(crate) struct OnThePlane<'a> {
+    /// The frames, front to back.
+    pub(crate) roots: &'a [WlSurface],
+    /// The popups their applications opened.
+    pub(crate) popups: &'a [crate::Popup],
+    /// Where the plane is being looked at from.
+    pub(crate) camera: alo_canvas::Camera,
+}
+
 /// Paint without dispatching requests or completing callbacks; callers own submission.
 pub(crate) fn paint(
     renderer: &mut GlesRenderer,
     framebuffer: &mut GlesTarget<'_>,
-    roots: &[WlSurface],
-    popups: &[crate::Popup],
+    plane: OnThePlane<'_>,
     cursor: &crate::Cursor,
     transform: Transform,
     native: crate::scene_native::NativeLayers<'_>,
 ) -> Result<drawing::Drawing, RenderError> {
+    let (roots, popups, camera) = (plane.roots, plane.popups, plane.camera);
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();
     if size.w <= 0 || size.h <= 0 {
@@ -63,7 +83,7 @@ pub(crate) fn paint(
         elements: Vec::new(),
         surfaces: Vec::new(),
     };
-    for (surface, location) in crate::scene::trees(roots, popups) {
+    for (surface, location) in crate::scene::trees(roots, popups, camera) {
         let mut tree = drawing::import_at(renderer, &[surface], damage, location.to_physical(1.0))?;
         drawing.elements.append(&mut tree.elements);
         drawing.surfaces.append(&mut tree.surfaces);
