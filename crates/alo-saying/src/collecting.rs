@@ -95,6 +95,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-changing-drives",
     "alo-changing-network",
     "alo-changing-printers",
+    "alo-changing-undo",
     "alo-changing-updates",
     "alo-choosing",
     "alo-clipboard",
@@ -256,6 +257,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         &mut vocabulary,
         "alo-changing-printers",
         alo_changing_printers::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
+        "alo-changing-undo",
+        alo_changing_undo::declare_into,
     )?;
     declare(
         &mut vocabulary,
@@ -428,6 +434,7 @@ mod tests {
             "alo-changing-printers",
             "changing-printers.refused.more-than-one-called",
         ),
+        ("alo-changing-undo", "changing-undo.how-far-back"),
         (
             "alo-changing-updates",
             "changing-updates.refused.nothing-makes-changes",
@@ -547,6 +554,7 @@ mod tests {
             alo_changing_printers::changing_printers_words()
                 .unwrap()
                 .how_many(),
+            alo_changing_undo::changing_undo_words().unwrap().how_many(),
             alo_changing_updates::changing_updates_words()
                 .unwrap()
                 .how_many(),

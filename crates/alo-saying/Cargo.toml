@@ -40,6 +40,7 @@ alo-changing-drives = { path = "../alo-changing-drives" }
 alo-changing-network = { path = "../alo-changing-network" }
 alo-changing-printers = { path = "../alo-changing-printers" }
 # The three things about an update that only the broker's door can answer.
+alo-changing-undo = { path = "../alo-changing-undo" }
 alo-changing-updates = { path = "../alo-changing-updates" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }

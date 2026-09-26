@@ -6787,7 +6787,16 @@ it, and this lane's branch touches no file of that crate.
 It is written down so the next worker who meets a red third gate on this
 machine knows what it is, that a re-run does not clear it, and that the
 question for its owner is which font set their expectation was measured on.
-**Date:** 2026-09-25.
+
+**It is not one machine's font set.** Added 2026-09-26: the third PC's gates hit
+the same assertion, with the same extra *Liberation Serif*, on a different
+machine, a different Ubuntu installation and a different set of installed
+fonts — while gating a change whose six files include nothing of that crate. Two
+machines answering the same way makes *whichever machine the expectation was
+measured on* the question rather than a guess: the test names one substitution
+and this engine, as `image/` pins it, reports two on every machine that has run
+it here. Still not this lane's crate, and still nothing changed in it.
+**Date:** 2026-09-25, and again 2026-09-26.
 
 ### A detached run has no HOME, and cargo's own environment file needs one
 **Version:** systemd 255 under WSL 2 on the development PC, `rustup` 1.28's
