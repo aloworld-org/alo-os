@@ -367,7 +367,16 @@ each walked in the guest except where it says otherwise:
   not walk to the fallback — but the claim is only safe with both gone.
 
 **Still owed here, and this task is not done until it is:**
-1. The walk of the default being changed from either side.
+1. The walk of the default being changed from either side — and it now has a
+   specific doubt to settle. Reading the two sides on 2026-09-26: the Windows
+   side reaches the start partition with `mountvol S: /S`, which is the one
+   **Windows** started from, while alo OS's loader reads its block on the
+   partition **it** lives on. On every machine this installer can install onto
+   today those are different partitions, because the road offers a whole empty
+   disk and alo OS lands on a second one with a start partition of its own. If
+   that is right, a default changed from Windows is a file alo OS never reads.
+   It is written up in `docs/quirks.md`; nothing was changed on the strength of
+   a reading.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
