@@ -29,7 +29,7 @@
 
 use alo_strings::{Filling, Strings, Word};
 
-use crate::disks::{Disks, Unsuitable};
+use crate::disks::{Disks, Replacing, Unsuitable};
 use crate::ended::{Ended, Refusal, the_disk};
 use crate::environment::Environment;
 use crate::machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
@@ -156,7 +156,20 @@ fn before_writing(
         .filter(|ran| ran.succeeded)
         .and_then(|ran| Disks::read(&ran.printed).ok())
         .ok_or(Refusal::DisksNotRead)?;
-    listed.may_receive(&device).map_err(|why| match why {
+    let replacing = if told.replaces_what_is_there() {
+        Replacing::TheSystemOnTheDisk
+    } else {
+        Replacing::Nothing
+    };
+    if told.replaces_what_is_there() {
+        // Said here, where the disk has been read and nothing has been
+        // written yet: the last sentence before the road that has no way back.
+        machine.say(&strings.say(
+            &words::REPLACING_WHAT_IS_THERE.key(),
+            &the_disk(disk.as_str()),
+        ));
+    }
+    listed.may_receive(&device, replacing).map_err(|why| match why {
         Unsuitable::NotListed => Refusal::DiskNotConnected(disk.clone()),
         Unsuitable::NotAWholeDisk => Refusal::NotAWholeDisk(disk.as_str().to_owned()),
         Unsuitable::HoldsThisInstaller => Refusal::HoldsThisInstaller(disk.clone()),

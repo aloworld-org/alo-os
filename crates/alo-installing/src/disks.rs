@@ -14,8 +14,10 @@
 //! - **a disk holding another operating system.** A partition of a type Windows
 //!   makes — its reserved area, its recovery area, a basic data volume — means
 //!   this is not the empty or spare disk a whole-disk install is for. Replacing
-//!   Windows is a separate road that asks twice (the installer plan's last
-//!   task), and this environment never takes it by accident;
+//!   Windows is a separate road that asks twice (the installer plan's task 7),
+//!   and this environment takes it only when it was told to in so many words
+//!   ([`Replacing`], `crate::Told::replaces_what_is_there`) — never by
+//!   accident, and never as a default;
 //! - **a disk in use or that cannot be written**: read-only, or with anything
 //!   on it mounted.
 //!
@@ -84,6 +86,20 @@ struct Device {
     children: Vec<Device>,
 }
 
+/// Whether this install may write over the system already on the disk.
+///
+/// It exists so that no caller can pass a `true` by accident: the road that
+/// replaces Windows names itself here, and every other road says the other
+/// word. The person's agreement to it was given twice, in the installer, on
+/// the machine's previous system.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Replacing {
+    /// The ordinary road: a disk holding another system is refused.
+    Nothing,
+    /// The road the person took twice: the system on this disk is replaced.
+    TheSystemOnTheDisk,
+}
+
 /// Why the chosen disk may not be written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Unsuitable {
@@ -135,9 +151,14 @@ impl Disks {
 
     /// Whether the device at this path may be written by a whole-disk install.
     ///
+    /// **[`Replacing::TheSystemOnTheDisk`] lifts one refusal and only one**:
+    /// that the disk holds another operating system. The installer's own disk,
+    /// a device that is not a whole disk, and a disk in use are refused on
+    /// every road, because no agreement a person gave was about those.
+    ///
     /// # Errors
     /// [`Unsuitable`], naming the first thing a person needs to hear.
-    pub fn may_receive(&self, device: &Path) -> Result<(), Unsuitable> {
+    pub fn may_receive(&self, device: &Path, replacing: Replacing) -> Result<(), Unsuitable> {
         let Some(disk) = self.blockdevices.iter().find(|one| one.is(device)) else {
             return Err(if self.blockdevices.iter().any(|one| one.holds(device)) {
                 Unsuitable::NotAWholeDisk
@@ -151,11 +172,13 @@ impl Disks {
         if disk.any(&|one| one.label.as_deref() == Some(THIS_INSTALLER)) {
             return Err(Unsuitable::HoldsThisInstaller);
         }
-        if disk.any(&|one| {
-            one.parttype
-                .as_deref()
-                .is_some_and(|kind| ANOTHER_SYSTEMS.contains(&kind.to_ascii_lowercase().as_str()))
-        }) {
+        if replacing == Replacing::Nothing
+            && disk.any(&|one| {
+                one.parttype.as_deref().is_some_and(|kind| {
+                    ANOTHER_SYSTEMS.contains(&kind.to_ascii_lowercase().as_str())
+                })
+            })
+        {
             return Err(Unsuitable::HoldsAnotherSystem);
         }
         if disk.ro || disk.any(&|one| one.mountpoints.iter().any(Option::is_some)) {
@@ -215,7 +238,7 @@ mod tests {
     #[test]
     fn an_empty_second_disk_may_be_written() {
         let disks = Disks::read(THE_TEST_MACHINE).unwrap();
-        assert_eq!(disks.may_receive(Path::new("/dev/vdb")), Ok(()));
+        assert_eq!(disks.may_receive(Path::new("/dev/vdb"), Replacing::Nothing), Ok(()));
     }
 
     /// **The disk the installer runs from is refused as that**, even though it
@@ -224,7 +247,7 @@ mod tests {
     fn the_installers_own_disk_is_refused() {
         let disks = Disks::read(THE_TEST_MACHINE).unwrap();
         assert_eq!(
-            disks.may_receive(Path::new("/dev/vda")),
+            disks.may_receive(Path::new("/dev/vda"), Replacing::Nothing),
             Err(Unsuitable::HoldsThisInstaller)
         );
     }
@@ -245,7 +268,7 @@ mod tests {
             );
             let disks = Disks::read(&printed).unwrap();
             assert_eq!(
-                disks.may_receive(Path::new("/dev/nvme1n1")),
+                disks.may_receive(Path::new("/dev/nvme1n1"), Replacing::Nothing),
                 Err(Unsuitable::HoldsAnotherSystem),
                 "{kind}"
             );
@@ -258,11 +281,11 @@ mod tests {
     fn part_of_a_disk_or_not_a_disk_is_refused() {
         let disks = Disks::read(THE_TEST_MACHINE).unwrap();
         assert_eq!(
-            disks.may_receive(Path::new("/dev/vda3")),
+            disks.may_receive(Path::new("/dev/vda3"), Replacing::Nothing),
             Err(Unsuitable::NotAWholeDisk)
         );
         assert_eq!(
-            disks.may_receive(Path::new("/dev/sr0")),
+            disks.may_receive(Path::new("/dev/sr0"), Replacing::Nothing),
             Err(Unsuitable::NotAWholeDisk)
         );
     }
@@ -272,13 +295,13 @@ mod tests {
     fn a_device_the_machine_does_not_list_is_refused() {
         let disks = Disks::read(THE_TEST_MACHINE).unwrap();
         assert_eq!(
-            disks.may_receive(Path::new("/dev/vdc")),
+            disks.may_receive(Path::new("/dev/vdc"), Replacing::Nothing),
             Err(Unsuitable::NotListed)
         );
         assert_eq!(
             Disks::read(r#"{"blockdevices": []}"#)
                 .unwrap()
-                .may_receive(Path::new("/dev/vdb")),
+                .may_receive(Path::new("/dev/vdb"), Replacing::Nothing),
             Err(Unsuitable::NotListed)
         );
     }
@@ -290,7 +313,7 @@ mod tests {
         assert_eq!(
             Disks::read(read_only)
                 .unwrap()
-                .may_receive(Path::new("/dev/sdb")),
+                .may_receive(Path::new("/dev/sdb"), Replacing::Nothing),
             Err(Unsuitable::CannotBeWritten)
         );
 
@@ -300,7 +323,7 @@ mod tests {
         assert_eq!(
             Disks::read(mounted)
                 .unwrap()
-                .may_receive(Path::new("/dev/sdb")),
+                .may_receive(Path::new("/dev/sdb"), Replacing::Nothing),
             Err(Unsuitable::CannotBeWritten)
         );
     }
@@ -316,7 +339,7 @@ mod tests {
         assert_eq!(
             Disks::read(printed)
                 .unwrap()
-                .may_receive(Path::new("/dev/sdb")),
+                .may_receive(Path::new("/dev/sdb"), Replacing::Nothing),
             Ok(())
         );
     }
@@ -327,5 +350,40 @@ mod tests {
         assert!(Disks::read("").is_err());
         assert!(Disks::read("NAME TYPE\nsda disk").is_err());
         assert!(Disks::read(r#"{"devices": []}"#).is_err());
+    }
+
+    /// **Replacing the system on the disk lifts that one refusal and no
+    /// other.** The road that replaces Windows may write a disk holding
+    /// Windows — that is what the person agreed to, twice — and may still not
+    /// write the installer's own disk, something that is not a whole disk, or
+    /// a disk in use.
+    #[test]
+    fn the_road_that_replaces_windows_may_write_a_disk_windows_is_on() {
+        // The same machine, with the installer staged on the second disk
+        // rather than beside Windows, so that the first disk is refused for
+        // one reason only.
+        let machine = THE_TEST_MACHINE.replace(r#""label": "ALO-INSTALL""#, r#""label": null"#);
+        let disks = Disks::read(&machine).unwrap();
+        assert_eq!(
+            disks.may_receive(Path::new("/dev/vda"), Replacing::Nothing),
+            Err(Unsuitable::HoldsAnotherSystem)
+        );
+        assert_eq!(
+            disks.may_receive(Path::new("/dev/vda"), Replacing::TheSystemOnTheDisk),
+            Ok(())
+        );
+        // And nothing else is lifted, on either road.
+        for road in [Replacing::Nothing, Replacing::TheSystemOnTheDisk] {
+            assert_eq!(
+                disks.may_receive(Path::new("/dev/vda3"), road),
+                Err(Unsuitable::NotAWholeDisk)
+            );
+        }
+        // Not even for the disk the installer itself is running from.
+        let whole = Disks::read(THE_TEST_MACHINE).unwrap();
+        assert_eq!(
+            whole.may_receive(Path::new("/dev/vda"), Replacing::TheSystemOnTheDisk),
+            Err(Unsuitable::HoldsThisInstaller)
+        );
     }
 }

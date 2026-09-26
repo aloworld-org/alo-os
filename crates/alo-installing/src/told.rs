@@ -20,11 +20,27 @@ use crate::disk::{DiskName, NotADisk};
 /// The word on the kernel command line that carries the choice.
 pub const THE_CHOICE: &str = "alo.installing.to=";
 
+/// The word that says this install replaces what is already on that disk.
+///
+/// The ordinary road never sets it, and the loader leaves it empty when the
+/// file that would set it was not staged — so *not replacing* is what a
+/// machine does when nothing said otherwise, in every direction.
+pub const THE_REPLACING: &str = "alo.installing.replacing=";
+
+/// The one value that means yes, in the one place a person never types.
+///
+/// Not a translated word and not a number: it travels from this repository's
+/// own installer to this repository's own environment, and anything else at
+/// all — including an empty word — is *no*.
+pub const REPLACING: &str = "windows";
+
 /// What was chosen.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Told {
     /// The one disk to install onto.
     disk: DiskName,
+    /// Whether the install replaces what is already on that disk.
+    replacing: bool,
 }
 
 /// Why the command line did not name one disk.
@@ -62,11 +78,32 @@ impl Told {
         if first.is_empty() {
             return Err(NotTold::NothingChosen);
         }
+        let mut replacing = line
+            .split_ascii_whitespace()
+            .filter_map(|word| word.strip_prefix(THE_REPLACING));
+        let first_replacing = replacing.next().unwrap_or_default();
+        if replacing.next().is_some() {
+            return Err(NotTold::MoreThanOne);
+        }
+        // Exactly the one value, or no. A word that is not it is not a reason
+        // to destroy an operating system, and a road this dangerous never
+        // reads *almost yes* as yes.
+        let replacing = first_replacing == REPLACING;
         match DiskName::named(first) {
-            Ok(disk) => Ok(Self { disk }),
+            Ok(disk) => Ok(Self { disk, replacing }),
             Err(NotADisk::APartition) => Err(NotTold::APartition(first.to_owned())),
             Err(why) => Err(NotTold::NotADisk(why)),
         }
+    }
+
+    /// Whether this install replaces what is already on the disk.
+    ///
+    /// The one road on which the environment may write over another system's
+    /// partitions (the installer plan's task 7). Everything else refuses a disk
+    /// that holds one.
+    #[must_use]
+    pub fn replaces_what_is_there(&self) -> bool {
+        self.replacing
     }
 
     /// The disk.
