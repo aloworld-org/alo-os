@@ -24,16 +24,19 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installer::{
-        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Switched, THE_DEFAULTS_WORD,
-        THE_SWITCHS_WORD, TheDefault, TheMachine, install, installer_words, restart_into_alo_os,
-        which_system_starts,
+        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Removed, Switched, THE_DEFAULTS_WORD,
+        THE_REMOVALS_WORD, THE_SWITCHS_WORD, TheDefault, TheMachine, install, installer_words,
+        remove_alo_os, restart_into_alo_os, which_system_starts,
     };
     use alo_strings::{Filling, Strings};
 
     /// Install, and say how it ended in the exit code as well as on the screen.
     ///
-    /// **Started with `THE_SWITCHS_WORD` as its only argument it does one other
-    /// thing instead**: it offers to restart this computer into alo OS. That is
+    /// **Started with one of this crate's own words as its only argument it does
+    /// one other thing instead**: `THE_SWITCHS_WORD` offers to restart this
+    /// computer into alo OS, `THE_DEFAULTS_WORD` shows and changes which system
+    /// it starts when nobody chooses, and `THE_REMOVALS_WORD` removes alo OS
+    /// again. That is
     /// how the copy the installer leaves behind is started, a start with no
     /// argument is an install as it always was, and any other argument is
     /// refused rather than guessed at.
@@ -68,6 +71,19 @@ mod running {
                     Switched::NotThere | Switched::NotRead | Switched::NotSet => ExitCode::FAILURE,
                 };
             }
+            [one] if one == THE_REMOVALS_WORD => {
+                let removed = remove_alo_os(&mut machine, &strings);
+                let _read =
+                    machine.ask(&strings.say(&PRESS_ENTER_TO_CLOSE.key(), &Filling::nothing()));
+                return match removed {
+                    Removed::Gone { .. } | Removed::NotAgreed => ExitCode::SUCCESS,
+                    Removed::NotThere
+                    | Removed::NotFound
+                    | Removed::NotRead
+                    | Removed::EntryNotRemoved
+                    | Removed::DiskNotCleared => ExitCode::FAILURE,
+                };
+            }
             [one] if one == THE_DEFAULTS_WORD => {
                 let ended = which_system_starts(&mut machine, &strings);
                 let _read =
@@ -81,7 +97,8 @@ mod running {
             }
             _ => {
                 eprintln!(
-                    "alo-installer: it takes no argument, or {THE_SWITCHS_WORD} or                      {THE_DEFAULTS_WORD} and nothing else."
+                    "alo-installer: it takes no argument, or {THE_SWITCHS_WORD}, \
+                     {THE_DEFAULTS_WORD} or {THE_REMOVALS_WORD} and nothing else."
                 );
                 return ExitCode::FAILURE;
             }

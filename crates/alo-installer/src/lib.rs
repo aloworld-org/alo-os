@@ -59,6 +59,7 @@ mod naming;
 #[cfg(windows)]
 mod on_windows;
 mod program;
+mod removing;
 mod security_chip;
 mod sequence;
 mod sizes;
@@ -90,8 +91,9 @@ pub use memory::MADE_FOR;
 pub use on_windows::OnThisMachine;
 pub use program::{
     BASIC_DATA, Program, THE_ENTRYS_NAME, THE_LOADER, THE_PROGRAMS_HOME, THE_PROGRAMS_NAME,
-    THE_SHORTCUT, Tool,
+    THE_REMOVALS_SHORTCUT, THE_SHORTCUT, Tool,
 };
+pub use removing::{Removed, THE_REMOVALS_WORD, remove_alo_os};
 pub use security_chip::SecurityChip;
 pub use sequence::install;
 pub use sizes::{GIB, MIB, THE_AREA, THE_LEAST_DISK, WINDOWS_KEEPS_FREE};
@@ -102,6 +104,8 @@ pub use words::{
     ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, DEFAULT_CHANGE_IT, DEFAULT_CHANGED,
     DEFAULT_IS, DEFAULT_KEPT, DEFAULT_NOT_REACHED, DEFAULT_NOT_READ, DEFAULT_NOT_THERE,
     EVERY_REFUSAL, EVERY_WORD, FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE,
-    REMAINS_FAST_STARTUP_OFF, SWITCH_AGREED, SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET,
-    SWITCH_NOT_THERE, SWITCH_WILL_RESTART, WordsError, declare_into, installer_words,
+    REMAINS_FAST_STARTUP_OFF, REMOVE_GONE, REMOVE_NOT_AGREED, REMOVE_NOT_FOUND, REMOVE_NOT_THERE,
+    REMOVE_TYPE_THE_DISKS_NAME, REMOVE_WILL_ERASE, SWITCH_AGREED, SWITCH_NOT_AGREED,
+    SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART, WordsError,
+    declare_into, installer_words,
 };
