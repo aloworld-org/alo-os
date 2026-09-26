@@ -123,6 +123,99 @@ impl Machine {
             .expect("the firmware's variables");
     }
 
+    /// Keep this machine's three files as a base other machines start from,
+    /// under this name, and say whether all three were kept.
+    ///
+    /// The machine must be off. Its disks are **flattened** into the base
+    /// rather than linked to: an overlay points at the disk it was made from,
+    /// and the run that made this one throws that away.
+    ///
+    /// # Panics
+    /// When a machine is running, since its disks would be read while it
+    /// writes them.
+    #[must_use]
+    pub fn keep_as(yard: &Path, name: &str, base: &str) -> bool {
+        assert!(
+            !is_running(),
+            "a machine is running, and its disks would be kept while it changes them"
+        );
+        for (from, to) in [
+            (Self::windows_of(yard, name), Self::windows_of(yard, base)),
+            (Self::second_of(yard, name), Self::second_of(yard, base)),
+        ] {
+            let _ = std::fs::remove_file(&to);
+            run(
+                "qemu-img",
+                &[
+                    "convert",
+                    "-O",
+                    "qcow2",
+                    &from.display().to_string(),
+                    &to.display().to_string(),
+                ],
+            );
+        }
+        let variables = std::fs::copy(
+            Self::variables_of(yard, name),
+            Self::variables_of(yard, base),
+        );
+        variables.is_ok() && Self::is_kept(yard, base)
+    }
+
+    /// Whether a base of that name is there, whole.
+    #[must_use]
+    pub fn is_kept(yard: &Path, base: &str) -> bool {
+        [
+            Self::windows_of(yard, base),
+            Self::second_of(yard, base),
+            Self::variables_of(yard, base),
+        ]
+        .iter()
+        .all(|file| std::fs::metadata(file).is_ok_and(|about| about.len() > 0))
+    }
+
+    /// A machine made from a base kept by [`Machine::keep_as`]: an overlay of
+    /// each of its disks and a copy of its firmware variables.
+    ///
+    /// The variables are copied rather than overlaid because they are a flash
+    /// image the firmware writes in place, and a machine of its own needs one
+    /// of its own.
+    ///
+    /// # Panics
+    /// When a disk cannot be made.
+    pub fn fresh_from(yard: &Path, name: &str, base: &str) {
+        for file in [
+            Self::windows_of(yard, name),
+            Self::second_of(yard, name),
+            Self::variables_of(yard, name),
+        ] {
+            let _ = std::fs::remove_file(file);
+        }
+        for (from, to) in [
+            (Self::windows_of(yard, base), Self::windows_of(yard, name)),
+            (Self::second_of(yard, base), Self::second_of(yard, name)),
+        ] {
+            run(
+                "qemu-img",
+                &[
+                    "create",
+                    "-f",
+                    "qcow2",
+                    "-b",
+                    &from.display().to_string(),
+                    "-F",
+                    "qcow2",
+                    &to.display().to_string(),
+                ],
+            );
+        }
+        std::fs::copy(
+            Self::variables_of(yard, base),
+            Self::variables_of(yard, name),
+        )
+        .expect("the firmware's variables");
+    }
+
     /// This machine's Windows disk. The machine with no name is the one
     /// Windows is installed into, whose disk every other is an overlay of.
     #[must_use]

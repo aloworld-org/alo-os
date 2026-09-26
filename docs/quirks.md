@@ -7049,4 +7049,31 @@ prints every file under `EFI/` before and after so that what was taken is read
 rather than assumed. Anything that reasons about removing or disabling alo OS
 — the road back in `crate::removing` included — has to know that the named
 loader is not the only one.
+
+**Date:** 2026-09-26.
+
+### The default's two sides may not be reading the same partition
+**Version:** `alo-installer`'s `defaulting.rs` (ADR 0066 term 3) and
+`alo-starting`'s `chosen.rs`, as they stand on 2026-09-26. **Not measured in a
+guest yet** — this is a reading of what the two sides do, written down before
+the walk that settles it.
+**Behaviour:** the Windows side reaches the EFI system partition with
+`mountvol S: /S`, which Windows documents as *the EFI system partition* —
+meaning **the one the running Windows started from**, on Windows' own disk. alo
+OS's side reads its environment block at `/EFI/fedora/grubenv` on the partition
+its own loader lives on. On the machines this installer can install today those
+are **two different partitions**: the installer only offers a whole empty disk,
+so alo OS lands on a second disk with an EFI system partition of its own.
+
+If that reading is right, a person who changes the default from Windows writes
+a file alo OS's loader never reads, and the two sides show different answers —
+which is the one thing ADR 0066 exists to prevent. On a single-disk install
+(the certified laptop's road, which this installer does not offer yet) the two
+are the same partition and the question does not arise.
+**Our response:** none yet, and nothing was changed on the strength of a
+reading. The walk of *the default changed from either side* is what settles it,
+and it is the last thing owed on the installer plan's task 4. If it confirms
+this, the fix belongs with ADR 0066's authors: either the Windows side finds
+alo OS's own start partition rather than Windows', or the block is kept where
+both sides already agree.
 **Date:** 2026-09-26.
