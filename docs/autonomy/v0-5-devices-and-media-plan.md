@@ -42,10 +42,16 @@ the plan as published.
 
 ### 1. Which codecs this machine carries, decided before anything plays
 
-**Status:** blocked — on a machine to play a real sample file on, **and on the
-image, which is the part this line used to deny.** A supervisor cannot start what
-is left, so this says so in the one word it reads: a status it cannot parse is a
-finished task it selects again for ever, which is how this line was found.
+**Status:** ready — **the owner decided on 2026-09-26 that alo OS ships with
+video and with images**, which is the choice this task was blocked on and could
+not make for itself. [ADR 0058](../decisions/0058-which-software-decoders-the-image-ships.md)
+stands unamended: it already promises AV1, VP9 and VP8 in software and
+`openh264` behind hardware for H.264. **The image is the thing that is wrong**,
+and it is the image that changes.
+
+**It waits on no other machine and on nothing the owner must do.** The Mac lane
+takes it, because the image is built there and a second machine editing the same
+recipe would collide on the pinned label. **Depends on:** nothing outstanding.
 
 **Not the owner's, and not hardware — corrected 2026-09-25**, the same day
 [what closes this release, and in what order](updates/what-closes-v0-0-5-and-in-what-order.md)
@@ -82,6 +88,34 @@ image (config `74a4aa1563c0`) on the development PC:
   `aomenc`, `vpxenc` or `svt-av1` — so the samples cannot be *made* with the
   image's own encoders the way this task intends, even though the encoder
   libraries are present with nothing to drive them.
+
+**What the image gains, and in what order.** Each line is a measurement on the
+machine that builds the image, not a package added and assumed:
+
+1. **A media pipeline.** There is none — no GStreamer, no `libavcodec`, no
+   player. Nothing below can be measured until something can decode a file at
+   all, and this is the single largest piece.
+2. **The three software video decoders ADR 0058 already promises** — `libdav1d`
+   and `libaom` for AV1, `libvpx` for VP9 and VP8 — and `libopenh264` for the
+   H.264 road the decision puts behind hardware. **HEVC stays absent and that
+   stays correct**: no redistributable binary exists, and without silicon an
+   HEVC file is refused by name.
+3. **One encoder**, so the samples this task plays can be made by the image's own
+   tools rather than carried in from somewhere nobody recorded. The encoder
+   libraries are already present with nothing to drive them.
+4. **Still images, confirmed rather than assumed.** The owner asked for video
+   *and* images. Photographs are already recognised from their bytes
+   (`alo-opening`), but *recognised* and *shown* are two claims, and only the
+   first has ever been measured.
+5. **The audio half, which is measurable today.** Every audio codec the decision
+   names is in the image — `libopus`, `libvorbis`, `libFLAC`, `libmpg123`,
+   `libfdk-aac` — and none has been played through the shipped stack either.
+
+**The constraint that does not move.** The image is rented and pinned
+(ADR 0011): these arrive as packages in the recipe, and the recipe's label moves
+in the same change, which `pinned.toml` enforces. A format that cannot be played
+honestly is **a finding and a sentence** — *this machine cannot open it*, with
+the reason — never a decoder of our own written to fill a gap.
 
 So *plays a real sample file through the rented stack* has nothing to run for
 AV1, VP9 or H.264 **on any machine**, and the certified laptop would not have
