@@ -1,5 +1,23 @@
 # Native window tiling geometry
 
+**Withdrawn 2026-09-26. Everything below describes an API that is gone.** It is
+kept because a contract is a thing other people read, and a page that quietly
+stopped describing the code is worse than one that says when it stopped and
+what replaced it.
+
+`TileSide`, `TileGeometry`, `TileGeometryError`, `Server::window_tile_geometry`
+and `Server::set_window_tiled` were removed from `alo-shell` in full, along with
+the `Tiled` window mode and the `Tile` error variants. Nothing is deprecated and
+nothing is aliased: a caller of any of them no longer compiles, which is the
+honest form of this change — a half that still answered would be a second layout
+decider agreeing with the division by inspection, and the v0.5 shell plan's
+constraint is that there is exactly one.
+
+What replaced it is a division, and it is described in
+[`native-window-dividing.md`](native-window-dividing.md). A division is not a
+wider tile: it divides *between* two windows, so the chord that put a single
+window on half a display has no answer any more and refuses by name.
+
 Status: additive trusted Rust planning API, 2026-09-08, under ADR 0002 and the
 v0.01 window-management scope. No agent verb or application-adapter API is added.
 

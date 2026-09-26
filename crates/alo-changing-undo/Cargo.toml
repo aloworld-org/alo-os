@@ -1,0 +1,52 @@
+[package]
+name = "alo-changing-undo"
+version = "0.0.1"
+description = "What a person sees of what their machine is keeping so that the agent's changes can be put back, and the two things they may do about it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Three sentences and one model. Everything else a person reads here was already
+# written where it was decided — the window in `alo-keeping-up`, the sentence for
+# the one act in `alo_keeping_up::WhatWasKept::forgetting`, what a size is not
+# telling you in `alo_measuring::Counted` — and is *said* here rather than
+# written again.
+#
+# It ships no dependency on `alo-letting-go`, and that is load-bearing rather
+# than tidiness. `alo-saying` is the machine's one vocabulary, so it ships every
+# crate that declares a word, which makes every such crate reachable from the
+# process an agent's turn runs in. `alo-letting-go` holds the one privileged
+# remover on this machine, and
+# `crates/alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs` holds that
+# the only road into it from there is its vocabulary. A pane that read the
+# person's file or performed the act would put that road inside a turn's process
+# and break that test — correctly. So this crate does neither: it is the model of
+# what a person reads and decides, and the file and the act stay with the
+# session that draws it. See `tests/a_turn_cannot_arrive_at_this_pane.rs`.
+
+[dependencies]
+# The window itself (`HowFarBack`), the refusal when a pair of numbers is not
+# one, and the sentence a person approves to forget. Read, never edited.
+alo-keeping-up = { path = "../alo-keeping-up" }
+# What undo is holding: the number this pane shows is this crate's answer, and a
+# test holds the two together. Never counted again here.
+alo-measuring = { path = "../alo-measuring" }
+# Every sentence a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The person's file and the deciding the window feeds, used to prove that a
+# window this pane produced really changes which snapshots are let go — rather
+# than reading the file back and believing it. A dev-dependency is a test's and
+# is in nobody's process, which is why this is allowed to be here and not above.
+alo-letting-go = { path = "../alo-letting-go" }
+
+# What a thing in a tree is (`Kind`), so that a test can build the node
+# `alo-measuring` would have answered with. This crate never builds one itself:
+# it is handed the measurement.
+alo-files = { path = "../alo-files" }
+
+[lints]
+workspace = true

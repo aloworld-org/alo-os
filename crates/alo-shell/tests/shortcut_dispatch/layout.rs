@@ -1,8 +1,6 @@
 //! Focus ownership, layout transactions and refusal through configured commands.
 use super::{Action, Changes, Chord, Fixture, Key, Modifier, Modifiers, Shortcuts, mapped};
-use alo_shell::{
-    InputError, TileGeometryError, WindowCommandError, WindowMaximizeError, WindowModeError,
-};
+use alo_shell::{InputError, NotDivided, WindowCommandError, WindowMaximizeError, WindowModeError};
 use smithay::backend::input::KeyState;
 use wayland_client::protocol::wl_keyboard;
 
@@ -162,30 +160,23 @@ fn shortcut_dispatch_layout_toggles_pending_intent_and_preserves_normal_geometry
         f.backend(move |_| alo_shell::window_buffer_origin(&target)),
         (8.0, 9.0).into()
     );
-    for (action, side, origin) in [
-        (Action::SnapRight, alo_shell::TileSide::Right, (16.0, 0.0)),
-        (Action::SnapLeft, alo_shell::TileSide::Left, (0.0, 0.0)),
-    ] {
-        assert_eq!(command(&f, action)?, Some(action));
-        app.sync();
-        app.xdg
-            .ack_configure(app.events.serial.ok_or("missing tile")?);
-        app.attach_tiled(side);
-        app.sync();
-        let target = root.clone();
-        assert_eq!(
-            f.backend(move |_| alo_shell::window_buffer_origin(&target)),
-            origin.into()
-        );
+    // **A chord with one window open refuses, and that is the design.**
+    //
+    // Snapping a window to half a screen was `window_tiling`'s, and it went on
+    // 2026-09-26 with the rest of the half. A division divides *between*
+    // windows: with one open there is no second share to make, and
+    // `alo-dividing` says so by name rather than putting the only window on
+    // half a display with nothing beside it.
+    for action in [Action::SnapRight, Action::SnapLeft] {
+        let Err(refused) = command(&f, action) else {
+            return Err(format!("{action:?} divided a display holding one window").into());
+        };
         assert!(
-            !app.events
-                .tiled
-                .last()
-                .ok_or("missing tile flags")?
-                .is_empty()
+            format!("{refused}").contains("division refused"),
+            "{action:?} was refused for another reason: {refused}"
         );
     }
-    command(&f, Action::MaximiseWindow)?; // Tiled -> maximized, not normal.
+    command(&f, Action::MaximiseWindow)?; // Normal -> maximized.
     app.sync();
     assert_eq!(app.events.maximized.last(), Some(&true));
     command(&f, Action::MaximiseWindow)?;
@@ -226,13 +217,11 @@ fn shortcut_dispatch_layout_output_and_limit_refusals_keep_wire_state()
             WindowMaximizeError::OutputUnavailable
         ))
     ));
+    // A chord refuses here too, and now it is the division that refuses: with
+    // one window open there is nothing to share a display with, whatever the
+    // output is doing.
     for action in [Action::SnapLeft, Action::SnapRight] {
-        assert!(matches!(
-            command(&f, action),
-            Err(WindowCommandError::Tile(WindowModeError::Tile(
-                TileGeometryError::OutputUnavailable
-            )))
-        ));
+        assert!(command(&f, action).is_err());
     }
     app.sync();
     assert_eq!(app.events.sizes.len(), count);
@@ -241,13 +230,12 @@ fn shortcut_dispatch_layout_output_and_limit_refusals_keep_wire_state()
     app.surface.commit();
     app.sync();
     let count = app.events.sizes.len();
+    // The same with a window that has told the compositor a minimum: what a
+    // window says it needs is carried into the division now
+    // (`crate::window_dividing`), and with nothing to share with the refusal
+    // comes first.
     for action in [Action::SnapLeft, Action::SnapRight] {
-        assert!(matches!(
-            command(&f, action),
-            Err(WindowCommandError::Tile(WindowModeError::Tile(
-                TileGeometryError::ClientLimits
-            )))
-        ));
+        assert!(command(&f, action).is_err());
     }
     app.sync();
     assert_eq!(app.events.sizes.len(), count);
@@ -333,10 +321,15 @@ fn shortcut_dispatch_layout_popup_grab_refuses_modes_but_minimize_retires_it()
         command(&f, Action::MaximiseWindow),
         Err(WindowCommandError::Maximize(WindowMaximizeError::Busy))
     ));
+    // **A popup grab refuses the division before it changes it.** The refusal
+    // is the window's and is carried whole, rather than the chord being
+    // answered with the division's own word for something else.
     for action in [Action::SnapLeft, Action::SnapRight] {
         assert!(matches!(
             command(&f, action),
-            Err(WindowCommandError::Tile(WindowModeError::Busy))
+            Err(WindowCommandError::Dividing(NotDivided::Window(
+                WindowModeError::Busy
+            )))
         ));
     }
     app.sync();

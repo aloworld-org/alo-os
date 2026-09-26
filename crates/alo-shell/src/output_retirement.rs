@@ -16,6 +16,7 @@ impl Server {
         self.presentation.retire(&self.display_handle(), target)?;
         self.surfaces.popups.output_size = None;
         self.surfaces.update_window_mode_output(None);
+        self.the_display_retired();
         Ok(())
     }
 }

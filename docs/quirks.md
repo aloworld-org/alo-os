@@ -2532,6 +2532,89 @@ because asking for more space than the machine has refuses on the guest half
 first and proves nothing about the half that actually ran out.
 **Date:** 2026-09-25.
 
+### A fresh clone does not bring a branch no remote has, and ten pieces of work were one command from gone
+**Version:** git 2.53.0 on Windows and 2.43.0 in WSL, on the third PC,
+2026-09-25. Nothing in it is particular to git's version or to this machine.
+
+**Behaviour:** rebuilding the third PC's WSL image ended with an ordinary
+instruction — *clone the repository fresh from origin*. `C:\dev\alo-os-3` was to
+be replaced by that clone. It held **five local branches that no remote had**:
+
+    backup/pre-rebase-task7          3 commits, 42 files, ~6,250 insertions
+    held/kernel-10-cannot-run-here    2 commits, a held task and why it is held
+    orphan/task-17-before-adr-0066    1 commit, ~2,240 insertions
+    parked/task-10-1790104409         2 commits, ~1,770 insertions
+    supervisor-per-checkout-copy      1 commit, tools/kernel-loop
+
+A clone brings what a remote has. None of that was on one, so the clone would
+have been correct, complete, and would have destroyed about eleven thousand
+inserted lines — a whole feature, a held task's finding, and an unpushed fix to
+the supervisor every lane runs. Nothing would have reported a loss, because from
+the clone's point of view nothing was lost.
+
+The step before it — destroying and re-importing the WSL image on D: — was
+**safe** for all of it, because those branches live on C:. That is the trap. The
+dangerous step was the innocuous one, and the careful audit had already been
+spent on the drive that was being deliberately destroyed.
+
+Auditing every other checkout on the same drive then found five more things.
+`C:\dev\alo-os` had two display branches, the larger 37 files and ~9,270
+insertions, **and three stashes** — session task 2, software task 8, session
+task 1. A stash is the most droppable thing git has: no branch, nothing pushes
+it, and `git stash drop` or a `gc` after the reflog expires ends it. It is also
+invisible to every audit that only walks branches. `alo-os-2`, `alo-os-4` and
+`alo-os-fix` were clean; `alo-os-work` and `moved-from-d` are no longer git
+checkouts at all, which is its own answer about what happens to a checkout
+nobody is watching.
+
+**Our response — a checkout is audited before it is replaced, and the audit is
+a restore that was tried.** Both halves are the rule; the first alone is a good
+intention.
+
+1. Find what no remote has. Branches, and then stashes, which the first loop
+   cannot see:
+
+       for b in $(git for-each-ref --format='%(refname:short)' refs/heads); do
+         [ -z "$(git branch -r --contains "$b" | grep -v HEAD)" ] && echo "$b"
+       done
+       git stash list
+
+   `git fetch` first, or a branch that *is* on a remote you have not heard about
+   reads as unpushed and wastes the attention the real ones need.
+2. Each one travels twice: a `git bundle`, which is exact, and a
+   `git format-patch`, which is readable and is what a person reads to decide
+   whether they want the branch at all. A bundle is opaque to a secret scan; the
+   patch beside it is the same content in text.
+3. A thin bundle (`--not origin/main`) names a commit it needs. **Check every
+   prerequisite is an ancestor of `origin/main` before relying on one** — a thin
+   bundle whose base is gone restores nothing, and this repository's history was
+   rewritten once already, on 2026-09-04.
+4. **`git bundle verify` says a bundle is well formed. It does not say the branch
+   comes back.** That is the whole finding in one sentence, and it is the same
+   defect as asking the guest for the host's free space in the entry above: a
+   check standing next to the thing, answering yes in the direction that lets
+   the work proceed. Fetch the bundle into a clone that holds **none of its
+   objects** and compare the tip to the sha it was made from. All ten were, and
+   all ten came back; the five from `alo-os-3` were additionally restored into
+   the clone taken fresh from GitHub, which is the case that mattered for them,
+   because that clone is what replaced their checkout.
+5. To bundle a stash, point a real ref at the stash commit, bundle that ref, and
+   delete it again, so the checkout is left exactly as it was found. A restored
+   stash still applies with `git stash apply <sha>`; that was run, not assumed,
+   and brought back all seven of that stash's files.
+
+Where they went is a private repository that is not the machine being rescued —
+on this machine `aloworld-org/alo-lane-records`. A rescue kept on the drive being
+rebuilt is not a rescue, and a rescue kept in a message to somebody is not one
+either.
+
+**The next machine to rebuild a disk will do exactly this.** It will take the
+care the destructive step obviously deserves, and then run one ordinary command
+that quietly needs the same care. The audit is cheap — it took minutes against
+the hours the rebuild took — and it is the only thing standing between a routine
+`clone` and work nobody will know is missing until they look for it.
+**Date:** 2026-09-25.
+
 ### A socket already open, and a datagram sent without connecting, are inside the boundary
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`
@@ -6704,7 +6787,16 @@ it, and this lane's branch touches no file of that crate.
 It is written down so the next worker who meets a red third gate on this
 machine knows what it is, that a re-run does not clear it, and that the
 question for its owner is which font set their expectation was measured on.
-**Date:** 2026-09-25.
+
+**It is not one machine's font set.** Added 2026-09-26: the third PC's gates hit
+the same assertion, with the same extra *Liberation Serif*, on a different
+machine, a different Ubuntu installation and a different set of installed
+fonts — while gating a change whose six files include nothing of that crate. Two
+machines answering the same way makes *whichever machine the expectation was
+measured on* the question rather than a guess: the test names one substitution
+and this engine, as `image/` pins it, reports two on every machine that has run
+it here. Still not this lane's crate, and still nothing changed in it.
+**Date:** 2026-09-25, and again 2026-09-26.
 
 ### A detached run has no HOME, and cargo's own environment file needs one
 **Version:** systemd 255 under WSL 2 on the development PC, `rustup` 1.28's
@@ -6726,6 +6818,117 @@ is a result file that never appears.
 sources that file, and the run is started with `--setenv=HOME=/root` as well.
 Either alone is enough; both are cheap.
 **Date:** 2026-09-25.
+### A backend's output metadata cannot tell two identical monitors apart
+**Version:** `alo-shell`'s `crate::display_lifecycle`, landed with *The division
+and the desktops a session holds*; 2026-09-26.
+**Whose:** ours.
+**Behaviour:** `alo-dividing` remembers a division per screen, under a key the
+compositor supplies, so that the same screen returning finds the arrangement it
+left. The strongest identity this compositor can supply is
+`OutputMetadata`'s make, model and connector name together — there is no serial
+number in it, because neither the DRM connector properties we read nor the
+nested backend's description carries one we could rely on.
+
+So two **identical** monitors swapped between two ports each find the other's
+arrangement. A different monitor plugged into the same port does not inherit
+one, and the same monitor returning to the same port does find its own, which
+are the two cases that happen to a person with one screen at a desk.
+**Our response:** the key is make, model and connector rather than connector
+alone, because the connector alone is the worse failure — it lays a laptop's
+arrangement over whatever is plugged into that socket next. The swap case is
+left wrong rather than guessed at. Reading EDID serial numbers would fix it and
+is not in this plan.
+**Date:** 2026-09-26.
+
+### Neither deciding crate takes a new area for a display it already holds
+**Version:** `alo-desktops` 0.1.0 and `alo-dividing` 0.1.0, read on 2026-09-26.
+**Whose:** `alo-desktops` and `alo-dividing` are not this lane's crates; this
+entry is the report, and whether to change them is their owner's.
+**Behaviour:** `Desktops` has `plug_in` and `unplug`, and `Division` has `of`,
+`divide`, `move_boundary` and `close`. Neither has a resize. A display whose
+mode changes — a person changing resolution, or a nested compositor's window
+being dragged bigger — therefore has no road that keeps its desktops and its
+division while moving them into the new extent.
+**Our response:** `alo-shell` treats a changed extent as the display **leaving
+and returning at the new size**, which uses both crates' own roads:
+`Remembered::of` on the way out and `Remembered::restored(new_area, open)` on
+the way in. The arrangement survives and the windows that are open keep their
+shares. What it costs is that a resize is not free — the tree is rebuilt from
+what was remembered rather than adjusted — and that a window with no `app_id`
+is not remembered across it, because a remembered share is keyed by
+application. A resize on either crate would be better and is not ours to add.
+**Date:** 2026-09-26.
+
+### A manifest tells whoever needs gestures to ask for them, and asking breaks the image
+**Version:** `alo-desktops` 0.1.0's `libinput` feature and
+`alo-desktops/src/libinput_gestures.rs`; `alo-saying` 0.0.1; found 2026-09-26
+while wiring swipes in `alo-shell`.
+**Whose:** `alo-desktops` and `alo-saying` are not this lane's crates; this
+entry is the report, and the fix is their owners'.
+**Behaviour:** `crates/alo-desktops/Cargo.toml` puts the `input` dependency
+behind a `libinput` feature and says, in as many words, *whoever needs gestures
+asks for them: `features = ["libinput"]`*. Following that instruction is a red
+gate. Cargo unifies a package's features across one workspace build, so a shell
+asking for `libinput` turns it on for **every** copy of `alo-desktops` in the
+resolve — and `alo-saying` depends on `alo-desktops` to collect the machine's
+one vocabulary while `alo-agentd` depends on `alo-saying`. `libudev-sys` then
+reaches a daemon that draws nothing and reads no touchpad, and the image links
+its daemons statically against musl where that library does not exist.
+
+`alo-image`'s `no_daemon_links_a_system_library` catches it and names it
+exactly, which is how this was found rather than at the next release. That test
+was written **for this fault**: release 0.0.3 shipped it as `cannot find
+-linput`. The fix it prescribes — put the dependency behind a feature the
+daemons do not enable — is the fix already in place; what nobody noticed is that
+the feature is then unusable by anybody in this workspace, so the module behind
+it has no possible consumer.
+**Our response:** `alo-shell` takes the libinput event apart itself, in
+`crates/alo-shell/src/libinput_gestures.rs`, and hands the result to
+`alo_desktops::Gestures` through the `gesture_events::Event` seam that crate
+already has for its own deterministic tests. **No decision is copied** — which
+swipes count, how far, which are turned off and what any of them means all stay
+in one place — and the extraction happens where libinput is already linked,
+beside the two files that already read it for keys and for scroll. The comment
+on that file says all of this, so the next person does not have to find it
+twice.
+
+The real fix is one of two things neither of which is ours: the vocabulary edge
+should not drag a whole crate into every daemon, or the libinput extraction
+should not live in a crate that every daemon reaches. An instruction in a
+manifest that cannot be followed is worse than no instruction.
+**Date:** 2026-09-26.
+
+### A network test fails about one time in two under the full workspace run
+**Version:** `alo-changing-network`'s
+`the_network_changes_only_through_the_broker::no_broker_or_no_key_changes_nothing`;
+Lima VM, Ubuntu 24.04.4 aarch64 on an Apple M3; 2026-09-26.
+**Whose:** `alo-changing-network` is not this lane's crate; this entry is the
+report, and the fix is its owner's.
+**Behaviour:** the third gate went red on `main` at `c876b9c` with
+
+```
+assertion `left == right` failed
+  left: Err(CouldNotFinish)
+ right: Err(NothingMakesChanges)
+```
+
+It is a flake and not a regression, held to evidence rather than reasoning:
+the tree it failed on, `5acff28`, is **byte for byte** the tree that had passed
+the same gate twice within the hour; the test passed three times out of three
+run on its own; and the very next full-workspace run on that same tree passed
+it. Nothing this lane landed reaches that crate — its last change was #85.
+
+The fixture spawns a broker thread, joins it, and then asserts that a verb is
+refused as *nothing makes changes*. *Could not finish* is what a request gets
+when it reached something rather than nothing, so the two answers are a race
+between the thread ending and its door going away — which a machine running the
+whole workspace's tests at once widens. `--no-fail-fast` means one such flake
+does not hide anything behind it.
+**Our response:** none from this lane, and nothing was changed in that crate. It
+is written down so the next worker who meets a red third gate on this machine
+knows what it is, that a re-run clears it, and that the question for its owner
+is what the test should hold when the broker's door is torn down under load.
+
 
 ### Reading a guest back while Windows restarts leaves a machine that never comes up
 **Version:** QEMU 8.2 `q35` with Fedora's `edk2-ovmf` 20250812-21 and a TPM,

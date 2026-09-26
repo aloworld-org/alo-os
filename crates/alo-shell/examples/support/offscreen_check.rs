@@ -64,7 +64,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         alo_appearance::Scheme::Dark
                     },
                 )?,
-                23..=28 => crate::window_tile_check::stage(&mut server, renderer, stage)?,
                 22 => crate::window_minimize_check::client_request(&mut server, renderer)?,
                 17..=21 => {
                     crate::window_maximize_check::stage(&mut server, renderer, stage)?;
@@ -164,7 +163,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     crate::window_size_check::run(&mut server, renderer)?;
                     crate::window_placement_check::run(&mut server, renderer)?;
                     crate::resize_geometry_check::run(&mut server, renderer)?;
-                    crate::tile_geometry_check::run(&mut server, renderer)?;
                 }
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
@@ -275,7 +273,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 30);
+    // Twenty-four, not thirty: stages 23 to 28 put a window on half an output
+    // and went with `window_tiling` on 2026-09-26. **This number was left at
+    // thirty and this probe was broken on main for a day.** Nothing caught it,
+    // because no gate runs this example — it needs a Wayland parent, and until
+    // one was found for this lane on 2026-09-26 there was no machine here that
+    // could run it at all. The numbering above keeps its gap deliberately, so
+    // a stage number in an old log still means what it meant.
+    assert_eq!(stages, 24);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

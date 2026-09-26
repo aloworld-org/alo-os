@@ -30,6 +30,12 @@ pub(crate) struct SwitchOrder(Vec<WlSurface>);
 
 impl SwitchOrder {
     /// Retain survivors and append new mappings in their observed stacking order.
+    /// Every window in the order a person switches through them.
+    pub(crate) fn in_order(&self) -> impl Iterator<Item = &WlSurface> + '_ {
+        self.0.iter()
+    }
+
+    /// Take the windows that are mapped now into the order.
     pub(crate) fn refresh<'a>(&mut self, mapped: impl Iterator<Item = &'a WlSurface>) {
         let mapped: Vec<_> = mapped.cloned().collect();
         self.0.retain(|root| mapped.contains(root));

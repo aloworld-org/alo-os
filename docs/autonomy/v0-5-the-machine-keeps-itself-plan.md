@@ -23,7 +23,12 @@ for finding out there is one — added by task 6 on 2026-09-19, because the aski
 needs a client and a disk and `alo-keeping-up` is held to neither — a new
 `crates/alo-letting-go` for the two privileged units that remove what an undo
 would have put back, added by task 13 on 2026-09-21 and written down here by
-task 14 on 2026-09-22, which found the line missing — and — from task 4, taken by
+task 14 on 2026-09-22, which found the line missing, a new
+`crates/alo-changing-undo` for what a person sees of what their machine is
+keeping — added by task 15 on 2026-09-25, which is the task that decided the pane
+needed a crate rather than a corner of `alo-letting-go`, on law 4: a crate that
+removes a person's history as root and also draws a window has two audiences and
+two reasons to change — and — from task 4, taken by
 the third PC on 2026-09-19 — the **undo entry in `crates/alo-record`** and the
 sentence `crates/alo-recounting` reads it back with. ADR 0045 point 3 asks for
 a record entry an undo writes, no existing kind fits one, and the crate is
@@ -1188,7 +1193,81 @@ keep passing; this is added beside them.
 
 ### 15. What a person sees of what their machine is keeping
 
-**Status:** ready. **Depends on:** 14.
+**Status:** done. **Depends on:** 14.
+
+**Done, 2026-09-25.** Report:
+[`updates/what-a-person-sees-of-what-their-machine-is-keeping.md`](updates/what-a-person-sees-of-what-their-machine-is-keeping.md).
+
+`crates/alo-changing-undo` — the pane's model, four files, 28 tests, and **no
+second copy of anything**. The window is `alo_keeping_up::HowFarBack`, the
+sentence a person approves is `alo_keeping_up::WhatWasKept::forgetting`, *this
+machine keeps nothing of what your files were* is
+`alo_keeping_up::words::NOT_UNDONE_NOTHING_KEEPS_WHAT_WAS_THERE` — the same fact
+an undo refuses with, so a person meets one wording of it however they arrived —
+and why a size is not the whole truth is `alo_measuring::Counted`'s. Three
+sentences are this crate's, each with a translator's note: how far back this
+machine keeps, how much room that is holding, and that nothing has needed keeping
+yet.
+
+**The crate, rather than a corner of `alo-letting-go`.** Law 4: a crate that
+removes a person's history as root *and* draws a window has two audiences and two
+reasons to change, and the second arrives the first time somebody wants the pane
+different. The owner confirmed it before the work started.
+
+**Three findings, and the first one changed the design.**
+
+1. **A pane cannot ship a dependency on `alo-letting-go`, and that shaped
+   everything.** `alo-saying` is the machine's one vocabulary, so it ships every
+   crate that declares a word — which puts every such crate inside the process an
+   agent's turn runs in. `crates/alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs`
+   holds that the only road into the privileged remover from there is its
+   vocabulary. So a pane that read the person's file or performed the act would
+   carry that road into a turn's process and break that test, **correctly**. The
+   pane therefore does neither: it is the model of what a person reads and
+   decides, `Wanted` is a window for the caller to keep and `Approved` is a
+   person's warrant for the caller to carry out, and the caller is the session
+   they are sitting at, which is not a turn. `alo-letting-go` is a
+   **dev-dependency** — a test's, in nobody's process — which is how
+   `tests/the_machine_really_obeys_the_changed_window.rs` takes the road the
+   crate may not. That the file and the act stay out of the crate is also why it
+   can hold no second copy of them: it has no copy at all. The task asked for the
+   not-on-the-road test by name and it is there, four cases, with
+   `alo-letting-go`'s own suite re-run green beside it.
+2. **ADR 0045's fourth term is not built.** *What is filling the disk counts
+   snapshots, by name* — `alo-measuring` has **no mention of a snapshot or an undo
+   at all**, zero matches, and that crate is lane B's. So this task did not build
+   it and did not count anything itself. What it does instead satisfies the
+   acceptance honestly: `Holding::measured` takes `alo_measuring::Node` and
+   carries its `size` and its `counted`, so the number the pane shows *is* that
+   crate's answer, held by a test. The caller measures the folder. The missing
+   line in *what is filling the disk* is still owed by whoever owns
+   `alo-measuring`, and a person who goes looking for it there will not find it.
+3. **This crate does not belong in `alo-declared`.** The task says to collect it
+   into `alo-saying` and `alo-declared` *as every crate with words is*, but
+   `alo-declared` is **every verb alo OS ships** — and this crate is forbidden a
+   verb by the same ADR. `alo-changing-updates`, the words-only crate it is
+   modelled on, is not in it either. `alo-saying` alone, which is the precedent.
+
+**Two smaller things worth knowing.** Registering one crate in `alo-saying`
+touched **four** hand-kept lists in `collecting.rs` — the name array, the
+`declare` run, `ONE_STRING_EACH` and the per-crate word count — and two of them
+were only found by a failing test. That is the class the software plan's task 10
+is for. And the pane's room sentence takes the size **already worded**, because
+how a number of bytes reads in a person's language is a drawing decision, and a
+second opinion in this repository about what `5183545344` should say would be one
+more answer nobody could reconcile.
+
+**A note on the name.** `alo-changing-undo` matches `alo-changing-updates`,
+`-drives`, `-printers` and `-network`, but every one of those is the surface of a
+**broker verb family**, and two are the broker plan's. This one is not a broker
+verb — ADR 0045's seventh term keeps forgetting off that list on purpose. The
+name is kept because the plan and the owner both chose it and a defensible
+reading holds — *the Settings surface for a privileged change* — and the
+distinction is written into the crate's own header so the family's meaning is
+documented rather than quietly broken.
+
+**What this does not do:** draw anything (the shell's), touch `undo.toml`,
+perform the act, declare a verb, open a socket, or read a file.
 
 Written 2026-09-22 by task 14, because the plan named nothing after it and its
 change leaves ADR 0045 point 5 half kept. The point has two halves — *what an

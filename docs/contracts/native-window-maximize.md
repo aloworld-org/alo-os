@@ -97,5 +97,6 @@ even after side changes. `WindowMaximizeError` remains its original separate
 four-variant enum, including variant imports, exhaustive matches and error text.
 The new tile entry point uses `WindowModeError`; it does not widen the existing
 maximize error contract. Existing
-`Maximized` sizing/placement refusals also cover tiled/restore memory. See
-`native-window-tiling.md` for the additive API and precise output/commit rules.
+`Maximized` sizing/placement refusals also cover tiled/restore memory.
+`native-window-tiling.md` described that API and is withdrawn as of 2026-09-26;
+what divides a display now is in `native-window-dividing.md`.
