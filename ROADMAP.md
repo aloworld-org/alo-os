@@ -1739,7 +1739,7 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 67 boxes: 31 promises, eighteen of which carry the two boxes the
+**This gate is 79 boxes: 31 promises, twenty-four of which carry the two boxes the
 section above describes.** It was 45 boxes over 29 promises before the
 reconciliation began on 2026-09-26, and it keeps growing as promises are
 split and as promises `docs/features.md` makes with nowhere to be are given a
@@ -1896,6 +1896,24 @@ sorted the same way v0.01 now is.
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
+  - [ ] **The code.**
+        **The decisions are built and four of the applications do not exist.**
+        Notifications and do-not-disturb are `alo-notifying`; file associations
+        and which application opens what are `alo-applications` and
+        `alo-portals`' open-with; archives are recognised by
+        `alo-applications`' media types; USB storage is the broker's `MountDrive`
+        and `EjectDrive`; trash is one of `alo-by-hand`'s plain ways to do what
+        the agent does. The status area is the shell's and is drawn.
+        **A file manager, a text editor, an image viewer and a terminal are
+        none of them anywhere** — no crate is one, and `image/Containerfile`
+        installs none. This line promises applications a person opens, not only
+        the machinery under them, and four of the ten clauses have nothing
+        behind them at all. Whether alo OS writes them or pins upstream ones is
+        undecided, which is itself the finding: *nothing here is owed to a
+        machine — it is owed a decision*
+  - [ ] **On the machine.**
+        the desktop in front of somebody, once there is one to be in front of
+        them
 - [ ] **The plain way to do what the agent does** (ADR 0009) — searching your own
       files by name, kind, date and contents; a window showing what is running
       and what it is using; what is filling the disk. Each is the non-agent
@@ -1918,10 +1936,44 @@ sorted the same way v0.01 now is.
         lane's, and nothing here has run on a certified machine
 - [ ] **Capture**: screenshots, annotation, screen recording with audio, screen
       sharing — and an indicator whenever screen, camera or microphone is in use
+  - [x] **The code.**
+        `alo-capturing` — a picture of the whole screen, one window or a chosen
+        region; `marking.rs` for annotating it without opening anything else;
+        recording with audio; and sharing the screen in a call. `alo-in-use` is
+        the indicator's other half: **whatever is using the screen, the camera or
+        the microphone, including ours** — law 1's instinct applied to the room
+        rather than to egress. `v0-5-capture-and-the-room-plan.md`, 7 of 7, with
+        a report each
+  - [ ] **On the machine.**
+        a real camera and a real microphone, which this machine has neither of,
+        and the indicator drawn by the compositor
 - [ ] ★ **Divide the screen**: halves and quarters by drag or keyboard, splits
       that hold while you work and are remembered, per display
+  - [x] **The code.**
+        `alo-dividing` — halves and quarters, the split held while a person
+        works rather than a one-off placement, and **remembered per display**, so
+        returning to a pair of windows restores the arrangement instead of the
+        last position of each. `v0-5-hands-on-the-desktop-plan.md`, 7 of 7;
+        `updates/a-split-remembered-per-display.md`,
+        `updates/the-division-and-the-desktops-a-session-holds.md`
+  - [ ] **On the machine.**
+        the drag itself — taking a half by throwing a window at an edge is the
+        compositor's, and is owed to it and to a second screen
 - [ ] **Input**: drag and drop, context menus, gestures, virtual desktops,
       keyboard layouts with dead keys and a compose key, input methods
+  - [ ] **The code.**
+        **Four of the six, and gestures are not among them.** Virtual desktops
+        are `alo-desktops`, switched from the keyboard without taking a chord
+        away from `alo-shortcuts`; keyboard layouts, **dead keys**, the **compose
+        key** and **input methods** are `alo-keyboards`.
+        **Gestures are not built.** `alo-desktops/src/chords.rs` is *switching
+        desktops from the keyboard* — keyboard chords, not touch — and nothing in
+        this repository reads a touchpad gesture. Drag and drop and context menus
+        are the compositor's and belong to the half below, but a gesture has a
+        decision behind it that would live in a crate, and there is none
+  - [ ] **On the machine.**
+        drag and drop between applications, context menus, and a touchpad to
+        make a gesture on
 - [ ] **Software**: install sandboxed applications, update and remove them; the
       XDG portal backend against our own shell; one grant list covering agents
       and applications alike; secret storage; session management; corporate
@@ -1957,6 +2009,29 @@ sorted the same way v0.01 now is.
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
+  - [x] **The code.**
+        `alo-access` — **the AT-SPI tree the agent uses is the one a screen
+        reader uses**, which is the promise `docs/features.md` makes and the
+        reason this is not extra work; high contrast; the magnifier as a setting
+        that is kept; and keyboard-only operation walked end to end with the
+        screen off. `v0-5-access-and-language-plan.md`, 7 of 7 —
+        `updates/the-tree-a-screen-reader-reads.md`,
+        `updates/the-screen-reader-and-the-tree-it-reads.md`,
+        `updates/the-walk-with-the-screen-off.md`
+  - [ ] **On the machine.**
+        a screen reader speaking, a magnifier magnifying, and somebody operating
+        the machine without seeing it — all owed to the compositor and the
+        certified machine
+- [ ] Accessibility: EN 301 549 conformance on the shell
+  - [ ] **The code.**
+        **not assessed.** The tree, high contrast and the keyboard-only walk
+        above are the work conformance is measured *over*; nothing here has been
+        measured against EN 301 549's clauses, and a conformance claim is an
+        assessment rather than a crate. v1 carries the **published** report; this
+        line is the shell being conformant, and the shell is being built
+  - [ ] **On the machine.**
+        the assessment itself, on the certified machine, against the shell as it
+        ships
 - [ ] `.docx`, `.xlsx`, `.pptx` open
   - [x] **The code.**
         `alo-converting` — the three formats opened through a pinned
@@ -2016,7 +2091,6 @@ sorted the same way v0.01 now is.
       tested in a VM; the installer program with typed consent and a tested
       bail-out; alongside Windows and back again; a GitHub Release; and the
       laptop, firmware to the daemon
-- [ ] Accessibility: EN 301 549 conformance on the shell
 - [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded
   - [x] **The code.**
         `alo-finding` — an index a person owns, in a file under their own
@@ -2417,6 +2491,49 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### The desktop, capture, input and access, reconciled, 2026-09-26
+
+Six promises, none of them split before. **Three ticked, three refused.**
+
+**Ticked, code half:** *Capture* — screenshots, annotation (`marking.rs`),
+recording with audio, sharing a call, and `alo-in-use` for the indicator over
+**whatever** is using the screen, camera or microphone including ours. *Divide the
+screen* — halves and quarters, held while a person works, remembered per display.
+*Access* — the AT-SPI tree the agent uses being the one a screen reader uses,
+high contrast, the magnifier as a kept setting, and keyboard-only operation walked
+with the screen off. Three complete plans behind them, 7 of 7 each.
+
+**Refused: *The ordinary desktop*.** The decisions are all there — notifications,
+file associations, archives recognised, USB storage as the broker's two verbs,
+trash as one of `alo-by-hand`'s plain ways. **A file manager, a text editor, an
+image viewer and a terminal are none of them anywhere**: no crate is one and
+`image/Containerfile` installs none. Four of ten clauses have nothing behind them,
+and this line promises applications a person opens rather than only the machinery
+under them. What makes it worth saying in the box: *nothing here is owed to a
+machine — it is owed a decision*, whether alo OS writes them or pins upstream
+ones.
+
+**Refused: *Input*.** Virtual desktops, keyboard layouts, dead keys, the compose
+key and input methods are built. **Gestures are not.**
+`alo-desktops/src/chords.rs` is switching desktops *from the keyboard* — keyboard
+chords, not touch — and nothing here reads a touchpad gesture. Drag and drop and
+context menus are the compositor's and sit in the machine half honestly; a gesture
+has a decision behind it that would live in a crate, and there is none.
+
+**Refused: *Accessibility: EN 301 549 conformance on the shell*.** The tree, high
+contrast and the keyboard-only walk are the work conformance is measured *over*;
+nothing has been measured against the standard's clauses. A conformance claim is an
+assessment rather than a crate, and the box now says that rather than sitting
+blank next to three crates that look like it.
+
+**The rate of refusal is the useful number from this group.** Three subject areas
+whose plans are all finished, 7 of 7, and half their gate promises cannot be
+ticked — because a plan finishing means its tasks are done, and a promise is met
+when every clause of it is. *Capture* names five things and has five; *Input* names
+six and has four. Nothing about the plans is wrong; the gate is simply a different
+question, and this is what asking it looks like.
+
 
 ### Software, and what opens a file, reconciled, 2026-09-26
 
