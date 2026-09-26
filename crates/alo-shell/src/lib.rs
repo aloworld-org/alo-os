@@ -320,6 +320,12 @@ pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
 pub use capture_flatten::{NotFlattened, burnt_in};
+// `DesktopFrame::capturing` is a public field of this type, so without these a
+// caller outside this crate could only ever pass `None` — the capture tools were
+// drawable by this crate and by nobody else, including the fixture whose whole
+// job is to draw a frame with them on it. What is exported is what a caller must
+// hand in; every picture the tools become stays private.
+pub use capture_raster::{CaptureLook, Capturing};
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
 pub use direct_desktop::TheDesktop;

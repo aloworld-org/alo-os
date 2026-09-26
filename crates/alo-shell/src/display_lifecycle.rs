@@ -82,9 +82,9 @@ impl crate::Server {
         // taken from the counter every window's number comes from so one of
         // them can never be a client's.
         let Ok(promises) = Promises::of(
-            WindowId::from_compositor(crate::window_number::Numbers::reserve()),
-            WindowId::from_compositor(crate::window_number::Numbers::reserve()),
-            WindowId::from_compositor(crate::window_number::Numbers::reserve()),
+            WindowId::from_compositor(crate::window_number::reserve()),
+            WindowId::from_compositor(crate::window_number::reserve()),
+            WindowId::from_compositor(crate::window_number::reserve()),
         ) else {
             // Three numbers from a counter that never repeats cannot be equal,
             // so this is unreachable rather than handled. Refusing is still the
