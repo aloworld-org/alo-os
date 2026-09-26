@@ -461,10 +461,13 @@ decided how a person moves between them: **the menu a machine starts at is alo
 OS's, and Windows stands behind it.** This is that journey, in order, with what
 a person sees at each step.
 
-**None of it has run on a machine.** What is below is what the code writes and
-what the decision says it means; the walk that proves it is the virtual machine
-on the development PC, and it is owed. Nothing here may be read as a
-measurement.
+**What has been watched, and what has not.** The walk on the development PC —
+a real Windows 11 in a virtual machine with a TPM, UEFI and two disks — has now
+run steps 2, 3, 4 and 5 of what follows, and *remove alo OS* below them. Each
+of those says what was read back and when. **Step 1's menu itself has not been
+watched**: no walk has yet photographed the list with its countdown, and
+nothing here may be read as saying otherwise. Nor has any of it run on a
+laptop; what a virtual machine cannot show is at the end of this page.
 
 ### 1. The machine is switched on
 
@@ -533,11 +536,29 @@ way (`bcdedit /set {fwbootmgr} bootsequence`, which
 changes which system the machine starts at by default — that is step 3, a
 different act and a different verb, and each leaves the other alone.
 
+**The Windows half is watched, 2026-09-23**: the copy the install leaves behind
+was started from its shortcut with the switch's word, the person's word was
+typed, the firmware started alo OS on the next start, and the start after that
+was Windows again — so the default had not been touched. alo OS's half is its
+own crate's, and its walk is owed.
+
 ### 5. If alo OS's loader will not start
 
 Windows stands **directly behind alo OS in the firmware's own start order**, so
 a loader the firmware cannot start at all is passed over and Windows starts with
 nothing typed (ADR 0062, term 1).
+
+**Watched, 2026-09-26.** On a machine that had just installed alo OS the whole
+way, alo OS's loader was taken away from the partition its firmware entry names
+and the machine was restarted with no disc, no boot order and no keypress. Its
+own console:
+
+    BdsDxe: failed to load Boot000C "alo OS" from HD(2,GPT,1A85CA2F-…)/\EFI\fedora\shimx64.efi: Not Found
+    BdsDxe: loading Boot0004 "Windows Boot Manager" from HD(1,GPT,0506F28D-…)/\EFI\Microsoft\Boot\bootmgfw.efi
+    BdsDxe: starting Boot0004 "Windows Boot Manager" from HD(1,GPT,0506F28D-…)/\EFI\Microsoft\Boot\bootmgfw.efi
+
+and then Windows' own start-up saying it had reached a session. The test is
+`with_alo_os_unstartable_the_computer_starts_windows_by_itself`.
 
 **The case that does not cover, said plainly.** A loader that *starts* and is
 then broken — a configuration it cannot read, a prompt instead of a menu — is
