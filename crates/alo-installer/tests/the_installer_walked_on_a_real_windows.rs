@@ -1111,14 +1111,23 @@ fn the_whole_road_installs(
 ) -> (bool, String) {
     let disc = medium::the_walk_disc(yard, &Told::TheWholeRoad, download);
     let console = Console::fresh(&yard.join("console.log"));
-    let machine = Machine::start_as_its_variables_decide(
+    let mut machine = Machine::start_as_its_variables_decide(
         firmware,
         yard,
         name,
         Some(&disc),
         &console,
         chip,
-        &[],
+        &[
+            (
+                "systemd.extra-unit.alo-walk-installed.service",
+                THE_INSTALLED_SYSTEM_SAYS,
+            ),
+            (
+                "systemd.unit-dropin.multi-user.target~alo-walk-installed",
+                "[Unit]\nWants=alo-walk-installed.service\n",
+            ),
+        ],
     );
     let done = the_environment_says("installing.installed");
     let not_done = the_environment_says("installing.not-installed");
@@ -1139,9 +1148,18 @@ fn the_whole_road_installs(
     let after = installed
         .then(|| console.wait_for(&[tidied.as_str(), not_whole.as_str()], A_WALK))
         .flatten();
+    // And then the installed system comes up, says what it started from and
+    // turns itself off. Waiting for that is not politeness: a machine killed a
+    // second after the environment wrote to the firmware is a machine whose
+    // variable store nobody has closed, and what the next start finds in it is
+    // not what was written (2026-09-26, three walks whose entry for alo OS was
+    // gone by the next boot).
+    let reached = after.is_some() && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
+    let stopped = reached && machine.has_stopped_within(Duration::from_secs(180));
     let said = without_the_kernels_messages(&console.said());
     drop(machine);
     walking::machine::stop();
+    eprintln!("the installed system reported itself: {reached}, and turned itself off: {stopped}");
     // The end of the install, in the log always: a walk that goes on to fail
     // three boots later is a walk whose install nobody can read afterwards,
     // because each boot writes over the same serial file.
