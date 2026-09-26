@@ -631,7 +631,24 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** ready. Unblocked 2026-09-26: task 11 landed on 2026-09-25 and task
+**Status:** **Done, 2026-09-26.** Eight steps walked on a real nested
+compositor — the sign-in screen, a name typed at it, the screen divided between
+two real clients, a second display docked, a capture with a blur, a notification
+arriving, the screen locked and a key pressed at the lock — each submitting a
+frame through the parent's own EGL and reading back the pixels it drew, and the
+sequence of what a person is told held against the report's table by
+`crates/alo-shell/tests/every_new_surface_walked.rs`. **Four things are named
+and not ticked:** a second display has no surface of its own anywhere in this
+compositor (nothing paints `screens_raster`'s pictures); the divided windows are
+drawn at the origins their shares gave them rather than grown into them, which
+is task 17; the lock screen, the capture tools and notifications are in no
+accessibility tree; and the certified machine has seen none of it. Report:
+[`updates/every-new-surface-walked.md`](updates/every-new-surface-walked.md).
+It found a fault in task 16's landed code — two clients' windows were given one
+window number between them, so a chord to divide refused on any second
+application opened.
+
+Unblocked 2026-09-26: task 11 landed on 2026-09-25 and task
 16 on 2026-09-26, so the state a walk needs now exists. A session holds desktops
 and divisions, a swipe switches desktops and windows belong to them, which is
 what *a walk cannot step through a second desktop that nothing holds* was
@@ -660,8 +677,22 @@ shopping and leaves the task where it was.
   and the exact sequence of spoken and shown text, recorded in the report and held by
   one test; every sentence drawn is the vocabulary's, and none is written in this
   crate.
+- **What a raster here is, written into the acceptance so a tick cannot be
+  misread:** each step's raster is **what this compositor drew, not what the
+  parent displayed**. The frame is painted twice by the same painter — same
+  `GlesRenderer`, same `crate::scene_drawing::paint`, same roots, popups, cursor
+  and layers — once into the parent's window, which is the submission, and once
+  into an offscreen buffer that can be read, because reading the window's own
+  buffer back loses the EGL context on this backend (`docs/quirks.md`). Seven
+  green steps are therefore evidence that each surface laid itself out and put
+  pixels down. They are **not** evidence that a parent, a compositor above it, or
+  any panel showed them.
 - **Constraint:** measured under a nested compositor; the certified machine has seen
-  none of it and the report says so.
+  none of it and the report says so. The parent may be `weston --backend=headless`
+  with no display and no GPU (see *A nested parent needs no WSLg and no display* in
+  [COMPOSITOR.md](COMPOSITOR.md)) — which is what makes this task runnable on a lane
+  without WSLg, and which composites to nothing, so no screenshot of a real display
+  comes out of it.
 
 
 ### 15. A running machine's own clock, battery, network and volume
@@ -817,3 +848,51 @@ exactly that. This task takes the half out as it puts the division in.
   answers. **What it cannot tick from a nested compositor** is that a real
   display plugged in and unplugged keeps its division; that needs a machine with
   a display to plug, and is named beside the tick rather than assumed.
+
+### 17. Two real clients divided, through the probe's own pixels
+
+**Status:** ready. **Depends on:** 16 (landed 2026-09-26), and on *the nested
+fixtures run in the gate* (#143), because a probe nothing runs is where this
+coverage went missing in the first place.
+
+Written 2026-09-26 by task 16's owner, about a hole task 16 made. It is here as
+a task rather than in a commit message because **a finding that lives in a commit
+message is invisible work**: nobody reads one looking for something to do.
+
+**What is uncovered.** `crates/alo-shell/examples/support/offscreen_check.rs`
+walked stages 23 to 28 with a real client through real GLES pixels: a window put
+on half an output, its configure acknowledged, its buffer attached at the tiled
+size, and the committed origin read back off the frame. Task 16 removed
+`crate::window_tiling` and those six stages went with it. **Nothing replaced
+them.** What a chord does now is held by `crate::window_dividing`'s unit tests,
+by `tests/shortcut_dispatch/layout.rs` with one client, and by
+`tests/one_layout_decider.rs` reading the source — and by no pixels at all. The
+probe's own stage count was left at thirty for a day afterwards, which is how
+somebody noticed.
+
+**Why it was removed rather than rewritten.** A division divides *between* two
+windows: `alo_dividing::Division::divide_with_next` takes the focused window and
+the next one, and with one window open it refuses by name. The probe drives
+**one** client through one scripted dance of stage numbers, and the checker side
+matches on those numbers. There is no second window to divide with, so the six
+stages had no honest translation — a single client asking to be divided is the
+one case the new design deliberately refuses.
+
+**What this task is.** Give the probe a second client, and divide between them:
+the focused window on a side, both windows configured, both buffers attached at
+the sizes the division gave, and both committed origins read back off the frame
+and compared against `Division::shares`. The two sides a half could never lay
+out — top and bottom — are shares of a tree exactly as left and right are, and
+are worth a stage each for that reason.
+
+- **Acceptance:** the offscreen probe divides a display between two real clients
+  and reads both windows' committed origins and sizes back off the submitted
+  frame, compared against what `alo_dividing::Division::shares` says rather than
+  against numbers written in the probe; a chord with one client still refuses and
+  that refusal is a stage too; and the probe's stage count matches the stages it
+  walks, checked by walking them rather than by a number somebody maintains.
+- **Constraint:** the probe drives clients and reads pixels; it decides no
+  layout. Every rectangle compared comes from the division. **What it cannot
+  tick** is a physical display: the parent is `weston --backend=headless` or
+  WSLg, both of which composite to nothing, so this is what was drawn and never
+  what a panel showed.

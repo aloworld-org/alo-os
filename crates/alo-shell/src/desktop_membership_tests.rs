@@ -48,9 +48,9 @@ fn a_session_with_two_desktops() -> (tempfile::TempDir, crate::Server, Promises,
     std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
     let mut server = crate::Server::bind(directory.path(), "promises").unwrap();
     let promises = Promises::of(
-        WindowId::from_compositor(crate::window_number::Numbers::reserve()),
-        WindowId::from_compositor(crate::window_number::Numbers::reserve()),
-        WindowId::from_compositor(crate::window_number::Numbers::reserve()),
+        WindowId::from_compositor(crate::window_number::reserve()),
+        WindowId::from_compositor(crate::window_number::reserve()),
+        WindowId::from_compositor(crate::window_number::reserve()),
     )
     .unwrap();
     server

@@ -395,6 +395,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-changing-undo"
+version = "0.0.1"
+dependencies = [
+ "alo-files",
+ "alo-keeping-up",
+ "alo-letting-go",
+ "alo-measuring",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-changing-updates"
 version = "0.0.1"
 dependencies = [
@@ -1271,6 +1283,7 @@ dependencies = [
  "alo-changing-drives",
  "alo-changing-network",
  "alo-changing-printers",
+ "alo-changing-undo",
  "alo-changing-updates",
  "alo-choosing",
  "alo-clipboard",
