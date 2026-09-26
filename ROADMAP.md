@@ -187,6 +187,35 @@ choices and release tiers stand; ADR 0021 remains proposed. Documentation-only
 report: `docs/autonomy/updates/owner-model-choice-direction.md`; no runtime
 verification or completion tick follows from that report.
 
+## Two numbers that look alike
+
+**`v0.5` is a milestone. `0.0.5` is an image.** They are one character apart,
+they mean entirely different things, and on 2026-09-26 the owner and the loop
+spent an evening each meaning a different one. That is a naming fault rather
+than anybody's mistake, and it is fixed here in words rather than by renaming
+anything published.
+
+| | What it is | How many | Who declares it done |
+|---|---|---|---|
+| **Milestone** `v0.01`, `v0.5`, `v1` | a phase of the product, with an exit gate of promises | three, ever | the exit gate, fully checked |
+| **Image** `0.0.1` … `0.0.5` | a built, pushed, signed artifact an installer pulls | one every day or two | the owner's signature over its digest |
+
+**Release 0.0.5 was signed on 2026-09-21 and is finished.** Milestone v0.5 is
+not, and the two facts are unrelated: an image is finished the moment it is
+signed, and a milestone is finished when everything it promised is shown to
+work. Five images have shipped inside one unfinished milestone.
+
+### The rule, from here
+
+- **An image is never written as a bare number.** Write *image 0.0.6* or
+  *release 0.0.6*, never *0.0.6* alone, and give its date where a reader might
+  care: *image 0.0.6 (2026-09-28)*.
+- **A milestone always carries its `v` and never a second zero** — `v0.5`,
+  never `v0.0.5`. A sentence with `v0.0.5` in it is wrong whichever was meant.
+- **`Roadmap:` trailers name milestones**, so they are `v0.5` and `v1`.
+- Nothing published is renamed. The registry tags, the digests and the
+  signatures stand; `image/pinned.toml` keeps its record of all five.
+
 ## v0.01 — it boots and the agent acts
 
 The point is to prove one sentence on real hardware: *an action a person would

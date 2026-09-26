@@ -24,6 +24,12 @@
 # pins its digest. Until then the recipe names a candidate, and an installer
 # still pulls what is pinned.
 
+# **The number below is an image, not a milestone.** `0.0.5` is an artifact
+# signed on 2026-09-21; `v0.5` is a phase of the product that is not finished.
+# They are one character apart and have been confused. ROADMAP.md, *Two numbers
+# that look alike*, carries the rule: write *image 0.0.6*, never a bare number,
+# and never `v0.0.5` for anything.
+
 registry = "ghcr.io/aloworld-org/alo-os"
 
 # Release 0.0.2: built from 8d2619daeb07b4b0ebbed59ded8caee722103b65, pushed and
