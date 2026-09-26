@@ -6951,3 +6951,40 @@ guest's script does nothing but unmount and say it is done. What that boot did
 is in the lines above; what the install did is the next boot's to say. A
 machine is not read while it is going down.
 **Date:** 2026-09-26.
+
+### A nested frame cannot be read back while it is in flight
+**Version:** `alo-shell`'s `Nested::keep_each_frame`; smithay 0.7.0's winit
+backend; Mesa 25.2.8 software EGL (llvmpipe) under `weston 13.0.0
+--backend=headless`; Lima VM, Ubuntu 24.04.4 aarch64 on an Apple M3;
+2026-09-26.
+**Whose:** ours.
+**Behaviour:** two things lose the EGL context outright, both reported as
+
+```
+The context has been lost, it needs to be recreated:
+EGL failed to allocate resources for the requested operation.
+```
+
+1. `readback_xrgb` on the window's own framebuffer, called inside
+   `WinitGraphicsBackend::bind`'s scope after the paint and before the swap.
+2. `render_native_scanout` — which binds an offscreen renderbuffer of its
+   own — called anywhere between that paint and that swap.
+
+Both at every output size tried, 800×600 and 1366×768. The identical readback
+against an offscreen renderbuffer with no frame in flight succeeds: the
+`readback_check` fixture passes here, orientation and odd-width packing
+included.
+
+**What this does not establish is which of the two it is** — whether a window
+target cannot be copied under this EGL at all, or whether nothing can be while
+a frame is in flight. They were not separated: the road that works was found
+first, and reading a window back is not what any of this is for. Saying so is
+cheaper than a cause nobody measured.
+**Our response:** `keep_each_frame` paints the scene a second time, by the same
+`GlesRenderer` through the same `crate::scene_drawing::paint` with the same
+roots, popups, cursor and layers, into an offscreen buffer — **after** the
+swap. What a fixture gets is therefore one painter's work twice rather than the
+parent's own bytes, and `keep_each_frame`'s own rustdoc says that where somebody
+reading a raster will meet it. It is off unless something asks, so a signed-in
+session never pays for a readback nobody is looking at.
+**Date:** 2026-09-26.

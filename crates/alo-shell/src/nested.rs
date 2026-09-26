@@ -37,6 +37,18 @@ pub struct Nested {
     focused: bool,
     /// Actual parent position, including motion consumed by native controls.
     pub(crate) control_input: crate::NestedControlInput,
+    /// Whether each frame's own pixels are kept as it is submitted.
+    ///
+    /// Off, and a signed-in session never turns it on: a readback is a
+    /// synchronous copy of the whole output and a compositor that did one every
+    /// frame would be paying for a fixture nobody is running.
+    keeping: bool,
+    /// The frame last submitted, while [`Self::keeping`].
+    ///
+    /// Held whole rather than as its pixels because `ScanoutPixels` is not
+    /// `Clone` — it owns a whole output's bytes, and a type that copied them on
+    /// a mistyped line would be the wrong default for a compositor.
+    kept: Option<crate::PreparedScanout>,
 }
 
 impl Nested {
@@ -90,7 +102,56 @@ impl Nested {
             closed: false,
             focused: false,
             control_input: crate::NestedControlInput::default(),
+            keeping: false,
+            kept: None,
         })
+    }
+
+    /// Keep each frame's own pixels from now on, for a fixture that has to look
+    /// at what was drawn.
+    ///
+    /// **Off until something asks.** A readback is a synchronous copy of the
+    /// whole output, taken while the frame is still bound; a session that did
+    /// one every frame would be paying, every frame, for a developer fixture
+    /// nobody is running. Turning it off again stops the copying and leaves the
+    /// last frame kept, so a caller can turn it on for one step of a walk.
+    ///
+    /// # What is kept, exactly, and why it is not the parent's own buffer
+    ///
+    /// The frame is painted **twice by the same painter**: once into the
+    /// parent's window, which is the submission, and once into an offscreen
+    /// buffer that can be read. Same `GlesRenderer`, same
+    /// `crate::scene_drawing::paint`, same roots, popups, cursor and layers —
+    /// what differs is the buffer it lands in and the transform a window needs.
+    ///
+    /// Reading the window's own buffer back would be the stronger thing to
+    /// know, and it is what this did first: `crate::readback_xrgb` on the
+    /// framebuffer inside the bind, after the paint and before the swap. Under
+    /// Mesa's software EGL that loses the context outright — *EGL failed to
+    /// allocate resources* — at every output size tried, while the identical
+    /// call against an offscreen renderbuffer succeeds.
+    ///
+    /// **What that does not establish is why**, and this says so rather than
+    /// guessing: a second target bound between the paint and the swap loses the
+    /// context here whatever it is, which is how the offscreen road failed too
+    /// until it was moved after the swap. So it may be that a window target
+    /// cannot be copied under this EGL, or only that nothing can be while a
+    /// frame is in flight. The two were not separated, because the road that
+    /// works was found first and reading a window back is not what any of this
+    /// is for. `docs/quirks.md` carries both halves.
+    pub fn keep_each_frame(&mut self, keeping: bool) {
+        self.keeping = keeping;
+    }
+
+    /// The pixels of the frame last submitted, while [`Self::keep_each_frame`]
+    /// was on for it.
+    ///
+    /// [`None`] before the first such frame. XRGB8888, little-endian, as
+    /// [`crate::ScanoutPixels`] describes — the same bytes every other readback
+    /// in this crate hands back.
+    #[must_use]
+    pub fn the_frame_just_drawn(&self) -> Option<&crate::ScanoutPixels> {
+        self.kept.as_ref().map(crate::PreparedScanout::pixels)
     }
 
     /// Process graphics events without routing input (render-only fixtures).
@@ -430,6 +491,24 @@ impl Nested {
         self.backend.submit(Some(&[damage])).map_err(submission)?;
         if trace {
             eprintln!("Nested submission {:?}: after swap", start.elapsed());
+        }
+        if self.keeping {
+            // The same scene again, by the same painter, into a buffer this
+            // EGL will let go of. See `keep_each_frame` for why it is not the
+            // window's own buffer, which is the thing anybody would try first.
+            //
+            // **After the swap, never between paint and swap.** Binding a
+            // second target while the window's frame is painted and not yet
+            // submitted loses the context outright under this EGL, which is a
+            // frame nobody sees rather than a raster nobody gets.
+            self.kept = Some(crate::offscreen::render_native_scanout(
+                self.backend.renderer(),
+                size,
+                roots,
+                popups,
+                cursor,
+                native,
+            )?);
         }
         // Positioned arrows are now in the submitted scene, just like client
         // cursors. Change host visibility only after that submission succeeds.
