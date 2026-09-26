@@ -39,6 +39,16 @@ pub(crate) struct NativeLayers<'a> {
     pub(crate) approval: Option<&'a crate::approval_raster::ApprovalPicture>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
+    /// What on this machine is watching or listening, beside the egress
+    /// indicator in the same status area and never drawn as it.
+    pub(crate) in_use: Option<&'a crate::in_use_raster::InUsePicture>,
+    /// The notifications `alo-notifying` handed over, at the other end of the
+    /// dock from both indicators.
+    pub(crate) notifications: Option<&'a crate::notification_raster::NotificationPicture>,
+    /// The capture tools, while somebody is choosing what to capture or
+    /// marking what they captured. Above everything, because what a person is
+    /// drawing on must not be covered by what arrives while they draw.
+    pub(crate) capturing: Option<&'a crate::capture_raster::CapturePicture>,
 }
 
 impl NativeLayers<'_> {
@@ -55,6 +65,9 @@ impl NativeLayers<'_> {
             settings: None,
             approval: None,
             status: None,
+            in_use: None,
+            notifications: None,
+            capturing: None,
         }
     }
 
@@ -66,6 +79,9 @@ impl NativeLayers<'_> {
             && self.settings.is_none()
             && self.approval.is_none()
             && self.status.is_none()
+            && self.in_use.is_none()
+            && self.notifications.is_none()
+            && self.capturing.is_none()
     }
 }
 

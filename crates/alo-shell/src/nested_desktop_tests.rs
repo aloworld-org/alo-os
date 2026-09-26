@@ -54,6 +54,9 @@ fn the_status_area_at_the_far_end_of_the_dock_holds_the_egress_indicator() {
                 dock.set_edge(edge);
                 let frame = |egress| DesktopFrame {
                     status: crate::desktop_testing::a_laptops_status(),
+                    in_use: &[],
+                    notifications: &[],
+                    capturing: None,
                     division: crate::desktop_testing::an_undivided_display(),
                     offer: crate::desktop_testing::nothing_offered(),
                     dock: &dock,
@@ -124,6 +127,9 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let never_told = EgressStatus::on_an_output();
     let frame = DesktopFrame {
         status: crate::desktop_testing::a_laptops_status(),
+        in_use: &[],
+        notifications: &[],
+        capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
         dock: &dock,
@@ -161,6 +167,9 @@ fn the_record_window_sits_in_the_desktop_frame() {
     );
     let desktop = DesktopFrame {
         status: crate::desktop_testing::a_laptops_status(),
+        in_use: &[],
+        notifications: &[],
+        capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
         dock: &dock,

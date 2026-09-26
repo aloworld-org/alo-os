@@ -33,6 +33,9 @@ fn a_desktop_that_will_not_start<'a>(
 ) -> DesktopFrame<'a> {
     DesktopFrame {
         status: crate::desktop_testing::a_laptops_status(),
+        in_use: &[],
+        notifications: &[],
+        capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
         dock,

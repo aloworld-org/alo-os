@@ -88,7 +88,11 @@ pub(crate) fn picture(
         which.push(Which::Battery);
     }
     which.push(Which::Network);
-    which.push(Which::Volume);
+    // An absent volume is left out exactly as an absent battery is: a machine
+    // that has not asked shows no volume rather than showing silence.
+    if items.volume_hundredths().is_some() {
+        which.push(Which::Volume);
+    }
 
     let how_many = i32::try_from(items.how_many()).unwrap_or(1);
     let (whole, thickness) = match along {
@@ -218,7 +222,7 @@ fn marks_for(
             solids
         }
         Which::Volume => {
-            let loud = i32::from(items.volume_hundredths());
+            let loud = i32::from(items.volume_hundredths().unwrap_or(0));
             let filled = inner_w * loud / i32::from(alo_sound::Volume::LOUDEST);
             if filled > 0 {
                 vec![Solid {
@@ -258,7 +262,7 @@ mod tests {
                 std::time::SystemTime::UNIX_EPOCH,
             )),
             Reaching::reported(HowFar::AllOfIt, Metered::NotSaid),
-            Volume::of(50).expect("a volume"),
+            Some(Volume::of(50).expect("a volume")),
         )
     }
 
@@ -268,7 +272,7 @@ mod tests {
             "09:41".to_owned(),
             None,
             Reaching::reported(HowFar::AllOfIt, Metered::NotSaid),
-            Volume::of(50).expect("a volume"),
+            Some(Volume::of(50).expect("a volume")),
         )
     }
 
@@ -440,7 +444,7 @@ mod tests {
             "09:41".to_owned(),
             None,
             Reaching::reported(HowFar::NotSaid, Metered::NotSaid),
-            Volume::of(0).expect("a volume"),
+            Some(Volume::of(0).expect("a volume")),
         );
         let drawn = picture(&nowhere, &dock, INK, GROUND);
         assert_eq!(
@@ -477,7 +481,7 @@ mod tests {
                     std::time::SystemTime::UNIX_EPOCH,
                 )),
                 Reaching::reported(HowFar::AllOfIt, Metered::NotSaid),
-                Volume::of(50).expect("a volume"),
+                Some(Volume::of(50).expect("a volume")),
             )
         };
         let filling = picture(&at_half(Charging::Charging), &dock, INK, GROUND);
@@ -510,7 +514,7 @@ mod tests {
                 "09:41".to_owned(),
                 None,
                 Reaching::reported(HowFar::AllOfIt, metered),
-                Volume::of(50).expect("a volume"),
+                Some(Volume::of(50).expect("a volume")),
             )
         };
         let free = picture(&reaching(Metered::Unmetered), &dock, INK, GROUND);
@@ -540,7 +544,7 @@ mod tests {
                 std::time::SystemTime::UNIX_EPOCH,
             )),
             Reaching::reported(HowFar::AllOfIt, Metered::NotSaid),
-            Volume::of(50).expect("a volume"),
+            Some(Volume::of(50).expect("a volume")),
         )
     }
 

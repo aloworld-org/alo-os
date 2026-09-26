@@ -65,7 +65,7 @@ pub struct StoodUp {
 /// not exist, the font that is not there.
 pub fn stand_the_desktop_up(
     display: ADisplayToStandOn<'_>,
-    desktop: &dyn TheDesktop,
+    desktop: &mut dyn TheDesktop,
     mut next: impl FnMut() -> DirectFrame,
 ) -> Result<StoodUp, WouldNotStand> {
     let mut server = Server::bind_keyboard(

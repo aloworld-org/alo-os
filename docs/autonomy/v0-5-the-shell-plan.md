@@ -446,13 +446,90 @@ untakeable to every machine that reads these plans. **Depends on:** 5.
 
 ### 11. Notifications, the capture tools and the in-use indicator, drawn
 
-**Status:** ready — **its blockers cleared on 2026-09-19, and this line outlived them.**
+**Status:** **Done, 2026-09-25.** All three surfaces are drawn and reach a real
+display. **Two things are named rather than ticked**: one arm of the in-use
+mark's colour rule cannot be carried by colour at all in high contrast, and the
+two indicators are on the desktop frame and not yet on Settings, a question or
+the record. Both are below. **It was ready, and its blockers cleared on 2026-09-19 —
+that line outlived them.**
 It waited on `v0-5-the-session-and-the-displays-plan.md` task 6 and
 `v0-5-capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
 to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
 `crates/alo-notifying` — on 2026-09-19. Nothing was re-read afterwards, so a
 takeable task read as untakeable for two days and task 14 behind it with it.
 Re-read 2026-09-21. **Depends on:** 5.
+
+#### What already exists for this task's nouns, read on 2026-09-24 before starting
+
+- **Nothing in the shell draws any of the three.** None of `alo-notifying`,
+  `alo-capturing` or `alo-in-use` is a dependency of `crates/alo-shell`, and
+  there is no raster for any of them. The gap this task names is the whole of
+  it.
+- **Every decision is already made, in the crate that owns it.**
+  `alo_notifying::deciding::arrives` hands back `Became::Shown(Shown)` or
+  `Became::Held(Why)` **having already asked** whether the seat is locked — the
+  notification waits behind the lock screen and comes back at the unlock — and
+  whether quiet hours hold it. `Shown` is that crate's own words for *what a
+  shell draws*. So *never while locked* is a test that this crate draws only
+  what `Became::shown()` gives it, and never a second judgement here.
+- **`alo_in_use::Line` is shaped like the egress indicator's.** It hands over
+  the mark, the position, the colour, the word and the sentence, decided — which
+  is what `alo_indicator` hands the egress indicator that
+  `egress_status_raster.rs` already draws. The in-use indicator is that file's
+  twin rather than a new invention, and `egress_status_place.rs` is where room
+  is made for it beside — never as — the egress indicator.
+- **Blur is already destructive inside `alo-capturing`.** `Marks::flatten`
+  composes the taken picture with the hidden regions before anything is saved,
+  so *destructive in what is saved* is not this crate's to implement. What is
+  drawn here is the marks a person is making, and what is held is that the
+  shell saves nothing.
+- **They can reach a real display now.** Task 39 of `v0-01-delivery-plan.md`
+  widened the direct seam from one scene to every layer on 2026-09-24. Before
+  that, anything drawn here could only ever have been seen in a nested
+  compositor.
+
+#### What was built, and the two things that are named rather than ticked
+
+**Notifications.** A card for each one the crate handed over, at the end of the
+dock **opposite** the status area — the two indicators own that corner and are
+permanent, and a notification that covered *what is leaving this machine* would
+be trading a promise for a convenience. *Never while locked, shared or
+recorded* is carried by the **type**: the drawing takes `alo_notifying::Shown`,
+and only that crate's `arrives` makes one, having already asked about the lock,
+the quiet hours, a screen being read, and a machine that cannot tell whether its
+screen is being read. There is no path here that could draw a held one.
+
+**The in-use indicator.** One row per line `alo-in-use` wrote, in the status
+area, ordered by that crate's `Position` and never by who is using something —
+a test holds that an agent picking up the camera does not move it. It takes the
+status corner and the egress indicator stacks beyond it, because ADR 0010 makes
+this indicator's position one of the three things given besides a colour and
+that only holds while its origin does not move. The three marks are compared as
+**pixels**: two shapes that happened to rasterise the same would fail.
+
+**The capture tools.** The region as an outline with its middle untouched and
+nothing outside it dimmed, and the marks a person is making. **A blur is drawn
+as the flat block it will be saved as**, because `capture_flatten` destroys what
+is under it for good; drawing it soft would show a person one thing and save
+another at the moment they are deciding whether a colleague may see it.
+
+Two indicators sit in that status area and a person reads them as one surface,
+so the row moved into `status_row.rs`: its height, the padding round its words,
+the side its mark sits on and the way words are cut at the screen's edge are
+decided once rather than twice in two files that would drift.
+
+**Named, not ticked.**
+
+- **In high contrast, colour cannot say *the agent* at all.** `Contrast::High`
+  collapses every accent to one, on purpose, so the agent's terracotta and an
+  application's navy are identical there. ADR 0010 is why that is safe — the
+  mark and the word carry it — and the test asserts the equality rather than
+  demanding high contrast stop being high contrast.
+- **Both indicators are on the desktop frame only.** Settings, a waiting
+  question and the record window are submitted by their own paths, which carry
+  the egress indicator and not yet the in-use one. A person who opens Settings
+  while their camera is on should not lose the line that says so; that is the
+  remaining wiring and it is named here rather than left to be found.
 
 - **Acceptance:** notifications are drawn as `alo-notifying` gives them, never while
   locked, shared or recorded; the region selection and the annotation marks of
@@ -586,7 +663,36 @@ shopping and leaves the task where it was.
 
 ### 15. A running machine's own clock, battery, network and volume
 
-**Status:** ready. **Depends on:** 7.
+**Status:** **Done, 2026-09-26.** The four are taken from this machine, in a
+package of its own — `crates/alo-desktop`, which the binary moved to so that no
+call into `/sys`, the media server or the network manager is made from
+`crates/alo-shell`. **What cannot be ticked here is that the numbers match the
+hardware**, which needs a certified machine; what was measured on the gate is
+below. **Depends on:** 7.
+
+#### What was measured, and what is owed
+
+**Measured on the gate machine, by running the binary.** It read that machine's
+**battery**, and reported — with the reason for each — that the machine has no
+network manager (`org.freedesktop.NetworkManager was not provided by any
+.service files`) and nothing that handles sound (`pw-dump failed: can't
+connect`). Three readings taken and two honest absences, none of them invented.
+
+**The volume asked for is the chosen output's**, not the loudest device plugged
+in: a machine with headphones and speakers has two volumes and a person hears
+one of them, and `alo-sound` already answers which.
+
+**The clock advances**, held by the test this acceptance names — move the time,
+find the text moved with it. The readings are taken again once a second rather
+than once a frame: a frame is drawn sixty times a second and a battery does not
+move sixty times a second. A refusal does not clear what was there, because the
+reading it would replace is a second old and truth arriving late beats an
+absence arriving early.
+
+**Owed: that the numbers match the hardware.** Nothing on a gate can show that
+the battery drawn is the charge in the machine — that is a certified machine's
+to show, and it is named here rather than assumed, as this plan's other tasks
+name theirs.
 
 Written 2026-09-21 by task 7, which found it unowned. Task 7 drew the status
 area's four and was right not to measure them: the readings arrive on

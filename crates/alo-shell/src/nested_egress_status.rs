@@ -49,7 +49,7 @@ impl Nested {
         egress: EgressStatusFrame<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         let size = self.size();
-        let status = status_picture(egress, labels, (size.w, size.h))?;
+        let status = status_picture(egress, labels, (size.w, size.h), 0)?;
         self.submit_native_scene(
             roots,
             popups,
@@ -61,10 +61,15 @@ impl Nested {
 }
 
 /// The indicator for this frame, or the refusal that stops the whole frame.
+///
+/// `beyond` is how much of the status area's corner is already taken by the
+/// in-use indicator, which has the corner (`crate::in_use_raster`). Frames that
+/// do not carry that indicator pass zero.
 pub(crate) fn status_picture(
     egress: EgressStatusFrame<'_>,
     labels: &mut WindowControlLabels,
     size: (i32, i32),
+    beyond: i32,
 ) -> Result<EgressStatusPicture, RenderError> {
     let drawn = egress
         .status
@@ -77,6 +82,7 @@ pub(crate) fn status_picture(
         labels,
         size,
         egress.look,
+        beyond,
     )
 }
 
@@ -122,7 +128,7 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080)),
+            status_picture(frame, &mut labels, (1920, 1080), 0),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -142,7 +148,7 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080)),
+            status_picture(frame, &mut labels, (1920, 1080), 0),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -158,7 +164,7 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (200, 150)),
+            status_picture(frame, &mut labels, (200, 150), 0),
             Err(RenderError::EgressStatusScene)
         ));
         assert!(indicator.ended(departing));
@@ -183,7 +189,7 @@ mod tests {
             look: look(),
         };
         assert!(
-            status_picture(frame, &mut labels, (1920, 1080))
+            status_picture(frame, &mut labels, (1920, 1080), 0)
                 .unwrap()
                 .is_empty()
         );
@@ -199,7 +205,7 @@ mod tests {
             look: look(),
         };
         assert_eq!(
-            status_picture(frame, &mut labels, (1920, 1080))
+            status_picture(frame, &mut labels, (1920, 1080), 0)
                 .unwrap()
                 .rows
                 .len(),

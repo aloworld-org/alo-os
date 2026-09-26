@@ -47,6 +47,56 @@ pub(crate) struct Place {
 }
 
 impl Place {
+    /// The same place, with `taken` pixels already used at the corner.
+    ///
+    /// **What is in use has the corner and what is leaving stacks beyond it.**
+    /// ADR 0010 makes the in-use indicator's position one of the three things a
+    /// person is given besides a colour, and the reason is that position costs
+    /// nothing to learn — which only holds while that stack's origin does not
+    /// move. So it keeps the fixed corner and this moves the other one along.
+    ///
+    /// The egress indicator's own rule is untouched: its first line stays
+    /// nearest its origin and a new one is added beyond, so nothing already on
+    /// the screen moves when something else starts leaving.
+    pub(crate) fn beyond(self, taken: i32) -> Self {
+        if taken <= 0 {
+            return self;
+        }
+        Self {
+            stacked: match self.stacked {
+                Stacked::Downwards(y) => Stacked::Downwards(y + taken),
+                Stacked::Upwards(y) => Stacked::Upwards(y - taken),
+            },
+            room_down: (self.room_down - taken).max(0),
+            ..self
+        }
+    }
+
+    /// The **other** end of the same dock, for a surface that must not cover
+    /// the status area.
+    ///
+    /// Notifications go here. The two indicators own the status corner and are
+    /// permanent; a notification is a message that arrives and goes, and one
+    /// that covered *what is leaving this machine* or *your camera is on* would
+    /// be trading a promise for a convenience. Same edge, same margins, other
+    /// end — so a person's eyes learn one side for what is true now and the
+    /// other for what just happened.
+    pub(crate) fn of_the_other_end(layout: Layout, size: (i32, i32), margin: i32) -> Self {
+        let corner = Self::of(layout, size, margin);
+        let (width, height) = size;
+        Self {
+            across: match corner.across {
+                Across::FromLeft(_) => Across::FromRight(width - margin),
+                Across::FromRight(_) => Across::FromLeft(margin),
+            },
+            stacked: match corner.stacked {
+                Stacked::Downwards(y) => Stacked::Downwards(y),
+                Stacked::Upwards(y) => Stacked::Upwards(y.min(height - margin)),
+            },
+            ..corner
+        }
+    }
+
     /// The status area's corner on an output of `size`, for a dock laid out
     /// as `layout`, keeping `margin` pixels from the dock and the output's
     /// edges.

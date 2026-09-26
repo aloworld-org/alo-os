@@ -17,27 +17,33 @@
 //! session this is*, and a desktop that took a person's number from a variable
 //! could be started for the wrong one.
 //!
-//! # What it draws, and what it does not yet
+//! # What it draws
 //!
 //! The dock, the status area and the egress indicator, drawn on the processor
-//! (`alo_shell`'s software painter). **The four readings in the status area are
-//! not this machine's yet**: nothing in this repository fills them on a running
-//! machine, which is task 15 of the shell plan. What is handed here is the
-//! clock — which a person watching a screen can see is alive — and the honest
-//! absent value for the battery and the network, which is what those crates say
-//! when nobody has asked them.
+//! (`alo_shell`'s software painter). **The four readings are this machine's**,
+//! taken by `crate::readings` from the entry point each owning crate already
+//! has: the clock, the battery, how far the machine reaches and how loud it is.
 //!
-//! **The volume is the exception, and it is a claim.** `StatusItems` has an
-//! absent case for the battery and for the network and none for the volume, so
-//! a desktop that has asked nothing still shows one, and silence is the least
-//! wrong thing to show. Giving that reading an absent case belongs with task
-//! 15, whose own acceptance says the absent cases must be real rather than
-//! defaults — and this is the one that cannot meet it yet.
+//! A reading that could not be taken is an **absence**, not a zero: the status
+//! area leaves it out, and the reason goes to the service log. A battery at
+//! nought per cent and a machine with no battery are different things, and a
+//! person acts on them differently.
+//!
+//! # Why the reading lives here and not in the shell
+//!
+//! The shell shows and does not measure — a compositor that opened `/sys` would
+//! be a compositor measuring. That is shell task 15's constraint, and it is why
+//! this process is a package of its own rather than another binary inside
+//! `alo-shell`: a binary in that directory reading a battery would be that call
+//! whatever the module boundary said.
 //!
 //! **A client's window cannot be drawn at all yet.** The software painter
 //! imports nothing, and every frame carrying a mapped window is refused by
 //! name. The desktop itself needs no importing, which is why it can stand up
 //! before that is answered.
+
+#[cfg(target_os = "linux")]
+mod readings;
 
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
@@ -75,7 +81,7 @@ mod running {
                 return ExitCode::FAILURE;
             }
         };
-        let desktop = match ThisPersonsDesktop::made() {
+        let mut desktop = match ThisPersonsDesktop::made() {
             Ok(desktop) => desktop,
             Err(why) => {
                 eprintln!("alo-desktop: this session cannot have a desktop: {why}");
@@ -85,9 +91,8 @@ mod running {
 
         eprintln!(
             "alo-desktop: the desktop is going up on {}, on a {} keyboard; the status area shows \
-             this machine's clock, says nothing of the battery or the network because nothing has \
-             asked them, and shows silence for a volume nothing has asked either — which is a \
-             claim rather than an absence, because that reading has no absent case yet",
+             this machine's own four readings, and leaves out any it could not take — the line \
+             above says which those were and why",
             said.display.display(),
             said.layout
         );
@@ -101,7 +106,7 @@ mod running {
                 socket: THE_SOCKET,
                 layout: &said.layout,
             },
-            &desktop,
+            &mut desktop,
             || {
                 let now = started.elapsed();
                 match last {
@@ -142,16 +147,27 @@ mod running {
         running: RunningWindow,
         /// The same.
         filling: FillingWindow,
-        /// The clock, and *nothing said* for the other three.
+        /// The four readings, as this machine gave them.
         status: alo_shell::StatusItems,
         /// A display nobody has divided, which is what this one is: the
         /// `Server` holds no division and task 16 is the one that gives it one.
         division: alo_dividing::Division,
+        /// The way this person writes a time, kept so every refresh uses it.
+        region: alo_formats::Regionally,
+        /// When the readings were last taken.
+        read_at: std::time::Instant,
     }
 
     impl ThisPersonsDesktop {
         /// Everything a desktop is, read once at the start.
         fn made() -> Result<Self, String> {
+            // **Read once here and again every frame** — see `read_again`.
+            let at = crate::readings::At::now()?;
+            let (readings, missing) = crate::readings::taken(&at, &the_region()?)?;
+            eprintln!(
+                "alo-desktop: the status area's readings — {}",
+                missing.said()
+            );
             let strings = alo_strings::Strings::of(
                 alo_saying::everything_this_machine_can_say().map_err(|why| why.to_string())?,
             );
@@ -169,20 +185,51 @@ mod running {
                 look: DesktopLook::of(
                     &alo_appearance::Appearance::shipped(),
                     &alo_access::TurnedOn::nothing(),
-                    the_hour()?,
+                    the_hour(&at)?,
                     alo_strings::Direction::LeftToRight,
                 ),
                 strings,
                 egress,
                 running: RunningWindow::closed(),
                 filling: FillingWindow::closed(),
-                status: the_clock_and_nothing_else()?,
+                status: readings,
                 division: a_display_nobody_has_divided()?,
+                region: the_region()?,
+                read_at: std::time::Instant::now(),
             })
         }
     }
 
+    /// How often the four readings are taken again.
+    ///
+    /// **Once a second, not once a frame.** A frame is drawn sixty times a
+    /// second and a battery does not move sixty times a second; asking the
+    /// media server and the network manager that often would be this process
+    /// spending a person's machine on a number that did not change. A second is
+    /// short enough that a clock showing minutes is never wrong.
+    const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
+
     impl TheDesktop for ThisPersonsDesktop {
+        /// Take the four again, if it is time to.
+        ///
+        /// A refusal does not clear what was there: a media server that did not
+        /// answer this second is not a reason to take the volume off a person's
+        /// screen, and the reading it replaces is a second old. What a failure
+        /// does change is the next successful reading, which is the truth
+        /// arriving late rather than an absence arriving early.
+        fn refreshed(&mut self) {
+            if self.read_at.elapsed() < HOW_OFTEN {
+                return;
+            }
+            self.read_at = std::time::Instant::now();
+            let Ok(at) = crate::readings::At::now() else {
+                return;
+            };
+            if let Ok((readings, _)) = crate::readings::taken(&at, &self.region) {
+                self.status = readings;
+            }
+        }
+
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
                 dock: &self.dock,
@@ -192,6 +239,20 @@ mod running {
                 running: &self.running,
                 filling: &self.filling,
                 status: &self.status,
+                // **Nothing is watching or listening, and that is read rather
+                // than assumed** — `alo_in_use::InUse::read_from` asks the
+                // machine's media server, and nothing on a machine with no
+                // applications on it yet has a camera or a microphone open.
+                // Asking the server for real belongs with the other readings
+                // this binary hands over, task 15 of the shell plan.
+                in_use: &[],
+                // **Nothing has sent one**, which is different from holding
+                // them: `alo_notifying::arrives` is where a notification
+                // becomes one to show, and nothing on this machine calls it
+                // yet. A portal that lets an application send one is the
+                // applications plan's, not this binary's.
+                notifications: &[],
+                capturing: None,
                 division: &self.division,
                 offer: &alo_dividing::Offer::Nothing,
             }
@@ -203,55 +264,24 @@ mod running {
     /// The clock is here and the other three are not because of what each looks
     /// like when it is wrong. A clock that never moves is a machine a person can
     /// see is dead; a battery reading that never moves is a machine lying about
-    /// how much time they have left. So this shows the one it can and says
-    /// nothing about the three it cannot — which is task 15 of the shell plan,
-    /// and is the value those crates give when nobody has asked them.
-    fn the_clock_and_nothing_else() -> Result<alo_shell::StatusItems, String> {
-        Ok(alo_shell::StatusItems::shown(
-            the_time()?,
-            // No battery has been asked, and a machine with none hands the
-            // same value. Both are true of this machine today.
-            None,
-            alo_networks::Reaching::reported(
-                alo_networks::HowFar::NotSaid,
-                alo_networks::Metered::NotSaid,
-            ),
-            // **This one is a claim, and the type leaves no way to avoid making
-            // it.** `StatusItems` can say *nothing said* about the network and
-            // [`None`] about the battery, and has no absent case for the
-            // volume — so a desktop that has asked nothing still shows a volume,
-            // and silence is the least wrong thing to show. Task 15 of the
-            // shell plan owns the readings, and giving the volume an absent
-            // case belongs with them: *the absent cases are real rather than
-            // defaults* is that task's own acceptance, and this is the one
-            // reading that cannot meet it yet.
-            alo_sound::Volume::of(0).map_err(|why| format!("a volume of nothing: {why:?}"))?,
-        ))
-    }
-
-    /// What this machine's clock says, in the region's own way of writing it.
-    fn the_time() -> Result<String, String> {
-        let (hour, minute) = the_clock()?;
+    /// how much time they have left. Every one of the four is this machine's,
+    /// and the ones it could not read are absent rather than invented.
+    ///
+    /// The way a person writes a time. English in Great Britain until a person
+    /// has somewhere to say otherwise — where that is kept is a settings
+    /// question and not this process's to answer.
+    fn the_region() -> Result<alo_formats::Regionally, String> {
         alo_formats::Regionally::reading("en")
             .and_then(|reading| reading.in_region("GB"))
-            .map_err(|why| format!("a region nobody writes in: {why:?}"))?
-            .time(hour, minute)
-            .ok_or_else(|| format!("a time nobody writes: {hour}:{minute}"))
-    }
-
-    /// This machine's own clock, as two numbers.
-    fn the_clock() -> Result<(u8, u8), String> {
-        let now = jiff::Zoned::now();
-        let hour = u8::try_from(now.hour()).map_err(|_| "an hour outside a day".to_owned())?;
-        let minute =
-            u8::try_from(now.minute()).map_err(|_| "a minute outside an hour".to_owned())?;
-        Ok((hour, minute))
+            .map_err(|why| format!("a region nobody writes in: {why:?}"))
     }
 
     /// The time of day the appearance is asked about, from the same clock.
-    fn the_hour() -> Result<alo_appearance::TimeOfDay, String> {
-        let (hour, minute) = the_clock()?;
-        alo_appearance::TimeOfDay::checked(hour, minute)
+    ///
+    /// The same moment the readings were taken at, so night light and the
+    /// status area's clock cannot disagree about what time it is.
+    fn the_hour(at: &crate::readings::At) -> Result<alo_appearance::TimeOfDay, String> {
+        alo_appearance::TimeOfDay::checked(at.hour, at.minute)
             .map_err(|why| format!("a time of day this machine does not have: {why:?}"))
     }
 

@@ -67,6 +67,19 @@ alo-greeting = { path = "../alo-greeting" }
 # compositor is handed, made from the machine's own `alo_egress::Indicator`.
 # This crate draws it and never decides what may leave.
 alo-indicator = { path = "../alo-indicator" }
+# What on this machine is watching or listening, and what a status area draws
+# beside the egress indicator to say so: the mark, the word and the position
+# ADR 0010 asks for beside a colour. Read, never decided — which thing is in
+# use, who has it and where its line sits are all that crate's answers.
+# The marks a person puts on a picture of their screen, and the areas they hid.
+# Which areas are hidden is that crate's answer; burning them into the bytes is
+# this crate's, because it is the one that holds pixels (`capture_flatten.rs`).
+alo-capturing = { path = "../alo-capturing" }
+alo-in-use = { path = "../alo-in-use" }
+# What a notification says and who sent it. Whether it is shown at all is that
+# crate's answer — a locked machine, a shared screen or the hours a person set
+# aside hold it there — and this crate can only be handed the ones that are.
+alo-notifying = { path = "../alo-notifying" }
 # What is running and what is filling the disk: the readings and the count the
 # two desktop windows draw, every number as the kernel or the count gave it.
 # Read, never acted on — `tests/desktop_source.rs` holds the windows to that.
@@ -116,6 +129,9 @@ zbus = { version = "5.19", default-features = false, features = ["async-io", "bl
 drm = "=0.14.1"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
+# An application to say who is using a camera in the in-use indicator's tests.
+# Never a dependency of the shipped surface, which only draws.
+alo-applications = { path = "../alo-applications" }
 # The agent's own reader, used to read this machine's tree back off the bus:
 # one description, read by the reader a blind person uses and by the one an
 # agent uses, is the claim `alo_access::tree` makes and this measures it.
@@ -146,14 +162,6 @@ wayland-protocols = { version = "0.32", features = ["client"] }
 [[bin]]
 name = "alo-compositor"
 path = "src/bin/alo-compositor.rs"
-
-# The desktop a person arrives at after they sign in. A second process rather
-# than a mode of the first, because the two belong to different people: the
-# greeter is the machine's, standing in front of somebody who has not signed in,
-# and this is the person's.
-[[bin]]
-name = "alo-desktop"
-path = "src/bin/alo-desktop.rs"
 
 [lints]
 workspace = true

@@ -71,6 +71,9 @@ impl crate::TheDesktop for ADesktop {
             running: &self.running,
             filling: &self.filling,
             status: a_laptops_status(),
+            in_use: &[],
+            notifications: &[],
+            capturing: None,
             division: an_undivided_display(),
             offer: nothing_offered(),
         }
