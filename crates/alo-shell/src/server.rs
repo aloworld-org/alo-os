@@ -34,6 +34,19 @@ pub struct Server {
     pub(crate) presentation: crate::presentation::Presentation,
     /// Stable mapped-root order for trusted window cycling.
     pub(crate) switch_order: crate::window_switch::SwitchOrder,
+    /// **How each display is divided and what desktops are on it.**
+    ///
+    /// Held here because it is a session's, and kept across windows opening
+    /// and closing and displays arriving and leaving. Nothing about a layout
+    /// or a desktop is decided in this crate: `crate::server_desk` says what
+    /// that means and which crate answers which question.
+    pub(crate) desk: crate::server_desk::Desk,
+    /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
+    ///
+    /// One recogniser for the seat: at most one gesture is in flight at a
+    /// time, and a second would be two answers to one person's fingers. What a
+    /// swipe does with what it answers is `crate::desktop_swipes`.
+    pub(crate) gestures: alo_desktops::gestures::Gestures,
 }
 
 impl Server {
@@ -61,6 +74,8 @@ impl Server {
             socket,
             presentation: Default::default(),
             switch_order: Default::default(),
+            gestures: Default::default(),
+            desk: crate::server_desk::Desk::new(),
         })
     }
 
@@ -87,6 +102,10 @@ impl Server {
         }
         self.display.dispatch_clients(&mut self.surfaces)?;
         self.surfaces.prune();
+        // The desktops and the divisions follow the windows: one that opened
+        // joins the desktop being looked at, and one that closed loses its
+        // share rather than leaving a tree holding a window nobody can see.
+        self.the_windows_are_now_these();
         self.switch_order.refresh(self.surfaces.buffered());
         self.display.flush_clients()
     }
@@ -127,7 +146,7 @@ impl Server {
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let size = target.size();
-        self.presentation.validate_target(target)?;
+        let metadata = self.presentation.validate_target(target)?;
         if size.w > 0 && size.h > 0 {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
@@ -145,6 +164,9 @@ impl Server {
             time,
         )?;
         self.surfaces.update_window_mode_output(Some(size));
+        // The output this frame went to is the display a session holds its
+        // divisions and desktops on; see `crate::display_lifecycle`.
+        self.the_display_submitted(&metadata, (size.w, size.h));
         Ok(submitted)
     }
 }

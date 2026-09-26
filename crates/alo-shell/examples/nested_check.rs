@@ -41,9 +41,6 @@ mod nested_reader_frame_check;
 #[path = "support/resize_geometry_check.rs"]
 mod resize_geometry_check;
 #[cfg(target_os = "linux")]
-#[path = "support/tile_geometry_check.rs"]
-mod tile_geometry_check;
-#[cfg(target_os = "linux")]
 #[path = "support/window_control_label_check.rs"]
 mod window_control_label_check;
 #[cfg(target_os = "linux")]
@@ -70,9 +67,6 @@ mod window_size_check;
 #[cfg(target_os = "linux")]
 #[path = "support/window_switch_check.rs"]
 mod window_switch_check;
-#[cfg(target_os = "linux")]
-#[path = "support/window_tile_check.rs"]
-mod window_tile_check;
 
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]

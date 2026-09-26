@@ -27,6 +27,10 @@ fn maximize(f: &Fixture, root: &WlSurface, value: bool) -> Result<(), WindowMaxi
     f.backend(move |s| s.set_window_maximized(&root, value).map(|_| ()))
 }
 
+/// Reported at the call site: this is asserted a dozen times in one test, and a
+/// failure that named this helper rather than the line that asked was a minute
+/// of bisecting every time.
+#[track_caller]
 fn available(view: &WindowControlSnapshot, maximize: bool, restoring: bool) {
     assert_eq!(
         view.layout().controls().map(|c| c.enabled()),
@@ -135,8 +139,18 @@ fn window_controls_output_availability_and_pending_toggles_follow_execution()
     available(&snapshot(&f, &root)?, false, false);
     f.render((121, 49), false, 4)?;
     available(&snapshot(&f, &root)?, true, false);
+    // **A window in a share is not a window restoring.** What stood here was a
+    // window tiled to half an output; the half went with `window_tiling` on
+    // 2026-09-26 and a share replaces it — so the controls are asked about the
+    // mode that actually exists, which nothing else asks them about.
+    //
+    // It takes a second window because a division divides *between* windows,
+    // and it takes the frame submitted above because that is what put a display
+    // under this session.
+    let mut second = mapped(&f);
+    second.sync();
     let target = root.clone();
-    f.backend(move |s| s.set_window_tiled(&target, Some(alo_shell::TileSide::Right)))?;
+    f.backend(move |s| s.divide_focused_with_next(&target, alo_dividing::Side::Left))?;
     available(&snapshot(&f, &root)?, true, false);
     maximize(&f, &root, true)?;
     available(&snapshot(&f, &root)?, true, true);

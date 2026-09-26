@@ -6726,3 +6726,82 @@ is a result file that never appears.
 sources that file, and the run is started with `--setenv=HOME=/root` as well.
 Either alone is enough; both are cheap.
 **Date:** 2026-09-25.
+### A backend's output metadata cannot tell two identical monitors apart
+**Version:** `alo-shell`'s `crate::display_lifecycle`, landed with *The division
+and the desktops a session holds*; 2026-09-26.
+**Whose:** ours.
+**Behaviour:** `alo-dividing` remembers a division per screen, under a key the
+compositor supplies, so that the same screen returning finds the arrangement it
+left. The strongest identity this compositor can supply is
+`OutputMetadata`'s make, model and connector name together — there is no serial
+number in it, because neither the DRM connector properties we read nor the
+nested backend's description carries one we could rely on.
+
+So two **identical** monitors swapped between two ports each find the other's
+arrangement. A different monitor plugged into the same port does not inherit
+one, and the same monitor returning to the same port does find its own, which
+are the two cases that happen to a person with one screen at a desk.
+**Our response:** the key is make, model and connector rather than connector
+alone, because the connector alone is the worse failure — it lays a laptop's
+arrangement over whatever is plugged into that socket next. The swap case is
+left wrong rather than guessed at. Reading EDID serial numbers would fix it and
+is not in this plan.
+**Date:** 2026-09-26.
+
+### Neither deciding crate takes a new area for a display it already holds
+**Version:** `alo-desktops` 0.1.0 and `alo-dividing` 0.1.0, read on 2026-09-26.
+**Whose:** `alo-desktops` and `alo-dividing` are not this lane's crates; this
+entry is the report, and whether to change them is their owner's.
+**Behaviour:** `Desktops` has `plug_in` and `unplug`, and `Division` has `of`,
+`divide`, `move_boundary` and `close`. Neither has a resize. A display whose
+mode changes — a person changing resolution, or a nested compositor's window
+being dragged bigger — therefore has no road that keeps its desktops and its
+division while moving them into the new extent.
+**Our response:** `alo-shell` treats a changed extent as the display **leaving
+and returning at the new size**, which uses both crates' own roads:
+`Remembered::of` on the way out and `Remembered::restored(new_area, open)` on
+the way in. The arrangement survives and the windows that are open keep their
+shares. What it costs is that a resize is not free — the tree is rebuilt from
+what was remembered rather than adjusted — and that a window with no `app_id`
+is not remembered across it, because a remembered share is keyed by
+application. A resize on either crate would be better and is not ours to add.
+**Date:** 2026-09-26.
+
+### A manifest tells whoever needs gestures to ask for them, and asking breaks the image
+**Version:** `alo-desktops` 0.1.0's `libinput` feature and
+`alo-desktops/src/libinput_gestures.rs`; `alo-saying` 0.0.1; found 2026-09-26
+while wiring swipes in `alo-shell`.
+**Whose:** `alo-desktops` and `alo-saying` are not this lane's crates; this
+entry is the report, and the fix is their owners'.
+**Behaviour:** `crates/alo-desktops/Cargo.toml` puts the `input` dependency
+behind a `libinput` feature and says, in as many words, *whoever needs gestures
+asks for them: `features = ["libinput"]`*. Following that instruction is a red
+gate. Cargo unifies a package's features across one workspace build, so a shell
+asking for `libinput` turns it on for **every** copy of `alo-desktops` in the
+resolve — and `alo-saying` depends on `alo-desktops` to collect the machine's
+one vocabulary while `alo-agentd` depends on `alo-saying`. `libudev-sys` then
+reaches a daemon that draws nothing and reads no touchpad, and the image links
+its daemons statically against musl where that library does not exist.
+
+`alo-image`'s `no_daemon_links_a_system_library` catches it and names it
+exactly, which is how this was found rather than at the next release. That test
+was written **for this fault**: release 0.0.3 shipped it as `cannot find
+-linput`. The fix it prescribes — put the dependency behind a feature the
+daemons do not enable — is the fix already in place; what nobody noticed is that
+the feature is then unusable by anybody in this workspace, so the module behind
+it has no possible consumer.
+**Our response:** `alo-shell` takes the libinput event apart itself, in
+`crates/alo-shell/src/libinput_gestures.rs`, and hands the result to
+`alo_desktops::Gestures` through the `gesture_events::Event` seam that crate
+already has for its own deterministic tests. **No decision is copied** — which
+swipes count, how far, which are turned off and what any of them means all stay
+in one place — and the extraction happens where libinput is already linked,
+beside the two files that already read it for keys and for scroll. The comment
+on that file says all of this, so the next person does not have to find it
+twice.
+
+The real fix is one of two things neither of which is ours: the vocabulary edge
+should not drag a whole crate into every daemon, or the libinput extraction
+should not live in a crate that every daemon reaches. An instruction in a
+manifest that cannot be followed is worse than no instruction.
+**Date:** 2026-09-26.

@@ -50,9 +50,16 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
         [
             "desktop_list.rs",
             "desktop_look.rs",
+            // Which desktop is shown and which windows are on it. Not a
+            // surface that draws, but held to the same promises: neither
+            // grants anything, neither measures anything, and a switch that
+            // picked its own scheme or counted its own bytes would be caught
+            // here as surely as a dock button that revoked a grant.
+            "desktop_membership.rs",
             "desktop_paint.rs",
             "desktop_raster.rs",
             "desktop_seat.rs",
+            "desktop_swipes.rs",
             "dock_raster.rs",
             "filling_keys.rs",
             "filling_rows.rs",

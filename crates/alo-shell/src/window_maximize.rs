@@ -1,8 +1,5 @@
 //! Trusted maximize entry and client intent policy using shared layout transactions.
-use crate::{
-    ResizeGeometryError, Server, TileGeometryError, WindowModeError, surfaces::Surfaces,
-    window_mode::Mode,
-};
+use crate::{ResizeGeometryError, Server, WindowModeError, surfaces::Surfaces, window_mode::Mode};
 use smithay::{
     reexports::wayland_server::protocol::wl_surface::WlSurface, utils::Serial,
     wayland::shell::xdg::ToplevelSurface,
@@ -26,28 +23,18 @@ pub enum WindowMaximizeError {
 }
 
 /// Preserve the existing exhaustive public maximize error contract.
-/// Tile planning is not reached by maximize/restore; defensive translations still
-/// refuse if that internal invariant changes, without adding a public variant.
+///
+/// **The tile translations went with the half on 2026-09-26.** They were
+/// defensive: tile planning was never reached by maximize or restore, and they
+/// existed so that a change to that invariant refused rather than passed. A
+/// share carries its own rectangle and has nothing left to refuse about, so
+/// there is nothing here to translate.
 pub(crate) fn maximize_refusal(error: WindowModeError) -> WindowMaximizeError {
     match error {
-        WindowModeError::Unmapped | WindowModeError::Tile(TileGeometryError::Unmapped) => {
-            WindowMaximizeError::Unmapped
-        }
-        WindowModeError::OutputUnavailable
-        | WindowModeError::Tile(TileGeometryError::OutputUnavailable) => {
-            WindowMaximizeError::OutputUnavailable
-        }
+        WindowModeError::Unmapped => WindowMaximizeError::Unmapped,
+        WindowModeError::OutputUnavailable => WindowMaximizeError::OutputUnavailable,
         WindowModeError::Busy => WindowMaximizeError::Busy,
-        WindowModeError::Geometry(error)
-        | WindowModeError::Tile(TileGeometryError::Geometry(error)) => {
-            WindowMaximizeError::Geometry(error)
-        }
-        WindowModeError::Tile(TileGeometryError::ClientLimits) => {
-            WindowMaximizeError::Geometry(ResizeGeometryError::ClientLimits)
-        }
-        WindowModeError::Tile(TileGeometryError::Size) => {
-            WindowMaximizeError::Geometry(ResizeGeometryError::Geometry)
-        }
+        WindowModeError::Geometry(error) => WindowMaximizeError::Geometry(error),
     }
 }
 

@@ -266,25 +266,12 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(22).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
-    for stage in 23..=28 {
-        if matches!(stage, 24 | 26 | 27) {
-            fresh.sync();
-            assert!(fresh.events.serial.is_some());
-            if let Some(serial) = fresh.events.serial {
-                fresh.xdg.ack_configure(serial);
-            }
-            fresh.sync();
-        }
-        match stage {
-            25 => fresh.attach_tiled(alo_shell::TileSide::Right),
-            26 => fresh.attach_tiled(alo_shell::TileSide::Left),
-            28 => fresh.attach_resized(),
-            _ => {}
-        }
-        fresh.sync();
-        assert!(send.send(stage).is_ok());
-        assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
-    }
+    // Stages 23 to 28 put a window on half an output and went with
+    // `window_tiling` on 2026-09-26. What replaced them is a division, which
+    // needs two windows to divide between and so is not this one client's
+    // dance; the numbering keeps its gap rather than renumbering every stage
+    // after it, because a stage number in a log is how somebody reads one of
+    // these runs.
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

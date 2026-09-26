@@ -631,11 +631,14 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** blocked — on tasks 11 and **16**. Task 10 is done for the part it
-ends at: the division is drawn, and the **state** a walk needs — desktops, and
-divisions restored as remembered — is task 16's, which is why the blocker names
-16 rather than 10. A walk cannot step through a second desktop that nothing
-holds. **Tasks 8, 9, 12 and 13 are done**
+**Status:** ready. Unblocked 2026-09-26: task 11 landed on 2026-09-25 and task
+16 on 2026-09-26, so the state a walk needs now exists. A session holds desktops
+and divisions, a swipe switches desktops and windows belong to them, which is
+what *a walk cannot step through a second desktop that nothing holds* was
+waiting for. Two things a walk will meet are named in 16's status and not
+ticked: nothing here has plugged a real display, and the agent overlay is drawn
+nowhere, so a walk finds two of the three promised surfaces and not three.
+**Tasks 8, 9, 12 and 13 are done**
 (2026-09-18, 2026-09-20, 2026-09-20 and 2026-09-20), so the lock screen, a second
 display, the accessibility tree with the magnifier and high contrast, and the
 recovery screen are all there for the walk to use. Narrowed here by the lane that
@@ -741,7 +744,18 @@ machine is telling them the truth.
 
 ### 16. The division and the desktops a session holds, and the one layout decider
 
-**Status:** ready. **Depends on:** task 13 of
+**Status:** **Done, 2026-09-26.** A session holds a division per display and
+the desktops on it, kept through windows opening and closing and a display
+arriving and leaving; a chord divides through `alo-dividing` and the half is
+gone, held by a test that reads the crate; a swipe switches desktops through
+`alo-desktops`, and windows belong to desktops. **Two things are named and not
+ticked:** a real display plugged in and unplugged has not been done, because
+this lane has no machine with a display — the constraint below says so — and the
+third of the three promised surfaces, the agent overlay, is on every desktop in
+`alo-desktops` but is drawn nowhere in this compositor, so only the egress
+indicator and the approval surface are held on two desktops in pixels. Report:
+[`updates/the-division-and-the-desktops-a-session-holds.md`](updates/the-division-and-the-desktops-a-session-holds.md).
+**Depends on:** task 13 of
 [`v0-01-delivery-plan.md`](v0-01-delivery-plan.md) — *A sign-in surface, and what
 starts it*.
 
@@ -763,6 +777,28 @@ output. Today it is the only layout decider and that is sound; the moment a
 `Division` is `Server` state, a window's place would be decided twice — once by
 a tree of shares and once by a half — and the shell plan's constraint forbids
 exactly that. This task takes the half out as it puts the division in.
+
+#### What already exists for this task's nouns, read on 2026-09-26 before starting
+
+- **Both deciding crates already hold the lifecycle.**
+  `alo_desktops::Desktops` has `plug_in`, `unplug` and `on(display)`;
+  `alo_dividing::Divisions` has `remember`, `on`, `forget` and `restored` — the
+  last taking the window numbers a division comes back under. So the `Server`'s
+  work is to **hold** an instance of each and route what happens to them, which
+  is what *this holds and shows their answers* already asks for. Neither a
+  state machine nor a restore needs writing here.
+- **The `Server` holds neither today.** It has an overlay, a press, a
+  presentation, its surfaces, its socket and a switch order, exactly as task 10
+  found.
+- **The removal depends on the state, so it comes second.**
+  `window_tiling`'s half is reached from `window_command.rs` (a chord),
+  `window_mode.rs` (`Mode::Tiled` and the geometry) and `lib.rs`'s exports.
+  `set_window_tiled(side)` can only become *the share the division gives for
+  that side* once a division is `Server` state, so the state lands first and
+  the half goes out after it — not the other way round.
+- **Which side a chord means is already `alo-dividing`'s**, since task 10 on
+  2026-09-22. What is left in the shell is the mechanism that turns a side into
+  half an output, and that is what goes.
 
 - **Acceptance:** the `Server` holds a division per display and the desktops a
   person has, kept through windows opening and closing and a display being
