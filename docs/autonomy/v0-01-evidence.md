@@ -94,13 +94,20 @@ any of that has ever been on a screen.
 ### Launcher and window management: open, focus, close, tile
 
 **Shown by:** `crates/alo-applications/tests/from_a_call_to_a_window.rs`,
-`crates/alo-shell/tests/window_tiling/mod.rs`,
+`crates/alo-shell/tests/one_layout_decider.rs`,
 `crates/alo-shell/tests/window_close/mod.rs`,
 `crates/alo-shell/tests/window_activation/mod.rs`
 
 **Still owed:** the launcher. `alo_shortcuts::Action::Launcher` is a chord with
 nothing behind it — no surface lists the installed applications and nothing
 starts one from a person's own choice rather than from a verb.
+
+**What changed on 2026-09-26:** tile named the shell's window-tiling Wayland
+tests until the v0.5 shell plan's task 16 took the half-output tile out and
+replaced it with a division between two windows. The test that stood there is
+gone with the mechanism it tested, and what is named in its place holds the
+thing that replaced it: that there is exactly one layout decider in this
+compositor, and that it is the dividing crate.
 
 ### Copy, cut and paste
 
@@ -175,14 +182,25 @@ is not read by anything a person can reach.
 
 **Shown by:** `crates/alo-shell/tests/window_move/mod.rs`,
 `crates/alo-shell/tests/window_resize/mod.rs`,
-`crates/alo-shell/tests/window_tiling/mod.rs`,
+`crates/alo-shell/src/window_dividing_tests.rs`,
 `crates/alo-shell/tests/window_minimize/mod.rs`,
 `crates/alo-shell/tests/window_maximize/mod.rs`,
 `crates/alo-shell/tests/window_close/mod.rs`
 
 **Still owed:** snap is a shortcut action dispatched to a layout and has no
-pointer gesture behind it — dragging a window to an edge does nothing. And all
-of it is measured in a nested session rather than on a machine.
+pointer gesture behind it — dragging a window to an edge does nothing. **And it
+now needs two windows:** a division divides between windows, so a chord with one
+window open is refused by name, where the half would have put the only window on
+half a display with nothing beside it. All of it is still measured in a nested
+session rather than on a machine.
+
+**What changed on 2026-09-26:** snap and tile were one mechanism — the shell's
+window-tiling module, which computed half an output — and the v0.5 shell plan's
+task 16 removed it, because a division becoming session state would have meant a
+window's place decided twice, once by a tree of shares and once by a half. A
+chord now divides the display between the focused window and the next one. The
+Wayland tests that stood here went with the mechanism, and what is named in
+their place holds what a chord does now, including what it refuses.
 
 ### The dock, and the person decides where it goes
 

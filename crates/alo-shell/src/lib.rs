@@ -139,6 +139,7 @@ mod in_use_mark;
 mod in_use_paint;
 mod in_use_raster;
 mod keyboard;
+mod libinput_gestures;
 mod libinput_routing;
 mod libinput_scroll;
 mod lock_background;

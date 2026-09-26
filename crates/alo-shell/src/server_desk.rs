@@ -299,11 +299,17 @@ fn restored(
 impl crate::Server {
     /// A display has arrived: its desktops begin and its division is restored.
     ///
-    /// See [`Desk::display_arrived`]. `named` is what `alo-dividing` remembers
-    /// this screen by, so the same screen returning finds what it left.
+    /// `named` is what `alo-dividing` remembers this screen by, so the same
+    /// screen returning finds what it left, and a different screen does not
+    /// inherit its arrangement. `open` answers which window each remembered
+    /// share is held by **now**: one whose application is not running is left
+    /// out and its share collapses onto what is left, so the division comes
+    /// back under today's window numbers rather than yesterday's.
     ///
     /// # Errors
-    /// [`NotADisplay::AlreadyThere`] for a display already here.
+    /// [`NotADisplay::AlreadyThere`] for a display already here. Plugging the
+    /// same display in twice would take the first's desktops away, and a
+    /// person's windows with them.
     pub fn display_arrived(
         &mut self,
         display: DisplayId,

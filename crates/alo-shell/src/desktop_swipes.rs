@@ -2,9 +2,10 @@
 //!
 //! `crate::libinput_routing` used to say *unsupported touch/tablet/gesture/
 //! switch events are ignored*, and a three-finger swipe therefore did nothing
-//! at all. `alo_desktops::libinput_gestures::decide` is the recogniser, and it
-//! already exists; what was missing was the session handing it the events and
-//! carrying out what it answered.
+//! at all. `alo_desktops::Gestures` is the recogniser and it already exists;
+//! what was missing was the session handing it the events —
+//! `crate::libinput_gestures` does the taking-apart, and says there why it does
+//! it rather than the crate doing it — and carrying out what it answered.
 //!
 //! # Which gestures are carried out here, and which are not
 //!
@@ -42,7 +43,7 @@ impl crate::Server {
     /// and a device leave cancel both. Returns whether the event was consumed
     /// as a desktop gesture, so the caller knows not to route it onwards.
     pub(crate) fn desktop_swipe(&mut self, event: &smithay::reexports::input::Event) -> bool {
-        match alo_desktops::libinput_gestures::decide(&mut self.gestures, event) {
+        match crate::libinput_gestures::decide(&mut self.gestures, event) {
             Some(intent) => self.carry_out(intent),
             None => false,
         }

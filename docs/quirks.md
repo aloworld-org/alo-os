@@ -6766,3 +6766,42 @@ what was remembered rather than adjusted — and that a window with no `app_id`
 is not remembered across it, because a remembered share is keyed by
 application. A resize on either crate would be better and is not ours to add.
 **Date:** 2026-09-26.
+
+### A manifest tells whoever needs gestures to ask for them, and asking breaks the image
+**Version:** `alo-desktops` 0.1.0's `libinput` feature and
+`alo-desktops/src/libinput_gestures.rs`; `alo-saying` 0.0.1; found 2026-09-26
+while wiring swipes in `alo-shell`.
+**Whose:** `alo-desktops` and `alo-saying` are not this lane's crates; this
+entry is the report, and the fix is their owners'.
+**Behaviour:** `crates/alo-desktops/Cargo.toml` puts the `input` dependency
+behind a `libinput` feature and says, in as many words, *whoever needs gestures
+asks for them: `features = ["libinput"]`*. Following that instruction is a red
+gate. Cargo unifies a package's features across one workspace build, so a shell
+asking for `libinput` turns it on for **every** copy of `alo-desktops` in the
+resolve — and `alo-saying` depends on `alo-desktops` to collect the machine's
+one vocabulary while `alo-agentd` depends on `alo-saying`. `libudev-sys` then
+reaches a daemon that draws nothing and reads no touchpad, and the image links
+its daemons statically against musl where that library does not exist.
+
+`alo-image`'s `no_daemon_links_a_system_library` catches it and names it
+exactly, which is how this was found rather than at the next release. That test
+was written **for this fault**: release 0.0.3 shipped it as `cannot find
+-linput`. The fix it prescribes — put the dependency behind a feature the
+daemons do not enable — is the fix already in place; what nobody noticed is that
+the feature is then unusable by anybody in this workspace, so the module behind
+it has no possible consumer.
+**Our response:** `alo-shell` takes the libinput event apart itself, in
+`crates/alo-shell/src/libinput_gestures.rs`, and hands the result to
+`alo_desktops::Gestures` through the `gesture_events::Event` seam that crate
+already has for its own deterministic tests. **No decision is copied** — which
+swipes count, how far, which are turned off and what any of them means all stay
+in one place — and the extraction happens where libinput is already linked,
+beside the two files that already read it for keys and for scroll. The comment
+on that file says all of this, so the next person does not have to find it
+twice.
+
+The real fix is one of two things neither of which is ours: the vocabulary edge
+should not drag a whole crate into every daemon, or the libinput extraction
+should not live in a crate that every daemon reaches. An instruction in a
+manifest that cannot be followed is worse than no instruction.
+**Date:** 2026-09-26.
