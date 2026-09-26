@@ -91,6 +91,32 @@ without them has not been finished, it has been abandoned.
 - A user-readable change description, written while the knowledge is fresh.
   Parallel contributors include it in their task report; the integration owner
   consolidates it into `CHANGELOG.md` under `docs/autonomy/SHARED_MAIN.md`.
+- **Say whether a measurement was performed once or runs forever.** A proof
+  somebody did by hand and a check that runs on every build are different
+  things, and **a report cannot tell them apart unless the writer says which it
+  was.** Both read as *measured* a week later. So a report that describes a
+  measurement names where it will run again — a test, a build step, a gate — or
+  says outright that it will not.
+
+**A check that stands in for the thing is not the thing**, and this repository
+has rediscovered that four times in four sets of clothes. It is written here
+because it is cheap to catch in review and expensive to catch in a release:
+
+- `test -x` on a converter binary stood in for the converter **starting**. Three
+  releases shipped one that died at launch on eleven missing libraries, and no
+  document of any format opened on a real machine.
+- `gst-inspect-1.0` on an element name stood in for a file **decoding**. It still
+  does; that gap is open and named in the recipe and in
+  `crates/alo-image/tests/the_image_can_play_what_the_decision_says.rs`.
+- A hand measurement in the pinned base — real, and correct — was written up as
+  though the build did it. The claim was false the day it was made, in the same
+  commit as the code it described, and stood for six days.
+- A suite green on one machine stood in for a suite that passes anywhere. Three
+  unrelated tests assumed they were alone on the machine; each failed a gate for
+  a reason that had nothing to do with what it tests.
+
+The question to ask of any green thing is **what would have to be true for this
+to pass while the product is broken** — and then whether anything checks that.
 
 **And no rushing.** A date never justifies a shortcut. When something
 has to give it is scope — one printer, one certified machine, one
