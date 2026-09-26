@@ -98,6 +98,12 @@ pub fn render_control_scanout(
     cursor: &Cursor,
     controls: Option<crate::WindowControlScene<'_>>,
 ) -> Result<PreparedScanout, RenderError> {
+    // **The plane's origin, and that is true rather than convenient.** This road
+    // scans out the window controls, which are the viewport layer; nothing has
+    // panned it, because nothing can — a person's camera reaches the drawing
+    // through the backend that holds one (`Nested`). When the direct backend
+    // grows a pan, this becomes a parameter; until then a default here would be
+    // hiding a question and this comment is the answer to it.
     render_native_scanout(
         renderer,
         size,
@@ -108,6 +114,7 @@ pub fn render_control_scanout(
             scene: controls.map(crate::scene_native::NativeScene::Controls),
             ..crate::scene_native::NativeLayers::nothing()
         },
+        alo_canvas::Camera::new(),
     )
 }
 
@@ -131,6 +138,7 @@ pub(crate) fn render_native_scanout(
     popups: &[Popup],
     cursor: &Cursor,
     layers: crate::scene_native::NativeLayers<'_>,
+    camera: alo_canvas::Camera,
 ) -> Result<PreparedScanout, RenderError> {
     validate_size(size)?;
     if let Some(crate::scene_native::NativeScene::Controls(controls)) = layers.scene {
@@ -145,8 +153,11 @@ pub(crate) fn render_native_scanout(
     let drawing = crate::scene_drawing::paint(
         renderer,
         &mut target,
-        roots,
-        popups,
+        crate::scene_drawing::OnThePlane {
+            roots,
+            popups,
+            camera,
+        },
         cursor,
         Transform::Normal,
         layers,

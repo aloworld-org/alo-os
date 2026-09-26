@@ -13,6 +13,7 @@ pub(crate) fn geometry(
     roots: &[WlSurface],
     popups: &[crate::Popup],
     output: Option<Size<i32, Physical>>,
+    camera: alo_canvas::Camera,
 ) -> Option<Rectangle<i32, Logical>> {
     if !safe_positioner(&positioner) {
         return None;
@@ -20,7 +21,7 @@ pub(crate) fn geometry(
     let Some(size) = output.filter(|_| !positioner.constraint_adjustment.is_empty()) else {
         return Some(positioner.get_geometry());
     };
-    let (_, origin) = crate::scene::trees(roots, popups)
+    let (_, origin) = crate::scene::trees(roots, popups, camera)
         .into_iter()
         .find(|(surface, _)| surface == parent)?;
     let origin = origin + crate::scene::geometry_origin(parent);

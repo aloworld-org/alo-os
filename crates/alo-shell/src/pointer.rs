@@ -238,7 +238,7 @@ impl Server {
         location: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
-        crate::scene::trees(&roots, &self.popup_surfaces())
+        crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
             .into_iter()
             .find_map(|(root, origin)| {
                 under_from_surface_tree(&root, location - origin, (0, 0), WindowSurfaceType::ALL)

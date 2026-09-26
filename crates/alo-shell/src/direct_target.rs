@@ -143,8 +143,20 @@ impl ScenePainter for GlesPainter<'_> {
         cursor: &Cursor,
         layers: crate::scene_native::NativeLayers<'_>,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
-        crate::offscreen::render_native_scanout(self.0, size, roots, popups, cursor, layers)
-            .map(crate::PreparedScanout::into_parts)
+        // The plane's origin: this backend has no camera yet, and a person's pan
+        // reaches the drawing through the one that does. Owed, and named in
+        // `docs/autonomy/the-smallest-canvas-worth-showing.md` task 1's inventory
+        // rather than left for somebody to find by panning a real machine.
+        crate::offscreen::render_native_scanout(
+            self.0,
+            size,
+            roots,
+            popups,
+            cursor,
+            layers,
+            alo_canvas::Camera::new(),
+        )
+        .map(crate::PreparedScanout::into_parts)
     }
 }
 

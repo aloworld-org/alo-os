@@ -37,6 +37,14 @@ pub struct Nested {
     focused: bool,
     /// Actual parent position, including motion consumed by native controls.
     pub(crate) control_input: crate::NestedControlInput,
+    /// What a person is looking at on the canvas, for the frames this draws.
+    ///
+    /// **A copy of the session's, kept in step by whoever submits** — the same
+    /// arrangement `crate::popups` uses for the output's extent and for the same
+    /// reason: this backend has to place the plane and cannot ask a `Server` for
+    /// it. `Camera::new()` is the truthful default, because a backend nobody has
+    /// panned is looking at the plane's origin.
+    pub(crate) camera: alo_canvas::Camera,
     /// Whether each frame's own pixels are kept as it is submitted.
     ///
     /// Off, and a signed-in session never turns it on: a readback is a
@@ -102,6 +110,7 @@ impl Nested {
             closed: false,
             focused: false,
             control_input: crate::NestedControlInput::default(),
+            camera: alo_canvas::Camera::new(),
             keeping: false,
             kept: None,
         })
@@ -478,8 +487,11 @@ impl Nested {
             crate::scene_drawing::paint(
                 renderer,
                 &mut framebuffer,
-                roots,
-                popups,
+                crate::scene_drawing::OnThePlane {
+                    roots,
+                    popups,
+                    camera: self.camera,
+                },
                 cursor,
                 Transform::Flipped180,
                 native,
@@ -508,6 +520,7 @@ impl Nested {
                 popups,
                 cursor,
                 native,
+                self.camera,
             )?);
         }
         // Positioned arrows are now in the submitted scene, just like client

@@ -1398,6 +1398,7 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-approving",
+ "alo-canvas",
  "alo-capability",
  "alo-capturing",
  "alo-changing",

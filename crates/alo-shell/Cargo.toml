@@ -55,6 +55,9 @@ alo-power = { path = "../alo-power" }
 alo-sound = { path = "../alo-sound" }
 alo-networks = { path = "../alo-networks" }
 alo-dividing = { path = "../alo-dividing" }
+# Where a frame sits on the plane a person pans and zooms, and the one transform
+# that turns that into a screen position. The viewport layer never reads it.
+alo-canvas = { path = "../alo-canvas" }
 alo-desktops = { path = "../alo-desktops" }
 alo-dock = { path = "../alo-dock" }
 # The list of grants a person sees: rows derived from the machine's own grants,
