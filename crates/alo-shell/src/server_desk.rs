@@ -190,7 +190,7 @@ impl Desk {
         &mut self,
         surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
     ) -> alo_dividing::WindowId {
-        alo_dividing::WindowId::from_compositor(self.numbers.of(surface))
+        alo_dividing::WindowId::from_compositor(crate::window_number::Numbers::of(surface))
     }
 
     /// The number this window already has, or [`None`] where it has never had
@@ -202,7 +202,7 @@ impl Desk {
         &self,
         surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
     ) -> Option<u64> {
-        self.numbers.given_to(surface)
+        crate::window_number::Numbers::given_to(surface)
     }
 
     /// These are the windows that are open now; the rest have closed.
@@ -219,9 +219,9 @@ impl Desk {
             Item = &'a smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
         >,
     ) {
-        let alive: std::collections::HashSet<u32> =
-            open.map(crate::window_number::Numbers::identity).collect();
-        for number in self.numbers.keep_only(&alive) {
+        let alive: std::collections::HashSet<u64> =
+            open.map(crate::window_number::Numbers::of).collect();
+        for number in self.numbers.open_now(alive) {
             let window = alo_dividing::WindowId::from_compositor(number);
             for division in self.dividing.values_mut() {
                 // A division that does not hold it says so, and that is not a

@@ -18,12 +18,44 @@
 //!
 //! It reads `image/Containerfile` and nothing else, so it runs on any machine
 //! and needs no network — which is why it can be in the gate at all. It cannot
-//! tell you the decoders *work*; the recipe's own build step does that, by
-//! inspecting each element and failing the build when one is missing, and by
-//! decoding a file of each format made during the build.
+//! tell you the decoders *work*. **Nor can the build**, and this file said
+//! otherwise until 2026-09-26; the correction is below, because a test that
+//! states something untrue about the thing it guards is worse than no test at
+//! all.
+//!
+//! What the build does is ask `gst-inspect-1.0` for each element by name and
+//! fail when one is missing. That is worth having — it is what catches a library
+//! aboard with no element to reach it, which is the fault this whole file exists
+//! about — and it is **not** a file decoding. An element that registers and a
+//! sample that plays are two claims, and only the first is checked anywhere
+//! today.
 //!
 //! What this file stops is that check being deleted. The build proves the
-//! image; this proves the build still asks.
+//! *elements*; this proves the build still asks for them.
+//!
+//! # The claim that was here, and since when
+//!
+//! This header said the build proved the image *"by inspecting each element and
+//! failing the build when one is missing, **and by decoding a file of each
+//! format made during the build**"*. The second half was never true. It was
+//! written in `97c970c9` — release 0.0.5, 2026-09-20 — **the same commit that
+//! wrote the recipe block it describes**, and that block has run
+//! `gst-inspect-1.0` and nothing else from that day to this. So the claim was
+//! false on the day it was made, and every reading of this file since has been
+//! told the image's codecs were measured when they were inspected.
+//!
+//! Where it came from is worth recording, because it is an easy mistake to
+//! repeat. A file of each format **was** made and decoded, returning 288,000
+//! bytes of raw frames each — ten frames of 160×120 I420, to the byte — and that
+//! measurement is real. It was taken **by hand, in the pinned base, before the
+//! recipe was changed**, as a check that the packages about to be named would
+//! work. It never became a build step. A one-off proof and a standing check read
+//! the same in a report a week later, which is exactly why the difference has to
+//! be written down where somebody meets it.
+//!
+//! Making the build encode a sample with the image's own encoders and decode it
+//! back is task 1 of `docs/autonomy/v0-5-devices-and-media-plan.md`, and until
+//! that lands **no release has been measured for playback at all.**
 
 #![expect(
     clippy::panic,

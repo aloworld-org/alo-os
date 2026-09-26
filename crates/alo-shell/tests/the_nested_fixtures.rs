@@ -86,6 +86,8 @@ mod nested_reader_frame_check;
 mod offscreen_check;
 #[path = "../examples/support/offscreen_client.rs"]
 mod offscreen_client;
+#[path = "support/one_heavy_fixture_at_a_time.rs"]
+mod one_heavy_fixture_at_a_time;
 #[path = "../examples/support/popup_check.rs"]
 mod popup_check;
 #[path = "../examples/support/resize_geometry_check.rs"]
@@ -235,7 +237,10 @@ fn main() -> std::process::ExitCode {
         println!("skipped: the nested fixtures are Linux's, and this is not Linux");
         return std::process::ExitCode::SUCCESS;
     }
-    // A child spawned by the run below, told which one check it is.
+    // A child spawned by the run below, told which one check it is. A child does
+    // not take the lock: the parent below holds it for all seven of them, and a
+    // child waiting for a lock its own parent holds would wait out the patience
+    // and then run anyway, which is the deadlock with extra steps.
     if let Some(named) = std::env::var_os(SUBMODE) {
         let named = named.to_string_lossy().into_owned();
         return match the_submode(&named) {
@@ -246,6 +251,11 @@ fn main() -> std::process::ExitCode {
             }
         };
     }
+
+    // Held for the whole run: a headless compositor and seven children each
+    // with a GLES context is the heaviest thing this crate does, and
+    // `one_heavy_fixture_at_a_time` says what it is being kept away from.
+    let _heavy = one_heavy_fixture_at_a_time::TheOnlyHeavyFixture::held();
 
     let parent = a_parent();
     let runtime = match &parent {

@@ -389,11 +389,24 @@ The **manual path is the same feature without an agent**: the transcript sits
 beside the recording, and clicking a line moves the picture to it. Asking **why**
 she said it is the model reasoning rather than searching, so it **quotes the
 passage and the moment it reasoned from** and the person checks it in one click
+- [v1] ★ **The words that came with the recording are read first** — a great
+many videos already carry a subtitle or caption track, and a subtitle track is a
+transcript with timestamps that somebody else already made. alo reads those
+**before it offers to make its own**, which means *open it where she says it* and
+reading along both work **with no model at all**: instantly, with nothing to
+wait for, and **in No AI**, where there is no model to ask. A person who declined
+AI entirely does not thereby lose the ability to search their own recordings.
+Where a track exists and a transcription would be better, the person is told
+both are possible rather than one being chosen for them; where the track is in
+another language it is still a set of moments, and saying so is better than
+ignoring it
 - [v1] **What the pipeline is asked for before it is built** — three things this
 plan needs from whatever decodes a recording, cheap to require now and expensive
 to retrofit: seeking that lands on **the moment asked for** rather than the
 nearest keyframe; a transcript carrying **timestamps** and not only text; and
-**one position control**, which the person's scrubber and alo both drive.
+**one position control**, which the person's scrubber and alo both drive; plus
+**the subtitle and caption tracks a file already carries**, surfaced as text with
+their timings rather than only burned into the picture.
 [ADR 0009](decisions/0009-a-good-computer-without-the-agent.md)'s
 rule is the reason for the third: a second, private way to move the playhead
 drifts from the first, and then alo can do something the person cannot
