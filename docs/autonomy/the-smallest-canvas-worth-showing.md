@@ -42,6 +42,32 @@ retrofit.
 - **Constraint:** nothing in the viewport layer may read the plane's transform
   to correct itself. If it has to, it is in the wrong layer.
 
+#### What exists for this task, read on 2026-09-27 before starting
+
+- **The arithmetic is done and tested**: `crates/alo-canvas` holds the plane and
+  the camera — signed plane units, a zoom in integer thousandths, pointer-centred
+  zooming, and the plane-to-surface transform. Thirteen tests, including a screen
+  press reaching the same surface coordinate at three zooms and two pan offsets,
+  which is most of **task 2**'s acceptance held before task 2 starts. The zoom is
+  a ratio rather than a float deliberately: *nearly the right pixel* in a drawing
+  program is a wrong pixel, and `f64` gives different answers depending on the
+  order the sums were done.
+- **One place decides where every client is drawn.** `alo_shell::scene`'s element
+  list maps each root to `window_buffer_origin`, so the plane's translation has a
+  single seam to go through rather than being threaded everywhere.
+- **There is no scaling path in the drawing at all.** Nothing in
+  `crates/alo-shell/src/drawing.rs` or the scene takes a scale, and no rescaling
+  render element is used anywhere. So *the plane scales* is not wiring — it is a
+  new capability in the GLES path, and it is the expensive half of this task
+  rather than the pan. Worth knowing before task 2 rests on it, because task 2's
+  coordinates are already exact and its **drawing** is not.
+- **The dock and the status area are already drawn in a separate layer** from
+  clients: `scene_drawing::paint` draws client trees first and the native layers
+  above them, and `desktop_raster` lays the dock out from the output's size
+  alone. So the *separation* exists in the drawing order today; what does not
+  exist is a camera on the plane side, which is what would make the separation
+  mean something.
+
 ### 2. A frame is where it looks, at any zoom
 
 **Status:** ready. **Depends on:** 1.

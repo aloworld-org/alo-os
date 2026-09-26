@@ -1,0 +1,14 @@
+[package]
+name = "alo-canvas"
+version = "0.0.1"
+description = "Where a frame sits on a plane a person can move and zoom, and what the viewport above it never has to know."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
