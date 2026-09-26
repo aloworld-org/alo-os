@@ -1795,7 +1795,6 @@ sorted the same way v0.01 now is.
         line below waits on. Nothing here has been pointed at real weights
         on a real machine
 
-- [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
       as a provider like any other, with a test that proves it: our address is
       not privileged in `alo-egress`, and a policy refusing hosted inference
       refuses ours. The account and the billing live outside this repository;
@@ -1847,9 +1846,7 @@ sorted the same way v0.01 now is.
       XDG portal backend against our own shell; one grant list covering agents
       and applications alike; secret storage; session management; corporate
       proxy support
-- [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
       media playback, power management, night light
-- [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
       even though no official EU language needs it yet
   - [x] **The code.**
@@ -1925,13 +1922,9 @@ sorted the same way v0.01 now is.
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
-- [ ] **Printing**
 - [ ] `.docx`, `.xlsx`, `.pptx` open
 - [ ] A web browser for the open web
-- [ ] **Application adapters**, and the accessibility fallback for applications without one
 - [ ] **System verbs** through the privileged broker
-- [ ] **Guided fine-tune**, with the dataset never leaving the machine
-- [ ] Full-disk encryption
 - [ ] **Atomic updates with rollback** — largely **inherited** rather than
       built, since a bootc image rolls back with one command (ADR 0011). What
       is ours is the policy around it, and *undo what the agent did*, which is
@@ -2112,7 +2105,6 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         two physical machines on one office network, which nothing here has
         had; every test puts both sides on one host
-- [ ] **One GPU box serves the office** — shared local inference over a pairing.
       **Still egress, and the indicator still fires** (ADR 0003): the pairing is
       what makes it wanted, not what makes it silent
   - [x] **The code.**
@@ -2134,7 +2126,6 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         a machine with a GPU and one without, in one building — owed to two
         machines and the certified one
-- [ ] A self-hosted workspace on the network is discovered, not configured
 - [ ] **Zero inference egress over a working day**, measured and published —
       *with a local model*, which is the claim `docs/features.md` makes and the
       only one that is true. A machine using the office GPU box or a hosted
@@ -2163,6 +2154,23 @@ did.
 ---
 
 ## v1 — an organisation can buy it
+
+### Moved here from v0.5 on 2026-09-26
+
+The owner cut v0.5 to what a developer preview needs. **Nothing was
+deleted** — each promise below keeps its words and its boxes, and only its
+date moved. They are here because an organisation buying the product will
+want them, and a developer trying it will not.
+
+- [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
+- [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
+- [ ] **Language**: the shell in all 24 official EU languages, with regional
+- [ ] **Printing**
+- [ ] **Application adapters**, and the accessibility fallback for applications without one
+- [ ] **Guided fine-tune**, with the dataset never leaving the machine
+- [ ] Full-disk encryption
+- [ ] **One GPU box serves the office** — shared local inference over a pairing.
+- [ ] A self-hosted workspace on the network is discovered, not configured
 
 Not only a fifty-seat firm. v1 is the release a security team, a compliance
 officer and a procurement department can all say yes to, which is a much wider
