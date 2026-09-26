@@ -29,6 +29,7 @@ members = [
   "crates/alo-changing-drives",
   "crates/alo-changing-network",
   "crates/alo-changing-printers",
+  "crates/alo-changing-undo",
   "crates/alo-changing-updates",
   "crates/alo-choosing",
   "crates/alo-citing",
