@@ -73,3 +73,7 @@ impl crate::Server {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "desktop_membership_tests.rs"]
+mod tests;
