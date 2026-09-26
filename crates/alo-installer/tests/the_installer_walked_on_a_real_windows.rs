@@ -1126,6 +1126,15 @@ fn the_whole_road_installs(
     let said = without_the_kernels_messages(&console.said());
     drop(machine);
     walking::machine::stop();
+    // The end of the install, in the log always: a walk that goes on to fail
+    // three boots later is a walk whose install nobody can read afterwards,
+    // because each boot writes over the same serial file.
+    let last = said.char_indices().rev().nth(4000).map_or(0, |(at, _)| at);
+    eprintln!(
+        "the install on {name} ended {ended:?}, tidy {after:?}; the end of its serial \
+         line:\n{}",
+        &said[last..]
+    );
     assert!(
         !installed || after.is_some(),
         "alo OS was installed and the environment never finished tidying up, so what \
@@ -1174,7 +1183,14 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     };
     let disc = medium::the_walk_disc(&yard, &told, &download);
     let console = Console::fresh(&yard.join("console.log"));
-    let mut machine = Machine::start(&yard, "removal", Some(&disc), None, &console, &chip);
+    // On the same firmware build the install ran on, and only the disk order
+    // changed. Measured on 2026-09-26: started on the other build this
+    // repository has, the machine came up with a firmware that listed neither
+    // alo OS nor anything else the install had written — the variables one
+    // build wrote are not the variables the other reads — and the removal
+    // rightly said there was nothing to remove.
+    let mut machine =
+        Machine::start_on(&firmware, &yard, "removal", Some(&disc), None, &console, &chip);
     let mut resets = 0;
     while console.wait_for(&[console::BEGINS], A_SIGN_IN).is_none() {
         resets += 1;
