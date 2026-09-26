@@ -1078,6 +1078,22 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     );
 }
 
+/// Whether the firmware's own variables still name an entry *alo OS*, read
+/// from the file the machine keeps them in with the machine off.
+///
+/// A load option holds its description as UTF-16, so the name is looked for as
+/// the machine would have written it. This says nothing about which entry it
+/// is or where it points; it answers one question — is it still there at all —
+/// and it answers it about the file rather than about anything a guest claims.
+fn the_variables_name_alo_os(yard: &Path, name: &str) -> bool {
+    let bytes = std::fs::read(Machine::variables_of(yard, name)).unwrap_or_default();
+    let wanted: Vec<u8> = alo_installing::THE_ENTRYS_NAME
+        .encode_utf16()
+        .flat_map(u16::to_le_bytes)
+        .collect();
+    bytes.windows(wanted.len()).any(|at| at == wanted)
+}
+
 /// Install alo OS the whole way on a machine that has its Windows: the
 /// installer run to its end, the restart it asks for, the environment's
 /// install, and the machine left off. Gives back whether the environment said
@@ -1174,6 +1190,11 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
          remove.\n{installing_said}"
     );
 
+    eprintln!(
+        "after the install, the firmware's own file names alo OS: {}",
+        the_variables_name_alo_os(&yard, "removal")
+    );
+
     // Windows, and the removal run from inside it.
     let told = Told::RemovingAloOs {
         left_at: alo_installer::THE_PROGRAMS_HOME.to_owned(),
@@ -1209,7 +1230,11 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     drop(machine);
     walking::machine::stop();
     let removing_said = console.said();
-    eprintln!("what the removal did, on the guest's own serial line:\n{removing_said}");
+    eprintln!(
+        "after that boot of Windows, the firmware's own file names alo OS: {}\n\
+         what the removal did, on the guest's own serial line:\n{removing_said}",
+        the_variables_name_alo_os(&yard, "removal")
+    );
 
     assert_eq!(
         finished.as_deref(),
