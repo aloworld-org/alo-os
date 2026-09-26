@@ -582,6 +582,26 @@ COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 COPY image/etc/alo/ /etc/alo/
 
+# **What this machine will accept as an update, and how it finds out.** ADR 0036
+# says an unsigned build is never staged; `alo_updating::apply` passes
+# `--enforce-container-sigpolicy` on every instruction, and this is the policy it
+# enforces. Without these three files that flag enforces the base's default,
+# which accepts anything — a machine that looks guarded and is not.
+#
+# **Two files, and the second is load-bearing.** `containers/image` fetches a
+# sigstore signature from the registry **only** when the registry is configured
+# for it. With `policy.json` alone it looks in a lookaside store, finds nothing,
+# and refuses with *A signature was required, but no signature exists* — **the
+# same sentence it gives for a genuinely unsigned image.** Measured 2026-09-26
+# against the real registry: the correctly signed 0.0.5 was refused until
+# `registries.d` existed. So whoever debugs that goes and checks the signature,
+# the key and the registry, all of which are fine. They ship together or the
+# machine refuses every update for a reason it states misleadingly.
+# `docs/quirks.md` carries it in those words, and ADR 0070 is the decision.
+COPY --chmod=0644 image/policy.json /etc/containers/policy.json
+COPY --chmod=0644 image/registries.d/ /etc/containers/registries.d/
+COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
+
 # The owner-approved default picture. A shipped wallpaper name resolves to the
 # same basename under this directory (docs/contracts/shipped-wallpapers.md).
 # Explicit mode prevents Windows checkout permissions from deciding readability.

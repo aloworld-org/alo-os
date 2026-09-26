@@ -78,4 +78,4 @@ jobs:
       - name: Push the candidate
         run: |
           podman push --digestfile digest "$REGISTRY:$VERSION"
-          echo "candidate $REGISTRY:$VERSION at $(cat digest), built from ${{ github.sha }}; unsigned, and not a release until the owner signs that digest"
+          echo "candidate $REGISTRY:$VERSION at $(cat digest), built from ${{ github.sha }}; unsigned, and not a release until the owner signs that digest. The two commands to run, and why each flag, are in image/pinned.toml under The two commands that sign a candidate."

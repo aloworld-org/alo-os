@@ -197,6 +197,24 @@ entry, written in full.
   the person is standing at — only appeared once the walk kept what a session
   keeps. **Before writing a fault down, ask what in the fixture is unlike a
   machine.** A fixture that would make any code look broken is measuring itself.
+- **Measure from the consumer, never from the producer.** The thing that will
+  read it in production is the only thing whose opinion counts. A check run by
+  whatever *wrote* the artefact proves the writer did what it meant to; it says
+  nothing about whether the reader can use it. Five of these in one week, each
+  green and each about something other than the product working:
+  - `cosign verify` passing stood in for **a machine can verify**. Five releases
+    record *verified against `signing/alo-os.pub`; a different key was refused*,
+    which is cosign reading cosign's own bundle. No alo OS machine can read it:
+    the signature is published as a sigstore bundle under `sha256-<digest>`, and
+    `containers/image` looks for `sha256-<digest>.sig`.
+  - `gst-inspect-1.0` on an element name stood in for **a file decodes**.
+  - `test -x` on a binary stood in for **the converter runs**. Three releases
+    shipped one that died at launch.
+  - A green suite on one machine stood in for **a suite that passes anywhere**.
+  - A hand measurement in the pinned base stood in for **a build step**.
+
+  So a report names the reader it measured through, and a check that cannot be
+  run from the consumer's side says so instead of standing in for one.
 
 ## Linux is reachable, and some items need it
 

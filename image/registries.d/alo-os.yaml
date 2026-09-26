@@ -1,0 +1,14 @@
+# Without this, no signature is ever fetched, and the machine says the same
+# thing it says about an unsigned build.
+#
+# `containers/image` reads sigstore signatures from the registry only when a
+# registry is configured for it. With no entry here it looks in a lookaside
+# store, finds nothing, and refuses with *A signature was required, but no
+# signature exists* — the identical message it gives for a genuinely unsigned
+# image, and for one signed in a form it cannot read. Measured 2026-09-26: a
+# correctly signed image was refused with that message until this file existed.
+#
+# So this is half of `policy.json`, not a convenience beside it. ADR 0070.
+docker:
+  ghcr.io/aloworld-org/alo-os:
+    use-sigstore-attachments: true

@@ -8,16 +8,126 @@
 #
 # Two layers, and both are kept: the digest is what an installer already
 # released will pull, so a stolen key cannot redirect it; the signature is what
-# a boot environment checks before it writes anything, so a registry that
-# changed the bytes cannot get past it.
+# a boot environment is *meant* to check before it writes anything, so a
+# registry that changed the bytes cannot get past it.
+#
+# # No machine can check these signatures yet, measured 2026-09-26
+#
+# **The second layer is not working, and the sentences below read as though it
+# were.** Each release says it was *verified against `signing/alo-os.pub`* and
+# that *a different key was refused*. Both are true, and narrower than they
+# read: that is **`cosign` verifying `cosign`'s own bundle**. It is a real check
+# of the key and of the owner's process. It is **not** evidence that any alo OS
+# machine can verify anything, and no alo OS machine can.
+#
+# Measured against the registry, on all five releases:
+#
+# - the signature is published under the tag `sha256-<digest>` — **no `.sig`** —
+#   as an OCI index whose manifest is
+#   `application/vnd.dev.sigstore.bundle.v0.3+json`, annotated
+#   `dev.sigstore.bundle.content: dsse-envelope`. That is `cosign` 3's new
+#   Sigstore bundle format, stored as a referrer;
+# - `containers/image` — what `bootc --enforce-container-sigpolicy` uses — looks
+#   for the tag `sha256-<digest>.sig` carrying a layer of
+#   `application/vnd.dev.cosign.simplesigning.v1+json`;
+# - `sha256-<digest>.sig` returns **404** for every release. Ten tags exist in
+#   the repository and **none** ends in `.sig`.
+#
+# So task 7 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` measured
+# *A signature was required, but no signature exists* and that was **literally
+# true** — not a bad key, not a missing transparency log, not the wrong policy
+# type. Which end moves is
+# [ADR 0070](../docs/decisions/0070-the-signature-a-machine-can-read.md).
+#
+# Until that lands, a digest in this file is pinned by content and **vouched for
+# by nothing a machine can read.**
 #
 # `crates/alo-image` reads this file and holds it to `image/Containerfile`'s
 # `org.opencontainers.image.version`, to `docs/booting.md`, and to the key. It is
 # not copied into the image: it names the image, so it cannot be inside it.
 #
+# # The two commands that sign a candidate
+#
+# Run **both**, in order, on the machine holding the private key, with `<DIGEST>`
+# the digest `image.yml` printed. Then verify, and pin below only if both pass.
+# Every flag is load-bearing and three of them are traps — ADR 0070 measured each
+# with `cosign` 3.1.3, the version every release so far used.
+#
+#     cosign sign --key cosign.key \
+#       --use-signing-config=false --tlog-upload=false \
+#       --new-bundle-format=false --yes \
+#       ghcr.io/aloworld-org/alo-os@<DIGEST>
+#
+#     cosign sign --key cosign.key \
+#       --use-signing-config=false --tlog-upload=false --yes \
+#       ghcr.io/aloworld-org/alo-os@<DIGEST>
+#
+#     cosign verify --key image/signing/alo-os.pub \
+#       ghcr.io/aloworld-org/alo-os@<DIGEST>
+#
+# - `--new-bundle-format=false`, **first command only**. Without it `cosign` 3
+#   writes a Sigstore bundle at `sha256-<digest>` that **no alo OS machine can
+#   read**. With it you get `sha256-<digest>.sig`, which is what
+#   `containers/image` looks for. **The flag is not in `cosign sign --help`.**
+# - The **second** command writes the bundle form deliberately, at a different
+#   tag, so the two cannot collide. Both are kept so that a newer base needs no
+#   second migration.
+# - `--use-signing-config=false`: without it, `--tlog-upload=false` is **refused
+#   outright** in 3.1.3 and the command fails for a reason unrelated to what you
+#   were doing.
+# - `--tlog-upload=false`: no transparency log, as every release so far.
+#   Deprecated in 3.1.3 and still the only way — see the flag above.
+# - `@<DIGEST>`: by digest, never by tag. A tag can move between signing and
+#   pulling.
+#
+# Do **not** reach for `--registry-referrers-mode=legacy` or
+# `COSIGN_DOCKER_MEDIA_TYPES=1`. Both look right, both are in the help, and
+# neither changes the format. Measured.
+#
+# ## The first command cannot be shortened, and this is why
+#
+# `cosign` 3.1.3 says to replace `--tlog-upload=false` with a signing config, and
+# `image/signing/no-transparency-log.json` is that file. **It works for the second
+# command only.** With `--signing-config`, cosign refuses: *must provide
+# `--new-bundle-format` or `--bundle` where applicable* — so the config file
+# cannot produce the classic form at all. The second command may be shortened to
+#
+#     cosign sign --key cosign.key \
+#       --signing-config image/signing/no-transparency-log.json --yes \
+#       ghcr.io/aloworld-org/alo-os@<DIGEST>
+#
+# **The first command keeps all three flags. None of them is redundant.** Removing
+# any one of them either fails outright or — worse — succeeds and publishes a
+# signature no alo OS machine can read, with nothing to tell you.
+#
+# ## Releases 0.0.1 to 0.0.4 are not machine-verifiable, and will be refused
+#
+# They carry only the bundle form, so the shipped `policy.json` refuses them, and
+# **that refusal is correct**. Measured 2026-09-26: release 0.0.4 is refused with
+# *A signature was required, but no signature exists*.
+#
+# They are **not** being re-signed. They are superseded and nothing pulls them, so
+# re-signing history buys nothing. This is written down so that nobody pins one
+# for a rollback or a bisect and loses an afternoon to a refusal that is working
+# as designed.
+#
+# **One consequence to know about:** 0.0.5 is the first machine-verifiable release
+# and therefore has nothing to roll back to. *Back to yesterday's machine* is a
+# promise in this release, and until a second release is signed with the flag,
+# yesterday's machine is unreachable by a machine that checks. What resolves it is
+# the next signing, not a change here — and it is why task 8 of
+# `../docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` needs **two** signings
+# rather than one.
+#
+# **The digest already pinned below can be signed again with the flag**, without
+# rebuilding or republishing anything: a signature is an attachment, so adding
+# one changes nothing about the image. That is how the current release becomes
+# verifiable by a machine — one command, not a release away.
+#
 # Release 0.0.1: built from 2501af53d459d7d75e08c2ecaf61d3e8430a2d50, pushed and
 # signed by the owner on 2026-09-15 (cosign 3.1.3, no transparency log), and
-# verified against `signing/alo-os.pub`; a different key was refused.
+# verified against `signing/alo-os.pub` **by `cosign`, reading `cosign`'s own
+# bundle**; a different key was refused. No machine can check it — see above.
 #
 # The next release is declared as `next = "MAJOR.MINOR.PATCH"` in the same
 # change that moves the recipe's label to it, and removed in the change that
@@ -34,8 +144,9 @@ registry = "ghcr.io/aloworld-org/alo-os"
 
 # Release 0.0.2: built from 8d2619daeb07b4b0ebbed59ded8caee722103b65, pushed and
 # signed by the owner on 2026-09-17 (cosign 3.1.3, by digest, no transparency
-# log), and verified against `signing/alo-os.pub`; a different key was refused
-# with *Found: 0, Expected 1*. It carries `usr/lib/tmpfiles.d/alo.conf`, the
+# log), and verified against `signing/alo-os.pub` **by `cosign`, reading
+# `cosign`'s own bundle**; a different key was refused with *Found: 0,
+# Expected 1* — `cosign`'s words, not a machine's. It carries `usr/lib/tmpfiles.d/alo.conf`, the
 # door on the way to the boundary, which 0.0.1 did not — and the document
 # converter, checked executable inside the built image before it was pushed.
 #
@@ -45,8 +156,9 @@ registry = "ghcr.io/aloworld-org/alo-os"
 #
 # Release 0.0.3: built from a875f80e3100ab51ac5fc64c762f5fc3fcde75f5, pushed and
 # signed by the owner on 2026-09-19 (cosign 3.1.3, by digest, no transparency
-# log), and verified against `signing/alo-os.pub`; a different key was refused
-# with *Found: 0, Expected 1*. It exists because the image gained a media
+# log), and verified against `signing/alo-os.pub` **by `cosign`, reading
+# `cosign`'s own bundle**; a different key was refused with *Found: 0,
+# Expected 1* — `cosign`'s words, not a machine's. It exists because the image gained a media
 # server: without one, four crates correctly answered *nothing here handles
 # sound and video*.
 #
@@ -59,7 +171,8 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # that is the whole reason it exists. Built from
 # b41b4b5ed36ea29b974af0c13d2f7ed9105169a7, pushed and signed by the owner on
 # 2026-09-20 (cosign 3.1.3, by digest, no transparency log), verified against
-# `signing/alo-os.pub`; a different key was refused with *Found: 0, Expected 1*.
+# `signing/alo-os.pub` **by `cosign`, reading `cosign`'s own bundle**; a
+# different key was refused with *Found: 0, Expected 1* — `cosign`'s words, not a machine's.
 #
 # Every release before it — 0.0.1, 0.0.2 and 0.0.3 — shipped a document
 # converter that could not start. `ldd` inside the published images reported
@@ -99,8 +212,9 @@ registry = "ghcr.io/aloworld-org/alo-os"
 # nowhere else at runtime.
 #
 # **Signed by the owner on 2026-09-21** (cosign 3.1.3, by digest, no
-# transparency log), verified against `signing/alo-os.pub`; a different key was
-# refused with *Found: 0, Expected 1*.
+# transparency log), verified against `signing/alo-os.pub` **by `cosign`,
+# reading `cosign`'s own bundle**; a different key was refused with *Found: 0,
+# Expected 1* — `cosign`'s words, not a machine's.
 #
 # **It records as well as plays, and that half was missing too.** Every release
 # before this one shipped no encoder either, so a machine could neither play a
