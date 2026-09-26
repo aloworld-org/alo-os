@@ -114,7 +114,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.5] **Session management**: log out, switch user, lock, and reopen what was open
 - [v1] **Corporate proxy support**, machine-wide and honoured by applications. A great many company networks have no other route out
 - [v1] Portals: USB devices, global shortcuts an application registers, dynamic launchers, remote desktop
-- [v1] **Location services**, off by default, per-application, with an indicator when in use
+- [v1.1] **Location services**, off by default, per-application, with an indicator when in use
 - [v1] Applications contribute to search — one place to look, not one per program
 - [v1] Realtime scheduling for audio work, which is what a workstation is often bought for
 - [v0.5] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine. Brought forward from v1 by ADR 0064: developers need their own tools from the first day
@@ -350,14 +350,14 @@ fit a PC and fit alo, adopted on 2026-09-22 and not yet built. Each is alo's own
 version, not a copy: it runs through the grants, the record and the person's
 choice like everything else.
 
-- [v1] ★ **Live capsules for work in progress** — a small live pill in the status area for anything under way, **the agent's work first of all**: *building your site, 3 of 5*, *waiting for your approval*. What the agent is doing, visible at a glance without opening anything
+- [v1.1] ★ **Live capsules for work in progress** — a small live pill in the status area for anything under way, **the agent's work first of all**: *building your site, 3 of 5*, *waiting for your approval*. What the agent is doing, visible at a glance without opening anything
 - [v1] ★ **A privacy centre with history** — one page answering *who used what, and when*: which applications **and the agent** used the camera, the microphone, files and the network. Built from the record alo OS already keeps, which most systems do not have to draw on
-- [v1] **Cards from dock icons** — hover over or long-press an application's icon and a small card shows what matters in it and what can be done, without opening it
-- [v1] **A collection shelf** — gather text, pictures and files from several applications into one shelf, then drop them where they are needed, including on another of the person's paired devices. The agent may fill it when asked, and only then
-- [v1] **Snap devices together** — drag one paired device's icon onto another's to connect them. A drag is deliberate, and the other device still asks (ADR 0003)
+- [v1.1] **Cards from dock icons** — hover over or long-press an application's icon and a small card shows what matters in it and what can be done, without opening it
+- [v1.1] **A collection shelf** — gather text, pictures and files from several applications into one shelf, then drop them where they are needed, including on another of the person's paired devices. The agent may fill it when asked, and only then
+- [v1.1] **Snap devices together** — drag one paired device's icon onto another's to connect them. A drag is deliberate, and the other device still asks (ADR 0003)
 - [v1] **One design language on every screen** — when alo's phone applications come, the same design and the same behaviour on the phone as on the PC, adapting to the size of the screen rather than being redrawn for it
-- [v1] **An alo typeface** covering all 24 official EU languages, drawn once for every screen
-- [v1] **Motion that feels physical** — animations that move like real objects and never stutter, within the frame budget the shell already holds itself to
+- [v1.1] **An alo typeface** covering all 24 official EU languages, drawn once for every screen
+- [v1.1] **Motion that feels physical** — animations that move like real objects and never stutter, within the frame budget the shell already holds itself to
 
 ## The interface (ADR 0065)
 
@@ -415,10 +415,10 @@ drifts from the first, and then alo can do something the person cannot
 - [v1] ★ **A frame arrives the shape its work is** — a messaging application opens as a narrow column of conversations, a spreadsheet wide, a video sixteen by nine — declared by the application and remembered per Place once the person changes it
 - [v1] ★ **Compact, and minimised — two things, and the person picks** — *compacting* a frame, by dragging it small enough or with one key, leaves a **live tile on the canvas** that still shows what matters (the last messages, the track playing, the build at four of six) and can be acted on without growing back. *Minimising* puts a **preview in the panel at the edge of the screen**, which stays where it is while the canvas moves, and restoring returns the window to its own place on the canvas at the size it had. This line used to say *nothing is swallowed into a bar*, refusing the second outright; the owner's direction of 2026-09-26 keeps both, because a tile that stays visible and a thing put away for later are two different wishes and a person has both in a day. What the older sentence was protecting still holds: **compacting never becomes minimising by accident**, and nothing is put away without the person saying so
 - [v1] **Tidy this canvas** — alignment and distribution for the person who wants them, and the same asked of alo as a proposal shown before anything moves
-- [v1] **A frame can be dragged out of one Place and into another**, and the work goes with it
+- [v1.1] **A frame can be dragged out of one Place and into another**, and the work goes with it
 - [v1] ★ **A frame simplifies as it shrinks** — application, then compact form, then its name and what it is doing, chosen by how large it is on screen. Zoomed out a person reads *three new from Anna* and *the build at four of six*, never a wall of unreadable miniatures
 - [v1] ★ **Zones that mean something** — name a region *drafting*, *waiting on Anna*, *done*, and dragging a frame into it does what the name says; a zone can be handed to alo whole
-- [v1] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was on Tuesday, from the snapshots undo already takes
+- [v1.1] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was on Tuesday, from the snapshots undo already takes
 - [v1] **Every screen is a view onto the canvas** — two displays are two viewports at their own zoom, not two desktops; on a small screen, focus shows one frame at a time
 - [v1] **The habits people arrive with still work** — the keys that cycle windows, close one and switch desktops become cycle frames, remove from canvas, and move between Places
 - [v1] **A panel out of view costs nothing** — it is a still picture until it is reached, so a Place holding forty things is not forty programs running
@@ -443,10 +443,10 @@ terracotta always with its mark and its word, never by colour alone.
 - [v1] ★ **Ghost previews** — before the agent changes anything, a translucent ghost of the result appears in place: the files with their new names, the draft, the edited design. Accepting makes it solid; declining fades it away
 - [v1] **The agent's presence** — a thin terracotta edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up
 - [v1] **The trust dial** — ADR 0064's three levels for running code as one dial in the agent's capsule, set per project
-- [v1] ★ **The time ribbon** — a ribbon at the bottom edge; dragging it back fades the whole desktop into the past, with what changed glowing, and letting go restores what the person picks
+- [v1.1] ★ **The time ribbon** — a ribbon at the bottom edge; dragging it back fades the whole desktop into the past, with what changed glowing, and letting go restores what the person picks
 - [v1] **The approval stack** — what the agent wants to do arrives as cards to accept or decline, each showing a real before and after: marked-up text, two versions of a design side by side, a difference in code
-- [v1] ★ **Where the data went, on a map** — a small map on which a line is drawn to wherever anything leaves the machine for: *Paris*, *Frankfurt*. On most days nothing moves, and that stillness is the point
-- [v1] **Explain mode** — hold one key and point at anything, and a card says what it is, what it does and what it can reach. For everyone arriving from another system
+- [v1.1] ★ **Where the data went, on a map** — a small map on which a line is drawn to wherever anything leaves the machine for: *Paris*, *Frankfurt*. On most days nothing moves, and that stillness is the point
+- [v1.1] **Explain mode** — hold one key and point at anything, and a card says what it is, what it does and what it can reach. For everyone arriving from another system
 - [v1] **One bar for everything** — search, settings, commands and the agent are one bar, typed or spoken, and every action says exactly what it will do before it runs
 - [v1] **Project spaces** — moving between projects rather than applications; the dock becomes the project's tools, with its people, files and the agent's memory of it
 - [v1] **Calm notifications** — delivered in batches at times the person chooses, summarised by the agent, with a capsule saying how many are waiting
@@ -461,17 +461,17 @@ them.
 - [v1] ★ **Projects instead of applications** — open *the client's website* and its mail, meetings, tasks, design, code and the agent's memory of it are one place, not six windows. The agent's one project memory made visible
 - [v1] ★ **Windows applications, and Android applications**, run through a compatibility layer, sandboxed and asking for what they need like any application — the largest single reason a person cannot leave Windows, removed. macOS applications are not promised: Apple's licence forbids it
 - [v1] ★ **A throwaway box for anything downloaded** — run it in a box that closing erases without trace, built on the same sealed box ADR 0064 gives the agent
-- [v1] ★ **Scroll the machine back in time** — a timeline to drag back to *Tuesday, 10:32*, see files and settings exactly as they were, and bring back only what is wanted. Built on the snapshots undo already takes
-- [v1] ★ **Replay what the agent did** — every file it touched and every connection it made, step by step like a recording, with any single step undoable
-- [v1] ★ **The machine works while the person sleeps** — tasks queued at night run on the machine's own model while it is charging, and the morning brings *here is what I did — approve or undo*. No paid cloud; the person's own hardware
-- [v1] ★ **Live translation of anything, on the machine** — any window, document, subtitle or call, between the 24 official EU languages, with nothing sent anywhere. It works on a plane
+- [v1.1] ★ **Scroll the machine back in time** — a timeline to drag back to *Tuesday, 10:32*, see files and settings exactly as they were, and bring back only what is wanted. Built on the snapshots undo already takes
+- [v1.1] ★ **Replay what the agent did** — every file it touched and every connection it made, step by step like a recording, with any single step undoable
+- [v1.1] ★ **The machine works while the person sleeps** — tasks queued at night run on the machine's own model while it is charging, and the morning brings *here is what I did — approve or undo*. No paid cloud; the person's own hardware
+- [v1.1] ★ **Live translation of anything, on the machine** — any window, document, subtitle or call, between the 24 official EU languages, with nothing sent anywhere. It works on a plane
 - [v1] **"Why did my computer do that?"** — *why is it slow*, *why did the network drop at three*, *what changed since yesterday*, answered with evidence from the record rather than a guess
 - [v1] ★ **Leave Windows in one evening, and come back if you want** — files, bookmarks, network passwords and the wallpaper brought across; the agent shows where each thing now lives; thirty days in which going back to Windows is one click, on the road *remove alo OS* already provides
 - [v1] ★ **A monthly privacy receipt** — *this month, nothing you wrote went to an AI company; this much went to system updates; here is every destination*, signed so it can be shown to someone else
 - [v1] **Settings in one sentence** — *warmer screen after eight, silence during meetings* becomes a set of rules the person can read and change, never hidden behaviour
-- [v1] **Remember everything, if the person wants it** — a searchable memory of what was on screen, off by default, kept only on the machine and encrypted, with applications that can be excluded, and never readable by the agent without a grant. It is what *context offered, never watched* allows a person to choose, and it records other people's words too, which the switch says plainly
-- [v1] **The machine suggests a workspace**, it never rearranges one — *switch to your photo editing space?* when a camera is plugged in, and nothing moves unless the person says so
-- [v1] **Self-healing by going back** — when something breaks after a change, the machine says what happened and offers yesterday's working system in one click, on the rollback the image already has. Never a silent fix
+- [v1.1] **Remember everything, if the person wants it** — a searchable memory of what was on screen, off by default, kept only on the machine and encrypted, with applications that can be excluded, and never readable by the agent without a grant. It is what *context offered, never watched* allows a person to choose, and it records other people's words too, which the switch says plainly
+- [v1.1] **The machine suggests a workspace**, it never rearranges one — *switch to your photo editing space?* when a camera is plugged in, and nothing moves unless the person says so
+- [v1.1] **Self-healing by going back** — when something breaks after a change, the machine says what happened and offers yesterday's working system in one click, on the rollback the image already has. Never a silent fix
 
 ## The person chooses (ADR 0064)
 
