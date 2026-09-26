@@ -1739,9 +1739,9 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 57 boxes: 31 promises, thirteen of which carry the two boxes the
+**This gate is 67 boxes: 31 promises, eighteen of which carry the two boxes the
 section above describes.** It was 45 boxes over 29 promises before the
-reconciliation began on 2026-09-26, and it will keep growing as promises are
+reconciliation began on 2026-09-26, and it keeps growing as promises are
 split and as promises `docs/features.md` makes with nowhere to be are given a
 box — **two have been added so far**, *Night light and display colour* and *The
 dock's size, and per display*, and the first of those had finished code and no
@@ -1926,11 +1926,67 @@ sorted the same way v0.01 now is.
       XDG portal backend against our own shell; one grant list covering agents
       and applications alike; secret storage; session management; corporate
       proxy support
+  - [ ] **The code.**
+        **Five of the six, and the sixth is not built.** Installing, updating and
+        removing an application, and what a fresh machine has so it is not
+        helpless, are `alo-software`; the **one grant list** is
+        `alo-capability`, which ADR 0040 gave a closed list of facilities and a
+        grantee that is an agent *or* an application, with application grants
+        that outlive declining the agent; secret storage is `alo-secrets`;
+        session management — log out, switch user, lock, reopen what was open —
+        is `alo-leaving`; and corporate proxy support is `alo-proxy`, machine-wide
+        and honoured, read from the machine's own settings, including one that
+        asks who you are. `v0-5-software-and-the-web-plan.md` 14 of 14 and
+        `v0-5-applications-and-what-they-expect-plan.md` 12 of 12, with a report
+        each.
+        **What is missing is the XDG portal backend itself.** `alo-portals`
+        judges a portal request — *this crate is that sentence as a type*, as its
+        own header says — and **no backend service exists**: no binary, and
+        nothing in `crates/` or `image/` implements
+        `org.freedesktop.impl.portal.*`. An application on a real machine has
+        nothing to talk to. The dialogs are the shell's; the service is not, and
+        it is code rather than a machine, so this half cannot be ticked.
+        *This is the promise the 2026-09-26 reconciliation found **assumed done
+        and not done**, and the reason it was assumed is recorded in the log
+        below: the cut left `alo-strings`' ticked box under this line, so the
+        gate read this as delivered*
+  - [ ] **On the machine.**
+        the portal backend running against our own compositor, with the file
+        chooser and the other dialogs a person actually sees, and an application
+        installed sandboxed on the certified machine
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
 - [ ] `.docx`, `.xlsx`, `.pptx` open
+  - [x] **The code.**
+        `alo-converting` — the three formats opened through a pinned
+        LibreOffice, what each loses named rather than glossed, the older
+        `.doc`, `.xls` and `.ppt` beside them, OpenDocument in all three kinds,
+        and a machine with no engine that **says so instead of failing**. The
+        iWork exclusion is measured against a real Keynote and a real Pages file
+        rather than asserted. Tasks 2, 6, 7, 8, 9 and 10 of
+        `docs/autonomy/v0-5-documents-and-paper-plan.md`, with a report each
+  - [ ] **On the machine.**
+        the certified machine, with the engine the image pins rather than the one
+        a developer installed — `docs/quirks.md` records that the same conversion
+        names one substituted font on one machine and two on another, which is
+        exactly why this half is owed
 - [ ] A web browser for the open web
+  - [ ] **The code.**
+        **The policy is built and no browser is pinned.** `alo-software` holds
+        what a web address is, checked at the boundary — `http` and `https` only,
+        a name-and-password in one refused with its own sentence — which
+        application opens them (the person's choice, then the one `Shipped` names
+        for `Role::WebBrowser`, then nothing, and never a person's own
+        application), and an application's request judged in the open-with
+        portal. Task 3 of `v0-5-software-and-the-web-plan.md`.
+        What the promise actually says is *a pinned upstream one, since our own
+        engine is not scheduled*, and **`image/Containerfile` installs no
+        browser at all.** Pinning one is image work, which is code rather than a
+        machine, so this half is not ticked
+  - [ ] **On the machine.**
+        the browser open on the certified machine, opening an address handed to
+        it by another application
 - [ ] **System verbs** through the privileged broker
   - [x] **The code.**
         `alo-broker` — a **closed, typed list of thirteen** and nothing else:
@@ -1998,7 +2054,32 @@ sorted the same way v0.01 now is.
         the window is the desktop lane's; measured under WSL, never on a
         certified machine
 - [ ] ★ **Printers, solved** — found, set up, and fixed when they stop
+  - [x] **The code.**
+        `alo-printing` — a printer found over IPP, set up here, and **what is
+        wrong said in a sentence a person can act on** rather than a status code;
+        and `alo-changing-printers` for what they read when the broker's three
+        printer verbs answer. Task 3 of
+        `docs/autonomy/v0-5-documents-and-paper-plan.md` and task 2 of the broker
+        plan, with a report each — `updates/printers-found-set-up-and-said-what-is-wrong.md`,
+        `updates/printers-through-the-broker.md`
+  - [ ] **On the machine.**
+        **a real printer, and there has not been one.** Every printer in this
+        repository is a recorded IPP conversation; law 3's *an OS that boots but
+        cannot print is not a released OS* is owed exactly here, and one printer
+        that works is the shape of it rather than a list of models
 - [ ] ★ **"I can't open this file"** — converted, or plainly explained
+  - [x] **The code.**
+        `alo-opening` — what this machine can do with a file decided from what
+        the file **is** rather than from its name (`zip`, `compound`, `iso_media`
+        and text sniffing behind one door), and the refusal worded for a person:
+        what it is, what this machine can and cannot do with it, and what they
+        might do next. Tasks 1 and 4 of the documents plan, and task 5's walk
+        through every sentence the plan makes —
+        `updates/what-this-machine-can-do-with-a-file.md`,
+        `updates/i-cannot-open-this-file-said-properly.md`,
+        `updates/every-sentence-about-documents-and-paper-and-the-walk-through-them.md`
+  - [ ] **On the machine.**
+        a person's own file, on the certified machine, opened or explained
 - [ ] ★ **The grant enforced by the kernel** (ADR 0013) — Landlock, seccomp and an
       eBPF programme on the turn's cgroup, so a verb outside its grant fails at
       the syscall rather than being refused by our own code, and the record
@@ -2336,6 +2417,47 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### Software, and what opens a file, reconciled, 2026-09-26
+
+Five promises read, four of them never split before. **Three ticked** and **two
+refused**, and the two refusals are the point of the group.
+
+**Ticked, code half:** *`.docx`, `.xlsx`, `.pptx` open*; *Printers, solved*;
+*"I can't open this file" — converted, or plainly explained*.
+
+**Refused: *Software*.** Five of its six clauses are built — installing, updating
+and removing an application; the one grant list, which is `alo-capability` with
+ADR 0040's closed facilities and a grantee that is an agent *or* an application;
+secret storage; session management; corporate proxy support. **The sixth is not.**
+`alo-portals` judges a portal request and says of itself *this crate is that
+sentence as a type* — and there is **no backend service at all**: no binary, and
+nothing in `crates/` or `image/` implementing `org.freedesktop.impl.portal.*`. An
+application on a real machine would have nothing to talk to.
+
+**This is the promise that was assumed done and is not**, and the two halves of
+how that happened are both recorded above. The cut left `alo-strings`' ticked box
+under this line, so the gate read *Software* as delivered; and nobody had read the
+line against its six clauses, so the missing sixth had never been noticed. A
+corrupted instrument and an unread one, hiding the same gap from two directions.
+
+**Refused: *A web browser for the open web*.** The policy is built — `alo-software`
+on what a web address is, which application opens it, and the open-with judgement —
+but the promise is *a pinned upstream one*, and `image/Containerfile` installs no
+browser. Pinning one is image work, which is code rather than a machine.
+
+**And a plan's status lines lag its own work, four tasks deep.**
+`v0-5-documents-and-paper-plan.md` shows tasks 1, 3, 4 and 5 as **ready** while
+tasks 7 and 10 — which *depend on* them — are done. All four have **published
+reports** in `docs/autonomy/updates/`, and `alo-printing`, `alo-opening` and
+`alo-converting` are 50 source files between them with no `todo!` and no
+`unimplemented!`. The work is done and the plan says otherwise.
+
+The plan belongs to the documents lane, so **its statuses are not edited here** —
+the gate is what this reconciliation was asked to fix, and the evidence the gate
+needs is the reports and the code, which stand on their own. It is named for that
+lane to correct: tasks 1, 3, 4 and 5, each with its report already published.
+
 
 ### The network and the broker, reconciled, 2026-09-26
 
