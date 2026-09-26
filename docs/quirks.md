@@ -6705,3 +6705,24 @@ It is written down so the next worker who meets a red third gate on this
 machine knows what it is, that a re-run does not clear it, and that the
 question for its owner is which font set their expectation was measured on.
 **Date:** 2026-09-25.
+
+### A detached run has no HOME, and cargo's own environment file needs one
+**Version:** systemd 255 under WSL 2 on the development PC, `rustup` 1.28's
+`~/.cargo/env`; 2026-09-25.
+**Behaviour:** a walk started with `systemd-run --unit=... bash <script>` ended
+one second later, having printed nothing but:
+
+```
+/root/.cargo/env: line 4: HOME: unbound variable
+```
+
+`systemd-run` gives a transient unit a clean environment with no `HOME`, and
+`~/.cargo/env` reads `$HOME` to put `$HOME/.cargo/bin` on the path. Under
+`set -u` — which every script here uses, because an unset variable silently
+skipping a step is worse than a stop — that is a fatal error before the first
+line of the run. The unit is created and immediately fails, so the only sign
+is a result file that never appears.
+**Our response:** the walk's runner exports `HOME=${HOME:-/root}` before it
+sources that file, and the run is started with `--setenv=HOME=/root` as well.
+Either alone is enough; both are cheap.
+**Date:** 2026-09-25.

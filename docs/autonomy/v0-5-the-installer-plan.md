@@ -303,12 +303,29 @@ each walked in the guest except where it says otherwise:
   sda   ├─sda1 SYSTEM  ├─sda2  ├─sda3 Windows  └─sda5      (no ALO-INSTALL)
   ```
 
+- **The fall-through, when alo OS cannot start** (ADR 0062 term 1). alo OS's
+  loader was taken away from the partition its firmware entry names — one file
+  renamed, from outside the guest, with the machine off — and the computer was
+  restarted with no disc, no boot order and **no keypress**. Its own console,
+  whole:
+
+  ```
+  BdsDxe: failed to load Boot000C "alo OS" from HD(2,GPT,1A85CA2F-…,0x1000,0x100000)/\EFI\fedora\shimx64.efi: Not Found
+  BdsDxe: loading Boot0004 "Windows Boot Manager" from HD(1,GPT,0506F28D-…,0x800,0x96000)/\EFI\Microsoft\Boot\bootmgfw.efi
+  BdsDxe: starting Boot0004 "Windows Boot Manager" from HD(1,GPT,0506F28D-…,0x800,0x96000)/\EFI\Microsoft\Boot\bootmgfw.efi
+  ALOWALK-BEGIN
+  ALOWALK-NO-INSTRUCTION
+  ALOWALK-END
+  ```
+
+  The last three lines are Windows' own start-up saying it reached a session
+  and had nothing to do. **Walked, 2026-09-26** (`fallthrough-2`, 1229 s): a
+  whole-road install first, so this is a computer that really had alo OS
+  installed and really started it first.
+
 **Still owed here, and this task is not done until they are:**
-1. **The fall-through test** ADR 0062 term 1 asks for: alo OS's loader made
-   unstartable, the computer restarted, and Windows coming up **with no
-   keypress**, read from the machine's own console rather than counted.
-2. The rest of the acceptance below that neither piece covers: *remove alo OS*,
-   and the walk of the default being changed from either side.
+1. The rest of the acceptance neither piece covers: *remove alo OS*, and the
+   walk of the default being changed from either side.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
