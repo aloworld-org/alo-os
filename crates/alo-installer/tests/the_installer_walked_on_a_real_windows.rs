@@ -1228,8 +1228,15 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     // alo OS nor anything else the install had written — the variables one
     // build wrote are not the variables the other reads — and the removal
     // rightly said there was nothing to remove.
-    let mut machine =
-        Machine::start_on(&firmware, &yard, "removal", Some(&disc), None, &console, &chip);
+    let mut machine = Machine::start_on(
+        &firmware,
+        &yard,
+        "removal",
+        Some(&disc),
+        None,
+        &console,
+        &chip,
+    );
     let mut resets = 0;
     while console.wait_for(&[console::BEGINS], A_SIGN_IN).is_none() {
         resets += 1;
