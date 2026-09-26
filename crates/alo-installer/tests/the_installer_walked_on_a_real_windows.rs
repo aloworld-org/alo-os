@@ -1002,32 +1002,12 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     a_fresh_machine(&yard, "fallthrough");
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
-    let disc = medium::the_walk_disc(&yard, &Told::TheWholeRoad, &download);
-    let console = Console::fresh(&yard.join("console.log"));
-    let machine = Machine::start_as_its_variables_decide(
-        &firmware,
-        &yard,
-        "fallthrough",
-        Some(&disc),
-        &console,
-        &chip,
-        &[],
-    );
-    let done = the_environment_says("installing.installed");
-    let not_done = the_environment_says("installing.not-installed");
-    let refused = the_environment_says("installing.restart-when-ready");
-    let ended = console.wait_for(
-        &[done.as_str(), not_done.as_str(), refused.as_str()],
-        A_WALK + A_SIGN_IN + AN_INSTALL,
-    );
-    let installed = ended.as_deref() == Some(done.as_str());
-    let installing_said = without_the_kernels_messages(&console.said());
-    drop(machine);
-    walking::machine::stop();
+    let (installed, installing_said) =
+        the_whole_road_installs(&yard, "fallthrough", &firmware, &chip, &download);
     assert!(
         installed,
         "the environment did not say alo OS is installed, so there is nothing here to \
-         make unstartable; it said {ended:?}.\n{installing_said}"
+         make unstartable.\n{installing_said}"
     );
 
     // The damage, from outside the guest with nothing running: one file — the
@@ -1096,6 +1076,221 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
             "was cut off"
         }
     );
+}
+
+/// Install alo OS the whole way on a machine that has its Windows: the
+/// installer run to its end, the restart it asks for, the environment's
+/// install, and the machine left off. Gives back whether the environment said
+/// alo OS is installed, and everything its serial line said.
+///
+/// Nothing here says what to start at any point — the machine is given no boot
+/// order, so each start is the firmware's own choice from its variables, as on
+/// a computer.
+fn the_whole_road_installs(
+    yard: &Path,
+    name: &str,
+    firmware: &Path,
+    chip: &SecurityChip,
+    download: &Path,
+) -> (bool, String) {
+    let disc = medium::the_walk_disc(yard, &Told::TheWholeRoad, download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let machine = Machine::start_as_its_variables_decide(
+        firmware,
+        yard,
+        name,
+        Some(&disc),
+        &console,
+        chip,
+        &[],
+    );
+    let done = the_environment_says("installing.installed");
+    let not_done = the_environment_says("installing.not-installed");
+    let refused = the_environment_says("installing.restart-when-ready");
+    let ended = console.wait_for(
+        &[done.as_str(), not_done.as_str(), refused.as_str()],
+        A_WALK + A_SIGN_IN + AN_INSTALL,
+    );
+    let installed = ended.as_deref() == Some(done.as_str());
+    let said = without_the_kernels_messages(&console.said());
+    drop(machine);
+    walking::machine::stop();
+    (installed, said)
+}
+
+/// **alo OS is removed again, and what is left is the Windows that was there.**
+///
+/// The installer plan's task 4: *remove alo OS exists as a documented, tested
+/// road back — the partition freed, the boot entry gone, Windows as it was.*
+/// The whole road installs alo OS first, so there is a real installation to
+/// remove; then Windows is started and the copy the install left behind is run
+/// with the removal's word, as a person would run it from the Start menu, and
+/// the disk's name is typed back from the sentence the removal itself printed.
+///
+/// Windows is reached by starting its disk first, which is the harness's way of
+/// making the choice a person makes at the menu; nothing else about the start
+/// is arranged. The restart after the removal is given no boot order at all.
+#[test]
+#[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
+fn alo_os_is_removed_again_and_windows_is_what_is_left() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+
+    a_fresh_machine(&yard, "removal");
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+    let (installed, installing_said) =
+        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download);
+    assert!(
+        installed,
+        "the environment did not say alo OS is installed, so there is nothing here to \
+         remove.\n{installing_said}"
+    );
+
+    // Windows, and the removal run from inside it.
+    let told = Told::RemovingAloOs {
+        left_at: alo_installer::THE_PROGRAMS_HOME.to_owned(),
+        left_as: alo_installer::THE_PROGRAMS_NAME.to_owned(),
+        shortcut: alo_installer::THE_REMOVALS_SHORTCUT.to_owned(),
+        argument: alo_installer::THE_REMOVALS_WORD.to_owned(),
+    };
+    let disc = medium::the_walk_disc(&yard, &told, &download);
+    let console = Console::fresh(&yard.join("console.log"));
+    let mut machine = Machine::start(&yard, "removal", Some(&disc), None, &console, &chip);
+    let mut resets = 0;
+    while console.wait_for(&[console::BEGINS], A_SIGN_IN).is_none() {
+        resets += 1;
+        assert!(
+            resets <= 2,
+            "Windows never reached a sign-in to remove alo OS from, after {resets} resets. \
+             The screen is at {} and the serial line said:\n{}",
+            machine.screen("removal-never-signed-in").display(),
+            console.said()
+        );
+        machine.reset();
+    }
+    let finished = console.wait_for(&[console::DONE, console::NOTHING_TO_DO], A_WALK);
+    let screen = machine.screen("after-the-removal");
+    let shut = machine.shut_down(Duration::from_secs(240));
+    drop(machine);
+    walking::machine::stop();
+    let removing_said = console.said();
+    eprintln!("what the removal did, on the guest's own serial line:\n{removing_said}");
+
+    assert_eq!(
+        finished.as_deref(),
+        Some(console::DONE),
+        "the boot that was to remove alo OS never finished what it was told. The screen \
+         is at {} and the serial line said:\n{removing_said}",
+        screen.display()
+    );
+    assert!(
+        !removing_said.contains("FAIL:"),
+        "the guest reported a failure:\n{removing_said}"
+    );
+    // The name typed is the name the removal itself printed, and nothing else.
+    let named = removing_said
+        .lines()
+        .find_map(|line| line.split("the disk it named: [").nth(1))
+        .and_then(|rest| rest.split(']').next())
+        .map(str::to_owned);
+    assert!(
+        named.is_some(),
+        "the removal never named the disk it would erase:\n{removing_said}"
+    );
+    assert!(
+        removing_said.contains(&format!("typing: [{}]", named.clone().unwrap_or_default())),
+        "the guest typed something other than the disk the removal named:\n{removing_said}"
+    );
+    assert!(
+        removing_said.contains("is empty, its space is free"),
+        "the removal never said alo OS is removed:\n{removing_said}"
+    );
+
+    // What the computer is afterwards, read by Windows itself: no entry for
+    // alo OS anywhere in the firmware, and its disk with no partition table at
+    // all — so the space is free, not merely unnamed.
+    let after = removing_said
+        .split("--- state (after the removal) ---")
+        .nth(1)
+        .and_then(|rest| rest.split("--- end state ---").next())
+        .unwrap_or_default()
+        .to_owned();
+    assert!(
+        !after.is_empty(),
+        "Windows never read the computer back after the removal:\n{removing_said}"
+    );
+    assert!(
+        !after.contains(&format!("[{}]", alo_installing::THE_ENTRYS_NAME)),
+        "the firmware still lists alo OS:\n{after}"
+    );
+    let its_disk = after
+        .lines()
+        .find(|line| {
+            line.starts_with("disk ") && line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)
+        })
+        .unwrap_or_default()
+        .to_owned();
+    assert!(
+        its_disk.contains("style=RAW"),
+        "the disk alo OS was on still has a partition table: {its_disk}\n{after}"
+    );
+    for label in ["EFI-SYSTEM", "root"] {
+        assert!(
+            !after.contains(&format!("label=[{label}]")),
+            "{label} is still on a disk of this computer:\n{after}"
+        );
+    }
+    eprintln!(
+        "after the removal Windows read: {its_disk}\nand it {} when it was asked to",
+        if shut { "shut down" } else { "was cut off" }
+    );
+
+    // And the restart, with no boot order and no keypress: Windows is what
+    // this computer is now.
+    let console = Console::fresh(&yard.join("console.log"));
+    let mut machine = Machine::start_as_its_variables_decide(
+        &firmware,
+        &yard,
+        "removal",
+        None,
+        &console,
+        &chip,
+        &[],
+    );
+    let came_up = console.wait_for(&[console::NOTHING_TO_DO, console::DONE], A_SIGN_IN + A_WALK);
+    let screen = machine.screen("after-alo-os-was-removed");
+    let stopped = machine.shut_down(Duration::from_secs(240));
+    drop(machine);
+    walking::machine::stop();
+    let said = without_the_kernels_messages(&console.said());
+    forget(&yard, "removal");
+    let starts = walking::firmware::starts(&said);
+    eprintln!(
+        "with alo OS removed, the firmware started: {starts:?}\n\
+         the serial line of that restart, whole:\n{said}"
+    );
+    assert!(
+        came_up.is_some(),
+        "nothing came up after alo OS was removed. The screen is at {} and the serial \
+         line said:\n{said}",
+        screen.display()
+    );
+    assert!(
+        starts
+            .iter()
+            .any(|started| started.description.contains("Windows Boot Manager")),
+        "the firmware did not start Windows Boot Manager: {starts:?}\n{said}"
+    );
+    assert!(
+        !starts
+            .iter()
+            .any(|started| started.description == alo_installing::THE_ENTRYS_NAME),
+        "the firmware still tried alo OS: {starts:?}\n{said}"
+    );
+    assert!(stopped, "Windows did not shut down when it was asked to");
 }
 
 /// The first sector of the installer's area, from the state the guest printed:
