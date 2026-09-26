@@ -364,6 +364,39 @@ choice like everything else.
 The v1 interface, decided on 2026-09-22 and not yet built. The v0.5 shell is
 its foundation and stays as the familiar option a person can keep (Law 5).
 
+- [v1] ★ **A recording is a document once its words are text** — a person asks
+what is in a video or a call and alo turns its speech into text **on the
+machine**, then answers from it exactly as it answers from any document. It says
+which road the answer came from: **from the words, not the picture**, so an
+answer about a slide nobody read aloud is never given confidently. Frames are
+sampled and looked at only where the words are not enough, and fewer of them on
+a machine with less to spare. What is not promised is understanding *motion* —
+what happened after he stood up — because that is not a claim this hardware can
+keep, and a promise nobody can keep is worse than a gap
+- [v1] ★ **Ask about a recording you never watched, and nothing is read until you
+ask** — the question worth answering is *which recording was the one about the
+Belgian contract*, across files nobody has opened. Two roads, and the person
+picks: **on demand**, where alo transcribes that file when asked, says how long
+it will take rather than spinning, and offers to keep the transcript beside it so
+the second question is instant; or **a folder the person chose**, worked through
+with what it did in the record. **Neither is a background index of somebody's
+disk** — context is captured on invocation and nothing reads a person's things
+while they are not looking. Transcripts are tiny where video is enormous, which
+is what makes the second question and the search across files nearly free
+- [v1] **Open it at the moment it was said** — *take me to where she talks about
+the deadline* finds the words in the transcript and moves the playhead there.
+The **manual path is the same feature without an agent**: the transcript sits
+beside the recording, and clicking a line moves the picture to it. Asking **why**
+she said it is the model reasoning rather than searching, so it **quotes the
+passage and the moment it reasoned from** and the person checks it in one click
+- [v1] **What the pipeline is asked for before it is built** — three things this
+plan needs from whatever decodes a recording, cheap to require now and expensive
+to retrofit: seeking that lands on **the moment asked for** rather than the
+nearest keyframe; a transcript carrying **timestamps** and not only text; and
+**one position control**, which the person's scrubber and alo both drive.
+[ADR 0009](decisions/0009-a-good-computer-without-the-agent.md)'s
+rule is the reason for the third: a second, private way to move the playhead
+drifts from the first, and then alo can do something the person cannot
 - [v1] ★ **Every goal is a canvas** — a Place is an endless surface, and objects **and applications alike open as panels on it**, where the person put them. Arranging is placing; nothing is stacked, so nothing is minimised. **Zoom** and **pan** move through it — by pinch, by wheel with a modifier, and by key — and the canvas replaces window switching, tiling and virtual desktops
 - [v1] ★ **Frames, dragged and resized like a design canvas** — a frame shows nothing but its content while the person works, and its name and few controls appear when they point at it, select it or zoom out — the name is also what it is dragged by, so a click inside always belongs to the application. Handles resize it and the application is told its size as it happens, dragging moves it, several can be taken at once, guides and snapping line them up, and each frame carries a name shown when the canvas is far out. Fit the Place to the screen, fill the screen with what is selected, double-click to work inside — each with a keyboard form
 - [v1] ★ **A frame arrives the shape its work is** — a messaging application opens as a narrow column of conversations, a spreadsheet wide, a video sixteen by nine — declared by the application and remembered per Place once the person changes it
