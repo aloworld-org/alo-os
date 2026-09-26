@@ -703,7 +703,57 @@ out by looking for a window.
 
 ### 12. Every sentence at a desk that changed, and what this plan still owes
 
-**Status:** ready. **Depends on:** 7, 11.
+**Status:** done. **Depends on:** 7, 11.
+
+**Done, 2026-09-26.** Report:
+[`updates/every-sentence-at-a-desk-that-changed.md`](updates/every-sentence-at-a-desk-that-changed.md).
+
+`crates/alo-sleeping/tests/the_walk_to_a_desk_that_changed.rs` — one walk, ten
+sentences, from three sources at once: the notes on `Attached`, the screens
+`Resumed` says have gone, and the ones it says are back. Each comes out of the
+machine's one assembled vocabulary through the value that really produces it, with
+no gap unfilled and **no connector name in any gap**. The table is in the report
+and the test reads it out of that file rather than a copy; tampering with one row
+was tried and it fails, naming the row and both sentences. Task 7's walk and table
+are untouched.
+
+**Two findings, and neither was repaired here** — no sentence was added, reworded
+or moved, because a walk allowed to tidy its own evidence stops being a
+measurement.
+
+1. **A vocabulary finding.** On the wake *back at her own desk*,
+   `displays.the-desk-changed` and `displays.as-you-left-them` arrive together and
+   restate one fact in different words, so a person reads two events. Worse, the
+   first sentence's closing clause — *the arrangement you made at the other desk is
+   still here for when you are back at it* — is **wrong at that moment**: she is
+   back at it, reading a sentence that speaks as though she were away. The clause
+   is right for the case task 11 wrote it for, a laptop closed at home and opened
+   at the office; it does not survive the other half of the same journey. The
+   question for whoever takes it is whether that reassurance belongs in that
+   sentence at all, or is a second sentence said only when the desk she has
+   arrived at is not one whose arrangement is kept.
+2. **An ordering finding.** `resumed_to` does `notes.insert(0, TheDeskChanged)` —
+   an ordering decision recorded in code. Across the three sources there is no
+   such decision: a caller holds three collections and nothing says which comes
+   first, so **the order in the table is the walk's own choice, not the
+   machine's**, and two surfaces could show this morning in two different orders,
+   both correct. Half the account is fixed in `alo-displays` and half is left to
+   whoever draws it.
+
+**What the plan still owes,** recorded because this is its last task: `docs/features.md`'s
+*per display* dock edge is **not met** — `alo_dock::Dock` holds one edge for the
+machine. `crates/alo-dock` belongs to
+`v0-5-where-a-persons-settings-are-kept-plan.md`; this plan reads it and never
+edits it, so the promise is owed rather than narrowed, and
+`alo_displays::Wearing::of` is the one function here that changes when it is paid.
+
+**One note on method.** Written first with `Changes::untouched()`, the walk had alo
+OS tell her that the screen she had used all day had never been used with this
+machine before, three times over. That was a finding about the test: a machine
+remembering nothing has nothing to recognise. Keeping what alo OS worked out, with
+`Changes::remember`, as a session does, removed the repetition and produced *your
+screens are arranged the way you last left them* — which is how finding 1 was
+found at all.
 
 Task 7 walks one person from locking their machine to docking it at another
 desk and holds the **sequence** they meet to a table in its report, because
