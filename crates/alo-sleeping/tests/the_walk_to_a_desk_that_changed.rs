@@ -218,12 +218,13 @@ impl Met {
 /// Anna's machine goes to sleep on a closed lid and wakes at `waking`, with the
 /// screens `reported` plugged into it — and the desk is asked at the resume.
 ///
-/// Returns every sentence the resume produces, in the order the machine offers
-/// them: the notes on `Attached` first, because `Attached::resumed_to` puts
-/// `TheDeskChanged` at the head of that list deliberately, then the screens that
-/// have gone, then the ones that are back. **That order is this walk's own
-/// choice, not the machine's**, and the report says so — it is the first of the
-/// two findings.
+/// Returns every sentence the resume produces, in **the machine's** order, from
+/// `Attached::the_account`. The first version of this walk composed that order
+/// itself out of three collections, and that was the ordering finding this task
+/// reported: half the sequence was decided in `alo-displays` and half was left to
+/// whoever drew it. The order is one opinion in one place now, and this walk reads
+/// it rather than inventing it — which is what makes the table below a measurement
+/// of what a person meets rather than of what this file chose.
 fn slept_and_woke_to(
     attached: &mut Attached,
     remembered: &Screens,
@@ -266,14 +267,7 @@ fn slept_and_woke_to(
         .expect("screens are plugged in");
     assert!(!resumed.the_same_desk(), "this is a different desk");
 
-    let mut said: Vec<Said> = attached
-        .notes()
-        .iter()
-        .map(|note| note.said(strings))
-        .collect();
-    said.extend(resumed.moved().map(|moved| moved.said(strings)));
-    said.extend(resumed.came_back().filter_map(|back| back.said(strings)));
-    said
+    attached.the_account(&resumed, strings)
 }
 
 /// The walk, carried out: every sentence a person meets, in order.

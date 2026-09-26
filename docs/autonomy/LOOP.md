@@ -186,6 +186,17 @@ entry, written in full.
   tested is *built and unit tested*, and the item says so.
 - **Never touch another repository.** Items that belong to `alo-workplace` are
   marked as such and are not this loop's to do.
+- **Never accept a fault a fixture manufactured.** A test whose setup does not
+  resemble a real session invents faults, and the invented one is usually louder
+  than the one that is there. Session task 12's walk, written with
+  `Changes::untouched()` throughout, had alo OS tell somebody three times that
+  the screen she had used all day had never been used with this machine before —
+  a machine remembering nothing has nothing to recognise. That reads exactly like
+  a serious finding about `alo-displays`, it would have been reported as one, and
+  the real finding underneath it — a sentence promising something about a desk
+  the person is standing at — only appeared once the walk kept what a session
+  keeps. **Before writing a fault down, ask what in the fixture is unlike a
+  machine.** A fixture that would make any code look broken is measuring itself.
 
 ## Linux is reachable, and some items need it
 
