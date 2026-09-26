@@ -1355,12 +1355,15 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
         !after.contains(&format!("[{}]", alo_installing::THE_ENTRYS_NAME)),
         "the firmware still lists alo OS:\n{after}"
     );
+    // Every line the guest says carries the time it said it, so a line about a
+    // disk contains `disk 1:` rather than beginning with it.
     let its_disk = after
         .lines()
         .find(|line| {
-            line.starts_with("disk ") && line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)
+            line.contains("disk ") && line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)
         })
         .unwrap_or_default()
+        .trim()
         .to_owned();
     assert!(
         its_disk.contains("style=RAW"),
@@ -1370,6 +1373,7 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     // none for alo OS's own partition, because it cannot read btrfs.
     let its_number = its_disk
         .split_whitespace()
+        .skip_while(|word| *word != "disk")
         .nth(1)
         .and_then(|number| number.strip_suffix(':'))
         .unwrap_or("?")
