@@ -60,6 +60,10 @@ alo-models = { path = "../alo-models" }
 serde_json = { workspace = true }
 # The image must carry the picture selected by the actual appearance default.
 alo-appearance = { path = "../alo-appearance" }
+# The shipped signature policy names a key path inside the image, so measuring it
+# here needs one copy with that path pointed at this checkout. Nothing this crate
+# ships writes a temporary file.
+tempfile = "3"
 
 [lints]
 workspace = true

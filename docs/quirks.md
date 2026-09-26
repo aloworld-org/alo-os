@@ -7077,3 +7077,47 @@ this, the fix belongs with ADR 0066's authors: either the Windows side finds
 alo OS's own start partition rather than Windows', or the block is kept where
 both sides already agree.
 **Date:** 2026-09-26.
+
+### A correctly signed release is refused with the words for an unsigned one
+**Version:** `containers/image` as `skopeo` 1.13.3 and
+`bootc --enforce-container-sigpolicy` use it; `cosign` 3.1.3's signatures on
+`ghcr.io/aloworld-org/alo-os`; 2026-09-26.
+**Whose:** ours.
+**Behaviour:** with `/etc/containers/policy.json` requiring `sigstoreSigned` for
+the release registry, and **no** `registries.d` entry for it, the correctly
+signed release 0.0.5 is refused with
+
+```
+Source image rejected: A signature was required, but no signature exists
+```
+
+`containers/image` fetches a sigstore signature from a registry **only** when
+that registry is configured with `use-sigstore-attachments: true`. Without it,
+it looks in a lookaside store, finds nothing, and says the above — which is **the
+same sentence, word for word**, that it gives for:
+
+- an image nobody signed;
+- an image signed in a form it cannot read (a Sigstore bundle at
+  `sha256-<digest>` instead of `sha256-<digest>.sig`); and
+- an image signed correctly that it was never told to look for.
+
+**So the message names a cause that may be false.** A machine shipping
+`policy.json` without the configuration refuses every update while telling the
+person the release is unsigned. Whoever debugs that goes and checks the signature,
+which is fine; then the key, which is fine; then the registry, which is fine.
+
+It also means task 7 of the keeps-itself plan, which measured exactly this
+sentence against the pinned release, could have been reading any of the three.
+It turned out to be the second — but nothing in the message said so.
+**Our response:** the configuration ships in `image/registries.d/` beside
+`image/policy.json`, copied into `/etc/containers/` by the same three lines of
+`image/Containerfile`, so there is no step to forget. The case is held forever by
+`crates/alo-image/tests/the_shipped_policy_accepts_and_refuses.rs`, which refuses
+a **correctly signed** image with the configuration withheld — a clause that is
+invisible in every other direction, because everything else about that machine is
+right. ADR 0070 is the decision.
+
+**And do not diagnose this message from its words.** Ask, in order: does
+`sha256-<digest>.sig` return 200, is the registry configured to fetch it, and does
+the key match. The message distinguishes none of the three.
+**Date:** 2026-09-26.
