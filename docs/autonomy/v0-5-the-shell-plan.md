@@ -631,7 +631,24 @@ Evidence, decisions and both findings in
 
 ### 14. Every new surface, walked
 
-**Status:** ready. Unblocked 2026-09-26: task 11 landed on 2026-09-25 and task
+**Status:** **Done, 2026-09-26.** Eight steps walked on a real nested
+compositor — the sign-in screen, a name typed at it, the screen divided between
+two real clients, a second display docked, a capture with a blur, a notification
+arriving, the screen locked and a key pressed at the lock — each submitting a
+frame through the parent's own EGL and reading back the pixels it drew, and the
+sequence of what a person is told held against the report's table by
+`crates/alo-shell/tests/every_new_surface_walked.rs`. **Four things are named
+and not ticked:** a second display has no surface of its own anywhere in this
+compositor (nothing paints `screens_raster`'s pictures); the divided windows are
+drawn at the origins their shares gave them rather than grown into them, which
+is task 17; the lock screen, the capture tools and notifications are in no
+accessibility tree; and the certified machine has seen none of it. Report:
+[`updates/every-new-surface-walked.md`](updates/every-new-surface-walked.md).
+It found a fault in task 16's landed code — two clients' windows were given one
+window number between them, so a chord to divide refused on any second
+application opened.
+
+Unblocked 2026-09-26: task 11 landed on 2026-09-25 and task
 16 on 2026-09-26, so the state a walk needs now exists. A session holds desktops
 and divisions, a swipe switches desktops and windows belong to them, which is
 what *a walk cannot step through a second desktop that nothing holds* was
