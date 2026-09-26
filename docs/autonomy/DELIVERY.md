@@ -19,7 +19,12 @@ of the release. Later-release features remain later-release features.
 This order supplements QUEUE.md and supersedes its obsolete portable-only
 restriction. An entry under its historical Linux section is eligible here.
 Linux is available in Ubuntu WSL2 and a Wayland socket is available through
-WSLg, checked 2026-09-07. Check the graphics development packages before building.
+WSLg, checked 2026-09-07. **WSLg is not the only parent**: a nested fixture runs
+against `weston --backend=headless` with Mesa's llvmpipe, on a machine with no
+display and no GPU, checked 2026-09-26 — see *A nested parent needs no WSLg and
+no display* in [COMPOSITOR.md](COMPOSITOR.md) for the invocation and what it
+does and does not prove. Check the graphics development packages before
+building.
 Code readiness, an integration demonstration and physical verification are
 separate facts. None of the tasks below is finished merely by writing this list.
 
