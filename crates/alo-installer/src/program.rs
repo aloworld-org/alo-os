@@ -71,6 +71,11 @@ pub const THE_SHORTCUT: &str =
 pub const THE_DEFAULTS_SHORTCUT: &str =
     "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Which system starts.lnk";
 
+/// The third shortcut: removing alo OS again (`crate::removing`). A person who
+/// installed from a download finds the way back where they found the way in.
+pub const THE_REMOVALS_SHORTCUT: &str =
+    "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Remove alo OS.lnk";
+
 /// Where Windows keeps the setting behind Fast Startup.
 const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
 
@@ -270,6 +275,20 @@ pub enum Program {
         /// Where it was made.
         offset: u64,
     },
+    /// Erase the disk alo OS is on — every partition of it, so the space is
+    /// free again — and print what the disk is afterwards.
+    ///
+    /// **Guarded in the script itself, not only by the caller.** It refuses a
+    /// disk Windows says is the system's or the one it started from; it refuses
+    /// a disk that carries no partition of the type the image gives alo OS's
+    /// own; and it refuses a disk carrying a partition of any type the image
+    /// does not make, so a disk somebody kept their own files on beside alo OS
+    /// is never erased. A program that erases a whole disk is the one program that must
+    /// be unable to erase the wrong one.
+    ClearingTheDiskAloOsIsOn {
+        /// The disk alo OS is on.
+        disk: DiskNumber,
+    },
     /// Grow the Windows partition back to the size it had.
     GrowingWindowsBack {
         /// Its disk.
@@ -453,15 +472,26 @@ impl Program {
                  $other.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
                  $other.Description = 'Which system this computer starts'; \
                  $other.Save(); \
+                 $back = $shell.CreateShortcut('{THE_REMOVALS_SHORTCUT}'); \
+                 $back.TargetPath = '{THE_PROGRAMS_HOME}\\{THE_PROGRAMS_NAME}'; \
+                 $back.Arguments = '{}'; \
+                 $back.WorkingDirectory = '{THE_PROGRAMS_HOME}'; \
+                 $back.Description = 'Remove alo OS from this computer'; \
+                 $back.Save(); \
+                 if (-not (Test-Path -LiteralPath '{THE_REMOVALS_SHORTCUT}')) \
+                   {{ throw 'no shortcut for the removal' }}; \
                  if (-not (Test-Path -LiteralPath '{THE_DEFAULTS_SHORTCUT}')) \
                    {{ throw 'no shortcut for the default' }}; \
                  if (-not (Test-Path -LiteralPath '{THE_SHORTCUT}')) {{ throw 'no shortcut' }}; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ Shortcut = '{THE_SHORTCUT}' }})",
                 crate::switching::THE_SWITCHS_WORD,
-                crate::defaulting::THE_DEFAULTS_WORD
+                crate::defaulting::THE_DEFAULTS_WORD,
+                crate::removing::THE_REMOVALS_WORD
             ),
             Self::RemovingWhatWasLeft => format!(
-                "Remove-Item -LiteralPath '{THE_DEFAULTS_SHORTCUT}' -Force \
+                "Remove-Item -LiteralPath '{THE_REMOVALS_SHORTCUT}' -Force \
+                   -ErrorAction SilentlyContinue; \
+                 Remove-Item -LiteralPath '{THE_DEFAULTS_SHORTCUT}' -Force \
                    -ErrorAction SilentlyContinue; \
                  Remove-Item -LiteralPath '{THE_SHORTCUT}' -Force -ErrorAction SilentlyContinue; \
                  Remove-Item -LiteralPath '{THE_PROGRAMS_HOME}' -Recurse -Force \
@@ -514,6 +544,27 @@ impl Program {
                  Remove-PartitionAccessPath -DiskNumber {disk} -PartitionNumber {partition} \
                    -AccessPath '{}'",
                 letter.root()
+            ),
+            Self::ClearingTheDiskAloOsIsOn { disk } => format!(
+                "$disk = Get-Disk -Number {disk}; \
+                 if ($disk.IsSystem -or $disk.IsBoot) \
+                   {{ throw 'that disk is the one this computer starts from' }}; \
+                 $types = @(Get-Partition -DiskNumber {disk} -ErrorAction SilentlyContinue | \
+                   ForEach-Object {{ [string]$_.GptType }}); \
+                 $its = @({}); \
+                 if ($types -notcontains '{}') {{ throw 'that disk does not hold alo OS' }}; \
+                 foreach ($type in $types) {{ \
+                   if ($its -notcontains $type) {{ throw 'that disk holds something else too' }} }}; \
+                 Clear-Disk -Number {disk} -RemoveData -RemoveOEM -Confirm:$false; \
+                 $after = Get-Disk -Number {disk}; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
+                   PartitionStyle = [string]$after.PartitionStyle }})",
+                crate::disks::THE_IMAGES_PARTITION_TYPES
+                    .iter()
+                    .map(|its| format!("'{its}'"))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                crate::disks::THE_SYSTEMS_PARTITION_TYPE
             ),
             Self::RemovingTheArea {
                 disk,
@@ -840,6 +891,7 @@ mod tests {
                 partition,
                 to: 1,
             },
+            Program::ClearingTheDiskAloOsIsOn { disk },
         ]
     }
 
@@ -879,6 +931,42 @@ mod tests {
         for change in every_change() {
             assert!(change.changes(), "{change:?}");
         }
+    }
+
+    /// **The program that erases a disk cannot be pointed at the wrong one.**
+    ///
+    /// Its script refuses the disk this computer starts from, refuses a disk
+    /// with no partition of the type the image gives alo OS's own, and refuses
+    /// one carrying a partition of any type the image does not make — before
+    /// it reaches the line that erases. The guards are in the script because the
+    /// caller is not the last thing standing between a person and their disk.
+    #[test]
+    fn the_disk_alo_os_is_on_is_erased_and_no_other_can_be() {
+        let script = Program::ClearingTheDiskAloOsIsOn {
+            disk: DiskNumber(1),
+        }
+        .script()
+        .unwrap();
+        let erases = script.find("Clear-Disk").unwrap();
+        for guard in [
+            "$disk.IsSystem",
+            "$disk.IsBoot",
+            "-notcontains",
+            crate::disks::THE_SYSTEMS_PARTITION_TYPE,
+        ] {
+            let at = script.find(guard);
+            assert!(
+                at.is_some_and(|at| at < erases),
+                "{guard} is not checked before the disk is erased"
+            );
+        }
+        for its in crate::disks::THE_IMAGES_PARTITION_TYPES {
+            assert!(script.contains(its), "{its}");
+        }
+        // The disk it erases is the one it was given, and it is named in every
+        // place the script asks about a disk.
+        assert_eq!(script.matches("-Number 1").count(), 3, "{script}");
+        assert!(!script.contains("-Number 0"), "{script}");
     }
 
     /// **Fast Startup is switched off by its own value, and hibernation is

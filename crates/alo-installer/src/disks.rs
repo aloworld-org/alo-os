@@ -22,6 +22,30 @@ use crate::identities::DiskNumber;
 use crate::naming;
 use crate::sizes::THE_LEAST_DISK;
 
+/// The GPT types the image's own partitions carry, so that the disk alo OS is
+/// on can be recognised again when it is time to remove it
+/// (`crate::removing`).
+///
+/// **Measured, not chosen**: read from a disk `bootc install` had just written
+/// in the walk of 2026-09-26, as Windows itself reported it — a one-mebibyte
+/// BIOS boot partition, an EFI system partition, and the system's own. They
+/// belong to the image, so a disk carrying a partition of any other type is
+/// not a disk this installer wrote.
+///
+/// **Not the labels.** The same reading shows Windows reporting no filesystem
+/// and no label at all for the system's own partition, because it cannot read
+/// btrfs (`alo_image::THE_ONLY_FILESYSTEM`). What a Windows program may ask
+/// about that partition is its type.
+pub const THE_IMAGES_PARTITION_TYPES: [&str; 3] = [
+    "{21686148-6449-6e6f-744e-656564454649}",
+    "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
+    "{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}",
+];
+
+/// The type of the partition alo OS itself lives on — Linux's root for this
+/// architecture. A disk without one holds no alo OS, whatever else it carries.
+pub const THE_SYSTEMS_PARTITION_TYPE: &str = "{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}";
+
 /// Every disk.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Disks(Vec<Disk>);
@@ -55,9 +79,14 @@ pub struct Disk {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct Partition {
-    /// Its volume's label, where it has one.
+    /// Its volume's label, where it has one — and Windows gives none at all
+    /// for a filesystem it cannot read.
     #[serde(default)]
     label: String,
+    /// Its GPT type, which Windows reports for every partition whether or not
+    /// it can read what is inside.
+    #[serde(default)]
+    gpt_type: String,
 }
 
 /// What a disk is to this installer.
@@ -104,6 +133,23 @@ impl Disks {
                 .iter()
                 .any(|partition| partition.label.trim().eq_ignore_ascii_case(THIS_INSTALLER))
         })
+    }
+
+    /// The disk alo OS is installed on, when exactly one disk is it.
+    ///
+    /// Not the disk Windows is on, whatever it carries; it carries the label
+    /// the image gives the system's own partition; and it carries **no** label
+    /// the image does not make, so a disk somebody put their own files on
+    /// beside alo OS is never the answer. Two such disks is not a choice this
+    /// can make for a person, and it answers with nothing.
+    #[must_use]
+    pub fn the_one_alo_os_is_on(&self, windows_is_on: DiskNumber) -> Option<&Disk> {
+        let mut its: Vec<&Disk> = self
+            .0
+            .iter()
+            .filter(|disk| disk.number() != windows_is_on && disk.holds_alo_os())
+            .collect();
+        (its.len() == 1).then(|| its.remove(0))
     }
 
     /// The name a person is shown for this disk, and types to agree.
@@ -153,6 +199,24 @@ impl Disk {
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ")
+    }
+
+    /// Whether what is on it is what the image puts on a disk of its own: a
+    /// partition of the system's own type, and every partition of a type the
+    /// image makes. A disk with a partition of any other type — a person's own
+    /// files beside alo OS, another system — is not it.
+    fn holds_alo_os(&self) -> bool {
+        let types = || {
+            self.partitions
+                .iter()
+                .map(|partition| partition.gpt_type.trim())
+        };
+        types().any(|its| its.eq_ignore_ascii_case(THE_SYSTEMS_PARTITION_TYPE))
+            && types().all(|its| {
+                THE_IMAGES_PARTITION_TYPES
+                    .iter()
+                    .any(|made| its.eq_ignore_ascii_case(made))
+            })
     }
 
     /// What it is to this installer, given which disk Windows is on.
@@ -212,6 +276,53 @@ mod tests {
       {"Number":4,"FriendlyName":"SanDisk Ultra","SerialNumber":"4C530001","BusType":"USB","UniqueId":"","Size":64023257088,"PartitionStyle":"RAW","IsReadOnly":false,"Partitions":[]}
     ]"#;
 
+    /// Two disks after an install: Windows on 0, alo OS on 1.
+    const AFTER_AN_INSTALL: &str = r#"[
+      {"Number":0,"FriendlyName":"Msft Virtual Disk","SerialNumber":"","BusType":"SAS","UniqueId":"600224801B4C5D6E7F8091A2B3C4D5E6","Size":136365211648,"PartitionStyle":"GPT","IsReadOnly":false,
+       "Partitions":[{"PartitionNumber":1,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":""},
+                     {"PartitionNumber":3,"GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}","Label":"Windows"}]},
+      {"Number":1,"FriendlyName":"Samsung SSD 870 EVO","SerialNumber":"S5Y1NJ0R123456","BusType":"SATA","UniqueId":"","Size":34359738368,"PartitionStyle":"GPT","IsReadOnly":false,
+       "Partitions":[{"PartitionNumber":1,"GptType":"{21686148-6449-6e6f-744e-656564454649}","Label":""},
+                     {"PartitionNumber":2,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":"EFI-SYSTEM"},
+                     {"PartitionNumber":3,"GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}","Label":""}]}
+    ]"#;
+
+    /// **The disk alo OS is on is the one the image wrote, and nothing else
+    /// is.** Windows' own disk is never it, whatever it carries; a disk with a
+    /// label the image does not make is not it; and a disk without the system's
+    /// own label is not it either.
+    #[test]
+    fn the_disk_alo_os_is_on_is_the_one_the_image_wrote() {
+        let disks = Disks::read(Some(AFTER_AN_INSTALL)).unwrap();
+        let its = disks.the_one_alo_os_is_on(DiskNumber(0)).unwrap();
+        assert_eq!(its.number(), DiskNumber(1));
+        assert_eq!(disks.shown_name(its), "Samsung SSD 870 EVO");
+
+        // Windows' disk is not offered even when it is asked about as if it
+        // were another disk's.
+        let as_if = Disks::read(Some(AFTER_AN_INSTALL)).unwrap();
+        assert_eq!(as_if.the_one_alo_os_is_on(DiskNumber(1)), None);
+
+        // A person's own files beside alo OS, and alo OS's own partition gone.
+        for changed in [
+            AFTER_AN_INSTALL.replace(
+                r#""GptType":"{21686148-6449-6e6f-744e-656564454649}""#,
+                r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+            ),
+            AFTER_AN_INSTALL.replace(
+                r#""GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}""#,
+                r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+            ),
+        ] {
+            let disks = Disks::read(Some(&changed)).unwrap();
+            assert_eq!(disks.the_one_alo_os_is_on(DiskNumber(0)), None, "{changed}");
+        }
+
+        // And a computer with no alo OS on it at all.
+        let none = Disks::read(Some(PRINTED)).unwrap();
+        assert_eq!(none.the_one_alo_os_is_on(DiskNumber(0)), None);
+    }
+
     /// **Only the empty disk that can be named is for alo OS**, and every other
     /// disk is what it is.
     #[test]
@@ -245,6 +356,7 @@ mod tests {
         let holding_a_linux = Disk {
             partitions: vec![Partition {
                 label: "home".to_owned(),
+                gpt_type: "{0fc63daf-8483-4772-8e79-3d69d8477de4}".to_owned(),
             }],
             ..empty.clone()
         };

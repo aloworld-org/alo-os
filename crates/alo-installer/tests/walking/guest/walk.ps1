@@ -260,6 +260,62 @@ if ($mode -eq 'manifest-only') {
   return
 }
 
+# Removing alo OS again, started as a person starts it: the same copy, with the
+# removal's own word, and the disk's name typed back from the sentence the
+# removal itself printed — so the name comes from the program under test rather
+# than from anything written here. The state is read before and after, and the
+# removal does not restart the computer, so the lines after it are this boot's.
+if ($mode -eq 'remove') {
+  $left = Join-Path $instruction['left-at'] $instruction['left-as']
+  Say "the road back: $left"
+  TheState('before the removal')
+  if (-not (Test-Path -LiteralPath $left)) {
+    Say 'FAIL: the installer left nothing to remove alo OS with'
+  } else {
+    Say ("the shortcut: {0} exists={1}" -f $instruction['shortcut'],
+      (Test-Path -LiteralPath $instruction['shortcut']))
+    $removal = New-Object System.Diagnostics.ProcessStartInfo
+    $removal.FileName = $left
+    $removal.Arguments = $instruction['argument']
+    $removal.UseShellExecute = $false
+    $removal.RedirectStandardInput = $true
+    $removal.RedirectStandardOutput = $true
+    $removal.RedirectStandardError = $true
+    $running = [System.Diagnostics.Process]::Start($removal)
+    Say "the removal's pid: $($running.Id)"
+    $named = $null
+    $typed = $false
+    while (-not $running.HasExited -or -not $running.StandardOutput.EndOfStream) {
+      $line = $running.StandardOutput.ReadLine()
+      if ($null -eq $line) { break }
+      Say "removal: $line"
+      if ($line -match 'alo OS is on the disk (.+?)\. Removing it erases') {
+        $named = $Matches[1]
+        Say "the disk it named: [$named]"
+      }
+      if (-not $typed -and $line -match 'and press Enter') {
+        if ($null -eq $named) {
+          Say 'FAIL: it asked for a disk before it named one'
+          $running.StandardInput.WriteLine('')
+        } else {
+          Say "typing: [$named]"
+          $running.StandardInput.WriteLine($named)
+        }
+        $running.StandardInput.Flush()
+        $typed = $true
+      } elseif ($line -match 'Press Enter to close') {
+        $running.StandardInput.WriteLine('')
+        $running.StandardInput.Flush()
+      }
+    }
+    Say "the removal exited: $($running.WaitForExit(600000)); code=$($running.ExitCode)"
+  }
+  TheState('after the removal')
+  UnmountTheStartPartition
+  Say 'ALOWALK-DONE remove'
+  return
+}
+
 # Fast Startup on, in this boot, when the instruction asks for it.
 #
 # The second base has hibernation on, and **this guest does not keep it across
@@ -408,9 +464,14 @@ if ($mode -eq 'whole-road') {
   $rest = $process.StandardOutput.ReadToEnd()
   if ($rest) { $rest -split "`r?`n" | ForEach-Object { Say "installer: $_" } }
   Say "installer exited: $($process.WaitForExit(600000)); code=$($process.ExitCode)"
-  TheState 'after the whole road'
-  $after = Manifest 'C:\alo\manifest-after.txt'
-  Say "manifest-after: digest=$($after.Digest) files=$($after.Count)"
+  # And nothing else. The installer has already asked Windows to restart, and
+  # the restart lands a few seconds later, in the middle of whatever is running
+  # here. Reading the machine back at this point is reading it while it goes
+  # down: measured on 2026-09-26, a run dumping the firmware's 256 start
+  # variables when the restart landed left a machine that then burned two
+  # processors for twenty minutes with a black screen and nothing on the serial
+  # line, and the install never happened. What this boot did is in the lines
+  # above it; what the install did is the next boot's to say.
   UnmountTheStartPartition
   Say 'ALOWALK-DONE whole-road'
   return

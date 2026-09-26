@@ -847,8 +847,121 @@ pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
 )
 .noting("The last line after the installer has stopped without restarting.");
 
+// ---------------------------------------------------------------------------
+// Removing alo OS again.
+// ---------------------------------------------------------------------------
+
+/// The removal's first line.
+pub const REMOVE_STARTING: Word = Word::saying(
+    "installer.remove.starting",
+    "This removes alo OS from this computer. Windows, and your files on it, are not touched",
+)
+.noting(
+    "The first line of the small program that removes alo OS. It is the same program the person \
+     installed with, started to undo that.",
+);
+
+/// What will be erased, before the person agrees to it.
+pub const REMOVE_WILL_ERASE: Word = Word::saying(
+    "installer.remove.will-erase",
+    "alo OS is on the disk {disk}. Removing it erases that disk: alo OS itself, and everything \
+     kept in it. The space becomes free again, and Windows starts as it does now",
+)
+.noting("{disk} is the disk's name, as the installer showed it when alo OS was installed.");
+
+/// The question.
+pub const REMOVE_TYPE_THE_DISKS_NAME: Word = Word::saying(
+    "installer.remove.type-the-disks-name",
+    "To remove alo OS, type the name of that disk, exactly as it is written above, and press \
+     Enter. To leave everything as it is, press Enter without typing anything",
+)
+.noting(
+    "The person agrees by typing a disk's name, never by pressing a button, because what is \
+     erased is a whole disk and the name says which one.",
+);
+
+/// Nothing typed, or not that name.
+pub const REMOVE_NOT_AGREED: Word = Word::saying(
+    "installer.remove.not-agreed",
+    "Nothing was changed. alo OS is still on this computer",
+)
+.noting(
+    "Said when the person pressed Enter without typing the disk's name, or typed something else.",
+);
+
+/// The firmware does not list alo OS.
+pub const REMOVE_NOT_THERE: Word = Word::saying(
+    "installer.remove.not-there",
+    "alo OS is not among the systems this computer can start, so there is nothing to remove. \
+     Nothing was changed",
+)
+.noting("Said when the firmware lists no entry for alo OS.");
+
+/// No disk of this computer is alo OS's own.
+pub const REMOVE_NOT_FOUND: Word = Word::saying(
+    "installer.remove.not-found",
+    "The disk alo OS is on could not be found, so nothing was changed. Nothing was erased",
+)
+.noting(
+    "Said when no disk of this computer holds what alo OS puts on the disk it is installed onto. \
+     This program erases a disk it is sure of, and nothing else.",
+);
+
+/// Something this needs to read did not answer.
+pub const REMOVE_NOT_READ: Word = Word::saying(
+    "installer.remove.not-read",
+    "This computer's disks, or the systems it can start, could not be read, so nothing was changed",
+)
+.noting("Said when one of Windows' own tools did not answer.");
+
+/// The entry would not go, and nothing was erased.
+pub const REMOVE_ENTRY_NOT_REMOVED: Word = Word::saying(
+    "installer.remove.entry-not-removed",
+    "alo OS could not be taken out of the systems this computer starts, so nothing was erased and \
+     alo OS is still here",
+)
+.noting("Said when the firmware's entry would not go. The disk is erased only after it has.");
+
+/// Erasing.
+pub const REMOVE_ERASING: Word = Word::saying(
+    "installer.remove.erasing",
+    "Erasing {disk}. This takes a moment",
+)
+.noting("The line before the disk is erased. {disk} is the disk's name.");
+
+/// The entry is gone and the disk is not.
+pub const REMOVE_DISK_NOT_CLEARED: Word = Word::saying(
+    "installer.remove.disk-not-cleared",
+    "This computer no longer starts alo OS, but the disk alo OS is on could not be erased. Its \
+     files are still there, and you can erase it in Windows' own disk management",
+)
+.noting(
+    "Said when the entry went and the disk did not. It says what is true of the computer now, and \
+     where a person can finish it by hand.",
+);
+
+/// alo OS is gone.
+pub const REMOVE_GONE: Word = Word::saying(
+    "installer.remove.gone",
+    "alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it \
+     did before alo OS was installed",
+)
+.noting("The last line when everything went. {disk} is the disk's name.");
+
+/// alo OS is gone, and this program is still on the computer.
+pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
+    "installer.remove.gone-but-the-copy-stays",
+    "alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it \
+     did. This program is still on this computer, because it cannot delete itself while it is \
+     running; you can delete it yourself",
+)
+.noting(
+    "Said when the removal ran from the copy the install left behind: Windows does not delete a \
+     running program.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 96] = [
+pub const EVERY_WORD: [Word; 108] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -944,6 +1057,18 @@ pub const EVERY_WORD: [Word; 96] = [
     DEFAULT_NOT_THERE,
     DEFAULT_NOT_READ,
     DEFAULT_NOT_REACHED,
+    REMOVE_STARTING,
+    REMOVE_WILL_ERASE,
+    REMOVE_TYPE_THE_DISKS_NAME,
+    REMOVE_NOT_AGREED,
+    REMOVE_NOT_THERE,
+    REMOVE_NOT_FOUND,
+    REMOVE_NOT_READ,
+    REMOVE_ENTRY_NOT_REMOVED,
+    REMOVE_ERASING,
+    REMOVE_DISK_NOT_CLEARED,
+    REMOVE_GONE,
+    REMOVE_GONE_BUT_THE_COPY_STAYS,
     PRESS_ENTER_TO_CLOSE,
 ];
 

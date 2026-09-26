@@ -323,9 +323,36 @@ each walked in the guest except where it says otherwise:
   whole-road install first, so this is a computer that really had alo OS
   installed and really started it first.
 
+- **The road back off this computer** — *remove alo OS*. The installer is a
+  third thing when it is started with the removal's own word: it finds the disk
+  alo OS is on, says what erasing it destroys, takes the person's typed consent
+  — that disk's name, as the install itself asks for it — and then takes the
+  firmware's entry away **before** erasing anything, so a failure at the first
+  step leaves alo OS installed and nothing erased. The disk is found by the GPT
+  types the image writes, never by memory and never by label: Windows reports
+  no filesystem and no label at all for alo OS's own partition, because it
+  cannot read btrfs, and the walk is what showed that. The program that erases
+  repeats every one of those checks in its own script and refuses the disk this
+  computer starts from. Six tests against a scripted Windows walk the road and
+  every refusal; one holds the erasing script's guards to running before the
+  line that erases.
+
+  **Its walk on a real Windows is written and has not yet passed.** What it has
+  already found and fixed is in `docs/quirks.md` and in the harness: a guest
+  read back while Windows was restarting, which left a machine burning two
+  processors with a black screen and no install; a boot told to remove alo OS
+  that ran the installer again first; and a Windows boot started on the other
+  firmware build this repository has, whose variables named nothing the install
+  had written. **Still open on it:** on three runs the firmware listed no entry
+  named alo OS when Windows came up after an install the environment had said
+  it tidied, and the walk now reads the machine's own variable file after the
+  install and after that boot to say where it is lost; and this development PC
+  has twice stalled a guest mid-install for twenty minutes at a time, which is
+  the machine and not the installer.
+
 **Still owed here, and this task is not done until they are:**
-1. The rest of the acceptance neither piece covers: *remove alo OS*, and the
-   walk of the default being changed from either side.
+1. That walk, green.
+2. The walk of the default being changed from either side.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the

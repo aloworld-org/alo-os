@@ -91,6 +91,7 @@ fn kind(program: &Program) -> &'static str {
         Program::RemovingTheEntry { .. } => "remove-entry",
         Program::RemovingTheArea { .. } => "remove-area",
         Program::GrowingWindowsBack { .. } => "grow-back",
+        Program::ClearingTheDiskAloOsIsOn { .. } => "clear-disk",
     }
 }
 
@@ -1456,4 +1457,167 @@ fn the_choice_is_what_the_environments_loader_reads() {
                 .as_str()
         )
     );
+}
+
+// ---------------------------------------------------------------------------
+// Removing alo OS again.
+// ---------------------------------------------------------------------------
+
+/// The same two disks, after alo OS has been installed onto the second: the
+/// labels `bootc install` leaves, and its one-mebibyte partition with none.
+const DISKS_WITH_ALO_OS: &str = r#"[
+  {"Number":0,"FriendlyName":"Samsung SSD 980 1TB","SerialNumber":"S64ANS0T123456A","BusType":"NVMe","UniqueId":"","Size":1000204886016,"PartitionStyle":"GPT","IsReadOnly":false,
+   "Partitions":[{"PartitionNumber":1,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":""},
+                 {"PartitionNumber":3,"GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}","Label":"Windows"}]},
+  {"Number":1,"FriendlyName":"Msft Virtual Disk","SerialNumber":"","BusType":"SAS","UniqueId":"60022480AAAABBBBCCCCDDDDEEEEFFFF","Size":34359738368,"PartitionStyle":"GPT","IsReadOnly":false,
+   "Partitions":[{"PartitionNumber":1,"GptType":"{21686148-6449-6e6f-744e-656564454649}","Label":""},
+                 {"PartitionNumber":2,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":"EFI-SYSTEM"},
+                 {"PartitionNumber":3,"GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}","Label":""}]}
+]"#;
+
+/// What that disk is called where the person reads it, and types it.
+const ALO_OSS_DISK: &str = "Msft Virtual Disk";
+
+/// A machine with alo OS installed on its second disk and listed by its
+/// firmware, whose person types this, and where the disk erases itself
+/// cleanly.
+fn asked_to_remove(typed: &str) -> Scripted {
+    let (mut machine, _) = Scripted::installable();
+    machine = machine
+        .answering("entries", ENTRIES_WITH_ALO_OS)
+        .answering("disks", DISKS_WITH_ALO_OS)
+        .answering("clear-disk", r#"{"PartitionStyle":"RAW"}"#);
+    machine.typed = format!("{typed}\n");
+    machine
+}
+
+/// **The entry goes first, then the disk** — and the disk erased is the one the
+/// person was shown, never Windows'.
+#[test]
+fn removing_alo_os_takes_the_entry_away_and_then_erases_its_disk() {
+    let mut machine = asked_to_remove(ALO_OSS_DISK);
+    let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+    assert_eq!(
+        removed,
+        alo_installer::Removed::Gone {
+            disk: ALO_OSS_DISK.to_owned(),
+            the_copy_went: true,
+        },
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        machine.kinds(),
+        [
+            "entries",
+            "volume",
+            "disks",
+            "remove-entry",
+            "forget-next",
+            "clear-disk",
+            "remove-what-was-left",
+        ]
+    );
+    // The disk in the one program that erases is the second disk, and the
+    // question named that disk to the person before anything was done.
+    assert!(
+        machine.ran.contains(&Program::ClearingTheDiskAloOsIsOn {
+            disk: alo_installer::DiskNumber(1)
+        }),
+        "{:#?}",
+        machine.ran
+    );
+    assert!(
+        machine
+            .said
+            .iter()
+            .any(|said| said.contains(ALO_OSS_DISK) && said.contains("erases that disk")),
+        "{:#?}",
+        machine.said
+    );
+    assert!(
+        machine.said.iter().any(|said| said.contains("free")),
+        "{:#?}",
+        machine.said
+    );
+}
+
+/// **Anything but that disk's name erases nothing.**
+#[test]
+fn nothing_is_erased_unless_the_disks_name_is_typed() {
+    for typed in ["", "   ", "yes", "remove", "Msft", "Samsung SSD 980 1TB"] {
+        let mut machine = asked_to_remove(typed);
+        let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+        assert_eq!(removed, alo_installer::Removed::NotAgreed, "{typed:?}");
+        assert!(!machine.changed_anything(), "{typed:?}");
+        assert!(
+            machine
+                .said
+                .contains(&sentence(alo_installer::REMOVE_NOT_AGREED)),
+            "{typed:?}"
+        );
+    }
+}
+
+/// **A disk with anything else on it is not alo OS's**, and nothing is erased:
+/// the second disk carries the image's own partitions and a plain Windows one
+/// beside them.
+#[test]
+fn a_disk_holding_anything_else_is_not_erased() {
+    let mut machine = asked_to_remove(ALO_OSS_DISK).answering(
+        "disks",
+        &DISKS_WITH_ALO_OS.replace(
+            r#""GptType":"{21686148-6449-6e6f-744e-656564454649}""#,
+            r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+        ),
+    );
+    let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+    assert_eq!(removed, alo_installer::Removed::NotFound);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::REMOVE_NOT_FOUND))
+    );
+}
+
+/// **With no entry for alo OS it says so and changes nothing.**
+#[test]
+fn removing_says_when_this_computer_does_not_start_alo_os() {
+    let mut machine = asked_to_remove(ALO_OSS_DISK).answering(
+        "entries",
+        "identifier              {bootmgr}\ndescription             Windows Boot Manager\n",
+    );
+    let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+    assert_eq!(removed, alo_installer::Removed::NotThere);
+    assert!(!machine.changed_anything());
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::REMOVE_NOT_THERE))
+    );
+}
+
+/// **An entry that will not go stops the removal before anything is erased.**
+#[test]
+fn an_entry_that_will_not_go_leaves_the_disk_alone() {
+    let mut machine = asked_to_remove(ALO_OSS_DISK).failing("remove-entry");
+    let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+    assert_eq!(removed, alo_installer::Removed::EntryNotRemoved);
+    assert!(
+        !machine.kinds().contains(&"clear-disk"),
+        "{:#?}",
+        machine.ran
+    );
+}
+
+/// **A disk that would not be erased is said as it is**: the computer no longer
+/// starts alo OS, and the files are still there.
+#[test]
+fn a_disk_that_would_not_be_erased_is_said_and_not_pretended_about() {
+    let mut machine = asked_to_remove(ALO_OSS_DISK).failing("clear-disk");
+    let removed = alo_installer::remove_alo_os(&mut machine, &strings());
+    assert_eq!(removed, alo_installer::Removed::DiskNotCleared);
+    assert!(machine.kinds().contains(&"remove-entry"));
+    assert!(!machine.kinds().contains(&"remove-what-was-left"));
 }

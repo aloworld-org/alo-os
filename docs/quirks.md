@@ -6928,4 +6928,26 @@ does not hide anything behind it.
 is written down so the next worker who meets a red third gate on this machine
 knows what it is, that a re-run clears it, and that the question for its owner
 is what the test should hold when the broker's door is torn down under load.
+
+
+### Reading a guest back while Windows restarts leaves a machine that never comes up
+**Version:** QEMU 8.2 `q35` with Fedora's `edk2-ovmf` 20250812-21 and a TPM,
+Windows 11 26100 in the installer walk; 2026-09-26.
+**Behaviour:** the installer's last step asks Windows to restart, and the
+restart lands a few seconds later — while the walk's own script is still
+running. In one run the script was reading the firmware's 256 `Boot####`
+variables for its after-the-install state dump when the restart landed. The
+serial line stopped mid-dump, after `--- the firmware's own entries ---`, and
+the machine then sat for twenty-one minutes at **171–234 % of two processors
+with a black screen**, no disk writes at all, and nothing more on the serial
+line. The install never happened. The same code path had run clean twice
+before, so it is a race rather than a rule.
+
+Whether the reading corrupts the firmware's variable store on the way down, or
+the machine hangs for another reason, is not known and was not worth the run to
+find out: nothing needed that reading.
+**Our response:** after the installer says the computer is restarting, the
+guest's script does nothing but unmount and say it is done. What that boot did
+is in the lines above; what the install did is the next boot's to say. A
+machine is not read while it is going down.
 **Date:** 2026-09-26.

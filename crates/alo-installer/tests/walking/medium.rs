@@ -54,6 +54,20 @@ pub enum Told {
         /// The word that agrees to the restart.
         agree: String,
     },
+    /// Start the removal the installer left in place, as a person starts it:
+    /// the copy under Windows' own place for programs, with the removal's word
+    /// as its argument, and the disk's own name typed at its question — read
+    /// from what the removal itself printed, never written into the guest.
+    RemovingAloOs {
+        /// Where the copy was left.
+        left_at: String,
+        /// What it is called there.
+        left_as: String,
+        /// The shortcut a person starts it from.
+        shortcut: String,
+        /// The argument that makes it the removal.
+        argument: String,
+    },
     /// Run the installer, answer the Fast Startup question with these words,
     /// and stop it once the answer has been acted on — before the disk is
     /// changed, which is what the question is asked before.
@@ -83,6 +97,15 @@ impl Told {
             } => format!(
                 "mode=switch\nstep=6\nleft-at={left_at}\nleft-as={left_as}\n\
                  shortcut={shortcut}\nargument={argument}\nagree={agree}\n"
+            ),
+            Self::RemovingAloOs {
+                left_at,
+                left_as,
+                shortcut,
+                argument,
+            } => format!(
+                "mode=remove\nstep=0\nleft-at={left_at}\nleft-as={left_as}\n\
+                 shortcut={shortcut}\nargument={argument}\n"
             ),
             Self::AnsweringFastStartup { answer } => {
                 // Killed after the second step of staging, which is the shrink:
