@@ -1232,20 +1232,21 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     };
     let disc = medium::the_walk_disc(&yard, &told, &download);
     let console = Console::fresh(&yard.join("console.log"));
-    // On the same firmware build the install ran on, and only the disk order
-    // changed. Measured on 2026-09-26: started on the other build this
-    // repository has, the machine came up with a firmware that listed neither
-    // alo OS nor anything else the install had written — the variables one
-    // build wrote are not the variables the other reads — and the removal
-    // rightly said there was nothing to remove.
-    let mut machine = Machine::start_on(
+    // On the same firmware build the install ran on, and with no disk order at
+    // all. Measured on 2026-09-26: started on the other build this repository
+    // has, the machine came up with a firmware that listed neither alo OS nor
+    // anything else the install had written — the variables one build wrote
+    // are not the variables the other reads; and started on the right build
+    // but with the Windows disk forced to the front, it lost the entry just
+    // the same. Left to its own variables, it keeps it.
+    let mut machine = Machine::start_as_its_variables_decide(
         &firmware,
         &yard,
         "removal",
         Some(&disc),
-        None,
         &console,
         &chip,
+        &[],
     );
     let mut resets = 0;
     while console.wait_for(&[console::BEGINS], A_SIGN_IN).is_none() {
