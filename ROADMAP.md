@@ -1739,8 +1739,16 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 45 boxes: 29 promises, eight of which carry the two boxes the
-section above describes.** Two were reached early because v0.01 work ran through
+**This gate is 55 boxes: 31 promises, twelve of which carry the two boxes the
+section above describes.** It was 45 boxes over 29 promises before the
+reconciliation began on 2026-09-26, and it will keep growing as promises are
+split and as promises `docs/features.md` makes with nowhere to be are given a
+box — **two have been added so far**, *Night light and display colour* and *The
+dock's size, and per display*, and the first of those had finished code and no
+box to tick it in. A gate that grows while work is being counted is a gate that
+was under-describing the work, not a gate getting further away.
+
+Two were reached early because v0.01 work ran through
 them or beside it — *Making it yours* (`alo-appearance`) and *Run a model we
 never catalogued* (`alo-models`). Three were built between 2026-09-13 and
 2026-09-14 under ADR 0028, while v0.01 waited on a machine: *The plain way to do
@@ -1764,7 +1772,73 @@ it is grouped by subject so it can be read; when work begins here it will be
 sorted the same way v0.01 now is.
 
 - [ ] Lock screen, suspend and resume
+  - [x] **The code.**
+        `alo-locking` — what a locked session is, what the lock screen may
+        show and what survives it; `alo-sleeping` — suspend, resume, the lid,
+        and what may keep a machine awake, asking the base for real
+        (`TheMachinesLogind::sleep` calls logind's `Suspend` over the system
+        bus, and an agent cannot take a hold); `alo-leaving` — log out,
+        switch user, and reopen what was open. One walk carries a person from
+        locking to resuming at another desk and holds the sequence they meet
+        to a table read out of its own report, and a second does the morning
+        the desk changed. Tasks 1, 2, 5, 7, 8, 11, 12, 13 and 14 of
+        `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, finished
+        14 of 14, with a report each in `docs/autonomy/updates/`
+  - [ ] **On the machine.**
+        **no lid has ever closed.** Every suspend, resume and lid event in
+        this repository is a stand-in recording what alo OS would ask of the
+        base; the plan says so itself, and a lid that has never closed on
+        certified hardware is code and nothing more. Owed to the certified
+        machine
 - [ ] Multi-monitor, scaling, hotplug
+  - [x] **The code.**
+        `alo-displays` — which screens these are over the whole set so two
+        identical monitors are told apart, where each goes, how large each
+        draws with what the machine can actually draw applied last, and an
+        arrangement remembered per **set** of screens so docking at the
+        office restores the office's layout. Hotplug both ways
+        (`plugged_in`, `unplugged`) with what was open on a screen that went
+        following it and coming back; a resume asks the whole question again
+        from what is reported, because a machine that was asleep saw no cable
+        move; and an arrangement that no longer fits is set aside rather than
+        forced on. Tasks 3, 10, 11, 12, 13 and 14 of the same plan
+  - [ ] **On the machine.**
+        no screen has been plugged into anything. The arrangement is decided
+        here and applied by the compositor, which is `alo-shell`'s and is
+        owed to the certified machine and a second screen
+- [ ] Night light and display colour
+      *This line was missing entirely until the reconciliation of 2026-09-26
+      went looking — a `[v0.5]` promise in `docs/features.md` with nowhere to
+      be, and the first one found whose code was already finished. The gate
+      could not have been ticked for it because it had no box*
+  - [x] **The code.**
+        `alo-displays` — a `NightLight` is *when* and *how warm*, kept apart
+        because a person changes them for different reasons; a schedule or
+        the sun, worked out on the machine from a latitude and longitude
+        rather than asked of anybody; and the two answers a polar circle
+        forces — the sun does not set today, the sun does not rise today —
+        said rather than papered over. Task 4 of the same plan;
+        `updates/night-light-and-display-colour.md`
+  - [ ] **On the machine.**
+        a screen whose colour actually changes, which is the compositor's and
+        is owed to the certified machine
+- [ ] **The dock's size, and per display** — whether it hides when a window
+      needs the room, and a dock along the bottom of the laptop while it runs
+      down the side of the external screen
+      *Two `[v0.5]` promises in `docs/features.md` (the dock's size and
+      hiding; per display) with no box in this gate until 2026-09-26. **The
+      dock on any edge** is v0.01's and is built; these two are the v0.5
+      refinements of it and are not*
+  - [ ] **The code.**
+        **not built.** `alo_dock::Dock` holds one edge for the machine, not
+        one per screen, and nothing sizes it or hides it. `crates/alo-dock`
+        belongs to `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`;
+        the session-and-displays plan reads it and never edits it, and named
+        `alo_displays::Wearing::of` as the one function of its own that
+        changes when this is paid — task 12 of that plan, and its task 3
+        before it, both say so in their status
+  - [ ] **On the machine.**
+        owed to the certified machine and a second screen, after the code
 - [ ] Recovery and rollback screen
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
@@ -2237,6 +2311,49 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### The session and the displays, reconciled, 2026-09-26
+
+The first subject group read promise by promise, against the plan that answers
+it — `v0-5-the-session-and-the-displays-plan.md`, finished 14 of 14.
+
+**Ticked, code half:** *Lock screen, suspend and resume*; *Multi-monitor,
+scaling, hotplug*; and *Night light and display colour*, which had no box at all
+until this reading. Each names its crates and its tasks, and each was checked
+rather than inferred from the plan being finished: `TheMachinesLogind::sleep`
+really calls logind's `Suspend` over the system bus, `alo-displays` really tells
+two identical monitors apart over the whole set, and night light really works the
+sun out on the machine from a latitude. No `todo!`, no `unimplemented!` in any of
+the five crates.
+
+**Not ticked, and now said in the box rather than left blank:** every machine
+half. **No lid has ever closed** and no screen has been plugged into anything;
+every suspend, resume and hotplug in this repository is a stand-in recording what
+alo OS would ask of the base. The plan says so itself, and it is the distinction
+the two boxes exist for.
+
+**Three promises `docs/features.md` makes had no box in this gate.** That is the
+eighth, ninth and tenth time — `crates/alo-reconciling`'s own header records six
+found one at a time for v0.01, and twice the reading believed it had found the
+last.
+
+- *Night light and display colour* — **built**, with a task, a report and some
+  1,600 lines across six files, and no box to tick. Work finished and invisible
+  in the instrument, which is the opposite failure from an untrue tick and just
+  as misleading to somebody planning.
+- *The dock's size, and whether it hides when a window needs the room* and *Per
+  display, so the dock can sit along the bottom of the laptop and down the side
+  of the external screen* — **not built**, given one box between them. `alo-dock`
+  holds one edge for the machine; the promise needs one per screen.
+
+**And the arithmetic that would have caught all three does not exist for v0.5.**
+`crates/alo-reconciling` reads every `[v0.01]` promise out of `docs/features.md`
+and fails the gate when the ledger in `docs/autonomy/v0-01-evidence.md` disagrees
+— a promise no entry is about, an entry about a promise that is gone. There is no
+`v0-5-evidence.md` and nothing reads the 92 `[v0.5]` promises, so v0.5's coverage
+is exactly the reading that crate was written because it fails. Three found in the
+first group of a by-eye pass is the expected rate, not bad luck.
+
 
 ### The v0.5 cut left four boxes behind, and two ticks on the wrong promises, 2026-09-26
 
