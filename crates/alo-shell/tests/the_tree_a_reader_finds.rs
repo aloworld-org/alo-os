@@ -29,6 +29,9 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+#[path = "support/one_heavy_fixture_at_a_time.rs"]
+mod one_heavy_fixture_at_a_time;
+
 use std::io::{BufRead as _, BufReader};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -101,11 +104,22 @@ struct ASession {
     accessibility: String,
     /// What it started, killed when it is dropped.
     processes: Vec<Child>,
+    /// Held while this session's processes are up, so this crate's other
+    /// process-heavy fixture is not starting a headless compositor and seven
+    /// children at the same moment. Dropped last, after the processes below.
+    _heavy: one_heavy_fixture_at_a_time::TheOnlyHeavyFixture,
 }
 
 impl ASession {
     /// A session of this test's own, started.
+    ///
+    /// Waits for this crate's other heavy fixture first. On 2026-09-26 the gate
+    /// on `main` failed here with *dbus-daemon printed no address* — a session
+    /// bus that never came up rather than one that answered wrongly — and
+    /// `one_heavy_fixture_at_a_time` says why that is worth serialising even
+    /// though the cause was never proved.
     fn started() -> Self {
+        let heavy = one_heavy_fixture_at_a_time::TheOnlyHeavyFixture::held();
         let place = std::env::temp_dir().join(format!(
             "alo-read-aloud-{}-{}",
             std::process::id(),
@@ -147,6 +161,7 @@ impl ASession {
             place,
             session,
             accessibility: String::new(),
+            _heavy: heavy,
             processes: vec![daemon],
         };
         let launcher = found(
