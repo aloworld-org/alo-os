@@ -39,6 +39,27 @@ struct Window {
     mapped: bool,
     /// Shell visibility is independent of the client's buffer mapping.
     minimized: bool,
+    /// The desktop this window is on is not the one a person is looking at.
+    ///
+    /// **A separate reason from `minimized`, deliberately.** A person minimised
+    /// a window and expects to find it minimised; a person who switched desktop
+    /// expects to find every window exactly as they left it when they switch
+    /// back. Folding the two would make a desktop switch look like somebody
+    /// minimising every window on the way out, and restore them un-minimised on
+    /// the way in. Which desktop is which is `alo-desktops`' answer and this
+    /// field is only where it is written down; see `crate::desktop_membership`.
+    elsewhere: bool,
+}
+
+impl Window {
+    /// Whether this window is one a frame draws.
+    ///
+    /// Three reasons it is not, and the caller never has to remember all
+    /// three: it has no configured buffer, the person minimised it, or it is on
+    /// a desktop that is not the current one.
+    fn drawn(&self) -> bool {
+        self.mapped && !self.minimized && !self.elsewhere && self.surface.alive()
+    }
 }
 
 /// Protocol globals and toplevel roots shared by display backends.
@@ -112,7 +133,7 @@ impl Surfaces {
     pub(crate) fn mapped(&self) -> impl Iterator<Item = &WlSurface> {
         self.windows
             .iter()
-            .filter(|w| w.mapped && !w.minimized && w.surface.alive())
+            .filter(|w| w.drawn())
             .map(|w| w.surface.wl_surface())
     }
 
@@ -130,6 +151,25 @@ impl Surfaces {
             .iter()
             .filter(|w| w.mapped && w.minimized && w.surface.alive())
             .map(|w| w.surface.wl_surface())
+    }
+
+    /// Say whether this window's desktop is one being looked at.
+    ///
+    /// A fresh visibility identity on a change, exactly as minimising does:
+    /// whatever was counting on this window being on screen must be told it is
+    /// not the same showing any more.
+    pub(crate) fn set_elsewhere(&mut self, surface: &WlSurface, value: bool) {
+        let Some(window) = self
+            .windows
+            .iter_mut()
+            .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
+        else {
+            return;
+        };
+        if window.elsewhere != value {
+            window.visibility = Default::default();
+        }
+        window.elsewhere = value;
     }
 
     /// Change visibility only for an exact live buffered root.
@@ -155,9 +195,7 @@ impl Surfaces {
     pub(crate) fn window_visibility(&self, surface: &WlSurface) -> Option<std::sync::Arc<()>> {
         self.windows
             .iter()
-            .find(|w| {
-                w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
-            })
+            .find(|w| w.drawn() && w.surface.wl_surface() == surface)
             .map(|w| w.visibility.clone())
     }
 
@@ -165,17 +203,17 @@ impl Surfaces {
     pub(crate) fn mapped_toplevel(&self, surface: &WlSurface) -> Option<&ToplevelSurface> {
         self.windows
             .iter()
-            .find(|w| {
-                w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
-            })
+            .find(|w| w.drawn() && w.surface.wl_surface() == surface)
             .map(|w| &w.surface)
     }
 
     /// Raise only a live mapped root; refusal leaves the entire order unchanged.
     pub(crate) fn raise(&mut self, surface: &WlSurface) -> bool {
-        let Some(index) = self.windows.iter().position(|w| {
-            w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
-        }) else {
+        let Some(index) = self
+            .windows
+            .iter()
+            .position(|w| w.drawn() && w.surface.wl_surface() == surface)
+        else {
             return false;
         };
         if let Some(prefix) = self.windows.get_mut(..=index) {
@@ -275,6 +313,7 @@ impl XdgShellHandler for Surfaces {
         // Initial configure is sent only after the client's first empty commit.
         self.windows.push(Window {
             visibility: Default::default(),
+            elsewhere: false,
             surface,
             mapped: false,
             minimized: false,

@@ -156,6 +156,14 @@ impl Desk {
         self.desktops.on(display)
     }
 
+    /// The desktops on this display, to change.
+    pub(crate) fn desktops_mut(
+        &mut self,
+        display: DisplayId,
+    ) -> Option<&mut alo_desktops::OnADisplay> {
+        self.desktops.on_mut(display)
+    }
+
     /// Move to another desktop, as `alo-desktops` decides which that is.
     ///
     /// The switch is handed over whole: which desktop is next, whether there is
@@ -221,6 +229,41 @@ impl Desk {
                 let _ = division.close(window);
             }
         }
+    }
+
+    /// Put this window on the desktop this display is showing.
+    ///
+    /// Which desktop that is, and what happens to a window already on one, are
+    /// `alo-desktops`' answers: `put_on` refuses a window it already holds and
+    /// that refusal is what makes this safe to call once a frame for every
+    /// window rather than only for the ones that just appeared.
+    pub(crate) fn put_on_the_current_desktop(
+        &mut self,
+        display: DisplayId,
+        window: alo_dividing::WindowId,
+    ) {
+        let Some(on) = self.desktops.on_mut(display) else {
+            return;
+        };
+        let current = on.current();
+        // Already on a desktop, or on every desktop: both are refusals, and
+        // both mean there is nothing to do.
+        let _ = on.put_on(current, window);
+    }
+
+    /// The windows on the desktop this display is showing.
+    ///
+    /// [`None`] for a display that is not here. The three surfaces that are on
+    /// every desktop are in this list on every desktop, because that is where
+    /// `alo-desktops` keeps them.
+    pub(crate) fn windows_on_the_current_desktop(&self, display: DisplayId) -> Option<Vec<u64>> {
+        let on = self.desktops.on(display)?;
+        Some(
+            on.windows_on(on.current())?
+                .into_iter()
+                .map(alo_dividing::WindowId::to_compositor)
+                .collect(),
+        )
     }
 
     /// Every display here, in the order `alo-desktops` holds them.
@@ -307,7 +350,22 @@ impl crate::Server {
         self.desk.desktops(display)
     }
 
-    /// Move to another desktop, as `alo-desktops` decides which that is.
+    /// The desktops on this display, to add one, name one or reorder them.
+    ///
+    /// Handed over whole: adding a desktop, removing one, naming one and
+    /// moving one are `alo-desktops`' own operations with their own refusals,
+    /// and a wrapper for each would be this crate restating them.
+    pub fn desktops_on_mut(&mut self, display: DisplayId) -> Option<&mut alo_desktops::OnADisplay> {
+        self.desk.desktops_mut(display)
+    }
+
+    /// Move to another desktop, as `alo-desktops` decides which that is, and
+    /// show what it decided.
+    ///
+    /// The windows on the desktop that is now current are the ones a frame
+    /// draws; the rest are hidden where they stand, unchanged, until a switch
+    /// brings them back. A refusal — the edge of the row, with no wrap — shows
+    /// nothing new, because nothing changed.
     ///
     /// # Errors
     /// [`NotADisplay::Unknown`] for a display that is not here.
@@ -316,7 +374,11 @@ impl crate::Server {
         display: DisplayId,
         switch: Switch,
     ) -> Result<Result<alo_desktops::DesktopId, alo_desktops::Refused>, NotADisplay> {
-        self.desk.switch(display, switch)
+        let answer = self.desk.switch(display, switch)?;
+        if answer.is_ok() {
+            self.show_the_current_desktops();
+        }
+        Ok(answer)
     }
 
     /// Whether this session has any display at all.

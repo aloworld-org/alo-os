@@ -100,9 +100,11 @@ mod default_cursor;
 mod descriptor_testing;
 mod desktop_list;
 mod desktop_look;
+mod desktop_membership;
 mod desktop_paint;
 mod desktop_raster;
 mod desktop_seat;
+mod desktop_swipes;
 #[cfg(test)]
 mod desktop_testing;
 mod direct_desktop;

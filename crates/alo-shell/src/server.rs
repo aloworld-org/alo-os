@@ -41,6 +41,12 @@ pub struct Server {
     /// or a desktop is decided in this crate: `crate::server_desk` says what
     /// that means and which crate answers which question.
     pub(crate) desk: crate::server_desk::Desk,
+    /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
+    ///
+    /// One recogniser for the seat: at most one gesture is in flight at a
+    /// time, and a second would be two answers to one person's fingers. What a
+    /// swipe does with what it answers is `crate::desktop_swipes`.
+    pub(crate) gestures: alo_desktops::gestures::Gestures,
 }
 
 impl Server {
@@ -68,6 +74,7 @@ impl Server {
             socket,
             presentation: Default::default(),
             switch_order: Default::default(),
+            gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),
         })
     }
@@ -95,9 +102,10 @@ impl Server {
         }
         self.display.dispatch_clients(&mut self.surfaces)?;
         self.surfaces.prune();
-        // The division follows the windows: one that closed loses its share
-        // here rather than leaving a tree holding a window nobody can see.
-        self.desk.windows_are_now(self.surfaces.mapped());
+        // The desktops and the divisions follow the windows: one that opened
+        // joins the desktop being looked at, and one that closed loses its
+        // share rather than leaving a tree holding a window nobody can see.
+        self.the_windows_are_now_these();
         self.switch_order.refresh(self.surfaces.buffered());
         self.display.flush_clients()
     }

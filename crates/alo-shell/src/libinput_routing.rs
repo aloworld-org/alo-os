@@ -16,8 +16,14 @@ impl Server {
     /// retires the context and calls Reset. Reset queues infallible whole-seat
     /// cleanup even with no input capabilities or an invalid output extent.
     /// The caller must flush client events, including after dispatch refusal.
-    /// Device additions do not select focus. Unsupported touch/tablet/gesture/
-    /// switch events are ignored; v0.01 exposes keyboard and pointer only.
+    /// Device additions do not select focus. Unsupported touch/tablet/switch
+    /// events are ignored; v0.01 exposes keyboard and pointer only.
+    ///
+    /// **Touchpad gestures reach `alo-desktops` first**, which is the crate
+    /// that decides what a swipe means. One it recognises as a desktop switch
+    /// is carried out and goes no further; everything else — including a scroll
+    /// frame, which that recogniser also has to see — continues down the
+    /// ordinary road. See `crate::desktop_swipes`.
     /// Deprecated axis events are ignored because libinput also emits modern
     /// scroll events. Processing both would scroll twice.
     /// `DirectSession::run_compositor_with_input` supplies that polling and flush
@@ -28,8 +34,14 @@ impl Server {
         extent: (i32, i32),
     ) -> Result<(), InputError> {
         match update {
-            InputUpdate::Reset => self.clear_input(),
+            InputUpdate::Reset => {
+                self.forget_unfinished_gestures();
+                self.clear_input();
+            }
             InputUpdate::Event(event) => {
+                if self.desktop_swipe(event) {
+                    return Ok(());
+                }
                 if let Some(event) = translate(event)? {
                     self.direct_seat(true, extent, event)?;
                 }
