@@ -1739,7 +1739,7 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 55 boxes: 31 promises, twelve of which carry the two boxes the
+**This gate is 57 boxes: 31 promises, thirteen of which carry the two boxes the
 section above describes.** It was 45 boxes over 29 promises before the
 reconciliation began on 2026-09-26, and it will keep growing as promises are
 split and as promises `docs/features.md` makes with nowhere to be are given a
@@ -1932,6 +1932,22 @@ sorted the same way v0.01 now is.
 - [ ] `.docx`, `.xlsx`, `.pptx` open
 - [ ] A web browser for the open web
 - [ ] **System verbs** through the privileged broker
+  - [x] **The code.**
+        `alo-broker` — a **closed, typed list of thirteen** and nothing else:
+        add, remove and default a printer; join, forget and proxy a network and
+        turn the radio off; apply a staged update and roll back; mount and eject
+        a removable drive; restart into Windows once and set which system starts
+        by default. Each takes an identity something else reported rather than a
+        string somebody composed, the broker itself holds no capability (ADR
+        0053 puts the carrying out behind a unit it starts), and the surfaces a
+        person reads when each answers are `alo-changing-printers`,
+        `-network`, `-drives` and `-updates`. One walk carries a person from a
+        new printer to a recovered disk. Tasks 1 to 8 of
+        `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, with a report each
+  - [ ] **On the machine.**
+        task 9 of that plan — *the three promises only a chip can keep* —
+        is **blocked on a certified machine existing**, and the door, the units
+        and every verb above are owed a machine to be carried out on
 - [ ] **Atomic updates with rollback** — largely **inherited** rather than
       built, since a bootc image rolls back with one command (ADR 0011). What
       is ours is the policy around it, and *undo what the agent did*, which is
@@ -2096,7 +2112,7 @@ sorted the same way v0.01 now is.
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
-  - [ ] **The code.** *Most of it, and not whole.* `alo-nearby` — a machine
+  - [x] **The code.** `alo-nearby` — a machine
         advertises presence and nothing else over DNS-SD, with an identity that
         is a file rather than a serial so a reinstall is a new machine; pairing
         is made only by two people confirming on their own machines and is
@@ -2104,11 +2120,20 @@ sorted the same way v0.01 now is.
         side a key and every message carries a proof made with it, checked
         against the pairing at the moment it arrives (ADR 0031); a proposal
         crosses the wire to the machine discovery measured and both people see
-        the same code; the daemon binds the port presence advertises. **Not
-        yet:** the person's door to propose, confirm and revoke, and a pairing
-        that outlives a restart — task 12 of
-        `v0-5-the-local-network-plan.md`, open — so the half is not ticked.
-        Tasks 1, 2, 6, 7, 9, 10 there, with a report each
+        the same code; the daemon binds the port presence advertises. And the
+        person's door proposes, confirms and revokes a pairing, which outlives a
+        restart in `/var/lib/alo/pairings.toml` —
+        `alo-protocol/src/pairing.rs` (the four requests and four answers),
+        `alo-agentd/src/pairing.rs` (the door, against the one lock),
+        `alo-nearby/src/keeping.rs` and `alo-remembering/src/pairings.rs`,
+        2,365 lines between them. Tasks 1, 2, 6, 7, 9, 10 and 12 of
+        `v0-5-the-local-network-plan.md`, finished 37 of 37, with a report each
+        — `updates/the-persons-door-pairs-and-a-pairing-outlives-a-restart.md`
+        for the last.
+        *This half read **Most of it, and not whole** until 2026-09-26, naming
+        task 12 as open. **That task was done on 2026-09-14** — twelve days of
+        finished work recorded here as missing, and named by task number so it
+        read as authoritative. A stale gate misleads in both directions*
   - [ ] **On the machine.**
         two physical machines on one office network, which nothing here has
         had; every test puts both sides on one host
@@ -2311,6 +2336,45 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### The network and the broker, reconciled, 2026-09-26
+
+**Ticked, code half:** *Machines find each other on a local network, with
+pairing*, and *System verbs through the privileged broker*, which was never
+split and is now.
+
+**The finding here is the opposite of the last group's.** *Machines find each
+other* read **"Most of it, and not whole"**, and named what was missing: *the
+person's door to propose, confirm and revoke, and a pairing that outlives a
+restart — task 12 of `v0-5-the-local-network-plan.md`, **open***.
+
+That task was **done on 2026-09-14**. Twelve days of finished work recorded in
+the exit gate as missing, in a clause precise enough to sound authoritative —
+naming the plan, the task number and the two capabilities. Anybody planning
+around the gate would have read local-network pairing as unfinished, and there
+are 2,365 lines across four files and a published report saying otherwise.
+
+Verified rather than taken from the plan's status line: `alo-protocol`'s four
+requests and four answers on the person's door, `alo-agentd`'s door against the
+one lock, `alo-nearby`'s pairings as written down, and
+`/var/lib/alo/pairings.toml` in `alo-remembering` for the restart.
+
+**A stale gate misleads in both directions**, and this pass has now found one of
+each — a tick standing for work that was not there (the cut's `alo-strings` box
+under *Software*), and an explicit denial standing over work that was. Neither is
+dishonesty; both come from nobody reading the instrument for a fortnight.
+
+**The broker's code half** is tasks 1 to 8 of the broker plan: a closed, typed
+list of thirteen verbs, each taking an identity something else reported rather
+than a string somebody composed, the broker holding no capability itself, and the
+four `alo-changing-*` surfaces a person reads when each answers. Its task 9 —
+*the three promises only a chip can keep* — is blocked on a certified machine and
+belongs to the machine half, which is where the box now says it is.
+
+**Re-checked rather than trusted:** *Zero inference egress over a working day*
+was already ticked. Its box names `alo-asking`'s `a_day_that_never_left.rs` and a
+report; both exist, the test carries five cases, and the tick stands.
+
 
 ### The session and the displays, reconciled, 2026-09-26
 
