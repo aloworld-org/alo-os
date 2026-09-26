@@ -6726,3 +6726,43 @@ is a result file that never appears.
 sources that file, and the run is started with `--setenv=HOME=/root` as well.
 Either alone is enough; both are cheap.
 **Date:** 2026-09-25.
+### A backend's output metadata cannot tell two identical monitors apart
+**Version:** `alo-shell`'s `crate::display_lifecycle`, landed with *The division
+and the desktops a session holds*; 2026-09-26.
+**Whose:** ours.
+**Behaviour:** `alo-dividing` remembers a division per screen, under a key the
+compositor supplies, so that the same screen returning finds the arrangement it
+left. The strongest identity this compositor can supply is
+`OutputMetadata`'s make, model and connector name together — there is no serial
+number in it, because neither the DRM connector properties we read nor the
+nested backend's description carries one we could rely on.
+
+So two **identical** monitors swapped between two ports each find the other's
+arrangement. A different monitor plugged into the same port does not inherit
+one, and the same monitor returning to the same port does find its own, which
+are the two cases that happen to a person with one screen at a desk.
+**Our response:** the key is make, model and connector rather than connector
+alone, because the connector alone is the worse failure — it lays a laptop's
+arrangement over whatever is plugged into that socket next. The swap case is
+left wrong rather than guessed at. Reading EDID serial numbers would fix it and
+is not in this plan.
+**Date:** 2026-09-26.
+
+### Neither deciding crate takes a new area for a display it already holds
+**Version:** `alo-desktops` 0.1.0 and `alo-dividing` 0.1.0, read on 2026-09-26.
+**Whose:** `alo-desktops` and `alo-dividing` are not this lane's crates; this
+entry is the report, and whether to change them is their owner's.
+**Behaviour:** `Desktops` has `plug_in` and `unplug`, and `Division` has `of`,
+`divide`, `move_boundary` and `close`. Neither has a resize. A display whose
+mode changes — a person changing resolution, or a nested compositor's window
+being dragged bigger — therefore has no road that keeps its desktops and its
+division while moving them into the new extent.
+**Our response:** `alo-shell` treats a changed extent as the display **leaving
+and returning at the new size**, which uses both crates' own roads:
+`Remembered::of` on the way out and `Remembered::restored(new_area, open)` on
+the way in. The arrangement survives and the windows that are open keep their
+shares. What it costs is that a resize is not free — the tree is rebuilt from
+what was remembered rather than adjusted — and that a window with no `app_id`
+is not remembered across it, because a remembered share is keyed by
+application. A resize on either crate would be better and is not ours to add.
+**Date:** 2026-09-26.

@@ -42,6 +42,15 @@ pub enum NotDivided {
         "this machine has more than one display, and nothing here decides which a window is on"
     )]
     MoreThanOneDisplay,
+    /// One of the two windows cannot take a share right now — it is not mapped,
+    /// or a move, a resize or a popup grab has hold of it.
+    ///
+    /// **Asked before the division changes, not after.** A window that refused
+    /// its share afterwards would leave the tree divided and the screen not,
+    /// and the next thing drawn from that tree would put somebody's window
+    /// where nothing on screen says it is.
+    #[error(transparent)]
+    Window(#[from] crate::WindowModeError),
 }
 
 impl crate::Server {
@@ -53,8 +62,10 @@ impl crate::Server {
     /// the two windows and hand them over.
     ///
     /// # Errors
-    /// [`NotDivided`]. A refusal leaves the division exactly as it was — that
-    /// is `alo-dividing`'s guarantee, not this file's.
+    /// [`NotDivided`]. A refusal leaves the division exactly as it was: for a
+    /// refusal from `alo-dividing` that is its own guarantee, and for a window
+    /// that cannot take a share it is because both windows are asked **before**
+    /// anything is divided.
     pub fn divide_focused_with_next(
         &mut self,
         focused: &WlSurface,
@@ -62,6 +73,10 @@ impl crate::Server {
     ) -> Result<(), NotDivided> {
         let display = self.the_only_display()?;
         let next = self.next_in_order(focused);
+        self.surfaces.ready_for_a_mode(focused)?;
+        if let Some(next) = next.as_ref() {
+            self.surfaces.ready_for_a_mode(next)?;
+        }
         let focused_window = self.window_for(focused);
         let next_window = next.as_ref().map(|next| self.window_for(next));
         // A division is changed where it lives: it is not `Clone`, because it
@@ -75,7 +90,55 @@ impl crate::Server {
             .dividing_mut(display)
             .ok_or(NotDivided::NoDisplay)?
             .divide_with_next(focused_window, next_window, side)
-            .map_err(NotDivided::Dividing)
+            .map_err(NotDivided::Dividing)?;
+        self.put_windows_in_their_shares(display);
+        Ok(())
+    }
+
+    /// Ask every window on this display to sit in the share it was given.
+    ///
+    /// **Every share, not the two that just changed.** Dividing one window's
+    /// share moves the boundary its neighbours sit against, and a compositor
+    /// that configured only the pair it touched would leave the rest of the
+    /// tree drawn where it used to be — a layout right in the division and
+    /// wrong on the screen.
+    ///
+    /// A window the division holds that this compositor no longer has is passed
+    /// over: the division is kept true to what is open once a frame, so a stale
+    /// share is a frame old rather than a reason to refuse.
+    fn put_windows_in_their_shares(&mut self, display: alo_desktops::DisplayId) {
+        let Some(division) = self.desk.dividing(display) else {
+            return;
+        };
+        let shares: Vec<(u64, crate::window_mode::Share)> = division
+            .shares()
+            .into_iter()
+            .map(|share| {
+                let area = share.area();
+                (
+                    share.window().to_compositor(),
+                    crate::window_mode::Share {
+                        at: (as_pixels(area.x()), as_pixels(area.y())),
+                        size: (as_pixels(area.width()), as_pixels(area.height())),
+                    },
+                )
+            })
+            .collect();
+        let mapped: Vec<WlSurface> = self.surfaces.mapped().cloned().collect();
+        for (number, share) in shares {
+            let Some(surface) = mapped
+                .iter()
+                .find(|surface| self.desk.number_given_to(surface) == Some(number))
+            else {
+                continue;
+            };
+            // A refusal here is the client's or the mode's and never the
+            // division's: the layout stands either way, and the next chord
+            // asks again.
+            let _ = self
+                .surfaces
+                .set_window_mode(surface, crate::window_mode::Mode::InAShare(share));
+        }
     }
 
     /// The one display this session has.
@@ -111,6 +174,16 @@ impl crate::Server {
             None => Window::any_size(id),
         }
     }
+}
+
+/// A measure a division gives, as a display's pixels count it.
+///
+/// A division measures in logical units and never in a number larger than a
+/// screen, so the conversion cannot fail — and a value that somehow did would
+/// be clamped rather than wrapped, because a window at a negative corner is one
+/// nobody can reach.
+fn as_pixels(units: u32) -> i32 {
+    i32::try_from(units).unwrap_or(i32::MAX)
 }
 
 /// The smallest size a window says it can be drawn at, in logical units.

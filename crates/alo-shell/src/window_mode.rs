@@ -27,9 +27,6 @@ pub enum WindowModeError {
     /// Normal geometry or current restore limits cannot be represented safely.
     #[error(transparent)]
     Geometry(#[from] ResizeGeometryError),
-    /// Exact tiling must satisfy committed hints and output bounds.
-    #[error(transparent)]
-    Tile(#[from] crate::TileGeometryError),
 }
 
 /// One mapping's saved normal geometry, retained until restoration commits.
@@ -51,17 +48,36 @@ pub(crate) enum Mode {
     Normal,
     /// Use the whole submitted output without normal-size hints.
     Maximized,
-    /// Use an exact half-output size constrained by current hints.
-    Tiled(crate::TileSide),
+    /// Sit exactly in the share `alo-dividing` gave this window.
+    ///
+    /// **The area is carried rather than computed.** It was a side and half an
+    /// output until 2026-09-26; a share is a rectangle the division decided,
+    /// and a shell that worked one out from a side would be the second layout
+    /// decider the shell plan's constraint forbids.
+    InAShare(Share),
 }
 
-/// Fixed output anchor, or a tile anchored using actual committed dimensions.
+/// A rectangle a window was given, in output pixels.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Share {
+    /// Its top-left corner.
+    pub(crate) at: (i32, i32),
+    /// How big it is.
+    pub(crate) size: (i32, i32),
+}
+
+/// Where a window sits once it has answered.
+///
+/// One case since 2026-09-26. There were two: a half-output tile anchored from
+/// the size the client actually committed, so that a right-hand half stayed
+/// against the right edge whatever the client did. A share has an exact corner
+/// the division decided, so there is nothing to work back from — and a window
+/// that commits smaller than its share sits at the share's corner rather than
+/// being pushed against an edge nobody chose.
 #[derive(Clone, Copy)]
 pub(crate) enum Anchor {
-    /// Saved normal origin or the maximized output origin.
+    /// The saved normal origin, the output's, or a share's corner.
     Fixed((i32, i32)),
-    /// Outside edge calculated from actual committed dimensions.
-    Tile(crate::TileGeometry),
 }
 
 impl Surfaces {
@@ -138,17 +154,13 @@ impl Surfaces {
                         Anchor::Fixed((0, 0)),
                     )
                 }),
-                Mode::Tiled(side) => size
-                    .and_then(|output| {
-                        crate::TileGeometry::for_surface(window.role.wl_surface(), output, side)
-                            .ok()
-                    })
-                    .map(|tile| {
-                        (
-                            configure(&window.role, window.mode, tile.requested_size()),
-                            Anchor::Tile(tile),
-                        )
-                    }),
+                // A share does not change because the output did: what a
+                // display's change means for a division is `alo-dividing`'s
+                // answer, asked when the display arrives.
+                Mode::InAShare(share) => Some((
+                    configure(&window.role, window.mode, share.size),
+                    Anchor::Fixed(share.at),
+                )),
             };
         }
     }
@@ -179,22 +191,7 @@ impl Surfaces {
         if !serial.is_some_and(|serial| serial >= required) {
             return;
         }
-        let origin = match anchor {
-            Anchor::Fixed(origin) => origin,
-            Anchor::Tile(tile) => {
-                // Limits committed with this response can invalidate its old plan.
-                if tile.revalidate(surface).is_err() {
-                    window.pending = None;
-                    return;
-                }
-                let size = crate::scene::geometry(surface).size.to_i32_round();
-                let Ok(origin) = tile.committed_origin((size.w, size.h)) else {
-                    window.pending = None;
-                    return;
-                };
-                origin
-            }
-        };
+        let Anchor::Fixed(origin) = anchor;
         crate::window_placement::set(surface, Some(origin.into()));
         if window.mode == Mode::Maximized {
             window.pending = None;
@@ -229,8 +226,9 @@ fn configure(role: &ToplevelSurface, mode: Mode, size: (i32, i32)) -> Serial {
             Mode::Maximized => {
                 pending.states.set(xdg_toplevel::State::Maximized);
             }
-            Mode::Tiled(_) => {
-                // Both halves abut output edges or the split on every edge.
+            Mode::InAShare(_) => {
+                // A share abuts the output's edges or another share's on every
+                // edge, which is what these four flags say to a client.
                 for flag in [
                     xdg_toplevel::State::TiledLeft,
                     xdg_toplevel::State::TiledRight,

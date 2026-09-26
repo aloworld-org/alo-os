@@ -46,6 +46,11 @@ impl Numbers {
             .or_insert_with(|| NEXT.fetch_add(1, Ordering::Relaxed))
     }
 
+    /// This window's number, or [`None`] where it has never had one.
+    pub(crate) fn given_to(&self, surface: &WlSurface) -> Option<u64> {
+        self.given.get(&surface.id().protocol_id()).copied()
+    }
+
     /// Keep only the windows still here, and say which numbers went.
     ///
     /// No number is given back: see this file's header. What is forgotten is
@@ -66,5 +71,20 @@ impl Numbers {
     /// Which protocol identity a surface has, for the caller collecting them.
     pub(crate) fn identity(surface: &WlSurface) -> u32 {
         surface.id().protocol_id()
+    }
+
+    /// A number for something this compositor draws itself.
+    ///
+    /// The egress indicator, the approval surface and the window-control
+    /// overlay are on every desktop and belong to no client, so there is no
+    /// `WlSurface` to hand out a number against — but `alo-desktops` holds them
+    /// as windows and needs numbers for them.
+    ///
+    /// Taken from the same counter as every other window's, so one of the three
+    /// can never collide with a client's. Nothing records it here: it is not
+    /// reachable from a surface, because there is no surface, and
+    /// [`Self::keep_only`] is therefore never asked about it.
+    pub(crate) fn reserve() -> u64 {
+        NEXT.fetch_add(1, Ordering::Relaxed)
     }
 }

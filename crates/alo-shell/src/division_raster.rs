@@ -17,14 +17,15 @@
 //! An outline that disagreed with the commit would be the machine lying at the
 //! one moment somebody could still change their mind.
 //!
-//! # One tiling decision, and it is not this crate's
+//! # One layout decision, and it is not this crate's
 //!
-//! `crate::window_tiling` computes a half of an output and sets a window mode.
-//! It is a **mechanism**: given a side, it works out a rectangle. It is not a
-//! decider, and since this file exists the side no longer comes from it —
-//! `crate::window_command` asks `alo_dividing::keyboard::side_for`, which is
-//! the one place a chord becomes a side. The plan's constraint is that there
-//! are never two tiling decisions in one compositor; this is how that is kept.
+//! There was a second one until 2026-09-26: `crate::window_tiling` computed
+//! half of an output and set a window mode from it. It has gone, and a chord
+//! now reaches `crate::window_dividing`, which hands the two windows to
+//! `alo_dividing::Division::divide_with_next` and lays out what comes back.
+//! The plan's constraint is that there are never two layout deciders in one
+//! compositor; removing the half is how that is kept, rather than keeping a
+//! half that agreed with the division by inspection.
 //!
 //! # Logical units in, pixels out
 //!

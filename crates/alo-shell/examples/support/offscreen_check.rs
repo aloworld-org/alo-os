@@ -64,7 +64,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         alo_appearance::Scheme::Dark
                     },
                 )?,
-                23..=28 => crate::window_tile_check::stage(&mut server, renderer, stage)?,
                 22 => crate::window_minimize_check::client_request(&mut server, renderer)?,
                 17..=21 => {
                     crate::window_maximize_check::stage(&mut server, renderer, stage)?;
@@ -164,7 +163,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     crate::window_size_check::run(&mut server, renderer)?;
                     crate::window_placement_check::run(&mut server, renderer)?;
                     crate::resize_geometry_check::run(&mut server, renderer)?;
-                    crate::tile_geometry_check::run(&mut server, renderer)?;
                 }
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {

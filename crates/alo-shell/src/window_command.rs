@@ -1,7 +1,7 @@
 //! Configured layout commands with additive, detailed refusal reporting.
 use crate::{
     InputError, Server, ShortcutDispatchError, WindowMaximizeError, WindowMinimizeError,
-    WindowModeError, window_mode::Mode,
+    window_mode::Mode,
 };
 use alo_shortcuts::{Action, Chord, Shortcuts};
 
@@ -26,9 +26,6 @@ pub enum WindowCommandError {
     /// Maximize or restore refused without queuing a configure.
     #[error(transparent)]
     Maximize(#[from] WindowMaximizeError),
-    /// Half-output tiling refused without queuing a configure.
-    #[error(transparent)]
-    Tile(#[from] WindowModeError),
     /// The division refused to put the window on that side, in its own words.
     #[error(transparent)]
     Dividing(#[from] crate::NotDivided),

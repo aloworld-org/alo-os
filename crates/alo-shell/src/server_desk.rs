@@ -52,6 +52,12 @@ pub(crate) struct Desk {
     numbers: crate::window_number::Numbers,
     /// How big each display is, as it was when it arrived.
     areas: BTreeMap<DisplayId, Area>,
+    /// What each display is remembered by, as it arrived under.
+    ///
+    /// Kept so a display can be let go of without the caller having to hand
+    /// back the name it plugged it in with. A departure that used a different
+    /// name would remember the arrangement where nothing looks for it.
+    names: BTreeMap<DisplayId, String>,
 }
 
 impl Desk {
@@ -85,6 +91,7 @@ impl Desk {
     ) -> Result<(), NotADisplay> {
         self.desktops.plug_in(display, area, promises)?;
         self.areas.insert(display, area);
+        self.names.insert(display, named.to_owned());
         if let Some(division) = self
             .remembered
             .on(named)
@@ -115,6 +122,7 @@ impl Desk {
             self.remembered.remember(named, remembered);
         }
         self.areas.remove(&display);
+        self.names.remove(&display);
         self.desktops.unplug(display)
     }
 
@@ -177,6 +185,18 @@ impl Desk {
         alo_dividing::WindowId::from_compositor(self.numbers.of(surface))
     }
 
+    /// The number this window already has, or [`None`] where it has never had
+    /// one.
+    ///
+    /// For finding a window a division holds without giving a number to
+    /// something that was never one here.
+    pub(crate) fn number_given_to(
+        &self,
+        surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    ) -> Option<u64> {
+        self.numbers.given_to(surface)
+    }
+
     /// These are the windows that are open now; the rest have closed.
     ///
     /// **A division is kept true to what is open, once a frame.** A window that
@@ -211,6 +231,11 @@ impl Desk {
     /// The area of a display, as it was when it arrived.
     pub(crate) fn area_of(&self, display: DisplayId) -> Option<Area> {
         self.areas.get(&display).copied()
+    }
+
+    /// What this display is remembered by, or [`None`] where it is not here.
+    pub(crate) fn name_of(&self, display: DisplayId) -> Option<&str> {
+        self.names.get(&display).map(String::as_str)
     }
 
     /// Whether any display is here at all.

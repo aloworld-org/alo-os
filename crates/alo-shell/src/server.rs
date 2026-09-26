@@ -138,7 +138,7 @@ impl Server {
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let size = target.size();
-        self.presentation.validate_target(target)?;
+        let metadata = self.presentation.validate_target(target)?;
         if size.w > 0 && size.h > 0 {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
@@ -156,6 +156,9 @@ impl Server {
             time,
         )?;
         self.surfaces.update_window_mode_output(Some(size));
+        // The output this frame went to is the display a session holds its
+        // divisions and desktops on; see `crate::display_lifecycle`.
+        self.the_display_submitted(&metadata, (size.w, size.h));
         Ok(submitted)
     }
 }

@@ -115,6 +115,7 @@ mod direct_seat;
 mod direct_session;
 mod direct_sign_in;
 mod direct_target;
+mod display_lifecycle;
 mod display_resources;
 mod division_raster;
 mod dock_raster;
@@ -289,7 +290,6 @@ mod window_raise;
 mod window_resize;
 mod window_size;
 mod window_switch;
-mod window_tiling;
 
 pub use status_items::StatusItems;
 pub use window_activation::WindowActivationError;
@@ -303,7 +303,6 @@ pub use window_raise::WindowRaiseError;
 pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};
 pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
-pub use window_tiling::{TileGeometry, TileGeometryError, TileSide};
 
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
