@@ -238,6 +238,77 @@ fn the_shipped_policy_rejects_by_default() {
     );
 }
 
+/// **Both attachments exist over the pinned digest.**
+///
+/// ADR 0070 signs twice — the readable form for machines today and the bundle
+/// form for the base that will read it tomorrow — and the window worth closing is
+/// the one where somebody ran the first command and not the second. Trusting
+/// whoever signed to have run both is the producer-side check `LOOP.md` warns
+/// about, so this asks the registry.
+///
+/// Read over plain HTTPS rather than with a tool: what is being asked is whether
+/// two tags exist, which is a question about the registry and not about any
+/// machine's architecture.
+#[test]
+fn both_signatures_exist_over_the_pinned_digest() {
+    let digest = the_pinned_digest();
+    let registry = the_registry();
+    let repository = registry
+        .split_once('/')
+        .map(|(_, path)| path)
+        .unwrap_or(&registry);
+    let host = registry.split('/').next().unwrap_or(&registry);
+    let Some(token) = a_token(host, repository) else {
+        println!("skipped: this machine cannot reach {host} for a pull token");
+        return;
+    };
+    let attachment = digest.replace(':', "-");
+    for (tag, what) in [
+        (format!("{attachment}.sig"), "the form a machine can read"),
+        (attachment.clone(), "the bundle form"),
+    ] {
+        let code = Command::new("curl")
+            .args([
+                "-s",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                "-H",
+                &format!("Authorization: Bearer {token}"),
+                "-H",
+                "Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json",
+                &format!("https://{host}/v2/{repository}/manifests/{tag}"),
+            ])
+            .output()
+            .expect("curl runs");
+        let code = String::from_utf8_lossy(&code.stdout).into_owned();
+        assert_eq!(
+            code, "200",
+            "{what} is missing for the pinned digest: {tag} returned {code}. \
+             ADR 0070 signs both ways; a half-signed release is one a machine \
+             either cannot verify today or will not be able to tomorrow."
+        );
+    }
+}
+
+/// An anonymous pull token for this repository, or [`None`] with no network.
+fn a_token(host: &str, repository: &str) -> Option<String> {
+    let said = Command::new("curl")
+        .args([
+            "-sf",
+            &format!("https://{host}/token?scope=repository:{repository}:pull&service={host}"),
+        ])
+        .output()
+        .ok()?;
+    let body = String::from_utf8_lossy(&said.stdout).into_owned();
+    let token: serde_json::Value = serde_json::from_str(&body).ok()?;
+    token
+        .get("token")
+        .and_then(|it| it.as_str())
+        .map(str::to_owned)
+}
+
 /// **The registry is configured for sigstore attachments, or nothing is ever
 /// fetched.**
 ///

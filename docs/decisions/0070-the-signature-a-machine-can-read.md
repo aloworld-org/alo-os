@@ -1,4 +1,4 @@
-# ADR 0070 — The signature a machine can read, and the one flag that produces it
+# ADR 0070 — The signature a machine can read, and the road that is closing
 
 **Status:** proposed, 2026-09-26.
 
@@ -11,10 +11,11 @@ after it.
 
 ## The decision in one line
 
-`cosign` 3 writes a signature no alo OS machine can read. **One undocumented flag
-makes it write one they can**, so the release side moves, nothing about the images
-changes, and the currently pinned release can be made verifiable **without a
-rebuild or a republish**.
+`cosign` 3 writes a signature no alo OS machine can read. One undocumented flag
+makes it write one they can, and **that flag is itself deprecated with nothing
+behind it** — so sign **both** ways now, and treat a base that reads the bundle
+form as the exit rather than a tidy-up. The currently pinned release becomes
+verifiable **without a rebuild or a republish**.
 
 ## What is published today, measured against the registry
 
@@ -61,19 +62,38 @@ the owner's invocation and not a guess about it.
 ## The options
 
 **1. The release signs in the readable form** — add `--new-bundle-format=false`.
-One argument. Nothing about any image changes, the base is untouched, and ADR
-0036's *a machine builds, a person signs* is unaffected.
+One argument, and **not durable.** cosign 3.1.3 prints, on every run:
 
-**2. The machine reads the bundle form** — a `containers/image` new enough to
-verify Sigstore bundles. That is the **pinned rented base**, and
+> Flag `--new-bundle-format` has been deprecated, **this will be the only
+> supported format in future versions.**
+
+So the only road to a verifiable release is the one cosign is removing. When the
+flag goes, **signing will still succeed** and publish a signature no alo OS
+machine can read: nothing fails, nothing warns, and the first symptom is a
+refused update months later. An earlier draft of this file recommended this
+option as the safe one. That was wrong, and the measurement below is why.
+
+**And there is no supported road behind it.** `--signing-config` — the
+replacement cosign names for the other deprecated flag — **cannot produce the
+classic form at all**: it refuses with *must provide `--new-bundle-format` or
+`--bundle` where applicable with `--signing-config`*. Measured. So the readable
+signature has **no non-deprecated path**, and that is not a tidiness problem; it
+is a road closing with nothing behind it.
+
+**2. The machine reads the bundle form** — **the only exit.** Given the
+deprecation above, this stops being the elegant long-term option and becomes the
+one road that still exists once the flag is gone — a `containers/image` new enough
+to verify Sigstore bundles. That is the **pinned rented base**, and
 [ADR 0011](0011-engines-are-configured-never-written-in.md) says engines are
 configured, never patched: this means a newer base or a patch, and either needs
 its own ADR. **Not proposed here**, and deliberately not measured — whether any
 base version can read bundles belongs in the build on x86_64, not in a reading of
 release notes.
 
-**3. Sign both, and keep signing both.** ✅ **Recommended.** One extra
-invocation. The two attachments live at **different tags** — `sha256-<digest>`
+**3. Sign both, and keep signing both.** ✅ **Recommended now**, with option 2
+as the **exit rather than the tidy long-term answer**. One extra invocation.
+
+The two attachments live at **different tags** — `sha256-<digest>`
 and `sha256-<digest>.sig` — so they cannot collide, which is measured rather
 than assumed: signing both ways against one digest produced both tags with
 neither disturbing the other. It keeps option 2 available later without a second
@@ -94,6 +114,40 @@ release half-signed fails the build rather than shipping as a machine that can
 verify nothing. That check is the consumer's side of this decision and is where
 the real guarantee lives.
 
+## The policy is two files, and the second is invisible
+
+`containers/image` fetches a sigstore signature from a registry **only** when
+that registry is configured for it. With `policy.json` alone, the **correctly
+signed** 0.0.5 was refused — with *A signature was required, but no signature
+exists*, **the same sentence a genuinely unsigned image gets.** Measured against
+the real registry.
+
+So a machine shipping the policy without
+`registries.d/…use-sigstore-attachments: true` refuses every update while
+telling the person the release is unsigned, and whoever debugs it goes and checks
+the signature, the key and the registry — all of which are fine. The two ship
+together in `image/Containerfile`, the negative case is held forever by
+`crates/alo-image/tests/the_shipped_policy_accepts_and_refuses.rs`, and
+`docs/quirks.md` carries the indistinguishable message in those words.
+
+It also means the error is ambiguous three ways: unsigned, signed in the
+unreadable form, or signed correctly and never looked for. Task 7's measurement
+could have been any of the three.
+
+## What the owner should see, from the consumer's side
+
+`cosign verify` is the producer asking itself, and it said yes for five releases
+while nothing could read a thing. The confirmation is:
+
+- the tag `sha256-<digest>.sig` now returns 200 where it returned 404; and
+- `skopeo --registries.d image/registries.d --policy <the shipped policy> copy
+  docker://ghcr.io/aloworld-org/alo-os@<DIGEST> dir:/tmp/check` reaches *Copying
+  blob* rather than *Source image rejected*.
+
+That second one runs the same library `bootc` runs. **Use `copy`, never
+`inspect`:** `skopeo inspect` does not apply the policy — it prints the config of
+an image the policy would refuse and exits zero.
+
 ## The migration, which needs no new release
 
 **The five published images are fine.** What is missing is a signature in the
@@ -111,8 +165,27 @@ command, and the one that matters is verifiable*. Task 8 of the keeps-itself pla
 can then be met on the current image rather than waiting for the next one, which
 is the difference between a release away and a command away.
 
-Older releases can be back-signed the same way, one command each, or left as
-they are — nothing pulls them.
+**Older releases are not being back-signed.** 0.0.1 to 0.0.4 carry only the
+bundle form and the policy refuses them, correctly — measured: 0.0.4 is refused
+with *A signature was required, but no signature exists*. They are superseded and
+nothing pulls them, so re-signing history buys nothing. `pinned.toml` says so
+plainly, because otherwise somebody pins one for a rollback or a bisect and loses
+an afternoon to a refusal that is working as designed.
+
+### Rollback, which this migration breaks until the next signing
+
+0.0.5 is the **first** machine-verifiable release, so **it has nothing to roll
+back to.** A machine that checks signatures will refuse 0.0.4, and *back to
+yesterday's machine* is a promise in this release. This is a known consequence of
+the migration rather than a fault in it: before it, nothing was verifiable and
+rollback was equally unavailable to a checking machine; after it, one release is.
+
+What resolves it is **the second signed release**, at which point there are two
+verifiable images and a rollback has somewhere to go. That also corrects the
+shape of task 8 of `../autonomy/v0-5-the-machine-keeps-itself-plan.md`: its
+acceptance is *one signed release updating to another*, so it needs **two
+signings, not one**. The migration makes the policy provable now; the task still
+waits on the next release.
 
 ## The four traps, none recoverable from the tool's own documentation
 
@@ -137,8 +210,11 @@ Recorded because each cost an hour and the next person would spend the same.
 
 ## What this lane did not determine
 
-- **Whether any `containers/image` version can read Sigstore bundles.** Option 2
-  rests on it and is not proposed. It is a question for the build, on x86_64.
+- **Whether any `containers/image` version can read Sigstore bundles.** This is
+  no longer a side question: given the deprecation, it **decides the long-term
+  signing story**, because option 2 is the only road that outlives the flag. It
+  belongs in the build, on x86_64, and it is worth doing early rather than when
+  the flag is removed.
 - **Whether the boot environment fetches the attachment at all.** Verification
   needs that tag pulled, and a staging road that can fetch an image but not its
   attachment fails where nobody is watching. This matters more now, not less,
