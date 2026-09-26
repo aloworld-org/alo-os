@@ -1112,9 +1112,25 @@ fn the_whole_road_installs(
         A_WALK + A_SIGN_IN + AN_INSTALL,
     );
     let installed = ended.as_deref() == Some(done.as_str());
+    // The environment says *installed* and then tidies up — the entry named,
+    // Windows put behind it, the staging area taken back — and only then
+    // restarts. A machine stopped on the first of those sentences is a machine
+    // stopped in the middle of the second: measured on 2026-09-26, a walk that
+    // stopped there left a firmware with no entry for alo OS at all, and the
+    // next boot had nothing to remove.
+    let tidied = the_environment_says("installing.tidied");
+    let not_whole = the_environment_says("installing.tidy-not-whole");
+    let after = installed
+        .then(|| console.wait_for(&[tidied.as_str(), not_whole.as_str()], A_WALK))
+        .flatten();
     let said = without_the_kernels_messages(&console.said());
     drop(machine);
     walking::machine::stop();
+    assert!(
+        !installed || after.is_some(),
+        "alo OS was installed and the environment never finished tidying up, so what \
+         this computer starts is whatever the tidy was in the middle of.\n{said}"
+    );
     (installed, said)
 }
 
@@ -1237,12 +1253,22 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
         its_disk.contains("style=RAW"),
         "the disk alo OS was on still has a partition table: {its_disk}\n{after}"
     );
-    for label in ["EFI-SYSTEM", "root"] {
-        assert!(
-            !after.contains(&format!("label=[{label}]")),
-            "{label} is still on a disk of this computer:\n{after}"
-        );
-    }
+    // And no partition of it is left at all. Not by label: Windows reports
+    // none for alo OS's own partition, because it cannot read btrfs.
+    let its_number = its_disk
+        .split_whitespace()
+        .nth(1)
+        .and_then(|number| number.strip_suffix(':'))
+        .unwrap_or("?")
+        .to_owned();
+    let left = after
+        .lines()
+        .filter(|line| line.contains(&format!("partition {its_number}/")))
+        .collect::<Vec<_>>();
+    assert!(
+        left.is_empty(),
+        "the disk alo OS was on still has partitions: {left:?}\n{after}"
+    );
     eprintln!(
         "after the removal Windows read: {its_disk}\nand it {} when it was asked to",
         if shut { "shut down" } else { "was cut off" }

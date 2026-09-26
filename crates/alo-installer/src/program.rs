@@ -280,10 +280,10 @@ pub enum Program {
     ///
     /// **Guarded in the script itself, not only by the caller.** It refuses a
     /// disk Windows says is the system's or the one it started from; it refuses
-    /// a disk that does not carry the label the image gives alo OS's own
-    /// partition; and it refuses a disk carrying any label the image does not
-    /// make, so a disk somebody kept their own files on beside alo OS is never
-    /// erased. A program that erases a whole disk is the one program that must
+    /// a disk that carries no partition of the type the image gives alo OS's
+    /// own; and it refuses a disk carrying a partition of any type the image
+    /// does not make, so a disk somebody kept their own files on beside alo OS
+    /// is never erased. A program that erases a whole disk is the one program that must
     /// be unable to erase the wrong one.
     ClearingTheDiskAloOsIsOn {
         /// The disk alo OS is on.
@@ -547,25 +547,24 @@ impl Program {
             ),
             Self::ClearingTheDiskAloOsIsOn { disk } => format!(
                 "$disk = Get-Disk -Number {disk}; \
-                 if ($disk.IsSystem -or $disk.IsBoot) {{ throw 'that disk is the one this computer starts from' }}; \
-                 $labels = @(Get-Partition -DiskNumber {disk} -ErrorAction SilentlyContinue | \
-                   ForEach-Object {{ $label = ''; \
-                     try {{ $label = [string]($_ | Get-Volume).FileSystemLabel }} catch {{ $label = '' }}; \
-                     $label }} | Where-Object {{ $_ -ne '' }}); \
+                 if ($disk.IsSystem -or $disk.IsBoot) \
+                   {{ throw 'that disk is the one this computer starts from' }}; \
+                 $types = @(Get-Partition -DiskNumber {disk} -ErrorAction SilentlyContinue | \
+                   ForEach-Object {{ [string]$_.GptType }}); \
                  $its = @({}); \
-                 if ($labels -notcontains '{}') {{ throw 'that disk does not hold alo OS' }}; \
-                 foreach ($label in $labels) {{ \
-                   if ($its -notcontains $label) {{ throw 'that disk holds something else too' }} }}; \
+                 if ($types -notcontains '{}') {{ throw 'that disk does not hold alo OS' }}; \
+                 foreach ($type in $types) {{ \
+                   if ($its -notcontains $type) {{ throw 'that disk holds something else too' }} }}; \
                  Clear-Disk -Number {disk} -RemoveData -RemoveOEM -Confirm:$false; \
                  $after = Get-Disk -Number {disk}; \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
                    PartitionStyle = [string]$after.PartitionStyle }})",
-                crate::disks::THE_IMAGES_LABELS
+                crate::disks::THE_IMAGES_PARTITION_TYPES
                     .iter()
-                    .map(|label| format!("'{label}'"))
+                    .map(|its| format!("'{its}'"))
                     .collect::<Vec<_>>()
                     .join(", "),
-                crate::disks::THE_SYSTEMS_LABEL
+                crate::disks::THE_SYSTEMS_PARTITION_TYPE
             ),
             Self::RemovingTheArea {
                 disk,
@@ -937,9 +936,9 @@ mod tests {
     /// **The program that erases a disk cannot be pointed at the wrong one.**
     ///
     /// Its script refuses the disk this computer starts from, refuses a disk
-    /// that does not carry the label the image gives alo OS's own partition,
-    /// and refuses one carrying any label the image does not make — before it
-    /// reaches the line that erases. The guards are in the script because the
+    /// with no partition of the type the image gives alo OS's own, and refuses
+    /// one carrying a partition of any type the image does not make — before
+    /// it reaches the line that erases. The guards are in the script because the
     /// caller is not the last thing standing between a person and their disk.
     #[test]
     fn the_disk_alo_os_is_on_is_erased_and_no_other_can_be() {
@@ -953,7 +952,7 @@ mod tests {
             "$disk.IsSystem",
             "$disk.IsBoot",
             "-notcontains",
-            crate::disks::THE_SYSTEMS_LABEL,
+            crate::disks::THE_SYSTEMS_PARTITION_TYPE,
         ] {
             let at = script.find(guard);
             assert!(
@@ -961,8 +960,8 @@ mod tests {
                 "{guard} is not checked before the disk is erased"
             );
         }
-        for label in crate::disks::THE_IMAGES_LABELS {
-            assert!(script.contains(label), "{label}");
+        for its in crate::disks::THE_IMAGES_PARTITION_TYPES {
+            assert!(script.contains(its), "{its}");
         }
         // The disk it erases is the one it was given, and it is named in every
         // place the script asks about a disk.

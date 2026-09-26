@@ -1472,7 +1472,7 @@ const DISKS_WITH_ALO_OS: &str = r#"[
   {"Number":1,"FriendlyName":"Msft Virtual Disk","SerialNumber":"","BusType":"SAS","UniqueId":"60022480AAAABBBBCCCCDDDDEEEEFFFF","Size":34359738368,"PartitionStyle":"GPT","IsReadOnly":false,
    "Partitions":[{"PartitionNumber":1,"GptType":"{21686148-6449-6e6f-744e-656564454649}","Label":""},
                  {"PartitionNumber":2,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":"EFI-SYSTEM"},
-                 {"PartitionNumber":3,"GptType":"{0fc63daf-8483-4772-8e79-3d69d8477de4}","Label":"root"}]}
+                 {"PartitionNumber":3,"GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}","Label":""}]}
 ]"#;
 
 /// What that disk is called where the person reads it, and types it.
@@ -1560,12 +1560,16 @@ fn nothing_is_erased_unless_the_disks_name_is_typed() {
 }
 
 /// **A disk with anything else on it is not alo OS's**, and nothing is erased:
-/// the second disk carries the image's labels and a person's own beside them.
+/// the second disk carries the image's own partitions and a plain Windows one
+/// beside them.
 #[test]
 fn a_disk_holding_anything_else_is_not_erased() {
     let mut machine = asked_to_remove(ALO_OSS_DISK).answering(
         "disks",
-        &DISKS_WITH_ALO_OS.replace(r#""Label":"EFI-SYSTEM""#, r#""Label":"Photos""#),
+        &DISKS_WITH_ALO_OS.replace(
+            r#""GptType":"{21686148-6449-6e6f-744e-656564454649}""#,
+            r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+        ),
     );
     let removed = alo_installer::remove_alo_os(&mut machine, &strings());
     assert_eq!(removed, alo_installer::Removed::NotFound);

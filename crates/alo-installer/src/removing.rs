@@ -12,9 +12,11 @@
 //! on it (`crate::disks`), so removing alo OS is: the firmware's entry for it,
 //! and then that disk — every partition of it, so the space is free again. The
 //! disk it erases is found by measurement rather than by memory: the one disk
-//! that is not Windows', that carries the label the image's own system
-//! partition carries, and that carries no label the image does not make
-//! (`crate::disks::THE_IMAGES_LABELS`). Nothing that fails that test is
+//! that is not Windows', that carries a partition of the type the image gives
+//! alo OS's own, and that carries no partition of a type the image does not
+//! make (`crate::disks::THE_IMAGES_PARTITION_TYPES`). It is the types and not
+//! the labels because Windows reports no label at all for a filesystem it
+//! cannot read, and alo OS's own it cannot. Nothing that fails that test is
 //! erased, and the sentence says the disk's name before anything is done.
 //!
 //! **Windows is never touched**: not its partition, not its start partition,

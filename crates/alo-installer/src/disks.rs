@@ -22,19 +22,29 @@ use crate::identities::DiskNumber;
 use crate::naming;
 use crate::sizes::THE_LEAST_DISK;
 
-/// The labels the image's own partitions carry, so that the disk alo OS is on
-/// can be recognised again when it is time to remove it (`crate::removing`).
+/// The GPT types the image's own partitions carry, so that the disk alo OS is
+/// on can be recognised again when it is time to remove it
+/// (`crate::removing`).
 ///
 /// **Measured, not chosen**: read from a disk `bootc install` had just written
-/// in the walk of 2026-09-25 — `EFI-SYSTEM` on the partition the firmware
-/// starts from and `root` on the system itself, beside a one-mebibyte partition
-/// with no label at all. They belong to the image, so a disk that carries a
-/// label the image does not make is not a disk this installer wrote.
-pub const THE_IMAGES_LABELS: [&str; 2] = ["EFI-SYSTEM", "root"];
+/// in the walk of 2026-09-26, as Windows itself reported it — a one-mebibyte
+/// BIOS boot partition, an EFI system partition, and the system's own. They
+/// belong to the image, so a disk carrying a partition of any other type is
+/// not a disk this installer wrote.
+///
+/// **Not the labels.** The same reading shows Windows reporting no filesystem
+/// and no label at all for the system's own partition, because it cannot read
+/// btrfs (`alo_image::THE_ONLY_FILESYSTEM`). What a Windows program may ask
+/// about that partition is its type.
+pub const THE_IMAGES_PARTITION_TYPES: [&str; 3] = [
+    "{21686148-6449-6e6f-744e-656564454649}",
+    "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
+    "{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}",
+];
 
-/// The label the image gives the partition alo OS itself lives on: a disk
-/// without it holds no alo OS, whatever else it carries.
-pub const THE_SYSTEMS_LABEL: &str = "root";
+/// The type of the partition alo OS itself lives on — Linux's root for this
+/// architecture. A disk without one holds no alo OS, whatever else it carries.
+pub const THE_SYSTEMS_PARTITION_TYPE: &str = "{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}";
 
 /// Every disk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,9 +79,14 @@ pub struct Disk {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct Partition {
-    /// Its volume's label, where it has one.
+    /// Its volume's label, where it has one — and Windows gives none at all
+    /// for a filesystem it cannot read.
     #[serde(default)]
     label: String,
+    /// Its GPT type, which Windows reports for every partition whether or not
+    /// it can read what is inside.
+    #[serde(default)]
+    gpt_type: String,
 }
 
 /// What a disk is to this installer.
@@ -186,22 +201,21 @@ impl Disk {
             .join(" ")
     }
 
-    /// Whether what is on it is what the image puts on a disk of its own: the
-    /// system's own label present, and every label it carries one the image
-    /// makes. A partition with no label at all — the image's own first
-    /// mebibyte is one — says nothing either way.
+    /// Whether what is on it is what the image puts on a disk of its own: a
+    /// partition of the system's own type, and every partition of a type the
+    /// image makes. A disk with a partition of any other type — a person's own
+    /// files beside alo OS, another system — is not it.
     fn holds_alo_os(&self) -> bool {
-        let labels = || {
+        let types = || {
             self.partitions
                 .iter()
-                .map(|partition| partition.label.trim())
-                .filter(|label| !label.is_empty())
+                .map(|partition| partition.gpt_type.trim())
         };
-        labels().any(|label| label.eq_ignore_ascii_case(THE_SYSTEMS_LABEL))
-            && labels().all(|label| {
-                THE_IMAGES_LABELS
+        types().any(|its| its.eq_ignore_ascii_case(THE_SYSTEMS_PARTITION_TYPE))
+            && types().all(|its| {
+                THE_IMAGES_PARTITION_TYPES
                     .iter()
-                    .any(|its| label.eq_ignore_ascii_case(its))
+                    .any(|made| its.eq_ignore_ascii_case(made))
             })
     }
 
@@ -270,7 +284,7 @@ mod tests {
       {"Number":1,"FriendlyName":"Samsung SSD 870 EVO","SerialNumber":"S5Y1NJ0R123456","BusType":"SATA","UniqueId":"","Size":34359738368,"PartitionStyle":"GPT","IsReadOnly":false,
        "Partitions":[{"PartitionNumber":1,"GptType":"{21686148-6449-6e6f-744e-656564454649}","Label":""},
                      {"PartitionNumber":2,"GptType":"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}","Label":"EFI-SYSTEM"},
-                     {"PartitionNumber":3,"GptType":"{0fc63daf-8483-4772-8e79-3d69d8477de4}","Label":"root"}]}
+                     {"PartitionNumber":3,"GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}","Label":""}]}
     ]"#;
 
     /// **The disk alo OS is on is the one the image wrote, and nothing else
@@ -289,10 +303,16 @@ mod tests {
         let as_if = Disks::read(Some(AFTER_AN_INSTALL)).unwrap();
         assert_eq!(as_if.the_one_alo_os_is_on(DiskNumber(1)), None);
 
-        // A person's own files beside alo OS, and alo OS's own label missing.
+        // A person's own files beside alo OS, and alo OS's own partition gone.
         for changed in [
-            AFTER_AN_INSTALL.replace(r#""Label":"EFI-SYSTEM""#, r#""Label":"Photos""#),
-            AFTER_AN_INSTALL.replace(r#""Label":"root""#, r#""Label":"""#),
+            AFTER_AN_INSTALL.replace(
+                r#""GptType":"{21686148-6449-6e6f-744e-656564454649}""#,
+                r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+            ),
+            AFTER_AN_INSTALL.replace(
+                r#""GptType":"{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}""#,
+                r#""GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}""#,
+            ),
         ] {
             let disks = Disks::read(Some(&changed)).unwrap();
             assert_eq!(disks.the_one_alo_os_is_on(DiskNumber(0)), None, "{changed}");
@@ -336,6 +356,7 @@ mod tests {
         let holding_a_linux = Disk {
             partitions: vec![Partition {
                 label: "home".to_owned(),
+                gpt_type: "{0fc63daf-8483-4772-8e79-3d69d8477de4}".to_owned(),
             }],
             ..empty.clone()
         };
