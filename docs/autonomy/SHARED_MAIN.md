@@ -6,6 +6,32 @@ all nine gates before every push: **progress pushes to task branches are allowed
 merging into `main` still requires all nine gates and task acceptance.** A branch
 push is a checkpoint, not a completed task or a release.
 
+## A tree already gated is not gated again
+
+**Compare the tree, never the feeling.** `git rev-parse HEAD^{tree}` on what you
+gated, and on `main` after the merge. **Identical: do not re-run the gates** —
+the second run reads the same bytes and can only repeat the first. **Different:
+gate it**, because that is the case the post-merge run exists for, where two
+green branches combine into a tree neither of them was.
+
+This is the only permitted reason to skip a gate, and the reason it is safe is
+that it is checkable. A tree hash is a fact. *Nothing much changed*, *the tests
+passed a minute ago* and *it is only documentation* are not, and each of them
+has already cost this repository something this week: a test no gate ran, so a
+broken assert passed nine gates twice; a stale output file read as a result; and
+a `cargo fmt` that never reached the checkout being reviewed. Every one would
+have been hidden by a skipped run somebody felt was safe.
+
+**Gate what the diff can reach.** A change under `docs/` does not need every
+suite in the workspace; a change to one crate needs that crate and the crates
+that depend on it, which cargo can work out. Reaching for the whole workspace
+every time is what makes a gate expensive enough that somebody starts wanting to
+skip one — and then they skip the wrong one. Say in the result file which gates
+you ran and why those were the ones the diff could reach.
+
+**What never shrinks:** the run on the tree you merge, when that tree is new.
+That is the one measurement this whole workflow is built on.
+
 ## Ownership and execution
 
 - One short-lived branch per task: `task/<machine>/<descriptive-subject>`.
