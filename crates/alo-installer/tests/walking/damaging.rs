@@ -23,8 +23,21 @@ use std::time::Duration;
 /// under a mount point.
 pub const THE_LOADER: &str = "EFI/fedora/shimx64.efi";
 
-/// What a taken-away loader is called instead: a rename, never a delete, so
-/// that the disk still holds the file and the change is one name.
+/// The other path the firmware will start the same system from: the removable
+/// media path every UEFI implementation looks for when the entry it was told
+/// to start fails, and which the base's own installer puts a copy of shim at.
+///
+/// **Taking the named loader away is not taking the loader away.** A machine
+/// whose `\EFI\fedora\shimx64.efi` is renamed still starts alo OS from here,
+/// and a walk that renamed only the first would be watching a fall-through
+/// that never happened.
+pub const THE_FALLBACK: &str = "EFI/BOOT/BOOTX64.EFI";
+
+/// What a taken-away file is called instead: a rename, never a delete, so that
+/// the disk still holds it and the change is one name.
+const AND_THEN: &str = ".taken-away";
+
+/// What the named loader is called once it has been taken away.
 pub const TAKEN_AWAY: &str = "EFI/fedora/shimx64.efi.taken-away";
 
 /// What was done to a disk, for the test to print and to hold.
@@ -34,8 +47,20 @@ pub struct TakenAway {
     pub partition: String,
     /// The loader's size in bytes before it was renamed.
     pub was_bytes: u64,
-    /// Whether the loader's own name is gone from the partition afterwards.
+    /// Whether the named loader's own name is gone from the partition
+    /// afterwards.
     pub gone: bool,
+    /// Whether the partition had a copy at the firmware's fallback path, and
+    /// whether that one is gone too. A partition with no copy there says
+    /// `false, true`: there was nothing to take and nothing is left.
+    pub fallback_was_there: bool,
+    /// Whether nothing now answers at the fallback path either.
+    pub fallback_gone: bool,
+    /// Everything under `EFI/` before the renames, and after them, as the
+    /// walk prints it: the evidence that what was taken is what was there.
+    pub before: Vec<String>,
+    /// The same listing, made again once the renames are done.
+    pub after: Vec<String>,
 }
 
 /// Take alo OS's loader away from a disk no machine is running from, and say
@@ -70,14 +95,31 @@ pub fn take_the_loader_away(disk: &Path, yard: &Path) -> TakenAway {
         }
         let loader = attached.at.join(THE_LOADER);
         if let Ok(about) = std::fs::metadata(&loader) {
+            let before = every_loader(&attached.at);
             let taken = attached.at.join(TAKEN_AWAY);
             std::fs::rename(&loader, &taken).expect("the loader could not be renamed");
             let gone = !loader.exists() && taken.exists();
+
+            // And the fallback, which starts the same system from a path the
+            // firmware looks for by itself.
+            let fallback = attached.at.join(THE_FALLBACK);
+            let fallback_was_there = fallback.exists();
+            if fallback_was_there {
+                let aside = attached.at.join(format!("{THE_FALLBACK}{AND_THEN}"));
+                let _ = std::fs::rename(&fallback, &aside);
+            }
+            let fallback_gone = !fallback.exists();
+
+            let after = every_loader(&attached.at);
             let _ = Command::new("sync").status();
             return TakenAway {
                 partition: device,
                 was_bytes: about.len(),
                 gone,
+                fallback_was_there,
+                fallback_gone,
+                before,
+                after,
             };
         }
         let _ = Command::new("umount").arg(&at).status();
@@ -101,6 +143,39 @@ fn the_loader_taken_away_is_the_one_the_entry_starts() {
     assert_eq!(named, THE_LOADER);
     assert!(TAKEN_AWAY.starts_with(THE_LOADER));
     assert_ne!(TAKEN_AWAY, THE_LOADER);
+}
+
+/// Every file under `EFI/` on a mounted partition, by its path from there,
+/// with its size: what a firmware has to choose from, read rather than assumed.
+fn every_loader(at: &Path) -> Vec<String> {
+    let mut found = Vec::new();
+    gather(&at.join("EFI"), at, &mut found);
+    found.sort();
+    found
+}
+
+/// Everything beneath a directory, as `path size`.
+fn gather(directory: &Path, from: &Path, into: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            gather(&path, from, into);
+        } else {
+            let named = path
+                .strip_prefix(from)
+                .unwrap_or(&path)
+                .display()
+                .to_string();
+            let size = entry
+                .metadata()
+                .map(|about| about.len())
+                .unwrap_or_default();
+            into.push(format!("{named} {size}"));
+        }
+    }
 }
 
 /// A disk attached so it can be written, with a mount point of its own —

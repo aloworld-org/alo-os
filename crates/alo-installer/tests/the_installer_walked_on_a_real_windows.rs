@@ -1003,7 +1003,7 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
     let (installed, installing_said) =
-        the_whole_road_installs(&yard, "fallthrough", &firmware, &chip, &download);
+        the_whole_road_installs(&yard, "fallthrough", &firmware, &chip, &download, false);
     assert!(
         installed,
         "the environment did not say alo OS is installed, so there is nothing here to \
@@ -1014,13 +1014,32 @@ fn with_alo_os_unstartable_the_computer_starts_windows_by_itself() {
     // one the firmware's own entry starts — renamed on the disk alo OS was
     // installed on.
     let taken = damaging::take_the_loader_away(&Machine::second_of(&yard, "fallthrough"), &yard);
+    eprintln!(
+        "what alo OS's start partition held, before:\n{:#?}\nand after:\n{:#?}",
+        taken.before, taken.after
+    );
     assert!(
         taken.gone,
         "alo OS's loader is still where the firmware looks for it: {taken:?}"
     );
+    // **And the path the firmware falls back to by itself.** A machine whose
+    // named loader is renamed still starts alo OS from `\EFI\BOOT\BOOTX64.EFI`
+    // if a copy is there, so a fall-through watched without taking that one
+    // away as well would be a fall-through that never happened.
+    assert!(
+        taken.fallback_gone,
+        "the firmware's own fallback path still holds a loader: {taken:?}"
+    );
     eprintln!(
-        "alo OS's loader was taken away from {} ({} bytes); nothing else was changed",
-        taken.partition, taken.was_bytes
+        "alo OS's loader was taken away from {} ({} bytes), and the fallback path {}; \
+         nothing else was changed",
+        taken.partition,
+        taken.was_bytes,
+        if taken.fallback_was_there {
+            "held a copy, which was taken away too"
+        } else {
+            "held nothing"
+        }
     );
 
     // The restart. No disc is put in, no boot order is given and no key is
@@ -1108,6 +1127,7 @@ fn the_whole_road_installs(
     firmware: &Path,
     chip: &SecurityChip,
     download: &Path,
+    and_let_it_start: bool,
 ) -> (bool, String) {
     let disc = medium::the_walk_disc(yard, &Told::TheWholeRoad, download);
     let console = Console::fresh(&yard.join("console.log"));
@@ -1148,13 +1168,22 @@ fn the_whole_road_installs(
     let after = installed
         .then(|| console.wait_for(&[tidied.as_str(), not_whole.as_str()], A_WALK))
         .flatten();
-    // And then the installed system comes up, says what it started from and
-    // turns itself off. Waiting for that is not politeness: a machine killed a
-    // second after the environment wrote to the firmware is a machine whose
-    // variable store nobody has closed, and what the next start finds in it is
-    // not what was written (2026-09-26, three walks whose entry for alo OS was
-    // gone by the next boot).
-    let reached = after.is_some() && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
+    // And then, when the caller wants it, the installed system comes up, says
+    // what it started from and turns itself off.
+    //
+    // **A walk that needs the firmware's entry afterwards must not let it.**
+    // Measured on 2026-09-26: after the environment tidied up, the installed
+    // alo OS read its own firmware and found `Boot000C* alo OS` first in the
+    // order — and the next start of that same machine, from the same variable
+    // file, listed only the four entries it had before alo OS was ever
+    // installed. A machine stopped before that first boot keeps the entry
+    // (the fall-through walk starts from one). Whether alo OS's own first boot
+    // undoes it, or this firmware never wrote it down, is written up in
+    // `docs/quirks.md`; either way the walk says which of the two machines it
+    // is asking for.
+    let reached = and_let_it_start
+        && after.is_some()
+        && console.wait_for(&["ALO-INSTALLED-END"], A_WALK).is_some();
     let stopped = reached && machine.has_stopped_within(Duration::from_secs(180));
     let said = without_the_kernels_messages(&console.said());
     drop(machine);
@@ -1186,9 +1215,11 @@ fn the_whole_road_installs(
 /// with the removal's word, as a person would run it from the Start menu, and
 /// the disk's name is typed back from the sentence the removal itself printed.
 ///
-/// Windows is reached by starting its disk first, which is the harness's way of
-/// making the choice a person makes at the menu; nothing else about the start
-/// is arranged. The restart after the removal is given no boot order at all.
+/// Windows is reached without arranging anything about the start: the loaders
+/// on alo OS's own start partition are taken away, so the firmware falls
+/// through to Windows by itself (ADR 0062 term 1). That is also the computer a
+/// person is most likely to be removing alo OS from. No start in this walk is
+/// given a boot order.
 #[test]
 #[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
 fn alo_os_is_removed_again_and_windows_is_what_is_left() {
@@ -1201,7 +1232,7 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
     let (installed, installing_said) =
-        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download);
+        the_whole_road_installs(&yard, "removal", &firmware, &chip, &download, false);
     assert!(
         installed,
         "the environment did not say alo OS is installed, so there is nothing here to \
@@ -1213,7 +1244,22 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
         the_variables_name_alo_os(&yard, "removal")
     );
 
-    // Windows, and the removal run from inside it.
+    // Windows, reached the way ADR 0062 term 1 says a person reaches it when
+    // alo OS will not start: both of the loaders on alo OS's own start
+    // partition are taken away — the one the firmware's entry names and the
+    // one it falls back to by itself — and the firmware goes to Windows.
+    let taken = damaging::take_the_loader_away(&Machine::second_of(&yard, "removal"), &yard);
+    eprintln!(
+        "what alo OS's start partition held, before:\n{:#?}\nand after:\n{:#?}",
+        taken.before, taken.after
+    );
+    assert!(
+        taken.gone && taken.fallback_gone,
+        "alo OS can still be started from this disk, so this machine will not fall \
+         through to Windows: {taken:?}"
+    );
+
+    // And the removal, run from inside Windows.
     let told = Told::RemovingAloOs {
         left_at: alo_installer::THE_PROGRAMS_HOME.to_owned(),
         left_as: alo_installer::THE_PROGRAMS_NAME.to_owned(),
@@ -1222,20 +1268,21 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     };
     let disc = medium::the_walk_disc(&yard, &told, &download);
     let console = Console::fresh(&yard.join("console.log"));
-    // On the same firmware build the install ran on, and only the disk order
-    // changed. Measured on 2026-09-26: started on the other build this
-    // repository has, the machine came up with a firmware that listed neither
-    // alo OS nor anything else the install had written — the variables one
-    // build wrote are not the variables the other reads — and the removal
-    // rightly said there was nothing to remove.
-    let mut machine = Machine::start_on(
+    // On the same firmware build the install ran on, and with no disk order at
+    // all. Measured on 2026-09-26: started on the other build this repository
+    // has, the machine came up with a firmware that listed neither alo OS nor
+    // anything else the install had written — the variables one build wrote
+    // are not the variables the other reads; and started on the right build
+    // but with the Windows disk forced to the front, it lost the entry just
+    // the same. Left to its own variables, it keeps it.
+    let mut machine = Machine::start_as_its_variables_decide(
         &firmware,
         &yard,
         "removal",
         Some(&disc),
-        None,
         &console,
         &chip,
+        &[],
     );
     let mut resets = 0;
     while console.wait_for(&[console::BEGINS], A_SIGN_IN).is_none() {
@@ -1308,12 +1355,15 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
         !after.contains(&format!("[{}]", alo_installing::THE_ENTRYS_NAME)),
         "the firmware still lists alo OS:\n{after}"
     );
+    // Every line the guest says carries the time it said it, so a line about a
+    // disk contains `disk 1:` rather than beginning with it.
     let its_disk = after
         .lines()
         .find(|line| {
-            line.starts_with("disk ") && line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)
+            line.contains("disk ") && line.contains(walking::machine::THE_SECOND_DISKS_SERIAL)
         })
         .unwrap_or_default()
+        .trim()
         .to_owned();
     assert!(
         its_disk.contains("style=RAW"),
@@ -1323,6 +1373,7 @@ fn alo_os_is_removed_again_and_windows_is_what_is_left() {
     // none for alo OS's own partition, because it cannot read btrfs.
     let its_number = its_disk
         .split_whitespace()
+        .skip_while(|word| *word != "disk")
         .nth(1)
         .and_then(|number| number.strip_suffix(':'))
         .unwrap_or("?")

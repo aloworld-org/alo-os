@@ -337,22 +337,37 @@ each walked in the guest except where it says otherwise:
   every refusal; one holds the erasing script's guards to running before the
   line that erases.
 
-  **Its walk on a real Windows is written and has not yet passed.** What it has
-  already found and fixed is in `docs/quirks.md` and in the harness: a guest
-  read back while Windows was restarting, which left a machine burning two
-  processors with a black screen and no install; a boot told to remove alo OS
-  that ran the installer again first; and a Windows boot started on the other
-  firmware build this repository has, whose variables named nothing the install
-  had written. **Still open on it:** on three runs the firmware listed no entry
-  named alo OS when Windows came up after an install the environment had said
-  it tidied, and the walk now reads the machine's own variable file after the
-  install and after that boot to say where it is lost; and this development PC
-  has twice stalled a guest mid-install for twenty minutes at a time, which is
-  the machine and not the installer.
+  **Walked on a real Windows, 2026-09-26** (`removal-12`, `cargo_test=0`,
+  2310 s). The whole road installed alo OS; both loaders on its start partition
+  were taken away so the firmware fell through to Windows by itself; the copy
+  the install left in the Start menu was started with the removal's word; and
+  the guest typed back the name the removal itself printed:
 
-**Still owed here, and this task is not done until they are:**
-1. That walk, green.
-2. The walk of the default being changed from either side.
+  ```
+  removal: alo OS is on the disk QEMU HARDDISK 1. Removing it erases that disk…
+  the disk it named: [QEMU HARDDISK 1]
+  typing: [QEMU HARDDISK 1]
+  removal: Erasing QEMU HARDDISK 1. This takes a moment
+  removal: alo OS is removed. QEMU HARDDISK 1 is empty, its space is free, and
+           this computer starts Windows as it did before alo OS was installed
+  disk 1: serial=[ALOTARGET1] size=34359738368 style=RAW      (and no partitions)
+  ```
+
+  Windows then read the firmware back with no entry named *alo OS*, and the
+  restart after that — no disc, no boot order, no keypress — started Windows
+  Boot Manager.
+
+  **What that walk found about taking a loader away.** alo OS's start partition
+  holds `\EFI\BOOT\BOOTX64.EFI`, 949 424 bytes, the same size as
+  `\EFI\fedora\shimx64.efi`: the base's installer puts a copy of shim at the
+  path every firmware falls back to by itself. **Renaming the loader the entry
+  names is therefore not making a machine unable to start alo OS**, and both
+  walks now take both away and print everything the partition held before and
+  after. The fall-through of #136 reached Windows regardless — that firmware did
+  not walk to the fallback — but the claim is only safe with both gone.
+
+**Still owed here, and this task is not done until it is:**
+1. The walk of the default being changed from either side.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the

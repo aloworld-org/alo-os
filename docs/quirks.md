@@ -6987,4 +6987,66 @@ swap. What a fixture gets is therefore one painter's work twice rather than the
 parent's own bytes, and `keep_each_frame`'s own rustdoc says that where somebody
 reading a raster will meet it. It is off unless something asks, so a signed-in
 session never pays for a readback nobody is looking at.
+
+### The start entry the environment writes is gone once alo OS has booted once
+**Version:** QEMU 8.2 `q35,smm=on` with Fedora's `edk2-ovmf` 20250812-21, its
+own variable file per machine; the installer walk; 2026-09-26.
+**Behaviour:** after the boot environment installs alo OS and tidies up, the
+installed alo OS reads its own firmware and finds exactly what the tidy wrote:
+
+```
+BootCurrent: 000C
+BootOrder: 000C,0004,0003,0000,0001,0002,0005,0006,0007,0008,0009
+Boot000C* alo OS	HD(2,GPT,…)/\EFI\fedora\shimx64.efi
+```
+
+It then powers itself off, QEMU exits by itself, and **the next start of that
+same machine, from that same variable file, lists only the four entries the
+machine had before alo OS was ever installed** — no `alo OS`, and none of the
+auto-created entries the firmware had added either. The store has gone back to
+what it was.
+
+A machine stopped *before* that first boot of alo OS keeps the entry: the
+fall-through walk starts from one, and its firmware tried `Boot000C "alo OS"`
+and fell through to Windows when the loader was taken away.
+
+**What is not known** is which of two things it is: alo OS's own first boot
+undoing what the environment wrote, or this firmware never writing the
+session's variables down at all. Both are worth knowing and neither is proven
+here. It matters beyond the walk: if it is the first, a computer that installs
+alo OS loses its own start entry the first time it runs.
+**Our response:** the walk says which machine it wants — the install stops
+before that first boot when what follows needs the entry. The question itself
+is written down rather than worked around, because a start entry that does not
+survive the system's first boot would be the installer's most serious bug and
+nothing here yet rules it out.
+**Date:** 2026-09-26.
+
+### A loader that is gone is still startable from the firmware's fallback path
+**Version:** the image the walk installs (Fedora bootc 42 with bootupd), read
+off a guest's own start partition on 2026-09-26.
+**Behaviour:** after an install, alo OS's EFI system partition holds **two**
+copies of the same signed loader:
+
+```
+EFI/BOOT/BOOTX64.EFI      949424
+EFI/fedora/shimx64.efi    949424
+```
+
+The firmware's entry names the second. The first is the removable-media path
+that UEFI looks for by itself when an entry fails, and which the base's own
+installer writes. So a machine whose `\EFI\fedora\shimx64.efi` has been taken
+away **still starts alo OS**, from a path nothing touched — *the loader is
+gone* and *this machine cannot start alo OS* are two different statements.
+
+Measured: a walk that renamed only the named loader watched the firmware load
+and start `Boot000C "alo OS"` from that very path three times over. (The
+fall-through walk of #136 renamed only that one too and did reach Windows, so
+this firmware did not walk to its own fallback there — which is a reason to
+take both away rather than to trust either.)
+**Our response:** the walk takes both away and holds both to being gone, and
+prints every file under `EFI/` before and after so that what was taken is read
+rather than assumed. Anything that reasons about removing or disabling alo OS
+— the road back in `crate::removing` included — has to know that the named
+loader is not the only one.
 **Date:** 2026-09-26.
