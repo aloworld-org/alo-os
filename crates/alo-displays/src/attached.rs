@@ -34,6 +34,8 @@
 //! [`Note::DidNotFit`] said. The saved arrangement is not deleted: the next
 //! time those screens report themselves as they did, it fits again.
 
+use alo_strings::{Said, Strings};
+
 use crate::arrangement::{Arrangement, NotArranged, Screens};
 use crate::changes::Changes;
 use crate::coming_and_going::{CameBack, Moved, NotAttached};
@@ -175,7 +177,47 @@ impl Attached {
         self.on.iter().find(|held| held.reported.socket() == socket)
     }
 
+    /// **Everything a person reads about this resume, in the order they read
+    /// it** — one account rather than three collections for a surface to
+    /// arrange.
+    ///
+    /// The notes first, which already begin with the fact that the desk changed
+    /// ([`Self::resumed_to`] puts it at the head of them); then the screens that
+    /// have gone and where the work open on each is now; then the screens that
+    /// are back and what returned to them. A person meets what happened, then
+    /// where their work went, then what came back.
+    ///
+    /// # Why the order is decided here and not by whoever draws it
+    ///
+    /// Because an account has a sequence and a set does not. Session task 12's
+    /// walk (`docs/autonomy/updates/every-sentence-at-a-desk-that-changed.md`)
+    /// found that half of this order was decided in this crate —
+    /// `notes.insert(0, Note::TheDeskChanged)`, deliberately — and half was left
+    /// to the caller, who holds [`Self::notes`], [`Resumed::moved`] and
+    /// [`Resumed::came_back`] with nothing to say which comes first. Two surfaces
+    /// could then show one morning in two orders and both be correct, and neither
+    /// would know what this crate had already decided about the first sentence.
+    ///
+    /// Which sentence follows which is not drawing. Where each sits on a screen
+    /// and in what typeface is the shell's; what a person is told, and in what
+    /// order, is decided where the facts are.
+    ///
+    /// The notes are `self`'s, so a caller cannot hand this the notes of some
+    /// other set of screens by mistake.
+    #[must_use]
+    pub fn the_account(&self, resumed: &Resumed, strings: &Strings) -> Vec<Said> {
+        let mut said: Vec<Said> = self.notes.iter().map(|note| note.said(strings)).collect();
+        said.extend(resumed.moved().map(|moved| moved.said(strings)));
+        said.extend(resumed.came_back().filter_map(|back| back.said(strings)));
+        said
+    }
+
     /// What a person is told about how these screens were set up.
+    ///
+    /// The sentences on their own, unordered against what a resume also answers
+    /// with — [`Self::the_account`] is the whole of what a person reads after a
+    /// resume, in order, and is what a surface showing one of those mornings
+    /// wants.
     #[must_use]
     pub fn notes(&self) -> &[Note] {
         &self.notes
@@ -509,6 +551,61 @@ fn side_by_side(
         ));
     }
     places
+}
+
+/// **The account is one sequence, and it begins with what happened.**
+///
+/// Held here rather than only in the walk that found it: a surface reading
+/// [`Attached::the_account`] is promised an order, and a later change that
+/// appended the notes after the screens would pass every other test in this
+/// crate.
+#[cfg(test)]
+mod the_account_is_ordered {
+    use super::*;
+    use crate::changes::Changes;
+    use crate::identity::{Panel, Socket};
+
+    #[expect(
+        clippy::unwrap_used,
+        reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    )]
+    #[test]
+    fn what_happened_comes_before_where_the_work_went() {
+        let laptop = Reported::of(
+            Socket::named("eDP-1").unwrap(),
+            None,
+            (1920, 1080),
+            Some((294, 165)),
+        )
+        .unwrap();
+        let office = Reported::of(
+            Socket::named("DP-1").unwrap(),
+            Some(Panel::of("Dell", "U2720Q", Some("CN-0ABC")).unwrap()),
+            (3840, 2160),
+            Some((596, 336)),
+        )
+        .unwrap();
+        let remembered = Changes::untouched();
+        let mut attached =
+            Attached::now(vec![laptop.clone()], &remembered, Support::Fractional).unwrap();
+        let resumed = attached
+            .resumed_to(vec![laptop, office], &remembered)
+            .unwrap();
+
+        let strings = alo_strings::Strings::of(crate::words::display_words().unwrap());
+        let account = attached.the_account(&resumed, &strings);
+
+        assert_eq!(
+            account.len(),
+            attached.notes().len() + resumed.moved().count() + resumed.came_back().count(),
+            "the account is every sentence and no more"
+        );
+        assert_eq!(
+            account.first().map(alo_strings::Said::text),
+            Some(Note::TheDeskChanged.said(&strings).text()),
+            "the account does not begin with what happened"
+        );
+    }
 }
 
 #[cfg(test)]

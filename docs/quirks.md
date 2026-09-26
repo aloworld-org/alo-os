@@ -7049,6 +7049,7 @@ prints every file under `EFI/` before and after so that what was taken is read
 rather than assumed. Anything that reasons about removing or disabling alo OS
 — the road back in `crate::removing` included — has to know that the named
 loader is not the only one.
+
 **Date:** 2026-09-26.
 
 ### The default's two sides may not be reading the same partition

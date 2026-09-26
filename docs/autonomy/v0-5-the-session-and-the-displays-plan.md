@@ -801,3 +801,73 @@ somewhere a person reads before this plan is called done.
   reads badly is a finding for a later task with its own argument, not
   something this one edits away. Nothing in `crates/alo-shell`, nothing on the
   machine, and `logind` stays rented (ADR 0011).
+
+### 13. The reassurance that is wrong on the way home
+
+**Status:** blocked — on [ADR 0068](../decisions/0068-a-published-sentence-changes-by-getting-a-new-key.md),
+proposed 2026-09-26. **Depends on:** 12.
+
+Written 2026-09-26 by task 12, whose walk found it. `displays.the-desk-changed`
+ends *the arrangement you made at the other desk is still here for when you are
+back at it*, and on the return leg it says that to somebody who is back at it — a
+sentence making a promise about a situation it is not in, wrong on every return leg
+of every journey, and read beside `displays.as-you-left-them` a duplicate of it.
+
+**The argument is ready.** The clause is a reassurance that what she is losing is
+kept: apt on the way out, where she is losing her own desk's arrangement, and
+pointless on the way back, where she is losing nothing and gaining the arrangement
+`as-you-left-them` already announces. So it belongs under one condition — **the set
+she has arrived at is not one whose arrangement is kept** — which `Changes::for_screens`
+already answers, being what chose between `AsYouLeftThem` and a worked-out layout.
+That leaves `the-desk-changed` the plain fact and the reassurance a second sentence,
+one fact in one place, and disposes of the duplicate.
+
+**What it is blocked on, and why blocked is honest.** Splitting a sentence means the
+remaining half no longer means what the whole did, and a translation is keyed:
+editing the English under a published key leaves every translation of it rendering
+perfectly and saying something the product no longer says. Nothing in this
+repository said whether that is allowed, so ADR 0068 proposes the rule — a changed
+meaning is a new key, the old key retired. The argument above waits on that one
+decision and on no further thinking.
+
+- **Acceptance:** on a wake whose arriving screens have a kept arrangement, a person
+  reads that the screens changed and that they are arranged as they last left them,
+  and **not** a promise about a desk they are standing at; on a wake whose arriving
+  screens have no kept arrangement they read the reassurance, whole, naming nothing
+  of the machinery; both held by the walk in
+  `crates/alo-sleeping/tests/the_walk_to_a_desk_that_changed.rs` with its table
+  republished in a follow-up report rather than edited; and whatever ADR 0068
+  settles about keys is obeyed to the letter, with the retirement in the same change
+  as the new key.
+- **Constraint:** no crate reaches into another to coordinate phrasing — a sentence
+  has one author. Nothing else in the vocabulary is reworded on the way past. Task
+  12's report and table are not edited. Nothing in `crates/alo-shell`, nothing on
+  the machine.
+
+### 14. One account in one order
+
+**Status:** done. **Depends on:** 12.
+
+**Done, 2026-09-26.** Report:
+[`updates/one-account-in-one-order-and-a-sentence-that-waits-on-a-rule.md`](updates/one-account-in-one-order-and-a-sentence-that-waits-on-a-rule.md).
+
+Task 12's second finding: `resumed_to` does `notes.insert(0, Note::TheDeskChanged)`,
+an ordering decision recorded in code, while across the three collections a resume
+answers with there was none — so the order in that walk's table was the walk's own
+choice, and two surfaces could have shown one morning in two orders with both
+correct.
+
+`Attached::the_account(&resumed, strings)` is where it belongs: everything a person
+reads about a resume, in the order they read it — what happened, then where their
+work went, then what came back. **Which sentence follows which is not drawing.**
+Where each sits on a screen is the shell's; what a person is told, and in what
+order, is decided where the facts are, and half of this order was already in
+`alo-displays` on purpose.
+
+Additive: no sentence changed, no door moved, nothing reading `notes`, `moved` or
+`came_back` reads differently. The notes come from `self`, so a caller cannot pass
+the notes of another set of screens. `alo-displays` holds a test of its own for the
+order rather than leaving the guarantee to the walk that found it. The walk now
+reads the machine's order instead of composing one, and **its table is unchanged** —
+the table was right, and it is now a measurement of what a person meets rather than
+of what a test file chose.
