@@ -9,15 +9,28 @@ evening, and what is deliberately not happening this week.
 
 ## The days
 
+**Friday needs one installer task, and it is task 4.** The walk installs
+*alongside* Windows. Task 7 is *replace Windows* — a road Friday never takes —
+and tasks 19 and 20 do not touch it either. They are this release's work and not
+this week's, and the first version of this table made them look like the same
+thing. The development PC does task 4 and then the rehearsal, with nothing
+stacked behind them.
+
 | | Development PC | Third PC | Mac | This checkout |
 |---|---|---|---|---|
-| **Sat 26** | installer 4 — the fall-through test, and land it | keeps-itself 15 | shell 14, steps 3–5 | finish the palette change |
-| **Sun 27** | installer 7 begins | keeps-itself 15 lands | shell 14 lands | reconcile: local network, access and language |
-| **Mon 28** | installer 7 | session 12 | `nested_check` into the gates; the removed coverage written down | reconcile: settings, capture |
-| **Tue 29** | installer 19 | session 12 lands, then installer 20 | devices 1 — **the three Wayland protocols first** | reconcile: documents, software and the web |
-| **Wed 30** | free for whatever Friday needs | installer 20 | devices 1 — the pipeline packaged | reconcile: the installer, the machine keeps itself |
+| **Sat 26** | installer 4 — the fall-through test | keeps-itself 15 | shell 14, steps 3–5 | finish the palette change |
+| **Sun 27** | installer 4 | keeps-itself 15 lands | shell 14 lands | reconcile: local network, access and language |
+| **Mon 28** | installer 4 | session 12 | `nested_check` into the gates; the removed coverage written down | reconcile: settings, capture |
+| **Tue 29** | installer 4 lands, or says what it is waiting for | session 12 lands, then installer 20 | devices 1 — **the three Wayland protocols first** | reconcile: documents, software and the web |
+| **Wed 30** | build the rehearsal guest from the testing PC's own layout | installer 20 | devices 1 — the pipeline packaged | reconcile: the installer, the machine keeps itself |
 | **Thu 1 Oct** | **the rehearsal** | installer 20 | devices 1 | the go/no-go, written down |
 | **Fri 2 Oct** | on hand to diagnose | — | — | reading the install as it happens |
+
+**Task 4 has four days rather than one.** It is the only thing between this
+repository and a machine, so it gets the room. If it lands on Saturday the
+development PC takes task 7 with the days it saved; if it takes until Tuesday,
+nothing else was displaced. What is not available is a day that says *installer
+4 lands today* when nobody knows that.
 
 ## Thursday is a rehearsal, not a spare day
 
