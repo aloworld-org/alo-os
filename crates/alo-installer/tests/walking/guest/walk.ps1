@@ -408,9 +408,14 @@ if ($mode -eq 'whole-road') {
   $rest = $process.StandardOutput.ReadToEnd()
   if ($rest) { $rest -split "`r?`n" | ForEach-Object { Say "installer: $_" } }
   Say "installer exited: $($process.WaitForExit(600000)); code=$($process.ExitCode)"
-  TheState 'after the whole road'
-  $after = Manifest 'C:\alo\manifest-after.txt'
-  Say "manifest-after: digest=$($after.Digest) files=$($after.Count)"
+  # And nothing else. The installer has already asked Windows to restart, and
+  # the restart lands a few seconds later, in the middle of whatever is running
+  # here. Reading the machine back at this point is reading it while it goes
+  # down: measured on 2026-09-26, a run dumping the firmware's 256 start
+  # variables when the restart landed left a machine that then burned two
+  # processors for twenty minutes with a black screen and nothing on the serial
+  # line, and the install never happened. What this boot did is in the lines
+  # above it; what the install did is the next boot's to say.
   UnmountTheStartPartition
   Say 'ALOWALK-DONE whole-road'
   return
