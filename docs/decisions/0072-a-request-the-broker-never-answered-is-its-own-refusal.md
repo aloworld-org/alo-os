@@ -1,4 +1,4 @@
-# ADR 0069 — A request the broker never answered is its own refusal, not a network that misbehaved
+# ADR 0072 — A request the broker never answered is its own refusal, not a network that misbehaved
 
 **Status:** proposed, 2026-09-26.
 

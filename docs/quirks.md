@@ -7073,7 +7073,7 @@ that was never wrong.
 **The obvious repair is the wrong one.** Letting the test accept either refusal
 would write down that a machine may blame a password when nothing was ever
 asked, and would throw away the distinction a person acts on. That is
-[ADR 0069](decisions/0069-a-request-the-broker-never-answered-is-its-own-refusal.md),
+[ADR 0072](decisions/0072-a-request-the-broker-never-answered-is-its-own-refusal.md),
 proposed rather than decided, because what a person is told is not a lane's call.
 
 **What this lane could not establish** is the mechanism. After the broker thread
@@ -7091,7 +7091,7 @@ twelve busy loops on six CPUs, all green. It needs the whole suite's file and
 socket pressure, which is why it is invisible at a desk and why both sightings
 were in a gate.
 **Our response:** none from this lane, and nothing was changed in that crate.
-The finding is ADR 0069; the flake closes when whichever option it names is
+The finding is ADR 0072; the flake closes when whichever option it names is
 chosen and the mechanism is found.
 
 
