@@ -7113,21 +7113,64 @@ fails, and `set default="${saved_entry}"` is set from an empty variable. ADR 006
 term 1 is therefore **unimplemented on a real install**, not implemented wrongly.
 
 And because the loader finds the partition by the file, **whoever creates the
-block chooses which partition every later read goes to.** That makes the
-placement a decision rather than a detail, and the unobvious answer is the right
-one: created on **Windows' ESP**, both sides reach it as they already stand —
-Windows by `mountvol S: /S`, alo OS by `search --file`. Created on alo OS's ESP,
-Windows' side still reads nothing. A copy on both is the one thing ADR 0066
-forbids, and nothing today prevents it: `search --file` takes the first
-filesystem it enumerates, so two copies is a silent, order-dependent answer
-rather than an error.
+block chooses which partition every later read goes to.** That made the placement
+a decision rather than a detail, and the owner settled it on 2026-09-27 as a test
+rather than a partition: the one copy lives on the EFI system partition **every
+reader this machine has** can reach. On the road offered today that resolves to
+**Windows' ESP** — both sides reach it as they already stand, Windows by
+`mountvol S: /S` and alo OS by `search --file`, and created on alo OS's ESP the
+Windows side would still read nothing. On a replace-Windows install there is no
+Windows partition and no Windows reader, and it resolves to alo OS's own. A copy
+on both is the one thing ADR 0066 forbids, and nothing today prevents it:
+`search --file` takes the first filesystem it enumerates, so two copies is a
+silent, order-dependent answer rather than an error.
 
 **Our response:** the measurement is here and nothing was changed on the
 strength of it. Where the one copy lives, and who creates it, is ADR 0066's to
 say — its own last consequence reserves that (*a change to this decision, not a
-second copy added quietly*). [ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-on-the-partition-windows-starts-from.md)
+second copy added quietly*). [ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md)
 puts the question with an argument. The guest walk of *the default changed from
 either side* still owes one measurement this offline read cannot give: that
 GRUB's `search --file` running from disk 1 really does reach disk 0's ESP on
 this firmware. Everything else above is read off the installed machine.
+**Date:** 2026-09-27.
+
+### GRUB's `search --file` crosses disks, and with two copies it takes the lower-numbered one
+**Version:** the kept install of 2026-09-26 — Fedora's
+`OVMF_CODE_4M.secboot.fedora.fd` with secure boot on, the shim and
+`grubx64.efi` 2.12-32.fc42 that install left on disk 1, and the same two AHCI
+disks in the same order the walk uses. **Measured 2026-09-27** by replacing only
+`EFI/fedora/grub.cfg` on an overlay of alo OS's ESP with a configuration that
+runs the generated menu's own search and prints what it found, then halts.
+Nothing boots past the loader, so the guest is 512 MB for five seconds rather
+than the walk's eleven gigabytes.
+
+**Behaviour:** two rounds, and the second is the one worth keeping.
+
+1. **With the block only on Windows' ESP**, `search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv` — run from the loader the firmware started off **disk
+   1** — set `esp` to `hd0,gpt1`, and `load_env -f (${esp})/EFI/fedora/grubenv`
+   read back the value that block carried. So the search really does cross from
+   the disk the loader lives on to the other disk's EFI system partition. This is
+   the measurement ADR 0066's amendment waited on, and it holds.
+
+2. **With a block on both ESPs**, each saying which partition it was on,
+   `search` again returned `hd0,gpt1` and read **Windows'** copy. The
+   per-device check in the same run confirmed both `(hd0,gpt1)` and `(hd1,gpt2)`
+   held a block. GRUB did not complain, and it did not prefer the partition it
+   had booted from — it took the lower-numbered disk.
+
+   The order `ls` prints is not the order `search` answers in: `ls` gave
+   `(hd0,gpt5) (hd0,gpt3) (hd0,gpt2) (hd0,gpt1) (hd1,…)`, while `search`
+   returned `gpt1`. So the tie is broken by disk before partition, and **the
+   agreement between that and the partition ADR 0069 chooses is an accident of
+   Windows being installed on disk 0.** Put alo OS on a disk that enumerates
+   first and the same two copies resolve the other way, with nothing said.
+
+**Our response:** the crossing is what
+[ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md)
+rests on and it is now measured rather than argued. The tie-break is why that
+decision makes a second copy a **refusal at install** rather than a rule about
+which copy wins: there is no enumeration order worth trusting, and the one that
+holds here holds for a reason that has nothing to do with the design.
 **Date:** 2026-09-27.

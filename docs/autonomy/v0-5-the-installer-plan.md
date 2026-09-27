@@ -387,14 +387,25 @@ each walked in the guest except where it says otherwise:
    rather than implemented wrongly. Because the loader finds the partition by
    the file, whoever creates the block also chooses the partition — which makes
    it a decision, put with its argument in
-   [ADR 0069](../decisions/0069-the-one-copy-of-the-default-lives-on-the-partition-windows-starts-from.md).
-   Nothing was changed on the strength of the measurement.
+   [ADR 0069](../decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md).
+   The owner settled the rule on 2026-09-27: the one copy lives wherever **every
+   reader** of it can reach — Windows' partition on a machine that keeps Windows,
+   alo OS's own after *replace Windows*, and a refusal if no single partition
+   satisfies every reader. Nothing was changed on the strength of the
+   measurement.
 
-   **One measurement is still owed and needs a guest:** that GRUB's `search
-   --file`, running from the loader on disk 1, reaches disk 0's ESP on this
-   firmware. Every other claim is read off an installed machine. It is cheap now
-   — the kept computer of #161 exists, so a walk that starts after an install is
-   an overlay rather than half an hour.
+   **That measurement is done, 2026-09-27, and it holds.** Run from the loader
+   the firmware starts on disk 1, `search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv` set `esp` to `hd0,gpt1` — Windows' partition — and
+   `load_env` read the block there. A second round with a block on both
+   partitions found GRUB silently taking the lower-numbered disk, which is why
+   ADR 0069 makes a second copy a refusal rather than a tie-break. The guest was
+   512 MB for five seconds, because GRUB is the consumer and nothing needs to
+   boot past the loader.
+
+   **What is left on this item is code, not a measurement:** nothing creates the
+   block, so the walk of the default changed from either side cannot pass until
+   ADR 0069's creation step is built. Task 4 is not closed by the measurement.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
