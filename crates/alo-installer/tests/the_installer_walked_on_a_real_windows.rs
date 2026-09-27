@@ -1032,6 +1032,27 @@ fn a_machine_with_alo_os_on_it(
 /// same machine the install left, twice running, or every walk built on it is
 /// measuring the last walk instead. Both starts are given nothing to do, and
 /// each is asked what the firmware starts and what is on its disks.
+///
+/// # What this holds, and the one thing it cannot hold yet
+///
+/// **The kept files are unchanged by being started from.** That is the
+/// snapshot's real invariant and the reason this test exists: an overlay that
+/// wrote through to its base would mean every later walk began on the computer
+/// the last walk left. The three files are hashed before the rounds and after.
+///
+/// **The two rounds agree**, both on what the firmware started and on whether
+/// the machine came up. One round booting and the other not is a failure here,
+/// not a line in the log.
+///
+/// **It cannot yet hold that the machine came up at all**, and that is not an
+/// oversight. The installed system's boot entry carries no console argument, so
+/// it says nothing on the serial line this reads and `came_up` is `None` even
+/// when the machine has reached a login prompt — measured on 2026-09-27, when
+/// both rounds booted fine and reported nothing. Until the installer plan's
+/// task 21 gives the installed system a console, *booted and idle* and *hung*
+/// are the same picture here, and the only check is to look at the screens this
+/// captures. Asserting `came_up.is_some()` today would fail on a working
+/// machine, which is why it says what it says instead.
 #[test]
 #[ignore = "starts a virtual machine; run by name"]
 fn the_kept_computer_is_the_same_computer_twice() {
@@ -1042,7 +1063,14 @@ fn the_kept_computer_is_the_same_computer_twice() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
 
+    // Read before the first round, so that making the base when it is not there
+    // is not mistaken for a round having changed it.
+    let _ = a_machine_with_alo_os_on_it(&yard, "kept-before", &firmware, &chip, &download);
+    forget(&yard, "kept-before");
+    let before = the_kept_files(&yard);
+
     let mut told_twice = Vec::new();
+    let mut came_up_twice = Vec::new();
     for round in ["once", "again"] {
         let name = format!("kept-{round}");
         let (there, said) = a_machine_with_alo_os_on_it(&yard, &name, &firmware, &chip, &download);
@@ -1078,6 +1106,7 @@ fn the_kept_computer_is_the_same_computer_twice() {
             screen.display()
         );
         told_twice.push(started);
+        came_up_twice.push(came_up.is_some());
     }
     let mut both = told_twice.into_iter();
     let (Some(first), Some(second)) = (both.next(), both.next()) else {
@@ -1094,6 +1123,59 @@ fn the_kept_computer_is_the_same_computer_twice() {
             .any(|started| started.contains(alo_installing::THE_ENTRYS_NAME)),
         "the kept computer does not start alo OS: {first:?}"
     );
+    assert_eq!(
+        came_up_twice.first(),
+        came_up_twice.get(1),
+        "the kept computer came up on one start and not the other, so the three files \
+         are not one computer: {came_up_twice:?}"
+    );
+    // The invariant the whole snapshot loop rests on: starting from the kept
+    // computer does not change it. An overlay that wrote through to its base
+    // would leave every later walk starting from the last walk's leavings, and
+    // nothing else here would notice.
+    let after = the_kept_files(&yard);
+    assert_eq!(
+        before, after,
+        "starting from the kept computer changed the kept computer, so the next walk \
+         would not begin where this one did"
+    );
+}
+
+/// What the three kept files are, as bytes, so that *unchanged* is measured
+/// rather than assumed.
+///
+/// The files are gigabytes, so each is read as its length and its SHA-256
+/// rather than held in memory.
+fn the_kept_files(yard: &Path) -> Vec<(String, u64, String)> {
+    [
+        Machine::windows_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+        Machine::second_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+        Machine::variables_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+    ]
+    .iter()
+    .map(|file| {
+        let named = file
+            .file_name()
+            .map_or_else(String::new, |it| it.to_string_lossy().into_owned());
+        let length = std::fs::metadata(file).map_or(0, |about| about.len());
+        (named, length, the_sum_of(file))
+    })
+    .collect()
+}
+
+/// A file's SHA-256, read in blocks, as the host's own `sha256sum` prints it.
+fn the_sum_of(file: &Path) -> String {
+    std::process::Command::new("sha256sum")
+        .arg(file)
+        .output()
+        .ok()
+        .filter(|ran| ran.status.success())
+        .and_then(|ran| {
+            String::from_utf8(ran.stdout)
+                .ok()
+                .and_then(|said| said.split_whitespace().next().map(str::to_owned))
+        })
+        .unwrap_or_else(|| "unreadable".to_owned())
 }
 
 /// **A computer that cannot start alo OS starts Windows, with nobody at the

@@ -337,6 +337,25 @@ each walked in the guest except where it says otherwise:
   every refusal; one holds the erasing script's guards to running before the
   line that erases.
 
+  **Walked again from the kept computer, 2026-09-27** (`cargo_test=0`,
+  **384 s** against `removal-12`'s 2310 s — six times faster, and the whole
+  difference is that the install was not walked again). Every recorded point
+  agrees with `removal-12`:
+
+  ```
+  disk 1: name=[QEMU HARDDISK] serial=[ALOTARGET1] bus=[SATA] size=34359738368 style=RAW
+  the firmware's own entries: Boot0001 [EFI Firmware Setup]
+                              Boot0004 [Windows Boot Manager] \EFI\Microsoft\Boot\bootmgfw.efi
+  with alo OS removed, the firmware started: Boot0004 "Windows Boot Manager"
+  ```
+
+  Same disk, same size, same `RAW` with no partitions; no entry named *alo OS*
+  left in the firmware; and the restart after it — no disc, no boot order, no
+  keypress — started Windows Boot Manager by itself. **So the snapshot is sound
+  for the walks built on it**: a road that begins after an install gives the
+  same answer from an overlay of the kept computer as it does from the whole
+  road, and costs six minutes instead of thirty-eight.
+
   **Walked on a real Windows, 2026-09-26** (`removal-12`, `cargo_test=0`,
   2310 s). The whole road installed alo OS; both loaders on its start partition
   were taken away so the firmware fell through to Windows by itself; the copy
@@ -1745,3 +1764,64 @@ environment has no point after which it says anything else.
   off a slow but moving download is a bug too, so the bound is on *no
   progress*, not on total time, unless measurement shows the two cannot be
   told apart.
+
+### 21. What the install leaves behind can be watched, or a booted machine and a hung one are the same picture
+
+**Status:** ready. **Depends on:** nothing; it blocks the snapshot loop paying
+off, and every later walk that watches the installed system.
+**Found by** the first run of `the_kept_computer_is_the_same_computer_twice` on
+2026-09-27. Kept on the development PC: `/root/t10/logs/`, and the two screens
+`kept-once.ppm` and `kept-again.ppm`.
+
+The installed system's boot entry carries no console argument. Read off the
+kept install's own disk, `/boot/loader/entries/ostree-1.conf` says:
+
+```
+options root=UUID=c583cbbc-6e3d-49d9-b021-0a29a4170413 rw \
+        ostree=/ostree/boot.1/default/81fdfdcf…/0
+```
+
+The **installer environment** sets a console argument on its own command line,
+which is why every walk up to and including the install can be read on the
+serial line. The system the install leaves behind does not, so from the moment
+the firmware hands over, the serial line goes quiet and stays quiet.
+
+**What that cost, measured rather than imagined.** Both starts of the kept
+computer looked exactly like a hang: the last line was OVMF's
+`PageFaultExitBoot` at `ExitBootServices`, then nothing for the full 480-second
+wait, one vCPU at 100%, and no disk bytes moving across ten-second samples —
+the stall signature this machine's discipline is written around. The screens say
+the opposite: both rounds reached `fedora login:` on tty1 under kernel
+6.19.14-101.fc42.x86_64, network up, `alo-boundaryd` loading its programs, about
+40 seconds after start. The machine was **idle at a login prompt**, and idle is
+indistinguishable from hung when the console is silent.
+
+So a quiet serial line on an installed machine is not evidence of anything, and
+`console.wait_for` against one can only ever time out. Any walk written to watch
+the installed system is waiting for a sentence that cannot arrive, and the only
+way to check such a walk today is to look at a picture by hand.
+
+**What is here.**
+- Decide which arguments the install writes, as the person's machine and not
+  only as a walk's fixture. `console=ttyS0` alone moves the kernel's messages
+  off the screen a person is looking at, which is wrong for a laptop;
+  `console=tty0 console=ttyS0` keeps both, with the last named console taking
+  `/dev/console`. That is a decision about what a person sees when their machine
+  starts, so it is made once and written down, not slipped into a test.
+- Write them the way `bootc` already offers — `--karg` on `install to-disk`, or
+  a `kargs.d` drop-in in the image — as configuration of the engine and never a
+  patch (ADR 0011).
+- Say whether a serial console on a shipped machine is acceptable at all, or
+  whether it is something the installer turns on only when it was asked to. A
+  serial console is a console: anything that can reach the port can type at it.
+
+- **Acceptance:** after an install, the installed system's own start-up is
+  readable on the serial line in a virtual machine, and
+  `the_kept_computer_is_the_same_computer_twice` asserts that the machine came
+  up rather than printing that it did not. A real machine with no serial port
+  boots exactly as before, and the argument does not send a person's kernel
+  messages somewhere they cannot see them.
+- **Constraint:** no engine is patched (ADR 0011). If a serial console is judged
+  unacceptable on a shipped machine, the walk gets its observability another way
+  — the screen, asserted against properly — and this task says so rather than
+  leaving the walks to time out.
