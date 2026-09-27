@@ -367,16 +367,34 @@ each walked in the guest except where it says otherwise:
   not walk to the fallback — but the claim is only safe with both gone.
 
 **Still owed here, and this task is not done until it is:**
-1. The walk of the default being changed from either side — and it now has a
-   specific doubt to settle. Reading the two sides on 2026-09-26: the Windows
-   side reaches the start partition with `mountvol S: /S`, which is the one
-   **Windows** started from, while alo OS's loader reads its block on the
-   partition **it** lives on. On every machine this installer can install onto
-   today those are different partitions, because the road offers a whole empty
-   disk and alo OS lands on a second one with a start partition of its own. If
-   that is right, a default changed from Windows is a file alo OS never reads.
-   It is written up in `docs/quirks.md`; nothing was changed on the strength of
-   a reading.
+1. The walk of the default being changed from either side. **The doubt was
+   measured on 2026-09-27** against the computer the whole road actually
+   produced, both disks read offline, and it came out differently than the
+   reading predicted — `docs/quirks.md`, *The default's two sides reach two
+   different partitions, and the one copy is on neither*.
+
+   The two sides do reach different partitions: Windows' EFI system partition is
+   disk 0 partition 1, alo OS's is disk 1 partition 2. But the conclusion drawn
+   from that on 2026-09-26 does not follow, because **alo OS's loader does not
+   read the partition it lives on** — the generated menu finds the partition by
+   the block file itself (`search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv`), so a block on Windows' ESP is one alo OS finds.
+
+   What the measurement did find is larger: **neither ESP holds an environment
+   block, and nothing in the tree creates one.** `save_env` can neither create a
+   file nor grow one, so the count of copies on a real installed machine is
+   zero. Both sides read nothing today, and ADR 0066 term 1 is unimplemented
+   rather than implemented wrongly. Because the loader finds the partition by
+   the file, whoever creates the block also chooses the partition — which makes
+   it a decision, put with its argument in
+   [ADR 0069](../decisions/0069-the-one-copy-of-the-default-lives-on-the-partition-windows-starts-from.md).
+   Nothing was changed on the strength of the measurement.
+
+   **One measurement is still owed and needs a guest:** that GRUB's `search
+   --file`, running from the loader on disk 1, reaches disk 0's ESP on this
+   firmware. Every other claim is read off an installed machine. It is cheap now
+   — the kept computer of #161 exists, so a walk that starts after an install is
+   an overlay rather than half an hour.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the

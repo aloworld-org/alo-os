@@ -7052,28 +7052,82 @@ loader is not the only one.
 
 **Date:** 2026-09-26.
 
-### The default's two sides may not be reading the same partition
-**Version:** `alo-installer`'s `defaulting.rs` (ADR 0066 term 3) and
-`alo-starting`'s `chosen.rs`, as they stand on 2026-09-26. **Not measured in a
-guest yet** — this is a reading of what the two sides do, written down before
-the walk that settles it.
-**Behaviour:** the Windows side reaches the EFI system partition with
-`mountvol S: /S`, which Windows documents as *the EFI system partition* —
-meaning **the one the running Windows started from**, on Windows' own disk. alo
-OS's side reads its environment block at `/EFI/fedora/grubenv` on the partition
-its own loader lives on. On the machines this installer can install today those
-are **two different partitions**: the installer only offers a whole empty disk,
-so alo OS lands on a second disk with an EFI system partition of its own.
+### The default's two sides reach two different partitions, and the one copy is on neither
+**Version:** `alo-installer`'s `defaulting.rs` (ADR 0066 term 3), `alo-starting`'s
+`chosen.rs` and `menu.rs`, and the computer a whole-road install actually
+produced — the kept base of 2026-09-26, its two disks opened read-only over
+`qemu-nbd` and read as filesystems. **Measured 2026-09-27**, which replaces the
+reading written here on 2026-09-26; the reading was half wrong and its
+conclusion did not follow.
 
-If that reading is right, a person who changes the default from Windows writes
-a file alo OS's loader never reads, and the two sides show different answers —
-which is the one thing ADR 0066 exists to prevent. On a single-disk install
-(the certified laptop's road, which this installer does not offer yet) the two
-are the same partition and the question does not arise.
-**Our response:** none yet, and nothing was changed on the strength of a
-reading. The walk of *the default changed from either side* is what settles it,
-and it is the last thing owed on the installer plan's task 4. If it confirms
-this, the fix belongs with ADR 0066's authors: either the Windows side finds
-alo OS's own start partition rather than Windows', or the block is kept where
-both sides already agree.
-**Date:** 2026-09-26.
+**Behaviour:** four things, measured on the installed machine rather than read
+off the source.
+
+1. **There are two EFI system partitions, on two disks.** Windows' is disk 0
+   partition 1, 300 MiB, vfat, holding `EFI/Boot/bootx64.efi` and the whole
+   `EFI/Microsoft/` tree and nothing else. alo OS's is disk 1 partition 2,
+   512 MiB, vfat, holding `EFI/BOOT/BOOTX64.EFI`, `EFI/BOOT/fbx64.efi` and
+   `EFI/fedora/{BOOTX64.CSV,bootuuid.cfg,grub.cfg,grubx64.efi,mmx64.efi,shim.efi,shimx64.efi}`.
+   `mountvol S: /S` can only reach the one the running Windows started from,
+   which is disk 0 partition 1. So the two sides do name different partitions,
+   and ADR 0066's *the* EFI system partition names neither of them.
+
+2. **But alo OS's loader does not read the partition it lives on.** The reading
+   of 2026-09-26 said it did, and that is where its conclusion came from. The
+   generated menu finds the partition **by the block file itself**:
+
+   ```
+   search --no-floppy --set=esp --file /EFI/fedora/grubenv
+   load_env -f (${esp})/EFI/fedora/grubenv saved_entry
+   save_env -f (${esp})/EFI/fedora/grubenv saved_entry
+   ```
+
+   `menu.rs`'s own test `the_partition_is_found_by_the_block_and_not_by_an_identifier`
+   holds that there is no `--fs-uuid` and no `hd0` in those lines. So a block
+   that exists only on **Windows'** ESP is a block alo OS's loader finds and
+   reads, and the conclusion *a default changed from Windows is a file alo OS
+   never reads* does not follow from the partitions being different.
+
+3. **Neither ESP holds an environment block at all.** After the whole road
+   installed alo OS beside Windows, `EFI/fedora/grubenv` is absent from both,
+   and no file with `env` in its name exists on either. Nothing in the tree
+   creates or pre-allocates it: there is no `grub2-editenv create` anywhere, and
+   `save_env` cannot create or grow a file — `on_this_machine.rs` says so and
+   the base measurement above shows the base ships no block on the ESP either.
+   So the count of copies on a real installed machine is **zero**, not one.
+
+4. **The block alo OS's loader actually has is on its own root filesystem.**
+   `/boot/grub2/grubenv`, 1024 bytes, on disk 1 partition 3 (btrfs) — header
+   and padding, no values. `/boot/efi` on that filesystem is an **empty
+   directory**, there is no `/etc/fstab`, and nothing mounts the ESP there, so
+   `THE_ENVIRONMENT_BLOCK` (`/boot/efi/EFI/fedora/grubenv`) resolves to no
+   partition on the installed machine. Windows cannot read btrfs at all — the
+   removal walk established that — so the one block that does exist is
+   unreachable from Windows by any path.
+
+**What follows, and it is not what the doubt predicted.** The defect is not that
+the two sides read different partitions; it is that **nothing creates the one
+copy**, so neither side reads anything. With no block, `which_system_starts`
+returns `NotThere`, the loader's `search` sets `${esp}` to nothing, `load_env -f`
+fails, and `set default="${saved_entry}"` is set from an empty variable. ADR 0066
+term 1 is therefore **unimplemented on a real install**, not implemented wrongly.
+
+And because the loader finds the partition by the file, **whoever creates the
+block chooses which partition every later read goes to.** That makes the
+placement a decision rather than a detail, and the unobvious answer is the right
+one: created on **Windows' ESP**, both sides reach it as they already stand —
+Windows by `mountvol S: /S`, alo OS by `search --file`. Created on alo OS's ESP,
+Windows' side still reads nothing. A copy on both is the one thing ADR 0066
+forbids, and nothing today prevents it: `search --file` takes the first
+filesystem it enumerates, so two copies is a silent, order-dependent answer
+rather than an error.
+
+**Our response:** the measurement is here and nothing was changed on the
+strength of it. Where the one copy lives, and who creates it, is ADR 0066's to
+say — its own last consequence reserves that (*a change to this decision, not a
+second copy added quietly*). [ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-on-the-partition-windows-starts-from.md)
+puts the question with an argument. The guest walk of *the default changed from
+either side* still owes one measurement this offline read cannot give: that
+GRUB's `search --file` running from disk 1 really does reach disk 0's ESP on
+this firmware. Everything else above is read off the installed machine.
+**Date:** 2026-09-27.
