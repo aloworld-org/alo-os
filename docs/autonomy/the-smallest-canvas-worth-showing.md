@@ -27,7 +27,21 @@ not undo the other nine.
 
 ### 1. A plane that moves under a viewport that does not
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-27.** `crates/alo-canvas` holds the plane and the
+camera; `alo_shell::scene::trees` applies the whole camera at one seam;
+`alo_shell::Server::{pan_the_canvas, zoom_the_canvas, look_at_the_canvas}` move
+it, and `FrameTarget::look_at` carries it to whichever display draws. Held by
+`crates/alo-shell/tests/one_plane_under_one_viewport.rs` — six tests, including
+the constraint read out of the source — and measured in pixels by the walk, which
+draws the same two windows at 512 painted pixels at life size and 84 at 40 %.
+
+**Owed, and not part of this task's acceptance:** the pointer. `trees` answers in
+screen pixels, and the surface-local coordinate a client is sent is derived by
+subtracting that origin, which is exact at life size and meaningless at any other
+zoom. So `Server::pointer_target` **refuses to hit anything** while the canvas is
+zoomed, rather than sending a client a coordinate that is not one. That refusal is
+task 2's to remove, and until it is removed a zoomed canvas can be looked at and
+not clicked. **Depends on:** nothing.
 
 Two layers, and the separation is the whole architecture: canvas content in one,
 viewport controls in the other. The dock and the status area are children of the
@@ -71,6 +85,18 @@ retrofit.
 ### 2. A frame is where it looks, at any zoom
 
 **Status:** ready. **Depends on:** 1.
+
+#### What task 1 left for this one, written on 2026-09-27
+
+The refusal above is where to start: `Server::pointer_target` returns `None` at
+any zoom but life size. Removing it is not one division, which is why task 1 did
+not do it. `crate::scene::trees` answers in screen pixels and Smithay derives a
+client's surface-local coordinate by subtracting the focus origin from the
+pointer's own location, so the pointer's units have to be decided rather than
+converted at the last moment — and `Surfaces::pointer.location`, the window
+controls and the resize gesture all read that same stored location and are all in
+the **viewport** layer, where a zoom must not reach. Two spaces, named, with one
+conversion between them; not a scale factor sprinkled at each reader.
 
 An application opens as a frame on the plane and receives input where a person
 points. This is the task that is quietly hard: a click at screen coordinates

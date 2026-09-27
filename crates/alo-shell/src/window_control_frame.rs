@@ -51,6 +51,12 @@ impl<T: FrameTarget> FrameTarget for ControlTarget<'_, T> {
     fn size(&self) -> Size<i32, Physical> {
         self.target.size()
     }
+    /// Forwarded, never answered here — and this is the wrapper every ordinary
+    /// frame crosses, so a default taken here would have refused every pan in the
+    /// product while each backend underneath was wired to draw one.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.target.look_at(camera)
+    }
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
         self.submit_popups(roots, &[], &crate::Cursor::Default)
     }

@@ -69,6 +69,7 @@ fn the_sign_in_screen_is_drawn_into_the_bytes_a_display_would_scan_out() {
             &[],
             &Cursor::Default,
             only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
         )
         .expect("the sign-in screen refused on the processor");
 
@@ -116,6 +117,7 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
                 location: (8.0, 8.0).into(),
             },
             only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
         )
         .expect("the arrow refused on the processor");
     let (without, _) = painter
@@ -125,6 +127,7 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
             &[],
             &Cursor::Default,
             only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
         )
         .expect("the same screen refused without an arrow");
 
@@ -222,6 +225,7 @@ fn a_frame_with_nothing_of_this_shells_own_in_it_is_refused_rather_than_drawn_bl
             &[],
             &Cursor::Default,
             crate::scene_native::NativeLayers::nothing(),
+            alo_canvas::Camera::new(),
         )
         .err()
         .expect("an empty frame was drawn rather than refused");
@@ -249,7 +253,8 @@ fn an_extent_no_display_has_is_refused_before_anything_is_allocated() {
             &[],
             &[],
             &Cursor::Default,
-            only(NativeScene::SignIn(&screen))
+            only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
         ),
         Err(RenderError::EmptySize)
     ));
@@ -289,6 +294,7 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
                 status: Some(&leaving),
                 ..crate::scene_native::NativeLayers::nothing()
             },
+            alo_canvas::Camera::new(),
         )
         .expect("a frame carrying both a screen and the indicator was refused");
 
@@ -333,6 +339,7 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
                 status: Some(&leaving),
                 ..crate::scene_native::NativeLayers::nothing()
             },
+            alo_canvas::Camera::new(),
         )
         .expect("a frame with a layer and no scene was refused");
 

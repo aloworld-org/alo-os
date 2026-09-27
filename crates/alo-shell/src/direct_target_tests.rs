@@ -61,6 +61,7 @@ impl ScenePainter for Painter {
         _: &[Popup],
         _: &Cursor,
         _: crate::scene_native::NativeLayers<'_>,
+        _: alo_canvas::Camera,
     ) -> Result<(crate::ScanoutPixels, Vec<WlSurface>), RenderError> {
         self.calls.set(self.calls.get() + 1);
         if self.refuse {

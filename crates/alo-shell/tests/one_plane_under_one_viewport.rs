@@ -165,6 +165,122 @@ fn a_pan_and_a_zoom_move_the_plane_and_not_the_viewport() {
     assert_eq!(zoomed.zoom().thousandths(), 400);
 }
 
+/// **Every display and every wrapper in this crate answers for the camera.**
+///
+/// The seam has one writer and four readers, and three of the readers are
+/// wrappers: `ControlTarget`, which every ordinary frame crosses, `Layered`,
+/// which adds this shell's own surfaces above the plane, and `ReaderTarget`. The
+/// first version of this work wired the two real backends and left all three
+/// wrappers on the trait's default, so a pan was refused in the product while
+/// every arithmetic test in `alo-canvas` passed — the refusal was honest, and
+/// caught it, and it should not have needed a running compositor to catch.
+///
+/// A default that refuses is the right default for a target that cannot draw the
+/// plane. It is the wrong answer for anything in `src/`, because everything here
+/// either draws the plane or hands it to something that does.
+#[test]
+fn no_display_or_wrapper_in_this_crate_takes_the_default_camera() {
+    let mut silent: Vec<String> = Vec::new();
+    for at in every_source_file() {
+        let written = std::fs::read_to_string(&at).expect("a source file this crate compiles");
+        let lines: Vec<&str> = written.lines().collect();
+        for (from, line) in lines.iter().enumerate() {
+            let Some(named) = line.split("FrameTarget for ").nth(1) else {
+                continue;
+            };
+            // Impls are items, so the block ends at the first `}` in column one.
+            let ends = lines
+                .iter()
+                .enumerate()
+                .skip(from + 1)
+                .find(|(_, it)| **it == "}")
+                .map_or(lines.len(), |(at, _)| at);
+            let block = lines.get(from..ends).unwrap_or_default();
+            if !block.iter().any(|it| it.contains("fn look_at")) {
+                let file = at
+                    .file_name()
+                    .map(|it| it.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                let named = named.trim_end_matches(" {").trim();
+                silent.push(format!("{file}: {named}"));
+            }
+        }
+    }
+    assert!(
+        silent.is_empty(),
+        "these are frame targets in this crate that never answer `look_at`, so a \
+         pan reaching them is refused rather than drawn: {silent:?}"
+    );
+}
+
+/// **A pan reaches the target through the path an ordinary frame takes.**
+///
+/// The structural claim above says nobody is silent; this says the one writer
+/// actually writes, through every wrapper between `Server::render` and a display.
+/// Neither test needs a GPU, which is the point: the fault this pair replaces was
+/// found by a compositor fixture that only this lane can run.
+#[test]
+fn a_panned_session_hands_its_camera_to_the_display() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    /// Records the last camera it was given, and nothing else.
+    struct Watching {
+        /// What the session last said it was looking at.
+        camera: Option<alo_canvas::Camera>,
+    }
+
+    impl alo_shell::FrameTarget for Watching {
+        fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), alo_shell::RenderError> {
+            self.camera = Some(camera);
+            Ok(())
+        }
+        fn size(&self) -> smithay::utils::Size<i32, smithay::utils::Physical> {
+            (1366, 768).into()
+        }
+        fn submit(
+            &mut self,
+            roots: &[smithay::reexports::wayland_server::protocol::wl_surface::WlSurface],
+        ) -> Result<
+            Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
+            alo_shell::RenderError,
+        > {
+            Ok(roots.to_vec())
+        }
+    }
+
+    let runtime = tempfile::tempdir().expect("a runtime directory");
+    std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
+        .expect("a private runtime directory");
+    let mut server =
+        alo_shell::Server::bind(runtime.path(), "one-plane-handed").expect("a server to look with");
+    let mut target = Watching { camera: None };
+
+    server.render(&mut target, 0).expect("an empty frame");
+    assert_eq!(
+        target.camera,
+        Some(alo_canvas::Camera::new()),
+        "a session nobody has panned still has to say where it is looking"
+    );
+
+    let panned = server.pan_the_canvas(-40, 25).expect("a pan on the plane");
+    server.render(&mut target, 1).expect("a panned frame");
+    assert_eq!(
+        target.camera,
+        Some(panned),
+        "the session panned and the display was never told"
+    );
+
+    let zoomed = server
+        .zoom_the_canvas(alo_canvas::Zoom::of(400).expect("40 per cent"), (683, 384))
+        .expect("a zoom on the plane");
+    server.render(&mut target, 2).expect("a zoomed frame");
+    assert_eq!(
+        target.camera,
+        Some(zoomed),
+        "the session zoomed and the display was told only about the pan"
+    );
+}
+
 /// **A pan off the plane is refused rather than clamped.**
 ///
 /// `alo-canvas` refuses by name, and the session carries that refusal rather than

@@ -39,11 +39,17 @@ pub struct Nested {
     pub(crate) control_input: crate::NestedControlInput,
     /// What a person is looking at on the canvas, for the frames this draws.
     ///
-    /// **A copy of the session's, kept in step by whoever submits** — the same
+    /// **A copy of the session's, set by [`FrameTarget::look_at`]** — the same
     /// arrangement `crate::popups` uses for the output's extent and for the same
     /// reason: this backend has to place the plane and cannot ask a `Server` for
     /// it. `Camera::new()` is the truthful default, because a backend nobody has
     /// panned is looking at the plane's origin.
+    ///
+    /// The first version of this field said only *kept in step by whoever
+    /// submits*, and nothing did: a zoom reached the session, the popups and the
+    /// scene's arithmetic, and the frames were drawn at life size anyway. It is
+    /// named after the one method that writes it so that reading the field tells
+    /// you where to look.
     pub(crate) camera: alo_canvas::Camera,
     /// Whether each frame's own pixels are kept as it is submitted.
     ///
@@ -345,6 +351,12 @@ impl Nested {
 }
 
 impl FrameTarget for Nested {
+    /// Kept for the frames this submits, and for the copy an offscreen readback
+    /// of the same scene draws from.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.camera = camera;
+        Ok(())
+    }
     fn submit_reader(
         &mut self,
         roots: &[WlSurface],

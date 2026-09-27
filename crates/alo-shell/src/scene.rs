@@ -23,6 +23,18 @@ impl Popup {
     }
 }
 
+/// The scale a client's pixels are drawn at under this camera.
+///
+/// **The one place the zoom becomes a float.** `alo-canvas` holds it as integer
+/// thousandths deliberately — *nearly the right pixel* in a drawing program is a
+/// wrong pixel, and an `f64` gives different answers depending on the order the
+/// sums were done — while GLES and Smithay's element geometry both take an `f64`.
+/// So the conversion happens once, here, and the four files that need it ask
+/// rather than each dividing by its own thousand.
+pub(crate) fn drawn_at(camera: alo_canvas::Camera) -> f64 {
+    f64::from(camera.zoom().thousandths()) / 1000.0
+}
+
 /// Front-to-back trees, descendants above parents and newest siblings first,
 /// placed where the canvas's camera puts them.
 ///
@@ -40,18 +52,29 @@ impl Popup {
 /// `docs/autonomy/the-smallest-canvas-worth-showing.md` task 1 is about, and the
 /// reason nothing in the viewport layer needs to know a camera exists.
 ///
-/// **The zoom is not applied yet.** `crate::drawing` has no scaling path at all,
-/// so a scale here would be a number nothing honoured. Task 1's inventory in that
-/// plan says so and names it as the expensive half.
+/// # These are screen pixels, not plane units
+///
+/// The pan and the zoom are **both** applied, so what comes back is where the
+/// surface is on the display. That is forced rather than chosen: Smithay's
+/// `Element::geometry(scale)` scales an element's *size* and uses its location
+/// exactly as given, so a location in plane units would draw every frame at the
+/// right size in the wrong place. Measured — a frame at plane x=683 was drawn at
+/// screen x=1707 while zoomed out to 40 %, off a 1366-wide output, and one of the
+/// walk's two windows simply vanished.
+///
+/// A caller that wants plane units divides by [`drawn_at`]; `crate::popup_placement`
+/// does exactly that, because a positioner's rectangle is in the parent's own
+/// units and those do not change when a person zooms.
 pub(crate) fn trees(
     roots: &[WlSurface],
     popups: &[Popup],
     camera: alo_canvas::Camera,
 ) -> Vec<(WlSurface, Point<f64, Logical>)> {
-    let panned = |origin: Point<f64, Logical>| {
+    let zoom = drawn_at(camera);
+    let on_the_screen = |origin: Point<f64, Logical>| {
         Point::from((
-            origin.x - f64::from(camera.at().x),
-            origin.y - f64::from(camera.at().y),
+            (origin.x - f64::from(camera.at().x)) * zoom,
+            (origin.y - f64::from(camera.at().y)) * zoom,
         ))
     };
     let mut trees = Vec::new();
@@ -62,7 +85,7 @@ pub(crate) fn trees(
         .map(|root| {
             (
                 root.clone(),
-                panned(crate::window_buffer_origin(root)),
+                on_the_screen(crate::window_buffer_origin(root)),
                 false,
             )
         })
@@ -74,7 +97,13 @@ pub(crate) fn trees(
         }
         pending.push((surface.clone(), origin, true));
         for popup in popups.iter().filter(|popup| popup.parent == surface) {
-            pending.push((popup.surface.clone(), origin + popup.location(), false));
+            // The parent's origin is already on the screen; a popup's offset from
+            // it is in the parent's units and has to be scaled to join it.
+            pending.push((
+                popup.surface.clone(),
+                origin + popup.location().upscale(zoom),
+                false,
+            ));
         }
     }
     trees

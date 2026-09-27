@@ -53,6 +53,12 @@ impl<T: FrameTarget> FrameTarget for ReaderTarget<'_, T> {
     fn size(&self) -> Size<i32, Physical> {
         self.target.size()
     }
+    /// Forwarded, never answered here. A wrapper that took the default would
+    /// accept the camera on the real backend's behalf and then not give it to
+    /// it, which is the same silent loss the default exists to refuse.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.target.look_at(camera)
+    }
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
         self.submit_popups(roots, &[], &crate::Cursor::Default)
     }
