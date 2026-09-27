@@ -168,15 +168,172 @@ pub enum Finding {
     /// otherwise be silent: a heading that moved, a file that was replaced, and
     /// an audit passing over a document it never found.
     #[error(
-        "docs/features.md makes {promises} v0.01 promises and the ledger has no entries at all, so \
-         this audit is checking nothing. The entries live under `{heading}` in \
-         docs/autonomy/v0-01-evidence.md; if that heading moved, this crate moves with it"
+        "docs/features.md makes {promises} promises at this tier and the ledger has no entries at \
+         all, so this audit is checking nothing. The entries live under `{heading}`; if that \
+         heading moved, this crate moves with it"
     )]
     NothingToReconcile {
         /// How many promises went unreconciled.
         promises: usize,
         /// The heading the entries are read from.
         heading: &'static str,
+    },
+
+    /// A tier asked to reconcile that has no ledger.
+    ///
+    /// Answered rather than treated as an empty ledger, because an empty ledger
+    /// and a tier nobody has written one for read identically to a caller and
+    /// only one of them is somebody's mistake.
+    #[error(
+        "there is no ledger for {tier}, so its promises cannot be reconciled against evidence. \
+         Two releases have one — v0.01 and v0.5 — and a tier gains one by being given a file and \
+         a heading in `crate::tier::Tier::ledger`"
+    )]
+    NoLedgerForThisTier {
+        /// The tier asked about.
+        tier: &'static str,
+    },
+
+    /// A promise carrying two of one half, which is a half left behind by a
+    /// promise that moved.
+    #[error(
+        "ROADMAP.md:{line} — \"{promise}\" carries {code} code half/halves and {machine} \
+         machine half/halves, and a promise has at most one of each. A promise moved between \
+         milestones by its first line alone leaves its halves attached to the promise above, \
+         which is how four boxes and two ticks ended up under promises they were not about"
+    )]
+    AHalfUnderTheWrongPromise {
+        /// The promise they attached themselves to.
+        promise: String,
+        /// Which line it is on.
+        line: usize,
+        /// How many code halves it carries.
+        code: usize,
+        /// How many machine halves it carries.
+        machine: usize,
+    },
+
+    /// A half that is neither the code nor the machine.
+    #[error(
+        "ROADMAP.md:{line} — \"{promise}\" carries {how_many} half/halves that say neither \
+         \"The code.\" nor \"On the machine.\". Those two are what the gate's own rule names, \
+         and a third kind of half is a box nobody can read the meaning of"
+    )]
+    AHalfThatIsNeither {
+        /// The promise it is under.
+        promise: String,
+        /// Which line the promise is on.
+        line: usize,
+        /// How many such halves.
+        how_many: usize,
+    },
+
+    /// A promise the definition makes with no box in the gate.
+    #[error(
+        "docs/features.md promises \"{promise}\" at {tier} and ROADMAP.md's {tier} gate has no \
+         box for it. A promise with no box cannot be ticked, so work finished against it is \
+         invisible — which is how night light was built, reported twice and never counted"
+    )]
+    APromiseWithNoBox {
+        /// The promise nothing answers.
+        promise: String,
+        /// Which tier promises it.
+        tier: &'static str,
+    },
+
+    /// A tier the roadmap has no section for.
+    #[error(
+        "ROADMAP.md has no section headed \"{heading}\", so nothing can be checked about \
+         {tier}'s gate. If that heading moved, this crate moves with it"
+    )]
+    ATierWithNoSection {
+        /// The tier.
+        tier: &'static str,
+        /// The heading looked for.
+        heading: &'static str,
+    },
+
+    /// A box denying work that its own named task says is done.
+    #[error(
+        "ROADMAP.md:{line} — \"{promise}\" says work is not there and names task {task} of \
+         {plan}, and that plan says the task is done. A stale gate misleads in both \
+         directions, and a denial precise enough to name a task number reads as authoritative"
+    )]
+    ADenialOfFinishedWork {
+        /// The promise whose box denies it.
+        promise: String,
+        /// Which line.
+        line: usize,
+        /// The plan named.
+        plan: String,
+        /// The task named.
+        task: u32,
+    },
+
+    /// A task whose status word its own section contradicts.
+    #[error(
+        "{plan} task {task} says \"{status}\" and its own body says \"{marker}\". A plan states \
+         whether a task is finished twice, and nothing made the two agree: 74 tasks across six \
+         plans had this on 2026-09-27, 32 of them in a release that shipped. \
+         docs/autonomy/SHARED_MAIN.md names the marker as the one to trust, so the status word \
+         is what to correct"
+    )]
+    AStatusItsOwnSectionContradicts {
+        /// The plan.
+        plan: String,
+        /// The task.
+        task: u32,
+        /// The status word the task states.
+        status: String,
+        /// The marker in its body that contradicts it.
+        marker: String,
+    },
+
+    /// A promise at one tier in the definition and another in the roadmap.
+    #[error(
+        "docs/features.md promises \"{promise}\" at {definition} and ROADMAP.md answers it in \
+         {roadmap}'s gate. The definition is the scope gate and decides; a promise carried \
+         between milestones in one document and not the other is how the camera came to sit \
+         at three tiers in three files"
+    )]
+    ATierThatDisagrees {
+        /// The promise.
+        promise: String,
+        /// What the definition says.
+        definition: &'static str,
+        /// What the roadmap says.
+        roadmap: &'static str,
+    },
+
+    /// A refusal a published report appears to contradict.
+    #[error(
+        "ROADMAP.md:{line} — a half under \"{promise}\" says something is not there, and \
+         docs/autonomy/updates/{report} looks like it is about that promise. Look before \
+         writing that nothing exists: four refusals on 2026-09-26 were negative claims from \
+         searches narrower than the claim, and reports had answered all four for days"
+    )]
+    ARefusalAReportContradicts {
+        /// The promise.
+        promise: String,
+        /// Which line the refusing half is on.
+        line: usize,
+        /// The report that may contradict it.
+        report: String,
+    },
+
+    /// A number a promise states, against the number the code has.
+    #[error(
+        "{what}: the definition says {promised} and this repository has {actual}. A count is a \
+         fact a crate can hold, and \"five designed hues\" stayed ticked as working code after \
+         Accent::ALL became four"
+    )]
+    ACountThatDrifted {
+        /// What is being counted, in the definition's words.
+        what: String,
+        /// What the definition promises.
+        promised: usize,
+        /// What the code has.
+        actual: usize,
     },
 }
 

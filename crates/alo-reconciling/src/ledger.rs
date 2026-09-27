@@ -23,6 +23,18 @@ const ANOTHER_SECTION: &str = "## ";
 /// beneath it until the next heading is its body.
 #[must_use]
 pub fn entries_in(document: &str) -> Vec<Entry> {
+    entries_under(document, THE_ENTRIES)
+}
+
+/// Every entry a ledger makes under one heading, in the order it makes them.
+///
+/// The heading is named by the caller because the second release's ledger is
+/// ninety-two entries and has to be grouped to be readable at all. Its groups are
+/// **bold lines rather than headings**, so that every `###` under the one heading
+/// is an entry and nothing else is — see `docs/autonomy/v0-5-evidence.md`, which
+/// says the same thing from the other side.
+#[must_use]
+pub fn entries_under(document: &str, under: &str) -> Vec<Entry> {
     let mut entries: Vec<Entry> = Vec::new();
     let mut reading = false;
     let mut promise: Option<String> = None;
@@ -38,7 +50,7 @@ pub fn entries_in(document: &str) -> Vec<Entry> {
         }
         if line.starts_with(ANOTHER_SECTION) {
             finish(&mut promise, &mut body, &mut entries);
-            reading = line.trim_end() == THE_ENTRIES;
+            reading = line.trim_end() == under;
             continue;
         }
         if promise.is_some() {

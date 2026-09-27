@@ -1,11 +1,18 @@
-//! Every v0.01 promise, against the evidence this repository can actually run.
+//! Every promise a release makes, against the evidence this repository can
+//! actually run — and the exit gate, held to the same documents.
 //!
 //! `docs/features.md` is the definition of what alo OS is — the scope gate, and
-//! the sentences a customer would read. `docs/autonomy/v0-01-evidence.md` is the
-//! other half of that document and is new here: **for every `[v0.01]` line, the
-//! test or the report that shows it, and what is still owed.** This crate is
-//! what makes the second file true of the first rather than a list somebody
-//! wrote once.
+//! the sentences a customer would read. A ledger is the other half of that
+//! document for one release: **for every line at that tier, the test or the
+//! report that shows it, and what is still owed.** There are two,
+//! `docs/autonomy/v0-01-evidence.md` and `docs/autonomy/v0-5-evidence.md`, and
+//! [`tier::Tier::ledger`] is the only place either is named. This crate is what
+//! makes them true of the definition rather than lists somebody wrote once.
+//!
+//! [`the_gate`] is the other half of the crate and reads a third document:
+//! `ROADMAP.md`'s exit gate, held to the definition, to the plans, and to itself.
+//! Its header says which finding specified each of its checks, and every one of
+//! them was specified by something a reading of that gate got wrong.
 //!
 //! # Why a crate and not a document somebody reads
 //!
@@ -71,12 +78,20 @@ pub mod ledger;
 pub mod owed;
 pub mod promise;
 pub mod reconciling;
+pub mod the_gate;
+pub mod tier;
 pub mod waiting;
 
 pub use entry::Entry;
 pub use evidence::Evidence;
 pub use finding::Finding;
-pub use ledger::entries_in;
-pub use promise::{Promise, promises_in};
-pub use reconciling::{Reconciled, reconcile};
+pub use ledger::{entries_in, entries_under};
+pub use promise::{Promise, promises_at, promises_in};
+pub use reconciling::{Reconciled, reconcile, reconcile_at};
+pub use the_gate::{
+    Box_, Promised, Section, counts_that_drifted, denials_by_task_number, orphaned_boxes,
+    promises_with_no_box, refusals_a_report_contradicts, sections_in,
+    statuses_their_own_section_contradicts, tiers_that_disagree,
+};
+pub use tier::Tier;
 pub use waiting::Waiting;

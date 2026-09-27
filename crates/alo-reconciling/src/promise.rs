@@ -6,13 +6,7 @@
 //! still the same promise, and a section that was renamed is not a release
 //! change.
 
-/// How `docs/features.md` marks a promise as v0.01.
-///
-/// The tier is written into the line itself, which is why it can be read
-/// without knowing anything about the document's shape. The leading `- ` is part
-/// of it so that the sentence in the file's own preamble explaining what the
-/// tiers mean is not read as a promise.
-const AT_V0_01: &str = "- [v0.01]";
+use crate::tier::Tier;
 
 /// One `[v0.01]` promise, in the words `docs/features.md` uses.
 ///
@@ -51,9 +45,21 @@ impl Promise {
 /// reading of a definition that made the same commitment in two places.
 #[must_use]
 pub fn promises_in(document: &str) -> Vec<Promise> {
+    promises_at(document, Tier::V0_01)
+}
+
+/// Every promise a features document makes at one tier, in the order it makes
+/// them.
+///
+/// The tier is a [`Tier`] rather than a string a caller passes, because the
+/// markers are one character apart: `[v0.5]` and `[v0.01]` differ by a zero, and
+/// a caller that assembled one itself would be a typo away from reconciling an
+/// empty set and reporting that every promise was answered.
+#[must_use]
+pub fn promises_at(document: &str, tier: Tier) -> Vec<Promise> {
     document
         .lines()
-        .filter_map(|line| line.trim_start().strip_prefix(AT_V0_01))
+        .filter_map(|line| line.trim_start().strip_prefix(tier.marker()))
         .map(|words| Promise {
             words: words.trim().to_owned(),
         })
