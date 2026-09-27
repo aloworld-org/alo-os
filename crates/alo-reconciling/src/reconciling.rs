@@ -13,12 +13,7 @@
 //! time these two documents were compared there were six.
 
 use crate::{
-    entry::Entry,
-    evidence::Evidence,
-    finding::Finding,
-    ledger::{THE_ENTRIES, entries_in},
-    owed::Owed,
-    promise::{Promise, promises_in},
+    entry::Entry, evidence::Evidence, finding::Finding, owed::Owed, promise::Promise,
     waiting::Waiting,
 };
 
@@ -84,13 +79,36 @@ pub fn reconcile(
     ledger: &str,
     reading: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Reconciled, Vec<Finding>> {
-    let promises = promises_in(features);
-    let entries = entries_in(ledger);
+    reconcile_at(features, ledger, crate::tier::Tier::V0_01, reading)
+}
+
+/// The same audit, for one release's promises against that release's ledger.
+///
+/// The tier is a [`crate::tier::Tier`] rather than two strings, because the
+/// marker and the heading have to agree: a caller that passed v0.5's marker and
+/// v0.01's heading would reconcile ninety-two promises against forty-six entries
+/// about other promises and report every one of them unanswered.
+///
+/// # Errors
+///
+/// As [`reconcile`], and [`Finding::NoLedgerForThisTier`] where the tier has no
+/// ledger to read.
+pub fn reconcile_at(
+    features: &str,
+    ledger: &str,
+    tier: crate::tier::Tier,
+    reading: &dyn Fn(&str) -> Option<String>,
+) -> Result<Reconciled, Vec<Finding>> {
+    let Some((_, heading)) = tier.ledger() else {
+        return Err(vec![Finding::NoLedgerForThisTier { tier: tier.named() }]);
+    };
+    let promises = crate::promise::promises_at(features, tier);
+    let entries = crate::ledger::entries_under(ledger, heading);
 
     if entries.is_empty() && !promises.is_empty() {
         return Err(vec![Finding::NothingToReconcile {
             promises: promises.len(),
-            heading: THE_ENTRIES,
+            heading,
         }]);
     }
 

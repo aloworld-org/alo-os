@@ -1741,10 +1741,17 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
 **This gate is 93 boxes: 31 promises, and every one of them now carries the two
 boxes the section above describes.** It read *8 of 49* on 2026-09-26 before it was
-reconciled promise by promise, and it reads **24 of 93** after — 31 promises where
+reconciled promise by promise, and it reads **26 of 93** after — 31 promises where
 four had been split, and two promises `docs/features.md` makes that had no box here
 at all: *Night light and display colour* and *The dock's size, and per display*. The
 first of those had finished code and nothing to tick it in.
+
+**And it is a check now rather than a reading.** `docs/autonomy/v0-5-evidence.md`
+is the other half of the definition for this release — 92 entries for 92 promises —
+and `crates/alo-reconciling/src/the_gate.rs` holds this document to it, to the
+plans, and to itself. Five of its checks are armed in the gate, each named after
+the thing that specified it; the two that cannot be are named in *The gate, read*
+at the bottom of this file, with the numbers that say why.
 
 **A gate that grows while the work is counted was under-describing the work.** It is
 not getting further away. Most of the growth is the same promises with the
@@ -1942,27 +1949,42 @@ sorted the same way v0.01 now is.
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
-  - [ ] **The code.**
-        **The decisions are built and four of the applications do not exist.**
+  - [x] **The code.**
+        **Every clause is decided, and nothing installs the applications yet.**
         Notifications and do-not-disturb are `alo-notifying`; file associations
         and which application opens what are `alo-applications` and
         `alo-portals`' open-with; archives are recognised by
-        `alo-applications`' media types; USB storage is the broker's `MountDrive`
-        and `EjectDrive`; trash is one of `alo-by-hand`'s plain ways to do what
-        the agent does. The status area is the shell's and is drawn.
-        The desktop itself **is drawn** — the dock, the status area, and the
-        windows for what is running and what is filling the disk — by
-        `alo-shell`, its plan's tasks 5, 7 and 15.
-        **What is missing is four applications.** A file manager, a text editor,
-        an image viewer and a terminal are none of them anywhere: no crate is one,
-        nothing in `alo-shell` is one, and `image/Containerfile` installs none.
-        This line promises applications a person opens as well as the machinery
-        under them, and four of its ten clauses have nothing behind them.
-        *Nothing here is owed to a machine — it is owed a decision*, whether alo
-        OS writes them or pins upstream ones
+        `alo-applications`' media types; USB storage is `alo-drives` over the
+        rented disk service with the broker's `MountDrive` and `EjectDrive`, and
+        *a drive is only ever mounted or ejected* is its test; trash is one of
+        `alo-by-hand`'s plain ways to do what the agent does. The status area is
+        the shell's and is drawn. The desktop itself **is drawn** — the dock, the
+        status area, and the windows for what is running and what is filling the
+        disk — by `alo-shell`, its plan's tasks 5, 7 and 15, and every step of it
+        is now read back off the frames it drew on a nested parent
+        (`updates/this-machine-runs-a-nested-compositor-and-two-faults-were-hiding-behind-that.md`).
+        **The four applications are decided and pinned**, each an upstream one
+        named by the identifier its source knows it by and the version it was
+        decided at: a file manager (`org.kde.dolphin` 26.04.3, which is also the
+        trash), archives (`org.kde.ark`), a text editor
+        (`org.gnome.TextEditor` 50.1), an image viewer (`org.gnome.Loupe` 50.0)
+        and a terminal (`app.devsuite.Ptyxis` 50.1, a person's and never an
+        agent's — ADR 0043). `crates/alo-software/shipped.toml`, task 2 of
+        `v0-5-software-and-the-web-plan.md`, held by
+        `crates/alo-software/tests/what_a_fresh_machine_has.rs`, with why each was
+        chosen in `updates/what-a-fresh-machine-has.md`
+        *This half read **four of the applications do not exist** and **it is owed
+        a decision, whether alo OS writes them or pins upstream ones** until
+        2026-09-27. That decision was taken on **2026-09-15**, twelve days before
+        the sentence was written. This box said task 11 — the same class of error
+        as the four refusals below: a negative claim from searching `crates/` and
+        `image/` rather than opening the crate that holds the answer*
   - [ ] **On the machine.**
-        the desktop in front of somebody, once there is one to be in front of
-        them
+        **the applications installed, and the desktop in front of somebody.**
+        Nothing in `image/` or the installer installs `shipped.toml`'s list yet —
+        the installer plan is to name them to the image from that file rather than
+        copy the list — so a fresh machine does not have them; and the desktop is
+        owed a person to be in front of
 - [ ] **The plain way to do what the agent does** (ADR 0009) — searching your own
       files by name, kind, date and contents; a window showing what is running
       and what it is using; what is filling the disk. Each is the non-agent
@@ -2116,21 +2138,29 @@ sorted the same way v0.01 now is.
         names one substituted font on one machine and two on another, which is
         exactly why this half is owed
 - [ ] A web browser for the open web
-  - [ ] **The code.**
-        **The policy is built and no browser is pinned.** `alo-software` holds
+  - [x] **The code.**
+        **The policy is built and the browser is pinned.** `alo-software` holds
         what a web address is, checked at the boundary — `http` and `https` only,
         a name-and-password in one refused with its own sentence — which
         application opens them (the person's choice, then the one `Shipped` names
         for `Role::WebBrowser`, then nothing, and never a person's own
         application), and an application's request judged in the open-with
-        portal. Task 3 of `v0-5-software-and-the-web-plan.md`.
-        What the promise actually says is *a pinned upstream one, since our own
-        engine is not scheduled*, and **`image/Containerfile` installs no
-        browser at all.** Pinning one is image work, which is code rather than a
-        machine, so this half is not ticked
+        portal. Task 3 of `v0-5-software-and-the-web-plan.md`, with
+        `crates/alo-software/tests/the_web_browser.rs`.
+        The promise says *a pinned upstream one, since our own engine is not
+        scheduled*, and the pin is `crates/alo-software/shipped.toml`:
+        `org.mozilla.firefox` 156.0 from Flathub, MPL-2.0, chosen for engine
+        diversity and a published enterprise policy that turns telemetry off.
+        *This half read **no browser is pinned** until 2026-09-27. Firefox has been
+        pinned since 2026-09-15. The claim came from searching `image/` — where it
+        is true that nothing installs it — and reporting that as the pin being
+        absent, which is a different thing and is the machine half below*
   - [ ] **On the machine.**
-        the browser open on the certified machine, opening an address handed to
-        it by another application
+        **installed, and then open.** `image/Containerfile` installs no browser:
+        the fresh machine's applications are to be named to the image from
+        `shipped.toml` by the installer plan, and that has not been done. Then the
+        browser open on the certified machine, opening an address handed to it by
+        another application
 - [ ] **System verbs** through the privileged broker
   - [x] **The code.**
         `alo-broker` — a **closed, typed list of thirteen** and nothing else:
@@ -2204,9 +2234,18 @@ sorted the same way v0.01 now is.
         files. Contents are never sent anywhere — a test reads the crate's
         shipped source for a socket. The agent's road is the `find` verb,
         a read under a grant over the folder whose index is searched, and the
-        person's road needs neither. One known limit, open as task 11: a
-        folder larger than the walker's bound is indexed only to the bound,
-        and says so. `v0-5-the-machine-measured-plan.md` tasks 3–10
+        person's road needs neither. The one known limit is **closed**: a folder
+        larger than the walker's bound is walked on from every folder one walk
+        left unentered, under the same bound each time, until nothing is left —
+        task 11, done 2026-09-14,
+        `updates/an-index-made-whole-for-a-folder-larger-than-one-walk.md`. The
+        one folder no walk can finish is one holding more than the bound at a
+        single level, and the sentence above the index says so rather than
+        *stopped after 20000 things*.
+        `v0-5-the-machine-measured-plan.md` tasks 3–11
+        *This box said task 11 was **open** until 2026-09-27, thirteen days after
+        it was done. Found by the check that reads a box against the plan it
+        names, not by reading*
   - [ ] **On the machine.**
         never on a certified machine, and the surface that shows an answer is
         the desktop lane's
@@ -2626,6 +2665,69 @@ promise.
 
 ## Reconciliation log
 
+### The gate is a check now, and it found six more things by being one, 2026-09-27
+
+The eighth reading of this gate took a day and got four of its own eight refusals
+wrong. Reading it a ninth time was never the answer: **every one of the things that
+reading found is mechanically detectable**, and a person reading 92 promises is a
+rule where a crate that fails the gate is a check.
+
+So `crates/alo-reconciling` gained a second half. It already read every `[v0.01]`
+promise against `docs/autonomy/v0-01-evidence.md`; it now reads this gate against
+`docs/features.md`, against the plans, and against itself. Its header says which
+finding specified each check, and `docs/autonomy/v0-5-evidence.md` is the second
+ledger — **92 entries for 92 promises**, one to one.
+
+**What the checks found on the day they were written, none of it by reading:**
+
+- **A box calling a finished task open.** *"Where is that file?"* said *one known
+  limit, open as task 11*. Task 11 of `v0-5-the-machine-measured-plan.md` — an
+  index made whole for a folder larger than one walk — was done on 2026-09-14,
+  thirteen days earlier. The limit is closed and the box now says so.
+- **Two more wrong refusals, making six.** *The ordinary desktop* said **four of
+  the applications do not exist** and that the choice between writing them and
+  pinning upstream ones was *owed a decision*. *A web browser for the open web*
+  said **no browser is pinned**. Both were written by searching `crates/` and
+  `image/`. `crates/alo-software/shipped.toml` has pinned all seven since
+  **2026-09-15** — Firefox 156.0, Dolphin 26.04.3 with its trash, Ark, GNOME Text
+  Editor 50.1, Loupe 50.0, Papers, and Ptyxis 50.1 as a terminal `Shipped::decided`
+  refuses to accept unless no agent can be granted it (ADR 0043) — each with a
+  licence, a source and the version it was decided at, held by
+  `crates/alo-software/tests/what_a_fresh_machine_has.rs` and explained in
+  `updates/what-a-fresh-machine-has.md`. Two code halves are ticked and what is
+  owed moves to the machine half, which is the honest place: nothing installs that
+  list yet.
+- **Seventy-four tasks whose status word their own body contradicted** — in six
+  plans, across two releases and the supervisor's own, 32 of them in
+  `v0-01-delivery-plan.md`. `SHARED_MAIN.md` had a rule telling every reader to
+  route around them. `updates/seventy-four-tasks-that-said-ready-above-their-own-done.md`.
+- **A conversion reporting a font nobody chose**, and **eight nested fixtures that
+  had been failing rather than skipping on the machine that gates** — both found by
+  running the gates rather than by reading them, both fixed, both written up.
+
+**And writing the ledger made the same mistake five more times.** Five entries were
+first drafted as *Shown by: nothing* — the lock-screen image, the dock's size, a
+file manager, USB storage, a text editor and a terminal — and every one was wrong,
+written from the crate whose *name* matched rather than the crate that held the
+answer: `alo-appearance/src/lock.rs` has decided the lock screen's independence all
+along, `alo-dock/src/layout.rs` sizes the dock and says in writing that the hiding
+is the v0.5 part, and `alo-drives` reads the rented disk service. Each entry now
+carries its own correction, because the pattern is the finding: **a negative claim
+made from a search narrower than the claim.** It is the same error as all six
+refusals, and it is why this is a crate rather than a ninth reading.
+
+**What the checks are.** Seven, each named after the thing that specified it:
+a half under the wrong promise; a promise with no box; a box denying work a plan
+says is done; a status word its own section contradicts; a tier that disagrees
+with the definition; a refusal a report contradicts; and a count that drifted.
+Two of them are deliberately weak signals shown loudly rather than verdicts — the
+refusal check cannot know whether a report is about the promise, and does not need
+to: it only has to make somebody look before writing *nothing exists*.
+
+**What they do not do** is read a plan's status to decide whether work is done.
+That is the one thing this pass established twice and forgot twice. A status is
+read only to find a disagreement with something else, and never as the answer.
+
 ### #185 left ADR 0067 half-implemented, main is red, and a ticked box was false, 2026-09-26
 
 Found minutes after the reconciliation finished, by running the gates over a
@@ -2735,42 +2837,6 @@ and **task 20, *a download that stops arriving ends the install*, is finished an
 held off `main`** until task 4 lands, so the gate cannot count it and should not.
 A promise on the critical path for every on-the-machine box in v0.01 has one
 unstarted code task and one finished one that nothing can see.
-
-## The gate, read
-
-It read **8 of 49**. It reads **22 of 93**.
-
-Every one of the 31 promises now carries both boxes; **27 of them did not before**,
-and a single box had been letting *it compiles* be read as *it works*. No
-on-the-machine box is ticked and none could be — the first physical install is
-Friday.
-
-**What ticked: 24 code halves.** What did not, and why, in the box rather than
-blank: *A web browser* (no browser pinned in the image), *The ordinary desktop*
-(the desktop is drawn; a file manager, text editor, image viewer and terminal are
-not anywhere), *Undo what the agent did* (built all round and waiting on `btrfs` at
-install), *The dock's size and per display* (**one dock, one edge**, which
-`alo-dock`'s own header says while quoting the promise), and *Installer* (one
-unstarted code task, one finished and held).
-
-**Four more were refused and the refusals were wrong.** The portal backend,
-touchpad gestures, EN 301 549 and whether Settings is drawn were all called missing
-and all four exist. They were corrected the same day, and the entry below this one
-says what caused it.
-
-**What nobody had counted.** The cut left four boxes and two ticks on the wrong
-promises. Three `docs/features.md` promises had no box at all, one of them with
-finished code. The gate denied twelve days of finished pairing work by task number.
-Two plans and fourteen tasks read `ready` over their own published reports. And the
-arithmetic that would catch all of it — `crates/alo-reconciling`, which fails the
-gate when `docs/features.md` and a ledger disagree — **exists for v0.01 and not for
-v0.5**, where 92 promises are checked by eye.
-
-**The one thing to do next, if this is to stay true:** a `v0-5-evidence.md` and
-`alo-reconciling` extended to read it. This pass took a day and will be stale in a
-fortnight. The v0.01 half of that crate exists because the same audit was done
-seven times by reading; this is the eighth.
-
 
 ### Updates, recovery, the language and undo, reconciled, 2026-09-26
 
@@ -3167,4 +3233,45 @@ its D1/D4 recommendation is not acceptance. A future verifiable restriction
 requires runtime supervision regardless of ownership; that mechanism remains
 unimplemented. Paired-machine configuration is still unreachable, and no scope,
 runtime policy or release checkbox changes follow from this report.
+
+## The gate, read
+
+It read **8 of 49**. It reads **26 of 93**.
+
+Every one of the 31 promises now carries both boxes; **27 of them did not before**,
+and a single box had been letting *it compiles* be read as *it works*. No
+on-the-machine box is ticked and none could be — the first physical install is
+Friday.
+
+**What ticked: 26 code halves.** What did not, and why, in the box rather than
+blank: *Undo what the agent did* (built all round and waiting on `btrfs` at
+install), *The dock's size and per display* (**one dock, one edge**, which
+`alo-dock`'s own header says while quoting the promise), *Installer* (one unstarted
+code task, one held), and *Making it yours*, whose tick was **withdrawn** when
+`Accent::ALL` turned out to have four hues against a promise of five.
+
+**Six were refused and the refusals were wrong.** The portal backend, touchpad
+gestures, EN 301 549 and whether Settings is drawn were called missing on
+2026-09-26 and all four exist. Two more were found on 2026-09-27 by the checks:
+*A web browser* said **no browser is pinned** and *The ordinary desktop* said
+**four of the applications do not exist** and that the choice between writing them
+and pinning upstream ones was owed — and `crates/alo-software/shipped.toml` has
+pinned all seven since **2026-09-15**. Every one of the six was a negative claim
+made from a search narrower than the claim. The entries below say what caused it.
+
+**What nobody had counted, and now cannot go uncounted.** The cut left four boxes
+and two ticks on the wrong promises. Promises had no box at all. The gate denied
+twelve days of finished pairing work by task number, and thirteen days of a
+finished index. Seventy-four tasks across six plans read `ready` above their own
+`**Done,` marker. **The arithmetic that catches all of that now exists for this
+release too**: `docs/autonomy/v0-5-evidence.md` is 92 entries for 92 promises, and
+`crates/alo-reconciling/src/the_gate.rs` holds the checks, five of them armed
+against these documents in the gate.
+
+**And one thing it still cannot check.** Whether a *box* covers a *promise* is a
+judgement this gate makes in prose — 31 boxes over 92 promises — and no
+word-matching rule answers it: one setting reported 3 promises with no box and
+missed real ones, another reported 69 of 92. The answer is for each box to name the
+promises it answers, which is a change to this document's shape.
+`updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md` makes the case.
 
