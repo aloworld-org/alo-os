@@ -1765,6 +1765,55 @@ environment has no point after which it says anything else.
   progress*, not on total time, unless measurement shows the two cannot be
   told apart.
 
+### Task 7's first refusal, walked: *not enough disk*
+
+**Walked on a real Windows, 2026-09-27** (`cargo_test=0`, 5520 s). The second
+disk was made **6 GiB** — large enough to partition, and too small for an
+installed image that occupies 8.3 GiB — with its first 64 MiB filled with a known
+pattern standing in for a person's own data. The road refused, in words, on the
+Windows side, before anything was staged:
+
+```
+installer: The disk QEMU HARDDISK 1 (6 GB) is smaller than the 24 GB alo OS needs
+installer: This computer has no empty disk of at least 24 GB beside the one
+           Windows is on, and this installer puts alo OS on a disk of its own,
+           so nothing was changed
+```
+
+The pattern read back whole afterwards and the disk was still 64.3 MiB. Nothing
+was wiped, and the road never reached `bootc`.
+
+**A reading of 2026-09-27 that this overturned, recorded because the mistake is
+the useful part.** Reading `crates/alo-installing` alone — the environment —
+gave *the refusal does not exist and cannot*: `lsblk` is asked for
+`NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL` with no size column, and its `Device`
+has no field to hold one. Both of those are true, and the conclusion drawn from
+them was wrong, because **the road has two programs and the guard is in the
+other one**: `crates/alo-installer`'s `sizes::THE_LEAST_DISK`, 24 GiB, on the
+Windows side. A claim about *the road* cannot be read off one of its crates.
+
+**What that leaves standing, and it is the part that matters for this task.**
+
+- There is **exactly one** size guard on the whole road, and it sits on the far
+  side of a reboot from the thing it protects. The environment refuses nothing
+  for size, and `bootc install to-disk --wipe` is one program — the wipe and the
+  write are the same invocation, and a failure lands as `Ended::NotInstalled`.
+- The refusal that was walked is the **ordinary** road's, and its sentence is
+  the ordinary road's question: *no empty disk of at least 24 GB **beside the one
+  Windows is on***. On the replace-Windows road the target **is** Windows' disk,
+  so that is not the question being asked, and whether a size check applies there
+  at all is **still owed**.
+- **`bootc`'s own ordering is still unmeasured** — does it check the size before
+  it wipes? The Windows-side guard refused first, which is the good news and the
+  reason the inner question went untested. It has to be measured before task 7
+  ships, because on that road it is the last thing standing.
+
+**And a cost this exposed in the walk itself.** The refusal took 341 seconds; the
+test took **5520**. The harness waits out `AN_INSTALL` for an install that was
+refused and will never happen. A road that stops early should end the walk early,
+or every refusal walked on this plan costs ninety minutes to observe four
+minutes of behaviour.
+
 ### 21. What the install leaves behind can be watched, or a booted machine and a hung one are the same picture
 
 **Status:** ready. **Depends on:** nothing; it blocks the snapshot loop paying

@@ -1404,6 +1404,144 @@ fn the_whole_road_installs(
     (installed, said)
 }
 
+/// **A disk too small to hold alo OS is refused, and nothing on it is touched.**
+///
+/// The ordinary road's *not enough disk* refusal, walked end to end rather than
+/// read. The second disk is made **6 GiB** — large enough to partition, and too
+/// small for an installed image that occupies 8.3 GiB — and the first 64 MiB are
+/// filled with a known pattern standing in for whatever a person had there.
+///
+/// **Measured 2026-09-27.** The installer refuses on the Windows side, in words,
+/// before anything is staged:
+///
+/// ```text
+/// The disk QEMU HARDDISK 1 (6 GB) is smaller than the 24 GB alo OS needs
+/// This computer has no empty disk of at least 24 GB beside the one Windows is
+/// on, and this installer puts alo OS on a disk of its own, so nothing was
+/// changed
+/// ```
+///
+/// The pattern was read back whole afterwards and the disk was still 64.3 MiB,
+/// so the road never reached `bootc` and nothing was wiped.
+///
+/// # Why this is worth a walk rather than a unit test
+///
+/// The check lives in `crate::sizes::THE_LEAST_DISK` on the **Windows** side,
+/// and it is the only thing standing between a too-small disk and
+/// `bootc install to-disk --wipe` — which is **one program**, so the wipe and
+/// the write are the same invocation and a failure lands as
+/// `Ended::NotInstalled`. `crate::disks` in the environment has no size check at
+/// all: `lsblk` is asked for `NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL` and no
+/// size, and its `Device` has no field to hold one. So there is exactly one
+/// guard here, on the other side of a reboot from the thing it protects, and a
+/// walk is what holds it in place.
+///
+/// **Two things this does not cover**, and they are the installer plan's task 7:
+/// the replace-Windows road, where the target *is* Windows' disk and so *an
+/// empty disk beside the one Windows is on* is not the question being asked;
+/// and the environment reached with a too-small disk by any road that does not
+/// pass this check, where nothing refuses and `bootc`'s own ordering — does it
+/// check the size before it wipes? — is still unmeasured.
+#[test]
+#[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
+fn a_disk_too_small_is_refused_and_nothing_on_it_is_touched() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+
+    let name = "too-small";
+    a_fresh_machine(&yard, name);
+
+    // The second disk again, this time too small for the image, and carrying
+    // something recognisable so that "was it wiped" is read rather than assumed.
+    let second = Machine::second_of(&yard, name);
+    drop(std::fs::remove_file(&second));
+    walking::machine::run(
+        "qemu-img",
+        &[
+            "create",
+            "-f",
+            "qcow2",
+            &second.display().to_string(),
+            THE_DISK_TOO_SMALL,
+        ],
+    );
+    walking::machine::run(
+        "qemu-io",
+        &[
+            "-c",
+            &format!("write -P 0x{THE_PATTERN:02x} 0 {THE_PATTERNED_LENGTH}"),
+            "-f",
+            "qcow2",
+            &second.display().to_string(),
+        ],
+    );
+    assert!(
+        the_pattern_is_there(&second),
+        "the pattern was not written, so nothing this test says afterwards means anything"
+    );
+
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+    let (installed, said) =
+        the_whole_road_installs(&yard, name, &firmware, &chip, &download, false);
+
+    let survived = the_pattern_is_there(&second);
+    eprintln!(
+        "onto a disk of {THE_DISK_TOO_SMALL}: installed={installed}, what was on the disk \
+         survived={survived}\nthe environment said:\n{said}"
+    );
+
+    assert!(
+        !installed,
+        "alo OS reported itself installed onto a disk too small to hold it, which means \
+         this test is not measuring what it thinks"
+    );
+    assert!(
+        survived,
+        "the road destroyed a disk it could not install onto: the install failed and \
+         what was on the disk was wiped away first. On the road that replaces Windows \
+         that is Windows gone and alo OS absent, with nothing to go back to. The guard \
+         is `crate::sizes::THE_LEAST_DISK` on the Windows side and it is the only one — \
+         the environment reads no size at all, and `bootc install to-disk --wipe` wipes \
+         and writes in one program."
+    );
+    assert!(
+        said.contains("smaller than"),
+        "the disk was not written, but the installer never said why in words a person \
+         could act on, so a person would be left with a road that stopped for no \
+         stated reason:\n{said}"
+    );
+}
+
+/// The disk that is large enough to partition and too small to hold alo OS,
+/// whose installed image occupies 8.3 GiB.
+const THE_DISK_TOO_SMALL: &str = "6G";
+
+/// What is written over the front of that disk, standing in for a person's own
+/// data, and read back afterwards.
+const THE_PATTERN: u8 = 0xA5;
+
+/// How much of the front carries it. Larger than anything a partition table
+/// alone would touch, so that a surviving pattern means the disk was not wiped
+/// rather than that the wipe was small.
+const THE_PATTERNED_LENGTH: &str = "64M";
+
+/// Whether the pattern is still on the front of that disk.
+fn the_pattern_is_there(disk: &Path) -> bool {
+    std::process::Command::new("qemu-io")
+        .args([
+            "-c",
+            &format!("read -P 0x{THE_PATTERN:02x} 0 {THE_PATTERNED_LENGTH}"),
+            "-f",
+            "qcow2",
+            &disk.display().to_string(),
+        ])
+        .output()
+        .is_ok_and(|ran| ran.status.success())
+}
+
 /// **alo OS is removed again, and what is left is the Windows that was there.**
 ///
 /// The installer plan's task 4: *remove alo OS exists as a documented, tested
