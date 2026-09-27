@@ -200,6 +200,19 @@ never misled about the result.
   uploaded: if the only way to convert a format were a service, the answer for
   v0.5 is *cannot open it* with the reason, not a quiet upload.
 
+**Corrected 2026-09-27, by another lane, because `main` was red on the machine
+that gates.** The inventory of a document rendered by the engine counted a
+**date format's own separators** as text the document sets, so an older Word
+document set in Garamond alone was reported as having also lost the rendering's
+default family. The fix is one condition — only text inside `office:body` is
+text a document sets — with a regression test holding the format, an entry in
+`docs/quirks.md` under *Pinned engines*, and
+`updates/a-date-formats-slashes-were-counted-as-a-font-the-document-used.md`.
+It was wrong on every machine; it showed only on one whose engine does not embed
+its own default into the copy. **Left for this lane:** the same question asked of
+`word`, `excel` and `powerpoint`, which read their own zips and have their own
+equivalent of a format's literal text.
+
 ### 3. A printer is found, set up, and says what is wrong with it
 
 **Status:** ready. **Depends on:** 1.

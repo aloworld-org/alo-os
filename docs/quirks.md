@@ -724,6 +724,46 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### LibreOffice writes a date format's separators into the part as text
+**Version:** LibreOffice 26.2.6.3, the build ADR 0039 pins at
+`/opt/libreoffice26.2/program/soffice`, on 2026-09-27.
+
+**What actually happens.** A document holding a date field is rendered with a
+number format in `office:automatic-styles`, and the format writes its own
+separators down as text nodes:
+
+```xml
+<number:date-style style:name="N1">
+  <number:month/><number:text>/</number:text>
+  <number:day/><number:text>/</number:text>
+  <number:year/>
+</number:date-style>
+```
+
+Those two slashes are text in the part, on no page, inside no paragraph and
+under no style. The same is true of a sequence declaration's name, a
+configuration setting's value and a font-face list. A reader that treats every
+text node in `content.xml` as text the document sets will count them, and
+because they name no style they resolve to the **default paragraph family** —
+which is a family the person never chose.
+
+It shows as a wrong answer only when that default family is itself missing from
+the converted copy. On a machine whose engine embeds its default into the PDF
+the miscount is invisible; on the machine that gates this repository, whose
+LibreOffice renders everything in Noto Serif, an older Word document set in
+Garamond alone was reported as having lost **Garamond and Liberation Serif**.
+The sentence a person would have read named a face they had never heard of.
+
+**What we do about it.** `crate::inventory::opendocument` inventories text only
+inside `office:body`. A style's own literal text is not text set in a family —
+which is the rule `crate::inventory::pages` already states from the other side,
+that a family counts when text is set in it. There is a regression test with
+this exact date format in it.
+
+**Why it is here and not only in the code.** Because the wrong version reads as
+obviously right: `content.xml` is the content part, so every text node in it
+looks like content. The engine's own format says otherwise and says it quietly.
+
 ### The base keeps the loader's saved default on `/boot`, not on the ESP, and mounts the ESP nowhere
 **Version:** `quay.io/fedora/fedora-bootc:42` at the digest
 `sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3` — the
