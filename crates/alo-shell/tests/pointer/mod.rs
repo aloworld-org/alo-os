@@ -288,11 +288,24 @@ fn pointer_scroll_and_invalid_input_preserve_focus() {
     assert!(app.events.pointer.frames >= 3);
     motion(&f, 16.0, 16.0);
     button(&f, Pressed, false);
+    // Off the window, so this scroll belongs to the canvas rather than to the
+    // client — the canvas plan's task 5. It used to be answered `false` because
+    // nothing happened at all; it now pans the plane and says so, and what this
+    // test is about is that **the client is still told nothing** and its focus is
+    // unchanged. `tests/panning_the_plane` holds the pan itself.
+    let axes = app.events.pointer.axes.len();
     assert_eq!(
         f.backend(|s| s.pointer_axis(AxisFrame::new(125).value(Axis::Vertical, 1.0)))
             .ok(),
-        Some(false)
+        Some(true)
     );
+    app.sync();
+    assert_eq!(
+        app.events.pointer.axes.len(),
+        axes,
+        "a scroll over empty canvas reached the client as well as panning"
+    );
+    assert_eq!(app.events.pointer.enters.len(), 1);
 }
 
 #[test]

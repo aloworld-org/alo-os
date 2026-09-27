@@ -10,6 +10,7 @@ mod dragging_a_frame;
 mod input;
 mod interactive_resize;
 mod output_metadata;
+mod panning_the_plane;
 mod pointer;
 mod popups;
 mod shortcut_dispatch;

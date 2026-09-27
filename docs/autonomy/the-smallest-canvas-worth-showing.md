@@ -161,6 +161,19 @@ which is correct, because ADR 0065 removed the strip rather than moving it. What
 this task owes is a grabbable name above a frame and a grabbable edge band around
 it, and then the refusal of an XDG move authorised by a press in the content.
 
+**And one question ADR 0065 does not settle, which this task must not answer for
+itself.** The ADR says *dragging an edge or a corner resizes it* in one paragraph
+and *the name is the handle, and so is the frame's edge* in its table two
+paragraphs later — and task 4 below says resizing is *from the edges and the
+corners*. The edge is therefore claimed by moving and by resizing, on the same
+pixels. One reading reconciles them: the **edge band moves** a frame and the
+**handles shown when it is selected resize** it, which is how a design canvas
+behaves and which leaves task 4's sentence true. That is a reading, not a decision,
+and adopting it in a source file would settle the boundary between tasks 3 and 4
+wherever the first gesture happened to be written. It wants an ADR of its own, or a
+sentence from the owner, before either gesture is built — and it blocks the second
+half of this task rather than the first, which is why the first landed alone.
+
 ### 4. Resizing, and the application told as it happens
 
 **Status:** ready. **Depends on:** 2.
@@ -182,6 +195,57 @@ frame's content; scroll over empty canvas pans.**
 
 - **Acceptance:** each road is exercised and the rule above is held by a test
   that scrolls over both and asserts which moved.
+
+#### The wheel and the rule are held; the other two roads are not (2026-09-27)
+
+**Held**, by `crates/alo-shell/tests/panning_the_plane/mod.rs` — four tests, at
+three zooms. `crate::canvas_pan` asks one question in one place and the hit test
+already answers it: *over a frame* is *the pointer has a client focus*, so no
+second opinion about where frames are was needed. Each case asserts what moved
+**and** what did not, which is what the acceptance's *asserts which moved* is
+worth: a scroll that panned the canvas and also reached the application passes a
+test that only watches the camera, and a person reading a long document would have
+the canvas slide out from under it. Proved to bite in both directions — make the
+pan unconditional and the frame's own scroll is stolen; remove it and the plane
+never moves.
+
+Two smaller facts fell out and are held too: a trackpad's tenths are **kept**
+between events rather than truncated away, because the plane is measured in whole
+units and dropping a fraction per event is a canvas that never moves for a slow
+scroll; and a scroll off the edge of the plane is refused and keeps **nothing**, so
+turning round does not spend a remainder as a jump.
+
+**A finding, not an edit: the keyboard route needs another crate.** A chord reaches
+a native operation through `alo_shortcuts::Action`, and that enum has no canvas
+action in it — no pan, no zoom, no *Show all*. It is a vocabulary a person edits in
+Settings, so it is a public surface (CLAUDE.md: config keys are contracts) in a
+crate this plan does not own, and its names need entries in `alo-strings` for all
+24 languages. **Task 6 needs the same thing** — *zoom has a keyboard route* is in
+its acceptance. So one addition to `alo-shortcuts` unblocks both, and neither task
+5 nor task 6 can be marked done until it lands.
+
+**Also not held:** space-and-drag, which ADR 0065 names beside the wheel, and the
+trackpad's two-finger form. Both are gestures rather than arithmetic.
+
+**Nothing here is accelerated.** A scroll pans by its own value in screen pixels,
+one for one. A wheel notch is ten of those by convention and a trackpad sends
+something nearer a pixel, so the two feel different — a device-feel question that
+wants a person and a real trackpad, not a multiplier chosen in a source file.
+
+**One rough edge, named rather than papered over.** *Nothing focused* is what this
+reads as *the arrow is on the canvas*, and the two are not quite the same thing: it
+is also true in the moment after the pointer has left the output, so a scroll
+arriving then pans. `alo-shell` keeps no separate record of whether a pointer is
+present — focus is the only signal — and adding one is a change to pointer lifetime
+rather than to the canvas, so it is written here instead of invented in
+`pointer_axis`.
+
+Two existing tests in this crate encoded the old contract and were updated rather
+than relaxed: `pointer::pointer_scroll_and_invalid_input_preserve_focus` now
+requires the scroll to pan **and** the client to still hear nothing, which is more
+than it asked before, and `direct_pointer`'s wire-lifetime test puts the camera back
+after the scroll that now pans, because every assertion in it is about a
+surface-local coordinate and none of it is about the canvas.
 
 ### 6. Zoom, and *Show all*
 

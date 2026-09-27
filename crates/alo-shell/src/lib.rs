@@ -92,6 +92,7 @@ mod atomic_output;
 mod atomic_test;
 mod booting;
 mod canvas_camera;
+mod canvas_pan;
 mod capture_flatten;
 mod capture_paint;
 mod capture_raster;
