@@ -29,10 +29,27 @@ use smithay::{
 
 /// How thick the band is on the glass, in pixels.
 ///
-/// The same thirty-two a native window control is wide. One number in this crate
-/// for *how big a thing a person aims at* is one number to change when somebody
-/// measures it against a real hand on a real trackpad, which nobody has yet.
-pub(crate) const THE_NAMES_BAND: f64 = 32.0;
+/// **Forty-eight, because `docs/design/the-canvas-in-numbers.md` says so** — read
+/// off the design file itself, Figma node `70:29`, rather than derived from
+/// anything in this repository. `crates/alo-shell/tests/the_frame_in_numbers.rs`
+/// holds this constant to that document, so the two cannot part again.
+///
+/// It was 32 for a day, reasoned out of a native window control's width, with a
+/// paragraph here explaining why 32 was the sensible number. The document had
+/// carried 48 since before that paragraph was written. A number a design file
+/// already gives is not a number to derive, and nothing was checking, so being
+/// wrong cost nothing at the time and would have cost a frame's whole feel later.
+pub(crate) const THE_NAMES_BAND: f64 = 48.0;
+
+/// How thick the band is, for the test that holds it to the design file.
+///
+/// The constant itself stays `pub(crate)`: what a frame's name is grabbed by is
+/// this crate's business, and widening it so a test can read it would make it
+/// somebody's API by accident.
+#[must_use]
+pub fn the_names_band() -> f64 {
+    THE_NAMES_BAND
+}
 
 impl crate::Server {
     /// Where this frame's name sits on the glass, or [`None`] if it is not drawn.

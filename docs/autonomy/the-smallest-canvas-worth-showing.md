@@ -153,10 +153,19 @@ The handle is the name, per ADR 0071. A frame's name is
 `Server::the_name_of` — the title, then the app id, then
 `alo_access::words::AN_APPLICATION`, the phrase the accessibility tree already
 reads for a window. `xdg_toplevel.set_title` was never read in this crate;
-smithay held it all along. The band is `crate::frame_handle`, thirty-two pixels
-**on the glass** rather than on the plane: a band in plane units would shrink to
-under three pixels at the furthest zoom, and zoomed out is exactly when a person
-is moving frames, so the handle would vanish when it was wanted.
+smithay held it all along. The band is `crate::frame_handle`, **forty-eight** pixels
+on the glass rather than on the plane: a band in plane units would shrink to under
+three pixels at the furthest zoom, and zoomed out is exactly when a person is
+moving frames, so the handle would vanish when it was wanted.
+
+Forty-eight because `docs/design/the-canvas-in-numbers.md` gives it, read off the
+design file at Figma node `70:29`. It was thirty-two for a day, derived from the
+width of a native window control with a paragraph explaining why thirty-two was
+sensible — while the document had carried forty-eight since before that paragraph
+existed. `crates/alo-shell/tests/the_frame_in_numbers.rs` now holds the constant to
+that document's own table row, which closes the gap the document names about
+itself: *nothing yet holds these to anything*. A number a design file already gives
+is not a number to derive.
 
 `xdg_toplevel.move` is refused **outright**, not merely when the press was in the
 content: that test would depend on mapping a serial back to where its press began,

@@ -348,6 +348,7 @@ pub use egress_status_raster::EgressStatusLook;
 pub use filling_keys::FillingKey;
 pub use filling_window::{FillingPressed, FillingShows, FillingWindow};
 pub use flip_gate::FlipGate;
+pub use frame_handle::the_names_band;
 pub use frame_name::FrameName;
 pub use keyboard::InputError;
 pub use nested::Nested;
