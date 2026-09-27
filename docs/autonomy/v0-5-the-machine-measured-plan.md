@@ -760,3 +760,81 @@ words. The index file on the disk is smaller than what it holds in hand.
   reads are untouched. If the honest deliverable is that the saving is
   not worth a changed public surface at the sizes a person's machine
   holds, that is the number in the report and the task ends there.
+
+### 15. What undo is holding, as its own line in what is filling the disk
+
+**Status:** ready. **Depends on:** 2, 12.
+
+**Written 2026-09-27 by another lane, which did not build it.** ADR 0045's
+**fourth accepted term** says *what is filling the disk counts snapshots, by
+name*: `alo-measuring`'s answer includes what undo is holding, as its own line,
+*because an answer that hid it would send a person hunting for space the machine
+itself was keeping.* That line does not exist. `alo-measuring` has **no mention of
+a snapshot or an undo at all** — zero matches across `src/` — and this plan owns
+that crate, so the lane that found the gap wrote the task instead of the code.
+It was found twice, independently: by the keeps-itself plan's task 15, whose
+report says the line *is still owed by whoever owns `alo-measuring`, and a person
+who goes looking for it there will not find it*, and again by
+`docs/autonomy/v0-5-evidence.md`, which records it against the promise.
+
+The design below is what that lane worked out before stopping. It is a
+recommendation and not a specification: the crate is this plan's.
+
+**It is a line, not a node in the tree.** A snapshot's bytes are not inside the
+folder a person opened, and on `btrfs` they are shared with the live files by
+copy-on-write, so a size that is *the sum of its children plus its own bytes* —
+which is what every [`Node`] promises — cannot describe them. A `Node` for a
+snapshot would be a lie about where the bytes are and would double-count every
+file that has not changed since. So `Holding` gains a field beside `tree`, and the
+tree's own numbers do not move by a byte.
+
+**The honesty shape is already in this crate and should be reused.** `Number` is
+*a number or a sentence, and never a zero standing in for a sentence*. What undo
+is holding needs the same three-way answer, with one arm `Number` does not have:
+
+- **holding**, with the bytes and where they were read;
+- **not on this machine**, which is ADR 0045's sixth term — a machine installed on
+  `ext4` keeps no undo and *answers* not yet on this machine *honestly, until it
+  is reinstalled*. **A zero here would be a lie**: zero says undo is holding
+  nothing, and the truth is that this machine cannot keep one. Every machine this
+  repository has is in that position today, so this is the arm the first reader
+  will see;
+- **asked and not answered**, with what the machine said — never a zero, for
+  `source.rs`'s reason.
+
+**Nothing new in `Cargo.toml`.** This crate has four dependencies and
+`tests/nothing_here_acts_or_asks_who_is_asking.rs` holds the list to exactly
+those; `alo-letting-go` is the crate that knows what undo kept, and depending on
+it would put a housekeeping road inside a crate an agent's turn reaches. The seam
+this crate already uses is the one to use: `Reading::of_kernel(&Disk, proc)` is
+*told* where to read, and `what undo is holding` should be told too — a small
+trait this crate declares and something outside it answers.
+
+**And `Holding::of` should take it rather than default it.** A caller that can
+produce an answer to *what is filling the disk* without saying anything about undo
+is a caller that will, and term 4 becomes a thing somebody has to remember. Taking
+it as an argument is what makes the fourth term structural. It is a public surface
+changing, so it changes the way task 14 changed one: additively where that is
+possible, and named in the report where it is not.
+
+- **Acceptance:** `alo-measuring`'s answer to *what is filling the disk* carries
+  what undo is holding as its own line, in three states and never as a zero; the
+  *not on this machine* state is what this machine answers, held by a test, with
+  the sentence a person reads declared in `words.rs` and collected by `alo-saying`
+  like every other word this crate says; the bytes, when there are bytes, name
+  where they were read the way every other number here does; `Holding::of` cannot
+  be called without an answer about undo, held by the compiler rather than by a
+  test; every size in the tree is unchanged to the byte and every task 2 and task
+  12 test passes unchanged, with task 12's timings re-run and published beside the
+  old ones; and the record of a `what_is_filling` call is unchanged in shape.
+- **Constraint:** no new dependency, and
+  `nothing_here_acts_or_asks_who_is_asking.rs` still reads the list. **Nothing
+  walks into a snapshot**: its files are not the folder's and counting them would
+  double-count every unchanged file. No clock, no socket, no watching. Nothing
+  here removes a snapshot or offers to — expiry is `alo-letting-go`'s and is
+  housekeeping rather than a petition (ADR 0045's seventh term), and a measurement
+  that could remove something would be a verb. If the honest deliverable is that
+  this machine can only ever answer *not yet on this machine*, that is the
+  deliverable: the line exists, says so, and is ready for the first machine
+  installed on `btrfs`.
+

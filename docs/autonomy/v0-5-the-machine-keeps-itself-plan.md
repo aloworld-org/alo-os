@@ -1242,6 +1242,10 @@ different. The owner confirmed it before the work started.
    crate's answer, held by a test. The caller measures the folder. The missing
    line in *what is filling the disk* is still owed by whoever owns
    `alo-measuring`, and a person who goes looking for it there will not find it.
+   **It is task 15 of `v0-5-the-machine-measured-plan.md` from 2026-09-27**, the
+   plan that owns that crate, written with the design rather than left as a
+   finding: the line goes beside the tree and not in it, and its three states
+   never include a zero.
 3. **This crate does not belong in `alo-declared`.** The task says to collect it
    into `alo-saying` and `alo-declared` *as every crate with words is*, but
    `alo-declared` is **every verb alo OS ships** — and this crate is forbidden a
