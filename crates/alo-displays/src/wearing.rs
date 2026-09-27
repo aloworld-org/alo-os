@@ -26,17 +26,29 @@
 //! because their sockets differ, and a background chosen for one of them does
 //! not appear on the other.
 //!
-//! # The dock's edge is not per screen yet, and that is `alo-dock`'s to decide
+//! # The dock's edge is per screen, and `alo-dock` decided it
 //!
-//! `alo_dock::Dock` holds **one** edge for the machine. The v0.5 plan this
-//! crate belongs to says *per-display placement is `alo-dock`'s decision*, and
-//! this plan reads that crate and never edits it — so what happens today is
-//! what `alo-dock` has decided today: the edge the person chose, on every
-//! screen. When `alo-dock` gains an edge per screen, [`Wearing::of`] is the one
-//! function that changes, and every caller of it keeps working.
+//! `alo_dock::Dock` held **one** edge for the machine until 2026-09-27, and this
+//! paragraph said so and named what would change when that ended: *when
+//! `alo-dock` gains an edge per screen, [`Wearing::of`] is the one function that
+//! changes, and every caller of it keeps working.* That is what happened, and
+//! it was one line — `dock.edge()` became
+//! `dock.edge_on(screen.named_for_the_shell())`, asked with the same name the
+//! background is asked for, in the same function, two lines apart.
 //!
-//! This is a finding rather than a silence, and it is written down in the task
-//! report as one.
+//! `alo_dock::Dock::edge_on` answers the exception the person made for this
+//! screen, or the edge they chose for everywhere, or the edge the release
+//! ships — the order `alo_appearance::Appearance::background_on` uses, so the
+//! two things a screen wears are decided the same way. **Two identical screens
+//! are two names**, because their sockets differ, so an edge chosen for one does
+//! not reach the other. This plan still reads `alo-dock` and never edits it; the
+//! edit there was the settings plan's crate, made by the change that paid the
+//! promise.
+//!
+//! **What is still owed is a second screen to see it on.** Nothing in this
+//! repository has had one attached, so *the dock along the bottom of the laptop
+//! and down the side of the external screen* is arithmetic here and a test, and
+//! not yet a thing anybody has looked at.
 
 use alo_appearance::{Appearance, Background};
 use alo_dock::{Dock, Edge};
@@ -66,7 +78,7 @@ impl Wearing {
     pub fn of(screen: &Reported, appearance: &Appearance, dock: &Dock, tonight: &Tonight) -> Self {
         Self {
             background: appearance.background_on(screen.named_for_the_shell()),
-            edge: dock.edge(),
+            edge: dock.edge_on(screen.named_for_the_shell()),
             warmth: tonight.warmth(),
             warming: Warming::at(tonight.warmth()),
         }
@@ -185,6 +197,42 @@ mod tests {
         assert_eq!(
             Wearing::of(&laptop, &appearance, &moved, &a_cold_evening()).edge(),
             Edge::Left
+        );
+    }
+
+    /// **The dock along the bottom of the laptop while it runs down the side of
+    /// the external screen**, which is the `[v0.5]` promise in the words
+    /// `docs/features.md` uses.
+    ///
+    /// The one thing this crate had to change for it, and the reason the
+    /// paragraph at the top of this file could be rewritten: `alo-dock` gained an
+    /// edge per display, and [`Wearing::of`] asks for this screen's rather than
+    /// the machine's. **Two screens, one dock, two edges** — and the screen
+    /// nobody singled out still answers with the edge chosen for everywhere.
+    #[test]
+    fn the_laptop_keeps_the_bottom_while_the_office_screen_takes_a_side() {
+        let laptop = a_reported_laptop();
+        let office = a_reported_office_screen();
+        let appearance = Appearance::shipped();
+
+        let mut dock = Dock::shipped();
+        dock.set_edge_on(office.named_for_the_shell().clone(), Edge::Left);
+
+        let evening = a_cold_evening();
+        assert_eq!(
+            Wearing::of(&office, &appearance, &dock, &evening).edge(),
+            Edge::Left,
+            "the screen singled out"
+        );
+        assert_eq!(
+            Wearing::of(&laptop, &appearance, &dock, &evening).edge(),
+            dock.edge(),
+            "and the laptop keeps the edge chosen for everywhere"
+        );
+        assert_ne!(
+            Wearing::of(&office, &appearance, &dock, &evening).edge(),
+            Wearing::of(&laptop, &appearance, &dock, &evening).edge(),
+            "two screens on one desk would have worn one edge before this"
         );
     }
 

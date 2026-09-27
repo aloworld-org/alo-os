@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Your dock can sit along the bottom of the laptop and down the side of the
+  screen on your desk.** Before this, moving the dock moved it on every display at
+  once. Now a display you single out keeps its own edge, and the rest follow the
+  choice you made for everywhere — so docking a laptop no longer means choosing one
+  edge that suits both. Putting the edge back and stopping singling a screen out
+  are two separate things, because they are two different things to want.
+  Nothing has been seen on a real second screen yet.
+  Evidence: `docs/autonomy/updates/the-dock-per-display.md`.
+
 - **When a converted document names a font it lost, it is a font you chose.**
   Converting a Word document saved before 2007 could report a second font as
   substituted that the document was never set in — the engine's own default,

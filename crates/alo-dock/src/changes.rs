@@ -7,14 +7,29 @@
 //! never touched it and no machine that did. An untouched machine has no
 //! `dock.toml` at all ([`crate::keeping`]).
 //!
-//! **There is one thing to change at v0.01, and that is not a mistake.** *The
+//! **There was one thing to change at v0.01, and that was not a mistake.** *The
 //! dock's size*, *whether it hides when a window needs the room* and *one dock
 //! per display* are all v0.5 in `docs/features.md`. A file with one key in it
-//! now is a file that gains keys additively later; a file with four keys in it
-//! now, three of which nothing reads, is three settings somebody has to keep
-//! working for a release that has not been designed.
+//! then was a file that gains keys additively later; a file with four keys in it
+//! then, three of which nothing read, would have been three settings somebody had
+//! to keep working for a release that had not been designed.
+//!
+//! **The second of those keys arrived on 2026-09-27, and additively as promised.**
+//! *Per display, so the dock can sit along the bottom of the laptop and down the
+//! side of the external screen* is the `[v0.5]` promise, and it is a display
+//! **singled out as an exception to the edge** — the third time this file takes
+//! `alo-appearance`'s shape, because that crate already made a display an
+//! exception to a background and two answers in this repository about what *per
+//! display* means would be one too many. A machine that never singled one out
+//! writes no such key and reads exactly as it did before.
+//!
+//! *The dock's size* and *whether it hides when a window needs the room* are
+//! still not here. `crate::layout` sizes it; the hiding has no code at all and
+//! says so where it would go.
 
 use serde::{Deserialize, Serialize};
+
+use alo_appearance::DisplayId;
 
 use crate::edge::Edge;
 
@@ -22,7 +37,11 @@ use crate::edge::Edge;
 /// offers *put it back*.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Setting {
-    /// Which edge of the screen the dock is on.
+    /// Which edge of the screen the dock is on, everywhere. Per-display
+    /// exceptions are their own, and [`Changes::forget_display`] is how one of
+    /// those goes back — `alo-appearance` says the same about a background, for
+    /// the same reason: *put the edge back* and *stop singling this screen out*
+    /// are two different things a person means.
     Edge,
 }
 
@@ -30,8 +49,10 @@ pub enum Setting {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Written", into = "Written")]
 pub struct Changes {
-    /// Which edge they moved it to.
+    /// Which edge they moved it to, on every display they have not singled out.
     edge: Option<Edge>,
+    /// The displays they singled out, oldest first, one entry each.
+    displays: Vec<(DisplayId, Edge)>,
 }
 
 impl Changes {
@@ -43,12 +64,16 @@ impl Changes {
 
     /// Whether nothing has been changed at all, which is what a fresh machine
     /// has, and what a missing file reads as.
+    ///
+    /// **A display singled out counts.** A machine whose only change is one
+    /// screen's own edge has been changed, and a reader that said otherwise would
+    /// write no file for it and lose the change at the next sign-in.
     #[must_use]
-    pub const fn is_untouched(&self) -> bool {
-        self.edge.is_none()
+    pub fn is_untouched(&self) -> bool {
+        self.edge.is_none() && self.displays.is_empty()
     }
 
-    /// Put the dock on this edge.
+    /// Put the dock on this edge, on every display not singled out.
     pub fn set_edge(&mut self, edge: Edge) {
         self.edge = Some(edge);
     }
@@ -57,6 +82,40 @@ impl Changes {
     #[must_use]
     pub const fn edge(&self) -> Option<Edge> {
         self.edge
+    }
+
+    /// Single this display out, putting the dock on this edge of it alone.
+    ///
+    /// Replaces the exception if there is one, so a display appears once;
+    /// otherwise it goes on the end, which is what keeps [`Self::displays`]
+    /// oldest first.
+    pub fn set_edge_on(&mut self, display: DisplayId, edge: Edge) {
+        self.displays.retain(|(named, _)| *named != display);
+        self.displays.push((display, edge));
+    }
+
+    /// The edge they singled this display out for, if they singled it out.
+    #[must_use]
+    pub fn edge_on(&self, display: &DisplayId) -> Option<Edge> {
+        self.displays
+            .iter()
+            .find(|(named, _)| named == display)
+            .map(|(_, edge)| *edge)
+    }
+
+    /// Every display they singled out, oldest first.
+    pub fn displays(&self) -> impl Iterator<Item = (&DisplayId, Edge)> {
+        self.displays.iter().map(|(named, edge)| (named, *edge))
+    }
+
+    /// Stop singling this display out, putting it back to the edge they chose
+    /// for everywhere.
+    ///
+    /// Says whether there was anything to put back.
+    pub fn forget_display(&mut self, display: &DisplayId) -> bool {
+        let before = self.displays.len();
+        self.displays.retain(|(named, _)| named != display);
+        self.displays.len() != before
     }
 
     /// Forget that this was ever changed, which puts it back to what the running
@@ -82,17 +141,28 @@ struct Written {
     /// The edge, if it was moved.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     edge: Option<Edge>,
+    /// The displays singled out, if any were. Absent rather than an empty list,
+    /// so a machine that singled none out writes exactly the file it wrote
+    /// before this key existed.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    displays: Vec<(DisplayId, Edge)>,
 }
 
 impl From<Written> for Changes {
     fn from(written: Written) -> Self {
-        Self { edge: written.edge }
+        Self {
+            edge: written.edge,
+            displays: written.displays,
+        }
     }
 }
 
 impl From<Changes> for Written {
     fn from(changes: Changes) -> Self {
-        Self { edge: changes.edge }
+        Self {
+            edge: changes.edge,
+            displays: changes.displays,
+        }
     }
 }
 

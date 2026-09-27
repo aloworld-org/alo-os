@@ -1739,9 +1739,9 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**This gate is 93 boxes: 31 promises, and every one of them now carries the two
+**This gate is 96 boxes: 32 promises, and every one of them carries the two
 boxes the section above describes.** It read *8 of 49* on 2026-09-26 before it was
-reconciled promise by promise, and it reads **26 of 93** after — 31 promises where
+reconciled promise by promise, and it reads **27 of 96** after — 32 promises where
 four had been split, and two promises `docs/features.md` makes that had no box here
 at all: *Night light and display colour* and *The dock's size, and per display*. The
 first of those had finished code and nothing to tick it in.
@@ -1834,26 +1834,50 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         a screen whose colour actually changes, which is the compositor's and
         is owed to the certified machine
-- [ ] **The dock's size, and per display** — whether it hides when a window
-      needs the room, and a dock along the bottom of the laptop while it runs
-      down the side of the external screen
-      *Two `[v0.5]` promises in `docs/features.md` (the dock's size and
-      hiding; per display) with no box in this gate until 2026-09-26. **The
-      dock on any edge** is v0.01's and is built; these two are the v0.5
-      refinements of it and are not*
+- [ ] **The dock's size, and whether it hides when a window needs the room**
+      *One of the two `[v0.5]` promises this gate carried as a single box until
+      2026-09-27. Split here because one of them was paid and the other was not,
+      and a box that groups two promises cannot say that*
   - [ ] **The code.**
-        **not built, and the crate says so itself.**
-        `crates/alo-dock/src/dock.rs` opens with **One dock, one edge**, quoting
-        this very promise: a dock on each display is drawn (`alo-shell`'s plan,
-        task 9, a background and a dock on each), and they all take the **same**
-        edge, so the laptop cannot have it along the bottom while the external
-        screen has it down the side. Nothing sizes it or hides it either.
-        `crates/alo-dock` belongs to
-        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, and
-        `alo_displays::Wearing::of` is the one function in the session plan that
-        changes when this is paid
+        **the size is there and the hiding is not.**
+        `crates/alo-dock/src/layout.rs` lays the dock out on a screen at a text
+        scale: the names give way to icons where there is no room and say so,
+        and **the dock never takes more than its share** on any edge at any
+        size, held by its own tests. *Whether it hides when a window needs the
+        room* has no code, and `layout.rs` says so in writing at the place that
+        work would go. `crates/alo-dock` belongs to
+        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, whose
+        seven tasks are done, so this has no task anywhere
   - [ ] **On the machine.**
-        owed to the certified machine and a second screen, after the code
+        owed to the certified machine, and to a window that needs the room
+- [ ] **Per display, so the dock can sit along the bottom of the laptop and down
+      the side of the external screen**
+  - [x] **The code.**
+        `alo_dock::Dock::edge_on` — **a display singled out is an exception to
+        the edge**, which is the shape `alo-appearance` already used to make a
+        display an exception to a background, and the order is that crate's
+        order too: the exception, then the edge chosen for everywhere, then the
+        edge the release ships. `alo_displays::Wearing::of` asks it once per
+        screen with the same name it asks for that screen's background, so two
+        identical screens are two names and an edge chosen for one does not
+        reach the other. `dock.toml` gains the key **additively** and a machine
+        that singled no screen out writes the file it wrote before.
+        The shell needed **nothing**: `alo-shell/src/screens_raster.rs` already
+        drew each screen's dock on the edge that screen's `Wearing` gave it, so
+        the promise was never blocked on the drawing.
+        Two tests hold the promise in its own words — the laptop keeps the
+        bottom while the external screen takes a side, in `alo-dock` and again
+        through `Wearing::of` — and `updates/the-dock-per-display.md` is the
+        report.
+        *This box read **not built, and the crate says so itself** until
+        2026-09-27, quoting `dock.rs`'s own **One dock, one edge**. That file now
+        says the opposite, and `wearing.rs`'s paragraph naming itself as the one
+        function that would change was accurate: it was one line*
+  - [ ] **On the machine.**
+        **a second screen.** No display has ever been plugged into anything this
+        repository runs on, so the laptop along the bottom and the external
+        screen down the side is arithmetic and a test rather than a thing
+        anybody has looked at. Owed to the certified machine and a cable
 - [ ] Recovery and rollback screen
   - [x] **The code.**
         `alo-keeping-up` — going back to the build the machine ran before, the
@@ -3238,19 +3262,27 @@ runtime policy or release checkbox changes follow from this report.
 
 ## The gate, read
 
-It read **8 of 49**. It reads **26 of 93**.
+It read **8 of 49**. It reads **27 of 96**.
 
-Every one of the 31 promises now carries both boxes; **27 of them did not before**,
-and a single box had been letting *it compiles* be read as *it works*. No
+Every one of the 32 promises carries both boxes; **27 of them did not before**, and
+a single box had been letting *it compiles* be read as *it works*. No
 on-the-machine box is ticked and none could be — the first physical install is
 Friday.
 
-**What ticked: 26 code halves.** What did not, and why, in the box rather than
+**What ticked: 27 code halves.** What did not, and why, in the box rather than
 blank: *Undo what the agent did* (built all round and waiting on `btrfs` at
-install), *The dock's size and per display* (**one dock, one edge**, which
-`alo-dock`'s own header says while quoting the promise), *Installer* (one unstarted
-code task, one held), and *Making it yours*, whose tick was **withdrawn** when
+install), *The dock's size and whether it hides* (the size is there, the hiding has
+no code and `layout.rs` says so where it would go), *Installer* (one unstarted code
+task, one held), and *Making it yours*, whose tick was **withdrawn** when
 `Accent::ALL` turned out to have four hues against a promise of five.
+
+**And the thirty-second promise is one of the thirty-first split in two.** *The
+dock's size, and per display* was one box over two `[v0.5]` lines, which is the
+grouping this gate does everywhere and the thing that makes it uncheckable
+promise-by-promise. On 2026-09-27 one of the two was paid — the dock sits per
+display now — and the other was not, so the box had to become two before either
+could be true. That is the argument for each box naming the promises it answers,
+made by a box rather than in prose.
 
 **Six were refused and the refusals were wrong.** The portal backend, touchpad
 gestures, EN 301 549 and whether Settings is drawn were called missing on

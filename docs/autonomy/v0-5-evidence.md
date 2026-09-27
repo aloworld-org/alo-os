@@ -267,15 +267,24 @@ opening line without opening `layout.rs`, which holds the sizing.*
 
 ### Per display, so the dock can sit along the bottom of the laptop and down the side of the external screen
 
-**Shown by:** `docs/autonomy/updates/several-displays-each-with-its-own-background-and-dock.md`
-— a dock **is** drawn on each display.
+**Shown by:** `crates/alo-dock/src/dock.rs`,
+`crates/alo-displays/src/wearing.rs`,
+`docs/autonomy/updates/the-dock-per-display.md`,
+`docs/autonomy/updates/several-displays-each-with-its-own-background-and-dock.md`
 
-**Still owed:** **a different edge per display**, which is the promise. Every
-dock drawn takes the same edge, because `alo_displays::Wearing::of` answers one
-edge for the whole set; that function is the one place in the session plan that
-changes when this is paid. A dock on each display is not a dock per display.
+**Still owed:** **a second screen.** The edge is per display:
+`alo_dock::Dock::edge_on` answers the exception a person made for this screen,
+then the edge they chose for everywhere, then the edge the release ships — the
+order `alo_appearance::Appearance::background_on` uses, so the two things a screen
+wears are decided the same way — and `alo_displays::Wearing::of` asks it once per
+screen with the same name it asks for that screen's background. Two tests hold the
+promise in its own words, in both crates. What is owed is a cable: nothing here
+has ever had a display attached, so the laptop along the bottom and the external
+screen down the side is arithmetic rather than something anybody has looked at.
 
-*This promise also had no box in the v0.5 gate until 2026-09-26.*
+*This promise had no box in the v0.5 gate until 2026-09-26, and shared one with
+*the dock's size* until 2026-09-27, when it was paid and the other half of that
+box was not.*
 
 ### **Divide the screen** — drag a window to an edge to take half, a corner to take a quarter
 
