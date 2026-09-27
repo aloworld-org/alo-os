@@ -7,7 +7,7 @@
 //! anchor in it — and so that the shell and this crate cannot drift into
 //! disagreeing about what navy is.
 //!
-//! **Terracotta is in the list and is not an ordinary colour.** The design brief
+//! **Deep teal is in the list and is not an ordinary colour.** The design brief
 //! spends it in one place only: where the agent is present or acting, about five
 //! percent of any screen, so that a person can tell at a glance whether the
 //! machine is doing something on their behalf. A person may still put it behind
@@ -22,7 +22,7 @@
 //! [`Token::said`], which answers in the reader's own language and says whether
 //! anybody translated it. A colour name is the hardest kind of string to
 //! translate and the easiest to get silently wrong — several languages have no
-//! ordinary word for terracotta — so each of the six carries a note describing
+//! ordinary word for deep teal — so each of the six carries a note describing
 //! the colour rather than assuming the word travels.
 
 use alo_strings::{Filling, Said, Strings, Word};

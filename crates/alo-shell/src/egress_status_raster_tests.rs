@@ -57,8 +57,8 @@ fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPictur
     .unwrap()
 }
 
-/// Terracotta, as the painter takes it.
-fn terracotta() -> [u8; 3] {
+/// Deep teal, as the painter takes it.
+fn deep_teal() -> [u8; 3] {
     rgb(Token::DeepTeal.colour())
 }
 
@@ -102,12 +102,7 @@ fn a_question_answered_here_draws_nothing_and_one_answered_elsewhere_draws_its_s
         let expected = indicator.showing().first().unwrap().said(&strings);
         assert!(!expected.is_a_bug(), "{expected}");
         assert_eq!(drawn.rows.first().unwrap().sentence, expected.text());
-        assert!(
-            drawn
-                .solids
-                .iter()
-                .any(|solid| solid.colour == terracotta())
-        );
+        assert!(drawn.solids.iter().any(|solid| solid.colour == deep_teal()));
         assert!(!drawn.inked.is_empty());
 
         // And when the answer is back, the screen is empty again.
@@ -168,7 +163,7 @@ fn what_alo_os_does_on_its_own_is_drawn_beside_what_an_agent_caused() {
     );
     for row in &drawn.rows {
         assert!(
-            drawn.solids.iter().any(|solid| solid.colour == terracotta()
+            drawn.solids.iter().any(|solid| solid.colour == deep_teal()
                 && row.mark.intersection(solid.area) == Some(solid.area)),
             "{row:?} has no mark"
         );
@@ -267,20 +262,15 @@ fn a_vocabulary_without_the_lines_still_draws_them() {
     .unwrap();
     assert_eq!(drawn.rows.len(), 1);
     assert!(!drawn.rows.first().unwrap().sentence.is_empty());
-    assert!(
-        drawn
-            .solids
-            .iter()
-            .any(|solid| solid.colour == terracotta())
-    );
+    assert!(drawn.solids.iter().any(|solid| solid.colour == deep_teal()));
 }
 
-/// **Terracotta never arrives alone.** In both schemes and at every text size,
-/// every terracotta pixel is inside a row's mark, that mark has an arrow drawn
-/// in it in a colour that is not terracotta, and the same row has words inked
-/// in the ink colour. No word is ever inked in terracotta.
+/// **Deep teal never arrives alone.** In both schemes and at every text size,
+/// every deep teal pixel is inside a row's mark, that mark has an arrow drawn
+/// in it in a colour that is not deep teal, and the same row has words inked
+/// in the ink colour. No word is ever inked in deep teal.
 #[test]
-fn terracotta_never_arrives_alone() {
+fn deep_teal_never_arrives_alone() {
     let (_, largest) = TextScale::range();
     let mut indicator = Indicator::default();
     drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
@@ -296,20 +286,20 @@ fn terracotta_never_arrives_alone() {
             let drawn = drawn_as(&indicator, look);
             let palette = crate::egress_status_raster::palette(scheme, Contrast::AsDesigned);
             assert!(!drawn.rows.is_empty());
-            let terracottas: Vec<&Solid> = drawn
+            let deep_teals: Vec<&Solid> = drawn
                 .solids
                 .iter()
-                .filter(|solid| solid.colour == terracotta())
+                .filter(|solid| solid.colour == deep_teal())
                 .collect();
-            assert_eq!(terracottas.len(), drawn.rows.len(), "{look:?}");
-            for fill in terracottas {
+            assert_eq!(deep_teals.len(), drawn.rows.len(), "{look:?}");
+            for fill in deep_teals {
                 let row = drawn
                     .rows
                     .iter()
                     .find(|row| row.mark.intersection(fill.area) == Some(fill.area))
                     .unwrap();
                 let arrow = drawn.solids.iter().filter(|solid| {
-                    solid.colour != terracotta()
+                    solid.colour != deep_teal()
                         && fill.area.intersection(solid.area) == Some(solid.area)
                         && solid.area != fill.area
                 });
@@ -328,8 +318,8 @@ fn terracotta_never_arrives_alone() {
                 drawn
                     .inked
                     .iter()
-                    .all(|inked| !inked.pixels.contains(&terracotta())),
-                "{look:?}: words inked in terracotta"
+                    .all(|inked| !inked.pixels.contains(&deep_teal())),
+                "{look:?}: words inked in deep teal"
             );
         }
     }
@@ -516,12 +506,12 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
     for row in drawn.rows.iter().take(drawn.rows.len() - 1) {
         assert_eq!(row.sentence, "@mail is asking a question of alo, in the EU");
     }
-    let terracottas = drawn
+    let deep_teals = drawn
         .solids
         .iter()
-        .filter(|solid| solid.colour == terracotta())
+        .filter(|solid| solid.colour == deep_teal())
         .count();
-    assert_eq!(terracottas, drawn.rows.len());
+    assert_eq!(deep_teals, drawn.rows.len());
 }
 
 /// **An output that cannot hold a dock refuses a lit frame** rather than
@@ -584,7 +574,7 @@ fn the_words_are_readable_on_their_ground() {
 /// **High contrast draws the indicator in the other palette, mark and all.**
 /// The rows are where they were, every flat colour is one
 /// `alo_access::HighContrast` decided, and the mark is still the agent's — that
-/// palette's own terracotta, which is the reserved colour taken deep enough to
+/// palette's own deep teal, which is the reserved colour taken deep enough to
 /// read rather than another colour wearing the agent's meaning (ADR 0010).
 #[test]
 fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
@@ -626,8 +616,8 @@ fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
             "{scheme:?}: the agent's mark is not on the indicator in high contrast"
         );
         assert!(
-            !high.solids.iter().any(|solid| solid.colour == terracotta()),
-            "{scheme:?}: the design's terracotta survived into high contrast"
+            !high.solids.iter().any(|solid| solid.colour == deep_teal()),
+            "{scheme:?}: the design's deep teal survived into high contrast"
         );
     }
 }

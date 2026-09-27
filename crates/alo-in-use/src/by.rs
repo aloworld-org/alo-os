@@ -13,7 +13,7 @@
 //! uses and for the same reason: there is no way to build [`By::the_agent`] out
 //! of a grantee that is an application, because the constructor reads
 //! `Grantee::is_an_application` and refuses. This is not tidiness. A line that
-//! says *the agent* is drawn in terracotta (ADR 0010), terracotta means the
+//! says *the agent* is drawn in deep teal (ADR 0010), deep teal means the
 //! machine is acting on the person's behalf and means nothing else anywhere in
 //! the system, and an application able to borrow it would have taken the one
 //! signal that says so.
@@ -61,7 +61,7 @@ impl By {
     /// An agent, by the name the machine knows it by.
     ///
     /// Answers [`None`] for a grantee that is an application. That is the one
-    /// guarantee this type makes: the terracotta line and the words *the agent*
+    /// guarantee this type makes: the deep teal line and the words *the agent*
     /// are reachable only from a grantee that really is one, so an application
     /// cannot arrive wearing them (ADR 0010).
     #[must_use]
@@ -111,7 +111,7 @@ impl By {
         }
     }
 
-    /// Whether this is an agent, which is the one answer that is terracotta.
+    /// Whether this is an agent, which is the one answer that is deep teal.
     #[must_use]
     pub const fn is_the_agents(&self) -> bool {
         matches!(self.0, Who::Agent(_))
@@ -197,7 +197,7 @@ mod tests {
     use crate::testing::{a_video_call, in_english, the_agent, translated};
 
     /// **An application cannot be an agent.** The one guarantee this type
-    /// makes, and the one that keeps terracotta meaning what ADR 0010 says it
+    /// makes, and the one that keeps deep teal meaning what ADR 0010 says it
     /// means: a grantee that is an application is refused here, so no line can
     /// be built that draws an application in the agent's colour with the
     /// agent's word beside it.

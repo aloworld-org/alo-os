@@ -1938,8 +1938,10 @@ sorted the same way v0.01 now is.
         and was ticked until 2026-09-26. `Accent::ALL` is `[Self; 4]` —
         Indigo, Violet, Moss, Rose — under a doc comment that still says *all
         five*, because **#185 implemented half of ADR 0067**: that decision says
-        `Token::Terracotta` stops being a palette token and **becomes
-        `Accent::Terracotta`**, and the token was removed while the accent was
+        `Token::Terracotta` stops being a palette token and the accent set
+        **does not gain it** — amended, because an accent must read at 4.5:1 on
+        both grounds and terracotta on cream measures 2.87:1. The token was
+        removed and no accent was
         never added. `docs/features.md` promises five designed hues and the ADR
         requires five, so the code does not meet the promise and the tick is
         withdrawn until it does. Owed by whoever owns `alo-appearance`

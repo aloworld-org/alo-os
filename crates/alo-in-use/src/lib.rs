@@ -57,7 +57,7 @@
 //! let in_use = InUse::read_from(&mut AMachine)?;
 //! assert!(!in_use.is_quiet());
 //!
-//! // The screen's line comes first, and it is the agent's: terracotta, with
+//! // The screen's line comes first, and it is the agent's: deep teal, with
 //! // the agent's mark, and saying so in words as well (ADR 0010).
 //! let lines = in_use.lines();
 //! let screen = lines.first().expect("the screen is in use");
@@ -65,7 +65,7 @@
 //! assert!(screen.the_agents_dot());
 //! assert!(screen.said(&strings).text().contains("the agent"));
 //!
-//! // The camera's is not the agent's, and is not terracotta.
+//! // The camera's is not the agent's, and is not deep teal.
 //! let camera = lines.get(1).expect("the camera is in use");
 //! assert_eq!(camera.colour(), Token::Navy);
 //! assert!(!camera.the_agents_dot());

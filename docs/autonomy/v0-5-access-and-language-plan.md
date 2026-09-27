@@ -46,7 +46,7 @@ not run*). Before writing the next task, `git pull` and read the plan as publish
   it changes, named as a value another crate reads** (`alo-appearance`'s palette and
   text scale, the keyboard crate's key filter) and a test per setting that the value
   changes; **high contrast is a palette of its own that meets WCAG AAA contrast for
-  text, measured in a test over every pair the shell draws**, and terracotta keeps its
+  text, measured in a test over every pair the shell draws**, and deep teal keeps its
   meaning with its mark and word (ADR 0010); every setting can be turned on **from the
   sign-in screen and during setup, before any account exists** — a person who needs a
   screen reader to set the machine up must not need one to find the setting; and the

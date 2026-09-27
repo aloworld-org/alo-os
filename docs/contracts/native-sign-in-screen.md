@@ -61,7 +61,7 @@ too short for two fields, or wider or taller than 16,384 px, refuse with
 ## Drawing
 
 Ground, field and ink colours are `alo-appearance` tokens: Porcelain, Cream
-and Navy in the light scheme; Charcoal and Cream in the dark. Terracotta is
+and Navy in the light scheme; Charcoal and Cream in the dark. Deep teal is
 never used. The waiting field has a three-pixel edge and a caret; the other has
 a one-pixel edge. The password field draws one band of fixed width once
 anything is typed, never a mark per character. The name is drawn as typed on

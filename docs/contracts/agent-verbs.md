@@ -818,7 +818,7 @@ index, not the record, not a file. The record says *a picture of the screen was
 taken* and never what was in it.
 
 **While the turn holds it, the in-use indicator shows the screen in use by the
-agent**, in terracotta with the agent's mark and word (ADR 0010) — the same line
+agent**, in deep teal with the agent's mark and word (ADR 0010) — the same line
 an application gets, in the colour reserved for the agent.
 
 ## The installing verb

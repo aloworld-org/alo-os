@@ -42,7 +42,7 @@ clients, popups and native controls and before the cursor.
   runtime alo OS ships or by a service at this machine's own address, is not a
   departure and draws nothing.
 - While something is leaving, one row per `alo_egress::Shown`, in the
-  indicator's order: a mark (a navy or charcoal arrow on terracotta inside an
+  indicator's order: a mark (a navy or charcoal arrow on deep teal inside an
   ink edge) and the line's sentence exactly as `Drawn::lines_said` answers it.
   An agent's egress and alo OS's own errand are drawn alike.
 - Rows sit at the status area `alo_dock::Layout` names on this output: against

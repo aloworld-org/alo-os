@@ -100,7 +100,7 @@ fn a_capture_by_the_agent_shows_in_the_indicator_in_the_agents_colour() {
     assert_eq!(
         line.colour(),
         Token::DeepTeal,
-        "ADR 0010 gives the agent terracotta, and this line is not it"
+        "ADR 0010 gives the agent deep teal, and this line is not it"
     );
     assert!(
         line.the_agents_dot(),
@@ -108,7 +108,7 @@ fn a_capture_by_the_agent_shows_in_the_indicator_in_the_agents_colour() {
     );
 }
 
-/// **And an application's capture is not terracotta**, so the colour still
+/// **And an application's capture is not deep teal**, so the colour still
 /// means one thing.
 #[test]
 fn an_application_using_the_screen_is_not_drawn_as_the_agent() {

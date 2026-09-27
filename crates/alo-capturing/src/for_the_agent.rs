@@ -34,7 +34,7 @@
 //!
 //! [`crate::for_the_agent::ForTheAgent::in_use`] is the use `alo-in-use` shows
 //! while the turn holds the picture: the screen, **by the agent**, which that
-//! crate draws in terracotta with the agent's mark and word — ADR 0010 reserves
+//! crate draws in deep teal with the agent's mark and word — ADR 0010 reserves
 //! that colour for the agent and nothing else uses it.
 //!
 //! A capture the agent took that the indicator did not show is the failure this
@@ -118,8 +118,8 @@ impl ForTheAgent {
 
     /// **What the indicator shows while the turn holds this.**
     ///
-    /// The screen, in use by the agent. `alo-in-use` draws that in terracotta
-    /// with the agent's mark, and nothing else in this system is terracotta
+    /// The screen, in use by the agent. `alo-in-use` draws that in deep teal
+    /// with the agent's mark, and nothing else in this system is deep teal
     /// (ADR 0010).
     ///
     /// [`None`] where the agent's name is not one a grant could name — which is
@@ -213,7 +213,7 @@ mod tests {
         )
     }
 
-    /// **The indicator shows the screen, in use by the agent, in terracotta.**
+    /// **The indicator shows the screen, in use by the agent, in deep teal.**
     #[test]
     fn while_the_turn_holds_it_the_indicator_says_the_agent_is_using_the_screen() {
         let capture = a_capture(vec![1, 2, 3]);

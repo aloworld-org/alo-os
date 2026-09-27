@@ -14,7 +14,7 @@
 //! focus has an edge around it, and a doubled edge while Settings waits for a
 //! chord. **Nothing is dimmed**, because nothing drawn here is disabled: a row
 //! exists only for something a person can do, and a state that is only a hue
-//! fails anybody who cannot tell the hue apart (EN 301 549). Terracotta is not
+//! fails anybody who cannot tell the hue apart (EN 301 549). Deep teal is not
 //! among the colours: it means the agent acting, and Settings is a person
 //! choosing.
 //!

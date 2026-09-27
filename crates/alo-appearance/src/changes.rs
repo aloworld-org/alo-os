@@ -363,13 +363,21 @@ mod tests {
     }
 
     /// **A settings file cannot ask for the agent's colour.** The accent is one
-    /// of five names, so terracotta is not a value the file can hold — a
+    /// of five names, so deep teal is not a value the file can hold — a
     /// hand-edited file naming it is refused where it is read rather than
     /// becoming an accent nobody offered (ADR 0010).
     #[test]
     fn a_file_cannot_name_the_reserved_colour_as_an_accent() {
+        assert!(serde_json::from_str::<Changes>(r#"{"accent":"DeepTeal"}"#).is_err());
+        // The name a file written before ADR 0067 would hold. Refused too, and
+        // for a different reason worth keeping separate: deep teal is refused
+        // because it is reserved, terracotta because it is not an accent at all.
         assert!(serde_json::from_str::<Changes>(r#"{"accent":"Terracotta"}"#).is_err());
-        assert!(serde_json::from_str::<Changes>(r##"{"accent":"#E76F51"}"##).is_err());
+        // **A hex is refused for its shape, not for its colour.** `accent` holds
+        // a name, so any six digits fail here and this assertion would pass with
+        // the colour changed to anything — it is about the field not taking a
+        // colour literal, and it is not evidence about which colour is reserved.
+        assert!(serde_json::from_str::<Changes>(r##"{"accent":"#0F6B72"}"##).is_err());
         assert_eq!(
             serde_json::from_str::<Changes>(r#"{"accent":"Verdigris"}"#)
                 .unwrap()

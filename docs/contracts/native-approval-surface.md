@@ -88,7 +88,7 @@ and the cursor.
   at the far end of the line, mirrored for right-to-left; stacked when they do
   not fit side by side.
 - The selected answer has a thicker edge and a bar under its words. Colours are
-  Cream and Navy (light) or Charcoal and Cream (dark); never terracotta.
+  Cream and Navy (light) or Charcoal and Cream (dark); never deep teal.
 - A refusal is the panel with its sentence and no answers.
 
 Errors, each refusing the whole frame before anything is drawn:

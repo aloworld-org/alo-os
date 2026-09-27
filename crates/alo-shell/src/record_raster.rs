@@ -33,7 +33,7 @@
 //! # What it reads
 //!
 //! `crate::RecordShows`, the person's vocabulary, and `alo-appearance`'s tokens.
-//! Terracotta is not among the colours: it means the agent acting, and this
+//! Deep teal is not among the colours: it means the agent acting, and this
 //! window is a person reading.
 
 use alo_strings::{Direction, Strings};

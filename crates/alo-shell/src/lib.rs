@@ -37,7 +37,7 @@
 //! The ordinary desktop (`DesktopFrame`) is drawn here and decided elsewhere:
 //! the dock on the edge `alo-dock` names, laid out for each display's own size,
 //! with its status area at the far end holding the egress indicator; the accent
-//! and light and dark as `alo-appearance` answers them, with terracotta never
+//! and light and dark as `alo-appearance` answers them, with deep teal never
 //! offered; and two windows drawn from `alo-measuring` — what is running
 //! (`RunningWindow`) and what is filling the disk (`FillingWindow`) — each
 //! number the one the kernel or the count gave. The dock grants, approves and

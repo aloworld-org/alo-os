@@ -212,8 +212,8 @@ pub(crate) fn picture(
 
 /// ADR 0010's small dot, drawn beside a mark that means the agent.
 ///
-/// It arrives with terracotta or not at all, which is `alo-in-use`'s own rule
-/// (`Line::the_agents_dot` is true exactly when the line is terracotta), so
+/// It arrives with deep teal or not at all, which is `alo-in-use`'s own rule
+/// (`Line::the_agents_dot` is true exactly when the line is deep teal), so
 /// this file never decides whether to draw it.
 fn the_agents_dot(
     at: Rectangle<i32, Physical>,

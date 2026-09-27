@@ -180,7 +180,7 @@ fn a_file_that_is_not_this_format_is_refused_whole() {
         words::KEPT_NOT_UNDERSTOOD
     );
 
-    std::fs::write(&at, "format = 1\naccent = \"Terracotta\"\n").unwrap();
+    std::fs::write(&at, "format = 1\naccent = \"Deep teal\"\n").unwrap();
     assert_eq!(
         keeping::read(&at).unwrap_err().word(),
         words::KEPT_NOT_UNDERSTOOD,

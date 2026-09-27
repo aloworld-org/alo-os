@@ -136,7 +136,7 @@ impl Notification {
         &self.offering
     }
 
-    /// Whether the agent sent it, which is the one answer that is terracotta
+    /// Whether the agent sent it, which is the one answer that is deep teal
     /// (ADR 0010).
     #[must_use]
     pub const fn is_the_agents(&self) -> bool {
@@ -147,7 +147,7 @@ impl Notification {
     ///
     /// Every notification says it, and the agent's says *the agent* in so many
     /// words — which is what carries ADR 0010's signal to somebody who cannot
-    /// tell terracotta from anything else.
+    /// tell deep teal from anything else.
     #[must_use]
     pub fn sent_by(&self, strings: &Strings) -> Said {
         strings.say(&words::SENT_BY.key(), &self.from.filling(strings))

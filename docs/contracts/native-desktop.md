@@ -22,7 +22,7 @@ revokes, measures for itself or acts on what it shows.
 
 An accent reaches a palette only through `alo_appearance::Accent::of_colour`,
 and is drawn as that accent's value for the scheme on screen. A look whose
-accent that door refuses — terracotta above all — refuses the frame with
+accent that door refuses — deep teal above all — refuses the frame with
 `RenderError::AccentRefused`.
 
 `RunningWindow` is the window of what is running.

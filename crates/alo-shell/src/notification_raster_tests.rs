@@ -121,14 +121,14 @@ fn a_notification_with_nothing_more_to_say_draws_no_blank_line() {
     );
 }
 
-/// **The agent's card is terracotta and says *the agent* in words.**
+/// **The agent's card is deep teal and says *the agent* in words.**
 ///
 /// ADR 0010: the colour never arrives alone. Somebody who cannot tell
-/// terracotta from anything else reads the sentence instead, and it is
+/// deep teal from anything else reads the sentence instead, and it is
 /// `alo-notifying`'s sentence rather than one assembled here.
 #[test]
 fn the_agents_card_carries_both_the_colour_and_the_word() {
-    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
+    let deep_teal = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
 
     let agents = drawn(&[from_an_agent("I have drafted a reply")]);
     let machines = drawn(&[from_the_machine("Printer ready", "", &[])]);
@@ -138,14 +138,14 @@ fn the_agents_card_carries_both_the_colour_and_the_word() {
         "the agent's card is not marked as the agent's"
     );
     assert!(
-        agents.solids.iter().any(|solid| solid.colour == terracotta),
-        "the agent's card is not drawn in terracotta"
+        agents.solids.iter().any(|solid| solid.colour == deep_teal),
+        "the agent's card is not drawn in deep teal"
     );
     assert!(
         !machines
             .solids
             .iter()
-            .any(|solid| solid.colour == terracotta),
+            .any(|solid| solid.colour == deep_teal),
         "a card that is not the agent's was drawn in the agent's colour"
     );
     assert!(

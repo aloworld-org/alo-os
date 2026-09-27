@@ -126,7 +126,7 @@ mod tests {
     }
 
     /// **Deep teal on cream clears both thresholds** — 5.78:1, over the 4.5 a
-    /// word needs and the 3.0 a shape carrying meaning needs. Terracotta, which
+    /// word needs and the 3.0 a shape carrying meaning needs. Deep teal, which
     /// it replaced, reached **2.87:1** and reached neither, so alo's colour has
     /// gone from unreadable as text on the reading ground to comfortably
     /// readable. This is one of the three measurements ADR 0067 said were owed.

@@ -12,7 +12,7 @@
 //! screen anybody behind the person can read.
 //!
 //! The waiting field is told apart by a thicker edge **and** a caret, never by
-//! colour alone, and neither is terracotta, which means the agent and is not
+//! colour alone, and neither is deep teal, which means the agent and is not
 //! on a screen nobody has signed in to yet.
 //!
 //! # What it reads

@@ -10,9 +10,9 @@
 //! machine that turns dark at six turns its desktop with it, and an accent a
 //! person chose is the one drawn.
 //!
-//! # Terracotta is never offered
+//! # Deep teal is never offered
 //!
-//! Terracotta means the agent and nothing else (ADR 0010). The accent reaches
+//! Deep teal means the agent and nothing else (ADR 0010). The accent reaches
 //! a [`DesktopPalette`] only through `alo_appearance::Accent::of_colour`, the
 //! door that refuses deep_teal in words, and the palette's other colours are
 //! the grounds and structure of the design brief. A palette that would offer
@@ -318,7 +318,7 @@ mod tests {
     /// own refusal, whichever scheme asks — and so is any palette colour that is
     /// a ground rather than an accent.
     #[test]
-    fn a_palette_that_offers_terracotta_is_refused() {
+    fn a_palette_that_offers_deep_teal_is_refused() {
         for scheme in [Scheme::Light, Scheme::Dark] {
             assert_eq!(
                 DesktopPalette::of(scheme, Token::DeepTeal.colour(), Contrast::AsDesigned),
@@ -339,7 +339,7 @@ mod tests {
     /// **No palette the desktop can draw offers deep_teal**: every accent a
     /// person can choose, on both schemes, and every colour in each palette.
     #[test]
-    fn no_palette_the_desktop_draws_offers_terracotta() {
+    fn no_palette_the_desktop_draws_offers_deep_teal() {
         let deep_teal = rgb(Token::DeepTeal.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {

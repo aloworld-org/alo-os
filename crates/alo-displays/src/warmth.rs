@@ -14,9 +14,9 @@
 //! where the arithmetic gives out.
 //!
 //! **And the second thing that bounds it is the agent.** ADR 0010 reserves
-//! terracotta, and warming pulls every hue on a screen towards orange — so
-//! *terracotta means the agent* has to be re-measured at every warmth a person
-//! can choose, and `tests/terracotta_still_means_the_agent_under_night_light.rs`
+//! deep teal, and warming pulls every hue on a screen towards orange — so
+//! *deep teal means the agent* has to be re-measured at every warmth a person
+//! can choose, and `tests/deep_teal_still_means_the_agent_under_night_light.rs`
 //! is that measurement. It is not what puts the floor at 2000 K today: at the
 //! warmest setting the nearest accent is still 9.5 ΔE\*ab from the agent's
 //! colour, against a floor of 5.0. It is what would refuse a warmer one.

@@ -41,7 +41,7 @@ where anyone wishes it were.
 
 | # | What the file shows | What the shell does | Milestone |
 |---|---|---|---|
-| 1 | deep teal for alo, navy for text and human controls | terracotta for the agent; navy is text already | **v0.5** |
+| 1 | deep teal for alo, navy for text and human controls | deep teal for the agent; navy is text already, human controls unchecked | **v0.5** |
 | 2 | the four-corner open-square mark beside alo | a mark exists beside the agent; it is not that shape | **v0.5** |
 | 3 | network, volume and brightness in the status area | shipped — clock, battery, network, volume | **done** |
 | 4 | one `Canvas / Window title` component | one title component, after the file's own cleanup | **done** |

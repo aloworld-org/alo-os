@@ -100,11 +100,11 @@ fn the_name_is_drawn() {
     );
 }
 
-/// **Terracotta is not on this screen**: it means the agent, and nobody has
+/// **Deep teal is not on this screen**: it means the agent, and nobody has
 /// signed in to have one.
 #[test]
-fn terracotta_is_not_on_the_sign_in_screen() {
-    let terracotta = {
+fn deep_teal_is_not_on_the_sign_in_screen() {
+    let deep_teal = {
         let colour = Token::DeepTeal.colour();
         [colour.red(), colour.green(), colour.blue()]
     };
@@ -115,17 +115,12 @@ fn terracotta_is_not_on_the_sign_in_screen() {
             scale: TextScale::ordinary(),
         };
         let picture = drawn(&typed("ada", "pw"), look);
-        assert!(
-            picture
-                .solids
-                .iter()
-                .all(|solid| solid.colour != terracotta)
-        );
+        assert!(picture.solids.iter().all(|solid| solid.colour != deep_teal));
         assert!(
             picture
                 .inked
                 .iter()
-                .all(|inked| inked.pixels.iter().all(|pixel| *pixel != terracotta))
+                .all(|inked| inked.pixels.iter().all(|pixel| *pixel != deep_teal))
         );
     }
 }

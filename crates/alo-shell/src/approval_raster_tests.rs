@@ -222,16 +222,16 @@ fn nothing_is_preselected_and_selection_is_never_colour_alone() {
     });
 }
 
-/// **Terracotta is not on the surface**, in either scheme: it means the agent
+/// **Deep teal is not on the surface**, in either scheme: it means the agent
 /// acting, and a question is the moment it has not.
 #[test]
-fn terracotta_is_not_on_the_surface() {
-    let terracotta = Token::DeepTeal.colour();
-    let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
+fn deep_teal_is_not_on_the_surface() {
+    let deep_teal = Token::DeepTeal.colour();
+    let deep_teal = [deep_teal.red(), deep_teal.green(), deep_teal.blue()];
     for scheme in [Scheme::Light, Scheme::Dark] {
         let palette = Palette::of(scheme, Contrast::AsDesigned);
-        assert_ne!(palette.ground, terracotta);
-        assert_ne!(palette.ink, terracotta);
+        assert_ne!(palette.ground, deep_teal);
+        assert_ne!(palette.ink, deep_teal);
     }
 }
 

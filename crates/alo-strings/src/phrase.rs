@@ -19,7 +19,7 @@
 //! **A note is for the strings that need a translator's judgement rather than
 //! their typing.** `docs/autonomy/QUEUE.md` names two outright: a key is
 //! labelled with what is printed on the person's own keyboard, and several
-//! languages have no ordinary word for terracotta — the word a translator
+//! languages have no ordinary word for deep teal — the word a translator
 //! reaches for may not be the colour. A note is where that is said, once, to
 //! everybody who will ever translate it.
 
@@ -113,19 +113,19 @@ mod tests {
 
     /// A phrase for one of the awkward strings `docs/autonomy/QUEUE.md` names:
     /// a colour whose name is a translator's judgement.
-    fn terracotta() -> Phrase {
+    fn deep_teal() -> Phrase {
         Phrase::says(
-            Key::named("appearance.token.terracotta").unwrap(),
-            "Terracotta",
+            Key::named("appearance.token.deep-teal").unwrap(),
+            "Deep teal",
         )
         .unwrap()
     }
 
     #[test]
     fn a_phrase_carries_its_key_and_its_english() {
-        let phrase = terracotta();
-        assert_eq!(phrase.key().as_str(), "appearance.token.terracotta");
-        assert_eq!(phrase.source().as_written(), "Terracotta");
+        let phrase = deep_teal();
+        assert_eq!(phrase.key().as_str(), "appearance.token.deep-teal");
+        assert_eq!(phrase.source().as_written(), "Deep teal");
         assert_eq!(phrase.note(), None);
     }
 
@@ -143,7 +143,7 @@ mod tests {
     /// dictionary*. Both of the strings the queue singles out are here.
     #[test]
     fn a_note_says_what_the_sentence_cannot() {
-        let colour = terracotta()
+        let colour = deep_teal()
             .noting(
                 "The colour of fired clay, an orange-brown. Several languages have no ordinary \
                  word for it; the nearest one may not be the colour, so describe it rather than \
@@ -162,11 +162,11 @@ mod tests {
     #[test]
     fn a_note_is_trimmed_and_an_empty_one_is_refused() {
         assert_eq!(
-            terracotta().noting("  fired clay  ").unwrap().note(),
+            deep_teal().noting("  fired clay  ").unwrap().note(),
             Some("fired clay")
         );
         assert!(matches!(
-            terracotta().noting("   "),
+            deep_teal().noting("   "),
             Err(PhraseError::EmptyNote { .. })
         ));
     }
@@ -187,18 +187,18 @@ mod tests {
     #[test]
     fn a_phrase_is_written_out_for_a_translator() {
         let written = serde_json::to_value(
-            terracotta()
+            deep_teal()
                 .noting("The colour of fired clay, an orange-brown.")
                 .unwrap(),
         )
         .unwrap();
         assert_eq!(
             written.get("key").and_then(serde_json::Value::as_str),
-            Some("appearance.token.terracotta")
+            Some("appearance.token.deep-teal")
         );
         assert_eq!(
             written.get("source").and_then(serde_json::Value::as_str),
-            Some("Terracotta")
+            Some("Deep teal")
         );
         assert_eq!(
             written.get("note").and_then(serde_json::Value::as_str),

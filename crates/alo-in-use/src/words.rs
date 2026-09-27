@@ -469,7 +469,7 @@ mod tests {
 
     /// **Every sentence that names the agent says the agent is not a person.**
     /// One does, and it is the clause ADR 0010 leans on: it is what a person
-    /// reads when they cannot tell terracotta from anything else.
+    /// reads when they cannot tell deep teal from anything else.
     #[test]
     fn every_word_that_names_the_agent_says_what_the_agent_is() {
         let mut found = 0_usize;

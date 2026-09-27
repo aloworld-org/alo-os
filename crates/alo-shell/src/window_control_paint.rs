@@ -19,7 +19,7 @@ impl WindowControlLayout {
     /// Disabled glyphs have a diagonal strike as well as a different ground;
     /// availability is never communicated by color alone. This icon painter does
     /// use a one-pixel inset border for hover, and an inverted ground plus a
-    /// two-pixel inset border for an armed press; no terracotta is used. It does
+    /// two-pixel inset border for an armed press; no deep teal is used. It does
     /// not render label text: the host must present `action().said(...)` through
     /// its label/accessible surface. No client callbacks or input are consumed.
     /// The frame must have the viewport used at construction; coordinates are

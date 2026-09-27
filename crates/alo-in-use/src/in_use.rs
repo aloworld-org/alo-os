@@ -244,16 +244,16 @@ mod tests {
     }
 
     /// **The agent's use is on the same list too**, and is the only one drawn
-    /// in terracotta.
+    /// in deep teal.
     #[test]
-    fn the_agents_use_is_on_the_same_list_and_is_the_only_terracotta_one() {
+    fn the_agents_use_is_on_the_same_list_and_is_the_only_deep_teal_one() {
         let in_use = InUse::read_from(&mut a_server_answering(every_shape_of_use())).unwrap();
-        let terracotta = in_use
+        let deep_teal = in_use
             .lines()
             .into_iter()
             .filter(|line| line.colour() == alo_appearance::Token::DeepTeal)
             .count();
-        assert_eq!(terracotta, 1);
+        assert_eq!(deep_teal, 1);
         assert!(
             in_use
                 .uses()

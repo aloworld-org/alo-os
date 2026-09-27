@@ -84,7 +84,7 @@ painted **above** it, and the egress indicator and the cursor above both.
   and never shortened. An entry with no agent has nothing where a name would be.
 - Every entry is drawn in the same type, the same two colours and the same
   spacing, whatever became of it. Colours are Cream and Navy (light) or Charcoal
-  and Cream (dark); never terracotta.
+  and Cream (dark); never deep teal.
 - An entry that does not fit whole below the last waits for the view to move.
   When any entry is out of view, a rail on the trailing edge shows where the
   view is. The record's own sentences never move with the view.

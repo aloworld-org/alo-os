@@ -10,9 +10,11 @@
 //!
 //! # Why a shape at all
 //!
-//! ADR 0010: terracotta on cream is 2.87:1, under what WCAG 2.1 §1.4.11 asks of
-//! a shape carrying meaning. So the agent never appears without a mark and a
-//! word beside its colour — and this indicator has three things to tell apart
+//! ADR 0010 measured terracotta on cream at 2.87:1, under what WCAG 2.1
+//! §1.4.11 asks of a shape carrying meaning. Deep teal replaced it and clears
+//! that at 5.78:1, and the rule stands on the half that was never about
+//! contrast: a hue carries nothing to somebody who cannot distinguish it. So
+//! the agent never appears without a mark and a word beside its colour — and this indicator has three things to tell apart
 //! rather than one, so each gets a mark of its own.
 
 use alo_appearance::{Colour, Scheme, Token};
@@ -26,7 +28,7 @@ use crate::painted::Solid;
 pub(crate) struct MarkColours {
     /// Its edge, against the row's ground.
     pub(crate) edge: [u8; 3],
-    /// Its fill: the line's own colour, which is terracotta exactly when the
+    /// Its fill: the line's own colour, which is deep teal exactly when the
     /// agent is the one using the thing, and navy otherwise.
     pub(crate) fill: [u8; 3],
     /// The shape cut out of the fill, against it.
@@ -38,7 +40,7 @@ impl MarkColours {
     ///
     /// The fill is the token `alo-in-use` chose, taken through the same palette
     /// door every other surface uses — so in high contrast it is that palette's
-    /// own terracotta rather than the design's, and still means the agent.
+    /// own deep teal rather than the design's, and still means the agent.
     pub(crate) fn of(colour: Token, scheme: Scheme, contrast: Contrast) -> Self {
         Self {
             edge: contrast.ink(scheme),

@@ -161,7 +161,7 @@ fn nothing_here_writes_to_the_crates_that_own_what_a_screen_wears() {
 /// **No colour is named here.** Every colour on a screen is `alo-appearance`'s
 /// token or the person's own background, warmed by `alo-displays`' own
 /// arithmetic — so there is no second palette in the compositor that could
-/// disagree with the one a person chose, and no terracotta reachable from the
+/// disagree with the one a person chose, and no deep teal reachable from the
 /// desk.
 #[test]
 fn no_colour_is_named_here() {

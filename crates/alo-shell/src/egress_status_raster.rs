@@ -5,7 +5,7 @@
 //! # What is drawn
 //!
 //! While the machine's indicator is quiet — every question answered here, no
-//! errand under way — **nothing**: no row, no mark, no terracotta, not one
+//! errand under way — **nothing**: no row, no mark, no deep teal, not one
 //! pixel of this surface. While something is leaving, one row per line, each a
 //! mark (`crate::egress_status_mark`) and the line itself, in the order the
 //! indicator holds them, stacked from the status area's corner
@@ -78,7 +78,7 @@ impl EgressStatusPicture {
     }
 }
 
-/// A row's ground and its ink, from the one palette door. Terracotta is the
+/// A row's ground and its ink, from the one palette door. Deep teal is the
 /// mark's and not here.
 pub(crate) fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
     Palette {

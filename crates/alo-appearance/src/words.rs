@@ -15,8 +15,8 @@
 //! Most of what a crate declares is a sentence, and a sentence carries enough of
 //! itself for a translator to work from. A **colour name** does not. *Verdigris*
 //! is the blue-green of weathered copper, which is two words in some languages
-//! and none in others; several languages have no ordinary word for *terracotta*
-//! at all and the nearest loanword may name a different colour; *rose* is a
+//! and none in others; *porcelain* names a material first, so its nearest
+//! loanword may name the china rather than the colour; *rose* is a
 //! flower before it is a shade of pink. These are names a person picks from a
 //! list rather than reads once, so getting one wrong is not a sentence that
 //! reads oddly — it is a row that does not match the colour beside it.
@@ -24,7 +24,7 @@
 //! So every one of the eleven carries a note that describes the colour rather
 //! than assuming the word travels, and says outright that describing it is
 //! allowed. That is the whole reason `alo_strings::Phrase` has a note at all:
-//! `docs/autonomy/QUEUE.md` named terracotta as the example before this crate
+//! `docs/autonomy/QUEUE.md` named a colour as the example before this crate
 //! existed.
 //!
 //! # What is deliberately not here
@@ -65,22 +65,6 @@ pub const DEEP_TEAL: Word = Word::saying("appearance.token.deep-teal", "Deep tea
     "A dark blue-green, the colour of deep water. It is how this machine says alo is present \
      or acting, so name it in whatever way a person would recognise rather than borrowing a \
      word that names a lighter colour.",
-);
-
-/// What `Accent::Terracotta` is called.
-///
-/// Not a link, because **the variant does not exist yet**. ADR 0067 decides that
-/// `Token::Terracotta` becomes `Accent::Terracotta`; the token was removed and
-/// the accent was never added, so `Accent::ALL` is four where the promise and the
-/// decision both say five. Owed by whoever owns `alo-appearance`.
-///
-/// Its key moved from `appearance.token.` to `appearance.accent.` when ADR
-/// 0067 released it: it is a colour a person picks now, not one the system is
-/// built out of.
-pub const TERRACOTTA: Word = Word::saying("appearance.accent.terracotta", "Terracotta").noting(
-    "The colour of fired clay: an orange-brown. Several languages have no ordinary word for it \
-     and the nearest loanword may name a different colour, so describe the colour rather than \
-     borrowing the word.",
 );
 
 /// What [`crate::Token::Cream`] is called.
@@ -155,23 +139,29 @@ pub const ROSE: Word = Word::saying("appearance.accent.rose", "Rose").noting(
 // settings panel wanting a colour, so each says what to choose instead.
 // ---------------------------------------------------------------------------
 
-/// Terracotta, which is the agent's and nobody else's.
+/// Deep teal, which is the agent's and nobody else's.
+///
+/// **Keyed `reserved-for-alo` since ADR 0067's colour change; the old
+/// `appearance.accent.reserved` is retired.** The sentence used to name
+/// terracotta and to offer verdigris, and a translation of it would still render
+/// and now send somebody to a colour this system does not have — which ADR 0068
+/// says is a new key rather than an edit.
 pub const RESERVED: Word = Word::saying(
-    "appearance.accent.reserved",
-    "terracotta is how this machine says alo is present or acting, so it is not offered as a \
-     personal accent — choose verdigris, indigo, violet, moss or rose",
+    "appearance.accent.reserved-for-alo",
+    "deep teal is how this machine says alo is present or acting, so it is not offered as a \
+     personal accent — choose indigo, violet, moss or rose",
 )
 .noting(
-    "\"alo\" is the name of the system and is never translated. Terracotta is the colour named in \
-     appearance.token.terracotta and the five at the end are the appearance.accent names: use the \
+    "\"alo\" is the name of the system and is never translated. Deep teal is the colour named in \
+     appearance.token.deep-teal and the four at the end are the appearance.accent names: use the \
      same words for them here, or a person will be sent to a list they cannot find.",
 );
 
 /// A ground or a structure colour, asked for as an accent.
 pub const NOT_AN_ACCENT: Word = Word::saying(
-    "appearance.accent.not-an-accent",
-    "{colour} is a ground or a structure colour rather than an accent — choose verdigris, indigo, \
-     violet, moss or rose",
+    "appearance.accent.a-ground-not-an-accent",
+    "{colour} is a ground or a structure colour rather than an accent — choose indigo, violet, \
+     moss or rose",
 )
 .noting(
     "{colour} arrives as one of the appearance.token names, already in your language. A ground is \
@@ -181,14 +171,14 @@ pub const NOT_AN_ACCENT: Word = Word::saying(
 
 /// A colour from somewhere else entirely.
 pub const NOT_OFFERED: Word = Word::saying(
-    "appearance.accent.not-offered",
-    "{colour} is not one of the accents this system offers — choose verdigris, indigo, violet, \
-     moss or rose, each of which is drawn to read on a light ground and on a dark one",
+    "appearance.accent.not-among-the-accents",
+    "{colour} is not one of the accents this system offers — choose indigo, violet, moss or \
+     rose, each of which is drawn to read on a light ground and on a dark one",
 )
 .noting(
     "{colour} arrives as a hash and six hexadecimal digits, such as #123456, and is never \
      translated. The last clause is the reason there is a list rather than a colour wheel: each \
-     of the five has been measured against the grounds it is drawn on.",
+     of the four has been measured against the grounds it is drawn on.",
 );
 
 // ---------------------------------------------------------------------------
@@ -470,14 +460,13 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// Every string this crate can say, in the order a translator meets them: the
 /// colours the system is built out of, the five a person can choose, the
 /// refusals, file by file, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 37] = [
+pub const EVERY_WORD: [Word; 36] = [
     NAVY,
     DEEP_TEAL,
     CREAM,
     PORCELAIN,
     CHARCOAL,
     WARM_STONE,
-    TERRACOTTA,
     INDIGO,
     VIOLET,
     MOSS,
@@ -623,8 +612,8 @@ mod tests {
     #[test]
     fn every_colour_name_names_nothing() {
         for word in [
-            NAVY, DEEP_TEAL, CREAM, PORCELAIN, CHARCOAL, WARM_STONE, TERRACOTTA, INDIGO, VIOLET,
-            MOSS, ROSE, VERDIGRIS,
+            NAVY, DEEP_TEAL, CREAM, PORCELAIN, CHARCOAL, WARM_STONE, INDIGO, VIOLET, MOSS, ROSE,
+            VERDIGRIS,
         ] {
             let phrase = word.phrase().unwrap();
             assert!(phrase.source().gaps().is_empty(), "{}", word.named());
@@ -690,9 +679,9 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
         }
         assert!(
-            TERRACOTTA
+            DEEP_TEAL
                 .note()
-                .is_some_and(|note| note.contains("orange-brown")),
+                .is_some_and(|note| note.contains("blue-green")),
             "the colour is described rather than named"
         );
         assert!(

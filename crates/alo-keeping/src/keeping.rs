@@ -34,7 +34,7 @@
 //! [`NonZeroU32`], and the one road a zero can still arrive by —
 //! [`Keeping::for_days`], where a settings panel lands — refuses it in words.
 //!
-//! That is `alo-appearance`'s shape from item 8a: terracotta is not refused at
+//! That is `alo-appearance`'s shape from item 8a: deep teal is not refused at
 //! the door, it is a colour the type cannot hold, and the refusal in words
 //! exists for the one place a value can still be typed in.
 //!

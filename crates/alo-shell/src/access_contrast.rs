@@ -30,11 +30,11 @@
 //!
 //! # The accent, in high contrast, is not the person's
 //!
-//! On the ordinary desktop the accent is the person's own, and terracotta is
+//! On the ordinary desktop the accent is the person's own, and deep teal is
 //! refused there because it means the agent (ADR 0010). In high contrast the
 //! accent is `alo_access::HighContrast`'s, which that crate argues at length:
 //! at AAA the reserved colour cannot be drawn as text at all, so it draws
-//! terracotta's own hue taken deep enough to read. A person's chosen accent is
+//! deep teal's own hue taken deep enough to read. A person's chosen accent is
 //! still *checked* here — an accent nobody may choose is refused before any
 //! palette is built — and then not drawn, because a colour a person cannot read
 //! is not a preference this palette can honour.

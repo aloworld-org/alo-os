@@ -30,7 +30,7 @@
 //! # What it reads
 //!
 //! `crate::ApprovalShows`, the person's vocabulary for the two answers, and
-//! `alo-appearance`'s tokens. Terracotta is not among the colours: it means the
+//! `alo-appearance`'s tokens. Deep teal is not among the colours: it means the
 //! agent acting, and this surface is the moment it has not.
 
 use alo_appearance::{Scheme, TextScale};

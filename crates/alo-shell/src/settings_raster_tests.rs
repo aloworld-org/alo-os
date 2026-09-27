@@ -65,9 +65,9 @@ fn every_piece_of_text_drawn_is_a_crates_answer() {
 /// **What is chosen is a shape and the focus is an edge, and neither is only a
 /// colour**: exactly the chosen rows carry a mark, exactly the focused row an
 /// edge, and waiting for a chord doubles it. Every shape is in the two tokens
-/// of the scheme — nothing dimmed, and never terracotta.
+/// of the scheme — nothing dimmed, and never deep teal.
 #[test]
-fn chosen_and_focused_are_shapes_in_two_colours_and_never_terracotta() {
+fn chosen_and_focused_are_shapes_in_two_colours_and_never_deep_teal() {
     let machine = a_persons_machine("raster-shapes");
     let mut window = machine.opened();
     let strings = words();
@@ -89,14 +89,14 @@ fn chosen_and_focused_are_shapes_in_two_colours_and_never_terracotta() {
     );
 
     let palette = Palette::of(alo_appearance::Scheme::Light, Contrast::AsDesigned);
-    let terracotta = Token::DeepTeal.colour();
-    let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
+    let deep_teal = Token::DeepTeal.colour();
+    let deep_teal = [deep_teal.red(), deep_teal.green(), deep_teal.blue()];
     for solid in &drawn.solids {
         assert!(
             solid.colour == palette.ink || solid.colour == palette.ground,
             "{solid:?}"
         );
-        assert_ne!(solid.colour, terracotta);
+        assert_ne!(solid.colour, deep_teal);
     }
 
     // Waiting for a chord doubles the focused row's edge.

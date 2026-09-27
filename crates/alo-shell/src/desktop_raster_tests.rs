@@ -1,5 +1,5 @@
 //! The whole desktop on one display: the dock, the windows over the room it
-//! leaves, the colours `alo-appearance` decides, and never terracotta.
+//! leaves, the colours `alo-appearance` decides, and never deep teal.
 #![expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
@@ -75,13 +75,13 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
     colours
 }
 
-/// **Not one pixel of the desktop is terracotta**, with both windows open, for
+/// **Not one pixel of the desktop is deep teal**, with both windows open, for
 /// every accent a person can choose, light and dark, read either way — because
-/// terracotta means the agent and the desktop is not the agent.
+/// deep teal means the agent and the desktop is not the agent.
 #[test]
-fn no_pixel_on_the_desktop_is_terracotta() {
+fn no_pixel_on_the_desktop_is_deep_teal() {
     let (running, filling, _folder) = both_open();
-    let terracotta = rgb(Token::DeepTeal.colour());
+    let deep_teal = rgb(Token::DeepTeal.colour());
     let evening = TimeOfDay::checked(20, 0).unwrap();
     for accent in Accent::ALL {
         for now in [TimeOfDay::checked(9, 0).unwrap(), evening] {
@@ -95,8 +95,8 @@ fn no_pixel_on_the_desktop_is_terracotta() {
                 assert!(!picture.running.is_empty() && !picture.filling.is_empty());
                 let colours = every_colour(&picture);
                 assert!(
-                    !colours.contains(&terracotta),
-                    "{accent:?} at {now:?} {reading:?} painted terracotta"
+                    !colours.contains(&deep_teal),
+                    "{accent:?} at {now:?} {reading:?} painted deep teal"
                 );
                 assert!(colours.contains(&rgb(accent.on(look.scheme()))));
             }

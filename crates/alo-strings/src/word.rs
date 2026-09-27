@@ -142,7 +142,7 @@ mod tests {
 
     /// One of the words this repository actually has: a colour name, which is
     /// the shape a note exists for.
-    const TERRACOTTA: Word = Word::saying("appearance.token.terracotta", "Terracotta")
+    const DEEP_TEAL: Word = Word::saying("appearance.token.deep-teal", "Deep teal")
         .noting("The colour of fired clay: an orange-brown.");
 
     /// One with a gap in it, which is the other shape.
@@ -154,13 +154,13 @@ mod tests {
     #[test]
     fn a_word_carries_its_key_its_english_and_its_note() {
         assert_eq!(
-            TERRACOTTA.key(),
-            Key::named("appearance.token.terracotta").unwrap()
+            DEEP_TEAL.key(),
+            Key::named("appearance.token.deep-teal").unwrap()
         );
-        assert_eq!(TERRACOTTA.named(), "appearance.token.terracotta");
-        assert_eq!(TERRACOTTA.says(), "Terracotta");
+        assert_eq!(DEEP_TEAL.named(), "appearance.token.deep-teal");
+        assert_eq!(DEEP_TEAL.says(), "Deep teal");
         assert!(
-            TERRACOTTA
+            DEEP_TEAL
                 .note()
                 .is_some_and(|note| note.contains("fired clay"))
         );
@@ -171,9 +171,9 @@ mod tests {
     /// its note and its gaps intact.
     #[test]
     fn a_word_becomes_the_phrase_the_lookup_holds() {
-        let phrase = TERRACOTTA.phrase().unwrap();
-        assert_eq!(phrase.key(), &TERRACOTTA.key());
-        assert_eq!(phrase.source().as_written(), "Terracotta");
+        let phrase = DEEP_TEAL.phrase().unwrap();
+        assert_eq!(phrase.key(), &DEEP_TEAL.key());
+        assert_eq!(phrase.source().as_written(), "Deep teal");
         assert_eq!(
             phrase.note(),
             Some("The colour of fired clay: an orange-brown.")

@@ -2,10 +2,13 @@
 //!
 //! [ADR 0010](../../../docs/decisions/0010-terracotta-is-reserved-and-never-alone.md)
 //! settled that a signal carried by hue alone fails for anybody who cannot
-//! distinguish that hue, and it measured the reason: terracotta on cream is
-//! 2.87:1, under the 3.0:1 WCAG 2.1 §1.4.11 asks of a shape carrying meaning
-//! and well under the 4.5:1 EN 301 549 asks of ordinary text. So the agent
-//! never appears without a **mark** and a **word** beside its colour.
+//! distinguish that hue. It also measured terracotta, the colour it reserved,
+//! at 2.87:1 on cream — under the 3.0:1 WCAG 2.1 §1.4.11 asks of a shape
+//! carrying meaning. **Deep teal replaced terracotta and clears that at
+//! 5.78:1**, and the rule is unchanged, because the measurement was a second
+//! reason rather than the reason: a hue carries nothing to somebody who cannot
+//! distinguish it at any contrast. So the agent never appears without a
+//! **mark** and a **word** beside its colour.
 //!
 //! This indicator takes the same rule one step further, because it has three
 //! things to distinguish rather than one: each of the screen, the camera and

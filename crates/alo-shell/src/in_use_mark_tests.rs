@@ -44,7 +44,7 @@ fn cut_out(which: alo_in_use::Mark, side: i32) -> Vec<(i32, i32)> {
 ///
 /// Not "they are drawn with different code": the pixels each one cuts out of
 /// its fill are compared, so two shapes that happened to rasterise the same
-/// fail here. A person who cannot distinguish terracotta from navy is reading
+/// fail here. A person who cannot distinguish deep teal from navy is reading
 /// exactly this.
 #[test]
 fn the_screen_the_lens_and_the_microphone_are_three_different_shapes() {
@@ -115,12 +115,12 @@ fn each_mark_has_the_outline_its_name_says() {
     );
 }
 
-/// **In the designed palette the agent's mark is terracotta; in high contrast
+/// **In the designed palette the agent's mark is deep teal; in high contrast
 /// no colour tells it apart at all — which is why the dot and the word exist.**
 ///
 /// `Contrast::High` collapses every accent to that palette's one accent, on
-/// purpose, so the agent's terracotta and an application's navy are the same
-/// colour there. ADR 0010 is why that is safe: terracotta never arrives alone,
+/// purpose, so the agent's deep teal and an application's navy are the same
+/// colour there. ADR 0010 is why that is safe: deep teal never arrives alone,
 /// and what carries *the agent* when colour cannot is `Line::the_agents_dot`
 /// and the line's own sentence. A test that demanded colour do it would be
 /// asking high contrast to stop being high contrast.

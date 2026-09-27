@@ -9,14 +9,17 @@
 //!
 //! # Mark, word — and only then colour
 //!
-//! ADR 0010 measured why: terracotta on cream is 2.87:1, under the 3.0:1 WCAG
-//! 2.1 §1.4.11 asks of a shape that carries meaning. So a notification from the
+//! ADR 0010 measured terracotta, the colour it reserved, at 2.87:1 on cream —
+//! under the 3.0:1 WCAG 2.1 §1.4.11 asks of a shape that carries meaning. Deep
+//! teal replaced it and clears that at 5.78:1; the rule did not move, because a
+//! hue carries nothing to somebody who cannot distinguish it however legible it
+//! is. So a notification from the
 //! agent carries **the agent's mark** ([`Shown::the_agents_mark`]) and **says
 //! *the agent* in words** ([`Shown::sent_by`]) before its colour is looked at,
 //! and a machine whose colours were all one colour would still tell a person
 //! which notifications were the agent's.
 //!
-//! [`Shown::colour`] is terracotta exactly when the agent sent it, and the
+//! [`Shown::colour`] is deep teal exactly when the agent sent it, and the
 //! colour alo OS writes everything else in for everything else. There is no
 //! third case and no setting: an application is not the machine acting on the
 //! person's behalf, and drawing one as though it were would spend the one
@@ -70,7 +73,7 @@ impl Shown {
     /// Whether the agent's own mark — ADR 0010's small dot — is drawn beside
     /// it.
     ///
-    /// True exactly when it is terracotta, because ADR 0010 says the two
+    /// True exactly when it is deep teal, because ADR 0010 says the two
     /// arrive together or not at all.
     #[must_use]
     pub const fn the_agents_mark(&self) -> bool {
@@ -80,13 +83,13 @@ impl Shown {
     /// Who it is from, said in the language the person reads.
     ///
     /// The agent's says *the agent* in so many words, which is what carries
-    /// the signal to somebody who cannot tell terracotta from anything else.
+    /// the signal to somebody who cannot tell deep teal from anything else.
     #[must_use]
     pub fn sent_by(&self, strings: &Strings) -> Said {
         self.notification.sent_by(strings)
     }
 
-    /// The colour it is drawn in: terracotta for the agent, and the colour
+    /// The colour it is drawn in: deep teal for the agent, and the colour
     /// everything else on the machine is written in for everything else.
     ///
     /// Reserved (ADR 0010), and carrying nothing the mark and the sentence do
@@ -123,10 +126,10 @@ mod tests {
         assert_eq!(shown.colour(), Token::DeepTeal);
     }
 
-    /// **Nobody else is terracotta**, and nobody else carries the agent's
+    /// **Nobody else is deep teal**, and nobody else carries the agent's
     /// mark — not an application, and not alo OS itself.
     #[test]
-    fn nobody_else_is_terracotta_and_nobody_else_carries_the_mark() {
+    fn nobody_else_is_deep_teal_and_nobody_else_carries_the_mark() {
         let strings = in_english();
         for notification in [
             a_notification_titled("Anna Pärt"),
