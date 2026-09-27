@@ -53,11 +53,26 @@ impl TheEvaluator for NeverAsked {
 /// written on, so the only way to show what a child process really received is
 /// to be the child process.
 #[cfg(unix)]
+/// A program of this run's own, never a fixed name in a shared directory.
+///
+/// **The process id is the whole point.** `fs.protected_regular` is 2 on Ubuntu
+/// and the temporary directory is sticky and world-writable, so a regular file
+/// there owned by a *different* user cannot be opened for writing — and that
+/// refusal does not exempt root. The gate runs as root and a person runs as
+/// themselves, so a fixed name here locked whichever of the two ran second out of
+/// this crate entirely, permanently, until somebody deleted the file by hand. It
+/// also raced itself: `cargo test --workspace` can run two copies of one test
+/// binary, and one truncated this script while the other was starting it, which
+/// arrives as `Text file busy` and looks nothing like the same fault.
+///
+/// `tempfile::tempdir()` is the better shape still, because it removes itself; it
+/// wants the guard returned rather than a path, which is a larger change than the
+/// one that stops the lock. `docs/quirks.md` carries the mechanism.
 fn a_program_that_prints_its_environment(named: &str) -> PathBuf {
     use std::io::Write as _;
     use std::os::unix::fs::PermissionsExt as _;
 
-    let program = std::env::temp_dir().join(format!("{named}.sh"));
+    let program = std::env::temp_dir().join(format!("{named}-{}.sh", std::process::id()));
     let mut written = std::fs::File::create(&program).expect("a program to start");
     written
         .write_all(b"#!/bin/sh\nexec /usr/bin/env\n")

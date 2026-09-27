@@ -224,7 +224,8 @@ mod tests {
 
     /// A directory of this test's own, empty.
     fn a_directory_of_its_own(named: &str) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!("alo-software-road-{named}"));
+        let directory =
+            std::env::temp_dir().join(format!("alo-software-road-{named}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&directory);
         std::fs::create_dir_all(&directory).unwrap();
         directory

@@ -85,7 +85,8 @@ fn a_proxy_that_asks_who_you_are() -> TheProxy {
 
 /// A directory of this test's own, empty.
 fn a_directory_of_its_own(named: &str) -> PathBuf {
-    let directory = std::env::temp_dir().join(format!("alo-software-{named}"));
+    let directory =
+        std::env::temp_dir().join(format!("alo-software-{named}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&directory);
     std::fs::create_dir_all(&directory).expect("a directory");
     directory
@@ -147,7 +148,7 @@ fn a_program_that_prints_its_environment(named: &str) -> PathBuf {
     use std::io::Write as _;
     use std::os::unix::fs::PermissionsExt as _;
 
-    let program = std::env::temp_dir().join(format!("{named}.sh"));
+    let program = std::env::temp_dir().join(format!("{named}-{}.sh", std::process::id()));
     let mut written = std::fs::File::create(&program).expect("a program to start");
     written
         .write_all(b"#!/bin/sh\nexec /usr/bin/env\n")
