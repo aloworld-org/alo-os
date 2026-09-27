@@ -1002,3 +1002,69 @@ assembled would measure the assembler.
   the deliverable is *this machine cannot open it* with the reason (task 4), and
   the format does not join `Conversion::EVERY`. Nothing is uploaded, and nothing
   names the engine where a person reads.
+
+### 11. The engine is pinned and the fonts it reads are not
+
+**Status:** ready, and **this is the only lane that can measure it**. **Depends
+on:** 10.
+
+**Found 2026-09-27 as an intermittent failure that no other lane can see.**
+`an_older_word_document_is_converted_and_what_it_lost_is_named` sometimes reports
+`FontSubstituted("Garamond")` **and** `FontSubstituted("Liberation Serif")`
+where it expects Garamond alone — and sometimes passes, on the same machine, with
+the pinned engine present and no skip taken.
+
+**Corrected the same day**: this was first written up as a standing red. It is
+not. Four runs on this machine produced both outcomes, so the report is not
+stable even where the host is. That makes the finding stronger rather than
+weaker: a loss report that gives different answers on one unchanged host is a
+worse thing to ship than one that is merely wrong, because no amount of reading
+it twice tells a person which answer is true. Whatever the cause turns out to
+be — a font cache warmed by another test, ordering under a parallel run, the
+engine's own first-start behaviour — it is a property of the environment the
+engine reads, which is what this task is about.
+
+**Why no one else saw it.** `this_machine_cannot_run_the_engine()` asks exactly
+one path, `alo_converting::engine::THE_ENGINE` =
+`/opt/libreoffice26.2/program/soffice`, and does not search `PATH`. The pinned
+engine has no aarch64 build (task 10), so the Mac lane skips all eight
+conversion tests and reports them passed — which is intended and recorded, but
+means a converting result from that lane is an absence, not an agreement. It was
+read as agreement once today, by both lanes, until the one `ls` was run.
+
+**The mechanism, which is the part worth having.** The fixtures README says the
+documents set their text in Garamond, *"which **the image** does not ship"* — so
+the expected loss was written against the font set of the pinned **image**. But
+the test runs the engine **installed on the host**, and an engine installed on a
+host resolves fonts through that host's fontconfig. On this machine: Garamond
+absent, Times New Roman absent, Liberation Serif present in four faces, no
+msttcorefonts, and `fc-match "Times New Roman"` returns Liberation Serif.
+
+So the binary is pinned and the environment it reads is not. `ADR 0011` pins the
+engine; nothing pins what the engine resolves against, and the standing rule that
+engines run as pinned containers is what closes that gap — a host install does
+not.
+
+**Why this is a product question and not a test question.** `lost()` is the
+answer a **person** is given about what their document lost. If it varies with
+the host's fonts, two people converting the same file are told different things,
+and neither can be told what to install to get the right answer. In a product
+whose claim is replacing Microsoft 365, a conversion-loss report that depends on
+which Microsoft-compatible fonts happen to be installed is the wrong way round.
+
+- **Acceptance:** the loss report for a given document is the same on any machine
+  that runs the pinned engine, and a test demonstrates that by producing it
+  **through the image** rather than through whatever LibreOffice the host has.
+  Where a host install is used for speed, the test says so and does not assert an
+  exact loss set against it.
+- **Constraint:** do not "fix" this by installing fonts on the lanes. The report
+  is not monotone in font availability — adding a metric-compatible family
+  changes which substitutions are reported, in a direction that cannot be
+  predicted from the font list — so a font install would move the red rather than
+  remove it.
+- **Not owed here:** whether `FontName` carries the font **requested** or the one
+  **substituted in**. Garamond is clearly the requested one; Liberation Serif is
+  present on this host, so its appearance in the list suggests the two cases do
+  not agree. Worth establishing first, because it decides whether the extra entry
+  is a second substitution or the same one named differently.
+
