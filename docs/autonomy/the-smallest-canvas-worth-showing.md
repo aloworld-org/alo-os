@@ -133,16 +133,33 @@ pixels at half zoom moves it 200 plane units.
 - **Acceptance:** dragging at three zoom levels moves the frame by the pointer's
   own distance in plane units, and a press inside the content never moves it.
 
-#### The arithmetic arrived with task 2; the gesture did not (2026-09-27)
+#### The first clause is held; the handle is what is left (2026-09-27)
 
-`Surfaces::window_press` records a press in plane units and `pointer_motion` hands
-`move_window_pointer` the same converted point, so `origin + (pointer - press)` is
-already entirely in plane units and a drag of a hundred screen pixels at half zoom
-already moves a frame two hundred of them. **Untested at any zoom but life size**,
-which is the first half of this task's acceptance and is now a test rather than an
-implementation. What is genuinely missing is the title area: a press anywhere in a
-window can begin an XDG move today, so *a press inside the content never moves it*
-is the part with work behind it.
+**Held:** *dragging at three zoom levels moves the frame by the pointer's own
+distance in plane units*, by
+`crates/alo-shell/tests/dragging_a_frame/mod.rs` — a drag of 150 screen pixels
+becomes 375 plane units at 40 per cent, 150 at life size and 60 at 250 per cent, at
+two pan offsets. The arithmetic arrived with task 2, because `window_press` records
+a press in plane units and `pointer_motion` hands the drag the same converted
+point; nothing checked it above life size until now. Proved to bite: feed the drag
+screen pixels and the frame moves 25 units where it owes 375.
+
+**Not held, and the rest of this task:** *a press inside the content never moves
+it.* It is **false today** — a client's `xdg_toplevel.move` is honoured from a
+press anywhere in its window, which is the only drag that exists and the one the
+test above uses. It also cannot be held by removing that drag: a frame nothing can
+move satisfies the clause perfectly, which is the shape of check this plan's own
+constraints keep warning about.
+
+ADR 0065 already decides where the handle goes, so this needs no new decision —
+*handles, not chrome*: **the name is the handle, and so is the frame's edge. Inside
+the frame every click belongs to the application, so nothing is moved by
+accident.** Neither exists yet. `WindowControlLayout` is three 32x32 buttons at an
+origin the host chooses and says outright that it *does not choose decoration
+policy or reserve client space*, so there is no strip to widen into a title bar —
+which is correct, because ADR 0065 removed the strip rather than moving it. What
+this task owes is a grabbable name above a frame and a grabbable edge band around
+it, and then the refusal of an XDG move authorised by a press in the content.
 
 ### 4. Resizing, and the application told as it happens
 

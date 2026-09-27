@@ -41,8 +41,9 @@
     reason = "an unexpected None or Err here is the failure this test reports"
 )]
 
-use super::{Application, Fixture};
-use alo_canvas::{At, Zoom};
+use super::support::{
+    Application, Fixture, THREE_ZOOMS, TWO_PANS, close_enough, looking, motion, on_the_screen,
+};
 use smithay::backend::input::ButtonState;
 use wayland_client::Proxy;
 
@@ -61,57 +62,6 @@ fn mapped(f: &Fixture) -> Application {
     app.sync();
     app
 }
-
-/// Look at the plane from exactly here, at exactly this zoom.
-///
-/// The zoom is set while the camera is at the origin and held at the viewport's
-/// own corner, so the pointer-centred arithmetic leaves the camera where it is;
-/// the pan is then set outright. Both are read back, because a camera that refused
-/// one of the two would otherwise make the case below a case about life size.
-fn looking(f: &Fixture, at: (i32, i32), zoom: u32) {
-    f.backend(move |s| {
-        assert!(s.look_at_the_canvas(At::origin()).is_some());
-        let zoom = Zoom::of(zoom).expect("a zoom inside the canvas's own bounds");
-        assert!(s.zoom_the_canvas(zoom, (0, 0)).is_some());
-        let at = At::checked(at.0, at.1).expect("a place on the plane");
-        assert!(s.look_at_the_canvas(at).is_some());
-        assert_eq!(s.the_camera().zoom(), zoom, "the camera refused the zoom");
-        assert_eq!(s.the_camera().at(), at, "the camera refused the pan");
-    });
-}
-
-/// Where a point of a frame at `origin` appears on the screen, under this camera.
-///
-/// Written out here rather than asked of the compositor: this is the sentence the
-/// person experiences — *the middle of that window is there on the glass* — and
-/// the test is worth nothing if it borrows the answer from the code it checks.
-fn on_the_screen(point: (f64, f64), origin: (i32, i32), at: (i32, i32), zoom: u32) -> (f64, f64) {
-    let scale = f64::from(zoom) / 1000.0;
-    (
-        (point.0 + f64::from(origin.0) - f64::from(at.0)) * scale,
-        (point.1 + f64::from(origin.1) - f64::from(at.1)) * scale,
-    )
-}
-
-/// Move the pointer there, in the screen's own pixels.
-fn motion(f: &Fixture, (x, y): (f64, f64)) {
-    assert!(f.backend(move |s| s.pointer_motion(x, y, 7)).is_ok());
-}
-
-/// A pointer coordinate a client was told, to within Wayland's own fixed point.
-///
-/// `wl_fixed` is 1/256 of a unit, so an exact comparison would be a test of the
-/// order this crate's divisions happen in rather than of where the arrow was.
-fn close_enough(got: (f64, f64), want: (f64, f64)) -> bool {
-    const A_FRACTION_OF_A_UNIT: f64 = 2.0 / 256.0;
-    (got.0 - want.0).abs() <= A_FRACTION_OF_A_UNIT && (got.1 - want.1).abs() <= A_FRACTION_OF_A_UNIT
-}
-
-/// The zooms the plan names, and life size between them.
-const THREE_ZOOMS: [u32; 3] = [400, 1000, 2500];
-
-/// Two pans, one of them off the plane's origin in both directions.
-const TWO_PANS: [(i32, i32); 2] = [(0, 0), (-37, 64)];
 
 /// **The middle of a window is where it looks, at every zoom and pan.**
 #[test]

@@ -6,6 +6,7 @@ mod cursor;
 mod direct_keyboard;
 mod direct_pointer;
 mod direct_seat;
+mod dragging_a_frame;
 mod input;
 mod interactive_resize;
 mod output_metadata;
