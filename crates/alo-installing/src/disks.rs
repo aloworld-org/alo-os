@@ -238,7 +238,10 @@ mod tests {
     #[test]
     fn an_empty_second_disk_may_be_written() {
         let disks = Disks::read(THE_TEST_MACHINE).unwrap();
-        assert_eq!(disks.may_receive(Path::new("/dev/vdb"), Replacing::Nothing), Ok(()));
+        assert_eq!(
+            disks.may_receive(Path::new("/dev/vdb"), Replacing::Nothing),
+            Ok(())
+        );
     }
 
     /// **The disk the installer runs from is refused as that**, even though it

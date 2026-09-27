@@ -169,13 +169,15 @@ fn before_writing(
             &the_disk(disk.as_str()),
         ));
     }
-    listed.may_receive(&device, replacing).map_err(|why| match why {
-        Unsuitable::NotListed => Refusal::DiskNotConnected(disk.clone()),
-        Unsuitable::NotAWholeDisk => Refusal::NotAWholeDisk(disk.as_str().to_owned()),
-        Unsuitable::HoldsThisInstaller => Refusal::HoldsThisInstaller(disk.clone()),
-        Unsuitable::HoldsAnotherSystem => Refusal::HoldsAnotherSystem(disk.clone()),
-        Unsuitable::CannotBeWritten => Refusal::CannotBeWritten(disk.clone()),
-    })?;
+    listed
+        .may_receive(&device, replacing)
+        .map_err(|why| match why {
+            Unsuitable::NotListed => Refusal::DiskNotConnected(disk.clone()),
+            Unsuitable::NotAWholeDisk => Refusal::NotAWholeDisk(disk.as_str().to_owned()),
+            Unsuitable::HoldsThisInstaller => Refusal::HoldsThisInstaller(disk.clone()),
+            Unsuitable::HoldsAnotherSystem => Refusal::HoldsAnotherSystem(disk.clone()),
+            Unsuitable::CannotBeWritten => Refusal::CannotBeWritten(disk.clone()),
+        })?;
 
     let connecting = strings.say(&words::CONNECTING.key(), &Filling::nothing());
     machine.say(&connecting);
