@@ -62,9 +62,13 @@ impl Server {
             return Err(InputError::InvalidPointer);
         }
         self.surfaces.prune_pointer_focus();
-        let location = (x, y).into();
-        if self.surfaces.move_window_pointer(location)?
-            || self.surfaces.resize_window_pointer(location)?
+        // `location` is the screen's, which is what is stored; `on_the_plane` is
+        // the same point in a frame's own units, which is what a frame, a drag and
+        // a resize are told. Converted once, here, rather than at each reader.
+        let location: Point<f64, Logical> = (x, y).into();
+        let on_the_plane = self.surfaces.on_the_plane(location);
+        if self.surfaces.move_window_pointer(on_the_plane)?
+            || self.surfaces.resize_window_pointer(on_the_plane)?
         {
             if let Some(pointer) = self.surfaces.pointer.as_mut() {
                 pointer.location = location;
@@ -81,11 +85,15 @@ impl Server {
         pointer.location = location;
         pointer.time = time;
         let handle = pointer.handle.clone();
+        // Plane units on both sides: the focus origin above came back in them, and
+        // Smithay sends a client the difference. A screen position against a plane
+        // origin would put the pointer inside the window by the wrong amount at
+        // every zoom but life size, which is the one zoom a test forgets.
         handle.motion(
             &mut self.surfaces,
             focus,
             &MotionEvent {
-                location,
+                location: on_the_plane,
                 serial: SERIAL_COUNTER.next_serial(),
                 time,
             },
@@ -234,37 +242,56 @@ impl Server {
 
     /// Scene hits are shared by motion and explicit-grab outside-click policy.
     ///
-    /// # Nothing is hit at any zoom but life size, and that is a refusal
+    /// # Two spaces, and this is the one conversion between them
     ///
-    /// `crate::scene::trees` answers in screen pixels, and the surface-local
-    /// coordinate a client is sent is derived by subtracting that origin from the
-    /// pointer's own location. Exact at life size; at 40 % the two are in
-    /// different units and the answer is not a surface coordinate at all. So this
-    /// refuses instead: a pointer that does nothing while a person is zoomed out
-    /// is visibly unfinished, and a pointer that lands in the wrong place — or in
-    /// the right window at the wrong spot — is a compositor a person cannot
-    /// trust and cannot diagnose.
+    /// `location` arrives in **screen pixels**, which is what a backend reports
+    /// and the space the arrow and the window-control strip live in. What comes
+    /// back is a surface and that surface's origin in **the plane's own units**,
+    /// because that origin is subtracted from a client's pointer position and a
+    /// client is never told about the canvas — at 40 % its window is 16 of its
+    /// own units wide and about 6 pixels tall on the glass, and only one of those
+    /// two numbers means anything inside the application.
     ///
-    /// This is `docs/autonomy/the-smallest-canvas-worth-showing.md` task 2, *a
-    /// frame is where it looks, at any zoom*, whose arithmetic already exists and
-    /// is tested in `alo_canvas::Camera`. What it owes is the pointer's own units,
-    /// which the window controls and the resize gesture read as well, and which
-    /// are not one division.
+    /// The camera's pan needs no term here: `crate::scene::trees` has already put
+    /// it into every origin, and dividing the pointer and the origins by the same
+    /// zoom cancels it exactly. So a pan is held in one place and a zoom in one
+    /// place, and neither is applied twice.
     fn pointer_target(
         &self,
         location: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
-        if self.camera.zoom() != alo_canvas::Zoom::LIFE_SIZE {
-            return None;
-        }
+        let on_the_plane = self.surfaces.on_the_plane(location);
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
             .into_iter()
             .find_map(|(root, origin)| {
-                under_from_surface_tree(&root, location - origin, (0, 0), WindowSurfaceType::ALL)
-                    .map(|(surface, offset)| (surface, origin + offset.to_f64()))
+                let origin = self.surfaces.on_the_plane(origin);
+                under_from_surface_tree(
+                    &root,
+                    on_the_plane - origin,
+                    (0, 0),
+                    WindowSurfaceType::ALL,
+                )
+                .map(|(surface, offset)| (surface, origin + offset.to_f64()))
             })
             .filter(|(surface, _)| self.surfaces.popup_allows_pointer(surface))
+    }
+}
+
+impl Surfaces {
+    /// A screen point in the units a frame on the plane is measured in.
+    ///
+    /// **The inverse of the zoom `crate::scene::trees` applied, and nothing
+    /// else.** The pan is already in the origins this is compared against, so
+    /// adding the camera's own position here would apply it twice.
+    ///
+    /// This is the seam `docs/autonomy/the-smallest-canvas-worth-showing.md`
+    /// task 2 is about. A viewport surface never calls it — the dock and the
+    /// status area are laid out from the output's size, a zoom does not resize
+    /// them, and a control that converted a pointer would be compensating for a
+    /// transform it is not under.
+    pub(crate) fn on_the_plane(&self, screen: Point<f64, Logical>) -> Point<f64, Logical> {
+        screen.downscale(crate::scene::drawn_at(self.popups.camera))
     }
 }
 
@@ -322,12 +349,21 @@ impl Surfaces {
     pub(crate) fn clear_pointer(&mut self) -> Result<(), InputError> {
         self.window_move = None;
         self.cancel_window_resize();
+        // Plane units, like every other motion this crate dispatches. The focus is
+        // `None` in both sends below, so no client reads this coordinate — but a
+        // location in the other space here would be the one that survived a later
+        // change to these two calls. Read before the mutable borrow, because the
+        // conversion asks this same `Surfaces` where the camera is.
+        let location = self
+            .pointer
+            .as_ref()
+            .map(|pointer| self.on_the_plane(pointer.location))
+            .ok_or(InputError::PointerUnavailable)?;
         let pointer = self
             .pointer
             .as_mut()
             .ok_or(InputError::PointerUnavailable)?;
         let handle = pointer.handle.clone();
-        let location = pointer.location;
         let time = pointer.time;
         let buttons = std::mem::take(&mut pointer.buttons);
         pointer.popup_release = None;

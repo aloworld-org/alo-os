@@ -6,14 +6,30 @@
 //! # Where the transform is applied, and why only there
 //!
 //! `crate::scene::trees` — once, for every window. Three roads read that list:
-//! the drawing, the pointer's hit test and popup placement. The pointer
-//! **subtracts** the origin it is given, so moving it there moves what is drawn
-//! and what can be clicked by the same amount, in the same arithmetic, with
-//! nothing to keep in step.
+//! the drawing, the pointer's hit test and popup placement. It answers in **screen
+//! pixels**, with the pan and the zoom both in it, so what is drawn and what can
+//! be clicked move by the same amount in the same arithmetic, with nothing to keep
+//! in step.
 //!
-//! A camera applied in the drawing alone would put every window's pixels
-//! somewhere its clicks are not — and it would pass a test that only looked at
-//! where the pixels went.
+//! A camera applied in the drawing alone would put every window's pixels somewhere
+//! its clicks are not — and it would pass a test that only looked at where the
+//! pixels went. That is not hypothetical: the first landing of this seam applied
+//! the zoom to each frame's *size* and not to where the frame was, and drew one of
+//! two windows because the second was scaled correctly onto a screen position it
+//! never had.
+//!
+//! The pointer converts back, once, in `Surfaces::on_the_plane`: a client is told
+//! its size and given its events in its own units, and is never told about the
+//! canvas. The pan needs no term in that conversion, because dividing the pointer
+//! and the origins by the same zoom cancels it exactly.
+//!
+//! # A fourth road reads the camera, and it is a display
+//!
+//! [`crate::FrameTarget::look_at`], called once a frame, because the backend that
+//! paints the plane has no `Server` to ask. Its default **refuses** a camera it
+//! cannot draw rather than drawing the plane unmoved. The first version of this
+//! seam had no such method: `Nested` held a copy whose rustdoc said it was kept in
+//! step by whoever submitted, and nothing did.
 //!
 //! # What does not read it, which is the whole point
 //!
@@ -25,13 +41,15 @@
 //! `crates/alo-shell/tests/one_plane_under_one_viewport.rs` holds it by reading
 //! this crate rather than by looking at where anything ended up.
 //!
-//! # The zoom is held and not yet drawn
+//! # What is still owed
 //!
-//! A [`alo_canvas::Zoom`] can be set and is carried, and `crate::drawing` has no
-//! scaling path at all — so the frames do not change size yet. That is named in
-//! the plan's inventory as the expensive half of this task, and it is written here
-//! too, because a camera that accepted a zoom and silently ignored it is worse
-//! than one that refused.
+//! Dragging and resizing a frame — the plan's tasks 3 and 4. Both already work in
+//! plane units, because `Surfaces::window_press` records a press there and
+//! `pointer_motion` hands the gestures the same converted point, so a drag of a
+//! hundred screen pixels at half zoom already moves a frame two hundred plane
+//! units. What those tasks owe is the rest of their acceptance — a title area that
+//! drags and a content area that does not, and an application told its new size as
+//! it happens — not the arithmetic.
 
 use alo_canvas::{At, Camera, Zoom};
 
@@ -68,8 +86,7 @@ impl crate::Server {
 
     /// Zoom to this, keeping the plane point under `held` where it is.
     ///
-    /// Pointer-centred, which is `alo-canvas`' own arithmetic. **What is drawn
-    /// does not change size yet**: see this file's header.
+    /// Pointer-centred, which is `alo-canvas`' own arithmetic.
     ///
     /// # Errors
     /// [`None`] where the resulting camera would leave the plane.
