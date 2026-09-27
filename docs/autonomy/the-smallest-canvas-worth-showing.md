@@ -126,7 +126,7 @@ still be right at 40% and at 250%.
 
 ### 3. Dragging a frame
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-27.** See below. **Depends on:** 2.
 
 Dragged by its title area, so a press inside the content always belongs to the
 application. The frame moves with the pointer at any zoom — a drag of 100 screen
@@ -135,46 +135,58 @@ pixels at half zoom moves it 200 plane units.
 - **Acceptance:** dragging at three zoom levels moves the frame by the pointer's
   own distance in plane units, and a press inside the content never moves it.
 
-#### The first clause is held; the handle is what is left (2026-09-27)
+#### Done, except the resize half of its refusal (2026-09-27)
 
-**Held:** *dragging at three zoom levels moves the frame by the pointer's own
-distance in plane units*, by
-`crates/alo-shell/tests/dragging_a_frame/mod.rs` — a drag of 150 screen pixels
-becomes 375 plane units at 40 per cent, 150 at life size and 60 at 250 per cent, at
-two pan offsets. The arithmetic arrived with task 2, because `window_press` records
-a press in plane units and `pointer_motion` hands the drag the same converted
-point; nothing checked it above life size until now. Proved to bite: feed the drag
-screen pixels and the frame moves 25 units where it owes 375.
+**Status:** **Done, 2026-09-27**, for everything this task's acceptance names.
 
-**Not held, and the rest of this task:** *a press inside the content never moves
-it.* It is **false today** — a client's `xdg_toplevel.move` is honoured from a
-press anywhere in its window, which is the only drag that exists and the one the
-test above uses. It also cannot be held by removing that drag: a frame nothing can
-move satisfies the clause perfectly, which is the shape of check this plan's own
-constraints keep warning about.
+*Dragging at three zoom levels moves the frame by the pointer's own distance in
+plane units* — a drag of 150 screen pixels becomes 375 plane units at 40 per cent,
+150 at life size and 60 at 250 per cent, at two pan offsets.
 
-ADR 0065 already decides where the handle goes, so this needs no new decision —
-*handles, not chrome*: **the name is the handle, and so is the frame's edge. Inside
-the frame every click belongs to the application, so nothing is moved by
-accident.** Neither exists yet. `WindowControlLayout` is three 32x32 buttons at an
-origin the host chooses and says outright that it *does not choose decoration
-policy or reserve client space*, so there is no strip to widen into a title bar —
-which is correct, because ADR 0065 removed the strip rather than moving it. What
-this task owes is a grabbable name above a frame and a grabbable edge band around
-it, and then the refusal of an XDG move authorised by a press in the content.
+*A press inside the content never moves it* — held in the **same** test, on the
+same frame, at the place the drag just left it, because a frame nothing can move
+satisfies that clause perfectly and the refusal is worth nothing except beside a
+move that has been shown to work. The content press comes second so a refusal
+cannot be mistaken for a frame that was already stuck.
 
-**And one question ADR 0065 does not settle, which this task must not answer for
-itself.** The ADR says *dragging an edge or a corner resizes it* in one paragraph
-and *the name is the handle, and so is the frame's edge* in its table two
-paragraphs later — and task 4 below says resizing is *from the edges and the
-corners*. The edge is therefore claimed by moving and by resizing, on the same
-pixels. One reading reconciles them: the **edge band moves** a frame and the
-**handles shown when it is selected resize** it, which is how a design canvas
-behaves and which leaves task 4's sentence true. That is a reading, not a decision,
-and adopting it in a source file would settle the boundary between tasks 3 and 4
-wherever the first gesture happened to be written. It wants an ADR of its own, or a
-sentence from the owner, before either gesture is built — and it blocks the second
-half of this task rather than the first, which is why the first landed alone.
+The handle is the name, per ADR 0071. A frame's name is
+`Server::the_name_of` — the title, then the app id, then
+`alo_access::words::AN_APPLICATION`, the phrase the accessibility tree already
+reads for a window. `xdg_toplevel.set_title` was never read in this crate;
+smithay held it all along. The band is `crate::frame_handle`, **forty-eight** pixels
+on the glass rather than on the plane: a band in plane units would shrink to under
+three pixels at the furthest zoom, and zoomed out is exactly when a person is
+moving frames, so the handle would vanish when it was wanted.
+
+Forty-eight because `docs/design/the-canvas-in-numbers.md` gives it, read off the
+design file at Figma node `70:29`. It was thirty-two for a day, derived from the
+width of a native window control with a paragraph explaining why thirty-two was
+sensible — while the document had carried forty-eight since before that paragraph
+existed. `crates/alo-shell/tests/the_frame_in_numbers.rs` now holds the constant to
+that document's own table row, which closes the gap the document names about
+itself: *nothing yet holds these to anything*. A number a design file already gives
+is not a number to derive.
+
+`xdg_toplevel.move` is refused **outright**, not merely when the press was in the
+content: that test would depend on mapping a serial back to where its press began,
+and an implicit grab is where that mapping stops being trustworthy. ADR 0071
+carries the reasoning and the cost.
+
+**Six existing tests were re-rooted rather than deleted**, because a
+shell-initiated move never touches the client and their subjects — cancellation,
+ownership, geometry tracking, invalid motion, a maximised frame refusing a drag,
+minimize cancelling one — are all still real. Two changed meaning and say so: the
+one that proved a press on a **subsurface** authorised a move of its root now
+proves it cannot, which is the sharpest case of the new rule, and the maximised
+case now also presses the band, because a frame in a window mode refuses the
+shell's road too.
+
+**Owed, and it is task 4's to land:** `xdg_toplevel.resize` is refused by the same
+argument and is **not refused yet**. Resizing from the left edge then the right
+composes into a translation, so leaving resize open leaves move reachable in two
+gestures — but nothing in the shell can resize yet, so refusing it now would leave
+a person unable to resize at all. It ships welded to task 4's edge gesture and
+cursor. Until then a client can still move itself that way.
 
 ### 4. Resizing, and the application told as it happens
 
@@ -186,6 +198,32 @@ drag is happening rather than at the end, and minimum sizes respected.
 - **Acceptance:** each edge and corner resizes; the application receives its
   size during the drag; a resize that would go below the application's minimum
   stops at it rather than being refused silently.
+
+#### What ADR 0071 hands this task (2026-09-27)
+
+The edges and the corners are **this task's**, and ADR 0071 settled the collision
+that made that ambiguous: ADR 0065 called the edge a resize handle in one paragraph
+and a move handle in its table two paragraphs later. The table was the loose one.
+
+Three things arrive here rather than in task 3:
+
+- **The cursor**, which is the part that makes the decision real rather than an
+  assertion about which pixels win: over an edge or a corner the cursor becomes the
+  **double-headed arrow for that direction**, and over the name it does not. That is
+  why a frame needs no furniture and still says what each part does. Four shapes
+  cover eight directions; the hotspot is the middle rather than the tip, unlike
+  `default_cursor`'s arrow.
+- **The shell's own edge and corner bands**, the same shape as the name's band in
+  `crate::frame_handle` — position from the plane, thickness on the glass.
+- **Refusing `xdg_toplevel.resize`**, which ADR 0071 decided and task 3 did not
+  land. It must arrive **with** the gesture above and never before it: nothing in
+  the shell can resize today, so refusing the client road first would leave a
+  person unable to resize anything. Until both land together, a client can still
+  move itself by resizing from the left edge and then the right, which composes
+  into a translation — the hole that decided the refusal in the first place.
+
+Refusing `resize` does not freeze a window's size. That request is the interactive,
+pointer-driven one; a client may still commit whatever size it likes.
 
 ### 5. Pan
 

@@ -200,22 +200,46 @@ fn window_maximize_and_pointer_operations_refuse_competing_ownership()
     let count = app.events.sizes.len();
     app.toplevel
         .resize(&seat, app.events.pointer.button_serial, ResizeEdge::TopLeft);
+    // Refused outright since ADR 0071, so this half no longer rests on the
+    // window being maximised. What does rest on it is the band press below: a
+    // frame in a window mode refuses the shell's own road too.
     app.toplevel._move(&seat, app.events.pointer.button_serial);
     app.sync();
     f.backend(|s| s.pointer_motion(9.0, 10.0, 6))?;
     app.sync();
     assert_eq!(app.events.sizes.len(), count);
     assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    f.backend(|s| s.pointer_button(0x110, Released, 61))?;
+    f.backend(|s| s.pointer_motion(4.0, -16.0, 62))?;
+    f.backend(|s| s.pointer_button(0x110, Pressed, 63))?;
+    f.backend(|s| s.pointer_motion(24.0, 4.0, 64))?;
+    assert_eq!(
+        origin(&f, &root),
+        (0.0, 0.0).into(),
+        "a maximised frame was dragged by its name"
+    );
+    f.backend(|s| s.pointer_button(0x110, Released, 65))?;
     f.backend(|s| s.pointer_button(0x110, Released, 7))?;
     maximize(&f, &root, false)?;
     ack(&mut app)?;
     app.surface.commit();
     app.sync();
-    f.backend(|s| s.pointer_motion(4.0, 5.0, 8))?;
+    // Take hold by the name, which is the only road to a drag now.
+    f.backend(|s| s.pointer_motion(4.0, -16.0, 8))?;
     f.backend(|s| s.pointer_button(0x110, Pressed, 9))?;
     app.sync();
-    app.toplevel._move(&seat, app.events.pointer.button_serial);
-    app.sync();
+    // **The band is alive**, asserted rather than assumed. The maximised case
+    // earlier requires a frame in a window mode *not* to move, and a hit test
+    // that found nothing at all would satisfy it — so the same gesture on a
+    // restored frame has to move it, here, in the same test. Without this the
+    // earlier assertion is true of a dead band as readily as of a refusing mode.
+    f.backend(|s| s.pointer_motion(24.0, 4.0, 91))?;
+    assert_eq!(
+        origin(&f, &root),
+        (20.0, 20.0).into(),
+        "the name band moved nothing on a restored frame, which would make the \
+         maximised case above pass for the wrong reason"
+    );
     assert_eq!(maximize(&f, &root, true), Err(WindowMaximizeError::Busy));
     f.backend(|s| s.pointer_button(0x110, Released, 10))?;
     assert!(maximize(&f, &root, true)?.is_some());

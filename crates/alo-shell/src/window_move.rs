@@ -3,9 +3,8 @@
 use crate::{InputError, surfaces::Surfaces};
 use smithay::{
     backend::input::ButtonState,
-    reexports::wayland_server::protocol::{wl_seat::WlSeat, wl_surface::WlSurface},
-    utils::{Logical, Point, Serial},
-    wayland::shell::xdg::ToplevelSurface,
+    reexports::wayland_server::protocol::wl_surface::WlSurface,
+    utils::{Logical, Point},
 };
 
 /// A compositor-owned drag, detached from client pointer delivery.
@@ -21,28 +20,42 @@ pub(crate) struct Move {
 }
 
 impl Surfaces {
-    /// Ignore requests lacking an active press on this exact root's tree.
-    pub(crate) fn start_window_move(
-        &mut self,
-        role: ToplevelSurface,
-        seat: WlSeat,
-        serial: Serial,
-    ) {
+    /// Take hold of this frame by the name above it.
+    ///
+    /// **The only road into this gesture**, and the shell's own — ADR 0071: the
+    /// edge and the corners resize, and the name above the frame moves it. There
+    /// is no serial and no seat here because there is no client request to
+    /// authorise: the press landed on the band above the frame, which belongs to
+    /// the shell and which no client was ever told about. See
+    /// `crate::frame_handle` for where that band is.
+    ///
+    /// Answers whether the frame was taken hold of. `false` where another gesture
+    /// or a menu already owns the pointer, where this root is not a live mapped
+    /// toplevel, or where there is no pointer to have pressed with.
+    pub(crate) fn start_move_from_the_name(&mut self, root: &WlSurface, button: u32) -> bool {
         self.prune();
-        let root = role.wl_surface();
-        let Some((pointer, buttons)) = self.window_press(root, &seat, serial) else {
-            return;
+        if self.window_move.is_some()
+            || self.window_resize.is_some()
+            || self.has_window_mode(root)
+            || self.popup_grab.is_some()
+            || self.mapped_toplevel(root).is_none()
+        {
+            return false;
+        }
+        let Some(location) = self.pointer.as_ref().map(|pointer| pointer.location) else {
+            return false;
         };
-        let movement = Move {
+        // Plane units, like the origin it will be compared against. The band was
+        // hit in screen pixels and a drag is measured on the plane; this is the
+        // same one conversion every other frame-side reader makes.
+        let press = self.on_the_plane(location);
+        self.window_move = Some(Move {
             root: root.clone(),
-            pointer,
+            pointer: press,
             origin: crate::window_buffer_origin(root) + crate::scene::geometry_origin(root),
-            buttons,
-        };
-        // Balance the client's press and leave before taking over. No synthetic
-        // release may subsequently authorize a popup or another move.
-        let _ = self.clear_pointer();
-        self.window_move = Some(movement);
+            buttons: vec![button],
+        });
+        true
     }
 
     /// Move before scene hit testing. Out-of-range motion changes no drag state.

@@ -15,15 +15,20 @@ fn window_minimize_cancels_move_and_resize_without_late_placement()
         let other = f
             .backend(|s| s.mapped_surfaces().nth(1).cloned())
             .ok_or("second missing")?;
-        f.backend(|s| s.pointer_motion(4.0, 5.0, 1))?;
-        assert!(f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?);
-        app.sync();
-        let seat = app.events.keyboard.seat.as_ref().ok_or("seat missing")?;
         if resize {
+            // A resize still begins with a press the application receives and a
+            // request it makes. ADR 0071 gives the edges to the shell as well, and
+            // that road arrives with the plan's task 4.
+            f.backend(|s| s.pointer_motion(4.0, 5.0, 1))?;
+            assert!(f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?);
+            app.sync();
+            let seat = app.events.keyboard.seat.as_ref().ok_or("seat missing")?;
             app.toplevel
                 .resize(seat, app.events.pointer.button_serial, ResizeEdge::TopLeft);
         } else {
-            app.toplevel._move(seat, app.events.pointer.button_serial);
+            // A move begins on the band above the frame, and reaches no client.
+            f.backend(|s| s.pointer_motion(4.0, -16.0, 1))?;
+            assert!(!f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?);
         }
         app.sync();
         minimize(&f, &other, true)?;
@@ -35,7 +40,8 @@ fn window_minimize_cancels_move_and_resize_without_late_placement()
         let target = root.clone();
         let before = f.backend(move |_| alo_shell::window_buffer_origin(&target));
         if !resize {
-            assert_eq!(before, (10.0, 10.0).into());
+            // Anchored at the band press, (4, -16), rather than at (4, 5).
+            assert_eq!(before, (10.0, 31.0).into());
         }
         minimize(&f, &root, true)?;
         app.sync();
