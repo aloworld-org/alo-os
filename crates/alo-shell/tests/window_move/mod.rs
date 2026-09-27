@@ -7,10 +7,22 @@ use smithay::{
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
 };
-use wayland_client::protocol::{wl_keyboard, wl_pointer};
+use wayland_client::protocol::wl_keyboard;
 
+/// **A press on a subsurface cannot move the frame, and a drag survives an
+/// unrelated unmap.**
+///
+/// This test used to prove the opposite of its first half: a press on a child
+/// surface *authorised* a move of its root, by walking up the tree to find it.
+/// ADR 0071 removed that road — the name above a frame is what moves it — and a
+/// child press is the sharpest case of the rule it replaced it with, because a
+/// subsurface is as deep inside an application as a press can land. Renamed
+/// rather than deleted: the same sequence now holds the refusal.
+///
+/// Its second half is unchanged in substance and re-rooted on the gesture that
+/// exists: another client unmapping must not disturb a drag in progress.
 #[test]
-fn window_move_accepts_a_child_press_and_survives_unrelated_unmap() {
+fn a_press_on_a_subsurface_cannot_move_the_frame_and_a_drag_survives_an_unrelated_unmap() {
     let f = fixture();
     let mut app = mapped(&f);
     let root = f.root();
@@ -18,21 +30,38 @@ fn window_move_accepts_a_child_press_and_survives_unrelated_unmap() {
     app.surface.commit();
     app.sync();
     let mut other = mapped(&f);
+
+    // Deep inside the application, on a surface of its own.
     assert!(f.backend(|s| s.pointer_motion(25.0, 33.0, 1)).is_ok());
     assert_eq!(
         f.backend(|s| s.pointer_button(0x110, Pressed, 2)).ok(),
-        Some(true)
+        Some(true),
+        "a press on a subsurface was not delivered to the application"
     );
     app.sync();
     let serial = app.events.pointer.button_serial;
     request(&mut app, serial);
+    assert!(f.backend(|s| s.pointer_motion(35.0, 43.0, 3)).is_ok());
+    assert_eq!(
+        origin(&f, &root),
+        (0.0, 0.0),
+        "a press on a subsurface moved the frame, and everything inside a frame \
+         belongs to the application"
+    );
+    assert_eq!(
+        f.backend(|s| s.pointer_button(0x110, Released, 4)).ok(),
+        Some(true)
+    );
+
+    // And the drag that does work is not disturbed by another client leaving.
+    take_hold(&f, &mut app);
     other.surface.attach(None, 0, 0);
     other.surface.commit();
     other.sync();
-    assert!(f.backend(|s| s.pointer_motion(35.0, 43.0, 3)).is_ok());
-    assert_eq!(origin(&f, &root), (10.0, 10.0));
+    assert!(f.backend(|s| s.pointer_motion(35.0, 43.0, 5)).is_ok());
+    assert_eq!(origin(&f, &root), (31.0, 59.0));
     assert_eq!(
-        f.backend(|s| s.pointer_button(0x110, Released, 4)).ok(),
+        f.backend(|s| s.pointer_button(0x110, Released, 6)).ok(),
         Some(false)
     );
 }
@@ -69,11 +98,34 @@ fn origin(f: &Fixture, root: &WlSurface) -> (f64, f64) {
     })
 }
 
+/// Ask to be moved, the way a client with its own title bar does.
+///
+/// **Refused since ADR 0071**: the shell owns the name above a frame, so a client
+/// holding a serial for a press inside its own content is asking on behalf of
+/// something that belongs to it. Kept here because the refusal is worth
+/// asserting.
 fn request(app: &mut Application, serial: u32) {
     assert!(app.events.keyboard.seat.is_some());
     if let Some(seat) = &app.events.keyboard.seat {
         app.toplevel._move(seat, serial);
     }
+    app.sync();
+}
+
+/// Take hold of the frame by the name above it, which is the only road now.
+///
+/// The band sits directly against the frame's own top edge, so a press there is
+/// the shell's: it reaches no client, `pointer_button` answers `false`, and the
+/// application is told nothing at all. That is the difference from the old road,
+/// which began with a press the client received and then had to have balanced by
+/// a synthetic release and a leave.
+fn take_hold(f: &Fixture, app: &mut Application) {
+    assert!(f.backend(|s| s.pointer_motion(4.0, -16.0, 1)).is_ok());
+    assert_eq!(
+        f.backend(|s| s.pointer_button(0x110, Pressed, 2)).ok(),
+        Some(false),
+        "a press on the name was delivered to a client, and the name is the shell's"
+    );
     app.sync();
 }
 
@@ -100,22 +152,22 @@ fn window_move_tracks_geometry_consumes_pointer_and_preserves_keyboard() {
     app.sync();
     let sizes = app.events.sizes.clone();
     let order = f.backend(|s| s.mapped_surfaces().cloned().collect::<Vec<_>>());
-    let serial = press(&f, &mut app);
-    request(&mut app, serial);
-    assert_eq!(
-        app.events.pointer.buttons,
-        [
-            (0x110, wl_pointer::ButtonState::Pressed),
-            (0x110, wl_pointer::ButtonState::Released)
-        ]
-    );
-    assert_eq!(app.events.pointer.leaves, 1);
+    take_hold(&f, &mut app);
+    // **The application hears nothing**, which is what changed with ADR 0071: the
+    // old road began with a press the client received and then had to have
+    // balanced by a synthetic release and a leave. A press on the name is the
+    // shell's, so there is nothing to balance.
+    assert!(app.events.pointer.buttons.is_empty());
+    assert_eq!(app.events.pointer.leaves, 0);
     let motions = app.events.pointer.motion.len();
+    // Anchored at the band press, (4, -16); geometry origin is (2, 3), so the
+    // placement is (2, 3) + (pointer - anchor) and the buffer origin is that less
+    // the geometry origin again.
     assert!(f.backend(|s| s.pointer_motion(34.0, 25.0, 3)).is_ok());
-    assert_eq!(origin(&f, &root), (30.0, 20.0));
+    assert_eq!(origin(&f, &root), (30.0, 41.0));
     // Negative placement and fractional motion preserve the initial anchor.
     assert!(f.backend(|s| s.pointer_motion(-1.25, -1.25, 4)).is_ok());
-    assert_eq!(origin(&f, &root), (-5.0, -6.0));
+    assert_eq!(origin(&f, &root), (-5.0, 15.0));
     assert_eq!(f.key(30, KeyState::Pressed).ok(), Some(true));
     assert_eq!(f.key(30, KeyState::Released).ok(), Some(true));
     app.sync();
@@ -140,10 +192,13 @@ fn window_move_tracks_geometry_consumes_pointer_and_preserves_keyboard() {
         Some(false)
     );
     assert!(f.backend(|s| s.pointer_motion(50.0, 50.0, 6)).is_ok());
-    assert_eq!(origin(&f, &root), (-5.0, -6.0));
+    assert_eq!(origin(&f, &root), (-5.0, 15.0));
+    // And asking for a move, the way an application with its own title bar does,
+    // is refused: the frame stays where the person left it.
+    let serial = app.events.pointer.button_serial;
     request(&mut app, serial);
     assert!(f.backend(|s| s.pointer_motion(60.0, 60.0, 7)).is_ok());
-    assert_eq!(origin(&f, &root), (-5.0, -6.0));
+    assert_eq!(origin(&f, &root), (-5.0, 15.0));
 }
 
 #[test]
@@ -186,13 +241,13 @@ fn window_move_invalid_motion_and_extra_buttons_do_not_lose_ownership() {
     let f = fixture();
     let mut app = mapped(&f);
     let root = f.root();
-    let serial = press(&f, &mut app);
-    request(&mut app, serial);
+    take_hold(&f, &mut app);
     for x in [f64::NAN, f64::INFINITY, 1_000_005.0] {
         assert!(f.backend(move |s| s.pointer_motion(x, 5.0, 3)).is_err());
         assert_eq!(origin(&f, &root), (0.0, 0.0));
     }
-    // Duplicate requests cannot re-anchor an active drag.
+    // A request cannot re-anchor an active drag, and is refused in any case.
+    let serial = app.events.pointer.button_serial;
     request(&mut app, serial);
     assert_eq!(
         f.backend(|s| s.pointer_button(0x111, Pressed, 4)).ok(),
@@ -202,14 +257,15 @@ fn window_move_invalid_motion_and_extra_buttons_do_not_lose_ownership() {
         f.backend(|s| s.pointer_button(0x110, Released, 5)).ok(),
         Some(false)
     );
+    // Anchored at the band press, (4, -16).
     assert!(f.backend(|s| s.pointer_motion(14.0, 15.0, 6)).is_ok());
-    assert_eq!(origin(&f, &root), (10.0, 10.0));
+    assert_eq!(origin(&f, &root), (10.0, 31.0));
     assert_eq!(
         f.backend(|s| s.pointer_button(0x111, Released, 7)).ok(),
         Some(false)
     );
     assert!(f.backend(|s| s.pointer_motion(24.0, 25.0, 8)).is_ok());
-    assert_eq!(origin(&f, &root), (10.0, 10.0));
+    assert_eq!(origin(&f, &root), (10.0, 31.0));
 }
 
 #[test]
@@ -218,10 +274,9 @@ fn window_move_cancels_on_leave_unmap_and_disconnect() {
         let f = fixture();
         let mut app = mapped(&f);
         let root = f.root();
-        let serial = press(&f, &mut app);
-        request(&mut app, serial);
+        take_hold(&f, &mut app);
         assert!(f.backend(|s| s.pointer_motion(14.0, 15.0, 3)).is_ok());
-        assert_eq!(origin(&f, &root), (10.0, 10.0));
+        assert_eq!(origin(&f, &root), (10.0, 31.0));
         match cancel {
             0 => assert!(f.backend(|s| s.pointer_leave()).is_ok()),
             1 => {
@@ -246,7 +301,9 @@ fn window_move_cancels_on_leave_unmap_and_disconnect() {
             assert_eq!(
                 origin(&f, &root),
                 if cancel == 0 {
-                    (10.0, 10.0)
+                    // Where the cancelled drag left it, anchored at the band
+                    // press rather than at a press inside the content.
+                    (10.0, 31.0)
                 } else {
                     (0.0, 0.0)
                 }

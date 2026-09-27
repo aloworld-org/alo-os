@@ -330,9 +330,28 @@ impl XdgShellHandler for Surfaces {
     fn grab(&mut self, surface: PopupSurface, seat: WlSeat, serial: Serial) {
         self.grab_popup(surface, seat, serial);
     }
-    fn move_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial) {
-        self.start_window_move(surface, seat, serial);
-    }
+    /// **Refused, always.** ADR 0071: the name above a frame is what moves it, and
+    /// the shell owns that band. A frame shows nothing but its content, so every
+    /// press a client can hold a serial for is a press inside its own content —
+    /// which means an application asking to be moved is asking on behalf of
+    /// something that belongs to it.
+    ///
+    /// Refused outright rather than only when the press was in the content,
+    /// because that test would depend on mapping a serial back to where its press
+    /// began, and an implicit grab is exactly the case where that mapping stops
+    /// being trustworthy: a client holding a button pressed inside itself receives
+    /// the next press too, wherever the pointer has since travelled. A rule that
+    /// depends on nothing beats a rule that depends on bookkeeping being right.
+    ///
+    /// **What this costs is visible and is understood.** An application that draws
+    /// its own title bar — anything that has not negotiated server-side
+    /// decorations — has a title bar that looks draggable and does nothing. That is
+    /// not a reason to soften the rule; it is why decoration negotiation matters,
+    /// and it is task 3 of `docs/autonomy/applications-people-already-use.md`,
+    /// which names `xdg_decoration` as *whether the application or the shell draws
+    /// the frame, which on a canvas is the shell*. Until that lands, a dead title
+    /// bar is the symptom.
+    fn move_request(&mut self, _surface: ToplevelSurface, _seat: WlSeat, _serial: Serial) {}
     fn maximize_request(&mut self, surface: ToplevelSurface) {
         self.client_window_maximize(surface, true);
     }

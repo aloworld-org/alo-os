@@ -147,6 +147,22 @@ impl Server {
             }
             return Ok(false);
         }
+        // **Taking hold of a frame by its name**, which is the only way a frame
+        // moves — ADR 0071. The band above a frame is the shell's own and no
+        // client was told about this press, so nothing is delivered and this
+        // answers `false`, exactly as a consumed drag button does.
+        if state == ButtonState::Pressed
+            && self.surfaces.window_move.is_none()
+            && let Some(location) = self
+                .surfaces
+                .pointer
+                .as_ref()
+                .map(|pointer| pointer.location)
+            && let Some(frame) = self.the_name_under(location)
+            && self.surfaces.start_move_from_the_name(&frame, button)
+        {
+            return Ok(false);
+        }
         if state == ButtonState::Pressed
             && self.surfaces.popup_grab.is_some()
             && self
