@@ -25,6 +25,8 @@ not undo the other nine.
 
 ---
 
+## Tasks
+
 ### 1. A plane that moves under a viewport that does not
 
 **Status:** **Done, 2026-09-27.** `crates/alo-canvas` holds the plane and the
