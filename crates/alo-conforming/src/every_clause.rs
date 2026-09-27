@@ -220,7 +220,7 @@ pub const THE_CLAUSES: [Clause; 46] = [
         standing: met(
             "alo-appearance",
             "src/contrast.rs",
-            "terracotta_on_cream_cannot_be_the_only_thing_saying_something",
+            "deep_teal_on_cream_is_readable_and_still_not_a_signal_on_its_own",
         ),
         checked: NotAgainstTheText,
     },

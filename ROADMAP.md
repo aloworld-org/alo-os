@@ -1741,7 +1741,7 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
 **This gate is 93 boxes: 31 promises, and every one of them now carries the two
 boxes the section above describes.** It read *8 of 49* on 2026-09-26 before it was
-reconciled promise by promise, and it reads **22 of 93** after — 31 promises where
+reconciled promise by promise, and it reads **24 of 93** after — 31 promises where
 four had been split, and two promises `docs/features.md` makes that had no box here
 at all: *Night light and display colour* and *The dock's size, and per display*. The
 first of those had finished code and nothing to tick it in.
@@ -1835,13 +1835,16 @@ sorted the same way v0.01 now is.
       dock on any edge** is v0.01's and is built; these two are the v0.5
       refinements of it and are not*
   - [ ] **The code.**
-        **not built.** `alo_dock::Dock` holds one edge for the machine, not
-        one per screen, and nothing sizes it or hides it. `crates/alo-dock`
-        belongs to `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`;
-        the session-and-displays plan reads it and never edits it, and named
-        `alo_displays::Wearing::of` as the one function of its own that
-        changes when this is paid — task 12 of that plan, and its task 3
-        before it, both say so in their status
+        **not built, and the crate says so itself.**
+        `crates/alo-dock/src/dock.rs` opens with **One dock, one edge**, quoting
+        this very promise: a dock on each display is drawn (`alo-shell`'s plan,
+        task 9, a background and a dock on each), and they all take the **same**
+        edge, so the laptop cannot have it along the bottom while the external
+        screen has it down the side. Nothing sizes it or hides it either.
+        `crates/alo-dock` belongs to
+        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, and
+        `alo_displays::Wearing::of` is the one function in the session plan that
+        changes when this is paid
   - [ ] **On the machine.**
         owed to the certified machine and a second screen, after the code
 - [ ] Recovery and rollback screen
@@ -1869,12 +1872,15 @@ sorted the same way v0.01 now is.
         `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, 7 of 7,
         and ADR 0038 gives each file to the crate that declares its shape
   - [ ] **On the machine.**
-        **the one place does not exist.** Nine crates are nine models, and the
-        promise `docs/features.md` makes is *not a scattering of dialogues a
-        person has to know* — a single Settings a person opens, which is a
-        compositor surface and has not been drawn. A person cannot open Settings
-        on any machine today; what they could open, once there is one, is all
-        nine of these
+        the certified machine. **The one place is drawn** —
+        `alo-shell/src/settings_*.rs` and `nested_settings.rs`, task 6 of
+        `v0-5-the-shell-plan.md`, with every section reaching its own crate — and
+        it is rasterised on the nested compositor and measured by tests on real
+        files. What is owed is a machine to open it on.
+        *This box said **the one place does not exist** on 2026-09-26, which was
+        **wrong**: it was drawn on 2026-09-16. The claim was made without opening
+        `v0-5-the-shell-plan.md` — a plan of seventeen tasks, sixteen done, that
+        draws almost every surface this gate calls owed*
 - [ ] ★ **Run a model we never catalogued** — point alo OS at weights you
       already have and it runs them; the catalogue recommends and does not
       gate. What you bring is yours, including its licence, and a model too
@@ -1917,12 +1923,19 @@ sorted the same way v0.01 now is.
       display; lock-screen image; light and dark; an accent from the five
       designed hues, terracotta reserved (ADR 0010); text scaling; wallpapers
       shipped in the image
-  - [x] **The code.**
+  - [ ] **The code.**
         `alo-appearance` — background per display, light and dark, text
-        scaling, and the accent set as working code: five hues, each value
-        measured against the ground it is drawn on, terracotta unreachable
-        rather than refused; and every word of it readable in the reader's
-        own language rather than in English
+        scaling, and the accent set as working code, with every word of it
+        readable in the reader's own language rather than in English.
+        **Four accents where the promise says five.** This box read *five hues*
+        and was ticked until 2026-09-26. `Accent::ALL` is `[Self; 4]` —
+        Indigo, Violet, Moss, Rose — under a doc comment that still says *all
+        five*, because **#185 implemented half of ADR 0067**: that decision says
+        `Token::Terracotta` stops being a palette token and **becomes
+        `Accent::Terracotta`**, and the token was removed while the accent was
+        never added. `docs/features.md` promises five designed hues and the ADR
+        requires five, so the code does not meet the promise and the tick is
+        withdrawn until it does. Owed by whoever owns `alo-appearance`
   - [ ] **On the machine.**
         the Settings panel, the wallpapers themselves, and the mark and word
         that must appear wherever the agent's colour does
@@ -1937,13 +1950,16 @@ sorted the same way v0.01 now is.
         `alo-applications`' media types; USB storage is the broker's `MountDrive`
         and `EjectDrive`; trash is one of `alo-by-hand`'s plain ways to do what
         the agent does. The status area is the shell's and is drawn.
-        **A file manager, a text editor, an image viewer and a terminal are
-        none of them anywhere** — no crate is one, and `image/Containerfile`
-        installs none. This line promises applications a person opens, not only
-        the machinery under them, and four of the ten clauses have nothing
-        behind them at all. Whether alo OS writes them or pins upstream ones is
-        undecided, which is itself the finding: *nothing here is owed to a
-        machine — it is owed a decision*
+        The desktop itself **is drawn** — the dock, the status area, and the
+        windows for what is running and what is filling the disk — by
+        `alo-shell`, its plan's tasks 5, 7 and 15.
+        **What is missing is four applications.** A file manager, a text editor,
+        an image viewer and a terminal are none of them anywhere: no crate is one,
+        nothing in `alo-shell` is one, and `image/Containerfile` installs none.
+        This line promises applications a person opens as well as the machinery
+        under them, and four of its ten clauses have nothing behind them.
+        *Nothing here is owed to a machine — it is owed a decision*, whether alo
+        OS writes them or pins upstream ones
   - [ ] **On the machine.**
         the desktop in front of somebody, once there is one to be in front of
         them
@@ -1994,16 +2010,21 @@ sorted the same way v0.01 now is.
         compositor's, and is owed to it and to a second screen
 - [ ] **Input**: drag and drop, context menus, gestures, virtual desktops,
       keyboard layouts with dead keys and a compose key, input methods
-  - [ ] **The code.**
-        **Four of the six, and gestures are not among them.** Virtual desktops
+  - [x] **The code.** Virtual desktops
         are `alo-desktops`, switched from the keyboard without taking a chord
         away from `alo-shortcuts`; keyboard layouts, **dead keys**, the **compose
         key** and **input methods** are `alo-keyboards`.
-        **Gestures are not built.** `alo-desktops/src/chords.rs` is *switching
-        desktops from the keyboard* — keyboard chords, not touch — and nothing in
-        this repository reads a touchpad gesture. Drag and drop and context menus
-        are the compositor's and belong to the half below, but a gesture has a
-        decision behind it that would live in a crate, and there is none
+        And **touchpad gestures are built**: task 5 of
+        `v0-5-hands-on-the-desktop-plan.md` with its refusal coverage in
+        `alo-desktops`, drawn by `alo-shell/src/desktop_swipes.rs` under its own
+        plan's task 10 — scroll, zoom and swipe between workspaces. Drag and drop
+        and context menus are `alo-shell`'s too, its plan's task 10 and
+        `updates/drag-and-drop-and-context-menus.md`.
+        *This half was refused on 2026-09-26 and the refusal was **wrong**. It
+        read `chords.rs` — keyboard chords for switching desktops — and concluded
+        from one file that nothing reads a gesture, without grepping for *swipe*
+        or opening `alo-shell` at all. The name standing in for the thing, which is
+        the error this gate keeps finding, made by the reader this time*
   - [ ] **On the machine.**
         drag and drop between applications, context menus, and a touchpad to
         make a gesture on
@@ -2011,8 +2032,8 @@ sorted the same way v0.01 now is.
       XDG portal backend against our own shell; one grant list covering agents
       and applications alike; secret storage; session management; corporate
       proxy support
-  - [ ] **The code.**
-        **Five of the six, and the sixth is not built.** Installing, updating and
+  - [x] **The code.**
+        **All six.** Installing, updating and
         removing an application, and what a fresh machine has so it is not
         helpless, are `alo-software`; the **one grant list** is
         `alo-capability`, which ADR 0040 gave a closed list of facilities and a
@@ -2024,17 +2045,16 @@ sorted the same way v0.01 now is.
         asks who you are. `v0-5-software-and-the-web-plan.md` 14 of 14 and
         `v0-5-applications-and-what-they-expect-plan.md` 12 of 12, with a report
         each.
-        **What is missing is the XDG portal backend itself.** `alo-portals`
-        judges a portal request — *this crate is that sentence as a type*, as its
-        own header says — and **no backend service exists**: no binary, and
-        nothing in `crates/` or `image/` implements
-        `org.freedesktop.impl.portal.*`. An application on a real machine has
-        nothing to talk to. The dialogs are the shell's; the service is not, and
-        it is code rather than a machine, so this half cannot be ticked.
-        *This is the promise the 2026-09-26 reconciliation found **assumed done
-        and not done**, and the reason it was assumed is recorded in the log
-        below: the cut left `alo-strings`' ticked box under this line, so the
-        gate read this as delivered*
+        And the portal backend itself: `alo_portals::serving::Backend::serve_on`
+        owns `org.freedesktop.portal.Desktop` on a session bus and serves only
+        what was decided — task 5 of the applications plan,
+        `updates/the-portal-backend-on-the-session-bus.md` — with the dialogs a
+        person sees drawn by `alo-shell` (its plan's tasks 5, 6 and 14).
+        *This half was refused on 2026-09-26 and the refusal was **wrong**. It
+        said no backend existed, on a search for `org.freedesktop.impl.portal.*`
+        that never looked for `org.freedesktop.portal.*`, never opened
+        `alo-portals/src/serving.rs`, and never read the applications plan's task
+        5. The correction, and what caused it, is in the log below*
   - [ ] **On the machine.**
         the portal backend running against our own compositor, with the file
         chooser and the other dialogs a person actually sees, and an application
@@ -2066,12 +2086,18 @@ sorted the same way v0.01 now is.
         the machine without seeing it — all owed to the compositor and the
         certified machine
 - [ ] Accessibility: EN 301 549 conformance on the shell
-  - [ ] **The code.**
-        **not assessed.** The tree, high contrast and the keyboard-only walk
-        above are the work conformance is measured *over*; nothing here has been
-        measured against EN 301 549's clauses, and a conformance claim is an
-        assessment rather than a crate. v1 carries the **published** report; this
-        line is the shell being conformant, and the shell is being built
+  - [x] **The code.**
+        `crates/alo-conforming` holds **46 clauses of EN 301 549 V3.2.1
+        (2021-03)** — clause 5, and clause 11 including the criteria a reader
+        knows from WCAG as they reach a native shell — each measured against the
+        shell rather than asserted about it. Task 4 of the access-and-language
+        plan; `updates/en-301-549-clause-by-clause.md`. v1 carries the
+        **published** report, which is a document and a signature rather than
+        code.
+        *This half was refused on 2026-09-26 as **not assessed**, and that was
+        **wrong**: the assessment exists, clause by clause, in a crate whose name
+        says so. The refusal was written without searching for the standard's
+        number*
   - [ ] **On the machine.**
         the assessment itself, on the certified machine, against the shell as it
         ships
@@ -2600,6 +2626,95 @@ promise.
 
 ## Reconciliation log
 
+### #185 left ADR 0067 half-implemented, main is red, and a ticked box was false, 2026-09-26
+
+Found minutes after the reconciliation finished, by running the gates over a
+one-file documentation change and reading a failure that had nothing to do with it.
+
+**ADR 0067 decides**, in its own list of what changes: *`Token::Terracotta` stops
+being a palette token and becomes **`Accent::Terracotta`**. The palette keeps six
+colours.* #185 removed the token. **It never added the accent.**
+
+Three consequences, two of them breaking `main` for every lane:
+
+- **`cargo doc -D warnings` fails.** `alo-appearance/src/words.rs` links
+  `[crate::Accent::Terracotta]`, which is correct per the decision and points at an
+  item that does not exist. Fixed here as a code span naming what is owed, rather
+  than by deleting a reference to something the ADR requires.
+- **`alo-conforming` fails its own guard.** Clause 11.1.4.1 of EN 301 549 was met by
+  `terracotta_on_cream_cannot_be_the_only_thing_saying_something`, which #185
+  renamed to `deep_teal_on_cream_is_readable_and_still_not_a_signal_on_its_own`. The
+  clause is still met, by the renamed test, and now says so. **That crate caught a
+  name standing for a thing that no longer exists** — the same class as ADR 0068 and
+  the same class as this pass's own worst mistake.
+- **A ticked box in this gate was false.** *Making it yours* claimed *the accent set
+  as working code: five hues*. `Accent::ALL` is `[Self; 4]`, under a doc comment
+  that still reads *All five*. `docs/features.md` promises five designed hues and
+  ADR 0067 requires five, so the tick is withdrawn until the code meets the promise.
+  The gate goes from 25 to 24.
+
+**What this says about the reconciliation is more useful than what it says about
+#185.** A gate read by hand on a Saturday is true on Saturday. This box was true
+when it was ticked, false within hours, and nothing would have noticed — the change
+that falsified it touched neither `ROADMAP.md` nor `docs/features.md`, and passed a
+review. Four accents where a promise says five is not a subtle fact; it is simply a
+fact nobody was looking at.
+
+The v0.5 ledger and the checks are the answer, and this is now part of their
+specification: **a promise's count is a number a crate can hold to the code.** *Five
+designed hues* against `Accent::ALL.len()` is one assertion, and it would have failed
+in the change that made it false rather than in a gate run two days later that was
+about something else.
+
+
+### Four of the eight refusals were wrong, and why, 2026-09-26
+
+Found within the hour, while listing the reports for the v0.5 ledger. Four
+promises this reconciliation refused are built:
+
+| refused as | actually |
+|---|---|
+| *Software* — "no portal backend service exists" | `alo_portals::serving::Backend::serve_on` owns `org.freedesktop.portal.Desktop` on a session bus. Applications plan task 5, done 2026-09-15 |
+| *Input* — "no touch gesture is read" | hands-on plan task 5, done 2026-09-18, with `alo-shell/src/desktop_swipes.rs` under the shell plan's task 10 |
+| *EN 301 549* — "not assessed" | `crates/alo-conforming`, **46 clauses of V3.2.1**, access plan task 4, done 2026-09-17 |
+| *Settings* — "the one place does not exist" | `alo-shell/src/settings_*.rs` and `nested_settings.rs`, shell plan task 6, drawn 2026-09-16 |
+
+**All four were negative claims, and every one came from a search narrower than
+the claim.** *No backend exists* rested on grepping `org.freedesktop.impl.portal.*`
+and never `org.freedesktop.portal.*`, in a crate whose `serving.rs` was never
+opened. *No gesture is read* rested on reading one file, `chords.rs`, finding
+keyboard chords, and never grepping for *swipe*. *Not assessed* was written without
+searching for the standard's own number. *Settings is not drawn* was written without
+opening `v0-5-the-shell-plan.md` at all.
+
+**`v0-5-the-shell-plan.md` is the instrument that was missed: seventeen tasks,
+sixteen done, and it draws almost every surface this gate calls owed** — the
+sign-in screen, the egress indicator, the sentence a person approves, the record
+window, the ordinary desktop, Settings, the status area, the lock screen, a dock on
+each display, dividing and gestures, notifications and the in-use indicator, the
+accessibility tree, and the recovery screen. A reconciliation that never opened it
+was reading the release with one eye shut.
+
+**The sharpest part is that the method was already known to be broken.** This same
+pass had established, twice, that plan status lines lag published work — and then
+used plan statuses and narrow greps to justify *negative* claims, which is the one
+direction where a narrow search is fatal. A positive claim from a narrow search is
+merely incomplete; a negative one is false. *Nothing matched my grep* was recorded
+as *nothing exists*.
+
+And `docs/autonomy/updates/` is the index that would have caught all four. It was
+read for the first time an hour later, for a different purpose, and answered
+immediately — a report named `the-portal-backend-on-the-session-bus.md` had been
+sitting in it for eleven days.
+
+**What this argues for is the check, not more care.** Four hundred reports and
+seventeen plans cannot be held in a reader's head, which is the same argument
+`crates/alo-reconciling` already makes about 41 promises. A refusal should have to
+name what it searched, and something should be able to disagree with it. The ledger
+being built next is where that goes: an entry claiming a promise is wholly owed, in a
+repository that holds a report about it, is a disagreement a crate can find.
+
+
 ### Settings and the installer, reconciled — and the gate is read, 2026-09-26
 
 The last two promises, and both are grouped boxes over many things.
@@ -2630,13 +2745,18 @@ and a single box had been letting *it compiles* be read as *it works*. No
 on-the-machine box is ticked and none could be — the first physical install is
 Friday.
 
-**What ticked: 22 code halves.** What did not, and why, in the box rather than
-blank: *Software* (no portal backend service exists), *A web browser* (no browser
-pinned in the image), *The ordinary desktop* (no file manager, editor, viewer or
-terminal anywhere), *Input* (no touch gestures), *EN 301 549* (not assessed), *Undo
-what the agent did* (built all round and waiting on `btrfs` at install), *The
-dock's size and per display* (one edge for the machine, not one per screen), and
-*Installer* (one unstarted task, one held).
+**What ticked: 24 code halves.** What did not, and why, in the box rather than
+blank: *A web browser* (no browser pinned in the image), *The ordinary desktop*
+(the desktop is drawn; a file manager, text editor, image viewer and terminal are
+not anywhere), *Undo what the agent did* (built all round and waiting on `btrfs` at
+install), *The dock's size and per display* (**one dock, one edge**, which
+`alo-dock`'s own header says while quoting the promise), and *Installer* (one
+unstarted code task, one finished and held).
+
+**Four more were refused and the refusals were wrong.** The portal backend,
+touchpad gestures, EN 301 549 and whether Settings is drawn were all called missing
+and all four exist. They were corrected the same day, and the entry below this one
+says what caused it.
 
 **What nobody had counted.** The cut left four boxes and two ticks on the wrong
 promises. Three `docs/features.md` promises had no box at all, one of them with

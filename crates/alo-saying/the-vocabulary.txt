@@ -135,6 +135,7 @@ appearance.accent.not-an-accent	{colour} is a ground or a structure colour rathe
 appearance.accent.not-offered	{colour} is not one of the accents this system offers — choose verdigris, indigo, violet, moss or rose, each of which is drawn to read on a light ground and on a dark one
 appearance.accent.reserved	terracotta is how this machine says alo is present or acting, so it is not offered as a personal accent — choose verdigris, indigo, violet, moss or rose
 appearance.accent.rose	Rose
+appearance.accent.terracotta	Terracotta
 appearance.accent.verdigris	Verdigris
 appearance.accent.violet	Violet
 appearance.colour.not-a-colour	a colour is a hash and six hexadecimal digits, as in #102A43 — {text} is not
@@ -161,9 +162,9 @@ appearance.time.no-such-hour	{hour} is not an hour of the day — the day runs f
 appearance.time.no-such-minute	{minute} is not a minute of the hour — an hour runs from 0 to 59
 appearance.token.charcoal	Charcoal
 appearance.token.cream	Cream
+appearance.token.deep-teal	Deep teal
 appearance.token.navy	Navy
 appearance.token.porcelain	Porcelain
-appearance.token.terracotta	Terracotta
 appearance.token.warm-stone	Warm stone
 applications.called	{called} ({application})
 applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
