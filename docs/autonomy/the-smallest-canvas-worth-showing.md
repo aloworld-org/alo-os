@@ -278,6 +278,38 @@ not depend on where a frame happens to sit.
 - **Constraint:** this is not a second interface. It is the same frames, said in
   order.
 
+#### Reached and ordered, and blocked on a frame having a name (2026-09-27)
+
+**Held**, by `crates/alo-shell/tests/every_frame_answers_as_a_list/mod.rs`, and the
+constraint held it down to almost nothing new: the shipped `NextWindow` and
+`PreviousWindow` chords are the road, `switch_window`'s ring is the order, and the
+cases prove **a canvas cannot change either**. Focus is read as each client's own
+`wl_keyboard.enter` rather than asked back of the compositor — *focused* means the
+application was told, and a compositor that moved its own idea of focus silently is
+the first failure a screen reader meets. Three frames are reached with **no pointer
+enabled at all**.
+
+One correction to an overclaim worth keeping: a stability test across a pan and a
+zoom catches **less** than it looks. Both are a translation and a positive scale, so
+a plain sort by where frames sit is monotonic under them and would pass untouched.
+What that case catches is banded reading orders, where a zoom changes which frames
+share a row, and anything measured from the viewport. The failure a person meets is
+a different one — an enumeration that reaches **only what is on the screen** — so it
+has its own case: a frame half a million units away is still reached and focused.
+Proved to bite by skipping frames past the viewport in `switch_window`, which fails
+that case alone.
+
+**Blocked, and it is a missing capability shared with task 3: a frame has no
+name.** `xdg_toplevel.set_title` is not read anywhere in `alo-shell` — the only
+labels it draws are the three window controls' own — so *every frame can be reached,
+focused and **named*** cannot be finished. The same missing name is task 3's handle
+(ADR 0065: *the name is the handle*) and ADR 0065's *frames carry a name, shown when
+the canvas is far out*. **One capability unblocks the second half of task 3 and the
+last third of task 7**, and it is the first thing to build next: read the toplevel's
+title and app_id, hold them per frame, fall back where an application gives neither
+(`window_control_name_fallback` already answers that question for controls), and say
+it where a reader asks.
+
 ### 8. A frame is never lost
 
 **Status:** ready. **Depends on:** 3, 6.
