@@ -59,7 +59,7 @@ answer, never hidden in settings.
 
 Palette: navy #102A43 for structure and text, cream #F8F6F2 as the ground, warm
 porcelain #F4F1EC for the workspace canvas, charcoal #1F2529 for the rail, warm
-stone #7A6F62 for metadata. Terracotta #0F6B72 is the accent and appears ONLY
+stone #7A6F62 for metadata. Deep teal #0F6B72 is the accent and appears ONLY
 where the agent is present or acting — about five percent of any screen — so a
 person can tell at a glance whether the machine is doing something on their
 behalf. Type: Inter throughout, EB Garamond for occasional editorial headings.
@@ -91,8 +91,8 @@ Screens, in this order:
 
 ### The five principles
 
-1. **Terracotta means the agent — with a mark and a word beside it.** Navy
-   structure on a warm cream ground. Terracotta appears where, and only where,
+1. **Deep teal means the agent — with a mark and a word beside it.** Navy
+   structure on a warm cream ground. Deep teal appears where, and only where,
    the agent is present or acting; it is reserved, and never offered as a
    personal accent. But it never carries the signal alone: wherever it appears,
    a small mark and a word appear with it. Hue alone fails for anybody who
@@ -164,7 +164,7 @@ no option is presented as the clever one.
 | Colour | Hex | Role |
 |---|---|---|
 | Navy | `#102A43` | structure, text |
-| Terracotta | `#0F6B72` | the agent — about 5% of any screen |
+| Deep teal | `#0F6B72` | the agent — about 5% of any screen |
 | Cream | `#F8F6F2` | reading ground |
 | Porcelain | `#F4F1EC` | workspace canvas |
 | Charcoal | `#1F2529` | the rail |
@@ -183,7 +183,7 @@ progress line up.
 - **EN 301 549** — the mandatory accessibility standard for EU public
   procurement. Keyboard-only operation, real focus states, contrast holding at
   200% text.
-- **Light and dark are equals.** The terracotta must hold on both grounds.
+- **Light and dark are equals.** The deep teal must hold on both grounds.
 - **Wallpaper is per display**, and people choose bad ones. Every surface must
   stay legible over anything.
 - **No dark patterns.** Approve and decline carry equal weight; a refusal is
