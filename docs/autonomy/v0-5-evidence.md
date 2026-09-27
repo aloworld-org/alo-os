@@ -572,8 +572,12 @@ turn. Drawing it is the shell's.
 line for what undo is holding.** ADR 0045's fourth term says `alo-measuring`
 counts what undo is holding, by name, and nothing in the crate mentions a snapshot
 or an undo — so a person whose disk is full of yesterday's turns is shown a tree
-that does not account for them. Owed by whoever owns `alo-measuring`, which is
-lane B's.
+that does not account for them. It is now **task 15 of
+`docs/autonomy/v0-5-the-machine-measured-plan.md`**, the plan that owns that crate,
+with the design written out: a line beside the tree rather than a node in it,
+because a snapshot's bytes are shared with the live files and a node would
+double-count them; three states and never a zero, because *not on this machine* is
+what every machine here answers today and zero would say undo is holding nothing.
 
 ### **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
 
@@ -988,8 +992,9 @@ agent's, and no agent has been asked anything on a machine.
 holding**: ADR 0045's fourth term says `alo-measuring` counts what undo is holding,
 by name, and nothing in the crate mentions a snapshot or an undo — so a person
 whose disk is full of yesterday's turns is shown a tree that does not account for
-them. This is the same pair as the two entries above, because the promise is the
-agent's way of asking what they answer.
+them. It is **task 15 of `docs/autonomy/v0-5-the-machine-measured-plan.md`**. This
+is the same pair as the two entries above, because the promise is the agent's way
+of asking what they answer.
 
 ### "I can't open this file."
 
