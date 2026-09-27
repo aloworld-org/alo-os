@@ -6730,6 +6730,72 @@ knows it has been seen, on what, and that a re-run passes — the workflow's
 *a flaky test is re-run three times* applies.
 **Date:** 2026-09-22.
 
+
+### That *Text file busy* is not a flake: a fixed name in a shared directory
+**Version:** `alo-software`'s `the_proxy_on_the_road_out` and
+`signing_in_to_the_proxy_on_the_road_out`, plus `src/road.rs`'s own unit tests;
+Ubuntu 24.04.4 aarch64 in this lane's Lima VM, `cargo test --workspace`,
+2026-09-27. **Whose:** `alo-software` is not this lane's crate either, and the
+owner asked for this fix to be landed on its own rather than left as a report.
+**Supersedes the entry above**, whose advice was to re-run three times.
+
+**Behaviour:** the entry above reads this as a race with an unidentified cause
+and treats it as a flake. It is neither unidentified nor only a race. Four
+fixtures wrote a **fixed name** under the temporary directory, and that produces
+two different failures by two different mechanisms:
+
+- **`Text file busy`**, which needs no sysctl and no second user. `cargo test
+  --workspace` can run two copies of one test binary; one truncates the script
+  while the other is executing it. This is the face the entry above met.
+- **`PermissionDenied`**, which needs `fs.protected_regular` — 2 on Ubuntu — and
+  a second user. A regular file in a sticky world-writable directory cannot be
+  opened for writing by anybody but its owner, **and that does not exempt
+  root**:
+
+```
+$ ls -l /tmp/alo-software-proxy-road.sh
+-rwx------ 1 disanssebowabasalidde disanssebowabasalidde 28 ...
+$ sudo sh -c 'printf x > /tmp/alo-software-proxy-road.sh'
+sh: cannot create /tmp/alo-software-proxy-road.sh: Permission denied
+```
+
+So a gate running as root and a person running as themselves lock each other out
+in alternation, permanently, until somebody deletes the file by hand. Two of four
+gate runs on one unchanged tree died that way in one session.
+
+**A per-run `TMPDIR` closes the lock and not the race.** Measured: with the gate
+holding its own, the failure moved from `/tmp/alo-software-proxy-road.sh` to
+`/root/alo-builds/tmp-2917021/alo-software-proxy-road.sh` and stayed a *Text file
+busy*. A run's own directory is still one directory shared by every crate's
+fixtures.
+
+**And the message points elsewhere.** `a_directory_of_its_own` discards its own
+cleanup failure with `let _ = std::fs::remove_dir_all(...)`, then succeeds at
+`create_dir_all` because the directory is already there, and fails two lines later
+writing inside it. What a reader is shown is *a password: Permission denied*,
+which reads like a broken credential store.
+
+**Our response:** each of the four paths now carries the process id, which closes
+both faces. `tempfile::tempdir()` is better still because it removes itself, but it
+wants the guard returned rather than a path. Checked by leaving the 27 root-owned
+leftovers in place and running the crate as an ordinary user: seven failures
+before, none after, with those files still there — deleting them would also have
+made it pass and proved nothing. **A re-run is not the response**; the fault is
+deterministic given a second user or a second copy.
+
+238 fixed-name `alo-*` entries were counted in one gate machine's `/tmp`, across a
+dozen crates, so this is a pattern rather than a file.
+
+**And it is not only `/tmp`.** The same three ingredients — a fixed name, a shared
+place, two writers — refused four gate runs on 2026-09-18 and 19 through the gates'
+own **source copy**, one per machine at a fixed shared path, which failed for faults
+in trees the gating lane did not have. Reported by the dev-PC lane from the
+branch-preservation work, and **closed by #205**, which gives each checkout a copy of
+its own to gate rather than one the machine shares — so that instance is history
+rather than a live fault, and is here for the pattern it shares with this one. One
+quirk, two clothes; recorded together so that meeting either leads to both.
+**Date:** 2026-09-27.
+
 ### Windows keeps `HibernateEnabled` under a different key from `HiberbootEnabled`
 **Version:** Windows 11 Enterprise Evaluation 25H2, 2026-09-23.
 **Behaviour:** Fast Startup is `HiberbootEnabled` under
