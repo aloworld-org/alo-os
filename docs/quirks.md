@@ -7077,3 +7077,80 @@ this, the fix belongs with ADR 0066's authors: either the Windows side finds
 alo OS's own start partition rather than Windows', or the block is kept where
 both sides already agree.
 **Date:** 2026-09-26.
+
+### An installed alo OS says nothing on the serial line, so a walk that watches it sees silence and cannot tell it from a hang
+**Version:** the computer `keep_as` kept on 2026-09-26 from a whole-road
+install, started twice by `the_kept_computer_is_the_same_computer_twice` on
+2026-09-27 (1366 s for both rounds), and its two disks read offline.
+
+**Behaviour:** the installed system's boot entry carries no console argument.
+`/boot/loader/entries/ostree-1.conf` reads:
+
+```
+options root=UUID=c583cbbc-… rw ostree=/ostree/boot.1/default/81fdfdcf…/0
+```
+
+No `console=ttyS0`. The installer environment sets one on its own command line,
+which is why every walk *up to and including the install* is readable on the
+serial line; the system the install leaves behind does not, so from the moment
+the firmware hands over to the installed alo OS the serial line goes quiet and
+stays quiet.
+
+**What that costs, and it is not cosmetic.** On the serial line the two starts
+of the kept computer looked exactly like a hang: the last line was OVMF's
+`PageFaultExitBoot` at `ExitBootServices`, then nothing for the full 480-second
+wait, with one vCPU at 100% and no disk bytes moving for ten seconds at a time —
+the stall signature this machine's discipline is written around. **The screen
+says otherwise.** Both rounds reached `fedora login:` on tty1 under kernel
+6.19.14-101.fc42.x86_64, with the network up and `alo-boundaryd` loading its
+programs, about 40 seconds after start. The machine was idle at a login prompt,
+not stalled, and the CPU and I/O signature of *booted and idle* is
+indistinguishable from *hung* when the console is silent.
+
+So: a silent serial line on an installed machine is not evidence of anything,
+and anything that waits on it is waiting for a sentence that cannot arrive.
+
+**Our response:** none yet, and the measurement is what it is. What it implies
+is worth stating: every later walk that wants to observe the **installed**
+system rather than the installer environment needs the installed entry to carry
+`console=ttyS0`, and until it does, such a walk can only be checked by looking
+at the screen. The snapshot loop this was measuring for is otherwise sound — see
+the entry below.
+**Date:** 2026-09-27.
+
+### The kept computer is a faithful copy, and the test that says so would say so even if it were not
+**Version:** `Machine::keep_as` and `Machine::fresh_from`
+(`crates/alo-installer/tests/walking/machine.rs`, change #161) and
+`the_kept_computer_is_the_same_computer_twice`, run for the first time on
+2026-09-27.
+
+**Behaviour, in two halves.**
+
+**The snapshot works.** Started twice from the three kept files, the computer
+booted alo OS to a login prompt both times, ~40 s each, same kernel, network up,
+`alo-boundaryd` running. Read offline, the copy is byte-faithful: the ostree
+entry names a valid 18 229 608-byte bzImage and a whole 115 831 483-byte
+initramfs, both present, and `bootupd-state.json` is complete. The overlays a
+walk starts from were **197 KB and 57 MB** against a 28 GB base, made in
+seconds. So the premise holds — a walk that begins after an install is an
+overlay rather than half an hour, and the cost of a cycle really does collapse.
+
+**The test does not measure it.** Both rounds recorded `came up: None` — the
+harness waited the full 480 s for a sentence on the serial line and got nothing,
+for the reason in the entry above. The test passes anyway, because all it
+asserts is that the two rounds report the same **firmware** boot-entry strings
+(`["alo OS \\EFI\\fedora\\shimx64.efi"]` twice) and that one of them
+contains the entry's name. `came_up` is bound and printed and never asserted.
+
+**A computer that did not boot at all would pass this test**, so long as the
+firmware tried the same loader twice — and the firmware tries the same loader
+whatever happens after it. The thing the test is named for, that a walk built on
+the snapshot is measuring the snapshot rather than the last walk, is not among
+the things it checks.
+
+**Our response:** nothing was changed on the strength of this. The proof needs
+either the installed entry to speak on serial, so the test can assert the
+machine came up, or an assertion made against the screen it already captures.
+Which of those is right is the installer's question, not the harness's, and it
+belongs with the console argument above.
+**Date:** 2026-09-27.
