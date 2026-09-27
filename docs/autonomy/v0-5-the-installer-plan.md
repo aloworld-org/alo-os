@@ -386,16 +386,45 @@ each walked in the guest except where it says otherwise:
   not walk to the fallback — but the claim is only safe with both gone.
 
 **Still owed here, and this task is not done until it is:**
-1. The walk of the default being changed from either side — and it now has a
-   specific doubt to settle. Reading the two sides on 2026-09-26: the Windows
-   side reaches the start partition with `mountvol S: /S`, which is the one
-   **Windows** started from, while alo OS's loader reads its block on the
-   partition **it** lives on. On every machine this installer can install onto
-   today those are different partitions, because the road offers a whole empty
-   disk and alo OS lands on a second one with a start partition of its own. If
-   that is right, a default changed from Windows is a file alo OS never reads.
-   It is written up in `docs/quirks.md`; nothing was changed on the strength of
-   a reading.
+1. The walk of the default being changed from either side. **The doubt was
+   measured on 2026-09-27** against the computer the whole road actually
+   produced, both disks read offline, and it came out differently than the
+   reading predicted — `docs/quirks.md`, *The default's two sides reach two
+   different partitions, and the one copy is on neither*.
+
+   The two sides do reach different partitions: Windows' EFI system partition is
+   disk 0 partition 1, alo OS's is disk 1 partition 2. But the conclusion drawn
+   from that on 2026-09-26 does not follow, because **alo OS's loader does not
+   read the partition it lives on** — the generated menu finds the partition by
+   the block file itself (`search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv`), so a block on Windows' ESP is one alo OS finds.
+
+   What the measurement did find is larger: **neither ESP holds an environment
+   block, and nothing in the tree creates one.** `save_env` can neither create a
+   file nor grow one, so the count of copies on a real installed machine is
+   zero. Both sides read nothing today, and ADR 0066 term 1 is unimplemented
+   rather than implemented wrongly. Because the loader finds the partition by
+   the file, whoever creates the block also chooses the partition — which makes
+   it a decision, put with its argument in
+   [ADR 0069](../decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md).
+   The owner settled the rule on 2026-09-27: the one copy lives wherever **every
+   reader** of it can reach — Windows' partition on a machine that keeps Windows,
+   alo OS's own after *replace Windows*, and a refusal if no single partition
+   satisfies every reader. Nothing was changed on the strength of the
+   measurement.
+
+   **That measurement is done, 2026-09-27, and it holds.** Run from the loader
+   the firmware starts on disk 1, `search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv` set `esp` to `hd0,gpt1` — Windows' partition — and
+   `load_env` read the block there. A second round with a block on both
+   partitions found GRUB silently taking the lower-numbered disk, which is why
+   ADR 0069 makes a second copy a refusal rather than a tie-break. The guest was
+   512 MB for five seconds, because GRUB is the consumer and nothing needs to
+   boot past the loader.
+
+   **What is left on this item is code, not a measurement:** nothing creates the
+   block, so the walk of the default changed from either side cannot pass until
+   ADR 0069's creation step is built. Task 4 is not closed by the measurement.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
