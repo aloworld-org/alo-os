@@ -27,8 +27,10 @@
 //!
 //! The order this looks for a parent, and it never installs anything:
 //!
-//! 1. a `WAYLAND_DISPLAY` already in the environment — a developer's own
-//!    session, or WSLg, which is what the fixtures were written against;
+//! 1. a `WAYLAND_DISPLAY` whose socket is **really there** — a developer's own
+//!    session, or WSLg, which is what the fixtures were written against.
+//!    `a_display_that_is_really_there` says why the socket and not the variable:
+//!    WSL names one for root that only the default user has;
 //! 2. failing that, a `weston` on the path, started headless for this run and
 //!    stopped again afterwards;
 //! 3. failing that, a skip naming which of the two was missing.
@@ -157,7 +159,7 @@ impl Drop for Parent {
 
 /// Find a Wayland parent, or start one, or say why there is none.
 fn a_parent() -> Parent {
-    if std::env::var_os("WAYLAND_DISPLAY").is_some_and(|it| !it.is_empty()) {
+    if a_display_that_is_really_there().is_some() {
         return Parent::AlreadyThere;
     }
     let Ok(runtime) = tempfile::tempdir() else {
@@ -181,9 +183,13 @@ fn a_parent() -> Parent {
         .stderr(Stdio::null())
         .spawn();
     let Ok(child) = started else {
-        return Parent::None(
-            "no WAYLAND_DISPLAY in the environment and no `weston` on the path".to_owned(),
-        );
+        return Parent::None(match std::env::var_os("WAYLAND_DISPLAY") {
+            Some(named) if !named.is_empty() => format!(
+                "WAYLAND_DISPLAY is {named:?} and there is no socket of that name to reach, \
+                 and no `weston` on the path to start one"
+            ),
+            _ => "no WAYLAND_DISPLAY in the environment and no `weston` on the path".to_owned(),
+        });
     };
     let socket = runtime.path().join("alo-gate-parent");
     let waiting = Instant::now();
@@ -198,7 +204,45 @@ fn a_parent() -> Parent {
     Parent::Started { child, runtime }
 }
 
+/// The socket `WAYLAND_DISPLAY` names, if there is really one there.
+///
+/// **A variable is a claim; a socket is a fact.** This asked only whether
+/// `WAYLAND_DISPLAY` was set and non-empty until 2026-09-27, and on the machine
+/// that gates this repository that cost every one of the eight sub-modes:
+///
+/// - WSL puts `WAYLAND_DISPLAY=wayland-0` and `XDG_RUNTIME_DIR=/run/user/0` into
+///   every shell, whoever it is;
+/// - WSLg's socket is at `/mnt/wslg/runtime-dir/wayland-0`, and WSL links it into
+///   `/run/user/1000` for the default user — **never into `/run/user/0`**;
+/// - the gate runs as root.
+///
+/// So the name pointed at nothing, this returned *already there*, weston was
+/// never looked for, and all eight sub-modes failed with *nested graphics
+/// initialization: No such file or directory*. Not a skip and not a machine
+/// fault: a fixture that believed an environment variable. With this, the same
+/// machine starts weston and seven of the eight passed on the first run — nine
+/// steps of the shell read back off the frames they drew, on llvmpipe, with no
+/// GPU.
+///
+/// Resolved the way a Wayland client resolves it: an absolute `WAYLAND_DISPLAY`
+/// is the path, anything else is relative to `XDG_RUNTIME_DIR`, and with no
+/// runtime directory there is nowhere for a relative name to be.
+fn a_display_that_is_really_there() -> Option<PathBuf> {
+    let named = std::env::var_os("WAYLAND_DISPLAY").filter(|it| !it.is_empty())?;
+    let named = Path::new(&named);
+    let at = if named.is_absolute() {
+        named.to_path_buf()
+    } else {
+        Path::new(&std::env::var_os("XDG_RUNTIME_DIR")?).join(named)
+    };
+    std::fs::metadata(&at)
+        .is_ok_and(|it| it.file_type().is_socket())
+        .then_some(at)
+}
+
+use std::os::unix::fs::FileTypeExt as _;
 use std::os::unix::fs::PermissionsExt as _;
+use std::path::Path;
 
 /// Which sub-mode a child process was spawned to run.
 ///
