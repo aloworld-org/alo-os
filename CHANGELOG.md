@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **When a converted document names a font it lost, it is a font you chose.**
+  Converting a Word document saved before 2007 could report a second font as
+  substituted that the document was never set in — the engine's own default,
+  named to you as if you had picked it. A date in the document was enough to
+  cause it: the separators of its date format were being counted as text. What
+  you are told now is only the families your own text is set in.
+  Evidence:
+  `docs/autonomy/updates/a-date-formats-slashes-were-counted-as-a-font-the-document-used.md`.
+
 - **A machine installed from now on has a disk that can hold an undo.** alo OS
   is installed onto a filesystem that can keep a copy of a folder as it was a
   moment ago, so that *undo what the agent did this afternoon* has somewhere to

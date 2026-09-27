@@ -31,6 +31,32 @@
 //! adds a family to text somebody wrote, so none can report a loss that is not
 //! there — which is the same standard `word` and `excel` hold themselves to.
 //!
+//! # And where it stops looking: text that is part of a style
+//!
+//! **Only text inside `office:body` is text the document sets.** A part holds
+//! more text than a person wrote: a date format in `office:automatic-styles`
+//! writes its own separators down as text — `<number:text>/</number:text>`,
+//! twice, for a date shown as `9/27/2026` — and a sequence declaration, a
+//! configuration setting and a font-face list each hold words of their own.
+//! None of it is on the page, and none of it names a style, so all of it
+//! resolved to the **default paragraph family** and was inventoried as a family
+//! the document sets text in.
+//!
+//! Found on 2026-09-27, by `tests/converting_a_real_document.rs` failing on the
+//! machine that gates this repository. An older Word document whose only family
+//! is Garamond was reported as also having lost `Liberation Serif` — the default
+//! paragraph family of the engine's rendering — because the rendering carried a
+//! date field, and the date format's two slashes were counted. The loss a person
+//! would have read is *your document is set in Garamond and Liberation Serif and
+//! both were substituted*, about a document set in one family, naming a face
+//! they never chose. It shows only where that default is itself absent from the
+//! copy, which is why it took a machine with a different font set to see it, and
+//! it was wrong on every machine.
+//!
+//! `crate::inventory::pages` states the rule this is the other half of: a family
+//! counts when **text is set in it**. A style's own literal text is not text set
+//! in anything.
+//!
 //! # Where an OpenDocument says what it links
 //!
 //! Not in a part beside every part, the way the three Office formats do
@@ -313,7 +339,11 @@ fn body(
                 around.pop();
             }
             Read::Text(_) => {
+                // Inside the body, because a date format's own separators are
+                // text in the part and are not text the document sets; see the
+                // module's *text that is part of a style*.
                 if shows(one)
+                    && walk.within("body")
                     && !walk.within("annotation")
                     && let Some(family) = family_around(styles, &around)
                 {
@@ -495,6 +525,45 @@ mod tests {
         assert_eq!(
             original.linked(),
             &std::collections::BTreeSet::from([Linked::Picture])
+        );
+    }
+
+    /// **A date format's own separators are not text the document sets.**
+    ///
+    /// The content part holds more text than a person wrote. A date format
+    /// writes its separators down as text, in `office:automatic-styles`, where
+    /// nothing names a style — so it resolved to the default paragraph family
+    /// and was reported as a family the document sets text in, and then as a
+    /// family a copy had lost. This is the regression: the document below sets
+    /// text in Garamond and in nothing else, and the format's two slashes and
+    /// the sequence declaration must add nothing.
+    ///
+    /// Written from `tests/documents/sample.doc` as the engine renders it on the
+    /// machine that gates this repository: a date shown `9/27/2026`, with
+    /// `Liberation Serif` as the rendering's default paragraph family.
+    #[test]
+    fn a_number_formats_own_text_is_not_a_family_the_document_sets() {
+        let styles = br#"<document-styles><styles>
+            <default-style family="paragraph"><text-properties font-name="Liberation Serif"/></default-style>
+            <style name="Standard" family="paragraph"><text-properties font-name="Garamond"/></style>
+        </styles></document-styles>"#;
+        let content = br#"<document-content>
+            <automatic-styles>
+                <date-style name="N1"><month/><text>/</text><day/><text>/</text><year/></date-style>
+            </automatic-styles>
+            <body><text>
+                <sequence-decls><sequence-decl name="Illustration"/></sequence-decls>
+                <p style-name="Standard">Saved on: <date date-value="2026-09-27">9/27/2026</date></p>
+            </text></body>
+        </document-content>"#;
+        let bytes = a_document(&[("content.xml", content), ("styles.xml", styles)]);
+        let mut zipped = Zipped::of(&bytes).unwrap();
+        let mut original = Original::default();
+        inventory(&mut zipped, &mut original).unwrap();
+        assert_eq!(
+            families(&original),
+            ["Garamond"],
+            "a family was inventoried that no text on the page is set in"
         );
     }
 
