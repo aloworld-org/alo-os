@@ -7,6 +7,7 @@ mod direct_keyboard;
 mod direct_pointer;
 mod direct_seat;
 mod dragging_a_frame;
+mod every_frame_answers_as_a_list;
 mod input;
 mod interactive_resize;
 mod output_metadata;
