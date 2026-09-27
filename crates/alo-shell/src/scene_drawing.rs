@@ -83,8 +83,20 @@ pub(crate) fn paint(
         elements: Vec::new(),
         surfaces: Vec::new(),
     };
+    // Positions are already on the screen — `scene::trees` applied the whole
+    // camera — so what is left for the drawing is the *size* of each frame's own
+    // units, which is what this scale is and all it is. The clients' trees are
+    // drawn at it; the arrow and every native layer below are drawn at `1.0`,
+    // because the viewport does not resize when a person zooms.
+    let zoom = crate::scene::drawn_at(camera);
     for (surface, location) in crate::scene::trees(roots, popups, camera) {
-        let mut tree = drawing::import_at(renderer, &[surface], damage, location.to_physical(1.0))?;
+        let mut tree = drawing::import_at(
+            renderer,
+            &[surface],
+            damage,
+            location.to_physical(1.0),
+            zoom,
+        )?;
         drawing.elements.append(&mut tree.elements);
         drawing.surfaces.append(&mut tree.surfaces);
     }
@@ -94,6 +106,9 @@ pub(crate) fn paint(
             std::slice::from_ref(surface),
             damage,
             location.to_physical(1.0),
+            // The pointer is the person's and not the plane's: it does not grow
+            // when they zoom in, any more than their hand does.
+            1.0,
         )?)
     } else {
         None
@@ -105,7 +120,7 @@ pub(crate) fn paint(
     frame
         .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
         .map_err(submission)?;
-    draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
+    draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage]).map_err(submission)?;
     if let Some(controls) = native.scene {
         controls.paint(&mut frame)?;
     }

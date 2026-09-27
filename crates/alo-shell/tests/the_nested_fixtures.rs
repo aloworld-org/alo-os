@@ -92,6 +92,8 @@ mod one_heavy_fixture_at_a_time;
 mod popup_check;
 #[path = "../examples/support/resize_geometry_check.rs"]
 mod resize_geometry_check;
+#[path = "../examples/support/the_walk_check.rs"]
+mod the_walk_check;
 #[path = "../examples/support/window_control_label_check.rs"]
 mod window_control_label_check;
 #[path = "../examples/support/window_control_scene_check.rs"]
@@ -201,9 +203,13 @@ use std::os::unix::fs::PermissionsExt as _;
 /// Which sub-mode a child process was spawned to run.
 ///
 /// The offscreen probe is first because it is the one that reads pixels back
-/// and compares them, so it is the one that fails most usefully.
-const EVERY_SUBMODE: [&str; 7] = [
+/// and compares them, so it is the one that fails most usefully. The walk is
+/// second for the same reason and a sharper one: it is the only check anywhere
+/// that measures what the canvas's zoom actually drew, and it found two faults
+/// in the canvas's first landing that the whole rest of the workspace passed.
+const EVERY_SUBMODE: [&str; 8] = [
     "offscreen",
+    "walk",
     "grabs",
     "pointer-release-grabs",
     "keyboard-grabs",
@@ -219,6 +225,7 @@ const SUBMODE: &str = "ALO_NESTED_SUBMODE";
 fn the_submode(named: &str) -> Result<(), Box<dyn std::error::Error>> {
     match named {
         "offscreen" => offscreen_check::run(),
+        "walk" => the_walk_check::run(),
         "grabs" => grab_check::run(false, false),
         "pointer-release-grabs" => grab_check::run(false, true),
         "keyboard-grabs" => grab_check::run(true, false),

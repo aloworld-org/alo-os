@@ -21,11 +21,16 @@ pub(crate) struct Drawing {
 }
 
 /// Import a tree at an explicit origin (popup geometry or cursor hotspot).
+///
+/// `origin` is in screen pixels and `drawn_at` is the scale the surface's own
+/// units are drawn at — `crate::scene::drawn_at` for a frame on the plane, and
+/// `1.0` for anything in the viewport layer, which a zoom does not resize.
 pub(crate) fn import_at(
     renderer: &mut GlesRenderer,
     roots: &[WlSurface],
     bounds: Rectangle<i32, Physical>,
     origin: Point<f64, Physical>,
+    drawn_at: f64,
 ) -> Result<Drawing, RenderError> {
     let mut drawing = Drawing {
         elements: Vec::new(),
@@ -43,7 +48,7 @@ pub(crate) fn import_at(
                     .and_then(|state| state.lock().ok().and_then(|state| state.view()));
                 match view {
                     Some(view) => TraversalAction::DoChildren(
-                        *location + view.offset.to_f64().to_physical(1.0),
+                        *location + view.offset.to_f64().to_physical(1.0).upscale(drawn_at),
                     ),
                     None => TraversalAction::SkipChildren,
                 }
@@ -59,11 +64,20 @@ pub(crate) fn import_at(
                 let Some(view) = view else {
                     return;
                 };
-                let location = *location + view.offset.to_f64().to_physical(1.0);
+                let location = *location + view.offset.to_f64().to_physical(1.0).upscale(drawn_at);
                 // Clip before Smithay converts geometry to i32. Arbitrary cursor
                 // hotspots and child offsets must not overflow rectangle endpoints.
-                if !Rectangle::new(location, view.dst.to_f64().to_physical(1.0))
-                    .overlaps(bounds.to_f64())
+                //
+                // `location` is already on the screen — `crate::scene::trees` put
+                // it there — and only the size is still in the surface's own
+                // units, so only the size is scaled. A frame zoomed out from is
+                // smaller on the screen than it is in itself, and clipping it at
+                // its own size would keep windows that are not visible.
+                if !Rectangle::new(
+                    location,
+                    view.dst.to_f64().to_physical(1.0).upscale(drawn_at),
+                )
+                .overlaps(bounds.to_f64())
                 {
                     return;
                 }
@@ -75,7 +89,7 @@ pub(crate) fn import_at(
                     1.0,
                     Kind::Unspecified,
                 ) {
-                    Ok(Some(element)) if element.geometry(1.0.into()).overlaps(bounds) => {
+                    Ok(Some(element)) if element.geometry(drawn_at.into()).overlaps(bounds) => {
                         drawing.elements.push(element);
                         drawing.surfaces.push(surface.clone());
                     }

@@ -61,6 +61,11 @@ impl FrameTarget for DirectTarget<'_, '_> {
     fn size(&self) -> Size<i32, Physical> {
         self.target.size()
     }
+    /// Forwarded like everything else here. Left to the default, this public
+    /// display would refuse a pan the shared target underneath it can draw.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.target.look_at(camera)
+    }
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
         self.target.submit(roots)
     }
@@ -129,6 +134,7 @@ pub(crate) trait ScenePainter {
         popups: &[Popup],
         cursor: &Cursor,
         layers: crate::scene_native::NativeLayers<'_>,
+        camera: alo_canvas::Camera,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError>;
 }
 
@@ -142,21 +148,10 @@ impl ScenePainter for GlesPainter<'_> {
         popups: &[Popup],
         cursor: &Cursor,
         layers: crate::scene_native::NativeLayers<'_>,
+        camera: alo_canvas::Camera,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
-        // The plane's origin: this backend has no camera yet, and a person's pan
-        // reaches the drawing through the one that does. Owed, and named in
-        // `docs/autonomy/the-smallest-canvas-worth-showing.md` task 1's inventory
-        // rather than left for somebody to find by panning a real machine.
-        crate::offscreen::render_native_scanout(
-            self.0,
-            size,
-            roots,
-            popups,
-            cursor,
-            layers,
-            alo_canvas::Camera::new(),
-        )
-        .map(crate::PreparedScanout::into_parts)
+        crate::offscreen::render_native_scanout(self.0, size, roots, popups, cursor, layers, camera)
+            .map(crate::PreparedScanout::into_parts)
     }
 }
 
@@ -176,6 +171,13 @@ pub(crate) struct Target<R, D: ScanoutDevice> {
     retirement_error: Option<ResourceError>,
     /// A retirement attempt is terminal, including failed disable.
     retired: bool,
+    /// What a person is looking at on the canvas, for the frames this scans out.
+    ///
+    /// A copy of the session's, set by [`FrameTarget::look_at`] once a frame. The
+    /// same arrangement `crate::nested` uses, because the reason is the same on
+    /// hardware as it is under a parent: the painter places the plane and has no
+    /// `Server` to ask.
+    camera: alo_canvas::Camera,
 }
 
 impl<R, D: ScanoutDevice> Target<R, D> {
@@ -189,6 +191,7 @@ impl<R, D: ScanoutDevice> Target<R, D> {
             halted: false,
             retirement_error: None,
             retired: false,
+            camera: alo_canvas::Camera::new(),
         }
     }
 
@@ -216,6 +219,10 @@ impl<R, D: ScanoutDevice> Target<R, D> {
 }
 
 impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.camera = camera;
+        Ok(())
+    }
     fn retire(&mut self) -> Result<(), RenderError> {
         if self.retired {
             return Err(RenderError::DirectHalted);
@@ -275,9 +282,9 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
         if self.halted {
             return Err(RenderError::DirectHalted);
         }
-        let prepared = self
-            .painter
-            .paint(self.size(), roots, popups, cursor, layers)?;
+        let prepared =
+            self.painter
+                .paint(self.size(), roots, popups, cursor, layers, self.camera)?;
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;

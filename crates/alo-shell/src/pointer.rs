@@ -233,10 +233,30 @@ impl Server {
     }
 
     /// Scene hits are shared by motion and explicit-grab outside-click policy.
+    ///
+    /// # Nothing is hit at any zoom but life size, and that is a refusal
+    ///
+    /// `crate::scene::trees` answers in screen pixels, and the surface-local
+    /// coordinate a client is sent is derived by subtracting that origin from the
+    /// pointer's own location. Exact at life size; at 40 % the two are in
+    /// different units and the answer is not a surface coordinate at all. So this
+    /// refuses instead: a pointer that does nothing while a person is zoomed out
+    /// is visibly unfinished, and a pointer that lands in the wrong place — or in
+    /// the right window at the wrong spot — is a compositor a person cannot
+    /// trust and cannot diagnose.
+    ///
+    /// This is `docs/autonomy/the-smallest-canvas-worth-showing.md` task 2, *a
+    /// frame is where it looks, at any zoom*, whose arithmetic already exists and
+    /// is tested in `alo_canvas::Camera`. What it owes is the pointer's own units,
+    /// which the window controls and the resize gesture read as well, and which
+    /// are not one division.
     fn pointer_target(
         &self,
         location: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
+        if self.camera.zoom() != alo_canvas::Zoom::LIFE_SIZE {
+            return None;
+        }
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
             .into_iter()

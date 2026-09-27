@@ -193,6 +193,12 @@ impl<T: crate::presentation::NativeTarget> FrameTarget for Layered<'_, T> {
     fn size(&self) -> Size<i32, Physical> {
         self.target.size()
     }
+    /// Forwarded to the display underneath, like the extent and the identity:
+    /// what this wrapper adds is the layers above the plane, and it decides
+    /// nothing about where the plane is.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        self.target.look_at(camera)
+    }
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
         self.submit_popups(roots, &[], &Cursor::Default)
     }

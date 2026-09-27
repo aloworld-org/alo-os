@@ -35,6 +35,15 @@ pub enum RenderError {
         /// Which scene, in the name this crate's own files use for it.
         scene: &'static str,
     },
+    /// This backend draws the plane at its origin at life size and was asked to
+    /// draw it somewhere else.
+    ///
+    /// **A refusal rather than a frame.** A target that accepted a pan and then
+    /// drew the plane unmoved would report a frame it had not drawn, and nothing
+    /// above it could tell that from a canvas a person had not moved yet — which
+    /// is the failure mode this whole seam exists to prevent.
+    #[error("this backend draws the plane at its origin and was asked to move it")]
+    PlaneNotMovedOnThisBackend,
     /// The backend omitted the root whose strip it was asked to compose.
     #[error("native control target omitted from submitted scene")]
     ControlTargetOmitted,
@@ -188,6 +197,27 @@ pub trait FrameTarget {
     /// Older custom targets advertise an unknown-size virtual output.
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         Ok(crate::OutputMetadata::virtual_output())
+    }
+    /// Where on the plane this frame is looked at from.
+    ///
+    /// Called once per frame by the session, before any `submit_*`, because the
+    /// camera is the session's state and a backend that paints the plane has no
+    /// `Server` to ask for it. A target that stores it must store it whole: the
+    /// pan and the zoom are one answer, and honouring half of it draws frames at
+    /// the right place in the wrong size.
+    ///
+    /// # Errors
+    /// [`RenderError::PlaneNotMovedOnThisBackend`] for any camera but the one a
+    /// backend that cannot move the plane is already drawing — the origin at life
+    /// size, which is what [`alo_canvas::Camera::new`] is. The default refuses
+    /// rather than ignores, so a backend that has not been wired for the canvas
+    /// says so on the first pan instead of at the fiftieth screenshot.
+    fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
+        if camera == alo_canvas::Camera::new() {
+            Ok(())
+        } else {
+            Err(RenderError::PlaneNotMovedOnThisBackend)
+        }
     }
     /// Current framebuffer dimensions, in physical pixels at compositor scale 1.
     fn size(&self) -> Size<i32, Physical>;

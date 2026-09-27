@@ -70,6 +70,12 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
     /// and the arrow last. Two orders would be two answers to what covers what,
     /// and one of the two would let a window cover what is leaving this
     /// machine.
+    ///
+    /// The camera is ignored here, and that is the constraint rather than a gap:
+    /// every layer this backend draws is a viewport surface laid out from the
+    /// output's own size, and it refuses any client window outright. There is no
+    /// frame on the plane in a software frame, so there is nothing for a pan to
+    /// move.
     fn paint(
         &mut self,
         size: Size<i32, Physical>,
@@ -77,6 +83,7 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
         popups: &[Popup],
         cursor: &Cursor,
         layers: crate::scene_native::NativeLayers<'_>,
+        _camera: alo_canvas::Camera,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
         crate::offscreen::validate_size(size)?;
         let carried = ToImport {

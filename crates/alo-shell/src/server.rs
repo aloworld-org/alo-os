@@ -163,6 +163,12 @@ impl Server {
             // to the screen, so placing one has to know where the plane is.
             self.surfaces.popups.camera = self.camera;
         }
+        // The third and last reader of the camera, and the one that draws with
+        // it. Every one of the three is set here, in this order, once a frame:
+        // a copy kept anywhere else is a copy that can be stale, and the first
+        // version of this seam shipped exactly that — a backend holding a camera
+        // nobody assigned, drawing a zoom it had never been told about.
+        target.look_at(self.camera)?;
         self.surfaces.prune();
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();

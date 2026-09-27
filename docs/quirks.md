@@ -111,6 +111,28 @@ at final release before retaining popup authority. It still delivers the release
 to the original drag recipient, and does not patch Smithay. The unchanged refusal
 test passes; this is Unix-socket development evidence, not physical input testing.
 
+## Smithay's element scale resizes an element and does not move it (2026-09-27)
+
+Smithay 0.7.0's `Element::geometry(scale)` is
+`Rectangle::new(self.location.to_i32_round(), self.size(scale))`, and
+`WaylandSurfaceRenderElement::size(scale)` is the only half that reads the
+scale. `draw_render_elements(frame, scale, ..)` therefore **scales every
+element's size and uses its location exactly as supplied**. The name reads like
+a transform and it is not one.
+
+Measured while drawing the canvas at 40 %: two 16x16 clients divided across a
+1366-wide output were drawn at the right size, one of them at screen x=1707,
+and were then culled off the output — one window simply vanished, and the frame
+came back with 36 painted pixels where two scaled windows are 82. So a location
+handed to `from_surface` has to be in **screen pixels already**. `alo-shell`
+applies the whole camera in `crate::scene::trees` for that reason, and passes
+the scale only for the size; nothing about Smithay is patched.
+
+The consequence worth remembering is that *the drawing scales* and *the drawing
+translates* cannot be wired separately in this renderer. A zoom applied to sizes
+alone is not a partly-finished zoom, it is a frame drawn in the wrong place, and
+a check that only asks whether the picture got smaller passes it.
+
 ## Hardware and firmware
 
 ### EDK II's strict image protection page-faults the base's signed loader, and Fedora's own firmware fixes it up

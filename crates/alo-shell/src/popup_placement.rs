@@ -24,11 +24,22 @@ pub(crate) fn geometry(
     let (_, origin) = crate::scene::trees(roots, popups, camera)
         .into_iter()
         .find(|(surface, _)| surface == parent)?;
-    let origin = origin + crate::scene::geometry_origin(parent);
+    // **The output, in the parent's own units.** A positioner's rectangle is
+    // expressed in the parent surface's units and a zoom does not change them —
+    // the application is never told about the canvas. `trees` answers in screen
+    // pixels, so the screen is divided back rather than the parent multiplied up:
+    // a menu constrained against a 1366-pixel output while zoomed out to 40 %
+    // has nearly 3,400 of its own units of room, and constraining it against
+    // 1,366 would flip menus that fit.
+    let zoom = crate::scene::drawn_at(camera);
+    let origin = origin.downscale(zoom) + crate::scene::geometry_origin(parent);
+    let (width, height) = (f64::from(size.w) / zoom, f64::from(size.h) / zoom);
     // Deep client-controlled chains and extreme surface-tree offsets accumulate
     // in f64. Refuse before narrowing; 16 million leaves ample i32 headroom for
     // upstream flip/slide/resize sums with our one-million positioner operands.
-    if [origin.x, origin.y, f64::from(size.w), f64::from(size.h)]
+    // The divided extent is bounded here too: at the furthest zoom out an output
+    // is twenty times its own size in a parent's units.
+    if [origin.x, origin.y, width, height]
         .into_iter()
         .any(|value| !value.is_finite() || value.abs() > 16_000_000.0)
     {
@@ -36,7 +47,7 @@ pub(crate) fn geometry(
     }
     let target = Rectangle::new(
         (-(origin.x as i32), -(origin.y as i32)).into(),
-        (size.w, size.h).into(),
+        (width as i32, height as i32).into(),
     );
     Some(positioner.get_unconstrained_geometry(target))
 }
