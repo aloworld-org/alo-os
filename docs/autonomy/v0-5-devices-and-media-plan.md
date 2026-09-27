@@ -262,8 +262,15 @@ pairing grants nothing** — held against the real `alo-nearby` and
 
 ### 4. The camera and the microphone
 
-**Status:** blocked — **on reaching a camera through the portal, on a machine
-with a desktop session** — *or* on why a V4L2 node never becomes a linkable,
+**Status:** scheduled — **carried to v2 by the owner's decision of 2026-09-27**,
+alongside playing a file. A developer preview is judged on what a developer
+opens, and nobody evaluates an operating system on its webcam. **It is not
+carried because it is stuck:** the work below stands, both explanations are
+still open, and deciding between them still needs no device — it is carried
+because it is not what the release is for.
+
+Formerly blocked — on reaching a camera through the portal, on a machine
+with a desktop session — *or* on why a V4L2 node never becomes a linkable,
 which is a second explanation measured later the same day and is **cheaper to
 decide than the first**. See *Two explanations, and how to tell them apart*
 immediately below the account of the two faults. Updated 2026-09-20, and this is
