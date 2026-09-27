@@ -109,7 +109,7 @@ pub enum RenderError {
     #[error("Settings does not fit this output")]
     SettingsScene,
     /// The desktop was asked to draw in an accent that is not one a person can
-    /// choose — terracotta above all, which means the agent and nothing else.
+    /// choose — deep teal above all, which means the agent and nothing else.
     #[error("the desktop refused an accent that is not offered")]
     AccentRefused,
     /// The target does not support explicit retirement.

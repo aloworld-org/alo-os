@@ -101,7 +101,7 @@ on-the-machine half has been empty since the repository began.
   **nothing**, and one answered anywhere else — a provider, or the machine
   down the corridor — draws its sentence, which is the difference the promise
   rests on and is one test with both halves; the line is the agent's name and
-  the destination as `alo-egress` words them, never re-worded here; terracotta
+  the destination as `alo-egress` words them, never re-worded here; deep teal
   is the colour and it **never arrives alone** — a mark and a word beside it,
   because a signal carried by hue fails for anybody who cannot distinguish it
   and EN 301 549 does not allow colour as the only means (`docs/features.md`,
@@ -201,7 +201,7 @@ no window.
 - **Acceptance:** a dock is drawn on the edge `alo-dock` names, per display,
   with a status area at its far end holding the clock, battery, network,
   volume and the egress indicator of task 2; the accent is `alo-appearance`'s
-  and **terracotta is never offered**, because it means the agent and nothing
+  and **deep teal is never offered**, because it means the agent and nothing
   else (`docs/features.md`, ★) — a test refuses a palette that offers it; a
   window drawn from `alo-measuring` shows what is running and what is using
   the machine, and a second shows what is filling the disk as sizes that open
@@ -521,7 +521,7 @@ decided once rather than twice in two files that would drift.
 **Named, not ticked.**
 
 - **In high contrast, colour cannot say *the agent* at all.** `Contrast::High`
-  collapses every accent to one, on purpose, so the agent's terracotta and an
+  collapses every accent to one, on purpose, so the agent's deep teal and an
   application's navy are identical there. ADR 0010 is why that is safe — the
   mark and the word carry it — and the test asserts the equality rather than
   demanding high contrast stop being high contrast.

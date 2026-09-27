@@ -18,7 +18,7 @@
 //!
 //! `alo_appearance::TimeOfDay` is the hour and the minute on the clock the
 //! person is looking at, and this crate reads that crate anyway for
-//! terracotta. What a stretch of the clock *means for notifications* is this
+//! deep teal. What a stretch of the clock *means for notifications* is this
 //! crate's and is here; what a time of day is, is not — and a second spelling
 //! of *22:00* on one machine is a second place for the twenty-fifth hour to be
 //! allowed. A value in `notifying.toml` that does not read is still said in

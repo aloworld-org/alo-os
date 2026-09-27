@@ -187,25 +187,35 @@ see either on is owed on top.
 
 **Shown by:** `crates/alo-appearance/tests/a_palette_with_one_source.rs`
 
-**Still owed:** **a fifth hue.** `Accent::ALL` is `[Self; 4]` — Indigo, Violet,
-Moss, Rose — under a doc comment that still says *all five*, because #185
-implemented half of ADR 0067: the decision says `Token::Terracotta` stops being a
-palette token and **becomes `Accent::Terracotta`**, and the token was removed
-while the accent was never added. The definition promises five and the ADR
-requires five, so the code does not meet the promise. This is the one promise in
-this release whose `ROADMAP.md` tick was **withdrawn** rather than never given.
+**Still owed:** nothing, and the withdrawal can be reconsidered. `Accent::ALL` is
+`[Self; 4]` — Indigo, Violet, Moss, Rose — and the doc comment says four.
 
-### **Terracotta is not one of them.** It means the agent and nothing else, so it is reserved
+The tick was withdrawn because #185 was read as implementing half of ADR 0067:
+the decision said `Token::Terracotta` stops being a palette token and *becomes
+`Accent::Terracotta`*, and the token was removed while the accent was never
+added. **The decision was the wrong half.** An accent has to reach 4.5:1 on both
+grounds; terracotta on cream measures 2.87:1, which this repository's own
+contrast test had recorded before any of it. ADR 0067 is amended to say
+terracotta is released from being reserved and is **not** added to the set, and
+four hues that all read is a better set than five with one nobody measured.
+
+So there is no fifth hue owed and no empty slot waiting for one. What the code
+does is what the decision now says.
+
+### **Deep teal is not one of them.** It means the agent and nothing else, so it is reserved
 
 **Shown by:** `crates/alo-conforming/tests/every_clause_that_is_met_names_a_test_that_exists.rs` (clause 11.1.4.1),
 `crates/alo-displays/tests/alo_is_legible_under_night_light_and_still_not_a_signal.rs`
 
-**Still owed:** the contrast measurement ADR 0067 owes. Reserving the hue is held
-by a clause and by the accent set not containing it; what is not held is the value
-it becomes as an accent, whose readability on a cream ground the ADR records as
-*to be measured*. Owed by whoever owns `alo-appearance`, with the fifth hue above.
+**Still owed:** nothing. Reserving the hue is held by a clause and by the accent set not
+containing it. The measurement ADR 0067 recorded as *to be measured* — the
+readability of terracotta on a cream ground, had it become an accent — **is
+measured: 2.87:1**, and that is what decided it could not be one. Deep teal, which
+holds the reservation now, measures 5.78:1 on the same ground.
+`crates/alo-appearance/src/contrast.rs` holds both figures, and a test refuses the
+two to disagree.
 
-### **The agent is never signalled by colour alone** — terracotta always arrives with a mark and a word
+### **The agent is never signalled by colour alone** — deep teal always arrives with a mark and a word
 
 **Shown by:** `crates/alo-conforming/tests/every_clause_that_is_met_names_a_test_that_exists.rs` (clause 11.1.4.1),
 `crates/alo-displays/tests/alo_is_legible_under_night_light_and_still_not_a_signal.rs`

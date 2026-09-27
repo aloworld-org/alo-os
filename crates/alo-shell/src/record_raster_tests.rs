@@ -374,30 +374,25 @@ fn the_rail_and_the_indent_follow_the_reading_direction() {
     assert!(rtl.after[0].area.size.w < rtl.clause.area.size.w);
 }
 
-/// **Terracotta is never drawn**, in either scheme: it means the agent acting,
+/// **Deep teal is never drawn**, in either scheme: it means the agent acting,
 /// and this window is a person reading.
 #[test]
-fn terracotta_is_never_drawn() {
-    let terracotta = Token::DeepTeal.colour();
-    let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
+fn deep_teal_is_never_drawn() {
+    let deep_teal = Token::DeepTeal.colour();
+    let deep_teal = [deep_teal.red(), deep_teal.green(), deep_teal.blue()];
     let kept = an_afternoon_kept();
     let window = opened(&kept);
     for scheme in [Scheme::Light, Scheme::Dark] {
         let palette = Palette::of(scheme, Contrast::AsDesigned);
-        assert_ne!(palette.ground, terracotta);
-        assert_ne!(palette.ink, terracotta);
+        assert_ne!(palette.ground, deep_teal);
+        assert_ne!(palette.ink, deep_teal);
         let picture = drawn_at(&window, (1920, 1080), RecordLook { scheme, ..light() });
-        assert!(
-            picture
-                .solids
-                .iter()
-                .all(|solid| solid.colour != terracotta)
-        );
+        assert!(picture.solids.iter().all(|solid| solid.colour != deep_teal));
         assert!(
             picture
                 .inked
                 .iter()
-                .all(|inked| inked.pixels.iter().all(|pixel| *pixel != terracotta))
+                .all(|inked| inked.pixels.iter().all(|pixel| *pixel != deep_teal))
         );
     }
 }

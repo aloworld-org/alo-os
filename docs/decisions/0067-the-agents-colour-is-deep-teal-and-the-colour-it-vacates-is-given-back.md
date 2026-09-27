@@ -48,10 +48,24 @@ decision, and changing either alone breaks both.**
 or waiting for an approval — and it means nothing else. It is not in the accent
 set and no personal setting selects it or a hue near it.
 
-**Terracotta `#E76F51` is released.** It was only ever withheld because it was a
-signal; it is not one any more, so withholding it would be a rule outliving its
-reason. It becomes an accent, which is the answer ADR 0010 wanted and could not
-give: a warm hue in a set that had none.
+**Terracotta `#E76F51` is released from being reserved, and is not added to the
+accent set.** Withholding it would have been a rule outliving its reason, so the
+reservation goes — but an accent must read on both grounds at 4.5:1, and
+terracotta on cream measures **2.87:1**, which this repository's own contrast
+test had recorded before any of this.
+
+**Amended 2026-09-27.** This paragraph said it *becomes an accent*, and the set
+was to gain a warm hue. The owner was offered a deeper terracotta for light
+grounds and declined to invent one, so **four accents ship and there is no empty
+slot waiting for a fifth**: four hues that all read on both grounds is a better
+set than five with one nobody measured. Terracotta is therefore neither a token
+nor an accent — it is no longer a colour this system uses, and its string goes
+with it.
+
+**The amendment was described and not landed for a day**, during which this file
+said terracotta was an accent while `Accent::ALL` held four. That gap is how the
+third PC came to report `Accent::Terracotta` as a missing variant: the decision
+was wrong, not the code.
 
 **Verdigris is retired.** Not moved, not re-toned — retired, because its name
 means the blue-green of weathered copper and a verdigris that is not blue-green

@@ -7,14 +7,14 @@
 //! that meets **WCAG 2.2 AAA** — a contrast of 7 to 1 for text — on every pair
 //! the shell actually draws.
 //!
-//! # Terracotta keeps its meaning, and stops carrying it alone
+//! # Deep teal keeps its meaning, and stops carrying it alone
 //!
 //! [ADR 0010](../../../docs/decisions/0010-terracotta-is-reserved-and-never-alone.md)
-//! reserves terracotta for the agent and says a colour alone cannot carry a
+//! reserves deep teal for the agent and says a colour alone cannot carry a
 //! signal anybody must rely on, so **the agent always appears with a mark and a
-//! word beside it**. Both halves matter here. At AAA the shell's terracotta
+//! word beside it**. Both halves matter here. At AAA the shell's deep teal
 //! cannot be drawn as text — on cream it reaches 3.09 to 1, under half of what
-//! text needs — so this palette draws the agent in terracotta's **own hue, 12°**,
+//! text needs — so this palette draws the agent in deep teal's **own hue, 12°**,
 //! taken down in lightness to `#862A13` on a light ground and up to `#F7CFC5` on
 //! a dark one, and no further: it is the reserved colour, still meaning the
 //! agent and nothing else, not a personal accent, which that ADR forbids anybody
@@ -133,13 +133,13 @@ mod tests {
     /// **The shell's own palette does not clear it**, which is why this one
     /// exists rather than a switch that raises the other.
     #[test]
-    fn the_shells_own_terracotta_is_why_this_palette_exists() {
+    fn the_shells_own_deep_teal_is_why_this_palette_exists() {
         let theirs = alo_appearance::Token::DeepTeal
             .colour()
             .contrast_with(alo_appearance::Token::Cream.colour());
         assert!(
             theirs < ENOUGH_FOR_TEXT_AT_AAA,
-            "the shell's terracotta on cream is {theirs:.2} to 1; if it now clears AAA this \
+            "the shell's deep teal on cream is {theirs:.2} to 1; if it now clears AAA this \
              palette should be re-argued rather than kept"
         );
     }
@@ -147,21 +147,21 @@ mod tests {
     /// **The accent is still the agent's colour**: the same hue, taken deep
     /// enough to read, rather than another colour wearing the agent's meaning.
     ///
-    /// Both values moved from terracotta's hue to deep teal's — 12° to 184° —
+    /// Both values moved from deep teal's hue to deep teal's — 12° to 184° —
     /// at the readability each already had rather than the saturation and value
     /// each already had. Rotating the hue alone was not enough: teal carries
-    /// more luminance than terracotta at the same value, so a straight rotation
+    /// more luminance than deep teal at the same value, so a straight rotation
     /// measured 4.82:1 against the ground where AAA needs 7. These are chosen to
     /// match what they replaced exactly — 8.92:1 on white and 14.69:1 on black,
-    /// the same two numbers terracotta measured, at alo's hue.
+    /// the same two numbers deep teal measured, at alo's hue.
     #[test]
     fn the_accent_is_the_agents_colour_taken_deep_enough_to_read() {
-        let terracotta = alo_appearance::Token::DeepTeal.colour();
+        let deep_teal = alo_appearance::Token::DeepTeal.colour();
         for scheme in [Scheme::Light, Scheme::Dark] {
             let accent = HighContrast::of(scheme).accent;
             assert_eq!(
                 hue_of(accent).round(),
-                hue_of(terracotta).round(),
+                hue_of(deep_teal).round(),
                 "{scheme:?}: the accent is no longer alo's hue"
             );
         }

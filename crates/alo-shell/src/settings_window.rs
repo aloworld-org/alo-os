@@ -26,8 +26,8 @@
 //! # Only what the machine has is here
 //!
 //! A row is something a person can act on: choose it, rebind it, revoke it.
-//! Nothing is drawn disabled. Terracotta is not among the accents, because
-//! `alo_appearance::Accent` cannot be terracotta. A setting the machine has
+//! Nothing is drawn disabled. Deep teal is not among the accents, because
+//! `alo_appearance::Accent` cannot be deep teal. A setting the machine has
 //! no road to change from a window yet — a background picture, a text scale,
 //! adding a provider — is absent rather than greyed out.
 //!

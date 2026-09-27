@@ -264,11 +264,11 @@ fn the_words_that_need_a_decision_carry_their_note() {
         assert!(phrase.note().is_some(), "{}", word.key());
     }
 
-    let terracotta = vocabulary.phrase(&words::TERRACOTTA.key()).unwrap();
+    let deep_teal = vocabulary.phrase(&words::DEEP_TEAL.key()).unwrap();
     assert!(
-        terracotta
+        deep_teal
             .note()
-            .is_some_and(|note| note.contains("orange-brown")),
+            .is_some_and(|note| note.contains("blue-green")),
         "the colour is described rather than named"
     );
     let verdigris = vocabulary.phrase(&words::VERDIGRIS.key()).unwrap();

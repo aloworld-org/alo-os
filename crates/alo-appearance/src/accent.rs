@@ -1,16 +1,18 @@
 //! The colours a person can make their own, and the one they cannot.
 //!
-//! **Terracotta is reserved** (ADR 0010). It means the agent — present, acting,
-//! or waiting for an approval — and it means nothing else anywhere in the
-//! system, so it is not in this set and [`Accent::of_colour`] refuses it in
-//! words rather than quietly accepting it. An accent somebody could set to
-//! terracotta would take away the one signal that says the machine is doing
-//! something on their behalf, and it would take it away on precisely the
-//! machines whose owners liked the colour enough to choose it.
+//! **Deep teal is reserved** (ADR 0010, which reserved terracotta; ADR 0067
+//! moved the signal to deep teal and the reservation moved with it). It means
+//! the agent — present, acting, or waiting for an approval — and it means
+//! nothing else anywhere in the system, so it is not in this set and
+//! [`Accent::of_colour`] refuses it in words rather than quietly accepting it.
+//! An accent somebody could set to deep teal would take away the one signal
+//! that says the machine is doing something on their behalf, and it would take
+//! it away on precisely the machines whose owners liked the colour enough to
+//! choose it.
 //!
 //! **The set is designed rather than derived**, which is the other half of that
 //! decision. `docs/features.md` used to promise an accent "drawn from the design
-//! tokens", and the tokens cannot answer it: the five that are not terracotta
+//! tokens", and the tokens cannot answer it: the five that are not deep teal
 //! are grounds and structure, and navy on the charcoal rail or cream on the
 //! cream ground is not an accent, it is invisible. So there are five hues from
 //! outside the palette, each with a value for a light ground and a value for a
@@ -54,7 +56,7 @@ use crate::words;
 /// English word left in the middle of a translated one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AccentError {
-    /// Terracotta, which is the agent's and nobody else's.
+    /// Deep teal, which is the agent's and nobody else's.
     Reserved,
     /// A ground or a piece of structure: a colour the system is built out of
     /// rather than one it can be accented with.
@@ -97,11 +99,12 @@ impl AccentError {
     }
 }
 
-/// One of the five colours a person can make their machine.
+/// One of the four colours a person can make their machine.
 ///
 /// Reads back from a settings file by name, and a file naming anything else —
-/// including terracotta — is refused where it is read rather than becoming a
-/// colour nobody offered.
+/// including deep teal, and including terracotta, which older files may still
+/// name — is refused where it is read rather than becoming a colour nobody
+/// offered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Accent {
     /// Deep blue. What a machine ships with.
@@ -125,8 +128,14 @@ pub enum Accent {
 }
 
 impl Accent {
-    /// All five, in the order ADR 0010 lists them, which is the order a picker
-    /// shows them in.
+    /// All four, in the order ADR 0010 listed them less verdigris, which ADR
+    /// 0067 retired — which is the order a picker shows them in.
+    ///
+    /// **Four rather than five, and there is no empty slot waiting for a
+    /// fifth.** ADR 0067 released terracotta from being reserved and was read
+    /// as making it an accent; it cannot be one, because an accent has to reach
+    /// 4.5:1 on both grounds and terracotta on cream measures 2.87:1. Four hues
+    /// that all read is a better set than five with one that does not.
     pub const ALL: [Self; 4] = [Self::Indigo, Self::Violet, Self::Moss, Self::Rose];
 
     /// The colour itself, on the ground this scheme puts behind it.
@@ -210,9 +219,9 @@ impl Accent {
 }
 
 impl Default for Accent {
-    /// Verdigris, which is a small piece of continuity: it is the name
-    /// `alo-workplace`'s colour scale still carries from before the palette
-    /// became terracotta.
+    /// Indigo, which is where verdigris now resolves — a small piece of
+    /// continuity, because verdigris is the name `alo-workplace`'s colour scale
+    /// still carries and the name most existing settings files hold.
     fn default() -> Self {
         Self::Indigo
     }
@@ -228,10 +237,14 @@ mod tests {
     use crate::contrast::ENOUGH_FOR_TEXT;
     use crate::testing::{in_english, translated};
 
-    /// How far a hue has to sit from terracotta's before this crate will say
+    /// How far a hue has to sit from the agent's before this crate will say
     /// they are different colours. Thirty degrees is a floor rather than a
-    /// perceptual claim — see [`no_accent_sits_where_terracotta_sits`].
-    const FAR_ENOUGH_FROM_TERRACOTTA: f64 = 30.0;
+    /// perceptual claim — see [`no_accent_sits_where_the_agents_colour_sits`].
+    ///
+    /// The agent's colour is deep teal (ADR 0067), which is what the test
+    /// measures against. This was named for terracotta long after terracotta
+    /// stopped being the colour it guarded.
+    const FAR_ENOUGH_FROM_THE_AGENTS_COLOUR: f64 = 30.0;
 
     /// Where a colour sits on the wheel, 0 to 360, which is the one question
     /// *is this the agent's colour* reduces to when the answer has to be
@@ -262,12 +275,12 @@ mod tests {
         straight.min(360.0 - straight)
     }
 
-    /// **Terracotta cannot be chosen, and the refusal says so in words.** It is
-    /// not in the set, so no settings file and no picker can name it; asking for
-    /// it through the design tokens comes back as a sentence naming the five
-    /// that can be had instead.
+    /// **The agent's colour cannot be chosen, and the refusal says so in
+    /// words.** It is not in the set, so no settings file and no picker can name
+    /// it; asking for it through the design tokens comes back as a sentence
+    /// naming the four that can be had instead.
     #[test]
-    fn terracotta_is_refused_as_a_personal_accent() {
+    fn the_agents_colour_is_refused_as_a_personal_accent() {
         let asked = Accent::of_colour(Token::DeepTeal.colour());
         assert_eq!(asked, Err(AccentError::Reserved));
         assert!(
@@ -283,21 +296,29 @@ mod tests {
                 assert_ne!(
                     accent.on(scheme),
                     Token::DeepTeal.colour(),
-                    "{} on {scheme:?} is not terracotta by another name",
+                    "{} on {scheme:?} is not the agent's colour by another name",
                     accent.word().says()
                 );
             }
         }
         assert!(
-            serde_json::from_str::<Accent>(r#""Terracotta""#).is_err(),
+            serde_json::from_str::<Accent>(r#""DeepTeal""#).is_err(),
             "and a hand-edited settings file cannot ask for it either"
+        );
+        // Terracotta keeps being refused by name as well. It was the reserved
+        // colour until ADR 0067, so a settings file written by an older release
+        // may still say it, and it is not an accent now either — dropping this
+        // would quietly stop testing the case it was written for.
+        assert!(
+            serde_json::from_str::<Accent>(r#""Terracotta""#).is_err(),
+            "nor can one written before ADR 0067"
         );
     }
 
     /// **Nothing in the palette is an accent**, including the five that are not
     /// reserved: they are grounds and structure, and the refusal for those says
-    /// something different from the refusal for terracotta because they are
-    /// different mistakes.
+    /// something different from the refusal for the agent's colour because they
+    /// are different mistakes.
     #[test]
     fn a_ground_or_a_structure_colour_is_refused_as_itself() {
         let strings = in_english();
@@ -315,9 +336,25 @@ mod tests {
                     );
                 }
             }
+            // **Every refusal says what can be had, and the set is read rather
+            // than spelled.** This was `contains("verdigris")`, which pinned a
+            // true intention to a spelling that stopped being true: ADR 0067
+            // retired verdigris, and all three refusals went on offering it — so
+            // the test did not merely miss the defect, it required it. Reading
+            // `Accent::ALL` means the next change to the set fails here instead
+            // of shipping a sentence that sends somebody to a colour that is not
+            // there.
+            let offered = said.text().to_lowercase();
+            for accent in Accent::ALL {
+                let name = accent.word().says().to_lowercase();
+                assert!(
+                    offered.contains(&name),
+                    "the refusal for {token:?} does not offer {name}"
+                );
+            }
             assert!(
-                said.text().contains("verdigris"),
-                "and every refusal says what can be had instead"
+                !offered.contains("verdigris"),
+                "the refusal for {token:?} still offers a colour ADR 0067 retired"
             );
         }
     }
@@ -394,7 +431,10 @@ mod tests {
             .unwrap_err()
             .said(&nothing_declared);
         assert!(said.is_a_bug());
-        assert!(said.text().contains("appearance.accent.reserved"), "{said}");
+        assert!(
+            said.text().contains("appearance.accent.reserved-for-alo"),
+            "{said}"
+        );
     }
 
     /// **A colour from somewhere else is refused too**, and each of the ten
@@ -487,20 +527,22 @@ mod tests {
         }
     }
 
-    /// **No accent sits where terracotta sits.** Hue distance is arithmetic and
-    /// not a claim about perception — deuteranopia makes terracotta and moss
+    /// **No accent sits where the agent's colour sits.** Hue distance is
+    /// arithmetic and not a claim about perception — deuteranopia makes hues
     /// neighbours whatever the wheel says, which is exactly why the agent gets a
     /// mark and a word as well. What this catches is the thing arithmetic can
-    /// catch: a hue added later that is terracotta with two digits changed.
+    /// catch: a hue added later that is deep teal with two digits changed. That
+    /// is not hypothetical — it is why ADR 0067 retired verdigris, whose
+    /// `#22707E` is deep teal's neighbour.
     #[test]
-    fn no_accent_sits_where_terracotta_sits() {
+    fn no_accent_sits_where_the_agents_colour_sits() {
         let reserved = hue(Token::DeepTeal.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 let distance = apart(hue(accent.on(scheme)), reserved);
                 assert!(
-                    distance >= FAR_ENOUGH_FROM_TERRACOTTA,
-                    "{} on {scheme:?} is {distance} degrees from terracotta",
+                    distance >= FAR_ENOUGH_FROM_THE_AGENTS_COLOUR,
+                    "{} on {scheme:?} is {distance} degrees from the agent's colour",
                     accent.word().says()
                 );
             }

@@ -253,7 +253,7 @@ mod tests {
 
     /// **The accent is `alo-appearance`'s**: the rule along the band's inside
     /// edge is exactly the accent the person chose, for the scheme on screen,
-    /// and the band is never terracotta.
+    /// and the band is never deep teal.
     #[test]
     fn the_dock_carries_the_persons_accent() {
         for accent in Accent::ALL {

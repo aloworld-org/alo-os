@@ -65,12 +65,15 @@
 //! appearance.set_text(TextScale::percent(200).expect("200% is the standard's floor"));
 //! assert_eq!(appearance.text().to_string(), "200%");
 //!
-//! // An accent follows light and dark, and terracotta is never one of them —
+//! // An accent follows light and dark, and deep teal is never one of them —
 //! // refused in a sentence the person can read, in the language they read it.
 //! appearance.set_accent(Accent::Rose);
 //! assert_eq!(appearance.accent_at(evening), Accent::Rose.on(Scheme::Dark));
 //! let refused = Accent::of_colour(Token::DeepTeal.colour()).unwrap_err();
-//! assert!(refused.said(&strings).text().contains("choose verdigris"));
+//! let sentence = refused.said(&strings).text().to_lowercase();
+//! for accent in Accent::ALL {
+//!     assert!(sentence.contains(&accent.word().says().to_lowercase()));
+//! }
 //!
 //! // Only the difference is written down.
 //! assert!(!appearance.changes().is_untouched());
@@ -108,12 +111,12 @@
 //! # What this crate does not answer
 //!
 //! **That the agent is never signalled by colour alone.** ADR 0010 has two
-//! halves. The first is here: terracotta is reserved, the five accents are
+//! halves. The first is here: deep teal is reserved, the five accents are
 //! [`accent::Accent`], and every one of them is measured against the grounds it
 //! is drawn on. The second — that wherever the agent appears, its colour arrives
 //! with a mark and a word — is true of screens rather than of colours, and
 //! belongs where the drawing happens. Nothing in this crate can enforce it, and
-//! [`contrast`] says why it is not optional: terracotta on the reading ground
+//! [`contrast`] says why it is not optional: deep teal on the reading ground
 //! measures 2.87:1, under what either a word or a shape needs.
 //!
 //! # Nothing here says anything in English by itself

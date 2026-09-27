@@ -156,30 +156,26 @@ fn the_words_are_the_crates_own() {
     }
 }
 
-/// **The agent's line is terracotta and carries the dot; nobody else's does.**
+/// **The agent's line is deep teal and carries the dot; nobody else's does.**
 ///
 /// ADR 0010: the two arrive together or not at all, and the decision is
 /// `alo-in-use`'s rather than this file's.
 #[test]
-fn terracotta_and_the_dot_arrive_together_and_only_for_the_agent() {
-    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
+fn deep_teal_and_the_dot_arrive_together_and_only_for_the_agent() {
+    let deep_teal = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
 
     let anybodys = drawn(&[used(Used::Camera, 1)]);
     let the_agents_own = drawn(&[the_agents(Used::Camera, 1)]);
 
-    let has_terracotta = |picture: &InUsePicture| {
-        picture
-            .solids
-            .iter()
-            .any(|solid| solid.colour == terracotta)
-    };
+    let has_deep_teal =
+        |picture: &InUsePicture| picture.solids.iter().any(|solid| solid.colour == deep_teal);
     assert!(
-        !has_terracotta(&anybodys),
+        !has_deep_teal(&anybodys),
         "an application's camera was drawn in the colour that means the agent"
     );
     assert!(
-        has_terracotta(&the_agents_own),
-        "the agent's camera was not drawn in terracotta"
+        has_deep_teal(&the_agents_own),
+        "the agent's camera was not drawn in deep teal"
     );
     assert!(
         the_agents_own.solids.len() > anybodys.solids.len(),

@@ -579,7 +579,7 @@ mod tests {
     /// application's identity onto its connection, a stamped identity is only
     /// ever read as an application, and an application writing alo OS's
     /// reserved identifier about itself gets a line naming itself rather than
-    /// the agent's terracotta.
+    /// the agent's deep teal.
     #[test]
     fn an_application_cannot_claim_to_be_alo_os_or_the_agent() {
         let record = a_record_of(&[

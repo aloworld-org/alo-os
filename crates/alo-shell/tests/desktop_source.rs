@@ -5,7 +5,7 @@
 //! furniture and holds no authority** — nothing is granted, approved or revoked
 //! from it — and that **what the status area and the windows show about the
 //! machine is measured by the crates that measure, and this surface adds no
-//! number of its own**. Its acceptance adds that **terracotta is never
+//! number of its own**. Its acceptance adds that **deep teal is never
 //! offered** and that **light and dark are `alo-appearance`'s**, never this
 //! crate's. A test that drew a desktop would only show the frames it drew.
 //! These read the files instead, so a revoke button on the dock, a byte count
@@ -296,20 +296,20 @@ fn neither_window_acts_on_what_it_shows() {
     }
 }
 
-/// **Light and dark are `alo-appearance`'s, and terracotta is never offered.**
+/// **Light and dark are `alo-appearance`'s, and deep teal is never offered.**
 /// A `DesktopLook` is built in one place, from `Appearance::scheme_at` and
 /// `Appearance::accent_at`; a scheme is only ever matched on, never chosen; the
 /// accent enters a palette only through `Accent::of_colour`, the door that
-/// refuses terracotta; and no desktop file names terracotta at all.
+/// refuses deep teal; and no desktop file names deep teal at all.
 #[test]
-fn light_and_dark_are_alo_appearances_and_terracotta_is_never_offered() {
+fn light_and_dark_are_alo_appearances_and_deep_teal_is_never_offered() {
     let mut built = Vec::new();
     let mut accents = Vec::new();
     for (named, code) in the_desktop_files() {
         for (which, line) in code {
             assert!(
-                !line.contains("Terracotta"),
-                "{named}:{which} names terracotta: {line}"
+                !line.contains("Deep teal"),
+                "{named}:{which} names deep teal: {line}"
             );
             for scheme in ["Scheme::Light", "Scheme::Dark"] {
                 if line.contains(scheme) {

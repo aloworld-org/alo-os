@@ -733,9 +733,13 @@ included: `"Dark"` reads and `"dark"` does not.
   clock whatever the region writes; the two times must differ.
 - **`text`** is from 75 to 300. 200 is what EN 301 549 requires a machine to
   reach.
-- **`accent`** is `"Verdigris"`, `"Indigo"`, `"Violet"`, `"Moss"` or `"Rose"`.
-  Terracotta is how the machine says alo is present or acting (ADR 0010), and a
-  file that asks for it as an accent does not read.
+- **`accent`** is `"Indigo"`, `"Violet"`, `"Moss"` or `"Rose"`.
+  Deep teal is how the machine says alo is present or acting (ADR 0010, as ADR
+  0067 amended it), and a file that asks for it as an accent does not read.
+  `"Verdigris"` is **also accepted, and is not one of the four**: ADR 0067
+  retired it, and it is read as `"Indigo"` for one release because most existing
+  files say it and refusing them would take somebody's colour away at the moment
+  they upgraded. Do not write it into a new file.
 
 A table inside a value has exactly its own keys: a picture, a folder, a
 schedule or a time of day with a key that is not its own does not read.
@@ -785,6 +789,18 @@ Shipped = "alo"
 ```
 
 Refused — `appearance.kept.not-understood`.
+
+```toml refused
+format = 1
+accent = "DeepTeal"
+```
+
+Refused — `appearance.kept.not-understood`.
+
+A file written before ADR 0067 moved the signal from terracotta to deep teal is
+refused for the same reason, and by name rather than by colour — the name is not
+one of the four the accent may take, whether or not the colour it used to mean is
+still reserved:
 
 ```toml refused
 format = 1

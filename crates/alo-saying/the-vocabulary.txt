@@ -129,13 +129,12 @@ answering.wrong.nothing-usable	something answered {source}, but not with anythin
 answering.wrong.ran-out	nothing was answered {source} — the account there has run out, so nothing will be answered until it is paid for, and nothing else about this machine has changed
 answering.wrong.sent-somewhere-else	nothing was answered {source} — that address sends this machine somewhere nobody agreed to, and the question was not carried there
 answering.wrong.took-too-long	nothing answered {source} within the time this machine waits
+appearance.accent.a-ground-not-an-accent	{colour} is a ground or a structure colour rather than an accent — choose indigo, violet, moss or rose
 appearance.accent.indigo	Indigo
 appearance.accent.moss	Moss
-appearance.accent.not-an-accent	{colour} is a ground or a structure colour rather than an accent — choose verdigris, indigo, violet, moss or rose
-appearance.accent.not-offered	{colour} is not one of the accents this system offers — choose verdigris, indigo, violet, moss or rose, each of which is drawn to read on a light ground and on a dark one
-appearance.accent.reserved	terracotta is how this machine says alo is present or acting, so it is not offered as a personal accent — choose verdigris, indigo, violet, moss or rose
+appearance.accent.not-among-the-accents	{colour} is not one of the accents this system offers — choose indigo, violet, moss or rose, each of which is drawn to read on a light ground and on a dark one
+appearance.accent.reserved-for-alo	deep teal is how this machine says alo is present or acting, so it is not offered as a personal accent — choose indigo, violet, moss or rose
 appearance.accent.rose	Rose
-appearance.accent.terracotta	Terracotta
 appearance.accent.verdigris	Verdigris
 appearance.accent.violet	Violet
 appearance.colour.not-a-colour	a colour is a hash and six hexadecimal digits, as in #102A43 — {text} is not

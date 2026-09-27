@@ -17,7 +17,7 @@
 //!
 //! **The agent's own notifications** come through [`from_the_agent`], which
 //! takes an `alo_capability::Grantee` and refuses one that is an application:
-//! ADR 0010's terracotta and the word *agent* are not borrowable. It takes no
+//! ADR 0010's deep teal and the word *agent* are not borrowable. It takes no
 //! grant, because an agent notifying the person is not an agent reaching the
 //! machine — nothing leaves, nothing changes, and `alo-capability`'s verbs are
 //! where an agent's reach is decided.

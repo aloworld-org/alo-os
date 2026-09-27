@@ -1,11 +1,11 @@
-//! The mark beside every line of the egress indicator: terracotta, and never
-//! only terracotta.
+//! The mark beside every line of the egress indicator: deep teal, and never
+//! only deep teal.
 //!
-//! `docs/features.md`, ★: *terracotta always arrives with a mark and a word. A
+//! `docs/features.md`, ★: *deep teal always arrives with a mark and a word. A
 //! signal carried by hue fails for anybody who cannot distinguish that hue,
 //! and EN 301 549 does not allow colour to be the only means of conveying
 //! anything.* The word is the line `alo-egress` wrote; this is the mark — an
-//! arrow leaving a square, drawn in a colour that stands apart from terracotta
+//! arrow leaving a square, drawn in a colour that stands apart from deep teal
 //! by lightness and not by hue, inside an edge that stands apart from the
 //! ground. Take every hue off the screen and the arrow is still there.
 
@@ -21,7 +21,7 @@ use crate::painted::Solid;
 pub(crate) struct MarkColours {
     /// Its edge, against the line's ground.
     pub(crate) edge: Colour,
-    /// Its fill: terracotta, which means the agent and nothing else.
+    /// Its fill: deep teal, which means the agent and nothing else.
     pub(crate) fill: Colour,
     /// The arrow, against the fill.
     pub(crate) arrow: Colour,
@@ -31,8 +31,8 @@ impl MarkColours {
     /// The mark's three colours in this scheme, in whichever palette the
     /// surface around it is drawn in.
     ///
-    /// The fill is terracotta in the design and `alo_access::HighContrast`'s
-    /// own terracotta — the same hue, taken deep enough to read — where high
+    /// The fill is deep teal in the design and `alo_access::HighContrast`'s
+    /// own deep teal — the same hue, taken deep enough to read — where high
     /// contrast is on, because the mark means the agent in both (ADR 0010).
     /// The arrow is drawn against that fill: the design's navy or charcoal,
     /// and in high contrast the ground, which is the far end of a palette
@@ -44,7 +44,7 @@ impl MarkColours {
             arrow: match contrast {
                 // **Cream in both schemes, because the fill is dark.** The rule
                 // is unchanged — the arrow is told from the fill by lightness
-                // rather than hue — but the fill is not: terracotta was a light
+                // rather than hue — but the fill is not: deep teal was a light
                 // warm colour and a dark arrow stood out of it, and deep teal is
                 // dark, so navy measures 2.35:1 inside it and charcoal 2.48:1,
                 // both under the 3.0 a shape carrying meaning needs. Cream
@@ -68,7 +68,7 @@ pub(crate) fn rgb(colour: Colour) -> [u8; 3] {
 
 /// The mark, `side` pixels square with its top-left corner at (`x`, `y`).
 ///
-/// The edge first, the terracotta inside it, and then the arrow: a stem and a
+/// The edge first, the deep teal inside it, and then the arrow: a stem and a
 /// head that widens one row at a time, pointing up and out of the square.
 pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme, contrast: Contrast) -> Vec<Solid> {
     let colours = MarkColours::of(scheme, contrast);
@@ -127,7 +127,7 @@ mod tests {
     /// thing saying something.
     ///
     /// It caught a real fault when the agent's colour moved: navy inside deep
-    /// teal measures 2.35:1 where it cleared terracotta easily, so for a while
+    /// teal measures 2.35:1 where it cleared deep teal easily, so for a while
     /// the mark that says *something is leaving* was nearly the tone of the
     /// mark that says *alo is working*.
     #[test]
@@ -144,7 +144,7 @@ mod tests {
     }
 
     /// **The arrow stands apart from the fill in high contrast too**, where
-    /// the fill is the other palette's terracotta rather than the design's —
+    /// the fill is the other palette's deep teal rather than the design's —
     /// the same clause, measured on the palette a person who needs it sees.
     #[test]
     fn the_arrow_stands_apart_from_the_fill_in_high_contrast() {
@@ -179,7 +179,7 @@ mod tests {
     }
 
     /// **The mark's edge stands apart from the ground it is drawn on**, so the
-    /// square is a shape even where terracotta and the ground are close.
+    /// square is a shape even where deep teal and the ground are close.
     #[test]
     fn the_edge_stands_apart_from_the_ground() {
         for (scheme, ground) in [

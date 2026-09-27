@@ -24,7 +24,7 @@ The hit is presentation information, never permission to execute an operation.
 
 `paint(frame, scheme)` uses the existing alo-appearance tokens, with opaque
 grounds and contrasting original glyphs. Disabled controls have both a changed
-ground and a separate strike mark. Terracotta is never used. The restoring flag
+ground and a separate strike mark. Deep teal is never used. The restoring flag
 selects overlapping rectangles rather than the maximize rectangle. All solids
 are clipped to the same output used by hit testing; gaps remain untouched.
 The caller supplies an active normal-transform scale-one frame matching the
@@ -222,7 +222,7 @@ Hover uses the existing disabled-ground token with a contrasting one-pixel
 border inset one pixel. An armed press swaps the ordinary ground/ink and uses
 a two-pixel border at the same inset. Border thickness distinguishes the states
 without hue alone; disabled strikes remain distinct and unchanged. All drawing
-clips to the shared viewport and leaves gaps transparent. No terracotta, new
+clips to the shared viewport and leaves gaps transparent. No deep teal, new
 palette or hardcoded user-facing string is introduced (ADRs 0002/0010).
 
 Two unit and three real-client feedback tests cover geometry, state, refusal,
@@ -784,7 +784,7 @@ opaque gutters and paints feedback outside every text pixel. Enabled rows have
 a one-pixel underline, hover a one-pixel outline, and armed press a two-pixel
 outline; unavailable rows retain full wording without a command affordance.
 These shape differences use the original chrome scheme's Cream/Navy or
-Charcoal/Cream tokens; no terracotta, shrinking, clipping or recolouring of text.
+Charcoal/Cream tokens; no deep teal, shrinking, clipping or recolouring of text.
 The bounded gutter painter allocates at most 24 solid primitives, no text copies.
 Bad feedback leaves the frame untouched; a renderer failure requires discarding
 the entire frame, as with existing label painting.

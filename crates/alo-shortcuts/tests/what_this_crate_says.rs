@@ -118,8 +118,8 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
     vocabulary
         .says(
             Phrase::says(
-                alo_strings::Key::named("appearance.token.terracotta").unwrap(),
-                "Terracotta",
+                alo_strings::Key::named("appearance.token.deep-teal").unwrap(),
+                "Deep teal",
             )
             .unwrap(),
         )

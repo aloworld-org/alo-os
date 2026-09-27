@@ -1,26 +1,26 @@
-//! Night light pulls every colour on a screen towards orange. Terracotta is
+//! Night light pulls every colour on a screen towards orange. Deep teal is
 //! already orange, and it is the one colour in this system that means
 //! something.
 //!
-//! ADR 0010 reserves terracotta for the agent — present, acting, or waiting for
+//! ADR 0010 reserves deep teal for the agent — present, acting, or waiting for
 //! an approval — and keeps all five personal accents thirty degrees of hue away
 //! from it so that none of them can be mistaken for it. That measurement is
 //! made on a screen nobody has warmed. Turn night light on and the whole
 //! palette moves: blue goes first, then green, and every hue on the screen
 //! slides towards the red end. The rose accent is the one that slides furthest,
-//! because it is the accent nearest terracotta already.
+//! because it is the accent nearest deep teal already.
 //!
-//! So *terracotta means the agent* is a promise that has to be re-measured at
+//! So *deep teal means the agent* is a promise that has to be re-measured at
 //! every warmth a person can choose, and that is what this file does.
 //!
 //! # Hue distance is the wrong measure here, and this file says so rather than
 //! quietly using it
 //!
 //! `alo_appearance::accent`'s own test asks how far each accent sits from
-//! terracotta on the colour wheel, and thirty degrees is its floor. Under night
+//! deep teal on the colour wheel, and thirty degrees is its floor. Under night
 //! light that measure collapses for everybody: warming takes blue away, so
 //! magenta, pink and red all converge on orange and the *wheel* distance
-//! between terracotta and rose goes to nothing. What does **not** collapse is
+//! between deep teal and rose goes to nothing. What does **not** collapse is
 //! that they are still plainly different colours — a bright warm orange and a
 //! dark dull one — and the measure for that is a distance in a space built so
 //! that equal steps look equally different. This file uses CIE76 ΔE\*ab, whose
@@ -41,9 +41,12 @@
 //!
 //! # None of which makes the colour sufficient, warmed or not
 //!
-//! ADR 0010's measured note says terracotta on cream is 2.87:1 — under the 3.0
-//! that WCAG 2.1 §1.4.11 asks of a shape carrying meaning, and under the 4.5 it
-//! asks of text. The agent's mark and the agent's word were never optional, and
+//! ADR 0010's measured note says **terracotta** on cream is 2.87:1 — under the
+//! 3.0 that WCAG 2.1 §1.4.11 asks of a shape carrying meaning, and under the 4.5
+//! it asks of text. **Deep teal, which replaced it, clears both at 5.78:1**, so
+//! that reason no longer applies to the colour this system uses. The agent's
+//! mark and the agent's word were never optional anyway — a hue nobody can
+//! distinguish carries nothing however legible it is — and
 //! [`night_light_does_not_make_the_colour_sufficient_because_it_never_was`]
 //! holds that night light changes nothing about that either way.
 
@@ -173,7 +176,7 @@ fn the_agents_colour_stays_apart_from_every_accent_at_every_warmth() {
 /// **And no warmth turns an accent into the agent's colour exactly**, which is
 /// the crude failure the measurement above would also catch but which is worth
 /// its own sentence: a screen at some particular warmth showing a moss that is
-/// terracotta byte for byte.
+/// deep teal byte for byte.
 #[test]
 fn no_warmth_draws_an_accent_as_the_agents_colour() {
     let agent = Token::DeepTeal.colour();
@@ -204,7 +207,7 @@ fn no_warmth_draws_an_accent_as_the_agents_colour() {
 /// **The mark and the word are not optional, and night light does not change
 /// that.**
 ///
-/// ADR 0010 measured terracotta on cream at 2.87:1 and concluded the agent's
+/// ADR 0010 measured **terracotta** on cream at 2.87:1 and concluded the agent's
 /// colour could not carry its meaning alone. **Deep teal reaches 5.78:1 cold
 /// and 5.13:1 at 2000 K**, so that particular reason is gone: alo's colour is
 /// legible at every warmth a person can set.

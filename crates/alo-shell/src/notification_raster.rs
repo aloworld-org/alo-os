@@ -28,9 +28,9 @@
 //!
 //! Per card: who it is from, its title, its body, and the label of every action
 //! its sender offered — each as `alo-notifying` worded it, never shortened or
-//! re-worded here. The agent's card is terracotta, and **says *the agent* in so
+//! re-worded here. The agent's card is deep teal, and **says *the agent* in so
 //! many words** as well (`Notification::sent_by`), which is what carries
-//! ADR 0010's signal to somebody who cannot tell terracotta from anything else.
+//! ADR 0010's signal to somebody who cannot tell deep teal from anything else.
 
 use alo_appearance::{Scheme, TextScale, Token};
 use alo_dock::{Dock, Screen};

@@ -34,8 +34,8 @@
 # grounds rather than two palettes; `crates/alo-appearance/src/scheme.rs` decides
 # which ground, and `contrast.rs` is what holds a pairing to being readable.
 #
-# **The five accents a person may choose** (ADR 0010, `accent.rs`). None of them
-# is in this list and that is the point: terracotta is the agent's and cannot be
+# **The four accents a person may choose** (ADR 0010, `accent.rs`). None of them
+# is in this list and that is the point: deep teal is the agent's and cannot be
 # adopted as somebody's accent, so the two sets are kept apart rather than
 # filtered apart.
 
@@ -53,7 +53,10 @@ role = "structure, text"
 # else. About five percent of any screen, so a person can tell at a glance
 # whether the machine is doing something on their behalf. It is never an accent
 # somebody may choose (ADR 0010, amended by ADR 0067, which moved this role from
-# terracotta to deep teal and released terracotta to the accent set).
+# terracotta to deep teal). Terracotta was released from being reserved and was
+# *not* added to the accent set: an accent has to reach 4.5:1 on both grounds and
+# terracotta on cream measures 2.87:1, so the set is four rather than five and
+# terracotta is no longer a colour this system uses.
 #
 # It never appears alone: deep teal arrives with the four-corner mark or the
 # word, because navy and deep teal are both dark desaturated blues and a person

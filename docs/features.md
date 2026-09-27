@@ -38,8 +38,8 @@ however good the rest is.
 - [v0.5] Set the lock-screen image, independently of the desktop
 - [v0.5] **Light and dark**, following the time of day if a person wants
 - [v0.5] **Accent colour** — five designed hues, each with a value for a light ground and one for a dark, so it reads properly either way. The whole shell follows it, not one button (ADR 0010)
-- [v0.5] ★ **Terracotta is not one of them.** It means the agent and nothing else, so it is reserved rather than offered — an accent somebody could set to terracotta would take away the one signal that says the machine is acting on their behalf
-- [v0.5] ★ **The agent is never signalled by colour alone** — terracotta always arrives with a mark and a word. A signal carried by hue fails for anybody who cannot distinguish that hue, and EN 301 549 does not allow colour to be the only means of conveying anything
+- [v0.5] ★ **Deep teal is not one of them.** It means the agent and nothing else, so it is reserved rather than offered — an accent somebody could set to deep teal would take away the one signal that says the machine is acting on their behalf
+- [v0.5] ★ **The agent is never signalled by colour alone** — deep teal always arrives with a mark and a word. A signal carried by hue fails for anybody who cannot distinguish that hue, and EN 301 549 does not allow colour to be the only means of conveying anything
 - [v0.5] Text size and scaling, which is an accessibility setting as much as a taste one
 - [v0.5] Wallpapers shipped with the image, so a fresh machine is not grey
 - [v1] Cursor size and colour; sounds, including silencing them
@@ -437,11 +437,11 @@ drifts from the first, and then alo can do something the person cannot
 
 Adopted by the owner on 2026-09-22 and not yet built. One rule runs through all
 of it, so a person can read at a glance what is real, what is proposed, and who
-is acting: **a ghost is proposed, solid is real, and terracotta is the agent** —
-terracotta always with its mark and its word, never by colour alone.
+is acting: **a ghost is proposed, solid is real, and deep teal is the agent** —
+deep teal always with its mark and its word, never by colour alone.
 
 - [v1] ★ **Ghost previews** — before the agent changes anything, a translucent ghost of the result appears in place: the files with their new names, the draft, the edited design. Accepting makes it solid; declining fades it away
-- [v1] **The agent's presence** — a thin terracotta edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up
+- [v1] **The agent's presence** — a thin deep teal edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up
 - [v1] **The trust dial** — ADR 0064's three levels for running code as one dial in the agent's capsule, set per project
 - [v1.1] ★ **The time ribbon** — a ribbon at the bottom edge; dragging it back fades the whole desktop into the past, with what changed glowing, and letting go restores what the person picks
 - [v1] **The approval stack** — what the agent wants to do arrives as cards to accept or decline, each showing a real before and after: marked-up text, two versions of a design side by side, a difference in code

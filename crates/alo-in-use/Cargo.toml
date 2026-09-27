@@ -18,7 +18,7 @@ alo-applications = { path = "../alo-applications" }
 # an agent's name in this workspace, and ADR 0040 made it say which kind it is —
 # so an application can never arrive here wearing an agent's variant.
 alo-capability = { path = "../alo-capability" }
-# The one palette (ADR 0010). Terracotta means the agent and nothing else, and a
+# The one palette (ADR 0010). Deep teal means the agent and nothing else, and a
 # second definition of it in this crate would be a second answer to *is the
 # machine acting on my behalf*.
 alo-appearance = { path = "../alo-appearance" }

@@ -311,7 +311,7 @@ mod tests {
         );
     }
 
-    /// **Terracotta is not reachable from here.** Whatever a person has chosen,
+    /// **Deep teal is not reachable from here.** Whatever a person has chosen,
     /// and at whatever hour it is asked, the accent is never the colour that
     /// means the agent is present or acting (ADR 0010).
     #[test]

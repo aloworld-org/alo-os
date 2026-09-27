@@ -10,9 +10,12 @@
 //! # Mark, word and position — and only then colour
 //!
 //! [ADR 0010](../../../docs/decisions/0010-terracotta-is-reserved-and-never-alone.md)
-//! is categorical: the agent is never signalled by colour alone, and it
-//! measured why — terracotta on cream is 2.87:1, under the 3.0:1 WCAG 2.1
-//! §1.4.11 asks of a shape that carries meaning. So every line carries three
+//! is categorical: the agent is never signalled by colour alone. It measured
+//! terracotta, the colour it reserved, at 2.87:1 on cream — under the 3.0:1
+//! WCAG 2.1 §1.4.11 asks of a shape that carries meaning. **Deep teal replaced
+//! it and clears that at 5.78:1, and the rule did not move**, because the rule
+//! never rested on the measurement: a hue carries nothing to somebody who
+//! cannot distinguish it, however legible it is. So every line carries three
 //! things that are not a colour:
 //!
 //! - a **mark**, one silhouette per thing ([`crate::Mark`]);
@@ -25,7 +28,7 @@
 //! machine whose colours were all one colour would still tell a person
 //! everything this indicator has to say.
 //!
-//! # Terracotta, and only for the agent
+//! # Deep teal, and only for the agent
 //!
 //! [`Line::colour`] answers `Token::DeepTeal` exactly when
 //! [`crate::By::is_the_agents`] does, and `Token::Navy` — the colour alo OS
@@ -127,7 +130,7 @@ impl Line {
         self.what.position()
     }
 
-    /// The colour it is drawn in: terracotta for the agent, and the colour
+    /// The colour it is drawn in: deep teal for the agent, and the colour
     /// everything else on the machine is written in for everything else.
     ///
     /// Reserved (ADR 0010) and carrying nothing the mark and the sentence do
@@ -144,7 +147,7 @@ impl Line {
     /// Whether the agent's own mark — ADR 0010's small dot — is drawn beside
     /// it.
     ///
-    /// True exactly when the line is terracotta, because ADR 0010 says the two
+    /// True exactly when the line is deep teal, because ADR 0010 says the two
     /// arrive together or not at all.
     #[must_use]
     pub const fn the_agents_dot(&self) -> bool {
@@ -225,10 +228,10 @@ mod tests {
         assert!(!ours.line().the_agents_dot());
     }
 
-    /// **Terracotta is the agent's and nobody else's** (ADR 0010), and the
+    /// **Deep teal is the agent's and nobody else's** (ADR 0010), and the
     /// agent's dot arrives with it rather than instead of it.
     #[test]
-    fn no_line_is_terracotta_unless_the_agent_is_the_one_using_it() {
+    fn no_line_is_deep_teal_unless_the_agent_is_the_one_using_it() {
         for one in every_shape_of_use() {
             let line = one.line();
             assert_eq!(
@@ -245,8 +248,9 @@ mod tests {
     }
 
     /// **The agent's line says *the agent* in words**, so the signal survives a
-    /// person who cannot tell terracotta from anything else — which ADR 0010
-    /// measured as everybody, on the reading ground, at 2.87:1.
+    /// person who cannot tell deep teal from anything else. That is not a
+    /// contrast question — deep teal is legible at 5.78:1 on cream — it is that
+    /// a hue is no use to somebody who does not see it as a distinct hue.
     #[test]
     fn the_agents_line_says_so_without_its_colour() {
         let strings = in_english();

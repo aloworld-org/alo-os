@@ -42,7 +42,8 @@ itself reaches alo OS's answer or the agent's. Every use the server answered is
 kept — a source nothing is recorded reading is listed as *something on this
 machine* rather than dropped, and a machine that cannot ask refuses in words
 rather than reading as a quiet room. A `Line` is mark, sentence and position
-before it is a colour, and is terracotta only for the agent (ADR 0010).
+before it is a colour, and is deep teal only for the agent (ADR 0010, as ADR
+0067 amended it).
 `tests/two_lines_and_neither_is_the_other.rs` holds this indicator and the egress
 one apart. The on-a-machine test is
 `tests/a_stream_through_the_media_server_is_listed.rs`; it opens a stream through
@@ -63,7 +64,7 @@ built that captures without it.
   a sentence in the vocabulary naming what and who (*the camera, by the video-call
   application*); **alo OS's own captures appear on it like anybody else's**, with a
   test; the indicator is **mark, word and position, never colour alone** (ADR 0010),
-  and it is not terracotta unless an agent is the one using it; and there is no
+  and it is not deep teal unless an agent is the one using it; and there is no
   variant that hides a use, no allow-list of trusted applications, and no setting
   that turns the indicator off.
 - **Constraint:** it shows; it never decides. Whether an application may use the
@@ -167,7 +168,7 @@ screenshot is the most harvest-shaped thing a machine has.
   says *a picture of your screen* and is approved like any other change, and the
   image goes to the turn and nowhere else — never kept, never indexed, never in the
   record beyond *a picture of the screen was taken*; while the turn holds it, task
-  1's indicator shows the screen in use **by the agent**, in terracotta with its mark
+  1's indicator shows the screen in use **by the agent**, in deep teal with its mark
   and word; a test reads the shipped source of `alo-agentd`'s crates for any capture
   that is not reached through that verb; and whether that verb exists at all in v0.5
   is recorded as a finding if `docs/contracts/agent-verbs.md` does not list it —

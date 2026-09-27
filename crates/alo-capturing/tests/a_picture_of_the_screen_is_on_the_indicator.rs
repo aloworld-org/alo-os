@@ -112,7 +112,7 @@ fn a_picture_being_taken_is_the_screen_in_use_by_alo_os() {
 
 /// **The line a person reads says the screen, and says alo OS.** In their own
 /// language, with the mark and the place ADR 0010 asks for beside the words —
-/// and not in terracotta, because terracotta means an agent is acting and
+/// and not in deep teal, because deep teal means an agent is acting and
 /// nobody asked an agent for this picture.
 #[test]
 fn the_line_says_the_screen_is_in_use_by_alo_os_itself() {

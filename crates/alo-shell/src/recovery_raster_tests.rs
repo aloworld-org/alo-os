@@ -136,13 +136,13 @@ fn a_machine_that_cannot_go_back_draws_no_moment_at_all() {
     assert!(!picture.inked.is_empty());
 }
 
-/// **Not one pixel of the recovery screen is terracotta.** Terracotta means the
+/// **Not one pixel of the recovery screen is deep teal.** Deep teal means the
 /// agent, and no agent is involved in a person getting their own machine back.
 #[test]
-fn not_one_pixel_of_the_recovery_screen_is_terracotta() {
+fn not_one_pixel_of_the_recovery_screen_is_deep_teal() {
     let strings = words();
-    let terracotta = Token::DeepTeal.colour();
-    let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
+    let deep_teal = Token::DeepTeal.colour();
+    let deep_teal = [deep_teal.red(), deep_teal.green(), deep_teal.blue()];
     for scheme in [alo_appearance::Scheme::Light, alo_appearance::Scheme::Dark] {
         for moves in 0..3 {
             let screen = a_screen(&strings, moves);
@@ -154,10 +154,10 @@ fn not_one_pixel_of_the_recovery_screen_is_terracotta() {
             };
             let picture = picture(screen.shows(), &mut labels, A_LAPTOP, look).unwrap();
             for solid in &picture.solids {
-                assert_ne!(solid.colour, terracotta, "{scheme:?}");
+                assert_ne!(solid.colour, deep_teal, "{scheme:?}");
             }
             for inked in &picture.inked {
-                assert!(!inked.pixels.contains(&terracotta), "{scheme:?}");
+                assert!(!inked.pixels.contains(&deep_teal), "{scheme:?}");
             }
         }
     }

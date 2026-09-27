@@ -1,7 +1,7 @@
 //! Who sent a notification: an application, the agent, or alo OS itself.
 //!
 //! Three answers, and the second one is the one this file exists for. A
-//! notification drawn in terracotta with the word *agent* beside it says the
+//! notification drawn in deep teal with the word *agent* beside it says the
 //! machine is speaking on the person's behalf, and
 //! [ADR 0010](../../../docs/decisions/0010-terracotta-is-reserved-and-never-alone.md)
 //! reserves that signal for exactly that. So [`Sender`] is a struct around a
@@ -60,7 +60,7 @@ impl Sender {
     /// An agent, by the name the machine knows it by.
     ///
     /// Answers [`None`] for a grantee that is an application. That is the one
-    /// guarantee this type makes, and it is ADR 0010's: the terracotta
+    /// guarantee this type makes, and it is ADR 0010's: the deep teal
     /// notification and the word *agent* are reachable only from a grantee
     /// that really is one.
     #[must_use]
@@ -96,7 +96,7 @@ impl Sender {
         }
     }
 
-    /// Whether this is an agent, which is the one answer that is terracotta.
+    /// Whether this is an agent, which is the one answer that is deep teal.
     #[must_use]
     pub const fn is_the_agents(&self) -> bool {
         matches!(self.0, Who::Agent(_))

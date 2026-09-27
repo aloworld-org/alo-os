@@ -203,9 +203,11 @@ range, 2000 K to `Warmth::NEUTRAL` at 6500 K where it changes **nothing**
 exactly, and `Warming` is the curve normalised at that point. It is applied per
 screen through `Wearing`, beside that screen's background, rather than as one
 tinted sheet over a desk; there is no *except this one*, and the report says
-why. `tests/terracotta_still_means_the_agent_under_night_light.rs` walks every
-warmth at 50 K and holds the agent's colour ≥ 5.0 ΔE\*ab from all ten accent
-values — measured minimum **9.48, rose on a dark ground at 2000 K** — and holds
+why. `crates/alo-displays/tests/alo_is_legible_under_night_light_and_still_not_a_signal.rs`
+walks every warmth at 50 K and holds the agent's colour ≥ 5.0 ΔE\*ab from all
+eight accent values — `Accent::ALL` across both schemes, four rather than the
+five it was — measured minimum **9.5, rose on a dark ground at 2000 K** — and
+holds
 that night light never makes the colour sufficient on its own, because ADR 0010
 measured that it never was. `displays.toml` gains one key, `night-light`.
 Report: `docs/autonomy/updates/night-light-and-display-colour.md`.
@@ -229,7 +231,7 @@ shell plan's task 9). **Depends on:** 3.
   sets, or from sunset to sunrise computed **on the machine** from a location the
   person typed or a timezone, **never from a location service or a network
   lookup**, held by a test that the calculation opens no socket; its strength is a
-  colour temperature within a closed range, applied per display; and **terracotta
+  colour temperature within a closed range, applied per display; and **deep teal
   still means the agent** under night light — a test holds that the warmed palette
   keeps the agent's colour distinguishable from every accent, with its mark and
   word beside it as always (ADR 0010).
@@ -325,7 +327,8 @@ until they dismiss it — **in the session's own memory, with no serde, no path
 and no file anywhere in it**, which is a narrowing of *until they dismiss them*
 the report states plainly: signing out empties the list as dismissing does.
 An agent's own notification carries its mark and says *the agent* in words
-before it is terracotta (ADR 0010), and no application can wear either. **An
+before it is deep teal (ADR 0010, as ADR 0067 amended it), and no application
+can wear either. **An
 application cannot notify with an action that answers an approval**: an `Action`
 is a name and a label, a `Picked` is addressed to the sender and refuses an
 action the notification never offered, `alo-approving` is a dev-dependency of

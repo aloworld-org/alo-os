@@ -23,7 +23,7 @@ alo-capability = { path = "../alo-capability" }
 # What an application's identifier is, declared once: a notification names the
 # identifier a grant was made over and never the name a packager wrote.
 alo-applications = { path = "../alo-applications" }
-# Terracotta, which is the agent's and nobody else's (ADR 0010), and the time
+# Deep teal, which is the agent's and nobody else's (ADR 0010), and the time
 # of day quiet hours are written in.
 alo-appearance = { path = "../alo-appearance" }
 # Whether the screen is being shared or recorded, read from the machine's own

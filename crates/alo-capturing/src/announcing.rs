@@ -28,7 +28,7 @@
 //!
 //! **It does not name an agent.** A picture of the screen taken because a
 //! person pressed a key is alo OS acting for them, not an agent acting: naming
-//! an agent here would draw the line in terracotta (ADR 0010), which means *the
+//! an agent here would draw the line in deep teal (ADR 0010), which means *the
 //! machine is doing this on your behalf as an agent* and would be a lie about
 //! who asked. The agent's own screenshot is the plan's task 6, through a verb
 //! that is approved, and it will name the agent because it is the agent's.
@@ -132,7 +132,7 @@ mod tests {
 
     /// **It never names an agent.** A picture taken because a person pressed a
     /// key is alo OS acting for them; naming an agent would draw the line in
-    /// terracotta and say the agent asked for it (ADR 0010).
+    /// deep teal and say the agent asked for it (ADR 0010).
     #[test]
     fn the_capture_never_names_an_agent() {
         for (named, _) in ANNOUNCED_AS {
