@@ -33,7 +33,7 @@ and whoever finishes a task writes the next one in the same change.
 
 ### 1. The local account that needs no tenant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Phase 4's smaller half, and the one the exit gate actually requires: v0.01
 opens with *sign in*, and nothing in this repository signs anybody in. A local
@@ -58,7 +58,7 @@ the next task and was already written.
 
 ### 2. The daemon's environment is the session's
 
-**Status:** ready. **Depends on:** 1.
+**Status:** done. **Depends on:** 1.
 
 `alo-agentd` runs as the signed-in person and finds their bus at
 `/run/user/<uid>`. That is measured (`a_session_that_really_ended.rs`) and not
@@ -88,7 +88,7 @@ is the next task and was written in the same change.
 
 ### 3. Where a machine keeps its grants between one sign-in and the next
 
-**Status:** ready. **Depends on:** 2.
+**Status:** done. **Depends on:** 2.
 
 `docs/features.md` promises for v0.01: *Grants: pick a folder, see what is
 granted, revoke it, and it expires*. A person can now make one —
@@ -137,7 +137,7 @@ below is the next task and was written in the same change.
 
 ### 4. A grant made now reaches the daemon now
 
-**Status:** ready. **Depends on:** 3.
+**Status:** done. **Depends on:** 3.
 
 Task 3 gave the machine somewhere to keep its grants, and `alo-agentd` reads
 them when it starts. What it cannot do is hear about one made **while it is
@@ -242,7 +242,7 @@ below is the next task and was written in the same change.
 
 ### 6. The account a person asks for is the one their machine kept
 
-**Status:** ready. **Depends on:** 5.
+**Status:** done. **Depends on:** 5.
 
 Task 5 gave the person's side a way to read the record their machine keeps, and
 it is read under rules about who may have written the file. What nothing on this
@@ -300,7 +300,7 @@ below is the next task and was already written.
 
 ### 7. The pinned model runtime is on the image
 
-**Status:** ready. **Depends on:** nothing in this lane.
+**Status:** done. **Depends on:** nothing in this lane.
 
 ADR 0025 was accepted on 2026-09-11 and the definition now promises that **the
 local model is what the machine arrives ready to run**. The ledger's entry for it
@@ -352,7 +352,7 @@ below is the next task and was written in the same change.
 
 ### 8. The carry-or-fetch measurement ADR 0025 owes
 
-**Status:** ready. **Depends on:** 7.
+**Status:** done. **Depends on:** 7.
 
 ADR 0025 recommends carrying the weights on the certified image and fetching
 only where an image cannot — and says in as many words that this is *a
@@ -411,7 +411,7 @@ below is the next task and was written in the same change.
 
 ### 9. The grade the weights wait on
 
-**Status:** ready. **Depends on:** 8.
+**Status:** done. **Depends on:** 8.
 
 **The memory question is answered.** This task was written *ready, and it needs
 a machine with room* — every unmeasured entry wants ten gigabytes or more, and
@@ -485,7 +485,7 @@ below is written from this outcome and was written in the same change.
 
 ### 10. A model on the disk, sized for the machine it lands on
 
-**Status:** ready — **its precondition was met on 2026-09-14.** **Depends on:** 9.
+**Status:** done — **its precondition was met on 2026-09-14.** **Depends on:** 9.
 
 > **Do not write *unblocked* in a status line.** This one said it from
 > 2026-09-14 until 2026-09-22, and the loop skipped the task for eight days: it
@@ -610,7 +610,7 @@ done on 2026-09-11 and now carrying a dated note saying what superseded it.
 
 ### 11. What a person is asked at setup, before there is anywhere to ask it
 
-**Status:** ready. **Depends on:** nothing in this lane.
+**Status:** done. **Depends on:** nothing in this lane.
 
 ADR 0009 gave setup a fourth choice — no model, no provider, no agent — with the
 same weight as the other three and no persuasion attached, and ADR 0025 settled
@@ -676,7 +676,7 @@ below was already written and is the next task.
 
 ### 12. Candidates the measuring box can actually hold
 
-**Status:** ready. **Depends on:** 9.
+**Status:** done. **Depends on:** 9.
 
 Task 9 found that the catalogue's unmeasured half is exactly the half this
 lane's box cannot load, and that trying anyway takes the guest down. So the
@@ -755,7 +755,7 @@ below is the next task and was written in the same change.
 
 ### 13. The two sizes rule 4 left without an artefact
 
-**Status:** ready. **Depends on:** 12.
+**Status:** done. **Depends on:** 12.
 
 Task 12 made `quantisation` a claim an entry has to be able to point at, and two
 entries could point at nothing: `teuken-7b-instruct` and `eurollm-9b-instruct`
@@ -833,7 +833,7 @@ Task 14 below is the next task and was written in the same change.
 
 ### 14. Whose requantisation this catalogue may vouch for
 
-**Status:** ready. **Depends on:** 13.
+**Status:** done. **Depends on:** 13.
 
 Task 12 refused a quantisation nobody can point at, task 13 refused a size
 belonging to a file the entry does not claim, and both refusals land on the same
@@ -915,7 +915,7 @@ Task 15 below is the next task and was written in the same change.
 
 ### 15. The file the two European entries mean
 
-**Status:** ready. **Depends on:** 14.
+**Status:** done. **Depends on:** 14.
 
 Task 14 decided what naming a stranger's artefact costs; nobody has paid it.
 `eurollm-9b-instruct` and `teuken-7b-instruct` still claim no quantisation and

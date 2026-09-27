@@ -209,10 +209,21 @@ It is the only machine that knows, and it knows at exactly the moment the
 knowledge is cheap.
 
 **When surveying the plans for free work, key on the `**Done,` marker and not
-on the status word.** A task carries `**Status:** ready.` *and*, separately, a
+on the status word.** A task carried `**Status:** ready.` *and*, separately, a
 `**Done, <date>.**` marker in its body — so reading the status line alone
-reports finished tasks as free. That mistake nearly handed a lane thirteen
+reported finished tasks as free. That mistake nearly handed a lane thirteen
 completed tasks on the same day this rule was written.
+
+**The marker is still the authority, and the two now agree.** On 2026-09-27
+every plan under this directory was read for the disagreement, and **74 tasks
+across six plans** said `ready` above their own `**Done, <date>.**` — 32 in
+`v0-01-delivery-plan.md`, a release that shipped, and 14 each in
+`kernel-enforcement-plan.md` and `v0-01-lane-b-plan.md`. Every one of those
+status words now reads `done`, copied from the marker directly beneath it and
+with no other word of any plan touched. So this rule is advice about which of
+two statements to trust, and no longer a workaround for 74 of them being
+wrong — and the rule above, that the machine finishing a task clears the lines
+naming it, now includes its own status line.
 
 Do not batch unrelated tasks into one branch or keep release-long development
 branches. Dependencies should land first; dependent branches integrate them

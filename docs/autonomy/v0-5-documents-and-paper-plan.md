@@ -66,7 +66,7 @@ files =
 
 ### 1. What this machine can do with a file, and what it cannot
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 **Done, 2026-09-14.** `crates/alo-opening`: `decide` takes an open file, its
 name and a `ThisMachine` and answers with a `Decided` — `AsItIs(Outcome)` or
@@ -215,7 +215,7 @@ equivalent of a format's literal text.
 
 ### 3. A printer is found, set up, and says what is wrong with it
 
-**Status:** ready. **Depends on:** 1.
+**Status:** done. **Depends on:** 1.
 
 **Done, 2026-09-14.** `crates/alo-printing` talks to the rented printing service
 (CUPS) in its own protocol, over its own socket or an address on this machine:
@@ -261,7 +261,7 @@ the entire reason printing is on a list of promises.
 
 ### 4. "I can't open this file", said properly
 
-**Status:** ready. **Depends on:** 2, 3.
+**Status:** done. **Depends on:** 2, 3.
 
 **Done, 2026-09-17.** `crates/alo-opening`: every `Cannot` now answers
 `would()` with one of a closed set of five `Would`s — *a complete copy* (empty,
@@ -305,7 +305,7 @@ an application that opens and shows nothing. The promise is that the moment is
 
 ### 5. Every sentence this makes, and the walk through them
 
-**Status:** ready. **Depends on:** 1, 2, 3, 4.
+**Status:** done. **Depends on:** 1, 2, 3, 4.
 
 **Done, 2026-09-17.** `crates/alo-converting/tests/the_walk_through_documents_and_paper.rs`
 walks a PDF arriving, the owner's `sample.docx` arriving and being converted

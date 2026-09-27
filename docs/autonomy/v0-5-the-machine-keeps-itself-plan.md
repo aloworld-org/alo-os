@@ -97,7 +97,7 @@ files =
 
 ### 1. What an update is, and what it may never do
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 **Done, 2026-09-14.** `crates/alo-keeping-up`: `Digest` is a whole, lowercase
 `sha256:` image digest, refused otherwise and read back through the same check;
@@ -142,7 +142,7 @@ rather than a habit.
 
 ### 2. An update applied, and the same machine afterwards
 
-**Status:** ready. **Depends on:** 1.
+**Status:** done. **Depends on:** 1.
 
 **Done, 2026-09-15.** The doing is a new crate, `crates/alo-updating`, so
 `alo-keeping-up` still names no process, file or clock. `alo-keeping-up` adds
@@ -203,7 +203,7 @@ survive it, and that the machine can say what changed.
 
 ### 3. Back to yesterday's machine
 
-**Status:** ready. **Depends on:** 2.
+**Status:** done. **Depends on:** 2.
 
 **Done, 2026-09-15.** `alo-keeping-up` decides, still with no clock, file or
 process: `Deployments` reads `rollbackQueued`; `Before::of` names the build
@@ -251,7 +251,7 @@ have never heard of.
 
 ### 4. Undo what the agent did
 
-**Status:** ready — [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) was
+**Status:** done — [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) was
 accepted on 2026-09-16, option A (the base's snapshot on btrfs, a subvolume per
 home, a snapshot either side of a changing turn), with six terms the owner added:
 undo reaches back seven days or fifty changing turns, whichever ends first; disk
@@ -347,7 +347,7 @@ changed their mind. Today nothing can answer that.
 
 ### 5. What a person is told, before and after
 
-**Status:** ready. **Depends on:** 1, 4.
+**Status:** done. **Depends on:** 1, 4.
 
 **Done, 2026-09-19.** Nothing was re-decided: every sentence this task holds
 existed before it, and what was missing was the proof that they are a
@@ -414,7 +414,7 @@ you were running that*, *this can be undone*, *this cannot*.
 
 ### 6. Finding out there is an update
 
-**Status:** ready. **Depends on:** 1, 2.
+**Status:** done. **Depends on:** 1, 2.
 
 **Done, 2026-09-19.** A new crate, `crates/alo-looking`, so `alo-keeping-up`
 still names no clock, socket or file and `alo-updating` still has no HTTP client
@@ -512,7 +512,7 @@ build; the recovery *screen* stays the shell plan's.
 
 ### 7. An offer a person can act on
 
-**Status:** ready. **Depends on:** 6.
+**Status:** done. **Depends on:** 6.
 
 **Done, 2026-09-19.** The offer **carries** the doubt rather than hiding the
 build: `alo_keeping_up::Vouching` is two members, `Offered::heard` takes one as
@@ -632,7 +632,7 @@ makes.
 
 ### 9. A staging decided from an approval that arrived from elsewhere
 
-**Status:** ready. Written 2026-09-20 for
+**Status:** done. Written 2026-09-20 for
 [`v0-5-the-broker-and-the-disk-plan.md`](v0-5-the-broker-and-the-disk-plan.md)
 task 8, which names it as one of its three blockers and **may not write it**:
 `alo-keeping-up` is this plan's crate and that plan never edits it. Its other two
@@ -719,7 +719,7 @@ drift. The instruction stays this crate's, and gains a second door into it.
 
 ### 10. A machine that has never looked
 
-**Status:** ready. **Depends on:** 6, 7.
+**Status:** done. **Depends on:** 6, 7.
 
 **Done, 2026-09-19.** `crates/alo-looking-once` is the one caller of
 `Because::ThisMachineStarted` on a booted machine, and a test reads every file
