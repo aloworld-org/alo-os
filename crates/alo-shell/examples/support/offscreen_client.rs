@@ -184,13 +184,10 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(send.send(11).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();
-    assert!(fresh.events.keyboard.seat.is_some());
-    if let Some(seat) = &fresh.events.keyboard.seat {
-        fresh
-            .toplevel
-            ._move(seat, fresh.events.pointer.button_serial);
-    }
-    fresh.sync();
+    // **No move request.** The shell takes hold of a frame by the name above it
+    // (ADR 0071) and refuses a client that asks to be moved, so there is nothing
+    // for this client to send here. The press in stage 11 landed on the band and
+    // was never delivered to it, which is why it is not acknowledged either.
     assert!(send.send(12).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();

@@ -228,6 +228,18 @@ fn window_maximize_and_pointer_operations_refuse_competing_ownership()
     f.backend(|s| s.pointer_motion(4.0, -16.0, 8))?;
     f.backend(|s| s.pointer_button(0x110, Pressed, 9))?;
     app.sync();
+    // **The band is alive**, asserted rather than assumed. The maximised case
+    // earlier requires a frame in a window mode *not* to move, and a hit test
+    // that found nothing at all would satisfy it — so the same gesture on a
+    // restored frame has to move it, here, in the same test. Without this the
+    // earlier assertion is true of a dead band as readily as of a refusing mode.
+    f.backend(|s| s.pointer_motion(24.0, 4.0, 91))?;
+    assert_eq!(
+        origin(&f, &root),
+        (20.0, 20.0).into(),
+        "the name band moved nothing on a restored frame, which would make the \
+         maximised case above pass for the wrong reason"
+    );
     assert_eq!(maximize(&f, &root, true), Err(WindowMaximizeError::Busy));
     f.backend(|s| s.pointer_button(0x110, Released, 10))?;
     assert!(maximize(&f, &root, true)?.is_some());

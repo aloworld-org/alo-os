@@ -74,10 +74,20 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 13..=16 => crate::interactive_resize_check::stage(&mut server, renderer, stage)?,
                 11 => {
                     // The cursor fixture must not inject a second motion between
-                    // this press and the client's ensuing move request.
+                    // this press and the drag it begins.
                     drive_cursor = false;
-                    server.pointer_motion(4.0, 5.0, 100)?;
-                    assert!(server.pointer_button(
+                    // **On the band above the frame**, not inside it. ADR 0071: the
+                    // name above a frame is what moves it, and a press inside the
+                    // content belongs to the application — so the press that used
+                    // to be at (4, 5) and authorise a client's move request is now
+                    // at (4, -16), directly above the frame's own top edge. The
+                    // pointer path in stage 12 is shifted by the same 21 so the
+                    // frame still lands where it did and the golden pixels below
+                    // are unchanged.
+                    server.pointer_motion(4.0, -16.0, 100)?;
+                    // `false`, because the band is the shell's: the press takes
+                    // hold of the frame and is never delivered to the client.
+                    assert!(!server.pointer_button(
                         0x110,
                         smithay::backend::input::ButtonState::Pressed,
                         101
@@ -85,7 +95,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 12 => {
                     let root = roots.first().ok_or("move client missing")?;
-                    for (pointer, delta) in [((14.0, 15.0), (10, 10)), ((-1.0, -1.0), (-5, -6))] {
+                    for (pointer, delta) in [((14.0, -6.0), (10, 10)), ((-1.0, -22.0), (-5, -6))] {
                         server.pointer_motion(pointer.0, pointer.1, 102)?;
                         let prepared = render_scanout(
                             renderer,
