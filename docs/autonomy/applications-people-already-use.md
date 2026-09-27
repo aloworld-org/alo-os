@@ -28,10 +28,44 @@ models and none of them runs on a machine:
 
 **Status:** ready. **Depends on:** nothing.
 
-A D-Bus service answering the `org.freedesktop.portal.*` interfaces and routing
-every request to `alo-portals`, which already knows how to judge one. Without
-it a sandboxed application installs and can then do nothing at all: not open a
-file, not save one, not be notified.
+**Corrected 2026-09-27, before anything was built.** This task said *no portal
+backend service exists*, taken from the exit gate's refusal. Read rather than
+believed: `alo-portals::Backend::serve_on` **owns
+`org.freedesktop.portal.Desktop`** and answers four interfaces — Secret, OpenURI,
+Settings and NetworkMonitor — reading a person's grants at every request so a
+revocation is felt at the next one rather than at a restart, and
+`the_portal_backend_answers_on_a_real_bus.rs` proves it on a real bus. **The
+backend is written.**
+
+**What is missing is narrower.** No binary calls `serve_on`, so nothing runs it,
+and there is no unit to start it — every other daemon here has both
+(`alo-convertd`, `alo-agentd`, `alo-boundaryd`). And the portals that need a
+dialog are **deliberately** unregistered: `serving.rs` answers only those
+decided without one, so the bus itself tells an application nothing answers the
+rest. **FileChooser is among them**, which is what an application needs to open
+or save anything — so this task ends with a running backend that still cannot
+let Chrome open a file, and that second half is task 6's real content.
+
+**And one of the four things the backend is built from has no real
+implementation.** `Backend::answering_from` takes a machine, a keyring, the
+sandboxes and a record. Three of them exist for a real machine — the keyring is
+`alo-secrets`' `TheKeyring`, the record is `AnswersFile`, and `Sandboxes::under`
+reads `/proc`. **`TheMachine` is implemented five times and every one is a test
+double.** Nothing reads a real person's grants, their *what opens what*, and how
+they set the machine to look, which is what `the_machine.rs` says is read at
+every request so that a revocation is felt at the next one.
+
+So the order inside this task is: the machine, then the binary, then the unit.
+Writing the binary first would mean assembling a backend out of a thing that
+does not exist.
+
+Without all of it, a sandboxed application installs and can then do nothing at
+all: not open a file, not save one, not be notified.
+
+- **Also owed:** this would be **the first user unit in the image**. Every unit
+  there today is a system one, and a portal backend serves one person's session
+  bus rather than the machine — so where a per-person service is started from is
+  a small structural decision to make rather than assume.
 
 - **Acceptance:** a real sandboxed application asks through a real portal for a
   file and for a notification; the request is judged by `alo-portals` against
