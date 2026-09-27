@@ -586,16 +586,36 @@ const NOT_COPIED: [&str; 4] = [
     "--exclude=/.kernel-loop",
 ];
 
-/// The copy of the source a build directory's gates read, beside it on the same
-/// filesystem: `$HOME/alo-builds/this-machine` reads `$HOME/alo-trees/this-machine`.
+/// The copy of the source this checkout's gates read, beside the build directory
+/// on the same filesystem: `C:\dev\alo-os-3` reads `$HOME/alo-trees/alo-os-3`.
 ///
-/// **One copy for every checkout on the machine**, overwritten by whichever
-/// lane has the gate turn, and read only while it holds the turn. A path that
-/// stays the same from lane to lane is what lets Cargo reuse what the previous
-/// lane built.
+/// **One copy per checkout, not one per machine.** It was one per machine, so
+/// that a path which never changed let Cargo reuse whatever the last lane built.
+/// That is worth having, and it is not worth what it cost: on 2026-09-18 and
+/// 2026-09-19 **four gate runs were refused for faults in a tree the gating lane
+/// did not have** — 41 crates against a length of 42, a module that was also a
+/// function, `alo_notifying` in a checkout with no such crate, and a test file
+/// two versions old. Each time the copy held another lane's tree. The gate turn
+/// keeps two supervisors out of it, so something else on this machine writes
+/// there — a worker running the gates by hand is the likeliest, and a copy nobody
+/// else names cannot be written under a lane either way.
+///
+/// **The build directory stays one per machine.** It is 40 GB and the disk
+/// argument that settled it is unchanged; a copy of the source is about 120 MB,
+/// so that argument does not reach it.
+///
+/// The cost is real and belongs here rather than in a commit message: Cargo's
+/// fingerprints carry the source path, so the shared build directory recompiles
+/// the workspace when the gate turn passes between checkouts. A refusal that
+/// names a file the work never touched costs more, because somebody has to read
+/// a whole tree to find out that it does not.
 #[cfg(any(windows, test))]
-fn the_copy_for(building_in: &str) -> String {
-    building_in.replacen(where_it_builds::ALL_OF_THEM, TREES, 1)
+fn the_copy_for(building_in: &str, at: &Path) -> String {
+    let beside = building_in.replacen(where_it_builds::ALL_OF_THEM, TREES, 1);
+    let above = beside
+        .rsplit_once('/')
+        .map_or(beside.clone(), |(above, _)| above.to_owned());
+    format!("{above}/{}", where_it_builds::a_name_for(at))
 }
 
 /// Whether a command in `within` links with mold.
@@ -641,7 +661,7 @@ fn copied_where_it_builds(at: &Path) -> Result<(), String> {
         return Ok(());
     };
     let from = as_wsl_sees_it(at)?;
-    let to = the_copy_for(building_in);
+    let to = the_copy_for(building_in, at);
     let said = Command::new("wsl")
         .args(["-d", "Ubuntu", "--", "bash", "-lc"])
         .arg(format!(
@@ -693,7 +713,7 @@ fn bridged(
         // `where_it_builds` guarantees the path has nothing in it a shell would
         // have to be protected from.
         Some(directory) => (
-            format!("{}/{within}", the_copy_for(directory)),
+            format!("{}/{within}", the_copy_for(directory, at)),
             format!("export CARGO_TARGET_DIR=\"{directory}\"; "),
         ),
         None => (as_wsl_sees_it(&at.join(within))?, String::new()),
@@ -910,15 +930,23 @@ mod a_mac_names_its_linux {
 mod tests {
     use super::*;
 
-    /// **The source the gates read sits beside the build directory**, on the
-    /// same filesystem and under the same name, and history and old builds are
-    /// not copied.
+    /// **Every checkout's gates read a copy of their own**, beside the one build
+    /// directory the machine shares, and history and old builds are not copied.
+    ///
+    /// Two checkouts sharing one copy is what refused four gate runs on
+    /// 2026-09-18 and 2026-09-19 for faults in a tree the gating lane did not
+    /// have, so **two different checkouts must never name the same copy** — which
+    /// is what the `assert_ne!` is for and is the whole of why this changed.
     #[test]
-    fn the_build_directory_reads_the_copy_of_the_source_beside_it() {
-        assert_eq!(
-            the_copy_for("$HOME/alo-builds/this-machine"),
-            "$HOME/alo-trees/this-machine"
+    fn every_checkout_reads_a_copy_of_its_own_beside_the_build_directory() {
+        let one = the_copy_for("$HOME/alo-builds/this-machine", Path::new("C:/dev/alo-os"));
+        let other = the_copy_for(
+            "$HOME/alo-builds/this-machine",
+            Path::new("C:/dev/alo-os-3"),
         );
+        assert_eq!(one, "$HOME/alo-trees/alo-os");
+        assert_eq!(other, "$HOME/alo-trees/alo-os-3");
+        assert_ne!(one, other, "two checkouts would gate in one copy");
         // One build directory serves every lane, so a copy that decided by
         // timestamp handed the next lane the last lane's artefacts.
         for by_content in ["--checksum", "--no-times", "--delete"] {
