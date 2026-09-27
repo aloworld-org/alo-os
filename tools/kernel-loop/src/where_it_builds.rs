@@ -23,9 +23,15 @@
 //! machine never gate at once anyway, so the lock costs nothing and the second
 //! directory costs a whole workspace build of disk. On 2026-09-17 that second
 //! copy of every artefact filled a 100 GB volume to zero on two machines, and
-//! one of them could not even start WSL afterwards. The copy of the source the
-//! gates read ([`crate::gates`]) is one per machine too, at the same path for
-//! every checkout, so what one lane built is fresh for the next.
+//! one of them could not even start WSL afterwards.
+//!
+//! The **copy of the source** the gates read ([`crate::gates`]) went the other
+//! way: it is one **per checkout**, named by [`a_name_for`], because sharing one
+//! refused four gate runs for faults in trees the gating lane did not have. A
+//! copy is about 120 MB against a build directory's 40 GB, so the disk argument
+//! that settles the build directory does not reach it.
+//! [`crate::gates::the_copy_for`] carries the four runs and what the change
+//! costs.
 //!
 //! The reserve is then asked of **that** directory, and the refusal names the
 //! filesystem it asked about — because a sentence about free space that does
@@ -322,6 +328,52 @@ const THIS_MACHINE: &str = "this-machine";
 /// The machine's build directory under a home, whichever checkout asks.
 fn this_machines(home: &str) -> String {
     format!("{home}/{ALL_OF_THEM}/{THIS_MACHINE}")
+}
+
+/// A name for a checkout, from its own directory, for the things there is one of
+/// **per checkout** rather than one of per machine.
+///
+/// The build directory is one per machine and the argument for that is 40 GB of
+/// disk. The **copy of the source** the gates read is not: it is 120 MB, and
+/// `crate::gates::the_copy_for` says what sharing it cost. So a checkout needs a
+/// name, and the only thing that distinguishes two checkouts on one machine is
+/// where they are.
+///
+/// Reduced to letters, digits and hyphens because the name goes into a path a
+/// shell is handed, and `where_it_goes` promises the build directory holds
+/// nothing a shell would have to be protected from — a promise that would be
+/// worth nothing if the directory beside it broke it. A checkout whose last
+/// component reduces to nothing is `checkout`, which collides with another such
+/// checkout and is still better than an empty path.
+///
+/// `#[cfg(any(windows, test))]` for the same reason its only caller,
+/// [`crate::gates::the_copy_for`], carries it: the copy is made **from** the
+/// Windows side, and the gates are built and run on the Linux beside it, where
+/// nothing calls this. Without the attribute the supervisor's own clippy refuses
+/// its binary for dead code — which is a gate this repository wants, so the answer
+/// is the attribute rather than an `allow`.
+#[cfg(any(windows, test))]
+#[must_use]
+pub fn a_name_for(checkout: &Path) -> String {
+    let written = checkout.to_string_lossy().replace('\\', "/");
+    let last = written
+        .rsplit('/')
+        .find(|part| !part.is_empty())
+        .unwrap_or("checkout");
+    let mut named = String::with_capacity(last.len());
+    for letter in last.chars() {
+        if letter.is_ascii_alphanumeric() {
+            named.push(letter.to_ascii_lowercase());
+        } else if !named.ends_with('-') {
+            named.push('-');
+        }
+    }
+    let named = named.trim_matches('-').to_owned();
+    if named.is_empty() {
+        "checkout".to_owned()
+    } else {
+        named
+    }
 }
 
 /// What `df` answered, read.
@@ -636,6 +688,54 @@ mod tests {
                     "something here can throw away somebody's compilation: {line}"
                 );
             }
+        }
+    }
+
+    /// **Two checkouts on one machine never get the same name**, which is the
+    /// whole of what this function is for, and a name is always safe in a path a
+    /// shell is handed.
+    ///
+    /// The second half matters as much as the first: this name goes beside the
+    /// build directory, and `where_it_goes` promises that directory holds nothing
+    /// a shell would have to be protected from. A promise kept by the build
+    /// directory and broken by the copy beside it is not kept.
+    #[test]
+    fn two_checkouts_never_name_one_copy() {
+        assert_eq!(a_name_for(Path::new("C:/dev/alo-os")), "alo-os");
+        assert_eq!(a_name_for(Path::new("C:/dev/alo-os-3")), "alo-os-3");
+        assert_ne!(
+            a_name_for(Path::new("C:/dev/alo-os")),
+            a_name_for(Path::new("C:/dev/alo-os-3")),
+            "two checkouts would gate in one copy"
+        );
+
+        // Windows separators, a trailing separator, and a name that differs only
+        // by case — each is the same checkout named two ways, and each has been
+        // typed at this machine.
+        assert_eq!(a_name_for(Path::new(r"C:\dev\alo-os-3")), "alo-os-3");
+        assert_eq!(a_name_for(Path::new("C:/dev/alo-os-3/")), "alo-os-3");
+        assert_eq!(a_name_for(Path::new("C:/dev/ALO-OS-3")), "alo-os-3");
+
+        for named in [
+            "C:/dev/alo os 3",
+            "C:/dev/alo..os..3",
+            "C:/dev/a'lane's checkout",
+            "/home/somebody/alo-os",
+            "C:/",
+            "",
+        ] {
+            let name = a_name_for(Path::new(named));
+            assert!(!name.is_empty(), "{named} named nothing");
+            for letter in name.chars() {
+                assert!(
+                    letter.is_ascii_lowercase() || letter.is_ascii_digit() || letter == '-',
+                    "{named} named {name}, which carries {letter:?} into a path a shell is handed"
+                );
+            }
+            assert!(
+                !name.starts_with('-') && !name.ends_with('-'),
+                "{named} named {name}"
+            );
         }
     }
 }
