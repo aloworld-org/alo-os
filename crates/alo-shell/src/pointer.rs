@@ -20,6 +20,12 @@ pub(crate) struct Pointer {
     pub(crate) location: Point<f64, Logical>,
     /// Timestamp used for synthetic cancellation events.
     time: u32,
+    /// Scroll a canvas pan has not been able to spend yet, in screen pixels.
+    ///
+    /// See `crate::canvas_pan`: the plane is measured in whole units and a scroll
+    /// arrives as a fraction, so a trackpad's tenths are kept here instead of
+    /// being truncated away one event at a time.
+    pub(crate) unspent_scroll: (f64, f64),
     /// Latest matched real release, valid only while its exact recipient keeps focus.
     pub(crate) popup_release: Option<(Serial, WlSurface)>,
 }
@@ -41,6 +47,7 @@ impl Server {
                 buttons: Vec::new(),
                 location: (0.0, 0.0).into(),
                 time: 0,
+                unspent_scroll: (0.0, 0.0),
                 popup_release: None,
             });
         }
@@ -209,7 +216,26 @@ impl Server {
     }
 
     /// Forward one finite scroll frame, preserving source, v120 and stop flags.
-    /// Returns false without focus. Timestamps use the backend's monotonic clock.
+    /// Timestamps use the backend's monotonic clock.
+    ///
+    /// # Over a frame it is the frame's; over the canvas it pans
+    ///
+    /// The canvas plan's task 5 states the rule, and the hit test already answers
+    /// it: with a client focused, this is that application's scroll and nothing
+    /// moves the plane; with none, the arrow is on the canvas and the scroll pans
+    /// it. See `crate::canvas_pan`. `true` means the scroll did one of those two
+    /// things, and a caller that needs to know which asks the camera.
+    ///
+    /// `false` where a scroll reached nobody: no pointer, a fraction too small to
+    /// spend yet — the remainder is kept — or a pan the plane's own edge refused.
+    /// This used to be the answer whenever nothing was focused, because then a
+    /// scroll over empty canvas did nothing at all.
+    ///
+    /// **Nothing focused is not quite the same as the arrow being on the canvas.**
+    /// It is also true in the moment after the pointer has left the output, and
+    /// this crate keeps no separate record of whether a pointer is present — so a
+    /// scroll arriving then pans. Named in the plan under task 5 rather than fixed
+    /// with a flag invented here.
     pub fn pointer_axis(&mut self, frame: AxisFrame) -> Result<bool, InputError> {
         if !bounded(frame.axis.0) || !bounded(frame.axis.1) {
             return Err(InputError::InvalidPointer);
@@ -220,8 +246,13 @@ impl Server {
             .pointer
             .as_mut()
             .ok_or(InputError::PointerUnavailable)?;
+        // **Over a frame, or over the plane** — task 5's whole rule, and the hit
+        // test has already answered it: a focus means the arrow is on a frame and
+        // the scroll is that application's, and no focus means the arrow is on the
+        // canvas and the scroll moves the canvas. See `crate::canvas_pan`.
         if pointer.handle.current_focus().is_none() {
-            return Ok(false);
+            pointer.time = frame.time;
+            return Ok(self.pan_the_plane_by_scroll(&frame));
         }
         pointer.time = frame.time;
         let handle = pointer.handle.clone();

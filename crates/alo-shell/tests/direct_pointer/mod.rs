@@ -169,6 +169,12 @@ fn direct_pointer_drag_pause_reactivation_and_disconnect_follow_wire_lifetimes()
     assert_eq!(app.events.pointer.leaves, 1);
     assert_eq!(app.events.pointer.buttons.len(), 2);
     assert!(app.events.pointer.axes.is_empty());
+    // That scroll landed on empty canvas, so it panned the plane — the canvas
+    // plan's task 5, held by `tests/panning_the_plane`. This test is about the
+    // pointer's wire lifetimes on the direct backend and every assertion in it is
+    // about a surface-local coordinate, so the camera is put back rather than the
+    // coordinates below being rewritten around a pan nobody here is testing.
+    assert!(f.backend(|s| s.look_at_the_canvas(alo_canvas::At::origin()).is_some()));
     route(
         &f,
         DirectPointerEvent::Absolute {
