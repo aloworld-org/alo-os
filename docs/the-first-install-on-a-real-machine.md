@@ -20,6 +20,24 @@ matters most.
 
 ## Before the day
 
+### Two things that must be true, or the day ends at step 2
+
+Both are read out of the installer rather than assumed, and the installer refuses
+rather than asking, so neither can be fixed once the walk has started.
+
+- **Secure Boot must be OFF.** `deciding.rs` returns `Refusal::SecureBootOn` when
+  it is on, and `Refusal::SecureBootNotRead` when it cannot be read — and ADR
+  0033 §4 says the installer **never suggests the setting be changed**, so the
+  program will refuse and will not tell you what to do about it. Turn it off in
+  the firmware before the day, and write down that you did: the walk is then a
+  walk with Secure Boot off, and the roadmap box says so.
+- **The machine needs a second, empty disk of at least 24 GB.** Not free space on
+  Windows' disk — a separate whole disk. `lib.rs` is plain about it: *the
+  environment replaces one whole empty disk; putting alo OS into the same disk
+  beside Windows is the installer plan's task 4* — and task 4 is **in progress**.
+  A single-disk machine cannot be walked at all, so if the testing PC has one
+  disk, that has to be solved before Friday rather than discovered on it.
+
 ### The machine's own facts, written down first
 
 A walk on an unnamed machine produces evidence nobody can repeat. Fill this in
@@ -68,14 +86,35 @@ counts.
 
 ### 2. Run it, and read what it found
 
-Run the installer on Windows. It reads the machine before it offers anything:
-the disks, the firmware, Secure Boot, and Windows' own Fast Startup setting.
+**Start it as an administrator.** `administrator.rs` checks for those rights
+*before it asks anything else*, deliberately, so that nobody is shown a list of
+what their computer is and told at the end that nothing could be done.
+
+**Windows will warn you that the publisher is unknown.** The executable is
+**unsigned** — there is no code-signing certificate, and ADR 0046 decides the
+release ships unsigned and says so rather than an agent obtaining a certificate
+that would make the publisher of alo OS somebody nobody chose. Expect
+SmartScreen, choose *More info* then *Run anyway*. Do not confuse this with the
+installer's own refusal, which is a different sentence: *this download is not a
+genuine alo OS, so nothing was changed*. That one has no way past it, and means
+the download really is not genuine.
+
+It then reads the machine before it offers anything: administrator rights,
+whether the environment beside it is genuine, UEFI, Secure Boot, TPM, BitLocker,
+free space, memory and the disks — each from Windows' own tools, and each said
+aloud to you.
 
 **Look for, and write down:**
 
 - **the disk it names**, and whether it is the one you expected;
 - **the size it says it needs** — 24 GB is the floor, and a machine with no
   empty disk that size is refused in words with nothing changed;
+- **what it says about BitLocker.** A volume BitLocker is still encrypting or
+  decrypting is refused; a volume simply encrypted is not the same case. Write
+  down which of the two it said.
+- **what it says about memory.** It decides nothing — less memory is a slower alo
+  OS, not a broken computer — but it says a second sentence below what
+  `docs/hardware.md` designs around, and that sentence is worth recording.
 - **whether it asks about Fast Startup.** It asks only when Fast Startup is on,
   after the consent and before anything is changed. If it asks, answer *turn
   off*: Windows' hibernation image would otherwise make the disk unsafe to
@@ -160,7 +199,25 @@ which cannot be performed — see the note there.
 
 ### The boundary attaches on this kernel
 
-Three questions in this order, and the third is the one that gets missed:
+**Ask the machine, not the kernel config.** `alo-boundaryd` is in the image, and
+its whole job is to load the boundary and pin it. Its own source is explicit that
+on a kernel with no BPF LSM it **ends in failure rather than in success**, because
+a process that exited cleanly would be telling a supervisor that a machine had
+been given its boundary. So it cannot report success falsely, which is what makes
+it the check:
+
+```
+systemctl status alo-boundaryd     # Type=oneshot, RemainAfterExit=yes
+journalctl -u alo-boundaryd        # its reasons, in English
+ls /sys/fs/bpf/alo                 # the pin the boundary hangs on
+```
+
+**Look for:** the unit succeeded, and the pin exists. If it did, the boundary
+attached on this kernel and this promise is shown — by the machine doing it,
+which is the only evidence the promise was ever about.
+
+**If it failed**, the log says why in English, and *then* these three reads find
+out which of the three requirements is missing:
 
 ```
 zcat /proc/config.gz | grep -E '^CONFIG_(BPF_LSM|LSM)='   # how it was built
@@ -168,9 +225,19 @@ mount -t securityfs securityfs /sys/kernel/security       # if not already mount
 cat /sys/kernel/security/lsm                              # what actually started
 ```
 
-**Look for:** `bpf` in the output of the last line. `CONFIG_BPF_LSM=y` on its
-own is a true answer to the wrong question — a kernel can have the BPF LSM
-compiled in and never start it.
+**`zcat /proc/config.gz` may itself fail**, with *No such file or directory*: it
+needs `CONFIG_IKCONFIG_PROC` compiled in, and nothing in this repository
+establishes that the image's kernel has it. That is a gap in our knowledge rather
+than a fault in the machine — write down which it was, and do not read it as an
+answer about the BPF LSM.
+
+**And `bpf` in that last line is not the whole question.** It shows the module
+*started*; it does not show a programme can be *attached*. `hardware.md`'s third
+requirement is that an attach hangs for ever, uninterruptibly and with no error,
+on a kernel whose RCU-tasks grace periods have stalled — so a machine that passes
+both reads can still be one where the boundary does nothing. That is exactly why
+the daemon, which actually attaches, is the check and the reads are the
+diagnosis.
 
 Then, **on a machine that has been up more than a minute**:
 
