@@ -337,6 +337,25 @@ each walked in the guest except where it says otherwise:
   every refusal; one holds the erasing script's guards to running before the
   line that erases.
 
+  **Walked again from the kept computer, 2026-09-27** (`cargo_test=0`,
+  **384 s** against `removal-12`'s 2310 s — six times faster, and the whole
+  difference is that the install was not walked again). Every recorded point
+  agrees with `removal-12`:
+
+  ```
+  disk 1: name=[QEMU HARDDISK] serial=[ALOTARGET1] bus=[SATA] size=34359738368 style=RAW
+  the firmware's own entries: Boot0001 [EFI Firmware Setup]
+                              Boot0004 [Windows Boot Manager] \EFI\Microsoft\Boot\bootmgfw.efi
+  with alo OS removed, the firmware started: Boot0004 "Windows Boot Manager"
+  ```
+
+  Same disk, same size, same `RAW` with no partitions; no entry named *alo OS*
+  left in the firmware; and the restart after it — no disc, no boot order, no
+  keypress — started Windows Boot Manager by itself. **So the snapshot is sound
+  for the walks built on it**: a road that begins after an install gives the
+  same answer from an overlay of the kept computer as it does from the whole
+  road, and costs six minutes instead of thirty-eight.
+
   **Walked on a real Windows, 2026-09-26** (`removal-12`, `cargo_test=0`,
   2310 s). The whole road installed alo OS; both loaders on its start partition
   were taken away so the firmware fell through to Windows by itself; the copy
@@ -367,16 +386,45 @@ each walked in the guest except where it says otherwise:
   not walk to the fallback — but the claim is only safe with both gone.
 
 **Still owed here, and this task is not done until it is:**
-1. The walk of the default being changed from either side — and it now has a
-   specific doubt to settle. Reading the two sides on 2026-09-26: the Windows
-   side reaches the start partition with `mountvol S: /S`, which is the one
-   **Windows** started from, while alo OS's loader reads its block on the
-   partition **it** lives on. On every machine this installer can install onto
-   today those are different partitions, because the road offers a whole empty
-   disk and alo OS lands on a second one with a start partition of its own. If
-   that is right, a default changed from Windows is a file alo OS never reads.
-   It is written up in `docs/quirks.md`; nothing was changed on the strength of
-   a reading.
+1. The walk of the default being changed from either side. **The doubt was
+   measured on 2026-09-27** against the computer the whole road actually
+   produced, both disks read offline, and it came out differently than the
+   reading predicted — `docs/quirks.md`, *The default's two sides reach two
+   different partitions, and the one copy is on neither*.
+
+   The two sides do reach different partitions: Windows' EFI system partition is
+   disk 0 partition 1, alo OS's is disk 1 partition 2. But the conclusion drawn
+   from that on 2026-09-26 does not follow, because **alo OS's loader does not
+   read the partition it lives on** — the generated menu finds the partition by
+   the block file itself (`search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv`), so a block on Windows' ESP is one alo OS finds.
+
+   What the measurement did find is larger: **neither ESP holds an environment
+   block, and nothing in the tree creates one.** `save_env` can neither create a
+   file nor grow one, so the count of copies on a real installed machine is
+   zero. Both sides read nothing today, and ADR 0066 term 1 is unimplemented
+   rather than implemented wrongly. Because the loader finds the partition by
+   the file, whoever creates the block also chooses the partition — which makes
+   it a decision, put with its argument in
+   [ADR 0069](../decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md).
+   The owner settled the rule on 2026-09-27: the one copy lives wherever **every
+   reader** of it can reach — Windows' partition on a machine that keeps Windows,
+   alo OS's own after *replace Windows*, and a refusal if no single partition
+   satisfies every reader. Nothing was changed on the strength of the
+   measurement.
+
+   **That measurement is done, 2026-09-27, and it holds.** Run from the loader
+   the firmware starts on disk 1, `search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv` set `esp` to `hd0,gpt1` — Windows' partition — and
+   `load_env` read the block there. A second round with a block on both
+   partitions found GRUB silently taking the lower-numbered disk, which is why
+   ADR 0069 makes a second copy a refusal rather than a tie-break. The guest was
+   512 MB for five seconds, because GRUB is the consumer and nothing needs to
+   boot past the loader.
+
+   **What is left on this item is code, not a measurement:** nothing creates the
+   block, so the walk of the default changed from either side cannot pass until
+   ADR 0069's creation step is built. Task 4 is not closed by the measurement.
 
 > **One of this task's two hardware conditions was cleared on 2026-09-20, on the
 > development PC** (Intel Core Ultra 7 155U). *Hardware virtualisation, which the
@@ -1748,3 +1796,113 @@ environment has no point after which it says anything else.
   off a slow but moving download is a bug too, so the bound is on *no
   progress*, not on total time, unless measurement shows the two cannot be
   told apart.
+
+### Task 7's first refusal, walked: *not enough disk*
+
+**Walked on a real Windows, 2026-09-27** (`cargo_test=0`, 5520 s). The second
+disk was made **6 GiB** — large enough to partition, and too small for an
+installed image that occupies 8.3 GiB — with its first 64 MiB filled with a known
+pattern standing in for a person's own data. The road refused, in words, on the
+Windows side, before anything was staged:
+
+```
+installer: The disk QEMU HARDDISK 1 (6 GB) is smaller than the 24 GB alo OS needs
+installer: This computer has no empty disk of at least 24 GB beside the one
+           Windows is on, and this installer puts alo OS on a disk of its own,
+           so nothing was changed
+```
+
+The pattern read back whole afterwards and the disk was still 64.3 MiB. Nothing
+was wiped, and the road never reached `bootc`.
+
+**A reading of 2026-09-27 that this overturned, recorded because the mistake is
+the useful part.** Reading `crates/alo-installing` alone — the environment —
+gave *the refusal does not exist and cannot*: `lsblk` is asked for
+`NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL` with no size column, and its `Device`
+has no field to hold one. Both of those are true, and the conclusion drawn from
+them was wrong, because **the road has two programs and the guard is in the
+other one**: `crates/alo-installer`'s `sizes::THE_LEAST_DISK`, 24 GiB, on the
+Windows side. A claim about *the road* cannot be read off one of its crates.
+
+**What that leaves standing, and it is the part that matters for this task.**
+
+- There is **exactly one** size guard on the whole road, and it sits on the far
+  side of a reboot from the thing it protects. The environment refuses nothing
+  for size, and `bootc install to-disk --wipe` is one program — the wipe and the
+  write are the same invocation, and a failure lands as `Ended::NotInstalled`.
+- The refusal that was walked is the **ordinary** road's, and its sentence is
+  the ordinary road's question: *no empty disk of at least 24 GB **beside the one
+  Windows is on***. On the replace-Windows road the target **is** Windows' disk,
+  so that is not the question being asked, and whether a size check applies there
+  at all is **still owed**.
+- **`bootc`'s own ordering is still unmeasured** — does it check the size before
+  it wipes? The Windows-side guard refused first, which is the good news and the
+  reason the inner question went untested. It has to be measured before task 7
+  ships, because on that road it is the last thing standing.
+
+**And a cost this exposed in the walk itself.** The refusal took 341 seconds; the
+test took **5520**. The harness waits out `AN_INSTALL` for an install that was
+refused and will never happen. A road that stops early should end the walk early,
+or every refusal walked on this plan costs ninety minutes to observe four
+minutes of behaviour.
+
+### 21. What the install leaves behind can be watched, or a booted machine and a hung one are the same picture
+
+**Status:** ready. **Depends on:** nothing; it blocks the snapshot loop paying
+off, and every later walk that watches the installed system.
+**Found by** the first run of `the_kept_computer_is_the_same_computer_twice` on
+2026-09-27. Kept on the development PC: `/root/t10/logs/`, and the two screens
+`kept-once.ppm` and `kept-again.ppm`.
+
+The installed system's boot entry carries no console argument. Read off the
+kept install's own disk, `/boot/loader/entries/ostree-1.conf` says:
+
+```
+options root=UUID=c583cbbc-6e3d-49d9-b021-0a29a4170413 rw \
+        ostree=/ostree/boot.1/default/81fdfdcf…/0
+```
+
+The **installer environment** sets a console argument on its own command line,
+which is why every walk up to and including the install can be read on the
+serial line. The system the install leaves behind does not, so from the moment
+the firmware hands over, the serial line goes quiet and stays quiet.
+
+**What that cost, measured rather than imagined.** Both starts of the kept
+computer looked exactly like a hang: the last line was OVMF's
+`PageFaultExitBoot` at `ExitBootServices`, then nothing for the full 480-second
+wait, one vCPU at 100%, and no disk bytes moving across ten-second samples —
+the stall signature this machine's discipline is written around. The screens say
+the opposite: both rounds reached `fedora login:` on tty1 under kernel
+6.19.14-101.fc42.x86_64, network up, `alo-boundaryd` loading its programs, about
+40 seconds after start. The machine was **idle at a login prompt**, and idle is
+indistinguishable from hung when the console is silent.
+
+So a quiet serial line on an installed machine is not evidence of anything, and
+`console.wait_for` against one can only ever time out. Any walk written to watch
+the installed system is waiting for a sentence that cannot arrive, and the only
+way to check such a walk today is to look at a picture by hand.
+
+**What is here.**
+- Decide which arguments the install writes, as the person's machine and not
+  only as a walk's fixture. `console=ttyS0` alone moves the kernel's messages
+  off the screen a person is looking at, which is wrong for a laptop;
+  `console=tty0 console=ttyS0` keeps both, with the last named console taking
+  `/dev/console`. That is a decision about what a person sees when their machine
+  starts, so it is made once and written down, not slipped into a test.
+- Write them the way `bootc` already offers — `--karg` on `install to-disk`, or
+  a `kargs.d` drop-in in the image — as configuration of the engine and never a
+  patch (ADR 0011).
+- Say whether a serial console on a shipped machine is acceptable at all, or
+  whether it is something the installer turns on only when it was asked to. A
+  serial console is a console: anything that can reach the port can type at it.
+
+- **Acceptance:** after an install, the installed system's own start-up is
+  readable on the serial line in a virtual machine, and
+  `the_kept_computer_is_the_same_computer_twice` asserts that the machine came
+  up rather than printing that it did not. A real machine with no serial port
+  boots exactly as before, and the argument does not send a person's kernel
+  messages somewhere they cannot see them.
+- **Constraint:** no engine is patched (ADR 0011). If a serial console is judged
+  unacceptable on a shipped machine, the walk gets its observability another way
+  — the screen, asserted against properly — and this task says so rather than
+  leaving the walks to time out.

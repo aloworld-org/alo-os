@@ -1032,6 +1032,27 @@ fn a_machine_with_alo_os_on_it(
 /// same machine the install left, twice running, or every walk built on it is
 /// measuring the last walk instead. Both starts are given nothing to do, and
 /// each is asked what the firmware starts and what is on its disks.
+///
+/// # What this holds, and the one thing it cannot hold yet
+///
+/// **The kept files are unchanged by being started from.** That is the
+/// snapshot's real invariant and the reason this test exists: an overlay that
+/// wrote through to its base would mean every later walk began on the computer
+/// the last walk left. The three files are hashed before the rounds and after.
+///
+/// **The two rounds agree**, both on what the firmware started and on whether
+/// the machine came up. One round booting and the other not is a failure here,
+/// not a line in the log.
+///
+/// **It cannot yet hold that the machine came up at all**, and that is not an
+/// oversight. The installed system's boot entry carries no console argument, so
+/// it says nothing on the serial line this reads and `came_up` is `None` even
+/// when the machine has reached a login prompt — measured on 2026-09-27, when
+/// both rounds booted fine and reported nothing. Until the installer plan's
+/// task 21 gives the installed system a console, *booted and idle* and *hung*
+/// are the same picture here, and the only check is to look at the screens this
+/// captures. Asserting `came_up.is_some()` today would fail on a working
+/// machine, which is why it says what it says instead.
 #[test]
 #[ignore = "starts a virtual machine; run by name"]
 fn the_kept_computer_is_the_same_computer_twice() {
@@ -1042,7 +1063,14 @@ fn the_kept_computer_is_the_same_computer_twice() {
     let chip = SecurityChip::fresh(&yard);
     let firmware = walking::firmware::fedoras(&yard);
 
+    // Read before the first round, so that making the base when it is not there
+    // is not mistaken for a round having changed it.
+    let _ = a_machine_with_alo_os_on_it(&yard, "kept-before", &firmware, &chip, &download);
+    forget(&yard, "kept-before");
+    let before = the_kept_files(&yard);
+
     let mut told_twice = Vec::new();
+    let mut came_up_twice = Vec::new();
     for round in ["once", "again"] {
         let name = format!("kept-{round}");
         let (there, said) = a_machine_with_alo_os_on_it(&yard, &name, &firmware, &chip, &download);
@@ -1078,6 +1106,7 @@ fn the_kept_computer_is_the_same_computer_twice() {
             screen.display()
         );
         told_twice.push(started);
+        came_up_twice.push(came_up.is_some());
     }
     let mut both = told_twice.into_iter();
     let (Some(first), Some(second)) = (both.next(), both.next()) else {
@@ -1094,6 +1123,59 @@ fn the_kept_computer_is_the_same_computer_twice() {
             .any(|started| started.contains(alo_installing::THE_ENTRYS_NAME)),
         "the kept computer does not start alo OS: {first:?}"
     );
+    assert_eq!(
+        came_up_twice.first(),
+        came_up_twice.get(1),
+        "the kept computer came up on one start and not the other, so the three files \
+         are not one computer: {came_up_twice:?}"
+    );
+    // The invariant the whole snapshot loop rests on: starting from the kept
+    // computer does not change it. An overlay that wrote through to its base
+    // would leave every later walk starting from the last walk's leavings, and
+    // nothing else here would notice.
+    let after = the_kept_files(&yard);
+    assert_eq!(
+        before, after,
+        "starting from the kept computer changed the kept computer, so the next walk \
+         would not begin where this one did"
+    );
+}
+
+/// What the three kept files are, as bytes, so that *unchanged* is measured
+/// rather than assumed.
+///
+/// The files are gigabytes, so each is read as its length and its SHA-256
+/// rather than held in memory.
+fn the_kept_files(yard: &Path) -> Vec<(String, u64, String)> {
+    [
+        Machine::windows_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+        Machine::second_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+        Machine::variables_of(yard, A_COMPUTER_WITH_ALO_OS_ON_IT),
+    ]
+    .iter()
+    .map(|file| {
+        let named = file
+            .file_name()
+            .map_or_else(String::new, |it| it.to_string_lossy().into_owned());
+        let length = std::fs::metadata(file).map_or(0, |about| about.len());
+        (named, length, the_sum_of(file))
+    })
+    .collect()
+}
+
+/// A file's SHA-256, read in blocks, as the host's own `sha256sum` prints it.
+fn the_sum_of(file: &Path) -> String {
+    std::process::Command::new("sha256sum")
+        .arg(file)
+        .output()
+        .ok()
+        .filter(|ran| ran.status.success())
+        .and_then(|ran| {
+            String::from_utf8(ran.stdout)
+                .ok()
+                .and_then(|said| said.split_whitespace().next().map(str::to_owned))
+        })
+        .unwrap_or_else(|| "unreadable".to_owned())
 }
 
 /// **A computer that cannot start alo OS starts Windows, with nobody at the
@@ -1320,6 +1402,144 @@ fn the_whole_road_installs(
          this computer starts is whatever the tidy was in the middle of.\n{said}"
     );
     (installed, said)
+}
+
+/// **A disk too small to hold alo OS is refused, and nothing on it is touched.**
+///
+/// The ordinary road's *not enough disk* refusal, walked end to end rather than
+/// read. The second disk is made **6 GiB** — large enough to partition, and too
+/// small for an installed image that occupies 8.3 GiB — and the first 64 MiB are
+/// filled with a known pattern standing in for whatever a person had there.
+///
+/// **Measured 2026-09-27.** The installer refuses on the Windows side, in words,
+/// before anything is staged:
+///
+/// ```text
+/// The disk QEMU HARDDISK 1 (6 GB) is smaller than the 24 GB alo OS needs
+/// This computer has no empty disk of at least 24 GB beside the one Windows is
+/// on, and this installer puts alo OS on a disk of its own, so nothing was
+/// changed
+/// ```
+///
+/// The pattern was read back whole afterwards and the disk was still 64.3 MiB,
+/// so the road never reached `bootc` and nothing was wiped.
+///
+/// # Why this is worth a walk rather than a unit test
+///
+/// The check lives in `crate::sizes::THE_LEAST_DISK` on the **Windows** side,
+/// and it is the only thing standing between a too-small disk and
+/// `bootc install to-disk --wipe` — which is **one program**, so the wipe and
+/// the write are the same invocation and a failure lands as
+/// `Ended::NotInstalled`. `crate::disks` in the environment has no size check at
+/// all: `lsblk` is asked for `NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL` and no
+/// size, and its `Device` has no field to hold one. So there is exactly one
+/// guard here, on the other side of a reboot from the thing it protects, and a
+/// walk is what holds it in place.
+///
+/// **Two things this does not cover**, and they are the installer plan's task 7:
+/// the replace-Windows road, where the target *is* Windows' disk and so *an
+/// empty disk beside the one Windows is on* is not the question being asked;
+/// and the environment reached with a too-small disk by any road that does not
+/// pass this check, where nothing refuses and `bootc`'s own ordering — does it
+/// check the size before it wipes? — is still unmeasured.
+#[test]
+#[ignore = "starts a virtual machine, installs, and pulls the release; run by name"]
+fn a_disk_too_small_is_refused_and_nothing_on_it_is_touched() {
+    let _one = one_machine_at_a_time();
+    the_host_has_what_this_needs();
+    let yard = needs::the_yard();
+    let download = the_download(&yard);
+
+    let name = "too-small";
+    a_fresh_machine(&yard, name);
+
+    // The second disk again, this time too small for the image, and carrying
+    // something recognisable so that "was it wiped" is read rather than assumed.
+    let second = Machine::second_of(&yard, name);
+    drop(std::fs::remove_file(&second));
+    walking::machine::run(
+        "qemu-img",
+        &[
+            "create",
+            "-f",
+            "qcow2",
+            &second.display().to_string(),
+            THE_DISK_TOO_SMALL,
+        ],
+    );
+    walking::machine::run(
+        "qemu-io",
+        &[
+            "-c",
+            &format!("write -P 0x{THE_PATTERN:02x} 0 {THE_PATTERNED_LENGTH}"),
+            "-f",
+            "qcow2",
+            &second.display().to_string(),
+        ],
+    );
+    assert!(
+        the_pattern_is_there(&second),
+        "the pattern was not written, so nothing this test says afterwards means anything"
+    );
+
+    let chip = SecurityChip::fresh(&yard);
+    let firmware = walking::firmware::fedoras(&yard);
+    let (installed, said) =
+        the_whole_road_installs(&yard, name, &firmware, &chip, &download, false);
+
+    let survived = the_pattern_is_there(&second);
+    eprintln!(
+        "onto a disk of {THE_DISK_TOO_SMALL}: installed={installed}, what was on the disk \
+         survived={survived}\nthe environment said:\n{said}"
+    );
+
+    assert!(
+        !installed,
+        "alo OS reported itself installed onto a disk too small to hold it, which means \
+         this test is not measuring what it thinks"
+    );
+    assert!(
+        survived,
+        "the road destroyed a disk it could not install onto: the install failed and \
+         what was on the disk was wiped away first. On the road that replaces Windows \
+         that is Windows gone and alo OS absent, with nothing to go back to. The guard \
+         is `crate::sizes::THE_LEAST_DISK` on the Windows side and it is the only one — \
+         the environment reads no size at all, and `bootc install to-disk --wipe` wipes \
+         and writes in one program."
+    );
+    assert!(
+        said.contains("smaller than"),
+        "the disk was not written, but the installer never said why in words a person \
+         could act on, so a person would be left with a road that stopped for no \
+         stated reason:\n{said}"
+    );
+}
+
+/// The disk that is large enough to partition and too small to hold alo OS,
+/// whose installed image occupies 8.3 GiB.
+const THE_DISK_TOO_SMALL: &str = "6G";
+
+/// What is written over the front of that disk, standing in for a person's own
+/// data, and read back afterwards.
+const THE_PATTERN: u8 = 0xA5;
+
+/// How much of the front carries it. Larger than anything a partition table
+/// alone would touch, so that a surviving pattern means the disk was not wiped
+/// rather than that the wipe was small.
+const THE_PATTERNED_LENGTH: &str = "64M";
+
+/// Whether the pattern is still on the front of that disk.
+fn the_pattern_is_there(disk: &Path) -> bool {
+    std::process::Command::new("qemu-io")
+        .args([
+            "-c",
+            &format!("read -P 0x{THE_PATTERN:02x} 0 {THE_PATTERNED_LENGTH}"),
+            "-f",
+            "qcow2",
+            &disk.display().to_string(),
+        ])
+        .output()
+        .is_ok_and(|ran| ran.status.success())
 }
 
 /// **alo OS is removed again, and what is left is the Windows that was there.**

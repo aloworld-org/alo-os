@@ -294,9 +294,21 @@ pub const RESTART_WHEN_READY: Word = Word::saying(
      restart by itself in that case, so the person has time to read why.",
 );
 
+/// The road that replaces the system already on the disk.
+pub const REPLACING_WHAT_IS_THERE: Word = Word::saying(
+    "installing.replacing-what-is-there",
+    "Everything on {disk} is being replaced, including the system that was on it. This is the \
+     road you agreed to twice, and there is no way back from here",
+)
+.noting(
+    "Said only on the road that replaces Windows, after the disk has been read and before \
+     anything is written. {disk} is the disk's own name.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 27] = [
+pub const EVERY_WORD: [Word; 28] = [
     STARTING,
+    REPLACING_WHAT_IS_THERE,
     TIDYING,
     TIDIED,
     TIDY_NOT_WHOLE,

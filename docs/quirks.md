@@ -7114,18 +7114,13 @@ loader is not the only one.
 
 **Date:** 2026-09-26.
 
-### The default's two sides may not be reading the same partition
-**Version:** `alo-installer`'s `defaulting.rs` (ADR 0066 term 3) and
-`alo-starting`'s `chosen.rs`, as they stand on 2026-09-26. **Not measured in a
-guest yet** — this is a reading of what the two sides do, written down before
-the walk that settles it.
-**Behaviour:** the Windows side reaches the EFI system partition with
-`mountvol S: /S`, which Windows documents as *the EFI system partition* —
-meaning **the one the running Windows started from**, on Windows' own disk. alo
-OS's side reads its environment block at `/EFI/fedora/grubenv` on the partition
-its own loader lives on. On the machines this installer can install today those
-are **two different partitions**: the installer only offers a whole empty disk,
-so alo OS lands on a second disk with an EFI system partition of its own.
+### The default's two sides reach two different partitions, and the one copy is on neither
+**Version:** `alo-installer`'s `defaulting.rs` (ADR 0066 term 3), `alo-starting`'s
+`chosen.rs` and `menu.rs`, and the computer a whole-road install actually
+produced — the kept base of 2026-09-26, its two disks opened read-only over
+`qemu-nbd` and read as filesystems. **Measured 2026-09-27**, which replaces the
+reading written here on 2026-09-26; the reading was half wrong and its
+conclusion did not follow.
 
 If that reading is right, a person who changes the default from Windows writes
 a file alo OS's loader never reads, and the two sides show different answers —
@@ -7183,3 +7178,192 @@ right. ADR 0070 is the decision.
 `sha256-<digest>.sig` return 200, is the registry configured to fetch it, and does
 the key match. The message distinguishes none of the three.
 **Date:** 2026-09-26.
+### An installed alo OS says nothing on the serial line, so a walk that watches it sees silence and cannot tell it from a hang
+**Version:** the computer `keep_as` kept on 2026-09-26 from a whole-road
+install, started twice by `the_kept_computer_is_the_same_computer_twice` on
+2026-09-27 (1366 s for both rounds), and its two disks read offline.
+
+**Behaviour:** the installed system's boot entry carries no console argument.
+`/boot/loader/entries/ostree-1.conf` reads:
+
+```
+options root=UUID=c583cbbc-… rw ostree=/ostree/boot.1/default/81fdfdcf…/0
+```
+
+No `console=ttyS0`. The installer environment sets one on its own command line,
+which is why every walk *up to and including the install* is readable on the
+serial line; the system the install leaves behind does not, so from the moment
+the firmware hands over to the installed alo OS the serial line goes quiet and
+stays quiet.
+
+**What that costs, and it is not cosmetic.** On the serial line the two starts
+of the kept computer looked exactly like a hang: the last line was OVMF's
+`PageFaultExitBoot` at `ExitBootServices`, then nothing for the full 480-second
+wait, with one vCPU at 100% and no disk bytes moving for ten seconds at a time —
+the stall signature this machine's discipline is written around. **The screen
+says otherwise.** Both rounds reached `fedora login:` on tty1 under kernel
+6.19.14-101.fc42.x86_64, with the network up and `alo-boundaryd` loading its
+programs, about 40 seconds after start. The machine was idle at a login prompt,
+not stalled, and the CPU and I/O signature of *booted and idle* is
+indistinguishable from *hung* when the console is silent.
+
+So: a silent serial line on an installed machine is not evidence of anything,
+and anything that waits on it is waiting for a sentence that cannot arrive.
+
+**Our response:** none yet, and the measurement is what it is. What it implies
+is worth stating: every later walk that wants to observe the **installed**
+system rather than the installer environment needs the installed entry to carry
+`console=ttyS0`, and until it does, such a walk can only be checked by looking
+at the screen. The snapshot loop this was measuring for is otherwise sound — see
+the entry below.
+**Date:** 2026-09-27.
+
+### The kept computer is a faithful copy, and the test that says so would say so even if it were not
+**Version:** `Machine::keep_as` and `Machine::fresh_from`
+(`crates/alo-installer/tests/walking/machine.rs`, change #161) and
+`the_kept_computer_is_the_same_computer_twice`, run for the first time on
+2026-09-27.
+
+**Behaviour, in two halves.**
+
+**The snapshot works.** Started twice from the three kept files, the computer
+booted alo OS to a login prompt both times, ~40 s each, same kernel, network up,
+`alo-boundaryd` running. Read offline, the copy is byte-faithful: the ostree
+entry names a valid 18 229 608-byte bzImage and a whole 115 831 483-byte
+initramfs, both present, and `bootupd-state.json` is complete. The overlays a
+walk starts from were **197 KB and 57 MB** against a 28 GB base, made in
+seconds. So the premise holds — a walk that begins after an install is an
+overlay rather than half an hour, and the cost of a cycle really does collapse.
+
+**The test does not measure it.** Both rounds recorded `came up: None` — the
+harness waited the full 480 s for a sentence on the serial line and got nothing,
+for the reason in the entry above. The test passes anyway, because all it
+asserts is that the two rounds report the same **firmware** boot-entry strings
+(`["alo OS \\EFI\\fedora\\shimx64.efi"]` twice) and that one of them
+contains the entry's name. `came_up` is bound and printed and never asserted.
+
+**A computer that did not boot at all would pass this test**, so long as the
+firmware tried the same loader twice — and the firmware tries the same loader
+whatever happens after it. The thing the test is named for, that a walk built on
+the snapshot is measuring the snapshot rather than the last walk, is not among
+the things it checks.
+
+**Our response:** nothing was changed on the strength of this. The proof needs
+either the installed entry to speak on serial, so the test can assert the
+machine came up, or an assertion made against the screen it already captures.
+Which of those is right is the installer's question, not the harness's, and it
+belongs with the console argument above.
+**Behaviour:** four things, measured on the installed machine rather than read
+off the source.
+
+1. **There are two EFI system partitions, on two disks.** Windows' is disk 0
+   partition 1, 300 MiB, vfat, holding `EFI/Boot/bootx64.efi` and the whole
+   `EFI/Microsoft/` tree and nothing else. alo OS's is disk 1 partition 2,
+   512 MiB, vfat, holding `EFI/BOOT/BOOTX64.EFI`, `EFI/BOOT/fbx64.efi` and
+   `EFI/fedora/{BOOTX64.CSV,bootuuid.cfg,grub.cfg,grubx64.efi,mmx64.efi,shim.efi,shimx64.efi}`.
+   `mountvol S: /S` can only reach the one the running Windows started from,
+   which is disk 0 partition 1. So the two sides do name different partitions,
+   and ADR 0066's *the* EFI system partition names neither of them.
+
+2. **But alo OS's loader does not read the partition it lives on.** The reading
+   of 2026-09-26 said it did, and that is where its conclusion came from. The
+   generated menu finds the partition **by the block file itself**:
+
+   ```
+   search --no-floppy --set=esp --file /EFI/fedora/grubenv
+   load_env -f (${esp})/EFI/fedora/grubenv saved_entry
+   save_env -f (${esp})/EFI/fedora/grubenv saved_entry
+   ```
+
+   `menu.rs`'s own test `the_partition_is_found_by_the_block_and_not_by_an_identifier`
+   holds that there is no `--fs-uuid` and no `hd0` in those lines. So a block
+   that exists only on **Windows'** ESP is a block alo OS's loader finds and
+   reads, and the conclusion *a default changed from Windows is a file alo OS
+   never reads* does not follow from the partitions being different.
+
+3. **Neither ESP holds an environment block at all.** After the whole road
+   installed alo OS beside Windows, `EFI/fedora/grubenv` is absent from both,
+   and no file with `env` in its name exists on either. Nothing in the tree
+   creates or pre-allocates it: there is no `grub2-editenv create` anywhere, and
+   `save_env` cannot create or grow a file — `on_this_machine.rs` says so and
+   the base measurement above shows the base ships no block on the ESP either.
+   So the count of copies on a real installed machine is **zero**, not one.
+
+4. **The block alo OS's loader actually has is on its own root filesystem.**
+   `/boot/grub2/grubenv`, 1024 bytes, on disk 1 partition 3 (btrfs) — header
+   and padding, no values. `/boot/efi` on that filesystem is an **empty
+   directory**, there is no `/etc/fstab`, and nothing mounts the ESP there, so
+   `THE_ENVIRONMENT_BLOCK` (`/boot/efi/EFI/fedora/grubenv`) resolves to no
+   partition on the installed machine. Windows cannot read btrfs at all — the
+   removal walk established that — so the one block that does exist is
+   unreachable from Windows by any path.
+
+**What follows, and it is not what the doubt predicted.** The defect is not that
+the two sides read different partitions; it is that **nothing creates the one
+copy**, so neither side reads anything. With no block, `which_system_starts`
+returns `NotThere`, the loader's `search` sets `${esp}` to nothing, `load_env -f`
+fails, and `set default="${saved_entry}"` is set from an empty variable. ADR 0066
+term 1 is therefore **unimplemented on a real install**, not implemented wrongly.
+
+And because the loader finds the partition by the file, **whoever creates the
+block chooses which partition every later read goes to.** That made the placement
+a decision rather than a detail, and the owner settled it on 2026-09-27 as a test
+rather than a partition: the one copy lives on the EFI system partition **every
+reader this machine has** can reach. On the road offered today that resolves to
+**Windows' ESP** — both sides reach it as they already stand, Windows by
+`mountvol S: /S` and alo OS by `search --file`, and created on alo OS's ESP the
+Windows side would still read nothing. On a replace-Windows install there is no
+Windows partition and no Windows reader, and it resolves to alo OS's own. A copy
+on both is the one thing ADR 0066 forbids, and nothing today prevents it:
+`search --file` takes the first filesystem it enumerates, so two copies is a
+silent, order-dependent answer rather than an error.
+
+**Our response:** the measurement is here and nothing was changed on the
+strength of it. Where the one copy lives, and who creates it, is ADR 0066's to
+say — its own last consequence reserves that (*a change to this decision, not a
+second copy added quietly*). [ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md)
+puts the question with an argument. The guest walk of *the default changed from
+either side* still owes one measurement this offline read cannot give: that
+GRUB's `search --file` running from disk 1 really does reach disk 0's ESP on
+this firmware. Everything else above is read off the installed machine.
+**Date:** 2026-09-27.
+
+### GRUB's `search --file` crosses disks, and with two copies it takes the lower-numbered one
+**Version:** the kept install of 2026-09-26 — Fedora's
+`OVMF_CODE_4M.secboot.fedora.fd` with secure boot on, the shim and
+`grubx64.efi` 2.12-32.fc42 that install left on disk 1, and the same two AHCI
+disks in the same order the walk uses. **Measured 2026-09-27** by replacing only
+`EFI/fedora/grub.cfg` on an overlay of alo OS's ESP with a configuration that
+runs the generated menu's own search and prints what it found, then halts.
+Nothing boots past the loader, so the guest is 512 MB for five seconds rather
+than the walk's eleven gigabytes.
+
+**Behaviour:** two rounds, and the second is the one worth keeping.
+
+1. **With the block only on Windows' ESP**, `search --no-floppy --set=esp --file
+   /EFI/fedora/grubenv` — run from the loader the firmware started off **disk
+   1** — set `esp` to `hd0,gpt1`, and `load_env -f (${esp})/EFI/fedora/grubenv`
+   read back the value that block carried. So the search really does cross from
+   the disk the loader lives on to the other disk's EFI system partition. This is
+   the measurement ADR 0066's amendment waited on, and it holds.
+
+2. **With a block on both ESPs**, each saying which partition it was on,
+   `search` again returned `hd0,gpt1` and read **Windows'** copy. The
+   per-device check in the same run confirmed both `(hd0,gpt1)` and `(hd1,gpt2)`
+   held a block. GRUB did not complain, and it did not prefer the partition it
+   had booted from — it took the lower-numbered disk.
+
+   The order `ls` prints is not the order `search` answers in: `ls` gave
+   `(hd0,gpt5) (hd0,gpt3) (hd0,gpt2) (hd0,gpt1) (hd1,…)`, while `search`
+   returned `gpt1`. So the tie is broken by disk before partition, and **the
+   agreement between that and the partition ADR 0069 chooses is an accident of
+   Windows being installed on disk 0.** Put alo OS on a disk that enumerates
+   first and the same two copies resolve the other way, with nothing said.
+
+**Our response:** the crossing is what
+[ADR 0069](decisions/0069-the-one-copy-of-the-default-lives-where-every-reader-reaches-it.md)
+rests on and it is now measured rather than argued. The tie-break is why that
+decision makes a second copy a **refusal at install** rather than a rule about
+which copy wins: there is no enumeration order worth trusting, and the one that
+holds here holds for a reason that has nothing to do with the design.
+**Date:** 2026-09-27.
