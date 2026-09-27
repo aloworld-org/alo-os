@@ -175,7 +175,7 @@ checked it.*
 
 ### 5. A brought file is one the runtime answers to
 
-**Status:** ready. **Depends on:** 4.
+**Status:** done. **Depends on:** 4.
 
 Task 4 made *point alo OS at weights you already have* a settings entry with
 the file's path and measured size in it, chosen and costed and asked like any

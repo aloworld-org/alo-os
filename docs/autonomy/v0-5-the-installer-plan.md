@@ -1707,7 +1707,10 @@ build walked the same way (the walk cross-builds `x86_64-pc-windows-gnu`).
 
 ### 20. A download that stops arriving ends the install in words, rather than *Still installing* for ever
 
-**Status:** ready. **Depends on:** 18.
+**Status:** blocked — on task 4, *in progress*, by the owner's instruction of
+2026-09-26: this is held until task 4 lands, and the check is made before
+starting rather than after. The work so far is off-repository on the development
+PC. **Depends on:** 18.
 **Found by** task 18's second run on 2026-09-22
 (`updates/the-install-finishes-on-the-installers-own-road.md`). On the
 installer's own road, with the environment carrying `mkfs.btrfs`, `bootc

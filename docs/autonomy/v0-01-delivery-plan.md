@@ -45,7 +45,7 @@ two checkouts.
 
 ### 1. A plan the loop can read, and a loop that can read it
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 `tools/kernel-loop` read one hard-coded plan — the kernel-enforcement
 workstream's — so a second workstream could only be driven by copying the
@@ -65,7 +65,7 @@ second plan.
 
 ### 2. The agent overlay: one key, from anywhere
 
-**Status:** ready. **Depends on:** nothing that is not already built.
+**Status:** done. **Depends on:** nothing that is not already built.
 **Owner:** Claude, while the desktop worker is away.
 
 v0.01's exit gate is *sign in, **press the key**, ask an agent to do something*.
@@ -100,7 +100,7 @@ taught the prompt to demand it.*
 
 ### 3. What the overlay shows when the agent has nothing to say yet
 
-**Status:** ready. **Depends on:** 2.
+**Status:** done. **Depends on:** 2.
 
 The overlay's content before a question is asked: what a person sees when they
 press the key. The three things `alo-agentd` already answers — what is granted,
@@ -123,7 +123,7 @@ already written.
 
 ### 4. Accounts and session entry — the local account
 
-**Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 1, and
+**Status:** done — lane B's, scheduled in `v0-01-lane-b-plan.md` as its task 1, and
 stepped over here so two loops never take up one task. Lane B's finishing
 handoff marks it done here. **Depends on:** nothing.
 
@@ -147,7 +147,7 @@ report.
 
 ### 5. The daemon's environment is the session's
 
-**Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 2, and
+**Status:** done — lane B's, scheduled in `v0-01-lane-b-plan.md` as its task 2, and
 stepped over here for the same reason as task 4. **Depends on:** 4.
 
 `alo-agentd` runs as the signed-in person and finds their bus at
@@ -169,7 +169,7 @@ Task 10 no longer waits on this. Report:
 
 ### 6. Native folder selection, so a grant can be made at all
 
-**Status:** ready. **Depends on:** 2.
+**Status:** done. **Depends on:** 2.
 
 ADR 0001 §3: a grant is made by a person picking a folder. `alo-capability` has
 grants and `alo-agentd` enforces them, and **nothing on this machine can make
@@ -191,7 +191,7 @@ next task (7) was already written.
 
 ### 7. One approval, and the sentence a person approves
 
-**Status:** ready. **Depends on:** 3, 6.
+**Status:** done. **Depends on:** 3, 6.
 
 The exit gate's middle: *approve the sentence, see it happen*. `alo-turn` and
 `alo-protocol` carry proposals and approvals; no surface has ever shown one.
@@ -221,7 +221,7 @@ drawing it is the compositor's, and *On the machine* does not move.
 
 ### 8. Afterwards, ask what it did
 
-**Status:** ready. **Depends on:** 7.
+**Status:** done. **Depends on:** 7.
 
 The exit gate's end: *ask what it did and get an answer from the record*.
 `alo-record` and `alo-keeping` hold it; nothing reads it back to a person.
@@ -251,7 +251,7 @@ compositor's, and *On the machine* does not move.
 
 ### 9. The egress indicator, on a screen
 
-**Status:** ready. **Depends on:** 3.
+**Status:** done. **Depends on:** 3.
 
 `alo-egress` decides and is tested; the indicator itself is a compositor surface
 and does not exist. The exit gate requires it to have **stayed dark** throughout,
@@ -312,7 +312,7 @@ on one. Report: `docs/autonomy/updates/what-a-person-signs-in-at.md`.
 
 ### 11. Reconcile every v0.01 promise against executable evidence
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 **It depended on 10 and no longer does, 2026-09-10.** That was an ordering
 rather than a need: an audit of `docs/features.md` against the evidence in this
@@ -427,7 +427,7 @@ bound to and that nothing on the image can currently cause.
 
 ### 14. Every verb's by-hand answer, and a check that it has one
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file.
 
 Written by task 11, which found it: `docs/features.md` promises at v0.01 that
@@ -477,7 +477,7 @@ crate.
 
 ### 15. A machine that cannot reach a model says so once
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file and needs no screen.
 
 Written by task 14, from the audit's remaining findings. `docs/features.md`
@@ -537,7 +537,7 @@ next task (16) is written below. No pixels are claimed and none are tested.
 
 ### 16. A default nobody chose, or a promise that says so
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it is a decision and a document, and it touches no
 compositor file.
 
@@ -610,7 +610,7 @@ written below. **No code follows this decision**, per its own acceptance.
 
 ### 17. Every crate that declares words, collected — and the one that is not, named
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -675,7 +675,7 @@ collect this crate.
 
 ### 18. Every decision this repository points at, and the ones nobody can find
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -752,7 +752,7 @@ collect this crate.
 
 ### 19. The four promises with no evidence, and which of them a lane can still reach
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it reads code and reports, and touches no compositor file.
 
 Written by task 18, and it is the first task in this lane's recent run that is
@@ -834,7 +834,7 @@ is written below.
 
 ### 20. The clipboard, before there is anything to draw
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -913,7 +913,7 @@ drawing it is the compositor's, and *On the machine* does not move.
 
 ### 21. A translator's line, held to the rule the English is held to
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -976,7 +976,7 @@ task (22) is written below.
 
 ### 22. The grants a person can see, before there is anywhere to show them
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -1032,7 +1032,7 @@ compositor's, and *On the machine* does not move.
 
 ### 23. A person's change to the grants reaches the file the daemon re-reads
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -1093,7 +1093,7 @@ The next task (24) is written below.
 
 ### 24. A person's choice about their model, written where the machine reads it
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
 
@@ -1192,7 +1192,7 @@ The next task (25) was already written below.
 
 ### 25. The image becomes a disk a machine can actually boot
 
-**Status:** ready. **Depends on:** nothing in this lane.
+**Status:** done. **Depends on:** nothing in this lane.
 
 Every promise in `docs/autonomy/v0-01-evidence.md` that says *still owed: no
 machine has ever* waits on one missing step, and it is not a machine. It is that
@@ -1243,7 +1243,7 @@ yet: the disk is a document and a check, not a machine anybody has watched.
 
 ### 26. The one privileged thing that turns a correct password into a session
 
-**Status:** ready. **Depends on:** nothing — ADR 0024's measurement is taken.
+**Status:** done. **Depends on:** nothing — ADR 0024's measurement is taken.
 
 Task 13 is the first screen, and it is the desktop lane's because it is drawing.
 **This is the half of it that is not drawing**, separated out so the critical
@@ -1382,7 +1382,7 @@ socket with `alo-sessiond`'s own `Listening` on the far side of it. Report:
 
 ### 28. What the greeter does, before there is anything to draw
 
-**Status:** ready. **Depends on:** 26.
+**Status:** done. **Depends on:** 26.
 
 Task 26 built the door and nothing knocks at it. Task 13 is the screen and it is
 the desktop lane's, because drawing is theirs. **Between them is everything the
@@ -1456,7 +1456,7 @@ already written below. No pixels are claimed and none are tested.
 
 ### 29. Recovering a parked task, as a command rather than as a memory
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Parking works: a task that fails its gates goes to a branch, nothing is
 discarded, and the run carries on. **Picking one back up does not**, and on
@@ -1519,7 +1519,7 @@ already names one.
 
 ### 30. The gates build where there is room, not where there is none
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Every gate builds into `target/` beside the checkout, which is on the **C: drive
 of a Windows host that is 98% full**, while the WSL filesystem the gates actually
@@ -1571,7 +1571,7 @@ task (31) is written below.
 
 ### 31. The weights a machine arrives with
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 ADR 0025 was accepted as Option D on 2026-09-11, and what it took on is heavier
 than what it gave up: **a model on the disk of every machine we ship, sized for
@@ -1648,7 +1648,7 @@ delivered stands; what changed is which entry, and who decides it. Report:
 
 ### 32. The one thing that serves the model, and what it may reach
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The image now carries a model runtime and the weights it would load, and
 **nothing starts either of them**. A machine built from this recipe boots with
@@ -1739,7 +1739,7 @@ not a machine watched** — nothing in this lane has booted this image — and
 
 ### 33. A machine that was watched, rather than a recipe that was read
 
-**Status:** ready. **Depends on:** nothing, on a machine with a container
+**Status:** done. **Depends on:** nothing, on a machine with a container
 runtime. **Owner:** Claude — it touches no compositor file and needs no screen.
 
 Written by task 32, from the sentence every image task since 27 has had to write
@@ -1817,7 +1817,7 @@ task (34) is written below.
 
 ### 34. Half an image of dead weight, and a runtime that calls home
 
-**Status:** ready. **Depends on:** nothing, on a machine with a container
+**Status:** done. **Depends on:** nothing, on a machine with a container
 runtime. **Owner:** Claude — it touches no compositor file and needs no screen.
 
 Written by task 33, out of the two things building the image measured. Both are
@@ -1889,7 +1889,7 @@ Task 35 was already written below.
 
 ### 35. Recovering a parked task whose worker never wrote a handoff
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 `recover <branch>` was used on real parked work three times on 2026-09-11 and
 refused twice — both times honestly, both times for the same reason: **the
@@ -1944,7 +1944,7 @@ next task (36) is written below.
 
 ### 36. A parked branch carries the handoff its gates refused
 
-**Status:** ready. **Depends on:** 35.
+**Status:** done. **Depends on:** 35.
 
 Task 35 reconstructs a handoff-less branch from `.kernel-loop/refused/`, which
 works on the checkout that parked it and nowhere else: the refused directory is

@@ -228,7 +228,7 @@ A task blocked does not block the ones after it that do not depend on it.
 
 ### 1. Establishing the network egress policy the kernel can actually enforce
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Before choosing a hook, the policy has to be stated, because the obvious reading
 does not survive contact with the kernel. `alo-egress`'s policy decides by
@@ -277,7 +277,7 @@ sockets the person was shown.
 
 ### 2. Reproducing unrestricted network access from inside a bound turn
 
-**Status:** ready. **Depends on:** 1 (for what to assert).
+**Status:** done. **Depends on:** 1 (for what to assert).
 
 - **Acceptance:** a test in `alo-bounding` that binds a turn, has the child
   attempt an outbound connection to an address nothing granted, and records what
@@ -440,7 +440,7 @@ whole of it.
 
 ### 5. Documenting the filesystem mutations that remain unwatched
 
-**Status:** ready, independent. **Depends on:** nothing.
+**Status:** done, independent. **Depends on:** nothing.
 
 `deciding.rs` lists them; `docs/quirks.md` does not, and neither does a contract.
 This is documentation of a known limit, not new enforcement.
@@ -483,7 +483,7 @@ Nothing was closed, nothing was ticked, and no *On the machine* box is touched.
 
 ### 6. Descriptors opened before a turn began
 
-**Status:** ready, independent. **Depends on:** nothing.
+**Status:** done, independent. **Depends on:** nothing.
 
 Audit and document only. A `file_open` hook cannot see a descriptor that already
 exists, and `alo-agentd` runs a turn as a thread of a process that has its own
@@ -863,7 +863,7 @@ administrator.
 
 ### 12. A descriptor opened before the turn began cannot move contents past the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 **Why now:** ADR 0028 — v0.5's screenless work begins while v0.01 waits on
 hardware; this is lane A's partition (`alo-bounding`, `alo-bounding-kernel`, `alo-bounding-map`,
@@ -922,7 +922,7 @@ opens and still finds nothing written down. Report:
 
 ### 13. A socket already open, and a datagram sent without connecting, are inside the boundary
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Two reproduced gaps in `what_a_bound_turn_can_still_reach.rs`, one class: the
 network boundary is applied at `connect`, so a socket inherited or opened
@@ -969,7 +969,7 @@ daemon's socket to the person is not egress. Report:
 
 ### 14. Attributes, ownership and size are inside the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 `inode_setattr` and `inode_setxattr` are not hooked, and `truncate(2)` reaches
 `inode_setattr` without an `open` — so a bound turn can shorten a file it may
@@ -1016,7 +1016,7 @@ matter, and in the hardening table above with v0.5. Report:
 
 ### 15. A turn whose boundary cannot be applied does not run
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 `docs/features.md`, v0.5: *a turn whose boundary cannot be applied does not
 run — a refusal, not a warning, the same rule `alo-egress` already follows when
@@ -1072,7 +1072,7 @@ what is stable and what is asked. Report:
 
 ### 16. Kernel-sourced enforcement records — the decision
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The table says *needs a decision, not code*, and it is right: *what a turn
 touched is what the kernel watched it touch* means the record's source changes
@@ -1131,7 +1131,7 @@ exists to catch and refuses it. Report:
 
 ### 17. A file's inode flags are inside the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The last named gap on the filesystem that a hook closes. Task 14 reproduced it
 and left it standing in `the_kernel_refuses_an_attribute_change.rs`
@@ -1198,7 +1198,7 @@ grant. The row moved from section 3 to section 1. Report:
 
 ### 18. What a turn makes is inside the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The five rows left in the hardening table's filesystem line, and the last
 that a hook closes: `inode_create`, `inode_mknod`, `inode_mkdir`,
@@ -1278,7 +1278,7 @@ on the filesystem is the mapping. Report:
 
 ### 19. What a turn reads about a file is inside the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 Every hook so far decides what a turn does *to* a file: opens, reads, writes,
 moves, removes, links, changes, makes. None decides what a turn learns
@@ -1376,7 +1376,7 @@ from inside a turn. Report:
 
 ### 20. A file's access list, read, is inside the grant
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The one question about a file that task 19 left answered, and it was found
 by that task's own reproduction rather than by reading. Since Linux 6.2 a
@@ -1448,7 +1448,7 @@ The row moves from section 3 to section 1. Report:
 
 ### 21. How a mapping is reproduced, decided
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
 
 The one filesystem row left in section 3 that moves contents past a grant,
 and the one every task since 12 has stepped around for the same reason. A
