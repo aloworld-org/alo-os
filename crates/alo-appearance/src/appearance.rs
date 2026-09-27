@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(appearance.lock_on(&laptop()), the_shipped_wallpaper());
         assert_eq!(appearance.scheme_at(at(22)), Scheme::Light);
         assert_eq!(appearance.text(), TextScale::ordinary());
-        assert_eq!(appearance.accent(), Accent::Verdigris);
+        assert_eq!(appearance.accent(), Accent::Indigo);
         assert!(appearance.changes().is_untouched());
     }
 
@@ -306,7 +306,7 @@ mod tests {
         assert!(!appearance.put_back(Setting::Accent));
         assert_eq!(
             appearance.accent_at(at(20)),
-            Accent::Verdigris.on(Scheme::Dark),
+            Accent::Indigo.on(Scheme::Dark),
             "and putting it back is the shipped accent, on the right ground"
         );
     }
@@ -323,7 +323,7 @@ mod tests {
             for hour in 0..24 {
                 assert_ne!(
                     appearance.accent_at(at(hour)),
-                    Token::Terracotta.colour(),
+                    Token::DeepTeal.colour(),
                     "{} at {hour} o'clock",
                     accent.word().says()
                 );

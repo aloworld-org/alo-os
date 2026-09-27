@@ -61,7 +61,7 @@
 //! // the agent's mark, and saying so in words as well (ADR 0010).
 //! let lines = in_use.lines();
 //! let screen = lines.first().expect("the screen is in use");
-//! assert_eq!(screen.colour(), Token::Terracotta);
+//! assert_eq!(screen.colour(), Token::DeepTeal);
 //! assert!(screen.the_agents_dot());
 //! assert!(screen.said(&strings).text().contains("the agent"));
 //!

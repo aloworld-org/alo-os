@@ -98,7 +98,7 @@ fn pointer_feedback_has_non_color_borders_and_disabled_paint_is_unchanged()
             assert!(
                 view.solids(scheme)
                     .iter()
-                    .all(|(_, c)| *c != Token::Terracotta.colour())
+                    .all(|(_, c)| *c != Token::DeepTeal.colour())
             );
         }
     }
@@ -270,7 +270,7 @@ fn disabled_controls_have_a_separate_non_color_mark_in_both_schemes()
             disabled_solids
                 .iter()
                 .chain(&active_solids)
-                .all(|(_, colour)| *colour != Token::Terracotta.colour())
+                .all(|(_, colour)| *colour != Token::DeepTeal.colour())
         );
     }
     Ok(())

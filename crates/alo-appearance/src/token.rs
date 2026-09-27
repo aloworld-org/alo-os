@@ -36,8 +36,9 @@ use crate::words;
 pub enum Token {
     /// Structure and text.
     Navy,
-    /// The agent — present or acting, and nothing else.
-    Terracotta,
+    /// alo — present, acting, proposing, or awaiting an approval, and nothing
+    /// else. Never drawn without the mark or the word beside it.
+    DeepTeal,
     /// The reading ground.
     Cream,
     /// The workspace canvas.
@@ -52,7 +53,7 @@ impl Token {
     /// All six, in the order the design brief lists them.
     pub const ALL: [Self; 6] = [
         Self::Navy,
-        Self::Terracotta,
+        Self::DeepTeal,
         Self::Cream,
         Self::Porcelain,
         Self::Charcoal,
@@ -64,7 +65,7 @@ impl Token {
     pub const fn colour(self) -> Colour {
         match self {
             Self::Navy => Colour::of(0x10, 0x2A, 0x43),
-            Self::Terracotta => Colour::of(0xE7, 0x6F, 0x51),
+            Self::DeepTeal => Colour::of(0x0F, 0x6B, 0x72),
             Self::Cream => Colour::of(0xF8, 0xF6, 0xF2),
             Self::Porcelain => Colour::of(0xF4, 0xF1, 0xEC),
             Self::Charcoal => Colour::of(0x1F, 0x25, 0x29),
@@ -78,7 +79,7 @@ impl Token {
     pub const fn word(self) -> Word {
         match self {
             Self::Navy => words::NAVY,
-            Self::Terracotta => words::TERRACOTTA,
+            Self::DeepTeal => words::DEEP_TEAL,
             Self::Cream => words::CREAM,
             Self::Porcelain => words::PORCELAIN,
             Self::Charcoal => words::CHARCOAL,
@@ -116,7 +117,7 @@ mod tests {
     fn the_palette_is_the_one_in_the_design_brief() {
         let written = [
             (Token::Navy, "#102A43"),
-            (Token::Terracotta, "#E76F51"),
+            (Token::DeepTeal, "#0F6B72"),
             (Token::Cream, "#F8F6F2"),
             (Token::Porcelain, "#F4F1EC"),
             (Token::Charcoal, "#1F2529"),
@@ -158,8 +159,8 @@ mod tests {
         assert!(Token::Navy.said(&strings).is_translated());
 
         // And the one nobody translated is still English, and says it is.
-        let untranslated = Token::Terracotta.said(&strings);
-        assert_eq!(untranslated.text(), "Terracotta");
+        let untranslated = Token::DeepTeal.said(&strings);
+        assert_eq!(untranslated.text(), "Deep teal");
         assert!(!untranslated.is_translated());
         assert!(!untranslated.is_a_bug());
     }

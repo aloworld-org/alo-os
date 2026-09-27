@@ -56,13 +56,13 @@ impl HighContrast {
                 ground: Colour::of(0xFF, 0xFF, 0xFF),
                 dock: Colour::of(0xED, 0xED, 0xED),
                 ink: Colour::of(0x00, 0x00, 0x00),
-                accent: Colour::of(0x86, 0x2A, 0x13),
+                accent: Colour::of(0x05, 0x52, 0x58),
             },
             Scheme::Dark => Self {
                 ground: Colour::of(0x00, 0x00, 0x00),
                 dock: Colour::of(0x14, 0x14, 0x14),
                 ink: Colour::of(0xFF, 0xFF, 0xFF),
-                accent: Colour::of(0xF7, 0xCF, 0xC5),
+                accent: Colour::of(0xA2, 0xE3, 0xE8),
             },
         }
     }
@@ -134,7 +134,7 @@ mod tests {
     /// exists rather than a switch that raises the other.
     #[test]
     fn the_shells_own_terracotta_is_why_this_palette_exists() {
-        let theirs = alo_appearance::Token::Terracotta
+        let theirs = alo_appearance::Token::DeepTeal
             .colour()
             .contrast_with(alo_appearance::Token::Cream.colour());
         assert!(
@@ -144,17 +144,25 @@ mod tests {
         );
     }
 
-    /// **The accent is still terracotta**: the same hue, taken deep enough to
-    /// read, rather than another colour wearing the agent's meaning.
+    /// **The accent is still the agent's colour**: the same hue, taken deep
+    /// enough to read, rather than another colour wearing the agent's meaning.
+    ///
+    /// Both values moved from terracotta's hue to deep teal's — 12° to 184° —
+    /// at the readability each already had rather than the saturation and value
+    /// each already had. Rotating the hue alone was not enough: teal carries
+    /// more luminance than terracotta at the same value, so a straight rotation
+    /// measured 4.82:1 against the ground where AAA needs 7. These are chosen to
+    /// match what they replaced exactly — 8.92:1 on white and 14.69:1 on black,
+    /// the same two numbers terracotta measured, at alo's hue.
     #[test]
     fn the_accent_is_the_agents_colour_taken_deep_enough_to_read() {
-        let terracotta = alo_appearance::Token::Terracotta.colour();
+        let terracotta = alo_appearance::Token::DeepTeal.colour();
         for scheme in [Scheme::Light, Scheme::Dark] {
             let accent = HighContrast::of(scheme).accent;
             assert_eq!(
                 hue_of(accent).round(),
                 hue_of(terracotta).round(),
-                "{scheme:?}: the accent is no longer terracotta's hue"
+                "{scheme:?}: the accent is no longer alo's hue"
             );
         }
     }

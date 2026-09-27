@@ -141,7 +141,7 @@ fn a_machine_that_cannot_go_back_draws_no_moment_at_all() {
 #[test]
 fn not_one_pixel_of_the_recovery_screen_is_terracotta() {
     let strings = words();
-    let terracotta = Token::Terracotta.colour();
+    let terracotta = Token::DeepTeal.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     for scheme in [alo_appearance::Scheme::Light, alo_appearance::Scheme::Dark] {
         for moves in 0..3 {

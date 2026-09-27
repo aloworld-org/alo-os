@@ -29,7 +29,7 @@
 //! a grant and was not held, and there is no second door.
 //!
 //! ```compile_fail
-//! let made_up = alo_notifying::Shown::in_colour(alo_appearance::Token::Terracotta);
+//! let made_up = alo_notifying::Shown::in_colour(alo_appearance::Token::DeepTeal);
 //! ```
 
 use alo_appearance::Token;
@@ -94,7 +94,7 @@ impl Shown {
     #[must_use]
     pub const fn colour(&self) -> Token {
         if self.notification.is_the_agents() {
-            Token::Terracotta
+            Token::DeepTeal
         } else {
             Token::Navy
         }
@@ -120,7 +120,7 @@ mod tests {
             Shown::of(from_the_agent(&the_agent(), "The invoices are filed", "", &[]).unwrap());
         assert!(shown.the_agents_mark());
         assert!(shown.sent_by(&strings).text().contains("the agent"));
-        assert_eq!(shown.colour(), Token::Terracotta);
+        assert_eq!(shown.colour(), Token::DeepTeal);
     }
 
     /// **Nobody else is terracotta**, and nobody else carries the agent's
@@ -150,7 +150,7 @@ mod tests {
             from_the_agent(&the_agent(), "The invoices are filed", "", &[]).unwrap(),
         ] {
             let shown = Shown::of(notification);
-            assert_eq!(shown.the_agents_mark(), shown.colour() == Token::Terracotta);
+            assert_eq!(shown.the_agents_mark(), shown.colour() == Token::DeepTeal);
         }
     }
 }

@@ -27,7 +27,7 @@
 //!
 //! # Terracotta, and only for the agent
 //!
-//! [`Line::colour`] answers `Token::Terracotta` exactly when
+//! [`Line::colour`] answers `Token::DeepTeal` exactly when
 //! [`crate::By::is_the_agents`] does, and `Token::Navy` — the colour alo OS
 //! draws structure and text in — for everything else. There is no third case
 //! and no setting: an application using the camera is not the machine acting on
@@ -66,7 +66,7 @@ use crate::uses::Use;
 ///     Used::Screen,
 ///     By::the_agent(&Grantee::named("@alo")).expect("an agent, not an application"),
 /// );
-/// assert_eq!(agent.line().colour(), Token::Terracotta);
+/// assert_eq!(agent.line().colour(), Token::DeepTeal);
 /// assert_eq!(agent.line().mark(), Mark::Rectangle);
 /// # Ok::<(), alo_applications::NotAnApplication>(())
 /// ```
@@ -75,7 +75,7 @@ use crate::uses::Use;
 /// constructor to call:
 ///
 /// ```compile_fail
-/// let line = alo_in_use::Line::in_colour(alo_appearance::Token::Terracotta);
+/// let line = alo_in_use::Line::in_colour(alo_appearance::Token::DeepTeal);
 /// ```
 ///
 /// nor can one be hidden, because there is nothing to call:
@@ -135,7 +135,7 @@ impl Line {
     #[must_use]
     pub const fn colour(&self) -> Token {
         if self.by.is_the_agents() {
-            Token::Terracotta
+            Token::DeepTeal
         } else {
             Token::Navy
         }
@@ -232,7 +232,7 @@ mod tests {
         for one in every_shape_of_use() {
             let line = one.line();
             assert_eq!(
-                line.colour() == Token::Terracotta,
+                line.colour() == Token::DeepTeal,
                 line.by().is_the_agents(),
                 "{one:?} is coloured for somebody it is not"
             );

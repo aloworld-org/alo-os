@@ -378,7 +378,7 @@ fn the_rail_and_the_indent_follow_the_reading_direction() {
 /// and this window is a person reading.
 #[test]
 fn terracotta_is_never_drawn() {
-    let terracotta = Token::Terracotta.colour();
+    let terracotta = Token::DeepTeal.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     let kept = an_afternoon_kept();
     let window = opened(&kept);

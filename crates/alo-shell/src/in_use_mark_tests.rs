@@ -127,14 +127,14 @@ fn each_mark_has_the_outline_its_name_says() {
 #[test]
 fn colour_tells_the_agent_apart_only_where_the_palette_allows_it() {
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let agents = MarkColours::of(Token::Terracotta, scheme, Contrast::AsDesigned);
+        let agents = MarkColours::of(Token::DeepTeal, scheme, Contrast::AsDesigned);
         let anybody = MarkColours::of(Token::Navy, scheme, Contrast::AsDesigned);
         assert_ne!(
             agents.fill, anybody.fill,
             "the agent's mark is the same colour as everybody's in the designed {scheme:?} palette"
         );
 
-        let agents = MarkColours::of(Token::Terracotta, scheme, Contrast::High);
+        let agents = MarkColours::of(Token::DeepTeal, scheme, Contrast::High);
         let anybody = MarkColours::of(Token::Navy, scheme, Contrast::High);
         assert_eq!(
             agents.fill, anybody.fill,
@@ -145,7 +145,7 @@ fn colour_tells_the_agent_apart_only_where_the_palette_allows_it() {
     // Whatever the palette, the shape inside the mark stays visible against it.
     for scheme in [Scheme::Light, Scheme::Dark] {
         for contrast in [Contrast::AsDesigned, Contrast::High] {
-            let colours = MarkColours::of(Token::Terracotta, scheme, contrast);
+            let colours = MarkColours::of(Token::DeepTeal, scheme, contrast);
             assert_ne!(
                 colours.fill, colours.cut,
                 "the shape cut out of the mark is invisible in {scheme:?}/{contrast:?}"

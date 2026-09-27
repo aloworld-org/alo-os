@@ -60,8 +60,19 @@ pub const NAVY: Word = Word::saying("appearance.token.navy", "Navy").noting(
      row in a list somebody picks a background from.",
 );
 
-/// What [`crate::Token::Terracotta`] is called.
-pub const TERRACOTTA: Word = Word::saying("appearance.token.terracotta", "Terracotta").noting(
+/// What [`crate::Token::DeepTeal`] is called.
+pub const DEEP_TEAL: Word = Word::saying("appearance.token.deep-teal", "Deep teal").noting(
+    "A dark blue-green, the colour of deep water. It is how this machine says alo is present \
+     or acting, so name it in whatever way a person would recognise rather than borrowing a \
+     word that names a lighter colour.",
+);
+
+/// What [`crate::Accent::Terracotta`] is called.
+///
+/// Its key moved from `appearance.token.` to `appearance.accent.` when ADR
+/// 0067 released it: it is a colour a person picks now, not one the system is
+/// built out of.
+pub const TERRACOTTA: Word = Word::saying("appearance.accent.terracotta", "Terracotta").noting(
     "The colour of fired clay: an orange-brown. Several languages have no ordinary word for it \
      and the nearest loanword may name a different colour, so describe the colour rather than \
      borrowing the word.",
@@ -97,7 +108,13 @@ pub const WARM_STONE: Word = Word::saying("appearance.token.warm-stone", "Warm s
 // problem as the tokens, five more times.
 // ---------------------------------------------------------------------------
 
-/// What [`crate::Accent::Verdigris`] is called.
+/// What the retired accent is called.
+///
+/// ADR 0067 retired it — `#22707E` is deep teal's neighbour, and an accent a
+/// person could mistake for alo is the failure ADR 0010 exists to prevent. The
+/// word stays because settings files naming it are read and migrated rather
+/// than refused, and the sentence that tells somebody their colour moved needs
+/// to name it in their own language.
 pub const VERDIGRIS: Word = Word::saying("appearance.accent.verdigris", "Verdigris").noting(
     "The blue-green of weathered copper — a church roof, an old statue. Two words in some \
      languages and none in others; this is a colour a person picks from a list, so name it in \
@@ -448,18 +465,19 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// Every string this crate can say, in the order a translator meets them: the
 /// colours the system is built out of, the five a person can choose, the
 /// refusals, file by file, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 36] = [
+pub const EVERY_WORD: [Word; 37] = [
     NAVY,
-    TERRACOTTA,
+    DEEP_TEAL,
     CREAM,
     PORCELAIN,
     CHARCOAL,
     WARM_STONE,
-    VERDIGRIS,
+    TERRACOTTA,
     INDIGO,
     VIOLET,
     MOSS,
     ROSE,
+    VERDIGRIS,
     RESERVED,
     NOT_AN_ACCENT,
     NOT_OFFERED,
@@ -600,8 +618,8 @@ mod tests {
     #[test]
     fn every_colour_name_names_nothing() {
         for word in [
-            NAVY, TERRACOTTA, CREAM, PORCELAIN, CHARCOAL, WARM_STONE, VERDIGRIS, INDIGO, VIOLET,
-            MOSS, ROSE,
+            NAVY, DEEP_TEAL, CREAM, PORCELAIN, CHARCOAL, WARM_STONE, TERRACOTTA, INDIGO, VIOLET,
+            MOSS, ROSE, VERDIGRIS,
         ] {
             let phrase = word.phrase().unwrap();
             assert!(phrase.source().gaps().is_empty(), "{}", word.named());

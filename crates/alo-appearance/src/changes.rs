@@ -374,7 +374,7 @@ mod tests {
             serde_json::from_str::<Changes>(r#"{"accent":"Verdigris"}"#)
                 .unwrap()
                 .accent(),
-            Some(Accent::Verdigris)
+            Some(Accent::Indigo)
         );
     }
 

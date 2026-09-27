@@ -132,7 +132,7 @@ fn a_chosen_picture_that_is_not_there_refuses_the_desktop_frame() {
 #[test]
 fn the_neutral_warming_changes_nothing() {
     assert!(Warmth::neutral().changes_nothing());
-    for token in [Token::Navy, Token::Cream, Token::Terracotta] {
+    for token in [Token::Navy, Token::Cream, Token::DeepTeal] {
         let prepared = ScreenBackground::prepare(
             &Background::from(token.colour()),
             cold(),

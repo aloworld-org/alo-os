@@ -162,7 +162,7 @@ fn the_words_are_the_crates_own() {
 /// `alo-in-use`'s rather than this file's.
 #[test]
 fn terracotta_and_the_dot_arrive_together_and_only_for_the_agent() {
-    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::Terracotta.colour());
+    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
 
     let anybodys = drawn(&[used(Used::Camera, 1)]);
     let the_agents_own = drawn(&[the_agents(Used::Camera, 1)]);

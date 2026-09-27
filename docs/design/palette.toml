@@ -49,12 +49,19 @@ format = 1
 hex = "#102A43"
 role = "structure, text"
 
-# The agent — present or acting, and nothing else. About five percent of any
-# screen, so a person can tell at a glance whether the machine is doing something
-# on their behalf. It is never an accent somebody may choose (ADR 0010).
-[terracotta]
-hex = "#E76F51"
-role = "the agent — about 5% of any screen"
+# alo — present, acting, proposing, or waiting for an approval, and nothing
+# else. About five percent of any screen, so a person can tell at a glance
+# whether the machine is doing something on their behalf. It is never an accent
+# somebody may choose (ADR 0010, amended by ADR 0067, which moved this role from
+# terracotta to deep teal and released terracotta to the accent set).
+#
+# It never appears alone: deep teal arrives with the four-corner mark or the
+# word, because navy and deep teal are both dark desaturated blues and a person
+# must be able to say who is acting without naming the colour
+# (`who-is-acting.md`).
+[deep-teal]
+hex = "#0F6B72"
+role = "alo — about 5% of any screen"
 
 # The reading ground.
 [cream]

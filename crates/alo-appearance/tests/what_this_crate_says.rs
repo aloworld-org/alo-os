@@ -72,12 +72,11 @@ fn die_farben() -> Strings {
         "de",
         &[
             (words::NAVY, "Marineblau"),
-            (words::TERRACOTTA, "Terrakotta"),
+            (words::DEEP_TEAL, "Petrol"),
             (words::CREAM, "Cremeweiß"),
             (words::PORCELAIN, "Porzellanweiß"),
             (words::CHARCOAL, "Anthrazit"),
             (words::WARM_STONE, "Warmer Stein"),
-            (words::VERDIGRIS, "Grünspan"),
             (words::INDIGO, "Indigo"),
             (words::VIOLET, "Violett"),
             (words::MOSS, "Moosgrün"),
@@ -113,16 +112,17 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
     }
 }
 
-/// **The whole colour picker, read on a German machine.** Eleven rows: the six
-/// the system is built out of and the five a person can choose between, each
-/// named the way somebody reading German would name that colour rather than the
-/// way English does.
+/// **The whole colour picker, read on a German machine.** Ten rows: the six the
+/// system is built out of and the four a person can choose between, each named
+/// the way somebody reading German would name that colour rather than the way
+/// English does.
 ///
-/// *Grünspan* and *Anthrazit* are the two that make the point. English borrowed
-/// verdigris from French and named a grey after burnt wood; German has an
-/// ordinary word for the first and names the second after a mineral. Neither
-/// list could have been reached from the other by translating word for word,
-/// which is what the notes on these eleven strings exist to say.
+/// *Petrol* and *Anthrazit* are the two that make the point. English describes
+/// alo's colour as a depth and a shade — *deep teal* — where German names it
+/// after the fuel it looks like; English names a grey after burnt wood where
+/// German names it after a mineral. Neither list could have been reached from
+/// the other by translating word for word, which is what the notes on these ten
+/// strings exist to say.
 #[test]
 fn the_whole_colour_picker_is_read_in_the_language_the_person_reads() {
     let strings = die_farben();
@@ -135,7 +135,7 @@ fn the_whole_colour_picker_is_read_in_the_language_the_person_reads() {
         built_out_of,
         [
             "Marineblau",
-            "Terrakotta",
+            "Petrol",
             "Cremeweiß",
             "Porzellanweiß",
             "Anthrazit",
@@ -147,10 +147,7 @@ fn the_whole_colour_picker_is_read_in_the_language_the_person_reads() {
         .iter()
         .map(|accent| accent.said(&strings).into_text())
         .collect();
-    assert_eq!(
-        to_choose_from,
-        ["Grünspan", "Indigo", "Violett", "Moosgrün", "Altrosa"]
-    );
+    assert_eq!(to_choose_from, ["Indigo", "Violett", "Moosgrün", "Altrosa"]);
 
     for token in Token::ALL {
         assert!(token.said(&strings).is_translated(), "{token:?}");
@@ -217,7 +214,7 @@ fn what_came_off_somebodys_own_machine_is_not_translated() {
 #[test]
 fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
     let mut strings = die_farben();
-    let colours = 11;
+    let colours = 10;
     assert_eq!(strings.unanswered().len(), EVERY_WORD.len() - colours);
     assert_eq!(
         strings.missing_from(&language("de")).len(),
@@ -225,8 +222,8 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
     );
 
     strings.shown(Showing::InDevelopment);
-    let translated = Token::Terracotta.said(&strings);
-    assert_eq!(translated.text(), "Terrakotta");
+    let translated = Token::DeepTeal.said(&strings);
+    assert_eq!(translated.text(), "Petrol");
     assert_eq!(
         translated.came_from(),
         &CameFrom::Translation(language("de"))

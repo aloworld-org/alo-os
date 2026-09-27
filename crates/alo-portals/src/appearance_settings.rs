@@ -432,14 +432,14 @@ mod tests {
             (Setting::ColorScheme, Value::ColorScheme(Scheme::Light)),
             (
                 Setting::AccentColor,
-                Value::AccentColor(Accent::Verdigris.on(Scheme::Light)),
+                Value::AccentColor(Accent::Indigo.on(Scheme::Light)),
             ),
         ];
         let dark_scheme = vec![
             (Setting::ColorScheme, Value::ColorScheme(Scheme::Dark)),
             (
                 Setting::AccentColor,
-                Value::AccentColor(Accent::Verdigris.on(Scheme::Light)),
+                Value::AccentColor(Accent::Indigo.on(Scheme::Light)),
             ),
         ];
         assert!(changed(&light, &light).is_empty());

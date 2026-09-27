@@ -226,7 +226,7 @@ fn nothing_is_preselected_and_selection_is_never_colour_alone() {
 /// acting, and a question is the moment it has not.
 #[test]
 fn terracotta_is_not_on_the_surface() {
-    let terracotta = Token::Terracotta.colour();
+    let terracotta = Token::DeepTeal.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     for scheme in [Scheme::Light, Scheme::Dark] {
         let palette = Palette::of(scheme, Contrast::AsDesigned);
@@ -352,7 +352,7 @@ fn high_contrast_draws_the_same_surface_in_the_palette_that_crate_decided() {
             let palette = crate::access_contrast::every_colour_of(
                 Contrast::High,
                 scheme,
-                Token::Terracotta.colour(),
+                Token::DeepTeal.colour(),
             );
             for solid in &high.solids {
                 assert!(

@@ -89,7 +89,7 @@ fn chosen_and_focused_are_shapes_in_two_colours_and_never_terracotta() {
     );
 
     let palette = Palette::of(alo_appearance::Scheme::Light, Contrast::AsDesigned);
-    let terracotta = Token::Terracotta.colour();
+    let terracotta = Token::DeepTeal.colour();
     let terracotta = [terracotta.red(), terracotta.green(), terracotta.blue()];
     for solid in &drawn.solids {
         assert!(

@@ -104,9 +104,17 @@ impl AccentError {
 /// colour nobody offered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Accent {
-    /// Blue-green. What a machine ships with.
-    Verdigris,
-    /// Deep blue.
+    /// Deep blue. What a machine ships with.
+    ///
+    /// **It answers to verdigris as well**, and that is a migration rather
+    /// than a synonym. Verdigris was the default until ADR 0067 retired it —
+    /// `#22707E` is deep teal's neighbour, and an accent somebody could
+    /// mistake for alo is the failure ADR 0010 exists to prevent. Most
+    /// settings files that exist say verdigris, because it was what a machine
+    /// shipped with, and refusing them would take somebody's colour away at
+    /// the moment they upgraded. So the name is read for one release and
+    /// resolves here, the nearest surviving hue and the furthest from alo.
+    #[serde(alias = "Verdigris")]
     Indigo,
     /// Purple.
     Violet,
@@ -119,13 +127,7 @@ pub enum Accent {
 impl Accent {
     /// All five, in the order ADR 0010 lists them, which is the order a picker
     /// shows them in.
-    pub const ALL: [Self; 5] = [
-        Self::Verdigris,
-        Self::Indigo,
-        Self::Violet,
-        Self::Moss,
-        Self::Rose,
-    ];
+    pub const ALL: [Self; 4] = [Self::Indigo, Self::Violet, Self::Moss, Self::Rose];
 
     /// The colour itself, on the ground this scheme puts behind it.
     ///
@@ -137,8 +139,6 @@ impl Accent {
     #[must_use]
     pub const fn on(self, scheme: Scheme) -> Colour {
         match (self, scheme) {
-            (Self::Verdigris, Scheme::Light) => Colour::of(0x22, 0x70, 0x7E),
-            (Self::Verdigris, Scheme::Dark) => Colour::of(0x5F, 0xB3, 0xC2),
             (Self::Indigo, Scheme::Light) => Colour::of(0x3A, 0x5A, 0xA8),
             (Self::Indigo, Scheme::Dark) => Colour::of(0x8A, 0xA0, 0xE6),
             (Self::Violet, Scheme::Light) => Colour::of(0x7A, 0x4E, 0x99),
@@ -155,7 +155,6 @@ impl Accent {
     #[must_use]
     pub const fn word(self) -> Word {
         match self {
-            Self::Verdigris => words::VERDIGRIS,
             Self::Indigo => words::INDIGO,
             Self::Violet => words::VIOLET,
             Self::Moss => words::MOSS,
@@ -201,7 +200,7 @@ impl Accent {
         for token in Token::ALL {
             if token.colour() == colour {
                 return Err(match token {
-                    Token::Terracotta => AccentError::Reserved,
+                    Token::DeepTeal => AccentError::Reserved,
                     other => AccentError::NotAnAccent(other),
                 });
             }
@@ -215,7 +214,7 @@ impl Default for Accent {
     /// `alo-workplace`'s colour scale still carries from before the palette
     /// became terracotta.
     fn default() -> Self {
-        Self::Verdigris
+        Self::Indigo
     }
 }
 
@@ -269,7 +268,7 @@ mod tests {
     /// that can be had instead.
     #[test]
     fn terracotta_is_refused_as_a_personal_accent() {
-        let asked = Accent::of_colour(Token::Terracotta.colour());
+        let asked = Accent::of_colour(Token::DeepTeal.colour());
         assert_eq!(asked, Err(AccentError::Reserved));
         assert!(
             asked
@@ -283,7 +282,7 @@ mod tests {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 assert_ne!(
                     accent.on(scheme),
-                    Token::Terracotta.colour(),
+                    Token::DeepTeal.colour(),
                     "{} on {scheme:?} is not terracotta by another name",
                     accent.word().says()
                 );
@@ -307,7 +306,7 @@ mod tests {
             let said = refused.said(&strings);
             assert!(said.unfilled().is_empty(), "{said}");
             match token {
-                Token::Terracotta => assert_eq!(refused, AccentError::Reserved),
+                Token::DeepTeal => assert_eq!(refused, AccentError::Reserved),
                 other => {
                     assert_eq!(refused, AccentError::NotAnAccent(other));
                     assert!(
@@ -391,7 +390,7 @@ mod tests {
     #[test]
     fn a_refusal_without_the_words_still_names_the_rule() {
         let nothing_declared = Strings::of(alo_strings::Vocabulary::empty());
-        let said = Accent::of_colour(Token::Terracotta.colour())
+        let said = Accent::of_colour(Token::DeepTeal.colour())
             .unwrap_err()
             .said(&nothing_declared);
         assert!(said.is_a_bug());
@@ -495,7 +494,7 @@ mod tests {
     /// catch: a hue added later that is terracotta with two digits changed.
     #[test]
     fn no_accent_sits_where_terracotta_sits() {
-        let reserved = hue(Token::Terracotta.colour());
+        let reserved = hue(Token::DeepTeal.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 let distance = apart(hue(accent.on(scheme)), reserved);
@@ -529,7 +528,6 @@ mod tests {
     #[test]
     fn the_set_is_the_one_in_the_decision() {
         let written = [
-            (Accent::Verdigris, "#22707E", "#5FB3C2"),
             (Accent::Indigo, "#3A5AA8", "#8AA0E6"),
             (Accent::Violet, "#7A4E99", "#BE97DE"),
             (Accent::Moss, "#4A7546", "#8DBE85"),
@@ -539,8 +537,8 @@ mod tests {
             assert_eq!(accent.on(Scheme::Light).to_string(), light);
             assert_eq!(accent.on(Scheme::Dark).to_string(), dark);
         }
-        assert_eq!(written.len(), Accent::ALL.len(), "all five, and only five");
-        assert_eq!(Accent::default(), Accent::Verdigris);
+        assert_eq!(written.len(), Accent::ALL.len(), "all four, and only four");
+        assert_eq!(Accent::default(), Accent::Indigo);
     }
 
     /// An accent survives a settings file, by name rather than by hex — so a

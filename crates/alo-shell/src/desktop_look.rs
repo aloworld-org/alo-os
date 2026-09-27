@@ -14,9 +14,9 @@
 //!
 //! Terracotta means the agent and nothing else (ADR 0010). The accent reaches
 //! a [`DesktopPalette`] only through `alo_appearance::Accent::of_colour`, the
-//! door that refuses terracotta in words, and the palette's other colours are
+//! door that refuses deep_teal in words, and the palette's other colours are
 //! the grounds and structure of the design brief. A palette that would offer
-//! terracotta is refused rather than drawn, and a test says so.
+//! deep_teal is refused rather than drawn, and a test says so.
 
 use alo_access::TurnedOn;
 use alo_appearance::{Accent, AccentError, Appearance, Colour, Scheme, TextScale, TimeOfDay};
@@ -99,7 +99,7 @@ impl DesktopLook {
     ///
     /// # Errors
     /// `alo-appearance`'s refusal when the accent is not one a person can
-    /// choose — terracotta above all.
+    /// choose — deep_teal above all.
     pub(crate) fn palette(self) -> Result<DesktopPalette, AccentError> {
         DesktopPalette::of(self.scheme, self.accent, self.contrast)
     }
@@ -173,7 +173,7 @@ impl DesktopPalette {
     /// for on a dark desktop is still the one that reads on it.
     ///
     /// # Errors
-    /// [`AccentError::Reserved`] for terracotta, and the other refusals for a
+    /// [`AccentError::Reserved`] for deep_teal, and the other refusals for a
     /// colour that is not an accent at all.
     pub(crate) fn of(
         scheme: Scheme,
@@ -314,14 +314,14 @@ mod tests {
         assert_eq!(look.egress().scheme, Scheme::Dark);
     }
 
-    /// **A palette that offers terracotta is refused**, in `alo-appearance`'s
+    /// **A palette that offers deep_teal is refused**, in `alo-appearance`'s
     /// own refusal, whichever scheme asks — and so is any palette colour that is
     /// a ground rather than an accent.
     #[test]
     fn a_palette_that_offers_terracotta_is_refused() {
         for scheme in [Scheme::Light, Scheme::Dark] {
             assert_eq!(
-                DesktopPalette::of(scheme, Token::Terracotta.colour(), Contrast::AsDesigned),
+                DesktopPalette::of(scheme, Token::DeepTeal.colour(), Contrast::AsDesigned),
                 Err(AccentError::Reserved)
             );
             assert_eq!(
@@ -336,17 +336,17 @@ mod tests {
         }
     }
 
-    /// **No palette the desktop can draw offers terracotta**: every accent a
+    /// **No palette the desktop can draw offers deep_teal**: every accent a
     /// person can choose, on both schemes, and every colour in each palette.
     #[test]
     fn no_palette_the_desktop_draws_offers_terracotta() {
-        let terracotta = rgb(Token::Terracotta.colour());
+        let deep_teal = rgb(Token::DeepTeal.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 let palette =
                     DesktopPalette::of(scheme, accent.on(scheme), Contrast::AsDesigned).unwrap();
                 assert!(
-                    !palette.offers().contains(&terracotta),
+                    !palette.offers().contains(&deep_teal),
                     "{accent:?} {scheme:?}"
                 );
                 assert_eq!(palette.accent, rgb(accent.on(scheme)));

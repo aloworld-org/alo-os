@@ -59,7 +59,7 @@ fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPictur
 
 /// Terracotta, as the painter takes it.
 fn terracotta() -> [u8; 3] {
-    rgb(Token::Terracotta.colour())
+    rgb(Token::DeepTeal.colour())
 }
 
 /// **A question answered on this machine draws nothing; one answered anywhere
@@ -610,7 +610,7 @@ fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
         let palette = crate::access_contrast::every_colour_of(
             Contrast::High,
             scheme,
-            Token::Terracotta.colour(),
+            Token::DeepTeal.colour(),
         );
         for solid in &high.solids {
             assert!(

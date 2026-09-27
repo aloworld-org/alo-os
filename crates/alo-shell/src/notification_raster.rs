@@ -187,8 +187,7 @@ pub(crate) fn picture(
         let whole = Rectangle::<i32, Physical>::from_size(size.into());
         let area = Rectangle::new((left.max(0), top.max(0)).into(), (wide, tall).into());
         let edge = if card.the_agents {
-            look.contrast
-                .accent(look.scheme, Token::Terracotta.colour())
+            look.contrast.accent(look.scheme, Token::DeepTeal.colour())
         } else {
             ink
         };

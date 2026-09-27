@@ -125,24 +125,30 @@ mod tests {
         assert!(measured >= ENOUGH_FOR_TEXT);
     }
 
-    /// **Terracotta on cream reaches neither threshold**, and that is the
-    /// measurement rather than an opinion: 2.87:1, under the 4.5 a word needs
-    /// and under the 3.0 a shape carrying meaning needs. It is why ADR 0010's
-    /// mark and word are not decoration — the agent's colour cannot be the only
-    /// thing saying the agent is there even for somebody who sees every hue,
-    /// let alone for somebody who does not. Anything the shell draws in
-    /// terracotta on the reading ground has to carry its meaning some other way
-    /// as well.
+    /// **Deep teal on cream clears both thresholds** — 5.78:1, over the 4.5 a
+    /// word needs and the 3.0 a shape carrying meaning needs. Terracotta, which
+    /// it replaced, reached **2.87:1** and reached neither, so alo's colour has
+    /// gone from unreadable as text on the reading ground to comfortably
+    /// readable. This is one of the three measurements ADR 0067 said were owed.
+    ///
+    /// **And the mark and the word are still not optional**, which is the part
+    /// worth keeping straight. Their reason has changed: it used to be that the
+    /// colour could not be read at all, and now it is the durable one — **hue is
+    /// never a signal**, because around one man in twelve cannot rely on it and
+    /// EN 301 549 has said so for twenty years. A colour that passes contrast is
+    /// still a colour somebody cannot distinguish from navy, which is why
+    /// `docs/design/who-is-acting.md` asks whether a person can say who is
+    /// acting **without naming the colour**.
     #[test]
-    fn terracotta_on_cream_cannot_be_the_only_thing_saying_something() {
-        let measured = Token::Terracotta
+    fn deep_teal_on_cream_is_readable_and_still_not_a_signal_on_its_own() {
+        let measured = Token::DeepTeal
             .colour()
             .contrast_with(Token::Cream.colour());
         assert!(
-            (measured - 2.8652).abs() < 0.001,
-            "terracotta on cream measured {measured}"
+            (measured - 5.7794).abs() < 0.001,
+            "deep teal on cream measured {measured}"
         );
-        assert!(measured < ENOUGH_FOR_A_SHAPE);
-        assert!(measured < ENOUGH_FOR_TEXT);
+        assert!(measured >= ENOUGH_FOR_A_SHAPE);
+        assert!(measured >= ENOUGH_FOR_TEXT);
     }
 }
