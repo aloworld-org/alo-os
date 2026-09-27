@@ -67,7 +67,12 @@ pub const DEEP_TEAL: Word = Word::saying("appearance.token.deep-teal", "Deep tea
      word that names a lighter colour.",
 );
 
-/// What [`crate::Accent::Terracotta`] is called.
+/// What `Accent::Terracotta` is called.
+///
+/// Not a link, because **the variant does not exist yet**. ADR 0067 decides that
+/// `Token::Terracotta` becomes `Accent::Terracotta`; the token was removed and
+/// the accent was never added, so `Accent::ALL` is four where the promise and the
+/// decision both say five. Owed by whoever owns `alo-appearance`.
 ///
 /// Its key moved from `appearance.token.` to `appearance.accent.` when ADR
 /// 0067 released it: it is a colour a person picks now, not one the system is
