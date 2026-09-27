@@ -43,6 +43,83 @@ day somebody edits it is the day it rots. The count is corrected and the gap in
 the numbering is deliberate, so a stage number in an old log still means what it
 meant.
 
+## The second machine runs them too, and two things were in the way (2026-09-27)
+
+**Every sub-mode of `the_nested_fixtures` now passes on the Windows Server
+machine that gates this repository** — WSL2, Ubuntu 24.04, no GPU, weston 13.0.0
+headless, Mesa 25.2.8, `GL_RENDERER: llvmpipe (LLVM 20.1.2, 256 bits)`. Nine
+steps of the shell were read back off the frames they drew:
+
+| step | pixels painted at 1366x768 |
+|---|---|
+| the sign-in screen, before any account is chosen | 1,049,088 |
+| a name typed at the sign-in screen | 1,049,088 |
+| the screen divided between two windows | 512 |
+| the same two windows, zoomed out to 40 per cent | 84 |
+| a second display docked, and the desktop after it | 127,038 |
+| a capture of the screen, with a blur marked on it | 241,662 |
+| a notification arrives on the desktop | 173,118 |
+| the screen is locked | 1,049,088 |
+| a key is pressed at the locked screen | 1,049,088 |
+
+So the paragraph above generalises: it is not one machine's trick. What it took
+was two fixes, and **both were faults rather than gaps** — this machine had been
+*failing* these fixtures, not skipping them.
+
+### A variable is a claim; a socket is a fact
+
+`a_parent` asked only whether `WAYLAND_DISPLAY` was set and non-empty. On this
+machine that is always true and always wrong:
+
+- WSL puts `WAYLAND_DISPLAY=wayland-0` and `XDG_RUNTIME_DIR=/run/user/0` into
+  every shell, whoever it is;
+- WSLg's socket is at `/mnt/wslg/runtime-dir/wayland-0`, and WSL links it into
+  `/run/user/1000` for the default user — **never into `/run/user/0`**;
+- the gate runs as root.
+
+The name pointed at nothing, `a_parent` answered *already there*, weston was never
+looked for, and all eight sub-modes failed with *nested graphics initialization:
+No such file or directory*. It now resolves the name the way a Wayland client does
+— absolute path, or relative to `XDG_RUNTIME_DIR` — and a `WAYLAND_DISPLAY` that
+names no socket falls through to starting weston. The refusal that is left says
+which of the two was missing.
+
+### A deadline stops a hang; it does not measure performance
+
+With a parent found, seven of eight passed and `client-everything` failed with
+*no callback after GLES submission* — three times out of three, deterministically
+and with nothing else competing, so not contention. Both deadlines were then
+raised out of the way and the run measured:
+
+| run | two frame callbacks arrived after |
+|---|---|
+| `client` | **52.7 ms** |
+| `client-everything` | **5.66 s** |
+
+Nothing was broken. `nested_client_check`'s loop does the reader's twelve EGL page
+submissions and the control strip's eight **in the same iteration**, as soon as
+the client's surface is mapped, and only then calls `Server::render` — which is
+what produces the client's callbacks. The client's wait was five seconds. On a GPU
+that fits; on llvmpipe it misses by about thirteen per cent, and a gate does not
+get to fail for that.
+
+So the wait is now `Flags::patience()`: five seconds for the plain run, unchanged,
+and sixty for a run that asks the compositor for the reader or the strip, with
+`Flags::whole_run()` raised in step so a failure still reports from the client
+rather than from the loop around it. A regression there reports in a minute rather
+than in five seconds. That is the price and it is the right way round: **a number
+tight enough to measure performance turns a software rasteriser into a failing
+gate**, and the only machines this project has are software rasterisers until the
+certified one exists.
+
+### What it still does not give anybody
+
+The same as above: no photograph. And one thing worth writing down for whoever
+tries the read-back another way — `weston-screenshooter` does not work here. It
+aborts on `width > 0` in `screenshot_create_shm_buffer` under the GL renderer and
+writes no file under pixman. It does not matter, because the shell reads its own
+framebuffer back and that is the stronger evidence, but an hour can be lost to it.
+
 ## Native window placement (2026-09-08)
 
 `Server::place_window(surface, (x, y))` places a live same-display mapped root's
