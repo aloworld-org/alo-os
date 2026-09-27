@@ -222,8 +222,8 @@ mod tests {
         let by_day = Wearing::of(&laptop, &appearance, &dock, &cold);
         assert!(by_day.warmth().changes_nothing());
         assert_eq!(
-            by_day.warming().applied_to(Token::Terracotta.colour()),
-            Token::Terracotta.colour(),
+            by_day.warming().applied_to(Token::DeepTeal.colour()),
+            Token::DeepTeal.colour(),
             "with night light off a screen is drawn exactly as it was"
         );
     }

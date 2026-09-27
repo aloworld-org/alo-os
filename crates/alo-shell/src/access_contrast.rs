@@ -81,7 +81,7 @@ impl Contrast {
                 (Role::Ink, Scheme::Dark) => Token::Cream,
                 // The accent has no token: it is the person's own colour,
                 // and `accent` is where it is asked for.
-                (Role::Accent, _) => Token::Terracotta,
+                (Role::Accent, _) => Token::DeepTeal,
             }
             .colour()),
         }

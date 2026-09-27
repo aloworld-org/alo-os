@@ -251,7 +251,7 @@ mod tests {
         let terracotta = in_use
             .lines()
             .into_iter()
-            .filter(|line| line.colour() == alo_appearance::Token::Terracotta)
+            .filter(|line| line.colour() == alo_appearance::Token::DeepTeal)
             .count();
         assert_eq!(terracotta, 1);
         assert!(

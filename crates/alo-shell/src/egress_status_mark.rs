@@ -40,12 +40,16 @@ impl MarkColours {
     pub(crate) fn of(scheme: Scheme, contrast: Contrast) -> Self {
         Self {
             edge: colour(contrast.ink(scheme)),
-            fill: colour(contrast.accent(scheme, Token::Terracotta.colour())),
+            fill: colour(contrast.accent(scheme, Token::DeepTeal.colour())),
             arrow: match contrast {
-                Contrast::AsDesigned => match scheme {
-                    Scheme::Light => Token::Navy.colour(),
-                    Scheme::Dark => Token::Charcoal.colour(),
-                },
+                // **Cream in both schemes, because the fill is dark.** The rule
+                // is unchanged — the arrow is told from the fill by lightness
+                // rather than hue — but the fill is not: terracotta was a light
+                // warm colour and a dark arrow stood out of it, and deep teal is
+                // dark, so navy measures 2.35:1 inside it and charcoal 2.48:1,
+                // both under the 3.0 a shape carrying meaning needs. Cream
+                // measures 5.78:1. The arrow flipped because the ground did.
+                Contrast::AsDesigned => Token::Cream.colour(),
                 Contrast::High => colour(contrast.ground(scheme)),
             },
         }
@@ -118,18 +122,23 @@ mod tests {
     use super::*;
     use alo_appearance::{ENOUGH_FOR_A_SHAPE, ENOUGH_FOR_TEXT};
 
-    /// **The arrow is told from the terracotta by lightness, not by hue**, in
+    /// **The arrow is told from alo's colour by lightness, not by hue**, in
     /// both schemes — WCAG 2.1 §1.4.11's contrast for a shape that is the only
     /// thing saying something.
+    ///
+    /// It caught a real fault when the agent's colour moved: navy inside deep
+    /// teal measures 2.35:1 where it cleared terracotta easily, so for a while
+    /// the mark that says *something is leaving* was nearly the tone of the
+    /// mark that says *alo is working*.
     #[test]
-    fn the_arrow_stands_apart_from_terracotta_without_its_hue() {
+    fn the_arrow_stands_apart_from_alos_colour_without_its_hue() {
         for scheme in [Scheme::Light, Scheme::Dark] {
             let colours = MarkColours::of(scheme, Contrast::AsDesigned);
-            assert_eq!(colours.fill, Token::Terracotta.colour());
+            assert_eq!(colours.fill, Token::DeepTeal.colour());
             let contrast = colours.arrow.contrast_with(colours.fill);
             assert!(
                 contrast >= ENOUGH_FOR_A_SHAPE,
-                "{scheme:?}: the arrow is {contrast:.2} from terracotta"
+                "{scheme:?}: the arrow is {contrast:.2} from alo's colour"
             );
         }
     }
@@ -188,7 +197,7 @@ mod tests {
     }
 
     /// **The mark is a shape with an arrow in it at every size**, and the arrow
-    /// is inside the terracotta rather than beside it.
+    /// is inside the fill rather than beside it.
     #[test]
     fn the_arrow_is_inside_the_square_at_every_size() {
         for side in [1, 8, 18, 36, 54] {
@@ -198,11 +207,11 @@ mod tests {
             let arrow = solids.get(2..).unwrap();
             assert!(arrow.len() >= 2, "{side}: no arrow");
             for part in arrow {
-                assert_eq!(part.colour, rgb(Token::Navy.colour()));
+                assert_eq!(part.colour, rgb(Token::Cream.colour()));
                 assert_eq!(
                     part.area.intersection(fill),
                     Some(part.area),
-                    "{side}: {part:?} leaves the terracotta"
+                    "{side}: {part:?} leaves the fill"
                 );
             }
             assert_eq!(fill.intersection(square), Some(fill));

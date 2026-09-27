@@ -44,7 +44,7 @@ fn the_agents_notification_carries_a_mark_a_word_and_a_colour() {
     let shown = became.shown().unwrap();
     assert!(shown.the_agents_mark());
     assert!(shown.sent_by(&strings).text().contains("the agent"));
-    assert_eq!(shown.colour(), Token::Terracotta);
+    assert_eq!(shown.colour(), Token::DeepTeal);
 }
 
 /// **Nobody else is terracotta and nobody else carries the mark** — not an

@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn what_ships_is_an_accent_a_person_could_also_have_chosen() {
         let shipped = Shipped::of_the_image();
-        assert_eq!(shipped.accent(), Accent::Verdigris);
+        assert_eq!(shipped.accent(), Accent::Indigo);
         assert!(Accent::ALL.contains(&shipped.accent()));
         assert_eq!(
             Accent::of_colour(shipped.accent().on(Scheme::Light)),

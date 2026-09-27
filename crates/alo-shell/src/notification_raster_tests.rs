@@ -128,7 +128,7 @@ fn a_notification_with_nothing_more_to_say_draws_no_blank_line() {
 /// `alo-notifying`'s sentence rather than one assembled here.
 #[test]
 fn the_agents_card_carries_both_the_colour_and_the_word() {
-    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::Terracotta.colour());
+    let terracotta = Contrast::AsDesigned.accent(Scheme::Light, Token::DeepTeal.colour());
 
     let agents = drawn(&[from_an_agent("I have drafted a reply")]);
     let machines = drawn(&[from_the_machine("Printer ready", "", &[])]);

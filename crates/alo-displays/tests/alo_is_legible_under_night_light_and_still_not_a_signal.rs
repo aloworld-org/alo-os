@@ -139,7 +139,7 @@ fn the_agents_colour_stays_apart_from_every_accent_at_every_warmth() {
     let mut where_it_was = String::new();
     for warmth in every_warmth() {
         let warming = Warming::at(warmth);
-        let agent = warming.applied_to(Token::Terracotta.colour());
+        let agent = warming.applied_to(Token::DeepTeal.colour());
         for accent in Accent::ALL {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 let measured = apart(agent, warming.applied_to(accent.on(scheme)));
@@ -176,7 +176,7 @@ fn the_agents_colour_stays_apart_from_every_accent_at_every_warmth() {
 /// terracotta byte for byte.
 #[test]
 fn no_warmth_draws_an_accent_as_the_agents_colour() {
-    let agent = Token::Terracotta.colour();
+    let agent = Token::DeepTeal.colour();
     for warmth in every_warmth() {
         let warming = Warming::at(warmth);
         for accent in Accent::ALL {
@@ -204,22 +204,29 @@ fn no_warmth_draws_an_accent_as_the_agents_colour() {
 /// **The mark and the word are not optional, and night light does not change
 /// that.**
 ///
-/// ADR 0010 measured terracotta on cream at 2.87:1, which is under the 3.0 that
-/// a shape carrying meaning has to reach — so the agent's colour never carried
-/// its meaning by itself, on a warmed screen or a cold one. This holds that at
-/// every warmth, so that nobody can read the test above as *the colour is
-/// enough now*.
+/// ADR 0010 measured terracotta on cream at 2.87:1 and concluded the agent's
+/// colour could not carry its meaning alone. **Deep teal reaches 5.78:1 cold
+/// and 5.13:1 at 2000 K**, so that particular reason is gone: alo's colour is
+/// legible at every warmth a person can set.
+///
+/// **The mark and the word are still not optional**, and this test now holds
+/// the reason that never depended on a measurement: a signal carried by hue
+/// alone fails for anybody who cannot distinguish that hue, and deep teal sits
+/// beside navy, which is what a person's own controls are drawn in. Night light
+/// could never turn a colour into a signal, and it certainly cannot do it for
+/// one that already reads perfectly well.
 #[test]
-fn night_light_does_not_make_the_colour_sufficient_because_it_never_was() {
+fn night_light_leaves_the_colour_legible_and_still_not_a_signal() {
     for warmth in every_warmth() {
         let warming = Warming::at(warmth);
-        let agent = warming.applied_to(Token::Terracotta.colour());
+        let agent = warming.applied_to(Token::DeepTeal.colour());
         let ground = warming.applied_to(Token::Cream.colour());
         let measured = agent.contrast_with(ground);
         assert!(
-            measured < ENOUGH_FOR_A_SHAPE,
-            "at {} K the agent's colour on the reading ground measured {measured}, which would be \
-             a change to ADR 0010 rather than a change to this crate",
+            measured >= ENOUGH_FOR_A_SHAPE,
+            "at {} K the agent's colour on the reading ground measured {measured}, under \
+             the 3.0 a shape carrying meaning needs — a finding about night light rather \
+             than a change to this crate",
             warmth.as_kelvin()
         );
     }
@@ -241,7 +248,7 @@ fn the_neutral_warmth_is_the_palette_itself() {
         }
     }
     assert!(
-        apart(Token::Terracotta.colour(), Accent::Rose.on(Scheme::Dark)) >= FAR_ENOUGH,
+        apart(Token::DeepTeal.colour(), Accent::Rose.on(Scheme::Dark)) >= FAR_ENOUGH,
         "the measure itself agrees with ADR 0010 on an unwarmed screen"
     );
 }

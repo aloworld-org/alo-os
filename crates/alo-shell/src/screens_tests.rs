@@ -227,8 +227,8 @@ fn night_light_reaches_every_screen_beside_its_own_background() {
     for place in screens.each() {
         assert!(place.wearing().warmth().changes_nothing());
         assert_eq!(
-            place.warming().applied_to(Token::Terracotta.colour()),
-            Token::Terracotta.colour()
+            place.warming().applied_to(Token::DeepTeal.colour()),
+            Token::DeepTeal.colour()
         );
     }
 

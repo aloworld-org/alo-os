@@ -105,7 +105,7 @@ fn the_name_is_drawn() {
 #[test]
 fn terracotta_is_not_on_the_sign_in_screen() {
     let terracotta = {
-        let colour = Token::Terracotta.colour();
+        let colour = Token::DeepTeal.colour();
         [colour.red(), colour.green(), colour.blue()]
     };
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -245,7 +245,7 @@ fn high_contrast_draws_the_same_screen_in_the_palette_that_crate_decided() {
         let palette = crate::access_contrast::every_colour_of(
             Contrast::High,
             scheme,
-            Token::Terracotta.colour(),
+            Token::DeepTeal.colour(),
         );
         for solid in &high.solids {
             assert!(

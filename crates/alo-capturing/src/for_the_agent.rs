@@ -229,7 +229,7 @@ mod tests {
         );
         assert_eq!(
             line.colour(),
-            alo_appearance::Token::Terracotta,
+            alo_appearance::Token::DeepTeal,
             "the agent used the screen and the indicator did not say so in the agent's colour"
         );
         assert!(line.the_agents_dot(), "ADR 0010's mark is not drawn");

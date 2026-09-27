@@ -69,7 +69,7 @@
 //! // refused in a sentence the person can read, in the language they read it.
 //! appearance.set_accent(Accent::Rose);
 //! assert_eq!(appearance.accent_at(evening), Accent::Rose.on(Scheme::Dark));
-//! let refused = Accent::of_colour(Token::Terracotta.colour()).unwrap_err();
+//! let refused = Accent::of_colour(Token::DeepTeal.colour()).unwrap_err();
 //! assert!(refused.said(&strings).text().contains("choose verdigris"));
 //!
 //! // Only the difference is written down.

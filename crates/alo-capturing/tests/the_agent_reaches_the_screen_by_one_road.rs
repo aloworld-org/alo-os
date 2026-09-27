@@ -99,7 +99,7 @@ fn a_capture_by_the_agent_shows_in_the_indicator_in_the_agents_colour() {
     );
     assert_eq!(
         line.colour(),
-        Token::Terracotta,
+        Token::DeepTeal,
         "ADR 0010 gives the agent terracotta, and this line is not it"
     );
     assert!(
@@ -123,7 +123,7 @@ fn an_application_using_the_screen_is_not_drawn_as_the_agent() {
     assert!(!line.by().is_the_agents());
     assert_ne!(
         line.colour(),
-        Token::Terracotta,
+        Token::DeepTeal,
         "an application was drawn in the agent's colour, so the colour no longer means the agent"
     );
     assert!(!line.the_agents_dot());

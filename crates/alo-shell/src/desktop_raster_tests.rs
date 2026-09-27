@@ -81,7 +81,7 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
 #[test]
 fn no_pixel_on_the_desktop_is_terracotta() {
     let (running, filling, _folder) = both_open();
-    let terracotta = rgb(Token::Terracotta.colour());
+    let terracotta = rgb(Token::DeepTeal.colour());
     let evening = TimeOfDay::checked(20, 0).unwrap();
     for accent in Accent::ALL {
         for now in [TimeOfDay::checked(9, 0).unwrap(), evening] {

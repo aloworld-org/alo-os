@@ -59,7 +59,7 @@ answer, never hidden in settings.
 
 Palette: navy #102A43 for structure and text, cream #F8F6F2 as the ground, warm
 porcelain #F4F1EC for the workspace canvas, charcoal #1F2529 for the rail, warm
-stone #7A6F62 for metadata. Terracotta #E76F51 is the accent and appears ONLY
+stone #7A6F62 for metadata. Terracotta #0F6B72 is the accent and appears ONLY
 where the agent is present or acting — about five percent of any screen — so a
 person can tell at a glance whether the machine is doing something on their
 behalf. Type: Inter throughout, EB Garamond for occasional editorial headings.
@@ -164,7 +164,7 @@ no option is presented as the clever one.
 | Colour | Hex | Role |
 |---|---|---|
 | Navy | `#102A43` | structure, text |
-| Terracotta | `#E76F51` | the agent — about 5% of any screen |
+| Terracotta | `#0F6B72` | the agent — about 5% of any screen |
 | Cream | `#F8F6F2` | reading ground |
 | Porcelain | `#F4F1EC` | workspace canvas |
 | Charcoal | `#1F2529` | the rail |

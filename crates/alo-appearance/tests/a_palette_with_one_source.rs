@@ -89,7 +89,7 @@ fn as_written() -> BTreeMap<String, String> {
 fn named(token: Token) -> &'static str {
     match token {
         Token::Navy => "navy",
-        Token::Terracotta => "terracotta",
+        Token::DeepTeal => "deep-teal",
         Token::Cream => "cream",
         Token::Porcelain => "porcelain",
         Token::Charcoal => "charcoal",

@@ -150,7 +150,7 @@ fn native_reader_interaction_feedback_is_distinct_and_never_covers_text() -> Res
                             .iter()
                             .all(|row| rect.intersection(row.bounds()).is_none())
                     );
-                    assert_ne!(*colour, Token::Terracotta.colour());
+                    assert_ne!(*colour, Token::DeepTeal.colour());
                 }
             }
             for feedback in [
