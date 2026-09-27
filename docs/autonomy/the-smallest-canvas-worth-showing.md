@@ -84,19 +84,32 @@ retrofit.
 
 ### 2. A frame is where it looks, at any zoom
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-27.** Two spaces with one conversion between them:
+`Pointer::location` stays in screen pixels, which is what a backend reports and
+what the arrow and the window-control strip are placed in, and
+`Surfaces::on_the_plane` converts once — in `pointer_motion`, in the hit test, and
+in `window_press`, which is where a screen press becomes a fact about a frame. The
+pan needs no term in that conversion, because dividing the pointer and the origins
+by the same zoom cancels it exactly.
 
-#### What task 1 left for this one, written on 2026-09-27
+Held by `crates/alo-shell/tests/a_frame_is_where_it_looks/mod.rs`: two real
+clients read their own `wl_pointer` events off the wire, and every case aims at
+**the middle of a 16x16 window** and asserts the client was told `(8, 8)` — at 40
+per cent, life size and 250 per cent, and at two pan offsets. The screen
+coordinate differs in all six cases and the expected answer never does. Proved to
+bite: with the conversion removed, the middle of the window is reported at `3.2`,
+which is `8 × 0.4`. The second test presses two frames 400 units apart and
+requires the other one to hear nothing, which is the failure a person would
+describe as *I clicked that window and the other one answered*.
 
-The refusal above is where to start: `Server::pointer_target` returns `None` at
-any zoom but life size. Removing it is not one division, which is why task 1 did
-not do it. `crate::scene::trees` answers in screen pixels and Smithay derives a
-client's surface-local coordinate by subtracting the focus origin from the
-pointer's own location, so the pointer's units have to be decided rather than
-converted at the last moment — and `Surfaces::pointer.location`, the window
-controls and the resize gesture all read that same stored location and are all in
-the **viewport** layer, where a zoom must not reach. Two spaces, named, with one
-conversion between them; not a scale factor sprinkled at each reader.
+**Not held, and not this task's to decide:** *focus follows the frame that was
+pressed*. Nothing in this shell moves **keyboard** focus on a press at any zoom —
+`Server::keyboard_focus` is an explicit host API and no pointer path calls it — so
+that clause is about a shell policy this compositor has never had rather than
+about the plane's transform. Click-to-focus versus focus-follows-pointer is an
+ADR, not a line in a canvas task, and inventing it here would settle a decision
+in the wrong place. What is held is that the press reaches the frame that looks
+pressed. **Depends on:** 1.
 
 An application opens as a frame on the plane and receives input where a person
 points. This is the task that is quietly hard: a click at screen coordinates
@@ -119,6 +132,17 @@ pixels at half zoom moves it 200 plane units.
 
 - **Acceptance:** dragging at three zoom levels moves the frame by the pointer's
   own distance in plane units, and a press inside the content never moves it.
+
+#### The arithmetic arrived with task 2; the gesture did not (2026-09-27)
+
+`Surfaces::window_press` records a press in plane units and `pointer_motion` hands
+`move_window_pointer` the same converted point, so `origin + (pointer - press)` is
+already entirely in plane units and a drag of a hundred screen pixels at half zoom
+already moves a frame two hundred of them. **Untested at any zoom but life size**,
+which is the first half of this task's acceptance and is now a test rather than an
+implementation. What is genuinely missing is the title area: a press anywhere in a
+window can begin an XDG move today, so *a press inside the content never moves it*
+is the part with work behind it.
 
 ### 4. Resizing, and the application told as it happens
 

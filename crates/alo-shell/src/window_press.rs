@@ -9,6 +9,12 @@ use smithay::{
 
 impl Surfaces {
     /// Resolve this seat's active press only on the requested mapped root tree.
+    ///
+    /// The press comes back **in the plane's units**, because both callers move
+    /// or resize a frame *on* the plane and compare this against the frame's own
+    /// origin. `Pointer::location` is kept in screen pixels, which is the space
+    /// the arrow and the window-control strip live in, so the conversion belongs
+    /// here — at the one point where a screen press becomes a fact about a frame.
     pub(crate) fn window_press(
         &self,
         root: &WlSurface,
@@ -34,6 +40,6 @@ impl Surfaces {
         while let Some(parent) = get_parent(&target) {
             target = parent;
         }
-        (&target == root).then(|| (pointer.location, pointer.buttons.clone()))
+        (&target == root).then(|| (self.on_the_plane(pointer.location), pointer.buttons.clone()))
     }
 }
