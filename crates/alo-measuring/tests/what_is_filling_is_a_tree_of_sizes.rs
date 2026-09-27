@@ -500,11 +500,33 @@ fn naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so() {
     );
     assert_eq!(holding.finished, not_finished.is_empty());
     for wide in not_finished {
-        assert_eq!(
+        // **At least the bound, not exactly it** — which is what the sentence
+        // beside this has always said, and what the assertion did not.
+        //
+        // `Walking::throughout` walks a folder *again* for everything one pass
+        // could not enter, and accumulates: each pass stops at `most` things, and
+        // `gathered.things` grows across passes. So a folder too wide for one walk
+        // ends up holding however much accumulated before the walking-on gave up —
+        // `most` on a folder that needed exactly one more pass, and more than
+        // `most` on anything wider. Equality held only on the synthetic trees
+        // beside this test, where one folder holds everything the walk ever saw.
+        //
+        // Measured on a real `/`: a Chrome cache of 56,936 entries at one level
+        // came back with 20,284 children against a bound of 20,000, and the
+        // equality failed on a walk that had done exactly what it promised.
+        //
+        // The inequality still catches what this is for. A folder cut short for
+        // any reason *other* than being too wide — an error reported as
+        // `NotFinished`, a pass that gave up early — has **fewer** than `most`
+        // children, and fails here.
+        assert!(
+            wide.children.len() >= holding.most,
+            "{} says it is not finished while holding {} things at one level, \
+             fewer than the {} one walk looks at — so it was cut short for some \
+             other reason than being too wide",
+            wide.at.display(),
             wide.children.len(),
-            holding.most,
-            "{} is cut short only because it holds more than the bound at one level",
-            wide.at.display()
+            holding.most
         );
     }
 }
