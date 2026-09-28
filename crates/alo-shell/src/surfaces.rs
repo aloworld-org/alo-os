@@ -95,6 +95,20 @@ pub(crate) struct Surfaces {
     pub(crate) cursor: CursorImageStatus,
     /// `zwp_pointer_gestures_v1`, held so the global outlives this compositor's
     /// clients rather than being dropped the moment it is created.
+    ///
+    /// **Never read, and that is what it is for.** The other globals beside it
+    /// are reached through their handler traits — `CompositorHandler` hands back
+    /// `&mut self.compositor`, and so on — but nothing asks this one for
+    /// anything: `delegate_pointer_gestures!` needs no accessor, and a pinch
+    /// arrives through the seat's pointer rather than through here. What the
+    /// field does is stay alive. Dropping it would take the global with it and
+    /// the protocol would simply stop being advertised, which is a fault with no
+    /// error message at either end — a client would see no gestures and nothing
+    /// would say why.
+    #[expect(
+        dead_code,
+        reason = "holding the global alive is the whole purpose; there is nothing to read"
+    )]
     pub(crate) gestures: PointerGesturesState,
 }
 

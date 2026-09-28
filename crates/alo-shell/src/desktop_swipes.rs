@@ -19,24 +19,19 @@
 //!   because a scroll cancels a swipe it had begun and it has to see that; what
 //!   is refused is the answer, and the event goes on to the road that already
 //!   handles it.
-//! - **`Zoom`** is not, and **the reason has changed**. It used to be that
-//!   nothing in this compositor could zoom anything. The canvas can now, and a
-//!   pinch over the plane does zoom it — through `crate::canvas_pinch`, not
-//!   through here. This answer stays refused because carrying it out as well
-//!   would apply one pinch twice.
+//! - **`Zoom` no longer exists to refuse.** There was an `Intent::Zoom`, this
+//!   file returned `false` for it, and the reason given was that nothing in this
+//!   compositor could zoom anything. The canvas can now — a pinch over the plane
+//!   zooms it through `crate::canvas_pinch` — and that made the old answer not
+//!   merely unused but wrong to keep: it reported **once, at the end of the
+//!   gesture**, with the scale the fingers finished at, while a canvas has to
+//!   move while they are still moving. Anybody wiring it up later would have
+//!   spent one pinch twice, and the only thing standing in their way was a test
+//!   asserting that nobody had.
 //!
-//!   The two are not the same shape. This recogniser answers **once, at the end
-//!   of the gesture**, with the scale the fingers finished at
-//!   (`gestures.rs`: `Event::End` is the only arm that returns `Intent::Zoom`).
-//!   A canvas has to zoom *while* the fingers move or it is not a pinch, it is a
-//!   jump when you let go — so the canvas reads the raw
-//!   `zwp_pointer_gestures_v1` updates, each of which carries the scale against
-//!   where the gesture began.
-//!
-//!   A pinch still reaches the recogniser, because a pinch cancels a swipe it
-//!   had begun and it has to see that. What is refused is only the answer, and
-//!   `a_zoom_is_not_carried_out_because_the_canvas_already_did_it`
-//!   below still holds it, under the new reason.
+//!   So it is gone from `alo_desktops::gesture_events` rather than kept refused.
+//!   A pinch still reaches the recogniser, because a pinch cancels a swipe it had
+//!   begun and it has to see that; it simply answers nothing now.
 //!
 //! # Where a swipe goes when there is no display
 //!
@@ -73,12 +68,11 @@ impl crate::Server {
                 self.swipe_switched_desktop(switch);
                 true
             }
-            // Handed back rather than acted on; see this file's header. Both
-            // are already answered by a road that sees the events directly —
-            // scrolling by `crate::libinput_scroll`, a pinch on the plane by
-            // `crate::canvas_pinch` — and carrying them out here as well would
-            // spend one movement of somebody's fingers twice.
-            Intent::Scroll { .. } | Intent::Zoom(_) => false,
+            // Handed back rather than acted on; see this file's header. A
+            // scroll is already sent to the focused client by
+            // `crate::libinput_scroll`, and carrying it out here as well would
+            // scroll twice for one movement of somebody's fingers.
+            Intent::Scroll { .. } => false,
         }
     }
 

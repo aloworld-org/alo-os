@@ -320,6 +320,14 @@ impl Server {
             .ok_or(InputError::PointerUnavailable)?;
         pointer.time = time;
         if pointer.handle.current_focus().is_none() {
+            // **The person's own setting decides whether a pinch zooms.** It is
+            // `alo_desktops::gesture_settings::Preferences::pinch` — *enable
+            // two-finger pinch zoom* — and it used to gate only the recogniser,
+            // which this road does not go through. A canvas that zoomed anyway
+            // would make that setting a lie about the one gesture it names.
+            if !self.pinch_zoom_is_wanted() {
+                return Ok(false);
+            }
             self.begin_a_pinch_on_the_plane();
             return Ok(true);
         }

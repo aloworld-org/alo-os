@@ -79,15 +79,25 @@ fn scroll_is_an_intent_and_nonfinite_input_is_refused() {
     assert_eq!(gestures.decide(scroll(None, None)), None);
 }
 
-/// Pinch scale is absolute, committed once, and never committed on cancellation.
+/// **A pinch answers nothing, and is still tracked so it can cancel a swipe.**
+///
+/// This asserted `Intent::Zoom(scale)` at the end of a pinch. That intent is
+/// gone: nothing ever carried it out, it reported once when the fingers came up,
+/// and the shell's canvas now zooms from the raw touchpad gesture while they are
+/// still moving — so the end-of-gesture answer could only ever have been a second
+/// helping of the same pinch.
+///
+/// What a pinch still does here is take part: a begin is accepted, updates are
+/// accepted, and an end resolves to nothing. `a_pinch_cancels_a_swipe_underway`
+/// is the case that depends on it.
 #[test]
-fn pinch_zoom_uses_the_last_scale_and_cancelled_pinches_do_nothing() {
+fn a_pinch_is_tracked_and_answers_nothing() {
     let mut gestures = Gestures::default();
     for scale in [0.5, 2.0] {
         assert_eq!(gestures.decide(Event::Begin(Kind::Pinch)), None);
         assert_eq!(gestures.decide(Event::Pinch(1.25)), None);
         assert_eq!(gestures.decide(Event::Pinch(scale)), None);
-        assert_eq!(gestures.decide(end(Kind::Pinch)), Some(Intent::Zoom(scale)));
+        assert_eq!(gestures.decide(end(Kind::Pinch)), None);
         assert_eq!(gestures.decide(end(Kind::Pinch)), None);
     }
     for cancelled in [true, false] {
@@ -102,12 +112,6 @@ fn pinch_zoom_uses_the_last_scale_and_cancelled_pinches_do_nothing() {
             }),
             None
         );
-    }
-    for bad in [0.0, -1.0, f64::NAN, f64::INFINITY] {
-        let _ = gestures.decide(Event::Begin(Kind::Pinch));
-        let _ = gestures.decide(Event::Pinch(bad));
-        let _ = gestures.decide(Event::Pinch(2.0));
-        assert_eq!(gestures.decide(end(Kind::Pinch)), None);
     }
 }
 
@@ -159,6 +163,14 @@ fn three_and_four_finger_swipes_switch_once_and_refuse_ambiguous_motion() {
 }
 
 /// Disabling one family leaves others available and retires an in-flight gesture.
+///
+/// **A pinch answers nothing whether it is enabled or not**, since `Intent::Zoom`
+/// was removed, so it cannot be checked the way a swipe is. That is not the
+/// setting becoming meaningless: `Preferences::pinch` is read by whoever spends
+/// the gesture — the shell's canvas asks
+/// `Gestures::preferences().enabled(Kind::Pinch)` before it begins a pinch zoom —
+/// so what this crate owes is that the setting it was handed is the setting it
+/// reports. That is asserted below beside the families that do answer.
 #[test]
 fn each_gesture_can_be_disabled_without_disabling_the_others() {
     let mut gestures = Gestures::default();
@@ -176,6 +188,16 @@ fn each_gesture_can_be_disabled_without_disabling_the_others() {
             ..Preferences::default()
         };
         gestures.configure(preferences);
+        // What this crate owes about a pinch is that it reports the setting it
+        // was given, because the canvas reads it from here rather than keeping a
+        // copy of its own.
+        for kind in [Kind::Pinch, Kind::ThreeFingerSwipe, Kind::FourFingerSwipe] {
+            assert_eq!(
+                gestures.preferences().enabled(kind),
+                kind != disabled,
+                "{kind:?} was not reported with the setting it was configured with"
+            );
+        }
         assert!(gestures.decide(scroll(None, Some(1.0))).is_some());
         for kind in [Kind::Pinch, Kind::ThreeFingerSwipe, Kind::FourFingerSwipe] {
             let _ = gestures.decide(Event::Begin(kind));
@@ -187,7 +209,12 @@ fn each_gesture_can_be_disabled_without_disabling_the_others() {
                     dy: 0.0,
                 }
             });
-            assert_eq!(gestures.decide(end(kind)).is_some(), kind != disabled);
+            // A pinch never answers now, enabled or not, so only the swipe
+            // families are asked whether being disabled silenced them.
+            assert_eq!(
+                gestures.decide(end(kind)).is_some(),
+                kind != disabled && kind != Kind::Pinch
+            );
         }
         gestures.configure(Preferences::default());
         let _ = gestures.decide(Event::Begin(disabled));
@@ -242,7 +269,7 @@ fn no_gesture_can_invoke_the_agent_and_broken_sequences_are_retired() {
         end(Kind::ThreeFingerSwipe),
     ] {
         match gestures.decide(event) {
-            None | Some(Intent::Scroll { .. } | Intent::Zoom(_) | Intent::Desktop(_)) => {}
+            None | Some(Intent::Scroll { .. } | Intent::Desktop(_)) => {}
         }
     }
     for interrupt in [

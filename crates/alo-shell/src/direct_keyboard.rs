@@ -58,6 +58,11 @@ impl Server {
         // These operations can only refuse an absent capability, intentionally
         // allowed for a display without input or with a keyboard-only seat.
         let _ = self.keyboard_focus(None);
+        // The focus clear above tells a client its keys went up. This forgets
+        // what the seat itself still believes is held, which a focus change
+        // deliberately does not do — see `Surfaces::forget_held_keys`. Without
+        // it a paused seat would hand the next one a modifier nobody is holding.
+        self.surfaces.forget_held_keys();
         let _ = self.surfaces.clear_pointer();
     }
 }

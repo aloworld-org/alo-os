@@ -392,10 +392,9 @@ fn an_update_with_no_pinch_in_progress_moves_nothing() {
     let before = f.backend(|s| s.the_camera());
 
     assert!(f.focus(None).is_ok());
-    assert_eq!(
-        f.backend(|s| s.pointer_pinch_update(4.0, 0.0, (0.0, 0.0), 30))
+    assert!(
+        !f.backend(|s| s.pointer_pinch_update(4.0, 0.0, (0.0, 0.0), 30))
             .expect("an update with real values"),
-        false,
         "an update with no pinch in progress reported that something moved"
     );
     assert_eq!(f.backend(|s| s.the_camera()), before);
@@ -413,4 +412,46 @@ fn a_pinch_with_no_real_scale_is_refused() {
             "{scale} was accepted as a pinch"
         );
     }
+}
+
+/// **Turning off two-finger pinch zoom turns it off on the canvas too.**
+///
+/// `alo_desktops::gesture_settings::Preferences::pinch` is the person's setting
+/// and it is named *enable two-finger pinch zoom*. It used to gate only the
+/// gesture recogniser — and the canvas reads the touchpad directly rather than
+/// through that recogniser, so for one landing the setting was a lie about the
+/// single gesture it names.
+#[test]
+fn a_person_who_turns_pinch_zoom_off_is_not_pinch_zoomed() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    let off = alo_desktops::gesture_settings::Preferences {
+        pinch: false,
+        ..alo_desktops::gesture_settings::Preferences::default()
+    };
+    f.backend(move |s| s.gestures_are_configured(off));
+
+    assert!(
+        !f.backend(|s| s.pointer_pinch_begin(2, 40))
+            .expect("a pinch begins on a seat with a pointer"),
+        "a pinch began on the plane with pinch zoom turned off"
+    );
+    pinch(&f, &[2.0]);
+    assert_eq!(
+        zoom(&f),
+        1000,
+        "the canvas zoomed with pinch zoom turned off"
+    );
+
+    // And back on again, so the setting is read each time rather than at start-up.
+    f.backend(|s| {
+        s.gestures_are_configured(alo_desktops::gesture_settings::Preferences::default())
+    });
+    pinch(&f, &[2.0]);
+    assert_eq!(
+        zoom(&f),
+        2000,
+        "turning pinch zoom back on did not restore it"
+    );
 }

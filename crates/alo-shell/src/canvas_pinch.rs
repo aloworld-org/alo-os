@@ -33,6 +33,18 @@
 use alo_canvas::Zoom;
 
 impl crate::Server {
+    /// Whether this person has two-finger pinch zoom turned on.
+    ///
+    /// Read from the recogniser's installed preferences rather than from a copy
+    /// kept here: `alo_desktops::Gestures` is where a person's touchpad settings
+    /// live, and a second copy would be a second answer to a question they have
+    /// already answered once.
+    pub(crate) fn pinch_zoom_is_wanted(&self) -> bool {
+        self.gestures
+            .preferences()
+            .enabled(alo_desktops::gesture_events::Kind::Pinch)
+    }
+
     /// Begin a pinch on the plane: remember what it is zooming from.
     ///
     /// The zoom at the moment the fingers went down is the only state a pinch
