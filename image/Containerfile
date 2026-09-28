@@ -173,7 +173,7 @@ WORKDIR /alo-os
 RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
       --package alo-portald \
-      --bin alo-shipping \
+      --package alo-software --bin alo-shipping \
       --package alo-converting
 
 # ---------------------------------------------------------------------------
