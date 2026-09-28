@@ -104,8 +104,14 @@ impl Layout {
         self.thickness
     }
 
-    /// How far it runs along the edge it is on, which at v0.01 is the whole of
-    /// that edge. *Whether it hides when a window needs the room* is v0.5.
+    /// How far it runs along the edge it is on, which is the whole of that
+    /// edge.
+    ///
+    /// *Whether it hides when a window needs the room* is [`crate::hiding`],
+    /// and it is deliberately not here: a layout says how much room the dock
+    /// takes when it is shown, and whether it is shown at all is a person's
+    /// choice answered against what the windows want. A layout that also hid
+    /// itself would have to know about windows, which this crate does not.
     #[must_use]
     pub const fn length(self) -> Room {
         self.length

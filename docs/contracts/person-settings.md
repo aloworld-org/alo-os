@@ -77,7 +77,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | File | Kept by | `format` | Keys besides `format` |
 |---|---|---|---|
 | `appearance.toml` | `alo_appearance::keeping` | `1` | `background`, `displays`, `lock`, `following`, `text`, `accent` |
-| `dock.toml` | `alo_dock::keeping` | `1` | `edge` |
+| `dock.toml` | `alo_dock::keeping` | `1` | `edge`, `hiding`, `displays` |
 | `shortcuts.toml` | `alo_shortcuts::keeping` | `1` | `changed` — one `[[changed]]` table per action, with `action` and, unless the person wants no shortcut for it, `chord` |
 | `what-opens-what.toml` | `alo_applications::keeping` | `1` | `kinds` — a table from a kind of file to the identifier of the application the person chose to open it |
 | `sleeping.toml` | `alo_sleeping::keeping` | `1` | `keep-awake`, `lid` |
@@ -865,7 +865,7 @@ back before it counts — so afterwards the file reads as a person who has
 changed nothing. It is the person's deliberate act in Settings; nothing else,
 and nothing an agent can reach, writes over a file that did not read.
 
-## `dock.toml` — which edge the dock is on
+## `dock.toml` — where the dock is, and whether it gives way
 
 Kept by `alo_dock::keeping`, beside `appearance.toml`, at the path the crate is
 handed. It holds `alo_dock::Changes`.
@@ -877,6 +877,8 @@ Besides `format`, and optional:
 | Key | Meaning |
 |---|---|
 | `edge` | Which edge of the screen the dock sits on: `"Bottom"`, `"Left"`, `"Right"` or `"Top"`. |
+| `hiding` | Whether the dock gives way to a window that needs the room it is in: `"Never"`, or `"WhenAWindowNeedsTheRoom"`. Absent means `"Never"` — a machine nobody has told otherwise keeps its dock on the screen. There is no per-display exception for it. |
+| `displays` | The displays the person singled out, oldest first: an array of `[name, edge]` pairs, where the name is the display's own as the compositor gives it. A display listed here sits on its own edge rather than the one `edge` names. Absent rather than an empty list. |
 
 ### `format`
 
@@ -887,8 +889,12 @@ Besides `format`, and optional:
 ```toml
 format = 1
 
+displays = [["DEL-U2720Q-7HR2K13", "Bottom"]]
 edge = "Left"
+hiding = "WhenAWindowNeedsTheRoom"
 ```
+
+Each key is written only if the person chose it, so a machine where somebody moved the dock and said nothing about hiding writes exactly the file it wrote before this key existed.
 
 ### What a missing file means
 
