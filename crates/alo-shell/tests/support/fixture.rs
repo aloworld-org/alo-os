@@ -1,7 +1,8 @@
 //! Private display lifetime and bounded test server driver.
 #![expect(
     clippy::unwrap_used,
-    reason = "unexpected results fail the integration test"
+    clippy::panic,
+    reason = "unexpected results fail the integration test, and a fixture that never got its answer must say which operation went unanswered rather than only that one did"
 )]
 
 use alo_shell::Server;
@@ -22,6 +23,42 @@ use std::{
     thread,
     time::Duration,
 };
+/// How long a fixture waits for the display thread to answer.
+///
+/// **This is not a promise about the product.** Nothing requires a backend
+/// operation to answer within any particular time; the deadline exists so that a
+/// wedged test fails instead of hanging for ever.
+///
+/// That job now belongs to the runner. `.config/nextest.toml` reports a slow test
+/// at sixty seconds and kills it at ten times that, and it knows what else is
+/// running on the machine — which a constant compiled into a fixture never can.
+///
+/// Three seconds was too short to be a watchdog and short enough to fire on an
+/// honest machine. Measured on the development PC: this fixture answers in about
+/// 1.7 s when it runs alone, so it passed #219's gate and failed #220's on the
+/// same tree, with the change under review touching a different workspace
+/// entirely. A merge was refused by a test that had nothing to do with it.
+///
+/// Generous on purpose. Raising a budget that no longer enforces anything costs
+/// nothing, while both alternatives — serialising these fixtures, or capping the
+/// runner's threads — cost time on every merge on every machine.
+const ANSWER_WITHIN: Duration = Duration::from_secs(30);
+
+/// The backend's answer, or a failure that says where the question was asked.
+///
+/// `recv_timeout(..).unwrap()` reported `Err(Timeout)` and nothing else: neither
+/// which operation stalled nor what budget it exceeded. `#[track_caller]` puts the
+/// calling method in the panic location, so the fixture names itself.
+#[track_caller]
+fn answered<T>(receive: &mpsc::Receiver<T>) -> T {
+    match receive.recv_timeout(ANSWER_WITHIN) {
+        Ok(answer) => answer,
+        Err(why) => {
+            panic!("the display thread did not answer within {ANSWER_WITHIN:?}: {why}")
+        }
+    }
+}
+
 /// Session kept alive until its driver has stopped and joined.
 pub struct Fixture {
     /// Private runtime directory.
@@ -110,7 +147,7 @@ impl Fixture {
                 send.send(operation(server)).unwrap();
             })))
             .unwrap();
-        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+        answered(&receive)
     }
     /// Start a real display with no graphics or input devices.
     pub fn new() -> Self {
@@ -188,10 +225,7 @@ impl Fixture {
     pub fn root(&self) -> WlSurface {
         let (send, receive) = mpsc::channel();
         self.query.send(Request::Root(send)).unwrap();
-        receive
-            .recv_timeout(Duration::from_secs(3))
-            .unwrap()
-            .unwrap()
+        answered(&receive).unwrap()
     }
 
     /// Refuse stale or foreign protocol resources through the real API.
@@ -200,14 +234,14 @@ impl Fixture {
         self.query
             .send(Request::FocusSurface(surface, send))
             .unwrap();
-        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+        answered(&receive)
     }
 
     /// Apply focus and wait for the backend result.
     pub fn focus(&self, index: Option<usize>) -> Result<(), alo_shell::InputError> {
         let (send, receive) = mpsc::channel();
         self.query.send(Request::Focus(index, send)).unwrap();
-        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+        answered(&receive)
     }
 
     /// Deliver a physical key transition and wait for its routing result.
@@ -218,7 +252,7 @@ impl Fixture {
     ) -> Result<bool, alo_shell::InputError> {
         let (send, receive) = mpsc::channel();
         self.query.send(Request::Key(code, state, send)).unwrap();
-        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+        answered(&receive)
     }
 
     /// Drive the real output/callback coordinator with a deterministic backend.
@@ -227,16 +261,18 @@ impl Fixture {
         self.query
             .send(Request::Render(TestTarget { size, fail }, time, send))
             .unwrap();
-        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+        answered(&receive)
     }
 
-    /// Wait at most three seconds for lifecycle cleanup, without unbounded retries.
+    /// Wait up to [`ANSWER_WITHIN`] for lifecycle cleanup, without unbounded
+    /// retries. The bound is there to fail rather than hang; the runner is what
+    /// decides a test has taken too long.
     pub fn wait_for(&self, expected: (usize, usize)) {
-        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        let deadline = std::time::Instant::now() + ANSWER_WITHIN;
         loop {
             let (send, receive) = mpsc::channel();
             self.query.send(Request::Counts(send)).unwrap();
-            let actual = receive.recv_timeout(Duration::from_secs(3)).unwrap();
+            let actual = answered(&receive);
             if actual == expected {
                 return;
             }
