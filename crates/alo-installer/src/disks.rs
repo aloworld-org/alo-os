@@ -258,7 +258,7 @@ impl Disk {
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::sizes::GIB;
 
