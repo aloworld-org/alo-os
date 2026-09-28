@@ -254,20 +254,22 @@ fn show_all_with_nothing_open_refuses() {
     );
 }
 
-/// **With nothing focused, the shell cannot see Ctrl, and a scroll pans.**
+/// **Ctrl is seen with nothing focused at all, and the wheel still zooms.**
 ///
-/// A rough edge pinned rather than hidden. `Server::keyboard_key` returns before
-/// `KeyboardHandle::input` — which is what advances xkb — when nothing holds
-/// keyboard focus, so the modifier never registers and the wheel takes the pan
-/// road. Established twice: by reading that early return, and by these same
-/// gestures passing the moment a window is focused.
+/// This test used to assert the opposite, and pinned it deliberately so that
+/// changing it would be a decision. This is that decision.
 ///
-/// This asserts what happens **today**, so that fixing it is a decision somebody
-/// makes rather than something that quietly starts working. The fix belongs in
-/// `crate::keyboard`, not in the wheel road: it is a question about what the
-/// keyboard is for when nothing is focused.
+/// `keyboard_key` returned before `KeyboardHandle::input` — which is what
+/// advances XKB — whenever `current_focus()` was `None`, so on a canvas with no
+/// window focused the compositor could not read its own modifiers and a
+/// Ctrl+wheel panned. A compositor has to know what is held to answer for its own
+/// gestures; only forwarding to a client depends on focus.
+///
+/// **The two halves are asserted separately**, because the fix is only right if
+/// both hold: the shell sees the modifier, *and* no client was told about a key
+/// pressed while nothing was focused.
 #[test]
-fn with_nothing_focused_the_shell_cannot_see_ctrl() {
+fn ctrl_is_seen_with_nothing_focused_and_the_wheel_still_zooms() {
     let f = fixture();
     let _app = mapped(&f);
     assert!(f.focus(None).is_ok(), "nothing focused");
@@ -275,19 +277,30 @@ fn with_nothing_focused_the_shell_cannot_see_ctrl() {
     assert!(
         !f.key(LEFT_CTRL, KeyState::Pressed)
             .expect("a real modifier press"),
-        "a key with nothing focused was routed after all, so this edge is gone \
-         and this test should become the opposite assertion"
+        "a key pressed with nothing focused was reported as delivered to a client"
     );
     let before = f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y));
-    assert!(scroll(&f, -1.0));
+    assert!(
+        scroll(&f, -1.0),
+        "Ctrl and a scroll up zooms with nothing focused"
+    );
     assert_eq!(
         zoom(&f),
-        1000,
-        "Ctrl was seen despite nothing being focused"
+        1500,
+        "the shell could not see Ctrl with nothing focused"
     );
-    assert_ne!(
+    assert_eq!(
         f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y)),
         before,
-        "the scroll neither zoomed nor panned"
+        "the zoom panned the canvas as well"
     );
+
+    // And letting go is seen too, so the modifier does not stick.
+    assert!(
+        !f.key(LEFT_CTRL, KeyState::Released)
+            .expect("a real modifier release"),
+        "a key released with nothing focused was reported as delivered to a client"
+    );
+    assert!(scroll(&f, -1.0), "the wheel pans again once Ctrl is let go");
+    assert_eq!(zoom(&f), 1500, "Ctrl stayed held after it was released");
 }
