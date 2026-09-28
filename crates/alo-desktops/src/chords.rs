@@ -123,18 +123,31 @@ impl DesktopChords {
     /// Bind this chord to this switch, moving it off whatever it was on.
     ///
     /// # Errors
+    /// Checked in this order, so that which refusal a caller gets does not
+    /// depend on which chords happen to ship:
+    /// - [`Refused::NoSuchPosition`] for a desktop beyond [`MOST_DESKTOPS`],
+    ///   which no display can ever have — refused whatever chord is offered
+    ///   for it, because the target is what is impossible;
     /// - [`Refused::ChordIsTaken`] when one of the person's system shortcuts
     ///   already has the chord — the compositor takes that first, so binding it
     ///   here would be a chord that never arrives;
-    /// - [`Refused::ChordIsASwitch`] when another desktop switch already has it;
-    /// - [`Refused::NoSuchPosition`] for a desktop beyond [`MOST_DESKTOPS`],
-    ///   which no display can ever have.
+    /// - [`Refused::ChordIsASwitch`] when another desktop switch already has it.
     pub fn bind(
         &mut self,
         shortcuts: &Shortcuts,
         chord: Chord,
         switch: Switch,
     ) -> Result<(), Refused> {
+        // The target is judged before the chord. A desktop no display can ever
+        // have is refused whatever chord is offered for it, and checking it last
+        // made the refusal depend on the shipped shortcut set: adding a canvas
+        // shortcut on Minus turned this into ChordIsTaken for a position that is
+        // still impossible, which is a true sentence about the wrong argument.
+        if let Switch::To(at) = switch
+            && usize::from(at.number()) > MOST_DESKTOPS
+        {
+            return Err(Refused::NoSuchPosition(at));
+        }
         if let Some(action) = shortcuts.action_for(chord) {
             return Err(Refused::ChordIsTaken(action));
         }
@@ -143,11 +156,6 @@ impl DesktopChords {
                 return Err(Refused::ChordIsASwitch(*already));
             }
             return Ok(());
-        }
-        if let Switch::To(at) = switch
-            && usize::from(at.number()) > MOST_DESKTOPS
-        {
-            return Err(Refused::NoSuchPosition(at));
         }
         self.unbind(switch);
         self.bound.push((chord, switch));

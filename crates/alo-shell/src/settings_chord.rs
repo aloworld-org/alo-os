@@ -60,6 +60,7 @@ fn key_of(symbol: Keysym) -> Option<Key> {
         Keysym::period => Key::Period,
         Keysym::slash => Key::Slash,
         Keysym::minus => Key::Minus,
+        Keysym::plus => Key::Plus,
         Keysym::equal => Key::Equals,
         Keysym::space => Key::Space,
         Keysym::Tab | Keysym::ISO_Left_Tab => Key::Tab,
