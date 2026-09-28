@@ -50,6 +50,7 @@ mod encoded;
 mod ended;
 mod entries;
 mod environment;
+mod erasing_consent;
 mod fast_startup;
 mod found;
 mod identities;
@@ -83,6 +84,7 @@ pub use environment::{
     EVERY_FILE_IT_NEEDS, NotStaged, Released, THE_CHOICE, THE_CHOICE_BEGINS, THE_DIRECTORY,
     THE_LIST, THE_RELEASED_LIST, TheEnvironment, sha256_hex,
 };
+pub use erasing_consent::erasing;
 pub use fast_startup::FastStartup;
 pub use found::Found;
 pub use identities::{DiskNumber, Entry, Letter, PartitionNumber};
