@@ -1,0 +1,74 @@
+[Unit]
+# The screen a machine boots to, and the reason an installed alo OS has stopped
+# being a console.
+#
+# `crates/alo-shell` had every part of the sign-in screen — its keys, its
+# drawing, the session it hands over to — and no binary, so nothing a machine
+# could start put them in order. `alo-compositor` is that order, and this unit
+# is what starts it. Until both existed, task 6 of the installer plan reached
+# `alo-agentd` on a console and stopped there, and every promise in
+# `docs/autonomy/v0-5-evidence.md` owed to "a screen" was owed to a screen that
+# did not come up.
+Description=alo OS sign-in screen: the compositor a machine boots to
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md
+
+# It takes a card from the login seat through libseat, and this image ships no
+# seatd — nothing installs one — so the seat comes from logind, which must be
+# answering before the card is asked for. A machine where it is not is one where
+# the card is refused in words, which is the honest failure and not this unit's
+# to prevent.
+After=systemd-logind.service
+
+[Service]
+Type=exec
+
+# **Three things differ from machine to machine, and the process refuses to
+# start without them** (v0-01-delivery-plan, task 38's binary): they are lines
+# here rather than guesses in the code, because a compositor that guessed any of
+# them would be guessing about the display a person looks at, the account they
+# sign in to, or the letters their password is made of.
+#
+# `ALO_PERSON` is the uid `/etc/alo/agentd.toml` names, and `crates/alo-image`
+# holds this line to that file — the same way it holds the other five units to
+# what they claim. A uid typed here that the machine does not have is a screen
+# nobody can sign in to.
+Environment=ALO_DISPLAY=/dev/dri/card0
+Environment=ALO_PERSON=1000
+Environment=ALO_KEYBOARD=gb
+
+# `RUNTIME_DIRECTORY` is systemd's own variable and not one of ours; the process
+# reads it to find where to bind. 0700 because the socket refuses a runtime
+# directory anybody else can read — a sign-in screen whose socket a second
+# process could reach is a sign-in screen that is not one.
+RuntimeDirectory=alo-compositor
+RuntimeDirectoryMode=0700
+
+# Root, because a card comes from the login seat and logind decides that on a
+# privileged caller, and because the sign-in screen exists before anybody is
+# signed in and so cannot be anybody. And the greeter's group, for the door:
+# `TheOpenersDoor::on_this_machine` is handed to whatever group this process is
+# in, which is how the surface that holds nothing is let in to knock at
+# `alo-sessiond` at all. A `Group=` line naming root would open a door only root
+# could reach, which is a machine nobody can sign in to.
+User=root
+Group=alo-greeter
+
+# **Whatever holds the privilege holds nothing else**, which is the check task
+# 38's acceptance asked for and could not make without a unit to make it about.
+# This process needs a seat and a socket; it needs no capability at all, and
+# saying so here is what makes that a fact rather than a sentence.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+ExecStart=/usr/bin/alo-compositor
+
+# A machine whose screen died should get its screen back rather than a console.
+# `Restart=on-failure` and not `always`: somebody signing in successfully is how
+# this process ends, and restarting after that would put the sign-in screen back
+# over the session it just opened.
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

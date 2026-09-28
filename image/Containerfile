@@ -331,6 +331,47 @@ RUN set -eu; \
 # ---------------------------------------------------------------------------
 # The machine
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# The screen, built on the base's own distribution
+#
+# The four binaries above are static musl builds and the compositor cannot be
+# one: it links against Wayland, libinput, libseat, xkbcommon and pixman, which
+# are the system's own C libraries. A musl build would either fail to link or
+# link against a libc the machine does not run, so this stage is `THE_BASE`
+# itself — already pinned by digest, so no new pin is chosen here. That pinning
+# constraint (ADR 0033, ADR 0036) is what stopped this from being done before.
+#
+# Two packages, not one. `alo-shell` carries `alo-compositor`, the screen a
+# machine boots to; `alo-desktop` carries the session that opens behind it,
+# which moved out of the shell on 2026-09-26 because the shell shows and does
+# not measure, and a binary in that directory reading a battery would be the
+# call its own constraint forbids.
+FROM ${THE_BASE} AS shell
+
+ARG THE_STABLE
+
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      gcc \
+      wayland-devel libinput-devel libseat-devel libxkbcommon-devel \
+      pixman-devel mesa-libEGL-devel mesa-libgbm-devel systemd-devel \
+ && dnf clean all
+
+ENV RUSTUP_HOME=/root/.rustup
+ENV CARGO_HOME=/root/.cargo
+ENV PATH=/root/.cargo/bin:${PATH}
+
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
+      | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE}
+
+COPY . /alo-os
+WORKDIR /alo-os
+
+# No `--target`: the host triple of this stage is the base's own, which is the
+# whole point of building here.
+RUN cargo build --release --package alo-shell --package alo-desktop \
+ && test -x target/release/alo-compositor \
+ && test -x target/release/alo-desktop
+
 FROM ${THE_BASE}
 
 ARG THE_TARGET
@@ -346,6 +387,13 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-a
 # who found it on their PATH would have found the thing that turns a number into
 # a session (ADR 0024).
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec/alo-sessiond
+
+# The screen, and the session behind it. `alo-compositor` is on the PATH rather
+# than in libexec because unlike the loader and the opener it is a thing a
+# person standing the machine up runs by hand while finding out why no screen
+# appeared — which its own source says is what its log is for.
+COPY --from=shell /alo-os/target/release/alo-compositor /usr/bin/alo-compositor
+COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
 
 # The converting service is in libexec for the same reason (ADR 0039): systemd
 # starts it when something knocks on its socket, and nobody runs it by hand.
@@ -436,6 +484,16 @@ RUN if [ -L /opt ]; then rm -f /opt; fi \
 # an artefact fetched by digest, which is the shape the other three pins here
 # have. Pinning one release of it would pin the base's security updates out with
 # it — a worse trade than a build that refuses anything below 0.5.
+# What the screen needs at run time. The `-devel` packages were the shell
+# stage's; these are the libraries the compositor actually opens on a machine,
+# and without them the binary is one that cannot start rather than one that is
+# absent — a worse failure, because the unit would be there to try.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      libwayland-server libwayland-client libinput libseat libxkbcommon \
+      pixman mesa-libEGL mesa-libgbm xkeyboard-config \
+ && dnf clean all \
+ && test -f /usr/share/X11/xkb/rules/evdev.xml
+
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       pipewire pipewire-utils wireplumber \
  && dnf clean all \
