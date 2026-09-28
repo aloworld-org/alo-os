@@ -774,6 +774,8 @@ installer.found.tpm-ready	This computer has a security chip (TPM), and it is rea
 installer.found.uefi	This computer starts with UEFI, which alo OS needs
 installer.found.windows-disk	Windows is on the disk {disk} ({size} GB)
 installer.genuine	This download is a genuine alo OS
+installer.how-much-and-how-recent	{files} of your own files are on {disk}, {used} GB in all, and the newest of them changed on {newest}. All of it goes
+installer.how-much-and-nothing-of-yours	{used} GB is used on {disk}, and none of your own files were found there. All of it goes
 installer.incomplete	This download is incomplete, so nothing was changed. Download alo OS again
 installer.leaving-the-way-back	Putting a program in the Start menu that restarts this computer into alo OS
 installer.making-the-area	Making the installer's area on the disk {disk}

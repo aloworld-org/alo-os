@@ -481,6 +481,31 @@ pub const WHAT_IS_ON_IT_NOW: Word = Word::saying(
      installer says what it found rather than asking the person to remember it.",
 );
 
+/// How much is on the Windows volume, and when a person's own files changed.
+pub const HOW_MUCH_AND_HOW_RECENT: Word = Word::saying(
+    "installer.how-much-and-how-recent",
+    "{files} of your own files are on {disk}, {used} GB in all, and the newest of them changed on \
+     {newest}. All of it goes",
+)
+.noting(
+    "{files} is a whole number, {used} a whole number of gigabytes, {disk} the disk's name, and \
+     {newest} a date as year-month-day, for example 2026-09-28. Every number was measured on this \
+     computer, never assumed. \"Your own files\" is exact: what was counted is the person's own \
+     folders, not the whole disk, and the sentence must keep saying whose files it means.",
+);
+
+/// The same, on a computer where none of the person's own files were found.
+pub const HOW_MUCH_AND_NOTHING_OF_YOURS: Word = Word::saying(
+    "installer.how-much-and-nothing-of-yours",
+    "{used} GB is used on {disk}, and none of your own files were found there. All of it goes",
+)
+.noting(
+    "{used} is a whole number of gigabytes and {disk} the disk's name. Said when the walk found no \
+     files of the person's own -- which is a new computer, or folders this installer was not \
+     allowed to read. It says what was found rather than claiming there is nothing there, because \
+     it cannot tell those two apart.",
+);
+
 /// The second question: the disk's name and the word, together.
 pub const TYPE_THE_DISK_AND_THE_WORD: Word = Word::saying(
     "installer.type-the-disk-and-the-word",
@@ -1055,7 +1080,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 116] = [
+pub const EVERY_WORD: [Word; 118] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1167,6 +1192,8 @@ pub const EVERY_WORD: [Word; 116] = [
     // Replacing Windows: the road with no way back.
     REPLACING_DESTROYS,
     WHAT_IS_ON_IT_NOW,
+    HOW_MUCH_AND_HOW_RECENT,
+    HOW_MUCH_AND_NOTHING_OF_YOURS,
     TYPE_THE_DISK_AND_THE_WORD,
     ERASING_WORD,
     NO_WAY_BACK_AFTER_THIS,

@@ -70,6 +70,7 @@ fn kind(program: &Program) -> &'static str {
         Program::ReadingBitLocker => "bitlocker",
         Program::ReadingTheMemory => "memory",
         Program::ReadingTheWindowsVolume => "volume",
+        Program::ReadingWhatReplacingDestroys => "what-replacing-destroys",
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
         Program::ReadingFastStartup => "fast-startup",
