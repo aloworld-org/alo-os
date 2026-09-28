@@ -4,6 +4,23 @@
     reason = "unexpected results fail the integration test"
 )]
 use super::Fixture;
+
+/// How long this client waits for the compositor at the other end of the socket.
+///
+/// **Not a promise about the product**, and not a measurement: the deadline is
+/// here so that a wedged test fails instead of hanging for ever. What decides a
+/// test has taken too long is the runner — `.config/nextest.toml` reports at
+/// sixty seconds and kills at ten times that — and it knows what else is running
+/// on the machine, which a constant never can. Three seconds was short enough to
+/// fire on an honest machine under the gate's own parallelism.
+///
+/// `Fixture` in `tests/support/fixture.rs` declares the same budget separately,
+/// and that duplication is deliberate. This file is included by two worlds that
+/// share no module: the integration tests, and the WSLg examples, each of which
+/// defines a `Fixture` of its own at its crate root — which is what `super::Fixture`
+/// above resolves to. There is no common place for one constant to live, so the
+/// number is written twice and the reason is written beside both.
+const ANSWER_WITHIN: Duration = Duration::from_secs(30);
 #[path = "keyboard_events.rs"]
 mod keyboard_events;
 #[path = "pixel_buffers.rs"]
@@ -328,9 +345,7 @@ impl Application {
     /// Connect and create a role without committing or acknowledging anything.
     pub fn new(fixture: &Fixture) -> Self {
         let stream = UnixStream::connect(&fixture.path).unwrap();
-        stream
-            .set_read_timeout(Some(Duration::from_secs(3)))
-            .unwrap();
+        stream.set_read_timeout(Some(ANSWER_WITHIN)).unwrap();
         let connection = Connection::from_socket(stream).unwrap();
         let mut queue = connection.new_event_queue();
         let qh = queue.handle();
