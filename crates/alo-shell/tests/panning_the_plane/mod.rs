@@ -10,11 +10,15 @@
 //!
 //! # What is not here, and it is somebody else's crate
 //!
-//! **The keyboard route.** A chord reaches a native operation through
-//! `alo_shortcuts::Action`, which has no canvas action in it — no pan, no zoom, no
-//! *Show all* — and that enum is a configurable vocabulary a person edits in
-//! Settings, so it is a public surface in another crate rather than a line this
-//! plan may add for itself. It is written up as a finding under task 5 in the plan.
+//! **The keyboard route for panning.** A chord reaches a native operation through
+//! `alo_shortcuts::Action`, which had no canvas action in it at all when this was
+//! written — a finding recorded under task 5. It now has three, and they are
+//! zoom's: `ZoomTheCanvasIn`, `ZoomTheCanvasOut` and `ShowAllOnTheCanvas`, held in
+//! `crates/alo-shell/tests/zoom_and_show_all/mod.rs`. **Panning still has no
+//! chord**, because the design file gives it the arrow keys rather than a chord —
+//! `alo_shortcuts::Chord` requires Super, Ctrl or Alt and a bare arrow is not one,
+//! so a pan shortcut is not a thing that enum can hold. That is task 5's remaining
+//! gap and it is a question about `alo-shortcuts`, not about this file.
 //!
 //! **Space-and-drag**, which ADR 0065 names beside the wheel, and the trackpad's
 //! two-finger form. Both are gestures rather than arithmetic and neither is held

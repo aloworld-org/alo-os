@@ -27,6 +27,7 @@ mod window_raise;
 mod window_resize;
 mod window_size;
 mod window_switch;
+mod zoom_and_show_all;
 use support::{Application, Fixture};
 
 #[test]
