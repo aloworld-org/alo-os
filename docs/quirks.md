@@ -1,5 +1,11 @@
 # Quirks
 
+> **New quirks go in [`quirks/`](quirks/), one file per entry.** This file keeps
+> the 203 already written — 187 files cite its path, so moving them would break
+> every one of those citations as prose rather than as a failing test. Adding a
+> file cannot conflict with adding a different file, which is why the directory
+> exists: three lanes appending here collided 28 times in one week.
+
 Where reality and the specification disagree.
 
 An operating system meets three kinds of reality that no document describes
