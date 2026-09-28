@@ -1370,9 +1370,12 @@ shortcuts.action.next-application	Next application
 shortcuts.action.next-window	Next window
 shortcuts.action.previous-application	Previous application
 shortcuts.action.previous-window	Previous window
+shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas
 shortcuts.action.snap-left	Put the window on the left half
 shortcuts.action.snap-right	Put the window on the right half
 shortcuts.action.the-agent	Ask the agent
+shortcuts.action.zoom-the-canvas-in	Zoom the canvas in
+shortcuts.action.zoom-the-canvas-out	Zoom the canvas out
 shortcuts.chord.nothing-held	hold Super, Ctrl or Alt as well — a shortcut on {key} by itself would take that key away from everything you type
 shortcuts.chord.shift-is-not-enough	Shift only changes which character {key} prints — hold Super, Ctrl or Alt as well
 shortcuts.chord.the-clipboard-copies	Ctrl+C is how copying works in every application — pick another key

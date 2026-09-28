@@ -71,6 +71,25 @@ fn auf_deutsch() -> Strings {
             (words::PREVIOUS_WINDOW, "Vorheriges Fenster"),
             (words::NEXT_APPLICATION, "Nächste Anwendung"),
             (words::PREVIOUS_APPLICATION, "Vorherige Anwendung"),
+            // The canvas rows. *Arbeitsfläche* is this fixture's rendering of
+            // "canvas" and not a translator's — the shipped string is the
+            // English in `crate::words`, and what a German machine really says
+            // arrives with the translated vocabulary. They are here because the
+            // panel below is read in German and three untranslated rows in it
+            // would be a row that went out counted as done, which is the fault
+            // the note further down was written for.
+            (
+                words::ZOOM_THE_CANVAS_IN,
+                "In die Arbeitsfläche hineinzoomen",
+            ),
+            (
+                words::ZOOM_THE_CANVAS_OUT,
+                "Aus der Arbeitsfläche herauszoomen",
+            ),
+            (
+                words::SHOW_ALL_ON_THE_CANVAS,
+                "Alle Fenster der Arbeitsfläche zeigen",
+            ),
             // Super and Alt are written the same way in German, and they are
             // here for that reason rather than in spite of it. Item 15 made a
             // sentence only as translated as the pieces put into it, and the
@@ -189,6 +208,18 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
                 "Vorherige Anwendung".to_owned(),
                 "Super+Umschalt+Tabulator".to_owned()
             ),
+            (
+                "In die Arbeitsfläche hineinzoomen".to_owned(),
+                "Super++".to_owned(),
+            ),
+            (
+                "Aus der Arbeitsfläche herauszoomen".to_owned(),
+                "Super+-".to_owned(),
+            ),
+            (
+                "Alle Fenster der Arbeitsfläche zeigen".to_owned(),
+                "Super+0".to_owned(),
+            ),
         ]
     );
 }
@@ -252,7 +283,7 @@ fn the_keys_that_print_a_mark_are_in_no_vocabulary_at_all() {
             "{key:?} is declared as a string"
         );
     }
-    assert_eq!(marks, 53);
+    assert_eq!(marks, 54);
     assert_eq!(
         vocabulary
             .phrases()

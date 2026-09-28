@@ -173,6 +173,7 @@ keys! {
         Period => ".",
         Slash => "/",
         Minus => "-",
+        Plus => "+",
         Equals => "=",
     }
     worded {
@@ -269,7 +270,7 @@ mod tests {
                 words = words.saturating_add(1);
             }
         }
-        assert_eq!(marks, 53);
+        assert_eq!(marks, 54);
         assert_eq!(words, 16);
         assert_eq!(marks + words, Key::ALL.len());
     }

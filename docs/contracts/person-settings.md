@@ -980,15 +980,16 @@ Each `[[changed]]` has exactly two keys:
 
 - **`action`** — `"TheAgent"`, `"Launcher"`, `"CloseWindow"`,
   `"MinimiseWindow"`, `"MaximiseWindow"`, `"SnapLeft"`, `"SnapRight"`,
-  `"NextWindow"`, `"PreviousWindow"`, `"NextApplication"` or
-  `"PreviousApplication"`. **An action named twice is read as its last entry.**
+  `"NextWindow"`, `"PreviousWindow"`, `"NextApplication"`,
+  `"PreviousApplication"`, `"ZoomTheCanvasIn"`, `"ZoomTheCanvasOut"` or
+  `"ShowAllOnTheCanvas"`. **An action named twice is read as its last entry.**
 - **`chord`** — `{ modifiers = [...], key = "..." }`, or no `chord` at all,
   which is the person wanting **no** shortcut for that action rather than the
   release's.
   - `modifiers` is a list of `"Super"`, `"Ctrl"`, `"Alt"` and `"Shift"`, in any
     order; the same one twice is the same chord.
   - `key` is `"A"` to `"Z"`, `"Digit0"` to `"Digit9"`, `"F1"` to `"F12"`,
-    `"Comma"`, `"Period"`, `"Slash"`, `"Minus"`, `"Equals"`, `"Space"`,
+    `"Comma"`, `"Period"`, `"Slash"`, `"Minus"`, `"Plus"`, `"Equals"`, `"Space"`,
     `"Tab"`, `"Enter"`, `"Escape"`, `"Backspace"`, `"Delete"`, `"Insert"`,
     `"Home"`, `"End"`, `"PageUp"`, `"PageDown"`, `"Left"`, `"Right"`, `"Up"`,
     `"Down"` or `"Print"`.

@@ -63,6 +63,12 @@ pub enum Action {
     NextApplication,
     /// Move to the previous application.
     PreviousApplication,
+    /// Zoom the canvas in.
+    ZoomTheCanvasIn,
+    /// Zoom the canvas out.
+    ZoomTheCanvasOut,
+    /// Show every window on the canvas at once.
+    ShowAllOnTheCanvas,
 }
 
 impl Action {
@@ -81,6 +87,9 @@ impl Action {
         Self::PreviousWindow,
         Self::NextApplication,
         Self::PreviousApplication,
+        Self::ZoomTheCanvasIn,
+        Self::ZoomTheCanvasOut,
+        Self::ShowAllOnTheCanvas,
     ];
 
     /// The string this crate declares for it: the key a translator's file is
@@ -99,6 +108,9 @@ impl Action {
             Self::PreviousWindow => words::PREVIOUS_WINDOW,
             Self::NextApplication => words::NEXT_APPLICATION,
             Self::PreviousApplication => words::PREVIOUS_APPLICATION,
+            Self::ZoomTheCanvasIn => words::ZOOM_THE_CANVAS_IN,
+            Self::ZoomTheCanvasOut => words::ZOOM_THE_CANVAS_OUT,
+            Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
         }
     }
 

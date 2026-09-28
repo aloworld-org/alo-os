@@ -108,6 +108,19 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         | Action::MaximiseWindow
         | Action::SnapLeft
         | Action::SnapRight => Surface::WindowControls,
+        // The canvas is the surface the windows sit on, and in this compositor
+        // that surface *is* the desktop — `Surface::Desktop` is documented as
+        // "the desktop itself, and the windows on it". So zooming it and fitting
+        // every window on the screen are reached where the windows are.
+        //
+        // Whether a canvas deserves a `Surface` of its own is this crate's
+        // question rather than the shell's: it would need a word, a
+        // `read_aloud` order and a row in the walk, and ADR 0065 has the canvas
+        // *replacing* window management rather than sitting beside it. Named
+        // here rather than decided.
+        Action::ZoomTheCanvasIn | Action::ZoomTheCanvasOut | Action::ShowAllOnTheCanvas => {
+            Surface::Desktop
+        }
     }
 }
 
