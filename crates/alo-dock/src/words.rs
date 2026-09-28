@@ -65,6 +65,30 @@ pub const TOP: Word = Word::saying("dock.edge.top", "Top").noting(
 );
 
 // ---------------------------------------------------------------------------
+// Whether the dock gives way — [`crate::Hiding`]. A second list a person picks
+// one row from, in the same panel as the edges.
+// ---------------------------------------------------------------------------
+
+/// What [`crate::Hiding::Never`] is called.
+pub const ALWAYS_SHOWN: Word = Word::saying("dock.hiding.never", "Always shown").noting(
+    "One of two rows in a list a person picks from, for whether the dock gives way to a window \
+     that wants the room it is in. This is the row a fresh machine is on. It describes what the \
+     dock does from now on, not an instruction to show it this moment.",
+);
+
+/// What [`crate::Hiding::WhenAWindowNeedsTheRoom`] is called.
+pub const GIVES_WAY_TO_A_WINDOW: Word = Word::saying(
+    "dock.hiding.when-a-window-needs-the-room",
+    "Gives way when a window needs the room",
+)
+.noting(
+    "The other of the two rows. The dock goes off the screen while a window wants the space it \
+     sits in, and comes back when none does. It is not closed, removed or emptied, and the \
+     sentence must not suggest the dock is gone for good — a person choosing this is lending the \
+     room, not giving it up.",
+);
+
+// ---------------------------------------------------------------------------
 // What the dock is doing with its names — [`crate::Labels`]. One line under the
 // list above, so that choosing an edge shows what it did.
 // ---------------------------------------------------------------------------
@@ -223,13 +247,16 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them: the
-/// four edges a person picks between, what the dock did with its names, the two
-/// refusals, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 17] = [
+/// four edges a person picks between, the two answers about whether it gives
+/// way, what the dock did with its names, the two refusals, and then what is
+/// said about the person's own file.
+pub const EVERY_WORD: [Word; 19] = [
     BOTTOM,
     LEFT,
     RIGHT,
     TOP,
+    ALWAYS_SHOWN,
+    GIVES_WAY_TO_A_WINDOW,
     NAMES_UNDER,
     NAMES_BESIDE,
     NAMES_GAVE_WAY,

@@ -548,6 +548,8 @@ dock.edge.bottom	Bottom
 dock.edge.left	Left
 dock.edge.right	Right
 dock.edge.top	Top
+dock.hiding.never	Always shown
+dock.hiding.when-a-window-needs-the-room	Gives way when a window needs the room
 dock.kept.another-format	your dock settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and the dock is where alo OS puts it
 dock.kept.not-expressible	this alo OS could not write that change into dock settings at {path} it can read back again, so nothing about the dock has been changed
 dock.kept.not-read	your dock settings at {path} could not be read, so the dock is where alo OS puts it

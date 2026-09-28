@@ -32,6 +32,7 @@ use serde::{Deserialize, Serialize};
 use alo_appearance::DisplayId;
 
 use crate::edge::Edge;
+use crate::hiding::Hiding;
 
 /// One thing a person can change about their dock, for a settings panel that
 /// offers *put it back*.
@@ -43,6 +44,11 @@ pub enum Setting {
     /// the same reason: *put the edge back* and *stop singling this screen out*
     /// are two different things a person means.
     Edge,
+    /// Whether the dock gives way when a window needs the room. There is no
+    /// per-display exception for it: a dock that hid on one screen and not
+    /// another would be a dock a person cannot predict, and predicting where it
+    /// is, is most of what a dock is for.
+    Hiding,
 }
 
 /// Everything a person has changed about their dock.
@@ -51,6 +57,8 @@ pub enum Setting {
 pub struct Changes {
     /// Which edge they moved it to, on every display they have not singled out.
     edge: Option<Edge>,
+    /// Whether they asked it to give way, if they said anything about it.
+    hiding: Option<Hiding>,
     /// The displays they singled out, oldest first, one entry each.
     displays: Vec<(DisplayId, Edge)>,
 }
@@ -70,12 +78,23 @@ impl Changes {
     /// write no file for it and lose the change at the next sign-in.
     #[must_use]
     pub fn is_untouched(&self) -> bool {
-        self.edge.is_none() && self.displays.is_empty()
+        self.edge.is_none() && self.hiding.is_none() && self.displays.is_empty()
     }
 
     /// Put the dock on this edge, on every display not singled out.
     pub fn set_edge(&mut self, edge: Edge) {
         self.edge = Some(edge);
+    }
+
+    /// Say whether the dock gives way when a window needs the room.
+    pub fn set_hiding(&mut self, hiding: Hiding) {
+        self.hiding = Some(hiding);
+    }
+
+    /// What they chose about hiding, if they chose.
+    #[must_use]
+    pub const fn hiding(&self) -> Option<Hiding> {
+        self.hiding
     }
 
     /// Which edge they moved it to, if they moved it.
@@ -125,6 +144,7 @@ impl Changes {
     pub fn forget(&mut self, setting: Setting) -> bool {
         match setting {
             Setting::Edge => self.edge.take().is_some(),
+            Setting::Hiding => self.hiding.take().is_some(),
         }
     }
 
@@ -141,6 +161,11 @@ struct Written {
     /// The edge, if it was moved.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     edge: Option<Edge>,
+    /// Whether it gives way, if anything was said about it. Absent rather than
+    /// present and null, like every other key here, so a machine that has not
+    /// chosen writes exactly the file it wrote before this key existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    hiding: Option<Hiding>,
     /// The displays singled out, if any were. Absent rather than an empty list,
     /// so a machine that singled none out writes exactly the file it wrote
     /// before this key existed.
@@ -152,6 +177,7 @@ impl From<Written> for Changes {
     fn from(written: Written) -> Self {
         Self {
             edge: written.edge,
+            hiding: written.hiding,
             displays: written.displays,
         }
     }
@@ -161,6 +187,7 @@ impl From<Changes> for Written {
     fn from(changes: Changes) -> Self {
         Self {
             edge: changes.edge,
+            hiding: changes.hiding,
             displays: changes.displays,
         }
     }
