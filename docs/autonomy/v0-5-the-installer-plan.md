@@ -258,9 +258,44 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** in progress — **and no longer scheduled on hardware.** It installs
-beside a real Windows in a virtual machine and walks the switching both ways,
-which is the largest disk of the three. **Depends on:** 3, 8, 9, 10.
+**Status:** deferred past the first install on real hardware, 2026-09-28, by
+the owner — **because no machine this project owns can host the walk.** Three
+pieces of the Windows side have landed and are listed below; what remains is the
+walk itself, and the walk has nowhere to run. **Depends on:** 3, 8, 9, 10.
+
+It installs beside a real Windows in a virtual machine and walks the switching
+both ways, which is the largest disk of the three: one virtual disk holding a
+Windows install, alo OS, and room to move between them — about 90 GB.
+
+**What was measured, on 2026-09-28, before deferring it:**
+
+| machine | virtualisation | largest free region | a Windows to install beside |
+|---|---|---|---|
+| development PC | KVM, yes | **24.6 GB** of 473.8, one volume | — |
+| third PC | **none** | **39.9 GB** on D: | none, and no ISO |
+| Mac | aarch64, Lima | not asked; wrong architecture for this walk | — |
+
+The development PC cannot be made to fit. Its 176.3 GB WSL disk will not shrink:
+`fstrim` returns the guest's blocks and the host file keeps its size because
+sparse support is disabled, and an elevated `compact vdisk` reclaimed 0 GB.
+Rebuilding it by export and import needs somewhere to put a 122 GB export, and
+there is one volume. Every remaining safe reclaim together reaches about 37 GB.
+
+The third PC cannot host a virtual machine at all, and this is structural rather
+than a setting. `/dev/kvm` exists as a node and opening it gives
+`Errno 19: No such device`; `/proc/cpuinfo` carries `hypervisor` and neither
+`vmx` nor `svm`. That Windows is itself a VMware guest, so the flag would have to
+be passed down twice and is not passed at the first hop. `nestedVirtualization`
+cannot conjure a flag the host never gave.
+
+**What would have to change to take this up again:** a disk, not effort — either
+an external drive on the development PC, or the owner expanding the underlying
+VMware disks the third PC runs on. Both are host-level acts outside any lane.
+
+**What this does not weaken.** A clean install on a whole empty disk is a
+different path and is unaffected; `docs/the-first-install-on-a-real-machine.md`
+walks it, and 24 GB is its floor. Installing *alongside* an existing Windows is
+the promise that waits.
 
 **Landed so far, 2026-09-22 to 2026-09-25**, three pieces of the Windows side,
 each walked in the guest except where it says otherwise:
@@ -1755,9 +1790,16 @@ build walked the same way (the walk cross-builds `x86_64-pc-windows-gnu`).
 
 ### 20. A download that stops arriving ends the install in words, rather than *Still installing* for ever
 
-**Status:** blocked — on task 4, *in progress*, by the owner's instruction of
+**Status:** blocked — on task 4, now **deferred**, by the owner's instruction of
 2026-09-26: this is held until task 4 lands, and the check is made before
-starting rather than after. The work so far is off-repository on the development
+starting rather than after.
+
+**The condition it waits on no longer has a date**, since task 4 was deferred on
+2026-09-28 for want of a machine that can host its walk. The instruction stands
+as written and a lane may not lift it; the owner either lifts it, so that this
+can be done while task 4 waits, or accepts that this waits with task 4. Written
+down here so the choice is visible rather than discovered later by somebody
+wondering why nothing moved. The work so far is off-repository on the development
 PC. **Depends on:** 18.
 **Found by** task 18's second run on 2026-09-22
 (`updates/the-install-finishes-on-the-installers-own-road.md`). On the
