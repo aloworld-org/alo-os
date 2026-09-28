@@ -27,13 +27,35 @@
 //!
 //! The order this looks for a parent, and it never installs anything:
 //!
-//! 1. a `WAYLAND_DISPLAY` whose socket is **really there** — a developer's own
-//!    session, or WSLg, which is what the fixtures were written against.
+//! 1. a `weston` on the path, started headless for this run and stopped again
+//!    afterwards — **the default, so that the parent is the same parent on every
+//!    machine**;
+//! 2. only when `ALO_NESTED_INHERIT_DISPLAY` is set, a `WAYLAND_DISPLAY` whose
+//!    socket is **really there** — a developer's own session, or WSLg.
 //!    `a_display_that_is_really_there` says why the socket and not the variable:
 //!    WSL names one for root that only the default user has;
-//! 2. failing that, a `weston` on the path, started headless for this run and
-//!    stopped again afterwards;
-//! 3. failing that, a skip naming which of the two was missing.
+//! 3. failing both, a skip naming what was missing.
+//!
+//! ## Why inheriting a display is opt-in, having been the default
+//!
+//! **A display this process did not start belongs to whatever else is running on
+//! the machine, so attaching to it measures that compositor rather than this one.**
+//! Measured on 2026-09-28 by the laptop lane: the same binary on the same tree
+//! passed when run alone and failed inside the full gate, and the cause was in the
+//! first line of its own stderr — it had inherited WSLg's compositor, which has no
+//! usable GPU for it, and `keyboard-grabs` then died on a bad buffer pool after
+//! `ZINK: failed to choose pdev`. The Mac lane's VM has no `WAYLAND_DISPLAY` at
+//! all, so it always started its own and always passed. **Same code, two verdicts,
+//! decided by what else was on the machine** — which for a fixture whose whole
+//! claim is *against a real parent* is the thing that most needs not to be true.
+//!
+//! It nearly went down as contention: constraining threads moved the time from 72s
+//! to 47s and did not move the verdict, which fitted that story and was not it.
+//!
+//! Reuse was deliberate — these were written against WSLg — so it is kept rather
+//! than removed, and made a decision somebody makes instead of one the environment
+//! makes for them. A machine with no `weston` and a display it did not start is
+//! told the variable's name rather than quietly given the wrong answer.
 //!
 //! # `harness = false`, because winit will not start off the main thread
 //!
@@ -159,7 +181,12 @@ impl Drop for Parent {
 
 /// Find a Wayland parent, or start one, or say why there is none.
 fn a_parent() -> Parent {
-    if a_display_that_is_really_there().is_some() {
+    // **Only when asked for**, and the header says why: a display this process did
+    // not start belongs to whatever else is running on the machine, and a fixture
+    // that attaches to it is measuring that compositor rather than this one.
+    if std::env::var_os(INHERIT).is_some_and(|it| !it.is_empty())
+        && a_display_that_is_really_there().is_some()
+    {
         return Parent::AlreadyThere;
     }
     let Ok(runtime) = tempfile::tempdir() else {
@@ -183,12 +210,22 @@ fn a_parent() -> Parent {
         .stderr(Stdio::null())
         .spawn();
     let Ok(child) = started else {
-        return Parent::None(match std::env::var_os("WAYLAND_DISPLAY") {
-            Some(named) if !named.is_empty() => format!(
-                "WAYLAND_DISPLAY is {named:?} and there is no socket of that name to reach, \
-                 and no `weston` on the path to start one"
+        // No `weston`. If there is a display here it is somebody else's, and
+        // using it is a decision rather than a fallback — so this says how to
+        // make that decision instead of quietly making it.
+        return Parent::None(match a_display_that_is_really_there() {
+            Some(named) => format!(
+                "no `weston` on the path to start a parent, and the {named:?} already here \
+                 belongs to whatever else is running on this machine: set {INHERIT}=1 to \
+                 measure against that compositor, knowing the result is then partly its"
             ),
-            _ => "no WAYLAND_DISPLAY in the environment and no `weston` on the path".to_owned(),
+            None => match std::env::var_os("WAYLAND_DISPLAY") {
+                Some(named) if !named.is_empty() => format!(
+                    "WAYLAND_DISPLAY is {named:?} and there is no socket of that name to reach, \
+                     and no `weston` on the path to start one"
+                ),
+                _ => "no WAYLAND_DISPLAY in the environment and no `weston` on the path".to_owned(),
+            },
         });
     };
     let socket = runtime.path().join("alo-gate-parent");
@@ -264,6 +301,13 @@ const EVERY_SUBMODE: [&str; 8] = [
 
 /// The environment variable naming a child's sub-mode.
 const SUBMODE: &str = "ALO_NESTED_SUBMODE";
+
+/// Set this to measure against a compositor this process did not start.
+///
+/// Off by default: see the header. It is the difference between *these fixtures
+/// passed* and *these fixtures passed on a machine that happened to be running
+/// something usable*, and only one of those is a gate.
+const INHERIT: &str = "ALO_NESTED_INHERIT_DISPLAY";
 
 /// What this binary calls itself when something asks it to list its tests.
 ///
@@ -384,7 +428,9 @@ fn main() -> std::process::ExitCode {
         // Nothing to hand a child: it inherits the parent already here.
         Parent::AlreadyThere => {
             eprintln!(
-                "using the WAYLAND_DISPLAY already in this environment rather than starting one"
+                "{INHERIT} is set, so this ran against the compositor already in this \
+                 environment rather than a headless parent of its own — what passed or \
+                 failed here is partly that compositor's"
             );
             None
         }
