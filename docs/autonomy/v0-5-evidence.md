@@ -101,8 +101,15 @@ and it needs a certified machine and a second screen at the same time.
 
 ### Recovery and rollback screen — reachable when the workspace is not
 
-**Shown by:** `docs/autonomy/updates/back-to-yesterdays-machine.md`,
+**Shown by:** `crates/alo-updating/tests/back_to_yesterdays_machine.rs`,
+`crates/alo-updating/tests/going_back_to_yesterdays_machine.rs`,
+`docs/autonomy/updates/back-to-yesterdays-machine.md`,
 `docs/autonomy/updates/the-recovery-and-rollback-screen.md`
+
+*The first of those is the rollback measured rather than argued: two bootable
+images on the base alo OS ships, the second differing by one file, the first
+installed to a disk and booted under QEMU through three starts. It shows the
+going-back. It shows no screen, which is what the sentence below says.*
 
 **Still owed:** the screen itself. What is built is going back to the build the
 machine ran before, the decisions such a screen draws, and what a person is told
@@ -329,7 +336,9 @@ the applications are not written.
 
 ### Right-click context menus, wherever a person expects one
 
-**Shown by:** `docs/autonomy/updates/drag-and-drop-and-context-menus.md`
+**Shown by:** `crates/alo-menus/tests/a_menu_is_a_closed_list_of_actions.rs`,
+`crates/alo-menus/tests/no_entry_reaches_the_agent_unless_it_says_so.rs`,
+`docs/autonomy/updates/drag-and-drop-and-context-menus.md`
 
 **Still owed:** *wherever a person expects one*, which is a claim about every
 surface and cannot be shown by a crate. The menu's behaviour is decided in the
@@ -590,8 +599,16 @@ what every machine here answers today and zero would say undo is holding nothing
 
 ### **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
 
-**Shown by:** `docs/autonomy/updates/installing-updating-and-removing-an-application.md`,
+**Shown by:** `crates/alo-software/tests/installing_updating_and_removing.rs`,
+`crates/alo-software/tests/from_nothing_to_a_working_application.rs`,
+`docs/autonomy/updates/installing-updating-and-removing-an-application.md`,
 `docs/autonomy/updates/every-sentence-and-the-walk-to-a-working-application.md`
+
+*Those tests hold each clause of the acceptance and put each refusal beside the
+act it refuses, against a stand-in for the rented tool that records **every act it
+was asked to do** — so a refusal is shown to have reached nothing rather than only
+to have returned an error. They say themselves what they cannot show: the real
+tool on a real machine.*
 
 **Still owed:** an application actually installed. The three verbs and what a
 person is told are decided and walked; nothing has been fetched from Flathub, and
@@ -659,11 +676,20 @@ in it.
 
 ### Unsandboxed installation as a deliberate, clearly-marked act
 
-**Shown by:** `docs/autonomy/updates/installing-updating-and-removing-an-application.md`
+**Shown by:** nothing.
 
-**Still owed:** the marking, and a person who sees it. The report decides that it
-is deliberate and separate; nothing in this repository draws the mark, and nothing
-has been installed either way.
+**Still owed:** **all of it, and the entry used to imply otherwise.** It waits on
+`docs/decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md`,
+which brought this promise forward from v1 and is the only record saying an
+unsandboxed install is a thing alo OS does at all. It named the
+report about installing, updating and removing an application — which is a
+different promise, the sandboxed road. Searched for `unsandboxed`, *without a
+sandbox*, *outside the sandbox*, *no sandbox* and `--system` across every crate
+and `docs/features.md`: **nothing in this repository distinguishes an install that
+is sandboxed from one that is not.** `alo-software/src/asked.rs`'s `--system` is
+machine-wide versus per-login, which is a different axis. So there is no
+deliberate act to mark, nothing to mark it with, and no refusal for a managed
+machine to make — three things, where the entry said one.
 
 ### Audio in and out, with device switching that works mid-call
 
@@ -695,7 +721,10 @@ this promise at `[v0.5]`.*
 
 ### Camera and microphone
 
-**Shown by:** `docs/autonomy/updates/a-camera-is-a-thing-not-a-number.md`,
+**Shown by:** `crates/alo-cameras/tests/a_camera_is_named_by_what_it_is_not_by_a_number.rs`,
+`crates/alo-cameras/tests/off_means_there_is_nothing_left_to_open.rs`,
+`crates/alo-cameras/tests/an_application_with_a_grant_gets_nothing.rs`,
+`docs/autonomy/updates/a-camera-is-a-thing-not-a-number.md`,
 `docs/autonomy/updates/the-camera-is-not-a-candidate.md`
 
 **Still owed:** **carried to v2 by the owner's decision of 2026-09-27**, with
@@ -705,9 +734,15 @@ the next person starts from them rather than from nothing.
 
 ### Media playback, and the codecs people actually have files in
 
-**Shown by:** `docs/autonomy/updates/what-this-machine-plays.md`,
+**Shown by:** `crates/alo-playing/tests/what_this_machine_plays_is_what_the_decision_says.rs`,
+`crates/alo-image/tests/the_image_can_play_what_the_decision_says.rs`,
+`docs/autonomy/updates/what-this-machine-plays.md`,
 `docs/autonomy/updates/what-the-image-carries-to-play-with.md`,
 `docs/autonomy/updates/the-image-carries-a-media-server.md`
+
+*The pair holds ADR 0051 to the code and to the recipe — the crate's list is the
+decided list, and the image carries what the decision says. Neither plays a file,
+which is the half carried to v2.*
 
 **Still owed:** **carried to v2 by the owner's decision of 2026-09-26** — task 1
 of the devices and media plan, scheduled. What the image carries and what this
@@ -744,11 +779,20 @@ tick it in.*
 
 ### Regional formats and timezones per language, and a keyboard layout offered with it
 
-**Shown by:** `docs/autonomy/updates/regional-formats-and-timezones-per-language.md`
+**Shown by:** `crates/alo-formats/tests/no_date_is_written_anywhere_else.rs`,
+`crates/alo-keyboards/tests/a_keyboard_for_every_language.rs`,
+`docs/autonomy/updates/regional-formats-and-timezones-per-language.md`
 
-**Still owed:** a test. The decision is written down and no test in this
-repository holds it — which makes this the weakest entry in the group: the
-evidence is one report and a reader has nothing to run.
+**Still owed:** the *regional* half, and the timezone. **This entry said no test
+in this repository held any of it, and that was wrong** — the same mistake this
+file warns about five times, made in it. `no_date_is_written_anywhere_else.rs`
+reads the shipped source of every crate and fails on a date built by hand, which
+holds the one property the promise rests on: every date a person sees goes
+through `alo-formats` and none is assembled by whoever happened to be writing
+that line. `a_keyboard_for_every_language.rs` holds the *keyboard layout offered
+with it* clause. What no test holds is that the format a person gets is the one
+their region uses, or anything about a timezone — a third of the promise, not all
+of it.
 
 ### The agent answers in the language you asked in
 
@@ -885,15 +929,21 @@ software nobody has written an adapter for, and one sample is not that.
 
 ### An address that is not https is refused rather than warned about
 
-**Shown by:** `docs/autonomy/updates/an-address-that-is-not-https-is-refused-at-the-write.md`
+**Shown by:** `crates/alo-choosing/tests/an_address_that_is_not_https.rs`,
+`docs/autonomy/updates/an-address-that-is-not-https-is-refused-at-the-write.md`
 
-**Still owed:** a test. The refusal is decided and recorded, and it is refused *at
-the write* rather than at the request — which is the right place. Nothing in this
-repository runs it, so the entry rests on a report.
+**Still owed:** nothing this entry named. **It said nothing in this repository ran
+it; that was wrong.** The test is the `docs/features.md` sentence taken one clause
+at a time, each against a settings file on a real disk and against the vocabulary
+the whole machine loads rather than the crate's own list — including the exception
+for a service on this machine, which is the clause a refusal written from the
+headline would have got wrong.
 
 ### Test a provider before saving it, so a mistyped key is found now
 
-**Shown by:** `docs/autonomy/updates/a-provider-is-tested-before-it-is-saved.md`
+**Shown by:** `crates/alo-asking/tests/a_provider_is_tested_before_it_is_saved.rs`,
+`crates/alo-asking/tests/nothing_here_keeps_the_key.rs`,
+`docs/autonomy/updates/a-provider-is-tested-before-it-is-saved.md`
 
 **Still owed:** a provider to reach. The order — test, then save — is decided; no
 request has left this machine for a provider, and the key in every test is a
@@ -963,8 +1013,17 @@ cannot get the licence of every catalogued model out of this repository today.
 
 ### The dataset, the adapter and the resulting weights never leave the machine
 
-**Shown by:** `docs/autonomy/updates/an-adapter-is-the-learning-and-the-base-is-never-touched.md`,
+**Shown by:** `crates/alo-adapting/tests/nothing_here_can_send_anything.rs`,
+`crates/alo-adapting/tests/the_flow_names_nothing_rented.rs`,
+`docs/autonomy/updates/an-adapter-is-the-learning-and-the-base-is-never-touched.md`,
 `docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`
+
+*The first is the strongest kind of evidence a promise like this can have: it
+holds that the crate **has no road to the network at all**, and fails the day
+somebody gives it one. Its header says why that is the property worth holding —
+an adapted model carries the documents it was trained on, so a road from here to
+a socket is a road from somebody's correspondence to somebody else's computer,
+whatever the code calls it.*
 
 **Still owed:** a fine-tune. Nothing in this repository trains anything; the
 decision that an adapter is the learning and the base is never touched is
@@ -1104,7 +1163,10 @@ answering, not the workspace.
 
 ### **A working day with the runtime alo OS ships produces zero inference egress**, measured at the network boundary
 
-**Shown by:** `crates/alo-bounding/tests/what_a_turn_can_reach_on_the_network.rs`,
+**Shown by:** `crates/alo-asking/tests/a_day_that_never_left.rs`,
+`crates/alo-asking/tests/a_day_that_only_looks_like_it_never_left.rs`,
+`crates/alo-asking/tests/from_a_question_to_what_left.rs`,
+`crates/alo-bounding/tests/what_a_turn_can_reach_on_the_network.rs`,
 `crates/alo-bounding/tests/a_private_ipv4_departure_is_held_to_its_network.rs`,
 `crates/alo-bounding/tests/a_link_local_departure_names_its_interface.rs`,
 `docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`,
@@ -1237,9 +1299,21 @@ chose* is the case that would otherwise be decided silently.
 
 ### Fast Startup: the installer asks
 
-**Shown by:** `docs/autonomy/updates/the-windows-installer-program.md`
+**Shown by:** `crates/alo-installer/tests/the_installer_walked_on_a_real_windows.rs`
+— its test *a windows with fast startup on is asked about and turned off* —,
+`crates/alo-installer/tests/the_installer_checks_consents_and_stages.rs`,
+`docs/autonomy/updates/the-windows-installer-program.md`
 
-**Still owed:** a test, and the asking on a real Windows. ADR 0064 decides that
-the installer asks rather than turning it off; the report describes the program
-that would ask. Nothing in this repository holds the question or the two answers,
-so a reader has nothing to run.
+**Still owed:** nothing that this entry claimed was owed. **It said a test and the
+asking on a real Windows were both missing, and both exist** — and that is the
+worse half of the mistake, because the real-Windows walk is the expensive kind of
+evidence and it was already there. The walk builds a second Windows with
+hibernation and Fast Startup **on** for the express purpose of reaching the
+question, which the base every other walk uses cannot reach at all, then asserts
+it is asked about and turned off. What remains owed is what remains owed of every
+promise in this release: a certified machine.
+
+*A comment at `the_installer_checks_consents_and_stages.rs:170` names a test
+`fast_startup_is_asked_about` that exists nowhere in this repository — a stale
+name for the one above. `alo-installer` is the owner's; it is noted here rather
+than changed.*
