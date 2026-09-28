@@ -26,7 +26,9 @@ models and none of them runs on a machine:
 
 ### 1. The portal backend, running
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** in progress — **taken 2026-09-28**, the machine and the binary; the
+unit and the image line are the owner's and are handed over rather than written.
+**Depends on:** nothing.
 
 **Corrected 2026-09-27, before anything was built.** This task said *no portal
 backend service exists*, taken from the exit gate's refusal. Read rather than

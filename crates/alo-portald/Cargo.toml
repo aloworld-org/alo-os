@@ -1,0 +1,60 @@
+[package]
+name = "alo-portald"
+version = "0.0.1"
+description = "The portal backend as a machine runs it: one person's session bus, and the machine it reads at every request."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No policy here.** Every decision about a portal request is `alo-portals`'
+# and this crate reads files and services and hands the readings over, which is
+# task 1's own constraint. So there is no `alo-strings` and no word list: every
+# sentence a person reads comes out of `alo-portals` in their own language, and
+# what this crate writes is English in a service log for whoever is standing the
+# machine up.
+[dependencies]
+# What a portal request is and how it is judged. `TheMachine` is the trait this
+# crate implements for a real person, and `Backend::serve_on` is what the binary
+# calls. Nothing here restates a decision it makes.
+alo-portals = { path = "../alo-portals" }
+
+# The grants a person made, as `alo-remembering` keeps them:
+# `/var/lib/alo/grants.toml`, read at every request so a revocation is felt at
+# the next one. The path is that crate's constant rather than a string here.
+alo-remembering = { path = "../alo-remembering" }
+
+# The type those grants are. Named because `TheMachine::grants` answers it, and
+# read from nowhere else.
+alo-capability = { path = "../alo-capability" }
+
+# How the person set the machine to look, from their own `appearance.toml` over
+# what the release ships. The reading is `keeping::at_sign_in` and the file name
+# is that crate's `THE_FILE`, so neither is spelled again here.
+alo-appearance = { path = "../alo-appearance" }
+
+# How far this machine reaches, asked of the rented network manager through the
+# one crate that speaks to it (ADR 0011).
+alo-networks = { path = "../alo-networks" }
+
+# The keyring behind the Secret portal, opened on the person's own bus — and
+# `TheBus`, which takes a uid from the kernel and nothing else, which is how
+# `DBUS_SESSION_BUS_ADDRESS` stays out of a decision made on their behalf.
+alo-secrets = { path = "../alo-secrets" }
+
+# Where the person's folder is, worked out from what the session says — the same
+# reading that happens at sign-in, and the same refusal for a login with no home
+# directory.
+alo-choosing = { path = "../alo-choosing" }
+
+[dev-dependencies]
+# A folder to write a settings file into, for the tests that tell a file which
+# did not parse from a machine nobody has touched.
+tempfile = "3"
+
+[[bin]]
+name = "alo-portald"
+path = "src/main.rs"
+
+[lints]
+workspace = true
