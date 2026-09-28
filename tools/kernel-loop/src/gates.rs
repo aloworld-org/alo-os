@@ -151,10 +151,40 @@ pub const EVERY_GATE: &[Gate] = &[
     // instrumenting found only 2 of 85 resumed passes re-walk anything. The cost
     // is real and unexplained, and this line does not pretend otherwise.
     //
-    // `the_nested_fixtures` is excluded for an unrelated and temporary reason: it
-    // writes its diagnostics to stdout, which nextest parses to discover tests,
-    // so listing fails outright — exit 104 with no summary. That is a one-word
-    // fix owed in alo-shell, and this exclusion goes when it lands.
+    // **`the_nested_fixtures` was excluded and is not any more, as of #232.**
+    // Two mistakes were made closing it and both are ones somebody will make
+    // again, so they are kept here rather than in a commit nobody reads.
+    //
+    // It writes diagnostics to stdout, which nextest parses to discover tests, so
+    // listing failed outright — exit 104, no summary. **Moving them to stderr
+    // alone would have been worse than the fault**: listing would then succeed
+    // with an empty stdout, nextest would discover nothing, every listing would
+    // still run the heaviest fixture in the crate to report no tests, and this
+    // file's gate count would still read nine.
+    //
+    // Answering `--list` was not sufficient either. nextest lists twice, once
+    // plain and once with `--ignored` to learn which tests are ignored, and a
+    // binary answering both identically says its one test is ignored. It was then
+    // listed **and skipped**, which in non-verbose output looks exactly like not
+    // being listed at all.
+    //
+    // What was actually wrong was never the tests. The binary attached to
+    // whatever `WAYLAND_DISPLAY` it inherited rather than starting a parent of
+    // its own, so its result was a property of the machine's session. Where
+    // nothing sets that variable it always started its own and always passed;
+    // on a guest with WSLg it borrowed a compositor with no usable GPU for it and
+    // died on `ZINK: failed to choose pdev`.
+    //
+    // Measured on that guest after #232, in a shell that has WSLg's
+    // WAYLAND_DISPLAY, which is how this gate runs: **PASS in 18.973s**, 23 GLES
+    // fixtures against a parent it started, no borrow line and no ZINK. The
+    // control is the same command one commit earlier: borrowed, five ZINK errors,
+    // rc=100. One variable between them.
+    //
+    // **It needs `weston` on the path.** A machine without one does not fail that
+    // binary — it skips it, and a skip is the same colour as a pass. Any runner
+    // this gate moves to must install weston or say out loud that it covers 23
+    // fixtures fewer than a lane does.
     //
     // The name is kept because the supervisor's refusals quote it and a person
     // reading `the gate \`the workspace's tests\` did not pass` should keep
@@ -175,7 +205,6 @@ pub const EVERY_GATE: &[Gate] = &[
             "gates",
             "-E",
             "not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) \
-             and not binary_id(alo-shell::the_nested_fixtures) \
              and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)",
         ],
         within: ".",
