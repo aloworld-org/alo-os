@@ -41,7 +41,14 @@ pub const FORMAT: i64 = 1;
 
 /// Every key the file may have besides `format` — which is every field a
 /// [`Changes`] writes, and a test holds the two together.
-const KEYS: &[&str] = &["edge"];
+///
+/// **It held one of three until 2026-09-29.** `displays` was written by
+/// `Changes` and missing here, so `keep` wrote the file, read it back, refused
+/// its own output with `UnknownKey` and left the file as it was: a person who
+/// singled out a display could not save it. The test that was supposed to hold
+/// the two together measured a fixture that set only the edge, so it never saw
+/// the key. Anything added to `Changes` belongs here in the same change.
+const KEYS: &[&str] = &["edge", "hiding", "displays"];
 
 impl Kept for Changes {
     const FILE: &'static str = THE_FILE;
@@ -126,24 +133,61 @@ pub fn at_sign_in(at: &Path) -> (Dock, Option<FileNotRead>) {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+    use alo_appearance::DisplayId;
+
     use super::*;
     use crate::edge::Edge;
+    use crate::hiding::Hiding;
 
-    /// **The list of keys is every key a change writes**: a dock moved to every
-    /// edge is written as `edge` and nothing else, and reads back as itself.
+    /// What a change writes, as the keys of the file it becomes.
+    fn keys_written(changes: &Changes) -> Vec<String> {
+        let text = alo_kept::text_of(changes).unwrap();
+        let table: toml::Table = toml::from_str(&text).unwrap();
+        let mut keys: Vec<String> = table
+            .keys()
+            .filter(|key| *key != alo_kept::THE_FORMAT_KEY)
+            .cloned()
+            .collect();
+        keys.sort();
+        keys
+    }
+
+    /// **The list of keys is every key a change writes** — measured against a
+    /// change that sets *every* setting.
+    ///
+    /// The earlier version of this set the edge alone and compared what that
+    /// wrote against the whole list, which is the same statement only while the
+    /// list has one entry. It is how `displays` came to be written by `Changes`
+    /// and missing from `KEYS`, so `keep` refused its own output and a person
+    /// who singled out a display could not save it. **Anything added to
+    /// `Changes` must be set here**, or this stops being able to see it.
     #[test]
     fn every_key_a_change_writes_is_on_the_list() {
+        let mut changes = Changes::untouched();
+        changes.set_edge(Edge::Left);
+        changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        changes.set_edge_on(
+            DisplayId::named("DEL-U2720Q-7HR2K13").unwrap(),
+            Edge::Bottom,
+        );
+
+        let mut listed: Vec<String> = KEYS.iter().map(|key| (*key).to_owned()).collect();
+        listed.sort();
+        assert_eq!(keys_written(&changes), listed);
+    }
+
+    /// **Only what was changed is written**: a dock moved to any edge is `edge`
+    /// and nothing else.
+    ///
+    /// What the test above used to check, kept apart from it, because *the list
+    /// is complete* and *nothing unasked-for is written* are two promises and a
+    /// single assertion could only ever hold one of them.
+    #[test]
+    fn only_what_was_changed_is_written() {
         for edge in [Edge::Bottom, Edge::Left, Edge::Right, Edge::Top] {
             let mut changes = Changes::untouched();
             changes.set_edge(edge);
-            let text = alo_kept::text_of(&changes).unwrap();
-            let table: toml::Table = toml::from_str(&text).unwrap();
-            let written: Vec<&str> = table
-                .keys()
-                .map(String::as_str)
-                .filter(|key| *key != alo_kept::THE_FORMAT_KEY)
-                .collect();
-            assert_eq!(written, KEYS, "{text}");
+            assert_eq!(keys_written(&changes), ["edge"], "{edge:?}");
         }
     }
 
