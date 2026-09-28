@@ -25,6 +25,7 @@
 //! | [`Program::ReadingBitLocker`] | the Windows volume's encryption state |
 //! | [`Program::ReadingTheMemory`] | installed memory |
 //! | [`Program::ReadingTheWindowsVolume`] | where Windows is, its size, how far it can shrink |
+//! | [`Program::ReadingWhatReplacingDestroys`] | how much is on Windows, and the newest day a person's own file changed |
 //! | [`Program::ListingTheDisks`] | every disk and its partitions |
 //! | [`Program::ListingTheStartEntries`] | the systems the firmware can start |
 //! | [`Program::ReadingFastStartup`] | whether Windows' Fast Startup is on |
@@ -122,6 +123,15 @@ pub enum Program {
     ReadingTheMemory,
     /// The Windows volume: its disk, partition, place, size, and how far it shrinks.
     ReadingTheWindowsVolume,
+    /// **Replacing only.** How much is used on the Windows volume, and the day
+    /// the newest of the person's own files there was changed.
+    ///
+    /// Read only on the road that erases the disk, because it is the sentence
+    /// that makes a person stop, and the alongside road destroys nothing that
+    /// would need one. It walks `%SystemDrive%\\Users` and can take minutes on a
+    /// full disk -- which is the correct trade for the one question whose answer
+    /// cannot be undone.
+    ReadingWhatReplacingDestroys,
     /// Every disk and its partitions.
     ListingTheDisks,
     /// The firmware's list of systems.
@@ -346,6 +356,7 @@ impl Program {
                 | Self::ReadingBitLocker
                 | Self::ReadingTheMemory
                 | Self::ReadingTheWindowsVolume
+                | Self::ReadingWhatReplacingDestroys
                 | Self::ListingTheDisks
                 | Self::ListingTheStartEntries
                 | Self::ReadingFastStartup
@@ -422,6 +433,32 @@ impl Program {
                    SizeMin = [uint64]$supported.SizeMin; \
                    SizeRemaining = [uint64]$volume.SizeRemaining })"
                 .to_owned(),
+            Self::ReadingWhatReplacingDestroys => {
+                // The walk carries its own -ErrorAction: this script runs under
+                // $ErrorActionPreference = 'Stop', and one folder Windows will
+                // not let it read would otherwise abort the whole measurement.
+                // A folder skipped costs a file in the count; a stop costs the
+                // sentence.
+                //
+                // The maximum is accumulated in the loop rather than by sorting,
+                // so a disk with a million files does not need a million-item
+                // list held in memory to answer one question.
+                "$letter = $env:SystemDrive.Substring(0, 1); \
+                 $volume = Get-Volume -DriveLetter $letter; \
+                 $newest = [datetime]::MinValue; \
+                 $counted = [uint64]0; \
+                 Get-ChildItem -LiteralPath ($env:SystemDrive + '\\Users') -Recurse -File \
+                   -Force -ErrorAction SilentlyContinue | ForEach-Object { \
+                     $counted = $counted + 1; \
+                     if ($_.LastWriteTimeUtc -gt $newest) { $newest = $_.LastWriteTimeUtc } }; \
+                 $day = ''; \
+                 if ($counted -gt 0) { $day = $newest.ToString('yyyy-MM-dd') }; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{ \
+                   Used = [uint64]($volume.Size - $volume.SizeRemaining); \
+                   Files = [uint64]$counted; \
+                   Newest = [string]$day })"
+                    .to_owned()
+            }
             Self::ListingTheDisks => "$disks = @(Get-Disk | Sort-Object Number | ForEach-Object { \
                    $disk = $_; \
                    $partitions = @(Get-Partition -DiskNumber $disk.Number -ErrorAction SilentlyContinue | \
@@ -896,7 +933,7 @@ mod tests {
     }
 
     /// Every read, which is every program that does not change anything.
-    const EVERY_READ: [Program; 9] = [
+    const EVERY_READ: [Program; 10] = [
         Program::ReadingFastStartup,
         Program::AskingWhetherThisIsAnAdministrator,
         Program::ReadingHowItStarts,
@@ -904,6 +941,7 @@ mod tests {
         Program::ReadingBitLocker,
         Program::ReadingTheMemory,
         Program::ReadingTheWindowsVolume,
+        Program::ReadingWhatReplacingDestroys,
         Program::ListingTheDisks,
         Program::ListingTheStartEntries,
     ];
