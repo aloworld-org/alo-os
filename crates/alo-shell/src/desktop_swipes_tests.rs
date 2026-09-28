@@ -106,19 +106,29 @@ fn a_swipe_before_any_display_has_arrived_does_nothing() {
     assert!(server.has_no_display());
 }
 
-/// **A pinch is not carried out here, and says so rather than swallowing it.**
+/// **A pinch is not carried out here, because it is already carried out.**
 ///
-/// Nothing in this compositor zooms an application. Returning `false` hands the
-/// event back to the ordinary road instead of consuming it as a gesture that
-/// was handled — a pinch that vanished into a compositor which did nothing with
-/// it is the shape of a fault nobody finds.
+/// This test was `a_zoom_is_not_carried_out_because_nothing_here_can`, and that
+/// reason expired the day the canvas learned to zoom. A pinch over the plane now
+/// does zoom it — continuously, from the raw gesture, in
+/// `crate::canvas_pinch` — so carrying out this answer as well would spend one
+/// movement of somebody's fingers twice, which is exactly why a scroll is
+/// refused here too.
+///
+/// The shapes differ as well as the count: this recogniser answers **once, at
+/// the end of the gesture**, while a canvas has to move while the fingers do.
+///
+/// Returning `false` still hands the event back to the ordinary road rather than
+/// consuming it as handled — a pinch that vanished into a compositor which did
+/// nothing with it is the shape of a fault nobody finds.
 #[test]
-fn a_zoom_is_not_carried_out_because_nothing_here_can() {
+fn a_zoom_is_not_carried_out_because_the_canvas_already_did_it() {
     let (_directory, mut server) = a_session_with_a_display();
 
     assert!(
         !server.carry_out(alo_desktops::gesture_events::Intent::Zoom(2.0)),
-        "a zoom was reported as carried out by a compositor that cannot zoom"
+        "the end-of-gesture zoom was carried out as well as the canvas's own, \
+         so one pinch was spent twice"
     );
 }
 

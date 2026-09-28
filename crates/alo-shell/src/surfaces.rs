@@ -2,7 +2,7 @@
 
 use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
-    delegate_compositor, delegate_shm, delegate_xdg_shell,
+    delegate_compositor, delegate_pointer_gestures, delegate_shm, delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -13,6 +13,7 @@ use smithay::{
     wayland::{
         buffer::BufferHandler,
         compositor::{CompositorClientState, CompositorHandler, CompositorState, with_states},
+        pointer_gestures::PointerGesturesState,
         shell::xdg::{
             PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
             XdgToplevelSurfaceData,
@@ -92,6 +93,9 @@ pub(crate) struct Surfaces {
     pub(crate) pointer: Option<crate::pointer::Pointer>,
     /// Latest request accepted by Smithay's focus, serial and role validation.
     pub(crate) cursor: CursorImageStatus,
+    /// `zwp_pointer_gestures_v1`, held so the global outlives this compositor's
+    /// clients rather than being dropped the moment it is created.
+    pub(crate) gestures: PointerGesturesState,
 }
 
 impl Surfaces {
@@ -107,6 +111,10 @@ impl Surfaces {
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
+            // The touchpad gesture protocol. Advertised so a pinch reaches an
+            // application that wants one; `crate::canvas_pinch` is what happens
+            // when the pinch is over the plane instead of over a frame.
+            gestures: PointerGesturesState::new::<Self>(display),
             windows: Vec::new(),
             seats: SeatState::new(),
             keyboard: None,
@@ -391,3 +399,5 @@ impl XdgShellHandler for Surfaces {
 delegate_compositor!(Surfaces);
 delegate_shm!(Surfaces);
 delegate_xdg_shell!(Surfaces);
+
+delegate_pointer_gestures!(Surfaces);

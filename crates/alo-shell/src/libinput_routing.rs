@@ -1,10 +1,18 @@
 //! Borrow libinput events without retaining device/context references.
 
-use crate::{DirectKeyEvent, DirectPointerEvent, DirectSeatEvent, InputError, InputUpdate, Server};
+use crate::{
+    DirectKeyEvent, DirectPinch, DirectPointerEvent, DirectSeatEvent, InputError, InputUpdate,
+    Server,
+};
 use smithay::reexports::input::{
     Event,
     event::{
-        DeviceEvent, KeyboardEvent, PointerEvent, keyboard::KeyboardEventTrait,
+        DeviceEvent, GestureEvent, KeyboardEvent, PointerEvent,
+        gesture::{
+            GestureEndEvent, GestureEventCoordinates, GestureEventTrait, GesturePinchEvent,
+            GesturePinchEventTrait,
+        },
+        keyboard::KeyboardEventTrait,
         pointer::PointerEventTrait,
     },
 };
@@ -92,6 +100,27 @@ pub(crate) fn translate(event: &Event) -> Result<Option<DirectSeatEvent>, InputE
             Some(frame) => DirectPointerEvent::Axis(frame),
             None => return Ok(None),
         },
+        // A touchpad pinch. Swipe and hold are deliberately not carried: this
+        // compositor has nothing to do with either yet, and a gesture forwarded
+        // to a client that no road here can also answer would be a half-supported
+        // protocol rather than an unsupported one.
+        Event::Gesture(GestureEvent::Pinch(pinch)) => DirectPointerEvent::Pinch(match pinch {
+            GesturePinchEvent::Begin(event) => DirectPinch::Begin {
+                fingers: u32::try_from(event.finger_count()).unwrap_or(2),
+                time: event.time(),
+            },
+            GesturePinchEvent::Update(event) => DirectPinch::Update {
+                scale: event.scale(),
+                rotation: event.angle_delta(),
+                delta: (event.dx(), event.dy()),
+                time: event.time(),
+            },
+            GesturePinchEvent::End(event) => DirectPinch::End {
+                cancelled: event.cancelled(),
+                time: event.time(),
+            },
+            _ => return Ok(None),
+        }),
         _ => return Ok(None),
     };
     Ok(Some(DirectSeatEvent::Pointer(pointer)))

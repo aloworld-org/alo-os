@@ -304,3 +304,113 @@ fn ctrl_is_seen_with_nothing_focused_and_the_wheel_still_zooms() {
     assert!(scroll(&f, -1.0), "the wheel pans again once Ctrl is let go");
     assert_eq!(zoom(&f), 1500, "Ctrl stayed held after it was released");
 }
+
+/// Pinch the plane, as a touchpad does: begin, some scales, end.
+fn pinch(f: &Fixture, scales: &[f64]) {
+    f.backend(|s| s.pointer_pinch_begin(2, 20))
+        .expect("a pinch begins on a seat with a pointer");
+    for scale in scales {
+        let scale = *scale;
+        f.backend(move |s| s.pointer_pinch_update(scale, 0.0, (0.0, 0.0), 21))
+            .expect("a pinch update with real values");
+    }
+    f.backend(|s| s.pointer_pinch_end(false, 22))
+        .expect("a pinch ends");
+}
+
+/// **A pinch zooms the canvas, and its scale is against where it began.**
+///
+/// The plan's task 6 names a pinch beside the wheel, and it needed a protocol
+/// rather than a branch: `zwp_pointer_gestures_v1`. The scale a touchpad reports
+/// is absolute against the moment the fingers went down, so two updates of the
+/// same scale are the same zoom rather than that zoom twice — which is the
+/// difference between moving a thing with your hand and accelerating it.
+#[test]
+fn a_pinch_zooms_the_canvas_by_the_scale_it_reports() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert_eq!(zoom(&f), 1000);
+
+    pinch(&f, &[2.0]);
+    assert_eq!(
+        zoom(&f),
+        2000,
+        "a pinch to twice the size did not double the zoom"
+    );
+
+    // Back to life size, then the same scale sent twice in one gesture.
+    pinch(&f, &[0.5]);
+    assert_eq!(zoom(&f), 1000);
+    pinch(&f, &[1.5, 1.5, 1.5]);
+    assert_eq!(
+        zoom(&f),
+        1500,
+        "the same scale three times was spent three times, so a pinch accelerates"
+    );
+}
+
+/// **A pinch holds the point under the fingers**, which is task 6's acceptance
+/// for every zoom road it names.
+#[test]
+fn a_pinch_holds_the_point_under_the_pointer() {
+    let f = fixture();
+    let _app = mapped(&f);
+    super::support::motion(&f, (409.0, 277.0));
+    let at = (409, 277);
+    let under = f.backend(move |s| s.the_camera().plane_of(at));
+
+    pinch(&f, &[1.5, 2.0, 1.2]);
+    assert_eq!(
+        f.backend(move |s| s.the_camera().plane_of(at)),
+        under,
+        "a pinch moved what was under the fingers"
+    );
+}
+
+/// **A pinch past the end of the zoom range rests there rather than refusing.**
+///
+/// The one place the canvas clamps, and it is a person's fingers that make it
+/// so: they do not stop at `FURTHEST_IN`, and abandoning the gesture would leave
+/// the next update fighting the one before it.
+#[test]
+fn a_pinch_past_the_end_rests_at_the_end() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    pinch(&f, &[1000.0]);
+    assert_eq!(zoom(&f), alo_canvas::Zoom::FURTHEST_IN);
+    pinch(&f, &[0.000_001]);
+    assert_eq!(zoom(&f), alo_canvas::Zoom::FURTHEST_OUT);
+}
+
+/// **A pinch that never began moves nothing**, so a stray update from a device
+/// that was reset cannot zoom a canvas nobody is touching.
+#[test]
+fn an_update_with_no_pinch_in_progress_moves_nothing() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let before = f.backend(|s| s.the_camera());
+
+    assert!(f.focus(None).is_ok());
+    assert_eq!(
+        f.backend(|s| s.pointer_pinch_update(4.0, 0.0, (0.0, 0.0), 30))
+            .expect("an update with real values"),
+        false,
+        "an update with no pinch in progress reported that something moved"
+    );
+    assert_eq!(f.backend(|s| s.the_camera()), before);
+}
+
+/// **A scale that is not a number is refused rather than turned into a zoom.**
+#[test]
+fn a_pinch_with_no_real_scale_is_refused() {
+    let f = fixture();
+    let _app = mapped(&f);
+    for scale in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(
+            f.backend(move |s| s.pointer_pinch_update(scale, 0.0, (0.0, 0.0), 31))
+                .is_err(),
+            "{scale} was accepted as a pinch"
+        );
+    }
+}

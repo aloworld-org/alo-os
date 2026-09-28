@@ -34,6 +34,43 @@ pub enum DirectPointerEvent {
     },
     /// Scroll converted to compositor units by the backend.
     Axis(AxisFrame),
+    /// A touchpad pinch, as `zwp_pointer_gestures_v1` describes one.
+    ///
+    /// Three arrivals rather than one event, because a pinch has a beginning a
+    /// recipient is chosen at, a middle measured against that beginning, and an
+    /// end that can be a cancellation. `crate::canvas_pinch` says what the plane
+    /// does with them.
+    Pinch(DirectPinch),
+}
+
+/// One moment of a touchpad pinch.
+pub enum DirectPinch {
+    /// The fingers went down.
+    Begin {
+        /// How many fingers libinput counted.
+        fingers: u32,
+        /// Monotonic milliseconds.
+        time: u32,
+    },
+    /// The fingers moved.
+    Update {
+        /// Distance between the fingers against the beginning, not the last
+        /// update: `1.0` is where they started.
+        scale: f64,
+        /// Degrees clockwise since the last update.
+        rotation: f64,
+        /// How far the gesture's centre moved since the last update.
+        delta: (f64, f64),
+        /// Monotonic milliseconds.
+        time: u32,
+    },
+    /// The fingers came up, or libinput stopped believing the gesture.
+    End {
+        /// Whether libinput cancelled it rather than the person finishing it.
+        cancelled: bool,
+        /// Monotonic milliseconds.
+        time: u32,
+    },
 }
 
 impl Server {
@@ -79,6 +116,20 @@ impl Server {
                 self.pointer_button(code, state, time).map(|_| ())
             }
             Some(DirectPointerEvent::Axis(frame)) => self.pointer_axis(frame).map(|_| ()),
+            Some(DirectPointerEvent::Pinch(DirectPinch::Begin { fingers, time })) => {
+                self.pointer_pinch_begin(fingers, time).map(|_| ())
+            }
+            Some(DirectPointerEvent::Pinch(DirectPinch::Update {
+                scale,
+                rotation,
+                delta,
+                time,
+            })) => self
+                .pointer_pinch_update(scale, rotation, delta, time)
+                .map(|_| ()),
+            Some(DirectPointerEvent::Pinch(DirectPinch::End { cancelled, time })) => {
+                self.pointer_pinch_end(cancelled, time).map(|_| ())
+            }
             None => Ok(()),
         }
     }
