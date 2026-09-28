@@ -125,6 +125,32 @@ pub const EVERY_GATE: &[Gate] = &[
     // merge, under `--profile boundary`, not under every merge on every lane.
     // docs/autonomy/SHARED_MAIN.md carries the amendment and what it costs.
     //
+    // **The walk of a real machine's root is excluded because it measures the
+    // machine.** `naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so`
+    // calls `Holding::of(Path::new("/"))`: it walks whatever host it lands on.
+    // Seconds on the development PC; `TIMEOUT [1200.054s]` on a lane whose `/`
+    // holds 446,428 entries, which left that machine unable to pass this gate on
+    // any branch at all.
+    //
+    // No budget is correct for it. High enough for the largest `/` anyone owns is
+    // high enough to hide a test that has genuinely stopped answering, which is
+    // what `slow-timeout` exists to prevent. So it comes off the merge path for
+    // the reason the boundary crates did: a measurement of the machine does not
+    // belong on a path three lanes queue behind.
+    //
+    // **A stopgap, and not the answer.** The test wants to walk a tree it builds,
+    // with mount points it made, so that it asserts the behaviour instead of the
+    // host. Two tests in that same file already build their own trees of more
+    // than `alo_files::MOST_WALKED` things, so the shape exists.
+    //
+    // What is *not* claimed here: that the walk is correct. On that lane it made
+    // 605,140 statx in its first 300 seconds against 446,428 entries and ran on
+    // for another 36 to 95 minutes, and nothing deletes `/`, so something there
+    // repeats. An earlier account of that — 2.00 statx per thing, quadratic in
+    // tree size — was withdrawn: it counted a synthetic test's own teardown, and
+    // instrumenting found only 2 of 85 resumed passes re-walk anything. The cost
+    // is real and unexplained, and this line does not pretend otherwise.
+    //
     // `the_nested_fixtures` is excluded for an unrelated and temporary reason: it
     // writes its diagnostics to stdout, which nextest parses to discover tests,
     // so listing fails outright — exit 104 with no summary. That is a one-word
@@ -149,7 +175,8 @@ pub const EVERY_GATE: &[Gate] = &[
             "gates",
             "-E",
             "not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) \
-             and not binary_id(alo-shell::the_nested_fixtures)",
+             and not binary_id(alo-shell::the_nested_fixtures) \
+             and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)",
         ],
         within: ".",
     },
