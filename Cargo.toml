@@ -12,6 +12,7 @@ members = [
   "crates/alo-agentd",
   "crates/alo-answering",
   "crates/alo-appearance",
+  "crates/alo-ask",
   "crates/alo-asking",
   "crates/alo-applications",
   "crates/alo-approving",

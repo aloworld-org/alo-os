@@ -1,0 +1,54 @@
+[package]
+name = "alo-ask"
+version = "0.0.1"
+description = "The command a person types to put a question to the model on this machine."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No words here, and no policy.** Every sentence this command prints is
+# somebody else's string in the person's own language — `alo-asking`'s when there
+# is nothing to ask with, `alo-answering`'s when nothing answered, `alo-models`'
+# beside the answer. A list of its own would be this crate saying a second time
+# what three crates already say, which is the thing `alo-asking`'s own word list
+# refuses to do.
+[dependencies]
+# The door. `Asking::to_this_machine` is the only method in this repository that
+# puts a person's prose question to a model here, and every refusal it makes is
+# already a sentence in their language.
+alo-asking = { path = "../alo-asking" }
+
+# The catalogue, the runtime that answers on the loopback address, and what a
+# place is. `ollama::DEFAULT_ENDPOINT` is that address; it is never spelled here.
+alo-models = { path = "../alo-models" }
+
+# One permission is one attempt, and the sentences for an attempt that produced
+# no answer. `WentWrong` is needed by name because the model has to be chosen
+# before a question exists, so the one failure that happens before the question
+# is reported through this crate's own public road.
+alo-answering = { path = "../alo-answering" }
+
+# Whose authority the question is under. Carried rather than read on this door —
+# nothing leaves the machine — and named because `Asking::by` asks for one.
+alo-capability = { path = "../alo-capability" }
+
+# The person's own folder and the settings in it: which languages they read, and
+# which model they chose. The folder is worked out from what the session says,
+# which is the same reading that happens at sign-in.
+alo-choosing = { path = "../alo-choosing" }
+
+# The vocabulary the sentences are rendered from, in the languages the person's
+# settings name.
+alo-strings = { path = "../alo-strings" }
+
+# One error type for four word lists that could not be gathered — read by
+# whoever is fixing a list, never by somebody who typed a question.
+thiserror = { workspace = true }
+
+[[bin]]
+name = "alo-ask"
+path = "src/main.rs"
+
+[lints]
+workspace = true

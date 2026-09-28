@@ -187,6 +187,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-ask"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-asking",
+ "alo-capability",
+ "alo-choosing",
+ "alo-models",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-asking"
 version = "0.0.1"
 dependencies = [
