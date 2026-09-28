@@ -7,11 +7,27 @@
 //!
 //! # Secure Boot
 //!
-//! On is refused, and so is *could not be found out* (ADR 0033 §4). The
-//! environment's loaders are the base's signed ones, but the installer plan's
-//! task 9 has not yet shown them starting under Secure Boot, and a person is
-//! never told to change the setting — so until it has, the only honest answer
-//! is to stop, say why, and change nothing.
+//! On is refused, and so is *could not be found out* (ADR 0033 §4), and a person
+//! is never told to change the setting. The environment's loaders are the base's
+//! signed ones.
+//!
+//! **What the refusal waits on is the shim review, which is external and takes
+//! months.** That is ADR 0033 §4's own pacing item, and its words are *refused,
+//! not disabled — except by the owner, for certification, on the record*: until
+//! the review lands the shipped installer refuses to proceed with Secure Boot
+//! enabled, the owner disables it in firmware themselves for a certification run,
+//! and the evidence ledger records that the machine was certified that way — so
+//! *boots on one certified machine* is not read as *with Secure Boot on* until it
+//! is.
+//!
+//! **Corrected 2026-09-28.** This said the refusal stood until the installer
+//! plan's task 9 had shown the loaders starting under Secure Boot. Task 9
+//! finished on 2026-09-16, and so did 12, 13 and 14 — task 13's status says
+//! outright that *with Secure Boot on, the install onto the second disk finishes,
+//! and the second disk boots*. So the comment named a condition that has been met
+//! for a rule whose real condition has not, and a reader who checked it would
+//! conclude the refusal was stale and should be lifted. One did, and stopped only
+//! because the ADR said otherwise.
 
 use alo_installing::DiskName;
 
