@@ -206,7 +206,13 @@ jobs:
           wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
           chmod +x /tmp/llvm.sh
           sudo /tmp/llvm.sh 22
-          echo "LLVM_SYS_221_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+          # **Copied from the lane that works, not inferred.** The first attempt
+          # set `LLVM_SYS_221_PREFIX` and `bpf-linker` still answered *could not
+          # find llvm-config*, because that is not the variable it reads. The
+          # machine where these gates have always passed does it with `PATH` and
+          # `LLVM_PREFIX` — `gate-workspace.sh:77` — so that is what this does.
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          echo "LLVM_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
           /usr/lib/llvm-22/bin/llvm-config --version
 
       - name: the linker the BPF target needs
@@ -216,6 +222,36 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest
+
+      # **What this run will not cover, said before it runs rather than after.**
+      #
+      # `alo/nine-gates` means the nine gates as `tools/kernel-loop/src/gates.rs`
+      # defines them, and that definition excludes three packages and one test by
+      # name. One lane runs `cargo test --workspace` with **no** exclusion at
+      # all, so its green covers strictly more than this one's — and nobody
+      # reading a tick would know which they were looking at.
+      #
+      # Running unfiltered here is not the answer: the excluded packages attach
+      # BPF programmes to a kernel, which is what #217 took off the merge path
+      # and what no hosted runner can do. CI running something other than the
+      # repository's own definition would be the drift this file exists to
+      # prevent, pointing the other way.
+      #
+      # So it prints the exclusions instead. A reader comparing a green here
+      # against a green on a lane can see the difference rather than infer it,
+      # which is the same rule as the skip count below and as
+      # *a gate that is absent should say so*.
+      - name: what these gates do not cover
+        run: |
+          echo "alo/nine-gates here means the gates as gates.rs defines them, which excludes:"
+          # `\r$` first: a checkout with CRLF endings leaves the continuation
+          # backslash followed by a carriage return, so `\\$` never matches and
+          # the joined line comes out with a stray `\` in the middle of it.
+          sed -n '/"-E",/,/",$/p' tools/kernel-loop/src/gates.rs \
+            | sed -e 's/\r$//' -e 's/^ *//' -e 's/\\$//' \
+            | tr -d '\n' | sed -e 's/^"-E",*//' -e 's/^ *"//' -e 's/",$//'
+          echo
+          echo "A lane running cargo test --workspace with no filter covers more than this."
 
       # **Built here rather than with `cargo run`, so two failures stay apart.**
       # A supervisor that does not compile and a gate that does not pass are
