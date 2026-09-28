@@ -130,6 +130,35 @@ pub const PREVIOUS_APPLICATION: Word = Word::saying(
 )
 .noting("An application, not one of its windows.");
 
+/// What [`crate::Action::ZoomTheCanvasIn`] does.
+pub const ZOOM_THE_CANVAS_IN: Word =
+    Word::saying("shortcuts.action.zoom-the-canvas-in", "Zoom the canvas in").noting(
+        "The canvas is the surface the windows sit on, and zooming it makes everything on it \
+         larger without changing any window's own size. Name the surface rather than the view, \
+         because a person moves the surface and the view follows.",
+    );
+
+/// What [`crate::Action::ZoomTheCanvasOut`] does.
+pub const ZOOM_THE_CANVAS_OUT: Word = Word::saying(
+    "shortcuts.action.zoom-the-canvas-out",
+    "Zoom the canvas out",
+)
+.noting(
+    "The opposite of shortcuts.action.zoom-the-canvas-in: everything on the surface becomes \
+         smaller and more of it fits on the screen.",
+);
+
+/// What [`crate::Action::ShowAllOnTheCanvas`] does.
+pub const SHOW_ALL_ON_THE_CANVAS: Word = Word::saying(
+    "shortcuts.action.show-all-on-the-canvas",
+    "Show all windows on the canvas",
+)
+.noting(
+    "Zooms out far enough that every open window is on the screen at once, however far apart \
+     they have been put. *All* means all of them and not all of the surface, which is much \
+     larger than whatever is on it.",
+);
+
 // ---------------------------------------------------------------------------
 // What is held down — [`crate::Modifier`]. Four words, and three of them are
 // printed differently on the keyboards this will run on.
@@ -427,7 +456,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 46] = [
+pub const EVERY_WORD: [Word; 49] = [
     THE_AGENT,
     LAUNCHER,
     CLOSE_WINDOW,
@@ -439,6 +468,9 @@ pub const EVERY_WORD: [Word; 46] = [
     PREVIOUS_WINDOW,
     NEXT_APPLICATION,
     PREVIOUS_APPLICATION,
+    ZOOM_THE_CANVAS_IN,
+    ZOOM_THE_CANVAS_OUT,
+    SHOW_ALL_ON_THE_CANVAS,
     SUPER,
     CTRL,
     ALT,

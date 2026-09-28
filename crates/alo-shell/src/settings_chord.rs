@@ -10,6 +10,26 @@
 //! A press of a key `alo_shortcuts::Key` has no name for — a modifier on its
 //! own, a media key, a letter outside the Latin alphabet — makes no chord, and
 //! Settings goes on waiting.
+//!
+//! # The rough edge: a character a layout only reaches with Shift
+//!
+//! **This file is handed the *unshifted* symbol**, because `settings_seat` reads
+//! `raw_latin_sym_or_raw_current_sym` so that Shift stays a modifier a person
+//! can hold rather than something swallowed into the key's name. The cost is
+//! that a `Key` is reachable only where the character it prints is some key's
+//! level-1 symbol. `Key::Plus` is that on a German or Finnish layout, and on
+//! every numpad; on a US or UK layout the main block's `+` is Shift and the
+//! `=` key, whose unshifted symbol is `equal`, so `Super`+Plus does not arrive
+//! from the main block there.
+//!
+//! `docs/design/the-shortcuts-and-the-edges.md` asks for more than this — *the
+//! keys that produce `+` and `−` on the person's own keyboard* — and that is a
+//! question only the keymap can answer: which keycode carries `plus` at **any**
+//! level. The keymap is held at the seat, not here, and a `Key` that can be
+//! reached with Shift held changes how every chord is named, not only this one.
+//! So it is named here and fixed there, if it is fixed. The layout data this is
+//! read out of, and the one caveat still unmeasured, are in
+//! `docs/quirks/a-shortcut-naming-a-character-is-unreachable-where-the-layout-shifts-it.md`.
 
 use alo_shortcuts::{Key, Modifier, Modifiers};
 use smithay::input::keyboard::{Keysym, ModifiersState};
@@ -59,7 +79,11 @@ fn key_of(symbol: Keysym) -> Option<Key> {
         Keysym::comma => Key::Comma,
         Keysym::period => Key::Period,
         Keysym::slash => Key::Slash,
-        Keysym::minus => Key::Minus,
+        // The numpad's own `+` and `−` sit beside the main ones exactly as
+        // `KP_Enter` sits beside `Return` below: one key, one name, whichever
+        // of the two a person reached for.
+        Keysym::minus | Keysym::KP_Subtract => Key::Minus,
+        Keysym::plus | Keysym::KP_Add => Key::Plus,
         Keysym::equal => Key::Equals,
         Keysym::space => Key::Space,
         Keysym::Tab | Keysym::ISO_Left_Tab => Key::Tab,
@@ -191,6 +215,10 @@ mod tests {
                 Keysym::Up.raw(),
                 Keysym::Down.raw(),
                 Keysym::Print.raw(),
+                // The numpad's arithmetic keys, which are outside the ASCII
+                // sweep above and are the only unshifted `+` some layouts have.
+                Keysym::KP_Add.raw(),
+                Keysym::KP_Subtract.raw(),
             ]);
         for raw in symbols {
             if let Some((_, key)) = chord_of(Keysym::new(raw), &ModifiersState::default()) {

@@ -273,11 +273,22 @@ mod tests {
         let shortcuts = Shortcuts::shipped();
         let mut chords = DesktopChords::as_shipped().unwrap();
         let beyond = Position::numbered(u16::try_from(MOST_DESKTOPS).unwrap() + 1).unwrap();
+        // A chord no system shortcut has, so what this test measures is the
+        // position and not the first check `bind` makes. It was `Super`+Minus
+        // until the canvas took that for zooming out, and the failure read
+        // `ChordIsTaken` where `NoSuchPosition` was expected — which says
+        // nothing about why. So the premise is asserted, not assumed.
+        let free = chord(Key::Slash);
         assert_eq!(
-            chords.bind(&shortcuts, chord(Key::Minus), Switch::To(beyond)),
+            shortcuts.action_for(free),
+            None,
+            "this test needs a chord no system shortcut has: pick another key"
+        );
+        assert_eq!(
+            chords.bind(&shortcuts, free, Switch::To(beyond)),
             Err(Refused::NoSuchPosition(beyond))
         );
-        assert_eq!(chords.switch_for(&shortcuts, chord(Key::Minus)), None);
+        assert_eq!(chords.switch_for(&shortcuts, free), None);
 
         assert!(chords.unbind(Switch::Next));
         assert!(!chords.unbind(Switch::Next));
