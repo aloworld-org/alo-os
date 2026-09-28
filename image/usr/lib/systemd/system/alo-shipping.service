@@ -1,0 +1,56 @@
+# **The applications a fresh machine has, installed once.**
+#
+# ADR 0073: a fresh machine installs its applications at first boot rather than
+# at image build, so that everything in `image/` stays content-addressed and a
+# person can remove any of them afterwards. The owner answered its two questions
+# on 2026-09-28: the version `shipped.toml` names rather than a digest while the
+# product is being built, and a machine that cannot reach Flathub says so and is
+# still a machine.
+#
+# **ConditionFirstBoot, not a stamp file of our own.** systemd already knows what
+# a first boot is — `/etc/machine-id` unpopulated — and an ostree deployment
+# keeps `/etc`, so this runs once on a fresh machine and never again on an
+# update. Inventing a second answer to a question systemd already answers is how
+# two of them come to disagree.
+#
+# **It does not retry, and that is a decision.** ADR 0073 rejected a unit that
+# retries for ever: a machine that is still trying is a machine that never says
+# what happened. `Restart=no` is the whole of it. A person asks again when they
+# have a network, through Software in Settings, which is the same road.
+[Unit]
+Description=The applications a fresh machine has
+Documentation=file:///usr/share/doc/alo/decisions/0073.md
+ConditionFirstBoot=yes
+
+# The places it installs from are not on this machine. Without the network it
+# will refuse each application in words rather than hang, which is the behaviour
+# ADR 0073 asked for — but waiting for the network first means a machine that
+# has one does not report seven failures because it started three seconds early.
+After=network-online.target
+Wants=network-online.target
+
+# The boundary is on the kernel before anything a person did not write runs
+# (ADR 0015), and this fetches and runs other people's code.
+After=alo-boundaryd.service
+Requires=alo-boundaryd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/alo-shipping
+RemainAfterExit=yes
+Restart=no
+
+# It reaches the network and writes the machine's flatpak installation, and
+# nothing else. It holds no capability of the machine's: an installed
+# application arrives reachable by nothing, which `alo-software` holds as a fact
+# rather than a shape, and this program is not the thing that would change that.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

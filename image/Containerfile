@@ -173,6 +173,7 @@ WORKDIR /alo-os
 RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
       --package alo-portald \
+      --bin alo-shipping \
       --package alo-converting
 
 # ---------------------------------------------------------------------------
@@ -406,6 +407,27 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec
 # and an installed machine has applications that launch and cannot open or save
 # anything — the whole of what that unit was for.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-portald /usr/libexec/alo-portald
+
+# **The tool a person's applications are installed with**, and the place they
+# come from. `alo_software::asked::THE_TOOL` is the absolute path
+# `/usr/bin/flatpak`: without it every install refuses for a missing program
+# rather than for anything true about the machine, and `shipped.toml` names
+# `flathub` as the source of all seven.
+#
+# `--if-not-exists` so a rebuild is not an error, and the remote is added
+# system-wide because the machine's applications are the machine's rather than
+# one login's. The place brings its own signing key and `alo-software` refuses
+# a place that does not check signatures before anything is fetched (ADR 0073).
+RUN dnf install --assumeyes --setopt=install_weak_deps=False flatpak \
+ && dnf clean all \
+ && flatpak remote-add --if-not-exists --system flathub \
+      https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# The walker is in libexec with the others and for the same reason: systemd
+# runs it once at first boot and nobody runs it by hand. What it installs is
+# `crates/alo-software/shipped.toml`, compiled into it by `include_str!`, so
+# the recipe names none of the seven and cannot come to disagree with the list.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-shipping /usr/libexec/alo-shipping
 
 # The office engine, from the checked packages, installed by the base's own
 # package manager so its libraries come from the base rather than from us.
@@ -681,6 +703,7 @@ COPY --chmod=0644 docs/artwork/wallpapers/alo-quiet-horizon.png /usr/share/alo/w
 # the service refuses to start rather than believe it.
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
+               /usr/libexec/alo-shipping \
                /usr/bin/alo-agentd /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
@@ -690,6 +713,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-portald.service \
+               /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
@@ -697,6 +721,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
                      alo-compositor.service alo-portald.service \
+                     alo-shipping.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
