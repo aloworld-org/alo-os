@@ -451,6 +451,67 @@ pub const RESTART_IT_YOURSELF: Word = Word::saying(
 .noting("Said when everything was prepared and Windows did not carry out the restart.");
 
 // ---------------------------------------------------------------------------
+// Replacing Windows: the road with no way back.
+//
+// The only thing this installer does that cannot be undone. Everything here is
+// said before the question is asked, and the question is asked twice --
+// installer plan task 7. The word a person types is translated like any other
+// sentence, because typing an English word is not consent in a language you do
+// not read.
+// ---------------------------------------------------------------------------
+
+/// What replacing costs, said before anything is asked.
+pub const REPLACING_DESTROYS: Word = Word::saying(
+    "installer.replacing-destroys",
+    "Replacing Windows erases {disk} completely. Windows, every program on it and every file on it \
+     go, and nothing that is only on this disk can be got back afterwards",
+)
+.noting(
+    "{disk} is the disk's own name as this computer reports it. Said before the question is asked, \
+     never after. \"Got back\" means recovered, by anybody, including us.",
+);
+
+/// What is on the disk now, so the person reads it before agreeing.
+pub const WHAT_IS_ON_IT_NOW: Word = Word::saying(
+    "installer.what-is-on-it-now",
+    "On {disk} now: Windows on {volume}, and everything kept there. All of it goes",
+)
+.noting(
+    "{disk} is the disk's name, {volume} the drive letter Windows is on, for example C:. The \
+     installer says what it found rather than asking the person to remember it.",
+);
+
+/// The second question: the disk's name and the word, together.
+pub const TYPE_THE_DISK_AND_THE_WORD: Word = Word::saying(
+    "installer.type-the-disk-and-the-word",
+    "To erase {disk} and install alo OS, type its name and the word {word}, with a space between \
+     them. Press Enter on its own to stop",
+)
+.noting(
+    "{disk} is the disk's name, {word} is ERASING_WORD in this language. Asked once, after \
+     everything above has been said. Both halves are required because a disk's name on its own \
+     can be typed by mistake.",
+);
+
+/// The word a person types to mean erase, in their own language.
+pub const ERASING_WORD: Word = Word::saying("installer.erasing-word", "erase").noting(
+    "The single word a person types beside the disk's name to agree to erasing it. Translate it \
+     to the plainest word in this language for destroying what is on a disk -- not a borrowed \
+     English word, and not a technical one. It is compared ignoring capitals and surrounding \
+     spaces.",
+);
+
+/// The point of no return, said once, at the moment it is passed.
+pub const NO_WAY_BACK_AFTER_THIS: Word = Word::saying(
+    "installer.no-way-back-after-this",
+    "Erasing {disk} now. From this moment there is no way back",
+)
+.noting(
+    "{disk} is the disk's name. Said at the single moment the installer stops being able to put \
+     anything back, and never before it -- everything earlier in the run can still be stopped.",
+);
+
+// ---------------------------------------------------------------------------
 // The refusals. Every one of them says that nothing was changed.
 // ---------------------------------------------------------------------------
 
@@ -599,6 +660,39 @@ pub const NOT_A_DISKS_NAME: Word = Word::saying(
 .noting(
     "Said when the person typed something that does not match any disk offered. The installer \
      never guesses which disk was meant.",
+);
+
+/// BitLocker, and no confirmation that what unlocks the disk is kept elsewhere.
+pub const BITLOCKER_NOT_CONFIRMED: Word = Word::saying(
+    "installer.bitlocker-not-confirmed",
+    "BitLocker is protecting {disk}. Erasing it would also destroy what unlocks it, and this \
+     installer cannot confirm you have that written down somewhere else, so nothing was changed",
+)
+.noting(
+    "{disk} is the disk's name. Said only when replacing Windows, never when keeping it. Do not \
+     name the thing that unlocks the disk in this sentence; \"what unlocks it\" is deliberate.",
+);
+
+/// One disk, and nothing else this computer could start from.
+pub const NO_WAY_BACK_AT_ALL: Word = Word::saying(
+    "installer.no-way-back-at-all",
+    "This computer has one disk and nothing else it can start from. Replacing Windows would leave \
+     you no way to change your mind, so nothing was changed",
+)
+.noting(
+    "Said only when replacing Windows. A refusal and not a warning: after replacing there is no \
+     Windows left to start the installer from.",
+);
+
+/// The second answer was not the disk's name and the word.
+pub const NOT_THE_WORD: Word = Word::saying(
+    "installer.not-the-word",
+    "What was typed is not {disk} and the word {word}, so nothing was changed",
+)
+.noting(
+    "{disk} is the disk's name, {word} is ERASING_WORD in this language. Said when either half is \
+     wrong, and it never says which: telling a person which half to fix is walking them towards \
+     the answer that erases their disk. It is not asked again in the same run.",
 );
 
 /// Preparing failed and was put back.
@@ -961,7 +1055,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 108] = [
+pub const EVERY_WORD: [Word; 116] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1070,10 +1164,19 @@ pub const EVERY_WORD: [Word; 108] = [
     REMOVE_GONE,
     REMOVE_GONE_BUT_THE_COPY_STAYS,
     PRESS_ENTER_TO_CLOSE,
+    // Replacing Windows: the road with no way back.
+    REPLACING_DESTROYS,
+    WHAT_IS_ON_IT_NOW,
+    TYPE_THE_DISK_AND_THE_WORD,
+    ERASING_WORD,
+    NO_WAY_BACK_AFTER_THIS,
+    BITLOCKER_NOT_CONFIRMED,
+    NO_WAY_BACK_AT_ALL,
+    NOT_THE_WORD,
 ];
 
 /// Every refusal, each of which is said before anything was changed.
-pub const EVERY_REFUSAL: [Word; 17] = [
+pub const EVERY_REFUSAL: [Word; 20] = [
     NOT_AN_ADMINISTRATOR,
     INCOMPLETE,
     NOT_GENUINE,
@@ -1090,6 +1193,9 @@ pub const EVERY_REFUSAL: [Word; 17] = [
     NO_DISK_FOR_ALO_OS,
     NOT_AGREED,
     NOT_A_DISKS_NAME,
+    BITLOCKER_NOT_CONFIRMED,
+    NO_WAY_BACK_AT_ALL,
+    NOT_THE_WORD,
     PUT_BACK,
 ];
 
@@ -1261,5 +1367,18 @@ mod tests {
             NOT_GENUINE.says(),
             "This download is not a genuine alo OS, so nothing was changed"
         );
+    }
+
+    /// **Every refusal says that nothing was changed**, because it is the first
+    /// thing a person needs to know and the section above promises it.
+    #[test]
+    fn every_refusal_says_that_nothing_was_changed() {
+        for refusal in EVERY_REFUSAL {
+            assert!(
+                refusal.says().contains("nothing was changed"),
+                "{}",
+                refusal.named()
+            );
+        }
     }
 }
