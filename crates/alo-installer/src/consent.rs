@@ -39,7 +39,12 @@ pub fn chosen<'offered>(
 }
 
 /// A name, with its case and its white space made not to matter.
-fn normalised(written: &str) -> String {
+///
+/// Shared with [`crate::erasing_consent`] rather than copied there. Both files
+/// promise to read a typed answer forgivingly in form and exactly in substance,
+/// and two implementations of *forgivingly* could drift apart -- on the road that
+/// erases a disk, that drift is the difference between a consent and a refusal.
+pub(crate) fn normalised(written: &str) -> String {
     written
         .split_whitespace()
         .collect::<Vec<_>>()
