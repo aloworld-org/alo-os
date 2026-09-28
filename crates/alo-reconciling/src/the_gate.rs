@@ -745,6 +745,49 @@ mod tests {
         a radio
 ";
 
+    /// **A box somebody is working on is not a box that is done.**
+    ///
+    /// `- [~]` is how a lane says it has this in hand, so three machines reading
+    /// one roadmap can tell a task nobody has picked up from one already being
+    /// worked on. Two lanes took ADR 0069 twenty minutes apart for want of
+    /// exactly that.
+    ///
+    /// It needs no parsing of its own — [`a_box`] decides with `starts_with('x')`
+    /// and anything else is untricked, which is the conservative reading and the
+    /// right one. This test exists so it stays that way: a later change that
+    /// counted `~` as done would report work in hand as work finished, and the
+    /// gate would say a promise was kept while somebody was still writing it.
+    #[test]
+    fn a_box_being_worked_on_is_not_a_box_that_is_done() {
+        const IN_HAND: &str = "\
+## v0.5 — a person can work on it all day
+
+- [ ] Lock screen, suspend and resume
+  - [~] **The code.**
+        `alo-locking` and `alo-sleeping`, in hand
+  - [ ] **On the machine.**
+        no lid has ever closed
+";
+
+        let sections = sections_in(IN_HAND);
+        let halves: Vec<&Box_> = sections
+            .iter()
+            .flat_map(|section| &section.promises)
+            .flat_map(|promised| &promised.halves)
+            .collect();
+        assert_eq!(halves.len(), 2, "both halves were read: {halves:?}");
+        assert!(
+            halves.iter().all(|half| !half.ticked()),
+            "a box being worked on was counted as done: {halves:?}"
+        );
+        assert!(
+            halves
+                .iter()
+                .any(|half| half.words().starts_with("**The code.**")),
+            "the marker did not eat the words beside it: {halves:?}"
+        );
+    }
+
     /// A features document at two tiers.
     const A_DEFINITION: &str = "\
 - [v0.5] Lock screen, suspend and resume
