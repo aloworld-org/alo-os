@@ -102,6 +102,14 @@ fn the_daemons(recipe: &str) -> BTreeSet<String> {
     recipe
         .lines()
         .filter(|line| line.starts_with("COPY") && line.contains("/release/"))
+        // **Only what the musl stage built.** The rule below is about a static
+        // link against a libc where the library does not exist, so it is about
+        // the binaries built that way and no others. `alo-compositor` links
+        // Wayland, libinput, libseat, xkbcommon and pixman on purpose, from a
+        // stage on the base's own distribution — and
+        // `every_binary_not_built_for_the_target_is_built_on_the_base` is what
+        // holds it to being that rather than to being exempt.
+        .filter(|line| line.contains("--from=built"))
         .filter(|line| line.contains("/usr/bin/") || line.contains("/usr/libexec/"))
         .filter_map(|line| {
             line.split_whitespace()
@@ -225,6 +233,69 @@ fn links_among(read: &serde_json::Value, ids: &BTreeSet<String>) -> BTreeMap<Str
         }
     }
     found
+}
+
+/// **Every binary the image installs that was not built for the target is built
+/// on the base's own distribution.**
+///
+/// This is the other half of the rule above, and it exists so that narrowing
+/// that one narrowed nothing. A binary copied from a stage other than `built`
+/// is one the musl rule does not examine; this holds it to the only thing that
+/// makes that safe — that its stage is `FROM ${THE_BASE}`, so it links against
+/// the glibc of the machine it will run on, and that it is built with no
+/// `--target`, so the host triple of that stage is what it gets.
+///
+/// Without this, `--from=anything-else` would be a way to put a binary in the
+/// image that nothing checks at all.
+#[test]
+fn every_binary_not_built_for_the_target_is_built_on_the_base() {
+    let recipe = the_recipe();
+
+    let installed: Vec<(String, String)> = recipe
+        .lines()
+        .filter(|line| line.starts_with("COPY") && line.contains("/release/"))
+        .filter(|line| line.contains("/usr/bin/") || line.contains("/usr/libexec/"))
+        .filter(|line| !line.contains("--from=built"))
+        .filter_map(|line| {
+            let stage = line
+                .split_whitespace()
+                .find_map(|word| word.strip_prefix("--from="))?;
+            let binary = line
+                .split_whitespace()
+                .find(|word| word.contains("/release/"))
+                .and_then(|word| word.rsplit('/').next())?;
+            Some((stage.to_owned(), binary.to_owned()))
+        })
+        .collect();
+
+    for (stage, binary) in installed {
+        let declared = format!("FROM ${{THE_BASE}} AS {stage}");
+        assert!(
+            recipe.contains(&declared),
+            "`{binary}` is copied from stage `{stage}`, which is not declared \
+             `{declared}`. A binary the musl rule does not examine is only safe \
+             if it was built on the base's own distribution; a stage on anything \
+             else links against a libc the machine does not run."
+        );
+
+        let building: Vec<&str> = recipe
+            .lines()
+            .skip_while(|line| !line.trim().starts_with(&declared))
+            .take_while(|line| !line.trim().starts_with("FROM ") || line.contains(&declared))
+            .filter(|line| line.contains("cargo build"))
+            .collect();
+        assert!(
+            !building.is_empty(),
+            "stage `{stage}` installs `{binary}` and never builds anything"
+        );
+        for line in building {
+            assert!(
+                !line.contains("--target"),
+                "stage `{stage}` builds with `--target`, so `{binary}` is not the \
+                 host triple of the base after all: {line}"
+            );
+        }
+    }
 }
 
 /// **No daemon the image installs reaches a crate that links a system library.**

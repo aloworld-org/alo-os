@@ -50,6 +50,14 @@ pub const THE_OPENER: &str = "alo-sessiond.service";
 /// `systemctl status` is a place a person reads.
 pub const THE_SERVER: &str = "alo-modeld.service";
 
+/// The service that stands the sign-in screen up.
+///
+/// The third privileged thing in this image, and the reason an installed alo OS
+/// stopped being a console. It runs as root because a card comes from the login
+/// seat and logind decides that on a privileged caller, and because a sign-in
+/// screen exists before anybody is signed in and so cannot be anybody.
+pub const THE_COMPOSITOR: &str = "alo-compositor.service";
+
 /// Where a unit file goes, beneath the image's root.
 const UNITS: &str = "usr/lib/systemd/system";
 
@@ -94,6 +102,8 @@ pub struct Image {
     opener: Service,
     /// The service that serves the model the machine arrived with.
     server: Service,
+    /// The service that stands the sign-in screen up.
+    screen: Service,
     /// The directories made at boot.
     made: Vec<Made>,
     /// The logins and groups made at boot.
@@ -141,6 +151,7 @@ impl Image {
         let agent = service(root, THE_AGENT)?;
         let opener = service(root, THE_OPENER)?;
         let server = service(root, THE_SERVER)?;
+        let screen = service(root, THE_COMPOSITOR)?;
 
         let at = root.join(TMPFILES);
         let made = crate::making::everything_made(&text(&at)?)
@@ -193,6 +204,7 @@ impl Image {
             agent,
             opener,
             server,
+            screen,
             made,
             declared,
             asserted,
@@ -233,6 +245,12 @@ impl Image {
     #[must_use]
     pub const fn server(&self) -> &Service {
         &self.server
+    }
+
+    /// The service that stands the sign-in screen up.
+    #[must_use]
+    pub const fn screen(&self) -> &Service {
+        &self.screen
     }
 
     /// The directory this image makes at this path, if it makes one.

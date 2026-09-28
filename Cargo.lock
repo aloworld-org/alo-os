@@ -1145,6 +1145,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-portald"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-capability",
+ "alo-choosing",
+ "alo-networks",
+ "alo-portals",
+ "alo-remembering",
+ "alo-secrets",
+ "tempfile",
+]
+
+[[package]]
 name = "alo-portals"
 version = "0.0.1"
 dependencies = [
