@@ -182,6 +182,33 @@ jobs:
       # conclusion would be that the BPF gates cannot run on a hosted runner and
       # belong to a lane. That is a measurement nobody has made yet, and this
       # step is how it gets made — not an assumption that it works.
+      # **And the LLVM it is built against.** Measured on the run before this
+      # step existed: `bpf-linker` would not build at all —
+      # *could not find llvm-config in directories specified by environment* —
+      # which is a level below the version-matching question. A hosted runner
+      # has no LLVM development files for this purpose.
+      #
+      # 22, because that is what the lane this was written on pairs with the
+      # pinned nightly: bpf-linker 0.11.0 against LLVM 22.1.8, arranged
+      # deliberately and for the reason `rust-toolchain.toml` gives. Ubuntu's own
+      # archive does not carry 22, so it comes from apt.llvm.org, which is the
+      # project's own.
+      #
+      # This is the expensive step in the file and it is worth saying so: it
+      # downloads and installs a compiler toolchain on every run that the cache
+      # does not cover. If it proves too slow, the honest alternative is to take
+      # the two BPF gates off this workflow's path and have CI **say so in its
+      # own output on every run** — a gate that is absent and says so is
+      # information; one that is absent quietly is the same fault as a skip
+      # reading like a pass.
+      - name: the LLVM the BPF linker is built against
+        run: |
+          wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/llvm.sh
+          sudo /tmp/llvm.sh 22
+          echo "LLVM_SYS_221_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+          /usr/lib/llvm-22/bin/llvm-config --version
+
       - name: the linker the BPF target needs
         run: cargo +nightly-2026-06-01 install bpf-linker --locked
 
