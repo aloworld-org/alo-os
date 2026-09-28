@@ -10,6 +10,30 @@
 //! A press of a key `alo_shortcuts::Key` has no name for — a modifier on its
 //! own, a media key, a letter outside the Latin alphabet — makes no chord, and
 //! Settings goes on waiting.
+//!
+//! # The rough edge: a character a layout only reaches with Shift
+//!
+//! **This file is handed the *unshifted* symbol**, because `settings_seat` reads
+//! `raw_latin_sym_or_raw_current_sym` so that Shift stays a modifier a person can
+//! hold rather than something swallowed into the key's name. The cost is that a
+//! `Key` is reachable only where the character it prints is some key's **level-1**
+//! symbol. Read out of `/usr/share/X11/xkb/symbols`: `de` carries `plus` at level
+//! 1 and the default `us` carries it only at level 2, so `Super`+Plus arrives from
+//! the main block on a German keyboard and not on an American one, from the same
+//! binding, with nothing saying so.
+//!
+//! The numpad is a real second route — `<KPAD>` has `KP_Add` at level 1 on every
+//! layout — and it is why `KP_Add` is named below. **A US laptop with no numpad
+//! still cannot press it**, and that is named rather than closed.
+//!
+//! `docs/design/the-shortcuts-and-the-edges.md` asks for more than this — *the
+//! keys that produce `+` and `−` on the person's own keyboard* — and that is a
+//! question only the keymap can answer: which keycode carries `plus` at **any**
+//! level. The keymap is held at the seat, not here, and a `Key` that can be
+//! reached with Shift held changes how every chord is named, not only this one.
+//! So it is named here and fixed there, if it is fixed. The measurements, and the
+//! one caveat still unmeasured, are in
+//! `docs/quirks/a-shortcut-naming-a-character-is-unreachable-where-the-layout-shifts-it.md`.
 
 use alo_shortcuts::{Key, Modifier, Modifiers};
 use smithay::input::keyboard::{Keysym, ModifiersState};
@@ -59,8 +83,12 @@ fn key_of(symbol: Keysym) -> Option<Key> {
         Keysym::comma => Key::Comma,
         Keysym::period => Key::Period,
         Keysym::slash => Key::Slash,
-        Keysym::minus => Key::Minus,
-        Keysym::plus => Key::Plus,
+        // The numpad's own `+` and `−` sit beside the main ones exactly as
+        // `KP_Enter` sits beside `Return` below: one key, one name, whichever of
+        // the two a person reached for. On a layout that puts `+` behind Shift
+        // this is the only unshifted `+` there is — see the header.
+        Keysym::minus | Keysym::KP_Subtract => Key::Minus,
+        Keysym::plus | Keysym::KP_Add => Key::Plus,
         Keysym::equal => Key::Equals,
         Keysym::space => Key::Space,
         Keysym::Tab | Keysym::ISO_Left_Tab => Key::Tab,
@@ -200,6 +228,26 @@ mod tests {
         }
         for key in Key::ALL {
             assert!(reached.contains(key), "{key:?} cannot be pressed");
+        }
+    }
+
+    /// **The numpad's `+` and `−` are the same two keys as the main block's.**
+    ///
+    /// Not covered by the sweep above, which only asks that every `Key` is
+    /// reachable *somehow* — `Keysym::plus` satisfies that on its own while a US
+    /// keyboard still cannot produce it unshifted. These two are the route that
+    /// does not depend on the layout, so they are asserted by name.
+    #[test]
+    fn the_numpad_names_the_same_plus_and_minus_as_the_main_block() {
+        for (symbol, key) in [
+            (Keysym::KP_Add, Key::Plus),
+            (Keysym::KP_Subtract, Key::Minus),
+        ] {
+            assert_eq!(
+                chord_of(symbol, &ModifiersState::default()),
+                Some((Modifiers::none(), key)),
+                "the numpad's own key does not name {key:?}"
+            );
         }
     }
 
