@@ -1,6 +1,6 @@
 # ADR 0073 — A fresh machine's applications are installed at first boot, from versions pinned by digest
 
-**Status:** proposed, 2026-09-28.
+**Status:** accepted, 2026-09-28, both open questions answered by the owner.
 
 Written by the development PC's lane, which owns `image/`. `docs/autonomy/v0-5-evidence.md`
 says of five separate promises that **the installing** is still owed — the file
@@ -93,19 +93,45 @@ The thing this forbids is the state the ledger would otherwise have produced: a
 machine with no file manager, no error, and a promise in `docs/features.md` saying
 it has one.
 
-## What is asked of the owner, because it is not ours
+## What was asked of the owner, and what the owner answered
 
-1. **Whether the digest is required, or preferred.** Pinning a flatpak by digest
-   is possible — a Flathub release has one — but it means this repository carries
-   seven more digests that a person must update when a version moves, and the
-   update is manual because nothing here watches Flathub. The alternative is to
-   keep the tag and say in `shipped.toml` that it is weaker than the image's pin.
-   **Recommendation: the digest**, because the sentence beside `pinned.toml`
-   applies word for word to an application as much as to an operating system.
-2. **Whether a machine may be sold that arrived with nothing.** If first boot
-   fails, the machine is usable and incomplete. The alternative is an image that
-   carries them and a person who cannot remove them.
-   **Recommendation: usable and incomplete**, said in words.
+Both questions were put because neither was a lane's to answer. One answer went
+with the recommendation and one against it.
+
+### 1. The version, not the digest — for now, and knowingly
+
+**Asked:** whether a flatpak must be pinned by digest, as `image/pinned.toml`
+pins the operating system, or may keep the tag `shipped.toml` names today.
+
+**Answered: keep the version.** Seven digests that nothing watches and a person
+must update by hand is too much while the product is still being built.
+
+**This goes against the recommendation, and the cost is real rather than
+theoretical.** `156.0` is a label on a remote that can move it; a digest cannot be
+moved by anybody. So a machine can install code we never tested, and the
+repository holds its own operating system to a standard it does not hold the
+browser to. That sentence stays true until this is revisited, and it belongs in
+`shipped.toml` where somebody reading the file will meet it — not only here.
+
+It is cheap to revisit: one field per application, and the seven versions are
+already written down. What it is not is an oversight, and it should not be
+tidied away by anybody who notices it later and assumes it was.
+
+### 2. Usable and incomplete, said in words
+
+**Asked:** whether a machine may arrive having installed nothing, if first boot
+cannot reach Flathub.
+
+**Answered: yes, and keep it simple.** The machine comes up, the desktop runs,
+the agent answers. Each application `shipped.toml` names is reported as not
+installed and why, through `alo-software`'s existing refusals. It does not retry
+for ever: a machine that is still trying is a machine that never says what
+happened. A person asks again when they have a network.
+
+This is the recommendation, and it is also the simpler build. Carrying the seven
+in the image instead would mean a larger image on every machine, a longer recipe,
+and applications a person cannot truly remove because an ostree deployment puts
+them back.
 
 ## What this does not decide
 

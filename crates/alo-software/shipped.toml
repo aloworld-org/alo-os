@@ -23,6 +23,15 @@
 # Nothing here is patched or rebranded. `version` is the upstream's own release
 # as its source listed it on the date the list was decided (2026-09-15); a newer
 # release reaches a machine as an offered update, like any application's.
+#
+# **`version` is a weaker pin than the one this repository holds its own
+# operating system to, and that is a decision rather than an oversight.**
+# `image/pinned.toml` pins by digest, because a digest cannot be moved by
+# anybody; `156.0` is a label on a remote that can be pointed at other code. So a
+# machine can install something nobody here tested. ADR 0073 asked, and the owner
+# chose the version while the product is being built, because seven digests that
+# nothing watches must be updated by hand. Revisiting it is one field per
+# application — do not quietly "fix" it without reading that record first.
 # Why each was chosen, and what else was considered, is in
 # `docs/autonomy/updates/what-a-fresh-machine-has.md`.
 
