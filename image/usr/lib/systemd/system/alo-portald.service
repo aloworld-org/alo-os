@@ -1,0 +1,77 @@
+[Unit]
+# The portal backend, which is what lets a sandboxed application open a file.
+#
+# `#193` landed as *The portal backend is written, and nothing runs it*, and that
+# stayed true until `alo-portald` was built: the crate had `Backend::serve_on`
+# and a real `TheMachine`, and nothing a machine could start assembled them. This
+# unit is what starts it, and without it an installed alo OS has applications
+# that can be launched and cannot open or save anything.
+Description=alo OS portal backend: how an application asks for a file
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/autonomy/applications-people-already-use.md
+
+# The person's own session, and the whole of what this service's lifetime is —
+# the same shape as `alo-agentd.service` and for the same reason. `user@1000.service`
+# is the person's systemd manager: logind starts it when they sign in and stops it
+# when their last session ends. After=, so `/run/user/1000` and the bus inside it
+# exist before this process does. BindsTo=, so signing out stops the backend
+# rather than leaving it holding a bus nobody is on.
+BindsTo=user@1000.service
+After=user@1000.service
+
+# It answers on the session bus, so the bus must be there. This is ordering
+# rather than a requirement: a session with no bus is one where the backend
+# refuses in words, which is the honest failure and not this unit's to prevent.
+After=dbus.socket
+
+[Service]
+Type=exec
+ExecStart=/usr/libexec/alo-portald
+
+# **The uid it runs as is the person, and that is load-bearing rather than
+# tidy.** `TheBus::of_this_process` takes the uid from the kernel and refuses a
+# bus that is not that uid's, so a backend running as anybody else answers
+# nothing — and a backend running as root would be one answering a person's
+# applications with authority the person does not have, which ADR 0001 §2
+# forbids in as many words.
+User=alo
+Group=alo
+
+# **A system unit inherits none of the person's session, so it is stated.**
+# Without these lines this service runs beside the person's session rather than
+# inside it — `alo-agentd.service` says the same thing above its own two, and
+# `crates/alo-image` holds both units' numbers to the one
+# `/etc/alo/agentd.toml` names.
+#
+# The literal 1000 is deliberate and is a trap this repository has already paid
+# for: `%U` in a system unit expands to 0, before `User=` is resolved, so it
+# reads as root and makes a service that stops. `docs/quirks.md` carries it.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
+# What the backend itself reads, and it reads both. `alo-portals`' `ThePlace`
+# decides where the answers file goes — under the login's state home, per login
+# rather than machine-wide — and the process exits non-zero with a sentence
+# rather than guessing when `HOME` is unset or relative. So both are named here
+# rather than left to whatever a manager happened to inherit.
+Environment=HOME=/home/alo
+Environment=XDG_STATE_HOME=/home/alo/.local/state
+
+# It holds no privilege at all. It answers questions about a person's own
+# machine, on that person's own bus, as that person — there is nothing here a
+# capability would buy, and saying so is what makes that a fact rather than a
+# sentence.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# A backend that died should come back, because what a person notices is an
+# application that can no longer open a file. Not `always`: the person signing
+# out is how this ends, and `BindsTo=` is what should end it then.
+Restart=on-failure
+RestartSec=2
+
+[Install]
+# The person's manager, not `multi-user.target`, for the reason
+# `alo-agentd.service` gives: a daemon started at boot is a daemon running
+# before anybody has signed in, with no session, no bus and no person.
+WantedBy=user@1000.service
