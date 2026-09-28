@@ -262,17 +262,52 @@ fn a_document_loses_exactly(
     assert_eq!(converted.copy(), copy);
     assert!(fs::read(&copy).unwrap().starts_with(b"%PDF-"));
     assert_eq!(fs::read(&file).unwrap(), original, "the original changed");
-    assert_eq!(
-        lost(converted.carried()),
-        expected.iter().cloned().collect::<BTreeSet<_>>()
-    );
+
+    // **Every loss the README names is reported, and nothing but a font
+    // substitution may be added to it.**
+    //
+    // Not an exact set, because this runs the engine *installed on this host*
+    // and an engine installed on a host resolves fonts through that host's
+    // fontconfig. `THE_ENGINE` pins the binary; nothing pins what the binary
+    // resolves against. Whether a family ends up embedded in the copy therefore
+    // varies with the machine, and the loss report is computed from what the
+    // copy contains — so on this development PC the same document has reported
+    // `Garamond` alone and `Garamond` with `Liberation Serif`, across four runs,
+    // unchanged.
+    //
+    // What does not vary with a host's fonts is asserted in full: a field that
+    // stopped updating, a comment that could not be shown, a link that was not
+    // fetched. If one of those went missing this still fails.
+    //
+    // The exact set is owed by a run **through the image**, where the fonts are
+    // pinned with the engine — documents plan, task 11. Until that exists, a
+    // host run that asserted an exact set would be asserting this machine's
+    // font list, and would go red on any other.
+    let actually = lost(converted.carried());
+    let named = expected.iter().cloned().collect::<BTreeSet<_>>();
+    for owed in &named {
+        assert!(
+            actually.contains(owed),
+            "{named:?} is owed and {owed:?} was not reported: {actually:?}"
+        );
+    }
+    for extra in actually.difference(&named) {
+        assert!(
+            matches!(extra, NotCarried::FontSubstituted(_)),
+            "a host's fonts may add a substitution and nothing else, and this \
+             copy also lost {extra:?}: {actually:?}"
+        );
+    }
 
     let said: Vec<String> = done
         .said(&strings)
         .iter()
         .map(|said| said.text().to_owned())
         .collect();
-    assert_eq!(said.len(), 2 + expected.len(), "{said:?}");
+    // One sentence for each thing not carried, and two of the copy itself — so
+    // it follows what was actually lost rather than what was expected, for the
+    // same reason as above.
+    assert_eq!(said.len(), 2 + actually.len(), "{said:?}");
     assert!(
         said.iter().any(|line| line.contains(named_in_a_sentence)),
         "{said:?}"
