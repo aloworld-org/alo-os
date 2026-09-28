@@ -194,8 +194,9 @@ each box moves only for what you actually saw.
 - an upgrade cannot break that stack.
 
 **On the day you can answer the first.** Look at the display: is it at the
-panel's own resolution, or a fallback? The rest depend on the check below,
-which cannot be performed — see the note there.
+panel's own resolution, or a fallback? The rest depend on the check below, which
+depends in turn on whether a command of ours has landed by then — see the note
+there.
 
 ### The boundary attaches on this kernel
 
@@ -260,20 +261,41 @@ compare them.
 
 ### The pinned model answers on this CPU
 
-**This check cannot be performed on 2 October, and that is a finding rather than
-a step to improvise.**
+**The model is on the machine and serving. What may be missing on the day is a
+command of ours to ask it with.**
 
-Nothing in the image asks a model. The image ships `alo-agentd`, `alo-boundaryd`,
-`alo-brokerd`, `alo-desktop`, `alo-compositor` and the installers; there is no
-model binary and no command that pulls or runs a catalogue entry.
-`hardware.md`'s definition of *the GPU works on first boot* has "pulling and
-running a model from the catalogue is one command" as one of its four parts, and
-that command does not exist yet.
+*Corrected 2026-09-28. This page said the check could not be performed because
+nothing in the image asks a model. That was established by grepping `[[bin]]`
+sections in `Cargo.toml` files rather than by asking what the image installs, and
+it missed `alo-modeld` entirely.*
 
-**So on the day:** write *not shown — no command in the image asks a model*, and
-leave both this box and the GPU box open. Do not substitute a hand-run Ollama:
-what the roadmap promises is the machine doing it, and a model run by hand
-proves the CPU can do arithmetic, not that alo OS can ask it anything.
+The image **does** ship the model: the runtime at `/usr/bin/ollama`, 2.23 GiB of
+qwen3 weights under `/usr/share/alo/models/`, and `alo-modeld.service` running
+`ollama serve`. ADR 0025 decided all of it, and that unit's own comment records
+that until it existed nothing started either half — `alo-models` knocked at the
+loopback address a runtime listens on and found nothing there, which is the same
+answer a machine with no model at all gives.
+
+**So first, ask the machine whether it is serving:**
+
+```
+systemctl status alo-modeld
+```
+
+What is narrower, and may still be owed on the day, is a command of **ours**.
+`alo-models` is a library with no binary, so the only way to ask the model today
+is to type the name of the thing we rented — and `docs/features.md` promises *a
+person never learns the name of anything we rented*, which
+`alo-modeld.service`'s own comment restates. A lane is adding that command; if it
+has landed by 2 October this page carries it and the check is performable.
+
+**If it has not landed:** write *the model is served, and no command of ours asks
+it*. That is a different and much smaller finding than the one this page used to
+record, and it leaves the GPU box open for one stated reason rather than two.
+
+Do **not** substitute `ollama run`. What the roadmap promises is the machine doing
+it; a model run by hand proves the CPU can do arithmetic, not that alo OS can ask
+it anything — and typing the rented name is the thing the promise forbids.
 
 ### Boots on one certified machine, firmware to the daemon
 
