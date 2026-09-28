@@ -110,10 +110,47 @@ pub const EVERY_GATE: &[Gate] = &[
         ],
         within: ".",
     },
+    // **Run by nextest, and without the boundary crates.** Two departures from
+    // `cargo test --workspace`, both measured on the development PC 2026-09-28,
+    // 8,883 tests across 551 binaries:
+    //
+    //   the whole suite                        1,326 s
+    //   alo-bounding + alo-agentd + alo-boundaryd  1,241 s
+    //   everything else                          ~150 s
+    //
+    // Those three attach BPF programmes. There is one kernel, an attach waits on
+    // an RCU-tasks grace period, and they cannot overlap — so they cost 1,241 s
+    // whether a change touched the kernel or corrected a sentence in a document.
+    // The owner amended the rule on that evidence: they run on `main` after a
+    // merge, under `--profile boundary`, not under every merge on every lane.
+    // docs/autonomy/SHARED_MAIN.md carries the amendment and what it costs.
+    //
+    // `the_nested_fixtures` is excluded for an unrelated and temporary reason: it
+    // writes its diagnostics to stdout, which nextest parses to discover tests,
+    // so listing fails outright — exit 104 with no summary. That is a one-word
+    // fix owed in alo-shell, and this exclusion goes when it lands.
+    //
+    // The name is kept because the supervisor's refusals quote it and a person
+    // reading `the gate \`the workspace's tests\` did not pass` should keep
+    // finding the same gate. What it no longer means is `--workspace` entire.
+    //
+    // Note for a lane that cannot mount /sys/fs/bpf: this gate no longer loads a
+    // BPF programme, but READY below still demands the mount. That is now a
+    // stricter requirement than this gate needs, and it is left alone here on
+    // purpose rather than changed in the same commit that changes the runner.
     Gate {
         named: "the workspace's tests",
         program: "cargo",
-        args: &["test", "--workspace"],
+        args: &[
+            "nextest",
+            "run",
+            "--workspace",
+            "--profile",
+            "gates",
+            "-E",
+            "not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) \
+             and not binary_id(alo-shell::the_nested_fixtures)",
+        ],
         within: ".",
     },
     // **The supervisor's own.** Its workspace is separate from the product's,
@@ -510,6 +547,19 @@ const READY: &[(Gate, &str)] = &[
         "`cargo` could not be run where the gates run, so every gate would fail for the same \
          reason and none of them would say which. Check that the Linux side of this machine is \
          reachable and that its toolchain is installed.",
+    ),
+    (
+        Gate {
+            named: "the runner the tests gate uses",
+            program: "cargo",
+            args: &["nextest", "--version"],
+            within: ".",
+        },
+        "`cargo nextest` could not be run where the gates run, so `the workspace's tests` would \
+         fail for a missing runner rather than for anything in the change. Install it with \
+         `cargo install cargo-nextest --locked`. It is what the tests gate has used since the \
+         boundary crates moved off the merge path, and its per-test process isolation is why \
+         `.config/nextest.toml` has to put them in a test group of one.",
     ),
     (
         Gate {
