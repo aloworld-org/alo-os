@@ -265,6 +265,14 @@ const EVERY_SUBMODE: [&str; 8] = [
 /// The environment variable naming a child's sub-mode.
 const SUBMODE: &str = "ALO_NESTED_SUBMODE";
 
+/// What this binary calls itself when something asks it to list its tests.
+///
+/// One name for all eight sub-modes, because that is honestly what this is: the
+/// sub-modes are not separately runnable by a filter — they are children this
+/// binary spawns, under one parent compositor and one heavy-fixture lock, and a
+/// tool that ran them apart would be running something else.
+const THE_ONE_TEST: &str = "every_nested_fixture_against_a_real_parent";
+
 /// Run one sub-mode in this process.
 fn the_submode(named: &str) -> Result<(), Box<dyn std::error::Error>> {
     match named {
@@ -284,8 +292,23 @@ fn the_submode(named: &str) -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// Each one drives real clients through the parent's own GLES.
 fn main() -> std::process::ExitCode {
+    // **`--list` lists; it does not run.** This binary is `harness = false`, so
+    // nothing gives it the listing protocol that every tool parsing test output
+    // expects: one `name: test` line per test on stdout, and nothing else.
+    //
+    // Without this it ignored the flag and ran, which is worse than the parse
+    // error it was reported as. `cargo nextest list` over the workspace failed on
+    // this binary — *did not end with ": test"* — but the listing had by then
+    // started a headless compositor and seven children each holding a GLES
+    // context, to answer a question about names. Answering it costs nothing now.
+    if std::env::args().any(|argument| argument == "--list") {
+        println!("{THE_ONE_TEST}: test");
+        return std::process::ExitCode::SUCCESS;
+    }
     if !cfg!(target_os = "linux") {
-        println!("skipped: the nested fixtures are Linux's, and this is not Linux");
+        // Diagnostics go to stderr, all of them, because stdout is where the
+        // line above lives and a tool reading it cannot tell prose from a name.
+        eprintln!("skipped: the nested fixtures are Linux's, and this is not Linux");
         return std::process::ExitCode::SUCCESS;
     }
     // A child spawned by the run below, told which one check it is. A child does
@@ -311,14 +334,14 @@ fn main() -> std::process::ExitCode {
     let parent = a_parent();
     let runtime = match &parent {
         Parent::None(why) => {
-            println!(
+            eprintln!(
                 "skipped: the nested fixtures need a Wayland parent and there is none — {why}"
             );
             return std::process::ExitCode::SUCCESS;
         }
         // Nothing to hand a child: it inherits the parent already here.
         Parent::AlreadyThere => {
-            println!(
+            eprintln!(
                 "using the WAYLAND_DISPLAY already in this environment rather than starting one"
             );
             None
@@ -344,7 +367,7 @@ fn main() -> std::process::ExitCode {
                 .env("LIBGL_ALWAYS_SOFTWARE", "1");
         }
         match child.status() {
-            Ok(status) if status.success() => println!("{named}: passed"),
+            Ok(status) if status.success() => eprintln!("{named}: passed"),
             Ok(_) => refused.push(named),
             Err(why) => {
                 eprintln!("{named} could not be started as a child: {why}");
@@ -353,7 +376,7 @@ fn main() -> std::process::ExitCode {
         }
     }
     if refused.is_empty() {
-        println!(
+        eprintln!(
             "every nested fixture passed against a real parent; \
              physical display unverified, because a headless parent composites to nothing"
         );
