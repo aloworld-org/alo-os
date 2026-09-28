@@ -32,6 +32,44 @@ you ran and why those were the ones the diff could reach.
 **What never shrinks:** the run on the tree you merge, when that tree is new.
 That is the one measurement this whole workflow is built on.
 
+**Amended 2026-09-28 by the owner, with one exception and the measurement that
+earned it.** The boundary suite — `alo-bounding`, `alo-agentd`, `alo-boundaryd` —
+runs on `main` after a merge rather than under every merge on every lane. The
+numbers, taken on the development PC with `cargo nextest`, 8,883 tests across 551
+binaries and zero failures:
+
+| | |
+|---|---|
+| whole suite, everything, clean | 1,326s |
+| the three boundary crates, serialised | **1,241s** |
+| the merge gate as it now runs, measured | **166s** (144s of it tests) |
+
+8,883 tests in the first row, 8,149 in the third, zero failures in either.
+
+Those three attach BPF programmes to the kernel. There is one kernel, an attach
+waits for an RCU-tasks grace period, and they must run one at a time because the
+`Mutex` they were written around cannot cross per-process isolation. **No hardware
+shortens it**, and it was the same 1,241 seconds whether a change touched the
+kernel or corrected a sentence in a document — a 22-minute floor under every
+merge, on a repository three lanes land work on.
+
+So the merge gate is everything else — **166 seconds, measured, not derived** —
+and `cargo nextest run --profile boundary` runs on `main` after each merge on the
+machine that can run it.
+
+*A caution worth inheriting, because it was got wrong here first:* 1,326 − 1,241
+is **not** the answer, and the 85 seconds it gives is not a time anything takes.
+The whole-suite run had the boundary crates and everything else in flight at once,
+so deleting them returns far less than their wall clock. The only trustworthy
+number is the one from running the gate you actually intend to run. **The cost is real and is not hidden:** a boundary
+regression can reach `main` and be found minutes later rather than never merged.
+That is the presubmit-and-postsubmit trade, taken deliberately, because the rule
+as written made the queue a queue.
+
+The rest of this section is unchanged: everything that is not the boundary suite
+still runs on the exact combined tree, and a lane that shrinks it further is
+outside the rule rather than reading it generously.
+
 ## Ownership and execution
 
 - One short-lived branch per task: `task/<machine>/<descriptive-subject>`.
