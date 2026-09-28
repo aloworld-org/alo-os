@@ -68,6 +68,7 @@ mod staging;
 mod starting;
 mod switching;
 mod the_point_of_no_return;
+mod the_replacing_road;
 mod what_replacing_destroys;
 mod windows_volume;
 mod words;
@@ -104,6 +105,7 @@ pub use sizes::{GIB, MIB, THE_AREA, THE_LEAST_DISK, WINDOWS_KEEPS_FREE};
 pub use starting::Starting;
 pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use the_point_of_no_return::crossed;
+pub use the_replacing_road::may_replace;
 pub use what_replacing_destroys::{Day, WhatReplacingDestroys};
 pub use windows_volume::{NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
