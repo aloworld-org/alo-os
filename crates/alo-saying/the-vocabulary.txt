@@ -730,6 +730,7 @@ installer.answer.turn-off	turn off
 installer.ask.fast-startup	Windows' Fast Startup is on. It can make Windows and alo OS disagree about the disk. Turn it off? (Recommended when sharing a disk.)
 installer.ask.type-one-of-these-answers	Type {off} or {on}, and press Enter
 installer.bitlocker-changing	BitLocker is still encrypting or decrypting Windows on {volume}, so nothing was changed. Run this installer again when it has finished
+installer.bitlocker-not-confirmed	BitLocker is protecting {disk}. Erasing it would also destroy what unlocks it, and this installer cannot confirm you have that written down somewhere else, so nothing was changed
 installer.checking-the-computer	Checking this computer. This only reads, and changes nothing
 installer.checking-the-download	Checking that this download is a genuine alo OS
 installer.copying-the-installer	Copying the installer into its area, and checking the copy
@@ -744,6 +745,7 @@ installer.default.starting	This shows which system this computer starts when nob
 installer.default.type-to-change	To make this computer start {system} instead, type {change} and press Enter. To leave it as      it is, press Enter without typing anything
 installer.disks-not-read	The disks in this computer could not be read, so nothing was changed
 installer.entries-not-read	The list of systems this computer can start could not be read, so nothing was changed
+installer.erasing-word	erase
 installer.fast-startup-left-on	Windows' Fast Startup is being left on, and nothing about it is changed
 installer.found.a-disk-for-alo-os	The disk {disk} ({size} GB) is empty, and alo OS can be installed onto it
 installer.found.a-disk-in-use	The disk {disk} ({size} GB) already holds files or a system, so alo OS does not use it
@@ -776,12 +778,15 @@ installer.incomplete	This download is incomplete, so nothing was changed. Downlo
 installer.leaving-the-way-back	Putting a program in the Start menu that restarts this computer into alo OS
 installer.making-the-area	Making the installer's area on the disk {disk}
 installer.no-disk-for-alo-os	This computer has no empty disk of at least {least} GB beside the one Windows is on, and this installer puts alo OS on a disk of its own, so nothing was changed
+installer.no-way-back-after-this	Erasing {disk} now. From this moment there is no way back
+installer.no-way-back-at-all	This computer has one disk and nothing else it can start from. Replacing Windows would leave you no way to change your mind, so nothing was changed
 installer.not-a-disks-name	What was typed is not the name of a disk alo OS can be installed onto, so nothing was changed
 installer.not-agreed	You stopped the installer, so nothing was changed
 installer.not-an-administrator	This installer needs permission to change how this computer starts, so nothing was changed. Start it again by choosing Run as administrator
 installer.not-enough-space	Windows on {volume} needs {needed} GB free for this and has {free} GB, so nothing was changed
 installer.not-genuine	This download is not a genuine alo OS, so nothing was changed
 installer.not-put-back	Preparing this computer did not finish, and not everything could be put back. Windows still starts. This remains:
+installer.not-the-word	What was typed is not {disk} and the word {word}, so nothing was changed
 installer.not-uefi	alo OS needs a computer that starts with UEFI, and this one starts in the older BIOS way, so nothing was changed
 installer.nothing-changed-yet	Nothing on this computer has been changed yet. If you agree, this is what happens, in this order:
 installer.press-enter-to-close	Press Enter to close this window
@@ -805,6 +810,7 @@ installer.remove.not-there	alo OS is not among the systems this computer can sta
 installer.remove.starting	This removes alo OS from this computer. Windows, and your files on it, are not touched
 installer.remove.type-the-disks-name	To remove alo OS, type the name of that disk, exactly as it is written above, and press Enter. To leave everything as it is, press Enter without typing anything
 installer.remove.will-erase	alo OS is on the disk {disk}. Removing it erases that disk: alo OS itself, and everything kept in it. The space becomes free again, and Windows starts as it does now
+installer.replacing-destroys	Replacing Windows erases {disk} completely. Windows, every program on it and every file on it go, and nothing that is only on this disk can be got back afterwards
 installer.restart-it-yourself	Everything is ready, and this computer could not restart by itself. Restart it to continue installing alo OS
 installer.restarting	Everything is ready. This computer restarts in a few seconds, and installing continues after the restart
 installer.secure-boot-not-read	Whether Secure Boot is on could not be found out, so nothing was changed
@@ -825,7 +831,9 @@ installer.switch.will-restart	This computer restarts into alo OS once. Windows s
 installer.system.alo-os	alo OS
 installer.system.windows	Windows
 installer.turning-fast-startup-off	Turning Windows' Fast Startup off. Windows keeps hibernation, and starts and shuts down as before
+installer.type-the-disk-and-the-word	To erase {disk} and install alo OS, type its name and the word {word}, with a space between them. Press Enter on its own to stop
 installer.type-the-disks-name	To agree, type the name of the disk alo OS replaces, exactly as it is written above, and press Enter. Everything on that disk is replaced. To stop, press Enter without typing anything
+installer.what-is-on-it-now	On {disk} now: Windows on {volume}, and everything kept there. All of it goes
 installer.will.add-the-entry	An entry named alo OS is added to the systems this computer can start. Windows stays the one it starts normally
 installer.will.make-the-area	A {area} GB area for the installer is made in that space, on the disk {disk}
 installer.will.restart	This computer restarts once into the installer, which replaces everything on the disk you name below with alo OS, then restarts again

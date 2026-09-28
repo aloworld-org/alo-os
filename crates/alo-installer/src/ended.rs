@@ -52,6 +52,34 @@ pub enum Refusal {
     WindowsDiskNotSupported(String),
     /// BitLocker is converting the Windows volume.
     BitLockerChanging(Letter),
+    /// **Replacing only.** The disk is protected by BitLocker and this installer
+    /// cannot confirm both that it is unlocked and that its recovery key is kept
+    /// somewhere other than on itself. Erasing it would destroy the only copy.
+    ///
+    /// Two conditions rather than one, because a volume can be unlocked and
+    /// still hold the only copy of the key that unlocks it. Keeping Windows
+    /// beside alo OS never reaches this: nothing is erased on that road.
+    BitLockerNotConfirmed(String),
+    /// **Replacing only.** One disk, and nothing else this machine could start
+    /// from if alo OS did not suit the person.
+    ///
+    /// A refusal and not a warning. After replacing there is no Windows to run a
+    /// program from, so a person who changes their mind needs something to start
+    /// from that is not this disk — and this installer does not offer a road
+    /// whose only exit is somebody else's spare computer.
+    NoWayBackAtAll,
+    /// **Replacing only.** The second answer was not the disk's name and the
+    /// word that names what is lost.
+    ///
+    /// Either half being wrong is this, and the installer never says which:
+    /// guessing which half was meant is how a person is walked towards the
+    /// answer that erases their disk. It is never asked again in the same run.
+    NotTheWord {
+        /// The disk that was not erased, by its own name.
+        disk: String,
+        /// The word that was not typed, in the reader's language.
+        word: String,
+    },
     /// Not enough free space on the Windows volume.
     NotEnoughSpace {
         /// The Windows volume.
@@ -111,6 +139,15 @@ impl Refusal {
             Self::BitLockerChanging(volume) => (
                 words::BITLOCKER_CHANGING,
                 Filling::of("volume", volume.drive()),
+            ),
+            Self::BitLockerNotConfirmed(disk) => (
+                words::BITLOCKER_NOT_CONFIRMED,
+                Filling::of("disk", disk.as_str()),
+            ),
+            Self::NoWayBackAtAll => (words::NO_WAY_BACK_AT_ALL, Filling::nothing()),
+            Self::NotTheWord { disk, word } => (
+                words::NOT_THE_WORD,
+                Filling::of("disk", disk.as_str()).and("word", word.as_str()),
             ),
             Self::NotEnoughSpace {
                 volume,
@@ -191,6 +228,12 @@ mod tests {
             Refusal::NoDiskForAloOs,
             Refusal::NotAgreed,
             Refusal::NotADisksName,
+            Refusal::BitLockerNotConfirmed("Msft Virtual Disk".to_owned()),
+            Refusal::NoWayBackAtAll,
+            Refusal::NotTheWord {
+                disk: "Msft Virtual Disk".to_owned(),
+                word: "erase".to_owned(),
+            },
             Refusal::PutBack,
         ];
         assert_eq!(refusals.len(), EVERY_REFUSAL.len());
