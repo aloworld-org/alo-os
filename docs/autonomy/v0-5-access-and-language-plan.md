@@ -220,3 +220,43 @@ at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
   record — produces the exact sequence of spoken and shown text, recorded as a table and
   held by one test; no sentence names Orca, AT-SPI, a speech engine or CLDR.
 - **Constraint:** nothing here re-decides what the sentences describe.
+
+### 8. A reader is told what is set, and by the words that are on it
+
+**Status:** ready, 2026-09-29. **Depends on:** 2, 4.
+
+**Reopening a plan that was closed** — task 7 said *this closes the plan, seven at
+publication, seven at close, nothing added after it was written*. This is added
+after. It is here rather than in a later plan because it is not new work somebody
+thought of: it is work `crates/alo-conforming` was already **claiming was done**,
+and four clauses were downgraded from *met* to point at it.
+
+Two gaps, found by reading the cited tests against the clause texts rather than by
+running anything. Neither is a test that could be written today — both are
+behaviour that does not exist yet.
+
+**A reader is never told which way a switch is set.** `alo_access::State::OnOrOff`
+becomes `CHECKABLE` in `alo_shell::access_roles`, and `ATSPI_STATE_CHECKED` is
+`#[cfg(test)]` there under the words *never sent by this crate*, with a test
+holding it to that. So a person using a reader is told a setting **can** be on or
+off and never which it is. The cause is structural rather than an oversight:
+`Surface::read_aloud()` is a static shape and `ReadAloudTree::of` is handed only
+which surfaces are showing, so **the tree describes what exists and not what state
+anything is in**. Clause 5.6.1 asks for exactly the missing half, and 11.4.1.2
+asks for *what state it is in*.
+
+**What is drawn on a control and what is read from it are two vocabularies.** A
+window control draws `alo_shortcuts::Action::said` — `CLOSE_WINDOW`, *"Close the
+window"* — and a reader is told `alo_access::words::CLOSE_THIS_WINDOW`, *"close
+this window"*. Clause 11.2.5.3 asks that the programmatic name **contain** the
+words a person sees, and it does not; nothing holds the two together, in English
+or in any of the other 23 languages. Somebody saying *"close the window"* to a
+voice control would be naming a control that answers to something else.
+
+- **Acceptance:** a reader is told the value of every control that has one, and a
+  test asserts it for each; the words drawn on a control and the words read from
+  it come from one place, and a test asserts that they cannot drift.
+- **Constraint:** the second half is **not** a renaming exercise. One of the two
+  vocabularies has to become the other's source, and which way round is a decision
+  about what controls are called — it reaches 24 languages and
+  `docs/contracts/person-settings.md`, so it wants an ADR before any word moves.

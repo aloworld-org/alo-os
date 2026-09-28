@@ -319,11 +319,40 @@ mod tests {
 
     /// **Every surface is read as something, and every control is named.**
     #[test]
-    fn every_surface_says_what_it_is_and_what_is_in_it() {
+    fn every_surface_is_read_as_something_rather_than_nothing() {
         for surface in Surface::ALL {
             let controls = surface.read_aloud();
             assert!(!controls.is_empty(), "{surface:?} is read as nothing");
         }
+    }
+
+    /// **Anything a person has to fill in says what it wants** — clause 11.3.3.2.
+    ///
+    /// Asked of the fill-in roles by name rather than of every control, because
+    /// the clause is about them: a list or a label being named says nothing about
+    /// whether a person knows what to type. Today that is `Surface::SignIn`'s
+    /// password, and the loop finds it rather than naming it, so a second field
+    /// added anywhere is held to the same thing without this test being touched.
+    #[test]
+    fn everything_a_person_fills_in_says_what_it_wants() {
+        let mut found = 0;
+        for surface in Surface::ALL {
+            for control in surface.read_aloud() {
+                if !matches!(control.role, Role::Entry | Role::PasswordEntry) {
+                    continue;
+                }
+                found += 1;
+                assert!(
+                    !control.name.says().trim().is_empty(),
+                    "{surface:?} asks a person to fill something in and does not say what it wants"
+                );
+            }
+        }
+        assert!(
+            found > 0,
+            "no surface has a field to fill in, so this test proves nothing and the \
+             clause it is cited by should be not-applicable instead"
+        );
     }
 
     /// **The approval surface: the sentence, then no, then approve — and

@@ -122,11 +122,12 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "5.6.1",
         requirement: "A control that locks or toggles must say which way it is set without being \
                       looked at.",
-        standing: met(
-            "alo-access",
-            "src/tree.rs",
-            "every_surface_says_what_it_is_and_what_is_in_it",
-        ),
+        // Was met, by a test that asserted only that each surface reads as a
+        // non-empty list. `State::OnOrOff` becomes `CHECKABLE` and
+        // `ATSPI_STATE_CHECKED` is never sent, so a reader is told a setting
+        // *can* be on or off and never which it is — the half this clause asks
+        // for is the half that is missing.
+        standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -177,10 +178,14 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "11.1.3.1",
         requirement: "What a thing is, and what it belongs to, must be readable by a program and \
                       not only visible.",
+        // Re-cited rather than downgraded: *what it belongs to* is the tree's
+        // parent and children, which live in the shell, and a test there walks
+        // every node and holds each one's parent to listing it as a child. The
+        // test this named before never read a role or a parent.
         standing: met(
-            "alo-access",
-            "src/tree.rs",
-            "every_surface_says_what_it_is_and_what_is_in_it",
+            "alo-shell",
+            "src/access_nodes_tests.rs",
+            "everything_hangs_under_something_that_says_so",
         ),
         checked: NotAgainstTheText,
     },
@@ -337,11 +342,12 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.2.4.6",
         requirement: "Headings and labels must say what they are about.",
-        standing: met(
-            "alo-access",
-            "tests/every_surface_the_shell_draws_is_read_aloud.rs",
-            "every_control_is_named_and_the_approval_reads_as_the_sentence_it_asks",
-        ),
+        // The test this named asserts that no name is empty, which is not the
+        // same claim: a label reading *a thing* would pass it. Whether these
+        // names describe what they are about is a judgement somebody makes with
+        // the standard in front of them, and `Checked::NotAgainstTheText` below
+        // says that nobody has.
+        standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -365,11 +371,12 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.2.5.3",
         requirement: "A control's name for a program must contain the words a person sees on it.",
-        standing: met(
-            "alo-access",
-            "tests/every_surface_the_shell_draws_is_read_aloud.rs",
-            "every_control_is_named_and_the_approval_reads_as_the_sentence_it_asks",
-        ),
+        // This asks for a containment between two strings and the test it named
+        // never compared two. Worse, the two disagree: a window control draws
+        // `alo_shortcuts::Action::said` — *"Close the window"* — and a reader is
+        // told `alo_access::words::CLOSE_THIS_WINDOW`, *"close this window"*.
+        // The evidence points at this being unmet rather than unproven.
+        standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -407,10 +414,13 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.3.3.2",
         requirement: "Anything a person has to fill in must say what it wants.",
+        // Kept met, on a test that looks for the fill-in roles rather than at
+        // every name: sign-in's password field is named, and a second field
+        // added anywhere is held to the same thing without that test changing.
         standing: met(
             "alo-access",
-            "tests/every_surface_the_shell_draws_is_read_aloud.rs",
-            "every_control_is_named_and_the_approval_reads_as_the_sentence_it_asks",
+            "src/tree.rs",
+            "everything_a_person_fills_in_says_what_it_wants",
         ),
         checked: NotAgainstTheText,
     },
@@ -418,11 +428,11 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "11.4.1.2",
         requirement: "Everything on the screen must tell a program what it is, what it is called \
                       and what state it is in.",
-        standing: met(
-            "alo-access",
-            "src/tree.rs",
-            "every_surface_says_what_it_is_and_what_is_in_it",
-        ),
+        // *What state it is in* is the part that is not true yet, for 5.6.1's
+        // reason: the tree carries the shape of the interface and no live value.
+        // What it is and what it is called are held elsewhere and are not in
+        // doubt; a clause is met when all of it is.
+        standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },
     Clause {
