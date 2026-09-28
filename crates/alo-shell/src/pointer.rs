@@ -26,6 +26,10 @@ pub(crate) struct Pointer {
     /// arrives as a fraction, so a trackpad's tenths are kept here instead of
     /// being truncated away one event at a time.
     pub(crate) unspent_scroll: (f64, f64),
+    /// Scroll spent on zooming rather than panning, kept the same way and for
+    /// the same reason — see `crate::canvas_wheel_zoom`, which says why the two
+    /// remainders are separate.
+    pub(crate) unspent_zoom: f64,
     /// Latest matched real release, valid only while its exact recipient keeps focus.
     pub(crate) popup_release: Option<(Serial, WlSurface)>,
 }
@@ -48,6 +52,7 @@ impl Server {
                 location: (0.0, 0.0).into(),
                 time: 0,
                 unspent_scroll: (0.0, 0.0),
+                unspent_zoom: 0.0,
                 popup_release: None,
             });
         }
@@ -268,6 +273,14 @@ impl Server {
         // canvas and the scroll moves the canvas. See `crate::canvas_pan`.
         if pointer.handle.current_focus().is_none() {
             pointer.time = frame.time;
+            // **Ctrl says which of the two the scroll is**, which is the modifier
+            // `docs/design/the-shortcuts-and-the-edges.md` documents for *zoom
+            // toward the pointer*. Read from the keyboard rather than carried on
+            // the axis event, because a modifier is the keyboard's state and a
+            // second copy of it would be a second answer to whether Ctrl is down.
+            if self.ctrl_is_held() {
+                return Ok(self.zoom_the_plane_by_scroll(&frame));
+            }
             return Ok(self.pan_the_plane_by_scroll(&frame));
         }
         pointer.time = frame.time;

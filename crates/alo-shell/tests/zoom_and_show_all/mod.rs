@@ -1,0 +1,293 @@
+//! **Zoom, and *Show all*** — the canvas plan's task 6.
+//!
+//! The acceptance is three sentences and each is a test here: *the point under
+//! the pointer is unchanged by a zoom, within a pixel*; *Show all leaves every
+//! frame inside the viewport with no frame clipped*; *zoom has a keyboard route*.
+//!
+//! # What is held here and what is held in `alo-canvas`
+//!
+//! The arithmetic — the rungs, the fit, and that nothing is clipped by it — is
+//! `alo_canvas::camera`'s and is tested there, against spans no compositor has to
+//! be started to build. What is held **here** is everything that arithmetic cannot
+//! see: that a chord reaches it, that Ctrl chooses the zoom road and its absence
+//! chooses the pan road, and that the frames handed to the fit are the ones
+//! actually open.
+//!
+//! That division is the lesson of this seam's first landing, where the zoom was
+//! applied to a frame's size and not its position: a test of the arithmetic alone
+//! passed while the compositor drew one of two windows.
+#![expect(
+    clippy::expect_used,
+    reason = "an unexpected None or Err here is the failure this test reports"
+)]
+
+use super::support::{Application, Fixture};
+use alo_shortcuts::{Action, Shortcuts};
+use smithay::{
+    backend::input::{Axis, AxisSource, KeyState},
+    input::pointer::AxisFrame,
+};
+
+/// `KEY_LEFTCTRL`, as a real keyboard sends it.
+const LEFT_CTRL: u32 = 29;
+
+/// The viewport every test here renders to, so *Show all* has room to fit into.
+const VIEWPORT: (i32, i32) = (1280, 720);
+
+/// A real display with a pointer, an output, and nothing open.
+fn fixture() -> Fixture {
+    let f = Fixture::keyboard();
+    assert!(f.backend(|s| s.enable_pointer()).is_ok());
+    f.render(VIEWPORT, false, 1).expect("an output to look at");
+    f
+}
+
+/// Complete the real XDG handshake and attach a buffer.
+fn mapped(f: &Fixture) -> Application {
+    let mut app = Application::new(f);
+    app.configure();
+    app.attach();
+    app.sync();
+    app
+}
+
+/// Press the chord this action ships with, through the canvas command road.
+fn command(f: &Fixture, action: Action) -> Option<Action> {
+    let settings = Shortcuts::shipped();
+    let chord = settings
+        .chord_for(action)
+        .expect("every canvas action ships with a chord");
+    f.backend(move |s| s.dispatch_canvas_command(&settings, chord))
+        .expect("a shipped canvas chord is one this shell can carry out")
+}
+
+/// How far in this session is looking, in thousandths.
+fn zoom(f: &Fixture) -> u32 {
+    f.backend(|s| s.the_camera().zoom().thousandths())
+}
+
+/// One wheel event over the plane, in notches.
+fn scroll(f: &Fixture, notches: f64) -> bool {
+    f.backend(move |s| {
+        s.pointer_axis(
+            AxisFrame::new(11)
+                .source(AxisSource::Wheel)
+                .value(Axis::Vertical, notches * 15.0),
+        )
+    })
+    .expect("a scroll with real values")
+}
+
+/// **Zoom has a keyboard route, and one press is one rung.**
+///
+/// The third of task 6's acceptance sentences. The chords are the shipped ones
+/// rather than written out here, so a default moved in `alo-shortcuts` moves this
+/// test with it instead of leaving it asserting a key nobody has.
+#[test]
+fn zoom_has_a_keyboard_route_and_one_press_is_one_rung() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert_eq!(zoom(&f), 1000, "a canvas starts at life size");
+
+    assert_eq!(
+        command(&f, Action::ZoomTheCanvasIn),
+        Some(Action::ZoomTheCanvasIn)
+    );
+    assert_eq!(zoom(&f), 1500, "one press in is one rung");
+    assert_eq!(
+        command(&f, Action::ZoomTheCanvasIn),
+        Some(Action::ZoomTheCanvasIn)
+    );
+    assert_eq!(
+        zoom(&f),
+        2000,
+        "a second press is a second rung, not a leap"
+    );
+
+    // **Nothing is accelerated**: presses in quick succession are rungs, not a
+    // curve, so going back is exactly the way it came.
+    assert_eq!(
+        command(&f, Action::ZoomTheCanvasOut),
+        Some(Action::ZoomTheCanvasOut)
+    );
+    assert_eq!(zoom(&f), 1500);
+    assert_eq!(
+        command(&f, Action::ZoomTheCanvasOut),
+        Some(Action::ZoomTheCanvasOut)
+    );
+    assert_eq!(zoom(&f), 1000, "in and out again is exactly life size");
+}
+
+/// **A keyboard zoom holds the middle of the viewport still.**
+///
+/// The first acceptance sentence, for the route that has no pointer to be centred
+/// on. *Within a pixel* is the acceptance's own tolerance; this asserts the plane
+/// unit, which is stricter and is what the integer arithmetic actually promises.
+#[test]
+fn a_keyboard_zoom_holds_the_middle_of_the_viewport() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let middle = (VIEWPORT.0 / 2, VIEWPORT.1 / 2);
+    let under = f.backend(move |s| s.the_camera().plane_of(middle));
+
+    for _ in 0..3 {
+        assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+        assert_eq!(
+            f.backend(move |s| s.the_camera().plane_of(middle)),
+            under,
+            "a zoom moved what was in the middle of the screen"
+        );
+    }
+}
+
+/// **Ctrl says which road a scroll takes, and nothing else does.**
+///
+/// This is the test the wheel route exists for. A scroll over the plane pans; the
+/// same scroll with Ctrl held zooms; and each has to leave the *other* alone, or a
+/// person zooming would also slide the canvas out from under themselves.
+#[test]
+fn ctrl_chooses_the_zoom_road_and_its_absence_chooses_the_pan_road() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    let before = f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y));
+    assert!(scroll(&f, 1.0), "a scroll over the plane pans it");
+    let panned = f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y));
+    assert_ne!(panned, before, "a plain scroll did not pan");
+    assert_eq!(zoom(&f), 1000, "a plain scroll zoomed as well as panning");
+
+    assert!(f.focus(Some(0)).is_ok());
+    assert!(
+        f.key(LEFT_CTRL, KeyState::Pressed)
+            .expect("a real modifier press"),
+        "the Ctrl press was not routed at all"
+    );
+    assert!(scroll(&f, -1.0), "Ctrl and a scroll up zooms in");
+    assert_eq!(zoom(&f), 1500, "Ctrl and one notch is one rung");
+    assert_eq!(
+        f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y)),
+        panned,
+        "a zoom panned the canvas as well"
+    );
+
+    f.key(LEFT_CTRL, KeyState::Released)
+        .expect("a real modifier release");
+    assert!(scroll(&f, 1.0), "the wheel pans again once Ctrl is let go");
+    assert_eq!(zoom(&f), 1500, "letting Ctrl go did not stop the zooming");
+}
+
+/// **A wheel zoom holds the point under the pointer**, which is the acceptance's
+/// first sentence for the route it was written about.
+#[test]
+fn a_wheel_zoom_holds_the_point_under_the_pointer() {
+    let f = fixture();
+    let _app = mapped(&f);
+    super::support::motion(&f, (317.0, 211.0));
+    let at = (317, 211);
+    let under = f.backend(move |s| s.the_camera().plane_of(at));
+
+    assert!(f.focus(Some(0)).is_ok());
+    assert!(
+        f.key(LEFT_CTRL, KeyState::Pressed)
+            .expect("a real modifier press"),
+        "the Ctrl press was not routed at all"
+    );
+    for notches in [-1.0, -1.0, 2.0] {
+        assert!(scroll(&f, notches));
+        assert_eq!(
+            f.backend(move |s| s.the_camera().plane_of(at)),
+            under,
+            "zooming by {notches} notches moved what was under the pointer"
+        );
+    }
+}
+
+/// **Show all leaves every frame inside the viewport, with none clipped.**
+///
+/// The second acceptance sentence, asked of the compositor rather than of the
+/// arithmetic: the frames fitted are the ones actually open, read back through
+/// the same screen transform that draws them.
+#[test]
+fn show_all_leaves_every_frame_inside_the_viewport() {
+    let f = fixture();
+    let _first = mapped(&f);
+    let _second = mapped(&f);
+
+    // Somewhere the frames are certainly not all on screen from.
+    assert!(f.backend(|s| s.pan_the_canvas(-4000, -3000)).is_some());
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+
+    let corners = f.backend(|s| {
+        s.the_frames_on_the_plane()
+            .into_iter()
+            .filter_map(|frame| {
+                Some((
+                    s.the_camera().screen_of(frame.at())?,
+                    s.the_camera().screen_of(frame.opposite()?)?,
+                ))
+            })
+            .collect::<Vec<_>>()
+    });
+    assert!(!corners.is_empty(), "Show all was asked about no frames");
+    for ((left, top), (right, bottom)) in corners {
+        assert!(
+            left >= 0 && top >= 0,
+            "a frame starts off the top-left at ({left}, {top})"
+        );
+        assert!(
+            right <= VIEWPORT.0 && bottom <= VIEWPORT.1,
+            "a frame is clipped, ending at ({right}, {bottom})"
+        );
+    }
+}
+
+/// **Show all with nothing open refuses rather than moving somewhere arbitrary.**
+#[test]
+fn show_all_with_nothing_open_refuses() {
+    let f = fixture();
+    let before = f.backend(|s| s.the_camera());
+    assert_eq!(f.backend(alo_shell::Server::show_all_on_the_canvas), None);
+    assert_eq!(
+        f.backend(|s| s.the_camera()),
+        before,
+        "refusing still moved the camera"
+    );
+}
+
+/// **With nothing focused, the shell cannot see Ctrl, and a scroll pans.**
+///
+/// A rough edge pinned rather than hidden. `Server::keyboard_key` returns before
+/// `KeyboardHandle::input` — which is what advances xkb — when nothing holds
+/// keyboard focus, so the modifier never registers and the wheel takes the pan
+/// road. Established twice: by reading that early return, and by these same
+/// gestures passing the moment a window is focused.
+///
+/// This asserts what happens **today**, so that fixing it is a decision somebody
+/// makes rather than something that quietly starts working. The fix belongs in
+/// `crate::keyboard`, not in the wheel road: it is a question about what the
+/// keyboard is for when nothing is focused.
+#[test]
+fn with_nothing_focused_the_shell_cannot_see_ctrl() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert!(f.focus(None).is_ok(), "nothing focused");
+
+    assert!(
+        !f.key(LEFT_CTRL, KeyState::Pressed)
+            .expect("a real modifier press"),
+        "a key with nothing focused was routed after all, so this edge is gone \
+         and this test should become the opposite assertion"
+    );
+    let before = f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y));
+    assert!(scroll(&f, -1.0));
+    assert_eq!(
+        zoom(&f),
+        1000,
+        "Ctrl was seen despite nothing being focused"
+    );
+    assert_ne!(
+        f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y)),
+        before,
+        "the scroll neither zoomed nor panned"
+    );
+}

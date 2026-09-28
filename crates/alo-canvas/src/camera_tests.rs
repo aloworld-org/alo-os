@@ -173,3 +173,192 @@ fn zooming_out_shows_more_of_the_plane() {
     assert!(out.width() > life.width() && out.height() > life.height());
     assert_eq!(out.width(), 3415);
 }
+
+/// The frames of one arrangement, as *Show all* is handed them.
+fn frames(placed: &[(i32, i32, u32, u32)]) -> Vec<Frame> {
+    placed
+        .iter()
+        .enumerate()
+        .map(|(id, (x, y, width, height))| {
+            Frame::of(
+                u64::try_from(id).unwrap(),
+                At::checked(*x, *y).unwrap(),
+                Size::checked(*width, *height).unwrap(),
+            )
+        })
+        .collect()
+}
+
+/// **The ladder is ordered, and it ends where the type does.**
+///
+/// A rung out of order would make a step go backwards, and a ladder that stopped
+/// short of the bounds would leave zooms a person can set but not step to.
+#[test]
+fn the_ladder_is_ordered_and_reaches_both_bounds() {
+    let mut rungs = Zoom::STOPS.into_iter();
+    let mut last = rungs.next().unwrap();
+    assert_eq!(last, Zoom::FURTHEST_OUT);
+    for rung in rungs {
+        assert!(rung > last, "the ladder goes backwards at {rung}");
+        assert!(
+            Zoom::of(rung).is_ok(),
+            "{rung} is not a zoom this type allows"
+        );
+        last = rung;
+    }
+    assert_eq!(last, Zoom::FURTHEST_IN);
+    assert!(
+        Zoom::STOPS.contains(&Zoom::LIFE_SIZE.thousandths()),
+        "life size is not a rung, so returning to 100 % is a jump rather than a step back"
+    );
+}
+
+/// **A step in and a step out come back to exactly where they started.**
+///
+/// This is the whole argument for a ladder over a multiplier: in integer
+/// thousandths a repeated multiply drifts, and a canvas that cannot return to
+/// life size is one somebody stops trusting.
+#[test]
+fn a_step_in_and_a_step_out_come_back() {
+    for rung in Zoom::STOPS {
+        let zoom = Zoom::of(rung).unwrap();
+        if let Some(further_in) = zoom.one_step_in() {
+            assert_eq!(
+                further_in.one_step_out(),
+                Some(zoom),
+                "stepping in from {rung} and out again did not come back"
+            );
+        }
+        if let Some(further_out) = zoom.one_step_out() {
+            assert_eq!(
+                further_out.one_step_in(),
+                Some(zoom),
+                "stepping out from {rung} and in again did not come back"
+            );
+        }
+    }
+}
+
+/// **The ends have nowhere further to go, and say so rather than staying put
+/// silently.**
+#[test]
+fn the_ends_of_the_ladder_refuse_to_step_past_themselves() {
+    assert_eq!(Zoom::of(Zoom::FURTHEST_IN).unwrap().one_step_in(), None);
+    assert_eq!(Zoom::of(Zoom::FURTHEST_OUT).unwrap().one_step_out(), None);
+    assert!(
+        Zoom::of(Zoom::FURTHEST_IN)
+            .unwrap()
+            .one_step_out()
+            .is_some()
+    );
+    assert!(
+        Zoom::of(Zoom::FURTHEST_OUT)
+            .unwrap()
+            .one_step_in()
+            .is_some()
+    );
+}
+
+/// **A zoom between rungs steps to the rung beyond it, not backwards.**
+///
+/// *Show all* leaves the camera between rungs, because the fit is whatever fits;
+/// the first press afterwards must carry on in the direction it was pressed.
+#[test]
+fn a_zoom_between_rungs_steps_past_itself() {
+    let between = Zoom::of(1200).unwrap();
+    assert_eq!(between.one_step_in(), Some(Zoom::of(1500).unwrap()));
+    assert_eq!(between.one_step_out(), Some(Zoom::LIFE_SIZE));
+}
+
+/// **Show all leaves every frame inside the viewport, with none clipped.**
+///
+/// Task 6's acceptance, held against the frames' own extent — `reached_by` — and
+/// not against any declared bound. Every corner of every frame is asked where it
+/// lands and has to be on the screen, at arrangements that are wide, tall,
+/// scattered across the origin and nearly a point.
+#[test]
+fn show_all_leaves_every_frame_inside_the_viewport() {
+    let viewport = Size::checked(1280, 720).unwrap();
+    let (room_across, room_down) = (1280, 720);
+    for arrangement in [
+        vec![(0, 0, 800, 600)],
+        vec![(0, 0, 800, 600), (2000, 1500, 640, 480)],
+        vec![(-5000, -4000, 300, 200), (9000, 7000, 1920, 1080)],
+        // Wider than it is tall by a factor of thousands, and the other way.
+        vec![(0, 0, 25_000, 10)],
+        vec![(0, 0, 10, 14_000)],
+        // Two frames almost on top of each other: the fit is capped by how far
+        // in the canvas goes, not by the span.
+        vec![(37, -91, 1, 1), (38, -90, 1, 1)],
+    ] {
+        let placed = frames(&arrangement);
+        let span = crate::plane::reached_by(&placed).unwrap();
+        let camera = Camera::showing(span, viewport).unwrap();
+        for frame in &placed {
+            let (left, top) = camera.screen_of(frame.at()).unwrap();
+            let (right, bottom) = camera.screen_of(frame.opposite().unwrap()).unwrap();
+            assert!(
+                left >= 0 && top >= 0,
+                "{arrangement:?}: a frame starts off the top-left at ({left}, {top})"
+            );
+            assert!(
+                right <= room_across && bottom <= room_down,
+                "{arrangement:?}: a frame is clipped, ending at ({right}, {bottom})"
+            );
+        }
+    }
+}
+
+/// **What Show all shows is centred**, to within what integer halving costs.
+///
+/// The tolerance is derived rather than chosen. Centring halves a count of whole
+/// **plane units**, so it can be off by one of those — and a plane unit is
+/// `zoom / 1000` pixels, which above life size is more than a pixel. Adding one
+/// for the screen conversion's own truncation gives the bound below. Asserting a
+/// single pixel here failed at 159 against 161 on a 1200-thousandths fit, which is
+/// the arithmetic behaving exactly as it says it does.
+#[test]
+fn show_all_centres_what_it_shows() {
+    let viewport = Size::checked(1280, 720).unwrap();
+    let placed = frames(&[(400, 300, 800, 600)]);
+    let span = crate::plane::reached_by(&placed).unwrap();
+    let camera = Camera::showing(span, viewport).unwrap();
+    let a_unit = i32::try_from(camera.zoom().thousandths().div_ceil(1000)).unwrap();
+    let slack = a_unit + 1;
+
+    let (left, top) = camera.screen_of(span.from).unwrap();
+    let (right, bottom) = camera.screen_of(span.to).unwrap();
+    assert!(
+        (left - (1280 - right)).abs() <= slack,
+        "left margin {left} and right margin {} differ by more than {slack}",
+        1280 - right
+    );
+    assert!(
+        (top - (720 - bottom)).abs() <= slack,
+        "top margin {top} and bottom margin {} differ by more than {slack}",
+        720 - bottom
+    );
+    // This arrangement is 4:3 in a 16:9 viewport, so height is what limits the
+    // fit and the spare room is at the sides. Margins of zero on both axes would
+    // satisfy the symmetry above while proving nothing.
+    assert!(
+        left > 0,
+        "a fit limited by height left no room at the sides"
+    );
+}
+
+/// **Frames spread further than the canvas goes are refused, not shown clipped.**
+///
+/// *Show all* makes exactly one promise. Breaking it silently is worse than
+/// saying it cannot be kept.
+#[test]
+fn show_all_refuses_frames_it_cannot_fit() {
+    let viewport = Size::checked(1280, 720).unwrap();
+    let placed = frames(&[(0, 0, 10, 10), (900_000, 0, 10, 10)]);
+    let span = crate::plane::reached_by(&placed).unwrap();
+    assert_eq!(
+        Camera::showing(span, viewport),
+        None,
+        "a span no zoom this canvas has can hold was fitted anyway"
+    );
+}

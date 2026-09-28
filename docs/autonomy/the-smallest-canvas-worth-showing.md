@@ -289,7 +289,24 @@ surface-local coordinate and none of it is about the canvas.
 
 ### 6. Zoom, and *Show all*
 
-**Status:** ready. **Depends on:** 1, 5.
+**Status:** **Done, 2026-09-28**, for everything this task's acceptance names.
+**Depends on:** 1, 5.
+
+**What is not done, and it is in the description rather than the acceptance: the
+pinch.** A trackpad pinch is a gesture — `zwp_pointer_gestures_v1` — and this
+compositor has no gesture road at all, so it is not a line to add beside the wheel
+but a protocol to support. It sits with task 5's space-and-drag and two-finger pan,
+which are gestures for the same reason.
+
+**And a rough edge found while building it: with nothing focused the shell cannot
+see Ctrl.** `Server::keyboard_key` returns before `KeyboardHandle::input` — which
+is what advances xkb — when `current_focus()` is `None`, so on a canvas with no
+window focused, Ctrl never registers and the wheel pans. With a window focused and
+the pointer merely out over the plane, which is the case the design file describes,
+it works. Pinned by
+`zoom_and_show_all::with_nothing_focused_the_shell_cannot_see_ctrl` and named in
+`crate::canvas_wheel_zoom`. The fix is a question about what the keyboard is for
+when nothing is focused, and belongs in `crate::keyboard`, not in the wheel road.
 
 Pointer-centred, so the point under the pointer stays under it. A documented
 modifier with the wheel, a pinch, and a keyboard route. **Show all** fits every

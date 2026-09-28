@@ -78,6 +78,69 @@ impl Zoom {
     pub const fn thousandths(self) -> u32 {
         self.0
     }
+
+    /// The zooms a step stands on, from furthest out to furthest in.
+    ///
+    /// **A ladder rather than a multiplier**, for a reason a person notices
+    /// rather than a tidiness one. In integer thousandths a repeated multiply
+    /// does not come back: stepping in by a factor and out again lands beside
+    /// where it started, a little further every time, and a canvas that cannot
+    /// return to life size is one somebody stops trusting. On a ladder, in and
+    /// then out is exactly where you were, because it is the same two rungs.
+    ///
+    /// It is also what *return the canvas to 100 %* needs — `docs/design/the-
+    /// shortcuts-and-the-edges.md` gives that its own key — because a stop the
+    /// steps do not stand on makes that key a jump rather than a step back.
+    ///
+    /// The ends are [`Self::FURTHEST_OUT`] and [`Self::FURTHEST_IN`], so stepping
+    /// can reach the bounds this type already refuses outside of, and the rungs
+    /// are roughly a factor of 1.4 apart — close enough that a step feels like a
+    /// step and not a jump, far enough that crossing the range does not take
+    /// twenty presses.
+    ///
+    /// **This is not an acceleration.** Every press moves exactly one rung,
+    /// however fast they arrive; the plan's task 5 says the same of panning.
+    pub const STOPS: [u32; 17] = [
+        Self::FURTHEST_OUT,
+        70,
+        100,
+        150,
+        200,
+        300,
+        400,
+        500,
+        700,
+        1000,
+        1500,
+        2000,
+        3000,
+        4000,
+        5000,
+        7000,
+        Self::FURTHEST_IN,
+    ];
+
+    /// The next rung in, or [`None`] at the furthest in.
+    ///
+    /// A zoom between rungs — which is where *Show all* leaves one — moves to the
+    /// first rung beyond it rather than snapping backwards.
+    #[must_use]
+    pub fn one_step_in(self) -> Option<Self> {
+        Self::STOPS
+            .into_iter()
+            .find(|stop| *stop > self.0)
+            .and_then(|stop| Self::of(stop).ok())
+    }
+
+    /// The next rung out, or [`None`] at the furthest out.
+    #[must_use]
+    pub fn one_step_out(self) -> Option<Self> {
+        Self::STOPS
+            .into_iter()
+            .rev()
+            .find(|stop| *stop < self.0)
+            .and_then(|stop| Self::of(stop).ok())
+    }
 }
 
 impl Default for Zoom {
@@ -206,6 +269,63 @@ impl Camera {
         let down = at.y.checked_sub(frame.at().y)?;
         let (across, down) = (u32::try_from(across).ok()?, u32::try_from(down).ok()?);
         (across < frame.size().width() && down < frame.size().height()).then_some((across, down))
+    }
+
+    /// The camera that shows all of this, centred, with nothing clipped.
+    ///
+    /// *Show all*, and the plan's task 6 constraint is the whole of its design:
+    /// **the extent is the frames' own**, arrived at here as a
+    /// [`crate::plane::Span`] from [`crate::plane::reached_by`] rather than read
+    /// off a declared bound the frames are free to sit outside.
+    ///
+    /// The zoom is the largest rung-free value that fits — this does not step on
+    /// [`Zoom::STOPS`], because a ladder that had to contain the exact fit for
+    /// every arrangement of frames would not be a ladder. Stepping afterwards
+    /// picks up from the rung beyond wherever this left it.
+    ///
+    /// # Nothing is clipped, by the arithmetic rather than by a margin
+    ///
+    /// The integer divisions all floor, and they floor in the safe direction.
+    /// `zoom` is `room * 1000 / used`, so `used * zoom <= room * 1000`: the span
+    /// fits with a remainder rather than overhanging by one. The centring then
+    /// spends only half of what [`Self::sees`] says is actually visible at that
+    /// zoom, and `sees` is floored the same way, so the far edge lands at or
+    /// inside the viewport's own edge and never a pixel past it.
+    ///
+    /// # Errors
+    /// [`None`] where the frames are spread so far that even
+    /// [`Zoom::FURTHEST_OUT`] cannot hold them, which is refused rather than
+    /// shown clipped: *Show all* that quietly left a frame off the screen would
+    /// be the one promise this function makes, broken silently.
+    #[must_use]
+    pub fn showing(span: crate::plane::Span, viewport: Size) -> Option<Self> {
+        let used = |from: i32, to: i32| u32::try_from(to.checked_sub(from)?).ok();
+        let (across, down) = (used(span.from.x, span.to.x)?, used(span.from.y, span.to.y)?);
+        // A span with no extent in one direction constrains nothing in it.
+        // `Size::checked` refuses a zero side, so no arrangement of real frames
+        // reaches this; it is here because a division is not the place to find
+        // out, and `Span` is a plain pair of corners anybody may build.
+        let fitting = |used: u32, room: u32| -> Option<u32> {
+            if used == 0 {
+                return Some(Zoom::FURTHEST_IN);
+            }
+            u32::try_from(u64::from(room).checked_mul(1000)? / u64::from(used)).ok()
+        };
+        let zoom = fitting(across, viewport.width())?
+            .min(fitting(down, viewport.height())?)
+            .min(Zoom::FURTHEST_IN);
+        let zoom = Zoom::of(zoom).ok()?;
+        // Centred: half the room left over, in plane units, on each side.
+        let seen = Self {
+            at: span.from,
+            zoom,
+        }
+        .sees(viewport)?;
+        let spare = |seen: u32, used: u32| i32::try_from(seen.saturating_sub(used) / 2).ok();
+        let at = span
+            .from
+            .moved_by(-spare(seen.width(), across)?, -spare(seen.height(), down)?)?;
+        Some(Self { at, zoom })
     }
 
     /// How big the plane's visible part is, for a viewport of this size.
