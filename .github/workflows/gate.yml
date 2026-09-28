@@ -162,6 +162,29 @@ jobs:
         with:
           workspaces: ". -> target\ntools/kernel-loop -> target"
 
+      # **The linker the last two gates need**, and the one piece of this file
+      # whose correctness cannot be settled from a lane.
+      #
+      # Measured on this workflow's first runs against other lanes' changes:
+      # `error: linker 'bpf-linker' not found` — the BPF target's clippy gate
+      # compiles `alo-bounding-kernel` and there is no such program on a runner.
+      #
+      # **It is not simply another package.** `crates/alo-bounding-kernel/rust-toolchain.toml`
+      # says why in its own words: `bpf-linker` does not link objects, it reads
+      # the LLVM bitcode `rustc` emits and runs LLVM's own passes over it, so the
+      # LLVM it was built against **has to be** the LLVM that compiler emits. On
+      # one lane's machine that pairing is bpf-linker 0.11.0 against LLVM 22.1.8,
+      # arranged deliberately.
+      #
+      # Installing it here builds it against whatever LLVM this runner has, which
+      # may or may not be the pinned nightly's. If it is not, the failure is the
+      # one that file warns about rather than a missing program, and the honest
+      # conclusion would be that the BPF gates cannot run on a hosted runner and
+      # belong to a lane. That is a measurement nobody has made yet, and this
+      # step is how it gets made — not an assumption that it works.
+      - name: the linker the BPF target needs
+        run: cargo +nightly-2026-06-01 install bpf-linker --locked
+
       - name: the test runner the gates name
         uses: taiki-e/install-action@v2
         with:
