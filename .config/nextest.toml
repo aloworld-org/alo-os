@@ -1,0 +1,103 @@
+# How the tests are run.
+#
+# **Every number here was measured, and two earlier drafts of this file were
+# wrong in ways that produced green-looking runs with failures in them.** The
+# history matters because it is the same mistake twice: a guess about which tests
+# are slow, and a guess about whether isolation was free.
+#
+# Measured on the development PC, 2026-09-28: 8,883 tests across 551 binaries.
+#
+# **Draft one** gave a five-minute limit to everything and the long budget to
+# `alo-converting`, `alo-measuring` and `alo-image` — the crates all three lanes
+# had blamed. It killed 15 passing tests. The measurement says those two packages
+# are **143 seconds of 961**, about 15%, and the minutes are the kernel boundary
+# tests: an attach waits on an RCU-tasks grace period, which `docs/hardware.md`
+# recorded long before anybody noticed it in a gate.
+#
+# **Draft two** raised their budget and they still failed, at exactly 300 seconds
+# each. Not a budget: nextest runs **each test in its own process**, and those
+# tests serialise BPF attachment with a `Mutex` — `on_this_kernel/mod.rs` says in
+# its own words that *four attached programmes at once is not what any of them is
+# measuring*. A mutex serialises within a process, so per-process isolation
+# destroys the guarantee they depend on and every concurrent attach queues behind
+# a grace period until it gives up.
+#
+# So the isolation that makes nextest fast is the thing that breaks these, and a
+# test group is the answer rather than a longer wait.
+
+# ---------------------------------------------------------------------------
+# One boundary at a time
+#
+# `alo-bounding`, `alo-agentd` and `alo-boundaryd` attach BPF programmes to this
+# machine's kernel. There is one kernel, and the `Mutex` those tests were written
+# around cannot reach across processes. `max-threads = 1` puts the serialisation
+# back where nextest can honour it.
+[test-groups.kernel-boundary]
+max-threads = 1
+
+[profile.default]
+# Never stop at the first failing target. Four runs on this machine once found
+# four faults serially that one run found together.
+fail-fast = false
+
+# A minute is when a test is reported as slow; ten periods is when it is killed.
+# The limit is for a test that has stopped answering, not one that is working —
+# the third PC spent 1h38m inside a single test and had to decide by hand whether
+# to keep waiting. That decision is the machine's now.
+slow-timeout = { period = "60s", terminate-after = 10 }
+
+[[profile.default.overrides]]
+filter = 'package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)'
+test-group = 'kernel-boundary'
+slow-timeout = { period = "180s", terminate-after = 10 }
+
+# The tests that measure the machine rather than the code. **Not quarantined** —
+# measurement says they are 15% of the run, so taking them out of the gate buys
+# little and costs a real check. What they get is a budget matching what they do:
+# drive a document converter, walk a filesystem, read an image's own recipe.
+[[profile.default.overrides]]
+filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
+slow-timeout = { period = "300s", terminate-after = 4 }
+
+# ---------------------------------------------------------------------------
+# The merge gate: everything except the boundary
+#
+# **Three crates were 1,241s of a 1,326s run; without them the gate is 166s.** The boundary suite is 1,241 seconds of a
+# 1,326-second run, it is serial by nature, and it costs the same whether a change
+# touched the kernel or corrected a sentence. It runs on `main` after each merge
+# now, under `--profile boundary`, rather than under every merge on every lane.
+#
+# The gate script passes the filter; this profile carries the budgets, so that a
+# person running the same profile by hand gets the same behaviour.
+[profile.gates]
+fail-fast = false
+slow-timeout = { period = "60s", terminate-after = 10 }
+
+[[profile.gates.overrides]]
+filter = 'package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)'
+test-group = 'kernel-boundary'
+slow-timeout = { period = "180s", terminate-after = 10 }
+
+[[profile.gates.overrides]]
+filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
+slow-timeout = { period = "300s", terminate-after = 4 }
+
+# ---------------------------------------------------------------------------
+# The boundary suite, run on main after a merge rather than before one
+#
+# One kernel, one attach at a time, each waiting on an RCU-tasks grace period.
+# These are the tests showing the kernel *imposes* the boundary rather than the
+# daemon following a rule — ADR 0013's claim — so they are the last thing to
+# weaken and the first thing to move off a path three lanes queue behind.
+#
+# A generous budget, and a limit that still exists: on a kernel whose RCU-tasks
+# machinery has stalled an attach never returns at all, uninterruptibly, which
+# `docs/hardware.md` names as the third requirement of a certified machine.
+[profile.boundary]
+fail-fast = false
+slow-timeout = { period = "180s", terminate-after = 10 }
+
+[[profile.boundary.overrides]]
+filter = 'package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)'
+test-group = 'kernel-boundary'
+slow-timeout = { period = "180s", terminate-after = 10 }
