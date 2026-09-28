@@ -133,6 +133,25 @@ enum Asked {
     /// publish nothing.
     Verify,
 
+    /// Run every gate, and nothing else at all.
+    ///
+    /// **For a caller that has no handoff**, which is what a workflow is.
+    /// [`Asked::Verify`] refuses without one, in its own words — *there is no
+    /// handoff waiting, so the gates could be run but no acceptance evidence
+    /// could be checked* — and continuous integration has no task, no
+    /// acceptance and no journal to write. It gates a commit somebody proposed
+    /// and says whether the gates passed.
+    ///
+    /// **It exists so the gate list keeps one definition.** On 2026-09-28
+    /// [`gates::EVERY_GATE`] said `cargo test --workspace` while three machines
+    /// ran `cargo nextest` with an exclusion written nowhere in this tree, and
+    /// each lane's own script had drifted separately without any of them
+    /// noticing — one of those scripts checked that it had run nine gates and
+    /// was satisfied, because it counted them rather than reading them. A
+    /// workflow that spelled the commands again would be the fourth copy, and
+    /// whoever found that drift would be finding it for the second time.
+    Gates,
+
     /// Put a parked task's work back in the tree, on top of today's `main`.
     Recover(String),
 }
@@ -147,6 +166,7 @@ impl Asked {
             Some("stop") => Some(Self::Stop),
             Some("publish") => Some(Self::Publish),
             Some("verify") => Some(Self::Verify),
+            Some("gates") => Some(Self::Gates),
             Some("recover") => args.next().map(Self::Recover),
             _ => None,
         }
@@ -163,6 +183,8 @@ fn main() -> ExitCode {
              \x20 alo-kernel-loop status   what is happening, and what happened last\n\
              \x20 alo-kernel-loop stop     finish the current task and begin no other\n\
              \x20 alo-kernel-loop verify   run every gate and the waiting handoff's evidence\n\
+             \x20 alo-kernel-loop gates    run every gate, and nothing else — for a caller with \
+             no handoff\n\
              \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n\
              \x20 alo-kernel-loop recover <branch>\n\
              \x20\x20\x20\x20\x20\x20\x20\x20\x20 put a parked task's work back in the tree, on \
@@ -184,6 +206,7 @@ fn main() -> ExitCode {
         Asked::Run => run(&at, &ours),
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
+        Asked::Gates => gates_only(&at),
         Asked::Recover(branch) => recover(&at, &ours, &branch),
         Asked::Status => {
             // **Whether anything is running, before what last happened.** A
@@ -720,6 +743,75 @@ fn publish(at: &Path, ours: &Path) -> ExitCode {
 /// the gates are the state of the repository, and an answer that said `ok` while
 /// no acceptance evidence had been looked at is the exact answer this program
 /// exists not to give.
+/// Every gate, and nothing else.
+///
+/// **The whole of it is `gates::all_of_them`**, and that is the point: a caller
+/// with no handoff gets exactly the nine gates this repository defines, run the
+/// way this repository defines them, rather than a second opinion about what
+/// they are. `verify` is this plus the waiting handoff's evidence; `publish` is
+/// that plus the landing.
+///
+/// It takes no list of touched files. `all_of_them` uses one only to forget
+/// what was built of them, which is an optimisation for a machine that gates
+/// the same checkout repeatedly — and a workflow's checkout is new every time,
+/// so there is nothing there to forget.
+///
+/// No lock and no journal. Both belong to a loop that publishes; this runs
+/// nothing else, holds nothing, and leaves nothing behind for the next run to
+/// read.
+fn gates_only(at: &Path) -> ExitCode {
+    // **Said before the silence, because the silence is long.**
+    // `gates::all_of_them` hands its passes back together when the last gate
+    // finishes rather than as each one does, so this prints nothing at all for
+    // as long as the gates take — fifteen minutes when it was first run here.
+    // On a hosted runner a blank log for fifteen minutes is indistinguishable
+    // from a hung job, and it is what gets a run cancelled by whoever is
+    // watching it. Reporting each gate as it passes means giving `all_of_them`
+    // a way to say so, which changes a function `run`, `publish` and `verify`
+    // all share, and that is not this subcommand's change to make.
+    println!(
+        "alo-kernel-loop: running {} gates. They are reported together when the last one \
+         finishes, so silence below this line is not a hung run.",
+        gates::EVERY_GATE.len()
+    );
+    for gate in gates::EVERY_GATE {
+        println!("  {}", gate.named);
+    }
+    let began = Instant::now();
+    match gates::all_of_them(at, &[]) {
+        Ok(passed) => {
+            for named in &passed {
+                println!("PASS {named}");
+            }
+            println!(
+                "alo-kernel-loop: {} of {} gates passed in {:?}.",
+                passed.len(),
+                gates::EVERY_GATE.len(),
+                began.elapsed()
+            );
+            // **The count is checked, not trusted.** `all_of_them` stops at the
+            // first failure, so a short list here without an error would be a
+            // run that quietly skipped gates and reported success — which is
+            // how one lane ran seven of nine for weeks while its own check
+            // counted nine and agreed with itself.
+            if passed.len() == gates::EVERY_GATE.len() {
+                ExitCode::SUCCESS
+            } else {
+                eprintln!(
+                    "alo-kernel-loop: that is fewer than the {} this repository lists, and no \
+                     gate reported a failure. Nothing here may be read as green.",
+                    gates::EVERY_GATE.len()
+                );
+                ExitCode::FAILURE
+            }
+        }
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {why}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 fn verify(at: &Path, ours: &Path) -> ExitCode {
     // As `publish`: the gates take minutes and the distribution they run in
     // stops when nothing is using it.

@@ -1,0 +1,258 @@
+# The nine gates, run on every change and on every queue branch, posting the
+# status `main` requires.
+#
+# **`alo/nine-gates` is a required check on `main` and until this file nothing
+# produced it.** Every status on every pull request was typed by hand with
+# `curl`, by whichever lane was landing, and so was the *second* one each
+# merge-queue branch needs. On 2026-09-28 that cost a pull request sitting at
+# position 1 in the queue with nobody to attest it, another gated twice because
+# the queue rebased it under the first attestation, and a lane that could not
+# merge at all for most of a day.
+#
+# Until that afternoon this file could not have existed: the gates loaded BPF
+# programmes into a privileged kernel, which no hosted runner will give. #217
+# took the three boundary crates off the merge path and removed exactly that
+# obstacle. `image.yml` and `release.yml` already run on hosted `ubuntu-24.04`,
+# so the runner is proven; what was missing was a suite that could run there.
+#
+# # Why `merge_group` is the most important line here
+#
+# GitHub's merge queue builds its own branch — `gh-readonly-queue/main/pr-N-<base>`
+# — and that commit is **not** the pull request's head: it is the change rebased
+# onto the real current `main`. Branch protection asks it for `alo/nine-gates`
+# too, and nothing produced that either. So `on: merge_group` is not a
+# convenience, it is the half of the contract that was being met by a person
+# typing a second `curl`.
+#
+# It is also the design the owner decided on 2026-09-28, out of three that were
+# put to them: **the queue branch is gated by CI, and `alo/nine-gates` on a pull
+# request's head means this commit on the base it was written against.** A gate
+# here takes tens of minutes while `main` lands a commit every fifteen to
+# twenty, so the base moves during essentially every run; attesting the head and
+# the queue branch separately is the normal case rather than the exception.
+#
+# # What this does not do
+#
+# **It does not change branch protection.** The required check stays what it is,
+# this workflow posts it like any lane does, and a lane may keep posting by hand
+# while this proves itself. Making this workflow's own check the required one is
+# a later decision and the owner's — a flag day in the middle of three lanes
+# landing work is how a queue stops for a reason nobody can see.
+#
+# **It does not build the image**, which no gate does either; `docs/quirks/`
+# records that as its own finding.
+#
+# # What a green run here is not evidence of
+#
+# Written down rather than left to be inferred, because *"nine gates green"*
+# already meant three different coverages on three machines on 2026-09-28: one
+# lane carrying the `gates.rs` exclusions, one running `cargo test --workspace`
+# with none at all, and one whose copy of the filter had drifted a merge behind.
+#
+# **A skip is the same colour as a pass.** `alo-shell::the_nested_fixtures`
+# rejoined the merge path in #236, and it starts its own compositor — but on a
+# host with no `weston` it **skips** rather than fails. A hosted runner has none
+# unless this file installs one, so a green run here can cover 23 GLES fixtures
+# fewer than a lane's green run and say nothing about the difference. Read the
+# skip count, not only the colour: nextest prints it on the summary line as
+# *N tests and M binaries skipped*.
+#
+# **And the survey that cleared this workflow had a hole of exactly that shape.**
+# Before it was written the whole suite was run twice on one machine — once as
+# that machine is, once with `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` and `DISPLAY`
+# unset to imitate a runner — and 8,161 tests passed identically both ways, with
+# nothing red in either direction. That is the evidence this file rests on.
+# **But the filter excluded `the_nested_fixtures` at the time, and that was the
+# only binary the question was ever about.** So what was proved is that the merge
+# path *as it was then defined* is indifferent to an inherited session. It proved
+# nothing about the one test whose result is a property of the session — and that
+# test is now back on the merge path.
+#
+# # One definition of the gates, three consumers
+#
+# Nothing here spells a gate. `tools/kernel-loop/src/gates.rs` is what the nine
+# gates *are*, and `alo-kernel-loop gates` runs them. That subcommand was added
+# for this workflow, because `verify` refuses without a handoff and a workflow
+# has none.
+#
+# The alternative — writing the commands into this file — was rejected on
+# evidence rather than taste. On the morning of 2026-09-28 `gates.rs` said
+# `cargo test --workspace` while all three machines ran `cargo nextest` with an
+# exclusion written nowhere in the tree, and one lane's script checked that it
+# had run nine gates and was satisfied, because it counted them instead of
+# reading them. A fourth copy here would recreate that drift in a place nobody
+# thinks to look. It would also be shell where the constitution says Rust:
+# "a language that is not Rust is a bug", and a workflow that *invokes* is
+# configuration where one that *decides* is a program in the wrong language.
+name: the nine gates
+
+on:
+  pull_request:
+  merge_group:
+
+# Only what it needs: read the tree, and write the one status it exists to post.
+permissions:
+  contents: read
+  statuses: write
+
+# A superseded run proves nothing about a commit nobody will merge. The queue's
+# own branches are never cancelled, because the queue is waiting on exactly that
+# answer and a cancelled run there stalls it until the sixty-minute timeout.
+concurrency:
+  group: the-nine-gates-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    # A cold build of this workspace is tens of minutes; a warm one is minutes.
+    # This is above the cold figure and well under the queue's own sixty-minute
+    # timeout, so a genuinely stuck run is killed before the queue gives up on
+    # it rather than after.
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The pinned nightly the BPF gates need, beside the stable the rest use.
+      # `crates/alo-bounding-kernel/rust-toolchain.toml` pins it and rustup
+      # honours that file, so the version is not repeated here.
+      - name: the toolchains this repository pins
+        run: |
+          rustup component add rustfmt clippy
+          rustup toolchain install nightly-2026-06-01 --component rust-src
+
+      # **The compositor the nested fixtures start for themselves.**
+      # `alo-shell::the_nested_fixtures` starts its own parent since #232 rather
+      # than borrowing whatever session it inherits, which is what let it rejoin
+      # the merge path. But it can only start one if `weston` is on the host, and
+      # **without it the binary skips rather than fails** — which is the same
+      # colour as a pass and would quietly make a green run here cover 23 GLES
+      # fixtures fewer than a lane's.
+      #
+      # So it is installed rather than left out, and the skip count is printed
+      # after the gates so the difference is visible if this ever stops working.
+      # Not asserted against a number: the right skip count is a property of the
+      # suite on the day, and a threshold invented here without a runner to
+      # measure on would be a guess dressed as a check.
+      # **And the C libraries this workspace links against.** Measured on this
+      # workflow's own first run: `clippy, warnings denied` failed because
+      # `libudev-sys`' build script panicked — the development files were not
+      # there. A hosted runner carries a compiler and not much else, and the
+      # gates build a compositor.
+      #
+      # The list is the one `image/Containerfile`'s own build stage installs,
+      # translated from Fedora's names to this runner's, so there is one answer
+      # to *what does this workspace need to build* rather than two that drift.
+      # `systemd-devel` is `libudev-dev` here, which is the one that failed.
+      - name: the libraries this workspace links, and a compositor for the
+              fixtures that start their own
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes \
+            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
+            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
+            weston
+          weston --version
+
+      # Cache invalidation dominates, not work: a queue-branch gate on one lane
+      # ran clippy in 2 seconds warm against 85 on a rebase-invalidated run. So
+      # this matters more than the runner's processor count.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target\ntools/kernel-loop -> target"
+
+      - name: the test runner the gates name
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      # **Built here rather than with `cargo run`, so two failures stay apart.**
+      # A supervisor that does not compile and a gate that does not pass are
+      # different things and should not share a step: one is a change to this
+      # repository's own tooling, the other is a change under test, and a log
+      # that conflates them sends whoever reads it to the wrong file.
+      #
+      # *Not* because `cargo run --manifest-path` is broken. On the machine this
+      # workflow was written on, that form fails the readiness check for the
+      # pinned nightly with `No such file or directory (os error 2)` while the
+      # built binary runs the gates normally — same directory, same PATH, same
+      # binary. The laptop's lane could not reproduce it: both forms behaved
+      # identically there. So it is something about that one machine, with no
+      # known cause, and it is recorded here rather than dressed up as a
+      # property of the tool. Three explanations of it have already been wrong.
+      - name: build the supervisor
+        run: cargo build --quiet --manifest-path tools/kernel-loop/Cargo.toml
+
+      # **That the runner ran the binary we think it ran, shown rather than
+      # assumed.** Cargo decides what to rebuild by comparing modification times,
+      # not contents, so a source that arrives older than the artefact built
+      # before it is reported as current and the artefact keeps the old code.
+      # Measured on one lane's machine on 2026-09-28: a source holding
+      # `Some("gates")`, a binary seven seconds newer holding no such string, and
+      # `Finished in 0.02s` over the top of both. One `touch` and it compiled.
+      #
+      # That was caught there because somebody read the mtimes. **Nobody reads
+      # mtimes in CI.** So this asks the binary what it is instead: the usage text
+      # lists every subcommand, and `gates` is the one this workflow depends on.
+      # If the step fails, the build produced something older than this file
+      # expects and the gates that follow would be measuring the wrong thing.
+      #
+      # It is checked here and not left to the gates themselves, because a stale
+      # supervisor might still run nine gates perfectly well — on the wrong
+      # definition of them.
+      - name: the supervisor is the one this file expects
+        run: |
+          ./tools/kernel-loop/target/debug/alo-kernel-loop 2>&1 | tee /tmp/the-usage.log || true
+          grep -q 'alo-kernel-loop gates' /tmp/the-usage.log || {
+            echo "REFUSED: the built supervisor has no 'gates' subcommand."
+            echo "Its usage above is what it actually offers. The build is older than"
+            echo "this workflow expects, which is how a stale artefact passes a gate."
+            exit 1
+          }
+
+      # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
+      # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
+      # slept and NTP stepped the clock forward mid-gate.
+      - name: the nine gates
+        run: |
+          began=$(cut -d. -f1 /proc/uptime)
+          set -o pipefail
+          ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1 | tee /tmp/the-gates.log
+          echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
+
+      # **What was not run, beside what passed.** A skip is the same colour as a
+      # pass, so this puts the count where somebody comparing a CI run against a
+      # lane's run can see it. Measured on one lane's machine on 2026-09-28 for
+      # comparison: *50 tests and 35 binaries skipped*, with weston present. A
+      # number much larger than that here means something this runner has not
+      # got, most likely the compositor above.
+      #
+      # It does not fail on the number. The right count is a property of the
+      # suite on the day, and a threshold invented without a runner to measure on
+      # would be a guess wearing the clothes of a check.
+      - name: what was skipped
+        if: always()
+        run: |
+          grep -oE '[0-9]+ tests and [0-9]+ binaries skipped' /tmp/the-gates.log | tail -1 \
+            || echo "no skip line in the gates' output — the tests gate may not have run"
+
+      # **The status `main` requires**, on whichever commit is being gated: the
+      # pull request's head, or the queue branch's own. `github.event.after` is
+      # the queue branch's head on a `merge_group` event and empty otherwise.
+      #
+      # It runs only on success. A failed gate posts nothing at all rather than
+      # posting a failure, because a lane may still land by hand while this
+      # proves itself, and a red status this workflow wrote would block a commit
+      # a person had gated properly on a machine with a kernel.
+      - name: post alo/nine-gates
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.event.after || github.sha }}
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state=success \
+            -f context=alo/nine-gates \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f description="all nine, on this tree, by the workflow"
