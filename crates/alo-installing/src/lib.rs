@@ -72,7 +72,7 @@ pub use program::{EVERY_PROGRAM, Program, Ran};
 pub use running::OnThisMachine;
 pub use sequence::install;
 pub use tidying::{Tidied, tidy_up};
-pub use told::{NotTold, THE_CHOICE, Told};
+pub use told::{NotTold, REPLACING, THE_CHOICE, THE_REPLACING, Told};
 pub use verifying::{Verified, Verifying};
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
 pub use writing::Writing;

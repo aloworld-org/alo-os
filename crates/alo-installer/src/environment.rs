@@ -33,7 +33,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_installing::DiskName;
+use alo_installing::{DiskName, REPLACING, Replacing};
 use ring::digest::{SHA256, digest};
 
 use crate::machine::TheMachine;
@@ -61,6 +61,15 @@ pub const THE_CHOICE: &str = "EFI/BOOT/chosen.cfg";
 
 /// What the choice's one line begins with; the disk's name follows it.
 pub const THE_CHOICE_BEGINS: &str = "set alo_installing_to=";
+
+/// What the choice's second line begins with, on the one road that replaces the
+/// system already on the disk.
+///
+/// `image/installing/grub.cfg` sets this variable empty before it sources the
+/// choice, and passes it on as `alo.installing.replacing=`. So a choice without
+/// this line is the ordinary road -- which is what a truncated file, a file from
+/// an older release and an ordinary install all have to mean.
+pub const THE_REPLACING_BEGINS: &str = "set alo_installing_replacing=";
 
 /// The SHA-256 of [`THE_LIST`], in hexadecimal, as the release that built this
 /// program set it — or nothing, for a program that is not a release.
@@ -152,10 +161,29 @@ impl TheEnvironment {
     }
 }
 
-/// The one line that tells the environment which disk to install onto.
+/// What tells the environment which disk to install onto, and on which road.
+///
+/// One line on the ordinary road. Two on the road that replaces the system
+/// already on the disk, and the second line is written **only** there.
+///
+/// **The absence of the second line is the ordinary road, deliberately.** The
+/// loader sets the variable empty before sourcing this file, so a file that was
+/// truncated, a file written by an older release, and a file written for an
+/// ordinary install all mean the same safe thing. Nothing has to go right for a
+/// machine to *not* erase itself.
+///
+/// The road is [`Replacing`] rather than a flag because that enum exists, in its
+/// own words, so that no caller can pass a `true` by accident. The word written
+/// is `alo-installing`'s own [`REPLACING`], never a second spelling of it here.
 #[must_use]
-pub fn the_choice(disk: &DiskName) -> String {
-    format!("{THE_CHOICE_BEGINS}{}\n", disk.as_str())
+pub fn the_choice(disk: &DiskName, replacing: Replacing) -> String {
+    let choice = format!("{THE_CHOICE_BEGINS}{}\n", disk.as_str());
+    match replacing {
+        Replacing::Nothing => choice,
+        Replacing::TheSystemOnTheDisk => {
+            format!("{choice}{THE_REPLACING_BEGINS}{REPLACING}\n")
+        }
+    }
 }
 
 /// A path inside the area, beneath a root on this machine.
@@ -300,12 +328,48 @@ mod tests {
     fn the_choice_is_one_line_naming_the_disk() {
         let disk = DiskName::named("wwn-0x60022480aaaabbbbccccddddeeeeffff").unwrap();
         assert_eq!(
-            the_choice(&disk),
+            the_choice(&disk, Replacing::Nothing),
             "set alo_installing_to=wwn-0x60022480aaaabbbbccccddddeeeeffff\n"
         );
         assert_eq!(
             beneath(Path::new("E:"), "EFI/BOOT/chosen.cfg"),
             Path::new("E:").join("EFI").join("BOOT").join("chosen.cfg")
         );
+    }
+
+    /// **Only the replacing road writes the second line, and the environment
+    /// reads back the road that was written** — on both roads.
+    ///
+    /// The second half is the part worth having: the two crates are checked
+    /// against each other through the command line the loader really builds,
+    /// rather than each being checked against my idea of the other.
+    #[test]
+    fn only_the_replacing_road_writes_it_and_the_environment_reads_it_back() {
+        use alo_installing::{THE_CHOICE as CHOICE_WORD, THE_REPLACING, Told};
+
+        let disk = DiskName::named("wwn-0x60022480aaaabbbbccccddddeeeeffff").unwrap();
+        let ordinary = the_choice(&disk, Replacing::Nothing);
+        let replacing = the_choice(&disk, Replacing::TheSystemOnTheDisk);
+
+        assert!(!ordinary.contains(THE_REPLACING_BEGINS));
+        assert_eq!(
+            replacing,
+            format!("{ordinary}{THE_REPLACING_BEGINS}{REPLACING}\n")
+        );
+
+        // What `image/installing/grub.cfg` builds: both variables passed every
+        // time, the second empty unless the choice set it.
+        for (choice, replaces) in [(&ordinary, false), (&replacing, true)] {
+            let said = choice
+                .lines()
+                .find_map(|line| line.strip_prefix(THE_REPLACING_BEGINS))
+                .unwrap_or_default();
+            let line = format!("{CHOICE_WORD}{} {THE_REPLACING}{said}", disk.as_str());
+            // unwrap, not expect: this module allows the first and denies the
+            // second, and the line being asserted on is in the message anyway.
+            let told = Told::from_the_command_line(&line).unwrap();
+            assert_eq!(told.replaces_what_is_there(), replaces, "{line}");
+            assert_eq!(told.disk().as_str(), disk.as_str());
+        }
     }
 }
