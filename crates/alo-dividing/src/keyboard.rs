@@ -55,7 +55,16 @@ pub const fn side_for(action: Action) -> Option<Side> {
         | Action::NextWindow
         | Action::PreviousWindow
         | Action::NextApplication
-        | Action::PreviousApplication => None,
+        | Action::PreviousApplication
+        // The canvas's own three. A division is a split of one display's room
+        // between windows; zooming the surface they sit on and fitting all of
+        // them on the screen change what is seen rather than how the room is
+        // shared, so none of them is a keyboard split. Written out rather than
+        // caught by a wildcard, because the next action added should make this
+        // file refuse to compile until somebody has decided which it is.
+        | Action::ZoomTheCanvasIn
+        | Action::ZoomTheCanvasOut
+        | Action::ShowAllOnTheCanvas => None,
     }
 }
 

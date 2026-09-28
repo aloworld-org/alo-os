@@ -37,7 +37,7 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 11] = [
+const SHIPPED: [(Action, Chord); 14] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
@@ -51,6 +51,17 @@ const SHIPPED: [(Action, Chord); 11] = [
     (
         Action::PreviousApplication,
         Chord::shipped(SUPER_SHIFT, Key::Tab),
+    ),
+    // The canvas, from `docs/design/the-shortcuts-and-the-edges.md`. Plus and
+    // Minus are the keys that *print* those characters on the person's own
+    // keyboard, which `crate::key`'s own header is about: a German keyboard has
+    // a `+` of its own and an American one reaches it with Shift, and neither
+    // person should have to know that to read their own shortcut.
+    (Action::ZoomTheCanvasIn, Chord::shipped(SUPER, Key::Plus)),
+    (Action::ZoomTheCanvasOut, Chord::shipped(SUPER, Key::Minus)),
+    (
+        Action::ShowAllOnTheCanvas,
+        Chord::shipped(SUPER, Key::Digit0),
     ),
 ];
 
