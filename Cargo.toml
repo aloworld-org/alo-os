@@ -88,6 +88,7 @@ members = [
   "crates/alo-overlay",
   "crates/alo-picking",
   "crates/alo-portals",
+  "crates/alo-portald",
   "crates/alo-protocol",
   "crates/alo-proxy",
   "crates/alo-reconciling",
