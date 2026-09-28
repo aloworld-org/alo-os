@@ -254,20 +254,22 @@ fn show_all_with_nothing_open_refuses() {
     );
 }
 
-/// **With nothing focused, the shell cannot see Ctrl, and a scroll pans.**
+/// **Ctrl is seen with nothing focused at all, and the wheel still zooms.**
 ///
-/// A rough edge pinned rather than hidden. `Server::keyboard_key` returns before
-/// `KeyboardHandle::input` — which is what advances xkb — when nothing holds
-/// keyboard focus, so the modifier never registers and the wheel takes the pan
-/// road. Established twice: by reading that early return, and by these same
-/// gestures passing the moment a window is focused.
+/// This test used to assert the opposite, and pinned it deliberately so that
+/// changing it would be a decision. This is that decision.
 ///
-/// This asserts what happens **today**, so that fixing it is a decision somebody
-/// makes rather than something that quietly starts working. The fix belongs in
-/// `crate::keyboard`, not in the wheel road: it is a question about what the
-/// keyboard is for when nothing is focused.
+/// `keyboard_key` returned before `KeyboardHandle::input` — which is what
+/// advances XKB — whenever `current_focus()` was `None`, so on a canvas with no
+/// window focused the compositor could not read its own modifiers and a
+/// Ctrl+wheel panned. A compositor has to know what is held to answer for its own
+/// gestures; only forwarding to a client depends on focus.
+///
+/// **The two halves are asserted separately**, because the fix is only right if
+/// both hold: the shell sees the modifier, *and* no client was told about a key
+/// pressed while nothing was focused.
 #[test]
-fn with_nothing_focused_the_shell_cannot_see_ctrl() {
+fn ctrl_is_seen_with_nothing_focused_and_the_wheel_still_zooms() {
     let f = fixture();
     let _app = mapped(&f);
     assert!(f.focus(None).is_ok(), "nothing focused");
@@ -275,19 +277,181 @@ fn with_nothing_focused_the_shell_cannot_see_ctrl() {
     assert!(
         !f.key(LEFT_CTRL, KeyState::Pressed)
             .expect("a real modifier press"),
-        "a key with nothing focused was routed after all, so this edge is gone \
-         and this test should become the opposite assertion"
+        "a key pressed with nothing focused was reported as delivered to a client"
     );
     let before = f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y));
-    assert!(scroll(&f, -1.0));
+    assert!(
+        scroll(&f, -1.0),
+        "Ctrl and a scroll up zooms with nothing focused"
+    );
+    assert_eq!(
+        zoom(&f),
+        1500,
+        "the shell could not see Ctrl with nothing focused"
+    );
+    assert_eq!(
+        f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y)),
+        before,
+        "the zoom panned the canvas as well"
+    );
+
+    // And letting go is seen too, so the modifier does not stick.
+    assert!(
+        !f.key(LEFT_CTRL, KeyState::Released)
+            .expect("a real modifier release"),
+        "a key released with nothing focused was reported as delivered to a client"
+    );
+    assert!(scroll(&f, -1.0), "the wheel pans again once Ctrl is let go");
+    assert_eq!(zoom(&f), 1500, "Ctrl stayed held after it was released");
+}
+
+/// Pinch the plane, as a touchpad does: begin, some scales, end.
+fn pinch(f: &Fixture, scales: &[f64]) {
+    f.backend(|s| s.pointer_pinch_begin(2, 20))
+        .expect("a pinch begins on a seat with a pointer");
+    for scale in scales {
+        let scale = *scale;
+        f.backend(move |s| s.pointer_pinch_update(scale, 0.0, (0.0, 0.0), 21))
+            .expect("a pinch update with real values");
+    }
+    f.backend(|s| s.pointer_pinch_end(false, 22))
+        .expect("a pinch ends");
+}
+
+/// **A pinch zooms the canvas, and its scale is against where it began.**
+///
+/// The plan's task 6 names a pinch beside the wheel, and it needed a protocol
+/// rather than a branch: `zwp_pointer_gestures_v1`. The scale a touchpad reports
+/// is absolute against the moment the fingers went down, so two updates of the
+/// same scale are the same zoom rather than that zoom twice — which is the
+/// difference between moving a thing with your hand and accelerating it.
+#[test]
+fn a_pinch_zooms_the_canvas_by_the_scale_it_reports() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert_eq!(zoom(&f), 1000);
+
+    pinch(&f, &[2.0]);
+    assert_eq!(
+        zoom(&f),
+        2000,
+        "a pinch to twice the size did not double the zoom"
+    );
+
+    // Back to life size, then the same scale sent twice in one gesture.
+    pinch(&f, &[0.5]);
+    assert_eq!(zoom(&f), 1000);
+    pinch(&f, &[1.5, 1.5, 1.5]);
+    assert_eq!(
+        zoom(&f),
+        1500,
+        "the same scale three times was spent three times, so a pinch accelerates"
+    );
+}
+
+/// **A pinch holds the point under the fingers**, which is task 6's acceptance
+/// for every zoom road it names.
+#[test]
+fn a_pinch_holds_the_point_under_the_pointer() {
+    let f = fixture();
+    let _app = mapped(&f);
+    super::support::motion(&f, (409.0, 277.0));
+    let at = (409, 277);
+    let under = f.backend(move |s| s.the_camera().plane_of(at));
+
+    pinch(&f, &[1.5, 2.0, 1.2]);
+    assert_eq!(
+        f.backend(move |s| s.the_camera().plane_of(at)),
+        under,
+        "a pinch moved what was under the fingers"
+    );
+}
+
+/// **A pinch past the end of the zoom range rests there rather than refusing.**
+///
+/// The one place the canvas clamps, and it is a person's fingers that make it
+/// so: they do not stop at `FURTHEST_IN`, and abandoning the gesture would leave
+/// the next update fighting the one before it.
+#[test]
+fn a_pinch_past_the_end_rests_at_the_end() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    pinch(&f, &[1000.0]);
+    assert_eq!(zoom(&f), alo_canvas::Zoom::FURTHEST_IN);
+    pinch(&f, &[0.000_001]);
+    assert_eq!(zoom(&f), alo_canvas::Zoom::FURTHEST_OUT);
+}
+
+/// **A pinch that never began moves nothing**, so a stray update from a device
+/// that was reset cannot zoom a canvas nobody is touching.
+#[test]
+fn an_update_with_no_pinch_in_progress_moves_nothing() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let before = f.backend(|s| s.the_camera());
+
+    assert!(f.focus(None).is_ok());
+    assert!(
+        !f.backend(|s| s.pointer_pinch_update(4.0, 0.0, (0.0, 0.0), 30))
+            .expect("an update with real values"),
+        "an update with no pinch in progress reported that something moved"
+    );
+    assert_eq!(f.backend(|s| s.the_camera()), before);
+}
+
+/// **A scale that is not a number is refused rather than turned into a zoom.**
+#[test]
+fn a_pinch_with_no_real_scale_is_refused() {
+    let f = fixture();
+    let _app = mapped(&f);
+    for scale in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(
+            f.backend(move |s| s.pointer_pinch_update(scale, 0.0, (0.0, 0.0), 31))
+                .is_err(),
+            "{scale} was accepted as a pinch"
+        );
+    }
+}
+
+/// **Turning off two-finger pinch zoom turns it off on the canvas too.**
+///
+/// `alo_desktops::gesture_settings::Preferences::pinch` is the person's setting
+/// and it is named *enable two-finger pinch zoom*. It used to gate only the
+/// gesture recogniser — and the canvas reads the touchpad directly rather than
+/// through that recogniser, so for one landing the setting was a lie about the
+/// single gesture it names.
+#[test]
+fn a_person_who_turns_pinch_zoom_off_is_not_pinch_zoomed() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    let off = alo_desktops::gesture_settings::Preferences {
+        pinch: false,
+        ..alo_desktops::gesture_settings::Preferences::default()
+    };
+    f.backend(move |s| s.gestures_are_configured(off));
+
+    assert!(
+        !f.backend(|s| s.pointer_pinch_begin(2, 40))
+            .expect("a pinch begins on a seat with a pointer"),
+        "a pinch began on the plane with pinch zoom turned off"
+    );
+    pinch(&f, &[2.0]);
     assert_eq!(
         zoom(&f),
         1000,
-        "Ctrl was seen despite nothing being focused"
+        "the canvas zoomed with pinch zoom turned off"
     );
-    assert_ne!(
-        f.backend(|s| (s.the_camera().at().x, s.the_camera().at().y)),
-        before,
-        "the scroll neither zoomed nor panned"
+
+    // And back on again, so the setting is read each time rather than at start-up.
+    f.backend(|s| {
+        s.gestures_are_configured(alo_desktops::gesture_settings::Preferences::default())
+    });
+    pinch(&f, &[2.0]);
+    assert_eq!(
+        zoom(&f),
+        2000,
+        "turning pinch zoom back on did not restore it"
     );
 }

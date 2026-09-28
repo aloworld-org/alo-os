@@ -15,7 +15,12 @@ fn keyboard_keymap_focus_and_keys_are_isolated_between_clients() {
     );
     assert!(first.events.keyboard.keymap.starts_with("xkb_keymap"));
     assert_eq!(first.events.keyboard.repeat, Some((25, 600)));
+    // Pressed with nothing focused: no client is told, and the seat now
+    // remembers it is down — so it is let go again before the run below presses
+    // it for real. This used to need no release, because a key with no focus was
+    // not remembered at all; `Server::keyboard_key` says why that changed.
     assert_eq!(fixture.key(30, Pressed).ok(), Some(false));
+    assert_eq!(fixture.key(30, Released).ok(), Some(false));
     first.configure();
     first.attach();
     first.sync();
@@ -106,7 +111,10 @@ fn unmap_and_disconnect_clear_focus_without_redirecting_keys() {
     assert_eq!(fixture.key(42, Pressed).ok(), Some(true));
     drop(second);
     fixture.wait_for((1, 0));
+    // As above: unfocused presses are remembered now, so this one is released
+    // before the focused press below.
     assert_eq!(fixture.key(30, Pressed).ok(), Some(false));
+    assert_eq!(fixture.key(30, Released).ok(), Some(false));
     first.configure();
     first.attach();
     first.sync();

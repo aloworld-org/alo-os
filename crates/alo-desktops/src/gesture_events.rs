@@ -93,8 +93,6 @@ pub enum Intent {
         /// Vertical delta or no report.
         vertical: Option<f64>,
     },
-    /// Multiply the application's current zoom by this positive factor.
-    Zoom(f64),
     /// Pass through the ordinary desktop switching road, including edge refusal.
     Desktop(Switch),
 }

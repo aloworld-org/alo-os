@@ -19,12 +19,19 @@
 //!   because a scroll cancels a swipe it had begun and it has to see that; what
 //!   is refused is the answer, and the event goes on to the road that already
 //!   handles it.
-//! - **`Zoom`** is not, because nothing in this compositor can zoom an
-//!   application. A pinch therefore reaches the recogniser (it is a gesture
-//!   event and a pinch cancels a swipe, which the recogniser has to see) and
-//!   its answer is refused rather than silently swallowed: `zoom_is_not_wired`
-//!   below says so by name, and this is a gap in the shell rather than a
-//!   decision about pinching.
+//! - **`Zoom` no longer exists to refuse.** There was an `Intent::Zoom`, this
+//!   file returned `false` for it, and the reason given was that nothing in this
+//!   compositor could zoom anything. The canvas can now — a pinch over the plane
+//!   zooms it through `crate::canvas_pinch` — and that made the old answer not
+//!   merely unused but wrong to keep: it reported **once, at the end of the
+//!   gesture**, with the scale the fingers finished at, while a canvas has to
+//!   move while they are still moving. Anybody wiring it up later would have
+//!   spent one pinch twice, and the only thing standing in their way was a test
+//!   asserting that nobody had.
+//!
+//!   So it is gone from `alo_desktops::gesture_events` rather than kept refused.
+//!   A pinch still reaches the recogniser, because a pinch cancels a swipe it had
+//!   begun and it has to see that; it simply answers nothing now.
 //!
 //! # Where a swipe goes when there is no display
 //!
@@ -61,8 +68,11 @@ impl crate::Server {
                 self.swipe_switched_desktop(switch);
                 true
             }
-            // Handed back rather than acted on; see this file's header.
-            Intent::Scroll { .. } | Intent::Zoom(_) => false,
+            // Handed back rather than acted on; see this file's header. A
+            // scroll is already sent to the focused client by
+            // `crate::libinput_scroll`, and carrying it out here as well would
+            // scroll twice for one movement of somebody's fingers.
+            Intent::Scroll { .. } => false,
         }
     }
 

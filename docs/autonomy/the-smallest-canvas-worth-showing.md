@@ -292,21 +292,36 @@ surface-local coordinate and none of it is about the canvas.
 **Status:** **Done, 2026-09-28**, for everything this task's acceptance names.
 **Depends on:** 1, 5.
 
-**What is not done, and it is in the description rather than the acceptance: the
-pinch.** A trackpad pinch is a gesture — `zwp_pointer_gestures_v1` — and this
-compositor has no gesture road at all, so it is not a line to add beside the wheel
-but a protocol to support. It sits with task 5's space-and-drag and two-finger pan,
-which are gestures for the same reason.
+**The pinch is done too, 2026-09-28**, and it was a protocol rather than a line
+beside the wheel: `zwp_pointer_gestures_v1` is advertised now, so a pinch also
+reaches an application that wants one. On the plane it zooms **continuously** —
+the scale a touchpad reports is measured against the moment the fingers went
+down, so the canvas is that starting zoom times that scale, all the way through
+the gesture. `crate::canvas_pinch`.
 
-**And a rough edge found while building it: with nothing focused the shell cannot
-see Ctrl.** `Server::keyboard_key` returns before `KeyboardHandle::input` — which
-is what advances xkb — when `current_focus()` is `None`, so on a canvas with no
-window focused, Ctrl never registers and the wheel pans. With a window focused and
-the pointer merely out over the plane, which is the case the design file describes,
-it works. Pinned by
-`zoom_and_show_all::with_nothing_focused_the_shell_cannot_see_ctrl` and named in
-`crate::canvas_wheel_zoom`. The fix is a question about what the keyboard is for
-when nothing is focused, and belongs in `crate::keyboard`, not in the wheel road.
+`alo-desktops`' recogniser already answered `Intent::Zoom` and the shell already
+refused it; that refusal stands, under a new reason. It answers **once, at the end
+of the gesture**, and a canvas has to move while the fingers do — so carrying it
+out as well would spend one pinch twice. Its test is renamed from
+*because nothing here can* to
+`a_zoom_is_not_carried_out_because_the_canvas_already_did_it`.
+
+**And the rough edge found while building it is fixed rather than named: the shell
+sees a modifier with nothing focused.** `Server::keyboard_key` returned before
+`KeyboardHandle::input`, which is what advances xkb, whenever `current_focus()`
+was `None` — so Ctrl+wheel over an empty canvas panned. A compositor has to know
+what is held to answer for its own gestures; only *forwarding* depends on focus.
+The key now always reaches xkb and reaches a client only when one is focused.
+
+That split *pressed* into two sets and both had to be kept: `pressed_keys` is what
+is physically down, `Keyboard::forwarded` is what a client was told about, and the
+two questions that meant the second — *is an application holding a chord*, *is this
+key owned by ordinary client routing* — now read it. The release on a focus change
+narrowed with it, or somebody holding Ctrl over empty canvas and then focusing a
+window would have had it released underneath their own finger.
+
+**Still not done, and still gestures:** task 5's space-and-drag and the trackpad
+two-finger pan.
 
 Pointer-centred, so the point under the pointer stays under it. A documented
 modifier with the wheel, a pinch, and a keyboard route. **Show all** fits every

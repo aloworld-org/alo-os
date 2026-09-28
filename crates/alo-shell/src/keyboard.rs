@@ -6,7 +6,7 @@ use smithay::{
     delegate_seat,
     input::{
         Seat,
-        keyboard::{FilterResult, KeyboardHandle, XkbConfig},
+        keyboard::{FilterResult, KeyboardHandle, Keycode, XkbConfig},
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{SERIAL_COUNTER, Serial},
@@ -46,19 +46,36 @@ pub(crate) struct Keyboard {
     pub(crate) handle: KeyboardHandle<Surfaces>,
     /// Last accepted timestamp, reused for releases synthesized on focus loss.
     pub(crate) time: u32,
+    /// The keys a client was actually told about, which is not every key held.
+    ///
+    /// **The shell tracks keys with nothing focused, so *pressed* means two
+    /// things and they have to be kept apart.** `KeyboardHandle::pressed_keys`
+    /// is every key physically down, which is what this compositor reads its own
+    /// modifiers from; this is the subset some client was sent, which is what
+    /// *is a client holding this* means. Smithay draws the same distinction and
+    /// keeps its `forwarded_pressed_keys` `pub(crate)`, so this is that set,
+    /// kept here because two questions that used to have one answer now have
+    /// two.
+    pub(crate) forwarded: std::collections::HashSet<Keycode>,
     /// Latest delivered real key event; consumed by popup initiation, never synthesized.
     pub(crate) popup_key: Option<(Serial, WlSurface)>,
 }
 
 impl Keyboard {
     /// Native name opening must not acquire application modifier chords.
+    ///
+    /// Asked of the **forwarded** set: a chord held over empty canvas belongs to
+    /// no application, so there is nothing to acquire it from.
     pub(crate) fn has_pressed_keys(&self) -> bool {
-        !self.handle.pressed_keys().is_empty()
+        !self.forwarded.is_empty()
     }
 
     /// Whether a valid evdev key is already owned by ordinary client routing.
+    ///
+    /// The forwarded set for the same reason: a key no client was told about is
+    /// not one ordinary client routing owns.
     pub(crate) fn client_holds(&self, code: u32) -> bool {
-        self.handle.pressed_keys().contains(&(code + 8).into())
+        self.forwarded.contains(&(code + 8).into())
     }
 }
 
@@ -84,6 +101,7 @@ impl Server {
             handle,
             time: 0,
             popup_key: None,
+            forwarded: std::collections::HashSet::new(),
         });
         Ok(server)
     }
@@ -113,8 +131,21 @@ impl Server {
 
     /// Route a Linux evdev key from a trusted backend, adding XKB's offset once.
     ///
-    /// Returns false for no focus, duplicate presses or unmatched releases.
-    /// No keys are remembered while unfocused. Call with monotonic milliseconds.
+    /// Returns false for no focus, duplicate presses or unmatched releases —
+    /// the answer is *was a client told*, which is why no focus is still false.
+    ///
+    /// **A key is remembered whether or not anything is focused, and this used to
+    /// say the opposite.** The shell's own modifier state comes from XKB, XKB is
+    /// only advanced by handling the key, and handling was skipped when
+    /// `current_focus()` was `None` — so on a canvas with no window focused,
+    /// holding Ctrl changed nothing the compositor could read and Ctrl+wheel
+    /// panned instead of zooming. A compositor has to know what is held in order
+    /// to answer for its own gestures; only *forwarding* depends on focus.
+    ///
+    /// So the key always reaches XKB and reaches a client only when one is
+    /// focused, and the seat's own record of what it forwarded separates the two
+    /// questions.
+    /// Call with monotonic milliseconds.
     /// The latest delivered press or release may initiate a popup on its focused parent;
     /// another accepted key event, a focus change or a successful grab invalidates
     /// that serial. Synthetic focus-cleanup events cannot initiate. Only matched
@@ -136,23 +167,47 @@ impl Server {
             .ok_or(InputError::Unavailable)?
             .handle
             .clone();
-        if keyboard.current_focus().is_none() {
-            return Ok(false);
-        }
-        let code = (code + 8).into();
+        let code: Keycode = (code + 8).into();
         if keyboard.pressed_keys().contains(&code) == (state == KeyState::Pressed) {
             return Ok(false);
         }
         let serial = SERIAL_COUNTER.next_serial();
         let focus = keyboard.current_focus();
+        // **A release only goes where its press went.** A key pressed with
+        // nothing focused and let go after a window took focus would otherwise
+        // send that window a release for a press it never saw — the very fault
+        // the release-on-focus-change exists to prevent, arriving from the other
+        // direction. So a release is delivered only if this key is one a client
+        // was actually told about.
+        let told_already = self
+            .surfaces
+            .keyboard
+            .as_ref()
+            .is_some_and(|keyboard| keyboard.forwarded.contains(&code));
+        let deliver = focus.is_some() && (state == KeyState::Pressed || told_already);
+        // Intercepting still advances XKB — `input_intercept` records the key and
+        // updates the modifiers before the filter is consulted — so a key sent to
+        // nobody is still a key this compositor knows is down.
         keyboard.input::<(), _>(&mut self.surfaces, code, state, serial, time, |_, _, _| {
-            FilterResult::Forward
+            if deliver {
+                FilterResult::Forward
+            } else {
+                FilterResult::Intercept(())
+            }
         });
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
-            keyboard.popup_key = focus.map(|surface| (serial, surface));
+            keyboard.popup_key = deliver
+                .then(|| focus.as_ref().map(|surface| (serial, surface.clone())))
+                .flatten();
+            if deliver {
+                match state {
+                    KeyState::Pressed => keyboard.forwarded.insert(code),
+                    KeyState::Released => keyboard.forwarded.remove(&code),
+                };
+            }
         }
-        Ok(true)
+        Ok(deliver)
     }
 }
 
@@ -183,7 +238,60 @@ impl Surfaces {
         }
     }
 
-    /// Release pressed keys using the same XKB path before switching recipients.
+    /// Forget every key this seat believes is held.
+    ///
+    /// **For a seat going away, which is not a focus change.** A focus change
+    /// leaves the person's fingers where they are, so
+    /// [`Surfaces::set_keyboard_focus`] releases only what a client was told
+    /// about and lets XKB keep what is physically down. A retirement is the
+    /// opposite: the device is gone, or the seat is paused, and nothing is held
+    /// any more — so XKB's own idea of what is down has to go too, or the next
+    /// session inherits a modifier from the last one.
+    ///
+    /// The releases are intercepted rather than forwarded. Anything that had a
+    /// client has already been told by the focus clear that runs first, and
+    /// telling it twice would be a release it never saw a press for.
+    pub(crate) fn forget_held_keys(&mut self) {
+        let Some(keyboard) = self.keyboard.as_ref() else {
+            return;
+        };
+        let handle = keyboard.handle.clone();
+        let time = keyboard.time;
+        for code in handle.pressed_keys() {
+            handle.input::<(), _>(
+                self,
+                code,
+                KeyState::Released,
+                SERIAL_COUNTER.next_serial(),
+                time,
+                |_, _, _| FilterResult::Intercept(()),
+            );
+        }
+        if let Some(keyboard) = self.keyboard.as_mut() {
+            keyboard.forwarded.clear();
+        }
+    }
+}
+
+impl Surfaces {
+    /// Release the keys a client was told about before switching recipients.
+    ///
+    /// **Only the forwarded ones, and only in the client.** This released every
+    /// key XKB had down, which was the same set while nothing was tracked
+    /// unfocused. It is not the same set any more: somebody holding Ctrl over
+    /// empty canvas and then focusing a window would have had Ctrl released
+    /// underneath their own finger, and the shell would have read no modifier
+    /// until they let go and pressed again.
+    ///
+    /// A key can only be *stuck* in a client that was told it went down, so the
+    /// forwarded set is exactly the set that needs releasing, and it is released
+    /// exactly as before — through `input`, so the client is told **and** the
+    /// modifiers it is sent come out right. A departing client that got releases
+    /// without a modifier update would be left believing Shift was still down.
+    ///
+    /// What changed is only *which* keys: one held over empty canvas was never
+    /// forwarded, so it is not released here and stays held where the shell can
+    /// still read it.
     pub(crate) fn set_keyboard_focus(
         &mut self,
         focus: Option<WlSurface>,
@@ -197,7 +305,12 @@ impl Surfaces {
         if let Some(keyboard) = self.keyboard.as_mut() {
             keyboard.popup_key = None;
         }
-        for code in handle.pressed_keys() {
+        let forwarded: Vec<_> = self
+            .keyboard
+            .as_ref()
+            .map(|keyboard| keyboard.forwarded.iter().copied().collect())
+            .unwrap_or_default();
+        for code in forwarded {
             handle.input::<(), _>(
                 self,
                 code,
@@ -206,6 +319,9 @@ impl Surfaces {
                 time,
                 |_, _, _| FilterResult::Forward,
             );
+        }
+        if let Some(keyboard) = self.keyboard.as_mut() {
+            keyboard.forwarded.clear();
         }
         handle.set_focus(self, focus, SERIAL_COUNTER.next_serial());
         // Smithay 0.7 notifies SeatHandler on entry/replacement, but not clearing.

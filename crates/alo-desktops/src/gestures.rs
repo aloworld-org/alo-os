@@ -39,6 +39,17 @@ impl Gestures {
         self.pending = None;
     }
 
+    /// The settings currently installed, so a caller need not keep a second copy.
+    ///
+    /// A gesture this recogniser is not asked about still belongs to the same
+    /// preferences: the shell's own canvas pinch reads the touchpad directly
+    /// rather than through here, and *two-finger pinch zoom is off* has to mean
+    /// the same thing on both roads. One answer, asked twice.
+    #[must_use]
+    pub const fn preferences(&self) -> Preferences {
+        self.preferences
+    }
+
     /// Decide an extracted event. Disabled, unsupported, malformed, orphaned,
     /// vertical and too-short gestures produce no intent. Malformed sequences
     /// are discarded whole; a fresh begin is required afterwards.
@@ -99,8 +110,15 @@ impl Gestures {
                 if cancelled || pending.kind != kind {
                     return None;
                 }
+                // **A pinch ends here and answers nothing.** It is still
+                // tracked, because a pinch cancels a swipe this recogniser had
+                // begun and it has to see that; what it no longer does is report
+                // a zoom. That answer was the end-of-gesture scale, nothing ever
+                // carried it out, and the canvas now zooms from the raw gesture
+                // while the fingers are still moving — so reporting it here as
+                // well would have been one pinch spent twice.
                 if kind == Kind::Pinch {
-                    return (pending.scale != 1.0).then_some(Intent::Zoom(pending.scale));
+                    return None;
                 }
                 if pending.x.abs() >= SWIPE_DISTANCE && pending.x.abs() > pending.y.abs() * 2.0 {
                     return Some(Intent::Desktop(if pending.x < 0.0 {

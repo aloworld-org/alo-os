@@ -4,7 +4,10 @@ use crate::{InputError, Server, surfaces::Surfaces};
 use smithay::{
     backend::{input::ButtonState, renderer::utils::with_renderer_surface_state},
     desktop::{WindowSurfaceType, utils::under_from_surface_tree},
-    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, PointerHandle},
+    input::pointer::{
+        AxisFrame, ButtonEvent, GesturePinchBeginEvent, GesturePinchEndEvent,
+        GesturePinchUpdateEvent, MotionEvent, PointerHandle,
+    },
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
     utils::{Logical, Point, SERIAL_COUNTER, Serial},
     wayland::compositor::get_parent,
@@ -30,6 +33,12 @@ pub(crate) struct Pointer {
     /// the same reason — see `crate::canvas_wheel_zoom`, which says why the two
     /// remainders are separate.
     pub(crate) unspent_zoom: f64,
+    /// The zoom a pinch on the plane started from, while one is in progress.
+    ///
+    /// `GesturePinchUpdateEvent::scale` is measured against the moment the
+    /// fingers went down, so this is the other half of that measurement. It is
+    /// also what says a pinch is the plane's: see `crate::canvas_pinch`.
+    pub(crate) pinch_from: Option<alo_canvas::Zoom>,
     /// Latest matched real release, valid only while its exact recipient keeps focus.
     pub(crate) popup_release: Option<(Serial, WlSurface)>,
 }
@@ -53,6 +62,7 @@ impl Server {
                 time: 0,
                 unspent_scroll: (0.0, 0.0),
                 unspent_zoom: 0.0,
+                pinch_from: None,
                 popup_release: None,
             });
         }
@@ -287,6 +297,135 @@ impl Server {
         let handle = pointer.handle.clone();
         handle.axis(&mut self.surfaces, frame);
         handle.frame(&mut self.surfaces);
+        Ok(true)
+    }
+
+    /// Begin a touchpad pinch, on the plane or on the application under it.
+    ///
+    /// **Which of the two is decided once, here, and holds for the gesture.** A
+    /// pinch that began over the plane finishes on the plane even if a frame
+    /// arrives under the fingers, because somebody who started pinching the
+    /// canvas is pinching the canvas until they let go — and the opposite, a
+    /// gesture that jumped between recipients mid-way, is how an application ends
+    /// up with an update whose begin it never saw.
+    ///
+    /// # Errors
+    /// [`InputError::PointerUnavailable`] with no pointer on the seat.
+    pub fn pointer_pinch_begin(&mut self, fingers: u32, time: u32) -> Result<bool, InputError> {
+        self.surfaces.prune_pointer_focus();
+        let pointer = self
+            .surfaces
+            .pointer
+            .as_mut()
+            .ok_or(InputError::PointerUnavailable)?;
+        pointer.time = time;
+        if pointer.handle.current_focus().is_none() {
+            // **The person's own setting decides whether a pinch zooms.** It is
+            // `alo_desktops::gesture_settings::Preferences::pinch` — *enable
+            // two-finger pinch zoom* — and it used to gate only the recogniser,
+            // which this road does not go through. A canvas that zoomed anyway
+            // would make that setting a lie about the one gesture it names.
+            if !self.pinch_zoom_is_wanted() {
+                return Ok(false);
+            }
+            self.begin_a_pinch_on_the_plane();
+            return Ok(true);
+        }
+        let handle = pointer.handle.clone();
+        handle.gesture_pinch_begin(
+            &mut self.surfaces,
+            &GesturePinchBeginEvent {
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+                fingers,
+            },
+        );
+        Ok(true)
+    }
+
+    /// Carry a pinch on, to the plane or to the application.
+    ///
+    /// Whether anything moved: on the plane, whether the camera did; on an
+    /// application, that it was told. **`false` for an update belonging to no
+    /// gesture this compositor is spending** — a device that was reset mid-pinch
+    /// can send one, and reporting it as delivered would be a claim about a
+    /// client that heard nothing.
+    ///
+    /// # Errors
+    /// [`InputError::InvalidPointer`] for a scale or a centre that is not a
+    /// number, which a zoom cannot be made of and a client should not be sent.
+    pub fn pointer_pinch_update(
+        &mut self,
+        scale: f64,
+        rotation: f64,
+        delta: (f64, f64),
+        time: u32,
+    ) -> Result<bool, InputError> {
+        if !scale.is_finite() || !rotation.is_finite() || !bounded(delta.0) || !bounded(delta.1) {
+            return Err(InputError::InvalidPointer);
+        }
+        if self.a_pinch_is_on_the_plane() {
+            if let Some(pointer) = self.surfaces.pointer.as_mut() {
+                pointer.time = time;
+            }
+            return Ok(self.pinch_the_plane_to(scale));
+        }
+        let pointer = self
+            .surfaces
+            .pointer
+            .as_mut()
+            .ok_or(InputError::PointerUnavailable)?;
+        pointer.time = time;
+        // No pinch on the plane and nobody focused: this update belongs to a
+        // gesture nothing here is spending, so it reached nobody and says so
+        // rather than reporting a delivery it did not make.
+        if pointer.handle.current_focus().is_none() {
+            return Ok(false);
+        }
+        let handle = pointer.handle.clone();
+        handle.gesture_pinch_update(
+            &mut self.surfaces,
+            &GesturePinchUpdateEvent {
+                time,
+                delta: delta.into(),
+                scale,
+                rotation,
+            },
+        );
+        Ok(true)
+    }
+
+    /// End a pinch, whether it finished or libinput cancelled it.
+    ///
+    /// # Errors
+    /// [`InputError::PointerUnavailable`] with no pointer on the seat.
+    pub fn pointer_pinch_end(&mut self, cancelled: bool, time: u32) -> Result<bool, InputError> {
+        if self.a_pinch_is_on_the_plane() {
+            self.end_the_pinch_on_the_plane();
+            if let Some(pointer) = self.surfaces.pointer.as_mut() {
+                pointer.time = time;
+            }
+            return Ok(true);
+        }
+        let pointer = self
+            .surfaces
+            .pointer
+            .as_mut()
+            .ok_or(InputError::PointerUnavailable)?;
+        pointer.time = time;
+        // As above: an end with no pinch of ours and no client to tell.
+        if pointer.handle.current_focus().is_none() {
+            return Ok(false);
+        }
+        let handle = pointer.handle.clone();
+        handle.gesture_pinch_end(
+            &mut self.surfaces,
+            &GesturePinchEndEvent {
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+                cancelled,
+            },
+        );
         Ok(true)
     }
 

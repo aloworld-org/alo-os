@@ -106,22 +106,6 @@ fn a_swipe_before_any_display_has_arrived_does_nothing() {
     assert!(server.has_no_display());
 }
 
-/// **A pinch is not carried out here, and says so rather than swallowing it.**
-///
-/// Nothing in this compositor zooms an application. Returning `false` hands the
-/// event back to the ordinary road instead of consuming it as a gesture that
-/// was handled — a pinch that vanished into a compositor which did nothing with
-/// it is the shape of a fault nobody finds.
-#[test]
-fn a_zoom_is_not_carried_out_because_nothing_here_can() {
-    let (_directory, mut server) = a_session_with_a_display();
-
-    assert!(
-        !server.carry_out(alo_desktops::gesture_events::Intent::Zoom(2.0)),
-        "a zoom was reported as carried out by a compositor that cannot zoom"
-    );
-}
-
 /// **A scroll is not carried out here, because it is already carried out.**
 ///
 /// `crate::libinput_scroll` sends the axis to the focused client. Doing it here
