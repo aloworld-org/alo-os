@@ -172,6 +172,7 @@ WORKDIR /alo-os
 # the converting service, which is the binary `alo-converting` builds.
 RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
+      --package alo-portald \
       --package alo-converting
 
 # ---------------------------------------------------------------------------
@@ -398,6 +399,13 @@ COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
 # The converting service is in libexec for the same reason (ADR 0039): systemd
 # starts it when something knocks on its socket, and nobody runs it by hand.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec/alo-convertd
+
+# The portal backend, in libexec for the third time and the same reason: the
+# person's own manager starts it when they sign in, and nobody runs it by hand.
+# Without this line the unit added beside it starts a file that is not there,
+# and an installed machine has applications that launch and cannot open or save
+# anything — the whole of what that unit was for.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-portald /usr/libexec/alo-portald
 
 # The office engine, from the checked packages, installed by the base's own
 # package manager so its libraries come from the base rather than from us.
@@ -672,19 +680,23 @@ COPY --chmod=0644 docs/artwork/wallpapers/alo-quiet-horizon.png /usr/share/alo/w
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
-               /usr/libexec/alo-convertd /usr/bin/alo-agentd /usr/bin/ollama \
+               /usr/libexec/alo-convertd /usr/libexec/alo-portald \
+               /usr/bin/alo-agentd /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/systemd/system/alo-sessiond.service \
                /usr/lib/systemd/system/alo-modeld.service \
                /usr/lib/systemd/system/alo-convertd.socket \
                /usr/lib/systemd/system/alo-convertd.service \
+               /usr/lib/systemd/system/alo-compositor.service \
+               /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
+                     alo-compositor.service alo-portald.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
