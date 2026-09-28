@@ -29,6 +29,7 @@
 //! choice, and it is the last thing done before the restart, after the person
 //! agreed to exactly that.
 
+use alo_installing::Replacing;
 use alo_strings::{Filling, Strings, Word};
 use serde::Deserialize;
 
@@ -249,7 +250,10 @@ fn steps(
         &Filling::nothing(),
     );
     let root = std::path::PathBuf::from(letter.root());
-    let choice = environment::the_choice(&chosen.after_the_restart);
+    // The ordinary road, named rather than defaulted: `sequence.rs` offers no
+    // other one yet, and the road that erases a disk will carry its own word
+    // from the consent that named it — never from anything this file decides.
+    let choice = environment::the_choice(&chosen.after_the_restart, Replacing::Nothing);
     for (inside, bytes) in the_environment
         .files()
         .iter()
