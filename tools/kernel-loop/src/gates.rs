@@ -65,6 +65,7 @@
 
 use std::path::Path;
 use std::process::Command;
+use std::time::Instant;
 
 use crate::{what_it_printed, where_it_builds};
 
@@ -263,6 +264,22 @@ pub const EVERY_GATE: &[Gate] = &[
 
 /// Run every gate, stopping at the first that fails.
 ///
+/// Each name comes back with **how long that gate took**, because a total is a
+/// number that cannot be wrong and it told three lanes nothing for a whole day.
+/// `9 of 9 in 2919s` was read perhaps fifty times between them before anybody
+/// asked which line cost the most, and the answer was not the one any of them
+/// would have guessed: **rustdoc at 1637 s, longer than the entire test suite at
+/// 1189 s** — `cargo doc --workspace --no-deps` with warnings denied over 104
+/// crates, measured on the Mac lane 2026-09-29. Nothing printed it, so nobody
+/// knew, and each lane estimated the shape of a gate run from the part it
+/// happened to watch.
+///
+/// The durations go in the strings rather than in a new return type, because
+/// both callers already say those strings somewhere a person reads — one prints
+/// them, one writes them to the journal — and neither puts them anywhere with a
+/// length limit. A richer type would be the better shape and a larger change
+/// than the thing it buys.
+///
 /// # Errors
 /// A sentence naming the gate and the last of what it printed. Stopping at the
 /// first is deliberate: the others' output would be noise around the one thing
@@ -287,15 +304,26 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         // fails both times, and no flag anywhere turns a gate off. What it
         // removes is the transient — the one kind of failure that says nothing
         // about the work.
+        let began = Instant::now();
         let mut refused = match ran(gate, at)? {
             Ok(()) => {
-                passed.push(gate.named.to_owned());
+                passed.push(format!("{} in {:.0?}", gate.named, began.elapsed()));
                 continue;
             }
             Err(why) => why,
         };
+        let again = Instant::now();
         if ran(gate, at)?.is_ok() {
-            passed.push(format!("{} (on the second run)", gate.named));
+            // Both durations, because the first one is how long the failure
+            // took and that is the more interesting of the two when a gate is
+            // failing transiently: a refusal in a second is a different animal
+            // from a refusal in nine minutes.
+            passed.push(format!(
+                "{} in {:.0?} (on the second run; the first refused after {:.0?})",
+                gate.named,
+                again.elapsed(),
+                began.elapsed().saturating_sub(again.elapsed())
+            ));
             continue;
         }
         // **Twice is the work — unless what refused it was the machine.** A
