@@ -43,6 +43,20 @@
 //! last used it* reads as *click a machine to return to where you last were on
 //! it*.
 //!
+//! # And it never stops saying it is elsewhere
+//!
+//! [`Marked`] is what a window carries so a person can tell it is not this
+//! machine. It is **the machine's name — a word**, never a colour, following
+//! `docs/design/who-is-acting.md` and ADR 0010: a signal carried by hue alone is
+//! not a signal. It is shown in every state a window can be in, and there is no
+//! argument a caller could pass to suppress it, because **filling the screen is
+//! the one case it exists for** — every other cue is gone and what is left is a
+//! screen showing a machine.
+//!
+//! A window whose machine the person has removed says
+//! [`Marked::ElsewhereUnnamed`] and never [`Marked::Here`]. A remote window that
+//! looks local is what this costs a password.
+//!
 //! # Work sent to another machine
 //!
 //! [`TheWork`] is what this machine has asked another of the person's machines
@@ -76,6 +90,7 @@ pub mod machine;
 pub mod machines;
 pub mod reaching;
 pub mod refusing;
+pub mod saying_where;
 pub mod sending;
 pub mod words;
 
@@ -85,5 +100,6 @@ pub use machine::{AMachine, AT_MOST, TheName};
 pub use machines::TheMachines;
 pub use reaching::Reaching;
 pub use refusing::NotElsewhere;
+pub use saying_where::Marked;
 pub use sending::{AGoal, APieceOfWork, AT_MOST_A_GOAL, HowItIsGoing, TheWork, WorkId};
 pub use words::{declare_into, elsewhere_words};

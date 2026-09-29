@@ -125,18 +125,19 @@ impl WhichMachines {
             .map(|(window, _)| *window)
     }
 
-    /// Forget every window showing a machine, and say how many there were.
-    ///
-    /// What happens when the person removes a machine: the windows are no
-    /// longer showing anything elsewhere. It does **not** close them — closing a
-    /// window is the Dock's and the compositor's, not this table's, and a side
-    /// table that closed windows would be a second window model wearing a
-    /// smaller name.
-    pub fn forget_machine(&mut self, machine: &MachineId) -> usize {
-        let was = self.showing.len();
-        self.showing.retain(|(_, each)| each != machine);
-        was.saturating_sub(self.showing.len())
-    }
+    // **There is deliberately no `forget_machine` here, and there was.**
+    //
+    // The first version of this file removed a machine's rows when the person
+    // removed the machine from their list. Building [`crate::Marked`] showed
+    // what that did: a window still showing another machine fell out of this
+    // table, and the next question about it answered *here*. **A remote window
+    // that looks local is the exact failure the marking exists to prevent**, and
+    // this method was the shortest road to it.
+    //
+    // A window leaves this table when the window closes, through
+    // [`Self::closed`], and by no other road. A machine the person removed is
+    // answered by [`crate::Marked::ElsewhereUnnamed`]: still elsewhere, still
+    // said, without a name to say it with.
 
     /// How many windows are showing a machine.
     #[must_use]
@@ -277,19 +278,22 @@ mod tests {
         assert_eq!(its, vec![WindowId::numbered(1), WindowId::numbered(2)]);
     }
 
-    /// **Forgetting a machine does not close a window.** Closing is the Dock's
-    /// and the compositor's; a side table that closed windows would be a second
-    /// window model wearing a smaller name.
+    /// **A window leaves this table when the window closes, and by no other
+    /// road.** Removing a machine from the person's list must not take its
+    /// windows out of here: one that did would answer *here* for a window still
+    /// showing somewhere else, which is the failure `Marked` exists to prevent.
     #[test]
-    fn forgetting_a_machine_leaves_its_windows_to_the_dock() {
+    fn only_closing_a_window_takes_it_out_of_the_table() {
         let mut which = WhichMachines::none();
         which.opened(WindowId::numbered(1), identity('a'));
-        which.opened(WindowId::numbered(2), identity('a'));
-        which.opened(WindowId::numbered(3), identity('b'));
+        which.opened(WindowId::numbered(2), identity('b'));
 
-        assert_eq!(which.forget_machine(&identity('a')), 2);
+        assert!(which.closed(WindowId::numbered(1)));
         assert!(!which.is_elsewhere(WindowId::numbered(1)));
-        assert!(which.is_elsewhere(WindowId::numbered(3)));
+        assert!(
+            which.is_elsewhere(WindowId::numbered(2)),
+            "an untouched window stopped saying where it is"
+        );
     }
 
     /// Closing says whether there was one, so a caller can tell *done* from
