@@ -18,6 +18,11 @@
 //! | [`labels`] | What became of the names |
 //! | [`hiding`] | Whether it gives way when a window needs the room |
 //! | [`layout`] | The whole answer, worked out |
+//! | [`on_the_canvas`] | Where a window is on the plane, and what is being looked at |
+//! | [`window`] | One window: its application, its place, and how it sits |
+//! | [`windows`] | Every window open, in the order they were last used |
+//! | [`holding`] | Which applications are on the Dock, and which of them fit |
+//! | [`clicking`] | What one click on an application's icon does |
 //! | [`shipped`] | What the dock is before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
@@ -137,28 +142,38 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod changes;
+pub mod clicking;
 pub mod dock;
 pub mod hiding;
+pub mod holding;
 pub mod keeping;
 pub mod labels;
 pub mod layout;
 pub mod measures;
+pub mod on_the_canvas;
 pub mod room;
 pub mod screen;
 pub mod shipped;
 pub mod unkept;
+pub mod window;
+pub mod windows;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use changes::{Changes, Setting};
+pub use clicking::{WhatAClickDoes, what_a_click_does};
 pub use dock::Dock;
 pub use hiding::{Hiding, Showing, TheRoom};
+pub use holding::{Fitted, Holding, OnTheDock, Pinned, fit};
 pub use labels::Labels;
 pub use layout::Layout;
+pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};
 pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;
 pub use unkept::{FileNotRead, FileNotWritten};
+pub use window::{AppId, HowItSits, NotAnApp, Window, WindowId};
+pub use windows::Windows;
 pub use words::{Word, WordsError, declare_into, dock_words};
