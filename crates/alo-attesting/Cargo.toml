@@ -1,0 +1,37 @@
+[package]
+name = "alo-attesting"
+version = "0.0.1"
+description = "What left this machine in a period, as one statement an auditor can check — rendered the same way every time so that a signature over it means something."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The record is the only source. Everything this crate states is read from
+# `alo-record`'s entries, because a second account of what left a machine is a
+# second thing to keep true — and law 1's record is already the one that cannot
+# hold a departure the indicator never showed.
+alo-record = { path = "../alo-record" }
+
+# The destination and the errand are `alo-egress`'s own types, named here rather
+# than restated. A statement that renamed them would be a place for the two to
+# drift apart.
+alo-egress = { path = "../alo-egress" }
+
+# The region a provider declared, which the destination carries. Named from its
+# own crate rather than restated here.
+alo-models = { path = "../alo-models" }
+
+# SHA-256, because that is what this repository already signs by (ADR 0036).
+# Derived from the existing arrangement rather than chosen here.
+sha2 = { workspace = true }
+
+[dev-dependencies]
+# The grantee a test entry is written under. A dev-dependency because this crate
+# reads a record and never makes one: the only entries it constructs are the
+# fixtures its own tests read back.
+alo-capability = { path = "../alo-capability" }
+
+[lints]
+workspace = true
