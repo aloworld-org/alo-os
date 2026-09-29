@@ -267,12 +267,51 @@ pub const EVERY_GATE: &[Gate] = &[
 /// Each name comes back with **how long that gate took**, because a total is a
 /// number that cannot be wrong and it told three lanes nothing for a whole day.
 /// `9 of 9 in 2919s` was read perhaps fifty times between them before anybody
-/// asked which line cost the most, and the answer was not the one any of them
-/// would have guessed: **rustdoc at 1637 s, longer than the entire test suite at
-/// 1189 s** — `cargo doc --workspace --no-deps` with warnings denied over 104
-/// crates, measured on the Mac lane 2026-09-29. Nothing printed it, so nobody
-/// knew, and each lane estimated the shape of a gate run from the part it
-/// happened to watch.
+/// asked which line cost the most, and nobody could answer — nothing printed the
+/// parts, so each lane estimated the shape of a gate run from the part it
+/// happened to watch, and two of three quoted a figure wrong by a factor of two.
+///
+/// # These are this run's times
+///
+/// **Not the gate's, and not the machine's.** A duration printed here says what
+/// this run cost on this machine in this cache state, and it is **not comparable
+/// across runs** — including two runs on one machine an hour apart.
+///
+/// Measured 2026-09-29, one machine, one script, ninety minutes apart, with a
+/// 34 GB incremental directory deleted in between:
+///
+/// | | earlier | later |
+/// |---|---|---|
+/// | `rustdoc, warnings denied` | 1637 s | 68 s |
+/// | `the workspace's tests` | 1306 s | 650 s |
+///
+/// **Twenty-four fold, on one machine.** So a duration is not a property of the
+/// gate and not a property of the machine either. The thing that varies is what
+/// the previous run left warm.
+///
+/// # How this note got it wrong twice, which is the more useful record
+///
+/// Each stage felt like the correction, and the first two were **both wrong in
+/// the same direction — more general than the evidence supported**:
+///
+/// 1. One measurement: *rustdoc is the expensive gate.* Read as a property of the
+///    gate.
+/// 2. Two measurements on two machines: *these are this machine's times.* It felt
+///    settled because two lanes agreed, which is authority rather than evidence.
+/// 3. Two measurements on one machine: *these are this run's times.*
+///
+/// **A correction can be wrong in the same direction as the thing it corrects**,
+/// and agreement between two observers is not a control for a variable neither of
+/// them varied.
+///
+/// And the pair that produced stage 2 was worse than uncontrolled. The 32 s came
+/// from this program; the 1637 s came from a hand-written shell copy of
+/// [`EVERY_GATE`] in another lane's tooling, which has drifted from this list once
+/// already — running `cargo test --workspace` while this definition said
+/// `cargo nextest run --profile gates`, matching by count while differing in what
+/// it ran. **Two programs, two machines, two cache states: three uncontrolled
+/// variables, offered and accepted as one.** The lane that owns the copy found
+/// that, and found the twenty-four-fold pair as well.
 ///
 /// The durations go in the strings rather than in a new return type, because
 /// both callers already say those strings somewhere a person reads — one prints
