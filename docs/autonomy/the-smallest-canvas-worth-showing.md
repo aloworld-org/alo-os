@@ -408,7 +408,27 @@ it where a reader asks.
 
 ### 8. A frame is never lost
 
-**Status:** ready. **Depends on:** 3, 6.
+**Status:** **Done, 2026-09-29.** **Depends on:** 3, 6.
+
+**The measurement that decided the shape of it.** *Show all* fits the frames' own
+extent and the widest extent it can fit is bounded by `Zoom::FURTHEST_OUT`: on a
+1280×720 output, 25,600 × 14,400 plane units. The plane reaches ±1,000,000 —
+**seventy-eight times further across than the fit can hold.** So *a frame dragged
+far away is still found by Show all* was not something the canvas had; it is
+something a rule has to keep, and the first draft of this task missed it because
+the acceptance sentence reads like a property rather than a promise.
+
+**Only two ways a frame can actually be lost, once panning exists.** A frame above
+the viewport, behind another, or off to one side is reached by panning. What
+panning cannot undo is being further out than the fit reaches, and being entirely
+under the dock — the latter because ADR 0071 makes the name the only handle, so a
+name under the dock is a frame nothing can pick up. *Entirely* is the condition: a
+band half out is one a pointer can still land on.
+
+**It stops a drag rather than undoing one.** A drag crossing either line keeps the
+last position that did not, which is what an edge feels like. A compositor that
+accepted the drag and took the window back afterwards would be one whose windows
+fight the person holding them.
 
 Nothing may be placed, dragged or restored where a person cannot get it back:
 not off the plane's reachable area, not behind a viewport control, not at a zoom
