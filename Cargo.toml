@@ -33,6 +33,7 @@ members = [
   "crates/alo-changing-undo",
   "crates/alo-changing-updates",
   "crates/alo-choosing",
+  "crates/alo-attesting",
   "crates/alo-citing",
   "crates/alo-clipboard",
   "crates/alo-collected",

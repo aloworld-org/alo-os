@@ -222,6 +222,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-attesting"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-egress",
+ "alo-models",
+ "alo-record",
+ "sha2 0.10.9",
+]
+
+[[package]]
 name = "alo-bluetooth"
 version = "0.0.1"
 dependencies = [
