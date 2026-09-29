@@ -94,6 +94,7 @@ mod atomic_test;
 mod booting;
 mod canvas_camera;
 mod canvas_command;
+mod canvas_never_lost;
 mod canvas_pan;
 mod canvas_pinch;
 mod canvas_show_all;
