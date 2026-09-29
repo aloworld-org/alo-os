@@ -13,7 +13,7 @@ release `0.0.1`, which does not carry the fix, and only the owner builds, signs 
 pins a release (ADR 0036). That run is task 15, written into the plan in this change
 and marked blocked on the owner's release.
 
-Follows `updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`
+Follows `docs/autonomy/updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`
 (task 13), which is not edited here.
 
 ## What the installed machine said

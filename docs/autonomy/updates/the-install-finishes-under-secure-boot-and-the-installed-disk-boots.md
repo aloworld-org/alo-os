@@ -10,7 +10,7 @@ second disk finishes with Secure Boot on, and that disk boots under Secure Boot;
 `alo-agentd` then failed on it**, so the named virtual-machine test does not yet
 pass as a whole. That is task 14, written into the plan in this change.
 
-Follows `updates/the-installers-sandbox-pivots-under-its-own-root.md` (task 12),
+Follows `docs/autonomy/updates/the-installers-sandbox-pivots-under-its-own-root.md` (task 12),
 which is not edited here.
 
 ## What the run before this one said

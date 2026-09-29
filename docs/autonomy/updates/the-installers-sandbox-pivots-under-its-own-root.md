@@ -7,7 +7,7 @@
 **Status:** ready for integration — for task 12's part. The install run it also
 named is task 13, **not run**, and scheduled for a machine that can hold it.
 
-Follows `updates/the-boot-environment-says-why-an-install-stopped.md`, which is not
+Follows `docs/autonomy/updates/the-boot-environment-says-why-an-install-stopped.md`, which is not
 edited here.
 
 ## What this task ends at, and why it was split

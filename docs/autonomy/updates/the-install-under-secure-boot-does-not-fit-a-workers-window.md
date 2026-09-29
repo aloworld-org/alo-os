@@ -12,8 +12,8 @@ deliberately rather than left running unwatched. What the run did show, and the
 measurement that says what a machine needs to hold it, are below and in the plan.
 **Nothing here claims the acceptance.**
 
-Follows `updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`
-(task 13) and `updates/the-agent-service-can-reach-the-boundary-on-an-installed-disk.md`
+Follows `docs/autonomy/updates/the-install-finishes-under-secure-boot-and-the-installed-disk-boots.md`
+(task 13) and `docs/autonomy/updates/the-agent-service-can-reach-the-boundary-on-an-installed-disk.md`
 (task 14). Neither is edited here.
 
 ## What this task is

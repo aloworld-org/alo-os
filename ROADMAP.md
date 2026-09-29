@@ -271,7 +271,7 @@ compositor is not required for, which is why it runs unbroken.
         sent it was refused: the `modelfile` field a brought file was handed
         over with is gone from that version's create API, and the road is now
         the one the runtime accepts, walked end to end with a 4.7 GB file
-        (`updates/the-pinned-runtime-and-what-alo-os-sends-it.md`). A Mac is not
+        (`docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`). A Mac is not
         the certified machine and this box stays open; but *never run against a
         real Ollama* stopped being true, and the fixture it exposed as a guess
         is fixed. *This line was ticked outright until the two boxes existed,
@@ -1830,7 +1830,7 @@ sorted the same way v0.01 now is.
         rather than asked of anybody; and the two answers a polar circle
         forces — the sun does not set today, the sun does not rise today —
         said rather than papered over. Task 4 of the same plan;
-        `updates/night-light-and-display-colour.md`
+        `docs/autonomy/updates/night-light-and-display-colour.md`
   - [ ] **On the machine.**
         a screen whose colour actually changes, which is the compositor's and
         is owed to the certified machine
@@ -1867,7 +1867,7 @@ sorted the same way v0.01 now is.
         the promise was never blocked on the drawing.
         Two tests hold the promise in its own words — the laptop keeps the
         bottom while the external screen takes a side, in `alo-dock` and again
-        through `Wearing::of` — and `updates/the-dock-per-display.md` is the
+        through `Wearing::of` — and `docs/autonomy/updates/the-dock-per-display.md` is the
         report.
         *This box read **not built, and the crate says so itself** until
         2026-09-27, quoting `dock.rs`'s own **One dock, one edge**. That file now
@@ -1885,8 +1885,8 @@ sorted the same way v0.01 now is.
         broker's `RollBack` carries it out and `alo-changing-updates` is what they
         read when it answers. Tasks 2 and 3 of
         `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` —
-        `updates/back-to-yesterdays-machine.md`,
-        `updates/the-recovery-and-rollback-screen.md`
+        `docs/autonomy/updates/back-to-yesterdays-machine.md`,
+        `docs/autonomy/updates/the-recovery-and-rollback-screen.md`
   - [ ] **On the machine.**
         the screen itself, drawn when the workspace is not reachable — the
         shell's, and owed a machine that has actually failed to start
@@ -1996,7 +1996,7 @@ sorted the same way v0.01 now is.
         status area, and the windows for what is running and what is filling the
         disk — by `alo-shell`, its plan's tasks 5, 7 and 15, and every step of it
         is now read back off the frames it drew on a nested parent
-        (`updates/this-machine-runs-a-nested-compositor-and-two-faults-were-hiding-behind-that.md`).
+        (`docs/autonomy/updates/this-machine-runs-a-nested-compositor-and-two-faults-were-hiding-behind-that.md`).
         **The four applications are decided and pinned**, each an upstream one
         named by the identifier its source knows it by and the version it was
         decided at: a file manager (`org.kde.dolphin` 26.04.3, which is also the
@@ -2006,7 +2006,7 @@ sorted the same way v0.01 now is.
         agent's — ADR 0043). `crates/alo-software/shipped.toml`, task 2 of
         `v0-5-software-and-the-web-plan.md`, held by
         `crates/alo-software/tests/what_a_fresh_machine_has.rs`, with why each was
-        chosen in `updates/what-a-fresh-machine-has.md`
+        chosen in `docs/autonomy/updates/what-a-fresh-machine-has.md`
         *This half read **four of the applications do not exist** and **it is owed
         a decision, whether alo OS writes them or pins upstream ones** until
         2026-09-27. That decision was taken on **2026-09-15**, twelve days before
@@ -2035,7 +2035,7 @@ sorted the same way v0.01 now is.
         searching their own files is not asking anybody — and the same three
         are read verbs an agent asks under a grant.
         `v0-5-the-machine-measured-plan.md` tasks 1–5;
-        `updates/the-three-measurements-are-verbs-and-not-the-only-road.md`
+        `docs/autonomy/updates/the-three-measurements-are-verbs-and-not-the-only-road.md`
   - [ ] **On the machine.**
         the file manager's search box and the two windows are the desktop
         lane's, and nothing here has run on a certified machine
@@ -2059,8 +2059,8 @@ sorted the same way v0.01 now is.
         works rather than a one-off placement, and **remembered per display**, so
         returning to a pair of windows restores the arrangement instead of the
         last position of each. `v0-5-hands-on-the-desktop-plan.md`, 7 of 7;
-        `updates/a-split-remembered-per-display.md`,
-        `updates/the-division-and-the-desktops-a-session-holds.md`
+        `docs/autonomy/updates/a-split-remembered-per-display.md`,
+        `docs/autonomy/updates/the-division-and-the-desktops-a-session-holds.md`
   - [ ] **On the machine.**
         the drag itself — taking a half by throwing a window at an edge is the
         compositor's, and is owed to it and to a second screen
@@ -2075,7 +2075,7 @@ sorted the same way v0.01 now is.
         `alo-desktops`, drawn by `alo-shell/src/desktop_swipes.rs` under its own
         plan's task 10 — scroll, zoom and swipe between workspaces. Drag and drop
         and context menus are `alo-shell`'s too, its plan's task 10 and
-        `updates/drag-and-drop-and-context-menus.md`.
+        `docs/autonomy/updates/drag-and-drop-and-context-menus.md`.
         *This half was refused on 2026-09-26 and the refusal was **wrong**. It
         read `chords.rs` — keyboard chords for switching desktops — and concluded
         from one file that nothing reads a gesture, without grepping for *swipe*
@@ -2104,7 +2104,7 @@ sorted the same way v0.01 now is.
         And the portal backend itself: `alo_portals::serving::Backend::serve_on`
         owns `org.freedesktop.portal.Desktop` on a session bus and serves only
         what was decided — task 5 of the applications plan,
-        `updates/the-portal-backend-on-the-session-bus.md` — with the dialogs a
+        `docs/autonomy/updates/the-portal-backend-on-the-session-bus.md` — with the dialogs a
         person sees drawn by `alo-shell` (its plan's tasks 5, 6 and 14).
         *This half was refused on 2026-09-26 and the refusal was **wrong**. It
         said no backend existed, on a search for `org.freedesktop.impl.portal.*`
@@ -2134,9 +2134,9 @@ sorted the same way v0.01 now is.
         reason this is not extra work; high contrast; the magnifier as a setting
         that is kept; and keyboard-only operation walked end to end with the
         screen off. `v0-5-access-and-language-plan.md`, 7 of 7 —
-        `updates/the-tree-a-screen-reader-reads.md`,
-        `updates/the-screen-reader-and-the-tree-it-reads.md`,
-        `updates/the-walk-with-the-screen-off.md`
+        `docs/autonomy/updates/the-tree-a-screen-reader-reads.md`,
+        `docs/autonomy/updates/the-screen-reader-and-the-tree-it-reads.md`,
+        `docs/autonomy/updates/the-walk-with-the-screen-off.md`
   - [ ] **On the machine.**
         a screen reader speaking, a magnifier magnifying, and somebody operating
         the machine without seeing it — all owed to the compositor and the
@@ -2147,7 +2147,7 @@ sorted the same way v0.01 now is.
         (2021-03)** — clause 5, and clause 11 including the criteria a reader
         knows from WCAG as they reach a native shell — each measured against the
         shell rather than asserted about it. Task 4 of the access-and-language
-        plan; `updates/en-301-549-clause-by-clause.md`. v1 carries the
+        plan; `docs/autonomy/updates/en-301-549-clause-by-clause.md`. v1 carries the
         **published** report, which is a document and a signature rather than
         code.
         *This half was refused on 2026-09-26 as **not assessed**, and that was
@@ -2272,7 +2272,7 @@ sorted the same way v0.01 now is.
         larger than the walker's bound is walked on from every folder one walk
         left unentered, under the same bound each time, until nothing is left —
         task 11, done 2026-09-14,
-        `updates/an-index-made-whole-for-a-folder-larger-than-one-walk.md`. The
+        `docs/autonomy/updates/an-index-made-whole-for-a-folder-larger-than-one-walk.md`. The
         one folder no walk can finish is one holding more than the bound at a
         single level, and the sentence above the index says so rather than
         *stopped after 20000 things*.
@@ -2296,8 +2296,8 @@ sorted the same way v0.01 now is.
         a node that says so, the root stopping at every mount. Nothing here
         signals, stops or deletes anything: it measures, and the person's next
         act is theirs. `v0-5-the-machine-measured-plan.md` tasks 1, 2 and 5;
-        `updates/what-is-running-is-read-from-the-kernel.md`,
-        `updates/what-is-filling-the-disk-is-a-tree-of-sizes.md`
+        `docs/autonomy/updates/what-is-running-is-read-from-the-kernel.md`,
+        `docs/autonomy/updates/what-is-filling-the-disk-is-a-tree-of-sizes.md`
   - [ ] **On the machine.**
         the window is the desktop lane's; measured under WSL, never on a
         certified machine
@@ -2308,8 +2308,8 @@ sorted the same way v0.01 now is.
         and `alo-changing-printers` for what they read when the broker's three
         printer verbs answer. Task 3 of
         `docs/autonomy/v0-5-documents-and-paper-plan.md` and task 2 of the broker
-        plan, with a report each — `updates/printers-found-set-up-and-said-what-is-wrong.md`,
-        `updates/printers-through-the-broker.md`
+        plan, with a report each — `docs/autonomy/updates/printers-found-set-up-and-said-what-is-wrong.md`,
+        `docs/autonomy/updates/printers-through-the-broker.md`
   - [ ] **On the machine.**
         **a real printer, and there has not been one.** Every printer in this
         repository is a recorded IPP conversation; law 3's *an OS that boots but
@@ -2323,9 +2323,9 @@ sorted the same way v0.01 now is.
         what it is, what this machine can and cannot do with it, and what they
         might do next. Tasks 1 and 4 of the documents plan, and task 5's walk
         through every sentence the plan makes —
-        `updates/what-this-machine-can-do-with-a-file.md`,
-        `updates/i-cannot-open-this-file-said-properly.md`,
-        `updates/every-sentence-about-documents-and-paper-and-the-walk-through-them.md`
+        `docs/autonomy/updates/what-this-machine-can-do-with-a-file.md`,
+        `docs/autonomy/updates/i-cannot-open-this-file-said-properly.md`,
+        `docs/autonomy/updates/every-sentence-about-documents-and-paper-and-the-walk-through-them.md`
   - [ ] **On the machine.**
         a person's own file, on the certified machine, opened or explained
 - [ ] ★ **The grant enforced by the kernel** (ADR 0013) — Landlock, seccomp and an
@@ -2486,8 +2486,8 @@ sorted the same way v0.01 now is.
         **close an application**, **interrupt the person**. Each is refused with
         its own sentence, and an update that is ready waits for the next restart
         the person chooses. Tasks 1 and 2 of the keeps-itself plan —
-        `updates/what-an-update-is-and-may-never-do.md`,
-        `updates/an-update-applied-and-the-same-machine-afterwards.md`
+        `docs/autonomy/updates/what-an-update-is-and-may-never-do.md`,
+        `docs/autonomy/updates/an-update-applied-and-the-same-machine-afterwards.md`
   - [ ] **On the machine.**
         a working day on the certified machine with an update staged through it,
         which is the only way *never interrupted* is a measurement rather than a
@@ -2509,7 +2509,7 @@ sorted the same way v0.01 now is.
         `alo-nearby/src/keeping.rs` and `alo-remembering/src/pairings.rs`,
         2,365 lines between them. Tasks 1, 2, 6, 7, 9, 10 and 12 of
         `v0-5-the-local-network-plan.md`, finished 37 of 37, with a report each
-        — `updates/the-persons-door-pairs-and-a-pairing-outlives-a-restart.md`
+        — `docs/autonomy/updates/the-persons-door-pairs-and-a-pairing-outlives-a-restart.md`
         for the last.
         *This half read **Most of it, and not whole** until 2026-09-26, naming
         task 12 as open. **That task was done on 2026-09-14** — twelve days of
@@ -2532,7 +2532,7 @@ sorted the same way v0.01 now is.
         single packet off-network, and a question bound for the internet told
         once and truthfully. The published test names the machine: the
         development PC under WSL.
-        `updates/an-office-that-cannot-connect-still-has-working-ai.md`
+        `docs/autonomy/updates/an-office-that-cannot-connect-still-has-working-ai.md`
   - [ ] **On the machine.**
         the day itself, on the certified machine, with a person working it
 
@@ -2651,8 +2651,8 @@ want them, and a developer trying it will not.
         paired machine's question with this machine's own model and writes
         *answered for another machine* with the origin named. Tasks 3, 4, 8
         and 11 of `v0-5-the-local-network-plan.md`;
-        `updates/the-machine-down-the-corridor-is-still-an-egress.md`,
-        `updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
+        `docs/autonomy/updates/the-machine-down-the-corridor-is-still-an-egress.md`,
+        `docs/autonomy/updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
   - [ ] **On the machine.**
         a machine with a GPU and one without, in one building — owed to two
         machines and the certified one
@@ -2747,13 +2747,13 @@ ledger — **92 entries for 92 promises**, one to one.
   refuses to accept unless no agent can be granted it (ADR 0043) — each with a
   licence, a source and the version it was decided at, held by
   `crates/alo-software/tests/what_a_fresh_machine_has.rs` and explained in
-  `updates/what-a-fresh-machine-has.md`. Two code halves are ticked and what is
+  `docs/autonomy/updates/what-a-fresh-machine-has.md`. Two code halves are ticked and what is
   owed moves to the machine half, which is the honest place: nothing installs that
   list yet.
 - **Seventy-four tasks whose status word their own body contradicted** — in six
   plans, across two releases and the supervisor's own, 32 of them in
   `v0-01-delivery-plan.md`. `SHARED_MAIN.md` had a rule telling every reader to
-  route around them. `updates/seventy-four-tasks-that-said-ready-above-their-own-done.md`.
+  route around them. `docs/autonomy/updates/seventy-four-tasks-that-said-ready-above-their-own-done.md`.
 - **A conversion reporting a font nobody chose**, and **eight nested fixtures that
   had been failing rather than skipping on the machine that gates** — both found by
   running the gates rather than by reading them, both fixed, both written up.
@@ -3334,5 +3334,5 @@ judgement this gate makes in prose — 31 boxes over 92 promises — and no
 word-matching rule answers it: one setting reported 3 promises with no box and
 missed real ones, another reported 69 of 92. The answer is for each box to name the
 promises it answers, which is a change to this document's shape.
-`updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md` makes the case.
+`docs/autonomy/updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md` makes the case.
 
