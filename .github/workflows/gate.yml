@@ -721,16 +721,37 @@ jobs:
       - name: what a namespace can exec once the tests exist
         if: always()
         run: |
-          # `|| true`, because under `-e -o pipefail` a glob that matches nothing
-          # makes `ls` exit non-zero, `grep -v` exits non-zero when it selects
-          # nothing, and either aborts this step **before** the sentence below that
-          # explains there is nothing to measure. A probe that is silent when its
-          # subject is absent is the fault this whole job keeps finding.
-          bin=$(ls -t target/debug/deps/asked_and_answered_over_ipv6-* 2>/dev/null \
-            | grep -v '\.d$' | head -1 || true)
+          # **It looks for the binary; it does not work out where the binary ought
+          # to be.** The first version of this step read `target/debug/deps`, which
+          # never exists here: the supervisor gives each checkout its own build
+          # directory under `$HOME/alo-builds/<name>` and exports `CARGO_TARGET_DIR`
+          # to it. So the probe measured nothing on the run that proved this job can
+          # be green — and said so, rather than claiming a result, which is the only
+          # reason it cost one run instead of a wrong conclusion.
+          #
+          # The tempting repair is to spell `$HOME/alo-builds/this-machine` here.
+          # That is a second copy of a naming rule that lives in
+          # `tools/kernel-loop/src/where_it_builds.rs`, and a second copy of a rule
+          # is what this file's own header describes going wrong: one command became
+          # three different commands on three machines. `alo-kernel-loop gates` does
+          # not print the directory it chose — `run` and `publish` say it in a line
+          # and `gates` does not — so there is nothing to read back, and that is worth
+          # fixing in the supervisor by whoever owns it rather than worked around
+          # here.
+          #
+          # So this **asks the filesystem** and names the places it asked. It makes no
+          # claim about how the directory is named, and a fourth location is one word
+          # on the `roots` line rather than a rule to keep in step.
+          roots="$HOME/alo-builds ./target"
+          echo "looking under: $roots"
+          bin=$(find $roots -maxdepth 4 -type f -perm -u+x \
+                  -name 'asked_and_answered_over_ipv6-*' ! -name '*.d' \
+                  -printf '%T@ %p\n' 2>/dev/null \
+                | sort -rn | head -1 | cut -d' ' -f2- || true)
           if [ -z "$bin" ]; then
-            echo "no ipv6 test binary under target/debug/deps, so the gates did not get"
-            echo "as far as building it. Nothing is measured here and nothing is claimed."
+            echo "no ipv6 test binary under any of them, so the gates did not get as far"
+            echo "as building it — or it is somewhere none of those names reach. Nothing"
+            echo "is measured here and nothing is claimed; add the place to \$roots."
             exit 0
           fi
           echo "binary   $bin"
