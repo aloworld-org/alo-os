@@ -33,6 +33,16 @@
 //! **Asking.** Nothing here opens a socket, and the list of machines permits
 //! nothing at all.
 //!
+//! # A machine on the canvas is a window, and not a new kind of one
+//!
+//! [`WhichMachines`] is a note saying which window is showing which machine, and
+//! that is all it is. The window itself is an ordinary [`alo_dock::Window`]: it
+//! sits on the canvas, is put aside, or fills the screen, and the Dock's rule
+//! answers a click on it without being rewritten. [`an_app_for`] gives each
+//! machine its own stable identifier, so *click an app to return to where you
+//! last used it* reads as *click a machine to return to where you last were on
+//! it*.
+//!
 //! # Work sent to another machine
 //!
 //! [`TheWork`] is what this machine has asked another of the person's machines
@@ -60,6 +70,7 @@
 //! it, and showing it is a term of that record rather than a choice about
 //! presentation.
 
+pub mod as_a_window;
 pub mod driving;
 pub mod machine;
 pub mod machines;
@@ -68,6 +79,7 @@ pub mod refusing;
 pub mod sending;
 pub mod words;
 
+pub use as_a_window::{A_MACHINES_APP, WhichMachines, an_app_for};
 pub use driving::{Driving, MayDrive, WHAT_IT_CANNOT_ENUMERATE};
 pub use machine::{AMachine, AT_MOST, TheName};
 pub use machines::TheMachines;
