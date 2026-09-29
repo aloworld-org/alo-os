@@ -450,6 +450,35 @@ pub const RESTART_IT_YOURSELF: Word = Word::saying(
 )
 .noting("Said when everything was prepared and Windows did not carry out the restart.");
 
+/// The question that offers the two roads.
+pub const ASK_WHICH_ROAD: Word = Word::saying(
+    "installer.ask-which-road",
+    "Windows can be kept, with alo OS beside it, or replaced. Keeping it changes nothing you \
+     cannot undo. Type {keep} or {replace}",
+)
+.noting(
+    "{keep} is ANSWER_KEEP_WINDOWS and {replace} is ANSWER_REPLACE_WINDOWS, each in this \
+     language. Asked once the computer has been checked and before anything is agreed to. The \
+     sentence says what keeping costs before it names replacing, because that is the order a \
+     person needs them in.",
+);
+
+/// The answer that keeps Windows, which is the road that changes nothing.
+pub const ANSWER_KEEP_WINDOWS: Word = Word::saying("installer.answer.keep-windows", "keep").noting(
+    "One of two words a person types to answer ASK_WHICH_ROAD. Translate it to the plainest \
+         word in this language for leaving something as it is. It is also what happens when an \
+         answer is not understood, so it must never read like a risky choice.",
+);
+
+/// The answer that asks to replace Windows, which only begins that road.
+pub const ANSWER_REPLACE_WINDOWS: Word =
+    Word::saying("installer.answer.replace-windows", "replace").noting(
+        "The other of the two words. Typing it does **not** erase anything: it opens the road, \
+         which then says what would be lost and asks again. Translate it to the plainest word for \
+         putting one thing where another was, not to a word meaning delete or erase -- ERASING_WORD \
+         is that word and is asked for separately.",
+    );
+
 // ---------------------------------------------------------------------------
 // Replacing Windows: the road with no way back.
 //
@@ -1080,7 +1109,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 118] = [
+pub const EVERY_WORD: [Word; 121] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1190,6 +1219,9 @@ pub const EVERY_WORD: [Word; 118] = [
     REMOVE_GONE_BUT_THE_COPY_STAYS,
     PRESS_ENTER_TO_CLOSE,
     // Replacing Windows: the road with no way back.
+    ASK_WHICH_ROAD,
+    ANSWER_KEEP_WINDOWS,
+    ANSWER_REPLACE_WINDOWS,
     REPLACING_DESTROYS,
     WHAT_IS_ON_IT_NOW,
     HOW_MUCH_AND_HOW_RECENT,

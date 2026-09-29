@@ -219,6 +219,24 @@ impl Disk {
             })
     }
 
+    /// Its name after the restart, whatever it is to this installer now.
+    ///
+    /// [`Self::standing`] answers this only for a disk alo OS may be installed
+    /// beside Windows on, because that is all the alongside road ever needed. The
+    /// road that **replaces** Windows installs onto the disk Windows is on, whose
+    /// standing is [`Standing::HoldsWindows`] and carries no name — so it asks
+    /// here instead. The naming does not depend on the standing: it is the same
+    /// four fields either way.
+    #[must_use]
+    pub fn after_the_restart(&self) -> Option<DiskName> {
+        naming::after_the_restart(
+            &self.bus_type,
+            &self.friendly_name,
+            &self.serial_number,
+            &self.unique_id,
+        )
+    }
+
     /// What it is to this installer, given which disk Windows is on.
     ///
     /// In the order a person most needs to hear: that it holds Windows before

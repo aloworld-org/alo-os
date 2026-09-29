@@ -47,8 +47,16 @@ pub struct Offer {
     pub shrink: Shrink,
     /// The disk Windows is on, as a person is shown it.
     pub windows_disk: String,
-    /// Every disk alo OS may be installed onto.
+    /// Every disk alo OS may be installed onto **beside** Windows.
     pub disks_for_alo_os: Vec<ForAloOs>,
+    /// The disk Windows is on, as a target for the road that replaces it, or
+    /// [`None`] when this installer cannot name it across the restart.
+    ///
+    /// Never one of [`Self::disks_for_alo_os`]: those are disks alo OS goes
+    /// beside Windows on, and this is the one it goes *instead* of Windows on.
+    /// Offering a road whose disk cannot be named would be offering a road that
+    /// cannot be walked, so `None` is how the question is not asked at all.
+    pub the_windows_disk: Option<ForAloOs>,
 }
 
 /// One disk alo OS may be installed onto.
@@ -116,10 +124,18 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
     if disks_for_alo_os.is_empty() {
         return Err(Refusal::NoDiskForAloOs);
     }
+    let the_windows_disk = windows_disk
+        .after_the_restart()
+        .map(|after_the_restart| ForAloOs {
+            number: windows_disk.number(),
+            shown: disks.shown_name(windows_disk),
+            after_the_restart,
+        });
     Ok(Offer {
         windows,
         shrink,
         windows_disk: disks.shown_name(windows_disk),
         disks_for_alo_os,
+        the_windows_disk,
     })
 }

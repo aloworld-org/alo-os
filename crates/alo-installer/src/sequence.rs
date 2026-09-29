@@ -20,6 +20,7 @@
 //! changed. Step 8's restart is the point after which this program is no longer
 //! running, and everything before it is reversible.
 
+use alo_installing::Replacing;
 use alo_strings::{Filling, Strings, Word};
 
 use crate::asking::{self, Answer};
@@ -33,6 +34,7 @@ use crate::machine::{BEFORE_RESTARTING, TheMachine};
 use crate::program::Program;
 use crate::sizes;
 use crate::staging;
+use crate::the_replacing_road::{Road, walk, which_road};
 use crate::words;
 
 /// Check, say, consent, stage and restart — or refuse — on this machine, and
@@ -120,6 +122,36 @@ fn installing(
     );
     say(machine, strings, words::WILL_RESTART, &Filling::nothing());
 
+    // **The fork.** Asked only where the road can be walked: the offer carries a
+    // target for it or it does not, and a road whose disk cannot be named is not
+    // a road to offer. Keeping Windows is what every unrecognised answer means,
+    // so nothing a person types by accident reaches the other one.
+    if let Some(the_windows_disk) = offer.the_windows_disk.clone()
+        && which_road(machine, strings) == Road::ReplaceWindows
+    {
+        let staged = walk(
+            machine,
+            strings,
+            &found,
+            &offer,
+            &the_windows_disk,
+            |machine, replacing| {
+                staging::stage(
+                    machine,
+                    strings,
+                    &offer,
+                    &the_windows_disk,
+                    &the_environment,
+                    Answer::LeaveOn,
+                    replacing,
+                )
+            },
+        )
+        .map_err(Ended::Refused)?;
+        staged?;
+        return restart(machine, strings);
+    }
+
     let typed = machine.ask(&strings.say(&words::TYPE_THE_DISKS_NAME.key(), &Filling::nothing()));
     let chosen = consent::chosen(&typed, &offer.disks_for_alo_os).map_err(Ended::Refused)?;
 
@@ -129,8 +161,24 @@ fn installing(
     // installing alo OS.
     let answer = ask_about_fast_startup(machine, strings, found.fast_startup);
 
-    staging::stage(machine, strings, &offer, chosen, &the_environment, answer)?;
+    staging::stage(
+        machine,
+        strings,
+        &offer,
+        chosen,
+        &the_environment,
+        answer,
+        Replacing::Nothing,
+    )?;
 
+    restart(machine, strings)
+}
+
+/// Say it is ready, give the person a moment to read that, and restart.
+///
+/// Both roads end here, and the same way: the restart is step 8 either way, and a
+/// machine that will not restart itself says so rather than looking finished.
+fn restart(machine: &mut impl TheMachine, strings: &Strings) -> Result<Ended, Ended> {
     say(machine, strings, words::RESTARTING, &Filling::nothing());
     machine.pause(BEFORE_RESTARTING);
     let restarted = machine
@@ -194,6 +242,6 @@ fn ask_about_fast_startup(
 }
 
 /// One sentence, looked up and put in front of the person.
-fn say(machine: &mut impl TheMachine, strings: &Strings, word: Word, filling: &Filling) {
+pub(crate) fn say(machine: &mut impl TheMachine, strings: &Strings, word: Word, filling: &Filling) {
     machine.say(&strings.say(&word.key(), filling));
 }
