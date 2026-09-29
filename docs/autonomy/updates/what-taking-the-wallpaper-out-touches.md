@@ -96,3 +96,56 @@ lock screen shows the surface and no client's pixels**. The second half is alrea
 held — `the_walk_check.rs` says the lock texture imports no client, and
 `lock_image_decode.rs` composites against opaque black. Whatever removes that file
 must keep that property and leave a test saying so.
+
+## Three: a settings file that already holds a picture is refused **whole**
+
+Found by taking the two modules out, reading the twelve errors the compiler
+listed, and then asking what it cannot see.
+
+`background` is a key in `appearance.toml` whose **value** is a serialized
+`Background`. Today that value can be a picture. Once `Picture` is gone, a file
+holding one no longer deserializes — and `alo_kept`'s reader does not drop the key
+it cannot read. `docs/contracts/person-settings.md` says such a file is **refused
+whole**, and `alo_appearance::keeping::at_sign_in` answers with the release's
+appearance and the refusal beside it.
+
+So a person who had chosen a wallpaper does not lose their wallpaper. **They lose
+their accent, their text scale, their light-and-dark setting and their per-display
+exceptions**, all at once, at the next sign-in, because one key's value names a
+type that no longer exists.
+
+This is a schema change and `CLAUDE.md` has a rule for it: *expand → migrate →
+contract across releases*. It is a real question rather than a formality, and it
+has at least three answers:
+
+- **refuse whole**, which is what happens if nothing is done, and is the worst of
+  the three for the person;
+- **read and drop** — accept the old shape, discard the background, keep every
+  other key, and say so in a sentence;
+- **read and convert** — accept the old shape and keep the colour where there was
+  one, discarding only a picture.
+
+Nothing here chooses between them. The third is only available where the old value
+was already a colour, so it is really the second plus a special case.
+
+**Who this actually affects is worth being exact about, because it is easy to
+argue it away.** alo OS has not shipped, so there is no field population. But the
+development machines have written these files, the certified laptop will have one
+before it is certified, and the read path is the same code either way. *Nobody has
+one yet* is a reason to choose calmly, not a reason the question does not exist.
+
+## What stopped the removal, and where it stands
+
+The modules come out cleanly: `git rm` of `picture.rs`, `rotating.rs`,
+`lock_image_decode.rs`, `lock_image_fit.rs`, `lock_texture.rs`, the contract and
+the artwork, and four lines out of `alo-appearance/src/lib.rs`, leaves **twelve
+errors across six files** — `appearance.rs`, `background.rs`, `changes.rs`,
+`keeping.rs`, `lock.rs` and `shipped.rs`. Every one is an unresolved import, which
+is the shape that makes this kind of removal safe: Rust leaves no silent survivor.
+
+What it does not leave is an answer to the two questions above — what
+`Background` becomes when a picture is no longer one of the things it can be, and
+what a file holding one does. The first is a small design decision, the second is a
+schema decision with a rule attached. Both were reached at the point where the
+next edit would have chosen one by accident, so the branch was abandoned rather
+than pushed.
