@@ -439,7 +439,29 @@ where it cannot be seen.
 
 ### 9. The canvas is where they left it
 
-**Status:** ready. **Depends on:** 1, 3, 6.
+**Status:** **Done, 2026-09-29.** **Depends on:** 1, 3, 6.
+
+`crates/alo-arranging` owns the file and **decides nothing about a canvas**: every
+value read back is rebuilt by `At::checked`, `Size::checked` and `Zoom::of`, the
+same road a live canvas takes, so a file hand-edited to a place off the plane is
+refused by the crate that owns that rule. There is deliberately no `Deserialize`
+for a `Camera`, because a position read back unchecked is a position nothing
+validated.
+
+**A window is remembered by what it is, not by which one it was.** A `wl_surface`
+does not survive a session, so the key is `app_id`. That has a consequence worth
+stating rather than discovering: **two windows of one application share one
+remembered place**, and the first to open claims it. A title would have been the
+alternative and is worse — a person renaming a document would find the window
+somewhere else tomorrow.
+
+**A remembered place is offered to task 8's own question before it is used.** A
+file written on a wide display can hold a place that is off a narrow one, and a
+person signing in on the smaller machine would get a window they could not reach.
+
+**An application that did not come back is absent rather than drawn empty**, and
+that needed no code: the arrangement is a list of places waiting to be claimed, and
+one nothing claims is never used.
 
 Frame positions and the camera survive a session ending and starting again.
 

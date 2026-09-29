@@ -187,6 +187,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-arranging"
+version = "0.0.1"
+dependencies = [
+ "alo-canvas",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
+]
+
+[[package]]
 name = "alo-ask"
 version = "0.0.1"
 dependencies = [
@@ -1436,6 +1446,7 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-approving",
+ "alo-arranging",
  "alo-canvas",
  "alo-capability",
  "alo-capturing",

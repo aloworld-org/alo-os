@@ -97,6 +97,7 @@ mod canvas_command;
 mod canvas_never_lost;
 mod canvas_pan;
 mod canvas_pinch;
+mod canvas_remembered;
 mod canvas_show_all;
 mod canvas_space_drag;
 mod canvas_wheel_zoom;
@@ -336,6 +337,7 @@ pub use capture_flatten::{NotFlattened, burnt_in};
 // job is to draw a frame with them on it. What is exported is what a caller must
 // hand in; every picture the tools become stays private.
 pub use canvas_command::CanvasCommandError;
+pub use canvas_remembered::WhereTheyLeftIt;
 pub use capture_raster::{CaptureLook, Capturing};
 pub use cursor::Cursor;
 pub use desktop_look::DesktopLook;
