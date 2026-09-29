@@ -560,7 +560,34 @@ Frame positions and the camera survive a session ending and starting again.
 
 ### 10. The walk, which is also the film's sequence
 
-**Status:** blocked — on 1 to 9. **Depends on:** 1–9.
+**Status:** **Done, 2026-09-30.** **This closes the plan.** **Depends on:** 1–9.
+
+Two halves, as `v0-5-the-shell-plan.md` task 14 established for the shell's own
+walk. The **raster** half is
+`crates/alo-shell/examples/support/the_canvas_walk_check.rs`, run as the
+`canvas-walk` sub-mode of `the_nested_fixtures` — ten steps against a real
+headless-weston parent, each read back off the frame it drew. The **sequence** half
+is `crates/alo-shell/tests/the_canvas_walked.rs`, which holds the walk's own order
+against the table in `docs/autonomy/updates/the-canvas-walked.md` and runs on any
+machine.
+
+**Four keyboard steps follow six pointer steps rather than six.** Dragging and
+resizing a frame have no keyboard form in v0.5 and none is promised: ADR 0065's
+*every one of them has a keyboard form* attaches to zoom, pan, fit, fill and work-
+inside, and `docs/features.md:422` attaches the same phrase to the same three at
+**[v1]**. `docs/design/the-shortcuts-and-the-edges.md` gives `Alt + F7` and
+`Alt + F8` under *Working with windows*, not under *Moving around the canvas*, and
+no `alo_shortcuts::Action` exists for either. The table names the absence in the
+row a person would look for it in, and a test requires that row to be there —
+because this plan's own history is of acceptances half-met where the missing half
+was true but unstated.
+
+**What the walk found while being written**, each recorded in the report: a wait
+that does not dispatch is a deadlock; a refusal that returns early takes its reason
+with it; and **Show all fits rather than zooms out** — it took the camera *in*, to
+168 per cent, because three small frames clustered on a large output are fitted by
+magnifying them. The first check demanded *further out*, having encoded the
+acceptance's phrasing instead of the behaviour.
 
 One walk: open three applications, drag one, resize another, pan, zoom out to
 *Show all*, zoom back into one and work in it, then the same by keyboard alone.

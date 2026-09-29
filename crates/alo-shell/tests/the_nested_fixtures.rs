@@ -116,6 +116,10 @@ mod one_heavy_fixture_at_a_time;
 mod popup_check;
 #[path = "../examples/support/resize_geometry_check.rs"]
 mod resize_geometry_check;
+#[path = "../examples/support/the_canvas_walk_check.rs"]
+mod the_canvas_walk_check;
+#[path = "../examples/support/the_canvas_walk_moments.rs"]
+mod the_canvas_walk_moments;
 #[path = "../examples/support/the_walk_check.rs"]
 mod the_walk_check;
 #[path = "../examples/support/window_control_label_check.rs"]
@@ -288,9 +292,10 @@ use std::path::Path;
 /// second for the same reason and a sharper one: it is the only check anywhere
 /// that measures what the canvas's zoom actually drew, and it found two faults
 /// in the canvas's first landing that the whole rest of the workspace passed.
-const EVERY_SUBMODE: [&str; 8] = [
+const EVERY_SUBMODE: [&str; 9] = [
     "offscreen",
     "walk",
+    "canvas-walk",
     "grabs",
     "pointer-release-grabs",
     "keyboard-grabs",
@@ -322,6 +327,7 @@ fn the_submode(named: &str) -> Result<(), Box<dyn std::error::Error>> {
     match named {
         "offscreen" => offscreen_check::run(),
         "walk" => the_walk_check::run(),
+        "canvas-walk" => the_canvas_walk_check::run(),
         "grabs" => grab_check::run(false, false),
         "pointer-release-grabs" => grab_check::run(false, true),
         "keyboard-grabs" => grab_check::run(true, false),
