@@ -12,6 +12,13 @@ repository.workspace = true
 # reinstall is a new machine (ADR 0003). Reused rather than restated: a second
 # spelling of *which machine* is a second thing to keep in step, and the
 # argument for why the identity is random lives in that crate.
+# The window model, reused rather than restated. A machine on the canvas is
+# an ordinary `alo_dock::Window`; this crate adds only a note saying which
+# machine one is showing. A second window model would need its own placement,
+# its own putting aside, its own travelling and its own answer to what a
+# click does — and the day those drifted, one kind of window would behave
+# differently for no reason a person could see.
+alo-dock = { path = "../alo-dock" }
 alo-nearby = { path = "../alo-nearby" }
 # Every sentence a person reads, in the language they read it in.
 alo-strings = { path = "../alo-strings" }
