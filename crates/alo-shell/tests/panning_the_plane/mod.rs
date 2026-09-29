@@ -30,8 +30,11 @@
 
 use super::support::{Application, Fixture, THREE_ZOOMS, looking, motion, on_the_screen};
 use alo_canvas::At;
+/// `KEY_SPACE`, as a real keyboard sends it.
+const SPACE: u32 = 57;
+
 use smithay::{
-    backend::input::{Axis, AxisSource},
+    backend::input::{Axis, AxisSource, KeyState},
     input::pointer::AxisFrame,
 };
 
@@ -222,5 +225,108 @@ fn a_scroll_past_the_edge_of_the_plane_is_refused_and_holds_nothing() {
         looking_at(&f),
         (before.0 - 10, before.1),
         "a refused scroll was kept and spent on the next one"
+    );
+}
+
+/// One two-finger scroll, as a touchpad sends one.
+///
+/// `AxisSource::Finger` rather than `Wheel`, which is the whole point of the
+/// test below: libinput reports the source and nothing on the pan road reads it.
+fn two_fingers(f: &Fixture, (across, down): (f64, f64)) -> bool {
+    f.backend(move |s| {
+        s.pointer_axis(
+            AxisFrame::new(31)
+                .source(AxisSource::Finger)
+                .value(Axis::Horizontal, across)
+                .value(Axis::Vertical, down),
+        )
+    })
+    .expect("a scroll with real values")
+}
+
+/// **A two-finger scroll pans exactly as a wheel does.**
+///
+/// Task 5 names *two-finger scroll* beside the wheel and this was recorded as
+/// still owed. It was not: `crate::libinput_scroll` turns `ScrollFinger` into an
+/// ordinary `AxisFrame` carrying `AxisSource::Finger`, and `crate::canvas_pan`
+/// never asks what the source was. So the road already existed and nothing held
+/// it — which is the same shape as a capability that is claimed and untested,
+/// and the reason this test is here rather than a line in the plan saying it
+/// works.
+///
+/// Asserted against the wheel's own answer rather than against a number written
+/// here, so the two cannot drift apart without this failing.
+#[test]
+fn a_two_finger_scroll_pans_exactly_as_a_wheel_does() {
+    let f = fixture();
+    let _app = mapped(&f);
+
+    let start = looking_at(&f);
+    assert!(scroll(&f, (13.0, -21.0)), "a wheel over the plane pans it");
+    let by_wheel = (looking_at(&f).0 - start.0, looking_at(&f).1 - start.1);
+    assert_ne!(
+        by_wheel,
+        (0, 0),
+        "the wheel moved nothing to compare against"
+    );
+
+    let before = looking_at(&f);
+    assert!(
+        two_fingers(&f, (13.0, -21.0)),
+        "two fingers over the plane pan it"
+    );
+    let by_fingers = (looking_at(&f).0 - before.0, looking_at(&f).1 - before.1);
+
+    assert_eq!(
+        by_fingers, by_wheel,
+        "a touchpad and a wheel moved the plane by different amounts for one gesture"
+    );
+}
+
+/// **Space and drag pans, and only while Space is held.**
+///
+/// ADR 0065 names it beside the wheel. It needed the fix that let this
+/// compositor see a key held with nothing focused — `Server::keyboard_key` used
+/// to return before the call that advances XKB whenever `current_focus()` was
+/// `None`, which is the only state this gesture happens in.
+///
+/// Both halves are asserted: that holding Space makes a drag pan, and that
+/// letting go stops it. A gesture that panned whether or not the key was down
+/// would pass the first half alone.
+#[test]
+fn space_and_drag_pans_the_plane_and_only_while_space_is_held() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert!(f.focus(Some(0)).is_ok(), "a window takes focus");
+
+    // With Space up, a motion moves the pointer and not the plane.
+    let start = looking_at(&f);
+    motion(&f, (400.0, 300.0));
+    motion(&f, (460.0, 330.0));
+    assert_eq!(
+        looking_at(&f),
+        start,
+        "the plane moved for a drag with no key held"
+    );
+
+    // Space down: the same movement pans, and the plane goes the other way —
+    // dragging right brings what is on the left into view, as a sheet of paper
+    // does.
+    assert!(f.key(SPACE, KeyState::Pressed).is_ok());
+    motion(&f, (560.0, 330.0));
+    let panned = looking_at(&f);
+    assert_eq!(
+        (panned.0 - start.0, panned.1 - start.1),
+        (-100, 0),
+        "a hundred pixels of space-drag did not move the plane a hundred units the other way"
+    );
+
+    // And letting go stops it.
+    assert!(f.key(SPACE, KeyState::Released).is_ok());
+    motion(&f, (660.0, 330.0));
+    assert_eq!(
+        looking_at(&f),
+        panned,
+        "the plane kept panning after Space was let go"
     );
 }
