@@ -167,8 +167,20 @@ jobs:
             libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
             libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
             weston \
-            dbus-x11 gnome-keyring at-spi2-core
+            dbus-x11 dbus-daemon gnome-keyring at-spi2-core \
+            libgtk-3-bin
           weston --version
+          # **The three programs `alo-adapters` starts a real application with**,
+          # named here because that test refuses to skip when they are absent —
+          # *skipping would report green on a machine with none* — which is the
+          # rule `installed_in_a_virtual_machine.rs` states and the right one. It
+          # asked for `broadwayd` and said so, and `gtk-builder-tool` and
+          # `dbus-daemon` are the two it would have asked for next; all three are
+          # checked here so the answer arrives in one run rather than three.
+          # `libgtk-3-bin` carries the first two.
+          for program in dbus-daemon broadwayd gtk-builder-tool; do
+            printf '%-20s %s\n' "$program" "$(command -v "$program" || echo MISSING)"
+          done
 
       # Cache invalidation dominates, not work: a queue-branch gate on one lane
       # ran clippy in 2 seconds warm against 85 on a rebase-invalidated run. So
@@ -345,6 +357,36 @@ jobs:
             fi
           done
 
+          # **Making the namespace is not the part that fails.** As root the line
+          # above succeeds and the five tests still fail, with the inner shell
+          # exiting **126** — found but not executable. So the question is not
+          # whether the namespace can be made but what can be *run* inside it, and
+          # these four lines ask that directly instead of leaving it to a theory.
+          #
+          # Each step is separate because `126` from `ip` and `126` from the test
+          # binary are different faults with the same number: the tests run
+          # `ip link set lo up && exec "$0"`, so a failure in the first is
+          # indistinguishable from a failure in the second unless they are asked
+          # apart. A binary from the repository's own tree is the last one, because
+          # that is the only one the test actually execs.
+          echo "--- what can be run inside a namespace, as root"
+          probe() {
+            printf '%-46s ' "$1"
+            shift
+            sudo unshare --map-root-user --net -- sh -c "$@" >/dev/null 2>/tmp/probe.err
+            printf 'exit %s %s\n' "$?" "$(tr '\n' ' ' < /tmp/probe.err)"
+          }
+          # 126 is the only answer that matters here: the supervisor with no
+          # arguments prints its usage and exits non-zero on purpose, so *any*
+          # other code means the binary ran and the fault is elsewhere.
+          probe "a shell builtin"              'exit 0'
+          probe "ip link set lo up"            'ip link set lo up'
+          probe "exec /bin/true"               'exec "$0"' /bin/true
+          probe "exec the supervisor (126?)"   'exec "$0"' \
+            ./tools/kernel-loop/target/debug/alo-kernel-loop
+          ls -l ./tools/kernel-loop/target/debug/alo-kernel-loop
+          echo "the tree is owned by: $(stat -c '%U:%G' .) ; target/ by: $(stat -c '%U:%G' target 2>/dev/null || echo 'no target yet')"
+
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
       # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
       # slept and NTP stepped the clock forward mid-gate.
@@ -409,17 +451,26 @@ jobs:
             ' | tee /tmp/the-gates.log
           echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
 
-      # Root compiled into `target/` and may have left files in the cargo home, so
-      # the cache's own save step — which runs as `runner` — would meet files it
-      # cannot read. Handing them back is part of gating as root rather than a
-      # separate concern, so it happens whether the gates passed or failed.
+      # Root compiled into `target/` and left files in the cargo home and under
+      # `$HOME/.local`, so `runner` — which runs every step after this one, and the
+      # cache's own save step — would meet files it cannot read. Handing them back
+      # is part of gating as root rather than a separate concern, so it happens
+      # whether the gates passed or failed.
+      #
+      # **`$HOME/.local` whole, not just the keyrings under it.** The first run
+      # that gated as root ended with the cleanup step saying
+      # `EACCES: permission denied, stat '/home/runner/.local/bin/git'` — the
+      # keyring daemon had created `$HOME/.local` itself, owned by root and not
+      # traversable, and everything already under it went out of reach with it. A
+      # chown aimed at the leaf cannot repair a directory above the leaf, which is
+      # the same lesson as the copy helper that can only touch what it transfers.
       - name: give the tree back to the runner
         if: always()
         run: |
           sudo chown -R "$(id -u):$(id -g)" \
-            "$HOME/.cargo" "$HOME/.local/share/keyrings" \
+            "$HOME/.cargo" "$HOME/.local" \
             target tools/kernel-loop/target 2>/dev/null || true
-          echo "owned by $(id -un) again"
+          echo "owned by $(id -un) again; $HOME/.local is $(stat -c '%U:%G %a' "$HOME/.local" 2>/dev/null || echo absent)"
 
       # **What was not run, beside what passed.** A skip is the same colour as a
       # pass, so this puts the count where somebody comparing a CI run against a
