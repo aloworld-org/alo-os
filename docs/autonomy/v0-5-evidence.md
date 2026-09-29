@@ -519,9 +519,15 @@ it.
 `org.kde.dolphin` 26.04.3 for the file manager, which is also the trash, and
 `org.kde.ark` from the same release for the archives a file manager hands on, each
 named by the identifier its source knows it by and the version it was decided at
-on 2026-09-15. Nothing in `image/` installs `shipped.toml`'s list: the installer
-plan is to name the fresh machine's applications to the image from that file, and
-that has not been done.
+on 2026-09-15. Nothing has booted the image. Since #229 the installing exists:
+`alo-shipping` is built by the recipe, installed to `/usr/libexec`, carries
+`alo-shipping.service` — *the applications a fresh machine has*, after
+`network-online.target` — and is in the recipe's own `systemctl enable` list
+beside the daemons, with `crates/alo-image` holding the recipe to it
+(ADR 0073: at first boot, not at image build). The seven identifiers appear
+nowhere under `image/` and that is correct rather than missing, because the list
+is `shipped.toml`'s and the installer reads it. **What has never happened is a
+boot.**
 
 *This entry read **Shown by: nothing** and *there is no file manager in this
 repository* in its first draft. It is a pinned upstream application, which is what
@@ -569,7 +575,15 @@ choose between.
 `org.gnome.TextEditor` 50.1 and `org.gnome.Loupe` 50.0, the viewer chosen because
 it decodes each image in a separate sandboxed process — and the text editor is
 also the reference adapter, driven end to end through its own automation
-interface. Nothing installs `shipped.toml`'s list on a machine yet.
+interface. Nothing has booted the image. Since #229 the installing exists:
+`alo-shipping` is built by the recipe, installed to `/usr/libexec`, carries
+`alo-shipping.service` — *the applications a fresh machine has*, after
+`network-online.target` — and is in the recipe's own `systemctl enable` list
+beside the daemons, with `crates/alo-image` holding the recipe to it
+(ADR 0073: at first boot, not at image build). The seven identifiers appear
+nowhere under `image/` and that is correct rather than missing, because the list
+is `shipped.toml`'s and the installer reads it. **What has never happened is a
+boot.**
 
 ### A terminal
 
@@ -580,8 +594,15 @@ interface. Nothing installs `shipped.toml`'s list on a machine yet.
 part that matters is held rather than described: `Shipped::decided` refuses the
 list unless the terminal is one **no agent can be granted** (ADR 0043). Law 2
 forbids the agent running arbitrary commands and says nothing about the person,
-and that refusal is what makes the distinction real instead of stated. Nothing
-installs the list on a machine yet.
+and that refusal is what makes the distinction real instead of stated. Nothing has booted the image. Since #229 the installing exists:
+`alo-shipping` is built by the recipe, installed to `/usr/libexec`, carries
+`alo-shipping.service` — *the applications a fresh machine has*, after
+`network-online.target` — and is in the recipe's own `systemctl enable` list
+beside the daemons, with `crates/alo-image` holding the recipe to it
+(ADR 0073: at first boot, not at image build). The seven identifiers appear
+nowhere under `image/` and that is correct rather than missing, because the list
+is `shipped.toml`'s and the installer reads it. **What has never happened is a
+boot.**
 
 ### **Search your own files, without asking anything** — by name, kind, date and contents
 

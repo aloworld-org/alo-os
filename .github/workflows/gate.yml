@@ -1,13 +1,17 @@
-# The nine gates, run on every change and on every queue branch, posting the
-# status `main` requires.
+# The gates that run on a hosted runner, on every change and every queue branch,
+# posting `alo/gates-on-a-runner` — which is **not** the status `main` requires.
 #
-# **`alo/nine-gates` is a required check on `main` and until this file nothing
-# produced it.** Every status on every pull request was typed by hand with
-# `curl`, by whichever lane was landing, and so was the *second* one each
-# merge-queue branch needs. On 2026-09-28 that cost a pull request sitting at
-# position 1 in the queue with nobody to attest it, another gated twice because
-# the queue rebased it under the first attestation, and a lane that could not
-# merge at all for most of a day.
+# **`alo/nine-gates` is a required check on `main` and nothing produces it but a
+# lane.** Every status on every pull request was typed by hand with `curl`, by
+# whichever lane was landing, and so was the *second* one each merge-queue branch
+# needs. On 2026-09-28 that cost a pull request sitting at position 1 in the queue
+# with nobody to attest it, another gated twice because the queue rebased it under
+# the first attestation, and a lane that could not merge at all for most of a day.
+# This file was written to end that and it does not, quite: seven tests of 8,205
+# cannot run here, so it posts a claim about a runner instead and the step at the
+# bottom of this file says why at length. What it removes is the *guessing* — a
+# lane still types the required status, but it no longer finds out from a queue
+# what a machine would have told it in twenty minutes.
 #
 # Until that afternoon this file could not have existed: the gates loaded BPF
 # programmes into a privileged kernel, which no hosted runner will give. #217
@@ -20,9 +24,10 @@
 # GitHub's merge queue builds its own branch — `gh-readonly-queue/main/pr-N-<base>`
 # — and that commit is **not** the pull request's head: it is the change rebased
 # onto the real current `main`. Branch protection asks it for `alo/nine-gates`
-# too, and nothing produced that either. So `on: merge_group` is not a
-# convenience, it is the half of the contract that was being met by a person
-# typing a second `curl`.
+# too, and nothing produces that either. So `on: merge_group` is not a
+# convenience, it is the half of the contract that is being met by a person
+# typing a second `curl` — and this file running there is what tells them, before
+# they type it, whether the rebase the queue performed still passes.
 #
 # It is also the design the owner decided on 2026-09-28, out of three that were
 # put to them: **the queue branch is gated by CI, and `alo/nine-gates` on a pull
@@ -33,11 +38,20 @@
 #
 # # What this does not do
 #
-# **It does not change branch protection.** The required check stays what it is,
-# this workflow posts it like any lane does, and a lane may keep posting by hand
-# while this proves itself. Making this workflow's own check the required one is
-# a later decision and the owner's — a flag day in the middle of three lanes
-# landing work is how a queue stops for a reason nobody can see.
+# **It does not change branch protection, and it no longer aims to.** The
+# required check stays what it is and a lane keeps posting it. Making
+# `alo/gates-on-a-runner` a required check, or adding it beside the other, is the
+# owner's decision — a flag day in the middle of three lanes landing work is how a
+# queue stops for a reason nobody can see. What would have to come first is the
+# seven tests. What is measured about them tonight is only this: they fail here and
+# they pass on all three lanes' machines, so it is this environment and not the
+# work. Five make a network namespace and two reach an accessibility bus, and for
+# the namespace five the run below shows the kernel refusing `unshare` to the
+# runner while allowing it to root — which explains why they failed before the
+# gates ran as root and **does not** explain why they still fail now. That is
+# unfinished rather than concluded, and it is written here as unfinished because a
+# cause invented to fill the gap is how five wrong explanations got withdrawn on
+# 2026-09-28 before the sixth was measured.
 #
 # **It does not build the image**, which no gate does either; `docs/quirks/`
 # records that as its own finding.
@@ -152,8 +166,21 @@ jobs:
           sudo apt-get install --no-install-recommends --yes \
             libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
             libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
-            weston
+            weston \
+            dbus-x11 dbus-daemon gnome-keyring at-spi2-core \
+            libgtk-3-bin
           weston --version
+          # **The three programs `alo-adapters` starts a real application with**,
+          # named here because that test refuses to skip when they are absent —
+          # *skipping would report green on a machine with none* — which is the
+          # rule `installed_in_a_virtual_machine.rs` states and the right one. It
+          # asked for `broadwayd` and said so, and `gtk-builder-tool` and
+          # `dbus-daemon` are the two it would have asked for next; all three are
+          # checked here so the answer arrives in one run rather than three.
+          # `libgtk-3-bin` carries the first two.
+          for program in dbus-daemon broadwayd gtk-builder-tool; do
+            printf '%-20s %s\n' "$program" "$(command -v "$program" || echo MISSING)"
+          done
 
       # Cache invalidation dominates, not work: a queue-branch gate on one lane
       # ran clippy in 2 seconds warm against 85 on a rebase-invalidated run. So
@@ -162,10 +189,98 @@ jobs:
         with:
           workspaces: ". -> target\ntools/kernel-loop -> target"
 
+      # **The linker the last two gates need**, and the one piece of this file
+      # whose correctness cannot be settled from a lane.
+      #
+      # Measured on this workflow's first runs against other lanes' changes:
+      # `error: linker 'bpf-linker' not found` — the BPF target's clippy gate
+      # compiles `alo-bounding-kernel` and there is no such program on a runner.
+      #
+      # **It is not simply another package.** `crates/alo-bounding-kernel/rust-toolchain.toml`
+      # says why in its own words: `bpf-linker` does not link objects, it reads
+      # the LLVM bitcode `rustc` emits and runs LLVM's own passes over it, so the
+      # LLVM it was built against **has to be** the LLVM that compiler emits. On
+      # one lane's machine that pairing is bpf-linker 0.11.0 against LLVM 22.1.8,
+      # arranged deliberately.
+      #
+      # Installing it here builds it against whatever LLVM this runner has, which
+      # may or may not be the pinned nightly's. If it is not, the failure is the
+      # one that file warns about rather than a missing program, and the honest
+      # conclusion would be that the BPF gates cannot run on a hosted runner and
+      # belong to a lane. That is a measurement nobody has made yet, and this
+      # step is how it gets made — not an assumption that it works.
+      # **And the LLVM it is built against.** Measured on the run before this
+      # step existed: `bpf-linker` would not build at all —
+      # *could not find llvm-config in directories specified by environment* —
+      # which is a level below the version-matching question. A hosted runner
+      # has no LLVM development files for this purpose.
+      #
+      # 22, because that is what the lane this was written on pairs with the
+      # pinned nightly: bpf-linker 0.11.0 against LLVM 22.1.8, arranged
+      # deliberately and for the reason `rust-toolchain.toml` gives. Ubuntu's own
+      # archive does not carry 22, so it comes from apt.llvm.org, which is the
+      # project's own.
+      #
+      # This is the expensive step in the file and it is worth saying so: it
+      # downloads and installs a compiler toolchain on every run that the cache
+      # does not cover. If it proves too slow, the honest alternative is to take
+      # the two BPF gates off this workflow's path and have CI **say so in its
+      # own output on every run** — a gate that is absent and says so is
+      # information; one that is absent quietly is the same fault as a skip
+      # reading like a pass.
+      - name: the LLVM the BPF linker is built against
+        run: |
+          wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/llvm.sh
+          sudo /tmp/llvm.sh 22
+          # **Copied from the lane that works, not inferred.** The first attempt
+          # set `LLVM_SYS_221_PREFIX` and `bpf-linker` still answered *could not
+          # find llvm-config*, because that is not the variable it reads. The
+          # machine where these gates have always passed does it with `PATH` and
+          # `LLVM_PREFIX` — `gate-workspace.sh:77` — so that is what this does.
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          echo "LLVM_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+          /usr/lib/llvm-22/bin/llvm-config --version
+
+      - name: the linker the BPF target needs
+        run: cargo +nightly-2026-06-01 install bpf-linker --locked
+
       - name: the test runner the gates name
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest
+
+      # **What this run will not cover, said before it runs rather than after.**
+      #
+      # The nine gates are what `tools/kernel-loop/src/gates.rs` defines, and that
+      # definition excludes three packages and one test by name. One lane runs
+      # `cargo test --workspace` with **no** exclusion at all, so its green covers
+      # strictly more than this one's — and nobody reading a tick would know which
+      # they were looking at. This is the *first* of two ways a green here is
+      # narrower than a lane's; `alo/gates-on-a-runner` at the bottom of this file
+      # is the second, and it is named the way it is for the same reason.
+      #
+      # Running unfiltered here is not the answer: the excluded packages attach
+      # BPF programmes to a kernel, which is what #217 took off the merge path
+      # and what no hosted runner can do. CI running something other than the
+      # repository's own definition would be the drift this file exists to
+      # prevent, pointing the other way.
+      #
+      # So it prints the exclusions instead. A reader comparing a green here
+      # against a green on a lane can see the difference rather than infer it,
+      # which is the same rule as the skip count below and as
+      # *a gate that is absent should say so*.
+      - name: what these gates do not cover
+        run: |
+          echo "the gates here are the ones gates.rs defines, which excludes:"
+          # `\r$` first: a checkout with CRLF endings leaves the continuation
+          # backslash followed by a carriage return, so `\\$` never matches and
+          # the joined line comes out with a stray `\` in the middle of it.
+          sed -n '/"-E",/,/",$/p' tools/kernel-loop/src/gates.rs \
+            | sed -e 's/\r$//' -e 's/^ *//' -e 's/\\$//' \
+            | tr -d '\n' | sed -e 's/^"-E",*//' -e 's/^ *"//' -e 's/",$//'
+          echo
+          echo "A lane running cargo test --workspace with no filter covers more than this."
 
       # **Built here rather than with `cargo run`, so two failures stay apart.**
       # A supervisor that does not compile and a gate that does not pass are
@@ -211,15 +326,161 @@ jobs:
             exit 1
           }
 
+      # **Can a namespace be made here at all.** `alo-nearby`'s IPv6 test and
+      # `alo-asking`'s four office tests each make a network namespace of their
+      # own with util-linux's `unshare`, inside a user namespace — deliberately,
+      # and `asked_and_answered_over_ipv6.rs` says why in its own words: a
+      # development machine may have IPv6 switched off outright (the WSL2 kernel
+      # they were written on does) and a fresh namespace has it on, so what is
+      # measured is the crate rather than however the host is configured.
+      #
+      # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor and
+      # WSL2 does not, which is the likeliest reason those five passed on a lane —
+      # including as uid 65534 — and failed here. Root is exempt, and the gates
+      # below run as root, so this step changes nothing: it **states** what the
+      # kernel is set to and whether a namespace can actually be made, as this
+      # runner and as root. If the five fail again, these lines are where a reader
+      # looks first, and they distinguish *the kernel forbids it* from *something
+      # else is wrong* without another run to find out.
+      - name: can a namespace be made
+        run: |
+          echo "kernel.apparmor_restrict_unprivileged_userns = $(
+            cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null \
+              || echo 'not a setting on this kernel'
+          )"
+          for who in "$(id -un)" root; do
+            if [ "$who" = root ]; then as=sudo; else as=""; fi
+            if $as unshare --user --map-root-user --net -- true 2>/dev/null; then
+              echo "unshare as $who: a network namespace can be made"
+            else
+              echo "unshare as $who: REFUSED — the five namespace tests cannot pass this way"
+            fi
+          done
+
+          # **Making the namespace is not the part that fails.** As root the line
+          # above succeeds and the five tests still fail, with the inner shell
+          # exiting **126** — found but not executable. So the question is not
+          # whether the namespace can be made but what can be *run* inside it, and
+          # these four lines ask that directly instead of leaving it to a theory.
+          #
+          # Each step is separate because `126` from `ip` and `126` from the test
+          # binary are different faults with the same number: the tests run
+          # `ip link set lo up && exec "$0"`, so a failure in the first is
+          # indistinguishable from a failure in the second unless they are asked
+          # apart. A binary from the repository's own tree is the last one, because
+          # that is the only one the test actually execs.
+          echo "--- what can be run inside a namespace, as root"
+          # **`|| code=$?` and not a bare call.** A step here runs under `bash -e`,
+          # so a probe that simply ran the command and read `$?` afterwards never
+          # reached the `printf`: the first failing case aborted the step, skipped
+          # the gates, and reported nothing about the very thing it was measuring.
+          # That is what the first run of this block did, and it is the shape of
+          # fault this whole file is about — a diagnostic that is silent in exactly
+          # the case it exists for. Every line here must survive its own bad news.
+          probe() {
+            label="$1"
+            shift
+            code=0
+            sudo unshare --map-root-user --net -- sh -c "$@" >/dev/null 2>/tmp/probe.err \
+              || code=$?
+            printf '%-46s exit %s %s\n' "$label" "$code" "$(tr '\n' ' ' < /tmp/probe.err)"
+          }
+          # 126 is the only answer that matters here: the supervisor with no
+          # arguments prints its usage and exits non-zero on purpose, so *any*
+          # other code means the binary ran and the fault is elsewhere.
+          probe "a shell builtin"              'exit 0'
+          probe "ip link set lo up"            'ip link set lo up'
+          probe "exec /bin/true"               'exec "$0"' /bin/true
+          probe "exec the supervisor (126?)"   'exec "$0"' \
+            ./tools/kernel-loop/target/debug/alo-kernel-loop
+          ls -l ./tools/kernel-loop/target/debug/alo-kernel-loop \
+            || echo "the supervisor is not at that path, so the line above is 127 and not 126"
+          echo "the tree is owned by: $(stat -c '%U:%G' .) ; target/ by: $(stat -c '%U:%G' target 2>/dev/null || echo 'no target yet')"
+
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
       # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
       # slept and NTP stepped the clock forward mid-gate.
+      # **Inside a session bus, because twenty-four tests need one.** Measured on
+      # the first run that got this far: 24 of 8,189 failed, and all of them for
+      # one reason — `alo-secrets` wants the Secret Service, `alo-shell`'s
+      # `the_tree_a_reader_finds` wants the accessibility bus, `alo-proxy` the
+      # same. Those are D-Bus, and a hosted runner has no session bus at all.
+      #
+      # This is the hole in the survey that cleared this workflow, and it is the
+      # second of exactly the same shape. That survey ran the suite twice with
+      # `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` and `DISPLAY` unset and found no
+      # difference — but the machine still had a session bus throughout, so the
+      # variable that mattered was never varied. A runner is a third session
+      # again, and this is the part of it the survey could not see.
+      #
+      # `dbus-run-session` gives the gates a bus of their own that dies with
+      # them; `gnome-keyring-daemon --unlock` puts a Secret Service on it with an
+      # empty password, which is what the tests expect of a fresh login.
+      #
+      # **And as root, because uid 0 is part of what nineteen of them measure.**
+      # A hosted runner is `runner`, uid 1001. A lane's machine gates as uid 0,
+      # and so does every daemon here in production — `alo-brokerd` is the update
+      # broker. `for_the_unit` writes a file mode 0644 and pins the refusal *"is
+      # not root's, so the broker did not write it"*; owned by `runner` that
+      # sentence is never reached, so the test fails while the code is right.
+      #
+      # Measured on a lane's machine on 2026-09-28, one binary run twice: as uid 0,
+      # 5 of 5 passed; as uid 65534, 3 of the 5 failed with that sentence as the
+      # panic. Those three are three of the eighteen `alo-brokerd` failures the
+      # first session-bus run reported, with `alo-proxy`'s password-file test the
+      # nineteenth. This is not a workaround for the tests — it is the environment
+      # they describe.
       - name: the nine gates
         run: |
           began=$(cut -d. -f1 /proc/uptime)
+
+          # `sudo` replaces the PATH with its own `secure_path`, which has no
+          # cargo in it, and `-E` does not bring PATH back — it is on sudo's
+          # blacklist by design. So the PATH is handed over explicitly, with the
+          # cargo home's `bin` in front of it.
+          #
+          # And it is **checked here rather than discovered inside**: a root shell
+          # with no cargo makes the gates fail, and a gate failure is a sentence
+          # about the work. This one would be a sentence about this file, so it
+          # says so in its own words. Watched failing exactly this way on a lane's
+          # machine on 2026-09-28 before it was written down.
+          gates_path="$HOME/.cargo/bin:$PATH"
+          root_cargo=$(sudo -E env "PATH=$gates_path" bash -c 'command -v cargo' || true)
+          if [ -z "$root_cargo" ]; then
+            echo "no cargo on root's PATH. The gates are not what failed — this step is."
+            echo "  the PATH handed over: $gates_path"
+            exit 1
+          fi
+          echo "root runs $root_cargo"
+
           set -o pipefail
-          ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1 | tee /tmp/the-gates.log
+          sudo -E env "PATH=$gates_path" "HOME=$HOME" \
+            dbus-run-session -- bash -c '
+              printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
+              ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
+            ' | tee /tmp/the-gates.log
           echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
+
+      # Root compiled into `target/` and left files in the cargo home and under
+      # `$HOME/.local`, so `runner` — which runs every step after this one, and the
+      # cache's own save step — would meet files it cannot read. Handing them back
+      # is part of gating as root rather than a separate concern, so it happens
+      # whether the gates passed or failed.
+      #
+      # **`$HOME/.local` whole, not just the keyrings under it.** The first run
+      # that gated as root ended with the cleanup step saying
+      # `EACCES: permission denied, stat '/home/runner/.local/bin/git'` — the
+      # keyring daemon had created `$HOME/.local` itself, owned by root and not
+      # traversable, and everything already under it went out of reach with it. A
+      # chown aimed at the leaf cannot repair a directory above the leaf, which is
+      # the same lesson as the copy helper that can only touch what it transfers.
+      - name: give the tree back to the runner
+        if: always()
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" \
+            "$HOME/.cargo" "$HOME/.local" \
+            target tools/kernel-loop/target 2>/dev/null || true
+          echo "owned by $(id -un) again; $HOME/.local is $(stat -c '%U:%G %a' "$HOME/.local" 2>/dev/null || echo absent)"
 
       # **What was not run, beside what passed.** A skip is the same colour as a
       # pass, so this puts the count where somebody comparing a CI run against a
@@ -237,15 +498,39 @@ jobs:
           grep -oE '[0-9]+ tests and [0-9]+ binaries skipped' /tmp/the-gates.log | tail -1 \
             || echo "no skip line in the gates' output — the tests gate may not have run"
 
-      # **The status `main` requires**, on whichever commit is being gated: the
-      # pull request's head, or the queue branch's own. `github.event.after` is
-      # the queue branch's head on a `merge_group` event and empty otherwise.
+      # **`alo/gates-on-a-runner`, and deliberately not `alo/nine-gates`.**
       #
-      # It runs only on success. A failed gate posts nothing at all rather than
-      # posting a failure, because a lane may still land by hand while this
-      # proves itself, and a red status this workflow wrote would block a commit
-      # a person had gated properly on a machine with a kernel.
-      - name: post alo/nine-gates
+      # This workflow was written to post the status `main` requires, and it very
+      # nearly did. Two tests need an accessibility bus this runner cannot give
+      # them as root and five need a network namespace it refuses to make, so the
+      # workspace-tests gate does not pass here — and the plan was for the run to
+      # *say so* while still posting.
+      #
+      # That plan was wrong and it was wrong in the shape this file argues against
+      # twice above. `alo/nine-gates` means the nine gates passed. **Naming a gap
+      # in a log does not make a status true**, and a green a reader has to go and
+      # read a log to qualify is the same fault as a skip being the same colour as
+      # a pass. It would also be a claim about the *repository's* gates made by the
+      # weakest place they run.
+      #
+      # So this posts a different claim, and the name says **where it ran** rather
+      # than how much of it ran. A count goes stale the day the runner gains or
+      # loses a capability and then the name is lying again; the machine is the
+      # durable fact. A reader seeing `alo/gates-on-a-runner` green and
+      # `alo/nine-gates` absent knows exactly what they have — most of the gates,
+      # on a hosted runner — without knowing today's arithmetic.
+      #
+      # `alo/nine-gates` stays what it is: posted by a lane, on a machine with a
+      # kernel, meaning all nine. If this runner is ever made able to run
+      # everything, this step can post both and the distinction retires on
+      # evidence rather than by decision.
+      #
+      # On whichever commit is being gated — the pull request's head, or the queue
+      # branch's own. `github.event.after` is the queue branch's head on a
+      # `merge_group` event and empty otherwise. It runs only on success, because a
+      # red status this workflow wrote would sit beside a commit somebody gated
+      # properly.
+      - name: post alo/gates-on-a-runner
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -253,6 +538,6 @@ jobs:
         run: |
           gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=success \
-            -f context=alo/nine-gates \
+            -f context=alo/gates-on-a-runner \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            -f description="all nine, on this tree, by the workflow"
+            -f description="the gates that run on a hosted runner, by the workflow"
