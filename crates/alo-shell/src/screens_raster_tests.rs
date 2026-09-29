@@ -9,7 +9,6 @@
 
 use alo_appearance::{Appearance, Background, Token};
 use alo_displays::Changes;
-use alo_dock::Edge;
 use alo_strings::Direction;
 
 use super::*;
@@ -29,16 +28,14 @@ fn two_backgrounds() -> Appearance {
     appearance
 }
 
-/// The two screens drawn, with the dock on `edge` and night light as `tonight`.
-fn the_desk(edge: Edge, tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
+/// The two screens drawn, with night light as `tonight`.
+fn the_desk(tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
     let appearance = two_backgrounds();
-    let mut dock = Dock::shipped();
-    dock.set_edge(edge);
+    let dock = Dock::shipped();
     let screens = the_screens(
         vec![a_laptop(), an_office_screen()],
         &Changes::untouched(),
         &appearance,
-        &dock,
         tonight,
     );
     desk(
@@ -64,47 +61,46 @@ fn ground(picture: &ScreenPicture) -> [u8; 3] {
 }
 
 /// **Two screens are two pictures**, each laid out for its own room, each with
-/// its own background behind its windows and its own dock along the edge
-/// `alo-dock` names — on every edge a person can put the dock on.
+/// its own background behind its windows and its own dock along the bottom.
 ///
 /// Nothing is stretched across the desk: the monitor's dock is laid out for the
 /// monitor and the laptop's for the laptop, which is why their bands are not
 /// the same size.
+///
+/// This ran four times before ADR 0076, once per edge. The statement it makes is
+/// the same one; there is one edge to make it on.
 #[test]
 fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
     let appearance = two_backgrounds();
     let navy = Token::Navy.colour();
     let cream = Token::Cream.colour();
 
-    for edge in Edge::ALL {
-        let mut dock = Dock::shipped();
-        dock.set_edge(edge);
+    {
         let screens = the_screens(
             vec![a_laptop(), an_office_screen()],
             &Changes::untouched(),
             &appearance,
-            &dock,
             &a_cold_evening(),
         );
-        let drawn = the_desk(edge, &a_cold_evening());
-        assert_eq!(drawn.len(), 2, "{edge:?}");
+        let drawn = the_desk(&a_cold_evening());
+        assert_eq!(drawn.len(), 2);
 
         for picture in &drawn {
             let place = screens
                 .each()
                 .find(|place| place.name() == &picture.name)
                 .expect("every picture is a screen on this desk");
-            assert_eq!(picture.size, place.room(), "{edge:?}");
+            assert_eq!(picture.size, place.room());
             assert_eq!(picture.at, place.at());
-            assert_eq!(picture.dock.size, picture.size, "{edge:?}");
-            assert_eq!(picture.dock.layout.edge(), edge);
+            assert_eq!(picture.dock.size, picture.size);
             assert!(!picture.dock.solids.is_empty());
             let band = picture.dock.band;
-            match edge {
-                Edge::Top | Edge::Bottom => assert_eq!(band.size.w, picture.size.0),
-                Edge::Left | Edge::Right => assert_eq!(band.size.h, picture.size.1),
-            }
-            assert!(picture.dock.status_area.size.w > 0);
+            assert_eq!(band.size.w, picture.size.0, "it spans the width");
+            assert_eq!(
+                band.loc.y + band.size.h,
+                picture.size.1,
+                "and sits on the bottom"
+            );
         }
 
         let laptop = drawn
@@ -117,10 +113,10 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
             .unwrap();
         assert_eq!(ground(laptop), [navy.red(), navy.green(), navy.blue()]);
         assert_eq!(ground(office), [cream.red(), cream.green(), cream.blue()]);
-        assert_ne!(laptop.size, office.size, "{edge:?}");
+        assert_ne!(laptop.size, office.size);
         assert_ne!(
             laptop.dock.band.size, office.dock.band.size,
-            "{edge:?}: one dock was stretched across two screens"
+            "one dock was stretched across two screens"
         );
     }
 }
@@ -132,8 +128,8 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
 /// warming a screen never brightens it.
 #[test]
 fn night_light_warms_the_background_and_the_dock_on_every_screen() {
-    let cold = the_desk(Edge::Bottom, &a_cold_evening());
-    let warm = the_desk(Edge::Bottom, &a_warm_evening());
+    let cold = the_desk(&a_cold_evening());
+    let warm = the_desk(&a_warm_evening());
     assert_eq!(cold.len(), 2);
     assert_eq!(warm.len(), 2);
 
@@ -176,7 +172,6 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
         vec![a_laptop(), an_office_screen()],
         &Changes::untouched(),
         &appearance,
-        &dock,
         &a_cold_evening(),
     );
 

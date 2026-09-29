@@ -254,7 +254,6 @@ mod sign_in_seat;
 mod socket;
 mod software_scanout;
 pub mod status_items;
-mod status_items_raster;
 mod status_row;
 mod surfaces;
 mod window_activation;

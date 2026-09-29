@@ -1,10 +1,18 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Nine strings, and they fall into three groups a person meets in three
-//! different places: the four edges, which are a list in Settings; what the dock
-//! is doing with its names, which is a line under that list; and the two ways a
-//! screen can fail to be one, which is read by whoever is looking at a machine
-//! that reported something impossible.
+//! They fall into groups a person meets in different places: whether the dock
+//! gives way, which is a list in Settings; what the dock is doing with its names,
+//! which is a line under that list; the two ways a screen can fail to be one,
+//! read by whoever is looking at a machine that reported something impossible;
+//! and what is said about the person's own file.
+//!
+//! **The four edge names left with the edges.** ADR 0076 fixed the dock along the
+//! bottom, so `dock.edge.bottom`, `.left`, `.right` and `.top` name nothing a
+//! person picks between, and `dock.labels.beside` described a placement that no
+//! longer happens. Removing a key is not the rewording ADR 0068 governs — there
+//! is no new meaning under an old key — but the vocabulary snapshot is regenerated
+//! in the same change, because a snapshot that still lists them is a claim that
+//! something says them.
 //!
 //! The shape is `alo-appearance`'s, one crate on: constants, `alo_strings::Word`,
 //! and a test at the bottom putting every key back through `Key::named`.
@@ -35,38 +43,8 @@ use alo_strings::Vocabulary;
 pub use alo_strings::Word;
 
 // ---------------------------------------------------------------------------
-// The four edges — [`crate::Edge`]. A list of four in Settings, and the whole of
-// what a person chooses about the dock at v0.01.
-// ---------------------------------------------------------------------------
-
-/// What [`crate::Edge::Bottom`] is called.
-pub const BOTTOM: Word = Word::saying("dock.edge.bottom", "Bottom").noting(
-    "One of four rows in a list a person picks the dock's position from. It names the bottom edge \
-     of the screen, not a direction to move something in.",
-);
-
-/// What [`crate::Edge::Left`] is called.
-pub const LEFT: Word = Word::saying("dock.edge.left", "Left").noting(
-    "One of four rows in a list a person picks the dock's position from — the left edge of the \
-     screen. It is the physical left of the screen and does not swap around in a language read \
-     right to left.",
-);
-
-/// What [`crate::Edge::Right`] is called.
-pub const RIGHT: Word = Word::saying("dock.edge.right", "Right").noting(
-    "One of four rows in a list a person picks the dock's position from — the right edge of the \
-     screen. As with the left, it is the physical side of the screen.",
-);
-
-/// What [`crate::Edge::Top`] is called.
-pub const TOP: Word = Word::saying("dock.edge.top", "Top").noting(
-    "One of four rows in a list a person picks the dock's position from — the top edge of the \
-     screen.",
-);
-
-// ---------------------------------------------------------------------------
-// Whether the dock gives way — [`crate::Hiding`]. A second list a person picks
-// one row from, in the same panel as the edges.
+// Whether the dock gives way — [`crate::Hiding`]. A list a person picks one row
+// from, and since ADR 0076 the only thing in the dock's panel they pick.
 // ---------------------------------------------------------------------------
 
 /// What [`crate::Hiding::Never`] is called.
@@ -89,23 +67,15 @@ pub const GIVES_WAY_TO_A_WINDOW: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
-// What the dock is doing with its names — [`crate::Labels`]. One line under the
-// list above, so that choosing an edge shows what it did.
+// What the dock is doing with its names — [`crate::Labels`]. One line in the
+// dock's panel, so that turning the text up shows what it did.
 // ---------------------------------------------------------------------------
 
-/// A dock that runs across the screen, with room for its names.
+/// A dock with room for its names.
 pub const NAMES_UNDER: Word = Word::saying("dock.labels.under", "each icon has its name under it")
     .noting(
-        "The dock is along the bottom or the top of the screen, so a name sits below the picture \
-         it belongs to. Shown in Settings under the list of edges, so somebody can see what \
-         choosing an edge did.",
-    );
-
-/// A dock that runs down the screen, with room for its names.
-pub const NAMES_BESIDE: Word =
-    Word::saying("dock.labels.beside", "each icon has its name beside it").noting(
-        "The dock is down the left or the right of the screen, so a name sits next to the picture \
-         it belongs to and still reads the ordinary way round — it is never turned on its side.",
+        "The dock is along the bottom of the screen, so a name sits below the picture it belongs \
+         to. Shown in the dock's settings, so somebody can see what the text size did.",
     );
 
 /// A dock with no room for names at the size the text has been set to.
@@ -173,8 +143,8 @@ pub const KEPT_NOT_UNDERSTOOD: Word = Word::saying(
 )
 .noting(
     "{path} is a file on this machine and is never translated. The important clause is that \
-     nothing in the file was used: alo OS did not take the half it understood. Said of an edge \
-     that is not one of the four, or a file with no format number at the top.",
+     nothing in the file was used: alo OS did not take the half it understood. Said of a value \
+     that is not one of the ones offered, or a file with no format number at the top.",
 );
 
 /// The file stopped being settings at a line.
@@ -247,18 +217,12 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them: the
-/// four edges a person picks between, the two answers about whether it gives
-/// way, what the dock did with its names, the two refusals, and then what is
-/// said about the person's own file.
-pub const EVERY_WORD: [Word; 19] = [
-    BOTTOM,
-    LEFT,
-    RIGHT,
-    TOP,
+/// two answers about whether it gives way, what the dock did with its names, the
+/// two refusals, and then what is said about the person's own file.
+pub const EVERY_WORD: [Word; 14] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_UNDER,
-    NAMES_BESIDE,
     NAMES_GAVE_WAY,
     NOT_A_SCREEN,
     SCREEN_TOO_SMALL,
@@ -376,12 +340,15 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **An edge is a name, and a name has nothing to fill in.** A row in a
-    /// picker with `{}` printed in the middle of it is the failure a person
-    /// choosing where their dock goes would see first.
+    /// **A row in a picker is a name, and a name has nothing to fill in.** A row
+    /// with `{}` printed in the middle of it is the failure a person choosing
+    /// what their dock does would see first.
+    ///
+    /// This used to be the four edge names; they went with the edges, and the two
+    /// rows about giving way are what a person now picks between.
     #[test]
-    fn every_edge_names_nothing() {
-        for word in [BOTTOM, LEFT, RIGHT, TOP] {
+    fn every_row_a_person_picks_names_nothing() {
+        for word in [ALWAYS_SHOWN, GIVES_WAY_TO_A_WINDOW] {
             assert!(
                 word.phrase().unwrap().source().gaps().is_empty(),
                 "{word:?}"
@@ -429,8 +396,8 @@ mod tests {
         );
     }
 
-    /// Every string here carries a note. Four of them are one word naming an
-    /// edge, and a word with no note is where a translation goes wrong quietly.
+    /// Every string here carries a note, because a word with no note is where a
+    /// translation goes wrong quietly.
     #[test]
     fn every_word_carries_a_note() {
         for word in EVERY_WORD {

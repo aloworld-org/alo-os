@@ -43,7 +43,7 @@ language = \"de\"
 
 [says]
 \"appearance.token.navy\" = \"Marineblau\"
-\"dock.edge.bottom\" = \"Unten\"
+\"dock.hiding.never\" = \"Immer sichtbar\"
 \"models.source.this-machine\" = \"auf diesem Gerät\"
 ";
 
@@ -62,7 +62,7 @@ fn a_translation_of_what_this_machine_really_says_loads_whole() {
     strings.prefers(&[Language::written("de").unwrap()]);
     for (named, says) in [
         ("appearance.token.navy", "Marineblau"),
-        ("dock.edge.bottom", "Unten"),
+        ("dock.hiding.never", "Immer sichtbar"),
         ("models.source.this-machine", "auf diesem Gerät"),
     ] {
         let said = strings.say(&Key::named(named).unwrap(), &Filling::nothing());
@@ -106,11 +106,11 @@ fn a_line_only_the_daemon_says_is_left_out_and_german_survives() {
     assert_eq!(
         strings
             .say(
-                &Key::named("dock.edge.bottom").unwrap(),
+                &Key::named("dock.hiding.never").unwrap(),
                 &Filling::nothing()
             )
             .text(),
-        "Unten"
+        "Immer sichtbar"
     );
 }
 
@@ -160,10 +160,10 @@ fn the_directory_alo_os_ships_with_is_reported_rather_than_fatal() {
         loaded
             .strings()
             .say(
-                &Key::named("dock.edge.bottom").unwrap(),
+                &Key::named("dock.hiding.never").unwrap(),
                 &Filling::nothing()
             )
             .text(),
-        "Bottom"
+        "Always shown"
     );
 }

@@ -94,9 +94,10 @@ pub(crate) fn picture(
     dock: &Dock,
     look: DesktopLook,
 ) -> Result<ScreenPicture, RenderError> {
-    let mut on_this_screen = dock.clone();
-    on_this_screen.set_edge(place.edge());
-    let mut drawn = crate::dock_raster::picture(&on_this_screen, look, place.room())?;
+    // One dock, drawn for this screen's own size. It used to be cloned and
+    // moved to this screen's edge first; ADR 0076 fixed the dock to the bottom
+    // edge of every screen, so there is nothing to override and no copy to make.
+    let mut drawn = crate::dock_raster::picture(dock, look, place.room())?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);

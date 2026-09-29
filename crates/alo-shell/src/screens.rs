@@ -33,7 +33,6 @@ use alo_displays::{
     Arrangement, Attached, CameBack, Changes, Identity, Moved, NotAttached, Note, Position,
     Reported, Resolution, Scale, Socket, Tonight, Warming, Wearing,
 };
-use alo_dock::{Dock, Edge};
 
 /// One screen as the compositor draws on it.
 #[derive(Debug, Clone, PartialEq)]
@@ -107,12 +106,6 @@ impl ScreenPlace {
         &self.wearing
     }
 
-    /// Which edge of this screen its dock sits on.
-    #[must_use]
-    pub const fn edge(&self) -> Edge {
-        self.wearing.edge()
-    }
-
     /// What night light does to each of this screen's three channels.
     #[must_use]
     pub const fn warming(&self) -> Warming {
@@ -132,18 +125,22 @@ pub struct Screens {
 impl Screens {
     /// The screens plugged in now, each with what it wears.
     #[must_use]
-    pub fn of(attached: Attached, appearance: &Appearance, dock: &Dock, tonight: &Tonight) -> Self {
-        let places = laid_out(&attached, appearance, dock, tonight);
+    pub fn of(attached: Attached, appearance: &Appearance, tonight: &Tonight) -> Self {
+        let places = laid_out(&attached, appearance, tonight);
         Self { attached, places }
     }
 
     /// Ask again what each screen wears, without touching the arrangement.
     ///
-    /// Night light coming on, a person choosing another background, and a dock
-    /// moved to another edge all reach the screens this way: the set and its
-    /// places are unchanged and only what each screen wears is asked again.
-    pub fn wearing_again(&mut self, appearance: &Appearance, dock: &Dock, tonight: &Tonight) {
-        self.places = laid_out(&self.attached, appearance, dock, tonight);
+    /// Night light coming on and a person choosing another background both
+    /// reach the screens this way: the set and its places are unchanged and only
+    /// what each screen wears is asked again.
+    ///
+    /// **A dock moved to another edge used to reach them here too.** ADR 0076
+    /// fixed the dock to the bottom edge of every screen, so there is nothing
+    /// about it left for a screen to wear and this no longer takes one.
+    pub fn wearing_again(&mut self, appearance: &Appearance, tonight: &Tonight) {
+        self.places = laid_out(&self.attached, appearance, tonight);
     }
 
     /// Every screen, in the order the machine reported them.
@@ -206,11 +203,10 @@ impl Screens {
         socket: &Socket,
         remembered: &Changes,
         appearance: &Appearance,
-        dock: &Dock,
         tonight: &Tonight,
     ) -> Result<Moved, NotAttached> {
         let moved = self.attached.unplugged(socket, remembered)?;
-        self.places = laid_out(&self.attached, appearance, dock, tonight);
+        self.places = laid_out(&self.attached, appearance, tonight);
         Ok(moved)
     }
 
@@ -226,23 +222,17 @@ impl Screens {
         arriving: Reported,
         remembered: &Changes,
         appearance: &Appearance,
-        dock: &Dock,
         tonight: &Tonight,
     ) -> Result<CameBack, NotAttached> {
         let back = self.attached.plugged_in(arriving, remembered)?;
-        self.places = laid_out(&self.attached, appearance, dock, tonight);
+        self.places = laid_out(&self.attached, appearance, tonight);
         Ok(back)
     }
 }
 
 /// One place per attached screen, each asked of the crates that own what it
 /// wears.
-fn laid_out(
-    attached: &Attached,
-    appearance: &Appearance,
-    dock: &Dock,
-    tonight: &Tonight,
-) -> Vec<ScreenPlace> {
+fn laid_out(attached: &Attached, appearance: &Appearance, tonight: &Tonight) -> Vec<ScreenPlace> {
     attached
         .each()
         .map(|on| {
@@ -256,7 +246,7 @@ fn laid_out(
                 room: room_at(drawn_at, reported.pixels()),
                 scale: drawn_at,
                 is_main: on.placed().is_the_main_screen(),
-                wearing: Wearing::of(reported, appearance, dock, tonight),
+                wearing: Wearing::of(reported, appearance, tonight),
             }
         })
         .collect()

@@ -18,11 +18,11 @@
 //!
 //! # Where they sit
 //!
-//! At the end of the dock **opposite** the status area
+//! At the end of the dock **opposite** the egress indicator
 //! (`crate::egress_status_place::Place::of_the_other_end`). The two indicators
-//! own the status corner and are permanent; a notification arrives and goes,
-//! and one that covered *what is leaving this machine* or *your camera is on*
-//! would be trading a promise for a convenience.
+//! own that corner and are permanent; a notification arrives and goes, and one
+//! that covered *what is leaving this machine* or *your camera is on* would be
+//! trading a promise for a convenience.
 //!
 //! # What is drawn
 //!
@@ -127,9 +127,10 @@ pub(crate) fn picture(
     .map_err(|_| RenderError::NotificationScene)?;
     let measure = Measure::of(look.scale);
     let place = Place::of_the_other_end(
-        dock.layout_on(screen, look.scale, look.reading),
+        dock.layout_on(screen, look.scale),
         size,
         measure.px(8),
+        look.reading,
     );
     let ground = look.contrast.ground(look.scheme);
     let ink = look.contrast.ink(look.scheme);
@@ -173,10 +174,6 @@ pub(crate) fn picture(
             Across::FromRight(x) => x - wide,
         };
         let top = match at_y {
-            Stacked::Downwards(y) => {
-                at_y = Stacked::Downwards(y + tall + measure.px(8));
-                y
-            }
             Stacked::Upwards(y) => {
                 at_y = Stacked::Upwards(y - tall - measure.px(8));
                 y - tall

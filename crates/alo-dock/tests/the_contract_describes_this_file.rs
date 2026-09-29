@@ -24,9 +24,8 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_appearance::DisplayId;
 use alo_dock::keeping::{self, FORMAT, THE_FILE};
-use alo_dock::{Changes, Dock, Edge, FileNotRead, Hiding, dock_words};
+use alo_dock::{Changes, Dock, FileNotRead, Hiding, dock_words};
 use alo_strings::Strings;
 
 /// One fenced block of the section: what follows the three backticks, the
@@ -160,14 +159,13 @@ fn read_from_a_file(what: &str, text: &str) -> (PathBuf, Result<Changes, FileNot
 /// every key this crate writes and no other*, and a key this fixture never sets
 /// is a key that guard cannot see. `displays` was in exactly that position: the
 /// crate writes it, the contract did not list it, and nothing failed.
+///
+/// Since ADR 0076 there is one setting to change, so this sets one thing. The
+/// guard is unchanged and so is the reason for it — the next setting to arrive
+/// belongs here in the same change that adds it.
 fn everything_changed() -> Changes {
     let mut changes = Changes::untouched();
-    changes.set_edge(Edge::Left);
     changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
-    changes.set_edge_on(
-        DisplayId::named("DEL-U2720Q-7HR2K13").unwrap(),
-        Edge::Bottom,
-    );
     changes
 }
 

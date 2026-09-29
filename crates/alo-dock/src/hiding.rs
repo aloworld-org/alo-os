@@ -6,10 +6,11 @@
 //!
 //! # What this crate decides, and what it does not
 //!
-//! It decides **whether the dock hides**, which is a person's choice and belongs
-//! with the edge they put it on. It does not decide **whether a window needs the
-//! room**, which is a fact about windows on a screen, and this crate knows
-//! nothing about windows — the shell hands that in as [`TheRoom`].
+//! It decides **whether the dock hides**, which is a person's choice — and since
+//! ADR 0076 fixed the dock to the bottom edge, the only one they have about it.
+//! It does not decide **whether a window needs the room**, which is a fact about
+//! windows on a screen, and this crate knows nothing about windows — the shell
+//! hands that in as [`TheRoom`].
 //!
 //! Keeping those apart is what lets the choice be tested without a compositor and
 //! the window arithmetic be changed without touching what a person chose.
@@ -23,11 +24,14 @@
 //! its dock on the screen, and `Changes` writes no key for it until somebody says
 //! otherwise.
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
+
+use crate::words::{self, Word};
 
 /// Whether the dock gives way when a window needs the room it is in.
 ///
-/// A person's choice, kept beside the edge in `dock.toml`.
+/// A person's choice, and the whole of what `dock.toml` keeps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Hiding {
     /// It stays on the screen whatever a window wants. **What a fresh machine
@@ -37,6 +41,37 @@ pub enum Hiding {
     /// It gives way while a window needs the room, and comes back when none
     /// does.
     WhenAWindowNeedsTheRoom,
+}
+
+impl Hiding {
+    /// Every answer, in the order a person reads them in the list they pick from.
+    ///
+    /// **Since ADR 0076 this is the dock's whole settings panel.** It was one list
+    /// under another — the four edges above, these two below — and the edges went
+    /// with the choice.
+    pub const ALL: [Self; 2] = [Self::Never, Self::WhenAWindowNeedsTheRoom];
+
+    /// The string this crate declares for this answer.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::Never => words::ALWAYS_SHOWN,
+            Self::WhenAWindowNeedsTheRoom => words::GIVES_WAY_TO_A_WINDOW,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// **It had no road to a screen until ADR 0076.** Both strings were declared
+    /// when `Hiding` arrived and nothing could say either of them, so a row a
+    /// person is supposed to pick from could not be drawn in any language,
+    /// including English. Taking the edges out left this as the only list in the
+    /// panel, which is how the gap showed.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// Whether any window needs the room the dock is in.
@@ -80,6 +115,47 @@ impl Hiding {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
+
+    /// **Both rows of the list say something, and they say different things.**
+    /// The strings were declared and unreachable until ADR 0076; this is the test
+    /// that says there is a road to them.
+    #[test]
+    fn each_answer_says_something_of_its_own() {
+        let strings = in_english();
+        assert_eq!(Hiding::Never.said(&strings).text(), "Always shown");
+        assert_eq!(
+            Hiding::WhenAWindowNeedsTheRoom.said(&strings).text(),
+            "Gives way when a window needs the room"
+        );
+        assert_ne!(
+            Hiding::Never.word().key(),
+            Hiding::WhenAWindowNeedsTheRoom.word().key()
+        );
+        for hiding in Hiding::ALL {
+            assert!(hiding.said(&strings).unfilled().is_empty(), "{hiding:?}");
+        }
+    }
+
+    /// A person reads the list in their own language, which is the whole reason
+    /// a row is a string rather than a word in the source.
+    #[test]
+    fn the_list_is_read_in_the_language_the_person_reads() {
+        let strings = translated(&[(words::ALWAYS_SHOWN, "Immer sichtbar")]);
+        let said = Hiding::Never.said(&strings);
+        assert_eq!(said.text(), "Immer sichtbar");
+        assert!(said.is_translated());
+    }
+
+    /// Every answer is in the list a panel draws, so an answer added later
+    /// cannot be one nobody is offered.
+    #[test]
+    fn every_answer_is_one_a_person_is_offered() {
+        assert!(Hiding::ALL.contains(&Hiding::default()));
+        for hiding in [Hiding::Never, Hiding::WhenAWindowNeedsTheRoom] {
+            assert!(Hiding::ALL.contains(&hiding), "{hiding:?}");
+        }
+    }
 
     /// **A fresh machine keeps its dock**, whatever the windows are doing.
     #[test]

@@ -863,10 +863,16 @@ back before it counts — so afterwards the file reads as a person who has
 changed nothing. It is the person's deliberate act in Settings; nothing else,
 and nothing an agent can reach, writes over a file that did not read.
 
-## `dock.toml` — where the dock is, and whether it gives way
+## `dock.toml` — whether the dock gives way
 
 Kept by `alo_dock::keeping`, beside `appearance.toml`, at the path the crate is
 handed. It holds `alo_dock::Changes`.
+
+**The dock is along the bottom edge of the screen and that is not a setting.**
+[ADR
+0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+fixed it there, so this file no longer holds where the dock is or a per-display
+exception to it. What is left is the one question a person answers about it.
 
 ### Keys
 
@@ -874,34 +880,53 @@ Besides `format`, and optional:
 
 | Key | Meaning |
 |---|---|
-| `edge` | Which edge of the screen the dock sits on: `"Bottom"`, `"Left"`, `"Right"` or `"Top"`. |
 | `hiding` | Whether the dock gives way to a window that needs the room it is in: `"Never"`, or `"WhenAWindowNeedsTheRoom"`. Absent means `"Never"` — a machine nobody has told otherwise keeps its dock on the screen. There is no per-display exception for it. |
-| `displays` | The displays the person singled out, oldest first: an array of `[name, edge]` pairs, where the name is the display's own as the compositor gives it. A display listed here sits on its own edge rather than the one `edge` names. Absent rather than an empty list. |
+
+### Keys an earlier release wrote
+
+`edge` and `displays` were how the dock's position, and per-display exceptions to
+it, were kept before ADR 0076.
+
+**A file that has either one reads, and it is ignored.** Nothing writes them and
+nothing reads what they hold; the dock is along the bottom whatever they say, and
+the value is not checked either — a file saying `edge = "Middle"` reads, where it
+was once refused. They are still *recognised* keys, which is the point: an
+unrecognised key is refused whole (`dock.kept.unknown-key`), and refusing a
+person's file over a key this project itself wrote last release would tell them
+their settings are broken when they are not.
+
+**They leave on the next write.** A write replaces the file whole, so the first
+change a person makes after this release drops the dead line. Nothing goes hunting
+for them, and nothing rewrites a person's file behind them.
 
 ### `format`
 
 `format = 1`, the first line of the file, and the only shape this alo OS reads.
+
+**It did not move for ADR 0076.** A format number says which shapes a reader
+understands, and this reader understands every `dock.toml` any release has
+written — it reads one key fewer than it used to and ignores two. A new number
+would mean the old files do not read, which is the opposite of what happens.
 
 ### What alo OS writes
 
 ```toml
 format = 1
 
-displays = [["DEL-U2720Q-7HR2K13", "Bottom"]]
-edge = "Left"
 hiding = "WhenAWindowNeedsTheRoom"
 ```
 
-Each key is written only if the person chose it, so a machine where somebody moved the dock and said nothing about hiding writes exactly the file it wrote before this key existed.
+Each key is written only if the person chose it, so a machine where nobody has
+answered writes `format = 1` alone.
 
 ### What a missing file means
 
-**The person has changed nothing**: the dock is where the release puts it. Not
-an error, and nothing is written until the person moves it.
+**The person has changed nothing**: the dock is as the release ships it. Not
+an error, and nothing is written until the person changes something.
 
 ### A file that does not read
 
-**Refused whole**, and the dock is where the release puts it;
+**Refused whole**, and the dock is as the release ships it;
 `alo_dock::keeping::at_sign_in` answers with the release's dock and the refusal
 beside it. The sentences name the file, and are the same five reasons
 `appearance.toml` has, under `dock.kept.`: `not-read`, `not-understood`,
@@ -910,19 +935,19 @@ the key.
 
 ```toml refused
 format = 1
-edge = "Left"
+hiding = "Never"
 size = 48
 ```
 
-Refused — `dock.kept.unknown-key`, naming `size` — and the dock is not moved to
-the left.
+Refused — `dock.kept.unknown-key`, naming `size` — and nothing else in the file
+is honoured.
 
 ```toml refused
 format = 1
-edge = "left"
+hiding = "never"
 ```
 
-Refused — `dock.kept.not-understood`. The edge's name is matched exactly.
+Refused — `dock.kept.not-understood`. The value's name is matched exactly.
 
 ### Writing it
 

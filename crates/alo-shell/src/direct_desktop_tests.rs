@@ -12,7 +12,7 @@
 
 use super::*;
 use crate::desktop_testing::{
-    a_laptops_status, an_appearance, an_undivided_display, noon_look, nothing_offered, words,
+    an_appearance, an_undivided_display, noon_look, nothing_offered, words,
 };
 use crate::direct_target::Target;
 use crate::software_scanout::SoftwarePainter;
@@ -70,7 +70,6 @@ impl crate::TheDesktop for ADesktop {
             egress: &self.egress,
             running: &self.running,
             filling: &self.filling,
-            status: a_laptops_status(),
             in_use: &[],
             notifications: &[],
             capturing: None,

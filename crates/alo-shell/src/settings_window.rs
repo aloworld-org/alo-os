@@ -42,7 +42,7 @@ use std::time::SystemTime;
 
 use alo_appearance::{Accent, Appearance};
 use alo_changing::{Door, Row};
-use alo_dock::{Dock, Edge};
+use alo_dock::{Dock, Hiding};
 use alo_nearby::Pairings;
 use alo_remembering::NotRemembered;
 use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
@@ -76,8 +76,13 @@ pub enum SettingsRow {
     Answer(SettingsChoice),
     /// An accent: Enter chooses it.
     Accent(Accent),
-    /// An edge for the dock: Enter moves the dock there.
-    Edge(Edge),
+    /// What the dock does when a window needs the room: Enter chooses it.
+    ///
+    /// This was an edge for the dock until ADR 0076 fixed the dock to the bottom
+    /// edge. The section did not become empty — it became the one question the
+    /// dock actually asks, and the strings for these two rows were already
+    /// declared with nothing drawing them.
+    Hiding(Hiding),
     /// An action's shortcut: Enter waits for a chord, Backspace puts it back.
     Shortcut(Action),
     /// A grant or a pairing: Enter revokes it.
@@ -91,7 +96,7 @@ impl SettingsRow {
         match self {
             Self::Answer(_) => SettingsSection::Answering,
             Self::Accent(_) => SettingsSection::Appearance,
-            Self::Edge(_) => SettingsSection::Dock,
+            Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) => SettingsSection::Granted,
         }
@@ -319,7 +324,7 @@ impl Open {
             rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
         }
         if self.dock.at().is_some() {
-            rows.extend(Edge::ALL.into_iter().map(SettingsRow::Edge));
+            rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
         }
         if self.shortcuts.at().is_some() {
             rows.extend(
@@ -361,11 +366,11 @@ impl Open {
                 );
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
-            SettingsRow::Edge(edge) => {
-                let edge = *edge;
+            SettingsRow::Hiding(hiding) => {
+                let hiding = *hiding;
                 let kept = self.dock.changed(
                     |dock| {
-                        dock.set_edge(edge);
+                        dock.set_hiding(hiding);
                         Ok(())
                     },
                     doors.strings,

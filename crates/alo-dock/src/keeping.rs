@@ -39,16 +39,43 @@ pub const THE_FILE: &str = "dock.toml";
 /// does not notice.
 pub const FORMAT: i64 = 1;
 
-/// Every key the file may have besides `format` — which is every field a
-/// [`Changes`] writes, and a test holds the two together.
+/// Every key the file may have besides `format`.
+///
+/// **This is no longer the same list as the keys a change writes.** `edge` and
+/// `displays` were how a person's dock position and their per-display exceptions
+/// were kept before [ADR
+/// 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+/// fixed the dock to the bottom edge. Nothing writes them now and nothing reads
+/// what they hold.
+///
+/// **They stay on this list because a key that is not on it is refused.** A file
+/// with an unrecognised key in it does not read at all — that is
+/// `dock.kept.unknown-key`, which is the right answer for a typo and the wrong
+/// one for a file this project itself wrote last release. So such a file reads,
+/// the edge is ignored, and the dock is along the bottom. They leave a person's
+/// folder on the next write, because a write replaces the file whole.
+///
+/// Until ADR 0076 this was one list with the keys a change writes, and a test
+/// asserted they were equal; it now asserts the live half of it.
 ///
 /// **It held one of three until 2026-09-29.** `displays` was written by
 /// `Changes` and missing here, so `keep` wrote the file, read it back, refused
 /// its own output with `UnknownKey` and left the file as it was: a person who
 /// singled out a display could not save it. The test that was supposed to hold
 /// the two together measured a fixture that set only the edge, so it never saw
-/// the key. Anything added to `Changes` belongs here in the same change.
-const KEYS: &[&str] = &["edge", "hiding", "displays"];
+/// the key. **Anything added to `Changes` belongs here in the same change**, and
+/// the test below still says so for every key that is written.
+const KEYS: &[&str] = &["hiding", "edge", "displays"];
+
+/// The keys on [`KEYS`] that no change writes, named so the tests below can tell
+/// the two apart.
+///
+/// Nothing outside a test reads this: the tolerance itself is `KEYS` having them,
+/// and the reader needs no list of which entries are dead. It is here so that
+/// *the list is complete* stays a testable statement now that it is no longer an
+/// equality.
+#[cfg(test)]
+const ONCE_WRITTEN: &[&str] = &["edge", "displays"];
 
 impl Kept for Changes {
     const FILE: &'static str = THE_FILE;
@@ -133,10 +160,7 @@ pub fn at_sign_in(at: &Path) -> (Dock, Option<FileNotRead>) {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
-    use alo_appearance::DisplayId;
-
     use super::*;
-    use crate::edge::Edge;
     use crate::hiding::Hiding;
 
     /// What a change writes, as the keys of the file it becomes.
@@ -152,8 +176,9 @@ mod tests {
         keys
     }
 
-    /// **The list of keys is every key a change writes** — measured against a
-    /// change that sets *every* setting.
+    /// **Every key a change writes is on the list** — measured against a change
+    /// that sets *every* setting, and against the list with the dead keys taken
+    /// off it.
     ///
     /// The earlier version of this set the edge alone and compared what that
     /// wrote against the whole list, which is the same statement only while the
@@ -164,30 +189,52 @@ mod tests {
     #[test]
     fn every_key_a_change_writes_is_on_the_list() {
         let mut changes = Changes::untouched();
-        changes.set_edge(Edge::Left);
         changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
-        changes.set_edge_on(
-            DisplayId::named("DEL-U2720Q-7HR2K13").unwrap(),
-            Edge::Bottom,
-        );
 
-        let mut listed: Vec<String> = KEYS.iter().map(|key| (*key).to_owned()).collect();
-        listed.sort();
-        assert_eq!(keys_written(&changes), listed);
+        let mut live: Vec<String> = KEYS
+            .iter()
+            .filter(|key| !ONCE_WRITTEN.contains(*key))
+            .map(|key| (*key).to_owned())
+            .collect();
+        live.sort();
+        assert_eq!(keys_written(&changes), live);
     }
 
-    /// **Only what was changed is written**: a dock moved to any edge is `edge`
-    /// and nothing else.
+    /// **And nothing a change writes is one of the dead ones.** The two lists
+    /// have to stay disjoint: a key on both would be written by `Changes` and
+    /// declared as something nothing writes, and the test above would then be
+    /// measuring one of them against itself minus itself.
+    #[test]
+    fn nothing_still_written_is_also_declared_dead() {
+        let mut changes = Changes::untouched();
+        changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        for key in keys_written(&changes) {
+            assert!(
+                !ONCE_WRITTEN.contains(&key.as_str()),
+                "{key} is written and also declared dead"
+            );
+        }
+        for dead in ONCE_WRITTEN {
+            assert!(
+                KEYS.contains(dead),
+                "{dead} is not recognised, so a file \
+                 written by an earlier release would be refused rather than read"
+            );
+        }
+    }
+
+    /// **Only what was changed is written**: a dock asked to give way is
+    /// `hiding` and nothing else.
     ///
-    /// What the test above used to check, kept apart from it, because *the list
+    /// What the first test used to check, kept apart from it, because *the list
     /// is complete* and *nothing unasked-for is written* are two promises and a
     /// single assertion could only ever hold one of them.
     #[test]
     fn only_what_was_changed_is_written() {
-        for edge in [Edge::Bottom, Edge::Left, Edge::Right, Edge::Top] {
+        for hiding in [Hiding::Never, Hiding::WhenAWindowNeedsTheRoom] {
             let mut changes = Changes::untouched();
-            changes.set_edge(edge);
-            assert_eq!(keys_written(&changes), ["edge"], "{edge:?}");
+            changes.set_hiding(hiding);
+            assert_eq!(keys_written(&changes), ["hiding"], "{hiding:?}");
         }
     }
 

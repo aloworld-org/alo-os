@@ -32,7 +32,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_appearance::{Scheme, TextScale};
     use alo_capability::Grantee;
-    use alo_dock::{Dock, Edge};
+    use alo_dock::Dock;
     use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why};
     use alo_indicator::{Drew, Indicating};
     use alo_models::{InferenceSource, Region};
@@ -90,8 +90,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if let Drew::Refused(refused) = indicating.show(Some(status), indicator) {
             return Err(refused.said(&strings).into_text().into());
         }
-        for edge in Edge::ALL {
-            dock.set_edge(edge);
+        {
             for scheme in [Scheme::Light, Scheme::Dark] {
                 let until = Instant::now() + Duration::from_millis(120);
                 while Instant::now() < until {

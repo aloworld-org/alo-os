@@ -171,13 +171,9 @@ fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     let size = (1920, 1080);
     let dock = Dock::shipped();
     let measure = Measure::of(TextScale::ordinary());
-    let layout = dock.layout_on(
-        Screen::of(1920, 1080).unwrap(),
-        TextScale::ordinary(),
-        Direction::LeftToRight,
-    );
-    let status = Place::of(layout, size, measure.px(8));
-    let cards = Place::of_the_other_end(layout, size, measure.px(8));
+    let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary());
+    let status = Place::of(layout, size, measure.px(8), Direction::LeftToRight);
+    let cards = Place::of_the_other_end(layout, size, measure.px(8), Direction::LeftToRight);
 
     assert_ne!(
         format!("{:?}", status.across),

@@ -208,7 +208,17 @@ structural rather than a matter of policy — **the earlier draft gave a reason 
 would have justified either answer, which is the wrong kind of reason.**
 
 In `dock.toml`, `edge` is a **key**. A reader that does not know a key can skip
-it, and `dock.kept.unknown-key` is the sentence for exactly that.
+it, and that is the whole difference.
+
+> **Corrected while carrying this record out.** This paragraph originally ended
+> *and `dock.kept.unknown-key` is the sentence for exactly that*, which has it
+> backwards. That sentence is a **refusal**: a key `alo-dock` does not recognise
+> makes the whole file fail to read. It is the right answer for a typo and the
+> wrong one for a key this project itself wrote last release. Read-and-ignore is
+> the **absence** of that refusal, not a use of it — so `edge` and `displays`
+> stay on `keeping.rs`'s list of keys the file may have, with no field behind
+> them, and serde skips what no field claims. The decision in this section is
+> unchanged; only the mechanism named in it was wrong.
 
 In `appearance.toml`, `background` is a key whose **value is a serialised type
 being removed**. Deserialisation fails on the shape of the file, not on the

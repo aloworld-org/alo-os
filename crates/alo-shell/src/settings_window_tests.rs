@@ -120,7 +120,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
         ]
     );
     let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
-    let edges: Vec<SettingsRow> = Edge::ALL.into_iter().map(SettingsRow::Edge).collect();
+    let edges: Vec<SettingsRow> = Hiding::ALL.into_iter().map(SettingsRow::Hiding).collect();
     let actions: Vec<SettingsRow> = Action::ALL
         .iter()
         .copied()
@@ -169,7 +169,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 model: "harbour-small".to_owned(),
             }),
             SettingsRow::Accent(Appearance::shipped().accent()),
-            SettingsRow::Edge(Dock::shipped().edge()),
+            SettingsRow::Hiding(Dock::shipped().hiding()),
         ]
     );
 }
@@ -288,7 +288,12 @@ fn the_dock_changes_nothing_its_crate_would_not() {
     let at = machine.kept(alo_dock::keeping::THE_FILE);
 
     assert_eq!(
-        chosen(&mut window, &SettingsRow::Edge(Edge::Left), &strings, &door),
+        chosen(
+            &mut window,
+            &SettingsRow::Hiding(Hiding::WhenAWindowNeedsTheRoom),
+            &strings,
+            &door
+        ),
         Some(SettingsDid::Kept(
             SettingsSection::Dock,
             SettingsKept::Written
@@ -297,7 +302,7 @@ fn the_dock_changes_nothing_its_crate_would_not() {
 
     let twin = a_twin();
     let mut expected = Dock::shipped();
-    expected.set_edge(Edge::Left);
+    expected.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
     let twin_at = twin.path().join(alo_dock::keeping::THE_FILE);
     alo_dock::keeping::keep(&twin_at, expected.changes()).unwrap();
     assert_eq!(bytes(&at), bytes(&twin_at));
@@ -586,7 +591,12 @@ fn a_file_that_did_not_read_is_kept_until_the_section_is_put_back_as_shipped() {
 
     // A change is refused and the person's edit is there byte for byte.
     assert_eq!(
-        chosen(&mut window, &SettingsRow::Edge(Edge::Top), &strings, &door),
+        chosen(
+            &mut window,
+            &SettingsRow::Hiding(Hiding::WhenAWindowNeedsTheRoom),
+            &strings,
+            &door
+        ),
         Some(SettingsDid::Kept(
             SettingsSection::Dock,
             SettingsKept::NotWritten
@@ -595,7 +605,7 @@ fn a_file_that_did_not_read_is_kept_until_the_section_is_put_back_as_shipped() {
     assert_eq!(bytes(&at), edited);
     assert_eq!(window.dock(), Some(&Dock::shipped()));
     let mut top = Dock::shipped();
-    top.set_edge(Edge::Top);
+    top.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
     let not_replaced = alo_dock::keeping::keep(&at, top.changes())
         .unwrap_err()
         .said(&strings)
@@ -621,7 +631,12 @@ fn a_file_that_did_not_read_is_kept_until_the_section_is_put_back_as_shipped() {
     assert_eq!(bytes(&appearance_at), None);
 
     // Put back as shipped replaces it, and the next change is written.
-    focus_on(&mut window, &SettingsRow::Edge(Edge::Top), &strings, &door);
+    focus_on(
+        &mut window,
+        &SettingsRow::Hiding(Hiding::WhenAWindowNeedsTheRoom),
+        &strings,
+        &door,
+    );
     assert_eq!(
         window.pressed(key(SettingsKey::PutBackAsShipped), doors(&strings, &door)),
         Some(SettingsDid::Kept(

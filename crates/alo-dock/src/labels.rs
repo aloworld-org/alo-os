@@ -29,12 +29,15 @@ use crate::words::{self, Word};
 /// Where the names in the dock are, if they are anywhere.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Labels {
-    /// Under each icon — a dock that runs across the screen, with room for a
-    /// line of text below the picture.
+    /// Under each icon, with room for a line of text below the picture — which
+    /// is where a name goes on a dock along the bottom, and ADR 0076 fixed the
+    /// dock there.
+    ///
+    /// `Beside` was the other placement, for a dock down the side of the screen,
+    /// and went with it. Two placements are why this is an enum rather than a
+    /// `bool`, and one placement is not a reason to make it one: *drawn, and
+    /// where* is still the question, and the third state is still an answer to it.
     Under,
-    /// Beside each icon — a dock that runs down the screen, with room for a name
-    /// next to the picture. Never rotated, which is [`crate::Along`]'s rule.
-    Beside,
     /// Nowhere: at this text size, as a percentage, there was not room. The
     /// name is still announced and still shown when somebody rests on the icon.
     GaveWay(u16),
@@ -44,7 +47,7 @@ impl Labels {
     /// Whether the names are being drawn.
     #[must_use]
     pub const fn are_shown(self) -> bool {
-        matches!(self, Self::Under | Self::Beside)
+        matches!(self, Self::Under)
     }
 
     /// The string this crate declares for this state.
@@ -52,7 +55,6 @@ impl Labels {
     pub const fn word(self) -> Word {
         match self {
             Self::Under => words::NAMES_UNDER,
-            Self::Beside => words::NAMES_BESIDE,
             Self::GaveWay(_) => words::NAMES_GAVE_WAY,
         }
     }
@@ -66,7 +68,7 @@ impl Labels {
     #[must_use]
     pub fn said(self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::Under | Self::Beside => Filling::nothing(),
+            Self::Under => Filling::nothing(),
             Self::GaveWay(percent) => Filling::of("percent", percent.to_string()),
         };
         strings.say(&self.word().key(), &filling)
@@ -78,19 +80,18 @@ mod tests {
     use super::*;
     use crate::testing::{in_english, translated};
 
-    /// Two of the three are names being drawn, and the third is not — which is
-    /// the question a settings panel and a compositor both ask first.
+    /// One of the two is a name being drawn and the other is not — which is the
+    /// question a settings panel and a compositor both ask first.
     #[test]
-    fn only_the_two_placements_are_names_being_drawn() {
+    fn only_the_placement_is_names_being_drawn() {
         assert!(Labels::Under.are_shown());
-        assert!(Labels::Beside.are_shown());
         assert!(!Labels::GaveWay(300).are_shown());
     }
 
-    /// Each state has a string of its own. *Under* and *beside* are two
-    /// sentences rather than one with a word swapped into it, because a language
-    /// that inflects the placement needs the whole sentence in front of it —
-    /// which is `alo-egress`' rule about its indicator line, met here.
+    /// Each state has a string of its own, and they are two sentences rather
+    /// than one with a word swapped into it, because a language that inflects
+    /// the placement needs the whole sentence in front of it — which is
+    /// `alo-egress`' rule about its indicator line, met here.
     #[test]
     fn each_state_says_something_of_its_own() {
         let strings = in_english();
@@ -98,11 +99,10 @@ mod tests {
             Labels::Under.said(&strings).text(),
             "each icon has its name under it"
         );
-        assert_eq!(
-            Labels::Beside.said(&strings).text(),
-            "each icon has its name beside it"
+        assert_ne!(
+            Labels::Under.word().key(),
+            Labels::GaveWay(300).word().key()
         );
-        assert_ne!(Labels::Under.word().key(), Labels::Beside.word().key());
     }
 
     /// **The sentence about names disappearing says where they went.** It is

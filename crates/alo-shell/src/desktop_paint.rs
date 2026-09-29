@@ -40,7 +40,6 @@ impl DesktopPicture {
         // under the dock, which is furniture over the top of everything.
         crate::painted::paint(frame, &self.division.solids, &[])?;
         crate::painted::paint(frame, &self.dock.solids, &[])?;
-        crate::painted::paint(frame, &self.status.solids, &[])?;
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;

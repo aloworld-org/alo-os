@@ -4,20 +4,23 @@
 //!
 //! The crate's own tests take one string at a time. This is the other half: the
 //! real vocabulary — not a fixture that resembles it — walked as a whole dock
-//! settings panel, which is four edges to pick between and one line underneath
-//! saying what picking one did to the names.
+//! settings panel, which since ADR 0076 is two rows to pick between and one line
+//! underneath saying what the text size did to the names.
+//!
+//! **It was four rows above those two**, for the edge a person put the dock on.
+//! The edges went with the decision; the shape of the test did not change, because
+//! *a list of rows and a line underneath* is still what the panel is.
 //!
 //! **German and Greek, for two different reasons.** German because it writes
 //! *200 %* with a space where English writes *200%*, which is the one thing a
 //! translator decides about the numbered strings in this crate. Greek because it
-//! is written in an alphabet that is not Latin, and the row a person picks their
-//! dock's edge from has to be readable by somebody who reads only that — which
-//! is the whole reason a colour, an edge or a key label is a string rather than
-//! a word in the source.
+//! is written in an alphabet that is not Latin, and a row a person picks from has
+//! to be readable by somebody who reads only that — which is the whole reason a
+//! colour, a row or a key label is a string rather than a word in the source.
 //!
 //! It is not the hardware verification `CLAUDE.md` asks for. Nothing here has
-//! been seen: there is no compositor, no screen, and there are still no
-//! translations in this repository.
+//! been seen: there is no screen in this test, and there are still no translations
+//! in this repository.
 
 #![expect(
     clippy::unwrap_used,
@@ -26,8 +29,8 @@
 
 use alo_appearance::TextScale;
 use alo_dock::words::{self, EVERY_WORD};
-use alo_dock::{Dock, Edge, Labels, Screen, Word, dock_words};
-use alo_strings::{CameFrom, Direction, Filling, Language, Phrase, Showing, Strings, Vocabulary};
+use alo_dock::{Dock, Hiding, Labels, Screen, Word, dock_words};
+use alo_strings::{CameFrom, Filling, Language, Phrase, Showing, Strings, Vocabulary};
 
 /// One of the tests' languages.
 fn language(tag: &str) -> Language {
@@ -54,17 +57,22 @@ fn reading(tag: &str, words: &[(Word, &str)]) -> Strings {
     strings
 }
 
-/// The four edges and the three things that can become of the names, in German.
+/// How many of this crate's words `das_dock` translates, named once so the test
+/// that counts what is left does not carry the number twice.
+const TRANSLATED_INTO_GERMAN: usize = 4;
+
+/// The two rows of the panel and the two things that can become of the names, in
+/// German.
 fn das_dock() -> Strings {
     reading(
         "de",
         &[
-            (words::BOTTOM, "Unten"),
-            (words::LEFT, "Links"),
-            (words::RIGHT, "Rechts"),
-            (words::TOP, "Oben"),
+            (words::ALWAYS_SHOWN, "Immer sichtbar"),
+            (
+                words::GIVES_WAY_TO_A_WINDOW,
+                "Weicht zurück, wenn ein Fenster den Platz braucht",
+            ),
             (words::NAMES_UNDER, "jedes Symbol hat seinen Namen darunter"),
-            (words::NAMES_BESIDE, "jedes Symbol hat seinen Namen daneben"),
             (
                 words::NAMES_GAVE_WAY,
                 "bei {percent} % Textgröße ist kein Platz für Namen — das Dock zeigt Symbole; wer \
@@ -101,8 +109,8 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
     }
 }
 
-/// **The whole dock panel, read on a German machine**: the four edges a person
-/// picks between, and the line underneath telling them what picking one did.
+/// **The whole dock panel, read on a German machine**: the rows a person picks
+/// between, and the line underneath telling them what the text size did.
 ///
 /// This is the test that ties the layout to the words. The line under the picker
 /// is not a caption somebody wrote — it is what [`alo_dock::Layout`] worked out,
@@ -113,33 +121,29 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
     let laptop = Screen::the_smallest();
     let ordinary = TextScale::ordinary();
 
-    let picker: Vec<String> = Edge::ALL
+    let picker: Vec<String> = Hiding::ALL
         .iter()
-        .map(|edge| edge.said(&strings).into_text())
+        .map(|hiding| hiding.said(&strings).into_text())
         .collect();
-    assert_eq!(picker, ["Unten", "Links", "Rechts", "Oben"]);
+    assert_eq!(
+        picker,
+        [
+            "Immer sichtbar",
+            "Weicht zurück, wenn ein Fenster den Platz braucht"
+        ]
+    );
+    for hiding in Hiding::ALL {
+        assert!(hiding.said(&strings).is_translated(), "{hiding:?}");
+    }
 
-    let mut dock = Dock::shipped();
-    let line = |dock: &Dock, text| {
-        dock.layout_on(laptop, text, Direction::LeftToRight)
-            .labels()
-            .said(&strings)
-    };
+    let dock = Dock::shipped();
+    let line = |text| dock.layout_on(laptop, text).labels().said(&strings);
 
     assert_eq!(
-        line(&dock, ordinary).text(),
+        line(ordinary).text(),
         "jedes Symbol hat seinen Namen darunter"
     );
-    dock.set_edge(Edge::Left);
-    assert_eq!(
-        line(&dock, ordinary).text(),
-        "jedes Symbol hat seinen Namen daneben"
-    );
-
-    for edge in Edge::ALL {
-        dock.set_edge(edge);
-        assert!(line(&dock, ordinary).is_translated(), "{edge:?}");
-    }
+    assert!(line(ordinary).is_translated());
 }
 
 /// **The sentence somebody reads when their names disappear is read in their
@@ -150,15 +154,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
 #[test]
 fn the_sentence_about_names_disappearing_survives_being_translated() {
     let strings = das_dock();
-    let dock = Dock::shipped().with({
-        let mut changes = alo_dock::Changes::untouched();
-        changes.set_edge(Edge::Right);
-        changes
-    });
     let large = TextScale::percent(300).unwrap();
 
-    let labels = dock
-        .layout_on(Screen::the_smallest(), large, Direction::LeftToRight)
+    let labels = Dock::shipped()
+        .layout_on(Screen::the_smallest(), large)
         .labels();
     assert_eq!(labels, Labels::GaveWay(300));
 
@@ -169,29 +168,36 @@ fn the_sentence_about_names_disappearing_survives_being_translated() {
     assert!(said.unfilled().is_empty());
 }
 
-/// **A person who reads only Greek can pick where their dock goes.** Four rows
-/// in an alphabet that is not Latin, which is what an edge being a string rather
-/// than a word in the source is for.
+/// **A person who reads only Greek can pick what their dock does.** Two rows in
+/// an alphabet that is not Latin, which is what a row being a string rather than
+/// a word in the source is for.
 #[test]
 fn the_picker_is_readable_by_somebody_who_reads_no_latin() {
     let strings = reading(
         "el",
         &[
-            (words::BOTTOM, "Κάτω"),
-            (words::LEFT, "Αριστερά"),
-            (words::RIGHT, "Δεξιά"),
-            (words::TOP, "Πάνω"),
+            (words::ALWAYS_SHOWN, "Πάντα ορατό"),
+            (
+                words::GIVES_WAY_TO_A_WINDOW,
+                "Αποσύρεται όταν ένα παράθυρο χρειάζεται τον χώρο",
+            ),
         ],
     );
-    let picker: Vec<String> = Edge::ALL
+    let picker: Vec<String> = Hiding::ALL
         .iter()
-        .map(|edge| edge.said(&strings).into_text())
+        .map(|hiding| hiding.said(&strings).into_text())
         .collect();
-    assert_eq!(picker, ["Κάτω", "Αριστερά", "Δεξιά", "Πάνω"]);
-    for edge in Edge::ALL {
-        assert!(edge.said(&strings).is_translated(), "{edge:?}");
+    assert_eq!(
+        picker,
+        [
+            "Πάντα ορατό",
+            "Αποσύρεται όταν ένα παράθυρο χρειάζεται τον χώρο"
+        ]
+    );
+    for hiding in Hiding::ALL {
+        assert!(hiding.said(&strings).is_translated(), "{hiding:?}");
         assert!(
-            !edge.said(&strings).text().is_ascii(),
+            !hiding.said(&strings).text().is_ascii(),
             "and it is genuinely not Latin"
         );
     }
@@ -228,16 +234,18 @@ fn what_came_off_the_machine_is_not_translated() {
 #[test]
 fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
     let mut strings = das_dock();
-    let translated = 7;
-    assert_eq!(strings.unanswered().len(), EVERY_WORD.len() - translated);
+    assert_eq!(
+        strings.unanswered().len(),
+        EVERY_WORD.len() - TRANSLATED_INTO_GERMAN
+    );
     assert_eq!(
         strings.missing_from(&language("de")).len(),
-        EVERY_WORD.len() - translated
+        EVERY_WORD.len() - TRANSLATED_INTO_GERMAN
     );
 
     strings.shown(Showing::InDevelopment);
     assert_eq!(
-        Edge::Top.said(&strings).came_from(),
+        Hiding::Never.said(&strings).came_from(),
         &CameFrom::Translation(language("de"))
     );
 
@@ -251,15 +259,22 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
 }
 
 /// A key that nothing declares is a mistake in this repository and says so,
-/// rather than showing an empty row where an edge should be.
+/// rather than showing an empty row where a setting should be.
+///
+/// **`dock.edge.middle` is the example for a second reason now.** Nothing
+/// declares any `dock.edge.*` key since ADR 0076, so a shell still asking for one
+/// — an old panel, a stale translation file — gets a sentence saying it is a bug
+/// rather than a blank row where an edge picker used to be.
 #[test]
-fn an_edge_nobody_declared_says_it_is_a_bug() {
+fn a_key_nobody_declared_says_it_is_a_bug() {
     let strings = in_english();
-    let middle = alo_strings::Key::named("dock.edge.middle").unwrap();
-    let said = strings.say(&middle, &Filling::nothing());
-    assert!(said.is_a_bug());
-    assert_eq!(said.came_from(), &CameFrom::NoPhrase);
-    assert_eq!(said.text(), "«dock.edge.middle»");
+    for named in ["dock.edge.middle", "dock.edge.bottom", "dock.labels.beside"] {
+        let key = alo_strings::Key::named(named).unwrap();
+        let said = strings.say(&key, &Filling::nothing());
+        assert!(said.is_a_bug(), "{named}");
+        assert_eq!(said.came_from(), &CameFrom::NoPhrase, "{named}");
+        assert_eq!(said.text(), format!("«{named}»"));
+    }
 }
 
 /// A machine with no translations at all is the machine this repository ships

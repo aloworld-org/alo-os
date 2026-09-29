@@ -14,14 +14,20 @@
 //! rather than left to taste — an icon is a target, and EN 301 549 carries WCAG
 //! 2.5.8's [`SMALLEST_TARGET`] for one.
 //!
-//! The other two are not taste at all. [`A_DOCK_MAY_TAKE_ONE_PART_IN`] and
-//! [`LABEL_EMS`] are fixed by a requirement: **text reaches 200% without losing
-//! content** (EN 301 549, by way of WCAG 1.4.4), on the smallest screen alo OS
-//! lays out for ([`crate::Screen::the_smallest`]). They are as generous as that
-//! requirement allows and no more, and `crate::room`'s tests are what says so —
-//! loosen either one and a dock on a 1366×768 screen takes more of it than the
-//! person's work; tighten either one and the names go at exactly the size the
-//! standard says they must survive.
+//! [`A_DOCK_MAY_TAKE_ONE_PART_IN`] is not taste at all. It is fixed by a
+//! requirement: **text reaches 200% without losing content** (EN 301 549, by way
+//! of WCAG 1.4.4), on the smallest screen alo OS lays out for
+//! ([`crate::Screen::the_smallest`]). It is as generous as that requirement
+//! allows and no more, and `crate::layout`'s tests are what says so — loosen it
+//! and a dock on a 1366×768 screen takes more of it than the person's work;
+//! tighten it and the names go at exactly the size the standard says they must
+//! survive.
+//!
+//! **`LABEL_EMS` was the second such number** — how much width a name needed
+//! beside an icon on a dock down the side of the screen. ADR 0076 fixed the dock
+//! along the bottom, so there is no name beside an icon and no floor to hold.
+//! The share survived that removal still being the tightest one the standard
+//! allows, which was the open question and is now a test.
 //!
 //! # The unit
 //!
@@ -59,18 +65,6 @@ pub const TEXT_AT_ORDINARY: u32 = 15;
 /// a fraction because this crate does no floating-point arithmetic and a layout
 /// that rounded differently on two machines would be two layouts.
 pub const LINE_IN_FIFTHS: u32 = 7;
-
-/// How much room a name needs beside an icon, counted in **ems** — multiples of
-/// the text's own size.
-///
-/// **This crate cannot measure text**, and an em is the one unit that does not
-/// need it to: it is the text's own size, so it grows with the text without a
-/// font in the room. Five of them is a floor on *room*, never a promise about a
-/// particular name — a name too long for the room it is given is elided by
-/// whoever draws it, and a name with five ems in front of it is still a name
-/// somebody recognises. Below that it is a fragment, and a fragment that starts
-/// two application names is worse than the icon on its own.
-pub const LABEL_EMS: u32 = 5;
 
 /// The most of a screen's side a dock may take: one part in this many.
 ///

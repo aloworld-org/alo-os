@@ -755,23 +755,29 @@ compositor is not required for, which is why it runs unbroken.
         that nothing has yet been started by systemd, and no shortening has
         fired on a machine nobody was watching
 
-- [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
-      built for both orientations rather than one rotated
+- [ ] **The alo Dock** — a fixed band along the bottom edge, above the canvas,
+      that shows what you can open and brings what is already open into focus
   - [x] **The code.**
-        `alo-dock` — the layout model, and the two orientations as two
-        layouts rather than one turned sideways: names sit under an icon
-        across the screen and beside it down the screen, the thickness comes
-        off the side the dock actually sits on, and the status area is a
-        column at the bottom of a vertical dock while the far end of a
-        horizontal one follows which way the person reads. *Labels give way
-        to icons where the short edge demands it* is arithmetic now rather
-        than a designer's eye, and the threshold is held to EN 301 549's
-        200% on the smallest screen alo OS lays out for, on all four edges
+        `alo-dock` — the layout model: how thick the band is, how far it runs,
+        and when a name gives way to an icon. *Labels give way to icons where
+        the short edge demands it* is arithmetic rather than a designer's eye,
+        and the threshold is held to EN 301 549's 200% on the smallest screen
+        alo OS lays out for
   - [ ] **On the machine.**
         the compositor that draws it, and with it everything about the dock
-        that is a picture rather than a measurement — the icons, what is in
-        the status area (v0.5), and the hover and screen-reader name the
-        *gave way* sentence promises is still there
+        that is a picture rather than a measurement — the icons, what a click
+        does, and the hover and screen-reader name the *gave way* sentence
+        promises is still there
+
+  **This box was *The dock on any edge* — bottom, left, right or top, the
+  person's choice, built for both orientations rather than one rotated — and
+  its code box was ticked.** [ADR
+  0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+  withdrew that promise and fixed the Dock to the bottom edge. The tick is
+  removed and the code it claimed is removed in the same change, which is the
+  order that record requires and the owner approved: what must not happen is
+  the code going and the tick staying, because then the roadmap claims
+  something that is not there.
 
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)

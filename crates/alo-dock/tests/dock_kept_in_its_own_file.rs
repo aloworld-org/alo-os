@@ -1,10 +1,15 @@
 //! `dock.toml`, kept against a real file on a real disk.
 //!
 //! The crate's own tests ask each refusal of text. This is the other half, the
-//! one ADR 0038 is about: where a person put their dock, written to the file in
-//! their folder and read back at the next sign-in as exactly that, and a file
-//! somebody edited by hand refused whole — with the file and the key named —
-//! while the dock sits where the release puts it.
+//! one ADR 0038 is about: what a person changed, written to the file in their
+//! folder and read back at the next sign-in as exactly that, and a file somebody
+//! edited by hand refused whole — with the file and the key named — while the
+//! dock is as the release ships it.
+//!
+//! **And since ADR 0076, one more thing that only a real file can show:** a
+//! `dock.toml` an earlier release wrote, naming an edge, read by this one. That
+//! is not a unit on `Changes` — it is the whole road, from the bytes in somebody's
+//! folder through the reader that refuses unknown keys to a dock.
 
 #![expect(
     clippy::unwrap_used,
@@ -15,7 +20,7 @@ use std::path::{Path, PathBuf};
 
 use alo_dock::keeping::{self, FORMAT, THE_FILE};
 use alo_dock::words;
-use alo_dock::{Changes, Dock, Edge, dock_words};
+use alo_dock::{Changes, Dock, Hiding, dock_words};
 use alo_strings::Strings;
 
 /// A folder under the temporary directory that is this test's alone, emptied.
@@ -33,15 +38,15 @@ fn the_file_in(folder: &Path) -> PathBuf {
     folder.join("alo").join(THE_FILE)
 }
 
-/// A dock moved to this edge.
-fn moved_to(edge: Edge) -> Changes {
+/// A dock asked to give way.
+fn asked_to_give_way() -> Changes {
     let mut changes = Changes::untouched();
-    changes.set_edge(edge);
+    changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
     changes
 }
 
 /// **What was written is what is read back**, from the file on the disk rather
-/// than a copy in memory — for every edge, and for a dock put back.
+/// than a copy in memory — for either answer, and for a dock put back.
 #[test]
 fn a_change_written_to_a_real_file_reads_back_as_itself() {
     let folder = a_folder_of_our_own("round-trip");
@@ -51,17 +56,19 @@ fn a_change_written_to_a_real_file_reads_back_as_itself() {
     let (drawn, refused) = keeping::at_sign_in(&at);
     assert_eq!((drawn, refused), (Dock::shipped(), None));
 
-    for edge in [Edge::Left, Edge::Top, Edge::Right, Edge::Bottom] {
-        keeping::keep(&at, &moved_to(edge)).unwrap();
+    for hiding in [Hiding::WhenAWindowNeedsTheRoom, Hiding::Never] {
+        let mut changes = Changes::untouched();
+        changes.set_hiding(hiding);
+        keeping::keep(&at, &changes).unwrap();
         let on_disk = std::fs::read_to_string(&at).unwrap();
         assert!(
             on_disk.starts_with(&format!("format = {FORMAT}\n")),
             "{on_disk}"
         );
-        assert_eq!(keeping::read(&at).unwrap(), moved_to(edge));
+        assert_eq!(keeping::read(&at).unwrap(), changes);
         let (drawn, refused) = keeping::at_sign_in(&at);
         assert_eq!(refused, None);
-        assert_eq!(drawn.edge(), edge);
+        assert_eq!(drawn.hiding(), hiding);
     }
 
     keeping::keep(&at, &Changes::untouched()).unwrap();
@@ -69,9 +76,81 @@ fn a_change_written_to_a_real_file_reads_back_as_itself() {
     assert_eq!(keeping::read(&at).unwrap(), Changes::untouched());
 }
 
+/// **A file an earlier release wrote still reads, and the dock is at the
+/// bottom.** Every release before ADR 0076 wrote `edge` for anybody who moved
+/// their dock, and `displays` for anybody who singled a screen out. A person's
+/// own file is not rewritten behind them, so it has to load — and it loads as a
+/// machine that changed nothing, because neither is a thing that can be changed
+/// any more.
+///
+/// The one that would have bitten: `edge` is still on `keeping`'s list of keys
+/// the file may have. Taken off it, the reader would refuse the whole file over a
+/// key this project itself wrote last release, and the person would be told their
+/// settings are not settings.
+#[test]
+fn a_file_from_before_the_dock_was_fixed_reads_and_the_edge_is_ignored() {
+    let folder = a_folder_of_our_own("an-older-release");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+
+    for text in [
+        "format = 1\nedge = \"Left\"\n",
+        "format = 1\nedge = \"Top\"\ndisplays = [[\"DP-3 Dell U2720Q\", \"Left\"]]\n",
+        // The value is not validated either. "Middle" was refused while there
+        // were four edges to be one of; refusing it now would be refusing a
+        // person's file over a word nothing reads.
+        "format = 1\nedge = \"Middle\"\n",
+    ] {
+        std::fs::write(&at, text).unwrap();
+        let (drawn, refused) = keeping::at_sign_in(&at);
+        assert_eq!(refused, None, "{text:?} was refused");
+        assert_eq!(drawn, Dock::shipped(), "{text:?}");
+        assert!(drawn.changes().is_untouched(), "{text:?}");
+    }
+}
+
+/// **The half of such a file that still means something survives it.** Somebody
+/// who moved their dock *and* asked it to give way does not lose the second
+/// because of the first.
+#[test]
+fn the_live_key_in_a_file_from_an_older_release_is_kept() {
+    let folder = a_folder_of_our_own("older-release-live-key");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(
+        &at,
+        "format = 1\nedge = \"Left\"\nhiding = \"WhenAWindowNeedsTheRoom\"\n",
+    )
+    .unwrap();
+
+    let (drawn, refused) = keeping::at_sign_in(&at);
+    assert_eq!(refused, None);
+    assert_eq!(drawn.hiding(), Hiding::WhenAWindowNeedsTheRoom);
+}
+
+/// **And the dead key leaves the folder on the next write, without anybody
+/// hunting for it.** A write replaces the file whole rather than editing it, so
+/// the first change a person makes after this release drops the `edge` line.
+#[test]
+fn the_dead_key_goes_on_the_next_write() {
+    let folder = a_folder_of_our_own("dead-key-goes");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(&at, "format = 1\nedge = \"Left\"\n").unwrap();
+
+    keeping::keep(&at, &asked_to_give_way()).unwrap();
+    let on_disk = std::fs::read_to_string(&at).unwrap();
+    assert!(!on_disk.contains("edge"), "{on_disk}");
+    assert!(on_disk.contains("hiding"), "{on_disk}");
+}
+
 /// **A hand-edited key that is not a dock setting is refused whole**, with the
-/// key named, and the edge beside it is not honoured: the dock is where the
-/// release puts it.
+/// key named, and nothing beside it is honoured: the dock is as the release
+/// ships it.
+///
+/// Tolerating what this project used to write is not tolerating anything, and
+/// this is the test that says so: a misspelling is still a file that does not
+/// read, which is what tells the person there is a mistake in it.
 #[test]
 fn a_key_that_is_not_on_the_list_is_refused_whole_and_the_release_is_drawn() {
     let folder = a_folder_of_our_own("unknown-key");
@@ -86,14 +165,18 @@ fn a_key_that_is_not_on_the_list_is_refused_whole_and_the_release_is_drawn() {
 
     let (drawn, refused) = keeping::at_sign_in(&at);
     assert_eq!(drawn, Dock::shipped(), "nothing in the file is honoured");
-    assert_eq!(drawn.edge(), Edge::Bottom);
     let said = refused.unwrap().said(&Strings::of(dock_words().unwrap()));
     assert!(said.text().contains("autohide"), "{said}");
     assert!(said.text().contains(&at.display().to_string()), "{said}");
     assert!(said.unfilled().is_empty(), "{said}");
+
+    // A misspelling of a key that *is* live, which is the case the tolerance
+    // above must not have swallowed.
+    std::fs::write(&at, "format = 1\nhidng = \"Never\"\n").unwrap();
+    assert_eq!(keeping::read(&at).unwrap_err().key(), Some("hidng"));
 }
 
-/// **A file from another format, an edge there is not, or text that is not
+/// **A file from another format, a value there is not, or text that is not
 /// settings is refused whole** — and one that stopped making sense names the
 /// line.
 #[test]
@@ -103,14 +186,17 @@ fn a_file_that_is_not_this_format_is_refused_whole() {
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
 
     for (text, word) in [
-        ("format = 2\nedge = \"Left\"\n", words::KEPT_ANOTHER_FORMAT),
-        ("edge = \"Left\"\n", words::KEPT_NOT_UNDERSTOOD),
         (
-            "format = 1\nedge = \"Middle\"\n",
+            "format = 2\nhiding = \"Never\"\n",
+            words::KEPT_ANOTHER_FORMAT,
+        ),
+        ("hiding = \"Never\"\n", words::KEPT_NOT_UNDERSTOOD),
+        (
+            "format = 1\nhiding = \"Sometimes\"\n",
             words::KEPT_NOT_UNDERSTOOD,
         ),
         ("", words::KEPT_NOT_UNDERSTOOD),
-        ("format = 1\nedge = \n", words::KEPT_NOT_UNDERSTOOD_AT),
+        ("format = 1\nhiding = \n", words::KEPT_NOT_UNDERSTOOD_AT),
     ] {
         std::fs::write(&at, text).unwrap();
         let (drawn, refused) = keeping::at_sign_in(&at);
@@ -130,18 +216,18 @@ fn a_file_that_is_not_this_format_is_refused_whole() {
 fn a_refused_write_leaves_the_file_as_it_was() {
     let folder = a_folder_of_our_own("refused-write");
     let at = the_file_in(&folder);
-    keeping::keep(&at, &moved_to(Edge::Right)).unwrap();
+    keeping::keep(&at, &asked_to_give_way()).unwrap();
     let text_before = std::fs::read_to_string(&at).unwrap();
 
     let blocked = at.join("alo").join(THE_FILE);
-    let refused = keeping::keep(&blocked, &moved_to(Edge::Top)).unwrap_err();
+    let refused = keeping::keep(&blocked, &asked_to_give_way()).unwrap_err();
     assert_eq!(refused.word(), words::KEPT_NOT_WRITTEN);
     assert_eq!(std::fs::read_to_string(&at).unwrap(), text_before);
-    assert_eq!(keeping::read(&at).unwrap(), moved_to(Edge::Right));
+    assert_eq!(keeping::read(&at).unwrap(), asked_to_give_way());
 
     let relative = Path::new("alo").join(THE_FILE);
     assert_eq!(
-        keeping::keep(&relative, &moved_to(Edge::Top))
+        keeping::keep(&relative, &asked_to_give_way())
             .unwrap_err()
             .word(),
         words::KEPT_NOT_EXPRESSIBLE
@@ -180,6 +266,9 @@ fn every_word_these_refusals_say_is_in_the_collected_vocabulary() {
 /// **The header says this crate keeps its own file**, rather than that it reads
 /// nothing at all, because a header describing a state the crate has left is
 /// worse than none.
+///
+/// The same rule caught something on the way through ADR 0076: the header
+/// described four edges and two orientations for a crate that has one of each.
 #[test]
 fn the_header_says_this_crate_keeps_its_own_file() {
     let header =
@@ -187,10 +276,13 @@ fn the_header_says_this_crate_keeps_its_own_file() {
     for stale in [
         "who writes it is the shell's",
         "**It does not read anything.**",
+        "the person decides\n//! where it goes",
+        "# Two orientations, not one rotated",
     ] {
         assert!(!header.contains(stale), "the header still says {stale:?}");
     }
     assert!(header.contains("[`keeping`]"));
+    assert!(header.contains("along the bottom edge"));
 }
 
 /// **A change is not written over a file that did not read.** ADR 0038, clause
@@ -203,12 +295,12 @@ fn a_change_is_not_written_over_a_file_that_did_not_read() {
     let folder = a_folder_of_our_own("not-written-over");
     let at = the_file_in(&folder);
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
-    std::fs::write(&at, "format = 1\nedge = \"Left\"\nautohide = true\n").unwrap();
+    std::fs::write(&at, "format = 1\nautohide = true\n").unwrap();
     let before = std::fs::read(&at).unwrap();
     let (drawn, at_sign_in) = keeping::at_sign_in(&at);
     assert_eq!(drawn, Dock::shipped());
 
-    let refused = keeping::keep(&at, &moved_to(Edge::Top)).unwrap_err();
+    let refused = keeping::keep(&at, &asked_to_give_way()).unwrap_err();
     assert_eq!(refused.word(), words::KEPT_NOT_REPLACED);
     assert_eq!(refused.at(), at.as_path());
     assert_eq!(refused.did_not_read(), at_sign_in);
@@ -239,12 +331,12 @@ fn a_file_mended_since_sign_in_takes_the_next_change() {
     let folder = a_folder_of_our_own("mended-since");
     let at = the_file_in(&folder);
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
-    std::fs::write(&at, "format = 1\nedge = \"Left\"\nautohide = true\n").unwrap();
+    std::fs::write(&at, "format = 1\nautohide = true\n").unwrap();
     assert!(keeping::at_sign_in(&at).1.is_some());
 
-    std::fs::write(&at, "format = 1\nedge = \"Left\"\n").unwrap();
-    keeping::keep(&at, &moved_to(Edge::Top)).unwrap();
-    assert_eq!(keeping::read(&at).unwrap(), moved_to(Edge::Top));
+    std::fs::write(&at, "format = 1\n").unwrap();
+    keeping::keep(&at, &asked_to_give_way()).unwrap();
+    assert_eq!(keeping::read(&at).unwrap(), asked_to_give_way());
 }
 
 /// **Putting the section back as shipped is the one door that replaces a file
@@ -255,7 +347,7 @@ fn putting_back_as_shipped_replaces_a_file_that_did_not_read() {
     let folder = a_folder_of_our_own("put-back");
     let at = the_file_in(&folder);
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
-    std::fs::write(&at, "format = 1\nedge = \"Left\"\nautohide = true\n").unwrap();
+    std::fs::write(&at, "format = 1\nautohide = true\n").unwrap();
 
     keeping::put_back_as_shipped(&at).unwrap();
     assert_eq!(
@@ -264,8 +356,8 @@ fn putting_back_as_shipped_replaces_a_file_that_did_not_read() {
     );
     assert_eq!(keeping::at_sign_in(&at), (Dock::shipped(), None));
 
-    keeping::keep(&at, &moved_to(Edge::Top)).unwrap();
-    assert_eq!(keeping::read(&at).unwrap(), moved_to(Edge::Top));
+    keeping::keep(&at, &asked_to_give_way()).unwrap();
+    assert_eq!(keeping::read(&at).unwrap(), asked_to_give_way());
 
     let relative = Path::new("alo").join(THE_FILE);
     assert_eq!(

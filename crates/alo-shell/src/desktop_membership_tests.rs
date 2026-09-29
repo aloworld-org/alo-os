@@ -16,9 +16,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use crate::desktop_testing::{
-    a_laptops_status, an_appearance, an_undivided_display, noon_look, nothing_offered,
-};
+use crate::desktop_testing::{an_appearance, an_undivided_display, noon_look, nothing_offered};
 use crate::egress_status_testing::{asking_a_provider, noon, words};
 use crate::{
     ApprovalFrame, ApprovalLook, ApprovalScreen, Contrast, DesktopFrame, EgressStatus,
@@ -182,7 +180,6 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     egress: &egress,
                     running: &running,
                     filling: &filling,
-                    status: a_laptops_status(),
                     in_use: &[],
                     notifications: &[],
                     capturing: None,
