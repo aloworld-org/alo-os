@@ -30,16 +30,30 @@
 //! **Asking.** Nothing in this crate opens a socket. The state is written down
 //! by whoever did the asking, through [`TheMachines::now_reaching`].
 //!
-//! **What a machine may do.** A grant is a separate thing a person gives, under
-//! [ADR 0079](../../../docs/decisions/0079-a-person-may-hand-their-agent-a-whole-machine.md),
-//! and being on this list permits nothing.
+//! **Asking.** Nothing here opens a socket, and the list of machines permits
+//! nothing at all.
+//!
+//! # What a person grants is separate, and deliberately so
+//!
+//! [`Driving`] is whether the person's agent may drive one of their machines,
+//! under [ADR 0079](../../../docs/decisions/0079-a-person-may-hand-their-agent-a-whole-machine.md).
+//! It shares no state with [`TheMachines`]: **being on the person's list of
+//! machines permits nothing**, and the two are never read from one place.
+//!
+//! That grant is the only one in this product that cannot enumerate what it
+//! permits, because a pointer and a keyboard reach everything a machine can do.
+//! [`WHAT_IT_CANNOT_ENUMERATE`] is the sentence the person reads when they give
+//! it, and showing it is a term of that record rather than a choice about
+//! presentation.
 
+pub mod driving;
 pub mod machine;
 pub mod machines;
 pub mod reaching;
 pub mod refusing;
 pub mod words;
 
+pub use driving::{Driving, MayDrive, WHAT_IT_CANNOT_ENUMERATE};
 pub use machine::{AMachine, AT_MOST, TheName};
 pub use machines::TheMachines;
 pub use reaching::Reaching;
