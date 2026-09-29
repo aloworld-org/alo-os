@@ -22,6 +22,7 @@
 //! | [`window`] | One window: its application, its place, and how it sits |
 //! | [`windows`] | Every window open, in the order they were last used |
 //! | [`holding`] | Which applications are on the Dock, and which of them fit |
+//! | [`places`] | Where each application's icon sits on the bar |
 //! | [`clicking`] | What one click on an application's icon does |
 //! | [`previews`] | An application's windows, for choosing one that is not the last |
 //! | [`travelling`] | Going somewhere, looking without going, and coming back |
@@ -160,6 +161,7 @@ pub mod measures;
 pub mod menu;
 pub mod offering;
 pub mod on_the_canvas;
+pub mod places;
 pub mod previews;
 pub mod revealing;
 pub mod room;
@@ -185,6 +187,7 @@ pub use layout::Layout;
 pub use menu::{AWindowsState, What};
 pub use offering::{Offer, WhatWouldHappen, dropped_at, near_the_view};
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};
+pub use places::{APlace, Places};
 pub use previews::{Opened, Preview, Previews};
 pub use revealing::{Revealing, TheKeyboard, ThePointer};
 pub use room::Room;
