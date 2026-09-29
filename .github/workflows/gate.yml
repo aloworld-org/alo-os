@@ -207,6 +207,117 @@ jobs:
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             -f description="$said"
 
+      # **And say it on the page a person actually looks at.**
+      #
+      # The step above puts the truth on the queue commit, which is where it is
+      # true. Nobody looks there. On 2026-09-29 a pull request sat for two hours
+      # reading *mergeable, checks passing* — which was accurate about its head —
+      # while the thing blocking it was a different commit on a branch the page
+      # never shows. **A lane watching its own pull request saw nothing wrong for
+      # the entire life of the problem.** The place a person looks should say the
+      # thing that is true.
+      #
+      # # What this claims, and why it is not a lie about the head
+      #
+      # A status on the head implying *the head's tree is broken* would be false.
+      # This says something else: **this pull request's queue entry is waiting for
+      # attestation, and here is its sha.** The subject is the pull request's
+      # position in the queue, which is exactly what the page is for, and the sha
+      # makes it checkable rather than trusted.
+      #
+      # # Nothing here derives a sha, and that is deliberate
+      #
+      # The pull request *number* is read from GitHub's own branch name — the queue
+      # builds `gh-readonly-queue/main/pr-<n>-<base>`, so the number is GitHub's
+      # encoding rather than this file's guess. The head **sha** is then read from
+      # the API. A sha assembled from a branch name would be the fabricated-hash
+      # fault with a machine doing the fabricating, and unlike a person's typo it
+      # would land on a commit that exists.
+      #
+      # Every guard below **refuses rather than guesses**: a number that will not
+      # parse, an API that returns no head, or a pull request that is not open all
+      # post nothing and say why.
+      #
+      # # The deadline is in the sentence, because nothing can clear the worst case
+      #
+      # The attest script clears this when somebody attests. But it only runs when
+      # somebody does — so it cannot clear an entry that **ejected on timeout** or a
+      # pull request **abandoned**, which are precisely the cases this status exists
+      # to make visible. A stale *waiting for attestation* would then sit in the one
+      # place we are teaching people to trust: the failure being removed, arriving
+      # through the door built to remove it.
+      #
+      # Carrying the queue sha alone makes the truth *available* — a reader who
+      # thinks to check finds the branch gone. Carrying **the deadline** makes it
+      # *unavoidable*: the sentence tells a reader when to stop believing it, judged
+      # against a clock they already have. That is the same move as the format
+      # number in an attestation payload — **the artifact carries what is needed to
+      # weigh the artifact.**
+      #
+      # So the three cases are: attested, and the attest script clears it; ejected
+      # and requeued, and the next `merge_group` run replaces it with a new sha and
+      # a new deadline; ejected and abandoned, and nobody clears it — but the
+      # deadline has passed and any reader can see so without leaving the page.
+      - name: say on the pull request that its queue entry is waiting
+        if: github.event_name == 'merge_group'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QUEUE_SHA: ${{ github.event.after || github.sha }}
+          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "queue ref: ${QUEUE_REF:-(the event carried none)}"
+
+          # The pull request number, read out of GitHub's own branch name.
+          number=$(printf '%s' "${QUEUE_REF:-}" | sed -n 's|.*/pr-\([0-9][0-9]*\)-.*|\1|p')
+          if [ -z "$number" ]; then
+            echo "Nothing posted: no pull request number in the queue ref."
+            echo "  Guessing one would put a status on somebody else's pull request."
+            exit 0
+          fi
+          echo "pull request: #$number"
+
+          # Its head sha, and its state, read from the API rather than derived.
+          read -r head state <<EOF
+          $(gh api "repos/$REPO/pulls/$number" --jq '"\(.head.sha) \(.state)"' 2>/dev/null || true)
+          EOF
+          if [ -z "${head:-}" ] || [ "${#head}" -ne 40 ]; then
+            echo "Nothing posted: the API returned no 40-character head sha for #$number."
+            exit 0
+          fi
+          if [ "${state:-}" != "open" ]; then
+            echo "Nothing posted: #$number is '$state', so nothing is waiting on it."
+            exit 0
+          fi
+          echo "head: $head"
+
+          # When the queue built this commit, so the sentence can carry its own
+          # expiry. Read from the commit rather than assumed to be now: this job
+          # starts shortly after the build, and *shortly* is not a measurement.
+          built=$(gh api "repos/$REPO/commits/$QUEUE_SHA" --jq '.commit.committer.date' 2>/dev/null || true)
+          if [ -z "$built" ]; then
+            echo "Nothing posted: the queue commit's build time could not be read, so the"
+            echo "  sentence could not carry the deadline that keeps it from going stale."
+            exit 0
+          fi
+
+          said="queue entry ${QUEUE_SHA} wants alo/nine-gates; it ejects 60 minutes after $built"
+          if [ "${#said}" -gt 140 ]; then
+            said="queue entry ${QUEUE_SHA} wants alo/nine-gates; ejects 60 min after $built"
+          fi
+          if [ "${#said}" -gt 140 ]; then
+            echo "Nothing posted: the description is ${#said} characters and the limit is 140."
+            echo "  A rejected POST would leave this page as silent as it was before."
+            exit 1
+          fi
+
+          echo "posting on $head: $said (${#said} characters)"
+          gh api -X POST "repos/$REPO/statuses/$head" \
+            -f state=failure \
+            -f context=alo/queue-entry-waiting \
+            -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" \
+            -f description="$said"
+
       # The pinned nightly the BPF gates need, beside the stable the rest use.
       # `crates/alo-bounding-kernel/rust-toolchain.toml` pins it and rustup
       # honours that file, so the version is not repeated here.
