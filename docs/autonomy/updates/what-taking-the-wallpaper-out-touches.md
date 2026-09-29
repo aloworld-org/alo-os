@@ -149,3 +149,49 @@ what a file holding one does. The first is a small design decision, the second i
 schema decision with a rule attached. Both were reached at the point where the
 next edit would have chosen one by accident, so the branch was abandoned rather
 than pushed.
+
+## What happened when this report's author did the removal
+
+The removal landed as #256. One part of it is worth adding here, because this
+document warned about it and then failed to prevent it.
+
+**`lock_texture.rs` was deleted and had to be restored.** ADR 0075 says *the lock
+screen's picture path, including `lock_image_decode.rs`* comes out, and I read
+that file as part of it. It is not. Its own first line is *exclusive opaque lock
+submission: no client import, no desktop layers, no cursor* — which is the
+property the record explicitly **keeps**, and it takes a composed `LockPicture`
+from `lock_raster` that has never known anything about a wallpaper. Deleting it
+would have removed the mechanism that implements the one rule ADR 0075 says
+survives.
+
+**It was caught by the compiler, not by care.** `scene_drawing.rs` still called
+it, so the call had no callee and the build stopped. Nothing about the reading
+that produced the mistake improved between making it and finding it.
+
+Three things follow, and they are why this is written down rather than quietly
+fixed.
+
+**A file nothing called would have gone silently.** The compiler is a complete
+check for *is this still called* and no check at all for *should this still
+exist*. Every file in the list above that is reachable only through another
+deleted file is in that position, and the only thing standing between them and a
+silent over-removal is somebody reading each one's own first line.
+
+**The author of the warning committed the warned-against fault.** This report says,
+in the section above, that the difference between a completeness gap and a
+decision left open *is the difference between finishing a removal and exceeding
+one*. That sentence was written four hours before the same person exceeded one, in
+a file this report had already named. A caution a reader has to remember is not a
+check, and the person best placed to remember it is the worst placed to notice
+when they have not.
+
+**Reviewing the diff would not have caught it either.** The third PC said so
+plainly when told, and I agree: a deletion of a file whose callers are also being
+deleted looks correct in a diff, and the question *is this file's subject the
+thing being removed* cannot be answered from the diff at all — only from the
+file's own words.
+
+What would have caught it mechanically: reading the first line of every file
+before deleting it, as a step rather than as an intention. That is cheap, it is
+the thing that eventually did catch it, and it is the only part of this removal
+that was left to memory.
