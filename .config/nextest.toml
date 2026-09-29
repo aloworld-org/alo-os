@@ -35,6 +35,25 @@
 [test-groups.kernel-boundary]
 max-threads = 1
 
+# **One machine, one camera.** `alo-cameras`' tests make a device come and go on
+# purpose — *yesterday's `video0` is today's `video2`* is the identity they exist
+# to prove — by unbinding and rebinding the kernel's `vivid` driver. There is one
+# of it, so two of these tests at once are two tests taking the same device away
+# from each other.
+#
+# It did not show under `cargo test`, which runs a binary's tests as threads in
+# one process; nextest gives each test its own process and runs them across
+# binaries at once, so the same crate's files now race. Measured on the Mac lane
+# 2026-09-29: `turning_the_camera_off_takes_the_device_away_from_everything`
+# failed in a full run with */dev/video0 was in the record and is not on this
+# machine*, and the same crate passed 21 of 21 run alone.
+#
+# **Only what was measured.** `alo-sound`'s `snd-aloop` cards are the same shape of
+# fixture and have not failed, so they are not listed here; if they start to, this
+# is where it goes and this comment is why.
+[test-groups.one-machine-one-device]
+max-threads = 1
+
 [profile.default]
 # Never stop at the first failing target. Four runs on this machine once found
 # four faults serially that one run found together.
@@ -55,6 +74,10 @@ slow-timeout = { period = "180s", terminate-after = 10 }
 # measurement says they are 15% of the run, so taking them out of the gate buys
 # little and costs a real check. What they get is a budget matching what they do:
 # drive a document converter, walk a filesystem, read an image's own recipe.
+[[profile.default.overrides]]
+filter = 'package(alo-cameras)'
+test-group = 'one-machine-one-device'
+
 [[profile.default.overrides]]
 filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
 slow-timeout = { period = "300s", terminate-after = 4 }
@@ -77,6 +100,10 @@ slow-timeout = { period = "60s", terminate-after = 10 }
 filter = 'package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)'
 test-group = 'kernel-boundary'
 slow-timeout = { period = "180s", terminate-after = 10 }
+
+[[profile.gates.overrides]]
+filter = 'package(alo-cameras)'
+test-group = 'one-machine-one-device'
 
 [[profile.gates.overrides]]
 filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
