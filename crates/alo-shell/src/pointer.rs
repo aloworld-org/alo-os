@@ -33,6 +33,12 @@ pub(crate) struct Pointer {
     /// the same reason — see `crate::canvas_wheel_zoom`, which says why the two
     /// remainders are separate.
     pub(crate) unspent_zoom: f64,
+    /// Pointer movement spent on a space-drag rather than on a frame.
+    ///
+    /// Kept for `crate::canvas_pan`'s reason and in its shape: the plane moves in
+    /// whole units and a pointer arrives in `f64`, so what is left over waits for
+    /// the next movement instead of being dropped.
+    pub(crate) unspent_space: (f64, f64),
     /// The zoom a pinch on the plane started from, while one is in progress.
     ///
     /// `GesturePinchUpdateEvent::scale` is measured against the moment the
@@ -62,6 +68,7 @@ impl Server {
                 time: 0,
                 unspent_scroll: (0.0, 0.0),
                 unspent_zoom: 0.0,
+                unspent_space: (0.0, 0.0),
                 pinch_from: None,
                 popup_release: None,
             });
@@ -88,6 +95,18 @@ impl Server {
         // the same point in a frame's own units, which is what a frame, a drag and
         // a resize are told. Converted once, here, rather than at each reader.
         let location: Point<f64, Logical> = (x, y).into();
+        // **Space and drag pans, before anything else is asked.** ADR 0065 names
+        // it beside the wheel. It is taken here rather than after the hit test
+        // because a drag that panned over empty canvas and scrolled a document
+        // the moment it crossed one would change meaning mid-stroke; somebody
+        // holding Space has already said what they mean.
+        if self.pan_the_plane_by_a_space_drag(location) {
+            if let Some(pointer) = self.surfaces.pointer.as_mut() {
+                pointer.location = location;
+                pointer.time = time;
+            }
+            return Ok(());
+        }
         let on_the_plane = self.surfaces.on_the_plane(location);
         if self.surfaces.move_window_pointer(on_the_plane)?
             || self.surfaces.resize_window_pointer(on_the_plane)?

@@ -98,6 +98,7 @@ mod canvas_never_lost;
 mod canvas_pan;
 mod canvas_pinch;
 mod canvas_show_all;
+mod canvas_space_drag;
 mod canvas_wheel_zoom;
 mod capture_flatten;
 mod capture_paint;
