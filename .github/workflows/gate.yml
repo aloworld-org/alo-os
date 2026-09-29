@@ -1,13 +1,17 @@
-# The nine gates, run on every change and on every queue branch, posting the
-# status `main` requires.
+# The gates that run on a hosted runner, on every change and every queue branch,
+# posting `alo/gates-on-a-runner` — which is **not** the status `main` requires.
 #
-# **`alo/nine-gates` is a required check on `main` and until this file nothing
-# produced it.** Every status on every pull request was typed by hand with
-# `curl`, by whichever lane was landing, and so was the *second* one each
-# merge-queue branch needs. On 2026-09-28 that cost a pull request sitting at
-# position 1 in the queue with nobody to attest it, another gated twice because
-# the queue rebased it under the first attestation, and a lane that could not
-# merge at all for most of a day.
+# **`alo/nine-gates` is a required check on `main` and nothing produces it but a
+# lane.** Every status on every pull request was typed by hand with `curl`, by
+# whichever lane was landing, and so was the *second* one each merge-queue branch
+# needs. On 2026-09-28 that cost a pull request sitting at position 1 in the queue
+# with nobody to attest it, another gated twice because the queue rebased it under
+# the first attestation, and a lane that could not merge at all for most of a day.
+# This file was written to end that and it does not, quite: seven tests of 8,205
+# cannot run here, so it posts a claim about a runner instead and the step at the
+# bottom of this file says why at length. What it removes is the *guessing* — a
+# lane still types the required status, but it no longer finds out from a queue
+# what a machine would have told it in twenty minutes.
 #
 # Until that afternoon this file could not have existed: the gates loaded BPF
 # programmes into a privileged kernel, which no hosted runner will give. #217
@@ -20,9 +24,10 @@
 # GitHub's merge queue builds its own branch — `gh-readonly-queue/main/pr-N-<base>`
 # — and that commit is **not** the pull request's head: it is the change rebased
 # onto the real current `main`. Branch protection asks it for `alo/nine-gates`
-# too, and nothing produced that either. So `on: merge_group` is not a
-# convenience, it is the half of the contract that was being met by a person
-# typing a second `curl`.
+# too, and nothing produces that either. So `on: merge_group` is not a
+# convenience, it is the half of the contract that is being met by a person
+# typing a second `curl` — and this file running there is what tells them, before
+# they type it, whether the rebase the queue performed still passes.
 #
 # It is also the design the owner decided on 2026-09-28, out of three that were
 # put to them: **the queue branch is gated by CI, and `alo/nine-gates` on a pull
@@ -33,11 +38,20 @@
 #
 # # What this does not do
 #
-# **It does not change branch protection.** The required check stays what it is,
-# this workflow posts it like any lane does, and a lane may keep posting by hand
-# while this proves itself. Making this workflow's own check the required one is
-# a later decision and the owner's — a flag day in the middle of three lanes
-# landing work is how a queue stops for a reason nobody can see.
+# **It does not change branch protection, and it no longer aims to.** The
+# required check stays what it is and a lane keeps posting it. Making
+# `alo/gates-on-a-runner` a required check, or adding it beside the other, is the
+# owner's decision — a flag day in the middle of three lanes landing work is how a
+# queue stops for a reason nobody can see. What would have to come first is the
+# seven tests. What is measured about them tonight is only this: they fail here and
+# they pass on all three lanes' machines, so it is this environment and not the
+# work. Five make a network namespace and two reach an accessibility bus, and for
+# the namespace five the run below shows the kernel refusing `unshare` to the
+# runner while allowing it to root — which explains why they failed before the
+# gates ran as root and **does not** explain why they still fail now. That is
+# unfinished rather than concluded, and it is written here as unfinished because a
+# cause invented to fill the gap is how five wrong explanations got withdrawn on
+# 2026-09-28 before the sixth was measured.
 #
 # **It does not build the image**, which no gate does either; `docs/quirks/`
 # records that as its own finding.
@@ -226,11 +240,13 @@ jobs:
 
       # **What this run will not cover, said before it runs rather than after.**
       #
-      # `alo/nine-gates` means the nine gates as `tools/kernel-loop/src/gates.rs`
-      # defines them, and that definition excludes three packages and one test by
-      # name. One lane runs `cargo test --workspace` with **no** exclusion at
-      # all, so its green covers strictly more than this one's — and nobody
-      # reading a tick would know which they were looking at.
+      # The nine gates are what `tools/kernel-loop/src/gates.rs` defines, and that
+      # definition excludes three packages and one test by name. One lane runs
+      # `cargo test --workspace` with **no** exclusion at all, so its green covers
+      # strictly more than this one's — and nobody reading a tick would know which
+      # they were looking at. This is the *first* of two ways a green here is
+      # narrower than a lane's; `alo/gates-on-a-runner` at the bottom of this file
+      # is the second, and it is named the way it is for the same reason.
       #
       # Running unfiltered here is not the answer: the excluded packages attach
       # BPF programmes to a kernel, which is what #217 took off the merge path
@@ -244,7 +260,7 @@ jobs:
       # *a gate that is absent should say so*.
       - name: what these gates do not cover
         run: |
-          echo "alo/nine-gates here means the gates as gates.rs defines them, which excludes:"
+          echo "the gates here are the ones gates.rs defines, which excludes:"
           # `\r$` first: a checkout with CRLF endings leaves the continuation
           # backslash followed by a carriage return, so `\\$` never matches and
           # the joined line comes out with a stray `\` in the middle of it.
@@ -421,15 +437,39 @@ jobs:
           grep -oE '[0-9]+ tests and [0-9]+ binaries skipped' /tmp/the-gates.log | tail -1 \
             || echo "no skip line in the gates' output — the tests gate may not have run"
 
-      # **The status `main` requires**, on whichever commit is being gated: the
-      # pull request's head, or the queue branch's own. `github.event.after` is
-      # the queue branch's head on a `merge_group` event and empty otherwise.
+      # **`alo/gates-on-a-runner`, and deliberately not `alo/nine-gates`.**
       #
-      # It runs only on success. A failed gate posts nothing at all rather than
-      # posting a failure, because a lane may still land by hand while this
-      # proves itself, and a red status this workflow wrote would block a commit
-      # a person had gated properly on a machine with a kernel.
-      - name: post alo/nine-gates
+      # This workflow was written to post the status `main` requires, and it very
+      # nearly did. Two tests need an accessibility bus this runner cannot give
+      # them as root and five need a network namespace it refuses to make, so the
+      # workspace-tests gate does not pass here — and the plan was for the run to
+      # *say so* while still posting.
+      #
+      # That plan was wrong and it was wrong in the shape this file argues against
+      # twice above. `alo/nine-gates` means the nine gates passed. **Naming a gap
+      # in a log does not make a status true**, and a green a reader has to go and
+      # read a log to qualify is the same fault as a skip being the same colour as
+      # a pass. It would also be a claim about the *repository's* gates made by the
+      # weakest place they run.
+      #
+      # So this posts a different claim, and the name says **where it ran** rather
+      # than how much of it ran. A count goes stale the day the runner gains or
+      # loses a capability and then the name is lying again; the machine is the
+      # durable fact. A reader seeing `alo/gates-on-a-runner` green and
+      # `alo/nine-gates` absent knows exactly what they have — most of the gates,
+      # on a hosted runner — without knowing today's arithmetic.
+      #
+      # `alo/nine-gates` stays what it is: posted by a lane, on a machine with a
+      # kernel, meaning all nine. If this runner is ever made able to run
+      # everything, this step can post both and the distinction retires on
+      # evidence rather than by decision.
+      #
+      # On whichever commit is being gated — the pull request's head, or the queue
+      # branch's own. `github.event.after` is the queue branch's head on a
+      # `merge_group` event and empty otherwise. It runs only on success, because a
+      # red status this workflow wrote would sit beside a commit somebody gated
+      # properly.
+      - name: post alo/gates-on-a-runner
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -437,6 +477,6 @@ jobs:
         run: |
           gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=success \
-            -f context=alo/nine-gates \
+            -f context=alo/gates-on-a-runner \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            -f description="all nine, on this tree, by the workflow"
+            -f description="the gates that run on a hosted runner, by the workflow"
