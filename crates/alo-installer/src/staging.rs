@@ -120,6 +120,7 @@ pub fn stage(
     chosen: &ForAloOs,
     the_environment: &TheEnvironment,
     fast_startup: Answer,
+    replacing: Replacing,
 ) -> Result<(), Ended> {
     let mut journal = Vec::new();
     match steps(
@@ -127,6 +128,7 @@ pub fn stage(
         strings,
         offer,
         chosen,
+        replacing,
         the_environment,
         fast_startup,
         &mut journal,
@@ -136,6 +138,12 @@ pub fn stage(
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the road is the eighth, and it is carried rather than decided: \
+             every one of these is something a person chose or a check found, and \
+             grouping them would hide which of them the caller may not invent"
+)]
 /// The person's answer about Fast Startup, and then steps 1 to 7, each change
 /// journalled as it succeeds.
 fn steps(
@@ -143,6 +151,7 @@ fn steps(
     strings: &Strings,
     offer: &Offer,
     chosen: &ForAloOs,
+    replacing: Replacing,
     the_environment: &TheEnvironment,
     fast_startup: Answer,
     journal: &mut Vec<Made>,
@@ -250,10 +259,9 @@ fn steps(
         &Filling::nothing(),
     );
     let root = std::path::PathBuf::from(letter.root());
-    // The ordinary road, named rather than defaulted: `sequence.rs` offers no
-    // other one yet, and the road that erases a disk will carry its own word
-    // from the consent that named it — never from anything this file decides.
-    let choice = environment::the_choice(&chosen.after_the_restart, Replacing::Nothing);
+    // The road is the caller's, never this file's: it comes from the consent
+    // that named it, and `staging.rs` has no way to decide to erase a disk.
+    let choice = environment::the_choice(&chosen.after_the_restart, replacing);
     for (inside, bytes) in the_environment
         .files()
         .iter()
