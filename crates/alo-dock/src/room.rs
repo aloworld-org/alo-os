@@ -102,6 +102,29 @@ impl Room {
             .and(Self::a_line_at(text))
     }
 
+    /// How wide a bar holding this many icons is: the room inside it, the
+    /// icons, and a gap between each pair of them.
+    ///
+    /// **A bar's width is what it holds.** It was the whole width of the screen
+    /// while the Dock was a band flush to the edge; the designs show a bar
+    /// centred with room either side, so the width is arithmetic over its
+    /// contents rather than a property of the screen.
+    ///
+    /// None at all is still a bar — the room inside it, and nothing between —
+    /// because a Dock with nothing pinned and nothing open is a thing a person
+    /// can still reach.
+    #[must_use]
+    pub fn a_bar_holding(how_many: usize) -> Self {
+        let icons = u32::try_from(how_many).unwrap_or(u32::MAX);
+        let gaps = icons.saturating_sub(1);
+        Self::pixels(
+            MARGIN
+                .saturating_add(icons.saturating_mul(ICON))
+                .saturating_add(gaps.saturating_mul(GAP))
+                .saturating_add(MARGIN),
+        )
+    }
+
     /// The most a dock may take out of the side of the screen it sits on.
     ///
     /// This is the ceiling the whole *labels give way* decision turns on:

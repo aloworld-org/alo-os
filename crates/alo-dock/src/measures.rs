@@ -74,6 +74,14 @@ pub const LINE_IN_FIFTHS: u32 = 7;
 /// lays out for, and nothing beyond that.
 pub const A_DOCK_MAY_TAKE_ONE_PART_IN: u32 = 6;
 
+/// How far the bar floats above the bottom edge of the screen.
+///
+/// **The Dock is a bar with room under it, not a band stuck to the edge.** The
+/// gap is what makes it read as something laid on the canvas rather than part
+/// of the screen's frame, and it is the same measure as the room inside the bar
+/// so that the two do not disagree by a pixel nobody chose.
+pub const FLOATING_ABOVE_THE_EDGE: u32 = MARGIN;
+
 /// The text size EN 301 549 requires a layout to survive, as a percentage.
 ///
 /// It is `alo_appearance`'s number as well — that crate asserts its ceiling
