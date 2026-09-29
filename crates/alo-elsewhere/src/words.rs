@@ -113,14 +113,97 @@ pub const ALREADY_ADDED_WORD: Word = Word::saying(
      I added this one?* {called} is the name they gave it, which is theirs and never translated.",
 );
 
+// ---------------------------------------------------------------------------
+// Letting the agent drive a machine — [`crate::Driving`]. Read where the person
+// grants it, which ADR 0079 makes a term of the decision rather than a choice
+// about presentation.
+// ---------------------------------------------------------------------------
+
+/// The key of [`WHAT_IT_CANNOT_ENUMERATE_WORD`].
+pub const WHAT_IT_CANNOT_ENUMERATE: &str = "elsewhere.driving.what-it-cannot-enumerate";
+
+/// The key of [`MAY_DRIVE_WORD`].
+pub const MAY_DRIVE: &str = "elsewhere.driving.may-drive";
+
+/// The key of [`MAY_NOT_DRIVE_WORD`].
+pub const MAY_NOT_DRIVE: &str = "elsewhere.driving.may-not-drive";
+
+/// The key of [`ENDS_BEFORE_IT_BEGINS_WORD`].
+pub const ENDS_BEFORE_IT_BEGINS: &str = "elsewhere.not-given.ends-before-it-begins";
+
+/// The key of [`ALREADY_DRIVING_WORD`].
+pub const ALREADY_DRIVING: &str = "elsewhere.not-given.already-driving";
+
+/// **The sentence ADR 0079 requires**, read where the person grants this.
+pub const WHAT_IT_CANNOT_ENUMERATE_WORD: Word = Word::saying(
+    WHAT_IT_CANNOT_ENUMERATE,
+    "This lets the agent do anything on that machine that you could do there. Unlike every other \
+     permission you give, this one cannot list what it allows",
+)
+.noting(
+    "THE most important string in this crate, and ADR 0079 makes showing it a term of the \
+     decision rather than a presentation choice. Read at the moment a person is letting their \
+     agent use another of their machines. Every other permission in alo OS is a list of things; \
+     this one is not, because a pointer and a keyboard reach everything a machine can do. Both \
+     halves must survive translation: what it allows (anything you could do there) AND that it \
+     is unlike the others (it cannot list what it allows). A translation that keeps only the \
+     first reads as ordinary permission, which is exactly the belief this sentence exists to \
+     prevent. It is not a warning and not a question — do not translate it as *are you sure*. \
+     It is the plain fact, told to somebody who is entitled to decide.",
+);
+
+/// A machine the agent may currently use.
+pub const MAY_DRIVE_WORD: Word = Word::saying(MAY_DRIVE, "Your agent may use this machine").noting(
+    "Beside one machine in a list of what the person has granted. Present tense, about right \
+         now: the grant has an end, and this says it has not been reached. Keep it short enough \
+         to sit in a row beside a machine's name.",
+);
+
+/// A machine the agent may not use.
+pub const MAY_NOT_DRIVE_WORD: Word =
+    Word::saying(MAY_NOT_DRIVE, "Your agent may not use this machine").noting(
+        "Beside one machine in a list of what the person has granted, when the grant has ended or \
+         was never given. It is the ordinary state and must not read as a fault or a refusal — \
+         nothing has gone wrong, the agent simply does not have this machine.",
+    );
+
+/// A grant whose end is not after its beginning.
+pub const ENDS_BEFORE_IT_BEGINS_WORD: Word = Word::saying(
+    ENDS_BEFORE_IT_BEGINS,
+    "Choose a time after now for this to end",
+)
+.noting(
+    "Shown while a person is granting their agent a machine and has picked an end that is not in \
+     the future. It asks for the thing it needs rather than naming the rule that was broken. \
+     Every grant in alo OS ends; there is no wording here for a permanent one because there is \
+     no permanent one.",
+);
+
+/// A machine already granted.
+pub const ALREADY_DRIVING_WORD: Word = Word::saying(
+    ALREADY_DRIVING,
+    "Your agent already has this machine — change when it ends instead",
+)
+.noting(
+    "Shown when a person grants a machine their agent already has. The second half matters more \
+     than the first: it tells them the act they actually want. Granting again is refused rather \
+     than silently making the grant longer, because somebody who thinks they are granting and is \
+     in fact widening has not been told what they did.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 6] = [
+pub const EVERY_WORD: [Word; 11] = [
     ANSWERED_WORD,
     DID_NOT_ANSWER_WORD,
     NOT_ASKED_YET_WORD,
     UNNAMED_WORD,
     NAME_TOO_LONG_WORD,
     ALREADY_ADDED_WORD,
+    WHAT_IT_CANNOT_ENUMERATE_WORD,
+    MAY_DRIVE_WORD,
+    MAY_NOT_DRIVE_WORD,
+    ENDS_BEFORE_IT_BEGINS_WORD,
+    ALREADY_DRIVING_WORD,
 ];
 
 /// What can go wrong declaring this crate's words.
@@ -220,6 +303,27 @@ mod tests {
                 word.named()
             );
         }
+    }
+
+    /// **Both halves of the sentence ADR 0079 requires are in the string**, not
+    /// one in the string and one added by whatever draws it. A translation that
+    /// kept only *anything you could do there* would read as ordinary
+    /// permission, which is the belief the sentence exists to prevent.
+    #[test]
+    fn the_grant_that_cannot_list_itself_says_both_halves() {
+        let says = WHAT_IT_CANNOT_ENUMERATE_WORD.says();
+        assert!(says.contains("anything on that machine that you could do there"));
+        assert!(says.contains("cannot list what it allows"));
+
+        let note = WHAT_IT_CANNOT_ENUMERATE_WORD.note().expect("a note");
+        assert!(
+            note.contains("Both halves must survive translation"),
+            "the note does not tell a translator which halves matter"
+        );
+        assert!(
+            note.contains("are you sure"),
+            "the note does not warn against turning a fact into a question"
+        );
     }
 
     /// The sentences that take a value name it, so a translator knows what will

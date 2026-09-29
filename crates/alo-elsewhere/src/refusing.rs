@@ -19,6 +19,12 @@ pub enum NotElsewhere {
     /// That machine is already on the person's list.
     #[error("that machine is already added")]
     AlreadyAdded,
+    /// A grant whose end is not after its beginning.
+    #[error("a grant must end after it begins")]
+    EndsBeforeItBegins,
+    /// A grant over that machine already exists.
+    #[error("that machine is already granted to the agent")]
+    AlreadyDriving,
 }
 
 impl NotElsewhere {
@@ -32,6 +38,8 @@ impl NotElsewhere {
             Self::Unnamed => words::UNNAMED,
             Self::NameTooLong { .. } => words::NAME_TOO_LONG,
             Self::AlreadyAdded => words::ALREADY_ADDED,
+            Self::EndsBeforeItBegins => words::ENDS_BEFORE_IT_BEGINS,
+            Self::AlreadyDriving => words::ALREADY_DRIVING,
         }
     }
 }
@@ -50,6 +58,8 @@ mod tests {
                 at_most: 64,
             },
             NotElsewhere::AlreadyAdded,
+            NotElsewhere::EndsBeforeItBegins,
+            NotElsewhere::AlreadyDriving,
         ];
         let mut seen = Vec::new();
         for refusal in &every {
@@ -57,7 +67,7 @@ mod tests {
             assert!(!seen.contains(&word), "two refusals share {word}");
             seen.push(word);
         }
-        assert_eq!(seen.len(), 3);
+        assert_eq!(seen.len(), 5, "a refusal was added without a sentence");
     }
 
     /// **The developer's sentence and the person's are not the same string.**
