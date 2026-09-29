@@ -152,7 +152,8 @@ jobs:
           sudo apt-get install --no-install-recommends --yes \
             libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
             libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
-            weston
+            weston \
+            dbus-x11 gnome-keyring at-spi2-core
           weston --version
 
       # Cache invalidation dominates, not work: a queue-branch gate on one lane
@@ -300,11 +301,30 @@ jobs:
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
       # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
       # slept and NTP stepped the clock forward mid-gate.
+      # **Inside a session bus, because twenty-four tests need one.** Measured on
+      # the first run that got this far: 24 of 8,189 failed, and all of them for
+      # one reason — `alo-secrets` wants the Secret Service, `alo-shell`'s
+      # `the_tree_a_reader_finds` wants the accessibility bus, `alo-proxy` the
+      # same. Those are D-Bus, and a hosted runner has no session bus at all.
+      #
+      # This is the hole in the survey that cleared this workflow, and it is the
+      # second of exactly the same shape. That survey ran the suite twice with
+      # `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` and `DISPLAY` unset and found no
+      # difference — but the machine still had a session bus throughout, so the
+      # variable that mattered was never varied. A runner is a third session
+      # again, and this is the part of it the survey could not see.
+      #
+      # `dbus-run-session` gives the gates a bus of their own that dies with
+      # them; `gnome-keyring-daemon --unlock` puts a Secret Service on it with an
+      # empty password, which is what the tests expect of a fresh login.
       - name: the nine gates
         run: |
           began=$(cut -d. -f1 /proc/uptime)
           set -o pipefail
-          ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1 | tee /tmp/the-gates.log
+          dbus-run-session -- bash -c '
+            printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
+            ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
+          ' | tee /tmp/the-gates.log
           echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
 
       # **What was not run, beside what passed.** A skip is the same colour as a
