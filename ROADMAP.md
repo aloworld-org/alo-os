@@ -2687,7 +2687,6 @@ managed machine means and what its person is told.
       location services off by default; applications contribute to search
 - [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
 - [ ] Fleet policy and signed updates, for alo OS machines
-- [ ] Files and printers shared between paired machines
 - [ ] Cross-machine agent work, under grants made on the target machine
 - [ ] Signed images verified before boot; Secure Boot with our key
 - [ ] Backup and restore

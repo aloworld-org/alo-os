@@ -299,7 +299,7 @@ on the same WiFi confers nothing.
 - [v0.5] Pairing: mutual, deliberate, enumerated, revocable in one action, and expiring — grants, across a machine boundary
 - [v0.5] ★ **The whole of it works with no internet at all.** An office that cannot connect still has working AI
 - [v0.5] A self-hosted workspace on the network is **discovered, not configured** — no DNS step
-- [v1] Files and printers shared between paired alo machines, with no server in the middle
+- [v2] Files and printers shared between paired alo machines, with no server in the middle
 - [v1] Enrollment by discovery: a new machine appears to the fleet and asks; an administrator admits it
 - [v1] ★ Cross-machine agent work — an agent may **ask** a paired machine, and acts only under a grant made **on that machine, by its person**
 
@@ -341,7 +341,7 @@ told so at first sign-in. There is no silent enrollment.
 - [v0.01] Image built as an OCI container image — a **bootable container** (`bootc`) on a rented, unmodified Linux base (ADR 0011), so the operating system *is* the image rather than being installed by one. No third language enters the repository to build it
 - [v0.5] ★ Atomic updates with rollback — the previous deployment stays bootable, which a bootc image gives us rather than us building it (ADR 0011)
 - [v0.5] ★ **Installed from the machine it replaces** — download one program on the Windows machine alo OS is replacing; it checks the machine, says exactly what will happen, stages a minimal boot environment, and pulls the operating system itself — signed and versioned — from the same registry updates come from. Download, click, reboot, sign in: no USB stick, no ISO burning, no firmware ceremony. Secure Boot is respected through the signed shim, never something a person is told to switch off; anything destructive takes a typed consent naming what is destroyed, and Windows stays bootable until the one named point of no return (ADR 0023)
-- [v0.5] Printing. Unglamorous, and it decides public-sector deals
+- [v1] Printing. Unglamorous, and it decides public-sector deals. `alo-printing` is built and gated against a real CUPS — found, set up, printed to, and told what is wrong when it stops — so what is owed is the **On the machine.** half: no paper has come out of anything, and law 3 is what ticks that box (ADR 0078)
 - [v0.5] The documents people are actually sent open: `.docx`, `.xlsx`, `.pptx`
 - [v0.5] A web browser for the open web — a pinned upstream one, since our own engine is not scheduled
 - [v0.5] Installer
