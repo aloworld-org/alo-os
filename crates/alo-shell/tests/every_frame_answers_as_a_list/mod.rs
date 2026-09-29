@@ -254,3 +254,119 @@ fn a_frame_far_outside_the_viewport_is_still_reached_and_focused() {
         "the ring refused to turn with two frames open"
     );
 }
+
+/// What a reader is told the windows open are, in the tree's own order.
+fn the_windows_a_reader_hears(f: &Fixture) -> Vec<String> {
+    f.backend(|s| {
+        let strings = alo_strings::Strings::of(
+            alo_saying::everything_this_machine_can_say().expect("the assembled vocabulary"),
+        );
+        s.read_aloud_with_the_frames_open(&strings, &[alo_access::Surface::Desktop])
+            .the_windows_open_as_read()
+            .into_iter()
+            .map(str::to_owned)
+            .collect()
+    })
+}
+
+/// The name a reader would hear for this frame, as the shell reads it.
+fn named(name: alo_shell::FrameName) -> String {
+    match name {
+        alo_shell::FrameName::Given(name) | alo_shell::FrameName::ItsClass(name) => name,
+        alo_shell::FrameName::AnApplication => "an application".to_owned(),
+    }
+}
+
+/// **Every frame is named to a reader, by whatever the application calls itself.**
+///
+/// The last third of task 7's acceptance — *every frame can be reached, focused
+/// and named* — and the third that was blocked on 2026-09-27 because nothing in
+/// this shell read `xdg_toplevel.set_title`.
+///
+/// All three cases a name can arrive in are here: a title the application set, a
+/// class where it set no title, and the machine's own words where it set neither.
+/// The third is the only one a translator ever sees.
+#[test]
+fn every_frame_is_named_to_a_reader_by_whatever_it_calls_itself() {
+    let f = Fixture::keyboard();
+    let mut titled = mapped(&f);
+    titled.toplevel.set_title("Ledger for March".to_owned());
+    titled.sync();
+    let mut classed = mapped(&f);
+    classed.toplevel.set_app_id("org.alo.Notes".to_owned());
+    classed.sync();
+    let mut nameless = mapped(&f);
+    nameless.sync();
+
+    let heard = the_windows_a_reader_hears(&f);
+    assert_eq!(
+        heard.len(),
+        3,
+        "three windows are open, a reader heard {heard:?}"
+    );
+    assert!(
+        heard.contains(&"Ledger for March".to_owned()),
+        "an application's own title did not reach the reader: {heard:?}"
+    );
+    assert!(
+        heard.contains(&"org.alo.Notes".to_owned()),
+        "an application with no title was not named by its class: {heard:?}"
+    );
+    assert!(
+        heard.contains(&"an application".to_owned()),
+        "an application that named itself nothing got no words of ours: {heard:?}"
+    );
+}
+
+/// **A reader hears the windows in the order the keyboard walks them.**
+///
+/// Task 7's constraint is that this is *not a second interface*. A list read in
+/// one order while the keyboard moves in another would be exactly that: two
+/// answers to *which window is next*, and a person using both told one thing and
+/// shown another.
+#[test]
+fn the_order_a_reader_hears_is_the_order_the_keyboard_walks() {
+    let f = Fixture::keyboard();
+    let mut first = mapped(&f);
+    first.toplevel.set_title("one".to_owned());
+    first.sync();
+    let mut second = mapped(&f);
+    second.toplevel.set_title("two".to_owned());
+    second.sync();
+    let mut third = mapped(&f);
+    third.toplevel.set_title("three".to_owned());
+    third.sync();
+
+    let heard = the_windows_a_reader_hears(&f);
+    let walked: Vec<String> = f.backend(|s| {
+        s.mapped_surfaces()
+            .map(|frame| named(s.the_name_of(frame)))
+            .collect()
+    });
+    assert_eq!(
+        heard, walked,
+        "a reader hears the windows in a different order from the one they are walked in"
+    );
+}
+
+/// **A window that closes stops being read**, so a reader is never offered one
+/// that is not there any more.
+#[test]
+fn a_window_that_closes_is_no_longer_read() {
+    let f = Fixture::keyboard();
+    let mut staying = mapped(&f);
+    staying.toplevel.set_title("staying".to_owned());
+    staying.sync();
+    let mut going = mapped(&f);
+    going.toplevel.set_title("going".to_owned());
+    going.sync();
+    assert_eq!(the_windows_a_reader_hears(&f).len(), 2);
+
+    drop(going);
+    f.wait_for((1, 1));
+    assert_eq!(
+        the_windows_a_reader_hears(&f),
+        vec!["staying".to_owned()],
+        "a reader was still told about a window that had gone"
+    );
+}

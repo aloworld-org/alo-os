@@ -336,7 +336,7 @@ frame on screen, and it is the moment the film exists for.
 
 ### 7. Every canvas answers as a list
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-29**, all three thirds. **Depends on:** 2.
 
 The accessibility half. The frames are enumerable in a stable order with their
 names, reachable and focusable by keyboard alone, and what a reader is told does
@@ -368,6 +368,32 @@ a different one — an enumeration that reaches **only what is on the screen** �
 has its own case: a frame half a million units away is still reached and focused.
 Proved to bite by skipping frames past the viewport in `switch_window`, which fails
 that case alone.
+
+#### Named, and no longer blocked (2026-09-29)
+
+**Done.** `crate::frame_name` reads `xdg_toplevel.set_title` and `app_id`, and
+`ReadAloudTree::with_the_frames_open` hangs one node per open frame under the
+desktop's *the windows open*, which had been a list with nothing in it — a reader
+was told this machine has a list of windows and never what was in it.
+
+**A frame's name is the only name in that tree a translator never sees.** Every
+other one is an `alo_access::words::Word` put through the person's language; a
+frame's is whatever the application called itself, already in whatever language it
+chose. The one case that is ours to word is an application that set neither a title
+nor a class, and that is `alo_access::words::AN_APPLICATION` — the phrase the tree
+already used for a window nobody named.
+
+Three tests: all three ways a name can arrive; that a reader hears the windows in
+the same order the keyboard walks them, which is task 7's *not a second interface*
+constraint made checkable; and that a window which closes stops being read, so a
+reader is never offered one that is not there.
+
+**What is still owed here is not task 7's.** `ReadAloudTree` has no production
+caller — only tests build it — so this is a tree that answers correctly and that
+nothing serves yet. That, and the four EN 301 549 clauses downgraded on 2026-09-29,
+are task 8 of `docs/autonomy/v0-5-access-and-language-plan.md`.
+
+#### The blocker as it stood (2026-09-27)
 
 **Blocked, and it is a missing capability shared with task 3: a frame has no
 name.** `xdg_toplevel.set_title` is not read anywhere in `alo-shell` — the only
