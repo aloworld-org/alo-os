@@ -11,6 +11,19 @@ this is true, and what would not?*
 own preamble is worth reading beside this one: the rules about what counts as
 evidence are the same, and they were written after the reading they replace.
 
+**A promise that leaves this tier takes its entry with it.** Printing did on
+2026-09-29 — `docs/features.md` had said `[v0.5]` since `ROADMAP.md` moved printing
+to v1 on 2026-09-26, and the definition is the binding one, so the line is corrected
+to **`[v1]`** and its evidence is no longer this gate's to hold. Nothing was
+withdrawn: the seven tests and two reports that showed it, and the sentence saying
+what is still owed — *a printer; everything is here, and no paper has come out of
+anything* — are carried in
+[ADR 0078](../decisions/0078-what-printing-owes-is-a-printer.md), which also records
+why only *Files and printers shared between paired machines* went to `[v2]`: it is
+the one printing promise with nothing built behind it. This note is here rather than
+left as an entry because `alo-reconciling` reads every `###` heading as a promise of
+this tier, and a heading saying *moved* would be an entry claiming to be one.
+
 ## Why this file exists, in one paragraph
 
 The v0.5 gate was read by hand seven times over three months. The eighth reading
@@ -1292,23 +1305,6 @@ scheduled. It installs beside a real Windows in a virtual machine and the
 switching is walked both ways; the boot environment says why an install stopped
 rather than sitting on *still installing*, which was found by a run that did
 exactly that.
-
-### Printing. Unglamorous, and it decides public-sector deals
-
-**Shown by:** `crates/alo-printing/tests/printing_a_document.rs`,
-`crates/alo-printing/tests/finding_printers.rs`,
-`crates/alo-printing/tests/changing_a_printer_set_up.rs`,
-`crates/alo-printing/tests/a_printer_that_stopped.rs`,
-`crates/alo-printing/tests/the_real_printing_service.rs`,
-`crates/alo-printing/tests/printing_reaches_only_this_machines_printing_service.rs`,
-`crates/alo-changing-printers/tests/printers_change_only_through_the_broker.rs`,
-`docs/autonomy/updates/printers-found-set-up-and-said-what-is-wrong.md`,
-`docs/autonomy/updates/printers-through-the-broker.md`
-
-**Still owed:** **a printer.** Everything is here — found, set up, printed to, and
-told what is wrong when it stops, against a real CUPS rather than a stand-in, with
-printing reaching only this machine's own service. No paper has come out of
-anything.
 
 ### The documents people are actually sent open: `.docx`, `.xlsx`, `.pptx`
 
