@@ -1845,17 +1845,35 @@ sorted the same way v0.01 now is.
       2026-09-27. Split here because one of them was paid and the other was not,
       and a box that groups two promises cannot say that*
   - [ ] **The code.**
-        **the size is there and the hiding is not.**
-        `crates/alo-dock/src/layout.rs` lays the dock out on a screen at a text
-        scale: the names give way to icons where there is no room and say so,
-        and **the dock never takes more than its share** on any edge at any
-        size, held by its own tests. *Whether it hides when a window needs the
-        room* has no code, and `layout.rs` says so in writing at the place that
-        work would go. `crates/alo-dock` belongs to
+        **the size is there, and the hiding is there except for the one thing
+        that would observe a window.** `crates/alo-dock/src/layout.rs` lays the
+        dock out on a screen at a text scale: the names give way to icons where
+        there is no room and say so, and **the dock never takes more than its
+        share** on any edge at any size, held by its own tests.
+        `crates/alo-dock/src/hiding.rs` holds the rest — `Hiding` (the person's
+        two choices, `Never` by default), `TheRoom` (`Free` or
+        `AWindowNeedsIt`), `Showing` (what the dock then does) and the decision
+        between them, 206 lines and six tests, exhaustive over both choices
+        against both states. `crates/alo-shell` offers the choice: two rows in
+        the settings window, the sentence a person reads, and tests that
+        changing it changes the dock. *What is missing is a caller that
+        computes `TheRoom` from real windows* — measured 2026-09-30, `TheRoom::`
+        appears nowhere outside `alo-dock`, and inside it only in tests and in
+        the match arm. So the person can choose it, the dock knows what to do,
+        and **nothing ever tells it a window needs the room.**
+        *This box read "**the size is there and the hiding is not**", and said
+        `layout.rs` "says so in writing at the place that work would go".
+        Neither was true: `layout.rs` says the opposite at that place — that
+        hiding is `crate::hiding` and deliberately not in a layout, because a
+        layout that hid itself would have to know about windows. Corrected
+        2026-09-30 by the lane that owns the crate, after reading it.*
+        `crates/alo-dock` belongs to
         `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, whose
         seven tasks are done, so this has no task anywhere
   - [ ] **On the machine.**
-        owed to the certified machine, and to a window that needs the room
+        owed to the certified machine, and to a window that needs the room —
+        and the caller above is owed before it, since there is nothing yet for
+        a machine to demonstrate
 - [ ] **Per display, so the dock can sit along the bottom of the laptop and down
       the side of the external screen**
   - [x] **The code.**
@@ -3099,8 +3117,16 @@ last.
   as misleading to somebody planning.
 - *The dock's size, and whether it hides when a window needs the room* and *Per
   display, so the dock can sit along the bottom of the laptop and down the side
-  of the external screen* — **not built**, given one box between them. `alo-dock`
-  holds one edge for the machine; the promise needs one per screen.
+  of the external screen* — given one box between them at the time of this pass.
+  `alo-dock` holds one edge for the machine; the promise needs one per screen.
+  *This read **not built** for both. It was already untrue of the first when it
+  was written — the box above said in the same document that the size is there
+  and held by its own tests — and the two were separated into boxes of their own
+  on 2026-09-27. Corrected 2026-09-30: the size is built, the hiding is built
+  except for a caller that computes `TheRoom` from real windows, and only the
+  per-display promise is unbuilt. **A document that contradicted itself two
+  thousand lines apart**, which is the same fault as `docs/features.md:421`
+  refusing a feature the line three below it keeps.*
 
 **And the arithmetic that would have caught all three does not exist for v0.5.**
 `crates/alo-reconciling` reads every `[v0.01]` promise out of `docs/features.md`
