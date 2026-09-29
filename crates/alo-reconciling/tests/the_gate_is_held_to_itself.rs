@@ -200,13 +200,71 @@ fn a_promise_with_no_box_is_found_even_though_it_cannot_gate_yet() {
 
     let tiers = tiers_that_disagree(&document("docs/features.md"), &document("ROADMAP.md"));
     let tiers = say(&tiers);
-    assert!(
-        tiers.contains("Camera and microphone"),
-        "the check no longer finds that `Camera and microphone` is `[v0.5]` in the definition and \
-         answered inside `Devices` in ROADMAP.md's v1 section. That is the disagreement it was \
-         written for, and it is still there"
-    );
+    for known in EVERY_DISAGREEMENT_THAT_STANDS {
+        assert!(
+            tiers.contains(known),
+            "the check no longer finds `{known}`, which it reported against the real documents on \
+             2026-09-29. Either the documents were reconciled — in which case take it off that \
+             list and say so — or the check stopped working"
+        );
+    }
 }
+
+/// **Every tier disagreement this check reports against the real documents**,
+/// measured on 2026-09-29 rather than recalled.
+///
+/// # Why this list exists
+///
+/// The assertion above named **one** of these — *Camera and microphone* — and that
+/// one was true. What it did not say is that the check reports **six findings
+/// across five promises**, so four promises stood unmentioned in a repository
+/// that runs this test on every gate. A reader of the old assertion would have
+/// concluded the check had one finding and it was known about.
+///
+/// That is not the check failing to work. It is a reader learning less from a
+/// passing test than the test's own function knew, and the remedy is cheap:
+/// name them all.
+///
+/// # What this list is not
+///
+/// **It is not an approval, and it is deliberately not a count.** The test above
+/// says at length why neither of these checks can gate yet, and asserting *and
+/// nothing else* would pin the output of a heuristic — the same fitting-to-the-
+/// documents that docstring refuses. **A new disagreement appearing will not fail
+/// this test**, and that is a stated limit rather than an oversight.
+///
+/// What it does buy: each of the five is held **live**. If the documents are
+/// reconciled, or the matcher drifts, the one that goes quiet is named.
+///
+/// # What each one is, on inspection
+///
+/// Three look like a promise **kept earlier than it was promised**, which is not a
+/// contradiction: *Lock screen, suspend and resume* and *Drag and drop between
+/// applications* are `[v0.5]` in the definition and answered inside v0.01's gate,
+/// and *Serving more than one person from one workstation* is `[v1]` answered in
+/// v0.01's. **Work done ahead of its tier reports the same as work at the wrong
+/// tier**, because the check compares where a promise is answered with where it is
+/// promised and cannot see which direction is a fault.
+///
+/// Three are the kind it was written for — *Camera and microphone*, *Drag and drop
+/// between applications* also answered in v1's gate, and the self-hosted workspace
+/// line: each `[v0.5]` in the definition and answered in v1's gate, which is a
+/// promise the scope gate says is in this release and the roadmap puts in the next.
+///
+/// **Which of those is a fault and which is a stale sentence is the owner's, not
+/// this test's.** It is recorded here so the question exists somewhere other than
+/// in a passing check's silence.
+const EVERY_DISAGREEMENT_THAT_STANDS: [&str; 5] = [
+    // Most likely kept earlier than promised, these two and the next.
+    "Lock screen, suspend and resume",
+    "Serving more than one person from one workstation",
+    // Answered in two gates at once, v0.01's and v1's — its own question, and the
+    // reason five promises produce six findings.
+    "Drag and drop between applications",
+    // The kind the check was written for.
+    "Camera and microphone",
+    "A self-hosted workspace on the network is **discovered, not configured**",
+];
 
 /// **No box denies work that its own named task says is done.**
 ///
