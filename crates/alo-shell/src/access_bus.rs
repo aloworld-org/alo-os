@@ -80,6 +80,13 @@ pub struct ReadAloudBus {
     /// The name this connection answers as — what every child in the tree is
     /// addressed by.
     answers_as: String,
+    /// The node paths currently on the bus, so they can be taken off again.
+    ///
+    /// The object server has no *replace this tree* and a reader walks by path,
+    /// so a window closing has to take its path **off** rather than leave it
+    /// answering about something that is gone. Remembered here because the
+    /// server will not say what it is holding.
+    served: Vec<String>,
 }
 
 impl ReadAloudBus {
@@ -111,10 +118,75 @@ impl ReadAloudBus {
                     .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))?;
             }
         }
+        let served = tree.nodes().iter().map(|node| node.path.clone()).collect();
         Ok(Self {
             connection,
             answers_as,
+            served,
         })
+    }
+
+    /// Serve the tree on the accessibility bus this session's reader is on.
+    ///
+    /// The address is `org.a11y.Bus`'s own answer to `GetAddress`, which is how
+    /// at-spi2 tells every application where the tree bus is — the same question
+    /// `alo_adapters::accessibility_bus` asks from the other side. Asked rather
+    /// than configured: a session bus that moved would otherwise leave this
+    /// serving a tree on an address nobody reads.
+    ///
+    /// # Errors
+    /// [`NotRead::NoBus`] when there is no session bus or nothing answers as
+    /// `org.a11y.Bus`, and then whatever [`Self::serving`] refuses.
+    pub fn where_the_reader_is(tree: &ReadAloudTree) -> Result<Self, NotRead> {
+        let session = Connection::session().map_err(|_| NotRead::NoBus)?;
+        let address: String = session
+            .call_method(
+                Some("org.a11y.Bus"),
+                "/org/a11y/bus",
+                Some("org.a11y.Bus"),
+                "GetAddress",
+                &(),
+            )
+            .map_err(|_| NotRead::NoBus)?
+            .body()
+            .deserialize()
+            .map_err(|_| NotRead::NoBus)?;
+        Self::serving(&address, tree)
+    }
+
+    /// Put this tree on the bus in place of the one already there.
+    ///
+    /// **What a reader is told has to follow what is open.** A window opening or
+    /// closing changes the tree, and a connection rebuilt for each one would
+    /// drop every path a reader was holding and cost a round trip to the registry
+    /// in the middle of a frame. So the connection stays and the objects move:
+    /// every path that was served is taken off, and the new tree's paths go on.
+    ///
+    /// Paths are positions in the tree rather than identities of windows, so a
+    /// window closing renumbers the ones after it — which is why this replaces
+    /// all of them rather than trying to work out which one went.
+    ///
+    /// # Errors
+    /// [`NotRead::NotServed`] when a node could not be put on the bus. Whatever
+    /// was taken off stays off: a tree half-replaced would answer about two
+    /// different moments at once, and an error a caller can retry is better than
+    /// a reader being told a mixture.
+    pub fn now_showing(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
+        let server = self.connection.object_server();
+        for path in self.served.drain(..) {
+            // A path that is already gone is not a failure: the tree it belonged
+            // to is what this is replacing.
+            let _ = server.remove::<ReadAloud, _>(path.as_str());
+        }
+        for node in tree.nodes() {
+            let served = ReadAloud::of(node, tree, &self.answers_as);
+            server
+                .at(node.path.as_str(), served)
+                .map_err(|_| NotRead::NotServed)
+                .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))?;
+            self.served.push(node.path.clone());
+        }
+        Ok(())
     }
 
     /// The name this machine's tree answers as.

@@ -68,9 +68,15 @@ impl crate::DirectSession {
         server: &mut Server,
         desktop: &mut dyn TheDesktop,
         labels: &mut WindowControlLabels,
+        strings: &alo_strings::Strings,
         mut next: impl FnMut() -> crate::DirectFrame,
     ) -> Result<crate::ActiveSessionResult<crate::DirectLoopResult>, SessionError> {
         server.clear_input();
+        // Opened once, here, rather than retried every frame: a machine with no
+        // accessibility bus will not grow one mid-session, and asking sixty
+        // times a second would be a D-Bus call per frame answering the same no.
+        let reader =
+            crate::TheReaderIsTold::opened(server, strings, &[alo_access::Surface::Desktop]).ok();
         let manager = self.input_session();
         self.with_active_device(|fd, poll| {
             let setup = (|| {
@@ -98,6 +104,8 @@ impl crate::DirectSession {
                         input,
                         desktop,
                         labels,
+                        strings,
+                        reader,
                     },
                 ),
                 Err(error) => crate::DirectLoopResult {
@@ -120,6 +128,15 @@ struct Desk<'a> {
     desktop: &'a mut dyn TheDesktop,
     /// The bundled font every word on the desktop is laid out with.
     labels: &'a mut WindowControlLabels,
+    /// This machine's own sentences, for the names a reader is told.
+    strings: &'a alo_strings::Strings,
+    /// The tree on the accessibility bus, where there is one to serve it on.
+    ///
+    /// `None` on a machine with no accessibility bus, which is the ordinary case
+    /// for somebody who has never turned a reader on — ADR 0063, *a machine that
+    /// cannot run the engine says so rather than failing*. The desktop runs
+    /// either way; what changes is whether anybody can read it.
+    reader: Option<crate::TheReaderIsTold>,
 }
 
 impl LoopInput for Desk<'_> {
@@ -165,6 +182,21 @@ impl LoopInput for Desk<'_> {
             },
             time,
         )?;
+        // **What a reader is told follows what is open**, and this is the call
+        // that was missing: the tree and the bus were both written and tested
+        // and nothing outside a test ever built either, so a screen reader on a
+        // running machine found no application at all.
+        //
+        // Cheap every frame on purpose — it compares the window names it last
+        // published and touches the bus only when they differ, so a frame being
+        // dragged or redrawn costs one comparison of a short list.
+        //
+        // A refusal is not allowed to stop the desktop. A reader that cannot be
+        // reached is a person without a reader; a compositor that stopped
+        // compositing over it would be a machine nobody can use at all.
+        if let Some(reader) = self.reader.as_mut() {
+            let _ = reader.following(server, self.strings, &[alo_access::Surface::Desktop]);
+        }
         Ok(())
     }
 

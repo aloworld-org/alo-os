@@ -77,8 +77,11 @@ pub fn stand_the_desktop_up(
         },
     )?;
     let mut labels = WindowControlLabels::new()?;
+    // The machine's own sentences, for the names a reader is told. The same
+    // bundle the sign-in screen words a refusal from, read the same way.
+    let strings = crate::what_this_machine_can_say()?;
     let mut session = DirectSession::new(display.display.to_owned())?;
-    let stood = session.desktop(&mut server, desktop, &mut labels, &mut next)?;
+    let stood = session.desktop(&mut server, desktop, &mut labels, &strings, &mut next)?;
     Ok(StoodUp {
         display: stood.outcome,
     })
