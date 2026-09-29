@@ -3,8 +3,9 @@
 **Status:** proposed, 2026-09-29. The owner directed that where other systems have
 already answered these questions, alo OS follows them rather than inventing — which
 settles the machine with no security chip (Windows' shape) and the separate key
-(the TPM's own endorsement-key/attestation-key split). **One thing is still asked
-of the owner**, at the bottom, and it is about wording rather than architecture.
+(the TPM's own endorsement-key/attestation-key split). The one thing still open when
+this was written — where the *what your proof is worth* sentence is said — **was
+answered on 2026-09-29 and is at the bottom.** Nothing is asked of the owner now.
 **Date:** 2026-09-29
 **Context:** `docs/features.md` promises at tier v1 *a signed, printable statement
 of exactly what left this machine in a period — the artifact an auditor asks for
@@ -291,10 +292,62 @@ does not meet the bar. On a product whose first law is that nothing leaves
 silently, a machine quietly holding its key in a file while its owner believes
 otherwise is the same failure one layer down.
 
-## What is asked of the owner
+## What was asked of the owner, and what they said
 
-One thing, and it is about words rather than architecture: whether the *what your
-proof is worth* sentence belongs in setup's own vocabulary, translated with the
-rest. It is a sentence a person reads, so the i18n rule says yes — but where in
-setup it appears, and how much it says, is a design decision this record does not
-make.
+**Asked:** whether the *what your proof is worth* sentence belongs in setup's own
+vocabulary, translated with the rest — and if so, where in setup it appears and how
+much it says.
+
+**Answered 2026-09-29, relayed through the laptop lane.** The path is recorded because
+it is how the answer reached this record, and a relayed answer written as a direct one
+is the same fault this repository spent a day finding in its checks: a true-looking
+signal whose subject is not the one a reader would assume.
+
+> **Yes — setup's own vocabulary, translated with the rest.** One short line at the
+> moment of switching on. The long explanation lives in Settings. **Not a warning box,
+> and not a paragraph at setup.**
+
+### One short line, at the moment of switching on
+
+Not later, because the person who most needs it is the one who will hand the artifact
+to an auditor, and they form their belief about what it is worth on the first day. Not
+longer, because a paragraph at setup is read by nobody: setup is a corridor somebody is
+walking through, and prose in a corridor is scenery.
+
+### The long explanation in Settings
+
+That is where a person goes **when they have a reason to ask**, which is the only time
+a longer answer will be read. It also puts it beside the machine's own answer to *whose
+machine is this* — a managed machine's person is told so at first sign-in and can find
+the detail afterwards (ADR 0004) — and those are the same question one layer apart.
+
+### Not a warning box, which is the half with a reason behind it
+
+A warning box says *something is wrong, and you should stop*. **Nothing is wrong.** A
+machine with no security chip still produces a true statement about what left it,
+signed by a key held the best way that machine can hold one; what differs is what the
+statement is worth to somebody who did not watch it being made. The sentence states
+worth, and dressing a statement of worth as an alarm teaches people to dismiss it —
+after which the one case that matters is dismissed along with the rest.
+
+This is the degrade-with-friction shape the rest of this record follows, and it is also
+where the field's own habit is refused rather than copied. Windows tells the
+administrator configuring certificate services; Apple tells the reader of a security
+guide; **neither tells the person using the machine.** The answer here is not a louder
+version of that. It is a quieter one, in the place a person is already looking.
+
+### And the i18n question is settled by this not being a special case
+
+`CLAUDE.md` externalizes user-facing strings from day one, for all 24 official EU
+languages. A line in setup is a user-facing string, so it is translated with the rest
+of setup and there is nothing further to decide.
+
+**What was open was never the i18n rule — it was whether this sentence is a setup
+string at all**, and the answer is that it is one. The reverse would have been the
+interesting case: a sentence held too delicate to translate is a sentence that reaches
+only the people who read English, on a product built in Europe, about a proof whose
+entire purpose is to be handed to somebody in the language they work in.
+
+## What is still asked of the owner
+
+Nothing. This record is answered.
