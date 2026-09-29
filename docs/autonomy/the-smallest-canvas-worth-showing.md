@@ -190,7 +190,33 @@ cursor. Until then a client can still move itself that way.
 
 ### 4. Resizing, and the application told as it happens
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-29.** **Depends on:** 2.
+
+**The transaction was already right; what was missing was a door a person could
+reach.** `crate::resize_transaction` has configured the client during the drag,
+refreshed its limits on every motion and anchored the opposite edge since before
+this task — all of it reachable only through `xdg_toplevel.resize`, the road ADR
+0071 refuses. So the shell's own bands enter the **same** transaction rather than a
+second one: a compositor with two resize implementations is one where a person can
+find the difference.
+
+**The numbers are the design file's** — a 6 px edge and a 24 × 24 corner — and the
+bands sit **outside** the frame, because ADR 0065 says every click inside belongs
+to the application. A corner beats an edge where they overlap.
+
+**The cursor is what makes the decision real**, and it is four shapes for eight
+directions with the hotspot in the middle rather than the tip. The first draft was
+drawn by hand and a symmetry test caught it: one end was heavier than the other,
+which tells somebody an edge moves one way. They are generated now — one half
+drawn, the other that half turned half a turn — so the two ends cannot differ.
+
+**And the refusal shipped welded to the gesture**, as ADR 0071 requires. Six tests
+drove the transaction through the wire request and were redirected through the
+band, because what they assert was never about the road. The one that tested the
+wire's own refusals — stale serial, foreign target, invalid edge — now asserts the
+pair that matters instead: a client asking gets nothing, **and** the same window
+still resizes from the band. A test that checked only the refusal would pass on a
+compositor nobody can resize anything on.
 
 From the edges and the corners, with the application told its new size while the
 drag is happening rather than at the end, and minimum sizes respected.

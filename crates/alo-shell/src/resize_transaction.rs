@@ -4,7 +4,7 @@ use smithay::{
     backend::input::ButtonState,
     reexports::{
         wayland_protocols::xdg::shell::server::xdg_toplevel,
-        wayland_server::protocol::{wl_seat::WlSeat, wl_surface::WlSurface},
+        wayland_server::protocol::wl_surface::WlSurface,
     },
     utils::{Logical, Point, Serial},
     wayland::{
@@ -30,35 +30,64 @@ pub(crate) struct Resize {
 }
 
 impl Surfaces {
-    /// Validate all authority and geometry before consuming input or configuring.
-    pub(crate) fn start_window_resize(
+    // **`start_window_resize` was here, and it is gone with the road it served.**
+    //
+    // It validated a client's `xdg_toplevel.resize` — the serial, the seat, that
+    // the press was inside that client's own surface — and ADR 0071 refuses that
+    // request outright. `Surfaces::window_press` went with it for the same reason:
+    // the move request was already refused, so once resize was too, nothing was
+    // left that needed to ask *was this press the client's own*. Clippy found both
+    // the moment the refusal landed, which is the dead-code lint doing exactly the
+    // job it exists for.
+
+    /// Begin a resize from the shell's own edge band, rather than from a client's
+    /// request.
+    ///
+    /// **The same transaction, entered from the other end.** Everything after the
+    /// press is identical — the geometry snapshot, the first configure, the limits
+    /// refreshed on every motion, the anchored opposite edge — because a
+    /// compositor with two resize implementations is one where a person can find
+    /// the difference.
+    ///
+    /// What is skipped is `window_press`, and only that. It asks whether the press
+    /// that started this was inside the client's own surface, which is the right
+    /// question for `xdg_toplevel.resize` and the wrong one here: the band is the
+    /// shell's, drawn **outside** the frame, so no client was under the pointer and
+    /// there is no client press to validate. The checks that guard the *window*
+    /// rather than the press are kept and made here instead.
+    ///
+    /// Whether one began.
+    pub(crate) fn begin_resize_on_the_shells_own_band(
         &mut self,
         role: ToplevelSurface,
-        seat: WlSeat,
-        serial: Serial,
-        edge: xdg_toplevel::ResizeEdge,
-    ) {
+        edge: ResizeEdge,
+    ) -> bool {
         self.prune();
-        let edge = match edge {
-            xdg_toplevel::ResizeEdge::Top => ResizeEdge::Top,
-            xdg_toplevel::ResizeEdge::Bottom => ResizeEdge::Bottom,
-            xdg_toplevel::ResizeEdge::Left => ResizeEdge::Left,
-            xdg_toplevel::ResizeEdge::Right => ResizeEdge::Right,
-            xdg_toplevel::ResizeEdge::TopLeft => ResizeEdge::TopLeft,
-            xdg_toplevel::ResizeEdge::TopRight => ResizeEdge::TopRight,
-            xdg_toplevel::ResizeEdge::BottomLeft => ResizeEdge::BottomLeft,
-            xdg_toplevel::ResizeEdge::BottomRight => ResizeEdge::BottomRight,
-            _ => return,
+        let root = role.wl_surface().clone();
+        if self.window_move.is_some()
+            || self.window_resize.is_some()
+            || self.has_window_mode(&root)
+            || self.popup_grab.is_some()
+            || self.mapped_toplevel(&root).is_none()
+        {
+            return false;
+        }
+        // A drag needs a button held and a place it started from. Taken from the
+        // seat's own state rather than from a serial, since there is no client
+        // grab to name.
+        let Some((pointer, buttons)) = self
+            .pointer
+            .as_ref()
+            .filter(|pointer| !pointer.buttons.is_empty())
+            .map(|pointer| (self.on_the_plane(pointer.location), pointer.buttons.clone()))
+        else {
+            return false;
         };
-        let root = role.wl_surface();
-        let Some((pointer, buttons)) = self.window_press(root, &seat, serial) else {
-            return;
-        };
-        let Ok(geometry) = self.resize_geometry(root, edge) else {
-            return;
+        let Ok(geometry) = self.resize_geometry(&root, edge) else {
+            return false;
         };
         let Ok(size) = geometry.requested_size((0.0, 0.0)) else {
-            return;
+            return false;
         };
         let _ = self.clear_pointer();
         role.with_pending_state(|pending| {
@@ -74,6 +103,7 @@ impl Surfaces {
             first,
             finish: None,
         });
+        true
     }
 
     /// Consume active motion, clamping against the client's current constraints.

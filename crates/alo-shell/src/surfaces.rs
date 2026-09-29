@@ -385,14 +385,32 @@ impl XdgShellHandler for Surfaces {
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
         self.client_window_maximize(surface, false);
     }
+    /// **Refused outright, as ADR 0071 decided** — and it lands with the gesture
+    /// that replaces it, never before.
+    ///
+    /// A chrome-less frame has no non-content area a client can be pressed in, so
+    /// a client asking to be resized is asking on behalf of a press that belongs
+    /// to it. The shell owns the edges and the corners exactly as it owns the
+    /// name, and `crate::canvas_resize` is where a person reaches them.
+    ///
+    /// **The decisive argument is that it cannot be half-refused.** Resizing from
+    /// the left edge and then from the right composes into a translation — same
+    /// size, moved — so honouring resize while refusing move would leave move
+    /// reachable in two gestures. A refusal that can be composed around is not a
+    /// refusal, which is why ADR 0071 made this the twin of the move refusal
+    /// rather than a separate decision.
+    ///
+    /// What this does **not** do is freeze a window's size. This request is
+    /// specifically an interactive, pointer-driven resize; a client may still
+    /// commit whatever size it likes and be drawn at it. What it loses is taking
+    /// over the pointer to do it.
     fn resize_request(
         &mut self,
-        surface: ToplevelSurface,
-        seat: WlSeat,
-        serial: Serial,
-        edges: smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge,
+        _surface: ToplevelSurface,
+        _seat: WlSeat,
+        _serial: Serial,
+        _edges: smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge,
     ) {
-        self.start_window_resize(surface, seat, serial, edges);
     }
     fn popup_destroyed(&mut self, surface: PopupSurface) {
         self.popup_grab_destroyed(&surface);
