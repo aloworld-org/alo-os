@@ -23,6 +23,7 @@
 //! | [`windows`] | Every window open, in the order they were last used |
 //! | [`holding`] | Which applications are on the Dock, and which of them fit |
 //! | [`clicking`] | What one click on an application's icon does |
+//! | [`previews`] | An application's windows, for choosing one that is not the last |
 //! | [`shipped`] | What the dock is before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
@@ -151,6 +152,7 @@ pub mod labels;
 pub mod layout;
 pub mod measures;
 pub mod on_the_canvas;
+pub mod previews;
 pub mod room;
 pub mod screen;
 pub mod shipped;
@@ -170,6 +172,7 @@ pub use holding::{Fitted, Holding, OnTheDock, Pinned, fit};
 pub use labels::Labels;
 pub use layout::Layout;
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};
+pub use previews::{Opened, Preview, Previews};
 pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;
