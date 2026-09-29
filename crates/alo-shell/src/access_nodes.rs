@@ -26,6 +26,7 @@ use alo_access::{Control, Surface};
 use alo_strings::{Filling, Strings};
 
 use crate::access_roles::{self, APPLICATION, FILLER};
+use crate::frame_name::FrameName;
 
 /// Where every application's tree starts, as at-spi2 fixes it.
 pub(crate) const ROOT: &str = "/org/a11y/atspi/accessible/root";
@@ -153,6 +154,94 @@ impl ReadAloudTree {
     }
 
     /// Put `node` under `parent`, and say where it went.
+    /// The same tree, with the frames now open hanging under *the windows open*.
+    ///
+    /// **Task 7 of the canvas plan: every frame reached, focused and *named*.**
+    /// `alo-access` lists `Surface::Desktop` as a window and a list called *the
+    /// windows open*, and that list had no children — a reader was told the
+    /// machine has a list of windows and never what was in it.
+    ///
+    /// # A frame's name is the only name here a translator never sees
+    ///
+    /// Every other name in this tree is an `alo_access::words::Word` put through
+    /// the person's language. A frame's is whatever the application called
+    /// itself, so it arrives already in whatever language that application
+    /// chose, and no vocabulary can hold it. [`FrameName::its_own_words`]
+    /// returns `None` for the one case that **is** ours to word — an application
+    /// that set neither a title nor a class — and that falls back to
+    /// `alo_access::words::AN_APPLICATION`, which is the phrase this tree
+    /// already uses for a window nobody named.
+    ///
+    /// # Order is the caller's
+    ///
+    /// They are listed in the order given, which is `Server::mapped_surfaces`'
+    /// order, which is the same ring `switch_window` walks. A reader hearing a
+    /// different order from the one the keyboard moves in would be a second
+    /// interface, which is the constraint task 7 carries.
+    #[must_use]
+    pub fn with_the_frames_open(mut self, strings: &Strings, frames: &[FrameName]) -> Self {
+        let Some(list) = self.the_windows_open() else {
+            return self;
+        };
+        for frame in frames {
+            let name = frame.its_own_words().map_or_else(
+                || said(strings, alo_access::words::AN_APPLICATION),
+                str::to_owned,
+            );
+            self.push(
+                list,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(alo_access::Role::ListItem),
+                    name,
+                    states: access_roles::words_of(alo_access::State::CanBeUsed),
+                    announced: false,
+                    parent: list,
+                    children: Vec::new(),
+                },
+            );
+        }
+        self
+    }
+
+    /// The windows a reader is told are open, in the order it hears them.
+    ///
+    /// The one question worth asking this tree from outside: *what would somebody
+    /// with their eyes shut be told is open right now*. Answering it does not
+    /// mean handing out every node, so it does not.
+    #[must_use]
+    pub fn the_windows_open_as_read(&self) -> Vec<&str> {
+        self.the_windows_open()
+            .and_then(|list| self.nodes.get(list))
+            .map(|list| {
+                list.children
+                    .iter()
+                    .filter_map(|at| self.nodes.get(*at).map(|node| node.name.as_str()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Where a frame hangs: the list under the desktop, found by its role.
+    ///
+    /// By role rather than by position, because *the windows open* is the second
+    /// control `Surface::Desktop` names today and a third arriving above it would
+    /// silently start collecting windows.
+    fn the_windows_open(&self) -> Option<usize> {
+        let desktop = self
+            .surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == Surface::Desktop).then_some(*at))?;
+        let list = access_roles::number_of(alo_access::Role::List);
+        self.nodes
+            .get(desktop)?
+            .children
+            .iter()
+            .copied()
+            .find(|at| self.nodes.get(*at).is_some_and(|node| node.role == list))
+    }
+
+    /// Put a node under `parent`, at the path its position gives it.
     fn push(&mut self, parent: usize, node: Node) -> usize {
         let at = self.nodes.len();
         self.nodes.push(Node {

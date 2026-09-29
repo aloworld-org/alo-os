@@ -81,3 +81,30 @@ impl crate::Server {
             .unwrap_or(FrameName::AnApplication)
     }
 }
+
+impl crate::Server {
+    /// What a reader is told about this machine, with the frames now open in it.
+    ///
+    /// **Task 7 of `docs/autonomy/the-smallest-canvas-worth-showing.md`: every
+    /// frame reached, focused and *named*.** The first two were held by
+    /// `crates/alo-shell/tests/every_frame_answers_as_a_list/mod.rs` on
+    /// 2026-09-27 and the third was blocked, because nothing read
+    /// `xdg_toplevel.set_title` — *a frame has no name* was the finding. It has
+    /// one now, and this is where the reader is given it.
+    ///
+    /// The order is `mapped_surfaces`', which is the ring `switch_window` walks,
+    /// so what a reader hears and what the keyboard does are one order. Task 7's
+    /// constraint is that this is **not a second interface**.
+    #[must_use]
+    pub fn read_aloud_with_the_frames_open(
+        &self,
+        strings: &alo_strings::Strings,
+        showing: &[alo_access::Surface],
+    ) -> crate::ReadAloudTree {
+        let frames: Vec<FrameName> = self
+            .mapped_surfaces()
+            .map(|frame| self.the_name_of(frame))
+            .collect();
+        crate::ReadAloudTree::of(strings, showing).with_the_frames_open(strings, &frames)
+    }
+}
