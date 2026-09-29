@@ -14,6 +14,11 @@ publish = false
 # name and the state of every control, decided there and never in this crate.
 # `tests/the_tree_a_reader_finds.rs` reads the tree back off a real bus.
 alo-access = { path = "../alo-access" }
+# Where a person left their canvas, between one sign-in and the next. This crate
+# reads and writes no file itself: `alo-arranging` owns the format and rebuilds
+# every value through `alo-canvas`, so a hand-edited place off the plane is
+# refused by the crate that owns that rule rather than landing here.
+alo-arranging = { path = "../alo-arranging" }
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
 # Lock policy, regional wording, and bounded image/time engines. No network lookup.

@@ -17,6 +17,7 @@ mod pointer;
 mod popups;
 mod shortcut_dispatch;
 mod support;
+mod the_canvas_is_where_they_left_it;
 mod window_activation;
 mod window_close;
 mod window_controls;

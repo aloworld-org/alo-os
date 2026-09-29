@@ -227,7 +227,23 @@ pointer-driven one; a client may still commit whatever size it likes.
 
 ### 5. Pan
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-29**, all three roads. **Depends on:** 1.
+
+**One of the two that were owed was never missing.** *Two-finger scroll* was
+recorded as still to do; `crate::libinput_scroll` already turns `ScrollFinger`
+into an ordinary `AxisFrame` and `crate::canvas_pan` never asks what the source
+was, so a touchpad had panned all along and nothing held it. Now
+`a_two_finger_scroll_pans_exactly_as_a_wheel_does` asserts it against the wheel's
+own answer rather than a number written in the test, so the two cannot drift.
+
+**Space and drag needed something that was not a gesture road at all.** It is the
+one moment a person holds a key with nothing focused, and `Server::keyboard_key`
+returned before the call that advances XKB in exactly that state — so the shell
+could not tell Space was down. Fixed for Ctrl+wheel in task 6 and spent twice.
+Space is deliberately not an `alo_shortcuts::Chord`, which requires Super, Ctrl or
+Alt: this is not a shortcut to rebind, it is the gesture every canvas application
+has, and offering to rebind it would be offering to rebind how somebody holds a
+sheet of paper.
 
 Wheel and trackpad over empty canvas, a keyboard route, and a drag gesture that
 does not fight editing inside a frame. **Scroll over a frame scrolls that
@@ -439,7 +455,29 @@ where it cannot be seen.
 
 ### 9. The canvas is where they left it
 
-**Status:** ready. **Depends on:** 1, 3, 6.
+**Status:** **Done, 2026-09-29.** **Depends on:** 1, 3, 6.
+
+`crates/alo-arranging` owns the file and **decides nothing about a canvas**: every
+value read back is rebuilt by `At::checked`, `Size::checked` and `Zoom::of`, the
+same road a live canvas takes, so a file hand-edited to a place off the plane is
+refused by the crate that owns that rule. There is deliberately no `Deserialize`
+for a `Camera`, because a position read back unchecked is a position nothing
+validated.
+
+**A window is remembered by what it is, not by which one it was.** A `wl_surface`
+does not survive a session, so the key is `app_id`. That has a consequence worth
+stating rather than discovering: **two windows of one application share one
+remembered place**, and the first to open claims it. A title would have been the
+alternative and is worse — a person renaming a document would find the window
+somewhere else tomorrow.
+
+**A remembered place is offered to task 8's own question before it is used.** A
+file written on a wide display can hold a place that is off a narrow one, and a
+person signing in on the smaller machine would get a window they could not reach.
+
+**An application that did not come back is absent rather than drawn empty**, and
+that needed no code: the arrangement is a list of places waiting to be claimed, and
+one nothing claims is never used.
 
 Frame positions and the camera survive a session ending and starting again.
 

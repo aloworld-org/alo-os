@@ -1,0 +1,20 @@
+[package]
+name = "alo-arranging"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+# The plane, the camera and the frame. **This crate decides nothing about any of
+# them**: every value read back off the disk is rebuilt by `At::checked`,
+# `Size::checked` and `Zoom::of`, which is the same road a live canvas takes — so
+# a file hand-edited to put a window a million units off the plane, or to a zoom
+# no canvas has, is refused by the crate that owns those rules rather than here.
+alo-canvas = { path = "../alo-canvas" }
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror.workspace = true
+
+[lints]
+workspace = true
