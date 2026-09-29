@@ -769,6 +769,20 @@ fn gates_only(at: &Path) -> ExitCode {
     // watching it. Reporting each gate as it passes means giving `all_of_them`
     // a way to say so, which changes a function `run`, `publish` and `verify`
     // all share, and that is not this subcommand's change to make.
+    // **Where it builds, said once at the start, as `run` and `publish` say it.**
+    // `BuildsIn.because` is documented as *what a run says about it, once, when it
+    // starts* — and this subcommand was the one that did not say it. So a gate
+    // run's log could not tell a reader where its artefacts were, and anything
+    // downstream had to guess: the third PC's namespace probe guessed
+    // `target/debug/deps` and measured nothing, because the supervisor exports
+    // `CARGO_TARGET_DIR` and the binaries were under `alo-builds/<name>`. That
+    // probe said *nothing is measured here and nothing is claimed* instead of
+    // passing silently, which is the only reason a wrong conclusion about an exit
+    // code of 126 did not follow from it.
+    //
+    // Printed rather than journalled: a hosted runner has a log and no journal,
+    // and the runner is what had to guess.
+    println!("{}", where_it_builds::chosen(at).because);
     println!(
         "alo-kernel-loop: running {} gates. They are reported together when the last one \
          finishes, so silence below this line is not a hung run.",
