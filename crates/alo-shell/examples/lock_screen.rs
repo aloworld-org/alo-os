@@ -4,7 +4,7 @@
 /// Run on Linux with a real Wayland parent. Never claims certified-machine evidence.
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use alo_appearance::{Appearance, Background, DisplayId, Picture, Scheme, TextScale};
+    use alo_appearance::{Appearance, Background, DisplayId, Scheme, TextScale, Token};
     use alo_shell::{
         Contrast, FrameTarget, LockBackground, LockLook, LockSurface, Nested, SignInLook,
         WindowControlLabels,
@@ -25,12 +25,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut surface = LockSurface::of(seat, words.clone()).map_err(|_| "seat was not locked")?;
     surface.arrives("private notification never drawn".into());
     let mut appearance = Appearance::shipped();
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/artwork/wallpapers/alo-quiet-horizon.png")
-        .canonicalize()?;
-    appearance.set_background(Background::Picture(
-        Picture::file(path).map_err(|_| "invalid asset path")?,
-    ));
+    // Not the shipped surface, so a raster that quietly fell back to the
+    // default would still be wrong here.
+    appearance.set_background(Background::Colour(Token::Charcoal.colour()));
     let display = DisplayId::named("nested-lock-probe").map_err(|_| "invalid probe display")?;
     let region = alo_formats::Regionally::reading("en").map_err(|_| "invalid region")?;
     let timezone = alo_formats::Timezone::named("Europe/Berlin").map_err(|_| "invalid zone")?;
@@ -71,9 +68,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .ok_or("no lock screen")?;
         let size = nested.size();
-        let background = LockBackground::prepare(screen.image(), (size.w, size.h), Duration::ZERO)?;
+        let background = LockBackground::prepare(screen.image(), (size.w, size.h))?;
         if tick == 8 {
-            let mismatch = LockBackground::prepare(screen.image(), (320, 480), Duration::ZERO)?;
+            let mismatch = LockBackground::prepare(screen.image(), (320, 480))?;
             if nested
                 .submit_lock(&surface, &screen, &mismatch, &mut labels, &look)
                 .is_ok()

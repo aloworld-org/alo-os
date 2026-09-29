@@ -137,12 +137,12 @@ fn lock_and_unlock(
     nested: &mut alo_shell::Nested,
     met: &mut Vec<Step>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use alo_appearance::{Appearance, Background, DisplayId, Picture, Scheme, TextScale};
+    use alo_appearance::{Appearance, Background, DisplayId, Scheme, TextScale, Token};
     use alo_shell::{
         Contrast, FrameTarget, LockBackground, LockLook, LockPressed, LockSurface, SignInKey,
         SignInLook, WindowControlLabels,
     };
-    use std::time::{Duration, SystemTime};
+    use std::time::SystemTime;
 
     let mut accounts = alo_accounts::Accounts::none()?;
     accounts
@@ -158,12 +158,10 @@ fn lock_and_unlock(
     let mut surface = LockSurface::of(seat, words.clone()).map_err(|_| "seat was not locked")?;
 
     let mut appearance = Appearance::shipped();
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/artwork/wallpapers/alo-quiet-horizon.png")
-        .canonicalize()?;
-    appearance.set_background(Background::Picture(
-        Picture::file(path).map_err(|_| "invalid asset path")?,
-    ));
+    // Deliberately not the shipped surface: a raster that quietly fell back to
+    // the default would still be wrong, and this is the walk that would have to
+    // notice.
+    appearance.set_background(Background::Colour(Token::Charcoal.colour()));
     let display = DisplayId::named("the-walk").map_err(|_| "invalid display")?;
     let region = alo_formats::Regionally::reading("en").map_err(|_| "invalid region")?;
     let timezone = alo_formats::Timezone::named("Europe/Berlin").map_err(|_| "invalid zone")?;
@@ -190,7 +188,7 @@ fn lock_and_unlock(
         )
         .ok_or("no lock screen")?;
     let size = nested.size();
-    let background = LockBackground::prepare(screen.image(), (size.w, size.h), Duration::ZERO)?;
+    let background = LockBackground::prepare(screen.image(), (size.w, size.h))?;
     nested.submit_lock(&surface, &screen, &background, &mut labels, &look)?;
     met.push(Step::of(
         "the screen is locked",

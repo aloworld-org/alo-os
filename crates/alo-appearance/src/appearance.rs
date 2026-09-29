@@ -148,40 +148,30 @@ impl Appearance {
     #[must_use]
     pub fn background_on(&self, display: &DisplayId) -> Background {
         if let Some(background) = self.changes.background_on(display) {
-            return background.clone();
+            return *background;
         }
         self.their_background()
     }
 
     /// What the lock screen shows on this display.
     ///
-    /// Their own lock screen if they set one. Otherwise the desktop — unless the
-    /// desktop rotates, in which case the wallpaper the image shipped, because a
-    /// folder of somebody's photographs is not a thing they chose to show to
-    /// whoever walks past a locked machine. [`crate::lock`] has the reasoning.
+    /// Their own if they set one, and otherwise the desktop — **which is now all
+    /// there is to it.** This used to have a third case: a desktop that rotated
+    /// was not followed, and the wallpaper the image shipped was shown instead,
+    /// because a folder of somebody's photographs is not a thing they chose to
+    /// show to whoever walks past a locked machine.
+    ///
+    /// ADR 0075 removed the folder and the wallpaper both, and said of that rule
+    /// that it *existed only because there was a picture to betray*. There is no
+    /// longer a choice to betray, and following simply follows. What replaces it
+    /// is simpler and was always the part that mattered: the lock screen shows
+    /// the surface and no client's pixels.
     #[must_use]
     pub fn lock_on(&self, display: &DisplayId) -> Background {
-        let lock = self.changes.lock().unwrap_or_else(|| self.shipped.lock());
-        match lock {
-            Lock::Its(background) => background.clone(),
-            Lock::TheDesktop => {
-                let desktop = self.background_on(display);
-                if desktop.rotates() {
-                    Background::from(self.shipped.background().clone())
-                } else {
-                    desktop
-                }
-            }
+        match self.changes.lock().unwrap_or_else(|| self.shipped.lock()) {
+            Lock::Its(background) => *background,
+            Lock::TheDesktop => self.background_on(display),
         }
-    }
-
-    /// Whether the lock screen is showing something other than the desktop
-    /// because the desktop rotates, which is what a settings panel says in a
-    /// line under the switch rather than leaving a person to notice.
-    #[must_use]
-    pub fn lock_is_holding_back(&self, display: &DisplayId) -> bool {
-        let lock = self.changes.lock().unwrap_or_else(|| self.shipped.lock());
-        matches!(lock, Lock::TheDesktop) && self.background_on(display).rotates()
     }
 
     /// What decides light and dark.
@@ -225,8 +215,8 @@ impl Appearance {
     fn their_background(&self) -> Background {
         self.changes
             .background()
-            .cloned()
-            .unwrap_or_else(|| Background::from(self.shipped.background().clone()))
+            .copied()
+            .unwrap_or_else(|| self.shipped.background())
     }
 }
 
@@ -237,11 +227,7 @@ impl Appearance {
 )]
 mod tests {
     use super::*;
-    use crate::picture::Picture;
-    use crate::rotating::{Every, Rotating};
-    use crate::shipped::THE_WALLPAPER;
     use crate::token::Token;
-    use std::path::PathBuf;
 
     /// The laptop's own screen.
     fn laptop() -> DisplayId {
@@ -253,24 +239,19 @@ mod tests {
         DisplayId::named("DP-1").unwrap()
     }
 
-    /// A folder of the person's own photographs, on a path no machine has.
-    fn photographs() -> Rotating {
-        let folder = if cfg!(windows) {
-            PathBuf::from(r"C:\Users\a\Pictures\Holidays")
-        } else {
-            PathBuf::from("/home/a/Pictures/Holidays")
-        };
-        Rotating::folder(folder, Every::minutes(10).unwrap()).unwrap()
-    }
-
-    /// The wallpaper the image ships, as a background.
-    fn the_shipped_wallpaper() -> Background {
-        Background::from(Picture::shipped(THE_WALLPAPER).unwrap())
-    }
-
     /// A time of day.
     fn at(hour: u8) -> TimeOfDay {
         TimeOfDay::checked(hour, 0).unwrap()
+    }
+
+    /// What a fresh machine shows: the surface the palette names, which is what
+    /// `Shipped::of_the_image` carries.
+    ///
+    /// It was `the_shipped_wallpaper` and answered with a picture until ADR
+    /// 0075. Three tests still ask the question, so it keeps a name rather than
+    /// being inlined into each of them.
+    fn the_shipped_surface() -> Background {
+        Background::Colour(crate::shipped::THE_SURFACE.colour())
     }
 
     /// A fresh machine shows what the image shipped, on every screen, at every
@@ -278,9 +259,9 @@ mod tests {
     #[test]
     fn a_fresh_machine_shows_what_the_image_shipped() {
         let appearance = Appearance::shipped();
-        assert_eq!(appearance.background_on(&laptop()), the_shipped_wallpaper());
-        assert_eq!(appearance.background_on(&desk()), the_shipped_wallpaper());
-        assert_eq!(appearance.lock_on(&laptop()), the_shipped_wallpaper());
+        assert_eq!(appearance.background_on(&laptop()), the_shipped_surface());
+        assert_eq!(appearance.background_on(&desk()), the_shipped_surface());
+        assert_eq!(appearance.lock_on(&laptop()), the_shipped_surface());
         assert_eq!(appearance.scheme_at(at(22)), Scheme::Light);
         assert_eq!(appearance.text(), TextScale::ordinary());
         assert_eq!(appearance.accent(), Accent::Indigo);
@@ -362,43 +343,6 @@ mod tests {
         );
     }
 
-    /// **The lock screen does not follow a rotating folder.** A person picked
-    /// the folder, not the picture a locked machine shows to whoever walks past
-    /// — so following means the shipped wallpaper while the desktop rotates.
-    #[test]
-    fn the_lock_screen_does_not_show_a_rotating_folder_by_following_one() {
-        let mut appearance = Appearance::shipped();
-        appearance.set_background(Background::from(photographs()));
-
-        assert_eq!(
-            appearance.background_on(&laptop()),
-            Background::from(photographs()),
-            "the desktop rotates, which is what was asked for"
-        );
-        assert_eq!(
-            appearance.lock_on(&laptop()),
-            the_shipped_wallpaper(),
-            "and the lock screen holds back"
-        );
-        assert!(appearance.lock_is_holding_back(&laptop()));
-    }
-
-    /// **And it takes nothing away.** A person who says they want their
-    /// photographs on the lock screen gets them, because saying so is a
-    /// decision and following is not.
-    #[test]
-    fn a_person_who_asks_for_photographs_on_the_lock_screen_gets_them() {
-        let mut appearance = Appearance::shipped();
-        appearance.set_background(Background::from(photographs()));
-        appearance.set_lock(Lock::from(Background::from(photographs())));
-
-        assert_eq!(
-            appearance.lock_on(&laptop()),
-            Background::from(photographs())
-        );
-        assert!(!appearance.lock_is_holding_back(&laptop()));
-    }
-
     /// A lock screen that follows a desktop that does not rotate shows the
     /// desktop, including the exception made for that display.
     #[test]
@@ -415,7 +359,6 @@ mod tests {
             appearance.lock_on(&laptop()),
             Background::from(Token::Navy.colour())
         );
-        assert!(!appearance.lock_is_holding_back(&desk()));
     }
 
     /// **Dark after six**, asked at whatever hour the caller names rather than
@@ -454,7 +397,7 @@ mod tests {
 
         appearance.put_everything_back();
         assert!(appearance.changes().is_untouched());
-        assert_eq!(appearance.background_on(&laptop()), the_shipped_wallpaper());
+        assert_eq!(appearance.background_on(&laptop()), the_shipped_surface());
         assert_eq!(appearance.scheme_at(at(12)), Scheme::Light);
     }
 
@@ -468,7 +411,7 @@ mod tests {
         let written = serde_json::to_string(theirs.changes()).unwrap();
 
         let next_release = Shipped::of(
-            Picture::shipped("harbour").unwrap(),
+            Background::from(Token::Cream.colour()),
             Lock::TheDesktop,
             Following::from(Shipped::the_evening_schedule()),
             TextScale::ordinary(),
@@ -479,7 +422,7 @@ mod tests {
 
         assert_eq!(
             after.background_on(&laptop()),
-            Background::from(Picture::shipped("harbour").unwrap()),
+            Background::from(Token::Cream.colour()),
             "the new wallpaper reaches them"
         );
         assert_eq!(

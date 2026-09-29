@@ -7,8 +7,6 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::path::Path;
-
 use alo_appearance::{Appearance, Background, Token};
 use alo_displays::Changes;
 use alo_dock::Edge;
@@ -31,12 +29,6 @@ fn two_backgrounds() -> Appearance {
     appearance
 }
 
-/// Nowhere a shipped image could be found: every background in these tests is
-/// a colour, so nothing here reads a file.
-fn no_wallpapers() -> &'static Path {
-    Path::new("/nonexistent/alo/wallpapers")
-}
-
 /// The two screens drawn, with the dock on `edge` and night light as `tonight`.
 fn the_desk(edge: Edge, tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
     let appearance = two_backgrounds();
@@ -49,19 +41,16 @@ fn the_desk(edge: Edge, tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
         &dock,
         tonight,
     );
-    within(
+    desk(
         &screens,
         &dock,
         noon_look(&appearance, Direction::LeftToRight),
-        Duration::ZERO,
-        no_wallpapers(),
     )
     .unwrap()
 }
 
 /// The single flat colour a screen's background is, when it is a colour.
 fn ground(picture: &ScreenPicture) -> [u8; 3] {
-    assert!(picture.background.inked.is_empty());
     let solid = picture
         .background
         .solids
@@ -191,7 +180,7 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
         &a_cold_evening(),
     );
 
-    for picture in within(&screens, &dock, look, Duration::ZERO, no_wallpapers()).unwrap() {
+    for picture in desk(&screens, &dock, look).unwrap() {
         let undimmed = crate::dock_raster::picture(&dock, look, picture.size).unwrap();
         assert_eq!(picture.dock, undimmed, "{:?}", picture.name);
     }

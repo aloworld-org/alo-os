@@ -164,30 +164,20 @@ fn read_from_a_file(what: &str, text: &str) -> (PathBuf, Result<Changes, FileNot
 fn everything_changed() -> Changes {
     use alo_appearance::lock::Lock;
     use alo_appearance::{
-        Accent, Background, DisplayId, Every, Fitting, Following, Picture, Rotating, Schedule,
-        TextScale, TimeOfDay, Token,
+        Accent, Background, DisplayId, Following, Schedule, TextScale, TimeOfDay, Token,
     };
 
     let mut changes = Changes::untouched();
-    changes.set_background(Background::from(
-        Rotating::folder(
-            PathBuf::from("/home/ada/Pictures"),
-            Every::minutes(10).unwrap(),
-        )
-        .unwrap()
-        .fitted(Fitting::Fit),
-    ));
+    changes.set_background(Background::from(Token::Cream.colour()));
     changes.set_background_on(
         DisplayId::named("HDMI-1").unwrap(),
         Background::from(Token::Navy.colour()),
     );
     changes.set_background_on(
         DisplayId::named("eDP-1").unwrap(),
-        Background::from(Picture::file(PathBuf::from("/home/ada/harbour.jpg")).unwrap()),
+        Background::from(Token::WarmStone.colour()),
     );
-    changes.set_lock(Lock::Its(Background::from(
-        Picture::shipped("alo").unwrap(),
-    )));
+    changes.set_lock(Lock::Its(Background::from(Token::DeepTeal.colour())));
     changes.follow(Following::from(
         Schedule::checked(
             TimeOfDay::checked(18, 0).unwrap(),

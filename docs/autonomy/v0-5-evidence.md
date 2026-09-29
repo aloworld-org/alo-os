@@ -265,20 +265,23 @@ scales, which is the compositor's and is owed to a machine.
 
 ### **A fresh machine already looks composed** — the plane ships with a surface of its own, so nobody meets a grey rectangle
 
-**Shown by:** nothing that survives ADR 0075.
+**Shown by:** `crates/alo-appearance/src/shipped.rs`
 
-This is not the usual *nothing*, and it is worth being exact. There **is**
-evidence — `crates/alo-image/tests/the_default_wallpaper_is_installed.rs` and
-`docs/autonomy/updates/approved-wallpaper-source-artwork.md` — and both show the
-**old** answer: a photograph the image installs, which ADR 0075 deletes. The
-appearance a release ships names that wallpaper as what a machine looks like
-before anybody changes anything.
+**Still owed:** a screen. `a_fresh_machine_is_not_grey` holds that a machine
+nobody has changed shows `Token::Porcelain`, which `token.rs` documents as *the
+workspace canvas* — and it asserts against the palette rather than against a
+literal, so a release that moves that token moves the machine with it. What
+nothing here shows is that surface drawn on a display somebody is looking at,
+which is the compositor's and is owed to a machine.
 
-**Still owed:** the whole of the new answer. After the removal, the shipped
-appearance names a wallpaper that will not exist, and nothing in this repository
-says what surface a machine with no choices shows instead. A promise whose only
-evidence is for the thing being removed is in a worse position than one with no
-evidence at all, because those tests are green and say so.
+*Until 2026-09-29 this entry read **Shown by: nothing that survives ADR 0075**,
+and explained that its only evidence —
+`crates/alo-image/tests/the_default_wallpaper_is_installed.rs` and the artwork
+report — was for the photograph the record deletes. That was the honest reading
+while the removal was pending. The removal landed, the test went with it, and
+`alo-reconciling` caught the citation still standing: **evidence that moved is
+evidence nobody can run, and it reads exactly like evidence that is still
+there.***
 
 *This entry read **Wallpapers shipped with the image, so a fresh machine is not
 grey** until 2026-09-29, and its **Still owed** said the promise was plural and

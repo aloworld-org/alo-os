@@ -138,41 +138,24 @@ mod tests {
     use crate::background::Background;
     use crate::display::DisplayId;
     use crate::lock::Lock;
-    use crate::picture::{Fitting, Picture};
-    use crate::rotating::{Every, Rotating};
     use crate::scheme::{Following, Schedule};
     use crate::text::TextScale;
     use crate::time::TimeOfDay;
     use crate::token::Token;
 
-    /// A whole path on whichever machine runs the test.
-    fn whole(path: &str) -> std::path::PathBuf {
-        if cfg!(windows) {
-            std::path::PathBuf::from(format!(r"C:\{path}"))
-        } else {
-            std::path::PathBuf::from(format!("/{path}"))
-        }
-    }
-
     /// Every setting changed, so every key is written.
     fn everything_changed() -> Changes {
         let mut changes = Changes::untouched();
-        changes.set_background(Background::from(
-            Rotating::folder(whole("home/ada/Pictures"), Every::minutes(10).unwrap())
-                .unwrap()
-                .fitted(Fitting::Fit),
-        ));
+        changes.set_background(Background::from(Token::Cream.colour()));
         changes.set_background_on(
             DisplayId::named("HDMI-1").unwrap(),
             Background::from(Token::Navy.colour()),
         );
         changes.set_background_on(
             DisplayId::named("eDP-1").unwrap(),
-            Background::from(Picture::file(whole("home/ada/harbour.jpg")).unwrap()),
+            Background::from(Token::WarmStone.colour()),
         );
-        changes.set_lock(Lock::Its(Background::from(
-            Picture::shipped("alo").unwrap(),
-        )));
+        changes.set_lock(Lock::Its(Background::from(Token::DeepTeal.colour())));
         changes.follow(Following::from(
             Schedule::checked(
                 TimeOfDay::checked(18, 0).unwrap(),
