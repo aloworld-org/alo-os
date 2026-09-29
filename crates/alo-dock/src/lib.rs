@@ -25,6 +25,10 @@
 //! | [`clicking`] | What one click on an application's icon does |
 //! | [`previews`] | An application's windows, for choosing one that is not the last |
 //! | [`travelling`] | Going somewhere, looking without going, and coming back |
+//! | [`offering`] | What a drop would do, said before it is done |
+//! | [`menu`] | What an icon offers when asked, and what it never offers unasked |
+//! | [`announcing`] | What a screen reader reads out for an icon |
+//! | [`revealing`] | Reaching the Dock when a window fills the screen |
 //! | [`shipped`] | What the dock is before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
@@ -143,6 +147,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod announcing;
 pub mod changes;
 pub mod clicking;
 pub mod dock;
@@ -152,8 +157,11 @@ pub mod keeping;
 pub mod labels;
 pub mod layout;
 pub mod measures;
+pub mod menu;
+pub mod offering;
 pub mod on_the_canvas;
 pub mod previews;
+pub mod revealing;
 pub mod room;
 pub mod screen;
 pub mod shipped;
@@ -166,6 +174,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use announcing::{Announced, Focused, where_it_sits};
 pub use changes::{Changes, Setting};
 pub use clicking::{WhatAClickDoes, what_a_click_does};
 pub use dock::Dock;
@@ -173,8 +182,11 @@ pub use hiding::{Hiding, Showing, TheRoom};
 pub use holding::{Fitted, Holding, OnTheDock, Pinned, fit};
 pub use labels::Labels;
 pub use layout::Layout;
+pub use menu::{AWindowsState, What};
+pub use offering::{Offer, WhatWouldHappen, dropped_at, near_the_view};
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};
 pub use previews::{Opened, Preview, Previews};
+pub use revealing::{Revealing, TheKeyboard, ThePointer};
 pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;

@@ -216,10 +216,68 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
      translated.",
 );
 
+// ---------------------------------------------------------------------------
+// What a screen reader reads out for one icon — [`crate::announcing`]. One
+// sentence, built from an application's name and its counts, so that a person
+// who cannot see the Dock is told the same three facts a person looking at it
+// can see: which application, how many windows, and what state they are in.
+// ---------------------------------------------------------------------------
+
+/// An application with nothing open.
+pub const ANNOUNCED_CLOSED: Word = Word::saying("dock.announced.closed", "{app}, not open").noting(
+    "Read aloud when the reader reaches an application's icon in the dock. {app} is the \
+     application's own name as this machine reports it and is never translated. It is on the dock \
+     because the person pinned it there, so \"not open\" describes it rather than warns about it.",
+);
+
+/// An application with windows, none of them put aside.
+pub const ANNOUNCED_OPEN: Word = Word::saying(
+    "dock.announced.open",
+    "{app}, {windows} open",
+)
+.noting(
+    "Read aloud for an icon whose application has windows. {app} is the application's own name and \
+     is never translated. {windows} is a plain whole number counted on this machine. English \
+     leaves the word \"windows\" to the plural form; if your language counts differently, the \
+     count and the word are yours to arrange.",
+);
+
+/// An application with windows, some of them put aside.
+pub const ANNOUNCED_SOME_PUT_ASIDE: Word = Word::saying(
+    "dock.announced.some-put-aside",
+    "{app}, {windows} open, {aside} minimised",
+)
+.noting(
+    "Read aloud for an icon some of whose windows the person has put aside. Both numbers are \
+     plain whole numbers counted on this machine, and {aside} is never larger than {windows}. \
+     \"Minimised\" is the word a screen-reader user will expect from other systems, which is why \
+     it is used here although the rest of alo OS says \"put aside\".",
+);
+
+/// Said after the application's name when one of its windows has the keyboard.
+pub const ANNOUNCED_FOCUSED: Word = Word::saying("dock.announced.focused", "focused").noting(
+    "Added to what is read for an icon when one of that application's windows currently has the \
+     keyboard. A single word, joined to the sentence by whoever reads it out, so that a language \
+     which would rather inflect the whole sentence can translate the sentences above instead.",
+);
+
+/// Where a chosen window sits, read out so somebody who cannot see the canvas
+/// knows where they would be taken.
+pub const ANNOUNCED_WHERE: Word = Word::saying(
+    "dock.announced.where",
+    "on the canvas, {across} across and {down} down",
+)
+.noting(
+    "Read for a window preview, so that a person who cannot see the canvas knows where choosing \
+     it would take them. Both numbers are plain whole numbers of canvas units and may be \
+     negative, because the canvas extends in every direction from its origin. They are positions, \
+     not distances from the person.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, what the dock did with its names, the
 /// two refusals, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 19] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_UNDER,
@@ -234,6 +292,11 @@ pub const EVERY_WORD: [Word; 14] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
+    ANNOUNCED_CLOSED,
+    ANNOUNCED_OPEN,
+    ANNOUNCED_SOME_PUT_ASIDE,
+    ANNOUNCED_FOCUSED,
+    ANNOUNCED_WHERE,
 ];
 
 /// Why this crate's own words could not be declared.
