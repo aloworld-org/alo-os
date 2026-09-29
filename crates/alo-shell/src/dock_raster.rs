@@ -1,21 +1,29 @@
-//! The dock on one display: the band along the edge `alo-dock` names, and the
-//! status area at its far end.
+//! The dock on one display: the band along the bottom edge.
 //!
 //! # Whose decisions these are
 //!
-//! Which edge, how thick, how far it runs and which end is the far one are all
-//! `alo_dock::Dock::layout_on`'s answers for this display's own size, the
-//! person's text size and the way they read. This file turns those answers into
-//! pixels and decides none of them. Asked once per display, so a laptop and the
-//! screen beside it each get the dock laid out for their own size — and a dock
-//! that gives its names way on the small one keeps them on the large one.
+//! How thick it is and how far it runs are `alo_dock::Dock::layout_on`'s answers
+//! for this display's own size and the person's text size. That it is along the
+//! **bottom** is [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md),
+//! not a value asked for per display. This file turns those answers into pixels
+//! and decides none of them. Asked once per display, so a laptop and the screen
+//! beside it each get the dock laid out for their own size — and a dock that
+//! gives its names way on the small one keeps them on the large one.
 //!
-//! # The status area
+//! # The status area is not drawn here any more
 //!
-//! A segment at the far end of the band, set off by a rule in ink. The egress
-//! indicator's lines grow from its corner (`crate::egress_status_place`) out of
-//! the same layout, so the status area and the indicator cannot disagree about
-//! where the far end is.
+//! This file drew a segment at the far end of the band, set off by a rule in ink,
+//! and called it the status area. ADR 0076 took the status area off the Dock: a
+//! clock is not something a person opens or brings into focus, so it is not the
+//! Dock's, and *where it goes instead* is handed to the shell's own plan rather
+//! than answered here.
+//!
+//! **The egress indicator was not left floating with it.** It still sits where it
+//! sat, and `crate::egress_status_place` now works its corner out from the screen
+//! and the dock's thickness directly — which is what that file always did, minus
+//! one indirection through a type the Dock no longer has. Nothing about where a
+//! person looks for *nothing has left this machine* changed in this record.
 //!
 //! # Furniture, not authority
 //!
@@ -23,7 +31,7 @@
 //! dock is a band of the person's colours with the accent along its inside
 //! edge. `tests/desktop_source.rs` reads these files to hold that.
 
-use alo_dock::{Along, Dock, Edge, End, Layout, Screen};
+use alo_dock::{Dock, Layout, Screen};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::RenderError;
@@ -40,11 +48,9 @@ pub(crate) struct DockPicture {
     pub(crate) size: (i32, i32),
     /// `alo-dock`'s layout for this display.
     pub(crate) layout: Layout,
-    /// The whole band.
+    /// The whole band, along the bottom.
     pub(crate) band: Rectangle<i32, Physical>,
-    /// The status area, at the band's far end.
-    pub(crate) status_area: Rectangle<i32, Physical>,
-    /// The accent along the band's inside edge.
+    /// The accent along the band's inside — that is, top — edge.
     pub(crate) accent: Rectangle<i32, Physical>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
@@ -73,74 +79,19 @@ pub(crate) fn picture(
     .map_err(|_| RenderError::DesktopScene)?;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
-    let layout = dock.layout_on(screen, look.scale(), look.reading());
+    let layout = dock.layout_on(screen, look.scale());
     let thickness = i32::try_from(layout.thickness().as_pixels())
         .map_err(|_| RenderError::DesktopScene)?
         .clamp(1, width.min(height));
     let rule = measure.px(2).min(thickness);
 
-    let band = match layout.edge() {
-        Edge::Bottom => Rectangle::new((0, height - thickness).into(), (width, thickness).into()),
-        Edge::Top => Rectangle::new((0, 0).into(), (width, thickness).into()),
-        Edge::Left => Rectangle::new((0, 0).into(), (thickness, height).into()),
-        Edge::Right => Rectangle::new((width - thickness, 0).into(), (thickness, height).into()),
-    };
-    let accent = match layout.edge() {
-        Edge::Bottom => Rectangle::new(band.loc, (width, rule).into()),
-        Edge::Top => Rectangle::new((0, thickness - rule).into(), (width, rule).into()),
-        Edge::Left => Rectangle::new((thickness - rule, 0).into(), (rule, height).into()),
-        Edge::Right => Rectangle::new(band.loc, (rule, height).into()),
-    };
-    let length = match layout.along() {
-        Along::Across => width,
-        Along::Down => height,
-    };
-    let segment = (2 * thickness).min(length);
-    let (status_area, divider) = match (layout.along(), layout.status().at()) {
-        (Along::Across, End::Left) => (
-            Rectangle::new(band.loc, (segment, thickness).into()),
-            Rectangle::new(
-                (segment - rule, band.loc.y).into(),
-                (rule, thickness).into(),
-            ),
-        ),
-        (Along::Across, _) => (
-            Rectangle::new(
-                (width - segment, band.loc.y).into(),
-                (segment, thickness).into(),
-            ),
-            Rectangle::new(
-                (width - segment, band.loc.y).into(),
-                (rule, thickness).into(),
-            ),
-        ),
-        (Along::Down, End::Top) => (
-            Rectangle::new(band.loc, (thickness, segment).into()),
-            Rectangle::new(
-                (band.loc.x, segment - rule).into(),
-                (thickness, rule).into(),
-            ),
-        ),
-        (Along::Down, _) => (
-            Rectangle::new(
-                (band.loc.x, height - segment).into(),
-                (thickness, segment).into(),
-            ),
-            Rectangle::new(
-                (band.loc.x, height - segment).into(),
-                (thickness, rule).into(),
-            ),
-        ),
-    };
+    let band = Rectangle::new((0, height - thickness).into(), (width, thickness).into());
+    let accent = Rectangle::new(band.loc, (width, rule).into());
 
     let solids = vec![
         Solid {
             area: band,
             colour: palette.dock,
-        },
-        Solid {
-            area: divider,
-            colour: palette.ink,
         },
         Solid {
             area: accent,
@@ -151,7 +102,6 @@ pub(crate) fn picture(
         size,
         layout,
         band,
-        status_area,
         accent,
         solids,
     })
@@ -168,61 +118,46 @@ mod tests {
     use alo_appearance::{Accent, TextScale};
     use alo_strings::Direction;
 
-    /// A dock on `edge`.
-    fn on(edge: Edge) -> Dock {
-        let mut dock = Dock::shipped();
-        dock.set_edge(edge);
-        dock
-    }
-
     /// Whether `inner` lies wholly inside `outer`.
     fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
         outer.intersection(inner) == Some(inner)
     }
 
-    /// **The dock is drawn on the edge `alo-dock` names**, as thick as it says
-    /// and spanning the edge, on every edge — with the status area inside the
-    /// band at the end `alo-dock` calls far, in both reading directions.
+    /// **The dock is drawn along the bottom**, as thick as `alo-dock` says and
+    /// spanning the width — the same band whichever way the person reads, because
+    /// the reading direction placed the status area and the status area is gone.
     #[test]
-    fn a_dock_is_drawn_on_the_edge_alo_dock_names_with_the_status_area_at_its_far_end() {
+    fn a_dock_is_drawn_along_the_bottom_as_thick_as_alo_dock_says() {
         let size = (1920, 1080);
+        let dock = Dock::shipped();
+        let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            for edge in Edge::ALL {
-                let dock = on(edge);
-                let drawn = picture(&dock, look, size).unwrap();
-                let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), look.scale(), reading);
-                assert_eq!(drawn.layout, layout);
-                let thick = i32::try_from(layout.thickness().as_pixels()).unwrap();
-                let expected = match edge {
-                    Edge::Bottom => Rectangle::new((0, 1080 - thick).into(), (1920, thick).into()),
-                    Edge::Top => Rectangle::new((0, 0).into(), (1920, thick).into()),
-                    Edge::Left => Rectangle::new((0, 0).into(), (thick, 1080).into()),
-                    Edge::Right => Rectangle::new((1920 - thick, 0).into(), (thick, 1080).into()),
-                };
-                assert_eq!(drawn.band, expected, "{edge:?} {reading:?}");
-                assert!(inside(drawn.status_area, drawn.band), "{edge:?}");
-                assert!(inside(drawn.accent, drawn.band), "{edge:?}");
+            let drawn = picture(&dock, look, size).unwrap();
+            let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), look.scale());
+            assert_eq!(drawn.layout, layout);
 
-                let area = drawn.status_area;
-                match layout.status().at() {
-                    End::Right => assert_eq!(area.loc.x + area.size.w, 1920),
-                    End::Left => assert_eq!(area.loc.x, 0),
-                    End::Bottom => assert_eq!(area.loc.y + area.size.h, 1080),
-                    End::Top => assert_eq!(area.loc.y, 0),
-                }
-                if edge.along() == Along::Across {
-                    let far = if reading == Direction::LeftToRight {
-                        End::Right
-                    } else {
-                        End::Left
-                    };
-                    assert_eq!(layout.status().at(), far);
-                } else {
-                    assert_eq!(layout.status().at(), End::Bottom);
+            let thick = i32::try_from(layout.thickness().as_pixels()).unwrap();
+            assert_eq!(
+                drawn.band,
+                Rectangle::new((0, 1080 - thick).into(), (1920, thick).into()),
+                "{reading:?}"
+            );
+            assert_eq!(drawn.band.loc.y + drawn.band.size.h, 1080, "{reading:?}");
+            assert!(inside(drawn.accent, drawn.band), "{reading:?}");
+            assert_eq!(drawn.accent.loc.y, drawn.band.loc.y, "the inside edge");
+
+            // The first way round records the band; the second is held to it,
+            // which is what says the reading direction no longer moves the dock
+            // now that it does not place a status area.
+            match whichever_way_read {
+                None => whichever_way_read = Some(drawn.band),
+                Some(first) => {
+                    assert_eq!(first, drawn.band, "which way a person reads moved the dock")
                 }
             }
         }
+        assert!(whichever_way_read.is_some(), "neither way round was drawn");
     }
 
     /// **Per display.** The same dock on a laptop and on a large screen beside
@@ -234,20 +169,21 @@ mod tests {
         let mut appearance = an_appearance();
         appearance.set_text(TextScale::percent(300).unwrap());
         let look = noon_look(&appearance, Direction::LeftToRight);
-        let dock = on(Edge::Left);
+        let dock = Dock::shipped();
 
         let laptop = picture(&dock, look, (1366, 768)).unwrap();
         let desk = picture(&dock, look, (3840, 2160)).unwrap();
         let portrait = picture(&dock, look, (1080, 1920)).unwrap();
         assert!(!laptop.layout.labels().are_shown());
         assert!(desk.layout.labels().are_shown());
-        assert_ne!(laptop.band.size.w, desk.band.size.w);
+        assert_ne!(laptop.band.size.h, desk.band.size.h);
         for drawn in [&laptop, &desk, &portrait] {
             assert_eq!(
-                i64::from(drawn.band.size.w),
+                i64::from(drawn.band.size.h),
                 i64::from(drawn.layout.thickness().as_pixels())
             );
-            assert_eq!(drawn.band.size.h, drawn.size.1);
+            assert_eq!(drawn.band.size.w, drawn.size.0, "it spans the width");
+            assert_eq!(drawn.band.loc.y + drawn.band.size.h, drawn.size.1);
         }
     }
 

@@ -191,7 +191,7 @@ fn the_shipped_dependencies(manifest: &str) -> Vec<String> {
 
 /// **The shell keeps no settings file of its own.** No shipped file in `src/`
 /// serialises a value, writes a file's contents, or names where a person's
-/// settings are kept — so a background, a dock edge or a shortcut can only ever
+/// settings are kept — so a background, a dock setting or a shortcut can only ever
 /// reach a disk through the crate that owns it, which is ADR 0038's
 /// recommendation and the plan's *this surface decides nothing*.
 #[test]

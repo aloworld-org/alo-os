@@ -238,7 +238,6 @@ mod running {
                 egress: &self.egress,
                 running: &self.running,
                 filling: &self.filling,
-                status: &self.status,
                 // **Nothing is watching or listening, and that is read rather
                 // than assumed** — `alo_in_use::InUse::read_from` asks the
                 // machine's media server, and nothing on a machine with no

@@ -128,9 +128,10 @@ pub(crate) fn picture(
     .map_err(|_| RenderError::EgressStatusScene)?;
     let measure = Measure::of(look.scale);
     let place = Place::of(
-        dock.layout_on(screen, look.scale, look.reading),
+        dock.layout_on(screen, look.scale),
         size,
         measure.px(8),
+        look.reading,
     )
     .beyond(beyond);
     let fonts = &mut labels.fonts;
@@ -170,10 +171,6 @@ pub(crate) fn picture(
             Across::FromRight(x) => x - laid.width,
         };
         let top = match at_y {
-            Stacked::Downwards(y) => {
-                at_y = Stacked::Downwards(y + laid.height + gap);
-                y
-            }
             Stacked::Upwards(y) => {
                 at_y = Stacked::Upwards(y - laid.height - gap);
                 y - laid.height

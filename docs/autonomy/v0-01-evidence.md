@@ -202,14 +202,25 @@ chord now divides the display between the focused window and the next one. The
 Wayland tests that stood here went with the mechanism, and what is named in
 their place holds what a chord does now, including what it refuses.
 
-### The dock, and the person decides where it goes
+### The alo Dock
 
-**Shown by:** `crates/alo-dock/src/layout.rs`, `crates/alo-dock/src/along.rs`,
-`crates/alo-dock/tests/what_this_crate_says.rs`
+**Shown by:** `crates/alo-dock/src/layout.rs`,
+`crates/alo-dock/tests/what_this_crate_says.rs`,
+`docs/autonomy/updates/the-dock-fixed-to-the-bottom-edge.md`
 
-**Still owed:** nothing draws a dock. The reflowing status area and the labels
-giving way to icons are arithmetic that no compositor asks for yet, and the
-Settings surface that would let a person choose the edge is not built.
+**Still owed:** **nothing draws a dock.** The labels giving way to icons are
+arithmetic that no compositor asks for yet, and everything the Dock is for —
+showing what you can open, bringing what is already open into focus, what a click
+does, favourites and an overflow area — has no code at all.
+
+*This entry read **The dock, and the person decides where it goes**, and cited
+`along.rs` for the two orientations. [ADR
+0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+withdrew that promise and fixed the Dock to the bottom edge; `along.rs` is
+deleted, and the Settings surface this entry said would let a person choose an
+edge is not owed any more, because there is no edge to choose. What the Dock's
+settings section does ask — whether it gives way when a window needs the room —
+is its own promise at v0.5.*
 
 ### Switching between windows, and between applications
 

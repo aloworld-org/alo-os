@@ -12,14 +12,33 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
-- **Your dock can sit along the bottom of the laptop and down the side of the
-  screen on your desk.** Before this, moving the dock moved it on every display at
-  once. Now a display you single out keeps its own edge, and the rest follow the
-  choice you made for everywhere — so docking a laptop no longer means choosing one
-  edge that suits both. Putting the edge back and stopping singling a screen out
-  are two separate things, because they are two different things to want.
-  Nothing has been seen on a real second screen yet.
-  Evidence: `docs/autonomy/updates/the-dock-per-display.md`.
+- **The dock is along the bottom of the screen, and which edge it sits on is no
+  longer a setting.** It was four edges, two orientations and a per-display
+  exception, none of which anybody has used, because nothing has booted the
+  image yet. The dock's job is to answer *where do I go*: it shows what you can
+  open, brings what is already open into focus, and stays put while the canvas
+  moves. A position you can change is a decision handed to you for no benefit,
+  and it was paid for on every screen and at every text size. **This replaces an
+  unreleased note that said your dock could sit along the bottom of the laptop
+  and down the side of the screen on your desk** — that is no longer true, and it
+  never reached anybody. Evidence:
+  `docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`.
+
+- **You can now ask the dock to give way when a window needs the room.** The
+  choice has been written into your settings file since late September, and
+  nothing could read it back or offer it to you — a setting that existed
+  everywhere except where you would use it. It is the one thing the dock's
+  settings section asks now, and it is offered in your own language. A fresh
+  machine keeps its dock on the screen, as before.
+
+- **The clock, the battery, the network and the volume are not drawn at the
+  moment.** They were laid out at the far end of the dock, and a clock is not
+  something you open or bring into focus, so it is not the dock's. They are
+  still promised; where they go is being decided rather than guessed, and until
+  it is, nothing draws them. **The indicator that says nothing has left this
+  machine has not moved**, nor has what tells you your camera or microphone is
+  in use: those have a corner of their own, at the far end of the dock and above
+  it, and they are drawn exactly where they were.
 
 - **When a converted document names a font it lost, it is a font you chose.**
   Converting a Word document saved before 2007 could report a second font as

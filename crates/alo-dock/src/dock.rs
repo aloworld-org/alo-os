@@ -1,35 +1,31 @@
 //! The dock on this machine: what the release ships, what the person changed,
 //! and the two of them resolved at the moment of asking.
 //!
-//! Nothing is worked out at load time. A person who moves their dock, or turns
-//! their text up, gets the answer on the next frame rather than at the next
-//! sign-in — and a settings panel asking *what would this look like at 200% on
-//! the projector* asks exactly the question the compositor asks when the
-//! projector is plugged in.
+//! Nothing is worked out at load time. A person who turns their text up gets the
+//! answer on the next frame rather than at the next sign-in — and a settings
+//! panel asking *what would this look like at 200% on the projector* asks exactly
+//! the question the compositor asks when the projector is plugged in.
 //!
-//! **One dock per display, and it was additive as this file said it would be.**
-//! *Per display, so the dock can sit along the bottom of the laptop and down the
-//! side of the external screen* is the `[v0.5]` promise in `docs/features.md`, and
-//! [`Dock::edge_on`] is where it is answered: **a display singled out is an
-//! exception to the edge, exactly as `alo-appearance` made a display an exception
-//! to a background.** This file read *One dock, one edge* until 2026-09-27 and
-//! quoted that promise as the thing it did not do.
+//! **Where the dock is, is not a question this file answers.** It is along the
+//! bottom, by [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md),
+//! on every screen. This file read *One dock, one edge* and then *one dock per
+//! display* before that record; both are gone, along with the per-display
+//! exception, and the record is why.
 //!
-//! [`Dock::layout_on`] still takes a screen and answers about its size, and is
-//! unchanged: the shell overrides the edge per screen already, from the answer
-//! `alo_displays::Wearing::of` gives it for that screen, which is what let this
-//! promise be paid in two crates and none of the drawing.
+//! **What it does answer, it answers for the first time.** `Hiding` has existed
+//! since 2026-09-27 and was stored by [`Changes`] without anything resolving it
+//! against what the release ships — so *whether the dock gives way* had a written
+//! answer that nothing could read back. [`Dock::hiding`] is that resolution, and
+//! it is here because a `Shipped` holding one setting and a `Dock` that could not
+//! read it would be the same half-wired setting with fewer places to notice.
 //!
-//! What is still not here is the other half of the same line in
-//! `docs/features.md`: *the dock's size, and whether it hides when a window needs
-//! the room*. [`crate::layout`] sizes it; the hiding has no code, and says so
-//! where it would go.
+//! [`Dock::layout_on`] takes a screen and answers about its size.
 
-use alo_appearance::{DisplayId, TextScale};
-use alo_strings::Direction;
+use alo_appearance::TextScale;
 
 use crate::changes::{Changes, Setting};
-use crate::edge::Edge;
+use crate::hiding::{Hiding, Showing, TheRoom};
 use crate::layout::Layout;
 use crate::screen::Screen;
 use crate::shipped::Shipped;
@@ -62,8 +58,7 @@ impl Dock {
     /// The changes read out of a settings file, applied over these defaults.
     ///
     /// **A file is not a settings panel**: what it says is what its owner
-    /// decided. What it cannot say is an edge that does not exist, because that
-    /// is checked where the file is read rather than here.
+    /// decided.
     #[must_use]
     pub fn with(mut self, changes: Changes) -> Self {
         self.changes = changes;
@@ -72,7 +67,7 @@ impl Dock {
 
     /// What has been changed, which is what gets written down.
     #[must_use]
-    pub fn changes(&self) -> &Changes {
+    pub const fn changes(&self) -> &Changes {
         &self.changes
     }
 
@@ -82,50 +77,31 @@ impl Dock {
         self.shipped
     }
 
-    /// Which edge the dock is on: the person's choice if they made one, and what
-    /// the release ships otherwise.
+    /// Whether the dock gives way when a window needs the room: the person's
+    /// choice if they made one, and what the release ships otherwise.
     #[must_use]
-    pub fn edge(&self) -> Edge {
-        self.changes.edge().unwrap_or_else(|| self.shipped.edge())
+    pub fn hiding(&self) -> Hiding {
+        self.changes
+            .hiding()
+            .unwrap_or_else(|| self.shipped.hiding())
     }
 
-    /// Put the dock on this edge, on every display not singled out.
-    pub fn set_edge(&mut self, edge: Edge) {
-        self.changes.set_edge(edge);
+    /// Say whether the dock gives way when a window needs the room.
+    pub const fn set_hiding(&mut self, hiding: Hiding) {
+        self.changes.set_hiding(hiding);
     }
 
-    /// Which edge of this display the dock is on.
-    ///
-    /// The exception the person made for this display, or the edge they chose for
-    /// everywhere, or the edge the release ships — in that order, which is
-    /// `alo_appearance::Appearance::background_on`'s order for the same reason.
-    ///
-    /// This is the whole of *per display, so the dock can sit along the bottom of
-    /// the laptop and down the side of the external screen*: two screens with
-    /// different exceptions answer differently here, and
-    /// `alo_displays::Wearing::of` asks it once per screen.
+    /// Whether the dock is on the screen at this moment, given what the windows
+    /// want of the room it is in.
     #[must_use]
-    pub fn edge_on(&self, display: &DisplayId) -> Edge {
-        self.changes.edge_on(display).unwrap_or_else(|| self.edge())
-    }
-
-    /// Single this display out, putting the dock on this edge of it alone.
-    pub fn set_edge_on(&mut self, display: DisplayId, edge: Edge) {
-        self.changes.set_edge_on(display, edge);
-    }
-
-    /// Stop singling this display out, putting it back to the edge chosen for
-    /// everywhere.
-    ///
-    /// Says whether there was anything to put back.
-    pub fn put_display_back(&mut self, display: &DisplayId) -> bool {
-        self.changes.forget_display(display)
+    pub fn showing(&self, room: TheRoom) -> Showing {
+        self.hiding().showing(room)
     }
 
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
-    pub fn put_back(&mut self, setting: Setting) -> bool {
+    pub const fn put_back(&mut self, setting: Setting) -> bool {
         self.changes.forget(setting)
     }
 
@@ -134,11 +110,11 @@ impl Dock {
         self.changes.forget_everything();
     }
 
-    /// The dock laid out on this screen, with the text at this size, for
-    /// somebody reading this way.
+    /// The dock laid out along the bottom of this screen, with the text at this
+    /// size.
     #[must_use]
-    pub fn layout_on(&self, screen: Screen, text: TextScale, reading: Direction) -> Layout {
-        Layout::of(self.edge(), screen, text, reading)
+    pub fn layout_on(&self, screen: Screen, text: TextScale) -> Layout {
+        Layout::of(screen, text)
     }
 }
 
@@ -149,23 +125,22 @@ impl Dock {
 )]
 mod tests {
     use super::*;
-    use crate::along::Along;
     use crate::labels::Labels;
 
-    /// A machine nobody has touched has its dock where the release put it, and
-    /// moving it is one call that shows up in the settings file.
+    /// A machine nobody has touched has the dock the release ships, and the one
+    /// thing a person can change shows up in the settings file.
     #[test]
-    fn a_fresh_dock_is_where_the_release_put_it_and_a_person_can_move_it() {
+    fn a_fresh_dock_is_what_the_release_ships_and_a_person_can_change_it() {
         let mut dock = Dock::shipped();
-        assert_eq!(dock.edge(), Edge::Bottom);
+        assert_eq!(dock.hiding(), Hiding::Never);
         assert!(dock.changes().is_untouched());
 
-        dock.set_edge(Edge::Left);
-        assert_eq!(dock.edge(), Edge::Left);
+        dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        assert_eq!(dock.hiding(), Hiding::WhenAWindowNeedsTheRoom);
         assert!(!dock.changes().is_untouched());
 
-        assert!(dock.put_back(Setting::Edge));
-        assert_eq!(dock.edge(), Edge::Bottom, "and it goes back");
+        assert!(dock.put_back(Setting::Hiding));
+        assert_eq!(dock.hiding(), Hiding::Never, "and it goes back");
         assert!(dock.changes().is_untouched());
     }
 
@@ -174,39 +149,30 @@ mod tests {
     /// difference is stored, and this is the test that says it works.
     #[test]
     fn a_new_default_reaches_the_untouched_machine_and_not_the_touched_one() {
-        let untouched = Dock::over(Shipped::of(Edge::Top));
-        assert_eq!(untouched.edge(), Edge::Top);
+        let untouched = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom));
+        assert_eq!(untouched.hiding(), Hiding::WhenAWindowNeedsTheRoom);
 
-        let mut moved = Changes::untouched();
-        moved.set_edge(Edge::Right);
-        let theirs = Dock::over(Shipped::of(Edge::Top)).with(moved);
+        let mut chosen = Changes::untouched();
+        chosen.set_hiding(Hiding::Never);
+        let theirs = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom)).with(chosen);
         assert_eq!(
-            theirs.edge(),
-            Edge::Right,
+            theirs.hiding(),
+            Hiding::Never,
             "their choice survives the release"
         );
     }
 
-    /// Moving the dock changes the layout, and everything about the layout
-    /// follows from the edge — which is what says the person has one decision to
-    /// make rather than four.
+    /// **The choice reaches the answer the compositor actually asks.** A dock
+    /// that stored *give way* and still reported itself shown would be a setting
+    /// with nothing behind it, which is what this was until the edge came out.
     #[test]
-    fn moving_the_dock_changes_how_it_is_laid_out() {
-        let screen = Screen::the_smallest();
-        let text = TextScale::ordinary();
+    fn a_dock_asked_to_give_way_does_so_only_when_a_window_needs_the_room() {
         let mut dock = Dock::shipped();
+        assert_eq!(dock.showing(TheRoom::AWindowNeedsIt), Showing::Shown);
 
-        let across = dock.layout_on(screen, text, Direction::LeftToRight);
-        assert_eq!(across.along(), Along::Across);
-        assert_eq!(across.labels(), Labels::Under);
-        assert_eq!(across.length(), screen.width());
-
-        dock.set_edge(Edge::Right);
-        let down = dock.layout_on(screen, text, Direction::LeftToRight);
-        assert_eq!(down.along(), Along::Down);
-        assert_eq!(down.labels(), Labels::Beside);
-        assert_eq!(down.length(), screen.height());
-        assert_ne!(down.thickness(), across.thickness());
+        dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        assert_eq!(dock.showing(TheRoom::AWindowNeedsIt), Showing::Hidden);
+        assert_eq!(dock.showing(TheRoom::Free), Showing::Shown);
     }
 
     /// **Nothing is worked out at load time.** The same dock answers about two
@@ -219,18 +185,27 @@ mod tests {
         let desk = Screen::of(3840, 2160).unwrap();
         let large = TextScale::percent(300).unwrap();
 
+        assert!(!dock.layout_on(laptop, large).labels().are_shown());
         assert!(
-            !dock
-                .layout_on(laptop, large, Direction::LeftToRight)
-                .labels()
-                .are_shown()
-        );
-        assert!(
-            dock.layout_on(desk, large, Direction::LeftToRight)
-                .labels()
-                .are_shown(),
+            dock.layout_on(desk, large).labels().are_shown(),
             "the same dock, the same text, a bigger screen"
         );
+        assert_eq!(
+            dock.layout_on(laptop, TextScale::ordinary()).labels(),
+            Labels::Under
+        );
+    }
+
+    /// **Every screen gets the same dock.** There is no per-display exception to
+    /// be had, which is the point of ADR 0076 rather than a gap in this file: two
+    /// screens laid out at the same size answer identically.
+    #[test]
+    fn two_screens_of_a_size_are_one_layout() {
+        let dock = Dock::shipped();
+        let text = TextScale::ordinary();
+        let one = Screen::of(1920, 1080).unwrap();
+        let other = Screen::of(1920, 1080).unwrap();
+        assert_eq!(dock.layout_on(one, text), dock.layout_on(other, text));
     }
 
     /// Putting everything back is one call, and it leaves the machine as though
@@ -238,73 +213,9 @@ mod tests {
     #[test]
     fn everything_can_be_put_back_at_once() {
         let mut dock = Dock::shipped();
-        dock.set_edge(Edge::Left);
+        dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
         dock.put_everything_back();
         assert!(dock.changes().is_untouched());
         assert_eq!(dock, Dock::shipped());
-    }
-
-    /// **The laptop along the bottom and the external screen down the side**,
-    /// which is the promise in the words `docs/features.md` uses.
-    ///
-    /// Two screens, one singled out, two different answers out of one dock. A
-    /// screen nobody singled out gets the edge chosen for everywhere, and that
-    /// order — exception, then everywhere, then shipped — is
-    /// `alo_appearance::Appearance::background_on`'s.
-    #[test]
-    fn the_laptop_keeps_the_bottom_while_the_external_screen_takes_a_side() {
-        let laptop = DisplayId::named("eDP-1 Built-in").unwrap();
-        let desk = DisplayId::named("DP-3 Dell U2720Q").unwrap();
-
-        let mut dock = Dock::shipped();
-        assert_eq!(dock.edge_on(&laptop), Edge::Bottom, "the shipped edge");
-        assert_eq!(dock.edge_on(&desk), Edge::Bottom);
-
-        dock.set_edge_on(desk.clone(), Edge::Left);
-        assert_eq!(dock.edge_on(&desk), Edge::Left, "the screen singled out");
-        assert_eq!(
-            dock.edge_on(&laptop),
-            Edge::Bottom,
-            "and the other screen is not touched by it"
-        );
-
-        // The edge for everywhere moves the screens nobody singled out, and
-        // leaves the one that was.
-        dock.set_edge(Edge::Top);
-        assert_eq!(dock.edge_on(&laptop), Edge::Top);
-        assert_eq!(dock.edge_on(&desk), Edge::Left);
-
-        assert!(dock.put_display_back(&desk), "there was one to put back");
-        assert_eq!(dock.edge_on(&desk), Edge::Top, "back to everywhere's");
-        assert!(!dock.put_display_back(&desk), "and only once");
-    }
-
-    /// **Putting the edge back does not stop singling a screen out**, and vice
-    /// versa: they are two things a person means and two calls.
-    ///
-    /// `Setting::Edge` says so in its own words, because a panel offering *put it
-    /// back* has to offer the right one.
-    #[test]
-    fn the_edge_and_a_screen_singled_out_go_back_separately() {
-        let desk = DisplayId::named("DP-3 Dell U2720Q").unwrap();
-        let mut dock = Dock::shipped();
-        dock.set_edge(Edge::Right);
-        dock.set_edge_on(desk.clone(), Edge::Left);
-
-        assert!(dock.put_back(Setting::Edge));
-        assert_eq!(dock.edge(), Edge::Bottom, "everywhere went back");
-        assert_eq!(
-            dock.edge_on(&desk),
-            Edge::Left,
-            "and the screen singled out did not"
-        );
-        assert!(
-            !dock.changes().is_untouched(),
-            "a machine with one screen singled out has been changed"
-        );
-
-        dock.put_everything_back();
-        assert!(dock.changes().is_untouched());
-        assert_eq!(dock.edge_on(&desk), Edge::Bottom);
     }
 }

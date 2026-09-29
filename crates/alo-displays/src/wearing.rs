@@ -1,13 +1,12 @@
-//! What one screen wears: the background behind its windows, the edge its dock
-//! sits on, and how warm it is drawn.
+//! What one screen wears: the background behind its windows, and how warm it is
+//! drawn.
 //!
-//! **Two of the three are not this crate's.** A background is
-//! `alo-appearance`'s and a dock's edge is `alo-dock`'s; what is decided here
-//! is only *which screen each belongs to*, which is the one question a crate
-//! about screens is allowed to answer. Nothing here draws, and nothing here
-//! writes to either crate's file.
+//! **One of the two is not this crate's.** A background is `alo-appearance`'s;
+//! what is decided here is only *which screen it belongs to*, which is the one
+//! question a crate about screens is allowed to answer. Nothing here draws, and
+//! nothing here writes to that crate's file.
 //!
-//! **The third is, and this is where night light reaches a screen.** The warmth
+//! **The other is, and this is where night light reaches a screen.** The warmth
 //! is one decision for the machine ([`crate::NightLight`]) — the clock and the
 //! sun are the same in every direction a person can turn their head — but it is
 //! **applied per screen**, here, beside that screen's background, so the shell
@@ -26,32 +25,26 @@
 //! because their sockets differ, and a background chosen for one of them does
 //! not appear on the other.
 //!
-//! # The dock's edge is per screen, and `alo-dock` decided it
+//! # The dock is not something a screen wears
 //!
-//! `alo_dock::Dock` held **one** edge for the machine until 2026-09-27, and this
-//! paragraph said so and named what would change when that ended: *when
-//! `alo-dock` gains an edge per screen, [`Wearing::of`] is the one function that
-//! changes, and every caller of it keeps working.* That is what happened, and
-//! it was one line — `dock.edge()` became
-//! `dock.edge_on(screen.named_for_the_shell())`, asked with the same name the
-//! background is asked for, in the same function, two lines apart.
+//! This held a third value: **which edge of this screen the dock sat on**. It was
+//! one edge for the machine, then for two days an exception a person could make
+//! per screen, and [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+//! then fixed the dock along the bottom edge of every screen.
 //!
-//! `alo_dock::Dock::edge_on` answers the exception the person made for this
-//! screen, or the edge they chose for everywhere, or the edge the release
-//! ships — the order `alo_appearance::Appearance::background_on` uses, so the
-//! two things a screen wears are decided the same way. **Two identical screens
-//! are two names**, because their sockets differ, so an edge chosen for one does
-//! not reach the other. This plan still reads `alo-dock` and never edits it; the
-//! edit there was the settings plan's crate, made by the change that paid the
-//! promise.
+//! **So there is nothing per screen left to answer.** A value that is the same on
+//! every output is not something an output wears, and keeping it here would be
+//! this crate reporting a constant as though a screen had a say in it. `Wearing`
+//! no longer takes a `Dock` at all.
 //!
-//! **What is still owed is a second screen to see it on.** Nothing in this
-//! repository has had one attached, so *the dock along the bottom of the laptop
-//! and down the side of the external screen* is arithmetic here and a test, and
-//! not yet a thing anybody has looked at.
+//! What a screen still decides about the dock is its **size**, because the
+//! thickness comes out of the screen's height — and that is asked of
+//! `alo_dock::Dock::layout_on`, which takes a screen and is the right door for it.
+//! It is not routed through here, because a layout is not worn: it is worked out
+//! at the moment of drawing, from a screen this crate already reports.
 
 use alo_appearance::{Appearance, Background};
-use alo_dock::{Dock, Edge};
 
 use crate::night_light::Tonight;
 use crate::reported::Reported;
@@ -62,8 +55,6 @@ use crate::warmth::{Warming, Warmth};
 pub struct Wearing {
     /// What is behind its windows.
     background: Background,
-    /// Which edge of it the dock sits on.
-    edge: Edge,
     /// How warm it is drawn.
     warmth: Warmth,
     /// What that warmth does to each of its three channels, worked out once
@@ -72,13 +63,12 @@ pub struct Wearing {
 }
 
 impl Wearing {
-    /// What this screen wears, asked of the two crates that own the values and
-    /// of night light for the third.
+    /// What this screen wears, asked of the crate that owns the background and
+    /// of night light for the warmth.
     #[must_use]
-    pub fn of(screen: &Reported, appearance: &Appearance, dock: &Dock, tonight: &Tonight) -> Self {
+    pub fn of(screen: &Reported, appearance: &Appearance, tonight: &Tonight) -> Self {
         Self {
             background: appearance.background_on(screen.named_for_the_shell()),
-            edge: dock.edge_on(screen.named_for_the_shell()),
             warmth: tonight.warmth(),
             warming: Warming::at(tonight.warmth()),
         }
@@ -88,12 +78,6 @@ impl Wearing {
     #[must_use]
     pub const fn background(&self) -> &Background {
         &self.background
-    }
-
-    /// Which edge of it the dock sits on.
-    #[must_use]
-    pub const fn edge(&self) -> Edge {
-        self.edge
     }
 
     /// How warm it is drawn, which is [`Warmth::neutral`] when night light is
@@ -168,71 +152,55 @@ mod tests {
             only_here,
         );
 
-        let dock = Dock::shipped();
         assert_eq!(
-            Wearing::of(&office, &appearance, &dock, &a_cold_evening()).background(),
+            Wearing::of(&office, &appearance, &a_cold_evening()).background(),
             &only_here
         );
         assert_eq!(
-            Wearing::of(&laptop, &appearance, &dock, &a_cold_evening()).background(),
+            Wearing::of(&laptop, &appearance, &a_cold_evening()).background(),
             &everywhere
         );
     }
 
-    /// **The edge a screen's dock sits on is the edge `alo-dock` decided**, and
-    /// it follows the person's choice rather than what the release shipped.
-    #[test]
-    fn the_edge_is_the_one_alo_dock_decided() {
-        let laptop = a_reported_laptop();
-        let appearance = Appearance::shipped();
-
-        let shipped = Dock::shipped();
-        assert_eq!(
-            Wearing::of(&laptop, &appearance, &shipped, &a_cold_evening()).edge(),
-            shipped.edge()
-        );
-
-        let mut moved = Dock::shipped();
-        moved.set_edge(Edge::Left);
-        assert_eq!(
-            Wearing::of(&laptop, &appearance, &moved, &a_cold_evening()).edge(),
-            Edge::Left
-        );
-    }
-
-    /// **The dock along the bottom of the laptop while it runs down the side of
-    /// the external screen**, which is the `[v0.5]` promise in the words
-    /// `docs/features.md` uses.
+    /// **Two screens on one desk wear the same dock**, because there is nothing
+    /// about it left to differ.
     ///
-    /// The one thing this crate had to change for it, and the reason the
-    /// paragraph at the top of this file could be rewritten: `alo-dock` gained an
-    /// edge per display, and [`Wearing::of`] asks for this screen's rather than
-    /// the machine's. **Two screens, one dock, two edges** — and the screen
-    /// nobody singled out still answers with the edge chosen for everywhere.
+    /// This is what is left of three tests that asked which edge each screen's
+    /// dock sat on — one for the machine's edge, one for a screen singled out.
+    /// ADR 0076 fixed the dock along the bottom of every screen, so the question
+    /// they asked has one answer and `Wearing` no longer carries it. What is kept
+    /// is the statement that nothing about a screen changes it, since that is the
+    /// part a later change could break.
     #[test]
-    fn the_laptop_keeps_the_bottom_while_the_office_screen_takes_a_side() {
+    fn nothing_about_a_screen_changes_where_the_dock_is() {
         let laptop = a_reported_laptop();
         let office = a_reported_office_screen();
         let appearance = Appearance::shipped();
-
-        let mut dock = Dock::shipped();
-        dock.set_edge_on(office.named_for_the_shell().clone(), Edge::Left);
-
         let evening = a_cold_evening();
-        assert_eq!(
-            Wearing::of(&office, &appearance, &dock, &evening).edge(),
-            Edge::Left,
-            "the screen singled out"
+
+        let dock = alo_dock::Dock::shipped();
+        let on_the_laptop = dock.layout_on(
+            alo_dock::Screen::of(1366, 768).unwrap(),
+            alo_appearance::TextScale::ordinary(),
+        );
+        let on_the_monitor = dock.layout_on(
+            alo_dock::Screen::of(1366, 768).unwrap(),
+            alo_appearance::TextScale::ordinary(),
         );
         assert_eq!(
-            Wearing::of(&laptop, &appearance, &dock, &evening).edge(),
-            dock.edge(),
-            "and the laptop keeps the edge chosen for everywhere"
+            on_the_laptop, on_the_monitor,
+            "two screens of a size lay the dock out identically"
         );
+
+        // And what a screen does wear is still its own.
         assert_ne!(
-            Wearing::of(&office, &appearance, &dock, &evening).edge(),
-            Wearing::of(&laptop, &appearance, &dock, &evening).edge(),
-            "two screens on one desk would have worn one edge before this"
+            laptop.named_for_the_shell(),
+            office.named_for_the_shell(),
+            "two screens are two names"
+        );
+        assert_eq!(
+            Wearing::of(&laptop, &appearance, &evening),
+            Wearing::of(&laptop, &appearance, &evening)
         );
     }
 
@@ -249,11 +217,10 @@ mod tests {
             DisplayId::named(office.named_for_the_shell().name()).unwrap(),
             Background::from(Token::Cream.colour()),
         );
-        let dock = Dock::shipped();
 
         let warm = a_warm_evening();
-        let on_the_laptop = Wearing::of(&laptop, &appearance, &dock, &warm);
-        let on_the_monitor = Wearing::of(&office, &appearance, &dock, &warm);
+        let on_the_laptop = Wearing::of(&laptop, &appearance, &warm);
+        let on_the_monitor = Wearing::of(&office, &appearance, &warm);
         assert_eq!(on_the_laptop.warmth().as_kelvin(), 2700);
         assert_eq!(on_the_monitor.warmth(), on_the_laptop.warmth());
         assert_ne!(
@@ -267,7 +234,7 @@ mod tests {
         );
 
         let cold = a_cold_evening();
-        let by_day = Wearing::of(&laptop, &appearance, &dock, &cold);
+        let by_day = Wearing::of(&laptop, &appearance, &cold);
         assert!(by_day.warmth().changes_nothing());
         assert_eq!(
             by_day.warming().applied_to(Token::DeepTeal.colour()),
@@ -290,13 +257,12 @@ mod tests {
             DisplayId::named(one.named_for_the_shell().name()).unwrap(),
             only_here,
         );
-        let dock = Dock::shipped();
         assert_eq!(
-            Wearing::of(&one, &appearance, &dock, &a_cold_evening()).background(),
+            Wearing::of(&one, &appearance, &a_cold_evening()).background(),
             &only_here
         );
         assert_ne!(
-            Wearing::of(&two, &appearance, &dock, &a_cold_evening()).background(),
+            Wearing::of(&two, &appearance, &a_cold_evening()).background(),
             &only_here
         );
     }

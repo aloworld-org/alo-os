@@ -544,10 +544,6 @@ dividing.refused.not-divided	this window is not part of the divided screen, so n
 dividing.refused.nothing-to-share-with	there is no other window open to share the screen with, so nothing has moved
 dividing.refused.too-narrow	this window cannot be made that narrow, so the screen has been left as it was
 dividing.refused.too-short	this window cannot be made that short, so the screen has been left as it was
-dock.edge.bottom	Bottom
-dock.edge.left	Left
-dock.edge.right	Right
-dock.edge.top	Top
 dock.hiding.never	Always shown
 dock.hiding.when-a-window-needs-the-room	Gives way when a window needs the room
 dock.kept.another-format	your dock settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and the dock is where alo OS puts it
@@ -558,7 +554,6 @@ dock.kept.not-understood	your dock settings at {path} are not settings alo OS ca
 dock.kept.not-understood-at	your dock settings at {path} stop making sense at line {line}, so nothing in the file has been used and the dock is where alo OS puts it
 dock.kept.not-written	your dock settings at {path} could not be written, so nothing about the dock has been changed
 dock.kept.unknown-key	your dock settings at {path} say {key}, which is not something alo OS can change about the dock, so nothing in the file has been used
-dock.labels.beside	each icon has its name beside it
 dock.labels.gave-way	there is no room for names at {percent}% text, so the dock shows icons — resting on one still gives its name, and a screen reader still reads it
 dock.labels.under	each icon has its name under it
 dock.screen.not-a-screen	a screen has a width and a height — {width} by {height} is not one

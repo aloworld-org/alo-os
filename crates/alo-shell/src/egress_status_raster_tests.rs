@@ -13,7 +13,6 @@ use crate::egress_status_testing::{
 use crate::painted_text::sentence as shaped_sentence;
 use crate::{EgressStatus, painted::Solid};
 use alo_appearance::Token;
-use alo_dock::Edge;
 use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why};
 use alo_indicator::{Drew, Indicating};
 use alo_models::InferenceSource;
@@ -335,17 +334,12 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
     let drawn_on = indicator;
     let (width, height, margin) = (1920, 1080, 8);
     for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-        for edge in Edge::ALL {
-            let mut dock = Dock::shipped();
-            dock.set_edge(edge);
+        {
+            let dock = Dock::shipped();
             let thick = i32::try_from(
-                dock.layout_on(
-                    Screen::of(1920, 1080).unwrap(),
-                    TextScale::ordinary(),
-                    reading,
-                )
-                .thickness()
-                .as_pixels(),
+                dock.layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+                    .thickness()
+                    .as_pixels(),
             )
             .unwrap();
             let mut labels = WindowControlLabels::new().unwrap();
@@ -363,29 +357,13 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
             let row = drawn.rows.first().unwrap().area;
             let (left, top) = (row.loc.x, row.loc.y);
             let (right, bottom) = (left + row.size.w, top + row.size.h);
-            let at = (edge, reading);
-            match edge {
-                Edge::Bottom => {
-                    assert_eq!(bottom, height - thick - margin, "{at:?}");
-                    assert!(bottom <= height - thick, "{at:?} is over the dock");
-                }
-                Edge::Top => {
-                    assert_eq!(top, thick + margin, "{at:?}");
-                }
-                Edge::Left => {
-                    assert_eq!(left, thick + margin, "{at:?}");
-                    assert_eq!(bottom, height - margin, "{at:?}");
-                }
-                Edge::Right => {
-                    assert_eq!(right, width - thick - margin, "{at:?}");
-                    assert_eq!(bottom, height - margin, "{at:?}");
-                }
-            }
-            if matches!(edge, Edge::Bottom | Edge::Top) {
-                match reading {
-                    Direction::LeftToRight => assert_eq!(right, width - margin, "{at:?}"),
-                    Direction::RightToLeft => assert_eq!(left, margin, "{at:?}"),
-                }
+            let at = reading;
+            let _ = top;
+            assert_eq!(bottom, height - thick - margin, "{at:?}");
+            assert!(bottom <= height - thick, "{at:?} is over the dock");
+            match reading {
+                Direction::LeftToRight => assert_eq!(right, width - margin, "{at:?}"),
+                Direction::RightToLeft => assert_eq!(left, margin, "{at:?}"),
             }
         }
     }
@@ -426,10 +404,9 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
     let mut labels = WindowControlLabels::new().unwrap();
     for scheme in [Scheme::Light, Scheme::Dark] {
         for percent in [smallest, 100, 200, largest] {
-            for edge in Edge::ALL {
+            {
                 for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-                    let mut dock = Dock::shipped();
-                    dock.set_edge(edge);
+                    let dock = Dock::shipped();
                     let look = EgressStatusLook {
                         contrast: Contrast::AsDesigned,
                         scheme,
@@ -446,7 +423,7 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
                         0,
                     )
                     .unwrap();
-                    let at = (look, edge);
+                    let at = look;
                     assert_eq!(drawn.rows.len(), 1, "{at:?}");
                     assert!(!drawn.inked.is_empty(), "{at:?}");
                     for area in drawn

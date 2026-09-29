@@ -18,7 +18,6 @@ use alo_displays::{
     Attached, Between, Changes, Moment, NightLight, Nightly, Panel, Reported, Socket, Support,
     TimeOfDay, Tonight, Warmth,
 };
-use alo_dock::Dock;
 
 use crate::screens::Screens;
 
@@ -55,10 +54,9 @@ pub(crate) fn the_screens(
     reported: Vec<Reported>,
     remembered: &Changes,
     appearance: &Appearance,
-    dock: &Dock,
     tonight: &Tonight,
 ) -> Screens {
-    Screens::of(a_desk(reported, remembered), appearance, dock, tonight)
+    Screens::of(a_desk(reported, remembered), appearance, tonight)
 }
 
 /// Night light off, which is what a machine ships with.

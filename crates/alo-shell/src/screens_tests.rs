@@ -1,5 +1,5 @@
 //! Several screens: laid out as `alo-displays` arranges them, restored as the
-//! person left them, each wearing its own background on its own dock edge, and
+//! person left them, each wearing its own background, and
 //! each warmed by the one night light.
 #![expect(
     clippy::unwrap_used,
@@ -9,7 +9,6 @@
 
 use alo_appearance::{Appearance, Background, DisplayId, Token};
 use alo_displays::{Arrangement, Note, Placed, Position, Scale};
-use alo_dock::{Dock, Edge};
 
 use super::*;
 use crate::screens_testing::{
@@ -33,11 +32,10 @@ fn by_name<'a>(screens: &'a Screens, named: &DisplayId) -> &'a ScreenPlace {
 fn every_screen_is_where_alo_displays_put_it_at_the_size_it_named() {
     let remembered = Changes::untouched();
     let appearance = Appearance::shipped();
-    let dock = Dock::shipped();
     let reported = vec![a_laptop(), an_office_screen()];
 
     let attached = a_desk(reported.clone(), &remembered);
-    let screens = the_screens(reported, &remembered, &appearance, &dock, &a_cold_evening());
+    let screens = the_screens(reported, &remembered, &appearance, &a_cold_evening());
 
     assert_eq!(screens.how_many(), 2);
     assert_eq!(screens.main_screen(), attached.main_screen());
@@ -76,7 +74,6 @@ fn every_screen_is_where_alo_displays_put_it_at_the_size_it_named() {
 #[test]
 fn an_arrangement_is_restored_when_that_set_is_plugged_in_again() {
     let appearance = Appearance::shipped();
-    let dock = Dock::shipped();
     let reported = vec![a_laptop(), an_office_screen()];
     let mut remembered = Changes::untouched();
 
@@ -84,7 +81,6 @@ fn an_arrangement_is_restored_when_that_set_is_plugged_in_again() {
         reported.clone(),
         &remembered,
         &appearance,
-        &dock,
         &a_cold_evening(),
     );
     let laptop = by_name(&first, a_laptop().named_for_the_shell()).clone();
@@ -105,7 +101,7 @@ fn an_arrangement_is_restored_when_that_set_is_plugged_in_again() {
         .unwrap(),
     );
 
-    let again = the_screens(reported, &remembered, &appearance, &dock, &a_cold_evening());
+    let again = the_screens(reported, &remembered, &appearance, &a_cold_evening());
     let office_again = by_name(&again, an_office_screen().named_for_the_shell());
     assert_eq!(office_again.at(), Position::at(-3840, 0));
     assert!(office_again.is_main());
@@ -121,13 +117,11 @@ fn an_arrangement_is_restored_when_that_set_is_plugged_in_again() {
 fn what_was_on_a_screen_that_went_belongs_where_alo_displays_says() {
     let remembered = Changes::untouched();
     let appearance = Appearance::shipped();
-    let dock = Dock::shipped();
     let office = an_office_screen();
     let mut screens = the_screens(
         vec![a_laptop(), office.clone()],
         &remembered,
         &appearance,
-        &dock,
         &a_cold_evening(),
     );
     let office_id = by_name(&screens, office.named_for_the_shell())
@@ -138,13 +132,7 @@ fn what_was_on_a_screen_that_went_belongs_where_alo_displays_says() {
         .clone();
 
     let moved = screens
-        .unplugged(
-            office.socket(),
-            &remembered,
-            &appearance,
-            &dock,
-            &a_cold_evening(),
-        )
+        .unplugged(office.socket(), &remembered, &appearance, &a_cold_evening())
         .unwrap();
     assert_eq!(moved.from(), &office_id);
     assert_eq!(moved.onto(), &laptop_id);
@@ -156,7 +144,7 @@ fn what_was_on_a_screen_that_went_belongs_where_alo_displays_says() {
     );
 
     let back = screens
-        .plugged_in(office, &remembered, &appearance, &dock, &a_cold_evening())
+        .plugged_in(office, &remembered, &appearance, &a_cold_evening())
         .unwrap();
     assert_eq!(back.back(), &office_id);
     assert!(back.anything_goes_back());
@@ -179,14 +167,11 @@ fn each_screen_wears_its_own_background_on_the_edge_alo_dock_names() {
     appearance.set_background(everywhere);
     appearance.set_background_on(office.named_for_the_shell().clone(), only_there);
 
-    for edge in Edge::ALL {
-        let mut dock = Dock::shipped();
-        dock.set_edge(edge);
+    {
         let screens = the_screens(
             vec![a_laptop(), office.clone()],
             &remembered,
             &appearance,
-            &dock,
             &a_cold_evening(),
         );
         assert_eq!(
@@ -201,8 +186,15 @@ fn each_screen_wears_its_own_background_on_the_edge_alo_dock_names() {
                 .background(),
             &everywhere
         );
+        // Which edge each screen's dock sits on was asserted here. ADR 0076
+        // fixed the dock to the bottom of every screen, so a screen no longer
+        // carries an answer and `ScreenPlace::edge` is gone with it.
         for place in screens.each() {
-            assert_eq!(place.edge(), edge, "{edge:?} on {:?}", place.name());
+            assert!(
+                place.wearing().warmth().changes_nothing(),
+                "{:?}",
+                place.name()
+            );
         }
     }
 }
@@ -213,7 +205,6 @@ fn each_screen_wears_its_own_background_on_the_edge_alo_dock_names() {
 #[test]
 fn night_light_reaches_every_screen_beside_its_own_background() {
     let remembered = Changes::untouched();
-    let dock = Dock::shipped();
     let office = an_office_screen();
     let mut appearance = Appearance::shipped();
     appearance.set_background(Background::from(Token::Navy.colour()));
@@ -223,7 +214,7 @@ fn night_light_reaches_every_screen_beside_its_own_background() {
     );
     let reported = vec![a_laptop(), office];
 
-    let mut screens = the_screens(reported, &remembered, &appearance, &dock, &a_cold_evening());
+    let mut screens = the_screens(reported, &remembered, &appearance, &a_cold_evening());
     for place in screens.each() {
         assert!(place.wearing().warmth().changes_nothing());
         assert_eq!(
@@ -232,7 +223,7 @@ fn night_light_reaches_every_screen_beside_its_own_background() {
         );
     }
 
-    screens.wearing_again(&appearance, &dock, &a_warm_evening());
+    screens.wearing_again(&appearance, &a_warm_evening());
     let mut backgrounds = Vec::new();
     for place in screens.each() {
         assert_eq!(place.wearing().warmth().as_kelvin(), 2700);

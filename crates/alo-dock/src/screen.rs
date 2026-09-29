@@ -1,12 +1,12 @@
-//! The screen a dock is laid out on, and the side it takes its thickness from.
+//! The screen a dock is laid out on.
 //!
 //! **A dock takes from the side it sits on, not from the screen's short side.**
-//! A dock along the bottom takes from the height; one down the left takes from
-//! the width. Measuring both against the same side would let a dock down the
-//! left of a wide screen grow to a quarter of it while a dock along the bottom
-//! of the same screen was squeezed — one number, two very different results,
-//! which is exactly the *horizontal bar somebody turned sideways* that
-//! `docs/features.md` refuses.
+//! The dock is along the bottom (ADR 0076), so it takes its thickness out of the
+//! **height** and runs the whole **width** — on a portrait screen as much as a
+//! landscape one. This file used to answer which side that was, given which way
+//! the dock ran; with one orientation the answer is [`Screen::height`] and
+//! [`Screen::width`], and [`crate::Layout`] asks them directly rather than
+//! through a method that once had a choice to make.
 //!
 //! **What this crate lays out for, and why it is 1366 by 768.** The thresholds
 //! in [`crate::measures`] are chosen against a screen rather than in the
@@ -24,7 +24,6 @@
 
 use alo_strings::{Filling, Said, Strings};
 
-use crate::along::Along;
 use crate::room::Room;
 use crate::words::{self, Word};
 
@@ -128,26 +127,6 @@ impl Screen {
     pub const fn height(self) -> Room {
         self.height
     }
-
-    /// The side a dock running this way takes its thickness out of: the height
-    /// for a dock across the screen, the width for one down it.
-    #[must_use]
-    pub const fn the_side_a_dock_takes_from(self, along: Along) -> Room {
-        match along {
-            Along::Across => self.height,
-            Along::Down => self.width,
-        }
-    }
-
-    /// The side a dock running this way spans: the width for a dock across the
-    /// screen, the height for one down it.
-    #[must_use]
-    pub const fn the_side_a_dock_runs_along(self, along: Along) -> Room {
-        match along {
-            Along::Across => self.width,
-            Along::Down => self.height,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -173,33 +152,16 @@ mod tests {
         assert_eq!(smallest.height().as_pixels(), 768);
     }
 
-    /// **A dock takes from the side it sits on.** A wide screen gives a dock down
-    /// its left more room than a dock along its bottom, and that is the point
-    /// rather than an accident: the two orientations are laid out against
-    /// different measurements.
+    /// A screen reports its two sides, and they are not the same on the screen
+    /// this crate is measured against — so a test that confused them would show.
     #[test]
-    fn a_dock_takes_from_the_side_it_sits_on_and_spans_the_other() {
+    fn a_screen_reports_both_of_its_sides() {
         let screen = Screen::the_smallest();
-        assert_eq!(
-            screen.the_side_a_dock_takes_from(Along::Across),
-            screen.height()
-        );
-        assert_eq!(
-            screen.the_side_a_dock_takes_from(Along::Down),
-            screen.width()
-        );
-        assert_eq!(
-            screen.the_side_a_dock_runs_along(Along::Across),
-            screen.width()
-        );
-        assert_eq!(
-            screen.the_side_a_dock_runs_along(Along::Down),
-            screen.height()
-        );
+        assert_eq!(screen.width(), Room::pixels(SMALLEST_WIDTH));
+        assert_eq!(screen.height(), Room::pixels(SMALLEST_HEIGHT));
         assert!(
-            screen.the_side_a_dock_takes_from(Along::Down)
-                > screen.the_side_a_dock_takes_from(Along::Across),
-            "a landscape screen has more width than height to give"
+            screen.width() > screen.height(),
+            "the smallest screen is a landscape one"
         );
     }
 

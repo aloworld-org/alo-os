@@ -447,7 +447,7 @@ mod tests {
         ("alo-desktops", "desktops.always.egress-indicator"),
         ("alo-displays", "displays.as-you-left-them"),
         ("alo-dividing", "dividing.place.left-half"),
-        ("alo-dock", "dock.edge.bottom"),
+        ("alo-dock", "dock.hiding.never"),
         ("alo-egress", "egress.destination.paired-machine"),
         ("alo-enrolling", "enrolling.that-does-not-open-this-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),

@@ -56,10 +56,9 @@ fn every_source_file() -> Vec<PathBuf> {
 /// Read as *what a person sees that a pan must not move*. Every one of these is
 /// painted above `crate::scene::trees` from the output's own size, and none of
 /// them is a frame on the plane.
-const THE_VIEWPORT_LAYER: [&str; 12] = [
+const THE_VIEWPORT_LAYER: [&str; 11] = [
     "desktop_raster.rs",
     "dock_raster.rs",
-    "status_items_raster.rs",
     "egress_status_raster.rs",
     "in_use_raster.rs",
     "notification_raster.rs",

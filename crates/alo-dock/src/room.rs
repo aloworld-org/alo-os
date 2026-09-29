@@ -17,7 +17,7 @@
 use alo_appearance::TextScale;
 
 use crate::measures::{
-    A_DOCK_MAY_TAKE_ONE_PART_IN, GAP, ICON, LABEL_EMS, LINE_IN_FIFTHS, MARGIN, TEXT_AT_ORDINARY,
+    A_DOCK_MAY_TAKE_ONE_PART_IN, GAP, ICON, LINE_IN_FIFTHS, MARGIN, TEXT_AT_ORDINARY,
 };
 
 /// How much room something takes, in logical pixels.
@@ -80,13 +80,6 @@ impl Room {
         )
     }
 
-    /// How wide a name needs to be beside an icon before it is worth showing at
-    /// all, which is [`LABEL_EMS`] of that text.
-    #[must_use]
-    pub fn a_name_beside_an_icon_at(text: TextScale) -> Self {
-        Self::pixels(Self::text_at(text).pixels.saturating_mul(LABEL_EMS))
-    }
-
     /// The side of one icon.
     #[must_use]
     pub const fn an_icon() -> Self {
@@ -99,22 +92,14 @@ impl Room {
         Self::pixels(MARGIN.saturating_add(ICON).saturating_add(MARGIN))
     }
 
-    /// How thick a dock that runs across the screen is, with a name under each
-    /// icon.
+    /// How thick the dock is with a name under each icon, which is the only
+    /// placement there is: ADR 0076 fixed the dock along the bottom, and
+    /// `a_dock_with_names_beside` left with the orientation that needed it.
     #[must_use]
     pub fn a_dock_with_names_under(text: TextScale) -> Self {
         Self::a_dock_of_icons()
             .and(Self::pixels(GAP))
             .and(Self::a_line_at(text))
-    }
-
-    /// How thick a dock that runs down the screen is, with a name beside each
-    /// icon.
-    #[must_use]
-    pub fn a_dock_with_names_beside(text: TextScale) -> Self {
-        Self::a_dock_of_icons()
-            .and(Self::pixels(GAP))
-            .and(Self::a_name_beside_an_icon_at(text))
     }
 
     /// The most a dock may take out of the side of the screen it sits on.
@@ -208,11 +193,11 @@ mod tests {
         assert!(Room::text_at(text(75)) < Room::text_at(text(100)));
     }
 
-    /// A line is taller than the text in it, and a name beside an icon is wider
-    /// than a line is tall — which is why the two orientations are worked out
-    /// separately rather than one being the other rotated.
+    /// A line is taller than the text in it, and a dock with names on it is
+    /// thicker than one without — which is what makes the ceiling a question
+    /// worth asking at all.
     #[test]
-    fn a_name_beside_an_icon_takes_more_room_than_a_name_under_one() {
+    fn a_line_is_taller_than_its_text_and_names_cost_room() {
         for percent in [75, 100, 125, 200, 300] {
             let size = text(percent);
             assert!(
@@ -220,8 +205,8 @@ mod tests {
                 "at {percent}% a line is not taller than its text"
             );
             assert!(
-                Room::a_dock_with_names_beside(size) > Room::a_dock_with_names_under(size),
-                "at {percent}% the two orientations want the same room"
+                Room::a_dock_with_names_under(size) > Room::a_dock_of_icons(),
+                "at {percent}% the names cost nothing"
             );
         }
     }
@@ -232,14 +217,10 @@ mod tests {
     #[test]
     fn nothing_gets_smaller_as_the_text_gets_bigger() {
         let (smallest, largest) = TextScale::range();
-        let mut previous = (Room::pixels(0), Room::pixels(0));
+        let mut previous = Room::pixels(0);
         for percent in smallest..=largest {
-            let size = text(percent);
-            let now = (
-                Room::a_dock_with_names_under(size),
-                Room::a_dock_with_names_beside(size),
-            );
-            assert!(now.0 >= previous.0 && now.1 >= previous.1, "at {percent}%");
+            let now = Room::a_dock_with_names_under(text(percent));
+            assert!(now >= previous, "at {percent}%");
             previous = now;
         }
     }

@@ -2,13 +2,30 @@
 //! may have open over the room the dock leaves.
 //!
 //! The windows are laid out in what is left of the display once the dock has
-//! taken its edge, so no window covers the dock or its status area. With one
-//! window open it has that room; with both, the room is shared along its longer
-//! side, and the window of what is running takes the half a person starts
-//! reading from. Each window's rows are `crate::running_rows` and
-//! `crate::filling_rows`, set out by `crate::desktop_list`.
+//! taken the bottom, so no window covers the dock. With one window open it has
+//! that room; with both, the room is shared along its longer side, and the window
+//! of what is running takes the half a person starts reading from. Each window's
+//! rows are `crate::running_rows` and `crate::filling_rows`, set out by
+//! `crate::desktop_list`.
+//!
+//! # The clock, the battery, the network and the volume are not drawn
+//!
+//! They were laid out inside the dock's status area, and [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+//! took the status area off the Dock: a clock is not something a person opens or
+//! brings into focus. **The promise is not withdrawn** — `docs/features.md` still
+//! carries it at v0.5 — but it has no location now, and
+//! `docs/autonomy/v0-5-evidence.md` records that it is owed one before it is owed
+//! an implementation. Drawing them somewhere else would be this file picking that
+//! location, which is the shell plan's to pick.
+//!
+//! `crate::status_items` is untouched and still decides what they *say*: it is the
+//! half that was never about where they go, and `alo-desktop` reads it.
+//!
+//! The egress indicator did not go with them. It has a corner of its own
+//! (`crate::egress_status_place`) and sits exactly where it sat.
 
-use alo_dock::{Dock, Edge};
+use alo_dock::Dock;
 use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
@@ -28,26 +45,26 @@ pub(crate) struct DesktopPicture {
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
     pub(crate) filling: ListPicture,
-    /// The clock, battery, network and volume, inside the dock's status area.
-    pub(crate) status: crate::status_items_raster::StatusPicture,
     /// How this display is divided, and what a drop would do.
     pub(crate) division: crate::division_raster::DivisionPicture,
 }
 
 /// What a desktop has on it, as the crates that decide each said it.
 ///
-/// One value rather than five arguments, because they are one thing: what is on
-/// this display now. A raster that took them loose would grow a sixth the next
-/// time a surface is added, and the order of five references is a mistake
+/// One value rather than four arguments, because they are one thing: what is on
+/// this display now. A raster that took them loose would grow a fifth the next
+/// time a surface is added, and the order of four references is a mistake
 /// waiting to be made.
+///
+/// **It held the status items until ADR 0076**, and losing one is what a value
+/// like this is for: the field went and every caller was named by the compiler
+/// rather than found by reading.
 #[derive(Clone, Copy)]
 pub(crate) struct Shown<'a> {
     /// The window of what is running.
     pub(crate) running: &'a ListShows,
     /// The window of what is filling the disk.
     pub(crate) filling: &'a ListShows,
-    /// The clock, battery, network and volume.
-    pub(crate) status: &'a crate::status_items::StatusItems,
     /// How this display is divided.
     pub(crate) division: &'a alo_dividing::Division,
     /// What letting go of a dragged window would do.
@@ -104,7 +121,6 @@ pub(crate) fn picture(
     let Shown {
         running,
         filling,
-        status,
         division,
         offer,
     } = shown;
@@ -125,8 +141,6 @@ pub(crate) fn picture(
     };
     let running = crate::desktop_list::picture(running, fonts, size, running_room, list)?;
     let filling = crate::desktop_list::picture(filling, fonts, size, filling_room, list)?;
-    let status =
-        crate::status_items_raster::picture(status, &dock_picture, palette.ink, palette.dock);
     // One is the scale this display is laid out at. A division is in logical
     // units and knows nothing about scale, so the multiplication happens here,
     // once, at the boundary.
@@ -136,27 +150,21 @@ pub(crate) fn picture(
         dock: dock_picture,
         running,
         filling,
-        status,
         division,
     })
 }
 
-/// The room the dock leaves, inset by `margin` on every side.
+/// The room the dock leaves above it, inset by `margin` on every side.
 fn room_beside(dock: &DockPicture, margin: i32) -> Rectangle<i32, Physical> {
     let (width, height) = dock.size;
-    let thick = match dock.layout.edge() {
-        Edge::Bottom | Edge::Top => dock.band.size.h,
-        Edge::Left | Edge::Right => dock.band.size.w,
-    };
-    let (x, y, w, h) = match dock.layout.edge() {
-        Edge::Bottom => (0, 0, width, height - thick),
-        Edge::Top => (0, thick, width, height - thick),
-        Edge::Left => (thick, 0, width - thick, height),
-        Edge::Right => (0, 0, width - thick, height),
-    };
+    let thick = dock.band.size.h;
     Rectangle::new(
-        (x + margin, y + margin).into(),
-        ((w - 2 * margin).max(0), (h - 2 * margin).max(0)).into(),
+        (margin, margin).into(),
+        (
+            (width - 2 * margin).max(0),
+            (height - thick - 2 * margin).max(0),
+        )
+            .into(),
     )
 }
 

@@ -295,39 +295,30 @@ one wallpaper was not enough. The promise is now that there is no wallpaper.*
 `crates/alo-dock/tests/dock_kept_in_its_own_file.rs`,
 `docs/autonomy/updates/appearance-dock-and-shortcuts-keep-their-own-files.md`
 
-**Still owed:** **the hiding, and the crate says so itself.**
-`crates/alo-dock/src/layout.rs` writes *whether it hides when a window needs the
-room is v0.5* at the place it would go, and nothing does it. The size is there:
-a dock is laid out on a screen at a text scale, the names give way to icons where
-there is not room and say so, and **the dock never takes more than its share** at
-any text size on any edge. `crates/alo-dock` belongs to
-`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md` and there is no
-task in it for the hiding.
+**Still owed:** **a screen to see it on**, and nothing else in this repository.
+
+The size is there: a dock is laid out on a screen at a text scale, the names give
+way to icons where there is not room and say so, and **the dock never takes more
+than its share** at any text size.
+
+**The hiding is there too, as of ADR 0076's change, and it was two-thirds there
+before it.** `crates/alo-dock/src/hiding.rs` has held the choice and the answer —
+four combinations, one of which is hidden — since 2026-09-27, and `Changes` wrote
+it to `dock.toml`. What was missing was the middle: nothing resolved a person's
+choice against what the release ships, so a written answer could not be read back,
+and the two strings for the rows a person picks between had no code that could say
+either of them. `Dock::hiding`, `Dock::showing` and `Hiding::said` are that middle,
+and `crates/alo-shell/src/settings_lines.rs` now draws the two rows.
+
+*This entry read **still owed: the hiding** and cited `layout.rs` writing* whether
+it hides when a window needs the room is v0.5 *at the place it would go. That
+sentence was stale from 2026-09-27; it survived because the thing it described was
+half-built, and half-built read as not built until the edge came out and left the
+hiding as the only setting there was.*
 
 *This promise had no box in `ROADMAP.md`'s v0.5 gate until 2026-09-26, and this
 entry read **Shown by: nothing** in its first draft — written off `dock.rs`'s
 opening line without opening `layout.rs`, which holds the sizing.*
-
-### Per display, so the dock can sit along the bottom of the laptop and down the side of the external screen
-
-**Shown by:** `crates/alo-dock/src/dock.rs`,
-`crates/alo-displays/src/wearing.rs`,
-`docs/autonomy/updates/the-dock-per-display.md`,
-`docs/autonomy/updates/several-displays-each-with-its-own-background-and-dock.md`
-
-**Still owed:** **a second screen.** The edge is per display:
-`alo_dock::Dock::edge_on` answers the exception a person made for this screen,
-then the edge they chose for everywhere, then the edge the release ships — the
-order `alo_appearance::Appearance::background_on` uses, so the two things a screen
-wears are decided the same way — and `alo_displays::Wearing::of` asks it once per
-screen with the same name it asks for that screen's background. Two tests hold the
-promise in its own words, in both crates. What is owed is a cable: nothing here
-has ever had a display attached, so the laptop along the bottom and the external
-screen down the side is arithmetic rather than something anybody has looked at.
-
-*This promise had no box in the v0.5 gate until 2026-09-26, and shared one with
-*the dock's size* until 2026-09-27, when it was paid and the other half of that
-box was not.*
 
 ### **Divide the screen** — drag a window to an edge to take half, a corner to take a quarter
 
@@ -492,25 +483,47 @@ promise in the group: do-not-disturb holds *every* notification, nothing shows o
 a locked machine, a notification cannot answer an approval, and the agent never
 reads one — four refusals, each tested. What is owed is the drawing.
 
-### Status area: clock, battery, network, volume, brightness — at the far end of the dock
+### Status area: clock, battery, network, volume, brightness
 
-**Shown by:** `docs/autonomy/updates/the-status-areas-four.md`,
-`docs/autonomy/updates/the-ordinary-desktop-drawn-dock-status-area-and-measuring-windows.md`
+**Shown by:** nothing.
 
-**Still owed:** a fifth. The report is *the status area's four*, and the promise
-names five — clock, battery, network, volume, brightness. Which one is absent is
-the lane's to say; this entry does not guess, and it does not let five be read out
-of a report that says four.
+**Still owed:** **a location, before an implementation.** It waits on
+`docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`,
+which took *at the far end of the dock, wherever the dock is* off this promise —
+a clock is not something a person opens or brings into focus, so it is not the
+Dock's — and handed the question *where does the status area go* to the shell's
+own plan, the smallest canvas worth showing. **The promise is not withdrawn.** A
+machine still needs those things.
 
-### The egress indicator lives in the status area, so "nothing has left this machine" sits where a person already glances
+**What went, and what this entry said before.** It read *shown by* two reports,
+and *still owed: a fifth* — four of the five were drawn, inside the dock's status
+area, by a raster in the shell that is deleted in the change carrying the
+record, because drawing them somewhere else would be a lane picking the location
+the record reserves. **So four things that were drawn are not drawn now.** The
+file that decides what a clock *says* is kept, since that was never the part
+about where it goes; the report below names it.
+
+**The fifth is still unnamed**, and that question outlived the drawing: the
+report was *the status area's four* and the promise names five. This entry does
+not guess which is absent, and it does not let five be read out of a report that
+says four.
+
+**The egress indicator did not go with them.** It is its own entry below, it has
+a corner of its own, and it sits where it sat.
+
+### The egress indicator sits at the far end of the dock, above it, so "nothing has left this machine" sits where a person already glances
 
 **Shown by:** `crates/alo-indicator/tests/the_egress_indicator_on_a_screen.rs`,
 `docs/autonomy/updates/the-egress-indicator-drawn-in-the-status-area.md`,
 `docs/autonomy/updates/the-egress-indicator-on-a-screen.md`
 
-**Still owed:** the screen it sits on. Drawn in the status area and measured; the
-sentence a person reads beside their clock is owed to a machine with a clock on
-it.
+**Still owed:** the screen it sits on. Drawn and measured; the sentence a person
+reads is owed to a machine with a display.
+
+*It was drawn* in the status area *until ADR 0076, which took the status area off
+the Dock. The indicator did not move — same corner, same pixels, and its test
+keeps the numbers it had before the record so that it can say so. What it is no
+longer beside is a clock, because nothing draws one.*
 
 ### A file manager, with trash, and archives that open
 

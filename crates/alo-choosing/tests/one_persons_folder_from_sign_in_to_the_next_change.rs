@@ -43,7 +43,7 @@ use alo_choosing::{
     Choosing, SESSION_NO_FOLDER, Settings, THE_FOLDER, THE_SETTINGS, the_persons_folder,
     where_it_is,
 };
-use alo_dock::{Dock, Edge};
+use alo_dock::{Dock, Hiding};
 use alo_shortcuts::{Action, Chord, Key, Modifier, Modifiers, Shortcuts};
 use alo_strings::{Language, Said, Strings};
 
@@ -202,7 +202,15 @@ impl Section for DockSection {
     }
 
     fn changed(mut drawn: Dock, second: bool) -> Dock {
-        drawn.set_edge(if second { Edge::Right } else { Edge::Left });
+        // Two different answers, because the walk's point is a *second* change
+        // over the first. `Never` is also what the release ships, and choosing
+        // it is still a change: the key is written, so the file records that
+        // this person decided rather than that nobody ever asked them.
+        drawn.set_hiding(if second {
+            Hiding::Never
+        } else {
+            Hiding::WhenAWindowNeedsTheRoom
+        });
         drawn
     }
 

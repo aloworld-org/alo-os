@@ -398,25 +398,6 @@ fn the_desktop(
     }
     let division = alo_dividing::Division::of(a_screen);
     let nothing_offered = alo_dividing::Offer::Nothing;
-
-    // **Fixed readings, deliberately.** What a person sees here comes from
-    // `alo-power`, `alo-networks`, `alo-sound` and `alo-formats` on their own
-    // machine and is handed to the shell; this walk asks whether the surface
-    // draws, not what this machine's battery is.
-    let status = alo_shell::StatusItems::shown(
-        "09:41".to_owned(),
-        Some(alo_power::Reading::taken(
-            alo_power::reading::Charge::reported(64)?,
-            alo_power::reading::Charging::Discharging,
-            None,
-            std::time::SystemTime::UNIX_EPOCH,
-        )),
-        alo_networks::Reaching::reported(
-            alo_networks::HowFar::AllOfIt,
-            alo_networks::Metered::NotSaid,
-        ),
-        Some(alo_sound::Volume::of(35)?),
-    );
     // Everything the desktop is handed that does not change between these four
     // steps, in one place, so each step names only what is different about it.
     let desk = TheDesk {
@@ -426,7 +407,6 @@ fn the_desktop(
         egress: &egress,
         running: &running,
         filling: &filling,
-        status: &status,
         division: &division,
         offer: &nothing_offered,
     };
@@ -558,8 +538,6 @@ struct TheDesk<'a> {
     running: &'a alo_shell::RunningWindow,
     /// The window of what is filling the disk.
     filling: &'a alo_shell::FillingWindow,
-    /// The clock, battery, network and volume.
-    status: &'a alo_shell::StatusItems,
     /// How this display is divided.
     division: &'a alo_dividing::Division,
     /// What a drop would do, which is nothing here.
@@ -580,7 +558,6 @@ impl<'a> TheDesk<'a> {
             egress: self.egress,
             running: self.running,
             filling: self.filling,
-            status: self.status,
             in_use: &[],
             notifications,
             capturing,

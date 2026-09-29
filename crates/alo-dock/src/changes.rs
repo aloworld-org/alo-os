@@ -7,43 +7,35 @@
 //! never touched it and no machine that did. An untouched machine has no
 //! `dock.toml` at all ([`crate::keeping`]).
 //!
-//! **There was one thing to change at v0.01, and that was not a mistake.** *The
-//! dock's size*, *whether it hides when a window needs the room* and *one dock
-//! per display* are all v0.5 in `docs/features.md`. A file with one key in it
-//! then was a file that gains keys additively later; a file with four keys in it
-//! then, three of which nothing read, would have been three settings somebody had
-//! to keep working for a release that had not been designed.
+//! **There is one thing to change, and it is not where the dock is.** [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+//! fixes the dock along the bottom edge, so *which edge* and *which edge on this
+//! screen* are not choices any more and are not stored. What is left is *whether
+//! it hides when a window needs the room*.
 //!
-//! **The second of those keys arrived on 2026-09-27, and additively as promised.**
-//! *Per display, so the dock can sit along the bottom of the laptop and down the
-//! side of the external screen* is the `[v0.5]` promise, and it is a display
-//! **singled out as an exception to the edge** — the third time this file takes
-//! `alo-appearance`'s shape, because that crate already made a display an
-//! exception to a background and two answers in this repository about what *per
-//! display* means would be one too many. A machine that never singled one out
-//! writes no such key and reads exactly as it did before.
+//! **A file that names an edge still reads.** `edge` and `displays` were written
+//! by earlier releases, and a person's `dock.toml` is not rewritten behind them
+//! — so both stay keys the file *may* have, with nothing behind them, and the
+//! dock is along the bottom whatever they say. That is in [`crate::keeping`],
+//! which is where the file's keys are declared; here they are simply absent from
+//! the private `Written` shape below, and serde skips a key no field claims.
 //!
-//! *The dock's size* and *whether it hides when a window needs the room* are
-//! still not here. `crate::layout` sizes it; the hiding has no code at all and
-//! says so where it would go.
+//! *The dock's size* is still not here. `crate::layout` sizes it.
 
 use serde::{Deserialize, Serialize};
 
-use alo_appearance::DisplayId;
-
-use crate::edge::Edge;
 use crate::hiding::Hiding;
 
 /// One thing a person can change about their dock, for a settings panel that
 /// offers *put it back*.
+///
+/// **One variant is not a mistake and not a placeholder.** It was two until ADR
+/// 0076 fixed the dock to the bottom edge; an enum with one variant here is an
+/// enum that gains variants additively when *the dock's size* arrives at v0.5,
+/// and it keeps the shape of the question — *which setting do you mean* —
+/// answerable by a panel that offers more than one row later.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Setting {
-    /// Which edge of the screen the dock is on, everywhere. Per-display
-    /// exceptions are their own, and [`Changes::forget_display`] is how one of
-    /// those goes back — `alo-appearance` says the same about a background, for
-    /// the same reason: *put the edge back* and *stop singling this screen out*
-    /// are two different things a person means.
-    Edge,
     /// Whether the dock gives way when a window needs the room. There is no
     /// per-display exception for it: a dock that hid on one screen and not
     /// another would be a dock a person cannot predict, and predicting where it
@@ -55,12 +47,8 @@ pub enum Setting {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Written", into = "Written")]
 pub struct Changes {
-    /// Which edge they moved it to, on every display they have not singled out.
-    edge: Option<Edge>,
     /// Whether they asked it to give way, if they said anything about it.
     hiding: Option<Hiding>,
-    /// The displays they singled out, oldest first, one entry each.
-    displays: Vec<(DisplayId, Edge)>,
 }
 
 impl Changes {
@@ -73,21 +61,18 @@ impl Changes {
     /// Whether nothing has been changed at all, which is what a fresh machine
     /// has, and what a missing file reads as.
     ///
-    /// **A display singled out counts.** A machine whose only change is one
-    /// screen's own edge has been changed, and a reader that said otherwise would
-    /// write no file for it and lose the change at the next sign-in.
+    /// **A file that only names an edge is untouched.** An edge is not a change
+    /// any more, so a machine whose `dock.toml` says nothing else has nothing to
+    /// keep — and the next write replaces that file with a format line, which is
+    /// how the dead key eventually leaves a person's folder without anybody
+    /// rewriting it behind them.
     #[must_use]
-    pub fn is_untouched(&self) -> bool {
-        self.edge.is_none() && self.hiding.is_none() && self.displays.is_empty()
-    }
-
-    /// Put the dock on this edge, on every display not singled out.
-    pub fn set_edge(&mut self, edge: Edge) {
-        self.edge = Some(edge);
+    pub const fn is_untouched(&self) -> bool {
+        self.hiding.is_none()
     }
 
     /// Say whether the dock gives way when a window needs the room.
-    pub fn set_hiding(&mut self, hiding: Hiding) {
+    pub const fn set_hiding(&mut self, hiding: Hiding) {
         self.hiding = Some(hiding);
     }
 
@@ -97,53 +82,12 @@ impl Changes {
         self.hiding
     }
 
-    /// Which edge they moved it to, if they moved it.
-    #[must_use]
-    pub const fn edge(&self) -> Option<Edge> {
-        self.edge
-    }
-
-    /// Single this display out, putting the dock on this edge of it alone.
-    ///
-    /// Replaces the exception if there is one, so a display appears once;
-    /// otherwise it goes on the end, which is what keeps [`Self::displays`]
-    /// oldest first.
-    pub fn set_edge_on(&mut self, display: DisplayId, edge: Edge) {
-        self.displays.retain(|(named, _)| *named != display);
-        self.displays.push((display, edge));
-    }
-
-    /// The edge they singled this display out for, if they singled it out.
-    #[must_use]
-    pub fn edge_on(&self, display: &DisplayId) -> Option<Edge> {
-        self.displays
-            .iter()
-            .find(|(named, _)| named == display)
-            .map(|(_, edge)| *edge)
-    }
-
-    /// Every display they singled out, oldest first.
-    pub fn displays(&self) -> impl Iterator<Item = (&DisplayId, Edge)> {
-        self.displays.iter().map(|(named, edge)| (named, *edge))
-    }
-
-    /// Stop singling this display out, putting it back to the edge they chose
-    /// for everywhere.
-    ///
-    /// Says whether there was anything to put back.
-    pub fn forget_display(&mut self, display: &DisplayId) -> bool {
-        let before = self.displays.len();
-        self.displays.retain(|(named, _)| named != display);
-        self.displays.len() != before
-    }
-
     /// Forget that this was ever changed, which puts it back to what the running
     /// release ships.
     ///
     /// Says whether there was anything to forget.
-    pub fn forget(&mut self, setting: Setting) -> bool {
+    pub const fn forget(&mut self, setting: Setting) -> bool {
         match setting {
-            Setting::Edge => self.edge.take().is_some(),
             Setting::Hiding => self.hiding.take().is_some(),
         }
     }
@@ -156,29 +100,25 @@ impl Changes {
 
 /// Changes as a settings file holds them: anything untouched is absent rather
 /// than present and null, so an untouched machine writes no keys at all.
+///
+/// **There is no `edge` field and no `displays` field**, and their absence is
+/// what makes a file that has them read: serde ignores a key no field claims, so
+/// a `dock.toml` written by an earlier release loads with its edge dropped
+/// rather than refused. [`crate::keeping`] is what keeps those two names
+/// recognised, since an unrecognised key *is* refused there.
 #[derive(Default, Serialize, Deserialize)]
 struct Written {
-    /// The edge, if it was moved.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    edge: Option<Edge>,
     /// Whether it gives way, if anything was said about it. Absent rather than
-    /// present and null, like every other key here, so a machine that has not
-    /// chosen writes exactly the file it wrote before this key existed.
+    /// present and null, so a machine that has not chosen writes exactly the
+    /// file it wrote before this key existed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     hiding: Option<Hiding>,
-    /// The displays singled out, if any were. Absent rather than an empty list,
-    /// so a machine that singled none out writes exactly the file it wrote
-    /// before this key existed.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    displays: Vec<(DisplayId, Edge)>,
 }
 
 impl From<Written> for Changes {
     fn from(written: Written) -> Self {
         Self {
-            edge: written.edge,
             hiding: written.hiding,
-            displays: written.displays,
         }
     }
 }
@@ -186,9 +126,7 @@ impl From<Written> for Changes {
 impl From<Changes> for Written {
     fn from(changes: Changes) -> Self {
         Self {
-            edge: changes.edge,
             hiding: changes.hiding,
-            displays: changes.displays,
         }
     }
 }
@@ -201,21 +139,21 @@ impl From<Changes> for Written {
 mod tests {
     use super::*;
 
-    /// The edge is recorded, replaced and forgotten, and *was it changed* is
+    /// A change is recorded, replaced and forgotten, and *was it changed* is
     /// answerable.
     #[test]
     fn a_change_is_recorded_replaced_and_forgotten() {
         let mut changes = Changes::untouched();
         assert!(changes.is_untouched());
-        assert_eq!(changes.edge(), None);
+        assert_eq!(changes.hiding(), None);
 
-        changes.set_edge(Edge::Left);
-        changes.set_edge(Edge::Top);
-        assert_eq!(changes.edge(), Some(Edge::Top));
+        changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        changes.set_hiding(Hiding::Never);
+        assert_eq!(changes.hiding(), Some(Hiding::Never));
         assert!(!changes.is_untouched());
 
-        assert!(changes.forget(Setting::Edge), "there was one to forget");
-        assert!(!changes.forget(Setting::Edge), "and not there twice");
+        assert!(changes.forget(Setting::Hiding), "there was one to forget");
+        assert!(!changes.forget(Setting::Hiding), "and not there twice");
         assert!(changes.is_untouched());
     }
 
@@ -228,24 +166,44 @@ mod tests {
         assert_eq!(serde_json::to_string(&Changes::untouched()).unwrap(), "{}");
 
         let mut changes = Changes::untouched();
-        changes.set_edge(Edge::Right);
+        changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
         let written = serde_json::to_string(&changes).unwrap();
-        assert_eq!(written, r#"{"edge":"Right"}"#);
+        assert_eq!(written, r#"{"hiding":"WhenAWindowNeedsTheRoom"}"#);
         assert_eq!(serde_json::from_str::<Changes>(&written).unwrap(), changes);
     }
 
-    /// A hand-edited file naming an edge that does not exist is refused where it
-    /// is read, rather than becoming a dock nobody can find.
+    /// **A file naming an edge reads, and the edge is ignored.** Every release
+    /// before ADR 0076 wrote `edge` for anybody who moved their dock, and a
+    /// person's own file is not rewritten behind them — so it has to load. It
+    /// loads as a machine that changed nothing, because an edge is no longer a
+    /// thing that can be changed.
+    ///
+    /// The value is not validated either: `"Middle"` was refused when there were
+    /// four edges to be one of, and refusing it now would be refusing a file over
+    /// a word nothing reads.
     #[test]
-    fn a_file_cannot_name_an_edge_there_is_not() {
-        assert!(serde_json::from_str::<Changes>(r#"{"edge":"Middle"}"#).is_err());
-        assert!(serde_json::from_str::<Changes>(r#"{"edge":3}"#).is_err());
-        assert_eq!(
-            serde_json::from_str::<Changes>(r#"{"edge":"Bottom"}"#)
-                .unwrap()
-                .edge(),
-            Some(Edge::Bottom)
-        );
+    fn a_file_naming_an_edge_reads_and_the_edge_is_ignored() {
+        for text in [
+            r#"{"edge":"Left"}"#,
+            r#"{"edge":"Middle"}"#,
+            r#"{"edge":3}"#,
+            r#"{"displays":[["DP-3","Left"]]}"#,
+        ] {
+            let changes = serde_json::from_str::<Changes>(text).unwrap();
+            assert!(changes.is_untouched(), "{text} was not read as untouched");
+        }
+    }
+
+    /// **And a file that names an edge *and* says something about hiding keeps
+    /// the half that still means something.** A person who moved their dock and
+    /// also asked it to give way does not lose the second because of the first.
+    #[test]
+    fn the_half_of_an_old_file_that_still_means_something_survives() {
+        let changes =
+            serde_json::from_str::<Changes>(r#"{"edge":"Top","hiding":"WhenAWindowNeedsTheRoom"}"#)
+                .unwrap();
+        assert_eq!(changes.hiding(), Some(Hiding::WhenAWindowNeedsTheRoom));
+        assert!(!changes.is_untouched());
     }
 
     /// Forgetting everything is one call, and it is the same as never having
@@ -253,7 +211,7 @@ mod tests {
     #[test]
     fn everything_can_be_put_back_at_once() {
         let mut changes = Changes::untouched();
-        changes.set_edge(Edge::Left);
+        changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
         changes.forget_everything();
         assert!(changes.is_untouched());
         assert_eq!(changes, Changes::untouched());

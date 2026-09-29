@@ -1,6 +1,24 @@
 //! The four things the status area shows, exactly as the crates that own them
 //! said them.
 //!
+//! # Nothing draws these at the moment
+//!
+//! [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+//! took the status area off the Dock — a clock is not something a person opens
+//! or brings into focus — and handed *where does it go* to
+//! `docs/autonomy/the-smallest-canvas-worth-showing.md`. The raster that laid
+//! these out inside the dock's band is deleted, because drawing them somewhere
+//! else would be picking the location that record reserves.
+//!
+//! **This file is kept, and deliberately.** What a clock *says* was never the
+//! half that was about where it goes: the arrangement below — every value
+//! arrives from the crate that owns it, and nothing here measures — is the part
+//! that will be true wherever the status area ends up. `alo-desktop` still reads
+//! it. `docs/autonomy/v0-5-evidence.md` carries the promise as **owed a location
+//! before an implementation**, which is the entry to read before building
+//! against this.
+//!
 //! The clock, the battery, the network and the volume. **Not one of them is
 //! measured here and not one of them is decided here** — each arrives as the
 //! owning crate's own value, and this file's whole job is to hold them and to
@@ -56,6 +74,21 @@ pub struct StatusItems {
     volume: Option<Volume>,
 }
 
+// ADR 0076 removed the raster that drew these, so nothing outside this crate's
+// own tests reads them. What a clock says is kept while the shell's plan decides
+// where the status area goes, and `docs/autonomy/v0-5-evidence.md` records the
+// promise as owed a location before an implementation.
+//
+// `cfg_attr(not(test), ...)` rather than a bare `expect`: the tests below *do*
+// use these, so in a test build the lint never fires and an unconditional
+// expectation is itself a warning.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "kept while the status area is owed a location; see v0-5-evidence.md"
+    )
+)]
 impl StatusItems {
     /// The four readings, as they were handed over.
     pub fn shown(

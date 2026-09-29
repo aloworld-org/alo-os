@@ -42,7 +42,6 @@ fn drawn(
         crate::desktop_raster::Shown {
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
-            status: crate::desktop_testing::a_laptops_status(),
             division: crate::desktop_testing::an_undivided_display(),
             offer: crate::desktop_testing::nothing_offered(),
         },
@@ -61,10 +60,11 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
             .collect::<Vec<_>>()
     };
     let mut colours = solids(&picture.dock.solids);
-    // The status area is on the dock and is painted with it, so the promise
-    // this walk exists for — not one pixel of the desktop is the agent's
-    // colour — covers the clock, the battery, the network and the volume too.
-    colours.extend(solids(&picture.status.solids));
+    // The clock, the battery, the network and the volume were painted with the
+    // dock and were covered by this walk's promise — not one pixel of the
+    // desktop is the agent's colour. ADR 0076 took the status area off the Dock
+    // and nothing draws them now, so there is nothing of theirs to check here
+    // until the shell plan says where they go.
     // And the division — its rules and the outline a drop would take are on the
     // desktop, so the promise that none of it is the agent's colour covers them.
     colours.extend(solids(&picture.division.solids));
@@ -160,17 +160,16 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
 fn no_window_covers_the_dock_and_two_share_the_room() {
     let (running, filling, _folder) = both_open();
     for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-        for edge in Edge::ALL {
-            let mut dock = Dock::shipped();
-            dock.set_edge(edge);
+        {
+            let dock = Dock::shipped();
             let look = noon_look(&an_appearance(), reading);
             let picture = drawn(&dock, look, &running, &filling, (1920, 1080)).unwrap();
             let band = picture.dock.band;
             let one = picture.running.panel.unwrap();
             let other = picture.filling.panel.unwrap();
-            assert!(band.intersection(one).is_none(), "{edge:?}");
-            assert!(band.intersection(other).is_none(), "{edge:?}");
-            assert!(one.intersection(other).is_none(), "{edge:?}");
+            assert!(band.intersection(one).is_none());
+            assert!(band.intersection(other).is_none());
+            assert!(one.intersection(other).is_none());
             match reading {
                 Direction::LeftToRight => assert!(one.loc.x < other.loc.x),
                 Direction::RightToLeft => assert!(one.loc.x > other.loc.x),

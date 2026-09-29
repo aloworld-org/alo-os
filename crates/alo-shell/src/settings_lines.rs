@@ -8,7 +8,7 @@
 //!   provider's model and the provider's name, or a paired machine's identity —
 //!   the person's own data, never translated;
 //! - **appearance** and **the dock**: `alo_appearance::Accent::said` and
-//!   `alo_dock::Edge::said`;
+//!   `alo_dock::Hiding::said`;
 //! - **shortcuts**: `alo_shortcuts::Action::said`, and the chord as
 //!   `alo_shortcuts::Chord::shown` writes it — nothing beside an action with no
 //!   shortcut;
@@ -155,12 +155,12 @@ fn dock(open: &Open, strings: &Strings) -> SectionWords {
     }
     said.extend(section.told().map(str::to_owned));
     let lines = if section.at().is_some() {
-        alo_dock::Edge::ALL
+        alo_dock::Hiding::ALL
             .into_iter()
-            .map(|edge| LineWords {
-                row: Some(SettingsRow::Edge(edge)),
-                parts: vec![edge.said(strings).into_text()],
-                chosen: section.drawn().edge() == edge,
+            .map(|hiding| LineWords {
+                row: Some(SettingsRow::Hiding(hiding)),
+                parts: vec![hiding.said(strings).into_text()],
+                chosen: section.drawn().hiding() == hiding,
             })
             .collect()
     } else {

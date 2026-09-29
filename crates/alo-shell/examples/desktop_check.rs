@@ -34,7 +34,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_access::TurnedOn;
     use alo_appearance::{Accent, Appearance, Following, Shipped, TimeOfDay};
     use alo_capability::Grantee;
-    use alo_dock::{Dock, Edge};
+    use alo_dock::Dock;
     use alo_egress::{Destination, EgressPolicy, Indicator, Leaving, Why};
     use alo_indicator::{Drew, Indicating};
     use alo_measuring::Reading;
@@ -100,26 +100,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     filling: &FillingWindow,
                     nested: &mut Nested|
      -> Result<(), Box<dyn std::error::Error>> {
-        // **Fixed readings, and deliberately so.** This probe asks whether the
-        // compositor draws a frame on a real display, not what this machine's
-        // battery is: the numbers a person sees come from `alo-power`,
-        // `alo-sound`, `alo-networks` and `alo-formats` on their own machine,
-        // and are handed to the shell rather than read by it. A laptop's four,
-        // so the battery is present and the status area lays out all of them.
-        let status = alo_shell::StatusItems::shown(
-            "09:41".to_owned(),
-            Some(alo_power::Reading::taken(
-                alo_power::reading::Charge::reported(64)?,
-                alo_power::reading::Charging::Discharging,
-                None,
-                std::time::SystemTime::UNIX_EPOCH,
-            )),
-            alo_networks::Reaching::reported(
-                alo_networks::HowFar::AllOfIt,
-                alo_networks::Metered::NotSaid,
-            ),
-            Some(alo_sound::Volume::of(35)?),
-        );
         // A display nobody has divided, which is what this probe's is: the
         // Server holds no division yet and the session that will is a task of
         // its own.
@@ -127,9 +107,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             alo_dividing::area::Point::at(0, 0),
             alo_dividing::area::Size::of(1920, 1080),
         )?);
-        for edge in Edge::ALL {
-            let mut dock = Dock::shipped();
-            dock.set_edge(edge);
+        {
+            let dock = Dock::shipped();
             for now in times {
                 for reading in [Direction::LeftToRight, Direction::RightToLeft] {
                     let until = Instant::now() + Duration::from_millis(60);
@@ -153,7 +132,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 egress,
                                 running,
                                 filling,
-                                status: &status,
                                 in_use: &[],
                                 notifications: &[],
                                 capturing: None,

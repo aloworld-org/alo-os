@@ -26,7 +26,7 @@
 //! | [`warmth`] | How warm a screen is drawn, and what that does to every colour on it |
 //! | [`nightly`] | When night light is on: never, a schedule, or the sun |
 //! | [`night_light`] | Night light as a person has it set, and what it is doing now |
-//! | [`wearing`] | The background, the dock edge and the warmth each screen wears |
+//! | [`wearing`] | The background and the warmth each screen wears |
 //! | [`plugged_into`] | What a screen that says nothing about itself is called, and never the socket's own name |
 //! | [`notes`] | What a person is told about their screens |
 //! | [`words`] | Every string this crate can say, and the English beside each |
