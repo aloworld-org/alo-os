@@ -33,6 +33,20 @@
 //! **Asking.** Nothing here opens a socket, and the list of machines permits
 //! nothing at all.
 //!
+//! # Work sent to another machine
+//!
+//! [`TheWork`] is what this machine has asked another of the person's machines
+//! to do. What crosses is [`AGoal`] — **words, with nowhere to put a program, an
+//! argument or a path** — because the working machine decides how, under its own
+//! rules. A struct with somewhere to put an argument list is a command protocol
+//! whatever its documentation says.
+//!
+//! The record lives on the machine that asked, so a result comes back here
+//! because there is nowhere else it could be addressed. And a result arriving
+//! after the person stopped something is refused rather than kept: keeping it
+//! would undo the stop quietly, which is the one outcome pressing stop rules
+//! out.
+//!
 //! # What a person grants is separate, and deliberately so
 //!
 //! [`Driving`] is whether the person's agent may drive one of their machines,
@@ -51,6 +65,7 @@ pub mod machine;
 pub mod machines;
 pub mod reaching;
 pub mod refusing;
+pub mod sending;
 pub mod words;
 
 pub use driving::{Driving, MayDrive, WHAT_IT_CANNOT_ENUMERATE};
@@ -58,4 +73,5 @@ pub use machine::{AMachine, AT_MOST, TheName};
 pub use machines::TheMachines;
 pub use reaching::Reaching;
 pub use refusing::NotElsewhere;
+pub use sending::{AGoal, APieceOfWork, AT_MOST_A_GOAL, HowItIsGoing, TheWork, WorkId};
 pub use words::{declare_into, elsewhere_words};

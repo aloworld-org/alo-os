@@ -592,9 +592,17 @@ elsewhere.not-added.name-too-long	That name is longer than {at_most} characters,
 elsewhere.not-added.unnamed	Give this machine a name you will recognise
 elsewhere.not-given.already-driving	Your agent already has this machine — change when it ends instead
 elsewhere.not-given.ends-before-it-begins	Choose a time after now for this to end
+elsewhere.not-sent.goal-too-long	That is longer than {at_most} characters — say the goal, and let the machine work out the rest
+elsewhere.not-sent.no-goal	Say what you want this machine to do
 elsewhere.reaching.answered	Answered
 elsewhere.reaching.did-not-answer	Did not answer
 elsewhere.reaching.not-asked-yet	Not asked yet
+elsewhere.work.came-back	Done
+elsewhere.work.could-not-be-sent	Could not be sent
+elsewhere.work.sent	Sent
+elsewhere.work.stopped	Stopped
+elsewhere.work.stopped-before-it-came-back	You stopped this work, so the result that arrived afterwards was not kept
+elsewhere.work.working	Working
 enrolling.choose-a-passphrase	choose a passphrase you will type when this machine starts
 enrolling.choose-a-pin	choose a PIN you will type when this machine starts
 enrolling.it-is-already-open	this disk is already open
