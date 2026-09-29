@@ -2443,12 +2443,31 @@ sorted the same way v0.01 now is.
         each.
         **What is not there is the bracket.** `alo-keeping-up/src/undoing.rs`
         says it plainly: *on a machine, every one of these three answers not yet
-        on this machine*. Nothing snapshots a folder before a turn changes it,
-        because ADR 0045's sixth term puts the filesystem at install —
-        **installer task 11, `btrfs`, has not landed** — and
-        `updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md` is the
-        finding that says so. Every verb refuses honestly rather than pretending,
-        which is the right behaviour and is not the promise
+        on this machine*. Nothing snapshots a folder before a turn changes it.
+        **The filesystem is no longer the reason, and this entry said it was
+        until 2026-09-29.** ADR 0045's sixth term put the filesystem at install
+        and installer task 11 landed it on 2026-09-21:
+        `alo_image::THE_ONLY_FILESYSTEM` is `btrfs`,
+        `crates/alo-installing/src/writing.rs` installs with
+        `--filesystem btrfs`, and
+        `crates/alo-image/tests/one_filesystem_and_it_can_hold_an_undo.rs` makes a
+        second filesystem on the road to a person's disk a failing test.
+        **What now stands in the way is what booting that machine measured**, and
+        it is three things in three other lanes. A person's home lands in
+        `/var/home`, which is an ordinary directory and **not a subvolume**, so
+        there is nothing for a snapshot to be of — making each home a subvolume is
+        the accounts lane's. Nothing brackets a turn. And removing a snapshot
+        needs `CAP_SYS_ADMIN`, because `bootc install` sets no
+        `user_subvol_rm_allowed` and we add no mount option of our own — a cost
+        ADR 0045 did not anticipate, and one its expiry window, its
+        oldest-go-first under disk pressure and its *forgetting is one act* all
+        now need a privileged remover for.
+        `docs/autonomy/updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md`
+        is the finding that opened the question and
+        `docs/autonomy/updates/a-disk-that-can-hold-an-undo.md` the run that
+        closed its first half. A machine already installed on ext4 is not
+        converted and does not claim an undo. Every verb refuses honestly rather
+        than pretending, which is the right behaviour and is not the promise
   - [ ] **On the machine.**
         a machine installed on a filesystem that can hold a snapshot, and a
         person putting something back
