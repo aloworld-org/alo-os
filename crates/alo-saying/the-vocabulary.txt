@@ -584,6 +584,7 @@ egress.leaving.sending	{agent} is sending something to {destination}
 egress.policy.nothing-leaves	this machine is set to let nothing leave, and {destination} is somewhere else
 egress.policy.outside-the-building	this machine is set to keep everything in the building, and {destination} is outside it
 egress.policy.outside-the-region	this machine is set to reach {region} only, and {destination} does not meet that
+elsewhere.driving.ended	Your agent's use of this machine has ended
 elsewhere.driving.may-drive	Your agent may use this machine
 elsewhere.driving.may-not-drive	Your agent may not use this machine
 elsewhere.driving.what-it-cannot-enumerate	This lets the agent do anything on that machine that you could do there. Unlike every other permission you give, this one cannot list what it allows

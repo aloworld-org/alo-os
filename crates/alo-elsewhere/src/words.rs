@@ -128,6 +128,9 @@ pub const MAY_DRIVE: &str = "elsewhere.driving.may-drive";
 /// The key of [`MAY_NOT_DRIVE_WORD`].
 pub const MAY_NOT_DRIVE: &str = "elsewhere.driving.may-not-drive";
 
+/// The key of [`DRIVING_ENDED_WORD`].
+pub const DRIVING_ENDED: &str = "elsewhere.driving.ended";
+
 /// The key of [`ENDS_BEFORE_IT_BEGINS_WORD`].
 pub const ENDS_BEFORE_IT_BEGINS: &str = "elsewhere.not-given.ends-before-it-begins";
 
@@ -165,6 +168,17 @@ pub const MAY_NOT_DRIVE_WORD: Word =
         "Beside one machine in a list of what the person has granted, when the grant has ended or \
          was never given. It is the ordinary state and must not read as a fault or a refusal — \
          nothing has gone wrong, the agent simply does not have this machine.",
+    );
+
+/// A grant that was given and has since ended on its own.
+pub const DRIVING_ENDED_WORD: Word =
+    Word::saying(DRIVING_ENDED, "Your agent's use of this machine has ended").noting(
+        "Beside one machine in the person's settings, where they gave their agent that machine and \
+     the time they set has run out. It must NOT be merged with the string for a machine the \
+     agent never had: one is a machine they opened and which has since closed on its own exactly \
+     as intended, the other is one they never opened, and a person reading their own settings is \
+     entitled to tell those apart. Nothing has gone wrong here — do not translate it as an error \
+     or as something expiring unexpectedly.",
     );
 
 /// A grant whose end is not after its beginning.
@@ -322,7 +336,8 @@ pub const ON_ANOTHER_MACHINE_WORD: Word = Word::saying(ON_ANOTHER_MACHINE, "On a
     );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 21] = [
+pub const EVERY_WORD: [Word; 22] = [
+    DRIVING_ENDED_WORD,
     ANSWERED_WORD,
     DID_NOT_ANSWER_WORD,
     NOT_ASKED_YET_WORD,

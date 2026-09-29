@@ -85,6 +85,7 @@
 //! presentation.
 
 pub mod as_a_window;
+pub mod changing;
 pub mod driving;
 pub mod machine;
 pub mod machines;
@@ -95,6 +96,7 @@ pub mod sending;
 pub mod words;
 
 pub use as_a_window::{A_MACHINES_APP, WhichMachines, an_app_for};
+pub use changing::{ARow, Change, TheRows, WhatTheAgentHas, carry_out};
 pub use driving::{Driving, MayDrive, WHAT_IT_CANNOT_ENUMERATE};
 pub use machine::{AMachine, AT_MOST, TheName};
 pub use machines::TheMachines;
