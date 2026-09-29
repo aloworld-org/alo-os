@@ -92,7 +92,7 @@ go. That is why the gate's single box for the two promises had to become **two
 boxes** before either could be true, and why the gate now reads 27 of 96 rather
 than 26 of 93. A box grouping two promises cannot say that one of them is paid,
 which is the argument
-`updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md` makes for each
+`docs/autonomy/updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md` makes for each
 box naming the promises it answers — made here by a box rather than in prose.
 
 ## The gate

@@ -67,6 +67,25 @@
 //! makes a demand on writing at the same time: keep the repository's name with
 //! the number it qualifies, because a reader cannot scroll up for it either.
 //!
+//! # The other family of document this repository points into
+//!
+//! An ADR is not the only pointer a reader believes without opening. `ROADMAP.md`
+//! offers task reports as the evidence for its boxes, and the reports cite each
+//! other, and a filename looks like a fact for the same reason a number does. So
+//! [`reports`] holds those citations to the same two things: that the document
+//! exists, and that the citation can be followed by something other than a person
+//! who already knows where the reports live.
+//!
+//! It is here rather than in `alo-reconciling` because it is the same question
+//! this crate already asks — *does this pointer land* — and because
+//! `alo-reconciling` asks a different one. That crate's `evidence.rs` does check
+//! that a report offered as evidence is there, but only for the entries of a
+//! ledger; and its `the_gate.rs` reads report names out of prose deliberately
+//! **by filename alone**, because its job there is to match a report against the
+//! task it belongs to rather than to resolve a path. Neither is wrong and neither
+//! was ever asked whether the repository's citations can be followed, which is how
+//! 46 of them came not to be.
+//!
 //! # It says nothing to a person
 //!
 //! Nothing here reaches a screen. The reader of a [`Finding`] is whoever wrote
@@ -93,6 +112,7 @@ pub mod decisions;
 pub mod finding;
 pub mod holding;
 pub mod naming;
+pub mod reports;
 
 pub use citation::{Citation, Named};
 pub use citing::cited_in;

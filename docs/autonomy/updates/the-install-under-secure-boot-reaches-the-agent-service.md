@@ -11,7 +11,7 @@ release pinned now — `0.0.4` at
 `sha256:48bd5f319abcecfa832eb9a5b0b2f7cd06815b1c30c43b781499500ec14c3858`, revision
 `b41b4b5e`. The run is pasted below.
 
-Follows `updates/the-install-under-secure-boot-does-not-fit-a-workers-window.md`
+Follows `docs/autonomy/updates/the-install-under-secure-boot-does-not-fit-a-workers-window.md`
 (the 2026-09-18 attempt on the third PC), which is not edited here: what it measured
 was true of that machine, and this run does not contradict it.
 
@@ -138,7 +138,7 @@ is fixed
 This is the first time the line has been seen on a machine installed from a **released**
 image rather than from a scratch disk, so it is worth recording that it survived into
 0.0.4 — but it is **not** a defect and it is not being filed as one.
-`updates/the-agent-service-can-reach-the-boundary-on-an-installed-disk.md` already
+`docs/autonomy/updates/the-agent-service-can-reach-the-boundary-on-an-installed-disk.md` already
 recorded it on 2026-09-16 with the reason: **no translation exists in this repository
 yet.** Checked again here — there is no `.toml` translation anywhere in the tree —
 so there is nothing for the image to carry, `alo-saying` is correctly reporting an

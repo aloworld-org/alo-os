@@ -55,7 +55,7 @@ to find a disagreement with something else, never as the answer.
   GNOME Text Editor 50.1, Loupe 50.0, Papers, and Ptyxis 50.1 as a terminal
   `Shipped::decided` refuses the list without unless no agent can be granted it
   (ADR 0043) — each with a licence, a source and the version it was decided at,
-  held by a test and explained in `updates/what-a-fresh-machine-has.md`. Both code
+  held by a test and explained in `docs/autonomy/updates/what-a-fresh-machine-has.md`. Both code
   halves are now ticked and what is owed moved to the machine half, which is the
   honest place: nothing installs that list yet.
 - **A box that withdrew a wrong claim was being read as still making it.**

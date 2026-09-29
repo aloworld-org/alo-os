@@ -46,7 +46,7 @@ No test weakens a production or publication gate.
 
 The pending painter and smaller profiles are preserved. Fast-forwarded from
 `4077d9e` to Claude's `8096910`; its five files did not overlap the dirty work.
-Reviewed `updates/a-real-keyring-answers.md` for integration: contributor reports
+Reviewed `docs/autonomy/updates/a-real-keyring-answers.md` for integration: contributor reports
 12 secret-store checks including real DH retrieval, Missing and schema isolation;
 the real-bus-with-no-service, locked/denied, daemon/HTTPS and lifetime/concurrency
 continuations remain unfinished. No service/package change from that report was
@@ -57,7 +57,7 @@ Full combined-tree Windows/Linux/kernel and painter graphics gates passed at
 new ignored test was added. Claude then published `9109875`; it was integrated
 by another non-overlapping fast-forward and the full combined-tree re-gate started.
 
-Reconciled `updates/the-four-refusals-against-a-real-store.md` precisely: real
+Reconciled `docs/autonomy/updates/the-four-refusals-against-a-real-store.md` precisely: real
 Locked and Denied fixtures plus error-name classification, not proof of all four
 states against a real store. Unavailable still has socket-shaped coverage, and
 the no-service-on-a-live-bus path remains unproven. The refusal type's no-send
@@ -69,7 +69,7 @@ Publication and desktop restart wait for the new combined-tree gates.
 Those complete `9109875` gates passed, including graphics. A second incoming
 publication, `c4e20c7`, was then fast-forwarded without overlap and a third complete
 combined-tree run started (`integrated-c4-*` logs). Reviewed its
-`updates/a-bus-with-nothing-on-it.md`: a fixture starts a live bus without starting
+`docs/autonomy/updates/a-bus-with-nothing-on-it.md`: a fixture starts a live bus without starting
 a keyring, proves bus liveness and name absence, then asserts Unavailable promptly.
 This supersedes the previously open empty-bus case; it does not complete daemon
 credential wiring, HTTPS, lifetime/concurrency or logout. No new release claim.

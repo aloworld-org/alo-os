@@ -7,7 +7,7 @@
 code an earlier worker on this checkout left in the tree at the ninety-minute limit
 **Status:** ready for integration.
 
-Follows `updates/with-secure-boot-on-the-staged-loader-starts.md`, which found the
+Follows `docs/autonomy/updates/with-secure-boot-on-the-staged-loader-starts.md`, which found the
 page fault and the unread choice and is not edited here.
 
 ## What this task ends at
