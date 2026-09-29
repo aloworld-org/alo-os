@@ -25,6 +25,20 @@ pub enum NotElsewhere {
     /// A grant over that machine already exists.
     #[error("that machine is already granted to the agent")]
     AlreadyDriving,
+    /// Nothing was left of the goal after the spaces either side came off.
+    #[error("work needs a goal saying what is wanted")]
+    NoGoal,
+    /// The goal is longer than what crosses.
+    #[error("that goal is {how_long} characters and the most is {at_most}")]
+    GoalTooLong {
+        /// How long the goal is, in characters.
+        how_long: usize,
+        /// The most a goal may be.
+        at_most: usize,
+    },
+    /// A result arrived for work the person had stopped.
+    #[error("that work was stopped before its result arrived")]
+    ItWasStopped,
 }
 
 impl NotElsewhere {
@@ -40,6 +54,9 @@ impl NotElsewhere {
             Self::AlreadyAdded => words::ALREADY_ADDED,
             Self::EndsBeforeItBegins => words::ENDS_BEFORE_IT_BEGINS,
             Self::AlreadyDriving => words::ALREADY_DRIVING,
+            Self::NoGoal => words::NO_GOAL,
+            Self::GoalTooLong { .. } => words::GOAL_TOO_LONG,
+            Self::ItWasStopped => words::IT_WAS_STOPPED,
         }
     }
 }
@@ -60,6 +77,12 @@ mod tests {
             NotElsewhere::AlreadyAdded,
             NotElsewhere::EndsBeforeItBegins,
             NotElsewhere::AlreadyDriving,
+            NotElsewhere::NoGoal,
+            NotElsewhere::GoalTooLong {
+                how_long: 501,
+                at_most: 500,
+            },
+            NotElsewhere::ItWasStopped,
         ];
         let mut seen = Vec::new();
         for refusal in &every {
@@ -67,7 +90,7 @@ mod tests {
             assert!(!seen.contains(&word), "two refusals share {word}");
             seen.push(word);
         }
-        assert_eq!(seen.len(), 5, "a refusal was added without a sentence");
+        assert_eq!(seen.len(), 8, "a refusal was added without a sentence");
     }
 
     /// **The developer's sentence and the person's are not the same string.**

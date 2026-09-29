@@ -191,8 +191,107 @@ pub const ALREADY_DRIVING_WORD: Word = Word::saying(
      in fact widening has not been told what they did.",
 );
 
+// ---------------------------------------------------------------------------
+// How work sent to another machine is going — [`crate::HowItIsGoing`]. Read in
+// a list of what the person's machines are doing for them.
+// ---------------------------------------------------------------------------
+
+/// The key of [`WORK_SENT_WORD`].
+pub const WORK_SENT: &str = "elsewhere.work.sent";
+
+/// The key of [`WORK_WORKING_WORD`].
+pub const WORK_WORKING: &str = "elsewhere.work.working";
+
+/// The key of [`WORK_CAME_BACK_WORD`].
+pub const WORK_CAME_BACK: &str = "elsewhere.work.came-back";
+
+/// The key of [`WORK_STOPPED_WORD`].
+pub const WORK_STOPPED: &str = "elsewhere.work.stopped";
+
+/// The key of [`WORK_COULD_NOT_BE_SENT_WORD`].
+pub const WORK_COULD_NOT_BE_SENT: &str = "elsewhere.work.could-not-be-sent";
+
+/// The key of [`NO_GOAL_WORD`].
+pub const NO_GOAL: &str = "elsewhere.not-sent.no-goal";
+
+/// The key of [`GOAL_TOO_LONG_WORD`].
+pub const GOAL_TOO_LONG: &str = "elsewhere.not-sent.goal-too-long";
+
+/// The key of [`IT_WAS_STOPPED_WORD`].
+pub const IT_WAS_STOPPED: &str = "elsewhere.work.stopped-before-it-came-back";
+
+/// Work handed over, with the other machine not yet saying it has started.
+pub const WORK_SENT_WORD: Word = Word::saying(WORK_SENT, "Sent").noting(
+    "Beside one piece of work in a list of what the person's machines are doing for them. It \
+     means handed over and not yet begun, as far as this machine knows. One or two words: it \
+     sits in a row, not in a sentence.",
+);
+
+/// Work the other machine has started.
+pub const WORK_WORKING_WORD: Word = Word::saying(WORK_WORKING, "Working").noting(
+    "Beside one piece of work in a list of what the person's machines are doing for them. The \
+     other machine has begun. Present continuous if the language has one — it is happening now, \
+     and the person may still stop it.",
+);
+
+/// Work that finished, with its result here.
+pub const WORK_CAME_BACK_WORD: Word = Word::saying(WORK_CAME_BACK, "Done").noting(
+    "Beside one piece of work in a list of what the person's machines are doing for them. It \
+     finished and the result is on THIS machine, the one that asked — never on the machine that \
+     did the work. It says nothing about whether the result is good, only that it is here.",
+);
+
+/// Work the person stopped.
+pub const WORK_STOPPED_WORD: Word = Word::saying(WORK_STOPPED, "Stopped").noting(
+    "Beside one piece of work the person stopped. Stopped by them, not failed — the translation \
+     must not read as an error or a crash. Nothing went wrong; they changed their mind.",
+);
+
+/// Work that never reached the other machine.
+pub const WORK_COULD_NOT_BE_SENT_WORD: Word =
+    Word::saying(WORK_COULD_NOT_BE_SENT, "Could not be sent").noting(
+        "Beside one piece of work that never reached the machine it was meant for. It stays in \
+         the list rather than disappearing, because a list that drops what went wrong reads as \
+         *everything is fine*. It is about the sending, not about the other machine being \
+         broken.",
+    );
+
+/// Work cannot be sent without saying what is wanted.
+pub const NO_GOAL_WORD: Word = Word::saying(NO_GOAL, "Say what you want this machine to do")
+    .noting(
+        "Shown where a person is sending work to another of their machines and has said nothing. \
+         It asks for the thing it needs. What crosses is a goal in the person's own words — not \
+         a command, not a program name — so the wording must invite a sentence rather than an \
+         instruction.",
+    );
+
+/// A goal longer than what crosses.
+pub const GOAL_TOO_LONG_WORD: Word = Word::saying(
+    GOAL_TOO_LONG,
+    "That is longer than {at_most} characters — say the goal, and let the machine work out the \
+     rest",
+)
+.noting(
+    "Shown while a person types what they want another of their machines to do. The second half \
+     is the half that matters: the limit is not meanness, it is that a goal is what is wanted \
+     rather than instructions for doing it. {at_most} is a plain whole number with no sign or \
+     separator on it.",
+);
+
+/// A result that arrived after the person stopped the work.
+pub const IT_WAS_STOPPED_WORD: Word = Word::saying(
+    IT_WAS_STOPPED,
+    "You stopped this work, so the result that arrived afterwards was not kept",
+)
+.noting(
+    "Read by somebody who stopped a piece of work and is being told a result turned up anyway \
+     and was discarded. It must read as the machine keeping their decision, not as something \
+     lost by accident: they ruled this out, and it stayed ruled out. Do not translate it as an \
+     error.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 11] = [
+pub const EVERY_WORD: [Word; 19] = [
     ANSWERED_WORD,
     DID_NOT_ANSWER_WORD,
     NOT_ASKED_YET_WORD,
@@ -204,6 +303,14 @@ pub const EVERY_WORD: [Word; 11] = [
     MAY_NOT_DRIVE_WORD,
     ENDS_BEFORE_IT_BEGINS_WORD,
     ALREADY_DRIVING_WORD,
+    WORK_SENT_WORD,
+    WORK_WORKING_WORD,
+    WORK_CAME_BACK_WORD,
+    WORK_STOPPED_WORD,
+    WORK_COULD_NOT_BE_SENT_WORD,
+    NO_GOAL_WORD,
+    GOAL_TOO_LONG_WORD,
+    IT_WAS_STOPPED_WORD,
 ];
 
 /// What can go wrong declaring this crate's words.
@@ -332,6 +439,37 @@ mod tests {
     fn the_sentences_with_a_gap_in_them_name_it() {
         assert!(NAME_TOO_LONG_WORD.says().contains("{at_most}"));
         assert!(ALREADY_ADDED_WORD.says().contains("{called}"));
+        assert!(GOAL_TOO_LONG_WORD.says().contains("{at_most}"));
+    }
+
+    /// **The result comes back to the machine that asked**, and the sentence
+    /// for *done* tells a translator so. A translation implying the result is
+    /// on the machine that did the work would send somebody looking for it in
+    /// the wrong place.
+    #[test]
+    fn the_done_sentence_says_where_the_result_is() {
+        let note = WORK_CAME_BACK_WORD.note().expect("a note");
+        assert!(
+            note.contains("the one that asked"),
+            "the note does not say where the result lands"
+        );
+    }
+
+    /// **Stopped is a decision, not a failure**, and the note says so — a
+    /// translation reading as an error would tell somebody something broke when
+    /// they simply changed their mind.
+    #[test]
+    fn stopped_is_not_translated_as_a_failure() {
+        for word in [WORK_STOPPED_WORD, IT_WAS_STOPPED_WORD] {
+            let note = word.note().expect("a note");
+            assert!(
+                note.contains("not failed")
+                    || note.contains("not as an error")
+                    || note.contains("Do not translate it as an error"),
+                "{} does not warn against reading a decision as a fault",
+                word.named()
+            );
+        }
     }
 
     /// They all go into one vocabulary, which is what the shell does with them.
