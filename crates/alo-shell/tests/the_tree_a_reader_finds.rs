@@ -40,7 +40,7 @@ use std::time::{Duration, Instant, SystemTime};
 use alo_access::{Control, Surface};
 use alo_adapters::{AccessibilityTree, AccessibleSession, Facts, NodeAt, Role};
 use alo_portals::Sandboxes;
-use alo_shell::{ReadAloudBus, ReadAloudTree};
+use alo_shell::{FrameName, ReadAloudBus, ReadAloudTree};
 use alo_strings::{Filling, Strings};
 
 /// How long anything here is waited for.
@@ -413,5 +413,101 @@ fn the_approval_surface_reads_as_the_sentence_and_its_two_answers() {
     assert_eq!(
         inside, expected,
         "the approval surface is read in another order"
+    );
+}
+
+/// The names a reader finds under *the windows open*, read off a real bus.
+///
+/// Walks from the registry exactly as `the_tree_read_back` does, so what this
+/// asserts is what a reader would actually be handed rather than what the tree
+/// says it would hand over.
+fn names_under_the_windows_open(session: &ASession, answers_as: &str) -> Vec<String> {
+    let strings = words();
+    // The list's own name, in this person's language, taken from the surface
+    // that declares it rather than written out here.
+    let list = Surface::Desktop
+        .read_aloud()
+        .into_iter()
+        .find(|control| control.role == alo_access::Role::List)
+        .map(|control| said(&strings, &control))
+        .expect("the desktop is read as a list of the windows open");
+    let reader = session.reader();
+    let ours = waiting_for(
+        "this machine's own tree being listed by the registry",
+        || {
+            reader
+                .applications()
+                .ok()?
+                .into_iter()
+                .find(|running| running.at.holder == answers_as)
+        },
+    );
+    everything(&reader, &ours.at)
+        .into_iter()
+        .find(|(_, facts)| facts.name == list)
+        .map(|(_, facts)| {
+            facts
+                .children
+                .iter()
+                .filter_map(|child| reader.facts(child).ok().map(|facts| facts.name))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// **The served tree follows what is open**, which is the half nothing held.
+///
+/// `ReadAloudBus::now_showing` replaces the objects on a live connection rather
+/// than rebuilding it, because a window opening must not cost a reader every path
+/// it was holding. This reads the bus back through the agent's own reader after a
+/// window arrives, so what is asserted is what a reader would actually find —
+/// not what the tree says it would.
+///
+/// The gap this closes is worth naming: the tree and the bus were both written
+/// and both tested, and **nothing outside a test ever built either**, so a
+/// screen reader on a running machine found no application at all. A test of the
+/// tree proves the tree; only reading it off a bus proves anybody can hear it.
+#[test]
+fn the_served_tree_follows_the_windows_that_open() {
+    let session = ASession::started();
+    let strings = words();
+    let showing = [Surface::Desktop];
+
+    let empty = ReadAloudTree::of(&strings, &showing);
+    let mut bus =
+        ReadAloudBus::serving(&session.accessibility, &empty).expect("the tree is served");
+    bus.embedded().expect("the registry embedded this machine");
+    assert!(
+        empty.the_windows_open_as_read().is_empty(),
+        "no window is open and the list of windows is not empty"
+    );
+
+    // The same tree with two windows in it, published over the first.
+    let opened = ReadAloudTree::of(&strings, &showing).with_the_frames_open(
+        &strings,
+        &[
+            FrameName::Given("Ledger for March".to_owned()),
+            FrameName::AnApplication,
+        ],
+    );
+    bus.now_showing(&opened)
+        .expect("the windows reached the bus");
+
+    let heard = names_under_the_windows_open(&session, bus.answers_as());
+    assert_eq!(
+        heard,
+        vec!["Ledger for March".to_owned(), "an application".to_owned()],
+        "a reader on the bus did not hear the windows that opened"
+    );
+
+    // And a window closing takes its path off rather than leaving it answering.
+    let closed = ReadAloudTree::of(&strings, &showing)
+        .with_the_frames_open(&strings, &[FrameName::Given("Ledger for March".to_owned())]);
+    bus.now_showing(&closed)
+        .expect("the closing reached the bus");
+    assert_eq!(
+        names_under_the_windows_open(&session, bus.answers_as()),
+        vec!["Ledger for March".to_owned()],
+        "a reader was still told about a window that had gone"
     );
 }
