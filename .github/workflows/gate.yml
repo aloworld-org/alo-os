@@ -541,3 +541,65 @@ jobs:
             -f context=alo/gates-on-a-runner \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             -f description="the gates that run on a hosted runner, by the workflow"
+
+      # **A queue commit says that it is waiting, because silence here is
+      # load-bearing.**
+      #
+      # The merge queue builds its own commit and branch protection asks *that*
+      # commit for `alo/nine-gates`. Nothing produces it but a lane, and **nothing
+      # tells the lane the commit exists.** So the commit sits until
+      # `check_response_timeout_minutes` — 60 — ejects it, and a queued pull request
+      # looks exactly like a patient one. It happened three times on 2026-09-28 and
+      # 29, to two different lanes, and each time the only reason anybody noticed
+      # was that a third lane was polling for the slot it wanted.
+      #
+      # That is *a gate that is absent and says nothing*, which this file argues
+      # against twice — except worse, because the merge waits on the silence. The
+      # failure is not a wrong answer; it is a branch that vanishes an hour later
+      # and a lane that never learns why.
+      #
+      # # Why a status of its own rather than relying on the run
+      #
+      # Measured before writing this, because the obvious answer was wrong: a red
+      # check **already exists** on every queue commit. The Mac's ejected
+      # `pr-264` commit read `gate | completed / failure` for all 57 of its minutes
+      # and neither lane acted on it. A second red thing is not the fix. What was
+      # missing is that a queue commit's `gate` is *indistinguishable from a pull
+      # request head's* `gate` — same name, same colour, and neither says which sha
+      # needs what from whom. So this posts a context whose **name** is the message
+      # and appears nowhere else.
+      #
+      # # Why a failing state cannot block a landing
+      #
+      # Also measured rather than reasoned: `#258`'s queue commit `e24594e4` merged
+      # while its own `gate` check was still `in_progress`. So `ALLGREEN` does not
+      # hold a merge for every check, and a non-required red status cannot stop one.
+      # Had that not been true this step would be a way to block every landing in
+      # the repository, which is why it was checked first.
+      #
+      # It is posted on **every** `merge_group` run, pass or fail, because a lane
+      # must attest a queue commit either way — `alo/gates-on-a-runner` is a
+      # narrower claim than the required check and never substitutes for it. The day
+      # this workflow can post `alo/nine-gates` honestly, this step goes with the
+      # distinction.
+      - name: say that this queue commit is waiting on a lane
+        if: always() && github.event_name == 'merge_group'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.after || github.sha }}
+        run: |
+          # **140 characters is a silent limit.** A longer description is rejected
+          # and the POST reports nothing useful, which would be a second silent gate
+          # built inside the fix for the first. Checked here rather than trusted.
+          said="gate this sha on a lane and post alo/nine-gates; the queue ejects it 60 minutes after it was built"
+          if [ "${#said}" -gt 140 ]; then
+            echo "REFUSED: the description is ${#said} characters and the limit is 140."
+            echo "  A rejected POST would leave this queue commit as silent as it was before."
+            exit 1
+          fi
+          echo "posting on $SHA: $said (${#said} characters)"
+          gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state=failure \
+            -f context=alo/this-queue-commit-needs-a-lane \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f description="$said"
