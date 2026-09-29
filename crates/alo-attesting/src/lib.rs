@@ -170,10 +170,12 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod held_by;
 pub mod period;
 pub mod rendering;
 pub mod statement;
 
+pub use held_by::HeldBy;
 pub use period::Period;
 pub use rendering::{THE_FORMAT, digest_of, rendered};
 pub use statement::Statement;

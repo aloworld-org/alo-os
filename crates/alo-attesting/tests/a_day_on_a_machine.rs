@@ -18,8 +18,17 @@
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use alo_attesting::{Period, Statement, digest_of, rendered};
+use alo_attesting::{HeldBy, Period, Statement, digest_of, rendered};
 use alo_record::Record;
+
+/// What the tests say holds the key.
+///
+/// Which protection a machine has is not this crate’s to choose — the machine picks
+/// the best it has and says so at setup. These tests are about the bytes, so any
+/// kind serves, and the one named here is arbitrary on purpose.
+fn a_key() -> HeldBy {
+    HeldBy::ASecurityChip
+}
 
 /// A moment on the day this statement is about.
 fn at(seconds: u64) -> SystemTime {
@@ -36,7 +45,7 @@ fn the_day() -> Period {
 fn a_working_day_renders_one_statement_that_answers_the_four_questions() {
     let record = Record::default();
     let statement = Statement::of(the_day(), record.everything());
-    let said = rendered(&statement);
+    let said = rendered(&statement, &a_key());
 
     for asked in [
         "departures",
@@ -54,7 +63,10 @@ fn a_working_day_renders_one_statement_that_answers_the_four_questions() {
 
     assert_eq!(
         digest_of(&said),
-        digest_of(&rendered(&Statement::of(the_day(), record.everything()))),
+        digest_of(&rendered(
+            &Statement::of(the_day(), record.everything()),
+            &a_key()
+        )),
         "the same record and the same period must render the same bytes, or the digest settles \
          nothing"
     );
@@ -65,7 +77,7 @@ fn a_working_day_renders_one_statement_that_answers_the_four_questions() {
 #[test]
 fn the_statement_says_which_end_it_includes() {
     let record = Record::default();
-    let said = rendered(&Statement::of(the_day(), record.everything()));
+    let said = rendered(&Statement::of(the_day(), record.everything()), &a_key());
     assert!(said.contains("from-is-included yes"), "{said}");
     assert!(said.contains("until-is-included no"), "{said}");
     assert!(
@@ -91,7 +103,7 @@ fn zero_inference_egress_is_a_number_in_the_artifact_and_not_a_promise() {
     let statement = Statement::of(the_day(), record.everything());
     assert_eq!(statement.inference_egress(), 0);
     assert!(
-        rendered(&statement).contains("inference-egress 0"),
+        rendered(&statement, &a_key()).contains("inference-egress 0"),
         "the measurement has to be readable without running anything"
     );
 }
@@ -104,7 +116,7 @@ fn a_period_the_record_does_not_cover_is_visible_in_the_artifact() {
     let record = Record::default();
     let elsewhere = Period::of(at(200_000), at(300_000)).expect("another period");
     let statement = Statement::of(elsewhere, record.everything());
-    let said = rendered(&statement);
+    let said = rendered(&statement, &a_key());
     assert!(
         said.contains("entries-outside-this-period"),
         "a reader must be able to see how much the period did not cover:\n{said}"

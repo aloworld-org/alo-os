@@ -27,7 +27,7 @@ use alo_egress::{Destination, Errand, Why};
 use alo_models::Region;
 use sha2::{Digest as _, Sha256};
 
-use crate::Statement;
+use crate::{HeldBy, Statement};
 
 /// The shape of a rendered statement.
 ///
@@ -112,7 +112,7 @@ fn errand(errand: Errand) -> &'static str {
 /// counts come before the lists so that a reader who checks only the arithmetic
 /// does not have to read to the end to find it.
 #[must_use]
-pub fn rendered(statement: &Statement) -> String {
+pub fn rendered(statement: &Statement, held_by: &HeldBy) -> String {
     let mut out = String::new();
 
     // The format first, so a reader knows which rules the rest was written under
@@ -122,6 +122,14 @@ pub fn rendered(statement: &Statement) -> String {
     let _ = writeln!(out, "until {}", moment(statement.period().until()));
     let _ = writeln!(out, "from-is-included yes");
     let _ = writeln!(out, "until-is-included no");
+
+    // **What holds the signing key, inside the bytes it will sign.** Kept beside
+    // the artifact it could be dropped, edited or lost and the attestation would
+    // still verify — a document whose strength claim can be stripped without
+    // breaking its signature overstates itself by default. In here, removing it
+    // breaks the signature. It says which kind was used and never that it was
+    // enough: whoever checks an attestation decides what they accept.
+    let _ = writeln!(out, "held-by {}", held_by.named());
 
     let _ = writeln!(out, "departures {}", statement.departures().len());
     let _ = writeln!(out, "held-back {}", statement.held_back().len());
@@ -134,23 +142,37 @@ pub fn rendered(statement: &Statement) -> String {
         statement.entries_outside()
     );
 
+    // **No grantee is named in these lines, and that is the decision rather than
+    // an omission.** `Statement` carries the grantee, because a person asking for
+    // their own record is entitled to it — but a machine's attestation is a
+    // document built to be handed to a third party, and naming who was working is
+    // a different question from saying what left. The owner decided the person
+    // chooses, each for themselves, and **off until they do**; a format that
+    // named everybody by default would be that decision inverted.
+    //
+    // Opting in is not built here on purpose. Done properly it needs a per-person
+    // setting nobody else can set for you, an aggregate for the people who did not
+    // choose — *four more, from people who have not chosen to be named*, with no
+    // per-person gaps, because a gap where Bob was names Bob by elimination on a
+    // two-person machine — and a sentence at the point of choosing saying it works
+    // **forwards only**, since a signed artifact cannot be reached back into. That
+    // is a change with its own vocabulary and its own consent, not a field to add
+    // while nobody is looking.
     for one in statement.departures() {
         let _ = writeln!(
             out,
-            "left {} {} {} {}",
+            "left {} {} {}",
             moment(one.at),
             why(one.why),
-            one.agent,
             destination(&one.destination)
         );
     }
     for one in statement.held_back() {
         let _ = writeln!(
             out,
-            "held-back {} {} {} {} {}",
+            "held-back {} {} {} {}",
             moment(one.at),
             why(one.why),
-            one.agent,
             destination(&one.destination),
             one.refused
         );
@@ -194,6 +216,12 @@ mod tests {
     use super::*;
     use crate::Period;
 
+    /// What the tests say holds the key. Any kind renders; these tests are
+    /// about the bytes and not about which protection is acceptable.
+    fn a_key() -> HeldBy {
+        HeldBy::ASecurityChip
+    }
+
     /// A moment, for readability.
     fn at(seconds: u64) -> SystemTime {
         UNIX_EPOCH + Duration::from_secs(seconds)
@@ -210,12 +238,13 @@ mod tests {
     #[test]
     fn a_quiet_period_renders_these_exact_bytes() {
         assert_eq!(
-            rendered(&quiet()),
+            rendered(&quiet(), &a_key()),
             "alo-egress-attestation 1\n\
              from 1000\n\
              until 2000\n\
              from-is-included yes\n\
              until-is-included no\n\
+             held-by a-security-chip\n\
              departures 0\n\
              held-back 0\n\
              on-its-own 0\n\
@@ -225,11 +254,38 @@ mod tests {
         );
     }
 
+    /// **What holds the key is inside the bytes**, so it cannot be dropped from
+    /// the artifact without breaking the signature over it.
+    #[test]
+    fn what_holds_the_key_is_in_the_signed_bytes() {
+        for (kind, named) in [
+            (HeldBy::ASecurityChip, "held-by a-security-chip"),
+            (HeldBy::AFileOnDisk, "held-by a-file-on-disk"),
+            (
+                HeldBy::SomethingElse("a smartcard".to_owned()),
+                "held-by something-else a smartcard",
+            ),
+        ] {
+            let said = rendered(&quiet(), &kind);
+            assert!(said.contains(named), "{named} is not in:\n{said}");
+        }
+    }
+
+    /// **And a different protection is a different digest**, which is what stops a
+    /// statement signed from a file on disk being presented as one from a chip.
+    #[test]
+    fn the_same_period_held_by_different_things_does_not_share_a_digest() {
+        assert_ne!(
+            digest_of(&rendered(&quiet(), &HeldBy::ASecurityChip)),
+            digest_of(&rendered(&quiet(), &HeldBy::AFileOnDisk))
+        );
+    }
+
     /// **The format number is the first thing in it**, so a reader knows which
     /// rules the rest was written under before reading any of it.
     #[test]
     fn the_format_number_is_the_first_thing_a_reader_meets() {
-        let said = rendered(&quiet());
+        let said = rendered(&quiet(), &a_key());
         let first = said.lines().next().expect("a rendering has a first line");
         assert_eq!(first, format!("alo-egress-attestation {THE_FORMAT}"));
     }
@@ -238,8 +294,8 @@ mod tests {
     /// the same digest. Without this the artifact settles nothing.
     #[test]
     fn rendering_is_the_same_every_time_and_so_is_the_digest() {
-        let once = rendered(&quiet());
-        let again = rendered(&quiet());
+        let once = rendered(&quiet(), &a_key());
+        let again = rendered(&quiet(), &a_key());
         assert_eq!(once, again);
         assert_eq!(digest_of(&once), digest_of(&again));
         assert_eq!(digest_of(&once).len(), 64, "SHA-256 in hexadecimal");
@@ -251,7 +307,10 @@ mod tests {
     fn a_statement_about_another_period_does_not_share_its_digest() {
         let other = Period::of(at(2_000), at(3_000)).expect("a period");
         let other = Statement::of(other, [].iter());
-        assert_ne!(digest_of(&rendered(&quiet())), digest_of(&rendered(&other)));
+        assert_ne!(
+            digest_of(&rendered(&quiet(), &a_key())),
+            digest_of(&rendered(&other, &a_key()))
+        );
     }
 
     /// An entry outside the period is counted as outside and changes the bytes,
@@ -268,12 +327,12 @@ mod tests {
         let statement = Statement::of(period, record.everything());
         assert_eq!(statement.entries_outside(), 1);
         assert!(
-            rendered(&statement).contains("entries-outside-this-period 1"),
+            rendered(&statement, &a_key()).contains("entries-outside-this-period 1"),
             "the statement must say how much it looked past"
         );
         assert_ne!(
-            digest_of(&rendered(&statement)),
-            digest_of(&rendered(&quiet()))
+            digest_of(&rendered(&statement, &a_key())),
+            digest_of(&rendered(&quiet(), &a_key()))
         );
     }
 }
