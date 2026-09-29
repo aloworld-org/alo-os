@@ -8,21 +8,34 @@
 //! camera, and a person reading a long document would watch the whole canvas
 //! slide away underneath it.
 //!
-//! # What is not here, and it is somebody else's crate
+//! # The keyboard route, and the reason it was missing for two days
 //!
-//! **The keyboard route for panning.** A chord reaches a native operation through
-//! `alo_shortcuts::Action`, which had no canvas action in it at all when this was
-//! written — a finding recorded under task 5. It now has three, and they are
-//! zoom's: `ZoomTheCanvasIn`, `ZoomTheCanvasOut` and `ShowAllOnTheCanvas`, held in
-//! `crates/alo-shell/tests/zoom_and_show_all/mod.rs`. **Panning still has no
-//! chord**, because the design file gives it the arrow keys rather than a chord —
-//! `alo_shortcuts::Chord` requires Super, Ctrl or Alt and a bare arrow is not one,
-//! so a pan shortcut is not a thing that enum can hold. That is task 5's remaining
-//! gap and it is a question about `alo-shortcuts`, not about this file.
+//! It is here now, at the foot of this file: arrows pan, Shift + arrow pans a
+//! whole viewport, and an application with focus keeps its own arrow keys.
+//! `crate::canvas_arrow_pan` holds the road.
 //!
-//! **Space-and-drag**, which ADR 0065 names beside the wheel, and the trackpad's
-//! two-finger form. Both are gestures rather than arithmetic and neither is held
-//! here; the plan says so.
+//! **This header used to say it was somebody else's gap, and that was wrong in a
+//! way worth keeping.** It reasoned: a chord reaches a native operation through
+//! `alo_shortcuts::Action`; `alo_shortcuts::Chord` requires Super, Ctrl or Alt;
+//! the design file gives panning the bare arrow keys; therefore *a pan shortcut is
+//! not a thing that enum can hold*, and the question belongs to `alo-shortcuts`.
+//!
+//! Every step of that is true and the conclusion does not follow. The road did not
+//! need to be a chord — `crate::canvas_space_drag` was already panning from a bare
+//! Space, in this crate, without one, and this file's own last test exercises it.
+//! **The answer was beside the question the whole time.** What the reasoning
+//! actually established was that the road is *not in `alo-shortcuts`*, and that
+//! got written down as *not ours*, which is a different claim and the one that let
+//! task 5 be marked done for all three roads while one of them did not exist.
+//!
+//! # All three roads are held in this file now
+//!
+//! The wheel, the trackpad's two-finger form, Space-and-drag and the arrows. This
+//! header said *neither is held here; the plan says so* about the last two long
+//! after `a_two_finger_scroll_pans_exactly_as_a_wheel_does` and
+//! `space_and_drag_pans_the_plane_and_only_while_space_is_held` were sitting a
+//! screen below it. **Third stale claim found in this one header** — a document
+//! and the code beneath it disagreeing, with the code right each time.
 #![expect(
     clippy::expect_used,
     reason = "an unexpected None or Err here is the failure this test reports"
@@ -328,5 +341,177 @@ fn space_and_drag_pans_the_plane_and_only_while_space_is_held() {
         looking_at(&f),
         panned,
         "the plane kept panning after Space was let go"
+    );
+}
+
+/// `KEY_UP`, `KEY_LEFT`, `KEY_RIGHT`, `KEY_DOWN` and `KEY_LEFTSHIFT`.
+const UP: u32 = 103;
+/// `KEY_LEFT`.
+const LEFT: u32 = 105;
+/// `KEY_RIGHT`.
+const RIGHT: u32 = 106;
+/// `KEY_DOWN`.
+const DOWN: u32 = 108;
+/// `KEY_LEFTSHIFT`, which the design file's *pan faster* is held with.
+const SHIFT: u32 = 42;
+
+/// An output wide enough that a quarter of it is a round number either way.
+const VIEWPORT: (i32, i32) = (400, 200);
+
+/// A display with a keyboard, a pointer and an output of a known size.
+///
+/// The output matters here and nowhere else in this file: a keyboard pan is
+/// measured as a fraction of the viewport, so a fixture with no output has
+/// nothing to take a fraction of.
+fn on_a_screen() -> Fixture {
+    let f = fixture();
+    assert!(f.render(VIEWPORT, false, 1).is_ok());
+    f
+}
+
+/// Press and release one key, and say whether a client was told.
+fn press(f: &Fixture, code: u32) -> bool {
+    let told = f.key(code, KeyState::Pressed).expect("a real key");
+    assert!(f.key(code, KeyState::Released).is_ok());
+    told
+}
+
+/// **Arrows pan the canvas, and one press is a quarter of the viewport.**
+///
+/// The keyboard road of task 5's three, which `docs/design/the-shortcuts-and-the-
+/// edges.md` gives as *pan in any direction: arrows while the canvas is focused*.
+/// It was missing while task 5 was marked done for all three roads — the header
+/// of this very file recorded it as a gap, and the plan's status line said
+/// otherwise.
+///
+/// All four directions, because each is a different arm of the same arithmetic
+/// and a sign error in one would pass a test that only pressed Right. The
+/// distance is asserted too: a road that panned by some amount would satisfy
+/// *the plane moved* while making the canvas unusable by keyboard.
+#[test]
+fn an_arrow_pans_the_plane_and_a_step_is_a_quarter_of_the_viewport() {
+    let f = on_a_screen();
+    let _app = mapped(&f);
+    let (quarter_across, quarter_down) = (VIEWPORT.0 / 4, VIEWPORT.1 / 4);
+
+    for (key, expected) in [
+        (RIGHT, (quarter_across, 0)),
+        (LEFT, (-quarter_across, 0)),
+        (DOWN, (0, quarter_down)),
+        (UP, (0, -quarter_down)),
+    ] {
+        looking(&f, (1000, 1000), 1000);
+        let before = looking_at(&f);
+        assert!(
+            !press(&f, key),
+            "an arrow over the canvas was handed to an application"
+        );
+        let moved = (looking_at(&f).0 - before.0, looking_at(&f).1 - before.1);
+        assert_eq!(moved, expected, "key {key} moved the plane by {moved:?}");
+    }
+}
+
+/// **Shift goes faster, and *faster* is exactly four ordinary presses.**
+///
+/// The design file's second row, *pan faster: Shift + arrow*. Asserted against
+/// the plain press's own answer rather than against a number written here, so the
+/// two cannot drift apart: if the step changes, this still says Shift is four of
+/// them. That is the same discipline `a_two_finger_scroll_pans_exactly_as_a_wheel
+/// _does` keeps one road over.
+#[test]
+fn shift_and_an_arrow_pans_exactly_four_ordinary_presses() {
+    let f = on_a_screen();
+    let _app = mapped(&f);
+
+    looking(&f, (1000, 1000), 1000);
+    let before = looking_at(&f);
+    assert!(!press(&f, RIGHT));
+    let plain = looking_at(&f).0 - before.0;
+    assert_ne!(
+        plain, 0,
+        "the ordinary press moved nothing to compare against"
+    );
+
+    looking(&f, (1000, 1000), 1000);
+    let before = looking_at(&f);
+    assert!(f.key(SHIFT, KeyState::Pressed).is_ok());
+    assert!(
+        !press(&f, RIGHT),
+        "Shift and an arrow reached an application"
+    );
+    assert!(f.key(SHIFT, KeyState::Released).is_ok());
+    let faster = looking_at(&f).0 - before.0;
+
+    assert_eq!(
+        faster,
+        plain * 4,
+        "Shift moved {faster} where four ordinary presses move {}",
+        plain * 4
+    );
+}
+
+/// **An application with focus owns its own arrow keys, and the plane stays.**
+///
+/// *While the canvas is focused* is the design file's condition and it is the
+/// whole of what keeps this road from breaking every text field on the machine.
+/// Both halves asserted, as the acceptance's *asserts which moved* asks
+/// everywhere else in this file: the application is told, **and** the camera did
+/// not move. A road that panned as well as delivering would pass a test that only
+/// watched the client.
+#[test]
+fn an_arrow_belongs_to_a_focused_application_and_the_plane_stays_where_it_is() {
+    let f = on_a_screen();
+    let mut app = mapped(&f);
+    assert!(f.focus(Some(0)).is_ok(), "a window takes focus");
+    app.sync();
+
+    looking(&f, (1000, 1000), 1000);
+    let before = looking_at(&f);
+    let keys = app.events.keyboard.keys.len();
+
+    assert!(
+        press(&f, RIGHT),
+        "an arrow was kept from the application that had focus"
+    );
+    app.sync();
+
+    assert_eq!(
+        looking_at(&f),
+        before,
+        "an arrow meant for an application panned the canvas underneath it"
+    );
+    assert!(
+        app.events.keyboard.keys.len() > keys,
+        "the focused application was never told about the arrow"
+    );
+}
+
+/// **An arrow at the edge of the plane is still the canvas's.**
+///
+/// Pressing left at the left-hand edge is an ordinary thing to do, and the screen
+/// already shows there is nowhere further. Handing the key on to nobody would make
+/// one key mean two things depending on where the canvas happens to sit — the same
+/// argument `crate::canvas_command` makes about zooming at the end of the ladder,
+/// where a refusal would turn key repeat into a stream of faults.
+#[test]
+fn an_arrow_at_the_edge_of_the_plane_is_not_handed_on() {
+    let f = on_a_screen();
+    let _app = mapped(&f);
+
+    // As far left as the plane goes, so the next press cannot be honoured.
+    f.backend(|s| {
+        let at = At::checked(-alo_canvas::plane::FURTHEST, 0).expect("the plane's own edge");
+        assert!(s.look_at_the_canvas(at).is_some());
+    });
+    let before = looking_at(&f);
+
+    assert!(
+        !press(&f, LEFT),
+        "an arrow refused by the plane's edge was handed to an application"
+    );
+    assert_eq!(
+        looking_at(&f),
+        before,
+        "a pan past the plane's edge moved the camera anyway"
     );
 }

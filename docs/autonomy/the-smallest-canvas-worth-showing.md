@@ -253,7 +253,30 @@ pointer-driven one; a client may still commit whatever size it likes.
 
 ### 5. Pan
 
-**Status:** **Done, 2026-09-29**, all three roads. **Depends on:** 1.
+**Status:** **Done, 2026-09-29**, all three roads — **and that line was false for two
+days.** It is true now: the keyboard route landed 2026-09-30 in
+`crates/alo-shell/src/canvas_arrow_pan.rs`, held by four tests at the foot of
+`crates/alo-shell/tests/panning_the_plane/mod.rs`. **Depends on:** 1.
+
+**How a Done line came to be written about a road that did not exist**, kept
+because the mechanism is more useful than the correction. Two roads were recorded
+as owed — two-finger scroll and Space-and-drag — both were closed, and the count
+went *wheel + trackpad + space-drag = three*. But *wheel and trackpad over empty
+canvas* is **one** road in this task's own sentence, and the third is the keyboard
+one, which had never been written down as owed and so was never counted. **The
+arithmetic was checked against the list of what was missing rather than against
+the acceptance sentence.** Auditing the ledger, not the thing.
+
+It survived a second audit too. *Does pan have a keyboard route* was asked of
+`alo_shortcuts::Action`, which holds the canvas's other keyboard actions — and the
+answer could not have been there: `docs/design/the-shortcuts-and-the-edges.md`
+gives panning the **bare arrow keys**, and an `alo_shortcuts::Chord` requires
+Super, Ctrl or Alt. Searching a space the answer is structurally excluded from,
+and reading the empty result as *nothing exists* rather than *wrong space*.
+
+Found by going to build task 10, whose acceptance says *then the same by keyboard
+alone*, and checking which keyboard forms existed before assembling a walk that
+claims to use them.
 
 **One of the two that were owed was never missing.** *Two-finger scroll* was
 recorded as still to do; `crate::libinput_scroll` already turns `ScrollFinger`
@@ -450,7 +473,17 @@ it where a reader asks.
 
 ### 8. A frame is never lost
 
-**Status:** **Done, 2026-09-29.** **Depends on:** 3, 6.
+**Status:** **Open** — the dock half landed 2026-09-29 and the status area half has
+nowhere to land yet; see below. **Depends on:** 3, 6.
+
+**This line said "Done for the dock… open for the status area" for about an
+hour, and the supervisor refused it in nought seconds.**
+`tools/kernel-loop/src/plan.rs` reads the first word of a status, saw *done*,
+found no `**Done, <date>.**` mark and said the loop would take the task up again.
+It was right twice over: the line was malformed *and* the task is genuinely
+unfinished, so being taken up again is the correct outcome rather than the fault.
+A field with two states was the wrong place to encode *partly*, and the blunt
+answer is the true one — **this task is not done.**
 
 **The measurement that decided the shape of it.** *Show all* fits the frames' own
 extent and the widest extent it can fit is bounded by `Zoom::FURTHEST_OUT`: on a
@@ -459,6 +492,21 @@ extent and the widest extent it can fit is bounded by `Zoom::FURTHEST_OUT`: on a
 far away is still found by Show all* was not something the canvas had; it is
 something a rule has to keep, and the first draft of this task missed it because
 the acceptance sentence reads like a property rather than a promise.
+
+**The status area half of the acceptance is not held, and this says so rather than
+leaving it to be discovered.** The sentence below asks for *the dock **or the
+status area***; the tests hold the dock. The status area has nowhere to be: ADR
+0076 took *at the far end of the dock* off that promise and handed the question
+**to this plan**, so there is no location to keep a frame out of. Two things follow
+and neither is done here. This plan owes an answer to *where does the status area
+go* — no task in it currently carries that — and the entry in
+`docs/autonomy/v0-5-evidence.md` must say the promise is owed a location before it
+is owed an implementation, which is that file's owner's to write.
+
+Until then the acceptance is met for the dock and **open** for the status area. The
+paragraph below used to say *only two ways a frame can actually be lost* and list
+two, which quietly dropped half of this task's own acceptance sentence without
+naming what it had dropped.
 
 **Only two ways a frame can actually be lost, once panning exists.** A frame above
 the viewport, behind another, or off to one side is reached by panning. What

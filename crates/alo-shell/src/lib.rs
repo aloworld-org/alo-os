@@ -92,6 +92,7 @@ mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
 mod booting;
+mod canvas_arrow_pan;
 mod canvas_camera;
 mod canvas_command;
 mod canvas_never_lost;
