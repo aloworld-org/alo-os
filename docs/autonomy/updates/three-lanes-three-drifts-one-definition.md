@@ -142,3 +142,56 @@ The comment was in the right file, in the right function, in code being actively
 read, and it still did not arrive. **A sentence in a source file is not a check.**
 The reason the replacement is the repair and the comment was not is that the
 replacement makes the drift impossible rather than documented.
+
+
+## Three rules, which came out of the repair rather than the faults
+
+The repair produced more than the faults did, because writing the checks
+reproduced the disease twice more. These are the usable part.
+
+### A path with one user is a path with one tested case
+
+A **reporting** path has no user until it fires. So does a **decision** path: the
+word `ATTESTABLE` had exactly one exerciser — trees that passed — and every
+condition inside it was therefore read only by runs that did not need it. Three
+of one lane's six conditions were wrong and nothing said so; another lane's
+`elif` chain would have reported one failing condition and hidden the very
+disagreement that revealed the problem.
+
+The only way to have a reporting path is to fire it on purpose. **Every fix that
+stuck tonight was watched refusing first.**
+
+### A harness has a different subject than the script
+
+Watching a check refuse proves its **logic**. It says nothing about whether the
+logic is **wired to the subject**.
+
+This was learned by ignoring it. A digest check — meant to catch a script edited
+while running, since bash reads from a byte offset and such a run has no single
+version of itself — was watched refusing in six injected cases *and* on a real
+edit-while-running of a copy. It was still broken in the real script: the path was
+resolved after a `cd`, so it measured nothing. **The mechanism was correct and the
+integration was never exercised.**
+
+The check that would have caught it is cheap and is now the practice: run the real
+script once and read its own first lines — a digest line that is 32 characters, or
+a bare one that says the run is not attributable.
+
+### An equality is worth nothing without a liveness check on its operands
+
+The sharpest of the three, and the one that explains why every self-agreeing check
+tonight passed.
+
+| | |
+|---|---|
+| nine names counted against nine gates | both sides derived from the same assumption, so agreement was guaranteed rather than measured |
+| nine lines counting nine | the script counted itself |
+| an empty digest against an empty digest | `[ "" != "" ]` is false, so the check reported no change while having read nothing |
+
+**Absence reads as agreement.** A comparison proves two things are the same; it
+never proves either was measured, and the failure is silent because *same* is the
+answer the happy path wants.
+
+So the absence case has to be its own failure. *An empty digest matches an empty
+digest, so nothing here was checked* is the general form, and any equality standing
+between a run and a published claim needs it.
