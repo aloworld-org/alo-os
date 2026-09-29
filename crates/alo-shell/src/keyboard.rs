@@ -167,6 +167,9 @@ impl Server {
             .ok_or(InputError::Unavailable)?
             .handle
             .clone();
+        // The number libinput sent, kept before XKB's offset is added below:
+        // `crate::canvas_arrow_pan` names its keys the way a keyboard sends them.
+        let raw = code;
         let code: Keycode = (code + 8).into();
         if keyboard.pressed_keys().contains(&code) == (state == KeyState::Pressed) {
             return Ok(false);
@@ -195,6 +198,21 @@ impl Server {
                 FilterResult::Intercept(())
             }
         });
+        // **Arrows pan the canvas with nothing focused** — ADR 0065's keyboard
+        // road, `crate::canvas_arrow_pan`. Asked after the call above rather than
+        // before it, because that call is what advances XKB, and *pan faster* is
+        // Shift + arrow: asking first would read the modifier state from before
+        // this very key and get Shift wrong on the press that turns it on.
+        //
+        // Only reached when nothing is focused, so no client is owed this key and
+        // none is losing one — an application with focus owns its own arrows.
+        if !deliver && self.pan_the_plane_by_an_arrow(raw, state) {
+            if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
+                keyboard.time = time;
+                keyboard.popup_key = None;
+            }
+            return Ok(false);
+        }
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
             keyboard.popup_key = deliver
