@@ -370,11 +370,20 @@ jobs:
           # apart. A binary from the repository's own tree is the last one, because
           # that is the only one the test actually execs.
           echo "--- what can be run inside a namespace, as root"
+          # **`|| code=$?` and not a bare call.** A step here runs under `bash -e`,
+          # so a probe that simply ran the command and read `$?` afterwards never
+          # reached the `printf`: the first failing case aborted the step, skipped
+          # the gates, and reported nothing about the very thing it was measuring.
+          # That is what the first run of this block did, and it is the shape of
+          # fault this whole file is about — a diagnostic that is silent in exactly
+          # the case it exists for. Every line here must survive its own bad news.
           probe() {
-            printf '%-46s ' "$1"
+            label="$1"
             shift
-            sudo unshare --map-root-user --net -- sh -c "$@" >/dev/null 2>/tmp/probe.err
-            printf 'exit %s %s\n' "$?" "$(tr '\n' ' ' < /tmp/probe.err)"
+            code=0
+            sudo unshare --map-root-user --net -- sh -c "$@" >/dev/null 2>/tmp/probe.err \
+              || code=$?
+            printf '%-46s exit %s %s\n' "$label" "$code" "$(tr '\n' ' ' < /tmp/probe.err)"
           }
           # 126 is the only answer that matters here: the supervisor with no
           # arguments prints its usage and exits non-zero on purpose, so *any*
@@ -384,7 +393,8 @@ jobs:
           probe "exec /bin/true"               'exec "$0"' /bin/true
           probe "exec the supervisor (126?)"   'exec "$0"' \
             ./tools/kernel-loop/target/debug/alo-kernel-loop
-          ls -l ./tools/kernel-loop/target/debug/alo-kernel-loop
+          ls -l ./tools/kernel-loop/target/debug/alo-kernel-loop \
+            || echo "the supervisor is not at that path, so the line above is 127 and not 126"
           echo "the tree is owned by: $(stat -c '%U:%G' .) ; target/ by: $(stat -c '%U:%G' target 2>/dev/null || echo 'no target yet')"
 
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
