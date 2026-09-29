@@ -667,7 +667,37 @@ the card's road waits for hardware the way the chip's half of encryption does.
 
 ### 7. Replace Windows — the road with no way back
 
-**Status:** ready. **Depends on:** 4.
+**Status:** **the code is whole and no machine has walked it**, 2026-09-29, on the
+development PC. **Depends on:** 4.
+
+Seven changes, each gated on the full nine and landed on its own:
+
+| | |
+|---|---|
+| #238 | the sentences, and three refusals that each say nothing was changed |
+| #240 | what replacing would destroy, **measured** — how much is used, and the day the newest of the person's own files changed |
+| #242 | the second consent: the disk's name **and** the word, in the reader's language |
+| #243 | the staged choice says which road, so the environment is told |
+| #245 | the point of no return as one named place, and the two machine-side refusals |
+| #250 | the fork: the installer offers both roads and this one is walkable |
+
+**What the acceptance still asks for is the whole of the evidence.** A virtual
+machine with a real Windows and known files on it, walking the refusals one at a
+time and then the accepted road once, checking after each refusal that Windows
+still boots and the files are byte-for-byte what they were. Nothing here has run
+on a machine, and no box above is a substitute for that.
+
+**Two things worth knowing before somebody walks it.**
+
+The offer had no target for this road until #250: `decide` names a disk for every
+standing except `HoldsWindows`, so the one disk this road installs onto was the one
+disk it never named. The name existed — `naming::after_the_restart` is a free
+function over a disk's own fields — and nothing had asked for it.
+
+And the question is asked only where the road can be walked. A machine whose
+Windows disk cannot be named is never offered it, and a machine with one disk is
+refused by `may_replace` before anything is said, because there would be nothing to
+come back to.
 
 [ADR 0023](../decisions/0023-installed-from-the-machine-it-replaces.md) §4:
 Windows is *either retained alongside (default where disk allows) or replaced
