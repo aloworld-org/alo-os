@@ -7,11 +7,26 @@
 # needs. On 2026-09-28 that cost a pull request sitting at position 1 in the queue
 # with nobody to attest it, another gated twice because the queue rebased it under
 # the first attestation, and a lane that could not merge at all for most of a day.
-# This file was written to end that and it does not, quite: seven tests of 8,205
+# This file was written to end that and it does not, quite: five tests of 8,326
 # cannot run here, so it posts a claim about a runner instead and the step at the
 # bottom of this file says why at length. What it removes is the *guessing* — a
 # lane still types the required status, but it no longer finds out from a queue
 # what a machine would have told it in twenty minutes.
+#
+# **And until 2026-09-29 it removed nothing, because it had never once been green.**
+# The gates step failed on every run — those five tests — and it was the step that
+# decided the job, so every later step was skipped, including the one that posts
+# `alo/gates-on-a-runner`. The status this file exists to produce had never been
+# posted in 102 runs, and four changes were landed building on it. A red check on a
+# pull request that a lane was going to attest by hand anyway is invisible: it looks
+# exactly like a red you have already accounted for.
+#
+# Two things were wrong and only one of them was the condition. The other is that
+# the run could only ask **which gate failed**, and `the workspace's tests` is the
+# answer both when this runner cannot make a namespace and when a change under test
+# broke something — so the run was silent about a real regression by construction.
+# `.github/the-tests-a-hosted-runner-cannot-run.txt` names the five, the run compares
+# what actually failed against it, and a failure outside that list fails the job.
 #
 # Until that afternoon this file could not have existed: the gates loaded BPF
 # programmes into a privileged kernel, which no hosted runner will give. #217
@@ -43,15 +58,28 @@
 # `alo/gates-on-a-runner` a required check, or adding it beside the other, is the
 # owner's decision — a flag day in the middle of three lanes landing work is how a
 # queue stops for a reason nobody can see. What would have to come first is the
-# seven tests. What is measured about them tonight is only this: they fail here and
-# they pass on all three lanes' machines, so it is this environment and not the
-# work. Five make a network namespace and two reach an accessibility bus, and for
-# the namespace five the run below shows the kernel refusing `unshare` to the
-# runner while allowing it to root — which explains why they failed before the
-# gates ran as root and **does not** explain why they still fail now. That is
-# unfinished rather than concluded, and it is written here as unfinished because a
-# cause invented to fill the gap is how five wrong explanations got withdrawn on
-# 2026-09-28 before the sixth was measured.
+# five tests. What is measured about them is only this: they fail here and they
+# pass on all three lanes' machines, so it is this environment and not the work.
+# All five re-run their own binary inside `unshare --map-root-user --net` and all
+# five get **126** — found, but could not be executed.
+#
+# The two accessibility-bus tests that used to be on this list are **not** on it any
+# more: they pass, since this job gained a compositor and a session bus. That is
+# what the expiry rule in the declared-tests file is for — an excuse that has
+# stopped being true is a permission, and the only way a list like this stays honest
+# is if the run checks that every line on it still fails.
+#
+# The cause of the 126 is **not established**. The probe below makes the namespace
+# as root, runs `ip` in it, and execs both `/bin/true` and a binary from this
+# repository's own tree in it, all successfully; the kernel refuses `unshare` to the
+# unprivileged `runner` user and allows it to root, and the gates are root. So the
+# obvious explanation — Ubuntu 24.04 restricting unprivileged user namespaces —
+# accounts for why they failed before the gates ran as root and **does not** account
+# for why they fail now. Written as unfinished because it is unfinished: five wrong
+# explanations were withdrawn on 2026-09-28 before the sixth was measured, and a
+# cause invented to fill a gap is how the sixth nearly was not. The step
+# *what a namespace can exec once the tests exist* is the next measurement, and it
+# runs after the build because the binary the tests exec does not exist before it.
 #
 # **It does not build the image**, which no gate does either; `docs/quirks/`
 # records that as its own finding.
@@ -643,13 +671,87 @@ jobs:
           fi
           echo "root runs $root_cargo"
 
+          # **This step records what the gates did; it does not decide the job.**
+          #
+          # It used to. The gates fail here for five tests this runner cannot run,
+          # so this step failed on every run, so every step after it was skipped —
+          # including `post alo/gates-on-a-runner`, which is `if: success()`. **The
+          # one status this whole file exists to produce could therefore never be
+          # posted, and in 102 runs it never was.** Nobody noticed, because a red
+          # check on a pull request that a lane is going to attest by hand anyway
+          # looks exactly like a red check you have already accounted for.
+          #
+          # A workflow whose success path has never once executed is not a mechanism,
+          # it is a plan; and this one was built on across four changes.
+          #
+          # So the code is captured and the decision is made further down, by a step
+          # that can tell *the failures this runner is known to cause* from *a
+          # failure in the change under test*. `|| code=$?` and not a bare call, for
+          # the reason the namespace probe above gives at length: under `bash -e` a
+          # step that fails before it prints is a diagnostic silent in exactly the
+          # case it exists for.
           set -o pipefail
+          code=0
           sudo -E env "PATH=$gates_path" "HOME=$HOME" \
             dbus-run-session -- bash -c '
               printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
               ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
-            ' | tee /tmp/the-gates.log
-          echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
+            ' | tee /tmp/the-gates.log || code=$?
+          echo "$code" > /tmp/the-gates.code
+          echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s, and exited $code"
+
+      # **The measurement the earlier probe could not make, made now that it can.**
+      #
+      # The probe before the gates asks what can be run inside a namespace and finds
+      # that as root everything can: the namespace is made, `ip` runs in it, and a
+      # binary from this repository's own tree execs in it. The five tests still fail
+      # with **126**, and the gates run as root, so the usual explanation — Ubuntu
+      # 24.04 refusing unprivileged user namespaces — does not account for it.
+      #
+      # The one thing that probe cannot try is the thing the tests actually exec: a
+      # nextest binary under `target/debug/deps`, which does not exist until the
+      # gates have built it. So this runs **after** them, as root, with the tests'
+      # own invocation, and prints what a reader needs to weigh it: the binary's mode
+      # and owner, the mount options of the filesystem it is on, and the exit code.
+      #
+      # `--list` rather than a test, because the question is whether the exec
+      # happens at all, and a listing answers that in milliseconds without needing a
+      # network. It fails the job under no circumstances: it is a measurement, and a
+      # measurement that can turn a run red is a measurement people delete.
+      - name: what a namespace can exec once the tests exist
+        if: always()
+        run: |
+          # `|| true`, because under `-e -o pipefail` a glob that matches nothing
+          # makes `ls` exit non-zero, `grep -v` exits non-zero when it selects
+          # nothing, and either aborts this step **before** the sentence below that
+          # explains there is nothing to measure. A probe that is silent when its
+          # subject is absent is the fault this whole job keeps finding.
+          bin=$(ls -t target/debug/deps/asked_and_answered_over_ipv6-* 2>/dev/null \
+            | grep -v '\.d$' | head -1 || true)
+          if [ -z "$bin" ]; then
+            echo "no ipv6 test binary under target/debug/deps, so the gates did not get"
+            echo "as far as building it. Nothing is measured here and nothing is claimed."
+            exit 0
+          fi
+          echo "binary   $bin"
+          echo "mode     $(sudo stat -c '%A %U:%G' "$bin")"
+          echo "on       $(df --output=source,fstype,target "$bin" | tail -1)"
+          echo "mounted  $(findmnt -no OPTIONS --target "$bin")"
+
+          code=0
+          sudo unshare --map-root-user --net -- \
+            sh -c 'ip link set lo up && exec "$0" --list' "$bin" \
+            >/tmp/inner.out 2>/tmp/inner.err || code=$?
+          echo "exec inside a namespace, as root: exit $code"
+          echo "  it printed $(wc -l < /tmp/inner.out) lines, and on stderr: $(tr '\n' ' ' < /tmp/inner.err | cut -c1-300)"
+
+          # And the same exec with no namespace at all, so the two differ in exactly
+          # one thing. Without this line a 126 here is a fact about the binary and a
+          # fact about the namespace at the same time, which is no fact at all.
+          code=0
+          sudo sh -c 'exec "$0" --list' "$bin" >/tmp/plain.out 2>/tmp/plain.err || code=$?
+          echo "exec with no namespace,      as root: exit $code"
+          echo "  it printed $(wc -l < /tmp/plain.out) lines, and on stderr: $(tr '\n' ' ' < /tmp/plain.err | cut -c1-300)"
 
       # Root compiled into `target/` and left files in the cargo home and under
       # `$HOME/.local`, so `runner` — which runs every step after this one, and the
@@ -688,13 +790,144 @@ jobs:
           grep -oE '[0-9]+ tests and [0-9]+ binaries skipped' /tmp/the-gates.log | tail -1 \
             || echo "no skip line in the gates' output — the tests gate may not have run"
 
+      # **The step that decides the job, and the only one that may.**
+      #
+      # Before this existed the gates step decided it, and the gates fail here for
+      # five tests this runner cannot run — so the job failed every time, so
+      # `post alo/gates-on-a-runner` never ran, so the status this file exists to
+      # produce was never once posted. 102 runs, no successes.
+      #
+      # The old reasoning went as far as *which gate failed* and stopped. That is
+      # too coarse by exactly one level: `the workspace's tests` is the answer both
+      # when the runner cannot make a namespace **and** when a change under test
+      # broke something. Treating the gate's name as the reason meant the run stayed
+      # silent about a real regression, which is a true-looking signal about the
+      # wrong subject — the fault this file argues against twice above and then
+      # committed.
+      #
+      # So the question asked here is *which tests failed*, against a declared list.
+      # Three answers and they are not the same:
+      #
+      #   every failure is declared      the runner's own gap, and nothing else; the
+      #                                  job may pass and the status may be posted
+      #   a failure is not declared      the change under test, or a new gap nobody
+      #                                  has looked at; the job fails
+      #   a declared test passed         the list is stale; said loudly, because a
+      #                                  list of excuses nothing ever removes from
+      #                                  becomes a list of things nobody may break
+      #
+      # The third is the liveness check, and it is the half that is usually left
+      # out: an equality is worth nothing without one on its operands, because
+      # absence reads as agreement. A declared list with no expiry would quietly
+      # grow into permission.
+      - name: whether anything failed that this runner can run
+        if: always()
+        run: |
+          declared=.github/the-tests-a-hosted-runner-cannot-run.txt
+          code=$(cat /tmp/the-gates.code 2>/dev/null || echo "")
+          if [ -z "$code" ]; then
+            echo "The gates step left no exit code, so it did not reach its end."
+            echo "Nothing is inferred from that: this job fails and a person reads the log."
+            echo "the gates step did not finish" > /tmp/the-verdict
+            exit 1
+          fi
+          if [ "$code" = 0 ]; then
+            echo "every gate passed on this runner, including the tests gate."
+            echo "That has not happened before. If it is repeatable, $declared is empty"
+            echo "in practice and the distinction between the two statuses can retire."
+            echo "every gate passed here" > /tmp/the-verdict
+            exit 0
+          fi
+
+          failed=$(sed -n 's/.*alo-kernel-loop: the gate `\(.*\)` did not pass.*/\1/p' \
+            /tmp/the-gates.log 2>/dev/null | head -1)
+          echo "the gate the supervisor named as failing: [${failed:-could not be read}]"
+          if [ "$failed" != "the workspace's tests" ]; then
+            echo
+            echo "This is not the gate this runner is known to be unable to finish, so"
+            echo "whatever it is, it is not this runner's doing. The job fails."
+            echo "the runner's own '${failed:-unnamed}' gate failed" > /tmp/the-verdict
+            exit 1
+          fi
+
+          # nextest's own naming, taken from its FAIL lines: `<crate>::<binary> <test>`.
+          # **`|| true` on both, and the emptiness asked about afterwards.** A step
+          # here runs under `-e -o pipefail`, and `grep -v` exits 1 when it selects
+          # nothing — so a declared file that was emptied would abort this step
+          # before it wrote a verdict, and an aborted decision step is a job that
+          # fails for a reason nobody can read. Each pipeline is allowed to produce
+          # nothing, and *nothing* is then a case with an answer rather than a crash.
+          sed -n 's/.*FAIL \[[^]]*\] *([^)]*) *//p' /tmp/the-gates.log \
+            | sort -u > /tmp/failed.txt || true
+          grep -v '^[[:space:]]*#' "$declared" 2>/dev/null \
+            | grep -v '^[[:space:]]*$' | sort -u > /tmp/declared.txt || true
+          echo "failed here: $(wc -l < /tmp/failed.txt); declared: $(wc -l < /tmp/declared.txt)"
+
+          # **An empty failure list is not agreement.** The tests gate failed, so
+          # something failed; reading no FAIL lines means the parse broke, not that
+          # nothing broke, and the difference is the whole point of this step.
+          if [ ! -s /tmp/failed.txt ]; then
+            echo
+            echo "The tests gate failed and no FAIL line could be read from its output."
+            echo "That is this step being unable to do its job, not the suite being fine."
+            echo "the tests gate failed and no FAIL line could be read" > /tmp/the-verdict
+            exit 1
+          fi
+
+          undeclared=$(comm -23 /tmp/failed.txt /tmp/declared.txt)
+          passed_after_all=$(comm -13 /tmp/failed.txt /tmp/declared.txt)
+
+          if [ -n "$passed_after_all" ]; then
+            echo
+            # **"did not fail" and not "passed".** A line that never appears among
+            # the failures has two explanations — the test runs here now, or the
+            # name is mistyped and has never matched anything — and this step cannot
+            # tell them apart. Saying *passed* would pick one and be wrong half the
+            # time, in a message whose whole job is to send somebody to look.
+            echo "=== these are declared as unrunnable here and did NOT fail:"
+            # Quoted and piped, never `printf '%s\n' $list`. A nextest name is
+            # `<crate>::<binary> <test>` and contains a space, so an unquoted
+            # expansion splits every entry in two and prints twice as many
+            # half-names as there are tests.
+            printf '%s\n' "$passed_after_all" | sed 's/^/  /'
+            echo "Either the runner gained what they need, or a name there is mistyped and has"
+            echo "never matched anything. Look, then delete the line: it is an"
+            echo "excuse, and an excuse that has stopped being true is a permission."
+          fi
+
+          if [ -n "$undeclared" ]; then
+            echo
+            echo "=== these failed and are NOT declared:"
+            printf '%s\n' "$undeclared" | sed 's/^/  /'
+            echo
+            echo "This runner is not known to cause these, so they belong to the change"
+            echo "under test or to a gap nobody has measured. The job fails, and it is"
+            echo "meant to: this is the case the old name-only check was silent about."
+            printf 'tests failed that this runner is not declared to cause: %s\n' \
+              "$(printf '%s' "$undeclared" | tr '\n' ' ')" > /tmp/the-verdict
+            exit 1
+          fi
+
+          echo
+          echo "every failure here is one this runner is declared to cause, and no other"
+          echo "gate failed. The gates this runner can run, passed."
+          echo "only the tests this runner cannot run failed" > /tmp/the-verdict
+          {
+            echo "### the gates a hosted runner can run"
+            echo
+            echo "All of them passed. \`$(wc -l < /tmp/declared.txt)\` tests could not run here and are"
+            echo "declared in \`$declared\`; every one of them still fails, so none is stale."
+            echo
+            echo "This is **not** \`alo/nine-gates\`. That is posted by a lane, from a machine"
+            echo "where all nine ran."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # **`alo/gates-on-a-runner`, and deliberately not `alo/nine-gates`.**
       #
       # This workflow was written to post the status `main` requires, and it very
-      # nearly did. Two tests need an accessibility bus this runner cannot give
-      # them as root and five need a network namespace it refuses to make, so the
-      # workspace-tests gate does not pass here — and the plan was for the run to
-      # *say so* while still posting.
+      # nearly did. Five tests re-run themselves inside a network namespace and
+      # cannot exec there, so the workspace-tests gate does not pass here — and the
+      # plan was for the run to *say so* while still posting.
       #
       # That plan was wrong and it was wrong in the shape this file argues against
       # twice above. `alo/nine-gates` means the nine gates passed. **Naming a gap
@@ -771,31 +1004,32 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.after || github.sha }}
         run: |
-          # **Not anchored to the start of the line.** `tee` writes what the
-          # supervisor printed, but GitHub's own log collector prefixes a timestamp
-          # to everything it displays, and if this file ever gains one an anchored
-          # pattern would match nothing — and then say *could not be read* for ever,
-          # which fails safe and never works. Matching anywhere in the line costs
-          # nothing and cannot silently stop working.
-          failed=$(sed -n 's/.*alo-kernel-loop: the gate `\(.*\)` did not pass.*/\1/p' \
-            /tmp/the-gates.log 2>/dev/null | head -1)
-          echo "the gate the supervisor named as failing: [${failed:-could not be read}]"
+          # **It reads the verdict the decision step wrote; it does not derive its
+          # own.** This used to re-read the log and ask *which gate failed*, and
+          # answer `the workspace's tests` in two different situations: the five
+          # tests this runner cannot run, and a change that broke a test. It then
+          # stayed silent for both — so the one case worth posting about was the one
+          # it could not see. Two readers of the same log, asking slightly different
+          # questions, is how that happened; now there is one reader and one answer.
+          verdict=$(cat /tmp/the-verdict 2>/dev/null || echo "")
+          echo "the verdict: [${verdict:-none was written}]"
 
-          if [ -z "$failed" ]; then
-            echo "Nothing is posted. The failing gate could not be read, and a guess here"
-            echo "would be worse than the silence the top-of-job announcement already broke."
+          if [ -z "$verdict" ]; then
+            echo "Nothing is posted. The decision step wrote no verdict, which means the job"
+            echo "failed before it ran — a toolchain, a library, the checkout. That is this"
+            echo "file's own business and not a statement about the change, and the"
+            echo "announcement posted at the top of this job already says a lane is needed."
             exit 0
           fi
 
-          if [ "$failed" = "the workspace's tests" ]; then
-            echo "This is the one gate this runner cannot run completely — seven tests want a"
-            echo "namespace or an accessibility bus it has not got, and they pass on every"
-            echo "lane. So this tells a lane nothing it did not know, and the announcement"
-            echo "posted at the top of this job stands unchanged."
-            exit 0
-          fi
+          case $verdict in
+            "only the tests this runner cannot run failed" | "every gate passed here")
+              echo "Nothing is posted: the job did not fail for a reason about this change."
+              exit 0
+              ;;
+          esac
 
-          said="the runner's own '$failed' gate failed, so this will not pass as it stands"
+          said="$verdict — so this will not pass as it stands"
           if [ "${#said}" -gt 140 ]; then
             said="a gate this runner can fully run has failed, so this will not pass as it stands"
           fi
