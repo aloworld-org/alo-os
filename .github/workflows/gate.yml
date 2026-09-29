@@ -766,6 +766,51 @@ jobs:
           echo "exec inside a namespace, as root: exit $code"
           echo "  it printed $(wc -l < /tmp/inner.out) lines, and on stderr: $(tr '\n' ' ' < /tmp/inner.err | cut -c1-300)"
 
+          # ------------------------------------------------ which part of the path
+          #
+          # The run of 2026-09-29 established *that* the namespace is the difference:
+          # this exec is `Permission denied` inside one and exit 0 outside, on a
+          # binary that is `-rwxr-xr-x root:root`. It did not establish **why**, and
+          # the next step is not a theory.
+          #
+          # `unshare --map-root-user` maps only uid 0. A process in that namespace
+          # holds no capability over a file owned by a uid that is *not* mapped, so
+          # `CAP_DAC_OVERRIDE` stops covering for a mode that would otherwise deny —
+          # and one directory in the path owned by an unmapped user without `o+x` is
+          # then enough to deny traversal to root itself. That mechanism was
+          # reproduced on a lane's machine deliberately: an unmapped owner at 0700
+          # gives exactly this exit code and message, at 0755 it does not.
+          #
+          # **Reproducing a mechanism that produces the symptom is not the same as
+          # showing it is this one.** Every component here is expected to be root's,
+          # and the binary certainly is, so the local reproduction may be a different
+          # road to the same 126. So the path is walked and each component's owner and
+          # mode printed, and the namespace's own `uid_map` beside them — which
+          # together name the component or rule the explanation out.
+          echo "  the path, one component at a time:"
+          walk=""
+          printf '%s\n' "$bin" | tr '/' '\n' | while read -r part; do
+            [ -n "$part" ] || continue
+            walk="$walk/$part"
+            sudo stat -c '    %A %U:%G (%u:%g)  %n' "$walk" 2>/dev/null \
+              || echo "    could not stat $walk"
+          done
+          echo "  this process is $(id -un) ($(id -u)), and inside the namespace:"
+          sudo unshare --map-root-user --net -- \
+            sh -c 'echo "    uid_map: $(tr -s " " < /proc/self/uid_map)"; echo "    id: $(id -u)"' \
+            2>&1 | sed 's/^/  /' || true
+
+          # And the discriminator: the same binary, copied where every component is
+          # root's. If this execs and the original does not, the path is the cause and
+          # the component above is named. If it fails too, the path is not the cause
+          # and the local reproduction was a different road to the same code.
+          sudo cp "$bin" /tmp/the-same-binary && sudo chmod 755 /tmp/the-same-binary
+          code=0
+          sudo unshare --map-root-user --net -- \
+            sh -c 'exec "$0" --list' /tmp/the-same-binary >/tmp/copied.out 2>/tmp/copied.err || code=$?
+          echo "the same binary under /tmp, inside a namespace: exit $code"
+          echo "  it printed $(wc -l < /tmp/copied.out) lines, and on stderr: $(tr '\n' ' ' < /tmp/copied.err | cut -c1-200)"
+
           # And the same exec with no namespace at all, so the two differ in exactly
           # one thing. Without this line a 126 here is a fact about the binary and a
           # fact about the namespace at the same time, which is no fact at all.
