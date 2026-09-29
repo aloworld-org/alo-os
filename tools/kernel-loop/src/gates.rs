@@ -499,12 +499,49 @@ fn ran(gate: &Gate, at: &Path) -> Result<Result<(), String>, String> {
     ))
 }
 
+/// How many lines of the end of a gate's output the sentence carries.
+///
+/// The end is where nextest puts its summary and its list of failures, so this
+/// is the part that answers **which**.
+const THE_TAIL: usize = 25;
+
+/// How many reasons the sentence quotes from the middle, and how many lines of
+/// each.
+///
+/// Bounded because a suite that fails in fifty places would otherwise produce a
+/// refusal nobody reads, and a refusal nobody reads is a refusal somebody
+/// overrides — which is this function's whole reason for carrying anything.
+const HOW_MANY_REASONS: usize = 8;
+/// The reason's own line and the three after it, which is where the assertion,
+/// the left and the right are.
+const LINES_OF_EACH: usize = 4;
+
+/// Whether a line begins a reason something failed.
+///
+/// `panicked at` is Rust's, and the two `error` forms are cargo's and nextest's
+/// own — a gate that fails to build never panics at all, and before this it said
+/// nothing whatever about why.
+fn begins_a_reason(line: &str) -> bool {
+    let trimmed = line.trim_start();
+    trimmed.contains("panicked at")
+        || trimmed.starts_with("error[")
+        || trimmed.starts_with("error:")
+}
+
 /// One gate's result, read.
 ///
 /// Separate from running it so that *what a failure does* is a thing this
-/// crate's own tests can state: it stops, it names the gate, and it carries the
-/// tail of what the gate printed so the sentence is diagnosable without going
-/// to look for a log.
+/// crate's own tests can state: it stops, it names the gate, and it carries
+/// enough of what the gate printed that the sentence is diagnosable without
+/// going to look for a log.
+///
+/// **It carries the reasons as well as the tail**, and that is not a
+/// refinement. The tail alone is what nextest prints last, which is the summary
+/// and the list of failures: it answers *which test* and never *why*. The
+/// reasons are in the per-test blocks in the middle, and the tail pushes them
+/// out. Measured on CI on 2026-09-29 by the third PC: 173 KB of log, every
+/// `FAIL [` line present, **not one panic and not one assertion**, and about two
+/// hours spent reproducing locally what the log already knew.
 ///
 /// # Errors
 /// A sentence whenever the gate did not exit successfully. There is no gate
@@ -513,12 +550,31 @@ fn whether_it_passed(named: &str, ok: bool, out: &str, err: &str) -> Result<(), 
     if ok {
         return Ok(());
     }
-    let tail: Vec<&str> = err.lines().chain(out.lines()).collect();
-    let from = tail.len().saturating_sub(25);
-    Err(format!(
-        "the gate `{named}` did not pass, so nothing was published:\n{}",
-        tail.get(from..).unwrap_or_default().join("\n")
-    ))
+    let everything: Vec<&str> = err.lines().chain(out.lines()).collect();
+    let tail_begins = everything.len().saturating_sub(THE_TAIL);
+
+    // Only reasons the tail does not already carry, so nothing is said twice.
+    let mut reasons: Vec<&str> = Vec::new();
+    let mut found = 0;
+    let mut at = 0;
+    while at < tail_begins && found < HOW_MANY_REASONS {
+        if everything.get(at).is_some_and(|line| begins_a_reason(line)) {
+            let until = (at + LINES_OF_EACH).min(tail_begins);
+            reasons.extend(everything.get(at..until).unwrap_or_default());
+            found += 1;
+            at = until;
+        } else {
+            at += 1;
+        }
+    }
+
+    let mut said = format!("the gate `{named}` did not pass, so nothing was published:\n");
+    if !reasons.is_empty() {
+        said.push_str(&reasons.join("\n"));
+        said.push_str("\n---\n");
+    }
+    said.push_str(&everything.get(tail_begins..).unwrap_or_default().join("\n"));
+    Err(said)
 }
 
 /// That this machine can run the gates at all, before it spends four minutes
@@ -1101,6 +1157,78 @@ mod tests {
         assert!(why.contains("the workspace's tests"), "{why}");
         assert!(why.contains("nothing was published"), "{why}");
         assert!(why.contains("0 passed; 5 failed"), "{why}");
+    }
+
+    /// **A reason buried under a long tail is still carried**, which is the
+    /// whole point and the thing the test above cannot see.
+    ///
+    /// The shape is CI's own: the panic early, hundreds of lines of passing
+    /// tests after it, the summary and the failure list at the end. Carrying the
+    /// last twenty-five lines of that answers *which test* and loses *why* —
+    /// measured on CI on 2026-09-29, 173 KB of log with every `FAIL [` line
+    /// present and not one panic in it.
+    #[test]
+    fn a_reason_buried_under_a_long_tail_is_still_carried() {
+        let mut out = String::from(
+            "        PASS [   0.0s] alo-brokerd for_the_unit::writes_it\n\
+             thread 'for_the_unit::the_file_is_not_wide_open' panicked at brokerd/src/unit.rs:88:9:\n\
+             assertion `left == right` failed\n  left: 0o644\n right: 0o600\n",
+        );
+        for which in 0..400 {
+            out.push_str(&format!(
+                "        PASS [   0.0s] alo-thing test_number_{which}\n"
+            ));
+        }
+        out.push_str("     Summary [ 90.0s] 401 tests run: 400 passed, 1 failed\n");
+        out.push_str(
+            "        FAIL [   0.0s] alo-brokerd for_the_unit::the_file_is_not_wide_open\n",
+        );
+
+        let Err(why) = whether_it_passed("the workspace's tests", false, &out, "") else {
+            panic!("a failed gate was treated as a pass")
+        };
+
+        assert!(why.contains("the_file_is_not_wide_open"), "which: {why}");
+        assert!(why.contains("panicked at"), "the reason is missing: {why}");
+        assert!(
+            why.contains("left: 0o644"),
+            "what was asserted is missing: {why}"
+        );
+        assert!(why.contains("Summary"), "the tail is missing: {why}");
+    }
+
+    /// **A gate that failed to build says so too**, though nothing panicked.
+    ///
+    /// `bpf-linker not found` is not a panic and never was; before this, a build
+    /// failure early in a long run said nothing whatever about its cause.
+    #[test]
+    fn a_build_failure_is_a_reason_even_though_nothing_panicked() {
+        let mut out = String::from(
+            "   Compiling alo-bounding-kernel v0.0.1\n\
+             error: linker `bpf-linker` not found\n  |\n  = note: No such file or directory\n",
+        );
+        for which in 0..60 {
+            out.push_str(&format!("   Compiling crate_number_{which} v0.0.1\n"));
+        }
+        out.push_str("error: could not compile `alo-bounding-kernel`\n");
+
+        let Err(why) = whether_it_passed("clippy, warnings denied", false, &out, "") else {
+            panic!("a failed gate was treated as a pass")
+        };
+        assert!(why.contains("bpf-linker"), "{why}");
+        assert!(why.contains("No such file or directory"), "{why}");
+    }
+
+    /// **Nothing is said twice**: a reason already inside the tail is not also
+    /// quoted above it.
+    #[test]
+    fn a_reason_inside_the_tail_is_not_quoted_twice() {
+        let out = "thread 'x' panicked at a.rs:1:1:\nassertion failed\n";
+        let Err(why) = whether_it_passed("the workspace's tests", false, out, "") else {
+            panic!("a failed gate was treated as a pass")
+        };
+        assert_eq!(why.matches("panicked at").count(), 1, "{why}");
+        assert!(!why.contains("---"), "there is nothing to separate: {why}");
     }
 
     /// And a gate that passed says nothing at all, which is what lets the
