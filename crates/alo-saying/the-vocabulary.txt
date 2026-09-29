@@ -597,6 +597,8 @@ elsewhere.not-sent.no-goal	Say what you want this machine to do
 elsewhere.reaching.answered	Answered
 elsewhere.reaching.did-not-answer	Did not answer
 elsewhere.reaching.not-asked-yet	Not asked yet
+elsewhere.window.on-another-machine	On another machine
+elsewhere.window.on-machine	On {called}
 elsewhere.work.came-back	Done
 elsewhere.work.could-not-be-sent	Could not be sent
 elsewhere.work.sent	Sent

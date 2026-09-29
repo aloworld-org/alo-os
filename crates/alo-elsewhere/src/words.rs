@@ -290,8 +290,39 @@ pub const IT_WAS_STOPPED_WORD: Word = Word::saying(
      error.",
 );
 
+// ---------------------------------------------------------------------------
+// What a window says about where it is — [`crate::Marked`]. Read on the window
+// itself, in every state including filling the screen.
+// ---------------------------------------------------------------------------
+
+/// The key of [`ON_MACHINE_WORD`].
+pub const ON_MACHINE: &str = "elsewhere.window.on-machine";
+
+/// The key of [`ON_ANOTHER_MACHINE_WORD`].
+pub const ON_ANOTHER_MACHINE: &str = "elsewhere.window.on-another-machine";
+
+/// A window showing a named machine of the person's.
+pub const ON_MACHINE_WORD: Word = Word::saying(ON_MACHINE, "On {called}").noting(
+    "Carried by a window that is showing another of the person's machines, in every state the \
+     window can be in — including filling the screen, which is when every other cue is gone and \
+     this is the only thing left saying the screen is not this computer. It is a WORD and not a \
+     colour: a person who cannot rely on hue must still be able to tell, and a screen reader \
+     must be able to speak it. {called} is the name that person gave the machine, which is \
+     theirs and is never translated. Keep it short — it sits on a window, not in a sentence.",
+);
+
+/// A window showing a machine the person has removed, or never added.
+pub const ON_ANOTHER_MACHINE_WORD: Word = Word::saying(ON_ANOTHER_MACHINE, "On another machine")
+    .noting(
+        "Carried by a window showing a machine that is no longer on the person's list. It must \
+         still say the window is elsewhere: a window that quietly stopped saying so would look \
+         like this computer's own, and somebody could type a password into a machine they did \
+         not mean to. It is not an error and nothing has gone wrong — the machine is simply no \
+         longer one they keep, so there is no name to give.",
+    );
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 21] = [
     ANSWERED_WORD,
     DID_NOT_ANSWER_WORD,
     NOT_ASKED_YET_WORD,
@@ -311,6 +342,8 @@ pub const EVERY_WORD: [Word; 19] = [
     NO_GOAL_WORD,
     GOAL_TOO_LONG_WORD,
     IT_WAS_STOPPED_WORD,
+    ON_MACHINE_WORD,
+    ON_ANOTHER_MACHINE_WORD,
 ];
 
 /// What can go wrong declaring this crate's words.
@@ -440,6 +473,30 @@ mod tests {
         assert!(NAME_TOO_LONG_WORD.says().contains("{at_most}"));
         assert!(ALREADY_ADDED_WORD.says().contains("{called}"));
         assert!(GOAL_TOO_LONG_WORD.says().contains("{at_most}"));
+        assert!(ON_MACHINE_WORD.says().contains("{called}"));
+    }
+
+    /// **A window that is elsewhere says so with a word, never with a colour.**
+    /// Both notes say it outright, because a translator handed a two-word
+    /// string on a window has no way to know it is the only thing standing
+    /// between somebody and a password typed into the wrong machine.
+    #[test]
+    fn the_window_markings_tell_the_translator_they_are_not_decoration() {
+        let named = ON_MACHINE_WORD.note().expect("a note");
+        assert!(
+            named.contains("WORD and not a colour"),
+            "the note does not say the marking must not rely on hue"
+        );
+        assert!(
+            named.contains("filling the screen"),
+            "the note does not say the marking survives full screen"
+        );
+
+        let unnamed = ON_ANOTHER_MACHINE_WORD.note().expect("a note");
+        assert!(
+            unnamed.contains("password"),
+            "the note does not say what getting it wrong costs"
+        );
     }
 
     /// **The result comes back to the machine that asked**, and the sentence
