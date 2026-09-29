@@ -298,6 +298,37 @@ jobs:
             exit 1
           }
 
+      # **Can a namespace be made here at all.** `alo-nearby`'s IPv6 test and
+      # `alo-asking`'s four office tests each make a network namespace of their
+      # own with util-linux's `unshare`, inside a user namespace — deliberately,
+      # and `asked_and_answered_over_ipv6.rs` says why in its own words: a
+      # development machine may have IPv6 switched off outright (the WSL2 kernel
+      # they were written on does) and a fresh namespace has it on, so what is
+      # measured is the crate rather than however the host is configured.
+      #
+      # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor and
+      # WSL2 does not, which is the likeliest reason those five passed on a lane —
+      # including as uid 65534 — and failed here. Root is exempt, and the gates
+      # below run as root, so this step changes nothing: it **states** what the
+      # kernel is set to and whether a namespace can actually be made, as this
+      # runner and as root. If the five fail again, these lines are where a reader
+      # looks first, and they distinguish *the kernel forbids it* from *something
+      # else is wrong* without another run to find out.
+      - name: can a namespace be made
+        run: |
+          echo "kernel.apparmor_restrict_unprivileged_userns = $(
+            cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null \
+              || echo 'not a setting on this kernel'
+          )"
+          for who in "$(id -un)" root; do
+            if [ "$who" = root ]; then as=sudo; else as=""; fi
+            if $as unshare --user --map-root-user --net -- true 2>/dev/null; then
+              echo "unshare as $who: a network namespace can be made"
+            else
+              echo "unshare as $who: REFUSED — the five namespace tests cannot pass this way"
+            fi
+          done
+
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
       # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
       # slept and NTP stepped the clock forward mid-gate.
@@ -317,15 +348,62 @@ jobs:
       # `dbus-run-session` gives the gates a bus of their own that dies with
       # them; `gnome-keyring-daemon --unlock` puts a Secret Service on it with an
       # empty password, which is what the tests expect of a fresh login.
+      #
+      # **And as root, because uid 0 is part of what nineteen of them measure.**
+      # A hosted runner is `runner`, uid 1001. A lane's machine gates as uid 0,
+      # and so does every daemon here in production — `alo-brokerd` is the update
+      # broker. `for_the_unit` writes a file mode 0644 and pins the refusal *"is
+      # not root's, so the broker did not write it"*; owned by `runner` that
+      # sentence is never reached, so the test fails while the code is right.
+      #
+      # Measured on a lane's machine on 2026-09-28, one binary run twice: as uid 0,
+      # 5 of 5 passed; as uid 65534, 3 of the 5 failed with that sentence as the
+      # panic. Those three are three of the eighteen `alo-brokerd` failures the
+      # first session-bus run reported, with `alo-proxy`'s password-file test the
+      # nineteenth. This is not a workaround for the tests — it is the environment
+      # they describe.
       - name: the nine gates
         run: |
           began=$(cut -d. -f1 /proc/uptime)
+
+          # `sudo` replaces the PATH with its own `secure_path`, which has no
+          # cargo in it, and `-E` does not bring PATH back — it is on sudo's
+          # blacklist by design. So the PATH is handed over explicitly, with the
+          # cargo home's `bin` in front of it.
+          #
+          # And it is **checked here rather than discovered inside**: a root shell
+          # with no cargo makes the gates fail, and a gate failure is a sentence
+          # about the work. This one would be a sentence about this file, so it
+          # says so in its own words. Watched failing exactly this way on a lane's
+          # machine on 2026-09-28 before it was written down.
+          gates_path="$HOME/.cargo/bin:$PATH"
+          root_cargo=$(sudo -E env "PATH=$gates_path" bash -c 'command -v cargo' || true)
+          if [ -z "$root_cargo" ]; then
+            echo "no cargo on root's PATH. The gates are not what failed — this step is."
+            echo "  the PATH handed over: $gates_path"
+            exit 1
+          fi
+          echo "root runs $root_cargo"
+
           set -o pipefail
-          dbus-run-session -- bash -c '
-            printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
-            ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
-          ' | tee /tmp/the-gates.log
+          sudo -E env "PATH=$gates_path" "HOME=$HOME" \
+            dbus-run-session -- bash -c '
+              printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
+              ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
+            ' | tee /tmp/the-gates.log
           echo "the gates took $(( $(cut -d. -f1 /proc/uptime) - began ))s"
+
+      # Root compiled into `target/` and may have left files in the cargo home, so
+      # the cache's own save step — which runs as `runner` — would meet files it
+      # cannot read. Handing them back is part of gating as root rather than a
+      # separate concern, so it happens whether the gates passed or failed.
+      - name: give the tree back to the runner
+        if: always()
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" \
+            "$HOME/.cargo" "$HOME/.local/share/keyrings" \
+            target tools/kernel-loop/target 2>/dev/null || true
+          echo "owned by $(id -un) again"
 
       # **What was not run, beside what passed.** A skip is the same colour as a
       # pass, so this puts the count where somebody comparing a CI run against a
