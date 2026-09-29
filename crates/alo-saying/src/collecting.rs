@@ -107,6 +107,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-dividing",
     "alo-dock",
     "alo-egress",
+    "alo-elsewhere",
     "alo-enrolling",
     "alo-files",
     "alo-finding",
@@ -288,6 +289,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-egress", alo_egress::declare_into)?;
     declare(
         &mut vocabulary,
+        "alo-elsewhere",
+        alo_elsewhere::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
         "alo-enrolling",
         alo_enrolling::words::declare_into,
     )?;
@@ -449,6 +455,7 @@ mod tests {
         ("alo-dividing", "dividing.place.left-half"),
         ("alo-dock", "dock.hiding.never"),
         ("alo-egress", "egress.destination.paired-machine"),
+        ("alo-elsewhere", "elsewhere.reaching.did-not-answer"),
         ("alo-enrolling", "enrolling.that-does-not-open-this-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
         ("alo-finding", "finding.not-absolute"),
@@ -568,6 +575,7 @@ mod tests {
             alo_dividing::dividing_words().unwrap().how_many(),
             alo_dock::dock_words().unwrap().how_many(),
             alo_egress::egress_words().unwrap().how_many(),
+            alo_elsewhere::elsewhere_words().unwrap().how_many(),
             alo_enrolling::words::enrolling_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),
             alo_finding::finding_words().unwrap().how_many(),

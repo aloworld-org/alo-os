@@ -694,6 +694,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-elsewhere"
+version = "0.0.1"
+dependencies = [
+ "alo-nearby",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-encrypting"
 version = "0.0.1"
 
@@ -1351,6 +1360,7 @@ dependencies = [
  "alo-dividing",
  "alo-dock",
  "alo-egress",
+ "alo-elsewhere",
  "alo-enrolling",
  "alo-files",
  "alo-finding",
