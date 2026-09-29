@@ -342,6 +342,40 @@ jobs:
       # runner and as root. If the five fail again, these lines are where a reader
       # looks first, and they distinguish *the kernel forbids it* from *something
       # else is wrong* without another run to find out.
+      - name: let an unprivileged user make a namespace
+        run: |
+          # **A measurement, not a fix.** The five namespace tests
+          # (`alo-asking`'s four and `alo-nearby`'s one) shell out to `unshare`
+          # as the ordinary runner user, and this image refuses that:
+          # `kernel.apparmor_restrict_unprivileged_userns = 1`. Every diagnostic
+          # so far has *reported* that value; none has tried turning it off, so
+          # whether it is the whole cause is unmeasured rather than disproven.
+          #
+          # A sysctl on an ephemeral VM that is destroyed with the job. Nothing
+          # persists and there is nothing to revert.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          # Older or differently configured images use this one instead.
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+
+          # **Ask the capability, not the setting.** A sysctl that returns 0 and
+          # a namespace that can actually be made are different questions, and
+          # this whole repository has spent two days on calls that answer
+          # successfully about a different one.
+          if unshare --user --map-root-user --net -- true 2>/dev/null; then
+            echo "an unprivileged user CAN now make a network namespace"
+          else
+            echo "STILL REFUSED as $(id -un): the sysctl is not the cause, or not the whole of it"
+            echo "kernel.apparmor_restrict_unprivileged_userns = $(
+              cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo unset
+            )"
+            # **Loud rather than silent.** A runner that cannot make a namespace
+            # and says nothing would let the five egress tests fall back to
+            # looking skipped, and *the egress tests passed* and *the egress
+            # tests did not run* must never look alike from outside. That is
+            # CLAUDE.md's first law, and it is the reason this experiment exists.
+            exit 1
+          fi
+
       - name: can a namespace be made
         run: |
           echo "kernel.apparmor_restrict_unprivileged_userns = $(
