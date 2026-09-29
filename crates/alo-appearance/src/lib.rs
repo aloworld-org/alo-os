@@ -16,9 +16,7 @@
 //! | [`contrast`] | How far apart two colours are to look at, to the standard |
 //! | [`token`] | The colours alo OS is built out of, from the design brief |
 //! | [`accent`] | The five a person can choose from, and the one they cannot |
-//! | [`picture`] | One picture, and how it meets the edges of a screen |
-//! | [`rotating`] | A folder of pictures, one at a time |
-//! | [`background`] | What is behind the windows: a picture, a folder, a colour |
+//! | [`background`] | The surface a person works on, and what it is made of |
 //! | [`display`] | Which screen, when there is more than one |
 //! | [`time`] | A time of day, which is all a schedule needs |
 //! | [`scheme`] | Light and dark, and the schedule that moves between them |
