@@ -28,8 +28,29 @@
 //! click on every application the next morning goes somewhere arbitrary — which
 //! breaks the rule on exactly the day a person most relies on it. That belongs
 //! to whoever owns `leaving.toml` rather than to a crate about a dock, and it is
-//! written down in `docs/design/what-a-click-on-the-dock-does.md` as owed rather
-//! than fixed here.
+//! written down under *What is owed elsewhere* in `docs/design/the-alo-dock.md`
+//! as owed rather than fixed here.
+//!
+//! **Until 2026-09-29 this pointed at a design note called
+//! `what-a-click-on-the-dock-does`, which was never written** — no file of that
+//! name has existed on any branch at any point in this repository's history.
+//! Nothing was lost: the substance is in the design note named above, which
+//! points back at this file by path and resolves. **Only one of the two
+//! directions worked, and the broken one read exactly like the working one** —
+//! and the half that resolves is evidence to a reader that the pair was checked.
+//!
+//! That name is written here without a path and without an extension **on
+//! purpose**. Written as `docs/design/….md` it would be a pointer: it would read
+//! like a live one to somebody skimming and like a live one to any check, which
+//! is the fault this paragraph exists to record, reproduced inside the record of
+//! it. Saying *a note called X, which was never written* carries more — it states
+//! outright that the file does not exist, which a quoted path does not — and
+//! leaves nothing for a checker to have to tell apart.
+//!
+//! A pointer a reader believes without opening is `alo-citing`'s subject, in its
+//! own words: *it has borrowed the authority of a decision nobody made, and reads
+//! exactly like one that has not.* It asks that question of `docs/decisions/`.
+//! One directory away, nothing asked it.
 
 use crate::window::{AppId, Window, WindowId};
 
