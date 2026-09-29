@@ -151,29 +151,51 @@ somebody signs against a shell running on a machine — neither the assessment n
 the machine exists. The claim must not be read out of the fallback's tests, which
 is what *the tree is shared* would be mistaken for.
 
-### **Set the background** — from a file, a folder that rotates, or a solid colour; per display
+### **Set the surface's material** — its colour and how it is finished; per display on a multi-monitor desk
 
 **Shown by:** `docs/autonomy/updates/several-displays-each-with-its-own-background-and-dock.md`,
-`crates/alo-appearance/tests/appearance_kept_in_its_own_file.rs`
+`crates/alo-appearance/tests/appearance_kept_in_its_own_file.rs`,
+`crates/alo-shell/src/screen_background_tests.rs`
 
-**Still owed:** a screen. Background per display is decided in `alo-appearance`
-and drawn by the shell on a nested compositor; the rotation of a folder and what
-a person sees when they choose one are owed to a machine with a display, and the
-Settings panel that offers it is owed with it.
+**Still owed:** the material, and a screen. What exists is the **colour** half:
+`screen_background.rs` draws one screen's chosen colour across the whole of it,
+per display, and the tests above hold that. *How it is finished* — the surface
+ADR 0075 says a person chooses — has no code and no decision beyond the record's
+own sentence, and what somebody sees while choosing one is owed to a machine with
+a display along with the Settings panel that offers it.
 
-### Set the lock-screen image, independently of the desktop
+**And the removal is owed before the promise can be read at all.** ADR 0075 is
+accepted and its code half is not done: `Picture`, `Of::File`, `Of::Shipped` and
+`Fitting` are still in `alo-appearance`, and
+`screen_background_tests.rs` still holds *a picture background is fitted to this
+screen*. So this crate currently passes tests for the feature the record removes.
+
+*This entry read **from a file, a folder that rotates, or a solid colour** until
+2026-09-29, when the promise was reworded to match ADR 0075.*
+
+### The lock screen shows the same surface and no client's pixels
 
 **Shown by:** `crates/alo-appearance/src/lock.rs`,
 `crates/alo-appearance/tests/appearance_kept_in_its_own_file.rs`,
 `crates/alo-appearance/tests/the_contract_describes_this_file.rs`
 
-**Still owed:** a lock screen somebody walks past. `Lock::TheDesktop` follows the
-desktop and `Lock::Its` takes any background at all, which is the
-*independently*; and the one case the file exists for is decided — following does
-**not** follow a rotating folder, because the desktop is seen by whoever is signed
-in and the lock screen by whoever walks past, and a person who pointed their
-background at a folder of their own photographs did not choose to show them to a
-corridor. Drawing it is the shell's.
+**Still owed:** the rule this promise now makes, and a lock screen somebody walks
+past. *No client's pixels* is shown:
+`crates/alo-shell/examples/support/the_walk_check.rs` says in its own words that
+the lock texture imports no client, and `lock_image_decode.rs` composites
+transparency against opaque black so none can show through. **The same surface**
+is not shown by anything: `Lock::Its` still takes any background at all, which
+was the old *independently*, and nothing asserts the lock screen shows what the
+plane shows.
+
+**The picture path is still here and ADR 0075 removes it**:
+`lock_image_decode.rs`, `lock_image_fit.rs`, `lock_texture.rs` and
+`lock_background_path.rs`. Until they go, the evidence above is evidence about a
+lock screen that can still show a photograph.
+
+*This entry read **Set the lock-screen image, independently of the desktop**
+until 2026-09-29. Its old form was right that `Lock::Its` is the independence;
+the promise changed under it.*
 
 *This entry read **Shown by: nothing** in its first draft, which was wrong, and
 wrong the way this whole audit exists to prevent: the claim was written without
@@ -241,15 +263,26 @@ agent's colour reaches is drawn by the shell on a machine that does not exist.
 the person's own file; what nothing here shows is a rendered surface at two
 scales, which is the compositor's and is owed to a machine.
 
-### Wallpapers shipped with the image, so a fresh machine is not grey
+### **A fresh machine already looks composed** — the plane ships with a surface of its own, so nobody meets a grey rectangle
 
-**Shown by:** `crates/alo-image/tests/the_default_wallpaper_is_installed.rs`,
-`docs/autonomy/updates/approved-wallpaper-source-artwork.md`
+**Shown by:** nothing that survives ADR 0075.
 
-**Still owed:** more than one. The test holds that the image installs *the*
-default wallpaper; the promise is plural, and a fresh machine with one wallpaper
-is not grey but is not what was promised either. Owed by whoever ships the
-artwork.
+This is not the usual *nothing*, and it is worth being exact. There **is**
+evidence — `crates/alo-image/tests/the_default_wallpaper_is_installed.rs` and
+`docs/autonomy/updates/approved-wallpaper-source-artwork.md` — and both show the
+**old** answer: a photograph the image installs, which ADR 0075 deletes. The
+appearance a release ships names that wallpaper as what a machine looks like
+before anybody changes anything.
+
+**Still owed:** the whole of the new answer. After the removal, the shipped
+appearance names a wallpaper that will not exist, and nothing in this repository
+says what surface a machine with no choices shows instead. A promise whose only
+evidence is for the thing being removed is in a worse position than one with no
+evidence at all, because those tests are green and say so.
+
+*This entry read **Wallpapers shipped with the image, so a fresh machine is not
+grey** until 2026-09-29, and its **Still owed** said the promise was plural and
+one wallpaper was not enough. The promise is now that there is no wallpaper.*
 
 **The ordinary things a desktop must do**
 

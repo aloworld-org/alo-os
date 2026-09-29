@@ -1950,10 +1950,18 @@ sorted the same way v0.01 now is.
       refuses ours. The account and the billing live outside this repository;
       what the machine knows is an address, a key in the keyring, a region,
       and whether the last request was accepted
-- [ ] **Making it yours**: background from a file, folder or colour and per
-      display; lock-screen image; light and dark; an accent from the five
-      designed hues, terracotta reserved (ADR 0010); text scaling; wallpapers
-      shipped in the image
+- [ ] **Making it yours**: the surface's own material and colour, per display;
+      light and dark; an accent from the five designed hues, terracotta
+      reserved (ADR 0010); text scaling
+      *Three parts of this promise were **deleted rather than completed** on
+      2026-09-29, and it read as though they were owed until then: the
+      background from a **file** or a **folder**, the **lock-screen image**, and
+      the **wallpapers shipped in the image**. [ADR
+      0075](docs/decisions/0075-alo-os-has-no-wallpaper-the-canvass-own-surface-is-the-desktop.md),
+      accepted 2026-09-28 by the owner, decides that alo OS ships no wallpaper
+      and that the canvas plane's own surface is the desktop — so what a person
+      chooses is that surface's material, not a picture behind it. The promise is
+      smaller, not unmet, and the record is the reason.*
   - [ ] **The code.**
         `alo-appearance` — background per display, light and dark, text
         scaling, and the accent set as working code, with every word of it

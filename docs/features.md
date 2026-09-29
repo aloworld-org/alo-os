@@ -29,21 +29,28 @@ current release, and Non-goals below.
 
 **Making it yours**
 
-The first thing anybody does with a new machine is change the picture. It is not
-a small feature: it is the moment a person decides whether the system is theirs
-or the company's, and an operating system that cannot do it feels unfinished
-however good the rest is.
+The first thing anybody does with a new machine is make it look like theirs. It
+is not a small feature: it is the moment a person decides whether the system is
+theirs or the company's, and an operating system that cannot do it feels
+unfinished however good the rest is.
 
-- [v0.5] **Set the background** — from a file, a folder that rotates, or a solid colour; per display on a multi-monitor desk
-- [v0.5] Set the lock-screen image, independently of the desktop
+**What they change is the surface they work on, not a picture behind it.** alo OS
+ships no wallpaper: the canvas plane's own surface *is* the desktop, so making a
+machine yours is done to that surface. [ADR
+0075](decisions/0075-alo-os-has-no-wallpaper-the-canvass-own-surface-is-the-desktop.md),
+accepted 2026-09-28, decides this and says why both places a picture could go are
+worse than none.
+
+- [v0.5] **Set the surface's material** — its colour and how it is finished; per display on a multi-monitor desk. *Read from a file or a rotating folder: **deleted rather than completed**, ADR 0075*
+- [v0.5] The lock screen shows the same surface and no client's pixels. *An independent lock-screen image: **deleted rather than completed**, ADR 0075 — there is no longer a picture for it to be independent of*
 - [v0.5] **Light and dark**, following the time of day if a person wants
 - [v0.5] **Accent colour** — five designed hues, each with a value for a light ground and one for a dark, so it reads properly either way. The whole shell follows it, not one button (ADR 0010)
 - [v0.5] ★ **Deep teal is not one of them.** It means the agent and nothing else, so it is reserved rather than offered — an accent somebody could set to deep teal would take away the one signal that says the machine is acting on their behalf
 - [v0.5] ★ **The agent is never signalled by colour alone** — deep teal always arrives with a mark and a word. A signal carried by hue fails for anybody who cannot distinguish that hue, and EN 301 549 does not allow colour to be the only means of conveying anything
 - [v0.5] Text size and scaling, which is an accessibility setting as much as a taste one
-- [v0.5] Wallpapers shipped with the image, so a fresh machine is not grey
+- [v0.5] **A fresh machine already looks composed** — the plane ships with a surface of its own, so nobody meets a grey rectangle. *Wallpapers shipped in the image: **deleted rather than completed**, ADR 0075*
 - [v1] Cursor size and colour; sounds, including silencing them
-- [v1] ★ **Ask for it** — "make the background this photo", "use dark after six" — the same propose-then-approve as any other change, because personalisation is exactly the low-stakes place people first learn to trust the agent
+- [v1] ★ **Ask for it** — "make the surface warmer", "use dark after six" — the same propose-then-approve as any other change, because personalisation is exactly the low-stakes place people first learn to trust the agent
 - [v1] Themes as a document, so a machine's look can be set once and applied across a fleet (ADR 0004)
 
 ## The ordinary things a desktop must do
