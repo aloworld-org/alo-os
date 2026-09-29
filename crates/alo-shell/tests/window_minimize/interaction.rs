@@ -1,7 +1,6 @@
 //! Minimizing cancels only the owning interactive transaction.
 use super::{Fixture, mapped, minimize};
 use smithay::backend::input::ButtonState;
-use wayland_protocols::xdg::shell::client::xdg_toplevel::ResizeEdge;
 
 #[test]
 fn window_minimize_cancels_move_and_resize_without_late_placement()
@@ -16,15 +15,15 @@ fn window_minimize_cancels_move_and_resize_without_late_placement()
             .backend(|s| s.mapped_surfaces().nth(1).cloned())
             .ok_or("second missing")?;
         if resize {
-            // A resize still begins with a press the application receives and a
-            // request it makes. ADR 0071 gives the edges to the shell as well, and
-            // that road arrives with the plan's task 4.
+            // A resize begins on the shell's own edge band, which is the road task
+            // 4 built and the only one left: ADR 0071 refuses the client's request.
+            // The press is still delivered to the application, because it lands
+            // inside the frame — the band begin is what starts the transaction.
             f.backend(|s| s.pointer_motion(4.0, 5.0, 1))?;
             assert!(f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?);
             app.sync();
-            let seat = app.events.keyboard.seat.as_ref().ok_or("seat missing")?;
-            app.toplevel
-                .resize(seat, app.events.pointer.button_serial, ResizeEdge::TopLeft);
+            let frame = root.clone();
+            assert!(f.backend(move |s| s.begin_a_resize(&frame, alo_shell::FrameEdge::TopLeft)));
         } else {
             // A move begins on the band above the frame, and reaches no client.
             f.backend(|s| s.pointer_motion(4.0, -16.0, 1))?;

@@ -178,11 +178,13 @@ fn window_maximize_and_pointer_operations_refuse_competing_ownership()
     f.backend(|s| s.pointer_button(0x110, Pressed, 2))?;
     app.sync();
     let seat = app.events.keyboard.seat.clone().ok_or("missing seat")?;
-    app.toplevel.resize(
-        &seat,
-        app.events.pointer.button_serial,
-        ResizeEdge::BottomRight,
-    );
+    // Begun on the shell's own band rather than by the client, which ADR 0071
+    // refuses. The competing ownership this test is about is between a resize and
+    // a maximise, not between a client and a compositor.
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .ok_or("a frame is mapped")?;
+    assert!(f.backend(move |s| s.begin_a_resize(&frame, alo_shell::FrameEdge::BottomRight)));
     app.sync();
     assert_eq!(maximize(&f, &root, true), Err(WindowMaximizeError::Busy));
     f.backend(|s| s.pointer_button(0x110, Released, 3))?;

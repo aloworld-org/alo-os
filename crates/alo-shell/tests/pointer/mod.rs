@@ -374,7 +374,14 @@ fn pointer_child_unmap_cancels_grab_and_missing_seat_refuses() {
     app.surface.commit();
     app.sync();
     button(&f, Released, false);
+    // The child is gone, so nothing of this client's is under (26, 35) any more —
+    // it is on the frame's own bottom-right corner band, and since ADR 0071 a
+    // press there begins a resize instead of reaching anybody. Undelivered either
+    // way, which is what this line has always asserted; released immediately
+    // because the drag it now starts would own the pointer for the rest of a test
+    // that is about hit testing after an unmap.
     button(&f, Pressed, false);
+    button(&f, Released, false);
     motion(&f, 1.0, 1.0);
     button(&f, Pressed, true);
     role.destroy();

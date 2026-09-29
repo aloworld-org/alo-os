@@ -119,11 +119,14 @@ fn client_maximize_refuses_unavailable_output_and_busy_resize_with_response()
     f.backend(|s| s.pointer_motion(4.0, 5.0, 1))?;
     f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?;
     app.sync();
-    app.toplevel.resize(
-        app.events.keyboard.seat.as_ref().ok_or("seat missing")?,
-        app.events.pointer.button_serial,
-        wayland_protocols::xdg::shell::client::xdg_toplevel::ResizeEdge::BottomRight,
-    );
+    // The resize begins on the shell's own edge band. It was the client's own
+    // request until ADR 0071 refused that road, and what this test is about never
+    // depended on which road: a frame that is mid-resize refuses to be maximised
+    // **and says so**, whoever started the resize.
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .ok_or("a frame is mapped")?;
+    assert!(f.backend(move |s| s.begin_a_resize(&frame, alo_shell::FrameEdge::BottomRight)));
     app.sync();
     let count = app.events.sizes.len();
     app.toplevel.set_maximized();

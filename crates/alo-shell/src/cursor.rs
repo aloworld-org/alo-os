@@ -21,6 +21,18 @@ pub enum Cursor {
         /// Rendering floors fractional coordinates and refuses non-finite values.
         location: Point<f64, Logical>,
     },
+    /// The pointer is on a frame's own resize band, and says which way it drags.
+    ///
+    /// ADR 0071: *the pointer is the affordance.* A frame shows no furniture, so
+    /// this is the only thing that tells a person the border under them resizes
+    /// rather than moves.
+    Resize {
+        /// Which edge or corner, which is what picks the arrow.
+        edge: crate::FrameEdge,
+        /// Where the pointer is. The arrow's hotspot is its middle, not a tip,
+        /// so what is drawn is offset from this rather than starting at it.
+        location: Point<f64, Logical>,
+    },
     /// The focused client explicitly requested no cursor.
     Hidden,
     /// Draw this tree above windows at its hotspot-adjusted logical origin.
@@ -42,6 +54,19 @@ impl Server {
             location: pointer.location,
         };
         if pointer.handle.current_focus().is_none() {
+            // Nothing of a client's is under the pointer, so the shell's own
+            // bands may answer. A frame shows no furniture (ADR 0065), which
+            // makes this arrow the only thing that says the border under a
+            // person resizes rather than moves — ADR 0071's *the pointer is the
+            // affordance*. Asked here rather than earlier so that anywhere a
+            // client actually drew, including outside its declared geometry, the
+            // cursor stays that client's business.
+            if let Some((_, edge)) = self.the_edge_under(pointer.location) {
+                return Cursor::Resize {
+                    edge,
+                    location: pointer.location,
+                };
+            }
             return default;
         }
         match &self.surfaces.cursor {

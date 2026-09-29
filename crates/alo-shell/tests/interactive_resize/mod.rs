@@ -1,4 +1,19 @@
-//! Real wire resize transactions, including refusal and commit ordering.
+//! Real resize transactions, including refusal and commit ordering.
+//!
+//! **These drove the transaction through `xdg_toplevel.resize` until ADR 0071
+//! refused that road**, and what they assert was never about the road: a configure
+//! sent while the drag is happening, the client's limits refreshed on every
+//! motion, the opposite edge anchored, the final commit retired. All of that is
+//! `crate::resize_transaction` and none of it changed.
+//!
+//! So they enter through the shell's own edge band now — `Server::begin_a_resize`,
+//! which `crate::canvas_resize` reaches from a press on that band — and go on
+//! asserting the same things about the same code.
+#![expect(
+    clippy::expect_used,
+    reason = "an unexpected None or Err here is the failure this test reports"
+)]
+
 use super::{Application, Fixture};
 use smithay::{
     backend::input::{
@@ -23,12 +38,26 @@ fn mapped(f: &Fixture) -> Application {
     app.sync();
     app
 }
-/// Send the wire request using the client's seat.
-fn request(app: &mut Application, serial: u32, edge: ResizeEdge) {
-    assert!(app.events.keyboard.seat.is_some());
-    if let Some(seat) = &app.events.keyboard.seat {
-        app.toplevel.resize(seat, serial, edge);
-    }
+/// Begin the resize the way a person does: from the shell's own edge band.
+///
+/// Was the wire request, which ADR 0071 refuses. The shape of the call is kept so
+/// each test still reads as *start a resize on this edge*; the serial is unused,
+/// because a shell-owned band has no client grab to name.
+fn request(f: &Fixture, app: &mut Application, _serial: u32, edge: ResizeEdge) {
+    let edge = match edge {
+        ResizeEdge::Top => alo_shell::FrameEdge::Top,
+        ResizeEdge::Bottom => alo_shell::FrameEdge::Bottom,
+        ResizeEdge::Left => alo_shell::FrameEdge::Left,
+        ResizeEdge::Right => alo_shell::FrameEdge::Right,
+        ResizeEdge::TopLeft => alo_shell::FrameEdge::TopLeft,
+        ResizeEdge::TopRight => alo_shell::FrameEdge::TopRight,
+        ResizeEdge::BottomLeft => alo_shell::FrameEdge::BottomLeft,
+        _ => alo_shell::FrameEdge::BottomRight,
+    };
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    let _ = f.backend(move |s| s.begin_a_resize(&frame, edge));
     app.sync();
 }
 /// Obtain a real delivered press serial.
@@ -64,7 +93,7 @@ fn interactive_resize_anchors_only_committed_responses_and_retires_final_commit(
     let mut app = mapped(&f);
     let root = f.root();
     let serial = press(&f, &mut app);
-    request(&mut app, serial, ResizeEdge::TopLeft);
+    request(&f, &mut app, serial, ResizeEdge::TopLeft);
     assert_eq!(app.events.resizing.last(), Some(&true));
     assert!(f.backend(|s| s.pointer_motion(-20.0, -11.0, 3)).is_ok());
     app.sync();
@@ -102,55 +131,50 @@ fn interactive_resize_anchors_only_committed_responses_and_retires_final_commit(
 }
 
 #[test]
-fn interactive_resize_refuses_serial_target_edge_release_and_missing_pointer() {
+fn a_client_asking_to_be_resized_is_refused_and_the_band_still_resizes() {
     let f = fixture();
     let mut app = mapped(&f);
-    let root = f.root();
     let mut other = mapped(&f);
     let serial = press(&f, &mut app);
     let count = app.events.sizes.len();
     let other_count = other.events.sizes.len();
-    request(&mut app, serial.wrapping_add(1000), ResizeEdge::Right);
-    request(&mut other, serial, ResizeEdge::Right);
-    request(&mut app, serial, ResizeEdge::None);
+
+    // Every way a client can ask, including the ones that used to be told apart.
     if let Some(seat) = &app.events.keyboard.seat {
-        use wayland_client::{Proxy, WEnum};
-        assert!(
-            app.toplevel
-                .send_request(
-                    wayland_protocols::xdg::shell::client::xdg_toplevel::Request::Resize {
-                        seat: seat.clone(),
-                        serial,
-                        edges: WEnum::Unknown(3),
-                    }
-                )
-                .is_ok()
-        );
+        for edge in [ResizeEdge::Right, ResizeEdge::None, ResizeEdge::TopLeft] {
+            app.toplevel.resize(seat, serial, edge);
+        }
     }
     app.sync();
-    assert_eq!(app.events.sizes.len(), count);
-    assert_eq!(other.events.sizes.len(), other_count);
-    assert_eq!(app.events.pointer.leaves, 0);
+    other.sync();
     assert_eq!(
-        f.backend(|s| s.pointer_button(0x110, Released, 3)).ok(),
-        Some(true)
+        app.events.sizes.len(),
+        count,
+        "a client that asked to be resized was resized"
+    );
+    assert_eq!(
+        other.events.sizes.len(),
+        other_count,
+        "one client asking resized another"
+    );
+    assert_eq!(
+        app.events.pointer.leaves, 0,
+        "a refused request still took the pointer away from the client"
+    );
+
+    // And the capability the refusal replaces is really there.
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    assert!(
+        f.backend(move |s| s.begin_a_resize(&frame, alo_shell::FrameEdge::Right)),
+        "the shell's own band could not resize the window the client was refused"
     );
     app.sync();
-    let release = app.events.pointer.button_serial;
-    request(&mut app, serial, ResizeEdge::Right);
-    request(&mut app, release, ResizeEdge::Right);
-    assert_eq!(app.events.sizes.len(), count);
-    assert_eq!(origin(&f, &root), (0.0, 0.0));
-    app.surface.attach(None, 0, 0);
-    app.surface.commit();
-    app.sync();
-    request(&mut app, serial, ResizeEdge::Right);
-    assert_eq!(app.events.sizes.len(), count);
-    let no_pointer = Fixture::keyboard();
-    let mut app = mapped(&no_pointer);
-    let count = app.events.sizes.len();
-    request(&mut app, 0, ResizeEdge::Right);
-    assert_eq!(app.events.sizes.len(), count);
+    assert!(
+        app.events.sizes.len() > count,
+        "a resize from the band told the application nothing"
+    );
 }
 
 #[test]
@@ -162,7 +186,7 @@ fn interactive_resize_preserves_keyboard_and_clamps_live_limits_without_drift() 
     assert!(f.focus_surface(root.clone()).is_ok());
     app.sync();
     let serial = press(&f, &mut app);
-    request(&mut app, serial, ResizeEdge::BottomRight);
+    request(&f, &mut app, serial, ResizeEdge::BottomRight);
     let motions = app.events.pointer.motion.len();
     app.toplevel.set_min_size(20, 18);
     app.toplevel.set_max_size(24, 22);
@@ -204,7 +228,7 @@ fn interactive_resize_cancels_leave_unmap_disconnect_and_impossible_live_limits(
         let mut app = mapped(&f);
         let root = f.root();
         let serial = press(&f, &mut app);
-        request(&mut app, serial, ResizeEdge::Left);
+        request(&f, &mut app, serial, ResizeEdge::Left);
         match cancel {
             0 => {
                 assert!(f.backend(|s| s.pointer_leave()).is_ok());
@@ -251,7 +275,7 @@ fn interactive_resize_cancels_leave_unmap_disconnect_and_impossible_live_limits(
             f.backend(|s| s.pointer_button(0x110, Released, 6)).ok(),
             Some(false)
         );
-        request(&mut app, serial, ResizeEdge::Left);
+        request(&f, &mut app, serial, ResizeEdge::Left);
         assert_eq!(app.events.sizes.len(), count);
     }
 }
@@ -270,10 +294,10 @@ fn interactive_resize_accepts_subsurface_press_and_consumes_all_buttons() {
     );
     app.sync();
     let serial = app.events.pointer.button_serial;
-    request(&mut app, serial, ResizeEdge::BottomRight);
+    request(&f, &mut app, serial, ResizeEdge::BottomRight);
     assert_eq!(app.events.resizing.last(), Some(&true));
     let count = app.events.sizes.len();
-    request(&mut app, serial, ResizeEdge::Left);
+    request(&f, &mut app, serial, ResizeEdge::Left);
     if let Some(seat) = &app.events.keyboard.seat {
         app.toplevel._move(seat, serial);
     }
@@ -320,7 +344,7 @@ fn interactive_resize_all_edges_follow_actual_geometry_and_unacked_commit_is_not
         let mut app = mapped(&f);
         let root = f.root();
         let serial = press(&f, &mut app);
-        request(&mut app, serial, edge);
+        request(&f, &mut app, serial, edge);
         assert!(f.backend(|s| s.pointer_motion(12.0, 13.0, 3)).is_ok());
         app.sync();
         assert_eq!(app.events.sizes.last(), Some(&expected));
@@ -344,11 +368,11 @@ fn interactive_resize_release_refreshes_limits_and_refuses_impossible_initial_ge
     app.sync();
     let serial = press(&f, &mut app);
     let count = app.events.sizes.len();
-    request(&mut app, serial, ResizeEdge::Left);
+    request(&f, &mut app, serial, ResizeEdge::Left);
     assert_eq!(app.events.sizes.len(), count);
     assert_eq!(app.events.pointer.leaves, 0);
     // The refused operation did not consume authority; a valid axis can use it.
-    request(&mut app, serial, ResizeEdge::BottomRight);
+    request(&f, &mut app, serial, ResizeEdge::BottomRight);
     assert_eq!(app.events.resizing.last(), Some(&true));
     app.toplevel.set_min_size(24, 28);
     app.surface.commit();

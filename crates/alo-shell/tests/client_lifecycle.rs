@@ -15,6 +15,7 @@ mod output_metadata;
 mod panning_the_plane;
 mod pointer;
 mod popups;
+mod resizing_from_the_edges;
 mod shortcut_dispatch;
 mod support;
 mod the_canvas_is_where_they_left_it;
