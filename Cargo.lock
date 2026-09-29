@@ -5600,6 +5600,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "what-a-gate-needs-in-memory"
+version = "0.1.0"
+
+[[package]]
 name = "winapi-util"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
