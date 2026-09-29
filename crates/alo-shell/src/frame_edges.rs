@@ -132,7 +132,19 @@ impl crate::Server {
         // Bands sit **outside** the frame, as the name band does: inside the frame
         // every click belongs to the application (ADR 0065), so a resize band that
         // overlapped the content would be taking presses that are not the shell's.
-        let (left, top, right, bottom) = (at.x, at.y, at.x + width, at.y + height);
+        //
+        // **And outside the name, not only outside the frame.** The name band is
+        // directly above the frame and exactly as wide as it
+        // (`crate::frame_handle`), so a top edge measured from the frame's own top
+        // would lie entirely inside the name — every press on the bottom six
+        // pixels of a frame's name would resize it instead of moving it, and
+        // whichever hit test ran first would decide that silently. What a person
+        // sees as one frame is the picture and the name above it, so that is what
+        // these eight bands surround.
+        let (left, right) = (at.x, at.x + width);
+        let bottom = at.y + height;
+        let top = at.y - crate::frame_handle::THE_NAMES_BAND;
+        let height = bottom - top;
         let rect = |x: f64, y: f64, w: f64, h: f64| Rectangle::new((x, y).into(), (w, h).into());
         Some(match edge {
             FrameEdge::Top => rect(left, top - THE_EDGE, width, THE_EDGE),

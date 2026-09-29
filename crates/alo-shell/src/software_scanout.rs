@@ -120,8 +120,14 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
                 .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
                 .map_err(paint_failed)?;
             paint_layers(layers, &mut frame)?;
-            // Last, so the arrow stays above the screen it points at.
-            for (pixel, colour) in crate::default_cursor::pixels(cursor, damage)? {
+            // Last, so the arrow stays above the screen it points at. Two masks
+            // asked, one of which is empty: the plain arrow and the double-headed
+            // one over a frame's resize band are the same kind of thing and only
+            // one of them applies at a time.
+            for (pixel, colour) in crate::default_cursor::pixels(cursor, damage)?
+                .into_iter()
+                .chain(crate::resize_cursor::pixels(cursor, damage)?)
+            {
                 frame
                     .draw_solid(pixel, &[Rectangle::from_size(pixel.size)], colour)
                     .map_err(paint_failed)?;

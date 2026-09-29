@@ -120,6 +120,35 @@ pub fn the_hotspot_of(shape: &[&str]) -> Option<(i32, i32)> {
     Some((width / 2, height / 2))
 }
 
+/// The arrow's pixels for this cursor state, clipped to the output.
+///
+/// Empty for every state that is not [`crate::Cursor::Resize`], so a painter may
+/// call this and `crate::default_cursor::pixels` one after the other and get
+/// whichever of the two applies — which is what both of them do, because only one
+/// cursor is ever on the screen and neither file should have to know about the
+/// other's states to say so.
+///
+/// **Placed by its middle**, which is the whole of what this adds over the arrow:
+/// the mask goes down half its width and half its height above and to the left of
+/// where the pointer is, so the crossing point of the two heads lands on the edge
+/// a person aimed at.
+pub(crate) fn pixels(
+    cursor: &crate::Cursor,
+    bounds: smithay::utils::Rectangle<i32, smithay::utils::Physical>,
+) -> Result<Vec<crate::cursor_mask::Pixel>, crate::RenderError> {
+    let crate::Cursor::Resize { edge, location } = cursor else {
+        return Ok(Vec::new());
+    };
+    let shape = the_cursor_over(*edge);
+    let Some((x, y)) = the_hotspot_of(shape) else {
+        return Ok(Vec::new());
+    };
+    let hotspot: smithay::utils::Point<f64, smithay::utils::Logical> =
+        (f64::from(x), f64::from(y)).into();
+    let origin = *location - hotspot;
+    crate::cursor_mask::painted(shape, origin, bounds)
+}
+
 #[cfg(test)]
 #[path = "resize_cursor_tests.rs"]
 mod tests;

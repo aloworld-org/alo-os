@@ -194,14 +194,10 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(send.send(13).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();
-    if let Some(seat) = &fresh.events.keyboard.seat {
-        fresh.toplevel.resize(
-            seat,
-            fresh.events.pointer.button_serial,
-            wayland_protocols::xdg::shell::client::xdg_toplevel::ResizeEdge::TopLeft,
-        );
-    }
-    fresh.sync();
+    // **No resize request either.** ADR 0071 gives the edges and corners to the
+    // shell, so this client has nothing to send: stage 13 took hold of the
+    // top-left corner on the compositor's side, and what arrives here is the
+    // configure that says so.
     assert_eq!(fresh.events.resizing.last(), Some(&true));
     assert!(send.send(14).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());

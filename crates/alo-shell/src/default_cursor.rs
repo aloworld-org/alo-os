@@ -1,13 +1,10 @@
 //! Output-clipped, compositor-owned arrow geometry; no client resources or theme I/O.
 
 use crate::{Cursor, RenderError};
-use smithay::{
-    backend::renderer::Color32F,
-    utils::{Physical, Rectangle},
-};
+use smithay::utils::{Physical, Rectangle};
 
 /// One opaque output pixel and its contrast color.
-type Pixel = (Rectangle<i32, Physical>, Color32F);
+type Pixel = crate::cursor_mask::Pixel;
 
 /// Original scale-one mask: black outline, white interior, transparent elsewhere.
 /// Tip at (0, 0). Neutral contrast is independent of the pending shell palette.
@@ -41,34 +38,10 @@ pub(crate) fn pixels(
     let Cursor::Arrow { location } = cursor else {
         return Ok(Vec::new());
     };
-    if !location.x.is_finite() || !location.y.is_finite() {
-        return Err(RenderError::Submission(
-            "non-finite default cursor position".into(),
-        ));
-    }
-    let mut pixels = Vec::new();
-    for (y, row) in (0..).zip(ROWS) {
-        for (x, value) in (0..).zip(row.bytes()) {
-            if value == b' ' {
-                continue;
-            }
-            let px = location.x.floor() + f64::from(x);
-            let py = location.y.floor() + f64::from(y);
-            if px < f64::from(bounds.loc.x)
-                || py < f64::from(bounds.loc.y)
-                || px >= f64::from(bounds.loc.x) + f64::from(bounds.size.w)
-                || py >= f64::from(bounds.loc.y) + f64::from(bounds.size.h)
-            {
-                continue;
-            }
-            let channel = if value == b'W' { 1.0 } else { 0.0 };
-            pixels.push((
-                Rectangle::new((px as i32, py as i32).into(), (1, 1).into()),
-                Color32F::new(channel, channel, channel, 1.0),
-            ));
-        }
-    }
-    Ok(pixels)
+    // The tip **is** the hotspot for this one, so the mask goes down where the
+    // pointer is with no adjustment — which is exactly the half
+    // `crate::resize_cursor` does differently.
+    crate::cursor_mask::painted(&ROWS, *location, bounds)
 }
 
 #[cfg(test)]

@@ -164,6 +164,21 @@ fn direct_pointer_drag_pause_reactivation_and_disconnect_follow_wire_lifetimes()
         &f,
         DirectPointerEvent::Axis(AxisFrame::new(5).value(Axis::Vertical, 15.0)),
     )?;
+    // **And let go of it.** The pointer was carried to (31, 31) by the relative
+    // motion above, which the implicit grab delivered to the client but which is
+    // outside the frame — it is on the frame's own bottom-right corner band, so
+    // since ADR 0071 that press begins a resize rather than reaching anybody. The
+    // press staying undelivered is what this test already asserted; the drag it
+    // now starts would hold the pointer for the rest of the test, and this test is
+    // about wire lifetimes rather than about resizing.
+    route(
+        &f,
+        DirectPointerEvent::Button {
+            code: 0x110,
+            state: ButtonState::Released,
+            time: 5,
+        },
+    )?;
     app.sync();
     assert_eq!(app.events.pointer.enters.len(), 1);
     assert_eq!(app.events.pointer.leaves, 1);

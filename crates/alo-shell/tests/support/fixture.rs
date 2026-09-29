@@ -123,9 +123,16 @@ impl FrameTarget for TestTarget {
     ) -> Result<Vec<WlSurface>, RenderError> {
         // This coordinator fixture simulates owned-arrow support, which adds no
         // client identities. Pixel evidence belongs to the real GLES fixture.
+        //
+        // The double-headed resize arrow is owned the same way — the shell draws
+        // it over its own band from its own mask, and no client is named by it —
+        // so it belongs on this side of the line with the plain arrow rather than
+        // with the cursor a client hands over.
         if !matches!(
             cursor,
-            alo_shell::Cursor::Default | alo_shell::Cursor::Arrow { .. }
+            alo_shell::Cursor::Default
+                | alo_shell::Cursor::Arrow { .. }
+                | alo_shell::Cursor::Resize { .. }
         ) {
             return Err(RenderError::Submission(
                 "fixture does not support client cursors".into(),

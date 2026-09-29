@@ -78,7 +78,13 @@ pub(crate) fn paint(
     if let Some(capturing) = native.capturing {
         capturing.validate(size)?;
     }
-    let arrow = crate::default_cursor::pixels(cursor, damage)?;
+    // One of these two is always empty: the plain arrow and the double-headed one
+    // over a frame's resize band are the same kind of thing, and only one cursor
+    // is on the screen at a time.
+    let arrow: Vec<_> = crate::default_cursor::pixels(cursor, damage)?
+        .into_iter()
+        .chain(crate::resize_cursor::pixels(cursor, damage)?)
+        .collect();
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),

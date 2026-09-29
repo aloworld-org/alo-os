@@ -181,6 +181,24 @@ impl Server {
             }
             return Ok(false);
         }
+        // **Taking hold of a frame by an edge or a corner**, which is the only way
+        // a frame resizes — ADR 0071, and the road that replaces the
+        // `xdg_toplevel.resize` this compositor now refuses. Asked before the name
+        // for the same reason a corner is asked before an edge: the eight bands
+        // surround the frame *and* its name, so a press in one of them was never a
+        // press on the name, and reading them first says which gesture is the more
+        // specific rather than leaving it to the order two hit tests happen to run
+        // in.
+        if state == ButtonState::Pressed
+            && let Some(location) = self
+                .surfaces
+                .pointer
+                .as_ref()
+                .map(|pointer| pointer.location)
+            && self.resize_from_the_edge_under(location, button)
+        {
+            return Ok(false);
+        }
         // **Taking hold of a frame by its name**, which is the only way a frame
         // moves — ADR 0071. The band above a frame is the shell's own and no
         // client was told about this press, so nothing is delivered and this
@@ -474,7 +492,7 @@ impl Server {
     /// it into every origin, and dividing the pointer and the origins by the same
     /// zoom cancels it exactly. So a pan is held in one place and a zoom in one
     /// place, and neither is applied twice.
-    fn pointer_target(
+    pub(crate) fn pointer_target(
         &self,
         location: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {

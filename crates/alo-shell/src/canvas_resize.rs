@@ -28,15 +28,11 @@
 //! optional once the gesture lands.
 
 use smithay::{
-    backend::input::ButtonState,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Point},
 };
 
 use crate::{FrameEdge, window_resize::ResizeEdge};
-
-/// The Linux button a drag is made with.
-const BTN_LEFT: u32 = 0x110;
 
 impl FrameEdge {
     /// The same edge, as the resize arithmetic names it.
@@ -63,6 +59,10 @@ impl FrameEdge {
 impl crate::Server {
     /// Begin a resize because a press landed on a frame's edge or corner.
     ///
+    /// `button` is the one being pressed, which the seat has not recorded yet:
+    /// `crate::pointer` asks the bands before it delivers or records anything, so a
+    /// resize that waited for the seat would begin on the second click.
+    ///
     /// Whether one began. `false` where the press was not on a band, where the
     /// frame has no geometry to resize from, and where a resize or a move is
     /// already under way — a second grab would be two gestures arguing about one
@@ -71,14 +71,30 @@ impl crate::Server {
     /// **The press is not passed on.** A band is the shell's own, outside the
     /// frame, so no client was under it; the alternative would be telling an
     /// application about a press that was never inside it.
-    pub fn resize_from_the_edge_under(&mut self, at: Point<f64, Logical>) -> bool {
+    pub fn resize_from_the_edge_under(&mut self, at: Point<f64, Logical>, button: u32) -> bool {
         if self.surfaces.window_resize.is_some() || self.surfaces.window_move.is_some() {
+            return false;
+        }
+        // **Where the application drew, the press is the application's** — ADR
+        // 0065, and the band yields to it rather than the other way round.
+        //
+        // A band is measured from the frame's *window geometry*, which is what a
+        // person sees as the window; a client may have surfaces outside it, and a
+        // subsurface hanging past the bottom-right corner is real content a person
+        // clicked on, not a place to start a resize. Asked as *is anything of a
+        // client's under this point* rather than by comparing rectangles, so the
+        // answer is the same one `pointer_motion` and the renderer already give.
+        if self.pointer_target(at).is_some() {
             return false;
         }
         let Some((frame, edge)) = self.the_edge_under(at) else {
             return false;
         };
-        self.begin_a_resize(&frame, edge)
+        let Some(role) = self.surfaces.mapped_toplevel(&frame).cloned() else {
+            return false;
+        };
+        self.surfaces
+            .begin_resize_on_the_shells_own_band(role, edge.as_resize_edge(), Some(button))
     }
 
     /// Begin one on a named frame and edge, however the caller decided.
@@ -94,19 +110,15 @@ impl crate::Server {
             return false;
         };
         self.surfaces
-            .begin_resize_on_the_shells_own_band(role, edge.as_resize_edge())
-    }
-
-    /// Carry a resize on, or let go of one.
-    ///
-    /// The motion road is `crate::resize_transaction`'s own and is already called
-    /// from `pointer_motion`; this is only the button, which decides when the
-    /// gesture ends. A resize that outlived its button would be a window that kept
-    /// following a pointer somebody had stopped dragging with.
-    pub fn resize_button(&mut self, button: u32, state: ButtonState) -> bool {
-        if button != BTN_LEFT {
-            return false;
-        }
-        self.surfaces.window_resize_button(button, state)
+            .begin_resize_on_the_shells_own_band(role, edge.as_resize_edge(), None)
     }
 }
+
+// **`resize_button` was here, and it was a second road to one door.**
+//
+// It filtered for BTN_LEFT and forwarded to `Surfaces::window_resize_button` —
+// which `Server::pointer_button` has called on its own first line of button
+// handling since long before this file existed, for every button rather than one.
+// So the drag already ended correctly and this ended it a second, narrower way,
+// which is the shape of the *two ways to resize* this file's own header argues
+// against. Nothing called it; deleting it is the same judgement one level down.

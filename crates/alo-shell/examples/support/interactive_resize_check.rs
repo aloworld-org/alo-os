@@ -18,6 +18,12 @@ pub fn stage(
             server.place_window(root, (20, 20))?;
             server.pointer_motion(24.0, 25.0, 200)?;
             assert!(server.pointer_button(0x110, Pressed, 201)?);
+            // The transaction begins here rather than on a request from the
+            // client, which ADR 0071 refuses. Named, not hit-tested, because this
+            // fixture is evidence about the resize's commit ordering and not about
+            // where a corner band lies — `tests/resizing_from_the_edges` holds that.
+            let frame = root.clone();
+            assert!(server.begin_a_resize(&frame, alo_shell::FrameEdge::TopLeft));
             ((20, 20), (32, 24))
         }
         14 => {

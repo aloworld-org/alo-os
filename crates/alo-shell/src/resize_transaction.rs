@@ -56,11 +56,15 @@ impl Surfaces {
     /// there is no client press to validate. The checks that guard the *window*
     /// rather than the press are kept and made here instead.
     ///
+    /// `starting` is the button whose press is beginning this drag, where one is —
+    /// it has not reached the seat yet, and is held alongside whatever already had.
+    ///
     /// Whether one began.
     pub(crate) fn begin_resize_on_the_shells_own_band(
         &mut self,
         role: ToplevelSurface,
         edge: ResizeEdge,
+        starting: Option<u32>,
     ) -> bool {
         self.prune();
         let root = role.wl_surface().clone();
@@ -75,14 +79,27 @@ impl Surfaces {
         // A drag needs a button held and a place it started from. Taken from the
         // seat's own state rather than from a serial, since there is no client
         // grab to name.
-        let Some((pointer, buttons)) = self
-            .pointer
-            .as_ref()
-            .filter(|pointer| !pointer.buttons.is_empty())
-            .map(|pointer| (self.on_the_plane(pointer.location), pointer.buttons.clone()))
-        else {
+        //
+        // **And from `starting`, which the seat does not know about yet.** A press
+        // on a band *is* where a resize begins, and `crate::pointer` consults the
+        // bands before it records the button — a transaction that read only the
+        // seat would refuse the very press that started it and begin on the
+        // *second* click instead. `crate::window_move` has taken its button this
+        // way since the name band was written; this is the same fact one gesture
+        // over.
+        let Some(pointer) = &self.pointer else {
             return false;
         };
+        let mut buttons: Vec<u32> = pointer.buttons.clone();
+        if let Some(button) = starting
+            && !buttons.contains(&button)
+        {
+            buttons.push(button);
+        }
+        if buttons.is_empty() {
+            return false;
+        }
+        let pointer = self.on_the_plane(pointer.location);
         let Ok(geometry) = self.resize_geometry(&root, edge) else {
             return false;
         };

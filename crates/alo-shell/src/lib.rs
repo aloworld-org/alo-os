@@ -106,6 +106,7 @@ mod capture_flatten;
 mod capture_paint;
 mod capture_raster;
 mod cursor;
+mod cursor_mask;
 mod default_cursor;
 #[cfg(test)]
 mod descriptor_testing;
