@@ -1,0 +1,21 @@
+[package]
+name = "alo-elsewhere"
+version = "0.0.1"
+description = "The machines a person has added, and whether each one answered — where not answering is a state that is shown rather than a machine that is left out."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The identity a machine has, which is a file rather than a serial so a
+# reinstall is a new machine (ADR 0003). Reused rather than restated: a second
+# spelling of *which machine* is a second thing to keep in step, and the
+# argument for why the identity is random lives in that crate.
+alo-nearby = { path = "../alo-nearby" }
+# Every sentence a person reads, in the language they read it in.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

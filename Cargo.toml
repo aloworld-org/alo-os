@@ -49,6 +49,7 @@ members = [
   "crates/alo-canvas",
   "crates/alo-dividing",
   "crates/alo-dock",
+  "crates/alo-elsewhere",
   "crates/alo-drives",
   "crates/alo-driving",
   "crates/alo-egress",
