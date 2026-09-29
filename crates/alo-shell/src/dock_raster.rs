@@ -1,15 +1,39 @@
-//! The dock on one display: the band along the bottom edge.
+//! The dock on one display: a floating bar, centred, above the bottom edge.
 //!
 //! # Whose decisions these are
 //!
-//! How thick it is and how far it runs are `alo_dock::Dock::layout_on`'s answers
-//! for this display's own size and the person's text size. That it is along the
-//! **bottom** is [ADR
+//! How thick it is and how wide it needs to be are `alo-dock`'s answers for this
+//! display's own size, the person's text size and how many icons there are. That
+//! it is along the **bottom** is [ADR
 //! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md),
 //! not a value asked for per display. This file turns those answers into pixels
 //! and decides none of them. Asked once per display, so a laptop and the screen
 //! beside it each get the dock laid out for their own size — and a dock that
 //! gives its names way on the small one keeps them on the large one.
+//!
+//! # A bar, not a band
+//!
+//! It drew a band across the whole width, flush to the bottom edge, from before
+//! ADR 0076 until now. **The designs show a bar**: as wide as what it holds,
+//! centred, with room underneath it and either side.
+//!
+//! That is not decoration. A band is part of the screen's frame; a bar is a
+//! thing lying on the canvas, which is what the Dock is — the canvas moves under
+//! it and it does not move with the canvas. The gap beneath it is
+//! `alo_dock::measures::FLOATING_ABOVE_THE_EDGE`.
+//!
+//! **What it holds is passed in.** This file does not count icons: how many
+//! there are is `alo_dock::Holding`'s answer and how many *fit* is
+//! `alo_dock::fit`'s, so a bar drawn here cannot disagree with the list the Dock
+//! decided to show.
+//!
+//! # When it will not fit
+//!
+//! A bar wider than the screen is clamped to the screen's width less its
+//! margins, and what does not fit went into the overflow before it ever reached
+//! this file. Clamping is the last resort rather than the mechanism: shrinking
+//! icons to fit more is how a dock becomes unusable exactly when somebody has
+//! the most open, which `alo_dock::fit` refuses on the way in.
 //!
 //! # The status area is not drawn here any more
 //!
@@ -31,7 +55,8 @@
 //! dock is a band of the person's colours with the accent along its inside
 //! edge. `tests/desktop_source.rs` reads these files to hold that.
 
-use alo_dock::{Dock, Layout, Screen};
+use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
+use alo_dock::{Dock, Layout, Room, Screen};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::RenderError;
@@ -67,6 +92,7 @@ pub(crate) fn picture(
     dock: &Dock,
     look: DesktopLook,
     size: (i32, i32),
+    holding: usize,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
@@ -85,8 +111,22 @@ pub(crate) fn picture(
         .clamp(1, width.min(height));
     let rule = measure.px(2).min(thickness);
 
-    let band = Rectangle::new((0, height - thickness).into(), (width, thickness).into());
-    let accent = Rectangle::new(band.loc, (width, rule).into());
+    // As wide as what it holds, clamped to the screen less its margins. The
+    // count comes from whoever decided what the Dock shows, so the bar drawn
+    // and the list decided cannot disagree.
+    let margin = i32::try_from(MARGIN).unwrap_or(i32::MAX);
+    let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+    let wanted = i32::try_from(Room::a_bar_holding(holding).as_pixels())
+        .map_err(|_| RenderError::DesktopScene)?;
+    let widest = (width - 2 * margin).max(1);
+    let bar_width = wanted.clamp(1, widest);
+
+    // Centred across, and lifted clear of the bottom edge.
+    let band = Rectangle::new(
+        ((width - bar_width) / 2, height - thickness - floating).into(),
+        (bar_width, thickness).into(),
+    );
+    let accent = Rectangle::new(band.loc, (bar_width, rule).into());
 
     let solids = vec![
         Solid {
@@ -123,41 +163,81 @@ mod tests {
         outer.intersection(inner) == Some(inner)
     }
 
-    /// **The dock is drawn along the bottom**, as thick as `alo-dock` says and
-    /// spanning the width — the same band whichever way the person reads, because
-    /// the reading direction placed the status area and the status area is gone.
+    /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
+    /// what it holds** — the same bar whichever way the person reads.
     #[test]
-    fn a_dock_is_drawn_along_the_bottom_as_thick_as_alo_dock_says() {
+    fn the_dock_is_a_centred_bar_clear_of_the_bottom_edge() {
         let size = (1920, 1080);
         let dock = Dock::shipped();
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn = picture(&dock, look, size).unwrap();
+            let drawn = picture(&dock, look, size, 4).unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), look.scale());
             assert_eq!(drawn.layout, layout);
 
             let thick = i32::try_from(layout.thickness().as_pixels()).unwrap();
+            let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap();
+
+            // Clear of the edge, with room underneath it.
             assert_eq!(
-                drawn.band,
-                Rectangle::new((0, 1080 - thick).into(), (1920, thick).into()),
-                "{reading:?}"
+                drawn.band.loc.y + drawn.band.size.h,
+                1080 - floating,
+                "{reading:?}: it is not floating"
             );
-            assert_eq!(drawn.band.loc.y + drawn.band.size.h, 1080, "{reading:?}");
+            assert_eq!(drawn.band.size.h, thick, "{reading:?}");
+
+            // As wide as what it holds, and nothing like the whole screen.
+            let wanted = i32::try_from(Room::a_bar_holding(4).as_pixels()).unwrap();
+            assert_eq!(drawn.band.size.w, wanted, "{reading:?}");
+            assert!(drawn.band.size.w < 1920, "{reading:?}: it spans the screen");
+
+            // Centred: the room either side is equal to within a pixel.
+            let left = drawn.band.loc.x;
+            let right = 1920 - (drawn.band.loc.x + drawn.band.size.w);
+            assert!((left - right).abs() <= 1, "{reading:?}: {left} vs {right}");
+
             assert!(inside(drawn.accent, drawn.band), "{reading:?}");
             assert_eq!(drawn.accent.loc.y, drawn.band.loc.y, "the inside edge");
 
-            // The first way round records the band; the second is held to it,
-            // which is what says the reading direction no longer moves the dock
-            // now that it does not place a status area.
             match whichever_way_read {
                 None => whichever_way_read = Some(drawn.band),
                 Some(first) => {
-                    assert_eq!(first, drawn.band, "which way a person reads moved the dock")
+                    assert_eq!(first, drawn.band, "which way a person reads moved the dock");
                 }
             }
         }
         assert!(whichever_way_read.is_some(), "neither way round was drawn");
+    }
+
+    /// **A bar holding more is wider**, which is what says the width comes from
+    /// the contents rather than from the screen.
+    #[test]
+    fn a_bar_holding_more_is_wider() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let dock = Dock::shipped();
+        let mut last = 0;
+        for holding in [0_usize, 1, 4, 9] {
+            let drawn = picture(&dock, look, (1920, 1080), holding).unwrap();
+            assert!(
+                drawn.band.size.w > last,
+                "holding {holding} was not wider than the one before"
+            );
+            last = drawn.band.size.w;
+        }
+    }
+
+    /// **A bar too wide for the screen is clamped rather than drawn off it**,
+    /// and what did not fit went into the overflow before it reached this file.
+    #[test]
+    fn a_bar_wider_than_the_screen_is_clamped_to_it() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let drawn = picture(&Dock::shipped(), look, (1366, 768), 200).unwrap();
+        let margin = i32::try_from(MARGIN).unwrap();
+
+        assert!(drawn.band.size.w <= 1366 - 2 * margin);
+        assert!(drawn.band.loc.x >= 0);
+        assert!(drawn.band.loc.x + drawn.band.size.w <= 1366);
     }
 
     /// **Per display.** The same dock on a laptop and on a large screen beside
@@ -171,9 +251,9 @@ mod tests {
         let look = noon_look(&appearance, Direction::LeftToRight);
         let dock = Dock::shipped();
 
-        let laptop = picture(&dock, look, (1366, 768)).unwrap();
-        let desk = picture(&dock, look, (3840, 2160)).unwrap();
-        let portrait = picture(&dock, look, (1080, 1920)).unwrap();
+        let laptop = picture(&dock, look, (1366, 768), 4).unwrap();
+        let desk = picture(&dock, look, (3840, 2160), 4).unwrap();
+        let portrait = picture(&dock, look, (1080, 1920), 4).unwrap();
         assert!(!laptop.layout.labels().are_shown());
         assert!(desk.layout.labels().are_shown());
         assert_ne!(laptop.band.size.h, desk.band.size.h);
@@ -182,8 +262,11 @@ mod tests {
                 i64::from(drawn.band.size.h),
                 i64::from(drawn.layout.thickness().as_pixels())
             );
-            assert_eq!(drawn.band.size.w, drawn.size.0, "it spans the width");
-            assert_eq!(drawn.band.loc.y + drawn.band.size.h, drawn.size.1);
+            assert_eq!(
+                drawn.band.loc.y + drawn.band.size.h,
+                drawn.size.1 - i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap(),
+                "it is clear of the bottom edge"
+            );
         }
     }
 
@@ -196,7 +279,7 @@ mod tests {
             let mut appearance = an_appearance();
             appearance.set_accent(accent);
             let look = noon_look(&appearance, Direction::LeftToRight);
-            let drawn = picture(&Dock::shipped(), look, (1920, 1080)).unwrap();
+            let drawn = picture(&Dock::shipped(), look, (1920, 1080), 4).unwrap();
             let rule = drawn
                 .solids
                 .iter()
@@ -218,7 +301,7 @@ mod tests {
         for size in [(0, 0), (100, 100), (-5, 800), (20_000, 1080)] {
             assert!(
                 matches!(
-                    picture(&Dock::shipped(), look, size),
+                    picture(&Dock::shipped(), look, size, 4),
                     Err(RenderError::DesktopScene)
                 ),
                 "{size:?}"

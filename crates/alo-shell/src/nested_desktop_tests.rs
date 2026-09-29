@@ -81,26 +81,29 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                         "{reading:?}: a line covers the dock"
                     );
                 }
-                // The first line's far end is at the dock's far end: the corner
-                // a person reads last, which is the right of the band in a
-                // language read left to right and its left in one read the other
-                // way. Measured against the band, because the status area it
-                // used to be measured against is not the Dock's any more.
+                // The first line ends at **the screen's far corner** — the
+                // side a person reads last — rather than at the Dock's end.
+                //
+                // Those were the same place while the Dock was a band spanning
+                // the width, so nobody had to choose between them. The bar is
+                // centred and narrow, and the indicator stays at the corner: it
+                // is where a person already glances, and one that moved into
+                // the middle of the screen because the Dock got narrower would
+                // be harder to find rather than easier.
                 let first = rows.first().unwrap().area;
                 let band = dock_drawn.band;
+                let (width, _) = size;
+                let margin = i32::try_from(alo_dock::measures::MARGIN).unwrap();
                 match reading {
                     Direction::LeftToRight => {
-                        let far = first.loc.x + first.size.w;
-                        assert!(
-                            far <= band.loc.x + band.size.w && far > band.loc.x,
+                        assert_eq!(
+                            first.loc.x + first.size.w,
+                            width - margin,
                             "{reading:?} {size:?}"
                         );
                     }
                     Direction::RightToLeft => {
-                        assert!(
-                            first.loc.x >= band.loc.x && first.loc.x < band.loc.x + band.size.w,
-                            "{reading:?} {size:?}"
-                        );
+                        assert_eq!(first.loc.x, margin, "{reading:?} {size:?}");
                     }
                 }
                 assert!(

@@ -359,8 +359,12 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
             let (right, bottom) = (left + row.size.w, top + row.size.h);
             let at = reading;
             let _ = top;
-            assert_eq!(bottom, height - thick - margin, "{at:?}");
-            assert!(bottom <= height - thick, "{at:?} is over the dock");
+            let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
+            assert_eq!(bottom, height - thick - floating - margin, "{at:?}");
+            assert!(
+                bottom <= height - thick - floating,
+                "{at:?} is over the dock"
+            );
             match reading {
                 Direction::LeftToRight => assert_eq!(right, width - margin, "{at:?}"),
                 Direction::RightToLeft => assert_eq!(left, margin, "{at:?}"),

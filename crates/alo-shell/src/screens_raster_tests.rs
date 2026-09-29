@@ -95,11 +95,15 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
             assert_eq!(picture.dock.size, picture.size);
             assert!(!picture.dock.solids.is_empty());
             let band = picture.dock.band;
-            assert_eq!(band.size.w, picture.size.0, "it spans the width");
+            assert!(
+                band.size.w < picture.size.0,
+                "the dock is a bar, not a band across the screen"
+            );
             assert_eq!(
                 band.loc.y + band.size.h,
-                picture.size.1,
-                "and sits on the bottom"
+                picture.size.1
+                    - i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap(),
+                "and floats clear of the bottom"
             );
         }
 
@@ -114,10 +118,19 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
         assert_eq!(ground(laptop), [navy.red(), navy.green(), navy.blue()]);
         assert_eq!(ground(office), [cream.red(), cream.green(), cream.blue()]);
         assert_ne!(laptop.size, office.size);
+        // A bar's width is what it holds, so two screens showing the same
+        // contents get the same size bar — which is right, and is why the
+        // old assertion (that the two differed in size) no longer holds: it
+        // was really testing that a band's width was its screen's width.
+        //
+        // Where each bar sits is still its own screen's answer, and that is
+        // what would catch one dock stretched across two screens.
         assert_ne!(
-            laptop.dock.band.size, office.dock.band.size,
-            "one dock was stretched across two screens"
+            laptop.dock.band.loc, office.dock.band.loc,
+            "both bars were placed as though the screens were one"
         );
+        assert_eq!(laptop.dock.size, laptop.size);
+        assert_eq!(office.dock.size, office.size);
     }
 }
 
@@ -176,7 +189,7 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
     );
 
     for picture in desk(&screens, &dock, look).unwrap() {
-        let undimmed = crate::dock_raster::picture(&dock, look, picture.size).unwrap();
+        let undimmed = crate::dock_raster::picture(&dock, look, picture.size, 0).unwrap();
         assert_eq!(picture.dock, undimmed, "{:?}", picture.name);
     }
 }

@@ -144,11 +144,16 @@ impl Place {
             Direction::RightToLeft => Across::FromLeft(margin),
             Direction::LeftToRight => Across::FromRight(width - margin),
         };
+        // Clear of the bar, which floats above the bottom edge rather than
+        // sitting on it — so the first line starts above the gap as well as
+        // above the bar itself.
+        let floating =
+            i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
         Self {
             across,
-            stacked: Stacked::Upwards(height - thickness - margin),
+            stacked: Stacked::Upwards(height - thickness - floating - margin),
             room_across: width - 2 * margin,
-            room_down: height - thickness - 2 * margin,
+            room_down: height - thickness - floating - 2 * margin,
         }
     }
 }
@@ -182,7 +187,8 @@ mod tests {
 
         let place = Place::of(layout, (1920, 1080), 8, Direction::LeftToRight);
         assert_eq!(place.across, Across::FromRight(1912));
-        assert_eq!(place.stacked, Stacked::Upwards(1080 - thick - 8));
+        let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
+        assert_eq!(place.stacked, Stacked::Upwards(1080 - thick - floating - 8));
 
         let mirrored = Place::of(layout, (1920, 1080), 8, Direction::RightToLeft);
         assert_eq!(mirrored.across, Across::FromLeft(8));
@@ -199,7 +205,11 @@ mod tests {
             let layout = laid_out();
             let thick = i32::try_from(layout.thickness().as_pixels()).unwrap();
             let place = Place::of(layout, (1920, 1080), 8, reading);
-            assert!(place.room_down <= 1080 - thick - 16, "{reading:?}");
+            let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
+            assert!(
+                place.room_down <= 1080 - thick - floating - 16,
+                "{reading:?}"
+            );
             assert_eq!(place.room_across, 1920 - 16);
         }
     }

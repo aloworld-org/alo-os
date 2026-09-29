@@ -124,7 +124,14 @@ pub(crate) fn picture(
         division,
         offer,
     } = shown;
-    let dock_picture = crate::dock_raster::picture(dock, look, size)?;
+    let dock_picture = crate::dock_raster::picture(
+        dock, look, size,
+        // Nothing in this crate decides what the Dock holds yet:
+        // `alo_dock::Holding` answers that and is not plumbed into a
+        // compositor. A bar holding nothing is narrow, which is true
+        // rather than a placeholder.
+        0,
+    )?;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
     let list = ListLook {

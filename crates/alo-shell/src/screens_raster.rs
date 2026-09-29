@@ -97,7 +97,7 @@ pub(crate) fn picture(
     // One dock, drawn for this screen's own size. It used to be cloned and
     // moved to this screen's edge first; ADR 0076 fixed the dock to the bottom
     // edge of every screen, so there is nothing to override and no copy to make.
-    let mut drawn = crate::dock_raster::picture(dock, look, place.room())?;
+    let mut drawn = crate::dock_raster::picture(dock, look, place.room(), 0)?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
