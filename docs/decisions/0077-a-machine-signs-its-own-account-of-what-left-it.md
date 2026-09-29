@@ -1,6 +1,10 @@
 # ADR 0077 — A machine signs its own account of what left it
 
-**Status:** proposed, 2026-09-29. **Awaiting the owner.**
+**Status:** proposed, 2026-09-29. The owner directed that where other systems have
+already answered these questions, alo OS follows them rather than inventing — which
+settles the machine with no security chip (Windows' shape) and the separate key
+(the TPM's own endorsement-key/attestation-key split). **One thing is still asked
+of the owner**, at the bottom, and it is about wording rather than architecture.
 **Date:** 2026-09-29
 **Context:** `docs/features.md` promises at tier v1 *a signed, printable statement
 of exactly what left this machine in a period — the artifact an auditor asks for
@@ -35,8 +39,15 @@ radius when it leaks.
 ## The decision in one line
 
 **The machine signs its own attestation, with a key generated on that machine in
-hardware that cannot export it, and the artifact names which kind of hardware
-that was.**
+hardware that cannot export it; the artifact names which kind of hardware that
+was; and a machine without such hardware can still attest, saying so in the signed
+bytes, but only after somebody deliberately turns it on.**
+
+Three answers, and only the first is this product's own. The second is what
+Windows, Android and Apple all already do — name the kind rather than claim a
+boolean — and the third is the shape Windows chose for BitLocker on a machine with
+no TPM. Where somebody shipping at scale has already answered one of these, this
+record follows them rather than inventing.
 
 ## Why the vendor cannot sign, which is a disqualification and not a preference
 
@@ -139,25 +150,74 @@ an auditor telling them it is weaker than they assumed. A machine that quietly
 used a file on disk while a person believed it had a chip would be the kind of
 silence this product exists to not have.
 
+## What Windows and macOS do, because two of these questions are already answered elsewhere
+
+This record reasons from this product's own principles, and then checks whether
+anybody shipping at scale reached a different answer. On two of the three, they did
+not — which is worth knowing before somebody relitigates them.
+
+**Windows names the kinds rather than asking whether.** Microsoft's own
+documentation distinguishes discrete, firmware and integrated TPMs from a
+software-emulated one, which is *"well-suited for prototyping or testing"* but does
+*"not provide the same level of security."* Four kinds, not a boolean — the same
+shape as `HeldBy`.
+
+**And Microsoft's stated reason for key attestation is the reason this record
+keeps.** TPM key attestation is *"proof that a private key was generated and
+remains managed inside a TPM in a non-exportable form, rather than merely being
+stored in software where it may be copied or stolen."* That is non-exportability as
+the guarantee, in the vendor's own words, and it is why the capability-model
+argument was rejected above rather than merely deprecated. The failure Microsoft
+names is ours exactly: without attestation, *"someone can easily spoof a software
+KSP as a TPM KSP with local administrator credentials."*
+
+**The endorsement key is not the attestation key.** *"Every TPM ships with a unique
+asymmetric key called the endorsement key, burned by the manufacturer"* — and
+attestation is performed with a separate key rather than that one. The hardware
+designers split identity from statement-signing for the blast-radius reason this
+record gives, which settles §2 below by convention rather than by argument.
+
+**Apple binds the key to the Secure Enclave and states the same bounded claim.** A
+key generated there *"is tied to the Secure Enclave and is therefore available only
+on a specific device"*, and the enclave *"has very strong protections against key
+extraction, even in the case of a compromised Application Processor."* Compromise
+the software and you get signatures made while compromised, not a stolen key — the
+limit this record states about itself.
+
+**But Apple's attestation is Apple-signed, and that part is deliberately not
+copied.** The enclave key is certified by Apple's servers, which makes the vendor a
+participant in every attestation. It is right for Apple because their claim is
+*this is a genuine Apple device*, which only Apple can vouch for. Ours is *this is
+my machine's account of what left it*, which is the customer's to make — so vendor
+participation buys nothing and costs exactly the sovereignty this product is sold
+on. Same mechanism, different claim, opposite conclusion.
+
 ## The machine with nowhere safe to keep a key
 
-**This is the part that is asked of the owner rather than answered here**, because
-both answers are defensible and the choice is a product decision.
+**It attests, saying `a-file-on-disk` — but only after somebody deliberately turns
+it on, and the artifact loses the guarantee rather than appearing to keep it.**
 
-- **Refuse to attest.** The artifact then always means at least *a key that cannot
-  be exported*, and a machine that cannot make that claim makes none. Clean, and
-  it denies a real capability to a machine whose owner may need it and understand
-  the limits perfectly well.
-- **Attest, and say `a-file-on-disk` in the signed bytes.** The person keeps the
-  artifact, the weaker protection is stated rather than implied, and a verifier can
-  refuse it on its own terms. Also the answer that lets a customer with older
-  hardware produce anything at all — but it ships an artifact that looks identical
-  in every respect except one line, which is exactly the shape a reader skims past.
+This follows Windows rather than being invented here. BitLocker faces the same
+question and does not refuse: without a TPM it still encrypts, but an administrator
+must first enable *"Allow BitLocker without a compatible TPM"*, the machine then
+demands a PIN or a USB startup key at every boot, and Microsoft states plainly that
+it *"does not provide the pre-startup system integrity verification offered by
+BitLocker with a TPM."* Weaker mode available, **off by default, behind an explicit
+act, with the lost guarantee named rather than glossed.**
 
-`HeldBy::AFileOnDisk` exists so the second is **expressible**, which is not the
-same as it being decided. Silence is the one answer that is not available: it will
-be discovered by the first machine without a security chip, and discovered is the
-worst way for it to be settled.
+Refusing outright was rejected: it denies a real capability to a customer whose
+hardware is older and who may understand the limits perfectly well, and it is not
+what anybody shipping at this scale does.
+
+Attesting silently was also rejected, and this is the part the Windows precedent
+sharpens. An artifact identical in every respect but one line is exactly the shape
+a reader skims past, so the weaker mode is not something a machine falls into — it
+is something somebody asks for.
+
+**And the compliance point makes this urgent rather than academic.** PCI DSS, HIPAA
+and ISO 27001 commonly require *hardware-backed* attestation, so a software-key
+attestation may not satisfy the very auditor it was produced for. A person must not
+discover that from the auditor. Whatever asks them to turn this on has to say it.
 
 ## What this does not decide
 
@@ -198,12 +258,43 @@ verifier accepts the weakest believing it accepted the strongest.
 removed without breaking the signature is a claim the artifact does not really
 make.
 
+## A separate key from the image's, settled by convention rather than by argument
+
+A per-machine attestation key is **not** ADR 0036's image key.
+
+The image key's leak lets anybody hand every machine ever installed software that
+verifies. An attestation key's leak forges one machine's statements. Sharing them
+would give the smaller job the larger blast radius — and would put the image key on
+every machine, which is the exact thing ADR 0036 exists to prevent.
+
+This is not a judgement call. A TPM's endorsement key is burned in by the
+manufacturer and attestation uses a *separate* key; Android separates its
+attestation key from app signing and verified-boot keys; Apple separates code
+signing from per-device enclave keys. Every system that does both does them with
+different keys. The burden of proof sits on anybody proposing to merge them.
+
+## The one thing with no prior art, which is why it stays
+
+**The person is told at setup what their proof is worth**, in their own language.
+
+Nothing above was copied for this one, because there is nothing to copy. Every
+mechanism surveyed reports to a certification authority, a fleet administrator or
+an application developer. Microsoft's software-TPM caveat is in documentation for
+people configuring certificate services; Apple's enclave guarantees are in a
+security guide. **No mainstream system tells the person using the machine, in plain
+language, what their attestation is worth.**
+
+Following the field here would mean copying the single thing the field gets wrong,
+and the compliance finding is why it matters: the person most likely to be misled
+is the one who hands the artifact to an auditor and learns from the auditor that it
+does not meet the bar. On a product whose first law is that nothing leaves
+silently, a machine quietly holding its key in a file while its owner believes
+otherwise is the same failure one layer down.
+
 ## What is asked of the owner
 
-1. **The machine with no such hardware**: refuse to attest, or attest saying
-   `a-file-on-disk`.
-2. Confirmation that a per-machine attestation key is **a different key from ADR
-   0036's**, which this record assumes and argues for but does not have the
-   standing to settle.
-3. Whether the *say so at setup* sentence belongs in setup's own words — it is a
-   sentence a person reads, so it needs translating with the rest.
+One thing, and it is about words rather than architecture: whether the *what your
+proof is worth* sentence belongs in setup's own vocabulary, translated with the
+rest. It is a sentence a person reads, so the i18n rule says yes — but where in
+setup it appears, and how much it says, is a design decision this record does not
+make.
