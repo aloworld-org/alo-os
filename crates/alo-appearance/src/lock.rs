@@ -54,36 +54,14 @@ impl From<Background> for Lock {
 )]
 mod tests {
     use super::*;
-    use crate::picture::Picture;
-    use crate::rotating::{Every, Rotating};
-    use std::path::PathBuf;
-
-    /// A rotating folder, on a path no machine has.
-    fn rotating() -> Rotating {
-        let folder = if cfg!(windows) {
-            PathBuf::from(r"C:\Users\a\Pictures\Rotating")
-        } else {
-            PathBuf::from("/home/a/Pictures/Rotating")
-        };
-        Rotating::folder(folder, Every::hours(1).unwrap()).unwrap()
-    }
+    use crate::token::Token;
 
     /// Following is the default, and choosing is a thing a panel can see.
     #[test]
     fn a_lock_screen_follows_or_is_its_own() {
         assert!(!Lock::TheDesktop.is_its_own());
-        let mine = Lock::from(Background::from(Picture::shipped("alo").unwrap()));
+        let mine = Lock::from(Background::from(Token::DeepTeal.colour()));
         assert!(mine.is_its_own());
-    }
-
-    /// **A person may put their photographs on the lock screen** — the rule
-    /// about rotating folders governs what *following* means, and takes nothing
-    /// away from somebody who says what they want.
-    #[test]
-    fn a_person_may_choose_a_rotating_lock_screen() {
-        let mine = Lock::from(Background::from(rotating()));
-        assert!(mine.is_its_own());
-        assert_eq!(mine, Lock::Its(Background::from(rotating())));
     }
 
     /// Both kinds survive a settings file unchanged.
@@ -91,7 +69,7 @@ mod tests {
     fn a_lock_screen_survives_being_written_down() {
         let each = [
             Lock::TheDesktop,
-            Lock::from(Background::from(Picture::shipped("alo").unwrap())),
+            Lock::from(Background::from(Token::DeepTeal.colour())),
         ];
         for lock in each {
             let written = serde_json::to_string(&lock).unwrap();

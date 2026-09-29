@@ -8,12 +8,16 @@
 //! difference ([`crate::changes`]), and everything else comes from the release
 //! that is running.
 //!
-//! **A fresh machine is not grey.** `docs/features.md` promises wallpapers in
-//! the image, so what ships here is a picture rather than a colour — named
-//! [`THE_WALLPAPER`], which is a promise the image has to keep. A machine whose
-//! image ships no wallpaper by that name shows nothing behind its windows, and
-//! that is the image's bug rather than a case this crate papers over with a
-//! colour nobody chose.
+//! **A fresh machine is not grey**, and since ADR 0075 it is not a photograph
+//! either. alo OS ships no wallpaper: the canvas plane's own surface is the
+//! desktop, so what ships here is that surface — [`Token::Porcelain`], which
+//! `token.rs` already named *the workspace canvas* long before this crate had to
+//! choose one.
+//!
+//! **That is a colour the palette chose, not a colour this file picked.** The
+//! difference matters: a default invented here would be one more thing to keep in
+//! step with the design, and the whole argument for defaults living in code is
+//! that a release can move them. This one moves when the palette does.
 //!
 //! **What ships is light, all day.** Not because light is the real one — the
 //! design brief says to treat the two as equals — but because a machine that
@@ -23,14 +27,18 @@
 //! turns on.
 
 use crate::accent::Accent;
+use crate::background::Background;
 use crate::lock::Lock;
-use crate::picture::Picture;
 use crate::scheme::{Following, Schedule, Scheme};
 use crate::text::TextScale;
 use crate::time::TimeOfDay;
+use crate::token::Token;
 
-/// The name the image gives the wallpaper it ships.
-pub const THE_WALLPAPER: &str = "alo";
+/// The surface a machine shows before anybody changes anything.
+///
+/// The palette's own name for it. `THE_WALLPAPER` stood here until 2026-09-29
+/// and named a picture the image installed; ADR 0075 removed it.
+pub const THE_SURFACE: Token = Token::Porcelain;
 
 /// The schedule a person gets when they turn *follow the time of day* on: dark
 /// from six in the evening, light again at seven in the morning.
@@ -39,8 +47,8 @@ const EVENING: Schedule = Schedule::shipped(TimeOfDay::shipped(18, 0), TimeOfDay
 /// What alo OS looks like out of the box.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shipped {
-    /// What is behind the windows.
-    background: Picture,
+    /// The surface a person works on.
+    background: Background,
     /// What the lock screen shows.
     lock: Lock,
     /// What decides light or dark.
@@ -56,7 +64,7 @@ impl Shipped {
     #[must_use]
     pub fn of_the_image() -> Self {
         Self {
-            background: Picture::unchecked(THE_WALLPAPER),
+            background: Background::Colour(THE_SURFACE.colour()),
             lock: Lock::TheDesktop,
             following: Following::Always(Scheme::Light),
             text: TextScale::ordinary(),
@@ -68,7 +76,7 @@ impl Shipped {
     /// person's changes, or a test of what a new default would do to them.
     #[must_use]
     pub fn of(
-        background: Picture,
+        background: Background,
         lock: Lock,
         following: Following,
         text: TextScale,
@@ -89,10 +97,10 @@ impl Shipped {
         EVENING
     }
 
-    /// What is behind the windows.
+    /// The surface a person works on.
     #[must_use]
-    pub fn background(&self) -> &Picture {
-        &self.background
+    pub const fn background(&self) -> Background {
+        self.background
     }
 
     /// What the lock screen shows.
@@ -133,14 +141,12 @@ impl Default for Shipped {
 )]
 mod tests {
     use super::*;
-    use crate::picture::{Fitting, Of};
 
     /// **What ships is held to the rules a person is held to.** The wallpaper's
     /// name and the schedule's two times are built by the compiler, so this is
     /// what puts them back through the checks — or the checks are advice.
     #[test]
     fn what_ships_would_be_accepted_from_a_person() {
-        assert!(Picture::shipped(THE_WALLPAPER).is_ok());
         let evening = Shipped::the_evening_schedule();
         assert_eq!(
             Schedule::checked(evening.dark_from(), evening.light_from()).unwrap(),
@@ -154,16 +160,21 @@ mod tests {
         );
     }
 
-    /// A fresh machine shows the picture the image shipped, not a colour and not
-    /// nothing.
+    /// A fresh machine shows the surface the palette named, not a colour this
+    /// crate chose and not nothing.
+    ///
+    /// It showed a photograph until ADR 0075. What replaced it is
+    /// [`Token::Porcelain`], which `token.rs` documents as *the workspace
+    /// canvas* — so this asserts against the palette rather than against a
+    /// literal, and a release that moves that token moves this with it.
     #[test]
     fn a_fresh_machine_is_not_grey() {
         let shipped = Shipped::of_the_image();
+        assert_eq!(shipped.background().colour(), Token::Porcelain.colour());
         assert_eq!(
-            shipped.background().of(),
-            &Of::Shipped(THE_WALLPAPER.to_owned())
+            shipped.background(),
+            Background::Colour(THE_SURFACE.colour())
         );
-        assert_eq!(shipped.background().fitting(), Fitting::Fill);
         assert_eq!(shipped, Shipped::default());
     }
 
@@ -212,7 +223,7 @@ mod tests {
     #[test]
     fn a_different_release_can_ship_different_defaults() {
         let other = Shipped::of(
-            Picture::shipped("harbour").unwrap(),
+            Background::from(Token::Cream.colour()),
             Lock::TheDesktop,
             Following::from(Shipped::the_evening_schedule()),
             TextScale::percent(125).unwrap(),

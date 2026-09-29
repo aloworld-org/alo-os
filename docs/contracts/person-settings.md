@@ -632,9 +632,15 @@ really protecting.
 
 Kept by `alo_appearance::keeping`, in the person's folder beside this file, at
 the path the crate is handed. It holds `alo_appearance::Changes` — what the
-person changed about the background, the lock screen, light and dark, the size
-of the text and the accent — and nothing the release ships, so a release that
-improves a wallpaper reaches every machine whose owner never changed theirs.
+person changed about the surface they work on, the lock screen, light and dark,
+the size of the text and the accent — and nothing the release ships, so a release
+that moves the shipped surface reaches every machine whose owner never changed
+theirs.
+
+**alo OS ships no wallpaper** ([ADR
+0075](../decisions/0075-alo-os-has-no-wallpaper-the-canvass-own-surface-is-the-desktop.md)).
+A background is the canvas plane's own surface, and what a person chooses is that
+surface's material — one kind today, a colour.
 
 ### Keys
 
@@ -643,8 +649,8 @@ setting the person has not changed.
 
 | Key | Meaning |
 |---|---|
-| `background` | What is behind the windows on every display the person has not singled out. |
-| `displays` | The displays the person singled out, oldest first, each with its own background. |
+| `background` | The surface, on every display the person has not singled out. One kind: `{ Colour = "#RRGGBB" }`. |
+| `displays` | The displays the person singled out, oldest first, each with its own surface. |
 | `lock` | What the lock screen shows. |
 | `following` | What decides light and dark: one of the two always, or the clock. |
 | `text` | How big the text is, as a whole-number percentage. |
@@ -664,16 +670,11 @@ Every setting changed, exactly as `alo_appearance::keeping::keep` writes it:
 format = 1
 
 accent = "Moss"
-displays = [["HDMI-1", { Colour = "#102A43" }], ["eDP-1", { Picture = { fitting = "Fill", of = { File = "/home/ada/harbour.jpg" } } }]]
+displays = [["HDMI-1", { Colour = "#102A43" }], ["eDP-1", { Colour = "#7A6F62" }]]
 text = 150
 
-[background.Rotating]
-fitting = "Fit"
-folder = "/home/ada/Pictures"
-
-[background.Rotating.every]
-nanos = 0
-secs = 600
+[background]
+Colour = "#F8F6F2"
 
 [following.TheClock.dark_from]
 hour = 18
@@ -683,11 +684,8 @@ minute = 0
 hour = 7
 minute = 30
 
-[lock.Its.Picture]
-fitting = "Fill"
-
-[lock.Its.Picture.of]
-Shipped = "alo"
+[lock.Its]
+Colour = "#0F6B72"
 ```
 
 A file typed by hand need not be laid out that way — TOML's inline tables and

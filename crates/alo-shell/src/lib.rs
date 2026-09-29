@@ -152,7 +152,6 @@ mod libinput_routing;
 mod libinput_scroll;
 mod lock_background;
 mod lock_clock;
-mod lock_image_fit;
 mod lock_pixels;
 mod lock_raster;
 mod lock_surface;
@@ -454,7 +453,6 @@ pub use lock_raster::LockLook;
 pub use lock_surface::{LockPressed, LockSurface};
 
 #[cfg(test)]
-mod lock_background_tests;
 #[cfg(test)]
 mod lock_raster_tests;
 #[cfg(test)]
@@ -462,7 +460,5 @@ mod lock_surface_tests;
 #[cfg(test)]
 mod lock_testing;
 
-mod lock_background_path;
 mod lock_battery;
-mod lock_image_decode;
 mod nested_lock_input;

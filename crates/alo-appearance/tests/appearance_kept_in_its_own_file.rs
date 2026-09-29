@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 use alo_appearance::keeping::{self, FORMAT, THE_FILE};
 use alo_appearance::words;
 use alo_appearance::{
-    Accent, Appearance, Background, Changes, DisplayId, Every, Fitting, Following, Lock, Picture,
-    Rotating, Schedule, Scheme, TextScale, TimeOfDay, Token, appearance_words,
+    Accent, Appearance, Background, Changes, DisplayId, Following, Lock, Schedule, Scheme,
+    TextScale, TimeOfDay, Token, appearance_words,
 };
 use alo_strings::Strings;
 
@@ -36,30 +36,15 @@ fn the_file_in(folder: &Path) -> PathBuf {
     folder.join("alo").join(THE_FILE)
 }
 
-/// A whole path on whichever machine runs the test.
-fn whole(path: &str) -> PathBuf {
-    if cfg!(windows) {
-        PathBuf::from(format!(r"C:\{path}"))
-    } else {
-        PathBuf::from(format!("/{path}"))
-    }
-}
-
 /// A person who changed every part of how their machine looks.
 fn everything_changed() -> Changes {
     let mut changes = Changes::untouched();
-    changes.set_background(Background::from(
-        Rotating::folder(whole("home/ada/Pictures"), Every::minutes(15).unwrap())
-            .unwrap()
-            .fitted(Fitting::Centre),
-    ));
+    changes.set_background(Background::from(Token::Cream.colour()));
     changes.set_background_on(
         DisplayId::named("HDMI-1").unwrap(),
         Background::from(Token::Charcoal.colour()),
     );
-    changes.set_lock(Lock::Its(Background::from(
-        Picture::file(whole("home/ada/harbour.jpg")).unwrap(),
-    )));
+    changes.set_lock(Lock::Its(Background::from(Token::Navy.colour())));
     changes.follow(Following::from(
         Schedule::checked(
             TimeOfDay::checked(19, 0).unwrap(),
@@ -135,29 +120,6 @@ fn a_key_that_is_not_on_the_list_is_refused_whole_and_the_release_is_drawn() {
     assert!(said.text().contains("wallpaper"), "{said}");
     assert!(said.text().contains(&at.display().to_string()), "{said}");
     assert!(said.unfilled().is_empty(), "{said}");
-}
-
-/// **A shipped wallpaper's name that is a path is refused whole**, which is the
-/// refusal that stops a hand-edited file pointing the lock screen anywhere on
-/// the disk while claiming to be something alo OS shipped.
-#[test]
-fn a_wallpaper_name_that_is_a_path_is_refused_whole() {
-    let folder = a_folder_of_our_own("name-is-a-path");
-    let at = the_file_in(&folder);
-    let mut changes = Changes::untouched();
-    changes.set_lock(Lock::Its(Background::from(
-        Picture::shipped("alo").unwrap(),
-    )));
-    changes.set_text(TextScale::percent(125).unwrap());
-    keeping::keep(&at, &changes).unwrap();
-
-    let written = std::fs::read_to_string(&at).unwrap();
-    assert!(written.contains("\"alo\""), "{written}");
-    std::fs::write(&at, written.replace("\"alo\"", "\"../../etc/shadow\"")).unwrap();
-
-    let (drawn, refused) = keeping::at_sign_in(&at);
-    assert_eq!(drawn, Appearance::shipped());
-    assert_eq!(refused.unwrap().word(), words::KEPT_NOT_UNDERSTOOD);
 }
 
 /// **A file from another format, or one that is not settings at all, is

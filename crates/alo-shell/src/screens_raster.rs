@@ -27,9 +27,6 @@
 //! At neutral warmth — which is a machine with night light off — that is the
 //! identity, and a screen is drawn exactly as it was.
 
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-
 use alo_appearance::{Colour, DisplayId};
 use alo_displays::{Position, Warming};
 use alo_dock::Dock;
@@ -40,11 +37,6 @@ use crate::desktop_look::DesktopLook;
 use crate::dock_raster::DockPicture;
 use crate::screen_background::ScreenBackground;
 use crate::screens::{ScreenPlace, Screens};
-
-/// Where the images this machine shipped are installed.
-fn shipped_wallpapers() -> PathBuf {
-    PathBuf::from("/usr/share/alo/wallpapers")
-}
 
 /// One screen, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,7 +77,7 @@ impl ScreenPicture {
     /// # Errors
     /// Every refusal the painter makes for a shape outside the frame.
     pub fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
-        crate::painted::paint(frame, &self.background.solids, &self.background.inked)?;
+        crate::painted::paint(frame, &self.background.solids, &[])?;
         crate::painted::paint(frame, &self.dock.solids, &[])
     }
 }
@@ -101,8 +93,6 @@ pub(crate) fn picture(
     place: &ScreenPlace,
     dock: &Dock,
     look: DesktopLook,
-    running: Duration,
-    shipped: &Path,
 ) -> Result<ScreenPicture, RenderError> {
     let mut on_this_screen = dock.clone();
     on_this_screen.set_edge(place.edge());
@@ -111,13 +101,8 @@ pub(crate) fn picture(
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
     }
-    let background = ScreenBackground::prepare(
-        place.wearing().background(),
-        warming,
-        place.room(),
-        running,
-        shipped,
-    )?;
+    let background =
+        ScreenBackground::prepare(place.wearing().background(), warming, place.room())?;
     Ok(ScreenPicture {
         name: place.name().clone(),
         at: place.at(),
@@ -137,22 +122,10 @@ pub fn desk(
     screens: &Screens,
     dock: &Dock,
     look: DesktopLook,
-    running: Duration,
-) -> Result<Vec<ScreenPicture>, RenderError> {
-    within(screens, dock, look, running, &shipped_wallpapers())
-}
-
-/// Every screen, resolving shipped images beneath an explicit root.
-pub(crate) fn within(
-    screens: &Screens,
-    dock: &Dock,
-    look: DesktopLook,
-    running: Duration,
-    shipped: &Path,
 ) -> Result<Vec<ScreenPicture>, RenderError> {
     screens
         .each()
-        .map(|place| picture(place, dock, look, running, shipped))
+        .map(|place| picture(place, dock, look))
         .collect()
 }
 

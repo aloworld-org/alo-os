@@ -41,14 +41,7 @@ fn try_draw(
     scale: TextScale,
 ) -> Result<super::lock_raster::LockPicture, crate::RenderError> {
     let screen = snapshot(surface, indicator);
-    let temp = tempfile::tempdir().unwrap();
-    std::fs::copy(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../docs/artwork/wallpapers/alo-quiet-horizon.png"),
-        temp.path().join("alo.png"),
-    )
-    .unwrap();
-    let background = LockBackground::within(screen.image(), size, Duration::ZERO, temp.path())?;
+    let background = LockBackground::prepare(screen.image(), size)?;
     let region = alo_formats::Regionally::reading("en").unwrap();
     let timezone = alo_formats::Timezone::named("Europe/Berlin").unwrap();
     let strings = words();

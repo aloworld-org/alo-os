@@ -262,7 +262,6 @@ impl From<Changes> for Written {
 )]
 mod tests {
     use super::*;
-    use crate::picture::Picture;
     use crate::scheme::Scheme;
     use crate::token::Token;
 
@@ -349,7 +348,7 @@ mod tests {
         changes.set_text(TextScale::percent(150).unwrap());
         assert_eq!(serde_json::to_string(&changes).unwrap(), r#"{"text":150}"#);
 
-        changes.set_background(Background::from(Picture::shipped("harbour").unwrap()));
+        changes.set_background(Background::from(Token::Cream.colour()));
         changes.set_background_on(laptop(), plain(Token::Navy));
         changes.set_lock(Lock::TheDesktop);
         changes.follow(Following::from(Scheme::Dark));

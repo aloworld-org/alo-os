@@ -26,104 +26,49 @@
 //! surface above draws them the one way and never has to take the background
 //! apart to find out which kind it is.
 
-use std::path::Path;
-use std::time::Duration;
-
 use alo_appearance::{Background, Colour};
 use alo_displays::Warming;
 use smithay::utils::{Physical, Rectangle};
 
 use crate::RenderError;
-use crate::lock_background_path::selected;
-use crate::lock_image_decode::{MAX_PIXELS, decode};
-use crate::painted::{Inked, Solid};
-
-/// The largest screen side a background is fitted to.
-const LARGEST_SIDE: i32 = 8192;
+use crate::lock_background::a_size_worth_painting;
+use crate::painted::Solid;
 
 /// One screen's background, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ScreenBackground {
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
-    /// Inked pixels, painted after the shapes.
-    pub(crate) inked: Vec<Inked>,
 }
 
 impl ScreenBackground {
-    /// The background `chosen` for this screen, fitted to `size` and warmed by
-    /// `warming`.
+    /// The surface `chosen` for this screen, at `size`, warmed by `warming`.
     ///
-    /// `running` is how long the session has been going, which is what
-    /// `alo-appearance` turns into *which* of a rotating folder's pictures is
-    /// showing now; the choice is that crate's and the reading is here.
+    /// It took two more arguments until ADR 0075 — how long the session had been
+    /// running, and where the image put its wallpapers — and both existed only to
+    /// choose which picture of a rotating folder was showing. There is no folder
+    /// and no picture, so there is nothing to choose.
     ///
     /// # Errors
-    /// [`RenderError::DesktopScene`] for a screen with no pixels or more than
-    /// this file fits, and for a chosen picture that is missing, malformed,
-    /// larger than is decoded, or in a folder too large to read.
+    /// [`RenderError::DesktopScene`] for a screen with no pixels, or more of them
+    /// than this will allocate.
     pub(crate) fn prepare(
         chosen: &Background,
         warming: Warming,
         size: (i32, i32),
-        running: Duration,
-        shipped: &Path,
     ) -> Result<Self, RenderError> {
-        let (width, height) = size;
-        if width <= 0
-            || height <= 0
-            || width > LARGEST_SIDE
-            || height > LARGEST_SIDE
-            || u64::from(width.unsigned_abs()) * u64::from(height.unsigned_abs()) > MAX_PIXELS
-        {
+        if !a_size_worth_painting(size) {
             return Err(RenderError::DesktopScene);
         }
+        let (width, height) = size;
         let area = Rectangle::<i32, Physical>::new((0, 0).into(), (width, height).into());
-        if let Background::Colour(colour) = chosen {
-            return Ok(Self {
-                solids: vec![Solid {
-                    area,
-                    colour: as_painted(warming.applied_to(*colour)),
-                }],
-                inked: Vec::new(),
-            });
-        }
-
-        let (path, fitting) = selected(chosen, running, shipped).map_err(on_the_desktop)?;
-        let picture = decode(&path).map_err(on_the_desktop)?;
-        let mut rgba = vec![0u8; width as usize * height as usize * 4];
-        crate::lock_image_fit::paint(&picture, fitting, size, &mut rgba);
         Ok(Self {
-            solids: Vec::new(),
-            inked: vec![Inked {
+            solids: vec![Solid {
                 area,
-                pixels: warmed(&rgba, warming),
+                colour: as_painted(warming.applied_to(chosen.colour())),
             }],
         })
     }
-}
-
-/// Every fitted pixel as this screen's night light shows it, row-major.
-fn warmed(rgba: &[u8], warming: Warming) -> Vec<[u8; 3]> {
-    let channel = |pick: fn(Colour) -> u8| -> Vec<u8> {
-        (0..=u8::MAX)
-            .map(|value| pick(warming.applied_to(Colour::of(value, value, value))))
-            .collect()
-    };
-    let (red, green, blue) = (
-        channel(Colour::red),
-        channel(Colour::green),
-        channel(Colour::blue),
-    );
-    let through = |table: &[u8], value: u8| table.get(value as usize).copied().unwrap_or(value);
-    rgba.as_chunks::<4>()
-        .0
-        .iter()
-        .map(|pixel| {
-            let [r, g, b, _] = *pixel;
-            [through(&red, r), through(&green, g), through(&blue, b)]
-        })
-        .collect()
 }
 
 /// A colour as the painter takes it.
@@ -133,17 +78,6 @@ fn as_painted(colour: Colour) -> [u8; 3] {
 
 /// A refusal from reading a chosen image, said as the desktop's.
 ///
-/// The two doors this file reads an image through are shared with the lock
-/// screen, and both word every failure they have as that screen's — a missing
-/// file comes back as a submission failure whose text names the lock
-/// background. Neither of them refuses for any other reason, so every refusal
-/// they make is this one: the desktop could not draw what a person chose. It is
-/// said that way here, because a desktop frame that refused in the lock
-/// screen's words would send somebody looking at the wrong surface.
-fn on_the_desktop(_error: RenderError) -> RenderError {
-    RenderError::DesktopScene
-}
-
 #[cfg(test)]
 #[path = "screen_background_tests.rs"]
 mod tests;

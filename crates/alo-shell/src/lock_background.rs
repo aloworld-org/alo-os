@@ -1,14 +1,43 @@
-//! Prepare reusable pixels for the appearance-selected lock background.
-use crate::{
-    RenderError,
-    lock_background_path::selected,
-    lock_image_decode::{MAX_PIXELS, decode},
-};
-use alo_appearance::Background;
-use std::{path::Path, time::Duration};
+//! The lock screen's surface, as reusable pixels.
+//!
+//! **alo OS ships no wallpaper** (ADR 0075), so this is a colour fill and the
+//! bound on how large a surface it will allocate for. It used to resolve a
+//! shipped name or a personal path, decode a PNG or a JPEG, and fit it five
+//! ways; all of that went with the picture.
+//!
+//! What the record replaced that rule with is the part that mattered and is
+//! still true here: **the lock screen shows the surface and no client's
+//! pixels**. Nothing in this file can reach a client, because nothing in it
+//! reaches anything at all.
 
-/// Prepared background pixels, reusable across clock ticks at the same output size.
-/// No file path or client content is retained in the pixels.
+use alo_appearance::Background;
+
+use crate::RenderError;
+
+/// The largest surface this will allocate pixels for.
+///
+/// About the screen rather than about any image — it was
+/// `lock_image_decode::MAX_PIXELS` until ADR 0075 removed that file, and the
+/// question it answers outlived the pictures it was written for.
+pub(crate) const MAX_PIXELS: u64 = 16_777_216;
+
+/// The largest side of a surface this will fit.
+pub(crate) const LARGEST_SIDE: i32 = 8192;
+
+/// Whether an output is one this will allocate for.
+pub(crate) fn a_size_worth_painting(size: (i32, i32)) -> bool {
+    let (width, height) = size;
+    width > 0
+        && height > 0
+        && width <= LARGEST_SIDE
+        && height <= LARGEST_SIDE
+        && u64::from(width.unsigned_abs()) * u64::from(height.unsigned_abs()) <= MAX_PIXELS
+}
+
+/// Prepared surface pixels, reusable across clock ticks at the same size.
+///
+/// No file path and no client content is retained in them, which is now true by
+/// construction rather than by care.
 #[derive(Clone)]
 pub struct LockBackground {
     /// Validated output extent.
@@ -20,52 +49,25 @@ pub struct LockBackground {
 }
 
 impl LockBackground {
-    /// Resolve shipped names in the installed image and personal paths explicitly.
-    /// `running` is elapsed rotation time; the appearance model chooses the index.
+    /// This surface, at this size.
+    ///
     /// # Errors
-    /// Refuses missing/malformed images, oversized images/outputs, special files,
-    /// and directories with more than 4096 entries. PNG and JPEG are supported.
-    pub fn prepare(
-        chosen: &Background,
-        size: (i32, i32),
-        running: Duration,
-    ) -> Result<Self, RenderError> {
-        Self::within(
-            chosen,
-            size,
-            running,
-            Path::new("/usr/share/alo/wallpapers"),
-        )
-    }
-
-    /// Resolve names beneath an explicit installed-image root.
-    pub(crate) fn within(
-        chosen: &Background,
-        size: (i32, i32),
-        running: Duration,
-        shipped: &Path,
-    ) -> Result<Self, RenderError> {
-        let (w, h) = size;
-        if w <= 0 || h <= 0 || w > 8192 || h > 8192 || w as u64 * h as u64 > MAX_PIXELS {
+    /// [`RenderError::LockScene`] for an output with no pixels, or more of them
+    /// than this will allocate.
+    pub fn prepare(chosen: &Background, size: (i32, i32)) -> Result<Self, RenderError> {
+        if !a_size_worth_painting(size) {
             return Err(RenderError::LockScene);
         }
-        let mut pixels = vec![0u8; w as usize * h as usize * 4];
-        match chosen {
-            Background::Colour(c) => {
-                for pixel in pixels.as_chunks_mut::<4>().0 {
-                    pixel.copy_from_slice(&[c.red(), c.green(), c.blue(), 255]);
-                }
-            }
-            _ => {
-                let (path, fitting) = selected(chosen, running, shipped)?;
-                let picture = decode(&path)?;
-                crate::lock_image_fit::paint(&picture, fitting, size, &mut pixels);
-            }
+        let (width, height) = size;
+        let colour = chosen.colour();
+        let mut pixels = vec![0u8; width as usize * height as usize * 4];
+        for pixel in pixels.as_chunks_mut::<4>().0 {
+            pixel.copy_from_slice(&[colour.red(), colour.green(), colour.blue(), 255]);
         }
         Ok(Self {
             size,
             pixels,
-            chosen: chosen.clone(),
+            chosen: *chosen,
         })
     }
 }

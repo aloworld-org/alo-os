@@ -161,11 +161,11 @@ mod tests {
 
         let mut appearance = Appearance::shipped();
         let everywhere = Background::from(Token::Navy.colour());
-        appearance.set_background(everywhere.clone());
+        appearance.set_background(everywhere);
         let only_here = Background::from(Token::Cream.colour());
         appearance.set_background_on(
             DisplayId::named(office.named_for_the_shell().name()).unwrap(),
-            only_here.clone(),
+            only_here,
         );
 
         let dock = Dock::shipped();
@@ -288,7 +288,7 @@ mod tests {
         let only_here = Background::from(Token::Cream.colour());
         appearance.set_background_on(
             DisplayId::named(one.named_for_the_shell().name()).unwrap(),
-            only_here.clone(),
+            only_here,
         );
         let dock = Dock::shipped();
         assert_eq!(

@@ -176,8 +176,8 @@ fn each_screen_wears_its_own_background_on_the_edge_alo_dock_names() {
     let everywhere = Background::from(Token::Navy.colour());
     let only_there = Background::from(Token::Cream.colour());
     let mut appearance = Appearance::shipped();
-    appearance.set_background(everywhere.clone());
-    appearance.set_background_on(office.named_for_the_shell().clone(), only_there.clone());
+    appearance.set_background(everywhere);
+    appearance.set_background_on(office.named_for_the_shell().clone(), only_there);
 
     for edge in Edge::ALL {
         let mut dock = Dock::shipped();
@@ -237,7 +237,7 @@ fn night_light_reaches_every_screen_beside_its_own_background() {
     for place in screens.each() {
         assert_eq!(place.wearing().warmth().as_kelvin(), 2700);
         assert!(place.warming().blue() < place.warming().green());
-        backgrounds.push(place.wearing().background().clone());
+        backgrounds.push(place.wearing().background());
     }
     assert_eq!(backgrounds.len(), 2);
     assert_ne!(
