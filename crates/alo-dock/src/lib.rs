@@ -24,6 +24,7 @@
 //! | [`holding`] | Which applications are on the Dock, and which of them fit |
 //! | [`clicking`] | What one click on an application's icon does |
 //! | [`previews`] | An application's windows, for choosing one that is not the last |
+//! | [`travelling`] | Going somewhere, looking without going, and coming back |
 //! | [`shipped`] | What the dock is before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
@@ -156,6 +157,7 @@ pub mod previews;
 pub mod room;
 pub mod screen;
 pub mod shipped;
+pub mod travelling;
 pub mod unkept;
 pub mod window;
 pub mod windows;
@@ -176,6 +178,7 @@ pub use previews::{Opened, Preview, Previews};
 pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;
+pub use travelling::{GoingBack, PeekEnded, Peeking, WhatHappenedNext};
 pub use unkept::{FileNotRead, FileNotWritten};
 pub use window::{AppId, HowItSits, NotAnApp, Window, WindowId};
 pub use windows::Windows;
