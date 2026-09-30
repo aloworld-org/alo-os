@@ -158,7 +158,7 @@ The Dock, the status area and the **expanded** minimized-window panel are a
 44 × 24 logical pixels, scaled with the accessibility settings. *One exposed pixel
 is technically reachable and practically lost.*
 
-Recovery is rechecked when the **display, the scale, the Dock's position or the
+Recovery is rechecked when the **display, the scale, the Dock's bounds or the
 panel's state** changes, and **a recovery that moves a frame shows the move and
 records where it was** — a frame that relocated itself silently is a person's
 arrangement edited without them.
@@ -166,6 +166,21 @@ arrangement edited without them.
 **This is task 8 of the closed canvas plan, carried here whole rather than
 restated.** It is `Status: Open` there and stays open; what changes is that its
 missing half now has a plan to belong to.
+
+**The owner's list said *Dock-position*, and on this tree the Dock's position
+cannot change.** ADR 0076 fixes it to the bottom edge — the decision is in its own
+title. What does vary is the Dock's **bounds**: the owner decided separately that
+it grows with its icons, expanding to the margins and the panel's reserved area
+before the glyph shrinks. So the trigger is the region the Dock occupies, not
+which edge it is on, and this task says *bounds* for that reason.
+
+**Recorded rather than silently reinterpreted**, because the two readings are not
+the same promise: if the owner does mean the edge can move, then ADR 0076 is what
+has to change and this task is waiting on it rather than on me. The laptop lane
+has separately put it to the owner that ADR 0076 removed a choice from the person
+and that law 5 — *a change that takes a choice away from the person is a bug,
+whatever the reason given* — arrived a week before it and is cited nowhere in it.
+**That question is upstream of this clause and is not this plan's to settle.**
 
 - **Acceptance:** the four checks task 8 already names — *Show all* reaches every
   frame in the supported zoom range; fixed controls cannot cover every usable drag
