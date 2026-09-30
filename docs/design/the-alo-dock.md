@@ -105,6 +105,15 @@ content, and **the pointer can travel onto the revealed Dock and click without i
 disappearing on the way** — which is a real constraint on how the reveal is
 built, not a detail.
 
+*Read "moving to the bottom edge" as the edge under the bar, not the whole width
+of it.* [The regions a pointer can be in](the-regions-a-pointer-can-be-in.md)
+carries the measured areas — the Dock's reaches 24 either side of the bar and
+runs down through the gap beneath it, and stops well short of the panel at the
+right — together with the owner's rule for where two surfaces meet at a corner.
+This sentence was written when the Dock was the only surface with an edge, and
+read alone it invites a strip the full width of the screen, which would claim a
+corner the panel owns.
+
 **Pinned** means the application stays available when it is closed. **Open** means
 it has a window. Those are two states and they are told apart without relying on
 colour. Icons keep a usable size; the rest go into a named overflow list.
