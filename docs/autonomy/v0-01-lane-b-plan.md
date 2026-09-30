@@ -191,7 +191,8 @@ below is the next task and was written in the same change.
 
 ### 5. A person can be told what their machine did
 
-**Status:** ready. **Depends on:** nothing in this lane; 4 is done.
+**Status:** **Done, 2026-09-10** — see the mark below; this line read `ready`
+until 2026-09-30. **Depends on:** nothing in this lane; 4 is done.
 
 `docs/features.md` promises for v0.01: *A record of what the agent did, in
 words*. `crates/alo-record` writes it, `crates/alo-keeping` shortens it and

@@ -629,6 +629,31 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
                      `**Status:** **Done, <date>.**`",
                     task.number
                 );
+                // **And the other way round, which nothing checked.** A task
+                // carrying the mark under a status line that still reads `ready`
+                // is finished work advertised as available. The loop itself is
+                // not fooled — it reads the mark — but a person is, and so is a
+                // lane picking up what to do next.
+                //
+                // Found on 2026-09-30 by the Mac lane going to start
+                // `kernel-enforcement-plan.md` task 3, reading `**Status:**
+                // ready`, and discovering `**Done, 2026-09-07.**` sixty lines
+                // below it with the code and seven tests behind it. A twenty-line
+                // sweep then found three across the repository — this plan's task
+                // 3, `v0-01-delivery-plan.md` task 27, `v0-01-lane-b-plan.md` task
+                // 5 — all three genuinely done, all three saying `ready`.
+                //
+                // The assertion above and this one are the two halves of one
+                // question, and only one of them existed. The half that was
+                // missing is the half that wastes somebody's afternoon rather
+                // than skipping a task, which is why nobody had met it.
+                assert!(
+                    said || !task.done,
+                    "`{named}` task {} carries a `**Done, <date>.**` mark and its status \
+                     line does not say done, so finished work reads as available — write \
+                     `**Status:** **Done, <date>.**`",
+                    task.number
+                );
             }
         }
     }

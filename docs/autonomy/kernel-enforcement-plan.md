@@ -306,7 +306,9 @@ fails and says where to come and what to change.
 
 ### 3. Socket attribution and default-deny for a bound turn
 
-**Status:** ready. **Depends on:** 1, 2 — both done.
+**Status:** **Done, 2026-09-07.** **Depends on:** 1, 2 — both done. This line read
+`ready` until 2026-09-30 while the work, the fifth and sixth hooks and seven tests
+sat sixty lines below it; see the mark further down.
 
 The programme and the map entry that make task 1's policy true.
 
