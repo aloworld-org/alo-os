@@ -22,6 +22,7 @@ use alo_dock::window::{Window, WindowId};
 
 use crate::preview::Preview;
 use crate::showing::{Chosen, HowItShows};
+use crate::what_alo_is_doing::WhatAloIsDoing;
 
 /// Why a window could not be put aside, or brought back.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -91,6 +92,41 @@ impl Panel {
             .position(|preview| preview.window() == window)
             .ok_or(NotPutAside::ItIsNotThere)?;
         Ok(self.previews.remove(at))
+    }
+
+    /// Say what alo is doing in a window that is put aside.
+    ///
+    /// Returns whether the panel held it. **A report for a window nobody put aside is
+    /// dropped, and saying so is the point** — a preview that appeared because a report
+    /// arrived would be a row for a window that is not away, which is worse than losing the
+    /// report.
+    ///
+    /// This is how a person watches work in a window they cannot see: the report is replaced
+    /// as it changes, and passing [`WhatAloIsDoing::Nothing`] is how it ends.
+    pub fn alo_is_now(&mut self, window: WindowId, what: WhatAloIsDoing) -> bool {
+        match self
+            .previews
+            .iter_mut()
+            .find(|preview| preview.window() == window)
+        {
+            Some(preview) => {
+                preview.alo_is_now(what);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// The put-aside windows where alo has stopped and needs the person.
+    ///
+    /// **In the panel's own order**, most recently put aside first — not waiting ones first.
+    /// A panel that reordered itself when a task needed attention would move a row under a
+    /// pointer travelling towards it, which is the fault the reveal state machine exists to
+    /// prevent arriving by way of sorting.
+    pub fn waiting_on_the_person(&self) -> impl Iterator<Item = &Preview> {
+        self.previews
+            .iter()
+            .filter(|preview| preview.alo().requires_you())
     }
 
     /// Whether this window is put aside.

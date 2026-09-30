@@ -23,6 +23,7 @@ use alo_canvas::Zoom;
 use alo_dock::on_the_canvas::Patch;
 use alo_dock::window::{AppId, Window, WindowId};
 
+use crate::what_alo_is_doing::WhatAloIsDoing;
 use crate::where_it_goes_back::WhereItGoesBack;
 
 /// One window put aside, as the panel holds it.
@@ -48,10 +49,24 @@ pub struct Preview {
     /// anyway: what is saved is the view the person was looking at when they chose to put
     /// the window away, and only they were there.
     zoom: Zoom,
+    /// What alo is doing in this window, if anything.
+    ///
+    /// **Not a construction-time value**, because it changes while the window is away: that
+    /// is the whole point of leaving alo working in something you put aside. So it starts as
+    /// [`WhatAloIsDoing::Nothing`] and is replaced by [`Self::alo_is_now`].
+    ///
+    /// Starting at `Nothing` is what makes the default safe. A window put aside on a machine
+    /// with no agent carries no agent report and can never be drawn with an empty one, which
+    /// is ADR 0009 held by the field's initial value rather than by a caller remembering.
+    alo: WhatAloIsDoing,
 }
 
 impl Preview {
     /// The preview for a window being put aside, at the zoom the person was at.
+    ///
+    /// Carries no agent report. One is attached by [`Self::alo_is_now`] if alo is given
+    /// something to do here, and **never by this constructor** — a machine with no agent must
+    /// not have to pass an argument saying so.
     #[must_use]
     pub fn of(window: &Window, zoom: Zoom) -> Self {
         Self {
@@ -60,6 +75,7 @@ impl Preview {
             called: window.called().to_owned(),
             at: window.at(),
             zoom,
+            alo: WhatAloIsDoing::Nothing,
         }
     }
 
@@ -95,6 +111,28 @@ impl Preview {
     #[must_use]
     pub const fn zoom(&self) -> Zoom {
         self.zoom
+    }
+
+    /// What alo is doing in this window, if anything.
+    ///
+    /// A surface asks this **before** drawing anything agent-shaped. [`WhatAloIsDoing::Nothing`]
+    /// means draw no heading and no control, which is ADR 0009 in this panel: the agent's
+    /// surfaces disappear rather than nag, and a greyed-out feature is an advertisement.
+    #[must_use]
+    pub const fn alo(&self) -> &WhatAloIsDoing {
+        &self.alo
+    }
+
+    /// Say what alo is doing here now.
+    ///
+    /// Replaces the report wholesale rather than amending it, so a preview cannot hold a
+    /// half-updated one — the same reason [`crate::alo_at_work::AtWork`] takes every part at once.
+    ///
+    /// Passing [`WhatAloIsDoing::Nothing`] is how work **ends**, and it is the same value a
+    /// preview starts with: a finished task and a machine with no agent leave a surface with
+    /// exactly the same thing to draw, which is nothing.
+    pub fn alo_is_now(&mut self, what: WhatAloIsDoing) {
+        self.alo = what;
     }
 
     /// The whole view it goes back to, as one value.

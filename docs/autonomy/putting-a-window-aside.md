@@ -445,7 +445,9 @@ this lane's.
 
 ### 7. Alo working in a minimised window
 
-**Status:** ready. **Task 1 is blocked on a clause of its own acceptance, not on its work; what this task needs from it is built.**
+**Status:** **blocked on the deep-teal clause, which is `alo-appearance`'s, 2026-09-30.** The
+report is built and *no empty agent controls* holds in the types; the colour clause is about
+drawing and stays here.
 
 The task alo was given, the scope it may change, progress, last confirmed action, **Stop
 available immediately**, and *Requires you* when a decision is waiting.
@@ -453,6 +455,48 @@ available immediately**, and *Requires you* when a decision is waiting.
 **Acceptance.** With AI switched off the panel is fully functional and shows no empty
 agent controls and no nagging, which is ADR 0009 in this surface. Deep teal appears only
 with the alo mark and a word, never as a selection colour.
+
+**Built:** five small files, one responsibility each —
+`crates/alo-put-aside/src/what_alo_is_doing.rs` (is there anything to draw),
+`alo_at_work.rs` (the report), `the_scope_alo_may_change.rs`, `how_far_alo_has_got.rs`,
+`requires_you.rs` — plus `Preview::alo`/`alo_is_now`, `Panel::alo_is_now` and
+`Panel::waiting_on_the_person`, and nine tests in
+`crates/alo-put-aside/tests/the_panel_is_whole_with_no_agent_at_all.rs`.
+
+**ADR 0009 is the whole design, in its own words:** *the agent's surfaces disappear rather
+than nag* — absent rather than present-but-disabled, because **a greyed-out feature is an
+advertisement.** So the work was to make *present but hollow* **unrepresentable** rather than
+merely avoided. The failure being guarded is not a crash: it is a panel that works and offers
+an empty agent section, which passes any test that only asks whether the panel functions.
+
+- `WhatAloIsDoing::Nothing` is the **value a preview is born with**, so a machine that
+  declined AI never depends on a caller passing an argument to say so. There is no *switched
+  off* variant, deliberately: both cases draw nothing, and the first thing somebody would do
+  with a `SwitchedOff` case is write a message for it — **that message is the nagging.**
+- An enum and not `Option<AtWork>`, because `None` reads as *not yet* and invites
+  `if let Some(..) else { draw_the_placeholder() }` — idiomatic Rust that breaks ADR 0009.
+- **Stop is not a field.** *Stop available immediately* is held by there being nothing that
+  could withhold it: no `can_stop`, no state where the report exists and stopping does not. A
+  boolean would be a promise a caller could set to `false`, and it is the one promise a person
+  cannot check for themselves from a window they cannot see.
+- Every field refuses its own hollow version: a blank task, a blank last-confirmed line, an
+  empty change scope, *Requires you* with no question, a progress past the end. Reading and
+  changing nothing are **different answers** rather than a list that happens to be empty, and
+  absent progress differs from zero — *nobody can say how far* and *begun and got nowhere*
+  draw differently, which is also why `Progress` has no `Default`.
+- `waiting_on_the_person` finds the stopped task **in the panel's own order**. A panel that
+  moved a waiting row to the top would move a preview out from under a pointer travelling
+  towards it, which is the reveal machine's fault arriving by way of sorting.
+
+**Three mutations watched failing:** a preview born holding a placeholder report, a blank task
+name accepted, and an empty change scope accepted. Each caught by the test that names it.
+
+**The deep-teal clause is not this lane's and is not dropped.** *Deep teal appears only with
+the alo mark and a word, never as a selection colour* is about drawing; this crate holds no
+pixels and `alo-appearance` owns the palette. The half that can be held here is held: a test
+reads this crate's own source and fails if it names any colour at all, because a colour here
+would be a second opinion about that palette and a selection colour here would be the exact
+misuse the clause forbids. The rest stays in this task, with the task open.
 
 ### 8. Privacy
 
