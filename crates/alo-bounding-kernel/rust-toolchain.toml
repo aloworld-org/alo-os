@@ -17,6 +17,22 @@
 # `core` for `bpfel-unknown-none`, so it is compiled from source with
 # `-Z build-std=core`, and that is a nightly option. Nothing else here needs
 # nightly, and no other crate in this repository is built with it.
+# **And the components its own gates need, declared here rather than installed by
+# hand.** Two of the nine gates run in this directory — `cargo fmt --all --check` and
+# `cargo clippy` for `bpfel-unknown-none` — so they run under this pin, and until
+# 2026-09-30 this file named only `rust-src`. Every machine that had ever run them had
+# `rustfmt` and `clippy` for this nightly because somebody had added them once, by hand,
+# and nothing recorded that they were needed.
+#
+# A hosted runner has neither, and the gate failed there with *'cargo-fmt' is not
+# installed for the toolchain 'nightly-2026-06-01'*. **It had failed that way on every
+# run and nobody could see it**: the supervisor reports the *first* failing gate, the
+# workspace's tests failed earlier for an unrelated reason, and this one was never
+# reached. It became visible in the same hour that earlier failure was fixed.
+#
+# So what the gates need is written where the toolchain is written. A component
+# installed by hand on three machines is a dependency nothing declares, and the only
+# machine that can tell you so is one that has never had it.
 [toolchain]
 channel = "nightly-2026-06-01"
-components = ["rust-src"]
+components = ["rust-src", "rustfmt", "clippy"]
