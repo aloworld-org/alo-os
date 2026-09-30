@@ -37,11 +37,18 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 
 ## Every v0.5 plan, and who has it — as of 2026-09-15
 
+*Lane B's checkout was named `alo-os-b` in this table until 2026-09-30. It is
+`alo-os-lane-b`. The Panel lane went looking for `alo-dock`'s owner here, found
+a checkout that does not exist, and reasonably concluded the lane was dormant —
+while it was landing in that crate the same afternoon. **A crate can look
+abandoned while its owner is active one directory over**, and this table is the
+one place somebody checks before deciding that.*
+
 | Plan | Machine | Crates it owns |
 |---|---|---|
 | `v0-5-the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
 | `v0-5-the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` |
-| `v0-5-where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
+| `v0-5-where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
 | `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
 | `v0-5-the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
 | `v0-5-documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
@@ -52,7 +59,7 @@ paper unblocks. Nobody else takes `alo-keeping-up`.
 | `v0-5-the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
 | `v0-5-capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it. Its tasks 4, 5 and 7 waited on the devices plan's codec decision, which the same lane then took and wrote as ADR 0051 | `alo-capturing`, `alo-in-use` |
 | `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
-| `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
+| `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-lane-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
 | `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
 **Narrow printer producer contribution, authorized 2026-09-18.** The owner told
