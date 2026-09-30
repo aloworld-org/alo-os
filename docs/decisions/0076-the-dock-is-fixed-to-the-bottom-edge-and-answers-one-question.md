@@ -1,8 +1,16 @@
 # ADR 0076 — the Dock is fixed to the bottom edge, and answers one question
 
-**Status:** accepted, 2026-09-29, by the owner. **Amended 2026-09-30** — the
-decision stands; what it cost is now written down, and the reason it gave for
-taking it is retired.
+**Status:** accepted 2026-09-29; **amended twice on 2026-09-30.**
+
+**The title of this record is now wrong and is deliberately not changed.** The
+Dock is no longer *fixed* to the bottom edge — bottom is its **default** and a
+person may choose bottom, left, right or top. A record is renamed only by
+breaking every link to it, so the correction lives in the text where a reader
+arrives rather than in a filename that would send them nowhere.
+
+What the two amendments did: the first wrote down what this record cost and
+retired the reason it gave for taking it; the second carries the owner's
+reversal. Everything about *what the Dock is for* is untouched by both.
 
 ## What this cost, which this record did not say
 
@@ -26,20 +34,46 @@ argues that the fifth law does not bind until somebody boots, which is the whole
 period in which this product is being decided. `CLAUDE.md` now says so, and the
 argument is not available to the next record that reaches for it.
 
-**What is decided, and what is not.** The Dock is fixed to the bottom edge, and
-that stands: the reasoning from *what is the Dock for* is sound, the design file
-draws it there, and the shell is built on it. **What is not decided is that a
-person may never choose an edge again.** This record withdrew the promise
-outright where it should have deferred it. That distinction is not pedantic — a
-withdrawn promise is gone and a deferred one is owed, and only one of the two
-survives the fifth law. Whether the choice returns, and at which tier, is the
-owner's and belongs in `docs/features.md`, which is the only place scope is
-decided.
+**The remedy was wrong, and the owner has reversed it.** On 2026-09-30, within
+the hour of the above:
 
-**Why this is an amendment and not a reversal.** Relitigating a settled decision
-without new facts is forbidden here. A law nobody applied is a new fact, and it
-reaches this record's *reasoning* and its *silence* — not its conclusion, which
-nothing here disturbs.
+> My earlier bottom-only ruling was too restrictive. **Bottom should be the
+> default; the person can choose bottom, left, right, or top.** Design each
+> orientation properly, including labels, overflow, the alo Bar, activation
+> regions, and conflicts with other controls.
+>
+> Restore the Dock's edge choice in v0.01 and schedule the missing designs now.
+> **The absence of side and top variants is a design dependency to resolve,
+> rather than a reason to move an existing v0.01 promise to v1.**
+>
+> Keep per-display Dock placement at its existing v0.5 tier. That is a separate
+> capability from choosing an edge for the current display.
+
+So this record's decision is now **bottom is the default rather than the only
+edge**, and the four-edge choice returns to `docs/features.md` at `[v0.01]`.
+Per-display placement stays at `[v0.5]`: choosing an edge for the display you
+are on and arranging docks across two displays are different capabilities.
+
+**What this record got wrong was the remedy, not the reasoning.** Everything
+below about *what the Dock is for* stands untouched — the three questions, the
+restatement, and the removals that follow from holding the Dock to one job.
+**None of that ever required one edge.** It answered *a dock that moves to any
+edge does not survive the canvas* by removing the choice, where the answer was a
+default that a person can change. That difference is exactly the fifth law's: a
+default is not a choice taken away, and a withdrawal is.
+
+**And the missing design was a dependency, not a verdict.** The design file has
+no side or top variants — measured 2026-09-30, all 163 Dock instances are the
+same bottom bar. This record treated that absence as settling the question. The
+owner has treated it as work to schedule. *An absent design is a dependency, not
+a verdict*, which is the general form of what went wrong here and is worth more
+than the particular.
+
+*The paragraph above this one, written earlier the same day, argued only that the
+promise should have been deferred rather than withdrawn. It is kept rather than
+replaced: it is how the question became answerable, and the distinction in it —
+a withdrawn promise is gone, a deferred one is owed — is what made the reversal
+reachable. The owner went further than the argument asked.*
 
 ## What forced it
 
