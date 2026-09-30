@@ -1,9 +1,49 @@
 # One plane, two vocabularies
 
-**Status:** a design note. It records a duplication, says which side should go,
-and says why the decision has to be taken before the next surface is built
-rather than after.
+**Status:** a design note, **corrected on the day it was written.** It records a
+duplication that is real and a remedy that was wrong, and the correction is
+kept above the original because the original is what somebody would otherwise
+act on.
 **Date:** 2026-09-30
+
+## Corrected the same day, by comparing the two APIs instead of reading them
+
+**The recommendation below — move `on_the_canvas` into `alo-canvas` — does not
+survive measurement, and the sentence it rests on is false.** This note said
+*these are the same four ideas, written twice*. They are not:
+
+| `alo-dock` | `alo-canvas` | the difference |
+|---|---|---|
+| `Spot::at(x: i64, y: i64)` | `At::checked(x: i32, y: i32)` | **a narrower integer** |
+| `Patch::of(corner, wide, tall)` | `Frame::of(id: u64, at, size)` | **`Frame` carries an identity** |
+
+`Frame` is not a rectangle on the plane. It is *a framed window with an id*.
+`Patch` is a rectangle and has no identity to give. And `alo-dock`'s plane is
+`i64` **on purpose** — its own documentation says a coordinate here is signed
+and larger than a screen's because a window can sit to the left of where the
+person is looking.
+
+So the move would be one of two real changes rather than a rename: **invent an
+identity for every rectangle**, or **narrow the dock's plane to `i32`**. The
+first puts a field where there is no fact to put in it; the second is a
+behaviour change to how far a window may sit from the origin.
+
+**The count was wrong too.** This note said *ten files in `alo-dock` and two in
+`alo-handing`*. Measured by asking which files name the types as `alo_dock`'s:
+**ten files, all inside `alo-dock`, and none outside it.** `alo-handing`
+matched a loose grep on the English words — `Delivery::OnTheSpot` — and
+`alo-shell` matched a method called `show_all_on_the_canvas`. Nothing outside
+`alo-dock` uses these types at all.
+
+**What survives is the observation and not the remedy.** Two crates do model
+one plane, they do not know about each other, and a surface needing both still
+has to choose. But the choice is not *which name wins*; it is **whether the
+plane's rectangle carries an identity, and how wide its coordinates are** —
+and those are decisions with consequences, not a cleanup.
+
+*Written from reading the type names and corrected from reading the
+constructors. The duplication was visible in the names; the incompatibility was
+only visible in the signatures.*
 **Asked by:** the lane building the minimised-windows panel, which is the first
 surface that needs both halves and therefore the first that has to choose.
 
@@ -42,6 +82,11 @@ clearly and go on being misplaced, because a docstring is read as a description
 of what the code does and not as a claim about where it lives.**
 
 ## What should happen
+
+> **Withdrawn by the correction at the top of this note.** What follows is the
+> recommendation as written, kept because a remedy deleted without trace is a
+> remedy somebody proposes again. It rests on the two type families being
+> interchangeable, and they are not.
 
 **The plane belongs to `alo-canvas`, and `alo-dock` should depend on it.**
 
