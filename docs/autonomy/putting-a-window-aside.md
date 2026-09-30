@@ -380,8 +380,41 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **blocked on the region contract here and on integration evidence in the shell,
-2026-09-30.** The generalisation has landed; the decision was made and acted on.
+**Status:** **blocked on there being no full screen in `alo-shell`, measured 2026-09-30** —
+upstream of the region contract and of the integration evidence, both of which are still owed.
+The generalisation has landed; the decision was made and acted on.
+
+**The blocker neither lane had measured.** This task completes by *revealing the panel over a
+truly full-screen window*. That cannot be run, and neither can the Dock's half of it, because
+the shell cannot put a window into full screen:
+
+- `alo_shell::window_mode::Mode` has three cases — `Normal`, `Maximized`, `InAShare`. None of
+  them fills the screen, and `Maximized` is not it: a maximised window sits in the work area
+  the Dock was already laid out beside, which is the arrangement this task's reveal exists to
+  escape.
+- The `XdgShellHandler` implementation in `alo-shell/src/surfaces.rs` answers `move`,
+  `maximize`, `minimize`, `unmaximize`, `resize` and `reposition`. **`fullscreen_request` and
+  `unfullscreen_request` are absent**, so Smithay's empty defaults run and a client asking to
+  fill the screen is answered with silence rather than a refusal.
+- `alo_dock::HowItSits::FillingTheScreen` exists in the model and occurs nowhere in `alo-shell`
+  but one doc comment — seven occurrences of the word across every crate, and five of them are
+  a menu item.
+
+**The shell is honest about it, and the first draft of this paragraph was not.** That draft said
+the compositor advertises a capability it does not implement. It does not:
+`alo-shell/tests/support/wm_capabilities.rs` pins the advertised set to exactly `Maximize` and
+`Minimize`, and asserts that adding `Fullscreen` to it **fails**. A test written against this
+very mistake caught it before it was published, which is the second time in a week that the
+record was about to be corrected in the wrong direction.
+
+**What it means for the split.** Rules 3, 4 and 6 landed in `#332` and the region contract is
+still this lane's. Neither produces this task's evidence, because the situation the machine
+exists for cannot be created. **Full screen in `alo-shell` is the prerequisite**, it belongs to
+lane B with the rest of the shell wiring, and **it is in no plan** — measured across `docs/`,
+where the word occurs in this task, one design note and one menu item.
+
+**`alo_dock::menu` already offers `What::FullScreen`.** Deciding a menu's contents before the
+capability exists is not a fault, but nobody is to read that item as evidence that it does.
 
 **`alo-dock::revealing` was generalised by lane B and it is done** — `#332`, *what holds a
 revealed surface open is a set, not the last event*. It is the redesign rather than the rename

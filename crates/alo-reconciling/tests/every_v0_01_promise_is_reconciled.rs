@@ -259,6 +259,18 @@ const THE_REAL_DECISION: &str =
 /// arrives with no evidence at all and points at task 1 of
 /// `docs/autonomy/putting-a-window-aside.md`.
 ///
+/// **And five from 2026-09-30, upward again and for the same reason.** The
+/// owner put *full screen* and *reaching the Dock over a full-screen window*
+/// into this release, neither having been in `docs/features.md` at all. Nothing
+/// is written for either, so both arrive with no evidence and both point at
+/// task 6 of `docs/autonomy/putting-a-window-aside.md`. This assertion refused
+/// the features.md change within minutes of it being made, for the second time
+/// in one day.
+///
+/// *The reveal's state machine is built and tested in `alo-dock` and is
+/// deliberately not cited as evidence for it.* Nothing calls it, so citing it
+/// would make the ledger say a person can reach the Dock when nobody can.
+///
 /// **A promise entering a release is a thing this count has to be told about**,
 /// and it is the case the three notes above do not cover: every one of those was
 /// something closing. A number that only ever falls is one nobody thinks to check
@@ -274,8 +286,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        3,
-        "the ledger's own account of itself says three v0.01 promises have no \
+        5,
+        "the ledger's own account of itself says five v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -298,8 +310,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        3,
-        "the entries with no evidence are not the three the count says: \
+        5,
+        "the entries with no evidence are not the five the count says: \
          {owed_and_pointing:?}"
     );
     for (promise, waits) in &owed_and_pointing {
