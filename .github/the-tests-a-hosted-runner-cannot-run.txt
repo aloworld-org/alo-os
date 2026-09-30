@@ -1,55 +1,54 @@
 # The tests that fail on a GitHub-hosted runner and pass on every lane's machine.
 #
-# `gate.yml` reads this file to tell **a failure this runner causes** from **a
-# failure in the change under test**. Until it existed the workflow could only ask
-# *which gate failed*, and answered `the workspace's tests` in both cases — so a
-# real broken test and a namespace the runner will not make were the same sentence,
-# and the run stayed quiet about both.
+# **This list is empty, and it reached zero by being satisfied.**
 #
-# # The rules this file lives under
+# `gate.yml` reads this file to tell **a failure this runner causes** from **a failure
+# in the change under test**. Until it existed the workflow could only ask *which gate
+# failed*, and answered `the workspace's tests` in both cases — so a real broken test
+# and a namespace the runner would not make were the same sentence, and the run stayed
+# quiet about both.
 #
-# **A line here is an excuse, so it expires.** The workflow checks not only that
-# every failure is listed, but that every listed test *still fails*. A test named
-# here that passes makes the run say so and is meant to be deleted in the next
-# change — otherwise this becomes a list of things nobody is allowed to break,
-# which is the opposite of what it is for. Two accessibility-bus tests were on the
-# informal version of this list in a comment, and they have passed since the
-# compositor and session bus were added to the job; they are not here.
+# # What was here, and why it is not
 #
-# **A line is a statement about the runner, never about the test.** Nothing here
-# is skipped, marked `#[ignore]`, or weakened. These tests run on every lane and
-# must pass there; `alo/nine-gates` — the status `main` actually requires — is
-# posted only from a machine where all of them ran.
+# Five tests: four in `alo-asking::an_office_that_cannot_connect_still_has_working_ai`
+# and one in `alo-nearby::asked_and_answered_over_ipv6`. All five re-run their own test
+# binary inside `unshare --map-root-user --net`, and all five failed here with **126** —
+# util-linux's *found, but could not be executed*.
+#
+# The cause was one bit. `/home/runner` is `drwxr-x---` owned by uid 1001, and
+# `--map-root-user` maps uid 0 and nothing else — so a process in that namespace holds
+# no capability over it, `CAP_DAC_OVERRIDE` stops covering for a mode that would
+# otherwise deny, and `0750` grants others nothing. **Traversal was denied to root
+# itself.** The job now grants `o+x` on that directory before the gates run, and the
+# five execute. Measured on 2026-09-30: zero `FAIL` lines in the whole suite, and the
+# probe's `exec inside a namespace, as root: exit 0`.
+#
+# **The file is kept rather than deleted.** A list that reached zero by being satisfied
+# is worth keeping as a list: it is the shape the next quarantine goes in, it carries
+# the rules below, and its emptiness is a claim the run checks on every pass rather than
+# a fact nobody revisits.
+#
+# # The rules a line here lives under
+#
+# **A line here is an excuse, so it expires.** The workflow checks not only that every
+# failure is listed, but that every listed test *still fails*. A test named here that
+# does not fail makes the run say so, and is meant to be deleted in the next change —
+# otherwise this becomes a list of things nobody is allowed to break, which is the
+# opposite of what it is for.
+#
+# That check had a gap of its own, found while fixing the five: when **every** gate
+# passed, the deciding step returned before comparing, so the lines would have gone
+# unreported by the very success that made them stale. The branch had never been green,
+# so the bypass could not have been seen until the moment it began to lie.
+#
+# **A line is a statement about the runner, never about the test.** Nothing here is
+# skipped, marked `#[ignore]`, or weakened. These tests run on every lane and must pass
+# there; `alo/nine-gates` — the status `main` actually requires — is posted only from a
+# machine where all of them ran.
 #
 # **Adding a line is not a way to land a red test.** A failure that is not already
-# understood and reproduced does not belong here. Each line below names what was
-# measured, and the exit code it produces, so a reader can check the claim.
+# understood and reproduced does not belong here. Each line names what was measured and
+# the exit code it produces, so a reader can check the claim.
 #
 # Format: one test per line, exactly as nextest names it in a FAIL line —
 # `<crate>::<binary> <test>`. Blank lines and `#` comments are ignored.
-
-# ---------------------------------------------------------------------------
-# A network namespace the runner makes but cannot execute the test binary inside
-#
-# Both of these re-run their own test binary inside a namespace made by
-# `unshare --map-root-user --net`, and both fail with the inner shell exiting
-# **126** — util-linux's *found, but could not be executed*.
-#
-# **What is measured, and what is not.** The job's namespace probe runs as root,
-# which is how the gates run, and it succeeds at every part of this shape: it makes
-# the namespace, runs `ip link set lo up` inside it, execs `/bin/true` inside it,
-# and execs a binary from this repository's own tree inside it. The kernel reports
-# `apparmor_restrict_unprivileged_userns = 1`, and the same probe as the unprivileged
-# `runner` user is refused — but the gates are not that user.
-#
-# So the usual explanation, that Ubuntu 24.04 blocks unprivileged user namespaces,
-# **does not account for this**: root is not blocked, and the probe proves it on
-# every run. The cause is not established. It is recorded as unknown rather than
-# given a plausible name, because a wrong cause written down is worse than an
-# admitted gap — somebody later builds on it. The job's probe now also execs a real
-# test binary inside the namespace, which is the measurement that will narrow it.
-alo-asking::an_office_that_cannot_connect_still_has_working_ai a_public_address_really_is_unreachable_where_this_is_measured
-alo-asking::an_office_that_cannot_connect_still_has_working_ai a_question_bound_for_the_internet_is_told_once_and_truthfully
-alo-asking::an_office_that_cannot_connect_still_has_working_ai nothing_on_the_road_addresses_a_single_packet_off_the_network
-alo-asking::an_office_that_cannot_connect_still_has_working_ai with_no_route_off_the_network_two_machines_still_find_each_other_pair_ask_and_answer
-alo-nearby::asked_and_answered_over_ipv6 asked_and_answered_over_ipv6_as_over_ipv4

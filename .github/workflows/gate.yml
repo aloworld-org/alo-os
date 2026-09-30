@@ -349,10 +349,18 @@ jobs:
       # The pinned nightly the BPF gates need, beside the stable the rest use.
       # `crates/alo-bounding-kernel/rust-toolchain.toml` pins it and rustup
       # honours that file, so the version is not repeated here.
+      # **The nightly's components are not named here, on purpose.**
+      # `crates/alo-bounding-kernel/rust-toolchain.toml` declares what that pin needs —
+      # `rust-src`, `rustfmt`, `clippy` — and rustup installs them when the toolchain is
+      # first used in that directory. Naming them here as well would be a second copy of
+      # a list, and the *first* copy is the one that has already been wrong: it said
+      # `rust-src` alone while two of the nine gates run `cargo fmt` and `cargo clippy`
+      # under that pin. Every lane's machine had them by hand; a fresh runner did not,
+      # and the gate failed there on every run without anybody seeing it.
       - name: the toolchains this repository pins
         run: |
           rustup component add rustfmt clippy
-          rustup toolchain install nightly-2026-06-01 --component rust-src
+          rustup toolchain install nightly-2026-06-01
 
       # **The compositor the nested fixtures start for themselves.**
       # `alo-shell::the_nested_fixtures` starts its own parent since #232 rather
@@ -946,7 +954,17 @@ jobs:
       - name: whether anything failed that this runner can run
         if: always()
         run: |
-          declared=.github/the-tests-a-hosted-runner-cannot-run.txt
+          # **The path is overridable so this step can be tested against a list that is
+          # not this repository's.** The harness that exercises all eight of this step's
+          # decisions used to read the real file and assert it held five entries — which
+          # was true when it was written and became a refusal the moment the five tests
+          # started running and the list went empty. A test whose fixture is the
+          # production data cannot outlive a change to the production data, and the
+          # change here was the one the whole mechanism existed to produce.
+          #
+          # Nothing in CI sets it, so the default is what runs; it is read-only and it
+          # is a workflow file rather than a product surface.
+          declared=${ALO_DECLARED:-.github/the-tests-a-hosted-runner-cannot-run.txt}
           code=$(cat /tmp/the-gates.code 2>/dev/null || echo "")
           if [ -z "$code" ]; then
             echo "The gates step left no exit code, so it did not reach its end."
