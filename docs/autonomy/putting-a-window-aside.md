@@ -60,12 +60,73 @@ press routed through the real input path, never `panel.peek_at(…)`.
 
 ---
 
+## What none of these tasks has
+
+**Nothing consumes this crate.** Measured 2026-09-30 on `9d1f6571`, by the lane that was about
+to build against it:
+
+- `alo-put-aside` appears in exactly one `Cargo.toml` — the workspace `members` list. **No
+  crate depends on it.**
+- `alo_put_aside` appears in no Rust file outside its own crate.
+- No file in `alo-shell/src` mentions a preview or a put-aside window.
+
+So eight tasks of landed, tested work reach no screen. The panel is not drawn, no press is
+routed to it, and **every test in the crate enters by calling a function directly.**
+
+### That is forbidden by the rule at the top of this document
+
+*Enter by the road a person uses*, written here before task 1 was built, quoting the frame-edge
+lane’s scar: their bands were drawn, documented, tested and **unreachable by any mouse**. It
+ends *for this panel that means a press routed through the real input path, never
+`panel.peek_at(…)`.*
+
+`tests/a_peek_leaves_the_window_and_the_canvas_alone.rs` opens with `peek_at(&panel, …)` three
+times. **The forbidden road, named by that exact function, in a rule this lane wrote down and
+relayed to others as a lesson already paid for.**
+
+### Two tasks said `done` and neither was
+
+Task 3 and task 8. Both were judged by whether their **acceptance clause** was inside this lane,
+and both acceptance clauses are met. But a task is its whole sentence: task 3 says *the canvas
+travels to show it* and task 8 says *a private window shows a neutral `Preview hidden` surface*,
+and **showing is drawing**. Reading the acceptance and calling the task done is how the
+acceptance quietly becomes the task — the same shrinkage this plan refuses when a clause is
+moved to a later task, arriving instead by reading a narrower line than the one that was agreed.
+
+### Why this lane was strict about it elsewhere and blind to it here
+
+Two other modules in this repository are built, tested and reached by nothing, and this lane
+insisted on saying so about both: `alo-dock::revealing`, whose owner declined to cite its twelve
+passing tests, and this plan’s own region contract. **The standard was applied wherever it had
+been handed over and nowhere it had to be noticed.**
+
+The difference is size. One module with no caller looks like an omission. Twelve files, sixty-five
+tests and ten merged pull requests look like progress, and **a plan that is wrong in every task
+reads as a plan that is going well.**
+
+### What unblocks it, and it is one thing rather than four
+
+Tasks 3, 5, 7 and 8 all wait on the same work: **the panel drawn and its input routed in
+`alo-shell`**, using that crate’s existing hit test rather than a second opinion about where
+clients are — which is what task 5’s acceptance already demanded, written against precisely this
+fault. It is lane B’s, it is in scope since `#322`, and this lane will not reach into
+`alo-shell` to do it.
+
+**Until then the honest status of all eight is the same: model built, no evidence.** Each task
+above names the frame its drawing clause will be measured against, because a clause that names
+its frame cannot later be evidenced against a description of the frame.
+
+---
+
 ## Tasks
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **blocked on Place identity, 2026-09-30.** Built except for one clause of
-its own acceptance, which stays in this task rather than moving to a later one.
+**Status:** **model built, no evidence, and blocked on Place identity, 2026-09-30.** Nothing
+draws this panel, so none of it is evidenced — see *What none of these tasks has* above. Its
+drawing clauses will be measured against **Minimized panel / 02 Expanded previews**, **07
+Collapsed rail** and **12 Empty handle**. And one clause of its own acceptance is owed, which
+stays in this task rather than moving to a later one.
 
 **This line said `Done` for one revision and that was the fault in miniature.** The
 prose three paragraphs below said the task was not wholly done, while the status a
@@ -137,7 +198,8 @@ state is its own thing and not a zero-length list, because *a panel holding noth
 
 ### 2. Minimising, and what is saved
 
-**Status:** **blocked on Place identity, 2026-09-30.** The transition is built and the
+**Status:** **model built, no evidence, and blocked on Place identity, 2026-09-30.** Nothing
+draws or routes this, so the gesture is untested by the road a person uses. The transition is built and the
 zoom is saved; one clause of this task's own acceptance is not, and it stays here.
 
 **What is built:** `crates/alo-put-aside/src/putting_aside.rs` — `put_aside` and
@@ -219,7 +281,10 @@ is the `one-plane-two-vocabularies` fault repeated on purpose.
 
 ### 3. Restoring, and the camera that travels to it
 
-**Status:** done, 2026-09-30.
+**Status:** **model built, no evidence, 2026-09-30.** **This said `done` and that was wrong** —
+see *What none of these tasks has* above. *The canvas travels to show it* is drawing, nothing
+draws it, and the travel decision has never been taken by a person clicking anything. Its
+drawing clause will be measured against **Minimized panel / 05 Restored in place**.
 
 One click returns that window to its **saved** position and the canvas travels to show
 it. Not to wherever the viewer happens to be.
@@ -256,7 +321,8 @@ nothing concludes the click was lost rather than that the window was already vis
 
 ### 4. When the saved place is taken
 
-**Status:** **blocked on History, which is `[v1]`, 2026-09-30.** The proposal is built and the
+**Status:** **model built, no evidence, and blocked on History, which is `[v1]`, 2026-09-30.**
+*The intended placement is shown* is drawing, and nothing draws it. The proposal is built and the
 original position is carried; the clause that names History cannot be finished inside this
 release and stays here.
 
@@ -325,7 +391,9 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** **blocked on the input-path evidence, which needs `alo-shell`, 2026-09-30.** The
+**Status:** **model built, no evidence, and blocked on the panel not being drawn or routed at
+all, 2026-09-30.** Not merely on a hit test: nothing consumes this crate. Its drawing clause
+will be measured against **Minimized panel / 04 Peek**. The
 peek is built and both *unchanged* clauses hold; the clause that needs the shell's own hit test
 stays here.
 
@@ -380,10 +448,17 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **blocked on there being no full screen in `alo-shell`, measured 2026-09-30** —
-upstream of the integration evidence, which is still owed. The generalisation has landed, the
-decision was made and acted on, and **the region contract is built with no evidence** (see
-below, and the entry in `docs/autonomy/v0-01-evidence.md`).
+**Status:** **model built, no evidence, and blocked on there being no full screen in
+`alo-shell`, measured 2026-09-30** — upstream of the integration evidence, which is still owed.
+The generalisation has landed, the decision was made and acted on, and **the region contract is
+built with no evidence** (see above, and the entry in `docs/autonomy/v0-01-evidence.md`).
+
+**This was the only status line here that said *no evidence* from the start**, and it was right
+about itself while seven others were wrong about themselves. What made the difference is that
+another lane had already said it about `revealing` — so this lane applied the standard where it
+had been handed it, and nowhere else. Its drawing clauses will be measured against **Dock 11
+Full screen edge** and the **Reveal** variants for Top, Bottom and Right, with the regions
+recorded in `docs/design/the-regions-a-pointer-can-be-in.md`.
 
 **The blocker neither lane had measured.** This task completes by *revealing the panel over a
 truly full-screen window*. That cannot be run, and neither can the Dock's half of it, because
@@ -530,7 +605,12 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **blocked on the deep-teal clause, which is `alo-appearance`'s, 2026-09-30.** The
+**Status:** **model built, no evidence, and blocked on the panel not being drawn, 2026-09-30.**
+**The deep-teal clause was never `alo-appearance`'s and this line said it was** — that crate's
+own `lib.rs` states ADR 0010's second half is *true of screens rather than of colours* and
+*belongs where the drawing happens*, and that nothing in it can enforce it. The attribution was
+this lane's mistake, repeated to the owner by another lane on this lane's word. Its drawing
+clause will be measured against **Minimized panel / 11 alo working**. The
 report is built and *no empty agent controls* holds in the types; the colour clause is about
 drawing and stays here.
 
@@ -585,8 +665,14 @@ misuse the clause forbids. The rest stays in this task, with the task open.
 
 ### 8. Privacy
 
-**Status:** done, 2026-09-30. **Every clause of this one is inside this lane, and all of them
-hold.**
+**Status:** **model built, no evidence, 2026-09-30.** **This said `done` and that was wrong.**
+The refusal is tested as a refusal and holds. But *a private window shows a neutral `Preview
+hidden` surface* is drawing, and nothing draws it — measured against **Minimized panel / 08
+Private preview** when something does. The acceptance clause is inside this lane; the sentence
+above it is not, and calling the task done read the acceptance and not the task.
+
+**Every acceptance clause of this one is inside this lane and all of them hold**, which is why
+it was the tempting one to close. It is still the task with the least owed to anybody else.
 
 A private window shows a neutral *Preview hidden* surface with a safe identifying name,
 and still restores normally. Previews are made locally.
