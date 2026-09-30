@@ -95,25 +95,46 @@ has a ladder to extend rather than a mode to add.
 - **Constraint:** no second navigation model. If the World needs a switcher, this
   task has failed rather than found a requirement.
 
-### 3. A frame moves between Places, and comes back to the right one
+### 3. A frame moves between Places, by pointer and by keyboard
 
 **Status:** blocked on 1, 2.
 
 Dragged out to the World and dropped into another Place, **and the work goes with
-it** — the promise that moved two tiers, from `[v1.1]`, because the owner named
-cross-Place movement and restoration as required.
-
-And the half that is easy to miss: **restoring a window whose Place is not the one
-being looked at travels to that Place** rather than dropping it on this one. A
-window put aside on Tuesday's Place does not reappear on Wednesday's.
+it** — the promise that moved two tiers, from `[v1.1]`. **And by keyboard, with
+*Move to Place*,** so neither road is the only road: a person who cannot drag can
+still move a window between Places.
 
 - **Acceptance:** a frame dragged to the World and into another Place is on that
-  Place and not on the first, with its size and content; restoring a put-aside
-  window whose Place is elsewhere moves the view to that Place; neither is a copy.
-- **Constraint:** a frame in flight belongs to exactly one Place at every moment.
-  There is no *between*.
+  Place and not on the first, with its size and its content; the same by keyboard
+  through *Move to Place*; neither is a copy and neither leaves anything behind.
+- **Constraint:** a frame belongs to exactly one Place at every moment. There is no
+  *between* — a frame in flight has a Place, and it is the one it started on until
+  it has the one it ends on.
 
-### 4. Every Place is where it was left
+### 4. A restore travels; it does not relocate
+
+**Status:** blocked on 1. **Separate from task 3 on purpose.**
+
+Restoring a minimised window **returns it to the Place it was already on**, and the
+view travels there. **Nothing is relocated by a restore.** A window put aside on
+Tuesday's Place comes back on Tuesday's Place, and the person is taken to it.
+
+**This is its own task because the two were conflated while this plan was being
+written, and the conflation is the easy mistake rather than an unlikely one.**
+*Cross-Place restoration* and *a frame dragged into another Place* read as one
+sentence at a glance and are two acts: one changes **where a window lives**, the
+other changes **where the person is looking**. The owner settled both — transfer is
+in v0.01, and a restore relocates nothing.
+
+A task that fails this one silently does the more destructive thing: it moves
+somebody's window to the Place they happened to be looking at.
+
+- **Acceptance:** a put-aside window whose Place is not the one on screen comes
+  back on **its own** Place, with the view travelling there; its Place is the same
+  before and after, asserted directly rather than inferred from where it appears.
+- **Constraint:** restoring never writes a window's Place. Only task 3 does.
+
+### 5. Every Place is where it was left
 
 **Status:** blocked on 1.
 
@@ -128,7 +149,7 @@ Place to key any of it by.
 - **Constraint:** extends `alo-arranging`. A second store would be a second answer
   to *where was everything*, which is the fault this repository keeps finding.
 
-### 5. The fixed controls, and a window that can always be got back
+### 6. The fixed controls, and a window that can always be got back
 
 **Status:** in progress — the Dock and the status area are held; the panel is not.
 
@@ -152,14 +173,17 @@ missing half now has a plan to belong to.
   and **keyboard users can find and move a frame without reaching its name band.**
 - **What is held today:** the first, and the Dock's and status area's share of the
   second, landed 2026-09-30.
-- **Owed, and it is scope rather than work:** the fourth check needs a keyboard
-  road to move a frame, which **does not exist and is not promised**. It is the
-  owner's to grant, because an acceptance condition cannot promote a promise by
-  itself.
+- **Owed, and the owner has granted part of it.** The fourth check needs a keyboard
+  road to move a frame. *Move to Place* is now promised and is task 3's — so
+  **moving a frame between Places by keyboard is in scope**. What is still not
+  promised is moving a frame **within** one Place by keyboard, which is the case
+  this check is mostly about: a frame whose name is under a control needs to be
+  moved a few hundred units, not sent to another Place. Reported rather than
+  assumed to be covered.
 
-### 6. The minimized-window panel, per Place
+### 7. The minimized-window panel, per Place
 
-**Status:** blocked on 1, 3 — and it is the desktop lane's.
+**Status:** blocked on 1, 4 — and it is the desktop lane's.
 
 Which Place a put-aside window belongs to; restoring across Places; the collapse
 choice remembered **per Place**, expanded on one surface and collapsed on another;
@@ -186,11 +210,11 @@ been this lane widening its own scope under cover of an instruction.
 is `[v1]` and was built at v0.5, with tests. Recorded rather than quietly
 re-tiered.
 
-**One acceptance condition needs scope the owner has not granted.** Stage 5's
+**One acceptance condition still needs scope the owner has not granted.** Task 6's
 fourth check asks for a keyboard road to move a frame. There is none, and
 `features.md:422`'s keyboard forms are *fit*, *fill* and *work inside* — not drag.
 
-**And the honest shape of stage 1.** *The canvas owns Place identity* is written
+**And the honest shape of task 1.** *The canvas owns Place identity* is written
 here as one task because it is one decision, but it touches `alo-canvas`,
 `alo-shell`, `alo-dock` and `alo-arranging`. It is the largest single thing in
 this plan and the one most likely to be discovered to be two.

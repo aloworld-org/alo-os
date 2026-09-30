@@ -887,10 +887,15 @@ draws it. **All of that is one Place.** What this band adds is the level above i
 - [ ] ★ **The World** — zoom out past a Place and every Place is seen at once;
       zoom into one and it fills the screen. **The same gesture as moving across a
       Place**, so there is no second way to navigate
-- [ ] ★ **A frame moves between Places and comes back** — dragged out to the World
-      and dropped into another, and the work goes with it. **Restoring a window
-      whose Place is not the one being looked at travels to that Place** rather
-      than dropping it on this one
+- [ ] ★ **A frame moves between Places** — dragged out to the World and dropped
+      into another, and the work goes with it, **by pointer through the World or by
+      keyboard with *Move to Place***, so neither road is the only road
+- [ ] ★ **A restore travels; it does not relocate** — restoring a minimised window
+      returns it to **the Place it was already on** and takes the view there.
+      **Nothing is relocated by a restore.** Its own box because the two were
+      conflated while this band was being written: *cross-Place restoration* and *a
+      frame dragged into another Place* read as one sentence and are two acts — one
+      changes where a window lives, the other changes where the person is looking
 - [ ] ★ **Every Place is where it was left** — position, size, camera and the
       panel's own state, per Place rather than per session. Extends the v0.5
       task that restores one canvas
@@ -908,13 +913,30 @@ draws it. **All of that is one Place.** What this band adds is the level above i
 **The plan is `docs/autonomy/the-canvas-and-its-places.md`**, written as connected
 stages rather than a list, because every one of these rests on the first.
 
-**Four promises were deliberately not moved**, and saying which is the point of
-this paragraph rather than an aside. *Tidy this canvas*, *A Place remembers time*,
-*Every screen is a view onto the canvas* and *A panel out of view costs nothing*
-stay where they are: the owner named five things completion requires and none of
-them is these. **Moving them would have been the lane widening its own scope under
-cover of an instruction**, which is the opposite of what was asked. If any belongs
-in v0.01 it is the owner's to say so.
+**The owner ruled on cross-Place movement on 2026-09-30, and it settled a
+conflation rather than a tier.** Asked whether *cross-Place movement* meant a frame
+changing which Place it lives on or only the view travelling to a window's Place,
+they answered **both, in v0.01** — dragging a window through the World into another
+Place **or** *Move to Place* by keyboard — **and that restoring a minimised window
+returns it to its existing Place without relocating it.** The two are separate boxes
+above for that reason.
+
+**Three promises were deliberately not moved**, and saying which is the point of
+this paragraph rather than an aside. *Tidy this canvas*, *Every screen is a view
+onto the canvas* and *A panel out of view costs nothing* stay at `[v1]`: the owner
+named five things completion requires and none of them is these. **Moving them
+would have been the lane widening its own scope under cover of an instruction**,
+which is the opposite of what was asked.
+
+**And one is left at `[v1.1]` and reported rather than decided.** *A Place remembers
+time* — drag the ribbon and the canvas is as it was on Tuesday — is the only canvas
+promise still above this release. The owner's words were *the complete agreed canvas
+experience belongs in v0.01; do not defer parts of it to v1.1*, and this lane cannot
+tell whether time travel is part of the agreed experience or a separate capability
+that happens to be about a canvas: it is not among the five completion requirements,
+and it rests on the snapshots **undo** takes rather than on Places at all. **So it is
+named here rather than moved or left silently.** If it belongs in v0.01 it is one
+line to move and the owner's to say.
 
 **And one tier is wrong in the other direction.** *Every canvas also answers as a
 list* is `[v1]` and **was built at v0.5** — task 7 of the closed canvas plan, with
