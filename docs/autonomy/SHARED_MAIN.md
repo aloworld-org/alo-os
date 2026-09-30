@@ -319,6 +319,39 @@ task; coordinate ownership before editing another shared specification. Tests
 and publication gates are unchanged. This is an agreed contributor workflow,
 not a GitHub permission rule that technically prevents those edits.
 
+### Say which shared document you are about to edit, before you edit it
+
+**To every lane, before the edit — not before the landing.** The rest of this
+protocol announces a *landing*, because landing is the scarce thing and a branch
+is nobody else's until it lands. A document is not like that. Two lanes can edit
+one at the same time, on the same afternoon, both correctly, and neither finds
+out until one of them rebases.
+
+**That is not hypothetical.** On 2026-09-30 the Mac lane and the dev PC both
+moved canvas promises into v0.01, in two branches, within an hour, each acting on
+the owner's direction and neither knowing. `docs/features.md`, the evidence
+ledger and the reconciler's own test were edited twice over. One commit was
+dropped; nothing was lost, and only because the collision was noticed by reading
+the other lane's open pull request rather than by anything in this file.
+
+**Which documents this is about, stated so it can be checked rather than felt.**
+A document needs announcing when **it holds a number that something else
+asserts** — another document, or a test. `docs/features.md` holds the promise
+counts the reconciler reads. `docs/autonomy/v0-01-evidence.md` states its own
+figures and a test reads all four of them. Those behave like locks whether or not
+anybody declared one: two lanes each correctly adding one promise produce a count
+that is wrong by one, and the test that catches it names neither of them. A
+design note that nothing counts is not a lock and needs no announcement.
+
+**It was findable in advance, which is why it is a rule and not a resolution to
+be careful.** The Panel lane had already refused to edit another lane's ledger
+while its counts were in flight, and said out loud why — *a second lane editing a
+ledger's prose while its counts are in flight is how two versions of a number
+appear.* Both other lanes heard it. Neither generalised it from that ledger to
+the document they were about to edit themselves. A hazard named about one
+document is a hazard about every document of that shape, and what failed was not
+attention. *Proposed by the Mac lane, from the collision it was half of.*
+
 Use one uniquely named report per task. Only that task's owner writes it. After
 publication, add a descriptively named follow-up report for corrections rather
 than rewriting another contributor's report. No shared report index is required.
