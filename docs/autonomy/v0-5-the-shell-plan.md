@@ -851,9 +851,39 @@ exactly that. This task takes the half out as it puts the division in.
 
 ### 17. Two real clients divided, through the probe's own pixels
 
-**Status:** ready. **Depends on:** 16 (landed 2026-09-26), and on *the nested
-fixtures run in the gate* (#143), because a probe nothing runs is where this
-coverage went missing in the first place.
+**Status:** **Done, 2026-09-30.** The probe has a second client and divides between
+them: `crates/alo-shell/examples/support/offscreen_division_check.rs`, stages 33,
+31, 32 and 34 of the offscreen walk. **Depends on:** 16 (landed 2026-09-26), and on
+*the nested fixtures run in the gate* (#143), because a probe nothing runs is where
+this coverage went missing in the first place.
+
+**Every rectangle comes from the division.** Each stage asks
+`alo_dividing::Division::shares` where the windows belong and compares the
+compositor's own origins against that — as two sets, because nothing public maps a
+`WindowId` back to a `WlSurface`, plus a separate check that the focused window is
+on the side the chord named, which is the half a set comparison cannot see.
+
+**The stage count is no longer a number anybody maintains.** It was
+`assert_eq!(stages, 24)`, and `30` before that — task 16 removed six stages and the
+number was left behind while the probe was broken on `main` for a day. The walked
+*sequence* is now asserted against `offscreen_stages::EVERY_STAGE`, which the client
+drives from, so neither side can move without the other and a stage sent twice or
+skipped fails where a count would pass.
+
+**Three faults in the writing of it, each a false pass or nearly one:**
+
+- The refusal stage passed on the **wrong refusal**. It asserted *a chord with one
+  window refuses* and the refusal it got was `NoDisplay` — the stage ran before the
+  probe had submitted a frame — so it would have passed with one-window division
+  entirely broken. It now requires `Refused::NothingToShareWith` by name.
+- The geometry was checked **one stage too early**. A division sends configures and a
+  window moves when its client answers, so asking and checking are now separate
+  stages, which is this probe's own idiom.
+- Running the stages first borrowed a state that **was load-bearing for stages they
+  do not own**: submitting a frame to get a display made
+  `window_control_scene_check` at stage 29 stop refusing with `OutputUnavailable`.
+  The output is retired again afterwards. *The cleanest state to borrow* and *a
+  state nothing else depends on* are different claims.
 
 Written 2026-09-26 by task 16's owner, about a hole task 16 made. It is here as
 a task rather than in a commit message because **a finding that lives in a commit
