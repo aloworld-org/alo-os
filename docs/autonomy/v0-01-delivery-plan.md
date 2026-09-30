@@ -1332,7 +1332,8 @@ the message.
 
 ### 27. The sign-in surface's half of the door
 
-**Status:** ready. **Depends on:** task 26, which is done. Not on task 13: what
+**Status:** **Done, 2026-09-11** — see the mark below; this line read `ready`
+until 2026-09-30. **Depends on:** task 26, which is done. Not on task 13: what
 is described here is what a screen calls, not the screen.
 **Owner:** Claude — it touches no compositor file, needs no screen and no
 machine.
