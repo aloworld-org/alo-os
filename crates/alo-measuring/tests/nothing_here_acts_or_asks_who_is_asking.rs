@@ -44,7 +44,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use alo_measuring::{Holding, NotMeasured, Reading, Running};
+use alo_measuring::{Holding, NotMeasured, Reading, Running, WhatUndoIsHolding};
 
 /// This crate's own directory.
 fn here() -> PathBuf {
@@ -271,7 +271,7 @@ fn the_numbers_come_from_proc_and_from_no_rented_crate() {
 fn the_list_takes_no_account_of_who_asked() {
     let now: fn() -> Result<Reading, NotMeasured> = Reading::now;
     let since: fn(&Reading, &Reading, Duration) -> Result<Running, NotMeasured> = Reading::since;
-    let of: fn(&Path) -> Result<Holding, NotMeasured> = Holding::of;
+    let of: fn(&Path, &dyn WhatUndoIsHolding) -> Result<Holding, NotMeasured> = Holding::of;
     // Nothing is measured by the assignment, and nothing here needs it to
     // be: the shape is the fact.
     let _ = (now, since, of);

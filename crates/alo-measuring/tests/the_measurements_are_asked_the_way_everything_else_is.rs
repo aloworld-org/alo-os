@@ -41,7 +41,8 @@ use alo_capability::{
 };
 use alo_files::{OnThisMachine, Resolving, Touching};
 use alo_measuring::{
-    Disk, Measured, Measurement, NotMeasured, Reading, Running, measuring_verbs, measuring_words,
+    Disk, Measured, Measurement, NoUndoHere, NotMeasured, Reading, Running, measuring_verbs,
+    measuring_words,
 };
 use alo_record::{Asking, Entry, Only, Record};
 use alo_strings::Strings;
@@ -464,14 +465,17 @@ fn a_person_with_no_agent_and_no_grant_gets_the_same_numbers() {
 
     let now: fn() -> Result<Reading, NotMeasured> = Reading::now;
     let since: fn(&Reading, &Reading, Duration) -> Result<Running, NotMeasured> = Reading::since;
-    let of: fn(&Path) -> Result<alo_measuring::Holding, NotMeasured> = alo_measuring::Holding::of;
+    let of: fn(
+        &Path,
+        &dyn alo_measuring::WhatUndoIsHolding,
+    ) -> Result<alo_measuring::Holding, NotMeasured> = alo_measuring::Holding::of;
     let _ = (now, since, of);
 
     #[cfg(target_os = "linux")]
     {
         let folder = a_folder_of_our_own("by-hand-filling");
         a_folder_of_known_bytes(&folder);
-        let by_hand = alo_measuring::Holding::of(&folder).unwrap();
+        let by_hand = alo_measuring::Holding::of(&folder, &NoUndoHere).unwrap();
         let grants = granting(&[&folder]);
         let touching = permitted(&filling_of(&folder).unwrap(), &grants);
         let measured = Measured::of(touching, two_seconds(), |_| {});

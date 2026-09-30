@@ -233,6 +233,31 @@ pub const NOT_FINISHED: Word = Word::saying(
      about the whole count. It stands beside a size.",
 );
 
+/// This machine keeps no undo, and cannot until it is reinstalled.
+pub const UNDO_NOT_ON_THIS_MACHINE: Word = Word::saying(
+    "measuring.undo.not-on-this-machine",
+    "This machine does not keep undo history, so none of the disk is being used for it.",
+)
+.noting(
+    "Shown on the line for what undo is holding, in place of a size. It must not read as \"undo \
+     is using no space\": the machine cannot keep undo history at all, because that needs a kind \
+     of disk formatting chosen when the system was installed and not changeable afterwards. The \
+     difference matters to somebody deciding where their disk went. \"Undo history\" is what the \
+     system calls the saved copies it can put back; use whatever that feature is called in the \
+     reader's language.",
+);
+
+/// Something was asked what undo is holding and did not answer.
+pub const UNDO_NOT_ANSWERED: Word = Word::saying(
+    "measuring.undo.not-answered",
+    "How much the undo history is using could not be read.",
+)
+.noting(
+    "Shown on the line for what undo is holding, in place of a size, when the machine was asked \
+     and did not answer. It must not read as nothing being used — the amount is unknown, and may \
+     be large. \"Undo history\" is what the system calls the saved copies it can put back.",
+);
+
 /// The folder asked about could not be counted at all.
 pub const NOT_COUNTED: Word = Word::saying(
     "measuring.filling.not-counted",
@@ -352,7 +377,7 @@ pub const MISSING: Word = Word::saying(
 );
 
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 22] = [
+pub const EVERY_WORD: [Word; 24] = [
     NOT_ON_THIS_HOST,
     UNREADABLE,
     NO_INTERVAL,
@@ -366,6 +391,8 @@ pub const EVERY_WORD: [Word; 22] = [
     NOT_READ,
     ANOTHER_FILESYSTEM,
     NOT_FINISHED,
+    UNDO_NOT_ON_THIS_MACHINE,
+    UNDO_NOT_ANSWERED,
     NOT_COUNTED,
     WHAT_IS_RUNNING,
     WHAT_IS_RUNNING_SENTENCE,
@@ -454,7 +481,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(measuring_words().unwrap().how_many(), 25);
+        assert_eq!(measuring_words().unwrap().how_many(), 27);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

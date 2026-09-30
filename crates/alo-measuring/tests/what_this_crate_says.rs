@@ -15,7 +15,8 @@
 use std::path::PathBuf;
 
 use alo_measuring::{
-    Counted, Gone, Holding, Kind, Network, Node, NotMeasured, Number, Source, measuring_words,
+    Counted, Gone, Holding, Kind, Network, Node, NotMeasured, Number, Source, UndoIsHolding,
+    measuring_words,
 };
 use alo_strings::{Form, Key, Language, Said, Strings, Translation};
 
@@ -154,6 +155,7 @@ fn a_holding(finished: bool, unnamed: usize) -> Holding {
         finished,
         most: 20_000,
         unnamed,
+        undo: UndoIsHolding::NotOnThisMachine,
     }
 }
 

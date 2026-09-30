@@ -38,6 +38,7 @@ use alo_files::{Gathered, Kind};
 
 use crate::holding::{Counted, Holding, Node};
 use crate::looking::Looked;
+use crate::undo::UndoIsHolding;
 
 /// One look at a thing on the disk, by path: what the machine says about it
 /// now, or why it would not say.
@@ -48,6 +49,10 @@ pub(crate) type Looking<'a> = &'a mut dyn FnMut(&Path) -> Result<Looked, String>
 ///
 /// `most` is the bound each walk had, for the sentence the answer says about
 /// a folder no walk could finish.
+///
+/// `undo` is carried through untouched onto [`Holding::undo`]. **No size here
+/// is computed from it**: what undo is holding is a line beside the tree, and
+/// the arithmetic below does not know it exists.
 #[cfg_attr(
     all(not(target_os = "linux"), not(test)),
     expect(
@@ -56,7 +61,13 @@ pub(crate) type Looking<'a> = &'a mut dyn FnMut(&Path) -> Result<Looked, String>
                   reached by the unit tests below"
     )
 )]
-pub(crate) fn tree_of(folder: &Path, walked: Gathered, most: usize, look: Looking<'_>) -> Holding {
+pub(crate) fn tree_of(
+    folder: &Path,
+    walked: Gathered,
+    most: usize,
+    look: Looking<'_>,
+    undo: UndoIsHolding,
+) -> Holding {
     let mut root = Node {
         name: folder.file_name().map_or_else(
             || folder.display().to_string(),
@@ -183,6 +194,7 @@ pub(crate) fn tree_of(folder: &Path, walked: Gathered, most: usize, look: Lookin
         finished: walked.whole,
         most,
         unnamed: walked.could_not_be_named,
+        undo,
     }
 }
 
@@ -271,7 +283,13 @@ mod tests {
             })
         };
 
-        let holding = tree_of(Path::new("Documents"), walked, 20_000, &mut look);
+        let holding = tree_of(
+            Path::new("Documents"),
+            walked,
+            20_000,
+            &mut look,
+            UndoIsHolding::NotOnThisMachine,
+        );
         assert!(holding.finished);
         assert_eq!(holding.unnamed, 0);
         let root = &holding.tree;
@@ -323,7 +341,13 @@ mod tests {
             })
         };
 
-        let holding = tree_of(Path::new("Documents"), walked, 20_000, &mut look);
+        let holding = tree_of(
+            Path::new("Documents"),
+            walked,
+            20_000,
+            &mut look,
+            UndoIsHolding::NotOnThisMachine,
+        );
         assert_eq!(holding.tree.size, 101, "not 201");
         let one = child(&holding.tree, "one.txt");
         assert_eq!(one.own, 100);
@@ -358,7 +382,13 @@ mod tests {
             })
         };
 
-        let holding = tree_of(Path::new("Documents"), walked, 20_000, &mut look);
+        let holding = tree_of(
+            Path::new("Documents"),
+            walked,
+            20_000,
+            &mut look,
+            UndoIsHolding::NotOnThisMachine,
+        );
         let link = child(&holding.tree, "elsewhere");
         assert_eq!(link.kind, Kind::Link);
         assert_eq!(link.own, 12);
@@ -380,7 +410,13 @@ mod tests {
         let walked = walk_of(vec![step("gone.txt", Kind::File, 5000)]);
         let mut look = |_: &Path| Err("no such file".to_owned());
 
-        let holding = tree_of(Path::new("Documents"), walked, 20_000, &mut look);
+        let holding = tree_of(
+            Path::new("Documents"),
+            walked,
+            20_000,
+            &mut look,
+            UndoIsHolding::NotOnThisMachine,
+        );
         let gone = child(&holding.tree, "gone.txt");
         assert_eq!(gone.own, 0);
         assert_eq!(
@@ -411,7 +447,13 @@ mod tests {
         walked.not_entered = vec![PathBuf::new(), PathBuf::from("later")];
         walked.could_not_be_named = 2;
 
-        let holding = tree_of(Path::new("Documents"), walked, 4, &mut one_name_each(3));
+        let holding = tree_of(
+            Path::new("Documents"),
+            walked,
+            4,
+            &mut one_name_each(3),
+            UndoIsHolding::NotOnThisMachine,
+        );
         assert!(!holding.finished);
         assert_eq!(holding.most, 4);
         assert_eq!(holding.unnamed, 2);
@@ -459,6 +501,7 @@ mod tests {
             walk_of(things),
             20_000,
             &mut one_name_each(1),
+            UndoIsHolding::NotOnThisMachine,
         );
         assert_eq!(holding.tree.size, 1);
         let mut depth = 0;

@@ -34,7 +34,7 @@ use alo_letting_go::the_folder::{AFTER, BEFORE, THE_TURN, THEIRS, TheTurn, Their
 use alo_letting_go::{
     AskingTheDisk, NotRemoved, Removing, Swept, THE_FOLDER, WhatItIs, WritingItDown, sweep,
 };
-use alo_measuring::Holding;
+use alo_measuring::{Holding, NoUndoHere};
 use alo_record::Entry;
 
 /// How long a day is where this test moves a clock.
@@ -134,7 +134,7 @@ fn what_undo_is_holding_is_a_line_of_its_own_and_goes_down_after_the_unit_runs()
     );
 
     // `alo-measuring`'s own answer, asked the way a person's window asks it.
-    let before = Holding::of(&under).expect("what the undo folder is holding");
+    let before = Holding::of(&under, &NoUndoHere).expect("what the undo folder is holding");
     assert!(before.finished);
     assert!(
         before.tree.size >= (4 * EACH_SIDE) as u64,
@@ -158,7 +158,7 @@ fn what_undo_is_holding_is_a_line_of_its_own_and_goes_down_after_the_unit_runs()
         "{swept:?}"
     );
 
-    let after = Holding::of(&under).expect("what the undo folder is holding now");
+    let after = Holding::of(&under, &NoUndoHere).expect("what the undo folder is holding now");
     assert!(
         after.tree.size < before.tree.size,
         "what undo is holding did not go down: {} then {}",
