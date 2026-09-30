@@ -91,7 +91,7 @@ pub use reconciling::{Reconciled, reconcile, reconcile_at};
 pub use the_gate::{
     Box_, Promised, Section, counts_that_drifted, denials_by_task_number, orphaned_boxes,
     promises_with_no_box, refusals_a_report_contradicts, sections_in,
-    statuses_their_own_section_contradicts, tiers_that_disagree,
+    statuses_their_own_section_contradicts, tiers_that_disagree, withdrawals_left_open,
 };
 pub use tier::Tier;
 pub use waiting::Waiting;

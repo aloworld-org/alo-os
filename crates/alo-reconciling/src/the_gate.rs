@@ -575,6 +575,127 @@ fn reports_named_in(said: &str) -> BTreeSet<String> {
     found
 }
 
+/// **A promise the definition records as withdrawn, still open in the roadmap.**
+///
+/// `docs/features.md` records a withdrawal as a paragraph beginning
+/// `**Withdrawn by [<record>](…):**`, naming in italics the promises it takes
+/// away. This reads those paragraphs and reports any whose promise still has an
+/// open `- [ ]` box in `ROADMAP.md`.
+///
+/// # Why this one can gate where its neighbours cannot
+///
+/// [`promises_with_no_box`] and [`tiers_that_disagree`] cannot gate, and the
+/// test that runs them says at length why: whether a box *covers* a promise is a
+/// judgement, 31 boxes group 92 promises, and every threshold measured either
+/// missed real cases or flagged most of the document.
+///
+/// **This asks a narrower question with a definite answer.** A withdrawal names
+/// the promise in the words the roadmap uses for it, because the roadmap's box
+/// was written from the same sentence — so the match is between two copies of
+/// one phrase, not between a promise and a paragraph that might be about it.
+/// And the right number of findings is **zero**: a withdrawn promise left open
+/// is never correct, where a promise with no box may simply be grouped under
+/// one.
+///
+/// # What it cannot see
+///
+/// **A withdrawal the definition never recorded.** If a record withdraws
+/// something and `docs/features.md` is not updated, nothing here notices — the
+/// definition is this check's only source for what was withdrawn, and a
+/// withdrawal that never reached it is invisible to every instrument in this
+/// crate.
+#[must_use]
+pub fn withdrawals_left_open(features: &str, roadmap: &str) -> Vec<Finding> {
+    let open: Vec<String> = roadmap
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("- [ ] "))
+        .map(str::to_owned)
+        .collect();
+
+    let mut findings = Vec::new();
+    for (record, withdrawn) in withdrawals_in(features) {
+        for promise in withdrawn {
+            if open
+                .iter()
+                .any(|still_open| is_answered(&promise, still_open))
+            {
+                findings.push(Finding::AWithdrawalLeftOpen {
+                    promise,
+                    record: record.clone(),
+                });
+            }
+        }
+    }
+    findings
+}
+
+/// Every withdrawal the definition records: the record that made it, and the
+/// promises it names in italics.
+///
+/// Italics rather than the whole paragraph, because a withdrawal also says
+/// *why*, and the why is prose that would match half the roadmap. Only spans
+/// long enough to be a promise are taken: a withdrawal italicises qualifiers
+/// too — *in both orientations* — and a short span has no business matching a
+/// box.
+fn withdrawals_in(features: &str) -> Vec<(String, Vec<String>)> {
+    let mut found = Vec::new();
+    for line in features.lines() {
+        let Some(rest) = line.trim_start().strip_prefix("**Withdrawn by ") else {
+            continue;
+        };
+        let record = rest.split_once(']').map_or_else(
+            || rest.to_owned(),
+            |(named, _)| named.trim_start_matches('[').to_owned(),
+        );
+        let promises: Vec<String> = italics_in(rest)
+            .into_iter()
+            .filter(|span| its_own_words(span).len() >= ENOUGH_WORDS)
+            .collect();
+        if !promises.is_empty() {
+            found.push((record, promises));
+        }
+    }
+    found
+}
+
+/// Every `*…*` span in a line, without the asterisks.
+///
+/// `**bold**` is stepped over: the marker is doubled, and reading the inside of
+/// a bold span would hand this check the words *Withdrawn by* on every
+/// paragraph it is looking at.
+fn italics_in(line: &str) -> Vec<String> {
+    let characters: Vec<char> = line.chars().collect();
+    let mut spans = Vec::new();
+    let mut at = 0;
+    while at < characters.len() {
+        if characters.get(at) != Some(&'*') {
+            at = at.saturating_add(1);
+            continue;
+        }
+        if characters.get(at.saturating_add(1)) == Some(&'*') {
+            at = at.saturating_add(2);
+            continue;
+        }
+        let opened = at.saturating_add(1);
+        let mut closes = opened;
+        while closes < characters.len() && characters.get(closes) != Some(&'*') {
+            closes = closes.saturating_add(1);
+        }
+        if closes >= characters.len() {
+            break;
+        }
+        let span: String = characters
+            .get(opened..closes)
+            .map(|inside| inside.iter().collect())
+            .unwrap_or_default();
+        if !span.is_empty() {
+            spans.push(span);
+        }
+        at = closes.saturating_add(1);
+    }
+    spans
+}
+
 /// **A promise at one tier in the definition and another in the roadmap.**
 ///
 /// *Camera and microphone* was `[v0.5]` in `docs/features.md`, inside *Devices*
@@ -836,6 +957,70 @@ mod tests {
     /// *Camera and microphone* was `[v0.5]` in the definition, inside *Devices* in
     /// the roadmap's v1, and *carried to v2* in its plan — three documents, three
     /// answers.
+    /// **The one that really happened.** ADR 0076 withdrew the per-display
+    /// dock; `ROADMAP.md` kept the box open for three days with its code half
+    /// ticked, citing a function the same change had deleted.
+    #[test]
+    fn a_withdrawn_promise_left_open_is_found() {
+        let features = "\
+**Withdrawn by [ADR 0076](decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md):** *the person decides where it goes*, \
+and its **[v0.5]** descendant *per display, so the dock can sit along the bottom of the laptop \
+and down the side of the external screen*. The Dock is fixed to the bottom edge.
+";
+        let roadmap = "\
+## v0.5 — a person can work on it all day
+
+- [ ] **Per display, so the dock can sit along the bottom of the laptop and down
+      the side of the external screen**
+  - [x] **The code.**
+        it was built, and then the promise was withdrawn
+";
+        let findings = withdrawals_left_open(features, roadmap);
+        let said: String = findings.iter().map(ToString::to_string).collect();
+        assert!(
+            said.contains("per display"),
+            "a withdrawn promise left open was not found: {said}"
+        );
+        assert!(
+            said.contains("ADR 0076"),
+            "the record was not named: {said}"
+        );
+    }
+
+    /// **And a withdrawal the roadmap took out is not reported**, or the check
+    /// would fail for ever on every withdrawal this repository ever makes.
+    #[test]
+    fn a_withdrawal_the_roadmap_honoured_is_not_found() {
+        let features = "\
+**Withdrawn by [ADR 0076](decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md):** *per display, so the dock can sit along \
+the bottom of the laptop and down the side of the external screen*.
+";
+        let roadmap = "\
+## v0.5 — a person can work on it all day
+
+- **Per display, so the dock can sit along the bottom** — WITHDRAWN by ADR 0076
+- [ ] Lock screen, suspend and resume
+";
+        assert!(
+            withdrawals_left_open(features, roadmap).is_empty(),
+            "a box that says it was withdrawn was reported anyway"
+        );
+    }
+
+    /// **A qualifier in italics is not a promise.** A withdrawal italicises
+    /// short asides too, and a three-word span has no business matching a box.
+    #[test]
+    fn a_short_italic_aside_is_not_taken_for_a_promise() {
+        let features = "\
+**Withdrawn by [ADR 0076](decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md):** *in both orientations*.
+";
+        let roadmap = "- [ ] Something about orientations in both directions entirely unrelated\n";
+        assert!(
+            withdrawals_left_open(features, roadmap).is_empty(),
+            "a short aside was matched against a box"
+        );
+    }
+
     #[test]
     fn a_promise_answered_at_another_tier_is_found() {
         let roadmap = "\
