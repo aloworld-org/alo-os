@@ -236,7 +236,7 @@ pub fn enough_of_it_is_reachable(
     if !band.0.is_finite() || !band.1.is_finite() || !width.is_finite() || width <= 0.0 {
         return true;
     }
-    the_longest_reachable_run(band, controls) >= handle.0.min(width)
+    the_longest_reachable_run(band, controls, handle.1) >= handle.0.min(width)
 }
 
 /// The longest single unobstructed run of this band, in logical pixels.
@@ -245,22 +245,45 @@ pub fn enough_of_it_is_reachable(
 /// pixels each at opposite ends of a name leave forty pixels and no handle, and a
 /// check that summed them would pass a frame nobody can grab.
 ///
-/// A control counts only where it crosses the band's **full height**. One that
-/// clips the top few pixels leaves a shorter but still grabbable strip, and calling
-/// that hidden would refuse drags a person can plainly make.
+/// A control counts where it leaves **less than `least_height`** of the band
+/// clear. One that clips a few rows leaves a shorter but still grabbable strip,
+/// and calling that hidden would refuse drags a person can plainly make.
+///
+/// # The height was specified and was not enforced
+///
+/// This asked whether a control crossed the band's **full** height, which is
+/// all-or-nothing and let a Dock cover 44 of a 48-row band while the rule
+/// answered *fully reachable*. Four rows is not a drag target. The owner settled
+/// **44 × 24** on 2026-09-30 and only the 44 was ever read: `handle.1` was passed
+/// through this whole API and discarded, which a drag test found by being allowed
+/// to put a name behind the Dock.
+///
+/// **That is the same failure this rule exists to prevent, on the other axis.**
+/// *One exposed pixel is technically reachable and practically lost* was the
+/// owner's reason for replacing a check that asked whether a name was *entirely*
+/// hidden — and this function then asked whether a control *entirely* covered the
+/// band's height. The horizontal case was fixed by a minimum and the vertical one
+/// kept the shape that had just been rejected.
 #[must_use]
 pub fn the_longest_reachable_run(
     band: (f64, f64, f64, f64),
     controls: &[Rectangle<i32, Physical>],
+    least_height: f64,
 ) -> f64 {
     let (left, top, width, height) = band;
+    // What a control may cover vertically and still leave a usable strip. A band
+    // shorter than the minimum owes all of itself, by the same argument
+    // `enough_of_it_is_reachable` makes about width: a short band is small, not
+    // hidden.
+    let may_cover = (height - least_height).max(0.0);
     let mut taken: Vec<(f64, f64)> = controls
         .iter()
         .filter_map(|control| {
             let (cl, ct) = (f64::from(control.loc.x), f64::from(control.loc.y));
             let cr = cl + f64::from(control.size.w);
             let cb = ct + f64::from(control.size.h);
-            (cb >= top + height && ct <= top).then(|| (cl.max(left), cr.min(left + width)))
+            let covered = cb.min(top + height) - ct.max(top);
+            (covered > may_cover).then(|| (cl.max(left), cr.min(left + width)))
         })
         .filter(|(start, end)| end > start)
         .collect();

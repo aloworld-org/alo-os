@@ -188,6 +188,15 @@ impl LoopInput for Desk<'_> {
             self.labels,
             (size.w, size.h),
         )?;
+        // **Where the fixed controls ended up, handed to the drag that has to
+        // avoid them.** The draw is the only place that knows: the Dock's band is
+        // laid out here and nowhere else. Without this line
+        // `crate::canvas_never_lost`'s rule has no bounds to check against, which
+        // is why it had no caller at all — see `crate::canvas_fixed_controls`.
+        server.the_dock_was_drawn(
+            pictures.desktop.dock.as_ref().map(|dock| dock.band),
+            self.desktop.now().look.scale(),
+        );
         server.render_frame(
             &mut Layered {
                 target,

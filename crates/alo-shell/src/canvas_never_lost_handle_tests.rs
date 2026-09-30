@@ -48,7 +48,7 @@ fn a_sliver_is_refused_and_a_usable_run_is_allowed() {
 fn the_longest_run_is_measured_rather_than_the_total() {
     // Clear 0..40, control 40..260, clear 260..300 — two runs of 40, total 80.
     let control = across(40, 220);
-    assert_eq!(the_longest_reachable_run(BAND, &[control]), 40.0);
+    assert_eq!(the_longest_reachable_run(BAND, &[control], HANDLE.1), 40.0);
     assert!(
         !enough_of_it_is_reachable(BAND, &[control], HANDLE),
         "eighty pixels of name in two useless halves was called reachable"
@@ -62,19 +62,23 @@ fn the_longest_run_is_measured_rather_than_the_total() {
 /// 300-pixel band and conclude something absurd.
 #[test]
 fn overlapping_controls_do_not_double_count() {
-    let run = the_longest_reachable_run(BAND, &[across(40, 160), across(100, 160)]);
+    let run = the_longest_reachable_run(BAND, &[across(40, 160), across(100, 160)], HANDLE.1);
     assert_eq!(run, 40.0, "the clear runs are 0..40 and 260..300");
 }
 
 /// **A control that only clips the top of a band hides nothing.**
 ///
 /// It leaves a shorter but still grabbable strip, and calling that hidden would
-/// refuse drags a person can plainly make.
+/// refuse drags a person can plainly make. Ten rows covered of forty-eight leaves
+/// thirty-eight, which is more than the twenty-four a handle owes.
 #[test]
 fn a_control_that_does_not_cross_the_whole_band_takes_nothing() {
     // Covers y 0..10 of a band running 0..48: the band is still 38 tall beneath it.
     let clipping = Rectangle::new((0, 0).into(), (1000, 10).into());
-    assert_eq!(the_longest_reachable_run(BAND, &[clipping]), 300.0);
+    assert_eq!(
+        the_longest_reachable_run(BAND, &[clipping], HANDLE.1),
+        300.0
+    );
     assert!(enough_of_it_is_reachable(BAND, &[clipping], HANDLE));
 }
 
@@ -111,7 +115,7 @@ fn a_band_narrower_than_a_handle_owes_only_what_it_has() {
 #[test]
 fn nothing_over_a_band_and_a_band_of_nothing() {
     assert!(enough_of_it_is_reachable(BAND, &[], HANDLE));
-    assert_eq!(the_longest_reachable_run(BAND, &[]), 300.0);
+    assert_eq!(the_longest_reachable_run(BAND, &[], HANDLE.1), 300.0);
     for degenerate in [
         (0.0, 0.0, 0.0, 48.0),
         (0.0, 0.0, -5.0, 48.0),
@@ -137,4 +141,46 @@ fn a_larger_handle_refuses_what_a_smaller_one_allowed() {
         !enough_of_it_is_reachable(BAND, &[control], (88.0, 48.0)),
         "fifty pixels clear should not satisfy an eighty-eight pixel handle"
     );
+}
+
+/// **The height the owner specified is enforced, and it was not.**
+///
+/// `A_USABLE_HANDLE` is 44 × 24 and **only the 44 was ever read**: `handle.1` was
+/// passed through this whole API and discarded, because the run asked whether a
+/// control crossed the band's *full* height. So a Dock covering 44 rows of a
+/// 48-row band left four rows and the rule answered *fully reachable*.
+///
+/// **Which is the failure this rule was written to prevent, on the other axis.**
+/// *One exposed pixel is technically reachable and practically lost* is the
+/// owner's reason for replacing *entirely under the dock* — and the replacement
+/// then asked whether a control covered the band's height *entirely*. Found by a
+/// drag test that was allowed to put a name behind the Dock, not by reading.
+///
+/// The three rows here are the boundary either side of it: a band 48 tall owes 24,
+/// so 24 rows covered is allowed and 25 is not.
+#[test]
+fn a_control_covering_all_but_a_sliver_of_the_height_is_not_a_handle() {
+    for (covered, reachable) in [(23, true), (24, true), (25, false), (44, false)] {
+        let over = Rectangle::new((0, 0).into(), (1000, covered).into());
+        assert_eq!(
+            enough_of_it_is_reachable(BAND, &[over], HANDLE),
+            reachable,
+            "{covered} of 48 rows covered should be reachable={reachable}"
+        );
+    }
+}
+
+/// **A band shorter than the handle owes all of its height.**
+///
+/// The same argument `a_band_narrower_than_a_handle_owes_only_what_it_has` makes
+/// about width: a band drawn shorter than 24 is small rather than hidden, so any
+/// control over it at all takes it. Without the `max(0.0)` the allowance would go
+/// negative and every control would count, which is the same answer by accident
+/// rather than by reasoning.
+#[test]
+fn a_band_shorter_than_a_handle_is_taken_by_any_control() {
+    let short = (0.0, 0.0, 300.0, 12.0);
+    assert!(enough_of_it_is_reachable(short, &[], HANDLE));
+    let over = Rectangle::new((0, 0).into(), (1000, 1).into());
+    assert!(!enough_of_it_is_reachable(short, &[over], HANDLE));
 }
