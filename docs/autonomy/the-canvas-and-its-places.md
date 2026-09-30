@@ -186,8 +186,34 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
   frame in the supported zoom range; fixed controls cannot cover every usable drag
   handle; display, scale, Dock-position and panel-state changes preserve recovery;
   and **keyboard users can find and move a frame without reaching its name band.**
-- **What is held today:** the first, and the Dock's and status area's share of the
-  second, landed 2026-09-30.
+- **What is held today:** the first. **Nothing else, and this line said otherwise.**
+
+  It read *the Dock's and status area's share of the second, landed 2026-09-30*.
+  **That work is not landed.** `2f8eaaaf` — the usable-handle rule, the set of
+  fixed controls, eight unit tests and five fixture tests — sits on a local branch
+  `task/mac/a-usable-handle`, gated nine of nine and never pushed. It was written,
+  it passed, the owner redirected this lane to the scope move, and the plan was
+  then written describing it as landed.
+
+  **Which is this plan's own subject, committed by its author, in the document
+  written to stop it.** Every instance we have catalogued needed somebody to have
+  been mistaken about work they could not see; this one was mistaken about work it
+  had done itself, four hours earlier, on the machine it was writing from.
+
+  **And it must not simply be pushed now.** `CLAUDE.md` gained two rules on
+  2026-09-30 — *the design is followed, not approximated* and *nothing is built to
+  one screen size*, with **a figure taken from a frame becomes a proportion or a
+  named rule, never a constant**. The unlanded work defines
+  `A_USABLE_HANDLE: (f64, f64) = (44.0, 24.0)`, scaled only by the text setting and
+  not derived from the display. The laptop lane measured every hit area on the
+  canvas page of the design file: **29, 40, 42, 44 or 52 logical pixels, and never
+  24.** So 44 is a design number and 24 is not one, and both are constants where
+  the rule asks for a derivation.
+
+  **That is a conflict between a direct instruction and a standing rule, and it is
+  the owner's.** The 44 × 24 minimum came from them on 2026-09-30; the rules
+  arrived the same day and say the design wins until an ADR says otherwise. Named
+  here rather than resolved by this lane in either direction.
 - **Owed, and the owner has granted part of it.** The fourth check needs a keyboard
   road to move a frame. *Move to Place* is now promised and is task 3's — so
   **moving a frame between Places by keyboard is in scope**. What is still not
