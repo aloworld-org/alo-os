@@ -88,6 +88,7 @@
 //! would be a supervisor that can throw work away.
 
 mod evidence;
+mod fetching;
 mod gate_turn;
 mod gates;
 mod handoff;
@@ -107,7 +108,7 @@ mod where_it_builds;
 mod who_owns;
 mod worker;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
 
@@ -153,7 +154,18 @@ enum Asked {
     Gates,
 
     /// Put a parked task's work back in the tree, on top of today's `main`.
-    Recover(String),
+    ///
+    /// `from` is the other checkout to bring the branch across from first, and
+    /// [`None`] when the branch is already here. Two checkouts share this
+    /// repository and a parked branch is local to the one it was parked in, so
+    /// recovering somebody else's parked task is a fetch and then the ordinary
+    /// recovery — see [`crate::fetching`].
+    Recover {
+        /// The parked branch.
+        branch: String,
+        /// The checkout to bring it across from, when it is not here.
+        from: Option<PathBuf>,
+    },
 }
 
 impl Asked {
@@ -167,7 +179,19 @@ impl Asked {
             Some("publish") => Some(Self::Publish),
             Some("verify") => Some(Self::Verify),
             Some("gates") => Some(Self::Gates),
-            Some("recover") => args.next().map(Self::Recover),
+            Some("recover") => {
+                let branch = args.next()?;
+                // `--from <path>` or nothing. An unrecognised third word is
+                // not silently ignored: a person who mistyped `--form` meant
+                // to fetch, and a recovery that quietly looked for a local
+                // branch instead would refuse for the wrong reason.
+                let from = match args.next().as_deref() {
+                    None => None,
+                    Some("--from") => Some(PathBuf::from(args.next()?)),
+                    Some(_) => return None,
+                };
+                Some(Self::Recover { branch, from })
+            }
             _ => None,
         }
     }
@@ -186,9 +210,14 @@ fn main() -> ExitCode {
              \x20 alo-kernel-loop gates    run every gate, and nothing else — for a caller with \
              no handoff\n\
              \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n\
-             \x20 alo-kernel-loop recover <branch>\n\
+             \x20 alo-kernel-loop recover <branch> [--from <checkout>]\n\
              \x20\x20\x20\x20\x20\x20\x20\x20\x20 put a parked task's work back in the tree, on \
-             top of today's main\n"
+             top of today's main\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 --from brings the branch across from the other \
+             checkout first; it\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 reads that checkout and never writes it, and \
+             never writes over a\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 branch of the same name here\n"
         );
         return ExitCode::FAILURE;
     };
@@ -207,7 +236,7 @@ fn main() -> ExitCode {
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
         Asked::Gates => gates_only(&at),
-        Asked::Recover(branch) => recover(&at, &ours, &branch),
+        Asked::Recover { branch, from } => recover(&at, &ours, &branch, from.as_deref()),
         Asked::Status => {
             // **Whether anything is running, before what last happened.** A
             // journal's last line reads exactly the same whether the loop is
@@ -877,7 +906,29 @@ fn verify(at: &Path, ours: &Path) -> ExitCode {
 /// and `publish` are what run them, and a recovery that published would be a
 /// road around the thing this program is. It deletes no branch either, so a
 /// recovery that goes wrong is a recovery that can be done again.
-fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
+fn recover(at: &Path, ours: &Path, branch: &str, from: Option<&Path>) -> ExitCode {
+    // **The crossing first, and only when asked for.** A recovery of a branch
+    // already here is exactly what it was; `--from` adds a fetch in front of
+    // it and changes nothing after it.
+    if let Some(from) = from {
+        match fetching::bring_across(from, branch, at) {
+            Ok(said) => {
+                println!("alo-kernel-loop: {said}.");
+                // Written down with where it came from, because a branch that
+                // arrived from another checkout is the one thing about a
+                // recovery a person cannot see from the branch itself.
+                journal::note(
+                    ours,
+                    &format!("brought `{branch}` across from {}", from.display()),
+                );
+            }
+            Err(why) => {
+                eprintln!("alo-kernel-loop: nothing was brought across. {why}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+
     let back = match recovering::recover(at, ours, branch) {
         Ok(back) => back,
         Err(why) => {
