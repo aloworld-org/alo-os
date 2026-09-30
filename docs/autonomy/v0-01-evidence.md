@@ -696,9 +696,38 @@ crate with no display. Which vocabulary it speaks for the plane is settled in
 later entry must not tick this one when only the panel exists: the line names two
 things and says *the person picks*, so half of it answered is a promise owed.
 
+### Full screen
+
+**Still owed:** **all of it.** `alo-shell` cannot put a window into full screen:
+`window_mode::Mode` carries `Normal`, `Maximized` and `InAShare`, and none of
+them fills the screen — a maximised window stops above the Dock and leaves it
+visible. The `XdgShellHandler` implementation answers move, maximize, minimize,
+unmaximize, resize and reposition and has **no `fullscreen_request` or
+`unfullscreen_request`**, so a client that asks to fill the screen is answered
+with silence rather than a refusal. The shell is honest about it rather than
+claiming it: `crates/alo-shell/tests/support/wm_capabilities.rs` pins the
+advertised set to exactly maximise and minimise and asserts that adding
+fullscreen to it fails, which is the test that changes when this is built.
+Where the work is: task 6 of `docs/autonomy/putting-a-window-aside.md`, whose
+status names this as the prerequisite it is blocked on and leaves it with the
+rest of the shell wiring.
+
+### Reaching the Dock over a full-screen window
+
+**Still owed:** the whole interaction, because the situation it happens in
+cannot be created — the entry above is why. The rules for it exist and are
+tested: `alo-dock`'s revealing module holds *which regions keep a surface open*,
+with the pointer, the keyboard, a drag and an open menu each holding it by
+itself, and twelve tests including one that reads its own source to hold that
+nothing in it consults a clock. **They are deliberately not cited above.**
+Nothing calls them, on any machine, so they are reusable groundwork and not
+evidence that a person can reach the Dock over a full-screen window — which is
+the distinction this ledger exists to keep. Where the work is: task 6 of
+`docs/autonomy/putting-a-window-aside.md`.
+
 ## What this audit found
 
-**The audit in figures: 42 promises, 2 shown whole, 37 shown in part, 3 with no
+**The audit in figures: 44 promises, 2 shown whole, 37 shown in part, 5 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
