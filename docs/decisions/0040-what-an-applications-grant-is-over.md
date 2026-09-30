@@ -176,7 +176,7 @@ Three things must happen before task 1 is ready again:
 
 Until then, no `crates/alo-portals` is created. Building the portal model beside
 a decision that is still *proposed* would mean the code chose option A or B
-without telling anyone. `crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`
+without telling anyone. `crates/alo-portals/tests/a_portal_request_is_a_grant.rs`
 enforces that.
 
 ## Consequences

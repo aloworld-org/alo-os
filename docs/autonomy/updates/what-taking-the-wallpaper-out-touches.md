@@ -21,7 +21,7 @@ wrong for this job by more than half.
 
 | | |
 |---|---|
-| `crates/alo-appearance/src/picture.rs` | a wallpaper. **This is the one ADR 0075 removes.** |
+| the `picture` module | a wallpaper. **This is the one ADR 0075 removes.** |
 | `crates/alo-capturing/src/picture.rs` | a screenshot. Nothing to do with it. |
 
 `alo-capturing`, `alo-converting` and `alo-dividing` account for most of the
@@ -34,7 +34,7 @@ grep will break screenshots.
 
 ## Two: `Rotating` comes out, and the record's list does not name it
 
-`crates/alo-appearance/src/rotating.rs` is, in its own first line, *a folder of
+the `rotating` module is, in its own first line, *a folder of
 pictures, one at a time*. It is the mechanism of the **folder** half of the
 promise.
 

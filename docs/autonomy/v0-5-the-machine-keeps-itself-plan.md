@@ -666,7 +666,7 @@ anything. **Found, and handed back rather than repaired:** the paragraph above
 says ADR 0053 was accepted on 2026-09-19 and
 [the decision itself](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
 still reads *proposed, 2026-09-17*, so
-`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` still passes for
+`crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` still passes for
 exactly the reason it was written — the broker plan's task 8 is now blocked on
 that one line and on nothing this crate owes. Accepting a decision is the
 owner's, so nothing was changed to match it. Report:

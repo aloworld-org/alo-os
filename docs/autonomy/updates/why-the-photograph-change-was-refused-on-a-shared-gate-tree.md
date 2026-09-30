@@ -22,7 +22,7 @@ times, on one test, in a crate this task does not touch:
 
 ```
 thread 'nothing_is_enrolled_while_its_decision_is_proposed' panicked at
-crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs:49:5:
+crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs:49:5:
 ADR 0054 is no longer proposed (**Status:** **accepted, 2026-09-19, by the owner
 — option C falling back to B,). Build what it decided — enrolment during
 install, and the recovery — and replace this test with the tests of that
@@ -238,7 +238,7 @@ Two further items this attempt found, for the queue:
    finished task already.
 2. **ADR 0054 is accepted, so its build is owed** — enrolment during install and
    the recovery, tasks 6 and 7 of the broker-and-the-disk plan, which include
-   replacing `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs`
+   replacing `crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs`
    with the tests of what was decided. Until that lands, every full workspace run
    on a tree carrying `task/dev-pc/the-disk-is-sealed-and-opened-with-a-pin` will
    fail that test — correctly, because that is what the tripwire is for.

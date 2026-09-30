@@ -21,7 +21,7 @@ is the plan's task 9, and is shown nowhere until that machine exists.
 > the three promises get shown.
 
 The code that task 6 would write waited on this, and
-`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` was what
+`crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` was what
 made the waiting visible rather than remembered — it failed the day this line
 stopped saying *proposed*, which is the day the code was written and the day
 that test was replaced by the tests of what was built.

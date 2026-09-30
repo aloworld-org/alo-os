@@ -113,6 +113,7 @@ pub mod finding;
 pub mod holding;
 pub mod naming;
 pub mod reports;
+pub mod sources;
 
 pub use citation::{Citation, Named};
 pub use citing::cited_in;

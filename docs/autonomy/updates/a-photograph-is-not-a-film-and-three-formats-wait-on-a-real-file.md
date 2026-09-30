@@ -119,12 +119,21 @@ and what must happen before the task is ready again; and **while it says
 sentence says one, no extension claims one, and a file of each still reads as
 what this machine honestly does not recognise.
 
-`crates/alo-opening/tests/a_photograph_is_not_a_film.rs` holds the correction,
+`crates/alo-opening/tests/a_photo_from_a_telephone.rs` and
+`crates/alo-opening/tests/a_file_this_machine_cannot_open_is_explained.rs` hold
+the correction,
 against files written to a real disk: a photograph is not called a film; a
 photograph named `.mp4` is the *finding* rather than a film nothing opens; every
 film and recording people are actually sent is still named, from the major brand
 or from the compatible brands beside it; and a header cut short claims nothing
 more than it named.
+
+*This paragraph named `a_photograph_is_not_a_film.rs` until 2026-09-30, and
+**no file of that name was ever written** — no commit in this repository's
+history touches it. The work landed in the two tests above, under the names
+they have. A report offering a test that does not exist is evidence nobody can
+run, and it reads exactly like evidence that can be. Found by
+`alo-citing`'s check that every path this repository's documents name lands.*
 
 ## Decisions taken here, and why
 
