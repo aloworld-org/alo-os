@@ -223,7 +223,47 @@ at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 ### 8. A reader is told what is set, and by the words that are on it
 
-**Status:** ready, 2026-09-29. **Depends on:** 2, 4.
+**Status:** blocked — on a decision about what the settings tree names, which
+is the same decision the second half already waits on. **Depends on:** 2, 4.
+
+**Measured 2026-09-30, and the first half is not the plumbing it reads as.**
+Everything this task says about the structure is true: `State::OnOrOff` becomes
+`CHECKABLE` at `crates/alo-shell/src/access_roles.rs:126`, `CHECKED` is
+`#[cfg(test)]` under *never sent by this crate*, and four clauses point here —
+5.6.1, 11.2.4.6, 11.2.5.3 and 11.4.1.2, counted rather than recalled. One
+pointer is a crate out: `ReadAloudTree::of` is `alo-shell`'s
+(`src/access_nodes.rs`), not `alo-access`'s.
+
+**What the measurement adds is that there is exactly one `State::OnOrOff`
+control in the whole tree, and it is a placeholder.**
+`crates/alo-access/src/tree.rs:264` is
+`Control::of(Role::Switch, words::A_SETTING, State::OnOrOff)`, and `A_SETTING`
+says **"a setting"**, noted as *One setting, which is on or off. Which it is
+now is read after the name.*
+
+So a value plumbed to that control would have a reader announce **"a setting,
+on"** — true, and useless. A person would be told the state of a switch whose
+identity they were never told. **Telling somebody which way a switch is set
+requires the tree to name the switches**, and today it names one abstract
+stand-in for all of them while `crates/alo-shell/src/settings_lines.rs` draws
+the real rows.
+
+**That makes both halves of this task the same decision, which is why the
+status changes rather than the scope.** The second half's constraint already
+says naming is not a renaming exercise, that one vocabulary has to become the
+other's source, and that this reaches 24 languages and
+`docs/contracts/person-settings.md`, so it wants an ADR before any word moves.
+Naming the settings tree's controls is that same question arriving from the
+other side. Building the first half alone would mean inventing those names
+inside a plumbing change — the cheapest possible moment to decide something
+that expensive.
+
+*The word's own note is worth keeping as an instance: it promises* which it is
+now is read after the name *and nothing reads it. A note describing behaviour
+the code does not have, in the file that defines the word — prose and code
+checked by different instruments, and here by neither.*
+
+**Nothing is built here. The record is corrected and the decision is named.**
 
 **Reopening a plan that was closed** — task 7 said *this closes the plan, seven at
 publication, seven at close, nothing added after it was written*. This is added
