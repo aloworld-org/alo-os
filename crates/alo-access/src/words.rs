@@ -224,10 +224,6 @@ pub const WHAT_CAN_BE_CHANGED: Word =
     Word::saying("access.what-can-be-changed", "what can be changed")
         .noting("The list of settings.");
 
-/// One setting, which is on or off.
-pub const A_SETTING: Word = Word::saying("access.a-setting", "a setting")
-    .noting("One setting, which is on or off. Which it is now is read after the name.");
-
 /// The button that closes a window.
 pub const CLOSE_THIS_WINDOW: Word = Word::saying("access.close-this-window", "close this window")
     .noting("The button that closes a window.");
@@ -293,7 +289,7 @@ pub const GO_BACK_NOW: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 40] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -326,7 +322,6 @@ pub const EVERY_WORD: [Word; 41] = [
     ONE_THING_THAT_HAPPENED,
     SETTINGS,
     WHAT_CAN_BE_CHANGED,
-    A_SETTING,
     CLOSE_THIS_WINDOW,
     ARRANGE_THIS_WINDOW,
     THE_RECOVERY_SCREEN,
@@ -382,10 +377,15 @@ mod tests {
     #[test]
     fn every_setting_says_what_it_does_in_words_of_its_own() {
         let vocabulary = access_words().unwrap();
+        // **Every word this crate declares is a name the tree says**, since
+        // the tree began naming each setting by its own word. It was a sum of
+        // two disjoint lists until 2026-09-30, when the settings' words stopped
+        // being outside the tree — so this is an identity now, which is the
+        // stronger claim: a word declared and never said would fail it.
         assert_eq!(
             EVERY_WORD.len(),
-            Setting::ALL.len() + crate::tree::EVERY_NAME_A_READER_SAYS,
-            "a word was added to this crate and to neither list it belongs to"
+            crate::tree::EVERY_NAME_A_READER_SAYS,
+            "a word was added to this crate and the tree never says it"
         );
         for setting in Setting::ALL {
             let word = setting.word();

@@ -55,11 +55,17 @@ fn a_password_field_is_never_the_kind_an_ordinary_field_is() {
 
 /// **Nothing is chosen for the person, on the bus either** (ADR 0001). A
 /// reader announces `IS_DEFAULT`, `FOCUSED` and `CHECKED`, and no state this
-/// machine publishes carries any of them.
+/// machine publishes carries any of them **of its own accord**.
+///
+/// *`CHECKED` is sent from 2026-09-30 for a setting the person has turned on,
+/// which is not this machine choosing anything — it is reporting what they
+/// chose. ADR 0001 is about a default nobody asked for, and the distinction is
+/// the difference between a switch that arrives on and a switch that says it
+/// is on. This test hands in no value, so what it holds is the first.*
 #[test]
 fn nothing_published_reads_as_already_chosen() {
     for state in EVERY_STATE {
-        let words = words_of(state);
+        let words = words_of(state, None);
         for (bit, what) in [
             (IS_DEFAULT, "the default"),
             (FOCUSED, "focused"),
@@ -82,7 +88,7 @@ fn nothing_published_reads_as_already_chosen() {
 fn what_can_be_used_is_focusable_and_nothing_else_is() {
     for surface in Surface::ALL {
         for control in surface.read_aloud() {
-            let focusable = carries(words_of(control.state), 11);
+            let focusable = carries(words_of(control.state, None), 11);
             assert_eq!(
                 focusable,
                 Control::can_be_used(&control),
@@ -98,7 +104,7 @@ fn what_can_be_used_is_focusable_and_nothing_else_is() {
 #[test]
 fn everything_read_aloud_is_showing_as_well_as_visible() {
     for state in EVERY_STATE {
-        let words = words_of(state);
+        let words = words_of(state, None);
         assert!(carries(words, 30), "{state:?} is not visible");
         assert!(carries(words, 25), "{state:?} is visible and not showing");
     }
@@ -110,7 +116,7 @@ fn everything_read_aloud_is_showing_as_well_as_visible() {
 #[test]
 fn a_surface_that_is_not_up_stops_showing_and_is_still_described() {
     for state in EVERY_STATE {
-        let up = words_of(state);
+        let up = words_of(state, None);
         let away = off_the_screen(up);
         assert!(carries(up, 25), "{state:?} was not showing to begin with");
         assert!(
@@ -147,6 +153,48 @@ fn the_roles_that_hold_others_are_the_ones_a_surface_can_be() {
                 Role::Window | Role::Dialogue | Role::StatusBar | Role::List
             ),
             "{role:?}"
+        );
+    }
+}
+
+/// **A setting that is on is read as on, and one that is off is not.**
+///
+/// EN 301 549 clause 5.6.1 — *a control that locks or toggles must say which
+/// way it is set without being looked at* — and the half of 11.4.1.2 that asks
+/// for *what state it is in*. Until 2026-09-30 `CHECKED` was `#[cfg(test)]`
+/// under the words *never sent by this crate*, so a reader was told a setting
+/// could be on or off and never which.
+#[test]
+fn a_setting_that_is_on_is_read_as_on() {
+    let on = words_of(State::OnOrOff, Some(true));
+    let off = words_of(State::OnOrOff, Some(false));
+
+    assert!(
+        carries(on, CHECKED),
+        "a setting the person turned on is not read as on"
+    );
+    assert!(
+        !carries(off, CHECKED),
+        "a setting the person turned off is read as on"
+    );
+
+    // Both are still switches: what changed is the value, not the kind.
+    for words in [on, off] {
+        assert!(carries(words, CHECKABLE), "it stopped being a switch");
+    }
+}
+
+/// **Only a switch is ever read as on.** A value handed in for something that
+/// is not a setting would have a reader announce a window as checked.
+#[test]
+fn nothing_but_a_switch_is_read_as_on() {
+    for state in EVERY_STATE {
+        if state == State::OnOrOff {
+            continue;
+        }
+        assert!(
+            !carries(words_of(state, Some(true)), CHECKED),
+            "{state:?} was read as on"
         );
     }
 }

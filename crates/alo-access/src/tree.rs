@@ -21,6 +21,7 @@
 //! words are `alo-access`'s own ([`crate::words`]) or the ones the shell's own
 //! crates already declare for what they draw.
 
+use crate::setting::Setting;
 use crate::words::{self, Word};
 
 /// **What kind of thing a control is**, in the vocabulary AT-SPI uses.
@@ -75,12 +76,44 @@ pub struct Control {
     pub name: Word,
     /// What can be done with it, or what it announces.
     pub state: State,
+    /// Which access setting this control *is*, where it is one.
+    ///
+    /// **A reader is told which way a switch is set, and this is how it knows
+    /// which switch.** A control carrying [`State::OnOrOff`] and no setting
+    /// would be a switch whose value nothing can look up, which is the shape
+    /// the tree had until 2026-09-30: one control named *a setting*, standing
+    /// for all nine.
+    ///
+    /// [`None`] for everything that is not a setting — a window, a list, a
+    /// button. Those have no value to be told.
+    pub setting: Option<Setting>,
 }
 
 impl Control {
     /// One control.
     const fn of(role: Role, name: Word, state: State) -> Self {
-        Self { role, name, state }
+        Self {
+            role,
+            name,
+            state,
+            setting: None,
+        }
+    }
+
+    /// The switch for one access setting, named by the setting itself.
+    ///
+    /// **The name comes from [`Setting::word`] rather than from here**, so a
+    /// setting added to [`Setting::ALL`] arrives in the tree already named and
+    /// there is no second list to keep in step. A tenth setting nobody teaches
+    /// this file about is a tenth control, not a missing one.
+    #[must_use]
+    pub fn for_setting(setting: Setting) -> Self {
+        Self {
+            role: Role::Switch,
+            name: setting.word(),
+            state: State::OnOrOff,
+            setting: Some(setting),
+        }
     }
 
     /// **Whether a person can act on this**, which is what decides whether the
@@ -258,11 +291,20 @@ impl Surface {
                     State::ReadOnly,
                 ),
             ],
-            Self::Settings => vec![
-                Control::of(Role::Window, words::SETTINGS, State::ReadOnly),
-                Control::of(Role::List, words::WHAT_CAN_BE_CHANGED, State::CanBeUsed),
-                Control::of(Role::Switch, words::A_SETTING, State::OnOrOff),
-            ],
+            // **Every setting by name, from the closed list itself.** This
+            // read one switch called *a setting* until 2026-09-30 — a
+            // placeholder standing for all nine, so a reader told its value
+            // would have announced *"a setting, on"* and named nothing. The
+            // names were already here, in `Setting::word`; only the tree was
+            // not using them.
+            Self::Settings => {
+                let mut read = vec![
+                    Control::of(Role::Window, words::SETTINGS, State::ReadOnly),
+                    Control::of(Role::List, words::WHAT_CAN_BE_CHANGED, State::CanBeUsed),
+                ];
+                read.extend(Setting::ALL.map(Control::for_setting));
+                read
+            }
             Self::WindowControls => vec![
                 Control::of(Role::Button, words::CLOSE_THIS_WINDOW, State::CanBeUsed),
                 Control::of(Role::Button, words::ARRANGE_THIS_WINDOW, State::CanBeUsed),
@@ -282,9 +324,15 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
     Surface::Approval.read_aloud()
 }
 
-/// How many of this crate's words name something a reader says, rather than a
-/// setting a person turns on — the count `words.rs` holds its own list to.
-pub const EVERY_NAME_A_READER_SAYS: usize = 32;
+/// How many of this crate's words name something a reader says — which, since
+/// 2026-09-30, is **all of them**.
+///
+/// *This used to count the words that were names rather than settings, and the
+/// two were disjoint: the tree named one placeholder switch called "a setting"
+/// and the nine settings' own words appeared only in `Setting::word`. Now the
+/// tree names every switch by its setting, so every word this crate declares is
+/// a name a reader says and `words.rs` holds the two lists to being one.*
+pub const EVERY_NAME_A_READER_SAYS: usize = 40;
 
 #[cfg(test)]
 mod tests {

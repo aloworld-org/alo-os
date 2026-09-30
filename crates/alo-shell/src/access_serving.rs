@@ -33,7 +33,7 @@
 //! reached* has something to say it about.
 
 use crate::{ReadAloudBus, Server};
-use alo_access::Surface;
+use alo_access::{Surface, TurnedOn};
 use alo_strings::Strings;
 
 /// The tree on the bus, and what it last said was open.
@@ -66,8 +66,9 @@ impl TheReaderIsTold {
         server: &Server,
         strings: &Strings,
         showing: &[Surface],
+        turned_on: &TurnedOn,
     ) -> Result<Self, crate::NotRead> {
-        let tree = server.read_aloud_with_the_frames_open(strings, showing);
+        let tree = server.read_aloud_with_the_frames_open(strings, showing, turned_on);
         let bus = ReadAloudBus::where_the_reader_is(&tree)?;
         bus.embedded()?;
         Ok(Self {
@@ -97,8 +98,9 @@ impl TheReaderIsTold {
         server: &Server,
         strings: &Strings,
         showing: &[Surface],
+        turned_on: &TurnedOn,
     ) -> Result<bool, crate::NotRead> {
-        let tree = server.read_aloud_with_the_frames_open(strings, showing);
+        let tree = server.read_aloud_with_the_frames_open(strings, showing, turned_on);
         let windows: Vec<String> = tree
             .the_windows_open_as_read()
             .into_iter()

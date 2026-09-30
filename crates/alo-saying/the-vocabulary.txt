@@ -12,7 +12,6 @@
 #
 # One line per key: the key, a tab, then the English exactly as the crate declares it.
 
-access.a-setting	a setting
 access.an-application	an application
 access.approve-it	approve
 access.arrange-this-window	move this window

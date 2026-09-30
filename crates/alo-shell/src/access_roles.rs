@@ -101,8 +101,11 @@ pub(crate) const FOCUSED: u32 = 12;
 /// `ATSPI_STATE_IS_DEFAULT` — never sent by this crate.
 #[cfg(test)]
 pub(crate) const IS_DEFAULT: u32 = 39;
-/// `ATSPI_STATE_CHECKED` — never sent by this crate.
-#[cfg(test)]
+/// `ATSPI_STATE_CHECKED` — sent for a setting that is on.
+///
+/// *This was `#[cfg(test)]` under the words "never sent by this crate" until
+/// 2026-09-30, and it was the whole of EN 301 549 clause 5.6.1's gap: a reader
+/// was told a setting **can** be on or off and never which it is.*
 pub(crate) const CHECKED: u32 = 4;
 
 /// The `live` attribute, for what is announced rather than looked for.
@@ -119,12 +122,28 @@ const ON_THE_SCREEN: u64 = (1 << VISIBLE) | (1 << SHOWING) | (1 << ENABLED);
 /// `SENSITIVE` and `FOCUSABLE` follow `Control::can_be_used` exactly — the same
 /// answer that decides where the keyboard stops (`alo_access::focus_order`), so
 /// what a reader is told it can act on and where Tab goes are one decision.
-pub(crate) const fn words_of(state: State) -> [u32; 2] {
-    let set = match state {
+/// `set` is whether this control is on, for a control that has a value, and
+/// [`None`] for one that does not. **A setting that is on is `CHECKED` as well
+/// as `CHECKABLE`**, which is the difference between telling somebody a switch
+/// exists and telling them which way it is set.
+pub(crate) const fn words_of(state: State, set: Option<bool>) -> [u32; 2] {
+    let mut set_bits = match state {
         State::ReadOnly | State::AnnouncedWhenItChanges => ON_THE_SCREEN | (1 << READ_ONLY),
         State::CanBeUsed => ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE),
         State::OnOrOff => ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE) | (1 << CHECKABLE),
     };
+    // **Only a switch can be on.** A value handed in for anything else is
+    // ignored rather than honoured: the function is the last place that can
+    // refuse it, and a read-only control announced as checked is a reader
+    // telling somebody a fact about a thing that has no state.
+    //
+    // *Its own test caught this. The first version added the bit for whatever
+    // state was passed, which no caller does today — and a permissive function
+    // is how it arrives tomorrow.*
+    if matches!((state, set), (State::OnOrOff, Some(true))) {
+        set_bits |= 1 << CHECKED;
+    }
+    let set = set_bits;
     #[expect(
         clippy::cast_possible_truncation,
         reason = "each half of a 64-bit set of states is one 32-bit word, by construction"

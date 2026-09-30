@@ -9,12 +9,13 @@ use alo_access::{Control, Surface};
 
 use super::*;
 use crate::approval_testing::words;
+use alo_access::TurnedOn;
 
 /// The tree a person reading English is given, with every surface up — which
 /// is not a machine, and is what makes the shape easy to read here. What is
 /// really up is [`the_showing_bit_says_which_surfaces_are_up`]'s subject.
 fn tree() -> ReadAloudTree {
-    ReadAloudTree::of(&words(), &Surface::ALL)
+    ReadAloudTree::of(&words(), &Surface::ALL, &TurnedOn::nothing())
 }
 
 /// `ATSPI_STATE_SHOWING`.
@@ -35,7 +36,7 @@ fn carries(words: [u32; 2], bit: u32) -> bool {
 fn the_showing_bit_says_which_surfaces_are_up() {
     let strings = words();
     for surface in Surface::ALL {
-        let tree = ReadAloudTree::of(&strings, &[surface]);
+        let tree = ReadAloudTree::of(&strings, &[surface], &TurnedOn::nothing());
         for (which, at) in tree.surfaces() {
             let node = &tree.nodes()[*at];
             assert_eq!(
@@ -73,7 +74,7 @@ fn every_surface_is_somewhere_in_the_tree() {
 #[test]
 fn every_control_is_a_thing_with_the_name_it_was_given() {
     let strings = words();
-    let tree = ReadAloudTree::of(&strings, &Surface::ALL);
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing());
     for (surface, at) in tree.surfaces() {
         let drawn = surface.read_aloud();
         let mut said: Vec<String> = Vec::new();

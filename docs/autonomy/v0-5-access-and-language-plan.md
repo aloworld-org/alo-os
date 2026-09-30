@@ -223,8 +223,40 @@ at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 ### 8. A reader is told what is set, and by the words that are on it
 
-**Status:** blocked — on a decision about what the settings tree names, which
-is the same decision the second half already waits on. **Depends on:** 2, 4.
+**Status:** the first half is **Done, 2026-09-30**; the second is blocked on an
+ADR about what controls are called. **Depends on:** 2, 4.
+
+**Correcting what this file said between 08:59 and 13:00 on 2026-09-30.** It
+said both halves were blocked on one decision. *That was wrong about the first
+half, and the error was mine.* I searched `tree.rs` for where the problem was
+and never opened `setting.rs`, one file away, where the answer already lived:
+`Setting::ALL` is the closed list of nine, `Setting::word` gives each its own
+person-facing sentence, and `TurnedOn::has` already answers whether each is on.
+**The names, the list and the values were all there.** Only the tree was not
+using them — it read one placeholder switch called *a setting*.
+
+So the first half was never a naming decision. It was plumbing, and it is done:
+
+- `crates/alo-access/src/tree.rs` builds the settings surface from
+  `Setting::ALL`, so a tenth setting arrives already named and there is no
+  second list to keep in step;
+- `Control` carries the `Setting` it *is*, so the value is looked up by
+  identity rather than matched by name — renaming a word cannot detach a
+  switch from its value;
+- `ReadAloudTree::of` is handed what the person has turned on, and
+  `access_roles::words_of` sends `CHECKED` for a setting that is on;
+- `access.a-setting` is **retired**, deleted under ADR 0068's fourth rule,
+  because keeping a key alive with a marker keeps the stale meaning reachable.
+
+**Two clauses moved from *not yet* to *met***: 5.6.1 and 11.4.1.2, by
+`a_setting_that_is_on_is_read_as_on`. **11.2.4.6 and 11.2.5.3 did not** — those
+are the vocabulary half, and moving them on this evidence would be claiming a
+clause on a test that does not show it.
+
+*Recorded because the error is the interesting part: I published a measured,
+confident answer that was false, and it was false because I measured where the
+fault was rather than where the fix would be. The same mistake as the plane
+note four hours earlier, in the same session.*
 
 **Measured 2026-09-30, and the first half is not the plumbing it reads as.**
 Everything this task says about the structure is true: `State::OnOrOff` becomes

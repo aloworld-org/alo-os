@@ -22,7 +22,7 @@
 //! same vocabulary the surface is drawn from, so what a reader hears and what a
 //! sighted person sees are one sentence and not two that can drift.
 
-use alo_access::{Control, Surface};
+use alo_access::{Control, Surface, TurnedOn};
 use alo_strings::{Filling, Strings};
 
 use crate::access_roles::{self, APPLICATION, FILLER};
@@ -69,7 +69,11 @@ impl ReadAloudTree {
     /// state, and a tree that claimed all nine at once would have a reader
     /// announcing screens nobody is looking at.
     #[must_use]
-    pub fn of(strings: &Strings, showing: &[Surface]) -> Self {
+    /// `turned_on` is what the person has switched on, which is how a
+    /// setting's control says which way it is set. **Handed in rather than
+    /// read**: this file does not know where a person's settings live, and the
+    /// caller is the only thing that does.
+    pub fn of(strings: &Strings, showing: &[Surface], turned_on: &TurnedOn) -> Self {
         let mut this = Self {
             nodes: vec![Node {
                 path: ROOT.to_owned(),
@@ -81,7 +85,7 @@ impl ReadAloudTree {
                 // down as a finding in the access plan: it is a word that has
                 // to be decided before it can be said.
                 name: String::new(),
-                states: access_roles::words_of(alo_access::State::ReadOnly),
+                states: access_roles::words_of(alo_access::State::ReadOnly, None),
                 announced: false,
                 parent: 0,
                 children: Vec::new(),
@@ -97,7 +101,7 @@ impl ReadAloudTree {
                 // a box with nothing in it.
                 None => continue,
                 Some((first, rest)) if access_roles::holds_others(first.role) => {
-                    (this.push(0, of_control(strings, *first)), rest)
+                    (this.push(0, of_control(strings, *first, turned_on)), rest)
                 }
                 Some(_) => (
                     this.push(
@@ -106,7 +110,7 @@ impl ReadAloudTree {
                             path: String::new(),
                             role: FILLER,
                             name: String::new(),
-                            states: access_roles::words_of(alo_access::State::ReadOnly),
+                            states: access_roles::words_of(alo_access::State::ReadOnly, None),
                             announced: false,
                             parent: 0,
                             children: Vec::new(),
@@ -116,7 +120,7 @@ impl ReadAloudTree {
                 ),
             };
             for control in rest {
-                this.push(at, of_control(strings, *control));
+                this.push(at, of_control(strings, *control, turned_on));
             }
             if !showing.contains(&surface) {
                 let under: Vec<usize> = this
@@ -194,7 +198,7 @@ impl ReadAloudTree {
                     path: String::new(),
                     role: access_roles::number_of(alo_access::Role::ListItem),
                     name,
-                    states: access_roles::words_of(alo_access::State::CanBeUsed),
+                    states: access_roles::words_of(alo_access::State::CanBeUsed, None),
                     announced: false,
                     parent: list,
                     children: Vec::new(),
@@ -257,12 +261,18 @@ impl ReadAloudTree {
 }
 
 /// One control, as a node.
-fn of_control(strings: &Strings, control: Control) -> Node {
+fn of_control(strings: &Strings, control: Control, turned_on: &TurnedOn) -> Node {
     Node {
         path: String::new(),
         role: access_roles::number_of(control.role),
         name: said(strings, control.name),
-        states: access_roles::words_of(control.state),
+        // **Which way it is set, for a control that is a setting.** Looked up
+        // from the setting the control carries rather than matched by name, so
+        // renaming a word cannot silently detach a switch from its value.
+        states: access_roles::words_of(
+            control.state,
+            control.setting.map(|setting| turned_on.has(setting)),
+        ),
         announced: access_roles::is_announced(control.state),
         parent: 0,
         children: Vec::new(),
