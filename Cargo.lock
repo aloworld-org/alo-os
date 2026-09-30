@@ -1280,6 +1280,7 @@ dependencies = [
 name = "alo-put-aside"
 version = "0.0.1"
 dependencies = [
+ "alo-canvas",
  "alo-dock",
  "thiserror 2.0.20",
 ]

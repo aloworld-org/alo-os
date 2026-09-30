@@ -10,9 +10,21 @@
               the same exemption `alo-dock`'s own test modules take, with its words"
 )]
 
+use alo_canvas::Zoom;
 use alo_dock::on_the_canvas::{Patch, Spot};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_put_aside::{Chosen, HowItShows, NotPutAside, Panel};
+
+/// The zoom a person happened to be at.
+///
+/// Nothing in this file asserts anything about it — task 1's behaviours are about which
+/// windows the panel holds and how it shows them. It is here because putting a window
+/// aside now takes the view it was put aside from, and a fixture passing
+/// [`Zoom::LIFE_SIZE`] would quietly make every test in the crate agree with a panel that
+/// stored no zoom at all.
+fn a_zoom() -> Zoom {
+    Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
 
 /// A window of an application, called something, sitting somewhere.
 ///
@@ -39,13 +51,13 @@ fn window(id: u64, app: &str, called: &str, x: i64) -> Window {
 fn three_windows_of_one_application_are_three_previews() {
     let mut panel = Panel::new();
     panel
-        .put_aside(&window(1, "Browser", "Launch strategy", 0))
+        .put_aside(&window(1, "Browser", "Launch strategy", 0), a_zoom())
         .unwrap();
     panel
-        .put_aside(&window(2, "Browser", "Pricing", 1_000))
+        .put_aside(&window(2, "Browser", "Pricing", 1_000), a_zoom())
         .unwrap();
     panel
-        .put_aside(&window(3, "Browser", "The wiki", 2_000))
+        .put_aside(&window(3, "Browser", "The wiki", 2_000), a_zoom())
         .unwrap();
 
     assert_eq!(
@@ -79,9 +91,11 @@ fn three_windows_of_one_application_are_three_previews() {
 fn collapsing_touches_no_window_at_all() {
     let mut panel = Panel::new();
     panel
-        .put_aside(&window(1, "Docs", "Launch strategy", 0))
+        .put_aside(&window(1, "Docs", "Launch strategy", 0), a_zoom())
         .unwrap();
-    panel.put_aside(&window(2, "Mail", "Anna", 900)).unwrap();
+    panel
+        .put_aside(&window(2, "Mail", "Anna", 900), a_zoom())
+        .unwrap();
 
     let before = panel.previews().to_vec();
 
@@ -125,7 +139,7 @@ fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
     );
 
     panel
-        .put_aside(&window(1, "Docs", "Launch strategy", 0))
+        .put_aside(&window(1, "Docs", "Launch strategy", 0), a_zoom())
         .unwrap();
     assert_eq!(
         panel.showing(),
@@ -145,9 +159,12 @@ fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
 fn a_window_is_not_put_aside_twice() {
     let mut panel = Panel::new();
     let it = window(1, "Docs", "Launch strategy", 0);
-    panel.put_aside(&it).unwrap();
+    panel.put_aside(&it, a_zoom()).unwrap();
 
-    assert_eq!(panel.put_aside(&it), Err(NotPutAside::ItIsAlreadyThere));
+    assert_eq!(
+        panel.put_aside(&it, a_zoom()),
+        Err(NotPutAside::ItIsAlreadyThere)
+    );
     assert_eq!(panel.holding(), 1);
 }
 
@@ -165,7 +182,7 @@ fn a_window_that_is_not_there_is_its_own_refusal() {
     );
 
     panel
-        .put_aside(&window(1, "Docs", "Launch strategy", 0))
+        .put_aside(&window(1, "Docs", "Launch strategy", 0), a_zoom())
         .unwrap();
     assert_eq!(
         panel.bring_back(WindowId::numbered(7)),
@@ -183,7 +200,7 @@ fn bringing_back_gives_the_patch_it_was_put_aside_at() {
     let mut panel = Panel::new();
     let it = window(1, "Docs", "Launch strategy", 4_200);
     let was_at = it.at();
-    panel.put_aside(&it).unwrap();
+    panel.put_aside(&it, a_zoom()).unwrap();
 
     let back = panel.bring_back(WindowId::numbered(1)).unwrap();
     assert_eq!(
