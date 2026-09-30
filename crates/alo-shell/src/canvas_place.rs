@@ -32,7 +32,9 @@
 //! absence affordable, by leaving nothing for a default to have to cover.
 
 use alo_canvas::Place;
-use smithay::{reexports::wayland_server::protocol::wl_surface::WlSurface, wayland::compositor::with_states};
+use smithay::{
+    reexports::wayland_server::protocol::wl_surface::WlSurface, wayland::compositor::with_states,
+};
 use std::sync::Mutex;
 
 /// Private compositor data; clients cannot write this through protocol state.
