@@ -675,6 +675,27 @@ decision, and no increment in between is available to this lane.
 and it carries no shell to boot to — `crates/alo-shell` has no binary, which is
 the finding task 10 stopped on.
 
+### Compact, and minimised — two things, and the person picks
+
+**Still owed:** all of it, and it is scheduled rather than missing — task 1 of
+`docs/autonomy/putting-a-window-aside.md`, with tasks 2 to 8 behind it. **This
+entry has no *Shown by* half, and that is what it is for.** The promise moved into
+this release on 2026-09-30, when the owner asked for the minimised-windows panel
+to be built now. Nothing has been written for it yet, so an entry claiming
+evidence would be the failure this ledger exists to catch, one day old.
+
+What is decided rather than built is in
+`docs/design/the-windows-put-aside.md`: the panel is a viewport control and never
+a child of the canvas, which `crates/alo-canvas` already enforces by refusing a
+viewport surface the camera; each preview names one window rather than one
+application; and seven of the owner's ten behaviour rules are decidable in a
+crate with no display. Which vocabulary it speaks for the plane is settled in
+`docs/design/one-plane-two-vocabularies.md`.
+
+**Compacting is the other half of the same promise and is equally unbuilt.** A
+later entry must not tick this one when only the panel exists: the line names two
+things and says *the person picks*, so half of it answered is a promise owed.
+
 ## What this audit found
 
 Forty-one promises. **Two are shown with nothing owed on them**, thirty-three

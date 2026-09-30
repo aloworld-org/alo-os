@@ -251,6 +251,19 @@ const THE_REAL_DECISION: &str =
 /// refuses a recipe that carries none. That entry still owes the sentence it is
 /// named for — no machine has booted with them — so it moved from *no evidence*
 /// to *partly owed* rather than off this list into a tick.
+///
+/// **And three from 2026-09-30, upward rather than downward** — the first time
+/// this number has grown. *Compact, and minimised — two things, and the person
+/// picks* was `[v1]` in `docs/features.md` until the owner moved it into this
+/// release so the panel could be built now. Nothing is written for it, so it
+/// arrives with no evidence at all and points at task 1 of
+/// `docs/autonomy/putting-a-window-aside.md`.
+///
+/// **A promise entering a release is a thing this count has to be told about**,
+/// and it is the case the three notes above do not cover: every one of those was
+/// something closing. A number that only ever falls is one nobody thinks to check
+/// when work arrives — and this assertion refused within minutes of the tier
+/// changing, which is what it is for.
 #[test]
 fn each_promise_with_no_evidence_names_where_the_work_is() {
     let here = the_repository();
@@ -261,8 +274,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        2,
-        "the ledger's own account of itself says two v0.01 promises have no \
+        3,
+        "the ledger's own account of itself says three v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -285,8 +298,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        2,
-        "the entries with no evidence are not the two the count says: \
+        3,
+        "the entries with no evidence are not the three the count says: \
          {owed_and_pointing:?}"
     );
     for (promise, waits) in &owed_and_pointing {
