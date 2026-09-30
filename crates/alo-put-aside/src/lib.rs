@@ -42,10 +42,12 @@
 pub mod panel;
 pub mod preview;
 pub mod putting_aside;
+pub mod restoring;
 pub mod showing;
 pub mod where_it_goes_back;
 
 pub use panel::{NotPutAside, Panel};
 pub use preview::Preview;
+pub use restoring::Travel;
 pub use showing::{Chosen, HowItShows};
 pub use where_it_goes_back::WhereItGoesBack;

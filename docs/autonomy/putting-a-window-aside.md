@@ -219,7 +219,7 @@ is the `one-plane-two-vocabularies` fault repeated on purpose.
 
 ### 3. Restoring, and the camera that travels to it
 
-**Status:** ready. **Task 1 and 2 are blocked on clauses of their own acceptance, not on their work; what this task needs from them is built.**
+**Status:** done, 2026-09-30.
 
 One click returns that window to its **saved** position and the canvas travels to show
 it. Not to wherever the viewer happens to be.
@@ -228,9 +228,35 @@ it. Not to wherever the viewer happens to be.
 distinguishes them by restoring from a view that does not contain the window. *Previous
 view* returns a view rather than a window, which `travelling.rs` already decides.
 
+**Built:** `crates/alo-put-aside/src/restoring.rs` and six tests in
+`crates/alo-put-aside/tests/restoring_goes_to_the_saved_view.rs`.
+
+**This file decides whether a travel is needed and what it would be; it does not perform
+one.** The caller has the camera and moves it. That is not squeamishness about a
+dependency: a version of this file that took a `Camera` and moved it would be a viewport
+surface driving the plane, and it would pass any test that only checked where the window
+ended up. What it takes instead is a `TheView` — the part of the plane being shown — and a
+view is not a camera, because it says what is visible rather than who decided.
+
+`Travel` is **a named enum rather than an `Option`**. *No travel is needed* and *no answer*
+are different, and `Option<WhereItGoesBack>` spells them the same way — a caller that forgot
+`None` would silently do nothing in the one case where doing nothing is correct, and be
+right by accident until the day it was not.
+
+**Each of the four ways to get this wrong was watched failing before the tests were
+trusted:** never travelling, always travelling, answering with the current view, and
+dropping the saved zoom. Each is caught by a test that names it, rather than by the suite
+going red somewhere. A test written after the implementation agrees with the implementation
+until somebody makes it disagree.
+
+`already_shows` is *wholly inside* and stays strict, with a test whose only job is to say so.
+The cost of the strict reading is a travel for a window that is nearly there; the cost of
+the loose one is a click that appears to do nothing, and a person whose click changes
+nothing concludes the click was lost rather than that the window was already visible.
+
 ### 4. When the saved place is taken
 
-**Status:** blocked on task 3.
+**Status:** ready, 2026-09-30. **Task 3 is done and this task needed its travel decision.**
 
 `docs/design/the-alo-dock.md` says the restored window *comes forward and nothing is
 rearranged*; the owner's specification adds that the person is **shown** the collision and
@@ -254,15 +280,59 @@ about where clients are.
 
 ### 6. The full-screen edge reveal
 
-**Status:** blocked on task 1, and **on a decision**.
+**Status:** blocked on the generalisation of `alo-dock::revealing`, which lane B owns and is
+doing, and on integration evidence in the shell, 2026-09-30. **The decision is made.**
 
 True full screen conceals the panel until the right edge reveals it, and the pointer must
 be able to travel onto the panel without it disappearing.
 
-**The decision first:** `alo-dock::revealing` already is this state machine, at the
-bottom edge, with no timers and for a reason. **Whether it is generalised to an edge or
-the panel gets its own is not decided, and writing the second one first is how there come
-to be two.** That belongs to whoever owns `alo-dock`.
+**Decided by the owner on 2026-09-30: reuse the existing machine.** `alo-dock::revealing`
+already is this state machine, at the bottom edge, with no timers and for a reason. It is
+generalised rather than copied — writing the second one first is how there come to be two —
+and **each surface gets its own instance**, so revealing or dismissing one does not affect
+the other. ADR 0076 is untouched: the Dock stays at the bottom and the panel reveals from
+the right, because **the edge becomes a parameter of the reveal rather than a setting of the
+Dock.** Nobody is to read that parameter later as a preference to offer a person.
+
+**The seven interaction rules, and which of them the existing machine does not have.** The
+full spec and the region contract land with this task's own branch; recorded here now
+because a decision written down late is a decision re-litigated.
+
+1. Entering the activation strip reveals the surface. *Already true.*
+2. Moving from the strip onto the panel keeps it open. *Already true.*
+3. Pointer presence **or** keyboard focus keeps it open, and leaving one cannot dismiss it
+   while the other remains inside. **Not true, and the current file does the opposite in
+   both directions:** `the_pointer_is` conceals on `Elsewhere` whatever the keyboard is
+   doing, and `the_keyboard` conceals on `IsElsewhere` whatever the pointer is doing. Tab
+   into the panel, move the mouse away, lose the panel.
+4. An active drag or an open panel menu also keeps it open. **Not represented at all.**
+5. Leaving all those interaction regions conceals it. *Already true, and becomes the empty
+   set.*
+6. Keyboard dismissal returns focus to the full-screen window. **Not represented** —
+   `Revealing` has never had an opinion about where focus goes.
+7. No reveal or hide timers. *Already true, and nothing here ever had a clock.*
+
+**So this is a logic change and not a rename, and the first report of it said otherwise.**
+The error is worth keeping. `revealing.rs` is genuinely general about **geometry** — its own
+header says *three places rather than a coordinate*, and that is true — and specific about
+**how many things can hold it open**, which is one, the most recent. A module that
+advertises the axis it is general on reads as general. Two lanes read that header and drew
+the same wrong conclusion.
+
+**Hit-testing:** the panel's previews, controls, menus and the connecting pointer path are
+**one continuous interaction region**. Coordinate classification belongs to the caller and
+the reveal machine consumes a classification, never a position.
+
+**Completion needs integration evidence, and tests of the shared machine are explicitly
+insufficient.** Reveal the right panel over a truly full-screen window, move onto a preview,
+click it successfully, then the whole interaction again through the keyboard, and check the
+bottom Dock still behaves. **Zero consumers means the module is reusable groundwork, not
+evidence that edge reveal works in the shell** — the rename and the actual wiring are
+separate work, and this task stays open until the complete interaction passes.
+
+**The split.** The generalisation, rules 3, 4 and 6, and the shell wiring belong to lane B,
+which owns `alo-dock` and works in `alo-shell`. The panel's side of the region contract is
+this lane's.
 
 ### 7. Alo working in a minimised window
 
