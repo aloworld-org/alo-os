@@ -222,29 +222,73 @@ the design is right until an ADR says otherwise. It also matters more than it
 looks: that gap is inside the Dock's region, so it is part of the ground a
 pointer crosses.
 
-**The bar's width: the code grows it, the design draws it fixed.**
-`dock_raster` computes the width from what the Dock holds and clamps it;
-the design shows 784 in every instance and carries a separate frame for
-*overflow*. **This one is not settled by the measurement.** It was reported
-between lanes as settled, and that was too confident: instances of one component
-share a size unless somebody overrides it, so 163 identical instances may be
-evidence of one component rather than of a pinned bar. The section above, which
-uses the bar's constant size against the shelf's varying one, rests on that
-reading — so if the bar turns out to grow, the *rule* still holds and only which
-side of it the bar falls on changes. What can be said from the frames alone is
-that an overflow frame exists, which is what a design that does not grow the bar
-needs and a design that grows it does not.
+**The bar's width: answered, and the code was closer than this note first
+guessed.** The owner settled it on 2026-09-30:
+
+> The Dock grows with its icons. The fixed width in Figma represents one state,
+> not a permanent size. It expands until it reaches the screen margins and the
+> shelf's reserved area, then icons shrink slightly — from 32 to a minimum of 28
+> logical pixels — while click targets remain at least 44 × 44. After that,
+> additional apps use **More apps** overflow. The alo Bar's text stays the same
+> size.
+
+So `dock_raster` growing the bar from its contents is right, and 163 identical
+instances were a property of the file rather than of the design — which is what
+the retraction it replaced had already allowed for.
+
+**But it takes the contrast the along-the-edge rule rested on.** That rule was
+read off exactly one difference: the shelf's extent varies and the bar's does
+not. Both vary. So the drawn 832-wide region is one state's region in the same
+way 784 was one state's bar, and the rule has nothing left to rest on as stated.
+
+What survives is the *reason*, which was never about which surface was which: a
+region that grows with its surface is a hit target that changes size under a
+pointer travelling towards it. Applied to a Dock that grows, that says its region
+must **not** be the bar plus a margin — and the owner's corner rule already says
+where it ends, at the reserved area. Put together, **the bottom region is the
+bottom edge up to the reserved width, constant with respect to what the Dock
+holds.**
+
+*That is a derivation and not a measurement*, and it is the one place in this
+file where the drawn geometry and the reasoning disagree. It is flagged rather
+than settled here.
+
+**The icon and the target are one number in the code and two in the design.**
+`measures::ICON` is 48 and `places.rs` says a place is *always* `ICON` across, so
+the glyph and the thing a person presses are the same value. The owner's answer
+has them apart: the glyph is **32**, shrinking to **28** when the bar runs out of
+room, while the target stays at least **44 × 44**. Every hit area measured in the
+design agrees — 29, 40, 42, 44, 52 — and none is 48.
+
+**`holding.rs` reads as a contradiction and is better than that.** It says *the
+size is never traded away: shrinking icons to fit more is how a dock becomes
+unusable at exactly the moment a person has the most open*, held to
+`SMALLEST_TARGET`. The owner's rule does shrink — but only the glyph, and only by
+four, while holding the target at 44, which is nearly twice the 24 floor that
+sentence was protecting. **The policy it defends is upheld by separating the two
+numbers**, which is the thing the file could not say while it had one.
+
+So what is owed is not a constant changed from 48 to 32. It is a distinction
+introduced: a place has a glyph size and a target size, the first may shrink one
+step and the second may not shrink at all, and `SMALLEST_TARGET` stops being the
+floor the icon is held to and becomes the floor the *target* is held to.
 
 ## What this does not settle
 
-**One shelf instance sits at x=56 instead of x=1352** — same 64 × 232, mirrored
-to the left edge, one out of 156. It may be right-to-left mirroring, or a stray.
-Nobody has asked, and this file does not guess.
+**The shelf drawn at x=56 is a stray**, and the test for it was the owner's:
+it is a right-to-left variant only if its screen is explicitly marked so.
 
-The consequence does not depend on the answer: **if a surface's edge can ever
-differ, that edge is data.** A classifier that names *right* anywhere has to be
-rewritten rather than parameterised if the answer turns out to be mirroring —
-which is the correction `revealing.rs` itself went through, where the file was
-general about geometry and specific about something it never mentioned.
+Measured. It sits inside **`33 · Keep controls visible`**, which is an
+accessibility screen and carries no such marking — and the words *RTL*,
+*right-to-left*, *mirror*, *Arabic* and *Hebrew* do not occur anywhere on the
+page at all. So it is a stray and is not part of the active design, and nothing
+is to be inferred from it.
 
-So the edge is taken as given. That costs nothing if the instance is a stray.
+**The rule it was nearly used to justify holds anyway, on the owner's word rather
+than on that instance.** The default shelf is on the right; a right-to-left
+layout mirrors it to the left **together with the Dock and the top-control
+exclusion regions**, so the whole set flips rather than one surface. And the
+standing instruction is the one this file was already following for a different
+reason: **the edge is layout data, never inferred from a coordinate.** A
+classifier that reads *this x is large, therefore right* has decided a language's
+direction from arithmetic.
