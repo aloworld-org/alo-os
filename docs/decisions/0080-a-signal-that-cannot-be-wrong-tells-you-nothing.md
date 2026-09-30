@@ -407,6 +407,43 @@ four mechanisms it replaces, and it is only available because the number was wri
 down before the run. Had it not been, 167 seconds would have been read as *fast, as
 expected* and filed as agreement.
 
+## And one whose cost of checking is unbounded
+
+Added 2026-09-30. It is the only instance here that **nobody can disprove without
+auditing the whole repository**, and that property is the whole of why it is worse than
+the rest.
+
+`docs/autonomy/v0-01-evidence.md` said a screen to see it on was owed **"and nothing
+else in this repository"**, while a caller that computes `TheRoom` from real windows was
+missing. Not a false claim about one thing. **A claim about everything.**
+
+**Every other instance in this record has a something.** A `grep` that found something,
+a gate with a name, a status line that exists, a path that does not land — a reader can
+go and look at the thing named and win. *And nothing else is owed* names nothing, so
+there is nothing to go and look at. Disproving it means enumerating the repository, and
+nobody ever will.
+
+> **The cost of checking is unbounded and the cost of asserting is one clause.**
+
+That sentence is the Mac lane's, and it is the property rather than the complaint. It is
+also the exact inverse of the rule this repository arrived at for attestations — *an
+attestation should carry what a stranger needs to disprove it.* A completeness claim is
+engineered, accidentally, to carry nothing. **And it reads as more rigorous than the
+list it replaces**, which is why nobody challenges it: a list of three owed things
+invites a reader to check three things, and *nothing else is owed* invites them to check
+none.
+
+**There is no remedy that makes it checkable, and that is the finding.** Every other
+entry here ends in a mechanism. This one ends in an instruction:
+
+> **Do not write it.** Say what is owed, and let the absence of a fourth line be the
+> claim — a reader can count lines and cannot audit a repository.
+
+*The same shape, one level down, is a refusal that leaves nothing behind. A refusal's
+message is not the evidence that it refused; the state is. `bring_across` asserts the
+branch that was here is identical afterwards and still has its own file, because a
+refusal that had already fetched would be the fault wearing a refusal's words.*
+
 ## What to write instead
 
 1. **Make the success condition depend on the claim, not on the presence of output.**
