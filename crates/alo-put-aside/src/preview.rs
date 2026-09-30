@@ -9,12 +9,21 @@
 //!
 //! # It carries what a person reads, and nothing about pixels
 //!
-//! A title, an application, and the patch the window will go back to. **No size, no
+//! A title, an application, and the view the window will go back to. **No size, no
 //! thumbnail, no screen coordinate** — what the preview looks like is the compositor's,
 //! and a crate that cannot measure a font has no business deciding it.
+//!
+//! A [`Zoom`] is not a pixel and not a screen coordinate: it is how far into the plane
+//! the person was, which is part of *where the window was* rather than part of how
+//! anything is drawn. It is stored as `alo-canvas`'s checked type rather than as a number
+//! of thousandths, because [`Zoom::of`] is the thing that refuses 0 and 50_000 — and a
+//! panel holding a value nobody validated would hand a caller a view it could not build.
 
+use alo_canvas::Zoom;
 use alo_dock::on_the_canvas::Patch;
 use alo_dock::window::{AppId, Window, WindowId};
+
+use crate::where_it_goes_back::WhereItGoesBack;
 
 /// One window put aside, as the panel holds it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,17 +41,25 @@ pub struct Preview {
     /// canvas *where is this window now* would get an answer about a window that is not
     /// on it.
     at: Patch,
+    /// How far in the person was when they put it aside.
+    ///
+    /// **Handed in rather than read.** This crate cannot ask a camera anything, so the
+    /// zoom arrives from whoever performed the gesture — which is the right direction
+    /// anyway: what is saved is the view the person was looking at when they chose to put
+    /// the window away, and only they were there.
+    zoom: Zoom,
 }
 
 impl Preview {
-    /// The preview for a window being put aside.
+    /// The preview for a window being put aside, at the zoom the person was at.
     #[must_use]
-    pub fn of(window: &Window) -> Self {
+    pub fn of(window: &Window, zoom: Zoom) -> Self {
         Self {
             window: window.id(),
             app: window.app().clone(),
             called: window.called().to_owned(),
             at: window.at(),
+            zoom,
         }
     }
 
@@ -68,9 +85,26 @@ impl Preview {
         &self.called
     }
 
-    /// Where it goes back to.
+    /// The part of the plane it goes back to.
     #[must_use]
     pub const fn at(&self) -> Patch {
         self.at
+    }
+
+    /// How far in the person was.
+    #[must_use]
+    pub const fn zoom(&self) -> Zoom {
+        self.zoom
+    }
+
+    /// The whole view it goes back to, as one value.
+    ///
+    /// The two accessors above stay because a caller listing the panel wants the patch
+    /// without deciding anything about a camera. **This is the one that restoring uses**,
+    /// and it exists so that a caller cannot take the patch and forget the zoom — which
+    /// is the failure that would make a restored window look right in the wrong place.
+    #[must_use]
+    pub const fn where_it_goes_back(&self) -> WhereItGoesBack {
+        WhereItGoesBack::of(self.at, self.zoom)
     }
 }

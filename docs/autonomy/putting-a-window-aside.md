@@ -137,32 +137,89 @@ state is its own thing and not a zero-length list, because *a panel holding noth
 
 ### 2. Minimising, and what is saved
 
-**Status:** ready.
+**Status:** **blocked on Place identity, 2026-09-30.** The transition is built and the
+zoom is saved; one clause of this task's own acceptance is not, and it stays here.
 
-**Not blocked on task 1, and the difference matters.** Task 1 is blocked on a *clause* of
-its own acceptance, not on its work: the panel, the previews and the presentations are
-built and this task needs only those. **A task blocked on a dependency and a task blocked
-on one of its own clauses are different states**, and reading the first as the second
-would stall this whole plan behind a Place that has not been designed yet.
+**What is built:** `crates/alo-put-aside/src/putting_aside.rs` — `put_aside` and
+`bring_back`, moving a window between the canvas and the panel.
+`crates/alo-put-aside/src/where_it_goes_back.rs` — the view a window returns to, patch and
+zoom as one value so a caller cannot take the patch and forget the zoom. Fourteen tests in
+the crate across three files.
+
+The panel accepts the preview **before** the window's state changes: if the order were
+reversed and the panel refused, the window would be marked put aside with nothing holding
+its preview — a window a person can neither see nor get back, which is the one outcome
+this surface exists to prevent.
+
+**What is owed:** the Place. That clause is below, and so is the zoom's — which is settled
+now, and kept because the first answer written here was wrong in a way worth reading.
+
+**This task was not blocked on task 1, and the difference mattered.** Task 1 is blocked
+on a *clause* of its own acceptance, not on its work: the panel, the previews and the
+presentations were built and this task needed only those. **A task blocked on a
+dependency and a task blocked on one of its own clauses are different states**, and
+reading the first as the second would have stalled this whole plan behind a Place that
+has not been designed yet.
 
 The window leaves the canvas; its patch, its Place and the zoom it was at are kept. The
 other windows **do not move to fill the gap**.
 
 **Acceptance.** A window put aside and restored with nothing else happening lands on the
-same patch, byte-identical. Minimising never discards work — a property of the state
-change, and tested as one.
+same patch **at the same zoom**, byte-identical. Minimising never discards work — a
+property of the state change, and tested as one.
+
+The zoom is asserted separately from the patch, and against `Zoom::LIFE_SIZE` as well: the
+fixture uses 1_750 thousandths precisely because life size is the default, so a test that
+saved it would pass for a panel that stored no zoom and built a default on the way out.
 
 **The Place half of this task is blocked on Place identity and stays in this task**,
 exactly as task 1's clause does: a patch alone is ambiguous, because `(4200, 0)` exists
 on every surface, so *which surface* is part of what minimising has to save and this
-task does not close without it. The zoom is available — `alo_canvas::Zoom` is thousandths
-held as an integer — and **holding a zoom a caller hands in is not reading the camera**,
-which is the distinction rule 1 turns on: a panel that took a `Camera` could correct
-itself, a panel that remembers a number cannot.
+task does not close without it.
+
+**The zoom is done, and the first answer written here was wrong.** Kept rather than
+deleted, because the mistake is one this repository is prone to and the correction is the
+useful part.
+
+What this section said: `alo_canvas::Zoom` is the right type, **holding a zoom a caller
+hands in is not reading the camera** — a panel that took a `Camera` could correct itself, a
+panel that remembers a number cannot — but `Zoom` is exported beside `Camera`, so taking
+the dependency would put a `Camera` in reach. **The clean resolution is a small split in
+`alo-canvas`**, it said, `Zoom` somewhere `Camera` is not.
+
+**That resolution does not exist. Rust's privacy boundary is the crate, not the module.**
+`alo-canvas` declares `pub mod camera`, so `alo_canvas::camera::Camera` is nameable from
+any crate that depends on `alo-canvas`, whatever module `Zoom` is exported from. The split
+would have bought a tidier import and no boundary at all — **and a boundary somebody
+believes in and does not have is worse than none, because it is the one they stop
+checking.** Two other lanes measured that crate's `lib.rs` instead of reasoning about it,
+which is why the error lasted hours rather than weeks.
+
+**So the rule is held by a test, and that is not the weaker option here — it is the only
+one of the two that holds anything.** `crates/alo-put-aside/tests/the_panel_never_reaches_the_camera.rs`
+reads the crate's own source for `Camera` and `camera::`, the idiom
+`alo-adapting/tests/nothing_here_can_send_anything.rs` already uses to forbid itself a
+network. It was watched refusing a real `use alo_canvas::Camera;` before it was trusted,
+and it names both offending lines.
+
+What a test here must **not** do is check a position: `alo-canvas`'s own header says a
+surface in the wrong layer that compensates correctly passes a test of where it ended up.
+The check is on whether anything can ask, not on whether the answer came out right.
+
+**A third option was considered and rejected by the canvas lane, and the reason is the
+better half of this entry.** The panel could have stored thousandths as a raw integer and
+depended on nothing, holding the rule by genuine absence — but it would then hold a zoom
+nobody validated. `Zoom::of` is what refuses 0 and 50_000, and `alo-arranging` already
+rebuilds every restored value through its checked constructor for exactly that reason. **A
+panel holding an unchecked number is a worse trade than a panel holding a checked type
+beside a check that it holds nothing else.**
+
+A local zoom type stays rejected on its own merits: a second vocabulary for one idea, which
+is the `one-plane-two-vocabularies` fault repeated on purpose.
 
 ### 3. Restoring, and the camera that travels to it
 
-**Status:** blocked on tasks 1 and 2.
+**Status:** ready. **Task 1 and 2 are blocked on clauses of their own acceptance, not on their work; what this task needs from them is built.**
 
 One click returns that window to its **saved** position and the canvas travels to show
 it. Not to wherever the viewer happens to be.
@@ -185,7 +242,7 @@ first.
 
 ### 5. Peek
 
-**Status:** blocked on task 1.
+**Status:** ready. **Task 1 and 2 are blocked on clauses of their own acceptance, not on their work; what this task needs from them is built.**
 
 A larger readable view over the current canvas. Releasing or Escape removes it and **the
 window stays minimised**.
@@ -209,7 +266,7 @@ to be two.** That belongs to whoever owns `alo-dock`.
 
 ### 7. Alo working in a minimised window
 
-**Status:** blocked on task 1.
+**Status:** ready. **Task 1 is blocked on a clause of its own acceptance, not on its work; what this task needs from it is built.**
 
 The task alo was given, the scope it may change, progress, last confirmed action, **Stop
 available immediately**, and *Requires you* when a decision is waiting.
@@ -220,7 +277,7 @@ with the alo mark and a word, never as a selection colour.
 
 ### 8. Privacy
 
-**Status:** blocked on task 1.
+**Status:** ready. **Task 1 is blocked on a clause of its own acceptance, not on its work; what this task needs from it is built.**
 
 A private window shows a neutral *Preview hidden* surface with a safe identifying name,
 and still restores normally. Previews are made locally.

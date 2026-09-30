@@ -7,21 +7,36 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-# **No `alo-canvas` here, and that is the point of the crate.**
+# **`alo-canvas` is listed here, and the rule it endangers is held by a test.**
 #
 # `alo-canvas` states the architecture this panel lives under: a plane that moves
 # under a viewport that does not, and *nothing in the viewport layer may read the
 # camera to correct itself. If it has to, it is in the wrong layer.* The panel is a
-# viewport surface, so **it must not be able to see a `Camera` at all** — and the way
-# to hold that is for the dependency not to exist rather than for a test to check
-# where the panel ended up. A test that only checked the position would pass for a
-# panel in the wrong layer that compensated correctly.
+# viewport surface, so it must not reach a `Camera`.
 #
-# What it does need from the plane is a rectangle to give a window back to, and
-# `alo-dock` already carries that as `Patch` alongside the window model. When the
-# plane moves into `alo-canvas` (`docs/design/one-plane-two-vocabularies.md`), this
-# crate follows the type and still never takes the camera.
+# This file said the opposite until the dependency was added, and the reasoning was
+# wrong in a way worth leaving written down. It claimed the rule was held by the
+# dependency not existing, and proposed moving `Zoom` out of `alo-canvas`'s `camera`
+# module so that it could be taken without `Camera` coming within reach. **Rust's
+# privacy boundary is the crate, not the module.** `alo-canvas` declares `pub mod
+# camera`, so `alo_canvas::camera::Camera` is nameable from here the moment this line
+# exists, whatever module `Zoom` is exported from. The split would have bought a
+# tidier import and no boundary, which is worse than no boundary: it is the one
+# nobody checks. Measured in that crate's own `lib.rs` by two other lanes rather than
+# reasoned about here.
+#
+# So the rule moves to `tests/the_panel_never_reaches_the_camera.rs`, which reads this
+# crate's own source. That is exact in both directions and it fails when somebody adds
+# the import — unlike a test asserting the panel is still at some coordinate after a
+# pan, which passes for a panel that is in the wrong layer and compensating correctly.
+#
+# The alternative was to store a zoom as raw thousandths and depend on nothing. It was
+# rejected because `Zoom::of` is what refuses 0 and 50_000: **a panel holding a number
+# nobody validated is a worse trade than a panel holding a checked type beside a check
+# that it holds nothing else.** `alo-arranging` already rebuilds every restored value
+# through its checked constructor for the same reason.
 [dependencies]
+alo-canvas = { path = "../alo-canvas" }
 alo-dock = { path = "../alo-dock" }
 thiserror = { workspace = true }
 

@@ -9,18 +9,26 @@
 //! `docs/autonomy/putting-a-window-aside.md` is the order it gets built in. This crate
 //! is task 1 of that plan: the panel's own state and how it shows.
 //!
-//! # Why this crate cannot see a camera
+//! # Why this crate never reaches a camera
 //!
 //! `alo-canvas` states the architecture: a plane that moves under a viewport that does
 //! not, and **nothing in the viewport layer may read the camera to correct itself. If
 //! it has to, it is in the wrong layer.** The panel is a viewport surface.
 //!
-//! So the rule is held by **the dependency not existing** rather than by a test. That
-//! crate's own warning says why: a dock that subtracted a pan to stay still *would pass
-//! a test that only checked where the dock ended up*. A test asserting the panel is
-//! still at some coordinate after a pan passes for a panel that is in the wrong layer
-//! and compensating correctly — so what is held here is that **the type cannot ask**.
-//! `Cargo.toml` does not list `alo-canvas`, and nothing in this crate takes a view.
+//! The rule is held by `tests/the_panel_never_reaches_the_camera.rs`, which reads this
+//! crate's own source. It is a test rather than an absent dependency, and that was a
+//! correction rather than a preference: this file claimed for a while that **not listing
+//! `alo-canvas` was what held the rule**, and proposed moving `Zoom` out of that crate's
+//! `camera` module so the dependency could be taken safely. **Rust's privacy boundary is
+//! the crate, not the module** — `pub mod camera` makes `alo_canvas::camera::Camera`
+//! nameable from any crate that depends on `alo-canvas`, whatever module `Zoom` sits in.
+//! A boundary believed in and not held is worse than none, because it is the one nobody
+//! keeps checking.
+//!
+//! What a test must not do here is check a position. That crate's own warning says why: a
+//! dock that subtracted a pan to stay still *would pass a test that only checked where
+//! the dock ended up*. So the check is on the source rather than on the arithmetic —
+//! **whether anything here can ask**, not whether the answer came out looking right.
 //!
 //! # Nothing here draws, and nothing here is a handle
 //!
@@ -33,8 +41,11 @@
 
 pub mod panel;
 pub mod preview;
+pub mod putting_aside;
 pub mod showing;
+pub mod where_it_goes_back;
 
 pub use panel::{NotPutAside, Panel};
 pub use preview::Preview;
 pub use showing::{Chosen, HowItShows};
+pub use where_it_goes_back::WhereItGoesBack;

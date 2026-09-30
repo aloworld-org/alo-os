@@ -17,6 +17,7 @@
 //! right afterwards — a rule about what does *not* happen is only held by a test whose
 //! subject is the absence.
 
+use alo_canvas::Zoom;
 use alo_dock::window::{Window, WindowId};
 
 use crate::preview::Preview;
@@ -58,16 +59,20 @@ impl Panel {
         Self::default()
     }
 
-    /// Put a window aside.
+    /// Put a window aside, remembering the zoom the person was at.
+    ///
+    /// The zoom is **handed in, never read**. This crate cannot ask a camera for one, and
+    /// `tests/the_panel_never_reaches_the_camera.rs` is what holds that — the dependency
+    /// on `alo-canvas` exists for [`Zoom`] and would otherwise put a `Camera` in reach.
     ///
     /// # Errors
     ///
     /// [`NotPutAside::ItIsAlreadyThere`] if it is in the panel already.
-    pub fn put_aside(&mut self, window: &Window) -> Result<(), NotPutAside> {
+    pub fn put_aside(&mut self, window: &Window, zoom: Zoom) -> Result<(), NotPutAside> {
         if self.holds(window.id()) {
             return Err(NotPutAside::ItIsAlreadyThere);
         }
-        self.previews.insert(0, Preview::of(window));
+        self.previews.insert(0, Preview::of(window, zoom));
         Ok(())
     }
 
