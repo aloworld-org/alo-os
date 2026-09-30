@@ -62,16 +62,61 @@ press routed through the real input path, never `panel.peek_at(…)`.
 
 ## What none of these tasks has
 
-**Nothing consumes this crate.** Measured 2026-09-30 on `9d1f6571`, by the lane that was about
-to build against it:
+**The panel is drawn and nothing drives it.** Two measurements a few hours apart, the second
+superseding the first in the good direction.
 
-- `alo-put-aside` appears in exactly one `Cargo.toml` — the workspace `members` list. **No
-  crate depends on it.**
-- `alo_put_aside` appears in no Rust file outside its own crate.
-- No file in `alo-shell/src` mentions a preview or a put-aside window.
+**Superseded, kept for provenance:** *nothing consumes this crate*, measured on `9d1f6571` by
+the lane that was about to build against it, and true then. `#343` made it false.
 
-So eight tasks of landed, tested work reach no screen. The panel is not drawn, no press is
-routed to it, and **every test in the crate enters by calling a function directly.**
+**Current, measured on `bd66424e`:** `alo-shell` depends on `alo-put-aside`, `panel_raster.rs`
+draws the panel, and `desktop_raster.rs` carries a `&Panel` through. **Every reference is
+read-only.** Workspace-wide, outside this crate, there is not one call to `putting_aside::`,
+`restoring_into_a_taken_place::`, `peek_at(`, `alo_is_now(` or `bring_back(`. The two non-zero
+hits are both inside the shell lane's own raster test fixture, which builds a panel to lay out
+rather than to operate.
+
+So the panel on a screen is **always empty** — and that lane's own `panel_raster.rs` says what
+that draws: *an empty panel has a rail of no height and no slots*.
+
+### The gesture is not missing. It exists and it does something else.
+
+The sharper finding, from the lane that owns the shell, after being asked whether the drawing
+was step one or a gap. `alo-shell/src/window_minimize.rs` holds `set_window_minimized`, wired to
+XDG's `minimize_request` at `surfaces.rs:380`, and its own header says what it is: **trusted
+visibility transitions**. It **hides a buffered root** — hidden roots keep their buffers,
+placement and cycling position, receive no scene hits, and revealing neither activates nor
+raises.
+
+**That is what minimise meant before this product had a panel.** `docs/features.md` distinguishes
+the two and says the person picks: *compacting* leaves a live tile on the canvas, *minimising*
+puts a preview in the panel at the edge. The shell implements **neither**. It implements hiding.
+
+**So the fault is not an absent road, it is a road that arrives somewhere else** — and the danger
+is that it reads as done from outside. A compositor that answers `minimize_request`, and a plan
+that says minimising puts a preview in the panel, **can both be true sentences about different
+mechanisms.** Neither document is wrong, and two mechanisms under one name is how this stops
+being reviewable.
+
+### What `#343` evidences, which is one clause of one task
+
+**Task 1's *an empty panel is its own state rather than a list of length zero*.**
+`HowItShows::AnEdgeHandle` is drawn by something real and the reserved column exists on a
+surface. That is all of it.
+
+Not task 1's previews or its collapsed rail, because nothing puts a window aside. Not task 3's
+travel, nor task 5's peek, nor task 7's *alo working*, nor task 8's *`Preview hidden`* — **each
+needs a call that does not exist.**
+
+**And the region contract is now *drawn against* rather than *reached by*.** `panel_raster.rs`
+imports `WhichEdge` and reads it to place the reserved column, and **nothing in this repository
+names an edge as a result** — which is that file doing the job it was written for. It is weaker
+than a pointer reaching it and it is not nothing. It becomes *reached by* when the classifier
+lands, and that is a sentence to write then rather than now.
+
+### The rest of this section was written when nothing consumed the crate
+
+It stands, because the tests are unchanged: **every test in this crate still enters by calling a
+function directly**, which is what the rule below forbids.
 
 ### That is forbidden by the rule at the top of this document
 
@@ -106,8 +151,9 @@ reads as a plan that is going well.**
 
 ### What unblocks it, and it is one thing rather than four
 
-Tasks 3, 5, 7 and 8 all wait on the same work: **the panel drawn and its input routed in
-`alo-shell`**, using that crate’s existing hit test rather than a second opinion about where
+Tasks 3, 5, 7 and 8 all wait on the same work: **a person being able to put a window aside, and
+the panel driven by it in `alo-shell`** — the drawing landed in `#343` and the gesture is next in
+that lane, using that crate’s existing hit test rather than a second opinion about where
 clients are — which is what task 5’s acceptance already demanded, written against precisely this
 fault. It is lane B’s, it is in scope since `#322`, and this lane will not reach into
 `alo-shell` to do it.
@@ -122,8 +168,10 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **model built, no evidence, and blocked on Place identity, 2026-09-30.** Nothing
-draws this panel, so none of it is evidenced — see *What none of these tasks has* above. Its
+**Status:** **model built, one clause evidenced, and blocked on Place identity, 2026-09-30.**
+Since `#343` the empty panel is drawn by something real, so *an empty panel is its own state
+rather than a list of length zero* is evidenced. Nothing puts a window aside, so the previews and
+the rail are not — see *What none of these tasks has* above. Its
 drawing clauses will be measured against **Minimized panel / 02 Expanded previews**, **07
 Collapsed rail** and **12 Empty handle**. And one clause of its own acceptance is owed, which
 stays in this task rather than moving to a later one.
