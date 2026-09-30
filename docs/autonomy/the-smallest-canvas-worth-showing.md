@@ -473,8 +473,10 @@ it where a reader asks.
 
 ### 8. A frame is never lost
 
-**Status:** **Open** — the dock half landed 2026-09-29 and the status area half has
-nowhere to land yet; see below. **Depends on:** 3, 6.
+**Status:** **Open.** Dock occlusion and drag-extent protections pass their current
+tests. **That is evidence of progress, not completion** — the owner's words of
+2026-09-30, and the reason this line does not say *partly*. **Depends on:** 3, 6,
+and on the minimized-window panel, which is the third PC's and in progress.
 
 **This line said "Done for the dock… open for the status area" for about an
 hour, and the supervisor refused it in nought seconds.**
@@ -493,20 +495,42 @@ far away is still found by Show all* was not something the canvas had; it is
 something a rule has to keep, and the first draft of this task missed it because
 the acceptance sentence reads like a property rather than a promise.
 
-**The status area half of the acceptance is not held, and this says so rather than
-leaving it to be discovered.** The sentence below asks for *the dock **or the
-status area***; the tests hold the dock. The status area has nowhere to be: ADR
-0076 took *at the far end of the dock* off that promise and handed the question
-**to this plan**, so there is no location to keep a frame out of. Two things follow
-and neither is done here. This plan owes an answer to *where does the status area
-go* — no task in it currently carries that — and the entry in
-`docs/autonomy/v0-5-evidence.md` must say the promise is owed a location before it
-is owed an implementation, which is that file's owner's to write.
+#### Where the status area goes — settled by the owner, 2026-09-30
 
-Until then the acceptance is met for the dock and **open** for the status area. The
-paragraph below used to say *only two ways a frame can actually be lost* and list
-two, which quietly dropped half of this task's own acceptance sentence without
-naming what it had dropped.
+ADR 0076 took *at the far end of the dock* off that promise and handed the question
+**to this plan**, and the plan carried it unanswered. The owner has answered it:
+
+**The status area is fixed at the top-right of the viewport**, separate from the
+canvas, the Dock and the minimized-window panel. **The right panel starts below
+it.** Its contents may change — clock, battery, network, volume, brightness — and
+**the shell always knows its current bounds**, which is what makes it something a
+frame can be kept out of rather than a promise with no geometry.
+
+It is a viewport control, so task 1's separation already says the rest: a child of
+the viewport and never of the plane, so panning and zooming cannot move it.
+
+#### The rule this task holds is stronger than *not entirely covered*
+
+Also the owner's, 2026-09-30, and it replaces *entirely under the dock*:
+
+**A frame must retain a usable portion of its name band outside every fixed
+control** — the Dock, the status area, and the **expanded** minimized-window panel.
+**One exposed pixel is technically reachable and practically lost.** So the
+protection preserves at least a **44 × 24 logical-pixel drag target**, scaled with
+the accessibility settings — `alo_access::TurnedOn::larger_text` answers the scale,
+and a person who has made everything larger has made this larger too.
+
+The three controls are a set rather than a list to extend by hand: a fourth fixed
+control added later must join it, because *outside every fixed control* is the
+promise and *outside the three we thought of* is not.
+
+#### Output changes are a dependency, not an afterthought
+
+A position valid on a large display becomes unreachable after switching to a
+smaller one, after the interface scale goes up, or after the right panel expands.
+**Reachability is rechecked when those bounds change.** Where recovery needs a frame
+moved, **the move is shown and its previous position recorded** — a frame that
+silently relocated itself is a person's arrangement edited without them.
 
 **Only two ways a frame can actually be lost, once panning exists.** A frame above
 the viewport, behind another, or off to one side is reached by panning. What
@@ -524,8 +548,18 @@ Nothing may be placed, dragged or restored where a person cannot get it back:
 not off the plane's reachable area, not behind a viewport control, not at a zoom
 where it cannot be seen.
 
-- **Acceptance:** a frame dragged far away is still found by *Show all*; a frame
-  cannot be left entirely under the dock or the status area; a test asserts each.
+- **Acceptance**, and all four are owed before this closes — the owner's list of
+  2026-09-30:
+  - ***Show all* can include every frame within the supported zoom range.**
+  - **Fixed controls cannot cover every usable drag handle** — the Dock, the status
+    area and the expanded minimized-window panel, at least 44 × 24 logical pixels
+    of name band left reachable, scaled with the accessibility settings.
+  - **Display, scale, Dock-position and panel-state changes preserve recovery**, and
+    a recovery that moves a frame shows the move and records where it was.
+  - **Keyboard users can find and move a frame without reaching its name band.**
+- **What is held today:** the first, and the Dock's share of the second. The status
+  area now has a position to be tested against; the minimized-window panel is the
+  third PC's and in progress; the third and fourth are not built.
 
 ### 9. The canvas is where they left it
 
