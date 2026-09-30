@@ -137,6 +137,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 capturing: None,
                                 division: &division,
                                 offer: &alo_dividing::Offer::Nothing,
+                                windows: &[],
                             },
                             None,
                             None,

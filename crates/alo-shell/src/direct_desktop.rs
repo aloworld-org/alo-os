@@ -164,8 +164,15 @@ impl LoopInput for Desk<'_> {
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
         let size = target.size();
+        // **The one place holding both the windows and the frame.** The
+        // desktop's own state has no server in it, so it cannot say where the
+        // windows are; the server cannot say what the person chose about the
+        // dock. The dock's question needs both, and they meet here.
+        let windows = server.window_areas();
+        let mut frame = self.desktop.now();
+        frame.windows = &windows;
         let pictures = crate::nested_desktop::frame_pictures(
-            self.desktop.now(),
+            frame,
             None,
             None,
             self.labels,

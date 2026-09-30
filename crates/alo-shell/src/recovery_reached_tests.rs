@@ -37,6 +37,7 @@ fn a_desktop_that_will_not_start<'a>(
         capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
+        windows: &[],
         dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings,

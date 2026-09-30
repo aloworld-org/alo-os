@@ -61,6 +61,12 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
             "desktop_seat.rs",
             "desktop_swipes.rs",
             "dock_raster.rs",
+            // Whether a window needs the room the dock sits in. It grants
+            // nothing and measures nothing about the machine: it compares two
+            // rectangles and answers `alo-dock`'s own `TheRoom`. Held to
+            // these promises like the rest, because a file that can make the
+            // dock disappear is one a revoke button could hide behind.
+            "dock_room.rs",
             "filling_keys.rs",
             "filling_rows.rs",
             "filling_window.rs",

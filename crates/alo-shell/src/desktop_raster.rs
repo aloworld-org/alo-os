@@ -25,7 +25,7 @@
 //! The egress indicator did not go with them. It has a corner of its own
 //! (`crate::egress_status_place`) and sits exactly where it sat.
 
-use alo_dock::Dock;
+use alo_dock::{Dock, Showing};
 use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
@@ -39,8 +39,16 @@ use crate::{DesktopLook, FillingShows, FillingWindow, RenderError, RunningShows,
 pub(crate) struct DesktopPicture {
     /// The display size it was laid out for.
     pub(crate) size: (i32, i32),
-    /// The dock.
-    pub(crate) dock: DockPicture,
+    /// The dock, or nothing when a window needs the room it sits in and the
+    /// person asked for it to give way.
+    ///
+    /// **[`Option`] rather than a flag on the picture**, so that painting a
+    /// dock which should not be showing is not something a caller can do by
+    /// forgetting: there is no `solids` to reach for. The band is laid out
+    /// either way and still decides where the two desktop panels go — see
+    /// [`crate::dock_room`] for why the work area must not depend on the
+    /// person's choice.
+    pub(crate) dock: Option<DockPicture>,
     /// The window of what is running.
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
@@ -69,6 +77,15 @@ pub(crate) struct Shown<'a> {
     pub(crate) division: &'a alo_dividing::Division,
     /// What letting go of a dragged window would do.
     pub(crate) offer: &'a alo_dividing::Offer,
+    /// Every mapped window on this display, in this display's physical
+    /// pixels, so that the dock can be asked whether one needs the room it
+    /// sits in.
+    ///
+    /// Handed in for the same reason the readings are: only the caller knows
+    /// which display's windows these are and what scale puts them in the
+    /// band's own space. An empty slice is the true answer on a desktop with
+    /// nothing open, not a placeholder — see [`crate::dock_room`].
+    pub(crate) windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
 }
 
 /// What the running window shows, as a panel.
@@ -123,6 +140,7 @@ pub(crate) fn picture(
         filling,
         division,
         offer,
+        windows,
     } = shown;
     let dock_picture = crate::dock_raster::picture(
         dock, look, size,
@@ -132,6 +150,13 @@ pub(crate) fn picture(
         // rather than a placeholder.
         0,
     )?;
+
+    // **Laid out first, shown or not.** The band has to exist before anything
+    // can ask whether a window is over it, and `room_beside` below uses it
+    // either way so that the two desktop panels get the same room whichever
+    // the person chose. That is what keeps this from oscillating: the band is
+    // a constant with respect to the question being asked of it.
+    let showing = dock.showing(crate::dock_room::the_room(dock_picture.band, windows));
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
     let list = ListLook {
@@ -154,7 +179,10 @@ pub(crate) fn picture(
     let division = crate::division_raster::picture(division, offer, 1, palette.ink, palette.accent);
     Ok(DesktopPicture {
         size,
-        dock: dock_picture,
+        dock: match showing {
+            Showing::Shown => Some(dock_picture),
+            Showing::Hidden => None,
+        },
         running,
         filling,
         division,
