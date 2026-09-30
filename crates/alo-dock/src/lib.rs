@@ -29,7 +29,7 @@
 //! | [`offering`] | What a drop would do, said before it is done |
 //! | [`menu`] | What an icon offers when asked, and what it never offers unasked |
 //! | [`announcing`] | What a screen reader reads out for an icon |
-//! | [`revealing`] | Reaching the Dock when a window fills the screen |
+//! | [`revealing`] | Reaching a surface at a screen edge when a window fills the screen |
 //! | [`shipped`] | What the dock is before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`dock`] | The two resolved, and every question asked of them |
@@ -189,7 +189,7 @@ pub use offering::{Offer, WhatWouldHappen, dropped_at, near_the_view};
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};
 pub use places::{APlace, Places};
 pub use previews::{Opened, Preview, Previews};
-pub use revealing::{Revealing, TheKeyboard, ThePointer};
+pub use revealing::{ADrag, AMenu, Dismissed, FocusGoes, Revealing, TheKeyboard, ThePointer};
 pub use room::Room;
 pub use screen::{Screen, ScreenError};
 pub use shipped::Shipped;
