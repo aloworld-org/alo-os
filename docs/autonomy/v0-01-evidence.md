@@ -698,6 +698,36 @@ things and says *the person picks*, so half of it answered is a promise owed.
 
 ## What this audit found
 
+**The audit in figures: 42 promises, 2 shown whole, 37 shown in part, 3 with no
+evidence at all.**
+
+*This line is the ledger's own count of itself and it is checked.*
+`crates/alo-reconciling/tests/every_v0_01_promise_is_reconciled.rs` reads these
+four numbers and compares each against what the reconciliation computes, so a
+promise entering or leaving a release fails the audit until this sentence is
+brought with it. **Whoever changes which promises are in v0.01 changes this
+line in the same commit.**
+
+*Written in digits on 2026-09-30 because the figure had nowhere to live. The
+current count used to exist only as a literal in that test file, while the
+paragraph below — the ledger's own account of itself — still said six, and the
+correction under it said five. The test's failure message claimed to be quoting
+this document and was quoting nothing: three appeared nowhere here. Two lanes
+had to remember a number that lived in neither of the places a reader would
+look, and getting it wrong failed the workspace's tests for all three.*
+
+***And the first run of the new check found the ledger already wrong by one.***
+*It was written as 41 promises and 36 shown in part, from the paragraph below;
+the audit counts **42 and 37**. A promise had entered v0.01 and been reconciled
+as shown in part with nothing recording it. The old literal could not have
+caught it — it asserted only the number with no evidence, which had not moved,
+so three of the four figures were unchecked and one of them had already
+drifted.*
+
+The paragraph below is the audit as first written, kept as history. Where its
+numbers differ from the line above, the line above is the current one and the
+notes that follow record what moved.
+
 Forty-one promises. **Two are shown with nothing owed on them**, thirty-three
 are shown in part with the rest named above, and **six have no evidence at
 all**. The six are the finding, and they are not one kind of thing:
