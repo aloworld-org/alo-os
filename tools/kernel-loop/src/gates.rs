@@ -358,10 +358,11 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
             // failing transiently: a refusal in a second is a different animal
             // from a refusal in nine minutes.
             passed.push(format!(
-                "{} in {:.0?} (on the second run; the first refused after {:.0?}){}",
+                "{} in {:.0?} (on the second run; the first refused after {:.0?}{}){}",
                 gate.named,
                 again.elapsed(),
                 began.elapsed().saturating_sub(again.elapsed()),
+                which_ones_refused(&refused),
                 beside(&coverage)
             ));
             continue;
@@ -385,6 +386,67 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         return Err(refused);
     }
     Ok(passed)
+}
+
+#[cfg(test)]
+mod a_transient_says_which {
+    use super::which_ones_refused;
+
+    /// **The name is taken off nextest's own FAIL line.**
+    #[test]
+    fn a_nextest_refusal_names_the_test() {
+        let said = "        FAIL [   0.0s] (12/34) alo-shell::client_lifecycle window_controls::name_fallback\n";
+        assert_eq!(
+            which_ones_refused(said),
+            ", and it was window_controls::name_fallback"
+        );
+    }
+
+    /// **And off `cargo test`'s**, which older gates in this repository still use.
+    #[test]
+    fn a_cargo_test_refusal_names_the_test() {
+        let said = "test plan::tests::a_thing ... FAILED\n";
+        assert_eq!(
+            which_ones_refused(said),
+            ", and it was plan::tests::a_thing"
+        );
+    }
+
+    /// **Three names, then a count** — because a transient that took two hundred
+    /// tests with it is not a transient, and at that point the number is the fact.
+    #[test]
+    fn a_whole_failing_suite_is_counted_rather_than_listed() {
+        let mut said = String::new();
+        for which in 0..6 {
+            said.push_str(&format!("        FAIL [   0.0s] (1/1) c::b test_{which}\n"));
+        }
+        let got = which_ones_refused(&said);
+        assert!(
+            got.starts_with(", and it was test_0, test_1, test_2 and 3 more"),
+            "{got}"
+        );
+    }
+
+    /// **A refusal that names no test says nothing**, which is the refusal path of
+    /// this function and the one that matters: a compiler out of memory has no test
+    /// to name, and inventing one would be worse than silence.
+    #[test]
+    fn a_refusal_with_no_test_in_it_is_silent() {
+        assert!(which_ones_refused("").is_empty());
+        assert!(
+            which_ones_refused("error: could not compile `alo-shell`\nrustc exited 101").is_empty()
+        );
+        assert!(which_ones_refused("  Compiling alo-canvas v0.0.1\n    Finished").is_empty());
+    }
+
+    /// **One name, not one per line it appeared on.** nextest prints its failures
+    /// twice — once as they happen and once in the summary — so a single failing
+    /// test would otherwise be reported as two.
+    #[test]
+    fn a_test_named_twice_is_named_once() {
+        let said = "        FAIL [   0.0s] (1/2) c::b only_one\n        FAIL [   0.0s] (1/2) c::b only_one\n";
+        assert_eq!(which_ones_refused(said), ", and it was only_one");
+    }
 }
 
 #[cfg(test)]
@@ -438,6 +500,60 @@ mod how_much_ran {
         assert!(how_much_of_the_suite_ran("checking alo-shell\nFinished", "").is_empty());
         assert!(beside("").is_empty());
         assert_eq!(beside("4 tests run: 4 passed"), " — 4 tests run: 4 passed");
+    }
+}
+
+/// Which tests refused on a run that passed when it was tried again.
+///
+/// **A transient that says nothing is a failure nobody can look into.** This path
+/// reported *on the second run; the first refused after 157s* and threw the reason
+/// away — so a real failure in the suite had happened minutes earlier and nothing
+/// anywhere could say which test it was. Measured on the Mac lane on 2026-09-30:
+/// the tests gate refused at 157s, passed at 156s, and the run was reported green
+/// with the duration doubled and the cause gone.
+///
+/// The green is honest — a gate that fails twice fails, and one flake is not a
+/// defect in the change. What was wrong is that the **evidence** was discarded
+/// along with the verdict. `window_controls::name_fallback` is a known
+/// contention-sensitive test in this repository and it may well have been that one;
+/// with this, a reader would not have to guess.
+///
+/// Empty where nothing in the refusal names a test, because a gate that refuses
+/// for another reason entirely — a compiler that ran out of memory — has nothing to
+/// name here, and inventing a name would be worse than saying nothing.
+fn which_ones_refused(refused: &str) -> String {
+    let mut named: Vec<&str> = Vec::new();
+    for line in refused.lines() {
+        // nextest: `FAIL [   0.0s] (12/34) crate::binary a_test::name`
+        // cargo test: `test a_test::name ... FAILED`
+        let found = if line.contains("FAIL [") {
+            line.split_whitespace().last()
+        } else if line.trim_start().starts_with("test ") && line.trim_end().ends_with("FAILED") {
+            line.split_whitespace().nth(1)
+        } else {
+            None
+        };
+        if let Some(found) = found
+            && !named.contains(&found)
+        {
+            named.push(found);
+        }
+    }
+    // **Three, and then a count.** A whole failing suite would otherwise put
+    // hundreds of names into a line somebody reads at a glance, and a transient
+    // that took hundreds of tests with it is not a transient — the count is the
+    // more useful fact at that point.
+    let shown: Vec<&str> = named.iter().take(3).copied().collect();
+    match (shown.as_slice(), named.len()) {
+        ([], _) => String::new(),
+        (some, total) if total > some.len() => {
+            format!(
+                ", and it was {} and {} more",
+                some.join(", "),
+                total - some.len()
+            )
+        }
+        (some, _) => format!(", and it was {}", some.join(", ")),
     }
 }
 
