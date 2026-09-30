@@ -1,6 +1,45 @@
 # ADR 0076 — the Dock is fixed to the bottom edge, and answers one question
 
-**Status:** accepted, 2026-09-29, by the owner.
+**Status:** accepted, 2026-09-29, by the owner. **Amended 2026-09-30** — the
+decision stands; what it cost is now written down, and the reason it gave for
+taking it is retired.
+
+## What this cost, which this record did not say
+
+**This record withdrew a choice a person had been promised, and did not say so.**
+`docs/features.md` carried *the person decides where it goes — bottom, left,
+right or top, chosen in Settings*. That is gone, and a person who would have put
+their dock down the side of a wide screen — which both of the systems they are
+coming from allow — no longer can.
+
+The fifth law says *a change that takes a choice away from the person is a bug,
+whatever the reason given for it*. **It landed on 2026-09-22, seven days before
+this record, which cites it zero times.** Nobody noticed until three lanes read
+the laws against their own crates on 2026-09-30.
+
+**The reason given here is retired, and it is the part that generalises.** This
+record argued that nobody had chosen an edge because nothing has booted the
+image, so the cost fell on a contract rather than on a person. But before a
+machine boots, *no* choice has been exercised — not one accessibility setting,
+not the dock's own hiding setting. That reason does not argue about docks; it
+argues that the fifth law does not bind until somebody boots, which is the whole
+period in which this product is being decided. `CLAUDE.md` now says so, and the
+argument is not available to the next record that reaches for it.
+
+**What is decided, and what is not.** The Dock is fixed to the bottom edge, and
+that stands: the reasoning from *what is the Dock for* is sound, the design file
+draws it there, and the shell is built on it. **What is not decided is that a
+person may never choose an edge again.** This record withdrew the promise
+outright where it should have deferred it. That distinction is not pedantic — a
+withdrawn promise is gone and a deferred one is owed, and only one of the two
+survives the fifth law. Whether the choice returns, and at which tier, is the
+owner's and belongs in `docs/features.md`, which is the only place scope is
+decided.
+
+**Why this is an amendment and not a reversal.** Relitigating a settled decision
+without new facts is forbidden here. A law nobody applied is a new fact, and it
+reaches this record's *reasoning* and its *silence* — not its conclusion, which
+nothing here disturbs.
 
 ## What forced it
 

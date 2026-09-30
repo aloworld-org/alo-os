@@ -61,6 +61,37 @@ that boots.
    The review question for every feature: *can the person choose this,
    knowing what it costs?* (ADR 0064)
 
+   **What this law reaches, and what it does not.** It is about a choice
+   a person **has or was promised** — anything this repository has told
+   them they may decide. It is not a duty to make every decision
+   configurable: a shell that offered a setting for each of its own
+   behaviours would be unusable, and some of its best decisions are ones
+   nobody is offered. The reveal has no delay before it appears and no
+   setting for one, because a delay makes reaching a surface depend on
+   how fast somebody can move, which is the one thing a person with a
+   tremor or a trackball cannot control. That takes nothing away; it was
+   never offered, and offering it would take something away from them.
+   **So: never offering is not taking away. Withdrawing is.** What
+   `docs/features.md` promises is the record of what was offered, which
+   is what makes this checkable rather than a matter of opinion.
+
+   **And "nobody has chosen it yet" is not a reason.** Before a machine
+   boots, no choice has been exercised — not one accessibility setting,
+   not the dock's, not the indicator's. A reason that turns on nobody
+   having used a thing yet is not an argument about that thing; it is an
+   argument that this law does not apply until somebody boots, which is
+   the whole period in which we are deciding. *Whatever the reason given
+   for it* is not addressed to bad reasons. Nobody needs protecting from
+   those. It is addressed to good ones.
+
+   *Both paragraphs were added on 2026-09-30, after
+   [ADR 0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+   was found to have withdrawn a promised choice seven days after this
+   law landed, citing it zero times, and to have given that exact reason
+   for doing so. The law was not wrong; it was unreadable on the
+   question, because its headline is broader than its body and two
+   careful readers disagreed about which bound.*
+
 ## The gate — nothing is done until all of this passes
 
 There is no "and we will add the tests afterwards". A change that ships
@@ -194,6 +225,20 @@ cannot demonstrate.
   the pixels draws the same interface sharper, not half as big. A
   control that falls off a small panel, or swims on a large one, is a
   bug and not a tuning problem.
+  **What this forbids is a raw pixel figure, not a named measure.**
+  `alo_dock::measures::ICON` is 48 and breaks nothing: it is a *logical*
+  measure, declared once with what it answers to, and converted for each
+  display through that display's scale. So there are three honest kinds
+  of number — a **logical measure**, put in a measures file and scaled
+  at the boundary; a **proportion** of the display; and a **rule** that
+  was never a number at all, like *flush to the edge* or *the whole
+  edge*. There is a fourth kind, and it is the one to watch: a bound
+  that is **another surface's current extent**, which is neither a
+  measure nor a proportion and can only be asked for. The fault this
+  rule names is a figure that reaches a display without passing through
+  its scale — and the usual way it arrives is scaled by the person's
+  text size *only*, which looks derived and is half the size it should
+  be on a dense screen.
 - **User-facing strings are externalized (i18n) from day one.** The
   first target is all 24 official EU languages, and any language
   somebody contributes after that. Hardcoded English is a bug, and
