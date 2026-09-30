@@ -558,8 +558,28 @@ where it cannot be seen.
     a recovery that moves a frame shows the move and records where it was.
   - **Keyboard users can find and move a frame without reaching its name band.**
 - **What is held today:** the first, and the Dock's share of the second. The status
-  area now has a position to be tested against; the minimized-window panel is the
-  third PC's and in progress; the third and fourth are not built.
+  area now has a position to be tested against, and the minimized-window panel is
+  the third PC's and in progress.
+- **The third is unbuilt. The fourth is unstarted *and* unscoped, and those are
+  different things.** No reachability is rechecked when bounds change, which is
+  work this plan can take. But *keyboard users can find and move a frame without
+  reaching its name band* **cannot be held by any test, because there is no
+  keyboard road to move a frame at all** — ADR 0065's *every one of them has a
+  keyboard form* covers zoom, pan, fit, fill and work-inside, and
+  `docs/features.md:422` attaches the same phrase to the same three at **[v1]**.
+  Satisfying it means **new v0.5 capability**, which `docs/features.md` gates and
+  which is the owner's to grant.
+
+  Said this plainly on purpose. *An acceptance condition naming a road that does
+  not exist reads as almost-done when it is not started* — and this plan has
+  already produced that fault twice, in task 5's *all three roads* and in task 8's
+  own dropped half. An unticked box invites somebody to think it is nearly paid.
+
+  **Unbuilt and unscoped differ in who can close them.** The third is this plan's
+  to build. The fourth is the owner's to grant, and the reason is worth keeping in
+  general form — the laptop lane's, 2026-09-30: **an acceptance condition cannot
+  quietly promote a promise from v1 to v0.5. If it could, the roadmap would be
+  editable by anybody writing a test they cannot pass yet.**
 
 ### 9. The canvas is where they left it
 
