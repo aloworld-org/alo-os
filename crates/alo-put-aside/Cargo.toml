@@ -1,0 +1,29 @@
+[package]
+name = "alo-put-aside"
+version = "0.0.1"
+description = "The panel at the edge that holds the windows a person put away, and gives each one back where it was."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No `alo-canvas` here, and that is the point of the crate.**
+#
+# `alo-canvas` states the architecture this panel lives under: a plane that moves
+# under a viewport that does not, and *nothing in the viewport layer may read the
+# camera to correct itself. If it has to, it is in the wrong layer.* The panel is a
+# viewport surface, so **it must not be able to see a `Camera` at all** — and the way
+# to hold that is for the dependency not to exist rather than for a test to check
+# where the panel ended up. A test that only checked the position would pass for a
+# panel in the wrong layer that compensated correctly.
+#
+# What it does need from the plane is a rectangle to give a window back to, and
+# `alo-dock` already carries that as `Patch` alongside the window model. When the
+# plane moves into `alo-canvas` (`docs/design/one-plane-two-vocabularies.md`), this
+# crate follows the type and still never takes the camera.
+[dependencies]
+alo-dock = { path = "../alo-dock" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

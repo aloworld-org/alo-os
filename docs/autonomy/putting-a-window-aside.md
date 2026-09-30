@@ -4,6 +4,20 @@
 holds minimised windows, and moved the promise into the current release so it could be
 built now. This is the order it gets built in.
 
+**And it is part of something larger, decided later the same day.** The owner put the
+**full canvas experience** into this release: Places are not to be reduced to a minimal
+implementation, the panel behaviour that depends on them is not to be deferred, and
+**the canvas owns Place identity, with every application and window participating in
+it**. Completion needs cross-Place movement and restoration, per-Place persistence,
+World navigation, fixed controls and window recovery.
+
+So **this plan is an input to the canvas plan rather than a finished piece**, and the
+lane that owns the canvas is writing that. What is here stays true — the panel's own
+state, minimising, restoring, peek — and everything in it that touches a Place waits on
+the canvas naming one. **Nothing here is marked done to close a task**: where a clause
+is owed it says so, which is the owner's instruction in their words — *report actual
+gaps openly rather than narrowing the agreed scope to close tasks.*
+
 **What it rests on.** `docs/design/the-windows-put-aside.md` is the design — what the
 panel is, what already exists, and which of the owner's ten behaviour rules a crate can
 decide without a display. `docs/design/one-plane-two-vocabularies.md` settles which
@@ -50,7 +64,60 @@ press routed through the real input path, never `panel.peek_at(…)`.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** ready.
+**Status:** **blocked on Place identity, 2026-09-30.** Built except for one clause of
+its own acceptance, which stays in this task rather than moving to a later one.
+
+**This line said `Done` for one revision and that was the fault in miniature.** The
+prose three paragraphs below said the task was not wholly done, while the status a
+reader scans said it was — and the status is what gets read. A task whose clause has
+moved elsewhere becomes completable, the acceptance quietly gets smaller, and nothing in
+the document says anything was removed. So the clause stays here and the status carries
+the block, because **the status line is the state and the prose is a comment.**
+
+**What is built:** `crates/alo-put-aside` — `Panel` with the windows put aside most
+recent first, `Preview` naming one window, and `Chosen` (two cases, what the person
+picked) against `HowItShows` (three, what is drawn). Six tests in
+`crates/alo-put-aside/tests/the_panel_holds_windows_and_not_applications.rs`.
+
+**What is owed:** the collapse choice keyed **per Place**. See below.
+
+**Rule 1 is held by the dependency not existing.** `Cargo.toml` does not list
+`alo-canvas`, so nothing in the crate can take a `Camera` at all — which is stronger
+than a test of where the panel ended up, for the reason that crate's own header gives: a
+surface in the wrong layer that compensates correctly passes a test of its position.
+
+**This task is not wholly done, and the gap is named rather than closed.** It said the
+collapse choice *persists per Place*. **The choice is held and remembered; it is not yet
+keyed by Place**, because there is no canvas Place to key it by — measured across the
+whole tree, and the word is spent four times over on other things: a socket's directory
+in `alo-agentd`, an update source in `alo-looking`, a region of a screen in
+`alo-dividing`, and where an icon sits on the bar in `alo-dock`. None is the endless
+surface `docs/features.md` defines.
+
+**It is blocked on Place identity, which the canvas owns.** On 2026-09-30 the owner put
+the full canvas experience into this release, ruled that Places are not to be reduced to
+a minimal implementation and that the panel behaviour depending on them is not to be
+deferred, and said the canvas owns Place identity with every application and window
+participating in it. So the fifth meaning of the word is the canvas lane's to define,
+and a `PlaceId` invented here would be the surface least entitled to define it doing so —
+and would have to be reconciled later, which is the two-vocabularies fault repeated on
+purpose after both lanes had learned it.
+
+**So this task cannot be marked done, and that is the point of leaving the clause in
+it.** Per the owner's instruction to report actual gaps rather than narrow the scope to
+close a task: **per-Place persistence is this task's, it is owed, and the task stays
+open until it exists.**
+
+**The same work appears in the canvas lane's plan as its task 7** — *the minimised-window
+panel, per Place* — under the constraint that the panel consumes Place identity rather
+than defining it. Two plans, one piece of work, and **neither closes until the Place half
+is built**. Named here so a reader of this plan finds the other.
+
+**And the empty case is a state rather than a count.** A person who collapses the panel
+and then restores their last window sees the handle, and gets the rail back when they
+put something aside again — emptiness wins over the choice without overwriting it,
+because *the panel is holding nothing* and *there is no panel here* are different and a
+length is the same number for both.
 
 A new crate — the panel is a different reason to change from a dock, which is law 4 at
 the scale of a crate — depending on `alo-dock` for the window model and `alo-canvas` for
@@ -70,7 +137,13 @@ state is its own thing and not a zero-length list, because *a panel holding noth
 
 ### 2. Minimising, and what is saved
 
-**Status:** blocked on task 1.
+**Status:** ready.
+
+**Not blocked on task 1, and the difference matters.** Task 1 is blocked on a *clause* of
+its own acceptance, not on its work: the panel, the previews and the presentations are
+built and this task needs only those. **A task blocked on a dependency and a task blocked
+on one of its own clauses are different states**, and reading the first as the second
+would stall this whole plan behind a Place that has not been designed yet.
 
 The window leaves the canvas; its patch, its Place and the zoom it was at are kept. The
 other windows **do not move to fill the gap**.
@@ -78,6 +151,14 @@ other windows **do not move to fill the gap**.
 **Acceptance.** A window put aside and restored with nothing else happening lands on the
 same patch, byte-identical. Minimising never discards work — a property of the state
 change, and tested as one.
+
+**The Place half of this task is blocked on Place identity and stays in this task**,
+exactly as task 1's clause does: a patch alone is ambiguous, because `(4200, 0)` exists
+on every surface, so *which surface* is part of what minimising has to save and this
+task does not close without it. The zoom is available — `alo_canvas::Zoom` is thousandths
+held as an integer — and **holding a zoom a caller hands in is not reading the camera**,
+which is the distinction rule 1 turns on: a panel that took a `Camera` could correct
+itself, a panel that remembers a number cannot.
 
 ### 3. Restoring, and the camera that travels to it
 
@@ -150,6 +231,29 @@ act on the window — tested as a refusal, not assumed from the absence of a cal
 ---
 
 ## What this plan does not cover
+
+**Everything a Place is.** Four of the panel's behaviours need one and none of them can
+be built here:
+
+- **minimising saves which Place**, because a patch alone is ambiguous — `(4200, 0)`
+  exists on every surface, so restoring needs the surface as well as the coordinates;
+- **restoring across Places**, which is the owner's *cross-Place restoration*: bringing
+  back a window whose Place is not the one being looked at has to travel to that Place
+  rather than drop the window on this one;
+
+  **This is not `docs/features.md:426`, and the owner separated them on 2026-09-30.**
+  That promise — *a frame can be dragged out of one Place and into another, and the work
+  goes with it* — is a person **relocating** a window's home, and it stays `[v1.1]`
+  along with *a Place remembers time* at `:429`. Restoring a window that was put aside
+  **moves nothing**: the window kept its Place all along and the camera travels to it.
+  One changes where a window lives and the other changes where the person is looking,
+  and the panel needs only the second;
+- **the collapse choice persisting per Place**;
+- **grouping by Place**, *without hiding individual windows behind an app icon*.
+
+**These are owed, not deferred.** They belong to the canvas plan and the canvas defines
+the Place they key on. Task 2 below builds what it can without one and says which clause
+it could not.
 
 **Compacting.** The promise names two things and says *the person picks*, and this plan
 builds one of them. **A later ledger entry must not tick the promise when only the panel
