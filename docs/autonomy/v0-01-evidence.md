@@ -69,6 +69,21 @@ in this repository — the word is spent four times on other things — so *wher
 person put them* is currently answerable only within a single surface. See task 1
 of the canvas plan.
 
+### Tidy this canvas
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. Alignment and distribution of a selection, and the
+same asked of alo as a proposal shown before anything moves. **The propose-then-
+approve half already exists** — `crates/alo-put-aside/src/proposing.rs` shows a
+placement before anything moves — and what does not exist is a proposal that
+carries a **set** rather than one frame, which is the hard part of this promise
+rather than the alignment arithmetic. Reached v0.01 on 2026-09-30 because the
+frames promise had already moved with *several can be taken at once* in it,
+leaving one operation at two tiers. Where
+the work is: task 3 of `docs/autonomy/the-canvas-and-its-places.md` gives it the
+selection to act on; nothing yet names the arrangement proposal itself.
+
 ### The World, and moving between Places
 
 **Shown by:** nothing yet.
@@ -813,7 +828,7 @@ the distinction this ledger exists to keep. Where the work is: task 6 of
 
 ## What this audit found
 
-**The audit in figures: 51 promises, 2 shown whole, 40 shown in part, 9 with no
+**The audit in figures: 52 promises, 2 shown whole, 40 shown in part, 10 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*

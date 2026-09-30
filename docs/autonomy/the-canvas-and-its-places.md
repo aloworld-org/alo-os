@@ -278,11 +278,24 @@ it depends on 1 and 3, not because it is optional.
 
 ## The gaps, stated because the instruction says to state them
 
-**Four promises were not moved and this lane did not move them.** *Tidy this
-canvas*, *A Place remembers time*, *Every screen is a view onto the canvas* and *A
-panel out of view costs nothing* remain at `[v1]` and `[v1.1]`. The owner named
-five things completion requires and none of them is these. Moving them would have
-been this lane widening its own scope under cover of an instruction.
+**Three promises were not moved and this lane did not move them.** *A Place
+remembers time*, *Every screen is a view onto the canvas* and *A panel out of view
+costs nothing* remain at `[v1]` and `[v1.1]`. The owner named five things
+completion requires and none of them is these. Moving them would have been this
+lane widening its own scope under cover of an instruction.
+
+**This paragraph said four, and *Tidy this canvas* was the fourth.** It moved to
+`[v0.01]` later the same day, and the reason it had to is a fault of this lane's
+own making rather than a new decision: *Frames, dragged and resized like a design
+canvas* was moved to `[v0.01]` in this very change **with *several can be taken at
+once, guides and snapping line them up* already in it**. So multi-select and
+snapping went into the current release while alignment and distribution — the
+adjacent operation on the same selection — stayed at `[v1]`. **One operation at
+two tiers, and the sentence above defended it on the grounds that the owner had
+not named it.** That defence was sound about a promise this lane had not touched
+and unsound the moment it had moved the other half. The laptop lane found it while
+reconciling a collision in `features.md`; the argument that settles it is this
+one, not theirs.
 
 **One promise is built below its own tier.** *Every canvas also answers as a list*
 is `[v1]` and was built at v0.5, with tests. Recorded rather than quietly
