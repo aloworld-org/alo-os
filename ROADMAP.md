@@ -1997,8 +1997,8 @@ sorted the same way v0.01 now is.
       what the machine knows is an address, a key in the keyring, a region,
       and whether the last request was accepted
 - [ ] **Making it yours**: the surface's own material and colour, per display;
-      light and dark; an accent from the five designed hues, terracotta
-      reserved (ADR 0010); text scaling
+      light and dark; an accent from the four designed hues, deep teal
+      reserved (ADR 0010 as amended by ADR 0067); text scaling
       *Three parts of this promise were **deleted rather than completed** on
       2026-09-29, and it read as though they were owed until then: the
       background from a **file** or a **folder**, the **lock-screen image**, and
@@ -2008,24 +2008,48 @@ sorted the same way v0.01 now is.
       and that the canvas plane's own surface is the desktop — so what a person
       chooses is that surface's material, not a picture behind it. The promise is
       smaller, not unmet, and the record is the reason.*
-  - [ ] **The code.**
+  - [x] **The code.**
         `alo-appearance` — background per display, light and dark, text
         scaling, and the accent set as working code, with every word of it
         readable in the reader's own language rather than in English.
-        **Four accents where the promise says five.** This box read *five hues*
-        and was ticked until 2026-09-26. `Accent::ALL` is `[Self; 4]` —
-        Indigo, Violet, Moss, Rose — under a doc comment that still says *all
-        five*, because **#185 implemented half of ADR 0067**: that decision says
-        `Token::Terracotta` stops being a palette token and the accent set
-        **does not gain it** — amended, because an accent must read at 4.5:1 on
-        both grounds and terracotta on cream measures 2.87:1. The token was
-        removed and no accent was
-        never added. `docs/features.md` promises five designed hues and the ADR
-        requires five, so the code does not meet the promise and the tick is
-        withdrawn until it does. Owed by whoever owns `alo-appearance`
+        Measured 2026-09-30, clause by clause: **per display** is
+        `Changes::set_background_on` and `Appearance::background_on`, which
+        falls through to the general choice when a display has no exception of
+        its own, with `put_display_back` to stop singling one out and a
+        `displays()` iterator over the exceptions — held by tests naming
+        `eDP-1` and `DP-1`. **Light and dark** is `Scheme`, and every accent
+        carries a value for each ground because `Accent::on` takes the scheme.
+        **Text scaling** is `TextScale`, with a range and a checked percent
+        constructor. **The accent set** is `Accent::ALL`. **In the reader's
+        language** is `words.rs`, 693 lines of it
+        *This half was unticked from 2026-09-26 with the reason **four accents
+        where the promise says five**, and two of the three things that reason
+        rested on were untrue when checked. It said the doc comment on
+        `Accent::ALL` **still says all five**: it does not, and has not — it
+        says *All four* and then, in bold, *Four rather than five, and there is
+        no empty slot waiting for a fifth*, with the contrast reason. It said
+        **the ADR requires five**: [ADR
+        0067](docs/decisions/0067-the-agents-colour-is-deep-teal-and-the-colour-it-vacates-is-given-back.md)
+        says the opposite in terms, amended 2026-09-27 — the owner was offered
+        a deeper terracotta for light grounds and **declined to invent one**,
+        so four ship and no slot waits for a fifth, because an accent must
+        reach 4.5:1 on both grounds and terracotta on cream measures 2.87:1.
+        What was genuinely stale was `docs/features.md:47`, which still
+        promised five and cited only the amended decision; corrected in the
+        same change. The box also carried the sentence **"The token was removed
+        and no accent was never added"**, a double negative that states the
+        reverse of what it means. Four hues that all read is the set, not four
+        fifths of one — so the code met the promise, and the promise was
+        mis-stated*
   - [ ] **On the machine.**
-        the Settings panel, the wallpapers themselves, and the mark and word
-        that must appear wherever the agent's colour does
+        the Settings panel, and the mark and word that must appear wherever the
+        agent's colour does
+        *This half asked for **the wallpapers themselves** until 2026-09-30.
+        There are none: [ADR
+        0075](docs/decisions/0075-alo-os-has-no-wallpaper-the-canvass-own-surface-is-the-desktop.md)
+        decides alo OS ships no wallpaper and the canvas plane's own surface is
+        the desktop, which the promise above this box already records. An
+        on-the-machine half cannot be owed a thing a record deleted*
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal

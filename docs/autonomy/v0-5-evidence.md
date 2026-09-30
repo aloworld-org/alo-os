@@ -225,12 +225,20 @@ schedule this repository computes from the sun is `alo-displays`' night light �
 nothing joins it to light and dark, and no test asks for the join. A screen to
 see either on is owed on top.
 
-### **Accent colour** — five designed hues, each with a value for a light ground and one for a dark
+### **Accent colour** — four designed hues, each with a value for a light ground and one for a dark
 
 **Shown by:** `crates/alo-appearance/tests/a_palette_with_one_source.rs`
 
-**Still owed:** nothing, and the withdrawal can be reconsidered. `Accent::ALL` is
-`[Self; 4]` — Indigo, Violet, Moss, Rose — and the doc comment says four.
+**Still owed:** nothing. The withdrawal was reconsidered on 2026-09-30 and
+lifted. `Accent::ALL` is `[Self; 4]` — Indigo, Violet, Moss, Rose — and the doc
+comment says four.
+
+This entry read *the withdrawal can be reconsidered* for four days while the
+roadmap box went on asking for a fifth hue and `docs/features.md` went on
+promising five. **The ledger was right and both documents around it were
+wrong** — which is the opposite of the failure this ledger was built to catch,
+and worth recording as such: an instrument can be correct and still not be read.
+Both are corrected in the same change, and the code half is ticked.
 
 The tick was withdrawn because #185 was read as implementing half of ADR 0067:
 the decision said `Token::Terracotta` stops being a palette token and *becomes
