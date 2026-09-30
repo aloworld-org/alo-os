@@ -320,10 +320,27 @@ one wallpaper was not enough. The promise is now that there is no wallpaper.*
 ### The dock's size, and whether it hides when a window needs the room
 
 **Shown by:** `crates/alo-dock/src/layout.rs`,
+`crates/alo-dock/src/hiding.rs`, `crates/alo-shell/src/dock_room.rs`,
 `crates/alo-dock/tests/dock_kept_in_its_own_file.rs`,
 `docs/autonomy/updates/appearance-dock-and-shortcuts-keep-their-own-files.md`
 
 **Still owed:** **a screen to see it on**, and nothing else in this repository.
+
+*That sentence was untrue when it was written, and this entry carried it from
+2026-09-27 to 2026-09-30.* A screen was not the only thing owed: **nothing
+computed `TheRoom` from real windows**, so the person could choose the
+behaviour, the dock knew what to do when told, and nothing ever told it.
+`TheRoom::` appeared nowhere outside `alo-dock`. The caller is
+`crates/alo-shell/src/dock_room.rs`, told the windows by
+`Server::window_areas` at the one place holding both a server and a frame, and
+`docs/design/when-the-dock-gives-way.md` settles what *a window needs the room*
+has to mean — four readings were available and three of them oscillate.
+
+**The shape of the error is worth more than the fix.** This entry did not say
+*the caller is missing*; it said *nothing else is owed*, which is a claim about
+everything rather than about one thing, and nothing could contradict it without
+enumerating the whole. A completeness claim is the hardest kind to check and
+the easiest kind to write.
 
 The size is there: a dock is laid out on a screen at a text scale, the names give
 way to icons where there is not room and say so, and **the dock never takes more

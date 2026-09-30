@@ -18,8 +18,12 @@ impl DesktopPicture {
     /// imported or drawn.
     pub(crate) fn validate(&self, size: Size<i32, Physical>) -> Result<(), RenderError> {
         let size = (size.w, size.h);
+        // A dock that gave way has no picture to check. `is_none_or` rather
+        // than a default size: *there is no dock* and *the dock was laid out
+        // for another display* are different answers, and only the second is
+        // a refusal.
         if self.size == size
-            && self.dock.size == size
+            && self.dock.as_ref().is_none_or(|dock| dock.size == size)
             && self.running.size == size
             && self.filling.size == size
         {
@@ -39,7 +43,12 @@ impl DesktopPicture {
         // The division first: its rules and the outline a drop would take sit
         // under the dock, which is furniture over the top of everything.
         crate::painted::paint(frame, &self.division.solids, &[])?;
-        crate::painted::paint(frame, &self.dock.solids, &[])?;
+        // Nothing to paint when the dock gave way. There is no `solids` to
+        // reach for, which is the point of the `Option`: a painter cannot
+        // draw a hidden dock by forgetting to check a flag.
+        if let Some(dock) = self.dock.as_ref() {
+            crate::painted::paint(frame, &dock.solids, &[])?;
+        }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;

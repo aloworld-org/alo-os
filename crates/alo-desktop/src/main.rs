@@ -254,6 +254,20 @@ mod running {
                 capturing: None,
                 division: &self.division,
                 offer: &alo_dividing::Offer::Nothing,
+                // **Empty here, and answered on the way to the frame.** This
+                // struct holds what the crates that own each thing said, and
+                // nothing here owns the windows: they are the compositor's,
+                // and this binary has no server in it to ask. `alo-shell`'s
+                // direct desktop is the one place holding both a server and
+                // this frame, and it replaces this with
+                // `Server::window_areas` before anything is drawn.
+                //
+                // So this is not the value the dock is asked about. It is
+                // what the frame says before the only caller that can answer
+                // has answered — and an empty slice is the honest thing to
+                // say meanwhile, because it is also exactly what a desktop
+                // with nothing open would report.
+                windows: &[],
             }
         }
     }

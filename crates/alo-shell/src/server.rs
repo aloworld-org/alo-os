@@ -3,6 +3,7 @@
 use std::{io, path::Path, sync::Arc};
 
 use smithay::reexports::wayland_server::{Display, protocol::wl_surface::WlSurface};
+use smithay::utils::{Physical, Rectangle};
 
 use crate::{
     SocketError,
@@ -125,6 +126,33 @@ impl Server {
     /// Minimization, buffer removal, destruction and disconnect exclude roots here.
     pub fn mapped_surfaces(&self) -> impl Iterator<Item = &WlSurface> {
         self.surfaces.mapped()
+    }
+
+    /// Where each mapped window is on this display, in its physical pixels.
+    ///
+    /// For the one question the dock asks of the windows — whether any needs
+    /// the room it is sitting in. [`crate::dock_room`] holds the rule and
+    /// `docs/design/when-the-dock-gives-way.md` settles what *a window needs
+    /// the room* has to mean.
+    ///
+    /// **One is the scale this display is laid out at**, the same one
+    /// `crate::desktop_raster` multiplies a division by. The conversion is
+    /// here rather than inside the comparison so there is one place to change
+    /// when a display is laid out at another scale.
+    ///
+    /// A minimised window is not among these, because `mapped` excludes it: a
+    /// window a person put aside is not a window needing the room.
+    pub(crate) fn window_areas(&self) -> Vec<Rectangle<i32, Physical>> {
+        self.mapped_surfaces()
+            .map(|surface| {
+                let origin = crate::window_placement::window_buffer_origin(surface);
+                let geometry = crate::scene::geometry(surface);
+                Rectangle::new(
+                    (origin + geometry.loc).to_physical(1.0).to_i32_round(),
+                    geometry.size.to_physical(1.0).to_i32_round(),
+                )
+            })
+            .collect()
     }
 
     /// Number of live toplevel roles, including those not yet mapped.

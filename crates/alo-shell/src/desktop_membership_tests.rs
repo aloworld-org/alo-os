@@ -185,6 +185,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     capturing: None,
                     division: an_undivided_display(),
                     offer: nothing_offered(),
+                    windows: &[],
                 },
                 None,
                 Some(ApprovalFrame {

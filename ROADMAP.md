@@ -1844,34 +1844,37 @@ sorted the same way v0.01 now is.
       *One of the two `[v0.5]` promises this gate carried as a single box until
       2026-09-27. Split here because one of them was paid and the other was not,
       and a box that groups two promises cannot say that*
-  - [ ] **The code.**
-        **the size is there, and the hiding is there except for the one thing
-        that would observe a window.** `crates/alo-dock/src/layout.rs` lays the
-        dock out on a screen at a text scale: the names give way to icons where
-        there is no room and say so, and **the dock never takes more than its
-        share** on any edge at any size, held by its own tests.
-        `crates/alo-dock/src/hiding.rs` holds the rest — `Hiding` (the person's
-        two choices, `Never` by default), `TheRoom` (`Free` or
-        `AWindowNeedsIt`), `Showing` (what the dock then does) and the decision
-        between them, 206 lines and six tests, exhaustive over both choices
-        against both states. `crates/alo-shell` offers the choice: two rows in
-        the settings window, the sentence a person reads, and tests that
-        changing it changes the dock. *What is missing is a caller that
-        computes `TheRoom` from real windows* — measured 2026-09-30, `TheRoom::`
-        appears nowhere outside `alo-dock`, and inside it only in tests and in
-        the match arm. So the person can choose it, the dock knows what to do,
-        and **nothing ever tells it a window needs the room.**
-        *And the caller cannot simply be written: nothing in this repository
-        says **which** windows count.* `docs/features.md:74` is a single line,
-        `docs/design/the-alo-dock.md` does not mention it, and `TheRoom`'s own
-        documentation defines the type and not the predicate — every other
-        occurrence is the phrase quoted back. Four readings are available and
-        visibly different to a person, and three of them oscillate, because
-        they are computed from a geometry the dock's own visibility changes.
-        `docs/design/when-the-dock-gives-way.md` records that, and recommends
-        an answer to each: the work area does not depend on the dock's setting,
-        any mapped window overlapping the band counts, `FillingTheScreen` is
-        not the trigger, the answer is per screen, and no timers
+  - [x] **The code.**
+        **The size is there, the hiding is there, and as of 2026-09-30 so is
+        the thing that observes a window.** `crates/alo-dock/src/layout.rs`
+        lays the dock out on a screen at a text scale: the names give way to
+        icons where there is no room and say so, and **the dock never takes
+        more than its share** on any edge at any size, held by its own tests.
+        `crates/alo-dock/src/hiding.rs` holds the choice and the answer —
+        `Hiding` (the person's two, `Never` by default), `TheRoom` (`Free` or
+        `AWindowNeedsIt`), `Showing`, and the decision between them, exhaustive
+        over both against both. `crates/alo-shell` offers the choice: two rows
+        in the settings window, the sentence a person reads, and tests that
+        changing it changes the dock.
+        **The caller is `crates/alo-shell/src/dock_room.rs`**, nine tests, and
+        it is wired to real windows rather than to a shape: `Server::window_areas`
+        reads the mapped windows — a minimised one is excluded, because a window
+        a person put aside is not one needing the room — and
+        `crates/alo-shell/src/direct_desktop.rs` is the one place holding both a
+        server and a frame, so that is where they meet. `DesktopPicture::dock` is
+        an `Option`, so a painter cannot draw a dock that gave way by forgetting
+        to check a flag: there is no `solids` to reach for.
+        **What *a window needs the room* means was decided before the caller was
+        written**, in `docs/design/when-the-dock-gives-way.md`: four readings
+        were available and three of them oscillate, because they are computed
+        from a geometry the dock's own visibility changes — a predicate that
+        cannot tell *a window needs the room* from *a window needs the room
+        because the dock hid*. So the work area does not depend on the person's
+        setting, and a test asserts the two desktop panels get the identical
+        room whether the dock is showing or hidden, which is what leaves the
+        cycle no edge. Any mapped window overlapping the band counts, not only
+        the focused one; touching is not overlapping, or a maximised window
+        would hide the dock permanently on every machine
         *This box read "**the size is there and the hiding is not**", and said
         `layout.rs` "says so in writing at the place that work would go".
         Neither was true: `layout.rs` says the opposite at that place — that
@@ -1882,9 +1885,11 @@ sorted the same way v0.01 now is.
         `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, whose
         seven tasks are done, so this has no task anywhere
   - [ ] **On the machine.**
-        owed to the certified machine, and to a window that needs the room —
-        and the caller above is owed before it, since there is nothing yet for
-        a machine to demonstrate
+        owed to the certified machine, and to a person dragging a window over
+        the band and watching the dock give way
+        *This half read that the caller was owed before it. The caller landed
+        2026-09-30, so what remains is only the display: every screen in this
+        repository is arithmetic and a test, and no eye has seen this happen*
 - **Per display, so the dock can sit along the bottom of the laptop and down
       the side of the external screen** — **WITHDRAWN by
       [ADR 0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md).**

@@ -75,6 +75,7 @@ impl crate::TheDesktop for ADesktop {
             capturing: None,
             division: an_undivided_display(),
             offer: nothing_offered(),
+            windows: &[],
         }
     }
 }

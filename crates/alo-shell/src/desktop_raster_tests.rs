@@ -34,6 +34,18 @@ fn drawn(
     filling: &FillingWindow,
     size: (i32, i32),
 ) -> Result<DesktopPicture, RenderError> {
+    drawn_with(dock, look, running, filling, size, &[])
+}
+
+/// The same, with windows on the display for the dock to be asked about.
+fn drawn_with(
+    dock: &Dock,
+    look: DesktopLook,
+    running: &RunningWindow,
+    filling: &FillingWindow,
+    size: (i32, i32),
+    windows: &[smithay::utils::Rectangle<i32, smithay::utils::Physical>],
+) -> Result<DesktopPicture, RenderError> {
     let strings = words();
     let mut labels = WindowControlLabels::new().unwrap();
     picture(
@@ -44,6 +56,7 @@ fn drawn(
             filling: &filling_shows(filling, &strings),
             division: crate::desktop_testing::an_undivided_display(),
             offer: crate::desktop_testing::nothing_offered(),
+            windows,
         },
         &mut labels.fonts,
         size,
@@ -59,7 +72,7 @@ fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
             .flat_map(|inked| inked.pixels.iter().copied())
             .collect::<Vec<_>>()
     };
-    let mut colours = solids(&picture.dock.solids);
+    let mut colours = solids(&picture.dock.as_ref().unwrap().solids);
     // The clock, the battery, the network and the volume were painted with the
     // dock and were covered by this walk's promise — not one pixel of the
     // desktop is the agent's colour. ADR 0076 took the status area off the Dock
@@ -138,16 +151,19 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
             Scheme::Light => (Token::Cream, Token::Porcelain, Token::Navy),
             Scheme::Dark => (Token::Charcoal, Token::Charcoal, Token::Cream),
         };
-        assert_eq!(picture.dock.solids[0].colour, rgb(dock_ground.colour()));
+        assert_eq!(
+            picture.dock.as_ref().unwrap().solids[0].colour,
+            rgb(dock_ground.colour())
+        );
         for window in [&picture.running, &picture.filling] {
             assert_eq!(window.solids[0].colour, rgb(ink.colour()), "{scheme:?}");
             assert_eq!(window.solids[1].colour, rgb(ground.colour()), "{scheme:?}");
         }
-        let accent = picture
-            .dock
+        let drawn = picture.dock.as_ref().unwrap();
+        let accent = drawn
             .solids
             .iter()
-            .find(|solid| solid.area == picture.dock.accent)
+            .find(|solid| solid.area == drawn.accent)
             .unwrap();
         assert_eq!(accent.colour, rgb(appearance.accent_at(now)));
     }
@@ -164,7 +180,7 @@ fn no_window_covers_the_dock_and_two_share_the_room() {
             let dock = Dock::shipped();
             let look = noon_look(&an_appearance(), reading);
             let picture = drawn(&dock, look, &running, &filling, (1920, 1080)).unwrap();
-            let band = picture.dock.band;
+            let band = picture.dock.as_ref().unwrap().band;
             let one = picture.running.panel.unwrap();
             let other = picture.filling.panel.unwrap();
             assert!(band.intersection(one).is_none());
@@ -210,5 +226,84 @@ fn a_desktop_that_cannot_be_drawn_whole_is_refused() {
     )
     .unwrap();
     assert!(bare.running.is_empty() && bare.filling.is_empty());
-    assert!(!bare.dock.solids.is_empty(), "the dock is still drawn");
+    assert!(
+        !bare.dock.as_ref().unwrap().solids.is_empty(),
+        "the dock is still drawn"
+    );
+}
+
+/// **The dock gives way to a window over it, and only when the person asked
+/// for that.**
+///
+/// The end of the road `alo-dock` has held since #247 and nothing walked:
+/// `Hiding` was the person's choice, `TheRoom` the input and `Dock::showing`
+/// the decision, and until now nothing in this repository ever told the dock
+/// that a window needed the room. This is the telling, from the drawn band.
+#[test]
+fn the_dock_gives_way_to_a_window_over_it_and_only_if_asked() {
+    use smithay::utils::{Point, Rectangle, Size};
+
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let look = noon_look(&an_appearance(), Direction::LeftToRight);
+    let size = (1000, 800);
+
+    // Where the dock actually is on this display, read off the picture rather
+    // than guessed, so this test cannot drift from the layout.
+    let band = drawn(&Dock::shipped(), look, &running, &filling, size)
+        .unwrap()
+        .dock
+        .as_ref()
+        .unwrap()
+        .band;
+    let over = [Rectangle::new(
+        Point::from((band.loc.x, band.loc.y + 1)),
+        Size::from((band.size.w, band.size.h)),
+    )];
+    let clear = [Rectangle::new(
+        Point::from((0, 0)),
+        Size::from((200, band.loc.y - 10)),
+    )];
+
+    // The shipped dock never gives way, whatever is over it.
+    let shipped = Dock::shipped();
+    assert_eq!(shipped.hiding(), alo_dock::Hiding::Never);
+    for windows in [&over[..], &clear[..]] {
+        let picture = drawn_with(&shipped, look, &running, &filling, size, windows).unwrap();
+        assert!(
+            picture.dock.is_some(),
+            "a dock set to never hide stays whatever is over it"
+        );
+    }
+
+    // The person's other choice, and the only arm that hides.
+    let mut gives_way = Dock::shipped();
+    gives_way.set_hiding(alo_dock::Hiding::WhenAWindowNeedsTheRoom);
+
+    let nothing_open = drawn_with(&gives_way, look, &running, &filling, size, &[]).unwrap();
+    assert!(
+        nothing_open.dock.is_some(),
+        "an empty desktop leaves the room free, so the dock stays"
+    );
+
+    let beside = drawn_with(&gives_way, look, &running, &filling, size, &clear).unwrap();
+    assert!(
+        beside.dock.is_some(),
+        "a window nowhere near the band does not take the room"
+    );
+
+    let covered = drawn_with(&gives_way, look, &running, &filling, size, &over).unwrap();
+    assert!(
+        covered.dock.is_none(),
+        "a window over the band takes the room, so the dock gives way"
+    );
+
+    // **And the room the panels get does not move.** This is what stops the
+    // whole thing oscillating, so it is asserted rather than assumed: the
+    // work area is the same whether the dock is showing or hidden.
+    assert_eq!(
+        covered.running.size, beside.running.size,
+        "the work area must not depend on whether the dock is showing"
+    );
+    assert_eq!(covered.size, beside.size);
 }

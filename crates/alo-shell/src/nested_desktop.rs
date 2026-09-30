@@ -62,6 +62,17 @@ pub struct DesktopFrame<'a> {
     /// What letting go of a dragged window would do, as `alo-dividing`
     /// proposed it, or `Offer::Nothing` while nothing is being dragged.
     pub offer: &'a alo_dividing::Offer,
+    /// Every mapped window on this display, in this display's physical
+    /// pixels, so the dock can be asked whether one needs the room it sits
+    /// in.
+    ///
+    /// Handed in for the same reason the readings and the division are: the
+    /// caller is the only one that knows which display's windows these are,
+    /// and what scale puts them in the band's own space. An empty slice is
+    /// the true answer on a desktop with nothing open — the dock stays.
+    /// `crate::dock_room` holds the rule and
+    /// `docs/design/when-the-dock-gives-way.md` the reasoning.
+    pub windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
 }
 
 impl Nested {
@@ -253,6 +264,7 @@ pub(crate) fn frame_pictures(
             filling: &filling,
             division: desktop.division,
             offer: desktop.offer,
+            windows: desktop.windows,
         },
         &mut labels.fonts,
         size,

@@ -409,6 +409,10 @@ fn the_desktop(
         filling: &filling,
         division: &division,
         offer: &nothing_offered,
+        // Nothing is mapped for the steps this desk is reused across. The
+        // one step that maps two real clients divides the screen and draws
+        // through its own path.
+        windows: &[],
     };
 
     nested.pump()?;
@@ -542,6 +546,13 @@ struct TheDesk<'a> {
     division: &'a alo_dividing::Division,
     /// What a drop would do, which is nothing here.
     offer: &'a alo_dividing::Offer,
+    /// The mapped windows on this display, in its physical pixels, so the
+    /// dock can be asked whether one needs the room it sits in.
+    ///
+    /// Empty through the steps that map nothing, which is the truth rather
+    /// than a placeholder: a desktop with no windows has nothing over the
+    /// band, and the answer *the room is free* is the one a person sees.
+    windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
 }
 
 impl<'a> TheDesk<'a> {
@@ -563,6 +574,7 @@ impl<'a> TheDesk<'a> {
             capturing,
             division: self.division,
             offer: self.offer,
+            windows: self.windows,
         }
     }
 }

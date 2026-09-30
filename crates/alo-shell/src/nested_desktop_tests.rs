@@ -58,6 +58,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                     capturing: None,
                     division: crate::desktop_testing::an_undivided_display(),
                     offer: crate::desktop_testing::nothing_offered(),
+                    windows: &[],
                     dock: &dock,
                     look: noon_look(&an_appearance(), reading),
                     strings: &strings,
@@ -69,7 +70,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 let pictures =
                     frame_pictures(frame(&quiet), None, None, &mut labels, size).unwrap();
                 assert!(pictures.status.is_empty());
-                assert!(!pictures.desktop.dock.solids.is_empty());
+                assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
 
                 let pictures = frame_pictures(frame(&lit), None, None, &mut labels, size).unwrap();
                 let dock_drawn = &pictures.desktop.dock;
@@ -77,7 +78,12 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 assert_eq!(rows.len(), 2, "{reading:?} {size:?}");
                 for row in rows {
                     assert!(
-                        dock_drawn.band.intersection(row.area).is_none(),
+                        dock_drawn
+                            .as_ref()
+                            .unwrap()
+                            .band
+                            .intersection(row.area)
+                            .is_none(),
                         "{reading:?}: a line covers the dock"
                     );
                 }
@@ -91,7 +97,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 // the middle of the screen because the Dock got narrower would
                 // be harder to find rather than easier.
                 let first = rows.first().unwrap().area;
-                let band = dock_drawn.band;
+                let band = dock_drawn.as_ref().unwrap().band;
                 let (width, _) = size;
                 let margin = i32::try_from(alo_dock::measures::MARGIN).unwrap();
                 match reading {
@@ -136,6 +142,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
         capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
+        windows: &[],
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -175,6 +182,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
         capturing: None,
         division: crate::desktop_testing::an_undivided_display(),
         offer: crate::desktop_testing::nothing_offered(),
+        windows: &[],
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -190,5 +198,5 @@ fn the_record_window_sits_in_the_desktop_frame() {
     let pictures = frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080)).unwrap();
     assert!(!pictures.record.as_ref().unwrap().entries.is_empty());
     assert!(pictures.approval.is_none());
-    assert!(!pictures.desktop.dock.solids.is_empty());
+    assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
 }
