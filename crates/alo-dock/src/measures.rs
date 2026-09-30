@@ -11,8 +11,15 @@
 //!
 //! [`ICON`] and [`TEXT_AT_ORDINARY`] are the shell's own design: how big a thing
 //! you press is, and how big the text was drawn at. Both are held to a floor
-//! rather than left to taste — an icon is a target, and EN 301 549 carries WCAG
-//! 2.5.8's [`SMALLEST_TARGET`] for one.
+//! rather than left to taste — an icon is a target, and the floors it is held to
+//! are `alo_appearance::targets`, which is where a standard's figures belong
+//! because they are not this crate's design and bind every surface that draws.
+//!
+//! **This file holds what a Dock is built out of, and only that.** It said so
+//! already and had stopped being true: a WCAG floor lived here for as long as a
+//! dock icon was the first thing that needed one. That is the shape to watch —
+//! a file whose header describes it correctly on the day it is written and is
+//! quietly outgrown by the second thing that needs what it holds.
 //!
 //! [`A_DOCK_MAY_TAKE_ONE_PART_IN`] is not taste at all. It is fixed by a
 //! requirement: **text reaches 200% without losing content** (EN 301 549, by way
@@ -44,12 +51,19 @@
 /// not exist yet, rather than one this crate guesses at.
 pub const ICON: u32 = 48;
 
-/// The smallest a thing a person presses may be, from WCAG 2.5.8 by way of
-/// EN 301 549 — the standard an EU public-sector desktop is procured against.
-///
-/// [`ICON`] is held to it by a test rather than by a comment, which is the same
-/// shape `alo_appearance::TextScale` holds its 200% in.
-pub const SMALLEST_TARGET: u32 = 24;
+// **The standards' target floors left this file on 2026-09-30.**
+// `SMALLEST_TARGET` was here because a dock icon was the first thing that
+// needed it, and it was never a number this crate is built out of: it is WCAG
+// 2.5.8 by way of EN 301 549, a rule about hands, and it binds a window's name
+// band and a status item exactly as much as a dock icon. It is now
+// `alo_appearance::targets::SMALLEST_TARGET`, beside `ENHANCED_TARGET` — WCAG
+// 2.5.5's 44, which is what this product's controls are built to — in the crate
+// every surface already depends on.
+//
+// It is deleted rather than kept as an alias here. A name that still resolves
+// is a name the next person will use, and then there are two homes for one
+// standard. The Mac lane found this on the day a second surface was about to
+// produce a second copy of the same 24 under a different name.
 
 /// The room between an icon and its name, and between one dock item and the
 /// next.

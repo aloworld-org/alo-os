@@ -158,8 +158,8 @@ impl Room {
 )]
 mod tests {
     use super::*;
-    use crate::measures::SMALLEST_TARGET;
     use crate::screen::Screen;
+    use alo_appearance::targets::{ENHANCED_TARGET, SMALLEST_TARGET};
 
     /// A size the tests name often enough to be worth a word.
     fn text(percent: u16) -> TextScale {
@@ -179,6 +179,16 @@ mod tests {
         assert!(
             Room::an_icon().as_pixels() >= SMALLEST_TARGET,
             "an icon is {} and the standard's floor is {SMALLEST_TARGET}",
+            Room::an_icon().as_pixels()
+        );
+        // **And above what a control is built to**, which is the stronger claim
+        // and the one that would fail first. The floor is what a layout may not
+        // go below; the enhanced figure is what the owner decided a control is
+        // on 2026-09-30. An icon clearing the first and missing this would be
+        // compliant and still too small to press.
+        assert!(
+            Room::an_icon().as_pixels() >= ENHANCED_TARGET,
+            "an icon is {} and a control is built to {ENHANCED_TARGET}",
             Room::an_icon().as_pixels()
         );
     }
