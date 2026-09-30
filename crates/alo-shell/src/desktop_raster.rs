@@ -100,6 +100,15 @@ pub(crate) struct Shown<'a> {
     /// and holds no geometry at all, and [`crate::panel_raster`] is where that
     /// becomes rectangles on this display.
     pub(crate) put_aside: &'a alo_put_aside::Panel,
+    /// Whether a window on this display is filling the screen.
+    ///
+    /// **This is the whole of what separates full screen from maximised as far
+    /// as a person can see.** Both are the same area; a window filling the
+    /// screen is the one the Dock and the panel give way to, and
+    /// `docs/design/the-alo-dock.md` says so: *true full screen covers the
+    /// Dock*. Asked of the shell by the caller, because only the caller knows
+    /// which display's windows these are — the seam `windows` already takes.
+    pub(crate) filling_the_screen: bool,
 }
 
 /// What the running window shows, as a panel.
@@ -156,6 +165,7 @@ pub(crate) fn picture(
         offer,
         windows,
         put_aside,
+        filling_the_screen,
     } = shown;
     let dock_picture = crate::dock_raster::picture(
         dock, look, size,
@@ -171,7 +181,18 @@ pub(crate) fn picture(
     // either way so that the two desktop panels get the same room whichever
     // the person chose. That is what keeps this from oscillating: the band is
     // a constant with respect to the question being asked of it.
-    let showing = dock.showing(crate::dock_room::the_room(dock_picture.band, windows));
+    // **A window filling the screen covers the Dock, whatever the person chose
+    // about it giving way.** Those are two different questions and only one of
+    // them is a setting: `alo_dock::Hiding` is whether the Dock yields to a
+    // window that needs its room, and this is a window that has taken the
+    // whole screen rather than needing part of it. A
+    // dock drawn over a full-screen video would be the thing the edge reveal
+    // exists to make unnecessary.
+    let showing = if filling_the_screen {
+        Showing::Hidden
+    } else {
+        dock.showing(crate::dock_room::the_room(dock_picture.band, windows))
+    };
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
     let list = ListLook {

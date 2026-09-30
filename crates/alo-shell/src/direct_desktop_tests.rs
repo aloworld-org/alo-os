@@ -77,6 +77,7 @@ impl crate::TheDesktop for ADesktop {
             offer: nothing_offered(),
             windows: &[],
             put_aside: crate::desktop_testing::nothing_put_aside(),
+            filling_the_screen: false,
         }
     }
 }

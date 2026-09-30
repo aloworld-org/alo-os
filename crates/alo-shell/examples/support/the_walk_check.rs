@@ -576,6 +576,7 @@ impl<'a> TheDesk<'a> {
             offer: self.offer,
             windows: self.windows,
             put_aside: nothing_put_aside(),
+            filling_the_screen: false,
         }
     }
 }
