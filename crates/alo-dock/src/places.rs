@@ -13,7 +13,15 @@
 //! start, then each icon, then a gap before the next. Nothing is centred within
 //! its own cell and nothing is stretched to fill — an icon is
 //! [`crate::measures::ICON`] across, always, because it is a thing a person
-//! presses and its size is held to a floor by [`crate::measures::SMALLEST_TARGET`].
+//! presses and its size is held to a floor by
+//! [`alo_appearance::targets::ENHANCED_TARGET`].
+//!
+//! **`always` is doing two jobs in that sentence and the owner has separated
+//! them.** A place is one number, so the glyph drawn and the area pressed are
+//! the same value and cannot move apart. The ruling of 2026-09-30 is that the
+//! Dock's glyph shrinks from 32 to 28 as the bar fills while the target stays
+//! at least 44 — which this file cannot say. Recorded here rather than in a
+//! commit message, because the next person to widen a place will read this.
 //!
 //! # What is a place and what is not
 //!
@@ -195,8 +203,8 @@ mod tests {
         for one in places.each() {
             assert_eq!(one.across(), measures::ICON);
             assert!(
-                one.across() >= measures::SMALLEST_TARGET,
-                "an icon is below the floor a pressable thing is held to"
+                one.across() >= alo_appearance::targets::ENHANCED_TARGET,
+                "an icon is below what a control is built to, WCAG 2.5.5 enhanced"
             );
         }
     }

@@ -26,7 +26,16 @@
 //! never traded away**: shrinking icons to fit more is how a dock becomes
 //! unusable at exactly the moment a person has the most open, and an icon is a
 //! thing somebody presses, held to a floor by
-//! [`crate::measures::SMALLEST_TARGET`].
+//! [`alo_appearance::targets::ENHANCED_TARGET`].
+//!
+//! **What that sentence was protecting is the target, and the owner has now
+//! separated the two.** Their ruling of 2026-09-30 is that the Dock's glyph may
+//! shrink from 32 to 28 as the bar fills, while a click target stays at least
+//! 44 — so a little of the *drawing* is traded and none of the *pressing* is.
+//! This file could not express that while a place was one number for both, and
+//! `crate::places` still is: a place is always `ICON` across, so the thing drawn
+//! and the thing pressed cannot move apart. That is the change this paragraph
+//! is owed, and it is not made here.
 //!
 //! **What overflows is chosen from the end**, so that a pinned application a
 //! person put there on purpose does not disappear because something else opened.

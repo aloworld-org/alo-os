@@ -326,7 +326,16 @@ mod tests {
         assert_eq!(picture.reserved.size.h, 960);
     }
 
-    /// **One slot per window, in order, each an icon square.**
+    /// **One slot per window, in order, each an icon square — and each big
+    /// enough to press.**
+    ///
+    /// The owner asked on 2026-09-30 for the target floors to be held against
+    /// the Dock, the status area and this panel. A preview is a thing somebody
+    /// clicks to bring a window back, so it is a control, and a control is
+    /// built to `ENHANCED_TARGET` rather than merely clearing
+    /// `SMALLEST_TARGET`. Asserted against the rectangles this file actually
+    /// produces rather than against `ICON`, because a constant compared with
+    /// itself is folded away before it can fail.
     #[test]
     fn there_is_one_slot_for_each_window_put_aside() {
         let picture = laid_out(4, AS_DRAWN);
@@ -334,6 +343,13 @@ mod tests {
         for slot in &picture.slots {
             assert_eq!(slot.size.w, 48);
             assert_eq!(slot.size.h, 48);
+            let floor = i32::try_from(alo_appearance::targets::ENHANCED_TARGET).unwrap();
+            assert!(
+                slot.size.w >= floor && slot.size.h >= floor,
+                "a preview is {}x{} and a control is built to {floor}",
+                slot.size.w,
+                slot.size.h
+            );
         }
         for pair in picture.slots.windows(2) {
             let (above, below) = (pair.first().unwrap(), pair.last().unwrap());
