@@ -533,13 +533,67 @@ misuse the clause forbids. The rest stays in this task, with the task open.
 
 ### 8. Privacy
 
-**Status:** ready. **Task 1 is blocked on a clause of its own acceptance, not on its work; what this task needs from it is built.**
+**Status:** done, 2026-09-30. **Every clause of this one is inside this lane, and all of them
+hold.**
 
 A private window shows a neutral *Preview hidden* surface with a safe identifying name,
 and still restores normally. Previews are made locally.
 
 **Acceptance.** A minimised state is never permission for an agent to inspect, share or
 act on the window — tested as a refusal, not assumed from the absence of a call.
+
+**Built:** `crates/alo-put-aside/src/a_safe_name.rs`, `whether_it_is_private.rs`,
+`what_a_preview_is_headed_with.rs`, `what_an_agent_may_do.rs`, and eight tests in
+`crates/alo-put-aside/tests/a_private_window_put_aside_stays_private.rs`.
+
+**The acceptance's last clause decided the shape of everything.** *Assumed from the absence of
+a call* is the test it forbids: assert that nothing reached the window and it passes on a
+machine where the agent is not running, then goes on passing after somebody adds the call —
+absence of evidence measured as evidence, which is ADR 0080's family.
+
+So there is a **door**, it is **asked**, and it **says no**. `what_an_agent_may_do` returns
+`NotPermitted` rather than a `Result`: **the return type has no success case**, so no caller
+can obtain permission here whatever it passes. Nine calls in the tests, three things an agent
+might want against two reasons it might give, each declined by name.
+
+**Both reasons are refused, and by different names.** *It is put aside* is the one a
+well-meaning caller actually reaches for — the window is out of the way, so surely reading it
+harms nobody — and a person put a window aside to stop dealing with it, which is not handing it
+over. *The person granted this* is refused too, because **this is not where grants are
+checked**: a crate saying yes to a grant it never saw would be guessing, and a second place
+deciding permission would be a second answer to *may this happen* with an agent finding
+whichever is weaker. The two refusals differ so a caller can tell *not on those grounds* from
+*not here*.
+
+**A private window's title is now unreachable, not merely undrawn.** `Preview::called()` is
+gone, replaced by `headline()`, which yields the safe name for a private window and does not
+return the title at all. A public accessor returning the title is the whole of what a leak
+needs, and documentation beside it stops nobody. **The same correction as `Zoom` and `Camera`,
+made before a peer had to measure it** — a rule held by a value being out of reach beats one
+held by a caller not asking for it.
+
+`Privacy::Private` **carries** its `SafeName` rather than sitting beside one, so *private with
+no safe name* does not exist — a `bool` plus an `Option` has that fourth state and the only
+thing a surface could do with it is fall back to the title. A blank safe name is refused too,
+because three rows reading *Preview hidden* identify nothing and a person with three private
+windows away has to be able to pick one.
+
+**Privacy is an argument, not a field with a default.** It is passed to every constructor that
+needs it, because a default of *ordinary* is the wrong default for privacy: the caller who
+forgets gets a leaked title, and forgetting is the commonest thing a caller does. Omitting it
+does not compile.
+
+*Preview hidden* is a **case and not a message**. The words belong to whoever draws and are
+externalised there, because this crate cannot know the person's language and English shipped
+here would be the hardcoded-English bug the standing rules name.
+
+**Previews are made locally**, held by a test reading this crate's own source for any road off
+the machine and its manifest for any dependency that could carry one. A preview that could
+travel is a private window travelling.
+
+**Four mutations watched failing:** the headline falling back to the title for a private
+window, *it is put aside* accepted as a reason, a blank safe name accepted, and a road off the
+machine added to the crate.
 
 ---
 

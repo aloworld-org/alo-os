@@ -38,7 +38,7 @@ use alo_put_aside::putting_aside::put_aside;
 use alo_put_aside::restoring::Travel;
 use alo_put_aside::restoring_into_a_taken_place::{Restored, accept, ask_for, dragged_to};
 use alo_put_aside::shown::Shown;
-use alo_put_aside::{NotPutAside, Panel};
+use alo_put_aside::{NotPutAside, Panel, Privacy};
 
 /// The zoom the person was at — never [`Zoom::LIFE_SIZE`], which is the default.
 fn a_zoom() -> Zoom {
@@ -84,7 +84,14 @@ fn a_wide_view() -> TheView {
 fn a_taken_place_proposes_and_moves_nothing() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let before: Vec<Window> = windows.each().cloned().collect();
     let previews_before = panel.previews().to_vec();
@@ -130,7 +137,14 @@ fn a_free_place_restores_and_says_where_to_travel() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(1)).unwrap().at();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     // A view at the plane's origin, nowhere near the window at x = 4_200.
     let elsewhere =
@@ -170,7 +184,14 @@ fn the_proposal_names_the_saved_place_the_offer_and_what_is_in_the_way() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(1)).unwrap().at();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let what = ask_for(
         &mut windows,
@@ -249,7 +270,14 @@ fn accepting_places_it_at_the_offer_and_keeps_where_it_was() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(1)).unwrap().at();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let Restored::Proposed(proposal) = ask_for(
         &mut windows,
@@ -300,7 +328,14 @@ fn dragging_places_it_where_the_person_said() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(1)).unwrap().at();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let Restored::Proposed(proposal) = ask_for(
         &mut windows,
@@ -376,7 +411,14 @@ fn asking_for_a_window_the_panel_does_not_hold_refuses_and_proposes_nothing() {
 fn accepting_after_the_window_has_gone_refuses() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let Restored::Proposed(proposal) = ask_for(
         &mut windows,
@@ -411,7 +453,14 @@ fn accepting_after_the_window_has_gone_refuses() {
 fn a_free_place_already_on_screen_travels_nowhere() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let what = ask_for(
         &mut windows,

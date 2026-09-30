@@ -39,6 +39,7 @@
 
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
+pub mod a_safe_name;
 pub mod alo_at_work;
 pub mod how_far_alo_has_got;
 pub mod panel;
@@ -52,9 +53,13 @@ pub mod restoring_into_a_taken_place;
 pub mod showing;
 pub mod shown;
 pub mod the_scope_alo_may_change;
+pub mod what_a_preview_is_headed_with;
 pub mod what_alo_is_doing;
+pub mod what_an_agent_may_do;
 pub mod where_it_goes_back;
+pub mod whether_it_is_private;
 
+pub use a_safe_name::SafeName;
 pub use alo_at_work::AtWork;
 pub use panel::{NotPutAside, Panel};
 pub use preview::Preview;
@@ -64,5 +69,7 @@ pub use restoring_into_a_taken_place::{Placed, Restored};
 pub use showing::{Chosen, HowItShows};
 pub use shown::Shown;
 pub use the_scope_alo_may_change::Scope;
+pub use what_a_preview_is_headed_with::Headline;
 pub use what_alo_is_doing::WhatAloIsDoing;
 pub use where_it_goes_back::WhereItGoesBack;
+pub use whether_it_is_private::Privacy;

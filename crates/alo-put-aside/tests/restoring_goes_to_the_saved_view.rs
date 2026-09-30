@@ -22,7 +22,7 @@ use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
 use alo_put_aside::putting_aside::put_aside;
 use alo_put_aside::restoring::{Travel, restore, travel_for};
-use alo_put_aside::{NotPutAside, Panel, WhereItGoesBack};
+use alo_put_aside::{NotPutAside, Panel, Privacy, WhereItGoesBack};
 
 /// The zoom the person was at — **never [`Zoom::LIFE_SIZE`]**.
 ///
@@ -66,7 +66,14 @@ fn restoring_from_somewhere_else_travels_to_the_saved_patch() {
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(1)).unwrap().at();
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
     let travel = restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
 
     let there = travel
@@ -97,7 +104,14 @@ fn restoring_from_somewhere_else_travels_to_the_saved_patch() {
 fn the_window_is_on_the_canvas_again_and_the_panel_has_let_it_go() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
 
@@ -117,7 +131,14 @@ fn the_window_is_on_the_canvas_again_and_the_panel_has_let_it_go() {
 fn restoring_a_window_the_view_already_shows_needs_no_travel() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     // The window sits at (20_000, 0) and is 800 by 600; this view contains it whole.
     let travel = restore(
@@ -152,7 +173,14 @@ fn restoring_a_window_the_view_already_shows_needs_no_travel() {
 fn a_window_only_partly_shown_is_still_travelled_to() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     // Showing from x = 19_000 for 1_920 reaches x = 20_920; the window ends at 20_800 —
     // so it fits horizontally. The miss is vertical: this view is only 400 tall.
@@ -205,7 +233,14 @@ fn restoring_a_window_the_panel_does_not_hold_refuses_and_changes_nothing() {
 fn asking_whether_a_travel_is_needed_does_not_restore_the_window() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let goes_back_to = WhereItGoesBack::of(a_patch(), a_zoom());
     let asked = travel_for(goes_back_to, view(0));
