@@ -205,15 +205,29 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
   one screen size*, with **a figure taken from a frame becomes a proportion or a
   named rule, never a constant**. The unlanded work defines
   `A_USABLE_HANDLE: (f64, f64) = (44.0, 24.0)`, scaled only by the text setting and
-  not derived from the display. The laptop lane measured every hit area on the
-  canvas page of the design file: **29, 40, 42, 44 or 52 logical pixels, and never
-  24.** So 44 is a design number and 24 is not one, and both are constants where
-  the rule asks for a derivation.
+  not derived from the display.
 
-  **That is a conflict between a direct instruction and a standing rule, and it is
-  the owner's.** The 44 × 24 minimum came from them on 2026-09-30; the rules
-  arrived the same day and say the design wins until an ADR says otherwise. Named
-  here rather than resolved by this lane in either direction.
+  **The laptop lane measured the design file twice, and the second measurement is
+  the one to act on.** The first said *29, 40, 42, 44 or 52, and never 24*, and
+  this line repeated it. **24 is in that file 328 times.** What the measurement
+  actually covered was every node named as a hit area, a focus area or a target:
+  29, 40, 42, 44 square, one 52 × 48, one 183 × 44. So the sharper statement, and
+  the true one: **24 is a glyph dimension in this design and never a target
+  dimension — and a handle is a target.** The smallest target anybody drew is 29.
+
+  **Which turns the question from a conflict into a suspected conflation.**
+  `A_USABLE_HANDLE` may be one constant doing two jobs: 44 behaving as a target
+  and 24 as a glyph. That is the same fault already found in `alo-dock`, where
+  `measures::ICON = 48` is both the picture and the thing you press. If it is the
+  same fault, the resolution that satisfies **both** the owner's 44 × 24
+  instruction and *a figure taken from a frame becomes a proportion or a named
+  rule* is a glyph and a target named separately — 24 surviving as the first, the
+  second derived rather than written down.
+
+  **Named here, not resolved by this lane.** The owner gave the 44 × 24 minimum on
+  2026-09-30 and the rules arrived the same day; whether the pair is one measure or
+  two is theirs to say, and the laptop lane offered its reading explicitly as a
+  candidate rather than a decision.
 - **Owed, and the owner has granted part of it.** The fourth check needs a keyboard
   road to move a frame. *Move to Place* is now promised and is task 3's — so
   **moving a frame between Places by keyboard is in scope**. What is still not
