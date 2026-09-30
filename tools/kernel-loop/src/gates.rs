@@ -345,23 +345,24 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         // about the work.
         let began = Instant::now();
         let mut refused = match ran(gate, at)? {
-            Ok(()) => {
-                passed.push(format!("{} in {:.0?}", gate.named, began.elapsed()));
+            Ok(coverage) => {
+                passed.push(said_of(gate.named, began.elapsed(), &coverage));
                 continue;
             }
             Err(why) => why,
         };
         let again = Instant::now();
-        if ran(gate, at)?.is_ok() {
+        if let Ok(coverage) = ran(gate, at)? {
             // Both durations, because the first one is how long the failure
             // took and that is the more interesting of the two when a gate is
             // failing transiently: a refusal in a second is a different animal
             // from a refusal in nine minutes.
             passed.push(format!(
-                "{} in {:.0?} (on the second run; the first refused after {:.0?})",
+                "{} in {:.0?} (on the second run; the first refused after {:.0?}){}",
                 gate.named,
                 again.elapsed(),
-                began.elapsed().saturating_sub(again.elapsed())
+                began.elapsed().saturating_sub(again.elapsed()),
+                beside(&coverage)
             ));
             continue;
         }
@@ -384,6 +385,75 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         return Err(refused);
     }
     Ok(passed)
+}
+
+#[cfg(test)]
+mod how_much_ran {
+    use super::{beside, how_much_of_the_suite_ran};
+
+    /// **The count is taken off nextest's own summary**, wherever nextest put it.
+    #[test]
+    fn a_suite_that_says_what_it_ran_is_quoted() {
+        let said = "    Summary [  33.8s] 865 tests run: 865 passed, 0 skipped\n";
+        assert_eq!(
+            how_much_of_the_suite_ran(said, ""),
+            "865 tests run: 865 passed, 0 skipped"
+        );
+        // nextest writes its summary to stderr under some runners, and a reader
+        // that only looked at stdout would report nothing on those machines
+        // while reporting a figure on others — which is worse than silence,
+        // because it looks like a difference in what ran.
+        assert_eq!(
+            how_much_of_the_suite_ran("", said),
+            "865 tests run: 865 passed, 0 skipped"
+        );
+    }
+
+    /// **A skip is the colour of a pass**, which is the whole reason this exists.
+    #[test]
+    fn the_skipped_count_survives_because_it_is_the_point() {
+        let said = "    Summary [   0.1s] 3 tests run: 3 passed, 862 skipped\n";
+        assert!(how_much_of_the_suite_ran(said, "").contains("862 skipped"));
+    }
+
+    /// **The last summary, not the first.** A run that lists and then runs prints
+    /// more than one, and the one that describes the run is the last.
+    #[test]
+    fn the_last_summary_is_the_one_that_describes_the_run() {
+        let said = "Summary [ 1.0s] 10 tests run: 10 passed\nnoise\nSummary [ 2.0s] 20 tests run: 20 passed\n";
+        assert_eq!(
+            how_much_of_the_suite_ran(said, ""),
+            "20 tests run: 20 passed"
+        );
+    }
+
+    /// **The eight gates that count nothing say nothing**, rather than saying nought.
+    ///
+    /// The refusal path of this function, and the one that matters: a formatting
+    /// gate reporting *0 tests run* would be a figure somebody could compare
+    /// against another gate's, and it would mean nothing at all.
+    #[test]
+    fn a_gate_with_nothing_to_count_is_silent() {
+        assert!(how_much_of_the_suite_ran("", "").is_empty());
+        assert!(how_much_of_the_suite_ran("checking alo-shell\nFinished", "").is_empty());
+        assert!(beside("").is_empty());
+        assert_eq!(beside("4 tests run: 4 passed"), " — 4 tests run: 4 passed");
+    }
+}
+
+/// What a passing gate is reported as: its name, how long it took, and how much
+/// of the suite it ran where it can say.
+fn said_of(named: &str, took: std::time::Duration, coverage: &str) -> String {
+    format!("{named} in {took:.0?}{}", beside(coverage))
+}
+
+/// The coverage line, set off from the name, or nothing at all.
+fn beside(coverage: &str) -> String {
+    if coverage.is_empty() {
+        String::new()
+    } else {
+        format!(" — {coverage}")
+    }
 }
 
 /// Drop what was built of the crates this change touched, before anything is
@@ -552,18 +622,53 @@ pub(crate) fn blamed_the_machine(said: &str) -> bool {
 /// The outer `Result` is *the gate could not be run at all*, which is a
 /// different thing from *the gate ran and refused* — and is not retried,
 /// because a missing toolchain does not become present on a second attempt.
-fn ran(gate: &Gate, at: &Path) -> Result<Result<(), String>, String> {
+fn ran(gate: &Gate, at: &Path) -> Result<Result<String, String>, String> {
     let said = asking(gate, at)?
         .output()
         .map_err(|why| format!("`{}` could not be run: {why}", gate.named))?;
     // Through `what_it_printed`, because the bridge's own words arrive in
     // UTF-16 and the classifier below has to be able to read them.
-    Ok(whether_it_passed(
-        gate.named,
-        said.status.success(),
-        &what_it_printed::as_text(&said.stdout),
-        &what_it_printed::as_text(&said.stderr),
-    ))
+    let out = what_it_printed::as_text(&said.stdout);
+    let err = what_it_printed::as_text(&said.stderr);
+    let coverage = how_much_of_the_suite_ran(&out, &err);
+    Ok(whether_it_passed(gate.named, said.status.success(), &out, &err).map(|()| coverage))
+}
+
+/// How much of the suite a passing gate actually ran, if it says.
+///
+/// **A skip is the colour of a pass.** Only the tests gate has anything to say
+/// here — nextest ends with *N tests run: N passed, M skipped* — and until this
+/// existed the line went into a buffer that a passing gate dropped. So every
+/// *nine of nine* any lane reported was silent about what fraction of the suite
+/// it had covered, and a machine with no weston, no vivid and no pinned office
+/// engine skips a great deal while looking identically green.
+///
+/// `gate.yml` has printed the skip count on every hosted run for weeks, with the
+/// reason written beside it. The supervisor did not, and the lane scripts that
+/// copied the supervisor could not. Found by the third PC on 2026-09-29, trying
+/// to tell the Mac lane how many tests its own gate had skipped and discovering
+/// that nothing anywhere knew.
+///
+/// Empty for the eight gates that measure nothing countable, which is why it is
+/// appended rather than formatted in: a gate with nothing to say should say
+/// nothing rather than say *0*.
+fn how_much_of_the_suite_ran(out: &str, err: &str) -> String {
+    let summary = |text: &str| -> Option<String> {
+        text.lines()
+            .rev()
+            .find(|line| line.contains(" tests run: "))
+            .map(|line| {
+                // Cut at nextest's own `Summary [ 12.3s]` frame and keep what
+                // follows, which begins with the count. An earlier version
+                // trimmed leading digits to drop the duration and ate the count
+                // with it — `865 tests run` became `tests run` — which its own
+                // test caught on the first run.
+                line.split_once("] ")
+                    .map_or(line.trim(), |(_, rest)| rest.trim())
+                    .to_owned()
+            })
+    };
+    summary(out).or_else(|| summary(err)).unwrap_or_default()
 }
 
 /// How many lines of the end of a gate's output the sentence carries.
