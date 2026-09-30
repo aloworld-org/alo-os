@@ -53,7 +53,7 @@ an application with an `Applicant` door (`Grants::allowing`) whose refusal
 and writes the lowest that holds the list (`docs/contracts/grants-file.md`).
 `crates/alo-portals` names the fifteen v0.5 portals and judges a request with
 `Grants::allows_anything` and `Grants::allowing`. The waiting test
-`crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs` was retired;
+`crates/alo-portals/tests/a_portal_request_is_a_grant.rs` was retired;
 what it held about the ADR's table and the features line is now held by
 `crates/alo-portals/tests/a_portal_request_is_a_grant.rs`. Report:
 `docs/autonomy/updates/portal-requests-judged-as-grants.md`.
@@ -79,7 +79,7 @@ portal may reach, a grantee that is an agent or an application, and application
 grants that outlive declining the agent. The task is ready again once three
 things happen: the owner answers, the capability change is made by the crate's
 owner or moved into this plan in writing, and the grants file moves to a new
-format. `crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`
+format. `crates/alo-portals/tests/a_portal_request_is_a_grant.rs`
 held the ADR in place while it was *proposed* (retired once task 1 was built).
 Report:
 `docs/autonomy/updates/portal-grants-decided-before-they-are-built.md`.

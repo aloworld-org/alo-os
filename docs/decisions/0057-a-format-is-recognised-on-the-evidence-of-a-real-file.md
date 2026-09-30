@@ -198,7 +198,7 @@ change that proposes this decision, and it needs no file to prove: the brands
 after the header decide, a file whose brands name none of the ones this machine
 reads is *not recognised*, and the rule is a refusal rather than a claim
 (`crates/alo-opening/src/iso_media.rs`,
-`crates/alo-opening/tests/a_photograph_is_not_a_film.rs`). **It does not
+`crates/alo-opening/tests/a_photo_from_a_telephone.rs`). **It does not
 recognise a photograph.** It stops this machine saying something untrue about
 one.
 

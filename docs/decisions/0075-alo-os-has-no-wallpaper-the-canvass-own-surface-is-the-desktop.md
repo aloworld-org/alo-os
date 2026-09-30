@@ -71,7 +71,10 @@ feature is how a machine ends up with two answers to *what is behind my work*.
 - `docs/contracts/shipped-wallpapers.md`, and the artwork it governs —
   `docs/artwork/wallpapers/alo-quiet-horizon.png` with its approval and SHA-256.
 - The image's install of `/usr/share/alo/wallpapers/alo.png`.
-- The lock screen's picture path, including `crates/alo-shell/src/lock_image_decode.rs`.
+- The lock screen's picture path, including the `lock_image_decode` module.
+  *Named without a path from 2026-09-30, because this record deleted that file
+  and a path here pointed at nothing. A dead name is written without a path or
+  an extension so that a quotation of it cannot be read as a pointer.*
 - The v0.5 promise's *file, folder* half. **Deleted rather than completed**, with
   this record as the reason.
 

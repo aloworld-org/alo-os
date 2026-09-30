@@ -11,7 +11,7 @@ transactions and the full window-management feature remain unfinished.
 
 Native controls can calculate exact left/right half-output targets without
 disturbing the current scene or ordinary typing. The additive trusted API lives
-in `crates/alo-shell/src/window_tiling.rs`, with public rustdoc and
+in `crates/alo-shell/src/window_dividing.rs`, with public rustdoc and
 `docs/contracts/native-window-tiling.md`. It reuses the successful-output extent
 and retirement rules of maximize and the effective-geometry validation of resize.
 No new agent or application-adapter endpoint, engine patch, strings or colors.

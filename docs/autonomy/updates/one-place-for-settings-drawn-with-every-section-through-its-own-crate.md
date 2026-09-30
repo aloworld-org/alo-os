@@ -141,7 +141,7 @@ certified machine or under WSLg.
 
 The first hand-over was refused by the workspace suite:
 `alo-changing`'s `no_shipped_source_is_a_second_writer_of_the_pairings_file`
-named `crates/alo-shell/src/settings_testing.rs`. That fixture is `cfg(test)`
+named the `settings_testing` fixture. That fixture is `cfg(test)`
 only, but it stands the machine up with `alo_remembering::pairings_kept`, and
 the test reads every file under a crate's `src/` as shipped — which is the
 right rule, because it cannot tell a fixture from a writer by reading.

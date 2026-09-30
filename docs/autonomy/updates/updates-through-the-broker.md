@@ -104,7 +104,7 @@ read fetches nothing rather than quietly going around it.
 
 ### Tests and documents
 
-- **`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` — deleted**,
+- **`crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` — deleted**,
   and replaced by **`tests/the_updates_are_carried_by_a_unit.rs`** and
   **`tests/only_the_update_approved_is_carried_out.rs`**, in the same commit that
   moves ADR 0053 to *accepted*.

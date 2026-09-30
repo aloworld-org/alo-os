@@ -16,7 +16,7 @@ judged against a grant yet.
   *proposed*). It covers what an application's grant is over, where it is
   kept, and why a worker could not choose that alone. It sets out three
   options, what each costs, and a recommendation.
-- **`crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`** (new).
+- **`crates/alo-portals/tests/a_portal_request_is_a_grant.rs`** (new).
   It holds the ADR in place, the same way
   `crates/alo-opening/tests/converting_waits_on_its_decision.rs` holds ADR
   0039.
@@ -95,7 +95,7 @@ the deliverable.
 
 ## What the test holds
 
-`crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`:
+`crates/alo-portals/tests/a_portal_request_is_a_grant.rs`:
 
 | Test | What it refuses |
 |---|---|

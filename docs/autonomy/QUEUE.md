@@ -3796,10 +3796,10 @@ out.
   manage. It is `InferenceSource::ThisMachine` and causes no egress, so it
   belongs behind the local door — and it is not a `ModelRuntime`, so
   `to_this_machine` as it stands could not carry it. **A third door**:
-  `crates/alo-asking/served.rs` (`Served`, and
+  `crates/alo-asking/src/served.rs` (`Served`, and
   `Asking::to_a_service_on_this_machine`) and `openai.rs`, which is the wire
   moved out of `hosted.rs` so that two things speaking one convention cannot
-  become two renderings of it. `crates/alo-models/address.rs` is new and is the
+  become two renderings of it. `crates/alo-models/src/address.rs` is new and is the
   security half. 64 unit tests in `alo-asking` (was 48), 103 in `alo-models`
   (was 96), 2 new integration tests through `alo-record` and the indicator, and
   1 new `compile_fail` doctest. **1183 tests and 40 doctests across the

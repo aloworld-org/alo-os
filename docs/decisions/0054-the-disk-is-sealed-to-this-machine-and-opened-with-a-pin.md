@@ -6,7 +6,7 @@ as recommended and without amendment.** Written by task 5 of
 decided before it is built*), whose whole acceptance is this decision and the
 shape it leaves behind in `crates/alo-encrypting`. Tasks 6 and 7 of that plan
 waited on it and are now the work to do;
-`crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` begins
+`crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` begins
 failing with this line, which is how a decision gets built rather than
 remembered.
 

@@ -142,7 +142,7 @@ accusation.
 
 **ADR 0053 still reads *proposed*.** This plan's task 9 says the owner accepted
 it on 2026-09-19, option B. The decision file's own status line says *proposed,
-2026-09-17*, and `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs`
+2026-09-17*, and `crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs`
 — which is written to start failing the day that line changes — passes today.
 Accepting a decision is the owner's act and not a worker's, so nothing was
 changed to match. The consequence is concrete and belongs in front of whoever

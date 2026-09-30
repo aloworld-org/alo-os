@@ -84,7 +84,7 @@ additively, then the portal crate.
 
 ### Retired
 
-- `crates/alo-granted/tests/a_portal_grant_waits_on_its_decision.rs`. It held
+- `crates/alo-portals/tests/a_portal_request_is_a_grant.rs`. It held
   the ADR in place while the ADR was *proposed*, and its own report asked the
   worker who built task 1 to remove or rewrite it. What still matters moved to
   `crates/alo-portals/tests/a_portal_request_is_a_grant.rs`: the features line

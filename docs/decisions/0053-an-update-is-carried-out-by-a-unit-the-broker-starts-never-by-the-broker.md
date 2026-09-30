@@ -7,7 +7,7 @@ which is the change that moved this line. Written by task 4 of the same plan
 built then; the update half could not be, without deciding something a worker
 may not decide: widening a privileged component's privilege, or adding a
 privileged component. Until this line moved, the update verbs were answered
-`not-carried`, held by `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs`,
+`not-carried`, held by `crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs`,
 which was written to fail the day it stopped saying *proposed*. It did, and the
 change that moved it replaced that test with the tests of what was built —
 `crates/alo-brokerd/tests/the_updates_are_carried_by_a_unit.rs` and

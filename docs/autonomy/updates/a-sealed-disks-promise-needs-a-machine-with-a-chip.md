@@ -118,7 +118,7 @@ with a chip — and until there is one, the repository says so.**
 ## Decisions made in writing it, and why
 
 - **Retargeting the guard rather than deleting it.**
-  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` failed the
+  `crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` failed the
   moment ADR 0054 stopped saying *proposed*, exactly as task 5 designed it to.
   Deleting it because the decision it named had been answered would have left a
   green suite over a crate that still enrols nothing. It now reads **both**

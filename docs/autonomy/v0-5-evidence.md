@@ -296,13 +296,20 @@ nothing here shows is that surface drawn on a display somebody is looking at,
 which is the compositor's and is owed to a machine.
 
 *Until 2026-09-29 this entry read **Shown by: nothing that survives ADR 0075**,
-and explained that its only evidence —
-`crates/alo-image/tests/the_default_wallpaper_is_installed.rs` and the artwork
+and explained that its only evidence — the `the_default_wallpaper_is_installed`
+test and the artwork
 report — was for the photograph the record deletes. That was the honest reading
 while the removal was pending. The removal landed, the test went with it, and
 `alo-reconciling` caught the citation still standing: **evidence that moved is
 evidence nobody can run, and it reads exactly like evidence that is still
 there.***
+
+*And this paragraph then made the same mistake one level down: it quoted the
+dead test **as a path**, so a note about a pointer that no longer lands was
+itself a pointer that no longer landed. Written without a path or an extension
+from 2026-09-30, the way `alo-dock` records its own dead names. Found by
+`alo-citing`'s check that every path this repository's documents name lands —
+which found it in the sentence explaining the fault it checks for.*
 
 *This entry read **Wallpapers shipped with the image, so a fresh machine is not
 grey** until 2026-09-29, and its **Still owed** said the promise was plural and

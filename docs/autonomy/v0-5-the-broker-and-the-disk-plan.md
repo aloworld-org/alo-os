@@ -232,7 +232,7 @@ process. Every road forward either widens a privileged component, adds one, or
 edits `alo-keeping-up`, which this plan never edits. So ADR 0053 sets out the
 options and recommends a unit per update verb that the broker starts through
 systemd. Both update verbs answer `not-carried` in the record until it is accepted,
-and `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` fails once it
+and `crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` fails once it
 is. The update half of the acceptance below is task 8's, word for word.
 
 - **Acceptance:** the broker's update verbs — apply a staged update, roll back — carry
@@ -297,7 +297,7 @@ asserted about one road a test walked.
   enrolled on any real disk by any test; everything is a virtual disk.
 - **What task 6 inherits from 5** (its report has the reasoning):
   `alo_encrypting::THE_ROAD` is the sequence to turn into commands, in that order, and
-  `crates/alo-encrypting/tests/the_enrolment_waits_on_its_decision.rs` **failed the day
+  `crates/alo-encrypting/tests/the_sequence_against_a_virtual_disk.rs` **failed the day
   ADR 0054 stopped saying *proposed***, so a decision accepted and not built is a red
   suite rather than a forgotten line. It did, on 2026-09-19, and task 6 retargeted it at
   [ADR 0056](../decisions/0056-a-sealed-disks-promise-is-shown-on-a-machine-with-a-chip.md)
@@ -517,7 +517,7 @@ status read now, refuses with `NotRunningABuild`, `TheMachineMovedOn`,
 
 **The two-commit shape task 6 sets out was followed.** Until the work commit the
 decision file still read *proposed, 2026-09-17*, and
-`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` read that line
+`crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` read that line
 and passed; the work commit moved ADR 0053 to *accepted*, replaced that guard
 with `tests/the_updates_are_carried_by_a_unit.rs` and
 `tests/only_the_update_approved_is_carried_out.rs`, and marked this task done,
@@ -536,7 +536,7 @@ broker. Its report and ADR 0053 have the measurements.
   capability; what runs the base is a unit with a fixed command line, its
   capabilities named line by line and held by a test; each refusal ADR 0053 lists
   is a test beside the carried case; and
-  `crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` is replaced by
+  `crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` is replaced by
   those tests.
 - **Constraint:** `bootc` is rented and never patched (ADR 0011). What the image
   installs is the installer plan's; this task hands it the units and the measured

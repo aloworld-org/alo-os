@@ -169,7 +169,7 @@ worker was sent at code nothing was wrong with.
   tree holds byte for byte what the commit held, and the commit itself is
   still in the reflog. This is a worker's `reset`, over its own task's
   work, and not one the supervisor gained.
-- Fixed the misreading, small and tested: `tools/kernel-loop/src/printed.rs`
+- Fixed the misreading, small and tested: `tools/kernel-loop/src/what_it_printed.rs`
   is one function, `as_text`, that decodes UTF-16LE when the bytes carry a
   NUL — which UTF-8 output from cargo, rustc, git and the test harness
   never does — and UTF-8 otherwise, dropping a byte-order mark. The gate

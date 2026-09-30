@@ -123,7 +123,7 @@ and no `Display`; and no secret appears in any line the crate can print,
 `Enrolment`'s included.
 
 `tests/the_enrolment_waits_on_its_decision.rs` is the pattern
-`crates/alo-brokerd/tests/the_updates_wait_on_their_decision.rs` set in task 4:
+`crates/alo-brokerd/tests/only_the_update_approved_is_carried_out.rs` set in task 4:
 it asserts ADR 0054 still says *proposed*, and **fails the day it says
 accepted**, which is task 6's instruction to build rather than a line somebody
 has to remember. It also reads the source to show that no rented tool, device or
