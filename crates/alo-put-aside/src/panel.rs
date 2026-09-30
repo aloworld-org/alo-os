@@ -23,6 +23,7 @@ use alo_dock::window::{Window, WindowId};
 use crate::preview::Preview;
 use crate::showing::{Chosen, HowItShows};
 use crate::what_alo_is_doing::WhatAloIsDoing;
+use crate::whether_it_is_private::Privacy;
 
 /// Why a window could not be put aside, or brought back.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -69,11 +70,16 @@ impl Panel {
     /// # Errors
     ///
     /// [`NotPutAside::ItIsAlreadyThere`] if it is in the panel already.
-    pub fn put_aside(&mut self, window: &Window, zoom: Zoom) -> Result<(), NotPutAside> {
+    pub fn put_aside(
+        &mut self,
+        window: &Window,
+        zoom: Zoom,
+        privacy: Privacy,
+    ) -> Result<(), NotPutAside> {
         if self.holds(window.id()) {
             return Err(NotPutAside::ItIsAlreadyThere);
         }
-        self.previews.insert(0, Preview::of(window, zoom));
+        self.previews.insert(0, Preview::of(window, zoom, privacy));
         Ok(())
     }
 

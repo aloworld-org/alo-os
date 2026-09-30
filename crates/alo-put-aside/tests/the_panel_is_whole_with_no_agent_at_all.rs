@@ -45,7 +45,7 @@ use alo_put_aside::putting_aside::put_aside;
 use alo_put_aside::requires_you::{NotWaiting, RequiresYou};
 use alo_put_aside::restoring_into_a_taken_place::{Restored, ask_for};
 use alo_put_aside::the_scope_alo_may_change::{NotAScope, Scope};
-use alo_put_aside::{Chosen, HowItShows, Panel, WhatAloIsDoing};
+use alo_put_aside::{Chosen, HowItShows, Panel, Privacy, WhatAloIsDoing};
 
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
@@ -83,9 +83,30 @@ fn with_no_agent_the_panel_is_complete_and_offers_nothing_agent_shaped() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(2), a_zoom()).unwrap();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(3), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(2),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(3),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     // Everything the panel is for, with no agent anywhere. A fresh panel is `Expanded` —
     // *what a panel does by default*, per `showing.rs` — so three previews are named ones.
@@ -97,7 +118,11 @@ fn with_no_agent_the_panel_is_complete_and_offers_nothing_agent_shaped() {
     assert_eq!(panel.chosen(), Chosen::Collapsed);
     panel.expand();
     assert_eq!(panel.showing(), HowItShows::NamedPreviews);
-    let names: Vec<&str> = panel.previews().iter().map(|p| p.called()).collect();
+    let names: Vec<&str> = panel
+        .previews()
+        .iter()
+        .map(|p| p.headline().text())
+        .collect();
     assert_eq!(names, ["The wiki", "Anna", "Launch strategy"]);
 
     // And not one of them has an agent section.
@@ -141,7 +166,14 @@ fn with_no_agent_the_panel_is_complete_and_offers_nothing_agent_shaped() {
 fn a_preview_starts_with_nothing_to_say_about_alo() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let only = panel.previews().first().expect("one window was put aside");
     assert_eq!(only.alo(), &WhatAloIsDoing::Nothing);
@@ -185,9 +217,30 @@ fn a_report_says_the_task_the_scope_the_progress_and_what_was_confirmed() {
 fn a_waiting_task_is_findable_without_the_panel_re_sorting() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(2), a_zoom()).unwrap();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(3), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(2),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(3),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
     let order_before: Vec<WindowId> = panel.previews().iter().map(|p| p.window()).collect();
 
     // The oldest one — bottom of the list — is the one that stops and waits.
@@ -234,7 +287,14 @@ fn a_waiting_task_is_findable_without_the_panel_re_sorting() {
 fn a_report_for_a_window_that_is_not_away_is_refused() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let work = AtWork::on("Something", Scope::ReadsOnly, None, None, RequiresYou::No).unwrap();
     assert!(

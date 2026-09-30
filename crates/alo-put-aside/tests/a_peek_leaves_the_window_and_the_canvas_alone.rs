@@ -41,7 +41,7 @@ use alo_put_aside::peeking_at_a_preview::{chosen, peek_at, stop_peeking};
 use alo_put_aside::putting_aside::put_aside;
 use alo_put_aside::restoring::Travel;
 use alo_put_aside::restoring_into_a_taken_place::Restored;
-use alo_put_aside::{NotPutAside, Panel};
+use alo_put_aside::{NotPutAside, Panel, Privacy};
 
 /// The zoom the person was at — never [`Zoom::LIFE_SIZE`], which is the default.
 fn a_zoom() -> Zoom {
@@ -78,7 +78,14 @@ fn an_offer() -> Patch {
 fn a_desk_with_one_put_aside() -> (Windows, Panel) {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
     (windows, panel)
 }
 

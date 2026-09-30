@@ -15,7 +15,7 @@ use alo_dock::on_the_canvas::{Patch, Spot};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
 use alo_put_aside::putting_aside::{bring_back, put_aside};
-use alo_put_aside::{NotPutAside, Panel};
+use alo_put_aside::{NotPutAside, Panel, Privacy};
 
 /// The zoom a person happened to be at — **deliberately not life size**.
 ///
@@ -71,7 +71,14 @@ fn putting_one_aside_moves_no_other_window() {
 
     let before = the_others(&windows, 2);
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(2), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(2),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     assert_eq!(
         the_others(&windows, 2),
@@ -91,7 +98,14 @@ fn the_window_leaves_the_canvas_and_the_panel_holds_it() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(2), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(2),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let it = windows.window(WindowId::numbered(2)).unwrap();
     assert_eq!(
@@ -123,7 +137,14 @@ fn a_window_comes_back_to_the_view_it_left() {
     let mut panel = Panel::new();
     let was_at = windows.window(WindowId::numbered(2)).unwrap().at();
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(2), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(2),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
     let goes_to = bring_back(&mut windows, &mut panel, WindowId::numbered(2)).unwrap();
 
     assert_eq!(goes_to.at(), was_at, "it came back somewhere else");
@@ -157,7 +178,14 @@ fn a_round_trip_leaves_the_whole_desk_as_it_was() {
     let mut panel = Panel::new();
     let before: Vec<Window> = windows.each().cloned().collect();
 
-    put_aside(&mut windows, &mut panel, WindowId::numbered(3), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(3),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
     bring_back(&mut windows, &mut panel, WindowId::numbered(3)).unwrap();
 
     let after: Vec<Window> = windows.each().cloned().collect();
@@ -179,7 +207,13 @@ fn the_two_ways_of_asking_about_a_window_that_is_not_there() {
     let mut panel = Panel::new();
 
     assert_eq!(
-        put_aside(&mut windows, &mut panel, WindowId::numbered(9), a_zoom()),
+        put_aside(
+            &mut windows,
+            &mut panel,
+            WindowId::numbered(9),
+            a_zoom(),
+            Privacy::Ordinary
+        ),
         Err(NotPutAside::ItIsNotThere),
         "putting aside a window nobody opened"
     );
@@ -199,11 +233,24 @@ fn the_two_ways_of_asking_about_a_window_that_is_not_there() {
 fn the_second_attempt_refuses_and_changes_nothing() {
     let mut windows = a_desk();
     let mut panel = Panel::new();
-    put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()).unwrap();
+    put_aside(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        a_zoom(),
+        Privacy::Ordinary,
+    )
+    .unwrap();
 
     let before: Vec<Window> = windows.each().cloned().collect();
     assert_eq!(
-        put_aside(&mut windows, &mut panel, WindowId::numbered(1), a_zoom()),
+        put_aside(
+            &mut windows,
+            &mut panel,
+            WindowId::numbered(1),
+            a_zoom(),
+            Privacy::Ordinary
+        ),
         Err(NotPutAside::ItIsAlreadyThere)
     );
 

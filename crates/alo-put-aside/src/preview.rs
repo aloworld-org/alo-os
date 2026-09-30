@@ -23,8 +23,10 @@ use alo_canvas::Zoom;
 use alo_dock::on_the_canvas::Patch;
 use alo_dock::window::{AppId, Window, WindowId};
 
+use crate::what_a_preview_is_headed_with::Headline;
 use crate::what_alo_is_doing::WhatAloIsDoing;
 use crate::where_it_goes_back::WhereItGoesBack;
+use crate::whether_it_is_private::Privacy;
 
 /// One window put aside, as the panel holds it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,6 +61,8 @@ pub struct Preview {
     /// with no agent carries no agent report and can never be drawn with an empty one, which
     /// is ADR 0009 held by the field's initial value rather than by a caller remembering.
     alo: WhatAloIsDoing,
+    /// Whether the title may be shown, and what to show if not.
+    privacy: Privacy,
 }
 
 impl Preview {
@@ -68,7 +72,7 @@ impl Preview {
     /// something to do here, and **never by this constructor** — a machine with no agent must
     /// not have to pass an argument saying so.
     #[must_use]
-    pub fn of(window: &Window, zoom: Zoom) -> Self {
+    pub fn of(window: &Window, zoom: Zoom, privacy: Privacy) -> Self {
         Self {
             window: window.id(),
             app: window.app().clone(),
@@ -76,6 +80,7 @@ impl Preview {
             at: window.at(),
             zoom,
             alo: WhatAloIsDoing::Nothing,
+            privacy,
         }
     }
 
@@ -91,14 +96,32 @@ impl Preview {
         &self.app
     }
 
-    /// What the person calls it.
+    /// What to write at the top of this preview's row.
     ///
-    /// **Never empty.** `alo-dock` gives a window with no title of its own the
-    /// application's name when it is made, for the reason its own file states: a
-    /// preview headed with a number is a row a person cannot choose between.
+    /// **The only way to get a heading, and a private window's title is not reachable at
+    /// all.** This replaced a `called()` that returned the title, because a public accessor
+    /// returning the title is the whole of what a surface needs to leak a private window, and
+    /// no documentation beside it stops the one caller who draws the obvious field.
+    ///
+    /// The same correction as `Zoom` and `Camera`, made before somebody else had to measure
+    /// it: a rule held by a value being out of reach beats a rule held by a caller not asking
+    /// for it.
+    ///
+    /// **Never empty.** `alo-dock` gives a window with no title of its own the application's
+    /// name when it is made, for the reason its own file states — a preview headed with a
+    /// number is a row a person cannot choose between — and a safe name refuses to be blank.
     #[must_use]
-    pub fn called(&self) -> &str {
-        &self.called
+    pub fn headline(&self) -> Headline<'_> {
+        match self.privacy.safe_name() {
+            Some(safe) => Headline::PreviewHidden(safe),
+            None => Headline::ItsTitle(&self.called),
+        }
+    }
+
+    /// Whether this window's contents may be described at all.
+    #[must_use]
+    pub const fn privacy(&self) -> &Privacy {
+        &self.privacy
     }
 
     /// The part of the plane it goes back to.
