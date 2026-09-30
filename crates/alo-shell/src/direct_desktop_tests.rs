@@ -76,6 +76,7 @@ impl crate::TheDesktop for ADesktop {
             division: an_undivided_display(),
             offer: nothing_offered(),
             windows: &[],
+            put_aside: crate::desktop_testing::nothing_put_aside(),
         }
     }
 }

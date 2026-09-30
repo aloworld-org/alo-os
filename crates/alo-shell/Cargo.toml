@@ -65,6 +65,11 @@ alo-dividing = { path = "../alo-dividing" }
 alo-canvas = { path = "../alo-canvas" }
 alo-desktops = { path = "../alo-desktops" }
 alo-dock = { path = "../alo-dock" }
+# The panel of windows a person put aside: what is in it and what each preview
+# says. It holds no geometry at all, deliberately, so the conversion from the
+# design's figures to this display's pixels happens once, here, in the crate
+# that knows the display. The `panel_raster` module is where that happens.
+alo-put-aside = { path = "../alo-put-aside" }
 # The list of grants a person sees: rows derived from the machine's own grants,
 # and the words for revoking one. Read, and revoked only through `alo-changing`.
 alo-granted = { path = "../alo-granted" }

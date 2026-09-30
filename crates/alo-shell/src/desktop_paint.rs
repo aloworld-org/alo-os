@@ -24,6 +24,7 @@ impl DesktopPicture {
         // a refusal.
         if self.size == size
             && self.dock.as_ref().is_none_or(|dock| dock.size == size)
+            && self.panel.size == size
             && self.running.size == size
             && self.filling.size == size
         {
@@ -49,6 +50,11 @@ impl DesktopPicture {
         if let Some(dock) = self.dock.as_ref() {
             crate::painted::paint(frame, &dock.solids, &[])?;
         }
+        // The panel is furniture beside the dock rather than on top of it: two
+        // surfaces at two edges, neither drawn over the other, which is why
+        // their areas are kept apart rather than ordered. An empty panel has no
+        // solids, so a person who has put nothing aside is painted nothing.
+        crate::painted::paint(frame, &self.panel.solids, &[])?;
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;

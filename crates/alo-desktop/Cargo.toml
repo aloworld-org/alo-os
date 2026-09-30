@@ -30,6 +30,9 @@ alo-appearance = { path = "../alo-appearance" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
+# The windows a person put aside. Held here because the panel at the edge is
+# drawn from it, and empty because nothing in this binary puts one aside yet.
+alo-put-aside = { path = "../alo-put-aside" }
 alo-egress = { path = "../alo-egress" }
 alo-indicator = { path = "../alo-indicator" }
 alo-saying = { path = "../alo-saying" }

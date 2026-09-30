@@ -281,3 +281,16 @@ pub(crate) fn nothing_offered() -> &'static alo_dividing::Offer {
     static NONE: alo_dividing::Offer = alo_dividing::Offer::Nothing;
     &NONE
 }
+
+/// A desk where nothing has been put aside.
+///
+/// One shared value rather than a temporary built at each site, so a test can
+/// bind the frame it builds without a borrow outliving the panel it names.
+///
+/// **An empty panel is the true answer for a test that is not about the
+/// panel**, not a placeholder: a person who has put nothing aside has an empty
+/// panel, and `crate::panel_raster` draws no rail for one.
+pub(crate) fn nothing_put_aside() -> &'static alo_put_aside::Panel {
+    static EMPTY: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
+    EMPTY.get_or_init(alo_put_aside::Panel::new)
+}

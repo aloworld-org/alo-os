@@ -73,6 +73,14 @@ pub struct DesktopFrame<'a> {
     /// `crate::dock_room` holds the rule and
     /// `docs/design/when-the-dock-gives-way.md` the reasoning.
     pub windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
+    /// The windows a person put aside, which the panel at the edge shows.
+    ///
+    /// Handed in for the same reason the rest are. `alo_put_aside::Panel` holds
+    /// what is in the panel and **no geometry at all**, deliberately, so the
+    /// conversion from a design's figures to a display's pixels happens once in
+    /// the crate that knows the display. An empty panel is the true answer on a
+    /// desk where nothing has been put aside, not a placeholder.
+    pub put_aside: &'a alo_put_aside::Panel,
 }
 
 impl Nested {
@@ -265,6 +273,7 @@ pub(crate) fn frame_pictures(
             division: desktop.division,
             offer: desktop.offer,
             windows: desktop.windows,
+            put_aside: desktop.put_aside,
         },
         &mut labels.fonts,
         size,
