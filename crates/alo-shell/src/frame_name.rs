@@ -96,15 +96,19 @@ impl crate::Server {
     /// so what a reader hears and what the keyboard does are one order. Task 7's
     /// constraint is that this is **not a second interface**.
     #[must_use]
+    /// `turned_on` is what the person has switched on, so a reader is told
+    /// which way each setting is set. Handed in for the same reason the
+    /// surfaces are: this crate does not decide what somebody turned on.
     pub fn read_aloud_with_the_frames_open(
         &self,
         strings: &alo_strings::Strings,
         showing: &[alo_access::Surface],
+        turned_on: &alo_access::TurnedOn,
     ) -> crate::ReadAloudTree {
         let frames: Vec<FrameName> = self
             .mapped_surfaces()
             .map(|frame| self.the_name_of(frame))
             .collect();
-        crate::ReadAloudTree::of(strings, showing).with_the_frames_open(strings, &frames)
+        crate::ReadAloudTree::of(strings, showing, turned_on).with_the_frames_open(strings, &frames)
     }
 }

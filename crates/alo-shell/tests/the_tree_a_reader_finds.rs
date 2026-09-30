@@ -37,6 +37,7 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant, SystemTime};
 
+use alo_access::TurnedOn;
 use alo_access::{Control, Surface};
 use alo_adapters::{AccessibilityTree, AccessibleSession, Facts, NodeAt, Role};
 use alo_portals::Sandboxes;
@@ -249,7 +250,7 @@ fn the_tree_read_back() -> (ASession, Vec<(NodeAt, Facts)>) {
     // bus can be held to every surface the shell draws. Which are really up is
     // the shell's own answer, and `the_showing_bit_says_which_surfaces_are_up`
     // is where that is held.
-    let tree = ReadAloudTree::of(&strings, &Surface::ALL);
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing());
     let bus = ReadAloudBus::serving(&session.accessibility, &tree).expect("the tree is served");
     bus.embedded().expect("the registry embedded this machine");
     let reader = session.reader();
@@ -324,6 +325,7 @@ fn the_password_field_crosses_the_bus_as_a_password_field() {
             role: alo_access::Role::PasswordEntry,
             name: alo_access::words::THE_PASSWORD,
             state: alo_access::State::CanBeUsed,
+            setting: None,
         },
     );
     let (_, facts) = read
@@ -473,7 +475,7 @@ fn the_served_tree_follows_the_windows_that_open() {
     let strings = words();
     let showing = [Surface::Desktop];
 
-    let empty = ReadAloudTree::of(&strings, &showing);
+    let empty = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing());
     let mut bus =
         ReadAloudBus::serving(&session.accessibility, &empty).expect("the tree is served");
     bus.embedded().expect("the registry embedded this machine");
@@ -483,7 +485,7 @@ fn the_served_tree_follows_the_windows_that_open() {
     );
 
     // The same tree with two windows in it, published over the first.
-    let opened = ReadAloudTree::of(&strings, &showing).with_the_frames_open(
+    let opened = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing()).with_the_frames_open(
         &strings,
         &[
             FrameName::Given("Ledger for March".to_owned()),
@@ -501,7 +503,7 @@ fn the_served_tree_follows_the_windows_that_open() {
     );
 
     // And a window closing takes its path off rather than leaving it answering.
-    let closed = ReadAloudTree::of(&strings, &showing)
+    let closed = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing())
         .with_the_frames_open(&strings, &[FrameName::Given("Ledger for March".to_owned())]);
     bus.now_showing(&closed)
         .expect("the closing reached the bus");

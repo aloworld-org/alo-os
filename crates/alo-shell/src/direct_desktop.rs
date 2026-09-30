@@ -75,8 +75,18 @@ impl crate::DirectSession {
         // Opened once, here, rather than retried every frame: a machine with no
         // accessibility bus will not grow one mid-session, and asking sixty
         // times a second would be a D-Bus call per frame answering the same no.
-        let reader =
-            crate::TheReaderIsTold::opened(server, strings, &[alo_access::Surface::Desktop]).ok();
+        let reader = crate::TheReaderIsTold::opened(
+            server,
+            strings,
+            &[alo_access::Surface::Desktop],
+            // **Nothing is turned on and that is read rather than
+            // assumed.** This binary has no settings file behind it
+            // yet; when it has one, what a person turned on comes
+            // from there and a reader is told which way each switch
+            // is set without another line changing here.
+            &alo_access::TurnedOn::nothing(),
+        )
+        .ok();
         let manager = self.input_session();
         self.with_active_device(|fd, poll| {
             let setup = (|| {
@@ -202,7 +212,12 @@ impl LoopInput for Desk<'_> {
         // reached is a person without a reader; a compositor that stopped
         // compositing over it would be a machine nobody can use at all.
         if let Some(reader) = self.reader.as_mut() {
-            let _ = reader.following(server, self.strings, &[alo_access::Surface::Desktop]);
+            let _ = reader.following(
+                server,
+                self.strings,
+                &[alo_access::Surface::Desktop],
+                &alo_access::TurnedOn::nothing(),
+            );
         }
         Ok(())
     }

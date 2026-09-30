@@ -122,12 +122,16 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "5.6.1",
         requirement: "A control that locks or toggles must say which way it is set without being \
                       looked at.",
-        // Was met, by a test that asserted only that each surface reads as a
-        // non-empty list. `State::OnOrOff` becomes `CHECKABLE` and
-        // `ATSPI_STATE_CHECKED` is never sent, so a reader is told a setting
-        // *can* be on or off and never which it is — the half this clause asks
-        // for is the half that is missing.
-        standing: not_yet(8, THE_PLAN),
+        // **Met 2026-09-30.** `CHECKED` is sent for a setting the person has
+        // turned on, and the settings surface names every switch by its own
+        // setting rather than by one placeholder called *a setting* — a value
+        // on that placeholder would have read as *"a setting, on"*, which names
+        // nothing. The names were never missing; the tree was not using them.
+        standing: met(
+            "alo-shell",
+            "src/access_roles_tests.rs",
+            "a_setting_that_is_on_is_read_as_on",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {
@@ -428,11 +432,15 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "11.4.1.2",
         requirement: "Everything on the screen must tell a program what it is, what it is called \
                       and what state it is in.",
-        // *What state it is in* is the part that is not true yet, for 5.6.1's
-        // reason: the tree carries the shape of the interface and no live value.
-        // What it is and what it is called are held elsewhere and are not in
-        // doubt; a clause is met when all of it is.
-        standing: not_yet(8, THE_PLAN),
+        // **Met 2026-09-30**, when *what state it is in* stopped being the
+        // missing part: the tree is handed what the person has turned on and a
+        // switch says which way it is set. What it is and what it is called
+        // were never in doubt.
+        standing: met(
+            "alo-shell",
+            "src/access_roles_tests.rs",
+            "a_setting_that_is_on_is_read_as_on",
+        ),
         checked: NotAgainstTheText,
     },
     Clause {

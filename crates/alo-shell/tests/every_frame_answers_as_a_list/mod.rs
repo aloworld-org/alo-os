@@ -261,11 +261,15 @@ fn the_windows_a_reader_hears(f: &Fixture) -> Vec<String> {
         let strings = alo_strings::Strings::of(
             alo_saying::everything_this_machine_can_say().expect("the assembled vocabulary"),
         );
-        s.read_aloud_with_the_frames_open(&strings, &[alo_access::Surface::Desktop])
-            .the_windows_open_as_read()
-            .into_iter()
-            .map(str::to_owned)
-            .collect()
+        s.read_aloud_with_the_frames_open(
+            &strings,
+            &[alo_access::Surface::Desktop],
+            &alo_access::TurnedOn::nothing(),
+        )
+        .the_windows_open_as_read()
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
     })
 }
 
