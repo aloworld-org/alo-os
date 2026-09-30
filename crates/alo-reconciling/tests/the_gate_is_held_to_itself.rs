@@ -35,6 +35,7 @@ use std::path::{Path, PathBuf};
 use alo_reconciling::the_gate::{
     counts_that_drifted, denials_by_task_number, orphaned_boxes, promises_with_no_box,
     refusals_a_report_contradicts, statuses_their_own_section_contradicts, tiers_that_disagree,
+    withdrawals_left_open,
 };
 use alo_reconciling::tier::Tier;
 use alo_reconciling::{Finding, promises_at, reconcile_at};
@@ -452,4 +453,31 @@ fn every_v0_5_promise_is_reconciled_against_evidence_that_runs() {
             say(&findings)
         ),
     }
+}
+
+/// **No promise this repository withdrew is still open in the roadmap, and this
+/// one gates.**
+///
+/// Its neighbours above cannot: whether a box *covers* a promise is a judgement,
+/// and every threshold measured either missed real cases or flagged most of the
+/// document. This asks a narrower question with a definite answer — a withdrawal
+/// names the promise in the words the roadmap's own box was written from, so the
+/// match is between two copies of one phrase, and **the right number of findings
+/// is zero**. A withdrawn promise left open is never correct.
+///
+/// It exists because one was. ADR 0076 withdrew *per display, so the dock can sit
+/// along the bottom of the laptop and down the side of the external screen*;
+/// `docs/features.md` recorded it; `ROADMAP.md` kept the box open for three days
+/// with its code half ticked, citing a function the same change had deleted. A
+/// lane picking it up would have been asked to build a thing this repository had
+/// decided not to have.
+#[test]
+fn no_withdrawn_promise_is_still_open() {
+    let findings = withdrawals_left_open(&document("docs/features.md"), &document("ROADMAP.md"));
+    assert!(
+        findings.is_empty(),
+        "{} withdrawn promise(s) are still open boxes in ROADMAP.md:\n\n- {}",
+        findings.len(),
+        say(&findings)
+    );
 }

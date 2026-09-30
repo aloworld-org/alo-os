@@ -289,6 +289,34 @@ pub enum Finding {
         marker: String,
     },
 
+    /// A promise the definition records as withdrawn, still open in the roadmap.
+    ///
+    /// **This really happened, on 2026-09-30.** ADR 0076 fixed the Dock to the
+    /// bottom edge and withdrew *per display, so the dock can sit along the
+    /// bottom of the laptop and down the side of the external screen*.
+    /// `docs/features.md` recorded the withdrawal. `ROADMAP.md` kept the box
+    /// open for three days afterwards, with its code half **ticked**, citing a
+    /// function the same change had deleted.
+    ///
+    /// Left open, a box reads as work somebody should do. So the roadmap asked a
+    /// lane to build a thing this repository had decided not to have, and
+    /// offered a deleted function as evidence it was half finished. Nothing
+    /// looked: this crate reconciles every `[v0.01]` promise against its ledger,
+    /// and no check anywhere compared a withdrawal in the definition against an
+    /// open box in the roadmap.
+    #[error(
+        "docs/features.md records \"{promise}\" as withdrawn by {record}, and ROADMAP.md still \
+         carries it as an open box. A withdrawn promise left open reads as work somebody should \
+         do — take the box out, or say in it that the promise was withdrawn and by which record. \
+         That is how a lane came to be asked for a feature this repository had decided not to have"
+    )]
+    AWithdrawalLeftOpen {
+        /// The promise, as the withdrawal words it.
+        promise: String,
+        /// The record that withdrew it, as the definition names it.
+        record: String,
+    },
+
     /// A promise at one tier in the definition and another in the roadmap.
     #[error(
         "docs/features.md promises \"{promise}\" at {definition} and ROADMAP.md answers it in \
