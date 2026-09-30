@@ -76,13 +76,13 @@ impl crate::Server {
             .into_iter()
             .map(|it| {
                 if Some(it.id()) == moved {
-                    Frame::of(it.id(), wanted, it.size())
+                    Frame::of(it.id(), it.place(), wanted, it.size())
                 } else {
                     it
                 }
             })
             .collect();
-        let Some(span) = alo_canvas::plane::reached_by(&frames) else {
+        let Some(span) = alo_canvas::plane::reached_by(&frames, self.the_place_now()) else {
             return true;
         };
         let across = i64::from(span.to.x) - i64::from(span.from.x);

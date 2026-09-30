@@ -88,6 +88,7 @@ fn a_pan_moves_the_plane_by_the_pointers_distance_in_plane_units() {
 fn a_press_arrives_at_the_right_place_inside_a_frame() {
     let frame = Frame::of(
         1,
+        crate::Place::FIRST,
         At::checked(500, 400).unwrap(),
         Size::checked(800, 600).unwrap(),
     );
@@ -112,6 +113,7 @@ fn a_press_arrives_at_the_right_place_inside_a_frame() {
 fn a_screen_press_reaches_the_same_place_at_every_zoom_and_pan() {
     let frame = Frame::of(
         1,
+        crate::Place::FIRST,
         At::checked(1_000, 800).unwrap(),
         Size::checked(800, 600).unwrap(),
     );
@@ -182,6 +184,7 @@ fn frames(placed: &[(i32, i32, u32, u32)]) -> Vec<Frame> {
         .map(|(id, (x, y, width, height))| {
             Frame::of(
                 u64::try_from(id).unwrap(),
+                crate::Place::FIRST,
                 At::checked(*x, *y).unwrap(),
                 Size::checked(*width, *height).unwrap(),
             )
@@ -292,7 +295,7 @@ fn show_all_leaves_every_frame_inside_the_viewport() {
         vec![(37, -91, 1, 1), (38, -90, 1, 1)],
     ] {
         let placed = frames(&arrangement);
-        let span = crate::plane::reached_by(&placed).unwrap();
+        let span = crate::plane::reached_by(&placed, crate::Place::FIRST).unwrap();
         let camera = Camera::showing(span, viewport).unwrap();
         for frame in &placed {
             let (left, top) = camera.screen_of(frame.at()).unwrap();
@@ -321,7 +324,7 @@ fn show_all_leaves_every_frame_inside_the_viewport() {
 fn show_all_centres_what_it_shows() {
     let viewport = Size::checked(1280, 720).unwrap();
     let placed = frames(&[(400, 300, 800, 600)]);
-    let span = crate::plane::reached_by(&placed).unwrap();
+    let span = crate::plane::reached_by(&placed, crate::Place::FIRST).unwrap();
     let camera = Camera::showing(span, viewport).unwrap();
     let a_unit = i32::try_from(camera.zoom().thousandths().div_ceil(1000)).unwrap();
     let slack = a_unit + 1;
@@ -355,7 +358,7 @@ fn show_all_centres_what_it_shows() {
 fn show_all_refuses_frames_it_cannot_fit() {
     let viewport = Size::checked(1280, 720).unwrap();
     let placed = frames(&[(0, 0, 10, 10), (900_000, 0, 10, 10)]);
-    let span = crate::plane::reached_by(&placed).unwrap();
+    let span = crate::plane::reached_by(&placed, crate::Place::FIRST).unwrap();
     assert_eq!(
         Camera::showing(span, viewport),
         None,

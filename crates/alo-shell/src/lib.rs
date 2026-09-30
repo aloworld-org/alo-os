@@ -97,6 +97,7 @@ mod canvas_camera;
 mod canvas_command;
 mod canvas_never_lost;
 mod canvas_pan;
+mod canvas_place;
 mod canvas_pinch;
 mod canvas_remembered;
 mod canvas_resize;

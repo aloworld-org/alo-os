@@ -11,6 +11,8 @@
 //! that touch should touch, and a fraction of a unit is a seam waiting to appear
 //! at some zoom.
 
+use crate::place::Place;
+
 /// The furthest from the origin a frame may sit, in logical units.
 ///
 /// **Not a wall a person can reach.** A million units either way is a plane
@@ -109,31 +111,66 @@ pub struct Span {
 
 /// One application's frame on the plane.
 ///
-/// This is a rectangle and an identity, and deliberately nothing else. What is
-/// *inside* it is the application's, which is the constraint task 2 states: the
-/// application is never told about the canvas — it is told its size and gets its
-/// events, as it would on any compositor.
+/// This is a rectangle, an identity and **which surface it is on**, and
+/// deliberately nothing else. What is *inside* it is the application's, which is
+/// the constraint task 2 states: the application is never told about the canvas —
+/// it is told its size and gets its events, as it would on any compositor. It is
+/// not told which Place it is on either, for the same reason.
+///
+/// # Why the Place is a field and not an argument to the functions that need one
+///
+/// `the-canvas-and-its-places.md` task 3: **a frame belongs to exactly one Place
+/// at every moment.** There is no *between* — a frame in flight has a Place, and
+/// it is the one it started on until it has the one it ends on. A field is how
+/// that is said in a type: there is no way to hold a `Frame` that is on no
+/// surface, and no way to ask where one is without being told which plane the
+/// answer is about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Frame {
     /// Which frame this is, as the compositor numbers its windows.
     id: u64,
-    /// Its top-left corner on the plane.
+    /// Which surface it is on.
+    place: Place,
+    /// Its top-left corner on that surface.
     at: At,
     /// How big it is, in plane units.
     size: Size,
 }
 
 impl Frame {
-    /// A frame of this size at this place.
+    /// A frame of this size, at this point, on this Place.
     #[must_use]
-    pub const fn of(id: u64, at: At, size: Size) -> Self {
-        Self { id, at, size }
+    pub const fn of(id: u64, place: Place, at: At, size: Size) -> Self {
+        Self {
+            id,
+            place,
+            at,
+            size,
+        }
     }
 
     /// Which frame this is.
     #[must_use]
     pub const fn id(self) -> u64 {
         self.id
+    }
+
+    /// Which surface it is on.
+    #[must_use]
+    pub const fn place(self) -> Place {
+        self.place
+    }
+
+    /// The same frame, on another Place.
+    ///
+    /// The whole of what moving a window between surfaces does to its geometry:
+    /// **nothing.** Task 3's *the work goes with it* is this — a frame keeps its
+    /// point and its size and changes which plane those are on, so a window
+    /// dragged into another Place is the same window and not a copy of one.
+    #[must_use]
+    pub const fn now_on(mut self, place: Place) -> Self {
+        self.place = place;
+        self
     }
 
     /// Its top-left corner.
@@ -158,13 +195,24 @@ impl Frame {
     }
 }
 
-/// How far these frames reach together, or [`None`] where there are none.
+/// How far the frames **on this Place** reach together, or [`None`] where there
+/// are none there.
 ///
 /// The answer *Show all* fits, and the reason it is a function of the frames
 /// rather than a field on anything.
+///
+/// # Why it takes a Place rather than a slice somebody has already filtered
+///
+/// Until Places existed this folded every frame it was given into one extent,
+/// which was right when there was one surface and became wrong in silence the
+/// moment there were two: *Show all* would have zoomed out far enough to fit a
+/// window on a surface the person is not looking at, and the window they wanted
+/// would have been a speck. Nothing would have failed — the arithmetic is the
+/// same arithmetic — which is why the Place is a parameter here rather than a
+/// filter at the call site that one caller could forget.
 #[must_use]
-pub fn reached_by(frames: &[Frame]) -> Option<Span> {
-    let mut frames = frames.iter();
+pub fn reached_by(frames: &[Frame], place: Place) -> Option<Span> {
+    let mut frames = frames.iter().filter(|frame| frame.place() == place);
     let first = frames.next()?;
     let mut span = Span {
         from: first.at(),

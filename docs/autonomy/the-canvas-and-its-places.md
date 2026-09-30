@@ -59,7 +59,30 @@ out of turn will be discovered to need the one before it.
 
 ### 1. A Place is a thing, and the canvas owns what one is
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-30.** `alo_canvas::Place` in
+`crates/alo-canvas/src/place.rs`; a `Place` on every `Frame`; `reached_by` folds
+one Place's frames rather than every frame it is handed; and
+`crates/alo-shell/src/canvas_place.rs` puts every toplevel on one when it is
+created. Shown by `crates/alo-canvas/src/place_tests.rs`, the four Place cases in
+`crates/alo-canvas/src/plane_tests.rs`, and
+`crates/alo-shell/tests/every_window_is_on_a_place/mod.rs`.
+**Depends on:** nothing.
+
+**What it was discovered to be, against the warning at the foot of this plan.**
+The plan said this task was *the one most likely to be discovered to be two*. It
+was, and the seam is not where it was expected: not between crates, but between
+**an identity** and **the roads that change it**. What landed is the identity, one
+setter, and every reader that was silently ambiguous without it. What did not land
+is any way for a person to change a window's Place — that is task 3's, by pointer
+and by keyboard, and `Server::move_the_window_to` is deliberately named as the
+primitive underneath both rather than as either of them.
+
+**`alo-dock` was not touched and gained no dependency.** The survey expected the
+Place to have to sit on `alo_dock::Window`; it does not, because `alo-shell` does
+not use `alo_dock::Window` at all — the shell's windows are Smithay toplevels with
+a `crate::window_number` identity. Two window vocabularies, and only one of them
+is the compositor's. **The panel's half of this therefore remains open** and is
+task 7's; nothing here has answered it.
 
 The fifth meaning of a word already spent four times, and the only one entitled to
 it: **a Place is the endless surface**, not a directory, not a screen division,
@@ -273,3 +296,39 @@ fourth check asks for a keyboard road to move a frame. There is none, and
 here as one task because it is one decision, but it touches `alo-canvas`,
 `alo-shell`, `alo-dock` and `alo-arranging`. It is the largest single thing in
 this plan and the one most likely to be discovered to be two.
+
+## Three things measured while starting task 1, which change what later costs
+
+**Task 5 breaks every arrangement file, and there is no version number to say so.**
+`alo-arranging`'s `TheFile` carries `#[serde(default, deny_unknown_fields)]` and
+three keys — `looking-at`, `zoom`, `windows` — **none of which is a version**.
+`arranging_tests.rs:94` asserts the refusal deliberately: *an unknown key is a file
+written by something else, or by a later version of this one. Either way it is not
+read half-way.* So the per-Place key task 5 needs makes every new file unreadable
+to every older binary, and there is no field to negotiate the transition through.
+
+**And task 5 is not a key addition at all**, which is the part that was assumed.
+Its acceptance says *two Places with different cameras*; `TheFile` holds **one**
+camera beside a flat `BTreeMap<app_id, Written>`. Two cameras means the file
+becomes a map of per-Place records — a reshape, not a field.
+
+**What makes both affordable is that this is free today and will not be tomorrow:**
+nothing in this repository writes that file to disk. `Arrangement::written()` has
+no production caller, `read` none outside the crate's own tests, and the file has
+no name and no path anywhere in the tree. **The format can be changed now at the
+cost of editing tests, and after the first machine saves one it cannot.** That is
+a reason to do task 5's reshape early rather than in its turn, and it is the only
+place in this plan where the order should probably not be obeyed.
+
+**`alo-dock` does not depend on `alo-canvas`, and task 7 is where it starts to.**
+`alo_dock::Window` is where the panel would read a Place from, and a `Place` on it
+is a new edge between two crates that have never met — deliberately, since
+`alo-dock` is a decision crate with no geometry it did not define. `alo-put-aside`
+is the crate that already imports both and bridges them, and is the cheaper seam.
+Recorded now because it is an architectural change, not a field.
+
+**A third `1_000_000` exists.** `alo_canvas::plane::FURTHEST` is the plane's bound;
+`crates/alo-shell/src/window_placement.rs:87` writes `(-1_000_000..=1_000_000)`
+out again, unconnected to it, for the same rule. Two constants for one fact, and
+the standing rule says a figure becomes a named rule rather than a constant. Not
+this task's to fix, and named so it is not discovered a third time.
