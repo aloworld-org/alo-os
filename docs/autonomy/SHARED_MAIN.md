@@ -319,6 +319,56 @@ task; coordinate ownership before editing another shared specification. Tests
 and publication gates are unchanged. This is an agreed contributor workflow,
 not a GitHub permission rule that technically prevents those edits.
 
+### A gate is inherited when the tree is byte-identical, and never otherwise
+
+**A gate is a function of the tree and of the machine that ran it.** If a run on
+this machine, with this gate script, already answered nine of nine for exactly
+this tree object, running it again asks a question whose answer is recorded.
+
+So a queue commit inherits a pass when **four mechanical facts** hold, and is
+gated from scratch when any one is missing:
+
+1. the same **tree object hash** — `git rev-parse <commit>^{tree}`
+2. the same **gate script digest**, which the gate already prints for this reason
+3. the **same machine**
+4. a recorded **nine of nine**
+
+**Byte-identical means the tree's own hash and nothing weaker.** Never *no file
+I think the gate reads*. The Mac lane rebased on 2026-09-30 believing their
+green carried over; it did not, because the tree had gained six hundred lines
+they had not touched, and with the weaker wording they would have talked
+themselves into it. **A tree comparison cannot be argued with; a judgement about
+which files matter can, and will be, at four in the morning.**
+
+**Why it is worth having.** With three lanes on one queue the gate sat *inside*
+the queue path, so depth cost whole runs rather than position — the third entry
+waited for two full gates before its own sixty-minute window opened. Two entries
+ejected that way on the evening this was written. Taking the gate off that path
+is the only change that makes every lane faster rather than one. *The Panel
+lane's argument; the tree-hash condition is theirs; the fourth fact — that the
+machine is part of the function — is this lane's.*
+
+**What it does not do, measured rather than assumed.** It does not help across a
+rebase, because rebasing onto a moved main always changes the tree. The Mac lane
+priced that the same evening: their branch's only difference from a nine-of-nine
+tree was **one markdown file in `docs/autonomy/` that nothing compiles**, and the
+rule still requires a full gate — fifty-five minutes on that machine to prove a
+document did not break a compositor. With three lanes landing documents all
+night that is the common case, not a rare one.
+
+**And the obvious lever does not work here, which is worth knowing before
+somebody builds it.** The Mac lane proposed that the gate declare its own inputs,
+computed rather than judged, so the comparison stays mechanical while the tree
+stops being the only mechanical thing available. That is the right shape. But
+**the inputs of this workspace's gate are not statically computable**:
+`crates/alo-reconciling`'s tests read files off the disk at run time by a path
+the *ledger's own content* supplies — `read_to_string(here.join(named))`, where
+`named` is data. A scan for `include_str!`, or even for literal paths, finds none
+of them, and a lane that built the lever that way would inherit a pass over a
+documentation change that genuinely breaks the workspace's tests. The version
+that could work observes what a run actually opened rather than predicting it,
+and that is a real piece of work rather than a midnight one.
+
 ### Say which shared document you are about to edit, before you edit it
 
 **To every lane, before the edit — not before the landing.** The rest of this
