@@ -206,6 +206,32 @@ cannot demonstrate.
 - **Scope is gated.** Nothing gets built that isn't in
   `docs/features.md` with a tier, inside the current release, and
   outside Non-goals.
+- **Work a task needs is part of that task.** If finishing something
+  already in scope turns out to require sub-work nobody listed — a
+  caller that does not exist, a gesture wired to the wrong mechanism, a
+  module with no consumer, a test that never ran — **build it, in the
+  same change, and say in the record that you did.** Do not file it for
+  later, do not hand it to another lane, and above all do not let the
+  parent task read as closeable without it. *A plan lists what somebody
+  foresaw; a task is done when it works.*
+  **This does not loosen the gate above and must not be read as doing
+  so.** One question separates them: *does this add a promise to a
+  person, or make an existing promise true?* A classifier nothing calls,
+  a raster nothing draws, a gesture that hides a window where the
+  promise says it goes in the panel — those make a promise true, and
+  they are yours to build without asking. Full screen, a four-edge dock,
+  selecting several frames at once — those *are* promises, and they need
+  a line in `docs/features.md` with a tier before one line of them is
+  written. **When the answer is not obvious, it is scope**: the cost of
+  asking is a message, and the cost of guessing wrong is a release
+  nobody decided.
+  **Sub-work you cannot do is reported the minute it is found**, not at
+  the end. A task blocked on something outside its own crate is blocked
+  from that minute, and other lanes may be resting on it — a missing
+  full screen in the shell blocked five clauses across two lanes for a
+  day because it was written down nowhere. *Added 2026-09-30, after a
+  plan's eight tasks were all model-complete, two of them marked done,
+  and nothing any of them described had reached a screen.*
 - **The design is followed, not approximated.** What the interface
   looks like is settled in the alo OS design file; `docs/design/`
   records what was measured off it and what the owner decided where it
