@@ -54,6 +54,7 @@ use alo_files::Kind;
 use alo_strings::{Counting, Filling, Said, Strings};
 
 use crate::refusing::NotMeasured;
+use crate::undo::{UndoIsHolding, WhatUndoIsHolding};
 use crate::words;
 
 /// What is filling a folder: the folder as a tree of sizes, and what the
@@ -81,18 +82,36 @@ pub struct Holding {
     /// How many things were left out because their names cannot be shown.
     /// [`Self::left_unnamed`] has the sentence.
     pub unnamed: usize,
+
+    /// What undo is holding — a line beside the tree, never a node in it.
+    ///
+    /// ADR 0045's fourth term: what is filling the disk counts snapshots, by
+    /// name, because an answer that hid them would send a person hunting for
+    /// space the machine itself was keeping. It is beside [`Self::tree`] and
+    /// not in it because a snapshot's bytes are shared with the live files, so
+    /// a node for one would double-count every unchanged file. **No size in
+    /// the tree is affected by it.** See [`crate::undo`].
+    pub undo: UndoIsHolding,
 }
 
 impl Holding {
     /// What is filling this folder, counted now — whole, however many walks
     /// the folder takes.
     ///
+    /// `undo` is asked what undo is holding, and its answer becomes
+    /// [`Self::undo`]. **It is an argument and not a default** so that the
+    /// fourth term of ADR 0045 is held by the compiler: a caller that could
+    /// answer *what is filling the disk* while saying nothing about the space
+    /// the machine itself is keeping is a caller that eventually would. Pass
+    /// [`crate::undo::NoUndoHere`] on a machine that keeps none, which is
+    /// every machine this repository has today.
+    ///
     /// # Errors
     /// [`NotMeasured::NotCounted`] when the folder itself is not there, is
     /// not a folder, or could not be read. A folder *inside* it that cannot
     /// be read is not an error: it is a node in the answer saying so.
     #[cfg(target_os = "linux")]
-    pub fn of(folder: &Path) -> Result<Self, NotMeasured> {
+    pub fn of(folder: &Path, undo: &dyn WhatUndoIsHolding) -> Result<Self, NotMeasured> {
         use alo_files::{MOST_WALKED, Walking};
         let walked = Walking::measuring(MOST_WALKED)
             .throughout(folder)
@@ -105,6 +124,7 @@ impl Holding {
             walked,
             MOST_WALKED,
             &mut crate::looking::looked_at,
+            undo.what_undo_is_holding(),
         ))
     }
 
@@ -117,8 +137,8 @@ impl Holding {
     /// Linux host answers — and a count that could not tell a second name
     /// from a second file would be a size that is silently wrong.
     #[cfg(not(target_os = "linux"))]
-    pub fn of(folder: &Path) -> Result<Self, NotMeasured> {
-        let _ = folder;
+    pub fn of(folder: &Path, undo: &dyn WhatUndoIsHolding) -> Result<Self, NotMeasured> {
+        let _ = (folder, undo);
         Err(NotMeasured::NotOnThisHost)
     }
 
@@ -316,6 +336,7 @@ mod tests {
             finished: true,
             most: 20_000,
             unnamed: 0,
+            undo: UndoIsHolding::NotOnThisMachine,
         };
         assert!(whole.not_the_whole(&strings).is_none());
         assert!(whole.left_unnamed(&strings).is_none());
@@ -326,6 +347,7 @@ mod tests {
             finished: false,
             most: 20_000,
             unnamed: 3,
+            undo: UndoIsHolding::NotOnThisMachine,
         };
         let cut = short.not_the_whole(&strings).unwrap();
         assert!(cut.text().contains("20"), "{cut}");

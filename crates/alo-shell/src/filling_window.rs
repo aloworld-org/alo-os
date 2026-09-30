@@ -27,7 +27,7 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use alo_measuring::{Holding, NotMeasured};
+use alo_measuring::{Holding, NoUndoHere, NotMeasured};
 
 use crate::FillingKey;
 use crate::filling_rows::{can_open, in_view};
@@ -194,7 +194,7 @@ impl FillingWindow {
         let Some(folder) = &self.folder else {
             return;
         };
-        match Holding::of(folder) {
+        match Holding::of(folder, &NoUndoHere) {
             Ok(holding) => {
                 self.refusal = None;
                 let last = in_view(&holding, &self.opened).len().saturating_sub(1);

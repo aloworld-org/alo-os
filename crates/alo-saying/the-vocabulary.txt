@@ -1023,6 +1023,8 @@ measuring.number.not-yet	Started since the last reading.
 measuring.number.withheld	The kernel did not show this.
 measuring.process.gone	Ended since the last reading.
 measuring.same-moment	Both readings are from the same moment, so nothing can be said about a rate.
+measuring.undo.not-answered	How much the undo history is using could not be read.
+measuring.undo.not-on-this-machine	This machine does not keep undo history, so none of the disk is being used for it.
 measuring.unreadable	What is running could not be read from {at}.
 measuring.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
 measuring.verb.not-this-crates	nothing here measures {verb} — it says what is running and what is filling a folder, and anything else is somewhere else's to do

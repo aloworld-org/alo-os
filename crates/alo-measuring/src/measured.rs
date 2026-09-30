@@ -48,6 +48,7 @@ use crate::kernel::Disk;
 use crate::reading::Reading;
 use crate::refusing::NotMeasured;
 use crate::running::Running;
+use crate::undo::NoUndoHere;
 
 /// The name `what_is_running` is declared under.
 const WHAT_IS_RUNNING: &str = "what_is_running";
@@ -140,7 +141,12 @@ fn measured(
             later.since(&earlier, interval).map(Measurement::Running)
         }
         WHAT_IS_FILLING => {
-            Holding::of(real(touching, "folder")?.as_path()).map(Measurement::Filling)
+            // `NoUndoHere` is the true answer on every machine this repository
+            // has, not a placeholder: a person's home is not a subvolume, so
+            // there is nothing for a snapshot to be of. It stops being the
+            // right argument when a machine can actually hold an undo, and
+            // the compiler asks for one here either way.
+            Holding::of(real(touching, "folder")?.as_path(), &NoUndoHere).map(Measurement::Filling)
         }
         other => Err(NotMeasured::NotThisCrates {
             verb: other.to_owned(),

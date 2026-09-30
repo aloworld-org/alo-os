@@ -677,16 +677,26 @@ turn. Drawing it is the shell's.
 
 **Shown by:** `crates/alo-measuring/tests/what_is_filling_is_a_tree_of_sizes.rs`
 
-**Still owed:** two things. The clicking through, which is the shell's; and **a
-line for what undo is holding.** ADR 0045's fourth term says `alo-measuring`
-counts what undo is holding, by name, and nothing in the crate mentions a snapshot
-or an undo — so a person whose disk is full of yesterday's turns is shown a tree
-that does not account for them. It is now **task 15 of
-`docs/autonomy/v0-5-the-machine-measured-plan.md`**, the plan that owns that crate,
-with the design written out: a line beside the tree rather than a node in it,
-because a snapshot's bytes are shared with the live files and a node would
-double-count them; three states and never a zero, because *not on this machine* is
-what every machine here answers today and zero would say undo is holding nothing.
+**Still owed:** the clicking through, which is the shell's.
+
+**The line for what undo is holding was built on 2026-09-30** — task 15 of
+`docs/autonomy/v0-5-the-machine-measured-plan.md`, the plan that owns the crate.
+`crates/alo-measuring/src/undo.rs` and
+`crates/alo-measuring/tests/what_undo_is_holding_has_its_own_line.rs`: a line
+beside the tree rather than a node in it, because a snapshot's bytes are shared
+with the live files and a node would double-count them; three states and never
+a zero; and `Holding::of` takes the answer rather than defaulting it, so ADR
+0045's fourth term is held by the compiler rather than by anybody remembering
+it. A test counts one folder with two different undo answers and asserts the
+two trees are identical, which is what says the tree's sizes did not move.
+
+*This entry said `alo-measuring` mentions no snapshot and no undo, and that was
+true when it was written and for three days after: the gap was found twice
+independently, by this ledger and by the keeps-itself plan's task 15, and
+written down both times before anybody built it.* **What every machine here now
+answers is *not on this machine*** — a person's home is not a subvolume, so
+there is nothing for a snapshot to be of — and that is a sentence rather than a
+zero, because a machine that cannot keep an undo is not a machine holding none.
 
 ### **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
 

@@ -33,7 +33,7 @@
 //! ```no_run
 //! use std::path::Path;
 //! use std::time::Duration;
-//! use alo_measuring::{Holding, Reading};
+//! use alo_measuring::{Holding, NoUndoHere, Reading};
 //!
 //! // A total is a fact about a moment; a rate needs two of them.
 //! let earlier = Reading::now()?;
@@ -51,10 +51,13 @@
 //!
 //! // What is filling a folder: each node's size is its own bytes plus its
 //! // children's, and a node whose size is not the whole truth says why.
-//! let holding = Holding::of(Path::new("Documents"))?;
+//! let holding = Holding::of(Path::new("Documents"), &NoUndoHere)?;
 //! for child in &holding.tree.children {
 //!     let _ = (child.size, &child.counted);
 //! }
+//! // And beside the tree, never in it: what undo is holding. Three answers,
+//! // and a zero is not one of them — `None` here is a sentence, not nothing.
+//! let _ = holding.undo.value();
 //! # Ok::<(), alo_measuring::NotMeasured>(())
 //! ```
 //!
@@ -168,6 +171,7 @@ mod sampled;
 mod sampling;
 mod source;
 mod stat;
+pub mod undo;
 pub mod verbs;
 pub mod words;
 
@@ -180,5 +184,6 @@ pub use refusing::NotMeasured;
 pub use running::{Gone, Network, Process, Running};
 pub use sampled::{Machine, Sampled};
 pub use source::{Known, Number, Source};
+pub use undo::{NoUndoHere, UndoIsHolding, WhatUndoIsHolding};
 pub use verbs::{Declaring, measuring_verbs};
 pub use words::{WordsError, declare_into, measuring_words};

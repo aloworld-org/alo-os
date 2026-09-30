@@ -41,7 +41,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
 
 use alo_files::MOST_WALKED;
-use alo_measuring::{Counted, Holding, Kind, Node, NotMeasured, measuring_words};
+use alo_measuring::{Counted, Holding, Kind, NoUndoHere, Node, NotMeasured, measuring_words};
 use alo_strings::Strings;
 
 /// A folder of this test's own, under this machine's temporary directory,
@@ -120,7 +120,7 @@ fn every_size_is_the_sum_of_its_children_plus_its_own_files_to_the_byte() {
     fs::write(root.join("2026/march.pdf"), b"an invoice").unwrap();
     fs::write(root.join("2026/April/scan.tiff"), vec![7; 1000]).unwrap();
 
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     assert!(holding.finished);
     assert_eq!(holding.unnamed, 0);
     assert_eq!(holding.folder, root);
@@ -183,7 +183,7 @@ fn a_folder_larger_than_one_walk_is_counted_whole_to_the_byte_and_timed() {
     assert_eq!(bytes, 240_000);
 
     let counting = Instant::now();
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     let counted = counting.elapsed();
     eprintln!(
         "{things} things of {bytes} bytes written in {written:?}, counted whole in {counted:?}"
@@ -230,7 +230,7 @@ fn a_file_with_two_names_is_counted_once_and_the_second_name_says_where() {
     fs::hard_link(root.join("one.txt"), root.join("inside/three.txt")).unwrap();
     fs::write(root.join("other.txt"), b"x").unwrap();
 
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     assert_eq!(holding.tree.size, 101, "not 301");
     let one = child(&holding.tree, "one.txt");
     assert_eq!(one.own, 100);
@@ -281,7 +281,7 @@ fn a_file_with_two_names_is_counted_once_and_the_second_name_says_where() {
     )
     .unwrap();
 
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     assert!(holding.finished, "more than one walk, and whole");
     assert_eq!(holding.tree.size, 21_000 + 5_000 + 300, "each file once");
     let big = child(child(&holding.tree, "a-first"), "00000-big.bin");
@@ -332,7 +332,7 @@ fn a_link_is_the_bytes_of_the_link_and_is_never_followed() {
     std::os::unix::fs::symlink(&elsewhere, counted.join("everything")).unwrap();
     fs::write(counted.join("mine.txt"), b"mine").unwrap();
 
-    let holding = Holding::of(&counted).unwrap();
+    let holding = Holding::of(&counted, &NoUndoHere).unwrap();
     let big = child(&holding.tree, "big.bin");
     let everything = child(&holding.tree, "everything");
     for link in [big, everything] {
@@ -368,7 +368,7 @@ fn a_folder_that_cannot_be_read_is_a_node_saying_so_rather_than_a_zero() {
     fs::write(root.join("counted.txt"), b"seven b").unwrap();
     let deepest = a_folder_too_deep_to_open(&root);
 
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     assert!(holding.finished);
     assert_eq!(holding.tree.size, 7, "what could be seen");
     assert_eq!(child(&holding.tree, "counted.txt").own, 7);
@@ -429,7 +429,7 @@ fn a_count_that_reaches_the_bound_says_so_on_the_folder_and_above_the_tree() {
     let (things, bytes) = a_tree_of_known_bytes(&root.join("large"), 110, 150, 1, 50);
     assert!(things > MOST_WALKED);
 
-    let holding = Holding::of(&root).unwrap();
+    let holding = Holding::of(&root, &NoUndoHere).unwrap();
     assert!(!holding.finished);
     assert_eq!(holding.most, MOST_WALKED);
     let many = child(&holding.tree, "many");
@@ -476,7 +476,7 @@ fn a_count_that_reaches_the_bound_says_so_on_the_folder_and_above_the_tree() {
 #[test]
 fn naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so() {
     let counting = Instant::now();
-    let holding = Holding::of(Path::new("/")).unwrap();
+    let holding = Holding::of(Path::new("/"), &NoUndoHere).unwrap();
     let counted = counting.elapsed();
     assert_eq!(holding.tree.name, "/");
     let proc = child(&holding.tree, "proc");
@@ -540,7 +540,7 @@ fn a_folder_that_is_not_there_or_not_a_folder_is_refused_in_words() {
     fs::write(root.join("march.pdf"), b"an invoice").unwrap();
     let strings = in_english();
 
-    let gone = Holding::of(&root.join("Taxes")).unwrap_err();
+    let gone = Holding::of(&root.join("Taxes"), &NoUndoHere).unwrap_err();
     let NotMeasured::NotCounted { at, why } = &gone else {
         panic!("{gone:?}");
     };
@@ -550,7 +550,7 @@ fn a_folder_that_is_not_there_or_not_a_folder_is_refused_in_words() {
     assert!(!said.is_a_bug(), "{said}");
     assert!(said.text().contains("Taxes"), "{said}");
 
-    let not_a_folder = Holding::of(&root.join("march.pdf")).unwrap_err();
+    let not_a_folder = Holding::of(&root.join("march.pdf"), &NoUndoHere).unwrap_err();
     let NotMeasured::NotCounted { why, .. } = &not_a_folder else {
         panic!("{not_a_folder:?}");
     };

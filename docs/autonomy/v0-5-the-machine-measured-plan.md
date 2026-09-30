@@ -763,7 +763,7 @@ words. The index file on the disk is smaller than what it holds in hand.
 
 ### 15. What undo is holding, as its own line in what is filling the disk
 
-**Status:** ready. **Depends on:** 2, 12.
+**Status:** **Done, 2026-09-30.** **Depends on:** 2, 12.
 
 **Written 2026-09-27 by another lane, which did not build it.** ADR 0045's
 **fourth accepted term** says *what is filling the disk counts snapshots, by
@@ -837,4 +837,27 @@ possible, and named in the report where it is not.
   this machine can only ever answer *not yet on this machine*, that is the
   deliverable: the line exists, says so, and is ready for the first machine
   installed on `btrfs`.
+
+**Built 2026-09-30, and the honest deliverable is the one named above.**
+`crates/alo-measuring/src/undo.rs` holds `UndoIsHolding` — `Bytes` with a
+[`Source`], `NotOnThisMachine`, `NotAnswered` — the `WhatUndoIsHolding` trait
+this crate declares and something outside it answers, and `NoUndoHere`, which is
+the true answer on every machine this repository has rather than a placeholder.
+`Holding` gains `undo` beside `tree`, and **`Holding::of` takes an answer rather
+than defaulting one**, so the fourth term is held by the compiler: there is no
+way to ask what is filling the disk while saying nothing about the space the
+machine itself is keeping.
+
+The two sentences are in `words.rs` and collected by `alo-saying` like every
+other word this crate says, with a note telling the translator that *cannot keep
+undo history* must not read as *undo is using no space*.
+`tests/what_undo_is_holding_has_its_own_line.rs` holds all of it, including the
+one that matters most: the same folder counted with two different undo answers
+gives **two identical trees**, so no size moved by a byte.
+
+**The public surface changed and could not change additively.** A defaulted
+answer was the whole thing this task exists to prevent, so `Holding::of` now
+takes two arguments; the four call sites in `alo-shell`, `alo-letting-go`,
+`measured.rs` and the crate's own tests pass `&NoUndoHere`. Named here because
+it is not additive.
 
