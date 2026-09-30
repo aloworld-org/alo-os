@@ -1005,8 +1005,51 @@ assembled would measure the assembler.
 
 ### 11. The engine is pinned and the fonts it reads are not
 
-**Status:** ready, and **this is the only lane that can measure it**. **Depends
-on:** 10.
+**Status:** blocked — on a run through the image, which needs the image built.
+**Depends on:** 10.
+
+**Half of this was paid on 2026-09-28 and this status line said `ready` for two
+days afterwards.** Measured 2026-09-30 on this machine, which is the only one
+that can run the test at all:
+
+| | |
+|---|---|
+| the test alone, ten runs | **10 passed, 0 failed** |
+| the whole file, ten runs, as the gate runs it | **10 passed, 0 failed** |
+
+There is no intermittent failure to fix. `7a3d41c` — *A host's fonts are not the
+product's, so a host run stops asserting them* (#233), landed 2026-09-28T19:14Z
+— **paid the acceptance's second clause**: *where a host install is used for
+speed, the test says so and does not assert an exact loss set against it*. The
+assertion now requires every owed loss in full and allows an extra one **only**
+if it is a `FontSubstituted(_)`, so `Garamond` alone and `Garamond` with
+`Liberation Serif` both pass, and the comment in the test says exactly that.
+
+This task was written 2026-09-27T14:25Z, **one day and five hours before the fix
+landed**, by a lane reporting what it had just seen. Nobody was wrong; the task
+simply outlived its subject, and the lane that fixed it fixed the symptom under
+a different title without knowing a task named it.
+
+**What is still owed is the first clause**, and it is the whole reason the task
+exists: *the loss report for a given document is the same on any machine that
+runs the pinned engine, and a test demonstrates that by producing it through the
+image*. That needs the image built, which is the same disk this repository is
+short of — so this is blocked rather than ready, and it is blocked on the same
+thing as the installer's alongside walk rather than on anybody's effort.
+
+**And one thing measured on the way that is worth its own line.** The test
+answers `this_machine_cannot_run_the_engine()` and `return`s. On a machine
+without the engine it therefore **passes without checking anything**, and the
+lanes that skip it report `1 passed` for a test that did nothing. The skip
+message is printed, but `cargo test` captures it on a pass, so nobody reads it.
+A skip is the colour of a pass here, in the test body rather than in a runner —
+the family
+[ADR 0080](../decisions/0080-a-signal-that-cannot-be-wrong-tells-you-nothing.md)
+names, and it means **the two other lanes' green says nothing about conversion
+at all.**
+
+*The paragraph below is what was found on 2026-09-27, kept because it records
+what the symptom looked like and why the fix took the shape it did.*
 
 **Found 2026-09-27 as an intermittent failure that no other lane can see.**
 `an_older_word_document_is_converted_and_what_it_lost_is_named` sometimes reports
