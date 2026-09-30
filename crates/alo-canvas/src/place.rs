@@ -75,7 +75,11 @@ impl Place {
     /// module's note; the rule is `alo-arranging`'s and predates this type.
     #[must_use]
     pub const fn numbered(number: u64) -> Option<Self> {
-        if number == 0 { None } else { Some(Self(number)) }
+        if number == 0 {
+            None
+        } else {
+            Some(Self(number))
+        }
     }
 
     /// Which Place this is.
