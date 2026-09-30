@@ -1996,7 +1996,33 @@ next task (37) is written below.
 
 ### 37. Recovering a parked task from another checkout, as a command
 
-**Status:** ready. **Depends on:** 36.
+**Status:** **Done, 2026-09-30.** **Depends on:** 36.
+
+`tools/kernel-loop/src/fetching.rs` — `bring_across`, six tests, against **two
+real checkouts of one repository** rather than a mock, because the thing under
+test is what `git fetch` does with a refspec and a mock of git would be a mock
+of the exact behaviour the refusals exist to prevent.
+
+`recover <branch> --from <checkout>` fetches that branch by name and then runs
+the existing recovery, unchanged. Each of the three refusals the acceptance
+names is a test: a `--from` that is not a git repository, a branch the other
+checkout does not have, and **a branch this checkout already has**. The third
+asserts more than the refusal — it asserts the branch that was here is
+identical afterwards, because *a refusal that had already fetched would be the
+fault wearing a refusal's words.*
+
+The crossing is written in the journal with where it came from, which is the
+one thing about a recovery a person cannot read off the branch itself.
+
+**It fetches and never pushes**, held by a test reading the module's own source
+above `#[cfg(test)]` — the idiom `crates/alo-shell/tests/desktop_source.rs`
+uses. *Its first version read the whole file and refused its own fixture's
+`git push origin main`: right that there was a push, wrong about whose. A check
+that read more than it was about, caught by running it.*
+
+A third word that is not `--from` is refused rather than ignored, because
+somebody who typed `--form` meant to fetch, and a recovery that quietly looked
+for a local branch would refuse for the wrong reason.
 
 Task 36 made a parked branch say what it is wherever it goes. Getting it there
 is still a memory: two checkouts share this repository (`SHARED_MAIN.md`),
