@@ -26,12 +26,20 @@
 //! one of them could not even start WSL afterwards.
 //!
 //! The **copy of the source** the gates read ([`crate::gates`]) went the other
-//! way: it is one **per checkout**, named by [`a_name_for`], because sharing one
-//! refused four gate runs for faults in trees the gating lane did not have. A
+//! way: it is one **per checkout**, named by `a_name_for` below, because sharing
+//! one refused four gate runs for faults in trees the gating lane did not have. A
 //! copy is about 120 MB against a build directory's 40 GB, so the disk argument
-//! that settles the build directory does not reach it.
-//! [`crate::gates::the_copy_for`] carries the four runs and what the change
-//! costs.
+//! that settles the build directory does not reach it. `gates::the_copy_for`
+//! carries the four runs and what the change costs.
+//!
+//! **Those two are named without brackets on purpose.** This crate is a binary,
+//! so every module in it is private to a root with no public surface, and rustdoc
+//! documents none of them: an intra-doc link to either resolves to nothing and
+//! `RUSTDOCFLAGS="-D warnings" cargo doc` refuses the crate. It had refused since
+//! #205 and nobody knew, because **the supervisor's own rustdoc is not one of the
+//! nine gates** — the nine are its formatting, its clippy and its own tests, and
+//! the `rustdoc, warnings denied` gate is the workspace's. So the crate that
+//! defines the gates was the one crate outside them.
 //!
 //! The reserve is then asked of **that** directory, and the refusal names the
 //! filesystem it asked about — because a sentence about free space that does
