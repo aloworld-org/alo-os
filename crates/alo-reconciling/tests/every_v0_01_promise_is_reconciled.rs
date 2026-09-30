@@ -276,6 +276,26 @@ const THE_REAL_DECISION: &str =
 /// something closing. A number that only ever falls is one nobody thinks to check
 /// when work arrives — and this assertion refused within minutes of the tier
 /// changing, which is what it is for.
+///
+/// **And four more on 2026-09-30, the second growth and the larger one.** The
+/// owner put the **full canvas experience** into v0.01: seven promises changed
+/// tier, of which three are shown in part by the closed canvas plan and four have
+/// nothing at all — *the World*, *a frame arrives the shape its work is*, *a frame
+/// dragged out of one Place and into another*, and *every application lives in a
+/// Place*. Each names the task that is its increment in
+/// `docs/autonomy/the-canvas-and-its-places.md`.
+///
+/// **The World is the one worth pausing on.** It had no promise in
+/// `docs/features.md` at all until that day, while `docs/decisions/0065` had
+/// defined `World → Place → Object` since it was written — so a decision record
+/// described a level of the interface that the only list of what gets built had
+/// never heard of. This count could not have caught that: a promise nobody has
+/// written is not a promise with no evidence, it is a promise that does not exist,
+/// and nothing here counts those.
+///
+/// Raised by the Mac lane, whose change forced it. This crate is the laptop
+/// lane's; the number is edited here rather than left failing because a literal
+/// that contradicts the audit blocks every other lane's landing too.
 #[test]
 fn each_promise_with_no_evidence_names_where_the_work_is() {
     let here = the_repository();
@@ -286,8 +306,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        5,
-        "the ledger's own account of itself says five v0.01 promises have no \
+        9,
+        "the ledger's own account of itself says nine v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -310,8 +330,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        5,
-        "the entries with no evidence are not the five the count says: \
+        9,
+        "the entries with no evidence are not the nine the count says: \
          {owed_and_pointing:?}"
     );
     for (promise, waits) in &owed_and_pointing {
