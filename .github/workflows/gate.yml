@@ -615,6 +615,47 @@ jobs:
             || echo "the supervisor is not at that path, so the line above is 127 and not 126"
           echo "the tree is owned by: $(stat -c '%U:%G' .) ; target/ by: $(stat -c '%U:%G' target 2>/dev/null || echo 'no target yet')"
 
+      # **One execute bit, and the five tests this runner could not run, can run.**
+      #
+      # The cause took three measurements and two wrong hypotheses. The exit code is
+      # **126** — util-linux's *found, but could not be executed* — on a binary that is
+      # `-rwxr-xr-x root:root`, execing fine outside a namespace and denied inside one.
+      # The path walk above names the component:
+      #
+      #     drwxr-x---  runner:runner (1001:1001)   /home/runner
+      #     uid_map inside the namespace: 0 0 1
+      #     the same binary under /tmp, inside a namespace: exit 0
+      #
+      # `unshare --map-root-user` maps uid 0 **and nothing else**. A process in that
+      # namespace therefore holds no capability over a file owned by uid 1001, so
+      # `CAP_DAC_OVERRIDE` stops covering for a mode that would otherwise deny — and
+      # `0750` grants others nothing. **Traversal is denied to root itself**, and the
+      # exec is `EACCES`. The `/tmp` copy, root-owned the whole way down, execs fine.
+      #
+      # Reproduced on a lane's machine at the mode that is actually here, not the one
+      # used in the first experiment: **0750 gives 126, 0751 gives 0.** That distinction
+      # mattered — the first reproduction used 0700 and would have "confirmed" a fix
+      # against a mode this runner does not have.
+      #
+      # **`o+x` and not `o+r`.** Traversal without listing: a process that knows the path
+      # can walk it, and nothing can read what is in the directory. On an ephemeral
+      # runner home this is as small as a change to a machine gets, and it is undone by
+      # the runner being thrown away.
+      #
+      # **What it is not.** It does not weaken a gate, skip a test or narrow a filter.
+      # The five tests are unchanged and still assert exactly what they assert; what
+      # changes is that this machine can now execute them. A runner that could not run
+      # them was the thing being worked around, and this removes the thing.
+      - name: let a namespace exec what the gates build
+        run: |
+          echo "before: $(stat -c '%A %U:%G' "$HOME")"
+          sudo chmod o+x "$HOME"
+          echo "after:  $(stat -c '%A %U:%G' "$HOME")"
+          echo
+          echo "This is traversal, not listing. If the five namespace tests still fail"
+          echo "after this, the walk in the previous step will name a different component"
+          echo "and .github/the-tests-a-hosted-runner-cannot-run.txt stays as it is."
+
       # `/proc/uptime` rather than `date +%s`. A wall-clock delta is how one
       # lane printed `PASS clippy 42943s` on a run minutes old, after its guest
       # slept and NTP stepped the clock forward mid-gate.
@@ -739,11 +780,27 @@ jobs:
           # fixing in the supervisor by whoever owns it rather than worked around
           # here.
           #
-          # So this **asks the filesystem** and names the places it asked. It makes no
-          # claim about how the directory is named, and a fourth location is one word
-          # on the `roots` line rather than a rule to keep in step.
-          roots="$HOME/alo-builds ./target"
-          echo "looking under: $roots"
+          # **The supervisor now says where it built, so this reads it rather than
+          # searching.** `alo-kernel-loop gates` prints `BuildsIn.because` as its first
+          # line — *the gates build in …* — which `run` and `publish` always did and
+          # `gates` did not. That gap is why the first version of this probe measured
+          # nothing, and the lane that owns the supervisor closed it.
+          #
+          # Reading it back is better than the search below for the reason the search
+          # was better than a spelled path: **it is the run's own statement about
+          # itself**, so there is no second copy of a naming rule to drift. The search
+          # stays as the fallback, because the supervisor has a second answer — *the
+          # gates build in this checkout's own `target/`* when no directory could be
+          # made — and that sentence names no path at all.
+          from_the_run=$(sed -n 's/^the gates build in \(\/[^,]*\), which is on the filesystem.*/\1/p' \
+            /tmp/the-gates.log 2>/dev/null | head -1 || true)
+          if [ -n "$from_the_run" ] && [ -d "$from_the_run" ]; then
+            roots=$from_the_run
+            echo "the run said where it built: $roots"
+          else
+            roots="$HOME/alo-builds ./target"
+            echo "the run did not name a directory this step could use, so looking under: $roots"
+          fi
           bin=$(find $roots -maxdepth 4 -type f -perm -u+x \
                   -name 'asked_and_answered_over_ipv6-*' ! -name '*.d' \
                   -printf '%T@ %p\n' 2>/dev/null \
@@ -897,10 +954,36 @@ jobs:
             echo "the gates step did not finish" > /tmp/the-verdict
             exit 1
           fi
+          # **The expiry check has to run here too, and it did not.**
+          #
+          # This branch used to say *if it is repeatable, the declared file is empty in
+          # practice* and exit. But the declared file's whole point is that a line in it
+          # expires: the run checks not only that every failure is listed but that
+          # **every listed test still fails**, so an excuse that has stopped being true
+          # is named instead of sitting.
+          #
+          # Returning here skipped that comparison — and this is the branch taken
+          # **precisely when every line has become stale**, because the tests gate
+          # passing is exactly the event that makes them so. *The expiry check was
+          # bypassed by the success that triggers it.* Found by reading this file before
+          # landing the change that would first make the branch reachable, which is the
+          # only reason it was found at all: it has never run.
           if [ "$code" = 0 ]; then
             echo "every gate passed on this runner, including the tests gate."
-            echo "That has not happened before. If it is repeatable, $declared is empty"
-            echo "in practice and the distinction between the two statuses can retire."
+            still=$(grep -v '^[[:space:]]*#' "$declared" 2>/dev/null \
+              | grep -v '^[[:space:]]*$' || true)
+            if [ -n "$still" ]; then
+              echo
+              echo "=== $(printf '%s\n' "$still" | wc -l) tests are still declared unrunnable here and ALL of them ran:"
+              printf '%s\n' "$still" | sed 's/^/  /'
+              echo
+              echo "Every line above is now an excuse that has stopped being true, and an"
+              echo "excuse nothing removes becomes a list of things nobody may break."
+              echo "Empty $declared in the next change. The file is kept, not deleted —"
+              echo "a list that reached zero by being satisfied is worth keeping as a list."
+            else
+              echo "and nothing is declared unrunnable, so this runner runs the whole suite."
+            fi
             echo "every gate passed here" > /tmp/the-verdict
             exit 0
           fi
