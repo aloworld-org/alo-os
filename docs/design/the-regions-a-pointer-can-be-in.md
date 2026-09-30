@@ -182,6 +182,59 @@ is untouched by it. The Dock is still fixed to the bottom edge. **An edge is a
 fact about a surface, not a setting offered to a person**, and a design that
 gives three surfaces three edges is not the Dock becoming movable.
 
+## These numbers are at one size, and what carries across is the rule
+
+Every figure above was read off a 1440 × 960 frame. **No machine is obliged to
+be 1440 × 960**, and `CLAUDE.md` forbids building to one screen size, so a number
+here is only usable once it is known which kind of number it is.
+
+**Fixed, in logical pixels.** The 24 between a surface and its region's edge is
+about a pointer having slack on its way to a target. Slack is ergonomic and does
+not get more generous because somebody bought a wider monitor, so it is the same
+24 everywhere, and it is `3 × measures::MARGIN` rather than a number of its own.
+The hit areas are the same kind: a target is sized for a hand.
+
+**Derived from the display.** The Dock's bar and the shelf's rail are not. A bar
+784 wide is 54% of a 1440 frame and would be absurd copied onto a 3840 one —
+`measures::A_DOCK_MAY_TAKE_ONE_PART_IN` already says what governs instead, and
+`dock_raster` already clamps the bar to the screen less its margins.
+
+**Flush is flush at every size.** *Runs to the screen edge* and *spans the whole
+edge* are rules rather than measurements, which is why the shelf's region being
+"960" is really "all of it" and survives a screen of any height unchanged.
+
+So: **take the 24 and the target sizes as constants; take everything else as the
+rule that produced them at this size.** A region hard-coded to 832 × 122 is the
+fault the standing rule names, and it would be invisible on the machine it was
+written on.
+
+## Where the code and the design already disagree
+
+Recorded rather than fixed here, because changing a measure is a code change and
+belongs in its own gate. Both were found by reading the frames against the code
+on 2026-09-30, within minutes of the standing rule existing.
+
+**The gap under the bar: the code says 8, the design shows 26.**
+`measures::FLOATING_ABOVE_THE_EDGE` is `MARGIN`, which is 8, and `dock_raster`
+places the band at `height - thickness - floating`. The design's bar ends at 934
+on a 960 frame. That is a plain numeric disagreement and, by the standing rule,
+the design is right until an ADR says otherwise. It also matters more than it
+looks: that gap is inside the Dock's region, so it is part of the ground a
+pointer crosses.
+
+**The bar's width: the code grows it, the design draws it fixed.**
+`dock_raster` computes the width from what the Dock holds and clamps it;
+the design shows 784 in every instance and carries a separate frame for
+*overflow*. **This one is not settled by the measurement.** It was reported
+between lanes as settled, and that was too confident: instances of one component
+share a size unless somebody overrides it, so 163 identical instances may be
+evidence of one component rather than of a pinned bar. The section above, which
+uses the bar's constant size against the shelf's varying one, rests on that
+reading — so if the bar turns out to grow, the *rule* still holds and only which
+side of it the bar falls on changes. What can be said from the frames alone is
+that an overflow frame exists, which is what a design that does not grow the bar
+needs and a design that grows it does not.
+
 ## What this does not settle
 
 **One shelf instance sits at x=56 instead of x=1352** — same 64 × 232, mirrored

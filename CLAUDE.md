@@ -175,6 +175,25 @@ cannot demonstrate.
 - **Scope is gated.** Nothing gets built that isn't in
   `docs/features.md` with a tier, inside the current release, and
   outside Non-goals.
+- **The design is followed, not approximated.** What the interface
+  looks like is settled in the alo OS design file; `docs/design/`
+  records what was measured off it and what the owner decided where it
+  is silent or disagrees with itself. Build to that. Where code and
+  design differ the design is right until an ADR says otherwise, and a
+  deliberate departure is written down where the next person looks
+  rather than left in a diff. **A screenshot is not a specification** —
+  take the numbers off the frames and record them, because a layout
+  matched by eye is a layout nobody can check.
+- **Nothing is built to one screen size.** The design's frames are
+  1440×960 and no machine is obliged to be. Every layout is derived
+  from the display it is on — its size, its scale, its orientation —
+  so a figure taken from a frame becomes a proportion or a named rule,
+  never a constant that holds only at the size somebody drew. Screens
+  run from the smallest this product lays out for up to an external
+  display beside the laptop, and density is separate from size: twice
+  the pixels draws the same interface sharper, not half as big. A
+  control that falls off a small panel, or swims on a large one, is a
+  bug and not a tuning problem.
 - **User-facing strings are externalized (i18n) from day one.** The
   first target is all 24 official EU languages, and any language
   somebody contributes after that. Hardcoded English is a bug, and
