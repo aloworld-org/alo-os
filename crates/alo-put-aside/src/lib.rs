@@ -40,6 +40,7 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 pub mod panel;
+pub mod peeking_at_a_preview;
 pub mod preview;
 pub mod proposing;
 pub mod putting_aside;

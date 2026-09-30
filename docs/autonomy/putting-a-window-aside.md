@@ -325,7 +325,9 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** ready. **Task 1 and 2 are blocked on clauses of their own acceptance, not on their work; what this task needs from them is built.**
+**Status:** **blocked on the input-path evidence, which needs `alo-shell`, 2026-09-30.** The
+peek is built and both *unchanged* clauses hold; the clause that needs the shell's own hit test
+stays here.
 
 A larger readable view over the current canvas. Releasing or Escape removes it and **the
 window stays minimised**.
@@ -335,10 +337,60 @@ separately. A press meant for the canvas does not reach the peek — tested thro
 real input path, and using the shell's existing hit test rather than a second opinion
 about where clients are.
 
+**Built:** `crates/alo-put-aside/src/peeking_at_a_preview.rs` and seven tests in
+`crates/alo-put-aside/tests/a_peek_leaves_the_window_and_the_canvas_alone.rs`.
+
+**The state machine is `alo_dock::Peeking` and no second one was written.** Checked for
+specificity on an axis its header does not advertise, because that is exactly what went wrong
+with `revealing`: it holds one window, which is right for a peek rather than a limit; it does
+not ask how the peek began and says so loudly, because the keyboard road must end somewhere
+identical; and **it holds no view at all**, which is how *the canvas stays exactly where it is*
+is kept.
+
+**Both halves of *unchanged* are held, and only one of them by a test.** The window's state is
+this crate's own data and is asserted directly. The camera is held by the shape — `peek_at` and
+`stop_peeking` take no view and return none, so no caller can be handed a reason to move.
+
+A test comparing a view across those calls **could not fail**, and this lane spent today
+learning what that costs. So the camera clause is guarded by a source check instead: the peek
+module must never construct a `Travel`. That can fail, and it was watched failing.
+
+**The finding, which is the reason this module exists at all.**
+`alo_dock::PeekEnded::ByTravellingThere` names the ordinary road for a window on the canvas. For
+a window that is **put aside**, the ordinary road is a *restore* — and since task 4 a restore
+can come back with a proposal, because the saved place may be taken.
+
+So a reader who follows that variant's name and performs a travel **skips the collision
+proposal**, putting the window back invisibly behind whatever is there: the one thing task 4
+forbids, reachable through a variant name. No rename was asked for — the variant's meaning,
+*the person chose it, do the ordinary thing*, is general, and renaming another lane's public
+enum over vocabulary is churn. What was built instead is `chosen`, which goes through
+`ask_for`, with a test that says so — **so the wrong reading fails in this crate rather than in
+the shell.**
+
+**Four mutations watched failing:** choosing that ignores the collision, peeking at a window the
+panel does not hold, peeking that un-minimises, and a `Travel` built inside the peek module. One
+earlier attempt did not compile and therefore proved nothing, which is the second time tonight
+that a mutation producing no output looked like a pass.
+
+**What is owed is the input-path evidence**, and it needs `alo-shell`, which is another lane's.
+The clause stays here rather than moving somewhere it could be ticked. Its wording names the
+fault to avoid in advance — *rather than a second opinion about where clients are* — which is
+the same reason task 4's overlap predicate was asked of `alo-dock` instead of written here.
+
 ### 6. The full-screen edge reveal
 
-**Status:** blocked on the generalisation of `alo-dock::revealing`, which lane B owns and is
-doing, and on integration evidence in the shell, 2026-09-30. **The decision is made.**
+**Status:** **blocked on the region contract here and on integration evidence in the shell,
+2026-09-30.** The generalisation has landed; the decision was made and acted on.
+
+**`alo-dock::revealing` was generalised by lane B and it is done** — `#332`, *what holds a
+revealed surface open is a set, not the last event*. It is the redesign rather than the rename
+both lanes first read it as: `Revealing` now holds **which regions keep it open** — `ThePointer`,
+`TheKeyboard`, `ADrag`, `AMenu` — and is revealed while any of them does, so rules 3 and 4 fall
+out of set semantics instead of being cases. Rule 6 arrived as `FocusGoes` and `Dismissed`, so a
+person who tabbed to the surface and pressed Escape lands back in their work rather than
+nowhere. `ThePointer::OnTheSurface` already documents the continuous region, *including its
+previews, its controls and the path between them, which the caller classifies*.
 
 True full screen conceals the panel until the right edge reveals it, and the pointer must
 be able to travel onto the panel without it disappearing.
