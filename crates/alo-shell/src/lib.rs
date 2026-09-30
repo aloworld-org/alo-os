@@ -192,6 +192,7 @@ mod popup_grabs;
 mod popup_placement;
 mod popups;
 mod presentation;
+mod putting_a_window_aside;
 mod readback;
 mod record_keys;
 mod record_lines;
@@ -310,6 +311,7 @@ mod window_resize;
 mod window_size;
 mod window_switch;
 
+pub use putting_a_window_aside::NotAside;
 pub use status_items::StatusItems;
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
