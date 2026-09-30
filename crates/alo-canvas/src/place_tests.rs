@@ -1,3 +1,9 @@
+//! What a Place refuses, and what two of them tell apart.
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
+
 use super::Place;
 
 #[test]
@@ -46,6 +52,6 @@ fn places_order_and_hash_so_they_can_key_a_map() {
     let second = first.next().expect("there is a second place");
     by_place.insert(second, "the second");
     by_place.insert(first, "the first");
-    let in_order: Vec<_> = by_place.into_iter().map(|(_, what)| what).collect();
+    let in_order: Vec<_> = by_place.into_values().collect();
     assert_eq!(in_order, vec!["the first", "the second"]);
 }
