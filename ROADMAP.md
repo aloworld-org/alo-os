@@ -1861,6 +1861,17 @@ sorted the same way v0.01 now is.
         appears nowhere outside `alo-dock`, and inside it only in tests and in
         the match arm. So the person can choose it, the dock knows what to do,
         and **nothing ever tells it a window needs the room.**
+        *And the caller cannot simply be written: nothing in this repository
+        says **which** windows count.* `docs/features.md:74` is a single line,
+        `docs/design/the-alo-dock.md` does not mention it, and `TheRoom`'s own
+        documentation defines the type and not the predicate — every other
+        occurrence is the phrase quoted back. Four readings are available and
+        visibly different to a person, and three of them oscillate, because
+        they are computed from a geometry the dock's own visibility changes.
+        `docs/design/when-the-dock-gives-way.md` records that, and recommends
+        an answer to each: the work area does not depend on the dock's setting,
+        any mapped window overlapping the band counts, `FillingTheScreen` is
+        not the trigger, the answer is per screen, and no timers
         *This box read "**the size is there and the hiding is not**", and said
         `layout.rs` "says so in writing at the place that work would go".
         Neither was true: `layout.rs` says the opposite at that place — that
