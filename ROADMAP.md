@@ -1874,34 +1874,45 @@ sorted the same way v0.01 now is.
         owed to the certified machine, and to a window that needs the room —
         and the caller above is owed before it, since there is nothing yet for
         a machine to demonstrate
-- [ ] **Per display, so the dock can sit along the bottom of the laptop and down
-      the side of the external screen**
-  - [x] **The code.**
-        `alo_dock::Dock::edge_on` — **a display singled out is an exception to
-        the edge**, which is the shape `alo-appearance` already used to make a
-        display an exception to a background, and the order is that crate's
-        order too: the exception, then the edge chosen for everywhere, then the
-        edge the release ships. `alo_displays::Wearing::of` asks it once per
-        screen with the same name it asks for that screen's background, so two
-        identical screens are two names and an edge chosen for one does not
-        reach the other. `dock.toml` gains the key **additively** and a machine
-        that singled no screen out writes the file it wrote before.
-        The shell needed **nothing**: `alo-shell/src/screens_raster.rs` already
-        drew each screen's dock on the edge that screen's `Wearing` gave it, so
-        the promise was never blocked on the drawing.
-        Two tests hold the promise in its own words — the laptop keeps the
-        bottom while the external screen takes a side, in `alo-dock` and again
-        through `Wearing::of` — and `docs/autonomy/updates/the-dock-per-display.md` is the
-        report.
-        *This box read **not built, and the crate says so itself** until
-        2026-09-27, quoting `dock.rs`'s own **One dock, one edge**. That file now
-        says the opposite, and `wearing.rs`'s paragraph naming itself as the one
-        function that would change was accurate: it was one line*
-  - [ ] **On the machine.**
-        **a second screen.** No display has ever been plugged into anything this
-        repository runs on, so the laptop along the bottom and the external
-        screen down the side is arithmetic and a test rather than a thing
-        anybody has looked at. Owed to the certified machine and a cable
+- **Per display, so the dock can sit along the bottom of the laptop and down
+      the side of the external screen** — **WITHDRAWN by
+      [ADR 0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md).**
+      *`docs/features.md:76` records it: the `[v0.01]` promise that a person
+      decides where the dock goes was withdrawn, **and its `[v0.5]` descendant,
+      this one**. The Dock is fixed to the bottom edge. Nobody had chosen an
+      edge, because nothing has booted the image; the cost was to a contract,
+      not to a person.*
+      *This box stood open for three days after that, so it read as work
+      somebody should do — and its code box was ticked, citing
+      `alo_dock::Dock::edge_on`, **which no longer exists**: measured
+      2026-09-30, `grep -rn edge_on crates/` finds nothing but an unrelated test
+      name. **A withdrawn promise, asked for as open, with a deleted function
+      cited as evidence it was half done.** Corrected 2026-09-30 by the lane
+      that removed the function.*
+      *What follows is kept rather than deleted. It is the record of something
+      built and then withdrawn, and a box emptied without trace teaches nothing
+      about why it stood.*
+      *What was built before the withdrawal, kept as a record and carrying no
+      boxes, because a withdrawn promise is not work anybody is owed:*
+      `alo_dock::Dock::edge_on` made **a display singled out an exception to the
+      edge**, the shape `alo-appearance` already used to make a display an
+      exception to a background, in that crate's order — the exception, the edge
+      chosen for everywhere, then the edge the release ships.
+      `alo_displays::Wearing::of` asked it once per screen with the same name it
+      asks for that screen's background, so two identical screens were two names
+      and an edge chosen for one did not reach the other. `dock.toml` gained the
+      key additively. The shell needed nothing:
+      `alo-shell/src/screens_raster.rs` already drew each screen's dock on the
+      edge that screen's `Wearing` gave it. Two tests held the promise in its own
+      words, and `docs/autonomy/updates/the-dock-per-display.md` is the report.
+      *On the machine it was never demonstrated: no display has ever been plugged
+      into anything this repository runs on.*
+      *And that description read **not built, and the crate says so itself**
+      until 2026-09-27, quoting `dock.rs`'s own **One dock, one edge** — a
+      sentence that was true when written and false when quoted. So this one
+      promise has now been described wrongly three times in three different
+      directions: not built when it was, open when it was withdrawn, and unbuilt
+      when it had been built and then taken away.*
 - [ ] Recovery and rollback screen
   - [x] **The code.**
         `alo-keeping-up` — going back to the build the machine ran before, the
@@ -3122,11 +3133,17 @@ last.
   *This read **not built** for both. It was already untrue of the first when it
   was written — the box above said in the same document that the size is there
   and held by its own tests — and the two were separated into boxes of their own
-  on 2026-09-27. Corrected 2026-09-30: the size is built, the hiding is built
-  except for a caller that computes `TheRoom` from real windows, and only the
-  per-display promise is unbuilt. **A document that contradicted itself two
-  thousand lines apart**, which is the same fault as `docs/features.md:421`
-  refusing a feature the line three below it keeps.*
+  on 2026-09-27. Corrected 2026-09-30: the size is built, and the hiding is
+  built except for a caller that computes `TheRoom` from real windows. **A
+  document that contradicted itself two thousand lines apart**, which is the
+  same fault as `docs/features.md:421` refusing a feature the line three below
+  it keeps.*
+  *That correction itself said **only the per-display promise is unbuilt**, and
+  that was wrong in the way this whole entry is about. The per-display promise
+  is not unbuilt — it was **built, and then withdrawn** by ADR 0076, and calling
+  it unbuilt asks somebody to build a thing this repository decided not to have.
+  Corrected again the same night, twenty minutes later, by the lane that wrote
+  it.*
 
 **And the arithmetic that would have caught all three does not exist for v0.5.**
 `crates/alo-reconciling` reads every `[v0.01]` promise out of `docs/features.md`
