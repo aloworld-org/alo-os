@@ -176,3 +176,139 @@ fn a_frame_cannot_be_dragged_entirely_under_the_dock() {
         "a drag leaving the name half reachable was refused"
     );
 }
+
+/// Where a frame's name band sits on the glass: `(left, top, width, height)`.
+///
+/// Computed from the two public numbers rather than reached for through a
+/// test-only accessor — `alo_shell::the_names_band` and
+/// `alo_shell::window_buffer_origin` — which is also what keeps this test honest
+/// about aiming where a person would. The fixture's windows carry a 16x16 buffer
+/// and the camera is at the origin at life size, so the band is directly above the
+/// frame and as wide as it.
+fn the_name_band(
+    f: &Fixture,
+    frame: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+) -> (f64, f64, f64, f64) {
+    let at = {
+        let frame = frame.clone();
+        f.backend(move |_| alo_shell::window_buffer_origin(&frame))
+    };
+    let band = alo_shell::the_names_band();
+    (at.x, at.y - band, 16.0, band)
+}
+
+/// The status area, where the owner put it: **fixed at the top-right**.
+///
+/// A viewport control like the dock, so it is a rectangle in screen pixels here
+/// rather than anything this test computes from the plane.
+fn a_status_area_at_the_top_right() -> Rectangle<i32, smithay::utils::Physical> {
+    Rectangle::new((VIEWPORT.0 - 200, 0).into(), (200, 32).into())
+}
+
+/// A control covering this frame's name wherever it is, for total occlusion.
+///
+/// **Not the viewport**, which was the first attempt and does not cover it: a
+/// frame at the plane origin has its name band at `y = -48`, above the top of the
+/// screen, so a rectangle over the visible area misses it entirely. That is not a
+/// fault in the rule — a name above the viewport is reached by panning, which is
+/// why this task's own reasoning counts only the fit and the fixed controls as
+/// ways a frame is lost.
+fn over_the_whole_name(name: (f64, f64, f64, f64)) -> Rectangle<i32, smithay::utils::Physical> {
+    Rectangle::new(
+        ((name.0 - 10.0) as i32, (name.1 - 10.0) as i32).into(),
+        (name.2 as i32 + 20, name.3 as i32 + 20).into(),
+    )
+}
+
+/// **A person who made everything larger made this larger too.**
+///
+/// A fixed 44 × 24 would shrink against everything around it for exactly the
+/// person who most needs it not to. Asserted against `TextScale`'s own ordinary
+/// value rather than against 100, so the two cannot drift.
+#[test]
+fn the_handle_grows_with_the_text_scale() {
+    let ordinary = alo_shell::Server::a_usable_handle_at(alo_appearance::TextScale::ordinary());
+    let larger = alo_shell::Server::a_usable_handle_at(
+        alo_appearance::TextScale::percent(200).expect("two hundred per cent is offered"),
+    );
+    assert_eq!(ordinary, (44.0, 24.0));
+    assert_eq!(
+        larger,
+        (88.0, 48.0),
+        "at twice the text size the handle is twice the size"
+    );
+    assert!(
+        larger.0 > ordinary.0 && larger.1 > ordinary.1,
+        "a larger text scale did not make the handle larger"
+    );
+}
+
+/// **A frame with no reachable name at all is refused**, which is the case the
+/// whole rule exists for and the one the dock test already held for one control.
+#[test]
+fn a_name_wholly_covered_by_the_controls_is_not_reachable() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    let here = At::checked(0, 0).expect("the origin is on the plane");
+    let handle = alo_shell::Server::a_usable_handle_at(alo_appearance::TextScale::ordinary());
+    let name = the_name_band(&f, &frame);
+    let covered = f.backend(move |s| {
+        s.enough_of_the_name_is_reachable(&frame, here, here, &[over_the_whole_name(name)], handle)
+    });
+    assert!(
+        !covered,
+        "a name entirely under a fixed control was called reachable"
+    );
+}
+
+/// **The status area is a control like any other**, now it has a position.
+///
+/// ADR 0076 left it with nowhere to be and the owner placed it at the top-right on
+/// 2026-09-30. This is the half of task 8's acceptance that could not be written
+/// until then — *a frame cannot be left entirely under the dock **or the status
+/// area***, with *entirely* replaced by the usable-handle rule.
+#[test]
+fn the_status_area_hides_a_name_the_same_way_the_dock_does() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    let here = At::checked(0, 0).expect("the origin is on the plane");
+    let handle = alo_shell::Server::a_usable_handle_at(alo_appearance::TextScale::ordinary());
+    let name = the_name_band(&f, &frame);
+
+    // The status area moved onto this frame's name, leaving nothing of it.
+    let over_the_name = Rectangle::new(
+        ((name.0 - 10.0) as i32, name.1 as i32).into(),
+        (name.2 as i32 + 20, name.3 as i32 + 2).into(),
+    );
+    let frame_a = frame.clone();
+    assert!(
+        !f.backend(move |s| s.enough_of_the_name_is_reachable(
+            &frame_a,
+            here,
+            here,
+            &[over_the_name],
+            handle
+        )),
+        "a name entirely under the status area was called reachable"
+    );
+
+    // And where it actually sits — top-right, clear of a frame at the origin — it
+    // takes nothing, so the rule is about the geometry rather than about the
+    // control's existence.
+    assert!(
+        f.backend(move |s| s.enough_of_the_name_is_reachable(
+            &frame,
+            here,
+            here,
+            &[a_status_area_at_the_top_right()],
+            handle
+        )),
+        "the status area at the top-right hid a frame at the origin"
+    );
+}
