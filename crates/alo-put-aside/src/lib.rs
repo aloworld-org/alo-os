@@ -41,13 +41,19 @@
 
 pub mod panel;
 pub mod preview;
+pub mod proposing;
 pub mod putting_aside;
 pub mod restoring;
+pub mod restoring_into_a_taken_place;
 pub mod showing;
+pub mod shown;
 pub mod where_it_goes_back;
 
 pub use panel::{NotPutAside, Panel};
 pub use preview::Preview;
+pub use proposing::Proposal;
 pub use restoring::Travel;
+pub use restoring_into_a_taken_place::{Placed, Restored};
 pub use showing::{Chosen, HowItShows};
+pub use shown::Shown;
 pub use where_it_goes_back::WhereItGoesBack;

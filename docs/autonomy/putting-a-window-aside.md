@@ -256,7 +256,9 @@ nothing concludes the click was lost rather than that the window was already vis
 
 ### 4. When the saved place is taken
 
-**Status:** ready, 2026-09-30. **Task 3 is done and this task needed its travel decision.**
+**Status:** **blocked on History, which is `[v1]`, 2026-09-30.** The proposal is built and the
+original position is carried; the clause that names History cannot be finished inside this
+release and stays here.
 
 `docs/design/the-alo-dock.md` says the restored window *comes forward and nothing is
 rearranged*; the owner's specification adds that the person is **shown** the collision and
@@ -265,6 +267,61 @@ offered a nearby position. Both refuse invisible stacking; the newer one decides
 **Acceptance.** The intended placement is shown before anything moves, and the original
 position is kept in History. Nothing is rearranged without the proposal being visible
 first.
+
+**Built:** `crates/alo-put-aside/src/proposing.rs` (`Proposal`),
+`crates/alo-put-aside/src/shown.rs` (`Shown`),
+`crates/alo-put-aside/src/restoring_into_a_taken_place.rs` (`ask_for`, `accept`,
+`dragged_to`, `Placed`), and ten tests in
+`crates/alo-put-aside/tests/a_taken_place_is_shown_before_anything_moves.rs`.
+
+**Nothing moves before the proposal is visible, and that decided the whole shape.** A
+collision cannot be resolved inside a restore: by the time a function has brought the window
+back and is choosing where to put it, the rearranging has begun and all that is left is how
+much. So the collision is checked **before the panel is touched**, and a taken place returns
+having changed nothing at all — the panel still holds the preview, the window still says it is
+put aside. The test for it compares every window whole, because the subject is an absence.
+
+**The refusal it guards is a proposal accepted without having been shown**, which is invisible
+stacking wearing a confirmation dialog's paperwork. `Shown` is what stops it: there is no way
+to make one without naming the view it was drawn in, this crate cannot draw, and `accept`
+takes it **by value** — one showing authorises one placement, because an approval is never a
+session.
+
+**The History clause is not buildable in this release and is not being pretended away.**
+History is `[v1]` in `docs/features.md`; the panel is `[v0.01]` only because the owner moved
+that line on 2026-09-30, and the move was recorded as a tier move rather than a gate crossing.
+`CLAUDE.md` binds building to what that file says.
+
+So what is built is that **the original position is never lost**: `Placed` carries where the
+window went *and* where it was, on both roads, so History has something true to read when it
+exists. Keeping a value is not building a surface, and that reading is stated rather than
+assumed — if the clause means *this task waits for History*, the work stands and only this
+status line changes.
+
+**It is told what is in the way rather than finding out.** `alo-dock`'s
+`Patch::wholly_inside` is private and *overlaps* is a different question, so there is no public
+predicate to ask. Asked of the lane that owns that crate; computing geometry about another
+crate's type here would be a second opinion that agrees today. `ask_for` therefore takes the
+occupying window, exactly as `restoring` takes a view rather than a camera — one line of wiring
+when the predicate lands, and no stub in the meantime.
+
+**Five mutations were watched failing before the tests were trusted:** restore-then-propose,
+never propose, accept at the saved place, a drag that lands on the offer, and `was_at`
+overwritten with where the window ended up. Each is caught by a test that names it.
+
+**And one test here cannot fail, which its own doc now says.** The check that these types
+cannot derive `Default` is a tripwire rather than a test: `Patch` has no `Default`, so the
+derive is a compile error today. It stays because `Camera` already derives `Default`, so
+`Patch` gaining one is an ordinary change — and on that day every guarantee-carrying type in
+this crate becomes silently defaultable with `Zoom::default()` being `LIFE_SIZE`. **A check
+that cannot fail lends unearned credit to the checks beside it**, which is why it is labelled
+instead of quietly kept. Found because two mutations did not compile and therefore reported
+nothing, and a mutation that produces no output is not a mutation that passed.
+
+**A law 4 split was found by a test rather than by reading.** `Shown` began inside
+`proposing.rs`; the one-way-in check counts constructors per file and reported two, which was
+right — `Proposal` changes when what is offered changes, `Shown` changes when what counts as
+having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
