@@ -3145,13 +3145,28 @@ last.
   Corrected again the same night, twenty minutes later, by the lane that wrote
   it.*
 
-**And the arithmetic that would have caught all three does not exist for v0.5.**
-`crates/alo-reconciling` reads every `[v0.01]` promise out of `docs/features.md`
-and fails the gate when the ledger in `docs/autonomy/v0-01-evidence.md` disagrees
-— a promise no entry is about, an entry about a promise that is gone. There is no
-`v0-5-evidence.md` and nothing reads the 92 `[v0.5]` promises, so v0.5's coverage
-is exactly the reading that crate was written because it fails. Three found in the
-first group of a by-eye pass is the expected rate, not bad luck.
+**And the arithmetic that would have caught all three did not exist for v0.5 when
+this pass was made.** `crates/alo-reconciling` reads every `[v0.01]` promise out of
+`docs/features.md` and fails the gate when the ledger in
+`docs/autonomy/v0-01-evidence.md` disagrees — a promise no entry is about, an entry
+about a promise that is gone. Three found in the first group of a by-eye pass is
+the expected rate, not bad luck.
+
+*This paragraph ended **there is no `v0-5-evidence.md` and nothing reads the 92
+`[v0.5]` promises**. True when written; false since. The file is 92 entries for 92
+promises and `every_v0_5_promise_is_reconciled_against_evidence_that_runs` gates on
+it — as this document says in two other places, where it calls that ledger the
+other half of the definition and the check a check rather than a reading. **A
+document contradicting itself about whether its own instrument exists**, with the
+stale half reading as present tense.*
+
+*It was read as current on 2026-09-30 and repeated in two of this lane's own commit
+messages, which is how a stale sentence in a plan becomes a stale claim in a
+record: read, believed, repeated. Corrected the same night by the lane that
+repeated it. The gap that remains is narrower and real: nothing compares a
+withdrawal recorded in `docs/features.md` against an open box here — which is what
+`withdrawals_left_open` was written for, after this document asked a lane to build
+a promise ADR 0076 had withdrawn.*
 
 
 ### The v0.5 cut left four boxes behind, and two ticks on the wrong promises, 2026-09-26
