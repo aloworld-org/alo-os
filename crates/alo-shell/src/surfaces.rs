@@ -85,6 +85,14 @@ pub(crate) struct Surfaces {
     xdg: XdgShellState,
     /// Live toplevel roots in front-to-back stacking order.
     windows: Vec<Window>,
+    /// **Which Place the person is looking at.**
+    ///
+    /// One home, not two. `Server::camera` has a second copy in
+    /// `self.popups.camera` that three mutators keep in step by hand, and this
+    /// deliberately does not repeat that: a new toplevel is created here, on
+    /// `Surfaces`, so the Place it is put on has to be reachable from here, and
+    /// the shell reads it back through `Server::the_place_now`.
+    pub(crate) place: alo_canvas::Place,
     /// Seat globals, created only when the backend enables input.
     pub(crate) seats: SeatState<Self>,
     /// Optional keyboard seat and routing state.
@@ -130,6 +138,8 @@ impl Surfaces {
             // when the pinch is over the plane instead of over a frame.
             gestures: PointerGesturesState::new::<Self>(display),
             windows: Vec::new(),
+            // A machine that has never been used is looking at its first Place.
+            place: alo_canvas::Place::FIRST,
             seats: SeatState::new(),
             keyboard: None,
             pointer: None,
@@ -332,6 +342,11 @@ impl XdgShellHandler for Surfaces {
         &mut self.xdg
     }
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
+        // **A window is on a Place before it is anything else.** Assigned here
+        // rather than when it maps, so that no toplevel this compositor knows
+        // about is ever without one; `crate::canvas_place` says why that matters
+        // more than it looks like it does.
+        crate::canvas_place::put_on(surface.wl_surface(), self.place);
         // Initial configure is sent only after the client's first empty commit.
         self.windows.push(Window {
             visibility: Default::default(),

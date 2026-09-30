@@ -50,7 +50,13 @@ impl crate::Server {
             .filter_map(|surface| {
                 let origin = crate::window_buffer_origin(surface);
                 let geometry = crate::scene::geometry(surface);
-                a_frame(crate::window_number::Numbers::of(surface), origin, geometry)
+                let place = crate::canvas_place::the_place_of(surface)?;
+                a_frame(
+                    crate::window_number::Numbers::of(surface),
+                    place,
+                    origin,
+                    geometry,
+                )
             })
             .collect()
     }
@@ -65,7 +71,7 @@ impl crate::Server {
         let room = self.surfaces.popups.output_size?;
         let viewport = Size::checked(u32::try_from(room.w).ok()?, u32::try_from(room.h).ok()?)?;
         let frames = self.the_frames_on_the_plane();
-        let span = alo_canvas::plane::reached_by(&frames)?;
+        let span = alo_canvas::plane::reached_by(&frames, self.the_place_now())?;
         let showing = Camera::showing(span, viewport)?;
         self.camera = showing;
         self.surfaces.popups.camera = showing;
@@ -82,6 +88,7 @@ impl crate::Server {
 /// promise was never made about.
 fn a_frame(
     id: u64,
+    place: alo_canvas::Place,
     origin: Point<f64, Logical>,
     geometry: Rectangle<f64, Logical>,
 ) -> Option<Frame> {
@@ -97,5 +104,5 @@ fn a_frame(
     // rather than moving the extent every other frame is fitted by.
     let at = At::checked(left.floor() as i32, top.floor() as i32)?;
     let size = Size::checked(width.ceil().max(0.0) as u32, height.ceil().max(0.0) as u32)?;
-    Some(Frame::of(id, at, size))
+    Some(Frame::of(id, place, at, size))
 }
