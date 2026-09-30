@@ -225,6 +225,15 @@ cannot demonstrate.
   written. **When the answer is not obvious, it is scope**: the cost of
   asking is a message, and the cost of guessing wrong is a release
   nobody decided.
+  **And the change says which answer it got, in one sentence.** Not the
+  result, the judgement: *this makes an existing promise true, because
+  X*. A reader tomorrow can then disagree with the reasoning rather than
+  only discover the outcome. This clause exists because the sentence
+  above is the one under most pressure when nobody is awake to ask, and
+  the failure mode is not a lane building something forbidden — it is a
+  lane finding *obvious* easier to reach than *ask*, because asking
+  costs a night. *Proposed by the Mac lane on 2026-09-30, before three
+  lanes ran unsupervised on the rule for eight hours.*
   **Sub-work you cannot do is reported the minute it is found**, not at
   the end. A task blocked on something outside its own crate is blocked
   from that minute, and other lanes may be resting on it — a missing
