@@ -137,6 +137,17 @@ mod running {
     struct ThisPersonsDesktop {
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
+        /// The windows this person has put aside, which the panel at the edge
+        /// shows.
+        ///
+        /// **Empty, and that is measured rather than assumed**: nothing in
+        /// this binary puts a window aside yet, because putting one aside is
+        /// an interaction and this is the drawing half. A person who has put
+        /// nothing aside has an empty panel and no rail is drawn for one, so
+        /// what is on the screen is true rather than a placeholder — and the
+        /// panel's reserved column exists either way, because the panel owns
+        /// its edge whether or not anything is in it.
+        put_aside: alo_put_aside::Panel,
         /// The colours and the way this person reads.
         look: DesktopLook,
         /// Every word on it.
@@ -182,6 +193,7 @@ mod running {
                 .show(Some(&mut egress), &alo_egress::Indicator::default());
             Ok(Self {
                 dock: alo_dock::Dock::shipped(),
+                put_aside: alo_put_aside::Panel::new(),
                 look: DesktopLook::of(
                     &alo_appearance::Appearance::shipped(),
                     &alo_access::TurnedOn::nothing(),
@@ -233,6 +245,7 @@ mod running {
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
                 dock: &self.dock,
+                put_aside: &self.put_aside,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

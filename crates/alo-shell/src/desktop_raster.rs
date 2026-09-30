@@ -26,6 +26,7 @@
 //! (`crate::egress_status_place`) and sits exactly where it sat.
 
 use alo_dock::{Dock, Showing};
+use alo_put_aside::the_region_the_panel_claims::WhichEdge;
 use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
@@ -49,6 +50,13 @@ pub(crate) struct DesktopPicture {
     /// [`crate::dock_room`] for why the work area must not depend on the
     /// person's choice.
     pub(crate) dock: Option<DockPicture>,
+    /// The panel of put-aside windows at its edge.
+    ///
+    /// Not an [`Option`]: unlike the dock, the panel has no *give way* setting
+    /// and a person who has put nothing aside gets a rail of no height rather
+    /// than an absent picture. The reserved column it carries exists either
+    /// way, because the panel owns its edge whether or not anything is in it.
+    pub(crate) panel: crate::panel_raster::PanelPicture,
     /// The window of what is running.
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
@@ -86,6 +94,12 @@ pub(crate) struct Shown<'a> {
     /// band's own space. An empty slice is the true answer on a desktop with
     /// nothing open, not a placeholder — see [`crate::dock_room`].
     pub(crate) windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
+    /// The windows a person put aside, which the panel at the edge shows.
+    ///
+    /// Handed in like the rest: `alo-put-aside` decides what is in the panel
+    /// and holds no geometry at all, and [`crate::panel_raster`] is where that
+    /// becomes rectangles on this display.
+    pub(crate) put_aside: &'a alo_put_aside::Panel,
 }
 
 /// What the running window shows, as a panel.
@@ -141,6 +155,7 @@ pub(crate) fn picture(
         division,
         offer,
         windows,
+        put_aside,
     } = shown;
     let dock_picture = crate::dock_raster::picture(
         dock, look, size,
@@ -177,12 +192,30 @@ pub(crate) fn picture(
     // units and knows nothing about scale, so the multiplication happens here,
     // once, at the boundary.
     let division = crate::division_raster::picture(division, offer, 1, palette.ink, palette.accent);
+
+    // **Which edge the panel belongs to is read from the direction a person
+    // reads in**, not assumed and not stored. The owner's ruling of 2026-09-30
+    // is that the default panel is on the right and a right-to-left layout
+    // mirrors it to the left *together with the Dock and the top-control
+    // exclusion regions* — so the one fact this needs is already here, in the
+    // look, and deriving it is why nothing names an edge.
+    let panel = crate::panel_raster::picture(
+        put_aside,
+        look,
+        size,
+        match look.reading() {
+            Direction::LeftToRight => WhichEdge::Right,
+            Direction::RightToLeft => WhichEdge::Left,
+        },
+    )?;
+
     Ok(DesktopPicture {
         size,
         dock: match showing {
             Showing::Shown => Some(dock_picture),
             Showing::Hidden => None,
         },
+        panel,
         running,
         filling,
         division,

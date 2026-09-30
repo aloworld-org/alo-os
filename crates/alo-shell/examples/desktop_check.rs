@@ -138,6 +138,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 division: &division,
                                 offer: &alo_dividing::Offer::Nothing,
                                 windows: &[],
+                                put_aside: nothing_put_aside(),
                             },
                             None,
                             None,
@@ -248,4 +249,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("{submitted} frames submitted");
     Ok(())
+}
+/// A desk where nothing has been put aside.
+///
+/// One shared value rather than a temporary at each site, so the borrow does
+/// not outlive the panel it names. An empty panel is the true answer for a
+/// check that is not about the panel: a person who has put nothing aside has
+/// one, and no rail is drawn for it.
+fn nothing_put_aside() -> &'static alo_put_aside::Panel {
+    static EMPTY: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
+    EMPTY.get_or_init(alo_put_aside::Panel::new)
 }

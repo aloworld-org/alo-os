@@ -186,6 +186,7 @@ mod output_metadata;
 mod output_retirement;
 mod painted;
 mod painted_text;
+mod panel_raster;
 mod pointer;
 mod popup_grabs;
 mod popup_placement;
