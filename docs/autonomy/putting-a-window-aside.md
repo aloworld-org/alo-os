@@ -381,8 +381,9 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 ### 6. The full-screen edge reveal
 
 **Status:** **blocked on there being no full screen in `alo-shell`, measured 2026-09-30** —
-upstream of the region contract and of the integration evidence, both of which are still owed.
-The generalisation has landed; the decision was made and acted on.
+upstream of the integration evidence, which is still owed. The generalisation has landed, the
+decision was made and acted on, and **the region contract is built with no evidence** (see
+below, and the entry in `docs/autonomy/v0-01-evidence.md`).
 
 **The blocker neither lane had measured.** This task completes by *revealing the panel over a
 truly full-screen window*. That cannot be run, and neither can the Dock's half of it, because
@@ -475,6 +476,57 @@ separate work, and this task stays open until the complete interaction passes.
 **The split.** The generalisation, rules 3, 4 and 6, and the shell wiring belong to lane B,
 which owns `alo-dock` and works in `alo-shell`. The panel's side of the region contract is
 this lane's.
+
+**The region contract is built, and it is evidence of nothing yet.**
+`crates/alo-put-aside/src/the_region_the_panel_claims.rs`, with eight tests in
+`crates/alo-put-aside/tests/one_pointer_position_reveals_one_surface.rs`.
+
+**Nothing on a machine reaches it**, because the situation the reveal exists for cannot be
+created until `alo-shell` has full screen. So the ledger entry for this promise says *no
+evidence*, and these tests are not cited as any — the lane that owns `revealing` set that rule
+for its own module and it applies here unchanged: **a crate with passing tests and no caller is
+reusable groundwork, and citing it would make the record claim a person can reach something
+nobody can.**
+
+What it holds:
+
+- **The previews, the panel's controls, its menus and the path between them are one region.**
+  The path is the part that is easy to omit, and omitting it is the flicker — a pointer
+  travelling from a preview to a control crosses it, and answering *elsewhere* there conceals
+  the panel under a pointer that never left it.
+- A region is **not confined to the panel's outline**. The design has a peek region in the
+  middle of the screen, nowhere near an edge, so a menu opening away from the panel is ordinary.
+- **The asking strip and the surface are different answers**, because the strip reveals from
+  concealed and the surface only keeps what is revealed.
+- **The edge is data.** One frame among a hundred and fifty-six mirrors the shelf to the
+  opposite edge, and nobody has established whether that is a stray or a right-to-left variant.
+  Taking the edge as data costs nothing if it is a stray and is the difference between a rename
+  and a rewrite if it is not — the correction `revealing` itself already went through.
+- **No numbers at all.** No strip width, no rail width, no panel height. The standing rule that
+  nothing is built to one screen size is satisfied here **by the values not being reachable**
+  rather than by conversions done correctly, and every figure stays with whoever draws — the
+  only place that knows the display's size and scale.
+
+**And it contains no priority order, which is a refusal rather than an omission.** The owner
+settled the shared corner: the panel owns the reserved area including the top-right corner, the
+top controls and the Dock stop before it, and *one pointer position cannot reveal two surfaces*.
+That is held as `at_most_one_surface_claims_it`, which **reports whether the rule holds and does
+not pick a winner** — a version returning *which surface wins* would be the order this file
+refuses to contain, and a classifier resolving overlap by the sequence of its branches would
+decide geometry by accident.
+
+The invariant is checked over a grid at **both** panel widths, because the reserved area follows
+the panel's current width and the expanded one is where the top region is smallest and the
+corner nearest. A rule about overlap tested where the surfaces are far apart is tested where it
+cannot fail.
+
+**One of those tests asserts that the design as drawn fails the invariant**, because it does:
+the top controls region is the full screen width and overlaps the shelf's region at the
+top-right corner. That is not a hypothetical mistake — it is the state the frames are in, which
+the owner's decision supersedes, and an invariant that could not catch it would be checking
+nothing. Four mutations were watched failing: the top controls reaching into the reserved area,
+the Dock running to the screen edge, the panel not owning the corner, and the at-most-one rule
+loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
@@ -621,6 +673,34 @@ be built here:
 **These are owed, not deferred.** They belong to the canvas plan and the canvas defines
 the Place they key on. Task 2 below builds what it can without one and says which clause
 it could not.
+
+### And three designed frames that have no task here at all
+
+Found on 2026-09-30 by mapping the Figma page's twelve frames against these eight tasks.
+Eight of the twelve land on a task and *03 Location cue* is the Place, recorded above. **These
+three land on nothing:**
+
+- **06 Drag preview** — dragging a window out of the panel, with the collision shown before the
+  drop;
+- **09 Multi-select** — choosing several previews at once;
+- **10 Arrange together** — the arrangement proposed for them, shown before it happens.
+
+`docs/design/the-windows-put-aside.md` lists the first two under what is missing, in almost
+those words, and **this plan never turned either into a task or into an entry here.** So the
+gap was neither built nor recorded, which is the worse of the two ways to leave something out:
+a deferred thing is visible and an unrecorded one is indistinguishable from a thing nobody
+wanted.
+
+**Recorded rather than made into tasks.** Whether they are in this release is the owner's, and
+a lane adding three tasks to its own plan because it found three frames would be deciding scope
+by drawing up work. The owner's instruction is the one this entry follows — *report actual gaps
+openly rather than narrowing the agreed scope to close tasks* — and the gap is reported in the
+direction that does not flatter the plan.
+
+Task 4's proposal is the nearest thing already built: it shows an intended placement before
+anything moves, for **one** window. *Arrange together* is that for several, and the hard part is
+not the arrangement but that the same *nothing moves before it is visible* rule has to hold
+across a set, which a proposal carrying one window cannot express.
 
 **Compacting.** The promise names two things and says *the person picks*, and this plan
 builds one of them. **A later ledger entry must not tick the promise when only the panel
