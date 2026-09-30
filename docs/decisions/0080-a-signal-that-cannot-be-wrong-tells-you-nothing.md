@@ -350,6 +350,63 @@ The pattern it showed is not lost. It is the general form in remedy 1 below: a `
 that found something is *output exists*, not *the output means what I am about to say
 it means*.
 
+## One more, whose remedy is unlike every other one here
+
+Added 2026-09-30. It is kept in a section of its own rather than numbered with the
+rest, because every other instance in this record is answered by **going and looking**,
+and this one is not — looking is what produced it.
+
+**A correction that feels like arrival.** One machine's gate was measured at 2919
+seconds, of which rustdoc was 1637, and the lane published *rustdoc is the expensive
+gate*. Corrected later the same night to *these are this machine's times*, when another
+machine measured 32 seconds for the same gate. Corrected again to *these are this run's
+times*, when the same machine measured 1637 and then 59 three hours apart. Corrected a
+fourth time when a third lane found its own dominant cost was neither compilation nor
+cache but **the suite's own execution** — 590 of 813 seconds spent running 8428 tests,
+a floor no cache state can lower.
+
+Three lanes, three different dominant costs, and each lane generalised its own.
+
+**Each correction was more right than the one it replaced, and that is what made them
+dangerous.** An error that irritates gets questioned again; an improvement that
+satisfies does not. The lane that made the first three had published the general form
+of the mistake — *these are this run's times* — and then, within the hour, gave two
+other lanes a single number for a run it had not finished. **Knowing the general form
+of a mistake does not stop you making it**, which is the finding, and it rules out the
+obvious remedy: *understand the pattern* was already true.
+
+**The remedy is to make the check refutable in advance.** The fourth correction exists
+only because that lane wrote down *short* **before** running, and got 813 seconds. Had
+they not, 813 would have read as *about twelve minutes, as expected*, and a mechanism
+that had not predicted it would have survived by agreeing with it. A measurement taken
+with no prior expectation cannot disagree with anything; it can only be interpreted.
+
+> **A prediction made in advance is the only version of a measurement that can be
+> wrong.**
+
+Which is this record's own thesis applied to the act of correcting: a correction that
+nothing can refute is not a finding, it is a restatement. So the question to ask of any
+correction, including the ones in this record, is **what would still be true if this
+correction were also wrong** — and the way to make that answerable is to say the number
+you expect before you have it.
+
+**Which was tested on this paragraph's author, immediately, and failed.** Gating the
+change that adds this section, the lane predicted in advance — in writing, to the other
+two — *about 400 seconds, dominated by about 270 of tests*, reasoning that no Rust had
+changed and the cache was one commit back. **It took 167 seconds, of which 146 were
+tests.** Wrong by a factor of 2.4, and wrong in the mechanism and not only the number:
+its own previous documents-only run, on the same machine the same night, had measured
+272 seconds of tests for the same suite. Same machine, same day, same gate, same kind
+of change, and the test time alone moved 1.9×.
+
+So there is now a **fifth** reading in the sequence, and it is not another theory of
+which gate is expensive. It is that on one machine the dominant cost is not stable
+across an hour, which means **no lane can predict its own gate, including the lane that
+has just finished writing down why nobody can.** That is worth more than any of the
+four mechanisms it replaces, and it is only available because the number was written
+down before the run. Had it not been, 167 seconds would have been read as *fast, as
+expected* and filed as agreement.
+
 ## What to write instead
 
 1. **Make the success condition depend on the claim, not on the presence of output.**
@@ -420,11 +477,13 @@ it means*.
    same reasoning as [ADR 0009](0009-a-good-computer-without-the-agent.md)'s refusal to
    nag.
 
-## Four instruments were written to catch this, and all four contained it
+## Five instruments were written to catch this, and all five contained it
 
 The only observation here about **producing** a check rather than about a check that
-already exists, and it has a number: **four instruments written in one evening to catch
-this family, four first-run faults, none surviving to a second run.**
+already exists, and it has a number: **five instruments written to catch this family,
+six first-run faults, none surviving to a second run.** Four were written in one
+evening; the fifth the following night, by a lane that had read this section first and
+contained the family twice anyway.
 
 - A status reader written to tell *asked, and there is none* from *the read failed*
   collapsed a non-array body to `no`, because `Array.isArray(a) && a.some(…)` is false
@@ -443,18 +502,45 @@ this family, four first-run faults, none surviving to a second run.**
   elsewhere. On the single pointer it found, the claim was false — the substance is in
   `docs/design/the-alo-dock.md` and only the path is wrong. **A checker reporting more
   than it measured**, written to find checkers reporting more than they measured.
+- A check written to hold every path this repository's prose names to landing — the
+  question `alo-citing` asks for decisions and for reports, one family over — reported
+  **correct writing as a fault, twice, on its first two runs.** It read
+  `src/{carrying_out,refusing,words}.rs` as one filename, and then
+  `src/sign_in_*.rs` as another: two forms this repository uses on purpose to name a
+  family of files, neither of which is a claim that one file exists. The same check
+  also carried a third version of the fault that never ran, because **its own unit test
+  caught it**: it asked whether a source contained the literal `Type::member`, and a
+  method is written `impl Hiding { pub const fn showing`, so the two halves never
+  appear together and it would have refused nearly every true sentence in the
+  repository. That half was then removed entirely — see below.
 
 **That is not three coincidences.** Writing a check means deciding what would count as
 the answer, and *that decision is the exact place this fault lives*. So the moment of
 writing a check is the moment of maximum exposure to it, and an instrument is at its
 least trustworthy on the run where it is newest.
 
-**The practice that caught all four is the same one, arrived at independently by three
-lanes in one evening: run a new instrument against a known answer before trusting it
-against an unknown one.** `0750` gives 126 and `0751` gives 0, both measured, before a
-line of the fix was written. A throwaway printed six findings against the real documents
-before a word was written about what the check knows. The harness was pointed at trees
-whose ownership was set on purpose before it was pointed at a runner.
+**And there is a second decision, later and less obvious: what the check refuses to
+look at.** The fifth instrument was first built to check Rust names as well as paths.
+Run once against the repository, most of what it found was correct writing — `std`'s
+unstable `ErrorKind::FilesystemLoop` quoted in the quirk log, another project's type,
+and names of work a plan has not done yet. **A name absent from this repository is
+evidence of nothing**: it may be the language's, another project's, or next week's. The
+half was deleted rather than tuned, because a check that cannot tell those apart
+produces confident findings about `std`, and confident findings about `std` are how an
+instrument loses the right to be believed. A false positive in a gate is not a smaller
+fault than a false negative — it is the one that teaches three lanes to route around
+the gate, which is this record's own thesis arriving from the other side.
+
+**The practice that caught all five is the same one, arrived at independently by three
+lanes: run a new instrument against a known answer before trusting it against an
+unknown one.** `0750` gives 126 and `0751` gives 0, both measured, before a line of the
+fix was written. A throwaway printed six findings against the real documents before a
+word was written about what the check knows. The harness was pointed at trees whose
+ownership was set on purpose before it was pointed at a runner. The fifth was run
+against the whole repository and **every finding it produced was read one at a time
+against the file it named** before the check was allowed to gate anything — which is
+how the two false positives were found, and they were found because reading twenty-two
+findings is cheap and believing twenty-two findings is not.
 
 Everything else in this record is a remedy for a check that is already wrong. This is
 the one that applies while it is being written.
