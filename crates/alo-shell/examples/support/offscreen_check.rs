@@ -40,7 +40,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let (reply, responses) = mpsc::channel();
     let client = thread::spawn(move || offscreen_client::run(fixture, send, responses));
     let start = Instant::now();
-    let mut stages = 0;
+    let mut walked: Vec<u8> = Vec::new();
     let mut drive_cursor = true;
     while !client.is_finished() {
         if start.elapsed() > Duration::from_secs(15) {
@@ -55,6 +55,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                stage if crate::offscreen_stages::is_a_division_stage(stage) => {
+                    crate::offscreen_division_check::stage(&mut server, renderer, stage)?;
+                }
                 29 | 30 => crate::window_control_scene_check::run(
                     &server,
                     renderer,
@@ -277,20 +280,32 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 _ => return Err("unknown client stage".into()),
             }
-            stages += 1;
+            walked.push(stage);
             reply.send(())?;
         }
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    // Twenty-four, not thirty: stages 23 to 28 put a window on half an output
-    // and went with `window_tiling` on 2026-09-26. **This number was left at
-    // thirty and this probe was broken on main for a day.** Nothing caught it,
-    // because no gate runs this example — it needs a Wayland parent, and until
-    // one was found for this lane on 2026-09-26 there was no machine here that
-    // could run it at all. The numbering above keeps its gap deliberately, so
-    // a stage number in an old log still means what it meant.
-    assert_eq!(stages, 24);
+    // **The stages it walked, against the stages there are — not a count.**
+    //
+    // This was `assert_eq!(stages, 24)`, and before that `30`: task 16 removed
+    // `window_tiling` on 2026-09-26, six stages went with it, and the number was
+    // left at thirty while this probe was broken on `main` for a day. Nothing
+    // caught it, because no gate runs this example — it needs a Wayland parent,
+    // and until one was found for this lane there was no machine here that could
+    // run it at all. **Somebody noticed the number, not the breakage.**
+    //
+    // A count is the weakest claim available about a walk: it passes when one
+    // stage is sent twice and another skipped, and it passes when two swap. The
+    // sequence is asserted instead, against `offscreen_stages::EVERY_STAGE`, which
+    // the client drives from — so neither side can move without the other, and no
+    // number is maintained by anybody. Task 17's acceptance asks for exactly this:
+    // *checked by walking them rather than by a number somebody maintains.*
+    assert_eq!(
+        walked.as_slice(),
+        crate::offscreen_stages::EVERY_STAGE.as_slice(),
+        "the probe walked a different sequence than this repository lists"
+    );
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

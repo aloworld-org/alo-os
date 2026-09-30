@@ -17,6 +17,14 @@ mod grab_check;
 mod offscreen_check;
 
 #[cfg(target_os = "linux")]
+#[path = "support/offscreen_division_check.rs"]
+mod offscreen_division_check;
+
+#[cfg(target_os = "linux")]
+#[path = "support/offscreen_stages.rs"]
+mod offscreen_stages;
+
+#[cfg(target_os = "linux")]
 #[path = "support/offscreen_client.rs"]
 mod offscreen_client;
 

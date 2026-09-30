@@ -43,6 +43,63 @@ impl FrameTarget for Target<'_> {
     }
 }
 
+/// **Stages 33, 31 and 32: a chord with one window, then a division between two.**
+///
+/// Task 17 of `docs/autonomy/v0-5-the-shell-plan.md`. Driven before the rest of the
+/// walk because these three need a window population they can state: the refusal
+/// needs **exactly one** mapped window and the two divisions need **exactly two**,
+/// and the only moment this probe can say that without qualification is before its
+/// own script has opened anything.
+///
+/// The windows are dropped at the end, so what follows starts on an empty display
+/// exactly as it did before this existed.
+fn divided_between_two(fixture: &Fixture, send: &mpsc::Sender<u8>, receive: &mpsc::Receiver<()>) {
+    let told = |stage: u8| {
+        assert!(send.send(stage).is_ok());
+        assert!(
+            receive.recv_timeout(Duration::from_secs(10)).is_ok(),
+            "offscreen stage {stage} was not acknowledged within ten seconds"
+        );
+    };
+    // One window: a chord has nothing to divide it with, and must say so.
+    let mut first = Application::new(fixture);
+    first.configure();
+    first.attach();
+    first.sync();
+    told(33);
+
+    // A second, and now there is a division to make. Both answer their configures
+    // and attach again, because **a client that never answers keeps the buffer it
+    // had** — the frame then shows two windows at their old sizes where a divided
+    // screen belongs, which is what `the_walk_check` learned the hard way and
+    // wrote down.
+    let mut second = Application::new(fixture);
+    second.configure();
+    second.attach();
+    second.sync();
+    // Ask, answer, check — and the answering is between the two, because a window
+    // moves when its client acknowledges its configure and commits, not when the
+    // chord is pressed. 31 asks for left and right; 32 checks it and asks for top
+    // and bottom; 34 checks that.
+    //
+    // **Only the stages that ask are answered.** 34 checks and divides nothing, so
+    // no configure follows it — and `Application::configure` unwraps the serial it
+    // expects, which is how the first version of this ended: a panic on `None` in
+    // the fixture rather than a sentence about the walk.
+    for stage in [31, 32] {
+        told(stage);
+        first.configure();
+        first.attach_resized();
+        first.sync();
+        second.configure();
+        second.attach_resized();
+        second.sync();
+    }
+    told(34);
+    drop(first);
+    drop(second);
+}
+
 /// Independent expected pixel map: opaque layers at known client coordinates.
 pub fn verify(pixels: &[u8]) {
     assert_eq!(pixels.len(), 33 * 32 * 4);
@@ -78,6 +135,7 @@ fn solid(bgra: [u8; 4]) -> [u8; 1024] {
 
 /// No callback can arrive before the explicit successful fixture submission.
 pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>) {
+    divided_between_two(&fixture, &send, &receive);
     let mut app = Application::new(&fixture);
     app.configure();
     let mut pixels = solid([0, 0, 255, 255]);

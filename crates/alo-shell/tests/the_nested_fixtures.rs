@@ -110,6 +110,10 @@ mod nested_reader_frame_check;
 mod offscreen_check;
 #[path = "../examples/support/offscreen_client.rs"]
 mod offscreen_client;
+#[path = "../examples/support/offscreen_division_check.rs"]
+mod offscreen_division_check;
+#[path = "../examples/support/offscreen_stages.rs"]
+mod offscreen_stages;
 #[path = "support/one_heavy_fixture_at_a_time.rs"]
 mod one_heavy_fixture_at_a_time;
 #[path = "../examples/support/popup_check.rs"]
