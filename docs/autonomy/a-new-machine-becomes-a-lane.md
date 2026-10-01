@@ -47,7 +47,7 @@ one place somebody checks before deciding that.*
 | Plan | Machine | Crates it owns |
 |---|---|---|
 | `v0-5-the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
-| `v0-5-the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` |
+| `v0-5-the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
 | `v0-5-where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
 | `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
 | `v0-5-the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
@@ -61,6 +61,32 @@ one place somebody checks before deciding that.*
 | `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
 | `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-lane-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
 | `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
+
+**`gate.yml` belongs to the desktop lane, assigned by the owner 2026-10-01.**
+The installer row above carries `.github/workflows/` as a whole, and that stopped
+being true some days before this line was written: `.github/workflows/gate.yml`
+has been the desktop lane's, with the owner's knowledge, through `#285`, `#287`,
+`#308` and `#314`. The owner's words: **desktop owns
+`.github/workflows/gate.yml` and the gate automation directly supporting it;
+installer retains its installer and image workflows.**
+
+It is recorded as a **specific-file exception** rather than by moving the whole
+directory, because the two halves have genuinely different owners: the image and
+installer workflows belong with `image/` and `alo-installer`, and the gate
+workflow belongs with whoever is answerable for what a gate means.
+
+*What makes this worth more than a corrected cell.* The dev-PC lane read this row,
+concluded those four CI changes were the installer lane's, and told the owner that
+the configuration change in [ADR 0081](../decisions/0081-the-runner-posts-the-check-main-requires.md)
+should go to the lane already furthest into it — **which was the wrong machine.**
+The row was the only evidence it had, and that is not an accident of this row:
+
+**Commit authorship must never be used to infer lane ownership.** Every commit on
+`main` reads the owner as author and GitHub as committer, because the merge queue
+squashes. *No lane's work in this repository can be told apart from another lane's
+by its commit metadata.* So this table and each lane's own account of itself are
+the only records there are — which is why a stale row does not merely mislead, it
+propagates into conclusions nobody can check against the history.
 
 **Narrow printer producer contribution, authorized 2026-09-18.** The owner told
 the third PC, "no you should do all the blockers by yourself so no need to lean
