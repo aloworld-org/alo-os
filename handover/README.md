@@ -41,3 +41,36 @@ Written by the dev-PC lane. Handed to the desktop lane on 2026-10-01 at its
 request, with the dev-PC lane claiming the task back from it earlier the same day
 for exactly the reason it should not have: *I have material for it*. Having
 material is a reason to hand the material over, not to hold the task.
+
+## Correction, 2026-10-01, after the desktop lane read it
+
+**The header claimed a mechanism the body does not have.** It said the panel's
+reserved area *is subtracted from the other two rather than merely tried first,
+so moving the arms of the match cannot change an answer.* There is no
+subtraction in the file. `whose_area` is three early returns with the panel
+asked first, and that order decides every contested point.
+
+The desktop lane measured it rather than reporting the mismatch: **378 points of
+the file's own grid fixture change answer if the arms are reordered**, the first
+at reserved width 112, point (1328, 848) — `ThePanel` as written, `TheDock`
+swapped.
+
+**Why that was worse than merely untrue.** A maintainer reordering the branches
+for readability had been told by the file that it was safe. The grid test stops
+them, so the cost is a confusing red rather than a shipped bug — but the prose
+was an invitation to do the thing the test forbids. And the test's own comment
+already said *which a version that merely tried the panel first would also
+pass*, so the file described its implementation correctly in one place and
+wrongly in another, one screen apart.
+
+**The prose is corrected rather than the code, and the reason is the desktop
+lane's**: the property the header was defending is already given by the return
+type. `whose_area` answers one `WhoseArea`, so two surfaces cannot both claim a
+point whatever the rectangles are — no subtraction needed. What the order
+decides is *which* surface owns the overlap, and the grid test is what holds it.
+The subtraction sentence was defending a weaker claim than the type already
+gave.
+
+Four places said it and all four are corrected, each quoting what it used to
+say: the module header, the `the_docks_area` field doc, the grid test's doc, and
+the mirrored-panel test's doc.

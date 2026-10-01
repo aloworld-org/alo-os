@@ -30,13 +30,38 @@
 //! surfaces both claim a point. The rule is not tested here because there is
 //! nothing to test: it is the return type.
 //!
-//! **And the order of the branches decides nothing that matters.** The panel's
-//! reserved area is subtracted from the other two rather than merely tried
-//! first, so moving the arms of the match cannot change an answer. A classifier
-//! that resolved overlap by the order its branches were written would have
-//! decided geometry by accident, which is the fault
-//! `alo_put_aside::the_region_the_panel_claims` explicitly refuses to commit in
-//! the panel's half of this contract.
+//! **The order of the branches is the correctness, and this paragraph said the
+//! opposite until 2026-10-01.** It read: *the panel's reserved area is
+//! subtracted from the other two rather than merely tried first, so moving the
+//! arms of the match cannot change an answer.* There is no subtraction in this
+//! file. [`whose_area`] is three early returns with the panel asked **first**,
+//! and that order decides every contested point — measured by the lane that
+//! read this header against the code below it: **378 points of the grid fixture
+//! change answer if the arms are reordered**, the first at reserved width 112,
+//! point (1328, 848), `ThePanel` as written and `TheDock` swapped.
+//!
+//! The sentence was worse than merely untrue. A maintainer who reorders these
+//! branches for readability had been **told by the file that it was safe**. The
+//! grid test stops them, so the cost is a confusing red rather than a shipped
+//! bug — but the prose was an invitation to do the thing the test forbids. The
+//! test's own comment already knew, one screen below: *which a version that
+//! merely tried the panel first would also pass.* That is this file describing
+//! its own implementation correctly in one place and wrongly in another.
+//!
+//! **And the claim was defending something the return type already gives.**
+//! `whose_area` answers one [`WhoseArea`], so two surfaces cannot both claim a
+//! point whatever the rectangles are — that is above, it is true, and it needs
+//! no subtraction. What the order decides is not *whether* a point has one
+//! owner but *which* owner it has where the reserved column overlaps the Dock's
+//! band. The panel is asked first because the reserved column is the panel's
+//! whatever else reaches it, which is the owner's rule of 2026-09-30, and
+//! `the_regions_a_pointer_can_be_in` is the argument. **The grid test is what
+//! holds it**, not a subtraction: swap the arms and it fails on the first
+//! contested point.
+//!
+//! *The same shape as `alo_put_aside::restoring::travel_for` asking the Place
+//! before the geometry: the order is the property, so it is stated as the
+//! property rather than described as an incidental.*
 //!
 //! # Told, never fetched, and therefore no screen size
 //!
@@ -83,9 +108,14 @@ pub(crate) struct TheSurfaces {
     /// reserved width the other two stop at. It reaches the full height of the
     /// display, which is what makes the shared corner the panel's.
     pub(crate) reserved_for_the_panel: Rectangle<i32, Physical>,
-    /// Where the Dock asks and keeps — before the panel's area is taken out of
-    /// it. The caller passes the region as drawn; the subtraction happens here
-    /// so that one rule is applied in one place.
+    /// Where the Dock asks and keeps, **as drawn and not reduced**.
+    ///
+    /// This said *before the panel's area is taken out of it* and *the
+    /// subtraction happens here so that one rule is applied in one place*. It
+    /// does not happen here or anywhere: this is the region the caller drew,
+    /// and the reserved column is kept off it by [`whose_area`] asking the
+    /// panel first rather than by any rectangle being made smaller. Corrected
+    /// 2026-10-01; the header says what holds the rule instead.
     pub(crate) the_docks_area: Rectangle<i32, Physical>,
     /// The same for the controls along the top edge.
     pub(crate) the_top_controls_area: Rectangle<i32, Physical>,
@@ -217,19 +247,31 @@ mod tests {
     ///
     /// It is written anyway, over a grid and over three panel widths including
     /// the widest, because that is where the top region is smallest and the
-    /// corner nearest. What it actually holds is the *subtraction*: that the
-    /// answer for a point inside the reserved area does not depend on what the
-    /// other two rectangles are, which a version that merely tried the panel
-    /// first would also pass and a version that tried it last would not.
+    /// corner nearest.
+    ///
+    /// **What it actually holds is the branch order**: that the answer for a
+    /// point inside the reserved area does not depend on what the other two
+    /// rectangles are. A version that tried the panel **last** fails it; the
+    /// version written here, which tries the panel first, passes it — and that
+    /// is not a weakness of the test, it is the point of it, because trying the
+    /// panel first *is* the implementation.
+    ///
+    /// *This read `what it actually holds is the subtraction` until 2026-10-01,
+    /// naming an implementation this file never had, and said in the same breath
+    /// that a version which merely tried the panel first would also pass —
+    /// which was the file reporting its own code correctly while the header
+    /// denied it. The lane that read the header against the code measured 378
+    /// points of this grid changing answer when the arms are reordered.*
     #[test]
     fn no_point_is_claimed_by_two_surfaces_at_any_panel_width() {
         for reserved_width in [112, 240, 512] {
             let left = 1440 - reserved_width;
             let surfaces = TheSurfaces {
                 reserved_for_the_panel: rect(left, 0, reserved_width, 960),
-                // Both drawn across the whole display on purpose: if the
-                // subtraction is missing, every point in the reserved column is
-                // contested and this fails.
+                // Both drawn across the whole display on purpose: the reserved
+                // column overlaps them completely, so every point in it is
+                // contested and only the branch order decides it. Ask the panel
+                // last and this fails on the first such point.
                 the_docks_area: rect(0, 838, 1440, 122),
                 the_top_controls_area: rect(0, 0, 1440, 84),
             };
@@ -262,7 +304,9 @@ mod tests {
     ///
     /// The panel's edge is data, not a constant —
     /// `alo_put_aside::the_region_the_panel_claims::WhichEdge` is why. Nothing
-    /// here reads it: a reserved column on the left is the same subtraction.
+    /// here reads it: a reserved column on the left is decided by the same
+    /// branch order as one on the right, because that order names no edge
+    /// either.
     #[test]
     fn a_panel_mirrored_to_the_left_needs_no_change_here() {
         let surfaces = TheSurfaces {
