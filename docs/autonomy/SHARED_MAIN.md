@@ -369,6 +369,32 @@ documentation change that genuinely breaks the workspace's tests. The version
 that could work observes what a run actually opened rather than predicting it,
 and that is a real piece of work rather than a midnight one.
 
+### While something is queued, the machine belongs to it
+
+**A queue entry has one window and it is sixty minutes.** Inside it the queue
+commit must be gated and attested, or the entry ejects and everything behind it
+waits again. A gate takes most of that window, so there is room for exactly one
+and none at all for a second.
+
+**So while a lane has an entry in the queue, that lane's machine gates the queue
+commit and nothing else, until it lands or ejects.** Not the next task. Not the
+top of its own stack. Not a quick check. The work that cannot land can always be
+built afterwards; **the window cannot be reopened.**
+
+**This is a missing rule rather than two slips, which is why it is written
+down.** On 2026-09-30 two lanes independently kept a machine busy through the
+only window the work that *could* land had — one building the next feature, one
+gating the top of its own stack while the bottom's window opened and closed.
+Both entries ejected. Six hours passed with three lanes producing and **nothing
+landing at all.**
+
+**And stacking makes this sharper rather than softer.** A stack is a chain of
+landings and **only its bottom has a window.** Gating the top while the bottom
+is queued is the same fault wearing the clothes of good discipline: the stack
+was the right structure and the wrong end of it was being measured.
+
+*Named by the Mac lane, from the hour it cost them.*
+
 ### Say which shared document you are about to edit, before you edit it
 
 **To every lane, before the edit — not before the landing.** The rest of this
