@@ -369,6 +369,54 @@ documentation change that genuinely breaks the workspace's tests. The version
 that could work observes what a run actually opened rather than predicting it,
 and that is a real piece of work rather than a midnight one.
 
+### Tree identity serialises every lane, so gate last
+
+**The condition is a still main, and that is the price of the mechanism.** Every
+landing changes `main`, so every landing invalidates **every other lane's gated
+tree**. With three lanes it is **N sequential gate-and-land cycles with no
+overlap** — the repository absorbs about one change per gate duration however
+many machines are pointed at it.
+
+**And it is worse than unhelpful capacity: a lane that does not hold the turn
+cannot usefully gate at all.** A gate started before you hold the turn is
+answering a question about a tree the queue will never build. So the two machines
+not holding the turn are idle **by construction** rather than merely unspent.
+*Short of turns, not capacity* was the laptop lane's phrase and it understates
+it: the capacity is not slow, it is unusable.
+
+**Which gives the order, and the order matters more than the rule:**
+
+```
+1. commit
+2. wait for the turn — the queue empty, no hold standing against you
+3. rebase onto current main
+4. gate
+5. push, attest, enqueue alone, inherit
+```
+
+**Gate at four, never before. The gate is the last thing before the push, not the
+first thing after the commit.** This was the habit from before any of this, and
+on 2026-10-01 the Mac lane killed **two fifty-minute runs inside forty minutes**
+for it: one invalidated when the governance rules landed, one when the panel's
+mint test did. Both were producing verdicts for trees that could not land. The
+laptop lane's own attestation died the same way the same hour. **A rule neither
+lane wrote down and both paid for twice.**
+
+**The hold that makes it work has to be asked for.** Engineering for tree
+identity means excluding every other lane for a gate's duration, and the
+mechanism does not carry that requirement inside it — both lanes supplied it by
+habit, and habit is not a shape. **A hold nobody was asked for is not a hold, it
+is a stall**, and the last time this was left to habit it cost five hours of
+mutual waiting built on a false premise. Ask, name a deadline, and say *tell me
+no rather than hold silently*.
+
+**What to measure, since this is the real constraint rather than the gate's
+duration:** three lanes have three machines and one turn. Four times on the night
+this was written somebody reached for **capacity** — a lane killing a passing run
+to gate for another, a lane offering its machine, a lane offering to send its
+scripts — and not one of those created a turn. **A shared constraint nobody has
+measured gets answered with whatever is easy to give.**
+
 ### While something is queued, the machine belongs to it
 
 **A queue entry has one window and it is sixty minutes.** Inside it the queue
