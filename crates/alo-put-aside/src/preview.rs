@@ -33,8 +33,15 @@ use crate::whether_it_is_private::Privacy;
 pub struct Preview {
     /// Which window. The compositor's own number.
     window: WindowId,
-    /// Which application it belongs to.
-    app: AppId,
+    /// Which application it belongs to, **when the machine knows of one.**
+    ///
+    /// The owner's direction of 2026-10-01: the panel identifies a window by its
+    /// **own identity, its title and its preview**, and shows an application
+    /// name *only when one is known*. `window` above is that identity and is
+    /// never absent, so nothing the panel must do depends on this field being
+    /// present — which is what makes the absence safe rather than merely
+    /// permitted.
+    app: Option<AppId>,
     /// What the person calls it — the name the preview is headed with.
     called: String,
     /// The part of the plane it goes back to.
@@ -75,7 +82,7 @@ impl Preview {
     pub fn of(window: &Window, zoom: Zoom, privacy: Privacy) -> Self {
         Self {
             window: window.id(),
-            app: window.app().clone(),
+            app: window.app().cloned(),
             called: window.called().to_owned(),
             at: window.at(),
             zoom,
@@ -90,10 +97,18 @@ impl Preview {
         self.window
     }
 
-    /// Which application it belongs to.
+    /// Which application it belongs to, or [`None`] when none is known.
+    ///
+    /// **A surface drawing a row writes an application name only when this
+    /// answers one.** It does not reach for the title instead: the title is this
+    /// window's name rather than its application's, and
+    /// [`Self::headline`] is the only road to a title, for the privacy reason
+    /// recorded there. A row for a window with no known
+    /// application is headed by the window's own name and carries no application
+    /// line at all — one line fewer, not a line saying nothing.
     #[must_use]
-    pub const fn app(&self) -> &AppId {
-        &self.app
+    pub const fn app(&self) -> Option<&AppId> {
+        self.app.as_ref()
     }
 
     /// What to write at the top of this preview's row.

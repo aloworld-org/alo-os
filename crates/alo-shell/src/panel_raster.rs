@@ -235,7 +235,7 @@ mod tests {
     fn a_window(number: u64) -> Window {
         Window::of(
             WindowId::numbered(number),
-            AppId::named("Docs").expect("a named application"),
+            Some(AppId::named("Docs").expect("a named application")),
             "A window",
             Patch::of(Spot::at(0, 0), 800, 600).expect("a window has extent"),
             HowItSits::OnTheCanvas,

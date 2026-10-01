@@ -51,27 +51,37 @@ fn somewhere() -> Patch {
     Patch::of(Spot::at(4_000, -200), 800, 600).expect("a window has extent")
 }
 
-/// **A window that named nothing is refused, and stays where it is.**
+/// **A window that named nothing is put aside like any other.**
 ///
-/// This is a hole rather than a policy, and the test says so rather than
-/// blessing it. `alo_dock::Window` needs an `AppId`, an `AppId` is an identity,
-/// and the machine's own word for an unnamed window is a *translated string* —
-/// so two windows that named nothing would become one application if the word
-/// were used as the identity. The design has an answer for what such a window
-/// is **called**; the model has none for what it **is**.
+/// **This test asserted the opposite until 2026-10-01**, and the reasoning it
+/// carried was *this is a hole rather than a policy*: `alo_dock::Window`
+/// required an `AppId`, an `AppId` is an identity, and the machine's own word
+/// for an unnamed window is a translated string — so two windows that named
+/// nothing would become one application if that word were the identity. The
+/// hole was real and the remedy was wrong. The owner's direction of 2026-10-01
+/// is that **a missing application identity must not prevent minimization**,
+/// and that no identity is to be fabricated.
 ///
-/// What matters until that is settled is the second assertion: a refused
-/// request leaves the window on the canvas. A window hidden by a request that
-/// failed is one a person can neither see nor get back, which is the single
-/// outcome this whole surface exists to prevent.
+/// The answer was neither the word nor the number but the absence: `app` is an
+/// `Option<AppId>`, so there is nothing to collapse two windows together and
+/// nothing unreadable to show. The premise that a refused window would
+/// otherwise be unreadable was also wrong — a preview is headed with the
+/// **window's own** name, so what is lost is the application line, and the row
+/// is one line shorter rather than blank.
+///
+/// Both halves are asserted, as the refusing version asserted both: the window
+/// is held, **and** it actually left the canvas. A window hidden with nothing
+/// holding its preview is one a person can neither see nor get back, which is
+/// the single outcome this whole surface exists to prevent — and it is now the
+/// failure this test would catch, rather than the refusal.
 #[test]
-fn a_window_that_named_nothing_is_refused_and_stays_on_the_canvas()
+fn a_window_that_named_nothing_is_put_aside_and_leaves_the_canvas()
 -> Result<(), Box<dyn std::error::Error>> {
     let f = Fixture::keyboard();
     let _app = mapped_nameless(&f);
     let root = f.root();
 
-    let (refused, still_shown) = {
+    let (held, hidden) = {
         let root: WlSurface = root.clone();
         f.backend(move |s| {
             let mut panel = Panel::new();
@@ -82,15 +92,20 @@ fn a_window_that_named_nothing_is_refused_and_stays_on_the_canvas()
                 Zoom::LIFE_SIZE,
                 Privacy::Ordinary,
             );
-            let shown = !s.minimized_surfaces().any(|it| it == &root);
-            (put.is_err() && panel.holding() == 0, shown)
+            let hidden = s.minimized_surfaces().any(|it| it == &root);
+            (put.is_ok() && panel.holding() == 1, hidden)
         })
     };
 
-    assert!(refused, "a window with no name at all was put aside");
     assert!(
-        still_shown,
-        "a refused request hid the window anyway, which is the one outcome this prevents"
+        held,
+        "a window whose client named neither a class nor a title was refused, \
+         which is the refusal the owner removed"
+    );
+    assert!(
+        hidden,
+        "it was accepted into the panel and left showing on the canvas, \
+         which is the same window twice"
     );
     Ok(())
 }

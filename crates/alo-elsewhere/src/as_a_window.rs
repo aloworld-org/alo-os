@@ -192,7 +192,7 @@ mod tests {
         let mut windows = Windows::none();
         windows.opened(Window::of(
             WindowId::numbered(1),
-            machine.clone(),
+            Some(machine.clone()),
             "the one in the studio",
             a_patch(5_000),
             HowItSits::OnTheCanvas,
@@ -215,7 +215,7 @@ mod tests {
         let mut windows = Windows::none();
         windows.opened(Window::of(
             WindowId::numbered(1),
-            machine,
+            Some(machine),
             "the one at home",
             a_patch(0),
             HowItSits::OnTheCanvas,

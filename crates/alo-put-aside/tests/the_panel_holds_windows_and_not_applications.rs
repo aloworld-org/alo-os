@@ -35,7 +35,7 @@ fn a_zoom() -> Zoom {
 fn window(id: u64, app: &str, called: &str, x: i64) -> Window {
     Window::of(
         WindowId::numbered(id),
-        AppId::named(app).expect("a fixture names its application"),
+        Some(AppId::named(app).expect("a fixture names its application")),
         called,
         Patch::of(Spot::at(x, 0), 800, 600).expect("a fixture gives its patch an extent"),
         HowItSits::OnTheCanvas,
@@ -89,7 +89,18 @@ fn three_windows_of_one_application_are_three_previews() {
         "most recently put aside is first, and every one is named"
     );
 
-    let apps: Vec<&str> = panel.previews().iter().map(|p| p.app().name()).collect();
+    // `expect` rather than a fallback string: these fixtures all name an
+    // application, so an absence here would mean the fixture changed and the
+    // assertion below would be comparing against a word this line invented.
+    let apps: Vec<&str> = panel
+        .previews()
+        .iter()
+        .map(|p| {
+            p.app()
+                .expect("these fixtures name their application")
+                .name()
+        })
+        .collect();
     assert_eq!(
         apps,
         ["Browser", "Browser", "Browser"],

@@ -172,7 +172,12 @@ impl Windows {
         let app = app.clone();
         self.in_use_order
             .iter()
-            .filter(move |held| held.app() == &app)
+            // **`Some(&app)`, so a window with no application matches none**
+            // rather than matching whichever one is being asked about. The
+            // comparison is between two `Option`s, and `None` equals only
+            // `None` — worth saying because the previous form compared the
+            // identities directly and there was no absence to consider.
+            .filter(move |held| held.app() == Some(&app))
     }
 
     /// The window of this application the person used last.
@@ -218,7 +223,7 @@ mod tests {
     fn window(number: u64, of: &str, called: &str) -> Window {
         Window::of(
             WindowId::numbered(number),
-            app(of),
+            Some(app(of)),
             called,
             Patch::of(Spot::at(0, 0), 800, 600).unwrap(),
             HowItSits::OnTheCanvas,

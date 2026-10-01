@@ -36,7 +36,7 @@ fn a_zoom() -> Zoom {
 fn window(id: u64, app: &str, called: &str, x: i64) -> Window {
     Window::of(
         WindowId::numbered(id),
-        AppId::named(app).expect("a fixture names its application"),
+        Some(AppId::named(app).expect("a fixture names its application")),
         called,
         Patch::of(Spot::at(x, 0), 800, 600).expect("a fixture gives its patch an extent"),
         HowItSits::OnTheCanvas,

@@ -120,8 +120,21 @@ impl HowItSits {
 pub struct Window {
     /// Which window.
     id: WindowId,
-    /// Which application it belongs to.
-    app: AppId,
+    /// Which application it belongs to, **when the machine knows of one.**
+    ///
+    /// [`Option`] rather than a placeholder, by the owner's direction of
+    /// 2026-10-01: *a missing application identity must not prevent
+    /// minimization*, and *do not substitute a fabricated app identity.*
+    ///
+    /// A client may map a toplevel having set neither a class nor a title.
+    /// Until this was optional such a window **could not be put aside at all**
+    /// — the gesture refused it — and both alternatives were worse than an
+    /// absence. A translated word like *an application* is not an identity, so
+    /// two unnamed windows would collapse into one application; the window's own
+    /// number is an identity nobody can read. **An absence cannot be overridden
+    /// wrongly and a chosen default can**, which is why this is `None` rather
+    /// than a value somebody picked.
+    app: Option<AppId>,
     /// What the person calls it — the title a preview is named with.
     called: String,
     /// The part of the plane it occupies, kept whatever state it is in.
@@ -132,8 +145,13 @@ pub struct Window {
 
 impl Window {
     /// A window of this application, called this, sitting here like this.
+    ///
+    /// `app` is [`None`] for a window whose client named neither a class nor a
+    /// title. Such a window is a window like any other here — what it cannot do
+    /// is appear under an application's icon, because there is no application to
+    /// put it under.
     #[must_use]
-    pub fn of(id: WindowId, app: AppId, called: &str, at: Patch, sits: HowItSits) -> Self {
+    pub fn of(id: WindowId, app: Option<AppId>, called: &str, at: Patch, sits: HowItSits) -> Self {
         Self {
             id,
             app,
@@ -149,10 +167,16 @@ impl Window {
         self.id
     }
 
-    /// Which application it belongs to.
+    /// Which application it belongs to, or [`None`] when none is known.
+    ///
+    /// **A caller that needs an application must handle the absence rather than
+    /// be given one.** The Dock groups by application and so leaves such a
+    /// window out of its icons; the put-aside panel identifies a window by its
+    /// own identity, title and preview and shows an application name only when
+    /// there is one.
     #[must_use]
-    pub const fn app(&self) -> &AppId {
-        &self.app
+    pub const fn app(&self) -> Option<&AppId> {
+        self.app.as_ref()
     }
 
     /// What the person calls it.
@@ -215,7 +239,7 @@ mod tests {
     fn a_window_put_aside_keeps_the_place_it_came_from() {
         let window = Window::of(
             WindowId::numbered(7),
-            AppId::named("Browser").unwrap(),
+            Some(AppId::named("Browser").unwrap()),
             "Research",
             a_patch(),
             HowItSits::OnTheCanvas,
@@ -237,14 +261,14 @@ mod tests {
         let browser = AppId::named("Browser").unwrap();
         let one = Window::of(
             WindowId::numbered(1),
-            browser.clone(),
+            Some(browser.clone()),
             "Research",
             a_patch(),
             HowItSits::OnTheCanvas,
         );
         let other = Window::of(
             WindowId::numbered(2),
-            browser.clone(),
+            Some(browser.clone()),
             "Research",
             a_patch(),
             HowItSits::OnTheCanvas,
@@ -271,7 +295,7 @@ mod tests {
     fn filling_the_screen_is_its_own_state() {
         let window = Window::of(
             WindowId::numbered(3),
-            AppId::named("Blender").unwrap(),
+            Some(AppId::named("Blender").unwrap()),
             "Opening scene",
             a_patch(),
             HowItSits::FillingTheScreen,
