@@ -849,12 +849,13 @@ layout does today; what is owed is that a person may choose left, right or top,
 and that the band works in both orientations rather than being a horizontal bar
 turned sideways.
 
-**Where the work is:** `docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`,
-whose amendment of 2026-09-30 is both the authority for the promise and the
-statement of what it waits on — the owner's *schedule the missing designs now*.
-No plan carries a task for it yet, and that is the gap this names rather than
-hides: the crate is `alo-dock`, lane B's under the settings plan's row in the
-lane table, and the task belongs in a plan before it belongs to a machine.
+**Where the work is:** task 11 of `docs/autonomy/the-smallest-canvas-worth-showing.md`,
+written on 2026-10-01 by the owner's direction and **Open, blocked on design**.
+It carries the four edges, orientation-aware layout, labels, overflow, the
+reveal paths and shared-edge collision, and it names the five states each of the
+left, right and top designs needs. *This entry cited only the ADR until that
+task existed, because a plan carried no task for the promise — which the owner
+then directed into this plan.*
 
 ### Reaching the Dock over a full-screen window
 
