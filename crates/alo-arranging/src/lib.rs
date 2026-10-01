@@ -46,6 +46,20 @@ pub enum NotArranged {
     /// The file is not the shape this crate writes.
     #[error("the arrangement could not be read: {0}")]
     Unreadable(String),
+    /// The file says a version this one does not write or read.
+    ///
+    /// **Its own variant rather than [`Self::Unreadable`]**, because the two are
+    /// different situations for the person in front of the machine: a file that
+    /// is not this shape is damaged or is somebody else's, and a file from
+    /// another version is theirs and this binary is the wrong one to open it
+    /// with. Carries both numbers, so the message can say which way round it is.
+    #[error("the arrangement says version {said}, and this reads version {reads}")]
+    AnotherVersion {
+        /// What the file claimed.
+        said: u32,
+        /// What this crate reads.
+        reads: u32,
+    },
     /// A value in it is not one `alo-canvas` allows.
     ///
     /// Carries what was refused, because a hand-edited file is the case this
@@ -67,10 +81,53 @@ struct Written {
     height: u32,
 }
 
+/// What version of this file this crate writes, and the only one it reads.
+///
+/// # Why this exists before anything needs it
+///
+/// **Because today it is free and tomorrow it is not.** `TheFile` carries
+/// `deny_unknown_fields`, and `arranging_tests.rs` asserts that refusal on
+/// purpose: *an unknown key is a file written by something else, or by a later
+/// version of this one. Either way it is not read half-way.* So the first key
+/// ever added to this file makes every new file unreadable to every older
+/// binary — and with no version there is nothing to negotiate that through, only
+/// a parse error that says `unknown field`.
+///
+/// Measured on 2026-09-30: **nothing in this repository writes this file to
+/// disk.** `Arrangement::written` has no production caller, `read` none outside
+/// this crate's own tests, and the file has no name and no path anywhere in the
+/// tree. So there are no files in the world to break, and there will be from the
+/// first machine that saves one.
+///
+/// `docs/autonomy/the-canvas-and-its-places.md` task 5 is what needs it: an
+/// arrangement per Place is a **whole-file reshape** rather than a key, because
+/// two cameras cannot live in a file with one. That change is affordable only
+/// while this number exists to say which shape a file is.
+///
+/// **It is not a compatibility promise.** A later version may refuse this one
+/// outright; what it may not do is read it and be wrong about what it means.
+pub const FORMAT: u32 = 1;
+
 /// The whole file, as it is written down.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
 struct TheFile {
+    /// Which shape this file is, as [`FORMAT`] numbers them.
+    ///
+    /// **Zero is the absent case and is refused by name.** `#[serde(default)]` on
+    /// the container takes every missing field from this struct's derived
+    /// `Default`, so a file with no `version` arrives here as zero — and
+    /// [`Arrangement::read`] answers [`NotArranged::AnotherVersion`] rather than
+    /// letting a missing version mean the current one. **A file that does not say
+    /// its version is not from a version that wrote one.**
+    ///
+    /// Which is why the default is *derived* and [`Arrangement::written`] sets
+    /// [`FORMAT`] explicitly: a hand-written `Default` giving the current version
+    /// would be read back through this same path and make the refusal
+    /// unreachable. That was written the wrong way round first, and the doc
+    /// comment describing the refusal sat above an implementation that prevented
+    /// it.
+    version: u32,
     /// Where the camera was looking, in plane units.
     looking_at: (i32, i32),
     /// How far in, in thousandths.
@@ -143,6 +200,9 @@ impl Arrangement {
     #[must_use]
     pub fn written(&self) -> String {
         let file = TheFile {
+            // **Set here rather than defaulted**, so that the absent case stays
+            // reachable in `read`. See the field's own note.
+            version: FORMAT,
             looking_at: (self.camera.at().x, self.camera.at().y),
             zoom: self.camera.zoom().thousandths(),
             windows: self
@@ -180,6 +240,16 @@ impl Arrangement {
     pub fn read(written: &str) -> Result<Self, NotArranged> {
         let file: TheFile =
             toml::from_str(written).map_err(|why| NotArranged::Unreadable(why.to_string()))?;
+        // **Before any value in it is trusted.** A file from another shape may
+        // parse cleanly and mean something else entirely — the same keys with a
+        // Place keyed above them, say — so the version is checked before the
+        // camera rather than after the windows.
+        if file.version != FORMAT {
+            return Err(NotArranged::AnotherVersion {
+                said: file.version,
+                reads: FORMAT,
+            });
+        }
         let camera = Camera::new()
             .looking_at(
                 At::checked(file.looking_at.0, file.looking_at.1)

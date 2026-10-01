@@ -70,20 +70,20 @@ fn an_empty_arrangement_is_the_origin_at_life_size() {
 /// with what they could read in it.
 #[test]
 fn a_place_no_canvas_has_is_refused() {
-    let off_the_plane = "looking-at = [0, 0]\nzoom = 1000\n\n[windows.\"org.alo.Notes\"]\n\
+    let off_the_plane = "version = 1\nlooking-at = [0, 0]\nzoom = 1000\n\n[windows.\"org.alo.Notes\"]\n\
                          x = 99999999\ny = 0\nwidth = 800\nheight = 600\n";
     assert!(matches!(
         Arrangement::read(off_the_plane),
         Err(NotArranged::NotOnThePlane(_))
     ));
 
-    let no_such_zoom = "looking-at = [0, 0]\nzoom = 999999\n";
+    let no_such_zoom = "version = 1\nlooking-at = [0, 0]\nzoom = 999999\n";
     assert!(matches!(
         Arrangement::read(no_such_zoom),
         Err(NotArranged::NotOnThePlane(_))
     ));
 
-    let no_width = "looking-at = [0, 0]\nzoom = 1000\n\n[windows.\"org.alo.Notes\"]\n\
+    let no_width = "version = 1\nlooking-at = [0, 0]\nzoom = 1000\n\n[windows.\"org.alo.Notes\"]\n\
                     x = 0\ny = 0\nwidth = 0\nheight = 600\n";
     assert!(matches!(
         Arrangement::read(no_width),
@@ -100,8 +100,14 @@ fn something_that_is_not_an_arrangement_is_refused() {
     ));
     // An unknown key is a file written by something else, or by a later version
     // of this one. Either way it is not read half-way.
+    //
+    // **Otherwise a valid file of this version**, so that what is being refused
+    // is the unknown key and not a missing version. Before `FORMAT` existed
+    // these fixtures said nothing about a version and could not tell the two
+    // apart; one of them now would be refused for the wrong reason and still
+    // pass.
     assert!(matches!(
-        Arrangement::read("looking-at = [0, 0]\nzoom = 1000\nwallpaper = \"none\"\n"),
+        Arrangement::read("version = 1\nlooking-at = [0, 0]\nzoom = 1000\nwallpaper = \"none\"\n"),
         Err(NotArranged::Unreadable(_))
     ));
 }
@@ -133,4 +139,81 @@ fn an_application_that_never_came_back_has_no_place() {
     let back = Arrangement::read(&left.written()).unwrap();
     assert_eq!(back.where_it_was("org.alo.Ledger"), None);
     assert_eq!(back.how_many(), 1);
+}
+
+/// **What this crate writes says which shape it is.**
+///
+/// The whole point of the number: a file with no version is not from a version
+/// that wrote one, and that has to be distinguishable from a file of this one.
+#[test]
+fn what_is_written_says_its_version_and_is_read_back() {
+    let mut left = Arrangement::fresh();
+    left.window_was("org.alo.Notes", at(40, 50), size(800, 600));
+    let written = left.written();
+
+    assert!(
+        written.contains(&format!("version = {FORMAT}")),
+        "an arrangement was written without its version: {written}"
+    );
+    assert_eq!(Arrangement::read(&written), Ok(left));
+}
+
+/// **A file with no version is refused by name, not as a parse error.**
+///
+/// This is the case that did not exist before: every file ever written by this
+/// crate said `version`, so one that does not is from something else. Refused as
+/// [`NotArranged::AnotherVersion`] with zero, because `#[serde(default)]` makes
+/// *absent* and *zero* the same arrival and zero is not a version anybody wrote.
+#[test]
+fn a_file_with_no_version_is_not_this_shape() {
+    let was_valid_before_versioning = "looking-at = [0, 0]\nzoom = 1000\n";
+    assert_eq!(
+        Arrangement::read(was_valid_before_versioning),
+        Err(NotArranged::AnotherVersion {
+            said: 0,
+            reads: FORMAT
+        })
+    );
+}
+
+/// **A later version is refused, and the refusal says which way round it is.**
+///
+/// A person whose file is newer than their binary has a working file and the
+/// wrong program to open it with, which is a different sentence from *this is
+/// damaged* — so it is a different variant, carrying both numbers.
+#[test]
+fn a_version_from_the_future_is_refused_with_both_numbers() {
+    let later = format!(
+        "version = {}\nlooking-at = [0, 0]\nzoom = 1000\n",
+        FORMAT + 1
+    );
+    assert_eq!(
+        Arrangement::read(&later),
+        Err(NotArranged::AnotherVersion {
+            said: FORMAT + 1,
+            reads: FORMAT
+        })
+    );
+}
+
+/// **The version is checked before any value in it is trusted.**
+///
+/// A file of another shape may parse cleanly and mean something else — the same
+/// keys with a Place keyed above them, which is exactly what task 5 will write.
+/// So a file whose version is wrong **and** whose values are off the plane is
+/// refused for its version, because that is the true reason and the one a person
+/// can act on.
+#[test]
+fn the_version_is_refused_before_the_values_are() {
+    let both_wrong = format!(
+        "version = {}\nlooking-at = [99999999, 0]\nzoom = 1000\n",
+        FORMAT + 1
+    );
+    assert_eq!(
+        Arrangement::read(&both_wrong),
+        Err(NotArranged::AnotherVersion {
+            said: FORMAT + 1,
+            reads: FORMAT
+        })
+    );
 }
