@@ -98,6 +98,7 @@ pub fn chosen(
     panel: &mut Panel,
     peeking: Peeking,
     showing: TheView,
+    looking_at: alo_canvas::Place,
     occupied_by: Option<WindowId>,
     offer: Patch,
 ) -> Result<(Restored, Peeking), NotPutAside> {
@@ -105,6 +106,6 @@ pub fn chosen(
     let Some(PeekEnded::ByTravellingThere(id)) = ended else {
         return Err(NotPutAside::ItIsNotThere);
     };
-    let what = ask_for(windows, panel, id, showing, occupied_by, offer)?;
+    let what = ask_for(windows, panel, id, showing, looking_at, occupied_by, offer)?;
     Ok((what, after))
 }

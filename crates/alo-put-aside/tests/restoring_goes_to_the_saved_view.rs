@@ -16,7 +16,7 @@
               the same exemption `alo-dock`'s own test modules take, with its words"
 )]
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot, TheView};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
@@ -30,6 +30,15 @@ use alo_put_aside::{NotPutAside, Panel, Privacy, WhereItGoesBack};
 /// here pass for an implementation that saved no zoom and built a default on the way out.
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place the window was on.
+///
+/// Deliberately not `Place::FIRST`, because FIRST is what a fresh machine looks at and a
+/// fixture using it would pass for a panel that saved no Place and answered with the default.
+/// The same reason the zoom fixture is 1_750 rather than LIFE_SIZE.
+fn a_place() -> Place {
+    Place::numbered(7).expect("7 is not zero, so it is a Place")
 }
 
 /// A window of an application, called something, sitting somewhere.
@@ -71,10 +80,18 @@ fn restoring_from_somewhere_else_travels_to_the_saved_patch() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
-    let travel = restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
+    let travel = restore(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        view(0),
+        a_place(),
+    )
+    .unwrap();
 
     let there = travel
         .to()
@@ -109,11 +126,19 @@ fn the_window_is_on_the_canvas_again_and_the_panel_has_let_it_go() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
 
-    restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
+    restore(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        view(0),
+        a_place(),
+    )
+    .unwrap();
 
     assert_eq!(
         windows.window(WindowId::numbered(1)).unwrap().sits(),
@@ -136,6 +161,7 @@ fn restoring_a_window_the_view_already_shows_needs_no_travel() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -146,6 +172,7 @@ fn restoring_a_window_the_view_already_shows_needs_no_travel() {
         &mut panel,
         WindowId::numbered(1),
         view(19_800),
+        a_place(),
     )
     .unwrap();
 
@@ -178,6 +205,7 @@ fn a_window_only_partly_shown_is_still_travelled_to() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -186,7 +214,11 @@ fn a_window_only_partly_shown_is_still_travelled_to() {
     // so it fits horizontally. The miss is vertical: this view is only 400 tall.
     let clipped =
         TheView::showing(Patch::of(Spot::at(19_000, 0), 1_920, 400).expect("a view has extent"));
-    let travel = travel_for(WhereItGoesBack::of(a_patch(), a_zoom()), clipped);
+    let travel = travel_for(
+        WhereItGoesBack::of(a_patch(), a_zoom(), a_place()),
+        clipped,
+        a_place(),
+    );
 
     assert!(
         travel.is_needed(),
@@ -212,7 +244,13 @@ fn restoring_a_window_the_panel_does_not_hold_refuses_and_changes_nothing() {
     let before: Vec<Window> = windows.each().cloned().collect();
 
     assert_eq!(
-        restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)),
+        restore(
+            &mut windows,
+            &mut panel,
+            WindowId::numbered(1),
+            view(0),
+            a_place()
+        ),
         Err(NotPutAside::ItIsNotThere),
         "a window nobody put aside cannot be restored"
     );
@@ -238,12 +276,13 @@ fn asking_whether_a_travel_is_needed_does_not_restore_the_window() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
 
-    let goes_back_to = WhereItGoesBack::of(a_patch(), a_zoom());
-    let asked = travel_for(goes_back_to, view(0));
+    let goes_back_to = WhereItGoesBack::of(a_patch(), a_zoom(), a_place());
+    let asked = travel_for(goes_back_to, view(0), a_place());
 
     assert!(asked.is_needed());
     assert_eq!(
@@ -258,7 +297,14 @@ fn asking_whether_a_travel_is_needed_does_not_restore_the_window() {
     );
 
     // And when it is actually restored, the answer is the same one.
-    let done = restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
+    let done = restore(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        view(0),
+        a_place(),
+    )
+    .unwrap();
     assert_eq!(
         done, asked,
         "asking and doing gave different answers about the same travel"

@@ -37,6 +37,7 @@
 //! preview and sees no change does not conclude that the window was already visible, they
 //! conclude the click was lost.
 
+use alo_canvas::Place;
 use alo_dock::on_the_canvas::TheView;
 use alo_dock::window::WindowId;
 use alo_dock::windows::Windows;
@@ -57,6 +58,17 @@ pub enum Travel {
     NotNeeded,
     /// The canvas must go here: the patch the window occupies, at the zoom it was saved at.
     To(WhereItGoesBack),
+    /// **The window is on another Place**, so the canvas has to go to that Place first.
+    ///
+    /// A third case rather than a flag on [`Self::To`], because what a caller does about it is
+    /// a different act: `To` is a pan and a zoom on the surface already shown, and this is
+    /// leaving that surface. A caller that treated them alike would pan to `(4200, 0)` on the
+    /// wrong Place — which is not a near miss, it is a window somewhere else, and the view
+    /// would look correct.
+    ///
+    /// The saved view travels with it, so the caller does not have to ask twice: go to that
+    /// Place, then to this patch at this zoom.
+    ToAnotherPlace(WhereItGoesBack),
 }
 
 impl Travel {
@@ -65,14 +77,23 @@ impl Travel {
     pub const fn to(self) -> Option<WhereItGoesBack> {
         match self {
             Self::NotNeeded => None,
-            Self::To(there) => Some(there),
+            Self::To(there) | Self::ToAnotherPlace(there) => Some(there),
         }
     }
 
     /// Whether the canvas has to move at all.
     #[must_use]
     pub const fn is_needed(self) -> bool {
-        matches!(self, Self::To(_))
+        matches!(self, Self::To(_) | Self::ToAnotherPlace(_))
+    }
+
+    /// Whether the canvas has to leave the Place it is on.
+    ///
+    /// Asked separately because it is a different act from panning, and a caller that only
+    /// asked `is_needed` would pan on the surface it was already looking at.
+    #[must_use]
+    pub const fn leaves_this_place(self) -> bool {
+        matches!(self, Self::ToAnotherPlace(_))
     }
 }
 
@@ -93,18 +114,34 @@ pub fn restore(
     panel: &mut Panel,
     id: WindowId,
     showing: TheView,
+    looking_at: Place,
 ) -> Result<Travel, NotPutAside> {
     let goes_back_to = bring_back(windows, panel, id)?;
-    Ok(travel_for(goes_back_to, showing))
+    Ok(travel_for(goes_back_to, showing, looking_at))
 }
 
-/// The travel a saved view needs, given what is on screen.
+/// The travel a saved view needs, given what is on screen and which Place that is.
 ///
 /// Its own function because it is the decision, and because it is worth being able to ask
 /// it without moving a window — a caller drawing a preview may want to say *this one is
 /// over there* before anybody clicks.
+///
+/// # The Place is asked first, and the order is the correctness
+///
+/// `already_shows` compares rectangles, and **a rectangle does not know which surface it is
+/// on**. `(4200, 0)` exists on every Place, so a view showing that patch on Place 2 answers
+/// *yes, already shown* about a window saved on Place 7 — and the caller then does nothing,
+/// having been told the window is visible when it is not even on this surface.
+///
+/// That is the worst shape of wrong answer available here: it is not a travel to the wrong
+/// place, it is **a confident report that no travel is needed**, and the screen agrees
+/// because something else is in that rectangle. So the Place is settled before the geometry
+/// is consulted at all.
 #[must_use]
-pub fn travel_for(goes_back_to: WhereItGoesBack, showing: TheView) -> Travel {
+pub fn travel_for(goes_back_to: WhereItGoesBack, showing: TheView, looking_at: Place) -> Travel {
+    if !goes_back_to.is_on(looking_at) {
+        return Travel::ToAnotherPlace(goes_back_to);
+    }
     if showing.already_shows(goes_back_to.at()) {
         Travel::NotNeeded
     } else {

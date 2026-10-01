@@ -28,7 +28,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot, TheView};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
@@ -43,6 +43,15 @@ use alo_put_aside::{Panel, Privacy};
 
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place the window was on.
+///
+/// Deliberately not `Place::FIRST`, because FIRST is what a fresh machine looks at and a
+/// fixture using it would pass for a panel that saved no Place and answered with the default.
+/// The same reason the zoom fixture is 1_750 rather than LIFE_SIZE.
+fn a_place() -> Place {
+    Place::numbered(7).expect("7 is not zero, so it is a Place")
 }
 
 /// A window whose title would be a leak if it were ever drawn.
@@ -88,6 +97,7 @@ fn a_private_preview_is_headed_with_a_safe_name_and_never_the_title() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         private_as("A Mail window"),
     )
     .unwrap();
@@ -121,6 +131,7 @@ fn an_ordinary_preview_is_headed_with_its_own_title() {
         &mut panel,
         WindowId::numbered(2),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -147,6 +158,7 @@ fn a_private_window_restores_like_any_other() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         private_as("A Mail window"),
     )
     .unwrap();
@@ -156,6 +168,7 @@ fn a_private_window_restores_like_any_other() {
         &mut panel,
         WindowId::numbered(1),
         a_view(),
+        a_place(),
         None,
         Patch::of(Spot::at(1, 1), 10, 10).unwrap(),
     )
