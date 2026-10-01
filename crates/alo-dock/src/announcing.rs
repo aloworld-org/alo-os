@@ -172,7 +172,7 @@ mod tests {
     fn window(number: u64, of: &str, sits: HowItSits) -> Window {
         Window::of(
             WindowId::numbered(number),
-            app(of),
+            Some(app(of)),
             "A window",
             Patch::of(Spot::at(0, 0), 800, 600).unwrap(),
             sits,

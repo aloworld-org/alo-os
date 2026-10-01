@@ -12,17 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
-- **The dock is along the bottom of the screen, and which edge it sits on is no
-  longer a setting.** It was four edges, two orientations and a per-display
-  exception, none of which anybody has used, because nothing has booted the
-  image yet. The dock's job is to answer *where do I go*: it shows what you can
+- **A window can be put aside even when the application it belongs to has no
+  name.** Some programs tell the machine neither what they are called nor what
+  the window is called. Until now, minimising one of those was simply refused —
+  the window stayed where it was and nothing said why. It is now put aside like
+  any other: the panel finds it by its own name and its picture, and the line
+  that would say which application it belongs to is left out rather than filled
+  in with a guess. Two such windows stay two windows, which is what a made-up
+  name would have broken.
+
+- **The dock sits along the bottom of the screen by default, and you can move
+  it to the top, the left or the right.** *This replaces an unreleased note that
+  said which edge it sits on was no longer a setting.* That note was written on
+  29 September and the decision behind it was reversed the next day; nothing of
+  either reached anybody. The dock's job is unchanged — it shows what you can
   open, brings what is already open into focus, and stays put while the canvas
-  moves. A position you can change is a decision handed to you for no benefit,
-  and it was paid for on every screen and at every text size. **This replaces an
-  unreleased note that said your dock could sit along the bottom of the laptop
-  and down the side of the screen on your desk** — that is no longer true, and it
-  never reached anybody. Evidence:
-  `docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`.
+  moves. Choosing which edge is work that has not been built yet, and it waits
+  on designs for the three edges that have none. Having your dock sit along the
+  bottom of the laptop and down the side of the screen on your desk is a
+  separate, later thing and is not promised in this release. Evidence:
+  `docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`
+  and its amendment of 30 September.
 
 - **You can now ask the dock to give way when a window needs the room.** The
   choice has been written into your settings file since late September, and

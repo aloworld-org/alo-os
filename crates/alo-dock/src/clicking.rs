@@ -156,7 +156,7 @@ mod tests {
     }
 
     fn window(number: u64, of: &str, called: &str, at: Patch, sits: HowItSits) -> Window {
-        Window::of(WindowId::numbered(number), app(of), called, at, sits)
+        Window::of(WindowId::numbered(number), Some(app(of)), called, at, sits)
     }
 
     /// **Nothing open is a window near where you are looking**, because there is

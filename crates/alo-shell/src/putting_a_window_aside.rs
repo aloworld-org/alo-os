@@ -38,36 +38,31 @@
 //! module exists for and the reason the patch is not optional here.
 
 use alo_canvas::Zoom;
-use alo_dock::{AppId, HowItSits, NotAnApp, Patch, Window, WindowId};
+use alo_dock::{AppId, HowItSits, Patch, Window, WindowId};
 use alo_put_aside::panel::NotPutAside;
 use alo_put_aside::whether_it_is_private::Privacy;
 use alo_put_aside::{Panel, Preview};
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 /// Why a window could not be put aside, or brought back.
+///
+/// **One variant, and it had two until 2026-10-01.** `Unnamed` refused a window
+/// whose client had set neither a class nor a title, on the reasoning that its
+/// preview would be headed with nothing and a preview a person cannot read is a
+/// window they cannot find. The owner's direction replaced that: *a missing
+/// application identity must not prevent minimization.* The premise was also
+/// wrong — the preview is headed with the **window's** own name, and only the
+/// application line is lost, so such a preview is one line shorter rather than
+/// blank.
+///
+/// The variant is removed rather than kept and never produced. A refusal nothing
+/// can cause is a refusal every caller must still handle and no test can reach,
+/// which is the shape this repository spent 2026-09-30 removing elsewhere.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum NotAside {
     /// The panel refused it — it is already there, or it is not.
     #[error(transparent)]
     ThePanel(#[from] NotPutAside),
-    /// The window has no name this machine can use as an application's.
-    ///
-    /// **Not a fallback.** A window whose class is blank is a window whose
-    /// preview would be headed with nothing, and a preview a person cannot
-    /// read is a window they cannot find — which is the outcome the whole
-    /// surface exists to prevent.
-    ///
-    /// The refusal is carried by value rather than as a source, because
-    /// `alo_dock::NotAnApp` does not implement `Error` — it is a refusal this
-    /// repository words for a person rather than a chain a programmer walks.
-    #[error("this window has no application name to head its preview with")]
-    Unnamed(NotAnApp),
-}
-
-impl From<NotAnApp> for NotAside {
-    fn from(why: NotAnApp) -> Self {
-        Self::Unnamed(why)
-    }
 }
 
 impl crate::Server {
@@ -79,8 +74,12 @@ impl crate::Server {
     /// be a window a person cannot see and cannot get back.
     ///
     /// # Errors
-    /// [`NotAside::ThePanel`] when the panel will not take it, and
-    /// [`NotAside::Unnamed`] when the window has no usable application name.
+    /// [`NotAside::ThePanel`] when the panel will not take it — **the only
+    /// refusal left.** There was a second until 2026-10-01: a window whose
+    /// client had set neither a class nor a title was declined, so a person
+    /// could not minimise it at all. The owner directed that a missing
+    /// application identity must not prevent minimisation, and such a window is
+    /// now put aside carrying no application rather than refused.
     pub fn put_this_window_aside(
         &mut self,
         panel: &mut Panel,
@@ -89,7 +88,7 @@ impl crate::Server {
         zoom: Zoom,
         privacy: Privacy,
     ) -> Result<WindowId, NotAside> {
-        let window = self.as_a_model_window(frame, at)?;
+        let window = self.as_a_model_window(frame, at);
         let id = window.id();
         panel.put_aside(&window, zoom, privacy)?;
         // Only now. See this method's own note, and `putting_aside`'s.
@@ -122,7 +121,7 @@ impl crate::Server {
     /// `alo_dividing` already bridges to its own window id the same way — so a
     /// window put aside and a window a division moved are the same window,
     /// rather than two ids that agree by luck.
-    fn as_a_model_window(&self, frame: &WlSurface, at: Patch) -> Result<Window, NotAnApp> {
+    fn as_a_model_window(&self, frame: &WlSurface, at: Patch) -> Window {
         let id = WindowId::numbered(crate::window_number::Numbers::of(frame));
         // **Two different facts, read separately on purpose.** `the_name_of`
         // answers one question — *what is this frame called* — by falling back
@@ -131,31 +130,35 @@ impl crate::Server {
         // own name beneath it. Collapsing them would head every preview of a
         // titled window with its title and leave the application unsaid.
         let called = self.the_name_of(frame);
-        // **Class first, then the window's own title, then a refusal.** The
-        // class is the application; the title is this window. Falling back is
-        // not conflating them — a client that named its window and not its
-        // class has told us what it is by the only name it gave, and the
-        // alternative is refusing to put aside a window that is plainly
-        // identifiable.
+        // **Class first, then the window's own title, then no application at
+        // all.** The class is the application; the title is this window. Falling
+        // back is not conflating them — a client that named its window and not
+        // its class has told us what it is by the only name it gave, and the
+        // alternative would be declining a window that is plainly identifiable.
         //
-        // **A window with neither is refused, and that is a hole rather than a
-        // policy.** `docs/design` has an answer for an unnamed window —
-        // `FrameName::AnApplication`, said with the machine's own translated
-        // word — and `alo_dock::Window` cannot carry it, because `AppId` is an
-        // identity and a translated word is not one: two unnamed windows would
-        // become one application. Recorded here rather than papered over with
-        // the number, which would be an identity nobody could read.
-        let name = the_class_of(frame)
+        // **A window with neither is put aside with no application, and that is
+        // the policy rather than a hole.** It was a refusal until 2026-10-01: a
+        // client that mapped a toplevel having set no class and no title could
+        // not be minimised at all. The owner's direction is that *a missing
+        // application identity must not prevent minimization* and that no
+        // identity is to be fabricated — so the absence is carried.
+        //
+        // The two rejected answers are worth keeping named, because both look
+        // like fixes. `FrameName::AnApplication` is a **translated word**, and
+        // two unnamed windows sharing it would become one application in every
+        // place that groups by `AppId`. The window's own number is unique and is
+        // an identity **nobody can read**. An absence is neither: it cannot be
+        // grouped wrongly and it cannot be shown as a name.
+        let app = the_class_of(frame)
             .or_else(|| called.its_own_words().map(str::to_owned))
-            .unwrap_or_default();
-        let app = AppId::named(&name)?;
-        Ok(Window::of(
+            .and_then(|name| AppId::named(&name).ok());
+        Window::of(
             id,
             app,
             called.its_own_words().unwrap_or_default(),
             at,
             HowItSits::OnTheCanvas,
-        ))
+        )
     }
 }
 

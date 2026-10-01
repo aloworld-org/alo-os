@@ -169,7 +169,21 @@ impl Holding {
         // looked at a window.
         let mut rest: Vec<&AppId> = Vec::new();
         for window in windows.each_as_opened() {
-            let app = window.app();
+            // **A window whose client named no application contributes no icon,
+            // and the absence is honoured here rather than the window being
+            // quietly lost.** The Dock's icons *are* applications: a window with
+            // none has nothing to appear under, and inventing a name would
+            // gather every unnamed window of every client beneath one false one.
+            //
+            // It stays reachable by every road that does not group by
+            // application — the put-aside panel holds it by its own identity,
+            // title and preview, and window switching lists windows rather than
+            // applications. So this is the Dock declining to answer a question
+            // about something that is not an application, not the Dock hiding a
+            // window.
+            let Some(app) = window.app() else {
+                continue;
+            };
             if !self.is_pinned(app) && !rest.contains(&app) {
                 rest.push(app);
             }
@@ -270,7 +284,7 @@ mod tests {
     fn window(number: u64, of: &str, sits: HowItSits) -> Window {
         Window::of(
             WindowId::numbered(number),
-            app(of),
+            Some(app(of)),
             "A window",
             Patch::of(Spot::at(0, 0), 800, 600).unwrap(),
             sits,

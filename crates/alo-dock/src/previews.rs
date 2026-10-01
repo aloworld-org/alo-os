@@ -220,7 +220,7 @@ mod tests {
     fn window(number: u64, of: &str, called: &str, sits: HowItSits) -> Window {
         Window::of(
             WindowId::numbered(number),
-            app(of),
+            Some(app(of)),
             called,
             patch(i64::from(u32::try_from(number).unwrap()) * 1_000),
             sits,
