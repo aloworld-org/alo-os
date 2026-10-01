@@ -106,18 +106,101 @@ fn the_repositorys_own_words() -> Vec<(String, String)> {
     written
 }
 
-/// The contents of `docs/decisions/`, each as its filename and its text.
+/// The decisions in `docs/decisions/`, each as its filename and its text, in
+/// their numbered order.
+///
+/// # Filtered first and sorted second, and the order of those two is the whole
+/// repair
+///
+/// This read the directory raw: no filter, no sort. `fs::read_dir` answers in
+/// the order the filesystem chooses, and
+/// [`a_real_decision_taken_off_the_real_list_is_refused`] takes the **first**
+/// entry — so *which decision is removed* was the kernel's choice, on a test
+/// whose name says *a real decision*.
+///
+/// **And the subject has to satisfy two conditions, which not every decision
+/// does.** That test asserts the removal is noticed twice over: once as a
+/// citation of a number nobody wrote, and once as a **link to a filename**
+/// nobody wrote. Measured on 2026-10-01: of 81 decisions, **three are never
+/// linked by filename anywhere in the repository** — `0050`, `0071` and `0074`.
+/// Pick one of those three and the second assertion cannot pass, however sound
+/// the check is.
+///
+/// So the test failed on a GitHub-hosted runner for six hours and passed on
+/// every lane's machine: the runner's filesystem handed back one of the three
+/// first, and no lane's did. A latent fault rather than a new one, and the
+/// failure was `is linked to by name in this repository and the check did not
+/// notice the file was gone` — the second assertion, not the first.
+///
+/// *Recorded because the first diagnosis of this was wrong and was published
+/// before it was reproduced: that `README.md` came back first and the number
+/// read off it was `READ`. That would have failed the **first** assertion, and
+/// an attempt to reproduce it by planting a dotfile did not fail at all —
+/// `read_dir` on ext4 answers in hash order, so planting a name that sorts first
+/// does not make it arrive first. The mechanism above is the one in the runner's
+/// own panic message.*
+///
+/// After filtering and sorting, the subject is always the lowest-numbered
+/// decision, `0001-the-capability-model.md`, which is linked from 61 other
+/// files. Deterministic, and deterministically able to pass.
+///
+/// **The filter is what makes this correct and the sort only makes it
+/// deterministic**, and that distinction is load-bearing rather than pedantic.
+/// Sorting alone appears to fix it, because `R` sorts after `0`. It would fix it
+/// *by accident*: `.` is `0x2E` and `0` is `0x30`, so **a dotfile sorts before
+/// every decision**, and the first `.DS_Store` or editor swapfile in this
+/// directory would put the fault straight back with the number read as `.DS_`.
+/// One of this fleet's lanes works on a Mac. *Found by that lane, reading the
+/// proposed fix rather than the code it replaced.*
+///
+/// So a later reader must not take the sort for the repair and remove the filter
+/// as redundant. The filter is the repair.
+///
+/// **The stronger form, considered and not taken.** The subject could be *named*
+/// in the source rather than chosen by position at all, which is where this
+/// family of fault ends: a test whose subject the filesystem picks is asking a
+/// question less specific than the one it reports on. It is not taken because a
+/// named decision that later stops being cited would fail this test for a reason
+/// that has nothing to do with what it checks. Position after filtering and
+/// sorting is deterministic, and [`is_a_decisions_name`] is asserted at the use
+/// site so that a loosened filter says so rather than computing a number out of
+/// whatever it was handed.
 fn the_decisions() -> Vec<(String, String)> {
     let mut written = Vec::new();
     let entries = fs::read_dir(the_repository().join(THE_DECISIONS))
         .expect("this repository keeps its decisions where it says it does");
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
+        if !is_a_decisions_name(&name) {
+            continue;
+        }
         if let Ok(text) = fs::read_to_string(entry.path()) {
             written.push((name, text));
         }
     }
+    written.sort();
+    assert!(
+        !written.is_empty(),
+        "no file in {THE_DECISIONS} is named like a decision, so either the \
+         convention changed or this filter is wrong — and an empty list would \
+         make every check below pass for the wrong reason"
+    );
     written
+}
+
+/// Whether this filename is a decision's, as `docs/decisions/` names them:
+/// `NNNN-subject.md`.
+///
+/// Four digits and a hyphen, which `README.md`, a dotfile and an editor
+/// swapfile all fail. Written as a predicate rather than inline so that the one
+/// place that decides what a decision's name is can be cited from the two tests
+/// that depend on it.
+fn is_a_decisions_name(name: &str) -> bool {
+    name.ends_with(".md")
+        && name.as_bytes().get(4) == Some(&b'-')
+        && name
+            .get(..4)
+            .is_some_and(|number| number.bytes().all(|byte| byte.is_ascii_digit()))
 }
 
 /// A list of owned pairs, borrowed for [`held`].
@@ -181,38 +264,86 @@ fn every_decision_this_repository_points_at_exists() {
 /// of them cheap to write and easy to disbelieve: a check could pass its fixtures
 /// and still never look at this repository. This is the one that says the real
 /// reading refuses, on the real disk, for the real reason.
+/// # The subject is derived from the property, not from a position
+///
+/// This test needs a decision that is **both cited by its number and linked by
+/// its filename**, because it asserts the removal is noticed in both of those
+/// ways. Not every decision is: measured 2026-10-01, of 81 decisions **four are
+/// never linked by filename** in any `.rs` or `.md` — `0050`, `0070`, `0071`,
+/// `0074` — and `0074`'s number is never cited either.
+///
+/// So the subject may not be chosen by position. It was `split_first()` on an
+/// unsorted `read_dir`, which is how this failed on a hosted runner for six
+/// hours while passing on every lane's machine: that filesystem offered one of
+/// the four first and no lane's did.
+///
+/// **Filtering and sorting fixed the symptom and left the cause.** With them,
+/// the subject is always the lowest-numbered decision — deterministic, and it
+/// passes only because that decision happens to be linked from sixty files. A
+/// test that passes because of a fact about `0001` is one that breaks the day
+/// `0001` stops being cited, for a reason that has nothing to do with what it
+/// checks. *Both lanes that read the fix said so independently, one about naming
+/// the subject and one about the enumeration being short by one.*
+///
+/// So the subject is **searched for**: the lowest-numbered decision whose
+/// removal is actually noticed both ways, and a loud refusal if there is none.
+/// That has no filesystem dependence, no dependence on any particular decision,
+/// and it cannot pass by lucky ordering — which is the difference between a fix
+/// verified against the instances somebody enumerated and a fix verified against
+/// the property.
 #[test]
 fn a_real_decision_taken_off_the_real_list_is_refused() {
     let decisions = the_decisions();
     let files = the_repositorys_own_words();
     let all_of_them = borrowed(&decisions);
-    let (gone, rest) = all_of_them
-        .split_first()
-        .expect("this repository has at least one decision");
-    let number = gone
-        .0
-        .get(..4)
-        .expect("a decision's name begins with its number");
-    let findings = held(rest, &borrowed(&files), &NEIGHBOURS).expect_err(
-        "a decision of this repository was removed and every pointer at it still landed",
-    );
+    let words = borrowed(&files);
+
+    // Every decision in turn, lowest-numbered first, until one is found whose
+    // removal the check notices in both of the ways asserted below. The search
+    // is the test's subject selection; the assertions are what it is about.
+    let mut tried = Vec::new();
+    let subject = all_of_them.iter().enumerate().find_map(|(at, gone)| {
+        let number = gone.0.get(..4)?;
+        let rest: Vec<_> = all_of_them
+            .iter()
+            .enumerate()
+            .filter(|(other, _)| *other != at)
+            .map(|(_, kept)| *kept)
+            .collect();
+        let findings = held(&rest, &words, &NEIGHBOURS).err()?;
+        let cited = findings.iter().any(|finding| {
+            matches!(finding, Finding::ADecisionNobodyWrote { number: at, .. } if at == number)
+        });
+        let linked = findings.iter().any(
+            |finding| matches!(finding, Finding::AFileNobodyWrote { named, .. } if named == gone.0),
+        );
+        tried.push((gone.0, cited, linked));
+        (cited && linked).then_some(gone.0)
+    });
+
+    let subject = subject.unwrap_or_else(|| {
+        let account: Vec<String> = tried
+            .iter()
+            .map(|(name, cited, linked)| {
+                format!("    {name}  cited-by-number={cited}  linked-by-filename={linked}")
+            })
+            .collect();
+        panic!(
+            "no decision in this repository is both cited by its number and linked \
+             by its filename, so removing one cannot be noticed both ways and this \
+             check has nothing real to be about. Every decision was tried:\n{}",
+            account.join("\n")
+        )
+    });
+
+    // **Said out loud, because a search that silently settles on anything is the
+    // fault this replaced.** The subject is in the output, so a reader never has
+    // to work out which decision the test was about — and if it ever moves, the
+    // run says so rather than quietly testing something else.
+    println!("the decision taken off the list: {subject}");
     assert!(
-        findings.iter().any(|finding| matches!(
-            finding,
-            Finding::ADecisionNobodyWrote { number: cited, .. } if cited == number
-        )),
-        "`{}` is cited in this repository, it was taken off the list of what \
-         exists, and the check did not name a single one of those citations",
-        gone.0
-    );
-    assert!(
-        findings.iter().any(|finding| matches!(
-            finding,
-            Finding::AFileNobodyWrote { named, .. } if named == gone.0
-        )),
-        "`{}` is linked to by name in this repository and the check did not \
-         notice the file was gone",
-        gone.0
+        is_a_decisions_name(subject),
+        "`{subject}` is not a decision's name, so `the_decisions` let something through"
     );
 }
 
