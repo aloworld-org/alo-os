@@ -26,7 +26,7 @@
               the same exemption `alo-dock`'s own test modules take, with its words"
 )]
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot, TheView};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
@@ -41,6 +41,19 @@ use alo_put_aside::{Panel, Privacy};
 /// on the way out.
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place these windows are on, and **the one fixture here that is deliberately
+/// constant**.
+///
+/// `put_aside` gained a Place on 2026-10-01, so every call in this file needed one. It
+/// is `FIRST` throughout on purpose: this suite's subject is a window with **no
+/// application**, and a Place that varied would make a second thing vary alongside the
+/// thing being tested. Whether the Place is *saved* and *asked before the geometry* is
+/// proved in `a_window_restored_from_another_place_travels_to_that_place.rs`, which
+/// uses Place 7 and looks at Place 2 precisely because `FIRST` cannot show it.
+fn a_place() -> Place {
+    Place::FIRST
 }
 
 /// A window with **no application**, called something, sitting somewhere.
@@ -87,6 +100,7 @@ fn a_window_with_no_application_goes_into_the_panel() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .expect("a window with no application was refused, which is the bug this test exists for");
@@ -123,6 +137,7 @@ fn its_preview_carries_no_application_rather_than_an_invented_one() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -158,10 +173,20 @@ fn a_window_with_no_application_comes_back_to_where_it_was() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
-    let travel = restore(&mut windows, &mut panel, WindowId::numbered(1), view(0)).unwrap();
+    // `a_place()` as the Place being looked at, matching the one it was put aside from,
+    // so this stays a test about a nameless window's travel rather than about Places.
+    let travel = restore(
+        &mut windows,
+        &mut panel,
+        WindowId::numbered(1),
+        view(0),
+        a_place(),
+    )
+    .unwrap();
 
     let there = travel
         .to()
@@ -202,6 +227,7 @@ fn two_windows_with_no_application_stay_two_windows() {
             &mut panel,
             WindowId::numbered(id),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -243,6 +269,7 @@ fn an_unnamed_window_and_a_named_one_are_both_held() {
             &mut panel,
             WindowId::numbered(id),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();

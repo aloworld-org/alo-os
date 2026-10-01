@@ -168,7 +168,11 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **model built, one clause evidenced, and blocked on Place identity, 2026-09-30.**
+**Status:** **model built, one clause evidenced, and its owed clause is now buildable rather
+than blocked, 2026-10-01.** `alo_canvas::Place` landed, so *the collapse choice keyed per Place*
+is no longer waiting on anybody — it is this lane’s next change rather than a block. Kept
+separate from the Place-saving work because a task that cannot be finished and gated inside a
+worker’s forty-five minutes is a phase rather than a task.
 Since `#343` the empty panel is drawn by something real, so *an empty panel is its own state
 rather than a list of length zero* is evidenced. Nothing puts a window aside, so the previews and
 the rail are not — see *What none of these tasks has* above. Its
@@ -246,7 +250,7 @@ state is its own thing and not a zero-length list, because *a panel holding noth
 
 ### 2. Minimising, and what is saved
 
-**Status:** **model built, no evidence, and blocked on Place identity, 2026-09-30.** Nothing
+**Status:** **model built, no evidence; the Place clause is built, 2026-10-01.** Nothing
 draws or routes this, so the gesture is untested by the road a person uses. The transition is built and the
 zoom is saved; one clause of this task's own acceptance is not, and it stays here.
 

@@ -29,7 +29,7 @@
               the shape was wrong"
 )]
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot, TheView};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
@@ -43,6 +43,15 @@ use alo_put_aside::{NotPutAside, Panel, Privacy};
 /// The zoom the person was at — never [`Zoom::LIFE_SIZE`], which is the default.
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place the window was on.
+///
+/// Deliberately not `Place::FIRST`, because FIRST is what a fresh machine looks at and a
+/// fixture using it would pass for a panel that saved no Place and answered with the default.
+/// The same reason the zoom fixture is 1_750 rather than LIFE_SIZE.
+fn a_place() -> Place {
+    Place::numbered(7).expect("7 is not zero, so it is a Place")
 }
 
 /// A window of an application, called something, sitting somewhere.
@@ -89,6 +98,7 @@ fn a_taken_place_proposes_and_moves_nothing() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -101,6 +111,7 @@ fn a_taken_place_proposes_and_moves_nothing() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -142,6 +153,7 @@ fn a_free_place_restores_and_says_where_to_travel() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -154,6 +166,7 @@ fn a_free_place_restores_and_says_where_to_travel() {
         &mut panel,
         WindowId::numbered(1),
         elsewhere,
+        a_place(),
         None,
         an_offer(),
     )
@@ -189,6 +202,7 @@ fn the_proposal_names_the_saved_place_the_offer_and_what_is_in_the_way() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -198,6 +212,7 @@ fn the_proposal_names_the_saved_place_the_offer_and_what_is_in_the_way() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -275,6 +290,7 @@ fn accepting_places_it_at_the_offer_and_keeps_where_it_was() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -284,6 +300,7 @@ fn accepting_places_it_at_the_offer_and_keeps_where_it_was() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -333,6 +350,7 @@ fn dragging_places_it_where_the_person_said() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -342,6 +360,7 @@ fn dragging_places_it_where_the_person_said() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -389,6 +408,7 @@ fn asking_for_a_window_the_panel_does_not_hold_refuses_and_proposes_nothing() {
             &mut panel,
             WindowId::numbered(1),
             a_wide_view(),
+            a_place(),
             Some(WindowId::numbered(2)),
             an_offer(),
         ),
@@ -416,6 +436,7 @@ fn accepting_after_the_window_has_gone_refuses() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -425,6 +446,7 @@ fn accepting_after_the_window_has_gone_refuses() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -458,6 +480,7 @@ fn a_free_place_already_on_screen_travels_nowhere() {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -467,6 +490,7 @@ fn a_free_place_already_on_screen_travels_nowhere() {
         &mut panel,
         WindowId::numbered(1),
         a_wide_view(),
+        a_place(),
         None,
         an_offer(),
     )

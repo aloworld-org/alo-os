@@ -29,6 +29,7 @@
 //! it is the right one to ask anyway — exactly as `restoring` is handed a view rather than
 //! reaching for a camera.
 
+use alo_canvas::Place;
 use alo_dock::on_the_canvas::{Patch, TheView};
 use alo_dock::window::{HowItSits, WindowId};
 use alo_dock::windows::Windows;
@@ -71,6 +72,7 @@ pub fn ask_for(
     panel: &mut Panel,
     id: WindowId,
     showing: TheView,
+    looking_at: Place,
     occupied_by: Option<WindowId>,
     offer: Patch,
 ) -> Result<Restored, NotPutAside> {
@@ -95,7 +97,11 @@ pub fn ask_for(
     // The place is free, so this is an ordinary restore and the window comes back.
     panel.bring_back(id)?;
     windows.now_sits(id, HowItSits::OnTheCanvas);
-    Ok(Restored::Travelled(travel_for(goes_back_to, showing)))
+    Ok(Restored::Travelled(travel_for(
+        goes_back_to,
+        showing,
+        looking_at,
+    )))
 }
 
 /// Accept the offered position: the window comes back there.

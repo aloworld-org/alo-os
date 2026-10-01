@@ -19,7 +19,7 @@
 //! of thousandths, because [`Zoom::of`] is the thing that refuses 0 and 50_000 — and a
 //! panel holding a value nobody validated would hand a caller a view it could not build.
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::Patch;
 use alo_dock::window::{AppId, Window, WindowId};
 
@@ -58,6 +58,12 @@ pub struct Preview {
     /// anyway: what is saved is the view the person was looking at when they chose to put
     /// the window away, and only they were there.
     zoom: Zoom,
+    /// Which Place the window was on.
+    ///
+    /// **A construction-time argument, like the zoom and the privacy.** A Place read later
+    /// would be the Place the person is on then, not the one the window was put aside from,
+    /// and those differ precisely when it matters most.
+    place: Place,
     /// What alo is doing in this window, if anything.
     ///
     /// **Not a construction-time value**, because it changes while the window is away: that
@@ -79,13 +85,14 @@ impl Preview {
     /// something to do here, and **never by this constructor** — a machine with no agent must
     /// not have to pass an argument saying so.
     #[must_use]
-    pub fn of(window: &Window, zoom: Zoom, privacy: Privacy) -> Self {
+    pub fn of(window: &Window, zoom: Zoom, place: Place, privacy: Privacy) -> Self {
         Self {
             window: window.id(),
             app: window.app().cloned(),
             called: window.called().to_owned(),
             at: window.at(),
             zoom,
+            place,
             alo: WhatAloIsDoing::Nothing,
             privacy,
         }
@@ -151,6 +158,12 @@ impl Preview {
         self.zoom
     }
 
+    /// Which Place the window was on.
+    #[must_use]
+    pub const fn place(&self) -> Place {
+        self.place
+    }
+
     /// What alo is doing in this window, if anything.
     ///
     /// A surface asks this **before** drawing anything agent-shaped. [`WhatAloIsDoing::Nothing`]
@@ -181,6 +194,6 @@ impl Preview {
     /// is the failure that would make a restored window look right in the wrong place.
     #[must_use]
     pub const fn where_it_goes_back(&self) -> WhereItGoesBack {
-        WhereItGoesBack::of(self.at, self.zoom)
+        WhereItGoesBack::of(self.at, self.zoom, self.place)
     }
 }

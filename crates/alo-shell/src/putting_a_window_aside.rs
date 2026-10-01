@@ -46,7 +46,7 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 /// Why a window could not be put aside, or brought back.
 ///
-/// **One variant, and it had two until 2026-10-01.** `Unnamed` refused a window
+/// **Two variants, and which two changed twice on 2026-10-01.** `Unnamed` refused a window
 /// whose client had set neither a class nor a title, on the reasoning that its
 /// preview would be headed with nothing and a preview a person cannot read is a
 /// window they cannot find. The owner's direction replaced that: *a missing
@@ -58,11 +58,45 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 /// The variant is removed rather than kept and never produced. A refusal nothing
 /// can cause is a refusal every caller must still handle and no test can reach,
 /// which is the shape this repository spent 2026-09-30 removing elsewhere.
+///
+/// **Then [`NotAside::NoPlace`] arrived the same day, and it is not that shape
+/// wearing a new name.** The two were compared on exactly the question that
+/// retired the first: can a test cause it? `Unnamed` could not, once the preview
+/// was headed with the window's own name. `NoPlace` can — a surface really is on
+/// no Place while it maps, and `the_place_of_the_window` answers `Option` because
+/// of that and not as a courtesy. So the count went back to two on purpose, and
+/// this paragraph exists because a reader who saw only the sentence above would
+/// reasonably think the lesson had been forgotten within the hour.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum NotAside {
     /// The panel refused it — it is already there, or it is not.
     #[error(transparent)]
     ThePanel(#[from] NotPutAside),
+    /// The compositor has no Place for this surface, so it cannot say which
+    /// surface the window is on. Saving a Place nobody chose would send it back
+    /// to the wrong one.
+    ///
+    /// **Not a fallback, and the reason is sharper than the removed variant's.**
+    /// A patch alone is ambiguous: `(4200, 0)` exists on every Place, so a
+    /// preview saved without one restores the window to whichever surface the
+    /// person happens to be looking at. Defaulting to `Place::FIRST` would make
+    /// that a window quietly coming back somewhere else, which looks like a bug
+    /// in the panel while the panel does exactly what it was told — and every
+    /// test would stay green, because every other fixture has one Place.
+    ///
+    /// `alo_canvas::Place` has no `Default` precisely so this case has to be
+    /// written rather than skipped: the type refuses to let a call site not
+    /// answer *which Place*. This refusal is that answer being **unavailable**
+    /// rather than unasked.
+    ///
+    /// **And unlike `Unnamed`, this one is reachable**, which is the whole of why
+    /// one went and this arrives in the same change.
+    /// [`crate::Server::the_place_of_the_window`] answers `Option` because a real surface
+    /// can really not be on a Place: while it is mapping, or on a display that
+    /// has gone away. A refusal a test can cause is a guarantee; a refusal
+    /// nothing can cause is a cost every caller pays for nothing.
+    #[error("this window is not on a Place this compositor knows")]
+    NoPlace,
 }
 
 impl crate::Server {
@@ -90,7 +124,14 @@ impl crate::Server {
     ) -> Result<WindowId, NotAside> {
         let window = self.as_a_model_window(frame, at);
         let id = window.id();
-        panel.put_aside(&window, zoom, privacy)?;
+        // **Which Place, asked of the display rather than assumed.** This is the
+        // only side that knows: the panel cannot ask a canvas, so the Place
+        // arrives as an argument the same way the zoom does. `Option` is refused
+        // rather than defaulted — see `NotAside::NoPlace`.
+        let place = self
+            .the_place_of_the_window(frame)
+            .ok_or(NotAside::NoPlace)?;
+        panel.put_aside(&window, zoom, place, privacy)?;
         // Only now. See this method's own note, and `putting_aside`'s.
         let _ = self.set_window_minimized(frame, true);
         Ok(id)

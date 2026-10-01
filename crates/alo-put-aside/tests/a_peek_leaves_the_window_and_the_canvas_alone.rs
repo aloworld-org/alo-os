@@ -33,7 +33,7 @@
 
 use std::path::Path;
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot, TheView};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_dock::windows::Windows;
@@ -46,6 +46,15 @@ use alo_put_aside::{NotPutAside, Panel, Privacy};
 /// The zoom the person was at — never [`Zoom::LIFE_SIZE`], which is the default.
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place the window was on.
+///
+/// Deliberately not `Place::FIRST`, because FIRST is what a fresh machine looks at and a
+/// fixture using it would pass for a panel that saved no Place and answered with the default.
+/// The same reason the zoom fixture is 1_750 rather than LIFE_SIZE.
+fn a_place() -> Place {
+    Place::numbered(7).expect("7 is not zero, so it is a Place")
 }
 
 fn window(id: u64, app: &str, called: &str, x: i64) -> Window {
@@ -83,6 +92,7 @@ fn a_desk_with_one_put_aside() -> (Windows, Panel) {
         &mut panel,
         WindowId::numbered(1),
         a_zoom(),
+        a_place(),
         Privacy::Ordinary,
     )
     .unwrap();
@@ -151,6 +161,7 @@ fn choosing_a_peeked_preview_proposes_when_its_place_is_taken() {
         &mut panel,
         peeking,
         a_view(),
+        a_place(),
         Some(WindowId::numbered(2)),
         an_offer(),
     )
@@ -184,6 +195,7 @@ fn choosing_a_peeked_preview_restores_when_its_place_is_free() {
         &mut panel,
         peeking,
         a_view(),
+        a_place(),
         None,
         an_offer(),
     )
@@ -235,6 +247,7 @@ fn choosing_without_a_peek_refuses_and_leaves_the_desk_alone() {
             &mut panel,
             alo_dock::Peeking::at_nothing(),
             a_view(),
+            a_place(),
             None,
             an_offer(),
         ),

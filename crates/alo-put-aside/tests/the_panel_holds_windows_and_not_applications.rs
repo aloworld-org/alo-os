@@ -10,7 +10,7 @@
               the same exemption `alo-dock`'s own test modules take, with its words"
 )]
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::on_the_canvas::{Patch, Spot};
 use alo_dock::window::{AppId, HowItSits, Window, WindowId};
 use alo_put_aside::{Chosen, HowItShows, NotPutAside, Panel, Privacy};
@@ -24,6 +24,15 @@ use alo_put_aside::{Chosen, HowItShows, NotPutAside, Panel, Privacy};
 /// stored no zoom at all.
 fn a_zoom() -> Zoom {
     Zoom::of(1_750).expect("1_750 thousandths is inside the canvas's own bounds")
+}
+
+/// The Place the window was on.
+///
+/// Deliberately not `Place::FIRST`, because FIRST is what a fresh machine looks at and a
+/// fixture using it would pass for a panel that saved no Place and answered with the default.
+/// The same reason the zoom fixture is 1_750 rather than LIFE_SIZE.
+fn a_place() -> Place {
+    Place::numbered(7).expect("7 is not zero, so it is a Place")
 }
 
 /// A window of an application, called something, sitting somewhere.
@@ -54,6 +63,7 @@ fn three_windows_of_one_application_are_three_previews() {
         .put_aside(
             &window(1, "Browser", "Launch strategy", 0),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -61,6 +71,7 @@ fn three_windows_of_one_application_are_three_previews() {
         .put_aside(
             &window(2, "Browser", "Pricing", 1_000),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -68,6 +79,7 @@ fn three_windows_of_one_application_are_three_previews() {
         .put_aside(
             &window(3, "Browser", "The wiki", 2_000),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -121,11 +133,17 @@ fn collapsing_touches_no_window_at_all() {
         .put_aside(
             &window(1, "Docs", "Launch strategy", 0),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
     panel
-        .put_aside(&window(2, "Mail", "Anna", 900), a_zoom(), Privacy::Ordinary)
+        .put_aside(
+            &window(2, "Mail", "Anna", 900),
+            a_zoom(),
+            a_place(),
+            Privacy::Ordinary,
+        )
         .unwrap();
 
     let before = panel.previews().to_vec();
@@ -173,6 +191,7 @@ fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
         .put_aside(
             &window(1, "Docs", "Launch strategy", 0),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -194,10 +213,12 @@ fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
 fn a_window_is_not_put_aside_twice() {
     let mut panel = Panel::new();
     let it = window(1, "Docs", "Launch strategy", 0);
-    panel.put_aside(&it, a_zoom(), Privacy::Ordinary).unwrap();
+    panel
+        .put_aside(&it, a_zoom(), a_place(), Privacy::Ordinary)
+        .unwrap();
 
     assert_eq!(
-        panel.put_aside(&it, a_zoom(), Privacy::Ordinary),
+        panel.put_aside(&it, a_zoom(), a_place(), Privacy::Ordinary),
         Err(NotPutAside::ItIsAlreadyThere)
     );
     assert_eq!(panel.holding(), 1);
@@ -220,6 +241,7 @@ fn a_window_that_is_not_there_is_its_own_refusal() {
         .put_aside(
             &window(1, "Docs", "Launch strategy", 0),
             a_zoom(),
+            a_place(),
             Privacy::Ordinary,
         )
         .unwrap();
@@ -239,7 +261,9 @@ fn bringing_back_gives_the_patch_it_was_put_aside_at() {
     let mut panel = Panel::new();
     let it = window(1, "Docs", "Launch strategy", 4_200);
     let was_at = it.at();
-    panel.put_aside(&it, a_zoom(), Privacy::Ordinary).unwrap();
+    panel
+        .put_aside(&it, a_zoom(), a_place(), Privacy::Ordinary)
+        .unwrap();
 
     let back = panel.bring_back(WindowId::numbered(1)).unwrap();
     assert_eq!(

@@ -17,7 +17,7 @@
 //! right afterwards — a rule about what does *not* happen is only held by a test whose
 //! subject is the absence.
 
-use alo_canvas::Zoom;
+use alo_canvas::{Place, Zoom};
 use alo_dock::window::{Window, WindowId};
 
 use crate::preview::Preview;
@@ -74,12 +74,14 @@ impl Panel {
         &mut self,
         window: &Window,
         zoom: Zoom,
+        place: Place,
         privacy: Privacy,
     ) -> Result<(), NotPutAside> {
         if self.holds(window.id()) {
             return Err(NotPutAside::ItIsAlreadyThere);
         }
-        self.previews.insert(0, Preview::of(window, zoom, privacy));
+        self.previews
+            .insert(0, Preview::of(window, zoom, place, privacy));
         Ok(())
     }
 

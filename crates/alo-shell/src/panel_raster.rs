@@ -249,6 +249,7 @@ mod tests {
                 .put_aside(
                     &a_window(u64::try_from(which).unwrap() + 1),
                     Zoom::LIFE_SIZE,
+                    alo_canvas::Place::FIRST,
                     Privacy::Ordinary,
                 )
                 .unwrap();

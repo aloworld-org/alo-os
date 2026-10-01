@@ -78,10 +78,11 @@ pub fn put_aside(
     panel: &mut Panel,
     id: WindowId,
     zoom: Zoom,
+    place: alo_canvas::Place,
     privacy: crate::whether_it_is_private::Privacy,
 ) -> Result<(), NotPutAside> {
     let window = windows.window(id).ok_or(NotPutAside::ItIsNotThere)?;
-    panel.put_aside(window, zoom, privacy)?;
+    panel.put_aside(window, zoom, place, privacy)?;
     // **After the panel has accepted it, never before.** If the state changed first and
     // the panel then refused, the window would be put aside with nothing holding its
     // preview — a window a person cannot see and cannot get back, which is the one
