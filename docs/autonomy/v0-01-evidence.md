@@ -318,10 +318,11 @@ does, favourites and an overflow area — has no code at all.
 `along.rs` for the two orientations. [ADR
 0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
 withdrew that promise and fixed the Dock to the bottom edge; `along.rs` is
-deleted, and the Settings surface this entry said would let a person choose an
-edge is not owed any more, because there is no edge to choose. What the Dock's
-settings section does ask — whether it gives way when a window needs the room —
-is its own promise at v0.5.*
+deleted. **The owner reversed that decision the next day and the edge choice is
+a promise again**, now its own entry above — so the Settings surface is owed
+after all, and `along.rs` is the deletion that has to be answered rather than a
+file nobody needs. What the Dock's settings section also asks — whether it gives
+way when a window needs the room — is its own promise at v0.5.*
 
 ### Switching between windows, and between applications
 
@@ -799,19 +800,61 @@ things and says *the person picks*, so half of it answered is a promise owed.
 
 ### Full screen
 
-**Still owed:** **all of it.** `alo-shell` cannot put a window into full screen:
-`window_mode::Mode` carries `Normal`, `Maximized` and `InAShare`, and none of
-them fills the screen — a maximised window stops above the Dock and leaves it
-visible. The `XdgShellHandler` implementation answers move, maximize, minimize,
-unmaximize, resize and reposition and has **no `fullscreen_request` or
-`unfullscreen_request`**, so a client that asks to fill the screen is answered
-with silence rather than a refusal. The shell is honest about it rather than
-claiming it: `crates/alo-shell/tests/support/wm_capabilities.rs` pins the
-advertised set to exactly maximise and minimise and asserts that adding
-fullscreen to it fails, which is the test that changes when this is built.
-Where the work is: task 6 of `docs/autonomy/putting-a-window-aside.md`, whose
-status names this as the prerequisite it is blocked on and leaves it with the
-rest of the shell wiring.
+**Shown by:** `crates/alo-shell/tests/a_window_that_fills_the_screen/mod.rs`,
+`crates/alo-shell/tests/support/wm_capabilities.rs`
+
+**Still owed:** **somebody seeing it on a display.** The mechanism landed on
+2026-10-01 in `7c236e0` and the entry that stood here — *all of it*, `Mode` has
+no case that fills the screen, no `fullscreen_request`, a client answered with
+silence — was true until that morning and is kept above in this sentence rather
+than deleted, because what a ledger entry said is how a reader judges what it
+says now.
+
+What is built and runs: `window_mode::Mode::FillingTheScreen`;
+`fullscreen_request` and `unfullscreen_request` on the `XdgShellHandler`;
+`Fullscreen` advertised in `wm_capabilities`; and the shell answering
+`a_window_is_filling_the_screen()`, which `desktop_raster` asks before drawing
+the Dock and the panel, so both give way whatever the person chose about the
+Dock hiding. Four tests in
+`crates/alo-shell/tests/a_window_that_fills_the_screen/mod.rs`, three of them
+driving a real client through the protocol rather than the shell's own entry,
+because the request is the thing that was missing: a client asking is answered;
+`Fullscreen` is sent without `Maximized`; leaving returns to normal rather than
+to maximised; and the shell knows, through the trusted entry.
+
+**Why that is not a tick.** Every one of those runs under a nested compositor.
+A nested session shows that a client talks to us and cannot show that a person
+sees a window take a real display — the rule this plan holds itself to. The
+owed half is the same owed half as tasks 38 and 39: a machine with a real
+display.
+
+### Where the Dock goes
+
+**Still owed:** **all of it, and the code was taken out rather than never
+written.** `alo-dock` has no edge at all: `crates/alo-dock/src/changes.rs` says
+so in its own words — *there is no `edge` field and no `displays` field* — and
+its tests pin the absence, one asserting that a `dock.toml` naming an edge loads
+with the edge **ignored** rather than refused, so that a file written by an
+earlier release still reads. ADR 0076's remedy removed the field on 2026-09-29;
+the owner reversed the decision on 2026-09-30 and the field has not come back.
+
+**So the honest state is a promise restored in the record and removed from the
+code**, which is the reverse of the usual gap and worth naming as such: the
+tests that would change when this is built are the two in `changes.rs` that
+currently assert an edge is ignored. A reader checking whether this is built
+will find tests passing, and they pass *because* it is not.
+
+The default is not the question. Bottom remains the default and is what the
+layout does today; what is owed is that a person may choose left, right or top,
+and that the band works in both orientations rather than being a horizontal bar
+turned sideways.
+
+**Where the work is:** `docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md`,
+whose amendment of 2026-09-30 is both the authority for the promise and the
+statement of what it waits on — the owner's *schedule the missing designs now*.
+No plan carries a task for it yet, and that is the gap this names rather than
+hides: the crate is `alo-dock`, lane B's under the settings plan's row in the
+lane table, and the task belongs in a plan before it belongs to a machine.
 
 ### Reaching the Dock over a full-screen window
 
@@ -828,7 +871,7 @@ the distinction this ledger exists to keep. Where the work is: task 6 of
 
 ## What this audit found
 
-**The audit in figures: 52 promises, 2 shown whole, 40 shown in part, 10 with no
+**The audit in figures: 53 promises, 2 shown whole, 41 shown in part, 10 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
