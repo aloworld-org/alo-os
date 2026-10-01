@@ -319,6 +319,114 @@ cannot demonstrate.
   Ambiguity between agents is solved by one agent per tree, never by
   inventing an author and no longer by a trailer.
 
+## How work reaches `main`, and what is forbidden because it is slow
+
+*Written 2026-10-01, from a day that landed ten changes before 07:33 and
+five in the thirteen hours after. Every rule below names the cost that
+produced it, because a rule whose reason is not written down is one the
+next lane relitigates.*
+
+**Required:**
+
+- **Push before you gate, and gate once.** A push is not a landing: the
+  merge is the scarce thing and a branch on the remote costs nobody
+  anything. A gate on an unpublished branch cannot prove the tree it
+  measured is the tree anyone else can fetch.
+- **Push early even when it is unfinished.** Work that is only on a
+  local disk *looks absent*, and a lane that reads absence as
+  abandonment takes a crate that has an owner — which is the fault the
+  lane table exists to prevent and which happened twice in one day.
+- **Stack your own dependent work.** Branch off your own branch rather
+  than waiting for it to land. Waiting for your own pull request is
+  serialisation a lane does to itself.
+- **A change to a signature and the call sites it breaks land
+  together.** Split across two pull requests, `main` does not compile
+  between the two merges, whichever lands first. **This overrides crate
+  ownership**: it is not a question about who owns a file, it is a
+  question about whether `main` builds, and *work a task needs is part
+  of that task* never had to reach it.
+- **Run the cheap checks before spending a gate**, and have that
+  pre-check **name what it does not run**. Formatting, clippy over the
+  **whole workspace**, and rustdoc with warnings denied cost four
+  minutes and catch what otherwise costs a full gate to discover. An
+  unlisted omission is how *the cheap checks passed* becomes a claim
+  somebody leans on.
+- **Delete a landed branch by asking whether its pull request merged.**
+  The queue squash-merges, so a landed branch is never reachable from
+  `main` and `git branch --merged` reports nothing. Fifty-six local
+  branches, two detected.
+- **A report names the fields that would have to agree, and names their
+  disagreement as its own outcome.** *A single number cannot be caught
+  being wrong; three that must be consistent can.* One lane's report
+  read `EXIT=0` beside four link errors, because nested quoting was
+  eaten at a shell boundary and the exit code it echoed was not the exit
+  code of what it measured — and it was caught **because** the fields
+  contradicted each other. Another put an inline `$(git rev-parse HEAD)`
+  in a line whose whole purpose was confirming which commit it was on,
+  and it printed **another repository's** sha: the check and the fault
+  were the same line, and nothing contradicted anything. **The second is
+  worse.** A verdict that agrees with itself while being wrong is
+  invisible; one whose own fields disagree announces itself.
+- **Before diagnosing why something did not happen, check that it was
+  asked for.** A branch pushed at 07:37Z was gated four times — 57, 61,
+  89 and 97 minutes — a spread measured, a cold cache diagnosed,
+  `CARGO_BUILD_JOBS` checked, 3.9 GB of RAM and two of six cores found,
+  a rustdoc breakdown produced, a ninety-minute hold asked for and
+  granted, an empty queue closed for two hours twenty, and a lane
+  declared structurally unable to land. **No pull request had ever been
+  opened.** Every number was real and not one of them was the reason.
+  This is neither a check that could not fail nor a measurement reported
+  as a property: it is **an elaborate correct diagnosis with a missing
+  step underneath that nobody was looking at**, and it was found from
+  outside in a single query.
+- **A gate states which subject it answered.** The status on a pull
+  request's head and the status on the queue commit are two different
+  claims: *these gates passed on this tree*, which stays true whatever
+  `main` does, and *these gates passed on the tree that will become
+  `main`*, which does not. Protection is `strict: false` precisely
+  because the queue builds its own commit, so `main is unmoved` is
+  load-bearing for the second and over-strict for the first. **A head
+  status must not read as *cleared to land*** — it names the machine and
+  the suite, so a green head beside an absent queue status is legible
+  rather than reassuring. And where a flag chooses between the strict
+  and the loose reading, **the strict one is the default**: a flag that
+  fails open is a flag that will be forgotten in the direction that
+  matters.
+
+**Forbidden:**
+
+- **Editing a checkout while a gate owns it.** The gate passes and
+  refuses to attest, and what is lost is a real nine-of-nine verdict
+  about a tree nobody will land. A lock plus a pre-edit hook, not
+  resolve: *deliberately not touching the tree* was said twice in one
+  evening by the lane that then touched it.
+- **Gating a branch whose local head is not the remote's.** A gater
+  that resets to `origin` destroys a committed-but-unpushed rebase —
+  and a clean tree hides it, because a clean tree is exactly what an
+  unpushed commit leaves. It then gates the old tree and **passes.**
+- **Asking another lane to hold the queue as routine.** A hold is for a
+  measured and named reason, and never twice for the same cause: a lane
+  that needs one per landing is an argument for changing the check, not
+  a protocol. *A hold nobody asked for is not a hold, it is a stall.*
+- **Hand-typing a status that CI can produce.** Every manual step in
+  the landing path serialises every machine behind one turn. Eleven
+  faults were found across three lanes on 2026-10-01 and **not one was
+  in the product** — all of them were in the apparatus that exists to
+  make a hand-typed status trustworthy.
+- **Publishing a measurement as a standing property.** Say what was
+  measured and when. *Twelve consecutive green runs* was true at 09:00
+  and false by 19:00, after it had been written into an ADR as its
+  central evidence.
+- **Sending another lane a remedy instead of the measurement that
+  produced it.** A fix that does not work is worse than no fix: it
+  converts *untested hypothesis* into *we tried that*. One filesystem,
+  measured on one machine, was offered as the cause for three.
+- **Reporting a change as tested on a subset of the gates.** Three of
+  nine run and called tested; four crates measured and three checked.
+  **In both cases the narrower measurement was correct**, which is what
+  makes this family invisible: *a scope that lives in the method and not
+  in the sentence is a scope the reader cannot check.*
+
 ## Map
 
 - `README.md` — what alo OS is, and what it is not.
