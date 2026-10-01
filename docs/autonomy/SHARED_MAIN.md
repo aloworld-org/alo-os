@@ -369,6 +369,63 @@ documentation change that genuinely breaks the workspace's tests. The version
 that could work observes what a run actually opened rather than predicting it,
 and that is a real piece of work rather than a midnight one.
 
+### Tree identity serialises every lane, so gate last
+
+**The condition is a still main, and that is the price of the mechanism.** Every
+landing changes `main`, so every landing invalidates **every other lane's gated
+tree**. With three lanes it is **N sequential gate-and-land cycles with no
+overlap** — the repository absorbs about one change per gate duration however
+many machines are pointed at it.
+
+**And it is worse than unhelpful capacity: a lane that does not hold the turn
+cannot usefully gate at all.** A gate started before you hold the turn is
+answering a question about a tree the queue will never build. So the two machines
+not holding the turn are idle **by construction** rather than merely unspent.
+*Short of turns, not capacity* was the laptop lane's phrase and it understates
+it: the capacity is not slow, it is unusable.
+
+**Which gives the order, and the order matters more than the rule:**
+
+```
+1. commit
+2. wait for the turn — the queue empty, no hold standing against you
+3. rebase onto current main
+4. push the branch
+5. gate
+6. attest, enqueue alone, inherit
+```
+
+**The push moved ahead of the gate, and the reason is the rule below about
+refusing an unpublished head.** A gate that refuses unless `HEAD` equals
+`origin/BRANCH` cannot run before the push, so the order follows from it rather
+than from preference. **A push is not a landing** — the scarce thing is the queue
+turn, and a branch on the remote costs nobody anything. What it buys is that the
+tree gated is provably the tree pushed, instead of two shas somebody compares
+afterwards and remembers comparing.
+
+**Gate at four, never before. The gate is the last thing before the push, not the
+first thing after the commit.** This was the habit from before any of this, and
+on 2026-10-01 the Mac lane killed **two fifty-minute runs inside forty minutes**
+for it: one invalidated when the governance rules landed, one when the panel's
+mint test did. Both were producing verdicts for trees that could not land. The
+laptop lane's own attestation died the same way the same hour. **A rule neither
+lane wrote down and both paid for twice.**
+
+**The hold that makes it work has to be asked for.** Engineering for tree
+identity means excluding every other lane for a gate's duration, and the
+mechanism does not carry that requirement inside it — both lanes supplied it by
+habit, and habit is not a shape. **A hold nobody was asked for is not a hold, it
+is a stall**, and the last time this was left to habit it cost five hours of
+mutual waiting built on a false premise. Ask, name a deadline, and say *tell me
+no rather than hold silently*.
+
+**What to measure, since this is the real constraint rather than the gate's
+duration:** three lanes have three machines and one turn. Four times on the night
+this was written somebody reached for **capacity** — a lane killing a passing run
+to gate for another, a lane offering its machine, a lane offering to send its
+scripts — and not one of those created a turn. **A shared constraint nobody has
+measured gets answered with whatever is easy to give.**
+
 ### While something is queued, the machine belongs to it
 
 **A queue entry has one window and it is sixty minutes.** Inside it the queue
@@ -477,6 +534,77 @@ file that way, `.gitattributes` normalised it to LF *in the commit*, and the
 gate — which copied the working tree — tested bytes that would never reach
 `main`. The branch was refused for a fault that did not exist in the work being
 merged, and the same trap catches any test that compares exact file content.
+
+### Refuse the ambiguous state rather than choosing which hole to have
+
+**Two lanes' gate scripts were measured against each other on 2026-10-01 and
+each had the other's safety.** Neither was simply wrong; they had chosen opposite
+defaults and neither had written the choice down.
+
+```
+reads the live checkout     nothing can be destroyed
+                            the verdict may be about a tree no commit names
+forces with reset --hard    the verdict is always about a committed tree
+                            unpushed work is discarded, and then it passes
+```
+
+The second is the worse of the two and worth naming precisely: a `reset --hard`
+over an unpushed rebase gates the **pre-rebase** tree and answers **nine of
+nine**. Every line of that log is true. **It is the only fault in this family
+that would survive review** — a reviewer reading the output cannot catch it, and
+only comparing the gated tree to the pushed tree can.
+
+**The answer is neither default: refuse the state, and gate nothing.** But it
+takes **two** comparisons, because the two scripts fail in opposite directions
+and neither comparison alone covers both:
+
+```
+the working tree is clean       so the verdict is about a commit
+HEAD equals origin/BRANCH      so the verdict is about a commit anybody can fetch
+```
+
+**The second is the one that is easy to miss, and it is the one that produces the
+correct-looking success.** The forcing lane's hole was live with a **clean** tree:
+the rebase was *committed and unpushed*, so `git status --porcelain` was empty and
+`reset --hard origin/BRANCH` would still have discarded a real commit. *A clean
+tree cannot lose anything to a reset* is false — it can lose every commit that
+has not been pushed. A dirty-tree check alone passes that state happily.
+
+**Each lane had built exactly the half that made its own hole invisible to it.**
+The forcing gate satisfied the first by force and violated the second. The
+live-checkout gate satisfied the second by never moving and violated the first.
+
+So the ambiguity to make unconstructible is not *is this committed* but **is the
+thing about to be gated the thing the author means** — and a gate refuses unless
+that state is already published, so no verdict can be about a tree its author
+cannot point at.
+
+```
+GATES-REFUSED: the working tree is not clean, so a verdict would not be about any commit
+GATES-REFUSED: head <sha> is not published as origin/<branch> (<sha>), so a verdict
+               would be about a tree nobody else can fetch
+GATES-ABOUT:   head <sha> tree <sha> branch <name>
+```
+
+**Use `rev-parse --verify --quiet` for that comparison.** Plain `rev-parse` prints
+its argument back when it cannot resolve a ref, so the failure case yields a
+*string* rather than an error — which is how this repository's one retracted
+attestation happened on 2026-09-30, and it reappeared in the first version of
+this very guard. The proof run showed a branch name where a sha belonged.
+
+**And print what the verdict is about**, because that line is what makes either
+hole visible: under a live-checkout gate it would differ from any commit, and
+under a forcing gate it would differ from what was pushed. The tree hash is also
+what the inheritance rule compares, so a run that does not print it leaves
+nothing to compare and the comparison becomes a thing somebody remembers.
+
+**This is the same shape as `Place` having no `Default`.** A default is a value
+somebody chose and a caller can fail to override; an absence cannot be overridden
+wrongly. Here: a state nobody can be in beats a state handled two ways. Both
+lanes reached for *which hole do I prefer* and the answer was **make the
+ambiguity unconstructible**. *The two holes were found by the laptop lane and
+this one measuring each other's scripts; the refusal is this lane's.*
+
 
 The rule is the same one the integration turn already follows for `main`: gate
 the thing that will actually land.
