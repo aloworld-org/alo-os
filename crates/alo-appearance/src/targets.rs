@@ -23,9 +23,29 @@
 //!
 //! **Logical pixels**, like everything else a layout is written in. A display
 //! converts them through its own scale, so a dense screen draws the same target
-//! sharper rather than smaller — and a target expressed only in a person's text
-//! size is half the size it should be on such a screen, which is the way this
-//! is violated without anybody noticing.
+//! sharper rather than smaller.
+//!
+//! **That conversion happens once, elsewhere, and nothing here repeats it.** It
+//! is `alo_displays::Scale::laid_out`, applied by `room_at` in
+//! `alo_shell::screens` at the rendering boundary. A floor in this file is a
+//! logical figure and stays one; a surface that multiplied it by the display's
+//! scale as well would reserve twice the room on a dense screen.
+//!
+//! **Where that would be caught, and where it would not.**
+//! `alo_shell::screens`' own tests do exercise a scale other than one — two
+//! screens, neither at a hundred per cent, each sized from its own glass — and
+//! they hold `place.room()` to `laid_out(pixels)` and to *not* the raw pixels.
+//! So **the conversion itself is tested.** What is not tested at any scale but
+//! one is everything downstream of it: layout, pointer hit-testing, control
+//! exclusion and this drag band. A double conversion in a surface would pass
+//! today, and the gap is one step further along than it looks.
+//!
+//! *Written this way after the first draft of this paragraph claimed that no
+//! test in `alo-shell` uses a scale other than one. That was measured as `no
+//! test calls `Scale::per_cent` with a number` and stated as a fact about
+//! scales — and the tests that do use another scale get it from
+//! `worked_out_for` and a screen's glass instead. The narrower claim is the
+//! true one and it is the one that locates the gap.*
 //!
 //! **Accessibility may enlarge these and may never reduce them.** The direction
 //! belongs to the measure rather than to a convention around it, which is why
@@ -109,14 +129,43 @@ impl DragBand {
     }
 }
 
-/// A floor in this display's pixels, which accessibility may raise and may not
+/// A floor in **logical** pixels, which accessibility may raise and may not
 /// lower.
 ///
-/// `scale` is hundredths — 100 is one, 150 is half again — and covers both the
-/// display's own conversion and the person's text size, multiplied by the
-/// caller before it gets here. **A scale below one returns the floor
-/// unchanged**, because these are floors: a person who made their text smaller
-/// did not ask for a target they cannot hit.
+/// `scale` is hundredths — 100 is one, 150 is half again — and is **the
+/// person's text or accessibility scale only.**
+///
+/// # It is not the display's conversion, and it said it was until 2026-10-01
+///
+/// This read *covers both the display's own conversion and the person's text
+/// size*. That was wrong, and wrong in the direction that doubles: a display's
+/// conversion is applied **once**, at the rendering boundary —
+/// `alo_displays::Scale::laid_out`, called by `room_at` in
+/// `alo_shell::screens` — so a caller who multiplied by it here would convert
+/// twice, and a reviewer reading the old sentence would have believed they were
+/// obliged to.
+///
+/// *That conversion divides rather than multiplies — `pixels * 100 / per_cent`
+/// — turning a screen's own pixels into the logical room a layout is written
+/// in. Checked rather than described, because the first draft of this paragraph
+/// named it as a free function in a module when it is a method on a type: a
+/// path nobody could follow, inside a sentence whose only purpose is that a
+/// reader can go and check where the conversion happens.*
+///
+/// The owner's requirement, in their words: *preserve at least 44 × 24 logical
+/// pixels of unobstructed drag area; convert to physical coordinates once at
+/// the established rendering boundary.* Where that conversion already happens,
+/// it is reused. **No additional multiplication by display scale.**
+///
+/// *The earlier wording came from this lane telling the owner a handle needed
+/// display scaling. It did not; the conversion was already there and had been
+/// read off a type annotation rather than measured. The ruling that followed
+/// carried the mistaken premise, and the owner removed the clause on
+/// 2026-10-01 once the premise was corrected.*
+///
+/// **A scale below one returns the floor unchanged**, because these are floors:
+/// a person who made their text smaller did not ask for a target they cannot
+/// hit.
 #[must_use]
 pub fn at_least(floor: u32, scale: u32) -> u32 {
     let raised = u64::from(floor)

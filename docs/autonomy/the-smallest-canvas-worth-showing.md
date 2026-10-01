@@ -614,7 +614,13 @@ Frame positions and the camera survive a session ending and starting again.
 
 ### 10. The walk, which is also the film's sequence
 
-**Status:** **Done, 2026-09-30.** **This closes the plan.** **Depends on:** 1–9.
+**Status:** **Done, 2026-09-30.** **Depends on:** 1–9.
+
+*This said **this closes the plan** until 2026-10-01. It does not close it any
+more: the owner restored the Dock's edge choice to v0.01 and directed the work
+into this plan, which is task 11 below. The closing claim is kept rather than
+deleted, because a reader who remembers this plan as finished needs to see what
+reopened it.*
 
 Two halves, as `v0-5-the-shell-plan.md` task 14 established for the shell's own
 walk. The **raster** half is
@@ -654,3 +660,67 @@ out of the published report.
 - **Constraint:** the report says what the raster is evidence of — what this
   compositor drew, and not what a display showed — unless it was run on a
   machine with one.
+
+### 11. The Dock at any edge a person chooses
+
+**Status:** **Open, and blocked on design.** **Depends on:** the left, right and
+top designs below, which do not exist. **Owner:** the `alo-dock` lane — this PC,
+lane B, under the settings plan's row in
+[the lane table](a-new-machine-becomes-a-lane.md). **Written 2026-10-01 by the
+owner's direction.**
+
+`docs/features.md` promises it at **[v0.01]**: *the bottom edge by default, and
+the person may choose bottom, left, right or top*, working **in both
+orientations rather than being a horizontal bar someone turned sideways**.
+[ADR 0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+withdrew that promise on 2026-09-29 and the owner reversed the withdrawal within
+a day; bottom is now the default rather than the only.
+
+**Measured before it was written, and it is a removal rather than a gap.**
+`alo-dock` has no edge at all. `crates/alo-dock/src/changes.rs` says in its own
+words that *there is no `edge` field and no `displays` field*, and two of its
+tests assert that a `dock.toml` naming an edge loads with the edge **ignored**
+rather than refused, so a file from an earlier release still reads. `along.rs`,
+which held the two orientations, is deleted. **So a reader checking whether this
+is built finds tests passing, and they pass because it is not** — those two
+tests are what changes when this is done.
+
+- **Acceptance:** a person may put the Dock on the bottom, top, left or right,
+  and it is laid out **for** that edge rather than rotated into it — a vertical
+  band is not a horizontal one turned sideways. Labels, the overflow area and
+  the reveal path all behave at every edge, and `alo_dock::revealing`'s regions
+  are read from the surface's own edge rather than assumed to be the bottom.
+  Where the Dock and the panel of put-aside windows would claim the same edge,
+  the collision is resolved by a rule in the code and tested at every pair, not
+  left to whichever is laid out second. A `dock.toml` that names an edge is
+  **honoured** rather than ignored, and the two tests asserting the opposite are
+  replaced in the same change.
+- **Constraint:** every figure is derived from `alo_dock::measures` and nothing
+  from the design file is copied into code — the source check
+  `no_figure_from_the_design_reaches_the_code` in `alo-shell` already forbids
+  it for the panel and this is held to the same rule. The reveal keeps **no
+  timers**, which `docs/features.md` promises at v0.01 for the reason that a
+  timer makes the behaviour depend on how fast somebody can move. Per-display
+  placement stays at **[v0.5]** and is not in this task.
+- **Still owed before this can start:** the designs. See below.
+
+#### The designs this task waits on
+
+**The left, right and top variants do not exist, and the instruction to schedule
+them did not create them.** The owner's direction of 2026-10-01 names this as a
+real blocker rather than a dependency to work around. What each variant needs:
+
+- **resting** — the band at that edge with nothing hovered
+- **overflow** — more to show than the edge has room for
+- **hover-revealed** — the band revealed over a window that covers it
+- **full-screen** — what a window filling the screen leaves of it
+- **shared-edge** — the Dock and the put-aside panel claiming one edge
+
+**The side variants must carry a usable alo Bar interaction of their own rather
+than the horizontal composer rotated.** A composer laid out along a short
+vertical edge is not the same control, and rotating it is the thing the *both
+orientations* clause in the promise exists to forbid.
+
+**Nothing in this task is startable from the bottom variant alone.** The Figma
+file has that one; building the other three from it would be this lane deciding
+a design, which the fifth law gives to the design rather than to the code.
