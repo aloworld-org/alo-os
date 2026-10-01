@@ -61,6 +61,37 @@ that boots.
    The review question for every feature: *can the person choose this,
    knowing what it costs?* (ADR 0064)
 
+   **What this law reaches, and what it does not.** It is about a choice
+   a person **has or was promised** — anything this repository has told
+   them they may decide. It is not a duty to make every decision
+   configurable: a shell that offered a setting for each of its own
+   behaviours would be unusable, and some of its best decisions are ones
+   nobody is offered. The reveal has no delay before it appears and no
+   setting for one, because a delay makes reaching a surface depend on
+   how fast somebody can move, which is the one thing a person with a
+   tremor or a trackball cannot control. That takes nothing away; it was
+   never offered, and offering it would take something away from them.
+   **So: never offering is not taking away. Withdrawing is.** What
+   `docs/features.md` promises is the record of what was offered, which
+   is what makes this checkable rather than a matter of opinion.
+
+   **And "nobody has chosen it yet" is not a reason.** Before a machine
+   boots, no choice has been exercised — not one accessibility setting,
+   not the dock's, not the indicator's. A reason that turns on nobody
+   having used a thing yet is not an argument about that thing; it is an
+   argument that this law does not apply until somebody boots, which is
+   the whole period in which we are deciding. *Whatever the reason given
+   for it* is not addressed to bad reasons. Nobody needs protecting from
+   those. It is addressed to good ones.
+
+   *Both paragraphs were added on 2026-09-30, after
+   [ADR 0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+   was found to have withdrawn a promised choice seven days after this
+   law landed, citing it zero times, and to have given that exact reason
+   for doing so. The law was not wrong; it was unreadable on the
+   question, because its headline is broader than its body and two
+   careful readers disagreed about which bound.*
+
 ## The gate — nothing is done until all of this passes
 
 There is no "and we will add the tests afterwards". A change that ships
@@ -175,6 +206,41 @@ cannot demonstrate.
 - **Scope is gated.** Nothing gets built that isn't in
   `docs/features.md` with a tier, inside the current release, and
   outside Non-goals.
+- **Work a task needs is part of that task.** If finishing something
+  already in scope turns out to require sub-work nobody listed — a
+  caller that does not exist, a gesture wired to the wrong mechanism, a
+  module with no consumer, a test that never ran — **build it, in the
+  same change, and say in the record that you did.** Do not file it for
+  later, do not hand it to another lane, and above all do not let the
+  parent task read as closeable without it. *A plan lists what somebody
+  foresaw; a task is done when it works.*
+  **This does not loosen the gate above and must not be read as doing
+  so.** One question separates them: *does this add a promise to a
+  person, or make an existing promise true?* A classifier nothing calls,
+  a raster nothing draws, a gesture that hides a window where the
+  promise says it goes in the panel — those make a promise true, and
+  they are yours to build without asking. Full screen, a four-edge dock,
+  selecting several frames at once — those *are* promises, and they need
+  a line in `docs/features.md` with a tier before one line of them is
+  written. **When the answer is not obvious, it is scope**: the cost of
+  asking is a message, and the cost of guessing wrong is a release
+  nobody decided.
+  **And the change says which answer it got, in one sentence.** Not the
+  result, the judgement: *this makes an existing promise true, because
+  X*. A reader tomorrow can then disagree with the reasoning rather than
+  only discover the outcome. This clause exists because the sentence
+  above is the one under most pressure when nobody is awake to ask, and
+  the failure mode is not a lane building something forbidden — it is a
+  lane finding *obvious* easier to reach than *ask*, because asking
+  costs a night. *Proposed by the Mac lane on 2026-09-30, before three
+  lanes ran unsupervised on the rule for eight hours.*
+  **Sub-work you cannot do is reported the minute it is found**, not at
+  the end. A task blocked on something outside its own crate is blocked
+  from that minute, and other lanes may be resting on it — a missing
+  full screen in the shell blocked five clauses across two lanes for a
+  day because it was written down nowhere. *Added 2026-09-30, after a
+  plan's eight tasks were all model-complete, two of them marked done,
+  and nothing any of them described had reached a screen.*
 - **The design is followed, not approximated.** What the interface
   looks like is settled in the alo OS design file; `docs/design/`
   records what was measured off it and what the owner decided where it
@@ -194,6 +260,20 @@ cannot demonstrate.
   the pixels draws the same interface sharper, not half as big. A
   control that falls off a small panel, or swims on a large one, is a
   bug and not a tuning problem.
+  **What this forbids is a raw pixel figure, not a named measure.**
+  `alo_dock::measures::ICON` is 48 and breaks nothing: it is a *logical*
+  measure, declared once with what it answers to, and converted for each
+  display through that display's scale. So there are three honest kinds
+  of number — a **logical measure**, put in a measures file and scaled
+  at the boundary; a **proportion** of the display; and a **rule** that
+  was never a number at all, like *flush to the edge* or *the whole
+  edge*. There is a fourth kind, and it is the one to watch: a bound
+  that is **another surface's current extent**, which is neither a
+  measure nor a proportion and can only be asked for. The fault this
+  rule names is a figure that reaches a display without passing through
+  its scale — and the usual way it arrives is scaled by the person's
+  text size *only*, which looks derived and is half the size it should
+  be on a dense screen.
 - **User-facing strings are externalized (i18n) from day one.** The
   first target is all 24 official EU languages, and any language
   somebody contributes after that. Hardcoded English is a bug, and

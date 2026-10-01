@@ -1,6 +1,79 @@
 # ADR 0076 — the Dock is fixed to the bottom edge, and answers one question
 
-**Status:** accepted, 2026-09-29, by the owner.
+**Status:** accepted 2026-09-29; **amended twice on 2026-09-30.**
+
+**The title of this record is now wrong and is deliberately not changed.** The
+Dock is no longer *fixed* to the bottom edge — bottom is its **default** and a
+person may choose bottom, left, right or top. A record is renamed only by
+breaking every link to it, so the correction lives in the text where a reader
+arrives rather than in a filename that would send them nowhere.
+
+What the two amendments did: the first wrote down what this record cost and
+retired the reason it gave for taking it; the second carries the owner's
+reversal. Everything about *what the Dock is for* is untouched by both.
+
+## What this cost, which this record did not say
+
+**This record withdrew a choice a person had been promised, and did not say so.**
+`docs/features.md` carried *the person decides where it goes — bottom, left,
+right or top, chosen in Settings*. That is gone, and a person who would have put
+their dock down the side of a wide screen — which both of the systems they are
+coming from allow — no longer can.
+
+The fifth law says *a change that takes a choice away from the person is a bug,
+whatever the reason given for it*. **It landed on 2026-09-22, seven days before
+this record, which cites it zero times.** Nobody noticed until three lanes read
+the laws against their own crates on 2026-09-30.
+
+**The reason given here is retired, and it is the part that generalises.** This
+record argued that nobody had chosen an edge because nothing has booted the
+image, so the cost fell on a contract rather than on a person. But before a
+machine boots, *no* choice has been exercised — not one accessibility setting,
+not the dock's own hiding setting. That reason does not argue about docks; it
+argues that the fifth law does not bind until somebody boots, which is the whole
+period in which this product is being decided. `CLAUDE.md` now says so, and the
+argument is not available to the next record that reaches for it.
+
+**The remedy was wrong, and the owner has reversed it.** On 2026-09-30, within
+the hour of the above:
+
+> My earlier bottom-only ruling was too restrictive. **Bottom should be the
+> default; the person can choose bottom, left, right, or top.** Design each
+> orientation properly, including labels, overflow, the alo Bar, activation
+> regions, and conflicts with other controls.
+>
+> Restore the Dock's edge choice in v0.01 and schedule the missing designs now.
+> **The absence of side and top variants is a design dependency to resolve,
+> rather than a reason to move an existing v0.01 promise to v1.**
+>
+> Keep per-display Dock placement at its existing v0.5 tier. That is a separate
+> capability from choosing an edge for the current display.
+
+So this record's decision is now **bottom is the default rather than the only
+edge**, and the four-edge choice returns to `docs/features.md` at `[v0.01]`.
+Per-display placement stays at `[v0.5]`: choosing an edge for the display you
+are on and arranging docks across two displays are different capabilities.
+
+**What this record got wrong was the remedy, not the reasoning.** Everything
+below about *what the Dock is for* stands untouched — the three questions, the
+restatement, and the removals that follow from holding the Dock to one job.
+**None of that ever required one edge.** It answered *a dock that moves to any
+edge does not survive the canvas* by removing the choice, where the answer was a
+default that a person can change. That difference is exactly the fifth law's: a
+default is not a choice taken away, and a withdrawal is.
+
+**And the missing design was a dependency, not a verdict.** The design file has
+no side or top variants — measured 2026-09-30, all 163 Dock instances are the
+same bottom bar. This record treated that absence as settling the question. The
+owner has treated it as work to schedule. *An absent design is a dependency, not
+a verdict*, which is the general form of what went wrong here and is worth more
+than the particular.
+
+*The paragraph above this one, written earlier the same day, argued only that the
+promise should have been deferred rather than withdrawn. It is kept rather than
+replaced: it is how the question became answerable, and the distinction in it —
+a withdrawn promise is gone, a deferred one is owed — is what made the reversal
+reachable. The owner went further than the argument asked.*
 
 ## What forced it
 
