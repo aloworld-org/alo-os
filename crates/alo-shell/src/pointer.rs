@@ -108,7 +108,7 @@ impl Server {
             return Ok(());
         }
         let on_the_plane = self.surfaces.on_the_plane(location);
-        if self.surfaces.move_window_pointer(on_the_plane)?
+        if self.a_drag_moves_the_frame(on_the_plane)?
             || self.surfaces.resize_window_pointer(on_the_plane)?
         {
             if let Some(pointer) = self.surfaces.pointer.as_mut() {

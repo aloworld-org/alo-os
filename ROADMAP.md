@@ -843,6 +843,107 @@ exists* still has to be verified on hardware.
 They were interleaved with the band above until this ordering was corrected,
 which made a completely consistent rule look like work being taken out of turn.
 
+#### The canvas and its Places — moved into v0.01 on 2026-09-30
+
+**The owner put the full canvas experience into this release.** Not a minimal
+Place and not a deferred panel: *the canvas owns Place identity; all applications
+and windows participate in it*, and completion requires **cross-Place movement and
+restoration, per-Place persistence, World navigation, fixed controls, and window
+recovery**.
+
+`docs/features.md` moved first, because `CLAUDE.md` binds building to that file
+and not to this one. Six promises changed tier — five from `[v1]` and **one from
+`[v1.1]`**, *a frame can be dragged out of one Place and into another*, which the
+owner named as required — and **one promise was written that had never existed**:
+the World. `docs/decisions/0065` has defined `World → Place → Object` since it was
+written and no line in `features.md` ever carried the World, so a decision record
+described a level of the interface the only list of what gets built had never
+heard of.
+
+**What is already built, and it is a real head start.** The v0.5 canvas plan
+closed on 2026-09-30 with ten tasks: the plane and camera, hit testing at any
+zoom, dragging, resizing, pan on three roads, zoom and *Show all*, the canvas as a
+list for a screen reader, arrangement restored across a session, and a walk that
+draws it. **All of that is one Place.** What this band adds is the level above it.
+
+**What does not exist at all**, measured 2026-09-30 rather than assumed:
+
+- **No canvas `Place` type anywhere in this repository.** The word is already
+  spent four times — `alo-agentd` (a socket's directory), `alo-looking` (where a
+  machine asks about an update), `alo-dividing` (a half or a quarter of a screen),
+  and `alo-dock`'s `APlace` (where an icon sits on the bar) — and **none of them
+  is the endless surface**. `alo_dock::Window` carries a patch and a
+  `HowItSits` and nothing else, so a window genuinely does not know which surface
+  it is on.
+- **No World.** No type, no navigation, no promise until today.
+- **No cross-Place anything**, because there is nothing to cross between.
+
+- [ ] ★ **A Place is a thing, and the canvas owns what one is** — the fifth
+      meaning of a word already spent four times, and the only one entitled to it:
+      a Place is the endless surface, not a directory, not a screen division and
+      not a spot on the Dock. Every window and every application carries which
+      Place it is on, because a patch alone is ambiguous — `(4200, 0)` exists on
+      every surface
+- [ ] ★ **The World** — zoom out past a Place and every Place is seen at once;
+      zoom into one and it fills the screen. **The same gesture as moving across a
+      Place**, so there is no second way to navigate
+- [ ] ★ **A frame moves between Places** — dragged out to the World and dropped
+      into another, and the work goes with it, **by pointer through the World or by
+      keyboard with *Move to Place***, so neither road is the only road
+- [ ] ★ **A restore travels; it does not relocate** — restoring a minimised window
+      returns it to **the Place it was already on** and takes the view there.
+      **Nothing is relocated by a restore.** Its own box because the two were
+      conflated while this band was being written: *cross-Place restoration* and *a
+      frame dragged into another Place* read as one sentence and are two acts — one
+      changes where a window lives, the other changes where the person is looking
+- [ ] ★ **Every Place is where it was left** — position, size, camera and the
+      panel's own state, per Place rather than per session. Extends the v0.5
+      task that restores one canvas
+- [ ] ★ **The fixed controls, and a window that can always be got back** — Dock,
+      status area and the expanded minimized-window panel are a **set**, and a
+      frame keeps a usable part of its name outside every one of them. Recovery is
+      rechecked when the display, the scale, the Dock's position or the panel's
+      state changes, and a recovery that moves a frame shows the move and records
+      where it was
+- [ ] **The minimized-window panel, per Place** — which Place a put-aside window
+      belongs to, restoring across Places, the collapse choice remembered per
+      Place, and grouping by Place **without hiding individual windows behind an
+      application icon**
+
+**The plan is `docs/autonomy/the-canvas-and-its-places.md`**, written as connected
+stages rather than a list, because every one of these rests on the first.
+
+**The owner ruled on cross-Place movement on 2026-09-30, and it settled a
+conflation rather than a tier.** Asked whether *cross-Place movement* meant a frame
+changing which Place it lives on or only the view travelling to a window's Place,
+they answered **both, in v0.01** — dragging a window through the World into another
+Place **or** *Move to Place* by keyboard — **and that restoring a minimised window
+returns it to its existing Place without relocating it.** The two are separate boxes
+above for that reason.
+
+**Three promises were deliberately not moved**, and saying which is the point of
+this paragraph rather than an aside. *Tidy this canvas*, *Every screen is a view
+onto the canvas* and *A panel out of view costs nothing* stay at `[v1]`: the owner
+named five things completion requires and none of them is these. **Moving them
+would have been the lane widening its own scope under cover of an instruction**,
+which is the opposite of what was asked.
+
+**And one is left at `[v1.1]` and reported rather than decided.** *A Place remembers
+time* — drag the ribbon and the canvas is as it was on Tuesday — is the only canvas
+promise still above this release. The owner's words were *the complete agreed canvas
+experience belongs in v0.01; do not defer parts of it to v1.1*, and this lane cannot
+tell whether time travel is part of the agreed experience or a separate capability
+that happens to be about a canvas: it is not among the five completion requirements,
+and it rests on the snapshots **undo** takes rather than on Places at all. **So it is
+named here rather than moved or left silently.** If it belongs in v0.01 it is one
+line to move and the owner's to say.
+
+**And one tier is wrong in the other direction.** *Every canvas also answers as a
+list* is `[v1]` and **was built at v0.5** — task 7 of the closed canvas plan, with
+tests. It is recorded here rather than quietly re-tiered, because a promise built
+below its own tier is a different fault from one built above it and neither is
+this lane's to settle alone.
+
 - [ ] ★ **The GPU works on first boot, where there is one** — drivers and runtime
       pinned together, no driver installation, no CUDA archaeology.
       **Acceleration, not an entry price** (`docs/features.md`): alo OS runs on

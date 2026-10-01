@@ -2,6 +2,7 @@
 #![cfg(target_os = "linux")]
 
 mod a_frame_is_never_lost;
+mod a_frame_is_never_lost_while_dragging;
 mod a_frame_is_where_it_looks;
 mod cursor;
 mod direct_keyboard;
@@ -9,6 +10,7 @@ mod direct_pointer;
 mod direct_seat;
 mod dragging_a_frame;
 mod every_frame_answers_as_a_list;
+mod every_window_is_on_a_place;
 mod input;
 mod interactive_resize;
 mod output_metadata;

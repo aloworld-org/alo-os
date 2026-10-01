@@ -48,7 +48,9 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 pub mod camera;
+pub mod place;
 pub mod plane;
 
 pub use camera::{Camera, NotZoomed, Zoom};
+pub use place::Place;
 pub use plane::{At, Frame, Size, Span};

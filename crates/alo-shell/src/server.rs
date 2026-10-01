@@ -42,6 +42,13 @@ pub struct Server {
     /// or a desktop is decided in this crate: `crate::server_desk` says what
     /// that means and which crate answers which question.
     pub(crate) desk: crate::server_desk::Desk,
+    /// **Where the fixed controls are, as the last draw laid them out.**
+    ///
+    /// Held here because a drag has to ask, and the Dock's bounds otherwise exist
+    /// only inside the raster path at draw time — which is why
+    /// `crate::canvas_never_lost`'s rule had no caller until this field existed.
+    /// `crate::canvas_fixed_controls` carries the reasoning and the units.
+    pub(crate) fixed_controls: crate::canvas_fixed_controls::FixedControls,
     /// **What a person is looking at on the canvas.**
     ///
     /// The plane moves under the viewport, so this is the whole of what a pan
@@ -82,6 +89,7 @@ impl Server {
             socket,
             presentation: Default::default(),
             switch_order: Default::default(),
+            fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),
             camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),

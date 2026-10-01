@@ -7,6 +7,21 @@ use smithay::{
     utils::{Logical, Point},
 };
 
+/// Where a drag would put a frame, and which frame it holds.
+///
+/// **Named rather than returned as a pair**, because a pair of a surface and a
+/// point is two facts a caller has to keep together by hand — and clippy's
+/// `type_complexity` refused the tuple, which was the right refusal for the
+/// wrong reason. The point means nothing without the surface it is about: a
+/// caller holding one and not the other has a position and no frame.
+#[derive(Debug)]
+pub(crate) struct Proposed {
+    /// The frame this drag holds.
+    pub(crate) root: WlSurface,
+    /// Where the pointer would put it, before any rule has looked.
+    pub(crate) at: Point<i32, Logical>,
+}
+
 /// A compositor-owned drag, detached from client pointer delivery.
 pub(crate) struct Move {
     /// Only this mapping may move.
@@ -58,14 +73,29 @@ impl Surfaces {
         true
     }
 
-    /// Move before scene hit testing. Out-of-range motion changes no drag state.
-    pub(crate) fn move_window_pointer(
+    /// Where this drag would put the frame, without putting it there.
+    ///
+    /// **Proposes rather than commits, and that split is the whole of why this
+    /// function changed shape.** The owner ruled on 2026-09-30: *keep the last
+    /// valid position while the pointer continues moving; never accept an invalid
+    /// placement and then pull the frame back.* This used to compute the position
+    /// and call `crate::window_placement::set` in the same breath, so there was no
+    /// moment between proposing and committing for a rule to run in — and a
+    /// correction afterwards is exactly the snap-back the owner forbade.
+    ///
+    /// So the answer comes back here and `crate::Server` decides. The rule lives
+    /// there because it needs the frame's name band and every frame on the plane,
+    /// neither of which this type can see.
+    ///
+    /// [`None`] where no drag is held. The surface is returned with the point
+    /// because the caller has no other way to know which frame this drag owns.
+    pub(crate) fn where_this_drag_would_put_it(
         &mut self,
         location: Point<f64, Logical>,
-    ) -> Result<bool, InputError> {
+    ) -> Result<Option<Proposed>, InputError> {
         self.prune_window_move();
         let Some(movement) = &self.window_move else {
-            return Ok(false);
+            return Ok(None);
         };
         let position = movement.origin + (location - movement.pointer);
         if ![position.x, position.y]
@@ -74,8 +104,10 @@ impl Surfaces {
         {
             return Err(InputError::InvalidPointer);
         }
-        crate::window_placement::set(&movement.root, Some(position.to_i32_round()));
-        Ok(true)
+        Ok(Some(Proposed {
+            root: movement.root.clone(),
+            at: position.to_i32_round(),
+        }))
     }
 
     /// Consume drag buttons; the final release ends ownership without replay.

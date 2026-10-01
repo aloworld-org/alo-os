@@ -50,6 +50,107 @@ it is not done, and a sentence too short to do that is refused.
 
 ## Every v0.01 promise, one at a time
 
+### Every goal is a canvas
+
+**Shown by:** `crates/alo-shell/tests/one_plane_under_one_viewport.rs`,
+`crates/alo-shell/tests/client_lifecycle.rs`,
+`crates/alo-shell/tests/the_canvas_walked.rs`,
+`crates/alo-shell/tests/the_nested_fixtures.rs`,
+`docs/autonomy/updates/the-canvas-walked.md`
+
+The plane and the camera, the viewport that does not move under them, a press
+reaching the right surface at three zooms and two pans, dragging, resizing,
+panning on three roads, zoom and *Show all*, and ten steps of a walk read back off
+a real parent's frames.
+
+**Still owed:** **everything above one Place.** The plan that is closed is one
+endless surface, and this promise says *a Place*. There is no canvas `Place` type
+in this repository — the word is spent four times on other things — so *where the
+person put them* is currently answerable only within a single surface. See task 1
+of the canvas plan.
+
+### Tidy this canvas
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. Alignment and distribution of a selection, and the
+same asked of alo as a proposal shown before anything moves. **The propose-then-
+approve half already exists** — `crates/alo-put-aside/src/proposing.rs` shows a
+placement before anything moves — and what does not exist is a proposal that
+carries a **set** rather than one frame, which is the hard part of this promise
+rather than the alignment arithmetic. Reached v0.01 on 2026-09-30 because the
+frames promise had already moved with *several can be taken at once* in it,
+leaving one operation at two tiers. Where
+the work is: task 3 of `docs/autonomy/the-canvas-and-its-places.md` gives it the
+selection to act on; nothing yet names the arrangement proposal itself.
+
+### The World, and moving between Places
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. **There is no World** — no type, no navigation, and no
+promise in `docs/features.md` until the day this entry was written, though
+`docs/decisions/0065` has defined `World → Place → Object` since it was written.
+Blocked on Place identity existing at all. The increment is task 2 of `docs/autonomy/the-canvas-and-its-places.md`.
+
+### Frames, dragged and resized like a design canvas
+
+**Shown by:** `crates/alo-shell/tests/client_lifecycle.rs`,
+`crates/alo-shell/tests/the_frame_in_numbers.rs`,
+`docs/autonomy/updates/the-canvas-walked.md`
+
+The name moves a frame at three zooms and two pans and a press in its content does
+not; all eight edges and corners resize with the application told its size during
+the drag; the four double-headed arrows say which. ADR 0071 settled the shape.
+
+**Still owed:** *several can be taken at once*, *guides and snapping line them
+up*, *fit the Place to the screen* as distinct from *Show all*, *fill the screen
+with what is selected*, and *double-click to work inside*. **And each of those is
+promised with a keyboard form**, which is a larger gap than it reads: there is no
+keyboard road to move or resize a frame at all, and the three keyboard forms this
+repository has are zoom in, zoom out and *Show all*.
+
+### A frame arrives the shape its work is
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. An application declares no opening shape anywhere, and
+*remembered per Place once the person changes it* needs both a Place to remember
+per and a store to remember in. The arranging crate is the store and has no Place. The increment is task 5 of `docs/autonomy/the-canvas-and-its-places.md`.
+
+### A frame can be dragged out of one Place and into another
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it, and it is two roads rather than one — through the World
+by pointer, and by keyboard with *Move to Place*, ruled by the owner on
+2026-09-30. **And task 4 is the thing this promise is not:**
+restoring a minimised window returns it to the Place it was already on and
+relocates nothing, and the two are separate tasks because they read as one
+sentence and are two acts. The increment is task 3 of `docs/autonomy/the-canvas-and-its-places.md`.
+
+### The habits people arrive with still work
+
+**Shown by:** `crates/alo-shell/tests/every_road_a_keyboard_takes.rs`,
+`crates/alo-shell/tests/client_lifecycle.rs`
+
+The three canvas actions that exist — zoom in, zoom out and *Show all* — and the
+window ones a person arrives with: next window, previous window, close.
+
+**Still owed:** *switch desktops becomes move between Places*, which needs Places.
+And *cycle frames* is currently *cycle windows* — the same ring, not yet a ring
+per Place.
+
+### Every application lives in a Place
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. A dock window carries a patch and a how-it-sits and
+**nothing that says which surface it is on**, so an application does not live
+in a Place today because there is no Place for it to live in. This is the promise
+that makes *one world rather than a modern half and an old half* true, and it
+rests entirely on task 1. The increment is task 1 of `docs/autonomy/the-canvas-and-its-places.md`.
+
 ### The colours come from a source this repository can read
 
 **Shown by:** `crates/alo-appearance/tests/a_palette_with_one_source.rs`,
@@ -727,7 +828,7 @@ the distinction this ledger exists to keep. Where the work is: task 6 of
 
 ## What this audit found
 
-**The audit in figures: 44 promises, 2 shown whole, 37 shown in part, 5 with no
+**The audit in figures: 52 promises, 2 shown whole, 40 shown in part, 10 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
@@ -761,10 +862,24 @@ Forty-one promises. **Two are shown with nothing owed on them**, thirty-three
 are shown in part with the rest named above, and **six have no evidence at
 all**. The six are the finding, and they are not one kind of thing:
 
-- **Three have no line anywhere in this repository, and nobody has scheduled
-  them**: *copy, cut and paste*, *the GPU works on first boot*, and *it never
-  nags*. Each is a v0.01 promise with no crate, no test and no report — the same
+***And seven more arrived the same day, when the owner put the full canvas
+experience into v0.01.*** *Three are shown in part — the closed canvas plan built
+one Place and its tests are named above — and **four name nothing**: the World, a
+frame arriving the shape its work is, a frame dragged between Places, and every
+application living in a Place. Each names the task that is its increment in*
+`docs/autonomy/the-canvas-and-its-places.md`*. That is 44 promises to 51 and five
+with no evidence to nine, and this line moved with them because the figures above
+are checked.*
+
+- **All seven that name nothing**: *copy, cut and paste*, *the
+  GPU works on first boot*, *it never nags*, and the four the canvas brought on
+  2026-09-30 — *the World*, *a frame arrives the shape its work is*, *a frame
+  dragged out of one Place and into another*, and *every application lives in a
+  Place*. Each is a v0.01 promise with no crate, no test and no report — the same
   kind the roadmap's audit found six of, one at a time, over seven readings.
+  **The difference between the first three and the last four is that the four
+  name the task that is their increment** in
+  `docs/autonomy/the-canvas-and-its-places.md`, and the three point nowhere.
 - **One is a standing rule nothing checks**: *anything an agent verb can do, a
   person can do by hand*. It is the check on every verb anybody proposes, and no
   test walks the verbs asking it.
