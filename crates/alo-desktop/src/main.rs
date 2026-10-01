@@ -246,6 +246,7 @@ mod running {
             DesktopFrame {
                 dock: &self.dock,
                 put_aside: &self.put_aside,
+                filling_the_screen: false,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

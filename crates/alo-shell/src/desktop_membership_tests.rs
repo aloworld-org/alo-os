@@ -187,6 +187,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     offer: nothing_offered(),
                     windows: &[],
                     put_aside: crate::desktop_testing::nothing_put_aside(),
+                    filling_the_screen: false,
                 },
                 None,
                 Some(ApprovalFrame {

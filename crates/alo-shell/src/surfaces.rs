@@ -301,9 +301,17 @@ impl CompositorHandler for Surfaces {
             });
         } else if !window.surface.is_initial_configure_sent() {
             window.surface.with_pending_state(|pending| {
+                // **Fullscreen joined these on 2026-09-30, when it became
+                // true.** It was deliberately absent before — the set said
+                // exactly what this compositor could do, and a capability
+                // advertised without a handler is a promise a client acts on
+                // and is answered with silence. `tests/support/wm_capabilities`
+                // pinned the set to refuse exactly that, and it changes here
+                // with the thing it was refusing rather than ahead of it.
                 pending.capabilities.replace([
                     smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Maximize,
                     smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Minimize,
+                    smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Fullscreen,
                 ]);
             });
             window.surface.send_configure();
@@ -399,6 +407,28 @@ impl XdgShellHandler for Surfaces {
     }
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
         self.client_window_maximize(surface, false);
+    }
+    /// **Answered, where until 2026-09-30 it was met with silence.**
+    ///
+    /// Smithay's default implementation is empty, so a client asking to fill
+    /// the screen received neither a configure nor a refusal — and a
+    /// compositor that advertises nothing and answers nothing is
+    /// indistinguishable, from the client's side, from one that is broken.
+    ///
+    /// The output is ignored. A client may name which screen it wants to fill;
+    /// this compositor fills the one the window is on, because a request to
+    /// move a window to another display is a *move* and is not something a
+    /// window asks for on its own behalf (ADR 0071's reasoning, one request
+    /// over).
+    fn fullscreen_request(
+        &mut self,
+        surface: ToplevelSurface,
+        _output: Option<smithay::reexports::wayland_server::protocol::wl_output::WlOutput>,
+    ) {
+        self.client_window_full_screen(surface, true);
+    }
+    fn unfullscreen_request(&mut self, surface: ToplevelSurface) {
+        self.client_window_full_screen(surface, false);
     }
     /// **Refused outright, as ADR 0071 decided** — and it lands with the gesture
     /// that replaces it, never before.

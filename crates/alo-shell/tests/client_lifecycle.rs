@@ -4,6 +4,7 @@
 mod a_frame_is_never_lost;
 mod a_frame_is_never_lost_while_dragging;
 mod a_frame_is_where_it_looks;
+mod a_window_that_fills_the_screen;
 mod cursor;
 mod direct_keyboard;
 mod direct_pointer;

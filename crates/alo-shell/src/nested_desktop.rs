@@ -81,6 +81,13 @@ pub struct DesktopFrame<'a> {
     /// the crate that knows the display. An empty panel is the true answer on a
     /// desk where nothing has been put aside, not a placeholder.
     pub put_aside: &'a alo_put_aside::Panel,
+    /// Whether a window on this display is filling the screen, so the Dock and
+    /// the panel give way to it.
+    ///
+    /// Handed in for the reason the rest are: the caller is the only one that
+    /// knows which display these windows are on. A Server answers it with
+    /// a_window_is_filling_the_screen.
+    pub filling_the_screen: bool,
 }
 
 impl Nested {
@@ -274,6 +281,7 @@ pub(crate) fn frame_pictures(
             offer: desktop.offer,
             windows: desktop.windows,
             put_aside: desktop.put_aside,
+            filling_the_screen: desktop.filling_the_screen,
         },
         &mut labels.fonts,
         size,

@@ -48,6 +48,19 @@ pub(crate) enum Mode {
     Normal,
     /// Use the whole submitted output without normal-size hints.
     Maximized,
+    /// The same area, and the shell's own furniture gives way to it.
+    ///
+    /// **The area is not what distinguishes this from [`Self::Maximized`]** —
+    /// both are the whole submitted output, because that is what this
+    /// compositor hands the window modes. Two things do.
+    ///
+    /// A client is told `Fullscreen` rather than `Maximized`, which is what
+    /// makes an application hide its own chrome; and the shell stops drawing
+    /// the Dock and the panel over it, which is what
+    /// `docs/design/the-alo-dock.md` means by *true full screen covers the
+    /// Dock*. Without the second, this would be a flag a client reads and a
+    /// person could not see the difference.
+    FillingTheScreen,
     /// Sit exactly in the share `alo-dividing` gave this window.
     ///
     /// **The area is carried rather than computed.** It was a side and half an
@@ -148,7 +161,7 @@ impl Surfaces {
         for window in &mut self.window_modes {
             window.pending = match window.mode {
                 Mode::Normal => window.pending,
-                Mode::Maximized => size.map(|size| {
+                Mode::Maximized | Mode::FillingTheScreen => size.map(|size| {
                     (
                         configure(&window.role, window.mode, size),
                         Anchor::Fixed((0, 0)),
@@ -193,7 +206,7 @@ impl Surfaces {
         }
         let Anchor::Fixed(origin) = anchor;
         crate::window_placement::set(surface, Some(origin.into()));
-        if window.mode == Mode::Maximized {
+        if matches!(window.mode, Mode::Maximized | Mode::FillingTheScreen) {
             window.pending = None;
         } else if window.mode == Mode::Normal {
             self.window_modes
@@ -215,6 +228,7 @@ fn configure(role: &ToplevelSurface, mode: Mode, size: (i32, i32)) -> Serial {
         pending.size = Some(size.into());
         for flag in [
             xdg_toplevel::State::Maximized,
+            xdg_toplevel::State::Fullscreen,
             xdg_toplevel::State::TiledLeft,
             xdg_toplevel::State::TiledRight,
             xdg_toplevel::State::TiledTop,
@@ -225,6 +239,13 @@ fn configure(role: &ToplevelSurface, mode: Mode, size: (i32, i32)) -> Serial {
         match mode {
             Mode::Maximized => {
                 pending.states.set(xdg_toplevel::State::Maximized);
+            }
+            // **Fullscreen alone, not Fullscreen and Maximized.** A client told
+            // both has to decide which it is, and XDG's own answer is that
+            // fullscreen supersedes — so saying both is saying nothing extra
+            // and inviting two readings of one window.
+            Mode::FillingTheScreen => {
+                pending.states.set(xdg_toplevel::State::Fullscreen);
             }
             Mode::InAShare(_) => {
                 // A share abuts the output's edges or another share's on every

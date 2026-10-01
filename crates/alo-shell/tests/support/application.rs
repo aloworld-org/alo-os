@@ -56,6 +56,13 @@ pub struct Events {
     pub resizing: Vec<bool>,
     /// Maximized flags received in successive configurations.
     pub maximized: Vec<bool>,
+    /// Whether each configure said the window fills the screen.
+    ///
+    /// Recorded separately from `maximized` rather than folded into it:
+    /// the two are different states and a window told both would be two
+    /// readings of one window, which is a thing a test here has to be
+    /// able to catch.
+    pub fullscreen: Vec<bool>,
     /// Exact tiled-state wire values, retaining duplicates for assertions.
     pub tiled: Vec<Vec<u32>>,
     /// Cooperative close requests received; the fixture never closes implicitly.
@@ -258,6 +265,11 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Events {
                     .maximized
                     .push(states.as_chunks::<4>().0.iter().any(|bytes| {
                         u32::from_ne_bytes(*bytes) == xdg_toplevel::State::Maximized as u32
+                    }));
+                state
+                    .fullscreen
+                    .push(states.as_chunks::<4>().0.iter().any(|bytes| {
+                        u32::from_ne_bytes(*bytes) == xdg_toplevel::State::Fullscreen as u32
                     }));
                 state
                     .resizing

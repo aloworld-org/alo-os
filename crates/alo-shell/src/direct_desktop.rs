@@ -181,6 +181,10 @@ impl LoopInput for Desk<'_> {
         let windows = server.window_areas();
         let mut frame = self.desktop.now();
         frame.windows = &windows;
+        // The server's half, like the windows above: a desktop's own
+        // state cannot know that a window has taken the whole screen,
+        // and the Dock gives way to one that has.
+        frame.filling_the_screen = server.a_window_is_filling_the_screen();
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
