@@ -3,7 +3,7 @@
 use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
     delegate_compositor, delegate_data_device, delegate_pointer_gestures, delegate_shm,
-    delegate_viewporter, delegate_xdg_shell,
+    delegate_text_input_manager, delegate_viewporter, delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -26,6 +26,7 @@ use smithay::{
             XdgToplevelSurfaceData,
         },
         shm::{ShmHandler, ShmState},
+        text_input::TextInputManagerState,
         viewporter::ViewporterState,
     },
 };
@@ -101,6 +102,30 @@ pub(crate) struct Surfaces {
         reason = "holding the global alive is the whole purpose; the effect arrives through the renderer's own commit handler"
     )]
     viewporter: ViewporterState,
+    /// `zwp_text_input_v3`: how text a person did not type on a keyboard reaches
+    /// an application.
+    ///
+    /// **Held and never read**, like `viewporter` and `gestures`. Smithay sets
+    /// text-input focus from the keyboard focus itself, so nothing of ours
+    /// follows it — which is the opposite of the clipboard, where a selection is
+    /// held by nobody unless something calls `set_data_device_focus`.
+    ///
+    /// **This is half of a pair, and the half that is safe to advertise.** An
+    /// application binds this to say *I will take composed text*; an input method
+    /// binds `zwp_input_method_v2` to produce it, and an application is never told
+    /// it has the text input until one exists — `smithay`'s own seat code:
+    /// *only notify on `enter` once we have an actual IME.*
+    ///
+    /// So this cannot fire yet, and
+    /// [ADR 0083](../../../docs/decisions/0083-an-input-method-is-a-grant-not-a-global.md)
+    /// says why the other half is absent: an input method receives every keystroke
+    /// before the application does, so who may become one is a grant a person
+    /// makes rather than a global anybody may bind.
+    #[expect(
+        dead_code,
+        reason = "holding the global alive is the whole purpose; focus is smithay's own"
+    )]
+    text_input: TextInputManagerState,
     /// CPU-backed application buffers.
     shm: ShmState,
     /// XDG shell role and configure tracking.
@@ -184,6 +209,7 @@ impl Surfaces {
             // when the pinch is over the plane instead of over a frame.
             gestures: PointerGesturesState::new::<Self>(display),
             viewporter: ViewporterState::new::<Self>(display),
+            text_input: TextInputManagerState::new::<Self>(display),
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
             place: alo_canvas::Place::FIRST,
@@ -564,3 +590,4 @@ delegate_xdg_shell!(Surfaces);
 
 delegate_pointer_gestures!(Surfaces);
 delegate_viewporter!(Surfaces);
+delegate_text_input_manager!(Surfaces);

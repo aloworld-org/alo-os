@@ -461,6 +461,18 @@ impl Application {
         self.surface.commit();
     }
 
+    /// Whether the compositor offered this connection a global by this name.
+    ///
+    /// Asked by interface rather than by index — a test naming a number would be
+    /// asserting the order globals happen to be advertised in.
+    #[allow(dead_code, reason = "used by the protocol tests, not by the examples")]
+    pub fn was_offered(&self, interface: &str) -> bool {
+        self.events
+            .globals
+            .iter()
+            .any(|(_, offered, _)| offered == interface)
+    }
+
     /// Say how big this surface should be drawn, through `wp_viewporter`.
     ///
     /// **`allow` rather than `expect`, because this file has two builds.** The

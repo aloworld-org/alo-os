@@ -27,6 +27,7 @@ mod putting_a_window_aside;
 mod resizing_from_the_edges;
 mod shortcut_dispatch;
 mod support;
+mod text_a_person_did_not_type_on_a_keyboard;
 mod the_canvas_is_where_they_left_it;
 mod the_world_is_a_step_out;
 mod window_activation;
