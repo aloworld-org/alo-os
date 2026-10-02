@@ -154,7 +154,19 @@ has a ladder to extend rather than a mode to add.
 
 ### 3. A frame moves between Places, by pointer and by keyboard
 
-**Status:** blocked on 2 only; 1 is done. *Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on 2026-09-30 — a status that outlived the thing it described, hiding available work from three lanes for two days.*
+**Status:** **Done, 2026-10-02 — both roads.**
+
+*Move to Place* ships as `Action::MoveTheWindowToTheNextPlace` on `⊞`+`Shift`+`.`,
+and the pointer road is `crates/alo-shell/src/canvas_dragged_into_a_place.rs`: take
+hold of a frame by its name, zoom out until the World appears, let go over a tile.
+Shown by `crates/alo-shell/tests/move_to_place/mod.rs` and
+`crates/alo-shell/tests/dragged_into_another_place/mod.rs`.
+
+*This line read `blocked on 2 only` until 2026-10-02, after **both** roads had
+landed. The Done mark was written twice, on the two branches that built them, and
+lost both times resolving a conflict — which is the hazard this lane had already
+recorded about carrying another task's status on a feature branch, met again by
+the lane that recorded it. **A status edit belongs in a change of its own.*** *Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on 2026-09-30 — a status that outlived the thing it described, hiding available work from three lanes for two days.*
 
 Dragged out to the World and dropped into another Place, **and the work goes with
 it** — the promise that moved two tiers, from `[v1.1]`. **And by keyboard, with
