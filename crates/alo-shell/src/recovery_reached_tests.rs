@@ -40,6 +40,7 @@ fn a_desktop_that_will_not_start<'a>(
         windows: &[],
         put_aside: crate::desktop_testing::nothing_put_aside(),
         filling_the_screen: false,
+        display_scale: 100,
         dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings,

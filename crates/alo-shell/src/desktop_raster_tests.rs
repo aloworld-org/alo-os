@@ -59,6 +59,7 @@ fn drawn_with(
             windows,
             put_aside: crate::desktop_testing::nothing_put_aside(),
             filling_the_screen: false,
+            display_scale: 100,
         },
         &mut labels.fonts,
         size,

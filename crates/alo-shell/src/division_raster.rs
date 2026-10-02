@@ -59,29 +59,58 @@ pub(crate) struct DivisionPicture {
 }
 
 /// One logical area as pixels on a display of this scale.
+///
+/// # Hundredths, and why a whole-number factor was not enough
+///
+/// `scale` is hundredths — 100 is one to one, 150 is half again — matching
+/// `alo_displays::Scale`. It took a whole-number factor until 2026-10-02, and a
+/// whole number **cannot carry a fractional display scale**: 125 and 150 are
+/// ordinary sizes and both floor to 1, so a dense screen that is not exactly
+/// double would be drawn as though it were one to one.
+///
+/// *The first attempt at this change converted hundredths to a factor at the
+/// call site — `scale / 100` — committing in code the exact fault the comment
+/// being written beside it was warning about. The conversion belongs where the
+/// multiplication is and nowhere else.*
 fn in_pixels(area: Area, scale: i32) -> Rectangle<i32, Physical> {
     let at: Point<i32, Physical> = (
-        i32::try_from(area.x())
-            .unwrap_or(i32::MAX)
-            .saturating_mul(scale),
-        i32::try_from(area.y())
-            .unwrap_or(i32::MAX)
-            .saturating_mul(scale),
+        laid_out(i32::try_from(area.x()).unwrap_or(i32::MAX), scale),
+        laid_out(i32::try_from(area.y()).unwrap_or(i32::MAX), scale),
     )
         .into();
     let size = (
-        i32::try_from(area.width())
-            .unwrap_or(i32::MAX)
-            .saturating_mul(scale),
-        i32::try_from(area.height())
-            .unwrap_or(i32::MAX)
-            .saturating_mul(scale),
+        laid_out(i32::try_from(area.width()).unwrap_or(i32::MAX), scale),
+        laid_out(i32::try_from(area.height()).unwrap_or(i32::MAX), scale),
     );
     Rectangle::new(at, size.into())
 }
 
+/// One logical length as pixels on a display of `scale` hundredths.
+///
+/// **Multiply first, divide once:** `value * scale / 100`, never
+/// `value * (scale / 100)`. The second floors the scale before it is used,
+/// which is how a fractional display silently becomes a one-to-one one.
+///
+/// # Every length goes through here, and that is the point
+///
+/// It is a function rather than a closure inside [`in_pixels`] because
+/// [`in_pixels`] is not the only thing that converts: the rule drawn between
+/// two shares has a thickness, and it is in logical units like everything else.
+/// While the scale was a whole-number factor, `BOUNDARY * scale` happened to be
+/// right; under hundredths **it made a two-pixel rule two hundred pixels
+/// wide**, which is the same fault as the one this change exists to fix,
+/// committed in the same change that fixed it and caught by a test that checks
+/// the rule still sits on the edge it marks.
+///
+/// One conversion in one place, and every caller reaches for it.
+fn laid_out(value: i32, scale: i32) -> i32 {
+    value.saturating_mul(scale).saturating_div(100)
+}
+
 /// Draw `division` on a display of `scale`, with `offer` outlined where one is
 /// being made.
+///
+/// `scale` is **hundredths**, as [`in_pixels`] explains: 100 is one to one.
 pub(crate) fn picture(
     division: &Division,
     offer: &Offer,
@@ -89,13 +118,16 @@ pub(crate) fn picture(
     ink: [u8; 3],
     accent: [u8; 3],
 ) -> DivisionPicture {
-    let scale = scale.max(1);
+    // A hundred is the floor, not one: `alo_displays::Scale`'s least value is
+    // 100, and clamping to 1 here would turn a nonsense scale into a division a
+    // hundred times too small rather than a one-to-one one.
+    let scale = scale.max(100);
     let shares: Vec<Rectangle<i32, Physical>> = division
         .shares()
         .into_iter()
         .map(|share| in_pixels(share.area(), scale))
         .collect();
-    let boundaries = between(&shares, BOUNDARY * scale);
+    let boundaries = between(&shares, laid_out(BOUNDARY, scale).max(1));
 
     let mut solids: Vec<Solid> = boundaries
         .iter()
@@ -234,12 +266,12 @@ mod tests {
     #[test]
     fn the_shares_drawn_are_the_shares_the_division_decided() {
         let division = side_by_side();
-        let drawn = picture(&division, &Offer::Nothing, 1, INK, ACCENT);
+        let drawn = picture(&division, &Offer::Nothing, 100, INK, ACCENT);
 
         let decided: Vec<Rectangle<i32, Physical>> = division
             .shares()
             .into_iter()
-            .map(|share| in_pixels(share.area(), 1))
+            .map(|share| in_pixels(share.area(), 100))
             .collect();
         assert_eq!(drawn.shares, decided);
         assert_eq!(drawn.shares.len(), 2);
@@ -249,13 +281,13 @@ mod tests {
     #[test]
     fn a_boundary_is_drawn_between_two_shares_and_nowhere_else() {
         let alone = Division::of(a_display());
-        let undivided = picture(&alone, &Offer::Nothing, 1, INK, ACCENT);
+        let undivided = picture(&alone, &Offer::Nothing, 100, INK, ACCENT);
         assert!(
             undivided.boundaries.is_empty(),
             "an undivided display was given a boundary"
         );
 
-        let drawn = picture(&side_by_side(), &Offer::Nothing, 1, INK, ACCENT);
+        let drawn = picture(&side_by_side(), &Offer::Nothing, 100, INK, ACCENT);
         assert_eq!(drawn.boundaries.len(), 1);
         let rule = drawn.boundaries.first().expect("one rule");
         // It runs down the screen between the two, not across it.
@@ -273,13 +305,13 @@ mod tests {
     #[test]
     fn moving_a_boundary_moves_the_rule_with_it() {
         let mut division = side_by_side();
-        let before = picture(&division, &Offer::Nothing, 1, INK, ACCENT);
+        let before = picture(&division, &Offer::Nothing, 100, INK, ACCENT);
         let was = before.boundaries.first().expect("one rule").loc.x;
 
         division
             .move_boundary(a_window(1).id(), Side::Right, 1200)
             .expect("a boundary a person may drag");
-        let after = picture(&division, &Offer::Nothing, 1, INK, ACCENT);
+        let after = picture(&division, &Offer::Nothing, 100, INK, ACCENT);
         let now = after.boundaries.first().expect("one rule").loc.x;
 
         assert_ne!(was, now, "the rule did not move with the boundary");
@@ -305,9 +337,9 @@ mod tests {
         let Offer::Proposed(proposal) = &offer else {
             unreachable!("a pointer at the left edge proposes a place: {offer:?}")
         };
-        let expected = in_pixels(proposal.area(), 1);
+        let expected = in_pixels(proposal.area(), 100);
 
-        let drawn = picture(&division, &offer, 1, INK, ACCENT);
+        let drawn = picture(&division, &offer, 100, INK, ACCENT);
         assert_eq!(drawn.offered, Some(expected));
 
         // It is an outline rather than a fill: four edges, and the middle of
@@ -336,7 +368,7 @@ mod tests {
         let middle = division.propose_drop(LogicalPoint::at(960, 540), a_window(3), None);
         assert_eq!(middle, Offer::Nothing, "the middle of a screen offered one");
 
-        let drawn = picture(&division, &middle, 1, INK, ACCENT);
+        let drawn = picture(&division, &middle, 100, INK, ACCENT);
         assert_eq!(drawn.offered, None);
         assert!(
             !drawn.solids.iter().any(|solid| solid.colour == ACCENT),
@@ -349,17 +381,55 @@ mod tests {
     ///
     /// A share that arrived already scaled, or was scaled twice, would put a
     /// window at half or four times the size of the place it was given.
+    ///
+    /// **At 125, 150 and 200**, by the owner's direction of 2026-10-01, and the
+    /// fractional two are the point rather than the round one. `scale` was a
+    /// whole-number factor until 2026-10-02 and **125 and 150 both floored to
+    /// 1**, so a dense screen that is not exactly double was drawn as though it
+    /// were one to one — and a test at 1 against 2 could not see it, which is
+    /// what this test used to be.
     #[test]
     fn the_scale_is_applied_once_at_the_boundary() {
         let division = side_by_side();
-        let at_one = picture(&division, &Offer::Nothing, 1, INK, ACCENT);
-        let at_two = picture(&division, &Offer::Nothing, 2, INK, ACCENT);
+        let at_one = picture(&division, &Offer::Nothing, 100, INK, ACCENT);
 
-        for (one, two) in at_one.shares.iter().zip(at_two.shares.iter()) {
-            assert_eq!(two.loc.x, one.loc.x * 2);
-            assert_eq!(two.loc.y, one.loc.y * 2);
-            assert_eq!(two.size.w, one.size.w * 2);
-            assert_eq!(two.size.h, one.size.h * 2);
+        for scale in [125, 150, 200] {
+            let scaled = picture(&division, &Offer::Nothing, scale, INK, ACCENT);
+            assert_eq!(
+                scaled.shares.len(),
+                at_one.shares.len(),
+                "a scale of {scale} changed how many shares there are"
+            );
+            for (one, up) in at_one.shares.iter().zip(scaled.shares.iter()) {
+                // `one * scale / 100`, with the same floor the conversion uses,
+                // so this asserts the arithmetic rather than restating it in a
+                // second form that could drift from it.
+                assert_eq!(up.loc.x, one.loc.x * scale / 100, "x at {scale}");
+                assert_eq!(up.loc.y, one.loc.y * scale / 100, "y at {scale}");
+                assert_eq!(up.size.w, one.size.w * scale / 100, "width at {scale}");
+                assert_eq!(up.size.h, one.size.h * scale / 100, "height at {scale}");
+            }
         }
+    }
+
+    /// **A fractional scale is not the same picture as one to one**, which is
+    /// the assertion a whole-number factor made impossible.
+    ///
+    /// Held separately from the arithmetic above because the two fail for
+    /// different reasons: that one catches a wrong multiplier, this one catches
+    /// a scale that was **discarded**. Before 2026-10-02, 125 floored to 1 and
+    /// this comparison would have found two identical pictures — the exact
+    /// silent under-conversion a dense screen suffered.
+    #[test]
+    fn a_fractional_scale_draws_something_other_than_one_to_one() {
+        let division = side_by_side();
+        let at_one = picture(&division, &Offer::Nothing, 100, INK, ACCENT);
+        let at_one_and_a_quarter = picture(&division, &Offer::Nothing, 125, INK, ACCENT);
+
+        assert_ne!(
+            at_one.shares, at_one_and_a_quarter.shares,
+            "a display at 125 per cent drew exactly what a display at 100 drew, \
+             so the scale was floored away rather than applied"
+        );
     }
 }

@@ -88,6 +88,32 @@ pub struct DesktopFrame<'a> {
     /// knows which display these windows are on. A Server answers it with
     /// a_window_is_filling_the_screen.
     pub filling_the_screen: bool,
+    /// **How many physical pixels this display draws for one logical one**, in
+    /// hundredths: 100 is one to one, 200 is a dense screen.
+    ///
+    /// Handed in for the reason the rest are — only the caller knows which
+    /// display this is, and `alo_displays::ScreenPlace::scale` is where it comes
+    /// from.
+    ///
+    /// # Until 2026-10-02 a display's scale reached nothing that draws
+    ///
+    /// `crate::division_raster::picture` has always taken a scale and converted
+    /// with it, and **its only call site passed the literal `1`** with a comment
+    /// saying *one is the scale this display is laid out at* — true of a one-to-one
+    /// screen and of nothing else. `desktop_raster::picture` received a size and
+    /// no scale, so it could not pass the real one: the seam was short by an
+    /// argument rather than wrong.
+    ///
+    /// **The failure that leaves is under-conversion, not double conversion.** A
+    /// division on a two-times display was drawn at half the room it owns.
+    /// Nothing downstream could convert twice, because nothing downstream
+    /// received a scale at all — *this lane reported the opposite to the owner
+    /// before measuring it.*
+    ///
+    /// Hundredths rather than a float, matching `alo_displays::Scale`, because a
+    /// fractional display scale is a real thing — 125 and 150 are ordinary — and
+    /// an integer factor would silently floor them to one.
+    pub display_scale: u16,
 }
 
 impl Nested {
@@ -282,6 +308,7 @@ pub(crate) fn frame_pictures(
             windows: desktop.windows,
             put_aside: desktop.put_aside,
             filling_the_screen: desktop.filling_the_screen,
+            display_scale: desktop.display_scale,
         },
         &mut labels.fonts,
         size,
