@@ -252,6 +252,12 @@ Place to key any of it by.
 
 ### 6a. The top controls, and the fourth member of the set
 
+**Cited as task 6.** `alo-reconciling` reads a task number as digits followed by
+`of` and finds a task by a `### <digits>.` heading under `## Tasks`, so `6a` is
+not a pointer it can follow and the ledger points at the set instead. The
+lettered heading stays because this belongs beside the controls it joins rather
+than at the end of the plan.
+
 **Status:** ready — **the owner made them a promise on 2026-10-02** and
 `docs/features.md` carries them at `[v0.01]`. **Depends on:** nothing.
 
