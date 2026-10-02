@@ -100,6 +100,103 @@ because nothing needs it to.
 
 ### Ready — the logical-coordinate boundary
 
+> **What the third hop found, 2026-10-02, before touching anything.**
+>
+> Two hops are landed: `TheRoom` names the value at the boundary (`#387`) and
+> reaches the background and the picture (`#390`). The third hop is
+> `dock_raster` and the desktop raster path, and measuring it first turned up
+> something the first two did not.
+>
+> **Within one `desktop_raster::picture` call, one surface is converted by the
+> display's scale and two are not:**
+>
+> ```text
+> dock_raster::picture(dock, look, size, ..)            size unchanged
+> panel_raster::picture(.., size, ..)                   size unchanged
+> division_raster::picture(.., i32::from(display_scale), ..)   converted
+> ```
+>
+> And in the direct path, `size` is the output mode's own resolution —
+> `direct_target`'s `size()` returns `self.output.output.mode.size()`. The
+> Dock's measures come from `Measure::of(TextScale)`, so **nothing in the Dock's
+> layout sees the display's scale at all.**
+>
+> **What that does NOT mean, corrected the same day it was written.** I first
+> wrote that the Dock would appear at half size on a two-times display. It
+> cannot, today: `alo-desktop` passes `display_scale: 100` as a **documented
+> placeholder**, so nothing anywhere receives another value. Its comment already
+> names the consequence and the cause — *this binary holds no `Screens` and no
+> `alo_displays::Scale`, so it has nothing true to put here... until this binary
+> reads the displays, a two-times screen draws a division at half the room it
+> owns.*
+>
+> So the Dock not receiving the scale is a **latent** question, not a live
+> fault, and the live blocker is upstream of it: the binary does not read the
+> displays. **A finding is only worth what its reach is, and I stated this one's
+> reach wrongly before checking what feeds it.**
+>
+> **And the canvas zoom is a different number entirely, which is what prompted
+> the check.** `alo_canvas::Zoom` is thousandths and moves the plane a person
+> works on; `display_scale` is hundredths and is how dense their screen is.
+> **Zooming the canvas must not resize the Dock, and does not** —
+> `alo-dock`'s `on_the_canvas` says so in its own words, *Zoom is not here... a
+> zoom level would be a second way to say the same thing, and two ways to say it
+> would disagree*, and `dock_raster` has no zoom in it. Two things called scale,
+> one of which the Dock is right to ignore.
+>
+> **And my own test could not have seen it.**
+> `the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
+> varies the scale and finds the band unchanged. I read that as *the band is in
+> laid-out units*. It is equally consistent with *the scale never reaches the
+> Dock at all*, which is what the lines above show. **A test that varies an
+> input a function never receives proves the function ignores it, and says
+> nothing about which space its answer is in.** That is the same shape as the
+> three name collisions this fleet hit today, in a test rather than a grep.
+>
+> **This reopens a question I closed.** `#379` removed a conversion from the
+> drag-handle floor on the reading that the Dock's band is logical. If the band
+> is in framebuffer pixels because `size` is, the floor needs converting after
+> all — and the owner's ruling that the floor is *44 × 24 logical, scaled by the
+> person's text size and nothing else* is about what the floor **is**, not about
+> what the rectangles it meets are.
+>
+> **The owner question here is withdrawn, because this file had already
+> answered it.** I wrote that one answer makes the Dock's layout the bug and the
+> other makes `#379` the bug, and that both cannot be right. That is wrong.
+>
+> `canvas_fixed_controls`'s module header — which I had read twice today —
+> settles it, and settles it without needing to know which space `size` is:
+>
+> > *A compositor that renders into a framebuffer of laid-out size and scales at
+> > scanout would make that label correct for its own frame, with two notions of
+> > physical living one layer apart. **Nobody has established which this is.**
+> > What is established is narrower and sufficient: **every quantity in the
+> > comparison comes from one space, so the arithmetic is consistent and no
+> > conversion belongs in it.***
+>
+> **The floor and the band are both laid out in whatever space `size` is, scaled
+> by the person's text size.** So the conversion `#379` removed does not belong
+> whichever answer is right, and `#379` stands. The question I put to the owner
+> was a question about which space, when what the comparison needs is only that
+> both sides are in the *same* space — which was measured and recorded before I
+> asked.
+>
+> **What remains open is narrower and is not blocking anything:** whether the
+> Dock should grow with a dense display at all. Today it cannot, because
+> `alo-desktop` passes `display_scale: 100` as a documented placeholder and
+> nothing receives another value. When that binary reads the displays, this
+> becomes a live question; until then it is a note.
+>
+> *Three times today I have stated a consequence before checking what feeds it.
+> This is the third, and the thing that fed it was a paragraph in the file the
+> finding is about.*
+>
+> *Nothing is built on this until it is answered. The two landed hops are
+> unaffected: `TheRoom` is constructed from pixels and a scale by its only
+> constructor, and says what it is wherever it travels. What is unresolved is
+> what the **other** path's `size` was ever meant to be.*
+
+
 - **Outcome:** a reader of the shell can tell which values are logical and which
   are physical.
 - **Acceptance:** the owner's direction — *introduce an explicit
