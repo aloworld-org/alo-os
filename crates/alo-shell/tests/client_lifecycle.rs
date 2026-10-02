@@ -4,6 +4,7 @@
 mod a_frame_is_never_lost;
 mod a_frame_is_never_lost_while_dragging;
 mod a_frame_is_where_it_looks;
+mod a_keyboard_recovers_a_hidden_frame;
 mod a_restore_travels;
 mod a_window_that_fills_the_screen;
 mod cursor;
