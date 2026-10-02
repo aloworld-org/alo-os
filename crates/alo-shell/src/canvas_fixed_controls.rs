@@ -144,6 +144,74 @@ impl crate::Server {
         self.fixed_controls.handle()
     }
 
+    /// Every frame whose name the controls, **as they are now**, leave
+    /// unreachable.
+    ///
+    /// # Nothing asked this until 2026-10-02, and that is the gap rather than
+    /// the feature
+    ///
+    /// The rule is in force on the two roads a frame *moves* by: a drag, and a
+    /// recovery putting a window back where it was left. Both ask before
+    /// placing. **Neither asks again afterwards**, and the controls move
+    /// underneath a frame that is not moving at all:
+    ///
+    /// - the Dock gives way to a window needing its room, and comes back;
+    /// - a window is put aside, so the panel's reserved column appears where
+    ///   there was none;
+    /// - the display changes, or its scale does, and every rectangle is
+    ///   somewhere else;
+    /// - the person moves the Dock to another edge.
+    ///
+    /// After any of those, a frame that was reachable is not, and **nothing
+    /// notices**. Task 8's third acceptance clause is exactly this:
+    /// *reachability is rechecked when those bounds change.*
+    ///
+    /// # This answers, and does not move anything
+    ///
+    /// The clause's other half — *where recovery needs a frame moved, the move
+    /// is shown and its previous position recorded* — is **not** here, and the
+    /// split is deliberate rather than partial delivery. A frame moved by the
+    /// machine is a person's arrangement edited without them, so it owes a
+    /// showing and a record; answering *which frames* owes neither, and is what
+    /// a mover would have to ask first.
+    ///
+    /// **Making the loss detectable comes before making it recoverable**,
+    /// because a silent loss cannot be tested for and this repository has spent
+    /// two days on checks that could not fail.
+    ///
+    /// Each answer is the frame's id and where it is, so a caller has what it
+    /// needs to record a previous position without asking a second time.
+    #[must_use]
+    pub fn frames_the_controls_now_hide(&self) -> Vec<(u64, alo_canvas::At)> {
+        // Nothing drawn is not everything hidden. Before the first frame there
+        // are no bounds, and answering *all of them* would be the most alarming
+        // possible way to say *I do not know yet*.
+        let Some(handle) = self.fixed_controls.handle() else {
+            return Vec::new();
+        };
+        let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
+        if controls.is_empty() {
+            return Vec::new();
+        }
+        self.mapped_surfaces()
+            .filter_map(|surface| {
+                let at = crate::canvas_place::the_place_of(surface)
+                    .and(Some(()))
+                    .and_then(|()| {
+                        let origin = crate::window_buffer_origin(surface)
+                            + crate::scene::geometry_origin(surface);
+                        alo_canvas::At::checked(origin.x.floor() as i32, origin.y.floor() as i32)
+                    })?;
+                // Asked of where it **is**, so `from` and `wanted` are the same
+                // point: this is not a proposed move, it is the position the
+                // frame already holds being re-examined against controls that
+                // have moved under it.
+                (!self.enough_of_the_name_is_reachable(surface, at, at, &controls, handle))
+                    .then(|| (crate::window_number::Numbers::of(surface), at))
+            })
+            .collect()
+    }
+
     /// Record where this draw put the fixed controls — **all of them, as a
     /// set.**
     ///
