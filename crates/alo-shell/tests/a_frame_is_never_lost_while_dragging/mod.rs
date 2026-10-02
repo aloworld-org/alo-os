@@ -13,13 +13,22 @@
 //! calls the rule. A test that called it would pass exactly as well before this
 //! change as after, which is the property that let the gap survive.
 //!
-//! # Why the Dock's bounds are handed in
+//! # Why the controls' bounds are handed in
 //!
-//! `Server::the_dock_was_drawn` is what the draw calls, and these tests call it
+//! `Server::the_fixed_controls_were_drawn` is what the draw calls, and these tests
+//! call it
 //! for the same reason: the Dock's band is laid out in the raster path and there
 //! is no draw in a headless fixture. **The band passed here is the one
 //! `direct_desktop` passes** — `pictures.desktop.dock.band` — so the shape of the
 //! fixture's input is the shape of production's, not a convenience.
+//!
+//! # The rule was in force against one control, not every one
+//!
+//! The promise is *outside **every** fixed control*. Until 2026-10-02 the shell
+//! handed over the Dock's band alone, so a frame could keep its name clear of the
+//! Dock and sit entirely under the put-aside panel, and **nothing could tell** —
+//! the rule was right, its caller existed, and the bounds it was given were a
+//! third of the question. The last test here could not have been written before.
 #![expect(
     clippy::expect_used,
     reason = "an unexpected None or Err here is the failure this test reports"
@@ -38,6 +47,12 @@ const VIEWPORT: (i32, i32) = (1280, 720);
 /// How thick the Dock's band is here.
 const DOCK: i32 = 64;
 
+/// How wide the put-aside panel's reserved column is here.
+///
+/// `alo_dock::measures` derives the real one; this is a width in the shape of
+/// one, because the test is about the rule and not about the panel's arithmetic.
+const PANEL: i32 = 112;
+
 /// A real display with a pointer and an output.
 fn fixture() -> Fixture {
     let f = Fixture::keyboard();
@@ -51,11 +66,37 @@ fn a_dock_along_the_bottom() -> Rectangle<i32, Physical> {
     Rectangle::new((0, VIEWPORT.1 - DOCK).into(), (VIEWPORT.0, DOCK).into())
 }
 
-/// Tell the server where the fixed controls are, as a draw would.
+/// The put-aside panel's reserved column, down the right-hand edge, as
+/// `panel_raster` lays one out for a panel that holds windows.
+fn a_panel_down_the_right() -> Rectangle<i32, Physical> {
+    Rectangle::new((VIEWPORT.0 - PANEL, 0).into(), (PANEL, VIEWPORT.1).into())
+}
+
+/// Tell the server where the fixed controls are, as a draw would — **the Dock
+/// alone**, which is all the shell handed over until 2026-10-02.
 fn drawn_with_a_dock(f: &Fixture) {
     f.backend(|s| {
-        s.the_dock_was_drawn(
-            Some(a_dock_along_the_bottom()),
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(a_dock_along_the_bottom()),
+                // A panel nobody has put a window into covers nothing, and a
+                // rectangle of no extent is the true answer for one rather than
+                // a placeholder.
+                panel_reserved: Rectangle::default(),
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+}
+
+/// The same, with the put-aside panel drawn as well.
+fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
+    f.backend(|s| {
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(a_dock_along_the_bottom()),
+                panel_reserved: a_panel_down_the_right(),
+            },
             alo_appearance::TextScale::ordinary(),
         );
     });
@@ -130,6 +171,62 @@ fn a_drag_cannot_put_a_frames_name_under_the_dock() {
     assert!(
         y < 704.0,
         "a drag left the frame at y={y}, with its whole name band under the Dock"
+    );
+}
+
+/// **The put-aside panel is a fixed control too, and this is the test that
+/// could not be written before 2026-10-02.**
+///
+/// The promise is *a frame keeps a usable part of its name outside **every**
+/// fixed control*. The shell handed the rule the Dock's band alone, so a frame
+/// could keep its name clear of the Dock, sit entirely under the panel's
+/// reserved column, and **nothing could tell**: the rule was right, its caller
+/// existed, and the bounds it was given were a third of the question.
+///
+/// Dragged to the right rather than down, so the Dock is not what refuses it.
+/// The same drag is allowed when only the Dock was drawn — that is the companion
+/// assertion, and without it this test would pass for a rule that refuses
+/// everything.
+#[test]
+fn a_drag_cannot_put_a_frames_name_under_the_put_aside_panel() {
+    let allowed_with_only_a_dock = {
+        let f = fixture();
+        let (_app, surface) = a_frame(&f);
+        drawn_with_a_dock(&f);
+        assert!(
+            f.backend({
+                let surface = surface.clone();
+                move |s| s.place_window(&surface, (200, 300))
+            })
+            .is_ok()
+        );
+        take_hold_of_the_name(&f, (200.0, 300.0));
+        // Into the column the panel reserves: 1168..1280 here.
+        motion(&f, (1210.0, 302.0));
+        origin_of(&f, &surface).0
+    };
+
+    let held_back_with_the_panel = {
+        let f = fixture();
+        let (_app, surface) = a_frame(&f);
+        drawn_with_a_dock_and_a_panel(&f);
+        assert!(
+            f.backend({
+                let surface = surface.clone();
+                move |s| s.place_window(&surface, (200, 300))
+            })
+            .is_ok()
+        );
+        take_hold_of_the_name(&f, (200.0, 300.0));
+        motion(&f, (1210.0, 302.0));
+        origin_of(&f, &surface).0
+    };
+
+    assert!(
+        allowed_with_only_a_dock > held_back_with_the_panel,
+        "the panel's reserved column held nothing back: the drag reached x={held_back_with_the_panel} \
+         with the panel drawn and x={allowed_with_only_a_dock} without it, so the same \
+         position was allowed either way and the rule never saw the panel"
     );
 }
 

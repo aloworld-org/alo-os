@@ -193,12 +193,23 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
         )?;
         // **Where the fixed controls ended up, handed to the drag that has to
-        // avoid them.** The draw is the only place that knows: the Dock's band is
-        // laid out here and nowhere else. Without this line
-        // `crate::canvas_never_lost`'s rule has no bounds to check against, which
-        // is why it had no caller at all — see `crate::canvas_fixed_controls`.
-        server.the_dock_was_drawn(
-            pictures.desktop.dock.as_ref().map(|dock| dock.band),
+        // avoid them.** The draw is the only place that knows: these are laid
+        // out here and nowhere else. Without this line
+        // `crate::canvas_never_lost`'s rule has no bounds to check against,
+        // which is why it had no caller at all — see
+        // `crate::canvas_fixed_controls`.
+        //
+        // **Every control this frame laid out, not only the Dock's band.** Until
+        // 2026-10-02 the band was the only one handed over, so the rule was in
+        // force against one of the three the promise names: a frame could keep
+        // its name clear of the Dock and sit entirely under the put-aside panel,
+        // and nothing could tell, because the shell had never been given the
+        // panel's bounds to check against.
+        server.the_fixed_controls_were_drawn(
+            crate::canvas_fixed_controls::FixedControlsDrawn {
+                dock_band: pictures.desktop.dock.as_ref().map(|dock| dock.band),
+                panel_reserved: pictures.desktop.panel.reserved,
+            },
             self.desktop.now().look.scale(),
         );
         // **And where the panel ended up, for the same reason and in the same place.**
