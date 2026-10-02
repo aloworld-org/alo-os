@@ -217,6 +217,65 @@ pub fn touches(arrived: &[String], ours: &[String]) -> bool {
 /// discarded on any of these roads**: a failed gate leaves the tree as it was, a
 /// conflicted rebase is left where it stopped, and a lost or refused push leaves
 /// the commit sitting locally for the next attempt.
+/// Whether this machine gates before it pushes.
+///
+/// # Why this is a choice now, and why it is still on unless a machine says otherwise
+///
+/// CI became the only verdict on 2026-10-02: `main` requires `alo/gates-on-a-runner`, which a
+/// hosted runner posts, and the gates a lane runs locally produce no required status at all.
+/// So the local run is no longer *the* gate — it is a pre-check, and whether it is worth
+/// paying for is a fact about the machine rather than about the work.
+///
+/// The numbers that forced the question, each lane measuring itself:
+///
+/// ```text
+/// laptop       ~330 s per task     worth paying
+/// desktop PC   ~840 s per task     worth paying
+/// the Mac      57-97 min per task  not worth paying for a 13-minute answer
+/// ```
+///
+/// On the Mac the local gate costs an hour and a half to learn what CI says in thirteen
+/// minutes, on 3.9 GB of RAM where five linkers drove the machine into swap. That lane cannot
+/// run unattended at all while it pays that, which is a real cost and not a preference.
+///
+/// **So it is an opt-out and the default is on.** The Mac lane asked for the reverse — off
+/// unless asked — and this is not that, for two reasons worth stating rather than quietly
+/// deciding:
+///
+/// - the owner's standing instruction is *always test before you push*, and a default that
+///   stops testing changes what every lane does in order to solve what one lane measured;
+/// - the queue is shared. A push a local gate would have refused costs a CI run and a queue
+///   slot another lane is waiting for, so the saving is one machine's and the cost is the
+///   fleet's.
+///
+/// Off by default would give that lane nothing it does not get from one variable in its own
+/// launch, while taking the pre-check away from two machines where it is cheap. **The
+/// asymmetry is the whole argument**, and if the owner prefers the other default it is one
+/// line here.
+///
+/// **An ungated publish is labelled as one**, at the point it happens rather than once at
+/// startup: a journal that read the same either way would make *nobody gated this*
+/// indistinguishable from *this passed*.
+fn whether_to_gate_here() -> bool {
+    reading_whether_to_gate(std::env::var("ALO_LOOP_GATE").ok().as_deref())
+}
+
+/// What a value of `ALO_LOOP_GATE` means, with no environment in the way.
+///
+/// **Pure so the readings can be tested**, including the one that matters: anything this
+/// cannot recognise as a refusal gates. A typo that silently stopped a lane gating would be
+/// the failure nobody sees, because an ungated publish looks exactly like a gated one until it
+/// breaks `main`.
+fn reading_whether_to_gate(said: Option<&str>) -> bool {
+    match said {
+        None => true,
+        Some(said) => !matches!(
+            said.trim().to_ascii_lowercase().as_str(),
+            "0" | "no" | "off" | "false" | "never"
+        ),
+    }
+}
+
 pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
     // A task that changes another plan's crate is refused before anything runs:
     // an hour of gates is no reason to publish into a crate another lane owns.
@@ -236,7 +295,17 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
     // Nothing is staged before this returns `Ok`. A failure here leaves a tree
     // the supervisor has not touched, which is what makes the work recoverable
     // by reading it rather than by finding it.
-    steps.check("this task's tree", Evidence::Run)?;
+    let gating = whether_to_gate_here();
+    if gating {
+        steps.check("this task's tree", Evidence::Run)?;
+    } else {
+        // **Said where it is skipped, not only at startup.** A journal that mentioned this
+        // once at the top would leave every later line reading as though it had been gated.
+        steps.note(
+            "not gating here: ALO_LOOP_GATE is off, so CI's required check is the only verdict \
+             on this work",
+        );
+    }
 
     steps.stage()?;
     let sha = steps.commit()?;
@@ -251,7 +320,14 @@ pub fn gated_and_pushed(steps: &mut dyn Steps) -> Result<String, String> {
             steps.rebase()?;
             // **The combination is gated before it is pushed, every time.** A
             // failure here leaves the rebased commit local and unpublished.
-            steps.check("the combined tree", Evidence::after_a_rebase(touched))?;
+            if gating {
+                steps.check("the combined tree", Evidence::after_a_rebase(touched))?;
+            } else {
+                steps.note(
+                    "not gating the combined tree either; CI gates the pull request and the \
+                     queue builds its own candidate on current main",
+                );
+            }
         }
 
         match steps.push() {
@@ -457,6 +533,42 @@ impl Steps for OnThisMachine<'_> {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+
+    /// **Unset means gate.** The default is the owner's standing instruction, and a machine
+    /// that has said nothing has not opted out of testing before it pushes.
+    #[test]
+    fn a_machine_that_has_said_nothing_gates() {
+        assert!(reading_whether_to_gate(None));
+    }
+
+    /// **Only an explicit refusal turns it off**, and the words a person might reasonably
+    /// write are all accepted — because a variable set to `off` that was read as *on* would
+    /// make a lane pay ninety minutes it had asked not to.
+    #[test]
+    fn an_explicit_no_in_any_reasonable_spelling_turns_it_off() {
+        for said in ["0", "no", "off", "false", "never", "OFF", " off ", "No"] {
+            assert!(
+                !reading_whether_to_gate(Some(said)),
+                "{said} did not turn it off"
+            );
+        }
+    }
+
+    /// **Anything else gates**, including an empty value and a typo.
+    ///
+    /// A variable set to nonsense is a machine that meant to say something and did not, and
+    /// the safe reading of *I could not tell* is to keep testing. The opposite reading would
+    /// let a typo silently stop a lane gating — which is the failure that cannot be seen,
+    /// because an ungated publish looks exactly like a gated one until it breaks `main`.
+    #[test]
+    fn anything_that_is_not_a_refusal_gates() {
+        for said in ["1", "yes", "on", "true", "", "   ", "offf", "0,1", "please"] {
+            assert!(
+                reading_whether_to_gate(Some(said)),
+                "{said:?} stopped it gating"
+            );
+        }
+    }
     use super::*;
 
     /// Every step, recorded rather than done, with any one of them able to
