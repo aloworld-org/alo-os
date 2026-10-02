@@ -121,10 +121,28 @@ because nothing needs it to.
 > Dock's measures come from `Measure::of(TextScale)`, so **nothing in the Dock's
 > layout sees the display's scale at all.**
 >
-> **Inferred, not measured:** on a display drawn at 200 per cent, the Dock is
-> laid out across the raw framebuffer with measures scaled only by text size,
-> and would appear at about half the size it should. Nobody has watched that on
-> a screen, because nobody has watched any of this on a screen.
+> **What that does NOT mean, corrected the same day it was written.** I first
+> wrote that the Dock would appear at half size on a two-times display. It
+> cannot, today: `alo-desktop` passes `display_scale: 100` as a **documented
+> placeholder**, so nothing anywhere receives another value. Its comment already
+> names the consequence and the cause — *this binary holds no `Screens` and no
+> `alo_displays::Scale`, so it has nothing true to put here... until this binary
+> reads the displays, a two-times screen draws a division at half the room it
+> owns.*
+>
+> So the Dock not receiving the scale is a **latent** question, not a live
+> fault, and the live blocker is upstream of it: the binary does not read the
+> displays. **A finding is only worth what its reach is, and I stated this one's
+> reach wrongly before checking what feeds it.**
+>
+> **And the canvas zoom is a different number entirely, which is what prompted
+> the check.** `alo_canvas::Zoom` is thousandths and moves the plane a person
+> works on; `display_scale` is hundredths and is how dense their screen is.
+> **Zooming the canvas must not resize the Dock, and does not** —
+> `alo-dock`'s `on_the_canvas` says so in its own words, *Zoom is not here... a
+> zoom level would be a second way to say the same thing, and two ways to say it
+> would disagree*, and `dock_raster` has no zoom in it. Two things called scale,
+> one of which the Dock is right to ignore.
 >
 > **And my own test could not have seen it.**
 > `the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
