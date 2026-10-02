@@ -252,8 +252,8 @@ Place to key any of it by.
 
 ### 6. The fixed controls, and a window that can always be got back
 
-**Status:** in progress — the recheck has a caller as of 2026-10-02; two named
-pieces are waiting on something other than work.
+**Status:** in progress — **the set is complete and the recheck has a caller as
+of 2026-10-02**; two named pieces are waiting on something other than work.
 
 *This line read **the Dock and the status area are held; the panel is not** until
 2026-10-02, and it was wrong in both directions: the panel had joined the set and
@@ -263,7 +263,7 @@ each piece is actually waiting on, so that nobody has to re-derive it:
 
 | The check | Where it stands |
 | --- | --- |
-| The set, and 44 × 24 of the name kept clear | The **Dock's band** and the **panel's reserved column** are held and compared. The **status area** is not, and cannot be: `EgressStatusPicture` carries rows and solids and **no rectangle**, so there is nothing to hand over. It joins when it can say where it is. |
+| The set, and 44 × 24 of the name kept clear | **Done, 2026-10-02.** All three are held and compared: the **Dock's band**, the **panel's reserved column**, and the **status area**, which joined when it could say where it is. Its band is the union of what was **painted** — every `Solid` and `Inked` carries its own area — rather than the room the indicator may grow into, which `Place` holds and which would reserve pixels nothing occupies. Nothing drawn is **no** band rather than a band of no size. *The wiring was unproven when first written: removing the status area from the rule's bounds left all nine hundred and fifty tests green, because the test that existed passes a rectangle straight to the rule and cannot notice whether this one is handed over. A rule that takes a list is tested by what is in the list, never by what the caller put there.* |
 | Rechecked when the display, the scale, the Dock's bounds or the panel's state changes | **Done.** The draw records the controls and, when they differ from the frame before, asks for the frames they now hide and brings them back. Before this the detector and the mover were both written, both tested and **called by tests alone.** |
 | A recovery that moves a frame shows the move and records where it was | **The record is done** — `Recovery::BroughtBack` carries where the frame was as well as where it is. **The showing is not**, and it is not a line of work: `alo_notifying::arriving::from_alo_os` is the mechanism and **alo OS has no production notification anywhere in this tree**, so the first one is its own task, with its own externalized words in every shipped language. |
 | A keyboard road to move a frame | Needs scope the owner has not granted; recorded at the foot of this plan rather than invented. |
