@@ -105,6 +105,7 @@ mod canvas_remembered;
 mod canvas_resize;
 mod canvas_show_all;
 mod canvas_space_drag;
+mod canvas_the_world;
 mod canvas_wheel_zoom;
 mod capture_flatten;
 mod capture_paint;

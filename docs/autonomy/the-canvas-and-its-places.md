@@ -102,7 +102,7 @@ has two halves and has only ever had one.
 
 ### 2. The World
 
-**Status:** **Done, 2026-10-02** for its arithmetic; the shell's gesture is owed.
+**Status:** **Done, 2026-10-02** — arithmetic and gesture both.
 `alo_canvas::World` in `crates/alo-canvas/src/world.rs` — Places laid out as
 tiles, the span they reach, the Place under a point, and a camera that fits them
 all. Shown by `crates/alo-canvas/src/world_tests.rs`.
@@ -113,12 +113,21 @@ all. Shown by `crates/alo-canvas/src/world_tests.rs`.
 work from three lanes for two days. The laptop lane found it by reading `main`
 against the plan rather than the plan alone.*
 
-**What is owed, stated rather than implied by a Done mark.** The arithmetic is
-whole and the **gesture is not wired**: nothing in `alo-shell` yet answers a step
-out from `Zoom::FURTHEST_OUT` with the World, and nothing zooms into the Place
-under the pointer. That is the same shape as task 6's rule having no caller for a
-fortnight, so it is said here in the status rather than found later — the half
-that exists is the half a test can hold without a compositor.
+**What was owed is paid.** This status said *the gesture is not wired — nothing
+in `alo-shell` answers a step out from `Zoom::FURTHEST_OUT` with the World*, which
+it did for the hours between the two changes. `crates/alo-shell/src/canvas_the_world.rs`
+now answers it on **both** roads a person has: the key, and Ctrl with the wheel.
+Shown by `crates/alo-shell/tests/the_world_is_a_step_out/mod.rs`, seven cases
+driven through the chord and the scroll rather than through the functions.
+
+**And `Showing` had to become state, against what its own doc comment said.** It
+read *returned rather than stored, because it is a consequence of the zoom* —
+written before anything consumed it, and disproved by building the consumer. The
+World and a Place are **different coordinate spaces**, so a camera at
+`FURTHEST_OUT` over a Place and a camera over the World are both ordinary cameras
+and nothing in a camera says which plane it is over. The comment was corrected
+rather than worked around; what survives of it is the constraint that **a person
+never sets it**.
 
 **And the design decision, because the obvious implementation is wrong twice.**
 The World is **not** a further-out view of the same plane. Lowering

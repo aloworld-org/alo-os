@@ -24,6 +24,7 @@ mod resizing_from_the_edges;
 mod shortcut_dispatch;
 mod support;
 mod the_canvas_is_where_they_left_it;
+mod the_world_is_a_step_out;
 mod window_activation;
 mod window_close;
 mod window_controls;

@@ -53,9 +53,20 @@ const THE_WORLDS_OWN_SURFACE: Place = Place::FIRST;
 
 /// What a person is looking at: one Place, or all of them.
 ///
-/// **Returned rather than stored**, because it is a consequence of the zoom and
-/// not a mode anybody sets. A field would be a second thing that can disagree
-/// with the camera, which is the fault `one-plane-two-vocabularies` names.
+/// # This has to be stored, and the first version of this comment said otherwise
+///
+/// It read *returned rather than stored, because it is a consequence of the zoom
+/// and not a mode anybody sets* — which was written before anything consumed it,
+/// and building the shell's half disproved it. **The World and a Place are
+/// different coordinate spaces.** A camera at [`Zoom::FURTHEST_OUT`](crate::Zoom::FURTHEST_OUT)
+/// over a Place and a camera over the World are both ordinary cameras, and
+/// nothing in a camera says which plane it is over. So no zoom value can
+/// distinguish them and the level is state.
+///
+/// What the original comment was right about is the danger, and it survives as a
+/// constraint rather than a prohibition: **a person never sets this.** It changes
+/// only by stepping out of the last rung or stepping into a Place, so it is
+/// derived from a gesture even though it is held in a field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Showing {
     /// Every Place at once. Reached by stepping out from [`Zoom::FURTHEST_OUT`](crate::Zoom::FURTHEST_OUT).

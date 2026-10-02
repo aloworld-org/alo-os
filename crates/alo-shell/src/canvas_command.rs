@@ -83,12 +83,21 @@ impl Server {
                 } else {
                     zoom.one_step_out()
                 };
-                // Already at the end of the ladder: nowhere to go, and nothing
-                // wrong with having asked.
                 if let Some(stepped) = stepped {
                     self.zoom_the_canvas(stepped, middle)
                         .ok_or(CanvasCommandError::NothingToShow)?;
+                } else if action == Action::ZoomTheCanvasOut {
+                    // **The step that had nowhere to go.** At the furthest out a
+                    // Place goes, one more step out leaves the Place and shows
+                    // every Place — `the-canvas-and-its-places.md` task 2, with
+                    // no new binding, which is its constraint. A person who has
+                    // nothing to step out to still presses a key that does
+                    // nothing, which is what it did before and is not a fault.
+                    self.step_out_into_the_world();
                 }
+                // Zooming *in* at the end of the ladder stays nothing happening:
+                // there is no level below a Place, and `Show all` is the key for
+                // fitting its frames.
             }
             Action::ShowAllOnTheCanvas => {
                 self.show_all_on_the_canvas()
