@@ -83,12 +83,14 @@ fn the_arrangement_written_down_is_the_one_on_the_screen() {
     let arrangement = f.backend(|s| s.the_arrangement_now());
     assert_eq!(arrangement.how_many(), 2, "two windows are open");
     assert_eq!(
-        arrangement.camera(),
+        arrangement
+            .camera_on(alo_canvas::Place::FIRST)
+            .expect("the Place was arranged"),
         f.backend(|s| s.the_camera()),
         "the arrangement remembered a different camera from the one being looked through"
     );
     let (at, _) = arrangement
-        .where_it_was("org.alo.Notes")
+        .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
         .expect("the first window names itself");
     assert_eq!(
         (at.x, at.y),
@@ -108,6 +110,7 @@ fn a_window_comes_back_where_it_was_and_the_second_does_not_take_its_place() {
     let f = fixture();
     let mut left = Arrangement::fresh();
     left.window_was(
+        alo_canvas::Place::FIRST,
         "org.alo.Notes",
         alo_canvas::At::checked(420, 260).expect("a place on the plane"),
         alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
@@ -125,7 +128,7 @@ fn a_window_comes_back_where_it_was_and_the_second_does_not_take_its_place() {
     );
     let arrangement = f.backend(|s| s.the_arrangement_now());
     let (at, _) = arrangement
-        .where_it_was("org.alo.Notes")
+        .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
         .expect("it is open");
     assert_eq!(
         (at.x, at.y),
@@ -156,6 +159,7 @@ fn an_application_that_did_not_come_back_leaves_nothing_behind() {
     let mut left = Arrangement::fresh();
     for (app_id, x) in [("org.alo.Notes", 100), ("org.alo.Gone", 900)] {
         left.window_was(
+            alo_canvas::Place::FIRST,
             app_id,
             alo_canvas::At::checked(x, 100).expect("a place on the plane"),
             alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
@@ -181,7 +185,7 @@ fn an_application_that_did_not_come_back_leaves_nothing_behind() {
         "the canvas holds a window for an application that never came back"
     );
     assert_eq!(
-        arrangement.where_it_was("org.alo.Gone"),
+        arrangement.where_it_was(alo_canvas::Place::FIRST, "org.alo.Gone"),
         None,
         "an application that did not come back was still written down"
     );
@@ -217,5 +221,71 @@ fn a_window_with_no_name_of_its_own_is_not_remembered() {
         f.backend(|s| s.the_arrangement_now().how_many()),
         0,
         "a window with no name of its own was written into the arrangement"
+    );
+}
+
+/// **An application that claimed its place on one Place can still claim on
+/// another.**
+///
+/// Task 5 of `the-canvas-and-its-places.md`: *position, size, camera and the
+/// panel's own state, **per Place rather than per session***. This is the one
+/// field that would have refused it quietly.
+///
+/// `WhereTheyLeftIt::claimed` was a `Vec<String>` of `app_id`s, which was right
+/// while an arrangement held one map: one application had one remembered place,
+/// so claiming it once was claiming it everywhere. With a place per Place the
+/// same list means an application that came back on one surface is **refused on
+/// every other** — and refused silently, because `put_back_where_it_was` answers
+/// `false` for *already claimed* exactly as it does for *nothing remembered*.
+///
+/// So this asserts the pair, not the single: the same `app_id` is offered its
+/// place on two Places and takes both.
+#[test]
+fn claiming_a_place_on_one_place_does_not_claim_it_on_another() {
+    let f = fixture();
+    let elsewhere = alo_canvas::Place::FIRST
+        .next()
+        .expect("there is a second place");
+
+    let mut left = Arrangement::fresh();
+    left.window_was(
+        alo_canvas::Place::FIRST,
+        "org.alo.Notes",
+        alo_canvas::At::checked(100, 100).expect("a place on the plane"),
+        alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+    );
+    left.window_was(
+        elsewhere,
+        "org.alo.Notes",
+        alo_canvas::At::checked(700, 500).expect("a place on the plane"),
+        alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+    );
+    let waiting = WhereTheyLeftIt::from(left);
+
+    // The first window opens on the Place a fresh machine looks at.
+    let _here = mapped_as(&f, "org.alo.Notes");
+    let first = f
+        .backend(|s| s.mapped_surfaces().last().cloned())
+        .expect("one frame is mapped");
+    let (took_here, waiting) = put_back(&f, &first, waiting);
+    assert!(took_here, "a window did not take its remembered place");
+
+    // A second window of the same application, moved to another Place before it
+    // is offered one. Moving is the primitive, not the gesture: task 3 owns the
+    // road a person takes and this test only needs the window to be elsewhere.
+    let _there = mapped_as(&f, "org.alo.Notes");
+    let second = f
+        .backend(|s| s.mapped_surfaces().last().cloned())
+        .expect("two frames are mapped");
+    f.backend({
+        let second = second.clone();
+        move |s| s.move_the_window_to(&second, elsewhere)
+    });
+
+    let (took_there, _) = put_back(&f, &second, waiting);
+    assert!(
+        took_there,
+        "an application that claimed its place on one Place was refused on another, \
+         which is the per-session claim the per-Place arrangement replaced"
     );
 }

@@ -38,7 +38,7 @@
 
 use std::collections::BTreeMap;
 
-use alo_canvas::{At, Camera, Size, Zoom};
+use alo_canvas::{At, Camera, Place, Size, Zoom};
 
 /// Why an arrangement could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -106,7 +106,43 @@ struct Written {
 ///
 /// **It is not a compatibility promise.** A later version may refuse this one
 /// outright; what it may not do is read it and be wrong about what it means.
-pub const FORMAT: u32 = 1;
+///
+/// # Two, and why there is nothing to migrate
+///
+/// Version 1 held **one** camera beside a flat map of windows. Task 5 of
+/// `docs/autonomy/the-canvas-and-its-places.md` asks that *two Places with
+/// different cameras both come back as they were*, and two cameras cannot live in
+/// a file with one — so this is a whole-file reshape rather than a key addition,
+/// which is exactly what the version existed to make affordable.
+///
+/// **No file of version 1 has ever been written to disk.** `written` had no
+/// production caller when 1 was defined and still has none, so there is no
+/// migration path here and no need of one: a version-1 file is refused by name
+/// like any other shape this does not read. The number did its job by existing
+/// for one day and then being spent.
+pub const FORMAT: u32 = 2;
+
+/// One Place's own arrangement, as it is written down.
+///
+/// **A camera per Place, which is the whole of task 5.** Version 1 had one camera
+/// for the session; a person who left two Places at two zooms had one of them
+/// restored wrongly and nothing said so.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
+struct APlacesOwn {
+    /// Where the camera was looking on this Place, in plane units.
+    looking_at: (i32, i32),
+    /// How far in, in thousandths.
+    zoom: u32,
+    /// Each application's window on this Place, by `app_id`.
+    ///
+    /// A map rather than a list, so the file says plainly that one application has
+    /// one remembered place **per Place** and a second row for it cannot be
+    /// written. One application may now appear once on each of several Places,
+    /// which is what `one_application_has_one_place` asserted was impossible when
+    /// there was only one.
+    windows: BTreeMap<String, Written>,
+}
 
 /// The whole file, as it is written down.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -128,72 +164,112 @@ struct TheFile {
     /// comment describing the refusal sat above an implementation that prevented
     /// it.
     version: u32,
-    /// Where the camera was looking, in plane units.
-    looking_at: (i32, i32),
-    /// How far in, in thousandths.
-    zoom: u32,
-    /// Each application's window, by `app_id`.
+    /// Each Place's own arrangement, keyed by the Place's number.
     ///
-    /// A map rather than a list, so the file says plainly that one application has
-    /// one remembered place and a second row for it cannot be written.
-    windows: BTreeMap<String, Written>,
+    /// **The key is the raw number as text, and it is validated on read.** TOML
+    /// keys are strings, so the boundary cannot carry an `alo_canvas::Place` — and
+    /// the rule this crate already states about positions applies to identities:
+    /// *across a disk boundary hold the raw number and validate on read, because
+    /// serde will invent one; inside a process hold the checked type, because
+    /// nothing will invent one for you.* So a key that is not a number, or is
+    /// zero, is a file this does not read rather than a Place nobody has.
+    places: BTreeMap<String, APlacesOwn>,
 }
 
 /// **Where a person left their canvas.**
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Arrangement {
-    /// Where they were looking.
+    /// Each Place's own camera and windows.
+    ///
+    /// **Keyed by the checked type**, not by the number — the raw number lives
+    /// only in the file. Empty for a canvas nobody has arranged, which is not the
+    /// same as a Place with nothing on it: the first is *no answer* and the second
+    /// is *an answer that is empty*, and a restore must be able to tell them
+    /// apart.
+    places: BTreeMap<Place, OnePlace>,
+}
+
+/// One Place's camera and windows, in memory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OnePlace {
+    /// Where they were looking on this Place.
     camera: Camera,
-    /// Where each application's window was, and how big.
+    /// Where each application's window was on it, and how big.
     windows: BTreeMap<String, (At, Size)>,
 }
 
-impl Default for Arrangement {
-    fn default() -> Self {
-        Self::fresh()
-    }
-}
-
-impl Arrangement {
-    /// A canvas nobody has arranged yet: the origin, at life size, nothing placed.
-    #[must_use]
-    pub fn fresh() -> Self {
+impl OnePlace {
+    /// A Place nobody has arranged yet: the origin, at life size, nothing placed.
+    fn fresh() -> Self {
         Self {
             camera: Camera::new(),
             windows: BTreeMap::new(),
         }
     }
+}
 
-    /// The camera this arrangement was left with.
+impl Arrangement {
+    /// A canvas nobody has arranged yet: no Places remembered at all.
     #[must_use]
-    pub const fn camera(&self) -> Camera {
-        self.camera
+    pub fn fresh() -> Self {
+        Self {
+            places: BTreeMap::new(),
+        }
     }
 
-    /// Remember where this application's window was.
+    /// The camera this Place was left with, or [`None`] if it was never arranged.
     ///
-    /// One place per `app_id`: writing a second replaces the first, which is the
-    /// consequence of the key this crate has and is stated in its header rather
-    /// than hidden here.
-    pub fn window_was(&mut self, app_id: impl Into<String>, at: At, size: Size) {
-        self.windows.insert(app_id.into(), (at, size));
-    }
-
-    /// Remember where the camera was.
-    pub const fn looking(&mut self, camera: Camera) {
-        self.camera = camera;
-    }
-
-    /// Where this application's window was, if it was here at all.
+    /// **[`None`] rather than the origin at life size**, because *this Place was
+    /// never left anywhere* and *this Place was left at the origin* are different
+    /// answers and only one of them should move a camera. Version 1 could not tell
+    /// them apart: it had one camera and it always had a value.
     #[must_use]
-    pub fn where_it_was(&self, app_id: &str) -> Option<(At, Size)> {
-        self.windows.get(app_id).copied()
+    pub fn camera_on(&self, place: Place) -> Option<Camera> {
+        self.places.get(&place).map(|one| one.camera)
     }
 
-    /// How many windows are remembered.
+    /// Remember where this application's window was, on this Place.
+    ///
+    /// One place per `app_id` **per Place**: writing a second for the same pair
+    /// replaces the first. One application may now be remembered once on each of
+    /// several Places, which is the thing version 1 made impossible.
+    pub fn window_was(&mut self, place: Place, app_id: impl Into<String>, at: At, size: Size) {
+        self.places
+            .entry(place)
+            .or_insert_with(OnePlace::fresh)
+            .windows
+            .insert(app_id.into(), (at, size));
+    }
+
+    /// Remember where the camera was on this Place.
+    pub fn looking(&mut self, place: Place, camera: Camera) {
+        self.places
+            .entry(place)
+            .or_insert_with(OnePlace::fresh)
+            .camera = camera;
+    }
+
+    /// Where this application's window was on this Place, if it was there at all.
+    #[must_use]
+    pub fn where_it_was(&self, place: Place, app_id: &str) -> Option<(At, Size)> {
+        self.places.get(&place)?.windows.get(app_id).copied()
+    }
+
+    /// How many windows are remembered on this Place.
+    #[must_use]
+    pub fn how_many_on(&self, place: Place) -> usize {
+        self.places.get(&place).map_or(0, |one| one.windows.len())
+    }
+
+    /// How many windows are remembered across every Place.
     #[must_use]
     pub fn how_many(&self) -> usize {
-        self.windows.len()
+        self.places.values().map(|one| one.windows.len()).sum()
+    }
+
+    /// Every Place this arrangement remembers, lowest number first.
+    pub fn each_place(&self) -> impl Iterator<Item = Place> + '_ {
+        self.places.keys().copied()
     }
 
     /// This arrangement, as the file says it.
@@ -203,19 +279,30 @@ impl Arrangement {
             // **Set here rather than defaulted**, so that the absent case stays
             // reachable in `read`. See the field's own note.
             version: FORMAT,
-            looking_at: (self.camera.at().x, self.camera.at().y),
-            zoom: self.camera.zoom().thousandths(),
-            windows: self
-                .windows
+            places: self
+                .places
                 .iter()
-                .map(|(app_id, (at, size))| {
+                .map(|(place, one)| {
                     (
-                        app_id.clone(),
-                        Written {
-                            x: at.x,
-                            y: at.y,
-                            width: size.width(),
-                            height: size.height(),
+                        place.number().to_string(),
+                        APlacesOwn {
+                            looking_at: (one.camera.at().x, one.camera.at().y),
+                            zoom: one.camera.zoom().thousandths(),
+                            windows: one
+                                .windows
+                                .iter()
+                                .map(|(app_id, (at, size))| {
+                                    (
+                                        app_id.clone(),
+                                        Written {
+                                            x: at.x,
+                                            y: at.y,
+                                            width: size.width(),
+                                            height: size.height(),
+                                        },
+                                    )
+                                })
+                                .collect(),
                         },
                     )
                 })
@@ -241,35 +328,47 @@ impl Arrangement {
         let file: TheFile =
             toml::from_str(written).map_err(|why| NotArranged::Unreadable(why.to_string()))?;
         // **Before any value in it is trusted.** A file from another shape may
-        // parse cleanly and mean something else entirely — the same keys with a
-        // Place keyed above them, say — so the version is checked before the
-        // camera rather than after the windows.
+        // parse cleanly and mean something else entirely — version 1 had these
+        // same keys one level higher — so the version is checked before the
+        // cameras rather than after the windows.
         if file.version != FORMAT {
             return Err(NotArranged::AnotherVersion {
                 said: file.version,
                 reads: FORMAT,
             });
         }
-        let camera = Camera::new()
-            .looking_at(
-                At::checked(file.looking_at.0, file.looking_at.1)
-                    .ok_or_else(|| NotArranged::NotOnThePlane("looking-at".to_owned()))?,
-            )
-            .ok_or_else(|| NotArranged::NotOnThePlane("looking-at".to_owned()))?;
-        let zoom = Zoom::of(file.zoom)
-            .map_err(|why| NotArranged::NotOnThePlane(format!("zoom: {why}")))?;
-        let camera = camera
-            .zoomed_to(zoom, (0, 0))
-            .ok_or_else(|| NotArranged::NotOnThePlane("zoom".to_owned()))?;
-        let mut windows = BTreeMap::new();
-        for (app_id, was) in file.windows {
-            let at = At::checked(was.x, was.y)
-                .ok_or_else(|| NotArranged::NotOnThePlane(format!("{app_id}: its place")))?;
-            let size = Size::checked(was.width, was.height)
-                .ok_or_else(|| NotArranged::NotOnThePlane(format!("{app_id}: its size")))?;
-            windows.insert(app_id, (at, size));
+        let mut places = BTreeMap::new();
+        for (key, was) in file.places {
+            // The boundary rule, applied to an identity rather than a position:
+            // the raw number crossed the disk and is validated here. A key that is
+            // not a number, or is zero, is a file this does not read.
+            let place = key
+                .parse::<u64>()
+                .ok()
+                .and_then(Place::numbered)
+                .ok_or_else(|| NotArranged::NotOnThePlane(format!("{key}: not a Place")))?;
+            let at = At::checked(was.looking_at.0, was.looking_at.1)
+                .ok_or_else(|| NotArranged::NotOnThePlane(format!("{key}: looking-at")))?;
+            let zoom = Zoom::of(was.zoom)
+                .map_err(|why| NotArranged::NotOnThePlane(format!("{key}: zoom: {why}")))?;
+            let camera = Camera::new()
+                .looking_at(at)
+                .and_then(|camera| camera.zoomed_to(zoom, (0, 0)))
+                .ok_or_else(|| NotArranged::NotOnThePlane(format!("{key}: its camera")))?;
+            let mut windows = BTreeMap::new();
+            for (app_id, where_it_was) in was.windows {
+                let at = At::checked(where_it_was.x, where_it_was.y).ok_or_else(|| {
+                    NotArranged::NotOnThePlane(format!("{key}/{app_id}: its place"))
+                })?;
+                let size =
+                    Size::checked(where_it_was.width, where_it_was.height).ok_or_else(|| {
+                        NotArranged::NotOnThePlane(format!("{key}/{app_id}: its size"))
+                    })?;
+                windows.insert(app_id, (at, size));
+            }
+            places.insert(place, OnePlace { camera, windows });
         }
-        Ok(Self { camera, windows })
+        Ok(Self { places })
     }
 }
 
