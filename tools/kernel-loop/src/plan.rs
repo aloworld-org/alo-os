@@ -529,8 +529,8 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
         for named in [
             THE_PLAN,
             "docs/autonomy/v0-01-delivery-plan.md",
-            "docs/autonomy/v0-01-lane-b-plan.md",
-            "docs/autonomy/v0-5-lane-b-plan.md",
+            "docs/autonomy/accounts-and-session-entry-plan.md",
+            "docs/autonomy/providers-and-models-plan.md",
             "docs/autonomy/v0-5-the-local-network-plan.md",
             "docs/autonomy/v0-5-the-machine-measured-plan.md",
             "docs/autonomy/v0-5-the-models-measured-plan.md",
@@ -642,7 +642,7 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
                 // ready`, and discovering `**Done, 2026-09-07.**` sixty lines
                 // below it with the code and seven tests behind it. A twenty-line
                 // sweep then found three across the repository — this plan's task
-                // 3, `v0-01-delivery-plan.md` task 27, `v0-01-lane-b-plan.md` task
+                // 3, `v0-01-delivery-plan.md` task 27, `accounts-and-session-entry-plan.md` task
                 // 5 — all three genuinely done, all three saying `ready`.
                 //
                 // The assertion above and this one are the two halves of one

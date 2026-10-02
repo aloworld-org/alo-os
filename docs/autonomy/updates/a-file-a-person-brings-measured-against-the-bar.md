@@ -142,7 +142,7 @@ give the agent, and the contract says so. The refusal lives on the one road that
 ## Lane B's task 10, and what it is really waiting on
 
 Its block said a catalogue entry that clears the bar. The truer sentence, now in
-`docs/autonomy/v0-01-lane-b-plan.md`: the 7B and 8B entries have been measured
+`docs/autonomy/accounts-and-session-entry-plan.md`: the 7B and 8B entries have been measured
 on a machine that holds them, and brought by file, and every one is `rarely` —
 failing the call's grammar (door and verb confused), not its size.
 

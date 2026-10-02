@@ -12,7 +12,7 @@ judgement it was and can overturn it with one line. Everything below is left as
 it was argued.
 **Date:** 2026-09-11
 **Proposed by:** the v0.01 delivery workstream, lane B, as task 14 of
-`docs/autonomy/v0-01-lane-b-plan.md`
+`docs/autonomy/accounts-and-session-entry-plan.md`
 **Context:** [ADR 0006](0006-the-pinned-model-runtime.md) (the pinned runtime,
 and *weights are never redistributed by us*),
 [ADR 0007](0007-the-cpu-is-the-default.md) (the CPU is the default, and the

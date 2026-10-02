@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** v0.01 delivery, lane B — task 15 of
-`docs/autonomy/v0-01-lane-b-plan.md`
+`docs/autonomy/accounts-and-session-entry-plan.md`
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration
 

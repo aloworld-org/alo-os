@@ -33,7 +33,7 @@ it happened on the very first task of the plan.
   would finish a task by describing the finishing. The two labels are named
   constants; the blocked check uses the same `**Status:**` constant. The
   module's rustdoc records the failure and why the status line counts.
-- `docs/autonomy/v0-5-lane-b-plan.md` — task 1's mark now stands at the start
+- `docs/autonomy/providers-and-models-plan.md` — task 1's mark now stands at the start
   of its own line, the canonical form every other plan uses, with a note that
   it first sat after the label and a link here. The reading instructions say
   "at the start of a line of its own" and that the loop also reads it after

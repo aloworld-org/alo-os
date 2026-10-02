@@ -1,7 +1,7 @@
 # A person can be told what their machine did
 
 **Date:** 2026-09-10
-**Workstream:** v0.01 lane B — accounts and session entry (`docs/autonomy/v0-01-lane-b-plan.md`, task 5)
+**Workstream:** v0.01 lane B — accounts and session entry (`docs/autonomy/accounts-and-session-entry-plan.md`, task 5)
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration
 
@@ -222,7 +222,7 @@ New: `crates/alo-keeping/src/believing.rs`,
 
 Edited: `crates/alo-keeping/{Cargo.toml,src/failing.rs,src/lib.rs,src/reading.rs,src/testing.rs,src/words.rs,tests/what_this_crate_says.rs}`,
 `crates/alo-recounting/{Cargo.toml,src/account.rs,src/lib.rs,src/recounting.rs,src/refusing.rs,src/testing.rs,src/words.rs,tests/afterwards_ask_what_it_did.rs}`,
-`Cargo.lock` and `docs/autonomy/v0-01-lane-b-plan.md`.
+`Cargo.lock` and `docs/autonomy/accounts-and-session-entry-plan.md`.
 
 ## Proposed shared-document updates
 
@@ -242,6 +242,6 @@ Not made here — `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` and
 
 **Queue/roadmap:** lane B's task 5 is done; task 6 (*the account a person asks
 for is the one their machine kept*) is written into
-`docs/autonomy/v0-01-lane-b-plan.md` and is ready. Nothing in
+`docs/autonomy/accounts-and-session-entry-plan.md` and is ready. Nothing in
 `docs/autonomy/v0-01-delivery-plan.md` matched this task, so nothing was marked
 there.

@@ -58,7 +58,7 @@ side, in `alo-choosing`:
   word count it pins, 15 → 16.
 - `docs/contracts/person-settings.md` — *Writing it* gained the rule and the
   changing door, additively.
-- `docs/autonomy/v0-5-lane-b-plan.md` — task 1 marked done. Task 2 was already
+- `docs/autonomy/providers-and-models-plan.md` — task 1 marked done. Task 2 was already
   written after it.
 
 ### User-readable change description

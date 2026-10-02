@@ -40,10 +40,10 @@ Where they were:
 |---|---|
 | `v0-01-delivery-plan.md` | 32 |
 | `kernel-enforcement-plan.md` | 14 |
-| `v0-01-lane-b-plan.md` | 14 |
+| `accounts-and-session-entry-plan.md` | 14 |
 | `v0-5-the-machine-keeps-itself-plan.md` | 9 |
 | `v0-5-documents-and-paper-plan.md` | 4 |
-| `v0-5-lane-b-plan.md` | 1 |
+| `providers-and-models-plan.md` | 1 |
 
 **Forty-six of the seventy-four are v0.01's** — a release that shipped, in two
 plans still describing most of their finished work as available. The nine in
@@ -61,7 +61,7 @@ after it, the acceptance criteria and every `**Done,` paragraph are untouched.
 The diff is 74 insertions and 74 deletions, and every one of the 148 lines is a
 `**Status:**` line. Two of them carried a sentence rather than a word —
 `v0-01-delivery-plan.md` tasks 4 and 5 read *lane B's — scheduled in
-`v0-01-lane-b-plan.md` … Lane B's finishing handoff marks it done here*, which
+`accounts-and-session-entry-plan.md` … Lane B's finishing handoff marks it done here*, which
 lane B did on 2026-09-10 — and those now read *done — lane B's, scheduled in
 …*, keeping the sentence.
 

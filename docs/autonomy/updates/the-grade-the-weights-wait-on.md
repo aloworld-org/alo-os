@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** v0.01 lane B — accounts and session entry
-**Task:** *The grade the weights wait on* (`docs/autonomy/v0-01-lane-b-plan.md`,
+**Task:** *The grade the weights wait on* (`docs/autonomy/accounts-and-session-entry-plan.md`,
 task 9)
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration.
@@ -163,7 +163,7 @@ much memory it has.
   refusals in front of itself.
 - `docs/quirks.md` — two entries under *Models*: what the box could not do with
   its numbers, and the two Teuken findings.
-- `docs/autonomy/v0-01-lane-b-plan.md` — task 9 marked **Done, 2026-09-11**
+- `docs/autonomy/accounts-and-session-entry-plan.md` — task 9 marked **Done, 2026-09-11**
   with the outcome; task 12 written from it.
 
 Nothing was touched in `crates/alo-shell`, no weights went near the image, no

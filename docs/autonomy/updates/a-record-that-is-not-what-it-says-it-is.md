@@ -2,7 +2,7 @@
 
 - **Date:** 2026-09-11
 - **Workstream:** lane B — accounts and session entry
-  (`docs/autonomy/v0-01-lane-b-plan.md`, task 6: *The account a person asks for
+  (`docs/autonomy/accounts-and-session-entry-plan.md`, task 6: *The account a person asks for
   is the one their machine kept*)
 - **Contributor:** Claude worker in `C:\dev\alo-os-b`
 - **Status:** ready for integration
@@ -58,7 +58,7 @@ shortened itself is one the check is silent about.
   additively. Not a byte of the file shape moved; the contract now says an
   entry *at* `since` and two entries in one moment are legitimate, which is the
   off-by-one a second implementation would otherwise get wrong.
-- `docs/autonomy/v0-01-lane-b-plan.md` — task 6 marked done. Task 7 was
+- `docs/autonomy/accounts-and-session-entry-plan.md` — task 6 marked done. Task 7 was
   already written, so no new task was added. No task in
   `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
 

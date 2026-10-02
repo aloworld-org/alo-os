@@ -67,7 +67,7 @@ model, not a certification of alo OS on this hardware.
 as *the first catalogue model that could be given the agent*, with its
 quantisation, counts and residency — and stop there: what the catalogue
 recommends and what the image pins are decisions the plan makes in tasks 15
-and 6 of `v0-01-lane-b-plan.md`, not this run.
+and 6 of `accounts-and-session-entry-plan.md`, not this run.
 
 **When you are done:** commit, pull, push, and tell the owner in a short
 report: the machine's exact model and memory, Ollama's version, each model's

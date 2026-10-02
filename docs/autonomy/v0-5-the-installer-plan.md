@@ -61,7 +61,7 @@ files below are the weights' own additions, and the checks that hold the recipe
 to them. A change to the image for any other reason is still this plan's alone.
 
 ```owner-release
-plan = docs/autonomy/v0-01-lane-b-plan.md
+plan = docs/autonomy/accounts-and-session-entry-plan.md
 task = 10
 files =
   image/Containerfile
