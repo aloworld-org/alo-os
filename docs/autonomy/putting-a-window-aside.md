@@ -76,6 +76,22 @@ callers, with definitions separated from calls.** `grep -c` on the name answers 
 listing does, and a method whose only callers are tests reads exactly like one that is
 finished.
 
+**The one exception, and it is narrow: a road may have no caller when giving it one would
+decide something the owner has not.** `alo_put_aside::a_place_groups_its_windows` has no
+production caller on purpose. `docs/design/the-windows-put-aside.md:304` allows grouping by
+Place *without hiding individual windows behind an app icon* and then says: **whether it is
+the default when there are many, or always a choice, is not decided.** A draw that grouped
+would answer that, in a drawing crate, on behalf of the person who has not been asked.
+
+So *has it got a caller* is the question, and **two answers pass**: it has one, or it has
+none and the status says which decision the caller waits on, named and citable. What does
+not pass is silence — a built road with no caller and a status that reads as finished,
+which is what the four above were.
+
+The distinction is not a loophole, because the second answer costs more than the first: it
+requires finding the sentence that makes the decision open, and quoting it where the next
+lane will read it. A lane that cannot find such a sentence does not have this exception.
+
 A corollary the same lanes paid for three times in one day: **a fault found at one site is
 a fault to grep for.** A guard covering the field that happened to get mutated, a report
 naming the one lookup that happened to get mutated — each time the finder stopped at the
