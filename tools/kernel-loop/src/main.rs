@@ -55,6 +55,26 @@
 //! somebody stops it. A task the plan marks **blocked** is stepped over, so one
 //! question awaiting an answer does not hold up work that has none.
 //!
+//! # The gate step is a pre-check now, and a machine may decline it
+//!
+//! `ALO_LOOP_GATE=off` skips the local gates and lets CI be the only verdict, which it
+//! already is: `main` requires `alo/gates-on-a-runner`, a hosted runner posts it, and the
+//! gates a lane runs locally produce no required status at all.
+//!
+//! **Unset means gate**, and only `0`, `no`, `off`, `false` or `never` turn it off — anything
+//! else, including a typo, keeps gating. `crate::publishing::reading_whether_to_gate` carries
+//! why that asymmetry is deliberate.
+//!
+//! It exists because the cost is a fact about the machine rather than about the work: ~330
+//! seconds a task on the laptop, ~840 on the desktop PC, and **57 to 97 minutes on the Mac**,
+//! which has 3.9 GB of RAM and was driven into swap by five linkers. That lane cannot run
+//! unattended at all while it pays an hour and a half to learn what CI says in thirteen
+//! minutes.
+//!
+//! **A run that did not gate says so in its journal, at the push rather than once at
+//! startup** — a record that read the same either way would make *nobody gated this*
+//! indistinguishable from *this passed*.
+//!
 //! # Parking, and picking one back up
 //!
 //! A task whose gates refuse it is committed to a local branch of its own and
