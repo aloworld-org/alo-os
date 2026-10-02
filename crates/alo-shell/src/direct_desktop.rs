@@ -310,6 +310,28 @@ impl LoopInput for Desk<'_> {
             },
             self.desktop.now().look.scale(),
         );
+        // **And if those bounds moved, a frame they now hide is brought back.**
+        // The line above has recorded where the controls are since 2026-10-02 and
+        // nothing asked the next question: the Dock grows with its icons, the
+        // panel's column appears when a window is put aside, and the display or
+        // its scale can change under a frame that is not moving at all. After any
+        // of those a reachable frame is unreachable, and before this line the
+        // detector and the mover that handle it were called by tests alone.
+        //
+        // **One frame behind, inherently.** These bounds come from the pictures
+        // laid out above, so the earliest a change can be acted on is after they
+        // exist, and a frame moved here is drawn where it moved to on the next
+        // pass. That is a single frame of a window sitting under the Dock, which
+        // is what the alternative — laying out twice to move before drawing —
+        // would cost every frame to avoid once.
+        //
+        // The result is dropped **because the telling is not built**, not because
+        // it does not matter: the move has already happened and is visible, and
+        // the sentence that explains it needs alo OS's first production
+        // notification and its words in every shipped language. See
+        // `crate::canvas_fixed_controls::Server::bring_back_frames_the_moved_controls_hide`,
+        // which holds the argument and the `was` that road will need.
+        let _ = server.bring_back_frames_the_moved_controls_hide();
         // **And where the panel ended up, for the same reason and in the same place.**
         // Its slots are laid out in `crate::panel_raster` and exist only for this
         // frame; a pointer arriving afterwards has nothing to be tested against

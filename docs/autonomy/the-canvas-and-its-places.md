@@ -252,7 +252,21 @@ Place to key any of it by.
 
 ### 6. The fixed controls, and a window that can always be got back
 
-**Status:** in progress — the Dock and the status area are held; the panel is not.
+**Status:** in progress — the recheck has a caller as of 2026-10-02; two named
+pieces are waiting on something other than work.
+
+*This line read **the Dock and the status area are held; the panel is not** until
+2026-10-02, and it was wrong in both directions: the panel had joined the set and
+the status area had never been in it.* A status that names what is done is a
+maintained count — nothing checks it, and the next reader plans around it. What
+each piece is actually waiting on, so that nobody has to re-derive it:
+
+| The check | Where it stands |
+| --- | --- |
+| The set, and 44 × 24 of the name kept clear | The **Dock's band** and the **panel's reserved column** are held and compared. The **status area** is not, and cannot be: `EgressStatusPicture` carries rows and solids and **no rectangle**, so there is nothing to hand over. It joins when it can say where it is. |
+| Rechecked when the display, the scale, the Dock's bounds or the panel's state changes | **Done.** The draw records the controls and, when they differ from the frame before, asks for the frames they now hide and brings them back. Before this the detector and the mover were both written, both tested and **called by tests alone.** |
+| A recovery that moves a frame shows the move and records where it was | **The record is done** — `Recovery::BroughtBack` carries where the frame was as well as where it is. **The showing is not**, and it is not a line of work: `alo_notifying::arriving::from_alo_os` is the mechanism and **alo OS has no production notification anywhere in this tree**, so the first one is its own task, with its own externalized words in every shipped language. |
+| A keyboard road to move a frame | Needs scope the owner has not granted; recorded at the foot of this plan rather than invented. |
 
 The Dock, the status area and the **expanded** minimized-window panel are a
 **set**, and a frame keeps a usable part of its name outside every one of them —
