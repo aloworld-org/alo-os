@@ -843,7 +843,48 @@ loosened to at-most-two.
 ### 7. Alo working in a minimised window
 
 **Status:** **model built, no evidence, and blocked on nothing reporting what alo is doing,
-2026-10-02.** A window can now be put aside, so there is a preview for a report to appear on, and
+2026-10-02.**
+
+> **Measured 2026-10-02, when the shell lane came to take it: the blocker is not
+> the shell, and the agent half cannot be written anywhere yet.**
+>
+> ```text
+> what_an_agent_may_do        0 production callers
+> Panel::alo_is_now           0 callers outside its own crate
+> AtWork                      nothing outside alo-put-aside constructs one
+> alo-approving               asks and answers — per turn, not work on a window
+> anything pairing a window with work in progress   none
+> alo-desktop, which holds the Panel: agent mentions 0, and it depends on
+>   neither alo-agentd nor alo-asking, both of which exist as crates
+> ```
+>
+> **So a method on the shell would be dead code**, and dead code fails the gate
+> under `-D warnings` — the same wall the pointer classifier met, from the other
+> side: there, the inputs were missing; here, the *caller* is.
+>
+> **The shell is also, deliberately, not where an agent reaches.** Thirteen
+> places in `alo-shell` say so in their own words — *this trusted shell
+> primitive is not an agent verb*, *offers no agent context or execution
+> authority*, *no agent is involved or reachable from these files* — and
+> `CLAUDE.md` puts the service that lets an agent reach the machine somewhere
+> else entirely.
+>
+> **That does not rule out the shell being *told*.** `the_panel_was_drawn` is
+> exactly that shape: the shell does not ask who drew what, it is handed the
+> answer. An `alo_is_now` taking a report would be the same, and would not make
+> the shell an endpoint.
+>
+> **What is missing is the one who does the telling.** Nothing between
+> `alo-agentd` and the crate holding the Panel carries *alo is working on this
+> window*. Building that is a crate-boundary decision — whether `alo-desktop`
+> gains a dependency on the agent road, or a third thing bridges them — and it
+> is the owner's rather than a lane's.
+>
+> *This is the second task today where the road is correct, the piece is
+> correct, and the thing that cannot be supplied is whatever would drive it. The
+> other is `linux-dmabuf`. Both were found by trying to take the task and
+> measuring first, and in both the honest output is the measurement rather than
+> a caller invented to satisfy a gate.* A window can now be put aside, so there is a preview for a report to appear on, and
 this is no longer blocked on the input road. What it waits on is `Panel::alo_is_now` having a
 caller — the agent half of this promise, which is the shell lane’s by the queues and cannot be
 written until there is something to report against. That is now true.
