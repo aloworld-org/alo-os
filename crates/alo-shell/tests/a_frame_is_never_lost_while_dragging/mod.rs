@@ -319,6 +319,56 @@ fn the_handle_floor_converts_with_the_displays_scale() {
     }
 }
 
+/// **A control that appears over a frame puts it out of reach, and until
+/// 2026-10-02 nothing noticed.**
+///
+/// The rule is in force on the two roads a frame *moves* by — a drag, and a
+/// recovery putting a window back where it was left. Both ask before placing.
+/// **Neither asks again**, and the controls move underneath a frame that is not
+/// moving at all: the Dock gives way and comes back, a window is put aside so
+/// the panel's column appears where there was none, the display or its scale
+/// changes, the Dock moves to another edge.
+///
+/// Task 8's third acceptance clause is exactly this: *reachability is rechecked
+/// when those bounds change.*
+///
+/// Three positions, so the answer is not *everything* or *nothing*: a frame well
+/// clear of the panel is not named, a frame under it is, and with no panel drawn
+/// neither is.
+#[test]
+fn a_frame_the_panel_now_covers_is_named_by_the_recheck() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+
+    // Under where the panel's column will be, and clear of the Dock.
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, (VIEWPORT.0 - 40, 300))
+        })
+        .is_ok()
+    );
+
+    // **The Dock alone, which is what the draw hands over until a window is put
+    // aside.** The frame is reachable: nothing is over it.
+    drawn_with_a_dock(&f);
+    let hidden_before = f.backend(|s| s.frames_the_controls_now_hide());
+    assert!(
+        hidden_before.is_empty(),
+        "a frame with nothing over it was named as hidden: {hidden_before:?}"
+    );
+
+    // **Now a window is put aside and the panel takes its column.** The frame
+    // has not moved; the controls have.
+    drawn_with_a_dock_and_a_panel(&f);
+    let hidden_after = f.backend(|s| s.frames_the_controls_now_hide());
+    assert!(
+        !hidden_after.is_empty(),
+        "the panel's column appeared over a frame and the recheck named nobody, \
+         so a frame can be put out of reach by a control moving and nothing notices"
+    );
+}
+
 /// **The frame keeps the last position that was allowed.**
 ///
 /// The owner's ruling of 2026-09-30: *keep the last valid position while the
