@@ -270,6 +270,42 @@ clients rather than a fixture; and the three v0.5 lines around this one — the
 clipboard portal, screenshots to the clipboard — stay where the definition puts
 them.
 
+### Notifications, with do-not-disturb
+
+**Shown by:** `crates/alo-notifying/tests/do_not_disturb_holds_every_notification.rs`,
+`crates/alo-notifying/tests/nothing_is_shown_while_the_machine_is_locked.rs`,
+`crates/alo-notifying/tests/a_notification_cannot_answer_an_approval.rs`,
+`crates/alo-notifying/tests/the_agent_never_reads_a_notification.rs`,
+`crates/alo-notifying/tests/what_a_person_missed_is_kept_here_and_never_synced.rs`,
+`docs/autonomy/updates/notifications-and-do-not-disturb.md`
+
+Carried here with the promise when it moved tier on 2026-10-02. It is the most
+completely built promise in its group: do-not-disturb holds *every*
+notification, nothing shows on a locked machine, a notification cannot answer an
+approval, and the agent never reads one — four refusals, each tested.
+
+**Still owed:** **a notification on a screen, and the caller that would put one
+there.** `arrives(notification, seat, quiet, missed)` is the only way to a
+`Shown`, because `Shown::of` is `pub(crate)` on purpose, and it is `arrives`
+that asks whether the seat is locked and whether quiet holds. It has no caller
+outside its own crate; nothing in production holds a `Seat<Notification>`; and
+`alo-desktop` passes an empty slice into every frame. So the rules are built and
+nothing walks them, and do-not-disturb has nothing to hold back.
+
+The clearest live consequence is already in the tree and commented as such:
+`direct_desktop` moves a window out from under the fixed controls when they grow
+and drops the result, because the telling is not built. The move happens and is
+visible; the sentence that would explain it needs this promise, and its count
+must go through `alo-strings`' plural machinery rather than an English format
+string, because several of the twenty-four languages have three or four plural
+categories.
+
+Reached v0.01 on 2026-10-02 by the owner's decision, so that a promise already
+at v0.01 could be kept rather than silently half-kept. Where the work is: task 6
+of `docs/autonomy/the-session-and-the-displays-plan.md` for the rules and
+do-not-disturb, and task 11 of `docs/autonomy/the-shell-plan.md` for drawing
+them on a frame.
+
 ### Keyboard shortcuts, and a person can change them
 
 **Shown by:** `crates/alo-shortcuts/src/changes.rs`,
