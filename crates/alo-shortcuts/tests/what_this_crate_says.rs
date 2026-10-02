@@ -90,6 +90,16 @@ fn auf_deutsch() -> Strings {
                 words::SHOW_ALL_ON_THE_CANVAS,
                 "Alle Fenster der Arbeitsfläche zeigen",
             ),
+            // *Place* is the canvas's own word and this translation keeps it as
+            // a noun a person reads rather than borrowing `Arbeitsfläche`, which
+            // this fixture already uses for the canvas itself. A window moved to
+            // the next *surface* and a window moved to the next *canvas* are not
+            // the same sentence, and the plan's fifth meaning of the word is the
+            // one being named.
+            (
+                words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
+                "Fenster auf die nächste Fläche verschieben",
+            ),
             // Super and Alt are written the same way in German, and they are
             // here for that reason rather than in spite of it. Item 15 made a
             // sentence only as translated as the pieces put into it, and the
@@ -219,6 +229,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             (
                 "Alle Fenster der Arbeitsfläche zeigen".to_owned(),
                 "Super+0".to_owned(),
+            ),
+            (
+                "Fenster auf die nächste Fläche verschieben".to_owned(),
+                "Super+Umschalt+.".to_owned(),
             ),
         ]
     );
