@@ -120,6 +120,61 @@ anything else people actually use. Missing, and each has a reason:
   and measuring, not invention, and anything that turns out to be invention is a
   finding worth writing down.
 
+**The finding that constraint asked for, 2026-10-02: `linux-dmabuf` is the one
+that is invention, and the other five were wiring.**
+
+Four are wired or in flight — the clipboard, the frame decoration, the drawn
+size, and text a person did not type. Each was a field on `Surfaces`, a line in
+its constructor, a handler and a delegate. `linux-dmabuf` cannot be any of
+those, and the reason is not a gap in smithay:
+
+```text
+DmabufState::create_global(display, formats)   must advertise the formats the
+                                               GPU can actually import
+DmabufHandler::dmabuf_imported(.., notifier)   must try the import and tell the
+                                               client whether it worked
+server.rs:115   Surfaces::new(&display.handle())   globals are made here
+nested.rs:102   winit::init_from_attributes       the ONLY renderer in the
+                                                  workspace is made here, later
+Surfaces, Server                                  hold no renderer at all
+```
+
+**So the handler has nothing to import into.** Every other protocol's state is
+answerable from what `Surfaces` already holds. This one needs a live renderer at
+two separate moments — when the global is created, to say which formats are
+offered, and at every import, to say whether this buffer worked.
+
+**What must not be done, and is the reason this is written instead of built.**
+A `dmabuf_imported` with no renderer can only accept optimistically: tell the
+client the buffer is fine and discover at draw time that it is not. That would
+advertise a protocol this compositor cannot honour, and **the failure would
+arrive as a black window rather than as a refusal the client can handle.** It is
+the same shape as a global nobody can use, inverted — not unreachable, but
+answering yes without knowing.
+
+**What it actually needs is a decision about where the renderer lives**, which
+is architecture rather than wiring:
+
+- `Surfaces` holds the renderer, which inverts the current direction — today the
+  renderer is threaded in as a parameter at draw time, and `direct_target.rs`,
+  `direct_loop.rs` and `direct_input_loop.rs` all take `&mut GlesRenderer`
+  rather than reaching for one; or
+- the import is deferred to the first draw, and the notifier is held until then,
+  which means a client waits on a round trip it did not expect; or
+- the global is created by whoever owns the renderer and the handler lives
+  there too, which splits this protocol's state away from the other five.
+
+**None of these is a line of wiring and each changes something another lane
+touches.** So it is the owner's, and it is written here rather than decided by
+the lane that found it.
+
+*One measurement that is worth keeping on its own: the workspace constructs
+exactly **one** renderer, `winit::init_from_attributes` in `nested.rs`, which is
+the windowed development backend. The direct path takes a `&mut GlesRenderer`
+everywhere and builds none. Whether a machine booting to `alo-compositor` has a
+renderer at all is a separate question this measurement raises and does not
+answer.*
+
 ### 4. A terminal, rented rather than written
 
 **Status:** ready. **Depends on:** 3.
