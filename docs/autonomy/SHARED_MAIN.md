@@ -1,4 +1,41 @@
-# Task branches and serialized integration
+# Task branches and integration
+
+> ## CI is authoritative since 2026-10-02, and much of what follows describes a retired protocol
+>
+> `main` now requires **`alo/gates-on-a-runner`**, which the hosted-runner
+> workflow posts on both `pull_request` and `merge_group`. **`alo/nine-gates` is
+> required by nothing, and no lane types a status.** Read back from the API at
+> the moment of the change: `required contexts: ['alo/gates-on-a-runner']`,
+> `strict: false`, `enforce_admins: true`.
+>
+> **Retired, and not to be rebuilt:** hand-posting a required status; exclusive
+> holds on the queue; turn-taking between lanes; verdict inheritance across a
+> tree; the four-sha guard; and any requirement that `main` be unmoved. A lane's
+> own full gate is now **diagnostic rather than admission**.
+>
+> **A landing is now:** commit, push, open a pull request, enqueue. CI checks the
+> head, the queue builds its own commit on current `main`, CI checks that, and it
+> merges. Verified end to end on `#363` — no status typed by anyone at any point.
+>
+> **Why the sections below are wrong rather than merely dated.** We built a
+> second integration protocol *around* GitHub's merge queue, and it defeated most
+> of the benefit the queue exists to provide. The queue already builds an
+> integration candidate and checks it; requiring `main` to stay unmoved so a
+> verdict could be inherited was re-implementing by hand the thing we were
+> standing on. On 2026-10-01 eleven faults were found across three lanes and
+> **not one was in the product** — every one was in the apparatus that existed to
+> make a hand-typed status trustworthy, and the fleet delivered 14 merges against
+> a five-day average of 40.
+>
+> **What survives, because it is true whoever posts the result:** a gate must not
+> run against a checkout something else is editing; a validator must not reset a
+> developer's working checkout to obtain its input, and should test an isolated
+> checkout of a named commit; an exit code must be read outside a pipe; a report
+> names the fields that would have to agree; and a build needs disk room. Those
+> are about whether a measurement is of the thing it claims.
+>
+> Per-machine work queues are in [the-queues.md](the-queues.md). `ROADMAP.md`
+> remains the only order.
 
 Owner-approved 2026-09-18. This replaces direct-to-main publication and the
 older prohibition on feature branches. It also replaces the requirement to run
