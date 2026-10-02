@@ -116,6 +116,87 @@ fn a_question_answered_here_draws_nothing_and_one_answered_elsewhere_draws_its_s
     );
 }
 
+/// **The band is what was painted, not the room it could have grown into.**
+///
+/// `Place` holds a corner and how much room there is; a frame has to keep clear
+/// of where the rows actually *went*. Those differ by however much of the room
+/// is unused, which on a quiet machine is nearly all of it — so a band taken
+/// from the room would reserve space no pixel occupies and push frames out of
+/// reach of nothing.
+///
+/// Asserted against the pieces rather than against a figure, so it keeps
+/// meaning this when the indicator's measurements change.
+#[test]
+fn the_band_holds_every_piece_drawn_and_starts_where_they_do() {
+    let mut indicator = Indicator::default();
+    assert!(
+        indicator
+            .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())
+            .is_ok()
+    );
+    let drawn = drawn_as(&indicator, light());
+    assert!(
+        !drawn.is_empty(),
+        "something is leaving, so something is drawn"
+    );
+
+    let Some(band) = drawn.band else {
+        unreachable!("something was drawn and the status area claims no place")
+    };
+
+    let areas: Vec<_> = drawn
+        .solids
+        .iter()
+        .map(|solid| solid.area)
+        .chain(drawn.inked.iter().map(|words| words.area))
+        .filter(|area| area.size.w > 0 && area.size.h > 0)
+        .collect();
+    assert!(
+        !areas.is_empty(),
+        "nothing with a size was drawn to measure"
+    );
+
+    for area in &areas {
+        assert!(
+            band.loc.x <= area.loc.x
+                && band.loc.y <= area.loc.y
+                && band.loc.x + band.size.w >= area.loc.x + area.size.w
+                && band.loc.y + band.size.h >= area.loc.y + area.size.h,
+            "a drawn piece {area:?} lies outside the band {band:?}, so a frame \
+             could sit on it while the never-lost rule believed that area clear"
+        );
+    }
+
+    assert_eq!(
+        Some(band.loc.x),
+        areas.iter().map(|a| a.loc.x).min(),
+        "the band starts left of everything drawn, reserving empty pixels"
+    );
+    assert_eq!(
+        Some(band.loc.y),
+        areas.iter().map(|a| a.loc.y).min(),
+        "the band starts above everything drawn, reserving empty pixels"
+    );
+}
+
+/// **Nothing drawn is no band, which is not the same as a band of no size.**
+///
+/// A zero-sized rectangle is a claim about a place. An empty status area has no
+/// place. The rule filters zero-sized bounds anyway, so the difference changes
+/// no behaviour today — and that is exactly why it would survive as a lie a
+/// later reader inherits.
+#[test]
+fn a_status_area_that_drew_nothing_claims_no_place() {
+    let indicator = Indicator::default();
+    let quiet = drawn_as(&indicator, light());
+    assert!(quiet.is_empty(), "nothing is leaving, so nothing is drawn");
+    assert!(
+        quiet.band.is_none(),
+        "nothing was drawn and the status area still claims a place: {:?}",
+        quiet.band
+    );
+}
+
 /// **An egress a policy refused draws nothing**: nothing left, and a surface
 /// that drew what a rule stopped would teach a person to ignore it.
 #[test]

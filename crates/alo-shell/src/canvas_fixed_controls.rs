@@ -551,11 +551,15 @@ impl crate::Server {
         // instead** — a denser display restricting the drag further reads as the
         // floor arriving, and is equally the floor being too large.
         let handle = Self::a_usable_handle_at(text);
-        let bounds = [drawn.dock_band, Some(drawn.panel_reserved)]
-            .into_iter()
-            .flatten()
-            .filter(|area| area.size.w > 0 && area.size.h > 0)
-            .collect();
+        let bounds = [
+            drawn.dock_band,
+            Some(drawn.panel_reserved),
+            drawn.status_area,
+        ]
+        .into_iter()
+        .flatten()
+        .filter(|area| area.size.w > 0 && area.size.h > 0)
+        .collect();
         self.fixed_controls.drawn(bounds, handle);
     }
 }
@@ -612,6 +616,18 @@ pub struct FixedControlsDrawn {
     /// put a window into covers nothing* is the true answer and not a
     /// placeholder.
     pub panel_reserved: Rectangle<i32, Physical>,
+    /// **Where the status area was drawn**, or [`None`] when nothing was.
+    ///
+    /// The third of the set, and the last to be able to say where it is: it
+    /// carried rows and words and no rectangle until 2026-10-02, so there was
+    /// nothing to hand over and the rule held two of three while promising
+    /// three.
+    ///
+    /// The band is the union of what was **painted**, not the room the
+    /// indicator may grow into. A band taken from the room available would
+    /// reserve space no pixel occupies, and push frames out of reach of
+    /// nothing.
+    pub status_area: Option<Rectangle<i32, Physical>>,
 }
 
 impl crate::Server {

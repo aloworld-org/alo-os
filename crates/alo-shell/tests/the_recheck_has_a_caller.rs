@@ -56,6 +56,9 @@ const THE_DOCKS_OWN_BAND: &str = "dock_band: pictures.desktop.dock";
 /// Where the panel's reserved column must come from, and not from a literal.
 const THE_PANELS_OWN_COLUMN: &str = "panel_reserved: pictures.desktop.panel.reserved";
 
+/// The third of the set, which could not say where it was until 2026-10-02.
+const THE_STATUS_AREAS_OWN_BAND: &str = "status_area: pictures.status.band";
+
 /// This crate's source directory.
 fn src() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src")
@@ -166,6 +169,16 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
 /// them. What *can* be checked is that the draw reads them from the pictures it
 /// just laid out rather than from a literal, and that is a fact about the text.
 ///
+/// **This list is written by hand and that is the wrong shape**, named here
+/// rather than left for the next person to discover. A field added to
+/// `FixedControlsDrawn` joins the set *by being pushed*, as that struct's own
+/// header says — and joins this guard only when somebody remembers. The Mac
+/// lane, which wrote this test, is replacing the list with the struct's own
+/// `pub` fields read from source, so that a new control is required to be wired
+/// the moment it exists. Until then the entries are added by whichever change
+/// adds a control, because **a guard that is wrong for an hour is a guard
+/// somebody reads in that hour.**
+///
 /// Both controls are asserted, not only the panel. The Dock's band is wired the
 /// same way and would fail the same way, and *the promise is outside **every**
 /// fixed control* — a guard covering the control that happened to be mutated would
@@ -181,6 +194,7 @@ fn the_draw_hands_over_the_controls_it_laid_out() {
     for (which, wiring) in [
         ("the Dock's band", THE_DOCKS_OWN_BAND),
         ("the panel's reserved column", THE_PANELS_OWN_COLUMN),
+        ("the status area's band", THE_STATUS_AREAS_OWN_BAND),
     ] {
         assert!(
             how_often(&code, wiring) > 0,
