@@ -260,10 +260,12 @@ impl LoopInput for Desk<'_> {
             crate::canvas_fixed_controls::FixedControlsDrawn {
                 dock_band: pictures.desktop.dock.as_ref().map(|dock| dock.band),
                 panel_reserved: pictures.desktop.panel.reserved,
-                // The scale these rectangles were laid out at, so the logical
-                // handle floor can be converted into their space once. Taken
-                // from the frame rather than guessed, like the rectangles.
-                display_scale: self.desktop.now().display_scale,
+                // **No scale is handed over, because these rectangles are in
+                // the room they were laid out from and the handle floor is in
+                // the same space.** Measured, not assumed: see
+                // `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`.
+                // The division below is the one surface that *does* convert,
+                // and it reads the scale itself.
             },
             self.desktop.now().look.scale(),
         );

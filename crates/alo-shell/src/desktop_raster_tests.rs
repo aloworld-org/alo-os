@@ -99,6 +99,63 @@ fn drawn_at(
     )
 }
 
+/// **Which space the Dock's band and the panel's column are in, asked of the
+/// raster instead of argued from the types.**
+///
+/// # Why this cannot be answered by reading
+///
+/// Both are typed `Rectangle<i32, Physical>` and **that label proves nothing**:
+/// every one of them is built from `size` and from measures scaled by the
+/// person's *text* size, and the marker is satisfied by construction. The
+/// module header of `canvas_fixed_controls` is a monument to the cost of
+/// guessing — two lanes spent an hour on 2026-09-30 diagnosing a unit mismatch
+/// that did not exist, from exactly these types.
+///
+/// So this asserts the only thing that distinguishes the two possibilities:
+/// **a physical rectangle changes with the display's scale and a logical one
+/// does not.**
+///
+/// # What the answer means, either way
+///
+/// If they are unchanged, they are in the room they were handed, which arrives
+/// laid out — and anything compared against them must stay logical too. If they
+/// double, they are true framebuffer pixels and a logical floor has to be
+/// converted before it is compared.
+///
+/// The division is drawn beside them and is the control: it *does* take the
+/// scale and convert, and `the_displays_scale_reaches_what_is_drawn` holds that
+/// it changes. One raster, two behaviours, told apart in one place.
+#[test]
+fn the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale() {
+    let appearance = an_appearance();
+    let look = noon_look(&appearance, Direction::LeftToRight);
+    let (running, filling, _folder) = both_open();
+    let size = (1920, 1080);
+
+    let at_one = drawn_at(&Dock::shipped(), look, &running, &filling, size, 100).unwrap();
+    let one_band = at_one.dock.as_ref().map(|dock| dock.band);
+    let one_column = at_one.panel.reserved;
+
+    for scale in [125u16, 150, 200] {
+        let dense = drawn_at(&Dock::shipped(), look, &running, &filling, size, scale).unwrap();
+        assert_eq!(
+            dense.dock.as_ref().map(|dock| dock.band),
+            one_band,
+            "at {scale} per cent the Dock's band is {:?} and at 100 it is {one_band:?}. \
+             A band that moves with the scale is in framebuffer pixels; one that does not \
+             is in the laid-out room it was handed. Whichever this is, everything compared \
+             against it has to be in the same space.",
+            dense.dock.as_ref().map(|dock| dock.band)
+        );
+        assert_eq!(
+            dense.panel.reserved, one_column,
+            "at {scale} per cent the panel's reserved column is {:?} and at 100 it is \
+             {one_column:?} — and a pointer is tested against this rectangle.",
+            dense.panel.reserved
+        );
+    }
+}
+
 /// **A display's scale reaches the surfaces, and this is the test that was
 /// missing while it did not.**
 ///

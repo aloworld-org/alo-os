@@ -381,12 +381,28 @@ impl crate::Server {
         drawn: FixedControlsDrawn,
         text: alo_appearance::TextScale,
     ) {
-        let (across, along) = Self::a_usable_handle_at(text);
-        // Multiply first and divide once, never by a floored factor: 125 and
-        // 150 are ordinary display scales and `scale / 100` would make both of
-        // them one.
-        let laid = |logical: f64| logical * f64::from(drawn.display_scale.max(100)) / 100.0;
-        let handle = (laid(across), laid(along));
+        // **The handle is not converted, and the display's scale is not read
+        // here.** The owner's ruling of 2026-10-01 says the floor is 44 × 24
+        // *logical*, scaled by the person's text size and nothing else, and
+        // explicitly asks that any implication of a second conversion be
+        // removed. Between 2026-10-02 and this change it was converted anyway,
+        // by me, in the two commits that followed that ruling.
+        //
+        // What makes it wrong is measurable rather than a matter of reading:
+        // `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
+        // draws the same display at 100, 125, 150 and 200 per cent and finds
+        // **both rectangles identical**. They are laid out from the room, which
+        // arrives already divided by the scale, and from measures scaled by text
+        // size alone — so they are logical, and a handle multiplied by the scale
+        // protected 88 × 48 at 200 per cent where the promise is 44 × 24.
+        //
+        // The `Physical` marker on them proves nothing: it is satisfied by
+        // construction, which is the trap this module's header was written about
+        // after two lanes lost an hour to it. **It cost a third hour here, and
+        // the test that was supposed to protect the conversion asserted it
+        // instead** — a denser display restricting the drag further reads as the
+        // floor arriving, and is equally the floor being too large.
+        let handle = Self::a_usable_handle_at(text);
         let bounds = [drawn.dock_band, Some(drawn.panel_reserved)]
             .into_iter()
             .flatten()
@@ -448,15 +464,6 @@ pub struct FixedControlsDrawn {
     /// put a window into covers nothing* is the true answer and not a
     /// placeholder.
     pub panel_reserved: Rectangle<i32, Physical>,
-    /// How many of this display's pixels are one logical pixel, in hundredths.
-    /// 100 is one to one.
-    ///
-    /// **Here because the rectangles above are in this display's pixels and the
-    /// handle floor they are compared against is logical.** Without it the
-    /// comparison is between two different units and the protected area is too
-    /// small by exactly this number — see
-    /// [`crate::Server::the_fixed_controls_were_drawn`].
-    pub display_scale: u16,
 }
 
 impl crate::Server {
