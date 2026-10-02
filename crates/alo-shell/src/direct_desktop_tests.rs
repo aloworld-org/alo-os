@@ -78,6 +78,7 @@ impl crate::TheDesktop for ADesktop {
             windows: &[],
             put_aside: crate::desktop_testing::nothing_put_aside(),
             filling_the_screen: false,
+            display_scale: 100,
         }
     }
 }

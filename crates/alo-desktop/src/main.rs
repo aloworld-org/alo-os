@@ -247,6 +247,21 @@ mod running {
                 dock: &self.dock,
                 put_aside: &self.put_aside,
                 filling_the_screen: false,
+                // **One to one, and it is owed rather than chosen.** 100 is the
+                // right answer for a display drawing one pixel per logical one,
+                // and it is what every surface effectively got until
+                // 2026-10-02: `division_raster` took a scale and its only
+                // caller passed a literal.
+                //
+                // What is missing is not the conversion, which now works, but a
+                // *source*. This binary holds no `Screens` and no
+                // `alo_displays::Scale`, so it has nothing true to put here for
+                // a dense screen. The real one is `ScreenPlace`'s own scale,
+                // for whichever display this frame is drawn on. Until this
+                // binary reads the displays, a two-times screen draws a
+                // division at half the room it owns — and saying so here is the
+                // difference between a default and a silence.
+                display_scale: 100,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

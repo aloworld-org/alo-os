@@ -121,6 +121,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             None,
                             &mut labels,
                             DesktopFrame {
+                                display_scale: 100,
                                 dock: &dock,
                                 look: DesktopLook::of(
                                     &appearance,

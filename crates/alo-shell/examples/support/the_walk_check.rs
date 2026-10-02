@@ -577,6 +577,7 @@ impl<'a> TheDesk<'a> {
             windows: self.windows,
             put_aside: nothing_put_aside(),
             filling_the_screen: false,
+            display_scale: 100,
         }
     }
 }

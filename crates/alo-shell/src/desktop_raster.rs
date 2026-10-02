@@ -109,6 +109,15 @@ pub(crate) struct Shown<'a> {
     /// Dock*. Asked of the shell by the caller, because only the caller knows
     /// which display's windows these are — the seam `windows` already takes.
     pub(crate) filling_the_screen: bool,
+    /// How many physical pixels this display draws for one logical one, in
+    /// hundredths. 100 is one to one; 200 is a dense screen.
+    ///
+    /// **The display's conversion, applied once, here, at the rendering
+    /// boundary** — which is what `alo_appearance::targets` says of the target
+    /// floors and what nothing was actually doing until 2026-10-02. See
+    /// [`crate::nested_desktop::DesktopFrame::display_scale`] for what was wrong and in
+    /// which direction it failed.
+    pub(crate) display_scale: u16,
 }
 
 /// What the running window shows, as a panel.
@@ -166,6 +175,7 @@ pub(crate) fn picture(
         windows,
         put_aside,
         filling_the_screen,
+        display_scale,
     } = shown;
     let dock_picture = crate::dock_raster::picture(
         dock, look, size,
@@ -209,10 +219,24 @@ pub(crate) fn picture(
     };
     let running = crate::desktop_list::picture(running, fonts, size, running_room, list)?;
     let filling = crate::desktop_list::picture(filling, fonts, size, filling_room, list)?;
-    // One is the scale this display is laid out at. A division is in logical
-    // units and knows nothing about scale, so the multiplication happens here,
-    // once, at the boundary.
-    let division = crate::division_raster::picture(division, offer, 1, palette.ink, palette.accent);
+    // **A division is in logical units, so the display's conversion happens
+    // here, once, at the boundary.** That sentence stood over a literal `1`
+    // until 2026-10-02: *one is the scale this display is laid out at*, which is
+    // true of a one-to-one screen and of nothing else. `picture` had no scale to
+    // pass, so the seam was short by an argument rather than wrong — and a
+    // division on a two-times display was drawn at half the room it owns.
+    //
+    // Hundredths straight through, because that is what `in_pixels` takes and
+    // the conversion belongs where the multiplication is. The first version of
+    // this line divided by a hundred here and floored 150 to 1 — the fault the
+    // comment above was written to warn about, committed two edits later.
+    let division = crate::division_raster::picture(
+        division,
+        offer,
+        i32::from(display_scale),
+        palette.ink,
+        palette.accent,
+    );
 
     // **Which edge the panel belongs to is read from the direction a person
     // reads in**, not assumed and not stored. The owner's ruling of 2026-09-30
