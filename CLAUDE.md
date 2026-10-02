@@ -162,6 +162,21 @@ cannot demonstrate.
   `docs/autonomy/SHARED_MAIN.md`: branch checkpoint pushes may precede full
   gates; only an exact, fully gated combined tree may be squash-merged through
   a pull request into `main`. Keep legacy direct-to-main publishers paused.
+- **One task at a time; two unfinished branches at a time.** Each agent
+  actively implements **one** task. Each machine may hold **two**
+  unfinished task branches in separate worktrees — one waiting, one
+  active. **When a task is waiting on CI, review or a decision somebody
+  else owns, start another approved, independent task rather than
+  idling.** *One branch until its PR merges* reads like discipline and
+  is a stall; it was replaced on 2026-10-02 by the owner, after a lane
+  sat idle through a queue that had been empty for two and a half
+  hours. **Opening a second branch does not transfer the first:**
+  ownership of an open pull request lasts until it merges or is
+  deliberately closed, and its failed checks and review requests come
+  before new work on the second. Record dependencies explicitly; a
+  blocked task does not block the machine, and where a question can be
+  settled by authorised investigation, settle it rather than wait.
+  `docs/autonomy/SHARED_MAIN.md` carries the limits and the order.
 - **One language: Rust.** The workspace above is TypeScript and lives
   in another repository. Here, a language that is not Rust is a bug.
   Pinned engines are the exception, and an engine is configured,
@@ -300,7 +315,13 @@ cannot demonstrate.
   `type(scope): descriptive subject`.
 - **One agent per working tree.** Concurrent editors on one checkout
   are forbidden. The canonical checkout lives outside any file-sync
-  folder — git and the remote are the only sync.
+  folder — git and the remote are the only sync. **One agent may hold
+  several worktrees**, which is how a second task proceeds without
+  disturbing the first: separate branches checked out in separate
+  directories, one editor in each. What they do not multiply is the
+  machine — they share its memory, CPU and disk, so **one Cargo
+  operation per machine** stands, and they do not multiply the agent,
+  so one task is actively implemented at a time.
 - **The author of every commit is the repository's owner**, from the
   checkout's own `user.name` and `user.email`. **No agent sets an
   author of its own** — not with `--author`, not with `-c user.name`,
