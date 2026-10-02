@@ -4,13 +4,28 @@ use alo_shell::{InputError, NotDivided, WindowCommandError, WindowMaximizeError,
 use smithay::backend::input::KeyState;
 use wayland_client::protocol::wl_keyboard;
 
+/// **A minimise ask is met in the same call that routed the chord**, as one dispatch does.
+///
+/// `Action::MinimiseWindow` records an ask rather than hiding a window, because
+/// `docs/features.md` promises that minimising puts a preview in the panel — so it goes down
+/// `putting_a_window_aside`, which needs a `Panel`. In production `direct_desktop` meets the
+/// ask immediately after routing the input; this is that second half, so these tests assert the
+/// end of the action rather than the state between its two steps.
 fn dispatch(
     f: &Fixture,
     settings: &Shortcuts,
     chord: Chord,
 ) -> Result<Option<Action>, WindowCommandError> {
     let settings = settings.clone();
-    f.backend(move |s| s.dispatch_window_command(&settings, chord))
+    f.backend(move |s| {
+        let answered = s.dispatch_window_command(&settings, chord);
+        // **The whole road, in one call, as one dispatch does.** Routing the chord records
+        // what the person asked; this meets it. A test that stopped at the first half would
+        // assert the state between two steps of one action.
+        let mut panel = alo_put_aside::Panel::new();
+        let _ = s.put_aside_what_was_asked_for(Some(&mut panel));
+        answered
+    })
 }
 
 fn command(f: &Fixture, action: Action) -> Result<Option<Action>, WindowCommandError> {
@@ -339,5 +354,59 @@ fn shortcut_dispatch_layout_popup_grab_refuses_modes_but_minimize_retires_it()
     app.sync();
     assert_eq!(app.events.popups.done, 1);
     assert_eq!(f.backend(|s| s.mapped_surfaces().count()), 0);
+    Ok(())
+}
+
+/// **The keyboard reaches the panel, and this is the test the original bug needed.**
+///
+/// `Action::MinimiseWindow` reached `set_window_minimized` directly until 2026-10-02, so
+/// `Super`+`M` hid a window and no preview appeared — while `docs/features.md:430` promised
+/// *minimising puts a preview in the panel at the edge of the screen*.
+///
+/// **Nothing caught it, and the near-miss is worth recording.** The road's own tests enter by
+/// `the_person_asked_to_put_aside`, which is what the dispatch calls — so they prove the road
+/// works and say nothing about whether the keyboard is on it. Pointing this action back at the
+/// primitive left all of them passing. This one presses the chord and asks the panel, which is
+/// the only shape that fails for the original fault.
+#[test]
+fn the_keyboard_puts_the_window_in_the_panel_rather_than_hiding_it()
+-> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+    // **A command needs a focused window**, which `dispatch_window_command` refuses without.
+    f.focus(Some(0))?;
+
+    let settings = Shortcuts::shipped();
+    let chord = Chord::checked(
+        Modifiers::just(Modifier::Ctrl).and(Modifier::Alt),
+        Key::Space,
+    )
+    .map_err(|_| "Ctrl+Alt+Space is a chord this build accepts")?;
+    let mut changes = Changes::none();
+    changes.set(Action::MinimiseWindow, Some(chord));
+    let settings = settings.with(changes);
+
+    let (held, hidden) = {
+        let root = root.clone();
+        f.backend(move |s| {
+            let _ = s.dispatch_window_command(&settings, chord);
+            // The second half of one dispatch, as `direct_desktop` performs it.
+            let mut panel = alo_put_aside::Panel::new();
+            let _ = s.put_aside_what_was_asked_for(Some(&mut panel));
+            let hidden = s.minimized_surfaces().any(|it| it == &root);
+            (panel.holding(), hidden)
+        })
+    };
+
+    assert_eq!(
+        held, 1,
+        "the chord did not put the window in the panel — the keyboard is not on the put-aside \
+         road, which is the fault this test exists for"
+    );
+    assert!(
+        hidden,
+        "the road composes set_window_minimized, so the window is hidden once the panel has it"
+    );
     Ok(())
 }

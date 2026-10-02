@@ -227,8 +227,13 @@ impl Server {
             return Ok(WindowControlRelease::Cancelled);
         }
         match press.action {
+            // **The same road as the keyboard, and this is the one a person actually
+            // takes.** The button on a window's own controls reached the primitive
+            // directly, so it hid the window instead of putting a preview in the panel.
+            // Migrating only the keyboard would have left this broken while a test of the
+            // keyboard passed — a fix down the path nobody uses.
             Action::MinimiseWindow => {
-                self.set_window_minimized(&press.surface, true)?;
+                self.the_person_asked_to_put_aside(&press.surface);
             }
             Action::MaximiseWindow => {
                 self.set_window_maximized(&press.surface, !press.restoring)?;

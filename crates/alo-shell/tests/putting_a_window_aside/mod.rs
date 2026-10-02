@@ -256,3 +256,97 @@ fn a_refused_second_putting_aside_leaves_the_window_where_it_is()
     );
     Ok(())
 }
+
+/// **A person asking for a window reaches the panel, not the primitive.**
+///
+/// The test task 5's *routed* clause and task 2's evidence both wanted. It enters by
+/// `the_person_asked_to_put_aside`, which is what `Action::MinimiseWindow` and the button on a
+/// window's own controls both call, and then performs the ask exactly where
+/// `crate::direct_desktop` performs it.
+///
+/// Before this road existed, both of those callers reached `set_window_minimized` directly —
+/// so a window was **hidden** and no preview appeared, while `docs/features.md` promised a
+/// preview in the panel.
+#[test]
+fn a_person_asking_puts_the_window_in_the_panel_and_hides_it() {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (asked_before, put, held, hidden) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            s.the_person_asked_to_put_aside(&root);
+            let asked_before = s.how_many_asked_to_be_put_aside();
+            let put = s.put_aside_what_was_asked_for(Some(&mut panel));
+            let held = panel.holding();
+            let hidden = s.minimized_surfaces().any(|it| it == &root);
+            (asked_before, put, held, hidden)
+        })
+    };
+
+    assert_eq!(asked_before, 1, "the ask was not recorded");
+    assert_eq!(put, 1, "the ask was recorded and never met");
+    assert_eq!(held, 1, "the window did not reach the panel");
+    assert!(
+        hidden,
+        "the road composes set_window_minimized, so the window is hidden after the panel took it"
+    );
+}
+
+/// **The asks are drained, so one keypress does not put a window aside for ever.**
+///
+/// A list that was read and not emptied would put the same window aside on every input batch —
+/// and the second attempt would be refused as already-there, which looks like nothing
+/// happening while the panel is asked sixty times a second.
+#[test]
+fn an_ask_is_met_once_and_then_forgotten() {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (first, left, second) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            s.the_person_asked_to_put_aside(&root);
+            let first = s.put_aside_what_was_asked_for(Some(&mut panel));
+            let left = s.how_many_asked_to_be_put_aside();
+            let second = s.put_aside_what_was_asked_for(Some(&mut panel));
+            (first, left, second)
+        })
+    };
+
+    assert_eq!(first, 1);
+    assert_eq!(left, 0, "the ask was met and not forgotten");
+    assert_eq!(second, 0, "a drained list put a window aside twice");
+}
+
+/// **A desktop with no panel loses nothing and puts nothing aside.**
+///
+/// The trait defaults `the_panel` to `None` because a desktop with no panel is a real one.
+/// This asserts the road is a no-op there rather than a panic or a hidden window — a window
+/// hidden with no preview to bring it back from is the outcome the whole surface prevents.
+#[test]
+fn a_desktop_with_no_panel_hides_nothing() {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (put, hidden) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            s.the_person_asked_to_put_aside(&root);
+            let put = s.put_aside_what_was_asked_for(None);
+            let hidden = s.minimized_surfaces().any(|it| it == &root);
+            (put, hidden)
+        })
+    };
+
+    assert_eq!(put, 0);
+    assert!(
+        !hidden,
+        "a window was hidden on a desktop with no panel to bring it back from"
+    );
+}

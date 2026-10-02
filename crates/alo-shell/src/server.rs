@@ -64,6 +64,26 @@ pub struct Server {
     /// this display. `crate::peeking_at_a_put_aside_window` answers `Ok(None)`
     /// there instead of inventing one.
     pub(crate) panel_as_drawn: Option<crate::which_preview_the_pointer_is_on::ThePanelAsDrawn>,
+    /// Windows the **person** has asked to put aside, not yet acted on.
+    ///
+    /// # Why a request rather than the act
+    ///
+    /// `Server::put_this_window_aside` needs the `Panel`, and the `Panel` belongs to
+    /// whoever implements `crate::TheDesktop` — the compositor holds no session state, by
+    /// that trait's own argument. But the two places a person asks are
+    /// `crate::window_command` (the keyboard) and `crate::window_control_input` (the
+    /// button on a window's own controls), and both are `Server` methods with no desktop
+    /// in scope.
+    ///
+    /// So the ask is recorded here and performed in `crate::direct_desktop`, which is the one
+    /// place holding both. The same shape as `panel_as_drawn` above, in the other direction:
+    /// that one carries what the draw knew to a question asked later, this one carries what
+    /// the input knew to an act performed later.
+    ///
+    /// **A list rather than one, because two presses in one batch are two windows.** Keeping
+    /// only the latest would silently drop a window a person asked to put away, which is the
+    /// one outcome this whole surface exists to prevent.
+    pub(crate) asked_to_put_aside: Vec<WlSurface>,
     /// **What a person is looking at on the canvas.**
     ///
     /// The plane moves under the viewport, so this is the whole of what a pan
@@ -108,6 +128,8 @@ impl Server {
             // Nothing has been drawn yet, which is why this is `None` rather than an
             // empty picture — see the field's own note.
             panel_as_drawn: None,
+            // Nobody has asked for anything yet.
+            asked_to_put_aside: Vec::new(),
             camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),

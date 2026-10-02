@@ -85,10 +85,25 @@ that draws: *an empty panel has a rail of no height and no slots*.
 `Server::where_the_pointer_is_on_the_panel` for a classification and hands it to
 `TheDesktop::the_pointer_is_now`; `alo-desktop` holds the `Panel` and calls `peek_at`.
 
-**Putting a window aside is not.** `Server::put_this_window_aside` is written and its only
-callers are its integration tests, because the gesture that would call it does not exist. So a
-person can now point at a panel that still has nothing in it, and **that one road is what every
-remaining task in this plan is waiting on.**
+**And putting a window aside is too, as of 2026-10-02.** `Super`+`M` and the minimise control
+on a window both go down `crate::putting_a_window_aside` instead of reaching
+`set_window_minimized` directly. So a person can put a window aside and then point at its
+preview, and the panel is no longer always empty.
+
+**What that road was, when it was missing, is worth keeping** — it was not an absent gesture.
+Four layers existed and none was joined, and the two that were wired reached **past** the road
+to the primitive underneath it. `set_window_minimized` hides a window and keeps its buffers,
+which is exactly right for `xdg_toplevel.set_minimized` and wrong for a person, and
+`putting_a_window_aside.rs`’s own opening section had said so since `#350` without anybody
+asking whether something was currently taking the wrong one.
+
+So the rule the fix was found by: **a primitive with a correct road over it stays correct, and
+the bug is every caller that skips the road.** The road does not replace the primitive — it
+composes it, calling `set_window_minimized` itself once the panel has accepted the window.
+
+Still absent, named rather than implied: **the Dock’s icon menu is entirely unwired.** Zero
+handling of any `alo_dock::menu::What` item anywhere in `alo-shell`, not only `Minimise`. That
+is a layer of its own and not this task’s.
 
 ### The order the remaining work goes in, and why
 
@@ -199,8 +214,11 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **model built and its owed clause paid; blocked on no window reaching the panel,
-2026-10-02.**
+**Status:** **built, and a window now reaches the panel, 2026-10-02.** Its owed clause — the
+collapse choice keyed per Place — is paid, and a person can now put a window aside, so the
+empty-panel state is no longer the only one reachable. What is **not** evidenced is the drawing:
+the three presentations are measured against **Minimized panel / 02, 07 and 12** when something
+paints them.
 
 **The collapse choice is keyed per Place.** `crates/alo-put-aside/src/the_collapse_choice_per_place.rs`
 holds `TheCollapseChoice`, a map from `alo_canvas::Place` to `Chosen` where **absent means
@@ -502,8 +520,9 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** **built and reachable on a running machine; blocked on nothing putting a window
-aside, 2026-10-02.**
+**Status:** **built and reachable end to end, 2026-10-02.** A person puts a window aside with
+`Super`+`M` or the minimise control, and peeks at the preview by pointing at it. Both halves of
+the road exist, and the panel a person points at can now have something in it.
 
 **The pointer road exists.** A person moving the pointer over a preview now gets a peek, end
 to end: `libinput_routing` translates the event, `direct_seat` and `direct_pointer` settle the
@@ -603,9 +622,23 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
-aside, 2026-10-02.**
+**Status:** **model built, no evidence, and blocked on the reveal machine having no caller,
+2026-10-02.** The put-aside road now exists — a person reaches the panel by `Super`+`M` and by
+the minimise control — so this is no longer blocked on *nothing putting a window aside*.
 
+What it waits on, measured rather than asserted: **`alo_dock::revealing` has zero callers in
+`alo-shell`.** The state machine that decides whether a surface is revealed is complete and
+nothing consumes it, so no screen edge is watched while a window fills the screen. That is this
+task’s own clause and this lane’s to build.
+
+**Superseded, kept because the measurement is the useful part.** The shell lane wrote this
+status hours earlier, and every line of its table was true when written. The one thing that has
+changed is the first row: `put_this_window_aside` had **zero** production callers and now has
+two, which is what this task stopped being blocked on.
+
+> **Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
+> aside, 2026-10-02.**
+>
 > **The previous reason — *no input road to the panel* — is stale, and it is the second reason
 > on this task to go stale while it waited.** The pointer road landed in `#373`: `libinput`
 > reaches `Desk::dispatch`, which asks `Server::where_the_pointer_is_on_the_panel`, and
@@ -634,6 +667,7 @@ aside, 2026-10-02.**
 > `xdg_toplevel.set_minimized` for a client that asked, and **must not be migrated with the
 > other two**; a lane greping the primitive's name will meet all three and should know in
 > advance that one of them is a different obligation that happens to share a mechanism.
+>
 
 **The full-screen half is stale: full screen landed in `#352`**, and
 `crates/alo-shell/src/window_full_screen.rs` is in `main`. That clause sat blocked on something
@@ -808,19 +842,16 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
-aside, 2026-10-02.**
+**Status:** **model built, no evidence, and blocked on nothing reporting what alo is doing,
+2026-10-02.** A window can now be put aside, so there is a preview for a report to appear on, and
+this is no longer blocked on the input road. What it waits on is `Panel::alo_is_now` having a
+caller — the agent half of this promise, which is the shell lane’s by the queues and cannot be
+written until there is something to report against. That is now true.
 
-> **The previous reason — *no input road to the panel* — is stale.** The pointer road landed in
-> `#373` and a person can point at the panel on a running machine. The measurement that replaces
-> it is in task 6 above and is the same for both: `Server::put_this_window_aside` has **zero**
-> production callers, two callers reach past it to `set_window_minimized`, and
-> `direct_keyboard.rs` has no chord handling, so nothing can put a window into the panel for
-> alo to be working in.
->
-> The keyboard half is **routing rather than a decision**: `docs/design/the-shortcuts-and-the-edges.md`
-> already specifies `Super + M`, `Super + Shift + M` and `Super + P`, and
-> `docs/design/the-alo-dock.md` the menu item. Nothing here waits on the owner.
+**And the keyboard half was never a decision**, which the shell lane established before this
+landed and which remains true: `docs/design/the-shortcuts-and-the-edges.md` specifies
+`Super`+`M`, `Super`+`Shift`+`M` and `Super`+`P`, and `docs/design/the-alo-dock.md` the menu
+item. Two of those three are now routed; `Super`+`P` and the menu are not.
 
 **The panel is drawn**, and has been since `#343` — `panel_raster` lays it out, `desktop_raster`
 calls it every frame, `alo-desktop` hands it a real `Panel`. The old reason was stale for a day.

@@ -274,6 +274,14 @@ mod running {
             }
         }
 
+        /// The panel this desktop keeps, lent for the one act that changes it.
+        ///
+        /// **`Some`, because this desktop has a panel** — the field above. The trait defaults
+        /// to `None` for a desktop that has none, and the display probe is one of those.
+        fn the_panel(&mut self) -> Option<&mut alo_put_aside::Panel> {
+            Some(&mut self.put_aside)
+        }
+
         /// Take the four again, if it is time to.
         ///
         /// A refusal does not clear what was there: a media server that did not
