@@ -135,6 +135,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_opener_holds_nothing_at_all(image, &mut wrong);
     the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
+    the_screen_holds_nothing(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_build_holds_every_login_to_its_number(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
@@ -924,6 +925,39 @@ fn the_opener_can_be_knocked_on_by_the_greeter_alone(image: &Image, wrong: &mut 
     }
 }
 
+/// **The screen holds no capability, and it is the unit where that matters
+/// most.**
+///
+/// `alo-compositor` runs as `root` — the only one of the five that does, because
+/// it exists before anybody is signed in and so cannot be anybody. A service
+/// that is root *and* holds capabilities is the shape every other check in this
+/// file exists to prevent, and until the unit existed there was nothing to make
+/// the assertion about.
+///
+/// `holds_nothing` requires both lines to be **present and empty**, not merely
+/// absent. A unit that never mentions capabilities gives an ordinary person's
+/// service none either — but the next person to edit it cannot see that it was
+/// decided.
+fn the_screen_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
+    if !image.screen().holds_nothing() {
+        wrong.push(Wrong::TheScreenHoldsSomething {
+            screen: image.screen().called().to_owned(),
+            bounded: image
+                .screen()
+                .bounded_to()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            given: image
+                .screen()
+                .given()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        });
+    }
+}
+
 /// ADR 0001 §2 and ADR 0018: the service that talks to the agent holds nothing,
 /// and says so.
 fn the_agent_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
@@ -1179,6 +1213,35 @@ mod tests {
     /// **The image this repository ships says one thing.** Everything below
     /// breaks one file of it and asks whether that is noticed, and none of those
     /// tests would mean anything without this one.
+    /// **The shipped screen unit holds nothing, asked of the real file.**
+    ///
+    /// The other test proves the check can refuse. This one proves the thing
+    /// the task was about: that `image/usr/lib/systemd/system/alo-compositor.service`
+    /// — the unit a built machine actually boots — passes it.
+    ///
+    /// A check that only ever meets a fixture is a check about a fixture.
+    #[test]
+    fn the_screen_this_repository_ships_holds_no_capability() {
+        let at = "../../image/usr/lib/systemd/system/alo-compositor.service";
+        let Ok(unit) = std::fs::read_to_string(at) else {
+            unreachable!("the shipped compositor unit is in this repository, at {at}")
+        };
+        let Ok(parsed) = crate::unit::Unit::read(&unit) else {
+            unreachable!("the shipped compositor unit parses as a unit")
+        };
+        let Ok(screen) = crate::service::Service::of("alo-compositor.service", parsed) else {
+            unreachable!("the shipped compositor unit is a service")
+        };
+
+        assert!(
+            screen.holds_nothing(),
+            "the unit a machine boots holds capabilities: bounded to {:?}, given {:?}. \
+             It runs as root, which is the one of the five where this matters most.",
+            screen.bounded_to(),
+            screen.given()
+        );
+    }
+
     #[test]
     fn the_image_this_repository_ships_agrees_with_itself() {
         let wrong = everything_wrong_with(&image_at(Path::new(crate::THE_IMAGE)));
