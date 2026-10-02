@@ -959,8 +959,67 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **model built, no evidence, and blocked on nothing reporting what alo is doing,
-2026-10-02.**
+**Status:** **the crossing is built, 2026-10-03; the sending and the drawing are not.**
+Was *blocked on nothing reporting what alo is doing* until the owner ruled on 2026-10-02.
+
+**What the ruling was, and what it is now.** The owner chose the third of the three answers
+this task recorded: a third thing bridges the agent service and the crate holding the Panel.
+Reports cross through the trusted coordinator; the drawing crate depends on no
+assistant-service crate; a small neutral contract carries the activity updates; a report
+grants no authority; and a lost connection becomes *status unavailable* rather than remaining
+*working*.
+
+- `alo-reported` is the contract. **It declares no crate of ours**, which is what makes it
+  neutral: a reporter built against it pulls in neither the panel's model nor the shell.
+  `alo-put-aside` could not serve, because it declares `alo-canvas` and `alo-dock`. It names
+  its own opaque window handle rather than borrowing one, because this workspace has three
+  different `WindowId` types and a contract that picked one would make every reporter depend
+  on that crate.
+- `alo-admitting` is the coordinator, and the design is visible in its two entry points:
+  **`handed_over` is the person's act** and the only place an association or a scope is
+  created; **`arrived` is a report** and can say how a task is going and nothing else. A
+  report about a window nobody handed over, naming a task that window is not running, or
+  claiming more than was granted is refused by name — tested, each one.
+- `WhatAloIsDoing` gained a third variant, `StatusUnavailable`. That module's header forbids a
+  third variant and the argument is *both cases draw nothing*, so a variant distinguishing
+  them exists only to be branched on and the branch becomes a message, which is the nagging
+  ADR 0009 refuses. **This variant draws something**, which is why it is allowed: a row is
+  already on screen claiming work is under way, and the claim has stopped being true.
+  `Nothing` is the wrong answer for it in the expensive direction — it erases the agent
+  section, so a dropped connection would read to a person as the task having finished.
+
+**Neither remaining half is this lane's to invent, and both are measured rather than
+guessed:**
+
+1. **Nothing sends a report yet.** The sender is the agent service, which `CLAUDE.md` puts
+   outside the shell, and `alo-agentd` has no reporting road to this contract.
+2. **Nothing draws the agent section, and that waits on a second owner decision.**
+   `Preview::alo()` has exactly **one** production caller — the filter in
+   `Panel::waiting_on_the_person` — and `crates/alo-shell/src/panel_raster.rs` mentions no
+   part of the report, so **no variant of `WhatAloIsDoing` has ever been drawn**, including
+   the two that predate `StatusUnavailable`. Counted in this crate by its own lane as well as
+   by the lane that added the variant.
+
+The desktop lane declined the drawing, and **not for a boundary reason.** `alo_at_work`'s
+header says *if this value exists, Stop exists* — a surface drawing an `AtWork` draws Stop
+**unconditionally, with no branch for it to get wrong**. So drawing the report obliges an
+interactive control that stops the agent's work, and nothing in this repository designs one.
+Taking the drawing would mean inventing Stop inside a drawing crate, which is the same fault
+as a drawing crate deciding whether the panel groups.
+
+So this task waits on **two rulings, and they are one surface**: whether the panel groups by
+Place by default, and what Stop is. Ruled on together, the drawing and the grouping default
+land in one change. Under this plan's two-answer caller rule, both have no caller and a
+status naming the decision, citably.
+
+**One consequence, which cuts against the variant that was just added rather than for it.**
+Stop is obliged by an `AtWork` existing, **not** by `StatusUnavailable`: that variant carries
+no `AtWork`, `at_work()` answers `None` for it, and a surface drawing *status unavailable*
+alone would owe no Stop control. So it is the one part of the report drawable today without
+inventing anything. **It should still not be drawn first.** A panel that can say something has
+gone wrong and can never say anything is going right tells a person only about failure, and
+the honest surface draws the common case first. It is recorded here as the smallest possible
+step if the owner ever asks for one, not as a step worth taking on its own.
 
 > **Measured 2026-10-02, when the shell lane came to take it: the blocker is not
 > the shell, and the agent half cannot be written anywhere yet.**

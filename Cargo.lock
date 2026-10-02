@@ -88,6 +88,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-admitting"
+version = "0.1.0"
+dependencies = [
+ "alo-dock",
+ "alo-put-aside",
+ "alo-reported",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
@@ -1336,6 +1346,13 @@ dependencies = [
  "serde",
  "thiserror 2.0.20",
  "toml",
+]
+
+[[package]]
+name = "alo-reported"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.20",
 ]
 
 [[package]]
