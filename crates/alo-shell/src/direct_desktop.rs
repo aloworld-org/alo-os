@@ -240,6 +240,16 @@ impl LoopInput for Desk<'_> {
         // desktop in scope; this is the one place that holds both. See
         // `Server::asked_to_put_aside`.
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
+        // **And the other direction, met in the same place and for the same reason.** A click
+        // on a preview was claimed where input happens, because whether the panel owns a click
+        // is geometry; *which* preview it chose needs the live `Panel` for the identity check,
+        // and that is here. See `crate::a_click_brings_a_window_back`.
+        //
+        // After the put-aside asks rather than before, so a window put aside and clicked in
+        // one frame is put aside first and then brought back — the order the person did them
+        // in. The reverse would bring back a window that was not in the panel yet and then
+        // put it away, leaving it aside when they had asked for it back.
+        server.bring_back_what_was_clicked(self.desktop.the_panel());
         // **And what that same position means to the panel's reveal machine.** A separate
         // question from the peek: one asks which preview, this asks whether the edge or the
         // surface is being touched. Both read the one stored draw, so they cannot disagree

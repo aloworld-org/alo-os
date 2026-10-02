@@ -66,6 +66,14 @@ impl Server {
                     return Err(InputError::InvalidPointer);
                 }
                 if count == u32::from(state == ButtonState::Pressed) {
+                    // **The panel takes its own clicks, after validation and before routing.**
+                    // After, so a malformed button is still refused above by the one place that
+                    // refuses them. Before, because `direct_pointer` is what reaches a client,
+                    // and a click on a compositor surface must not also land on whatever is
+                    // behind it. See `crate::a_click_brings_a_window_back`.
+                    if self.the_panel_took_this_click(code, state) {
+                        return Ok(());
+                    }
                     self.direct_pointer(
                         true,
                         extent,
