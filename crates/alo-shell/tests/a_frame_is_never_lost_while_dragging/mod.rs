@@ -47,6 +47,14 @@ const VIEWPORT: (i32, i32) = (1280, 720);
 /// How thick the Dock's band is here.
 const DOCK: i32 = 64;
 
+/// A display that draws one pixel per logical one, in hundredths.
+///
+/// Named rather than written as `100` at each site, because **every test in this
+/// file meant it implicitly until 2026-10-02** and a bare number would not say
+/// which of the two scales it is. The handle floor is logical; these rectangles
+/// are in the display's pixels; this is what converts between them.
+const ONE_TO_ONE: u16 = 100;
+
 /// How wide the put-aside panel's reserved column is here.
 ///
 /// `alo_dock::measures` derives the real one; this is a width in the shape of
@@ -83,6 +91,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // rectangle of no extent is the true answer for one rather than
                 // a placeholder.
                 panel_reserved: Rectangle::default(),
+                display_scale: ONE_TO_ONE,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -96,6 +105,7 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 panel_reserved: a_panel_down_the_right(),
+                display_scale: ONE_TO_ONE,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -228,6 +238,85 @@ fn a_drag_cannot_put_a_frames_name_under_the_put_aside_panel() {
          with the panel drawn and x={allowed_with_only_a_dock} without it, so the same \
          position was allowed either way and the rule never saw the panel"
     );
+}
+
+/// Tell the server where the controls are, on a display of `scale` hundredths.
+fn drawn_at_a_display_scale(f: &Fixture, scale: u16) {
+    f.backend(move |s| {
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(a_dock_along_the_bottom()),
+                panel_reserved: Rectangle::default(),
+                display_scale: scale,
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+}
+
+/// How far right a drag gets with the Dock drawn at this display scale.
+fn how_far_a_drag_gets_at(scale: u16) -> f64 {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+    drawn_at_a_display_scale(&f, scale);
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, (200, 100))
+        })
+        .is_ok()
+    );
+    take_hold_of_the_name(&f, (200.0, 100.0));
+    // **Chosen so the floor is the only thing that decides.** The grab sits 16
+    // above the frame's top, so a pointer at 662 puts the top at 678 and the
+    // 48-tall name band at 630..678. The Dock's band starts at 656, leaving
+    // **26 pixels** of name clear.
+    //
+    // 26 clears a 24-pixel floor and fails a 30-, 36- or 48-pixel one. So this
+    // exact motion is allowed at one to one and refused at 125, 150 and 200 per
+    // cent — which is only true if the logical floor is converted into the
+    // pixels these rectangles are measured in.
+    //
+    // *A first attempt aimed at 670, leaving 34 clear. That is allowed at 125
+    // because 34 still clears a floor of 30 — the code was right and the
+    // expectation was wrong, which is worth recording because the failure looked
+    // exactly like the bug.*
+    motion(&f, (202.0, 662.0));
+    origin_of(&f, &surface).1
+}
+
+/// **The handle floor is logical and the controls are in the display's pixels,
+/// so the floor is converted once — and a dense display protects more pixels,
+/// not the same number.**
+///
+/// `A_USABLE_HANDLE` is 44 × 24 **logical**, by the owner's ruling, scaled by
+/// the person's text size and nothing else. The rectangles it is compared
+/// against are laid out from `target.size()`, the framebuffer. Comparing them
+/// without converting made the protected area **too small by the display's
+/// scale**: on a screen drawing two pixels per logical one, a floor of 24 was 24
+/// framebuffer pixels where the promise is 48.
+///
+/// **Every test in this file ran at one to one, so nothing could see it.** That
+/// is the same reason the division's scale sat at a literal `1` for as long as
+/// the file existed.
+///
+/// At 125, 150 and 200 by the owner's direction. The fractional two matter most:
+/// a converter written as `scale / 100` floors both to one, and a test at 1
+/// against 2 cannot tell that apart from a correct one.
+#[test]
+fn the_handle_floor_converts_with_the_displays_scale() {
+    let at_one = how_far_a_drag_gets_at(100);
+
+    for scale in [125u16, 150, 200] {
+        let dense = how_far_a_drag_gets_at(scale);
+        assert!(
+            dense < at_one,
+            "at {scale} per cent the drag reached y={dense} and at 100 it reached \
+             y={at_one}: a denser display did not protect more of the name band, \
+             so the logical floor was never converted into the pixels it is \
+             compared against"
+        );
+    }
 }
 
 /// **The frame keeps the last position that was allowed.**

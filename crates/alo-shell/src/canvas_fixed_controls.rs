@@ -165,12 +165,42 @@ impl crate::Server {
     /// no height, and a rectangle with no height contributes nothing** — which
     /// is why the reserved column is taken unconditionally and the rail is not
     /// taken at all.
+    /// # The handle floor is logical and these rectangles are not
+    ///
+    /// [`A_USABLE_HANDLE`](crate::A_USABLE_HANDLE) is **44 × 24 logical
+    /// pixels**, by the owner's ruling, and `a_usable_handle_at` scales it by
+    /// the person's text size and nothing else. The rectangles arriving here are
+    /// laid out from `target.size()` — the framebuffer — so they are in **the
+    /// display's own pixels.**
+    ///
+    /// Comparing the two without converting makes the protected area **too small
+    /// by the display's scale**: on a screen drawing two pixels per logical one,
+    /// a floor of 44 is 44 framebuffer pixels where the promise is 88. A person
+    /// on a dense display was promised a handle and given half of one, and every
+    /// test passed because **every test ran at one to one.**
+    ///
+    /// So the conversion happens here, **once**, which is the owner's words
+    /// exactly: *preserve at least 44 × 24 logical pixels of unobstructed drag
+    /// area; convert to physical coordinates once at the established rendering
+    /// boundary.* This is that boundary — the one place that holds both the
+    /// logical floor and the rectangles it is compared against.
+    ///
+    /// The two scales are **not** the same thing and both apply: the text scale
+    /// is the person asking for larger targets, and the display scale is how
+    /// many pixels this screen draws for one logical unit. A fixed 44 × 24 would
+    /// shrink against everything around it for the person who most needs it not
+    /// to; an unconverted one shrinks against the screen.
     pub fn the_fixed_controls_were_drawn(
         &mut self,
         drawn: FixedControlsDrawn,
         text: alo_appearance::TextScale,
     ) {
-        let handle = Self::a_usable_handle_at(text);
+        let (across, along) = Self::a_usable_handle_at(text);
+        // Multiply first and divide once, never by a floored factor: 125 and
+        // 150 are ordinary display scales and `scale / 100` would make both of
+        // them one.
+        let laid = |logical: f64| logical * f64::from(drawn.display_scale.max(100)) / 100.0;
+        let handle = (laid(across), laid(along));
         let bounds = [drawn.dock_band, Some(drawn.panel_reserved)]
             .into_iter()
             .flatten()
@@ -205,6 +235,15 @@ pub struct FixedControlsDrawn {
     /// put a window into covers nothing* is the true answer and not a
     /// placeholder.
     pub panel_reserved: Rectangle<i32, Physical>,
+    /// How many of this display's pixels are one logical pixel, in hundredths.
+    /// 100 is one to one.
+    ///
+    /// **Here because the rectangles above are in this display's pixels and the
+    /// handle floor they are compared against is logical.** Without it the
+    /// comparison is between two different units and the protected area is too
+    /// small by exactly this number — see
+    /// [`crate::Server::the_fixed_controls_were_drawn`].
+    pub display_scale: u16,
 }
 
 impl crate::Server {
