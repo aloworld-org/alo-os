@@ -411,7 +411,7 @@ pub use scanout::ActiveScanout;
 pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
-pub use screens::{ScreenPlace, Screens};
+pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use screens_raster::{ScreenPicture, desk};
 pub use server::Server;
 pub use session_desktop::{ADisplayToStandOn, StoodUp, stand_the_desktop_up};

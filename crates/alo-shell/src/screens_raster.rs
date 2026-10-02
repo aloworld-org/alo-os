@@ -97,17 +97,23 @@ pub(crate) fn picture(
     // One dock, drawn for this screen's own size. It used to be cloned and
     // moved to this screen's edge first; ADR 0076 fixed the dock to the bottom
     // edge of every screen, so there is nothing to override and no copy to make.
-    let mut drawn = crate::dock_raster::picture(dock, look, place.room(), 0)?;
+    // `across_and_along` rather than a silent conversion: `dock_raster` still
+    // takes a pair, and this is the point at which the value stops saying what
+    // it is. Three such points exist in this function and each says so.
+    let mut drawn = crate::dock_raster::picture(dock, look, place.room().across_and_along(), 0)?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
     }
-    let background =
-        ScreenBackground::prepare(place.wearing().background(), warming, place.room())?;
+    let background = ScreenBackground::prepare(
+        place.wearing().background(),
+        warming,
+        place.room().across_and_along(),
+    )?;
     Ok(ScreenPicture {
         name: place.name().clone(),
         at: place.at(),
-        size: place.room(),
+        size: place.room().across_and_along(),
         background,
         dock: drawn,
     })
