@@ -75,6 +75,16 @@ pub fn run(
                     alo_shortcuts::Action::MinimiseWindow
                 ))
             );
+            // **This release executed the action, so the ask is met here too.** `route`
+            // answering `Executed(MinimiseWindow)` is the control firing — the same road the
+            // chord below takes, reached by pointer instead of by key.
+            let mut panel = alo_put_aside::Panel::new();
+            let _ = server.put_aside_what_was_asked_for(Some(&mut panel));
+            assert_eq!(
+                panel.holding(),
+                1,
+                "the routed control press did not reach the put-aside road"
+            );
             assert_eq!(
                 server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
                 WindowControlRelease::Unowned
@@ -89,6 +99,17 @@ pub fn run(
             assert_eq!(
                 server.dispatch_window_command(&settings, chord)?,
                 Some(Action::MinimiseWindow)
+            );
+            // **The ask is met here, as one dispatch does.** The chord records that the person
+            // asked; `putting_a_window_aside` hides the window once the panel has accepted it.
+            // The assertions below are about the end of the action, not the state between its
+            // two steps.
+            let mut panel = alo_put_aside::Panel::new();
+            let _ = server.put_aside_what_was_asked_for(Some(&mut panel));
+            assert_eq!(
+                panel.holding(),
+                1,
+                "the chord did not reach the put-aside road"
             );
         } else {
             assert!(server.set_window_minimized(&root, false)?);

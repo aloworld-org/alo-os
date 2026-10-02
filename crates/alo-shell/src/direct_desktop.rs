@@ -75,6 +75,21 @@ pub trait TheDesktop {
     /// that can compare this classification against the last and return early. The compositor
     /// cannot, because it does not know what a repeat means to the surface.
     fn the_pointer_is_now(&mut self, _on: crate::which_preview_the_pointer_is_on::OnThePanel) {}
+
+    /// The panel this desktop keeps, for the one act that has to change it.
+    ///
+    /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
+    /// a borrow to draw from or a classification to consume; putting a window aside is the
+    /// one thing that alters what the desktop holds, and it cannot be done through
+    /// `now()` because that lends the panel immutably as part of a frame.
+    ///
+    /// **`None` by default**, the same as the two above and for the same reason: a desktop
+    /// with no panel is a real desktop — the display probe is one — and a default that
+    /// answered `Some` would make every implementor responsible for a surface it may not
+    /// have. A desktop that answers `None` simply never puts a window aside.
+    fn the_panel(&mut self) -> Option<&mut alo_put_aside::Panel> {
+        None
+    }
 }
 
 impl crate::DirectSession {
@@ -206,6 +221,11 @@ impl LoopInput for Desk<'_> {
         if let Some(on) = on {
             self.desktop.the_pointer_is_now(on);
         }
+        // **What a person asked for, performed where the panel is reachable.** The keyboard
+        // and the window's own controls record the ask on the server, because neither has a
+        // desktop in scope; this is the one place that holds both. See
+        // `Server::asked_to_put_aside`.
+        server.put_aside_what_was_asked_for(self.desktop.the_panel());
         Ok(())
     }
 

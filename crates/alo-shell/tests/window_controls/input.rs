@@ -21,8 +21,19 @@ fn press(
     let root = root.clone();
     f.backend(move |s| s.press_window_control(&root, (120, 48), (3, 4), (x, 5.0)))
 }
+/// **A minimise ask is met in the same call that routed the pointer**, as one dispatch does.
+///
+/// The minimise control records an ask rather than hiding a window: it goes down
+/// `putting_a_window_aside`, because `docs/features.md` promises a preview in the panel. In
+/// production `direct_desktop` meets it immediately after routing the input.
 fn release(f: &Fixture, x: f64) -> std::result::Result<Release, WindowControlReleaseError> {
-    f.backend(move |s| s.release_window_control((120, 48), (3, 4), (x, 5.0)))
+    f.backend(move |s| {
+        let answered = s.release_window_control((120, 48), (3, 4), (x, 5.0));
+        // The whole road in one call, as one dispatch does — see this function's own note.
+        let mut panel = alo_put_aside::Panel::new();
+        let _ = s.put_aside_what_was_asked_for(Some(&mut panel));
+        answered
+    })
 }
 
 #[test]
@@ -250,5 +261,48 @@ fn window_controls_input_popup_started_after_press_refuses_live_maximize() -> Re
     assert_eq!(app.events.popups.done, 0);
     assert_eq!(app.events.close_requests, 0);
     assert_eq!(app.events.maximized.last(), Some(&false));
+    Ok(())
+}
+
+/// **The minimise control reaches the panel, and this is the road a person actually takes.**
+///
+/// Nobody holds `Super`+`M` first; they click the button on the window. Until 2026-10-02 that
+/// button called `set_window_minimized` directly, so it hid the window and no preview appeared
+/// — while `docs/features.md:430` promised a preview in the panel.
+///
+/// **A second test, because the keyboard's does not cover this.** Pointing this one control back
+/// at the primitive left all 329 tests in this binary passing, including the keyboard's own
+/// put-aside test and the release assertions above — they check the window became hidden, which
+/// is true down either road, because the put-aside road hides it too once the panel has it.
+/// Only asking the **panel** tells the two apart.
+#[test]
+fn the_minimise_control_puts_the_window_in_the_panel_rather_than_hiding_it() -> Result {
+    let f = Fixture::new();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    // Arm and release over the minimise control, the same coordinates the test above uses.
+    assert!(press(&f, &root, 4.0)?);
+    let (release_said, held, hidden) = {
+        let root = root.clone();
+        f.backend(move |s| {
+            let said = s.release_window_control((120, 48), (3, 4), (4.0, 5.0));
+            let mut panel = alo_put_aside::Panel::new();
+            let _ = s.put_aside_what_was_asked_for(Some(&mut panel));
+            let hidden = s.minimized_surfaces().any(|it| it == &root);
+            (said, panel.holding(), hidden)
+        })
+    };
+
+    assert_eq!(release_said?, Release::Executed(Action::MinimiseWindow));
+    assert_eq!(
+        held, 1,
+        "the control did not put the window in the panel — it is reaching past the put-aside \
+         road to the primitive, which is the fault this test exists for"
+    );
+    assert!(
+        hidden,
+        "the road composes set_window_minimized, so the window is hidden once the panel has it"
+    );
     Ok(())
 }

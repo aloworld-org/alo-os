@@ -137,6 +137,17 @@ fn nested_input(
             time: 3,
         }),
     )?;
+    // **The ask is met here, as one dispatch does.** The release routed above records that the
+    // person asked for the window to be put aside; `putting_a_window_aside` hides it once the
+    // panel has accepted it. Without this the window is still mapped, because nothing has
+    // performed the ask yet — and the assertion below is about the end of the action.
+    let mut panel = alo_put_aside::Panel::new();
+    let _ = server.put_aside_what_was_asked_for(Some(&mut panel));
+    assert_eq!(
+        panel.holding(),
+        1,
+        "the control did not reach the put-aside road"
+    );
     assert!(!server.mapped_surfaces().any(|surface| surface == root));
     paint_choice(
         renderer,

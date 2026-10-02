@@ -74,8 +74,19 @@ impl Server {
             .keyboard_root()
             .ok_or(WindowCommandError::NoFocusedWindow)?;
         match action {
+            // **The person asked, so this goes down the put-aside road, not to the
+            // primitive.** `set_window_minimized` hides a window and keeps its buffers; it
+            // is still exactly right for `xdg_toplevel.set_minimized`, which is a client
+            // asking, and `crate::surfaces` keeps that caller. But `docs/features.md`
+            // promises that *minimising puts a preview in the panel at the edge of the
+            // screen*, and this is the road a person takes to it.
+            //
+            // The road is not a replacement for the primitive — it **composes** it:
+            // `crate::putting_a_window_aside` calls `set_window_minimized` itself, after
+            // the panel has accepted the window. Recorded rather than performed because the
+            // `Panel` is the desktop's; see `Server::asked_to_put_aside`.
             Action::MinimiseWindow => {
-                self.set_window_minimized(&root, true)?;
+                self.the_person_asked_to_put_aside(&root);
             }
             Action::MaximiseWindow => {
                 let maximize = self.surfaces.requested_window_mode(&root) != Mode::Maximized;

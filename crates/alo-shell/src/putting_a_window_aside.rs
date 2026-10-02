@@ -217,3 +217,118 @@ fn the_class_of(frame: &WlSurface) -> Option<String> {
     })
     .filter(|it| !it.trim().is_empty())
 }
+
+impl crate::Server {
+    /// Record that the person asked for this window to be put aside.
+    ///
+    /// **Public so that a test can take the road a person takes.** The keyboard
+    /// (`crate::window_command`) and the button on a window's own controls
+    /// (`crate::window_control_input`) both call this; nothing else should, and in particular
+    /// `xdg_toplevel.set_minimized` must not — a client asking to be minimised is a different
+    /// obligation and `crate::surfaces` keeps it on the primitive.
+    pub fn the_person_asked_to_put_aside(&mut self, frame: &WlSurface) {
+        self.asked_to_put_aside.push(frame.clone());
+    }
+
+    /// How many asks are waiting, for a test that wants to see one recorded before it is met.
+    #[must_use]
+    pub fn how_many_asked_to_be_put_aside(&self) -> usize {
+        self.asked_to_put_aside.len()
+    }
+
+    /// Put aside every window the person asked for, and say how many were.
+    ///
+    /// # Why the arguments are derived here and not handed in
+    ///
+    /// [`crate::Server::put_this_window_aside`] takes the patch, the zoom and the Place because
+    /// only a caller knows which display's canvas a window is on. **This is that caller.** Each
+    /// value comes from the same place the rest of the compositor already gets it:
+    ///
+    /// - the **Place** from [`crate::Server::the_place_of_the_window`];
+    /// - the **zoom** from the server's own camera, which is what the person is looking
+    ///   through;
+    /// - the **patch** from the window's buffer origin and its geometry, which is exactly how
+    ///   `crate::canvas_show_all::the_frames_on_the_plane` already derives a frame's place on
+    ///   the plane. Deriving it a second way here would be two answers that must agree.
+    ///
+    /// # Privacy is passed deliberately, and the road that would set it does not exist
+    ///
+    /// The owner ruled on 2026-10-02 that **a window is private because the person marked it
+    /// so, per window**, with no inference from application class, no protocol marker and no
+    /// global setting — and that a window nobody has marked is ordinary.
+    ///
+    /// So [`Privacy::Ordinary`] below is **the person's answer and not a fallback**: nobody
+    /// has marked anything, because the control that would do the marking is not built.
+    /// `alo_put_aside::whether_it_is_private` refuses to give `Privacy` a `Default` precisely
+    /// so that a caller cannot omit this — and that refusal is about the caller who *forgets*,
+    /// which is a different question from the person who has not chosen. This caller has not
+    /// forgotten; it is answering with what the person has said, which is nothing.
+    ///
+    /// **The marking control is not in scope and is not built here.** `docs/features.md:430`
+    /// promises that minimising puts a preview in the panel; it says nothing about a private
+    /// window, at any tier. Building a control that marks one would add a promise rather than
+    /// make an existing one true, which `CLAUDE.md` gates on a line in that file. Named here
+    /// so the next reader knows it is absent on purpose rather than forgotten.
+    pub fn put_aside_what_was_asked_for(&mut self, panel: Option<&mut Panel>) -> usize {
+        // Taken before anything is attempted, so a refusal cannot leave an ask to be retried
+        // for ever against a window that will never accept it.
+        let asked = std::mem::take(&mut self.asked_to_put_aside);
+        if asked.is_empty() {
+            return 0;
+        }
+        // **`None` means this desktop has no panel at all**, so no ask can be met. The asks
+        // are already taken, which is right: a desktop with no panel will not grow one, and
+        // keeping them would retry for ever.
+        let Some(panel) = panel else {
+            return 0;
+        };
+        let zoom = self.camera.zoom();
+        let mut put = 0;
+        for frame in asked {
+            let Some(at) = self.the_patch_of_the_window(&frame) else {
+                continue;
+            };
+            // **The panel and the server are different objects, so both borrows stand.** An
+            // earlier version swapped an empty panel in and out to satisfy a borrow checker
+            // that had not objected, and would have **lost the whole panel** had a second
+            // lookup answered `None`. A workaround for a problem that does not exist is how a
+            // person loses everything they put away.
+            if self
+                .put_this_window_aside(panel, &frame, at, zoom, Privacy::Ordinary)
+                .is_ok()
+            {
+                put += 1;
+            }
+        }
+        put
+    }
+
+    /// Where this window sits on the plane, in the plane's own units.
+    ///
+    /// The same arithmetic `crate::canvas_show_all` uses for *show all*: the buffer's origin
+    /// plus the geometry's offset is the top left, and the geometry's size is the extent.
+    /// `None` for a surface with a geometry no plane can hold, which that file refuses the
+    /// same way rather than clamping — a window at an absurd coordinate is not a window at the
+    /// edge of the plane.
+    fn the_patch_of_the_window(&self, frame: &WlSurface) -> Option<Patch> {
+        let origin = crate::window_buffer_origin(frame);
+        let geometry = crate::scene::geometry(frame);
+        let left = origin.x + geometry.loc.x;
+        let top = origin.y + geometry.loc.y;
+        let (width, height) = (geometry.size.w, geometry.size.h);
+        if ![left, top, width, height].iter().all(|it| it.is_finite()) {
+            return None;
+        }
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a plane coordinate is whole; `Patch::of` refuses anything off the plane \
+                      after the cast, which is how `canvas_show_all` handles the same values"
+        )]
+        Patch::of(
+            alo_dock::on_the_canvas::Spot::at(left as i64, top as i64),
+            width as u32,
+            height as u32,
+        )
+        .ok()
+    }
+}
