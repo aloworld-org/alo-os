@@ -93,6 +93,7 @@ mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
 mod booting;
+mod buffers_clients_hand_over;
 mod canvas_a_restore_travels;
 mod canvas_arrow_pan;
 mod canvas_camera;
@@ -485,6 +486,8 @@ pub use lock_raster::LockLook;
 pub use lock_surface::{LockPressed, LockSurface};
 
 #[cfg(test)]
+#[cfg(test)]
+mod buffers_clients_hand_over_tests;
 #[cfg(test)]
 mod lock_raster_tests;
 #[cfg(test)]

@@ -201,6 +201,27 @@ pub(crate) struct Surfaces {
         reason = "holding the global alive is the whole purpose; there is nothing to read"
     )]
     pub(crate) gestures: PointerGesturesState,
+    /// Buffer sharing with the graphics card, made here and advertised later.
+    ///
+    /// **The state is not the global.** `DmabufState::new` creates nothing a
+    /// client can see; `create_global` is what advertises. So this can be held
+    /// from the start while the promise waits for a renderer, which is what the
+    /// owner's ruling of 2026-10-02 asks for and the reason this field is not
+    /// an `Option`: an absent state would need an accessor that panics, and
+    /// `DmabufHandler::dmabuf_state` returns a plain reference.
+    dmabuf: DmabufState,
+    /// Absent until a renderer exists — see `advertise_importable_buffers`.
+    ///
+    /// Its presence is the record that the promise has been made, so making it
+    /// twice can be refused rather than quietly advertising two globals.
+    dmabuf_global: Option<DmabufGlobal>,
+    /// Buffers clients offered, until a renderer has tried to import them.
+    ///
+    /// Filled by `dmabuf_imported` and emptied by the loop, which is the only
+    /// place holding both this and the renderer. A buffer left here would be a
+    /// client waiting forever, so the drain is not optional — see
+    /// `crate::buffers_clients_hand_over`.
+    handed_over: Vec<crate::buffers_clients_hand_over::HandedOver>,
 }
 
 impl Surfaces {
@@ -229,6 +250,15 @@ impl Surfaces {
             gestures: PointerGesturesState::new::<Self>(display),
             viewporter: ViewporterState::new::<Self>(display),
             text_input: TextInputManagerState::new::<Self>(display),
+            // Buffer sharing. **The global is deliberately not made here**, by
+            // the owner's ruling of 2026-10-02: advertising DMA-BUF before a
+            // renderer exists is a promise this shell cannot keep, and a client
+            // would discover that only when its buffer was refused. Every other
+            // global above is advertised at birth because every other protocol
+            // is implemented by this file alone.
+            dmabuf: DmabufState::new(),
+            dmabuf_global: None,
+            handed_over: Vec::new(),
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
             place: alo_canvas::Place::FIRST,
@@ -238,6 +268,44 @@ impl Surfaces {
             pointer: None,
             cursor: CursorImageStatus::default_named(),
         }
+    }
+
+    /// Advertise buffer sharing, now that a renderer can actually import.
+    ///
+    /// **Called once a renderer exists and never from `new`.** The owner ruled
+    /// on 2026-10-02 that the renderer is initialised before DMA-BUF is
+    /// advertised, and this is where the two meet: the caller is the graphics
+    /// backend's own setup, which has just built a renderer and asks it what it
+    /// can take.
+    ///
+    /// `formats` are that renderer's own, read through
+    /// [`crate::direct_target::ScenePainter::importable_formats`] and never a
+    /// list written here. A hand-written list is the same broken promise one
+    /// size smaller: the client is told a format is available and finds out
+    /// otherwise when it offers one.
+    ///
+    /// A renderer that can import nothing advertises nothing, because a global
+    /// with an empty format set is a promise with no content.
+    ///
+    /// Advertising twice is ignored rather than doubled: two globals for one
+    /// protocol would have clients bind either one and be answered by the same
+    /// handler, which no client expects and nothing here needs.
+    pub(crate) fn advertise_importable_buffers(&mut self, formats: FormatSet) {
+        if self.dmabuf_global.is_some() || formats.iter().next().is_none() {
+            return;
+        }
+        let display = self.display.clone();
+        self.dmabuf_global = Some(self.dmabuf.create_global::<Self>(&display, formats));
+    }
+
+    /// Take every buffer waiting for a renderer to try it.
+    ///
+    /// Taken rather than borrowed: each answer consumes the notifier that
+    /// carries it, so the holder has to give them up to answer them.
+    pub(crate) fn buffers_awaiting_import(
+        &mut self,
+    ) -> Vec<crate::buffers_clients_hand_over::HandedOver> {
+        std::mem::take(&mut self.handed_over)
     }
 
     /// Remove resources whose client disappeared without orderly destruction.
@@ -665,3 +733,41 @@ delegate_xdg_shell!(Surfaces);
 delegate_pointer_gestures!(Surfaces);
 delegate_viewporter!(Surfaces);
 delegate_text_input_manager!(Surfaces);
+
+use smithay::{
+    backend::allocator::{dmabuf::Dmabuf, format::FormatSet},
+    delegate_dmabuf,
+    wayland::dmabuf::{DmabufGlobal, DmabufHandler, DmabufState, ImportNotifier},
+};
+
+impl DmabufHandler for Surfaces {
+    fn dmabuf_state(&mut self) -> &mut DmabufState {
+        &mut self.dmabuf
+    }
+
+    /// Hold the offer. The loop answers it, after a real import.
+    ///
+    /// **Nothing is decided here, and that is the point.** This runs inside
+    /// `dispatch_clients`, where the renderer is not reachable: it belongs to
+    /// the graphics backend. Answering `successful` from here would be the
+    /// unconditional acceptance the owner's ruling of 2026-10-02 forbids —
+    /// true-sounding, unverified, and discovered to be false only when the
+    /// frame is drawn.
+    ///
+    /// The global is ignored because this shell advertises exactly one and the
+    /// renderer behind it is the same renderer whichever global a buffer came
+    /// through.
+    fn dmabuf_imported(
+        &mut self,
+        _global: &DmabufGlobal,
+        dmabuf: Dmabuf,
+        notifier: ImportNotifier,
+    ) {
+        self.handed_over
+            .push(crate::buffers_clients_hand_over::HandedOver {
+                buffer: dmabuf,
+                telling: notifier,
+            });
+    }
+}
+delegate_dmabuf!(Surfaces);
