@@ -1,7 +1,7 @@
 # The person sees what their machine says about itself on the network
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 21)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 21)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the owner
 **Status:** ready for integration
 

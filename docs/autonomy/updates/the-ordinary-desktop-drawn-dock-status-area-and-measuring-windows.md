@@ -1,7 +1,7 @@
 # The ordinary desktop, drawn: the dock, its status area, and what is running and filling the disk
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 5)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 5)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — the code. Not seen on a certified machine.
 The clock, battery, network and volume are **not** drawn; they are task 7 in the
@@ -52,7 +52,7 @@ record window), `nested.rs`, `offscreen.rs`, `nested_approval.rs` and
 `nested_record.rs` (no desktop layer), `presentation.rs`
 (`RenderError::DesktopScene`, `RenderError::AccentRefused`), `lib.rs`,
 `Cargo.toml` (`alo-measuring` as a dependency), `Cargo.lock`.
-`docs/autonomy/v0-5-the-shell-plan.md` marks task 5 done and adds task 7.
+`docs/autonomy/the-shell-plan.md` marks task 5 done and adds task 7.
 
 **User-readable change description:** *alo OS now has a desktop. The dock sits
 on the edge of the screen you chose, sized for each screen it is on, in your

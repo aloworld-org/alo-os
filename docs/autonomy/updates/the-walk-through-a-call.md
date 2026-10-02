@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — capture, and the room you are sitting in
 **Task:** *Every sentence, and the walk through a call*
-(`docs/autonomy/v0-5-capture-and-the-room-plan.md`, task 7)
+(`docs/autonomy/capture-and-the-room-plan.md`, task 7)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
 tested and linted in the Lima VM (Ubuntu 24.04 aarch64).

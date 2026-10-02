@@ -11,7 +11,7 @@ signed Windows executable, downloaded from the website*),
 §4 (Secure Boot is never switched off, and a person is never asked to),
 [ADR 0036](0036-the-image-is-signed-by-a-key-a-person-holds.md) (who holds the
 key the *image* is signed with, and who may publish), and task 5 of
-`docs/autonomy/v0-5-the-installer-plan.md`, which asks for a workflow that
+`docs/autonomy/the-installer-plan.md`, which asks for a workflow that
 builds the installer on a tag, **signs the executable**, and publishes it as a
 Release asset with a checksum beside it.
 

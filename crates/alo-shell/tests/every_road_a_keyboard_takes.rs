@@ -1,7 +1,7 @@
 //! **Every road a keyboard takes through this crate's surfaces, walked
 //! against the crate that decides them.**
 //!
-//! Task 12 of `docs/autonomy/v0-5-the-shell-plan.md`: *focus is always visible,
+//! Task 12 of `docs/autonomy/the-shell-plan.md`: *focus is always visible,
 //! never trapped, and every action has the keyboard road `alo-access` lists,
 //! with a test that walks them*. `alo-access` holds its own half already — its
 //! `tests/everything_the_shell_offers_has_a_keyboard_road.rs` walks every

@@ -102,9 +102,9 @@ their tests — 64 and 124 unit tests, `GATES=0` on both — and then all seven 
 workspace.
 
 `crates/alo-dock` belongs to
-`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, whose seven tasks
+`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, whose seven tasks
 are done, and `crates/alo-displays` to
-`docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, 14 of 14. Neither had a
+`docs/autonomy/the-session-and-the-displays-plan.md`, 14 of 14. Neither had a
 task for this and no lane was working in either crate; the last change to touch
 them was #200 on the palette. Both plans' own words said what to do, which is the
 best case for a promise with no task: the crates had already had the argument.

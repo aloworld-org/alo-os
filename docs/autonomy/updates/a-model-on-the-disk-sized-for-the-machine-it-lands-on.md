@@ -142,12 +142,12 @@ of the plan is that build, written from this outcome.
   it is predicted from, and the two-GGUFs finding. The 2026-09-11 entry about
   the weights a machine arrives with gained a dated note saying what superseded
   it and what in it still holds.
-- `docs/autonomy/v0-01-evidence.md` — the entry for *the local model is what the
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — the entry for *the local model is what the
   machine arrives ready to run* rewritten: which model, who decides it, the
   no-weights case, and the bar now cleared with the road to it unfinished.
 - `docs/autonomy/accounts-and-session-entry-plan.md` — task 10 marked done; **task 17 written
   in the same change**, which is the build.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 31, the matching task, was
+- `docs/autonomy/the-executable-plan.md` — task 31, the matching task, was
   already marked done on 2026-09-11 and now carries a dated note saying lane B's
   task 10 superseded it and in what way.
 
@@ -244,5 +244,5 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
 - **ROADMAP.md:** no line ticks. The image line's machine half stays empty.
 - **QUEUE.md / STATE.md:** lane B task 10 done; task 17 (*The recipe built with
   the model it now carries*) written into
-  `docs/autonomy/accounts-and-session-entry-plan.md` and ready. `v0-01-delivery-plan.md`
+  `docs/autonomy/accounts-and-session-entry-plan.md` and ready. `the-executable-plan.md`
   task 31 was already done and now records what superseded it.

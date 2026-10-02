@@ -1,11 +1,13 @@
-# v0.01 — the executable plan
+# The executable plan
+
+*Named `v0.01 — the executable plan` until 2026-10-02. **A release code is not a subject** — `v0.01` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. **Not `delivery-plan.md`**, which would sit beside the existing `DELIVERY.md` — a different document, about what order the phases come in rather than what to do next — and that is the confusion this rule exists to prevent. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 The eight phases in `docs/autonomy/DELIVERY.md` say *what order*. This says *what
 to do next*, in the shape `tools/kernel-loop` can read: a numbered task under
 `## Tasks`, a `**Status:**`, a `**Depends on:**`, and a `**Done, <date>.**` line
 written by whoever did it.
 
-Point the loop at it with `ALO_LOOP_PLAN=docs/autonomy/v0-01-delivery-plan.md`.
+Point the loop at it with `ALO_LOOP_PLAN=docs/autonomy/the-executable-plan.md`.
 
 ## What this plan is honest about
 
@@ -330,7 +332,7 @@ found the last.
   report that shows it, or is named as owed. A promise with neither is the
   finding, and it is written down before anything else is.
 
-**Done, 2026-09-10.** `docs/autonomy/v0-01-evidence.md` is the ledger — all
+**Done, 2026-09-10.** `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is the ledger — all
 forty-one v0.01 promises, each naming the test or the report that shows it and
 what is still owed — and `crates/alo-reconciling` is what makes it true of
 `docs/features.md` rather than a list somebody wrote once: both documents are
@@ -347,7 +349,7 @@ agent verb can do, a person can do by hand* is a standing rule nothing checks;
 *the agents point at the local model by default* cannot get a line without a
 decision, because ADR 0016 refuses a default nobody chose; and *boots on one
 certified machine* is task 12. Report:
-`docs/autonomy/updates/every-v0-01-promise-against-evidence.md`. The next task
+`docs/autonomy/updates/every-promise-against-executable-evidence.md`. The next task
 (14) was written from those findings, because 12 and 13 are both unstartable and
 a plan whose remaining tasks are all blocked reads as the workstream being
 finished.
@@ -391,7 +393,7 @@ session, or hold a privilege; those three are this task's other half and are
 task 38's.
 
 Was *ready, and being built since 2026-09-14 as task 1 of*
-`docs/autonomy/v0-5-the-shell-plan.md` — whoever runs *this* plan must not
+`docs/autonomy/the-shell-plan.md` — whoever runs *this* plan must not
 take it up as well. It sat ready for three days with nobody assigned: it was
 the away desktop lane's, and the rule reserving `crates/alo-shell` was not
 lifted until the owner asked what was blocking the remaining work. When the
@@ -468,7 +470,7 @@ ten verbs ship at v0.01 and their plain way — file manager, search, text edito
 terminal — arrives at v0.5**, so a v0.01 machine whose agent is unavailable can
 do none of the six by hand. That is a scope fact and the owner's to move, not
 this check's to refuse; it is written into `docs/by-hand.md` and
-`docs/autonomy/v0-01-evidence.md`, whose entry for this promise is no longer one
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`, whose entry for this promise is no longer one
 of the six with no evidence at all. Rule 7 of *adding a verb* in
 `docs/contracts/agent-verbs.md` is where whoever adds the next one meets it.
 Report: `docs/autonomy/updates/every-verbs-by-hand-answer.md`. The next task (15)
@@ -528,7 +530,7 @@ telling. `ToldOnce` is four lines in the order they are read: the heading and th
 `alo-saying`, and the two in the middle are `alo-answering`'s own, unchanged,
 because a telling that reworded a failure would be a machine with two accounts of
 one moment. The offers travel with the telling, unranked and unchosen, so
-adopting this crate closes no door ADR 0008 leaves open. `docs/autonomy/v0-01-evidence.md`'s
+adopting this crate closes no door ADR 0008 leaves open. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`'s
 entry for *and it never nags* is no longer one of the six with no evidence at
 all; four are left, and none of them can be closed without a screen, a decision
 or a machine. Report:
@@ -543,7 +545,7 @@ compositor file.
 
 Written by task 15, from the last of the audit's findings this lane can reach.
 `docs/features.md` promises at v0.01 that **the agents point at the local model
-by default**, and `docs/autonomy/v0-01-evidence.md` records that it *cannot get a
+by default**, and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` records that it *cannot get a
 line without a decision*: ADR 0016 says the organisation bounds and **the person
 chooses**, and refuses a default nobody chose. Those two sentences cannot both be
 kept. One of them is wrong, and no worker may quietly narrow the promise or
@@ -560,7 +562,7 @@ behalf, and that reading may keep both sentences.
 - **Acceptance:** an ADR under `docs/decisions/`, numbered next, with the options
   set out fairly, a recommendation, and what each would cost — including what it
   costs `crates/alo-choosing`, `crates/alo-image` and the setup flow ADR 0009
-  gave a fourth answer to. `docs/autonomy/v0-01-evidence.md`'s entry for the
+  gave a fourth answer to. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`'s entry for the
   promise names it and says what is still owed, and the reconciling gate passes
   on the change that adds it. **No code follows in the same change**, because
   until it is accepted a worker writing code would be choosing between the
@@ -596,7 +598,7 @@ whether the weights are carried on the certified image or fetched at setup, sinc
 a machine that fetches at setup is not local by default when it is offline at
 setup.
 
-`docs/autonomy/v0-01-evidence.md`'s entry names the decision and says what is
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`'s entry names the decision and says what is
 owed underneath it, and the count of promises with no evidence at all **stays at
 four**: a proposed decision is not evidence that anything was built, which is
 what `alo-reconciling` refuses an ADR for in the first place. What is new there
@@ -687,7 +689,7 @@ a promise's evidence. **Nothing checks that any of those pointers lands.**
 
 Task 16 already met one edge of this and fixed exactly one pointer:
 `a_promise_that_waits_on_a_decision_names_one_that_is_there` holds
-`docs/autonomy/v0-01-evidence.md` to the decision it names, because *waits on a
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` to the decision it names, because *waits on a
 decision* sending a reader to an ADR nobody wrote reads exactly like an answer.
 Every other citation in the repository is unchecked — and an ADR reference is the
 one kind of pointer a reader believes without opening, because the number looks
@@ -760,7 +762,7 @@ not another repository check. The family is finished: `alo-reconciling` holds th
 promises to evidence, `alo-by-hand` holds the verbs to a plain way,
 `alo-collected` holds the words to one vocabulary, and `alo-citing` holds the
 citations to decisions that exist. What none of them answers is the finding task
-11 left standing and tasks 14 and 15 halved: **`docs/autonomy/v0-01-evidence.md`
+11 left standing and tasks 14 and 15 halved: **`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
 records four v0.01 promises with no evidence at all**, and the ledger says each
 of them needs a screen, a decision or a machine.
 
@@ -775,7 +777,7 @@ before it is a screen, and nothing in this repository has looked.
   actually has — the crates, the contracts and the ADRs, named — and is written
   down as either *reachable without a screen, a decision or a machine, and here
   is the increment*, or *not, and here is precisely what it waits on*. The
-  finding goes in `docs/autonomy/v0-01-evidence.md` under the promise it is
+  finding goes in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` under the promise it is
   about, so the next reader inherits the reasoning rather than the verdict; the
   reconciling gate passes on the change; and **where one is reachable, the next
   task in this plan is the increment**, written with its own acceptance.
@@ -787,7 +789,7 @@ before it is a screen, and nothing in this repository has looked.
 
 **Done, 2026-09-11.** The four were read one at a time against the crates, the
 contracts and the decisions, and the reading is written under each promise in
-`docs/autonomy/v0-01-evidence.md` rather than as a verdict beside it. **The count
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` rather than as a verdict beside it. **The count
 stays at four** — nothing was closed and nothing was ticked — and **one of them
 was in the wrong pile.**
 
@@ -904,7 +906,7 @@ asked: that is today. What stops tomorrow is that **neither crate can name the
 other** — the test reads both manifests off the disk, and holds this crate to
 depending on no daemon, no turn, no record and no grants either. A turn cannot
 reach a clipboard because there is no clipboard in scope to reach (ADR 0001 §4).
-No verb was added. `docs/autonomy/v0-01-evidence.md` now stands at **three**
+No verb was added. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` now stands at **three**
 promises with no evidence at all, and none of the three can be closed by this
 lane: two need a machine and the third needs the owner. Report:
 `docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md`. The
@@ -918,7 +920,7 @@ drawing it is the compositor's, and *On the machine* does not move.
 machine.
 
 Written by task 20, out of the one still-owed half in
-`docs/autonomy/v0-01-evidence.md` that needs no screen, no decision and no
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` that needs no screen, no decision and no
 machine. `docs/features.md` promises at v0.01 that **a person never learns the
 name of anything we rented** — *they install an application, not a Flatpak; they
 run a model, not Ollama* — and, in the line under it, that **it is enforced
@@ -969,7 +971,7 @@ the same test — is refused, which is the case the whole task is about; a real
 translation of real keys from the machine's own vocabulary, on a real disk,
 loses nothing. No new string: the refusal travels in `Damage`, which gained the
 third kind, and keeps its English for `failing.rs`'s standing reason. The
-still-owed half in `docs/autonomy/v0-01-evidence.md` is closed and what remains
+still-owed half in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is closed and what remains
 owed is named. Report:
 `docs/autonomy/updates/a-translators-line-held-to-the-same-rule.md`. The next
 task (22) is written below.
@@ -1194,7 +1196,7 @@ The next task (25) was already written below.
 
 **Status:** done. **Depends on:** nothing in this lane.
 
-Every promise in `docs/autonomy/v0-01-evidence.md` that says *still owed: no
+Every promise in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` that says *still owed: no
 machine has ever* waits on one missing step, and it is not a machine. It is that
 **nothing turns the image into something a machine boots.** `image/Containerfile`
 builds a bootc OCI image (ADR 0011) and `crates/alo-image` holds it to every
@@ -1583,7 +1585,7 @@ digest checked before anything is unpacked, read back by
 choices with the local one first and nothing pre-selected. The third is
 untouched: `image/Containerfile` carries **no weights at all**, so no machine
 this repository builds arrives able to run anything, and
-`docs/autonomy/v0-01-evidence.md` records that against *the local model is what
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` records that against *the local model is what
 the machine arrives ready to run*.
 
 The open question ADR 0025 left is a decision inside this work rather than a
@@ -1602,7 +1604,7 @@ the runtime is.
   a model the catalogue holds no measurement for, each as a `Wrong` naming the
   decision it breaks; the choice between riding on the image and being fetched at
   setup is **made**, in the recipe and in a sentence in the report saying what it
-  costs the other way; and the entry in `docs/autonomy/v0-01-evidence.md` is
+  costs the other way; and the entry in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is
   rewritten to say exactly what is now shown and what still waits.
 - **Constraint:** it may not tick *arrives ready to run* — that waits on an image
   that boots with the weights on a machine, and this lane has no machine. It may
@@ -2158,7 +2160,7 @@ be a task whose half-done state nobody could read.
   display backend — a `DesktopFrame` with the dock, the status area and the
   windows that are open — started by the session rather than by a test or the
   display probe; what the status area shows is that machine's own readings
-  (task 15 of `v0-5-the-shell-plan.md`) rather than the fixed ones the probe
+  (task 15 of `the-shell-plan.md`) rather than the fixed ones the probe
   hands over; and the egress indicator is on it, because a desktop where nothing
   can be seen leaving is the one surface this product may not ship without.
 - **Constraint:** the shell still measures nothing and decides no layout. **What
@@ -2181,7 +2183,7 @@ not ship without, checked at the pixels rather than at the call.
 
 - **A photograph**, as task 38 owes one: the dock on its edge, the status area
   with this machine's clock, and the indicator when something is leaving.
-- **The four readings** — task 15 of `v0-5-the-shell-plan.md`. What is handed
+- **The four readings** — task 15 of `the-shell-plan.md`. What is handed
   today is the clock and the honest absent value for the battery and the
   network. **The volume is a claim**: `StatusItems` has no absent case for it,
   so a desktop that has asked nothing still shows one. Said in the code, in the

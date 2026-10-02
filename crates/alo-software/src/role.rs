@@ -1,6 +1,6 @@
 //! What each application a fresh machine ships is there to do.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2, names the list: a
+//! `docs/autonomy/software-and-the-web-plan.md`, task 2, names the list: a
 //! web browser, a file manager with trash and archives that open, a text editor,
 //! an image viewer, a document viewer and a terminal. **Seven roles for six
 //! things**, because the file manager a fresh machine ships opens archives

@@ -29,7 +29,7 @@
 //! so that the installer plan is handed sentences rather than left to write
 //! English of its own. The walk from a new printer to a recovered disk, and the
 //! table of exactly what a person meets in order, is task 7 of
-//! `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`.
+//! `docs/autonomy/the-broker-and-the-disk-plan.md`.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 

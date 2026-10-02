@@ -1,4 +1,6 @@
-# v0.5 — every promise, against the evidence
+# Every promise of *a person can work on it all day*, against the evidence
+
+*Named `v0.5 — every promise, against the evidence` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. **Both evidence documents had the same subject**, so the release was the only thing telling them apart; this one is named for the release's own descriptive title rather than its number. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 `docs/features.md` is the definition of what alo OS is. This is the other half
 of it for the second release: **for every `[v0.5]` line, the test or the report
@@ -7,7 +9,7 @@ that shows it, and what is still owed.** It is not a release verdict —
 question, promise by promise: *what in this repository would show somebody that
 this is true, and what would not?*
 
-`docs/autonomy/v0-01-evidence.md` is the same file for the first release, and its
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is the same file for the first release, and its
 own preamble is worth reading beside this one: the rules about what counts as
 evidence are the same, and they were written after the reading they replace.
 
@@ -147,7 +149,7 @@ nested compositor and measured by tests on real files.
 
 *This promise's box in `ROADMAP.md` said **the one place does not exist** on
 2026-09-26. That was wrong, and it was wrong because the claim was made without
-opening `v0-5-the-shell-plan.md` — seventeen tasks, sixteen done, which draws
+opening `the-shell-plan.md` — seventeen tasks, sixteen done, which draws
 almost every surface that reading called owed.*
 
 ### Accessibility: the AT-SPI tree the agent uses is the one a screen reader uses; EN 301 549 conformance is the same work, not extra work
@@ -704,7 +706,7 @@ turn. Drawing it is the shell's.
 **Still owed:** the clicking through, which is the shell's.
 
 **The line for what undo is holding was built on 2026-09-30** — task 15 of
-`docs/autonomy/v0-5-the-machine-measured-plan.md`, the plan that owns the crate.
+`docs/autonomy/the-machine-measured-plan.md`, the plan that owns the crate.
 `crates/alo-measuring/src/undo.rs` and
 `crates/alo-measuring/tests/what_undo_is_holding_has_its_own_line.rs`: a line
 beside the tree rather than a node in it, because a snapshot's bytes are shared
@@ -853,7 +855,7 @@ this promise at `[v0.5]`.*
 `docs/autonomy/updates/the-camera-is-not-a-candidate.md`
 
 **Still owed:** **carried to v2 by the owner's decision of 2026-09-27**, with
-task 4 of `docs/autonomy/v0-5-devices-and-media-plan.md` scheduled rather than
+task 4 of `docs/autonomy/devices-and-media-plan.md` scheduled rather than
 open. The reports are what was learnt before it was carried, and they are here so
 the next person starts from them rather than from nothing.
 
@@ -1185,7 +1187,7 @@ agent's, and no agent has been asked anything on a machine.
 holding**: ADR 0045's fourth term says `alo-measuring` counts what undo is holding,
 by name, and nothing in the crate mentions a snapshot or an undo — so a person
 whose disk is full of yesterday's turns is shown a tree that does not account for
-them. It is **task 15 of `docs/autonomy/v0-5-the-machine-measured-plan.md`**. This
+them. It is **task 15 of `docs/autonomy/the-machine-measured-plan.md`**. This
 is the same pair as the two entries above, because the promise is the agent's way
 of asking what they answer.
 
@@ -1386,7 +1388,7 @@ absent.*
 
 **Still owed:** the download, the click and the reboot on somebody's own Windows
 machine, and the held work behind it: task 20 of
-`docs/autonomy/v0-5-the-installer-plan.md` — a download that stops arriving ending
+`docs/autonomy/the-installer-plan.md` — a download that stops arriving ending
 the install in words — is blocked on task 4 and its work is off-repository.
 
 **The interface (ADR 0065)**

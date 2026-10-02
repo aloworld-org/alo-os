@@ -1,7 +1,7 @@
 //! The plan's acceptance for *one approval, and the sentence a person
 //! approves*, one test per criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 7: *a proposed change is shown
+//! `docs/autonomy/the-executable-plan.md`, task 7: *a proposed change is shown
 //! as the sentence `alo-turn` renders, approved once, carried out, and refused
 //! after its proposal has expired — with the record carrying what was approved
 //! and by whom.*

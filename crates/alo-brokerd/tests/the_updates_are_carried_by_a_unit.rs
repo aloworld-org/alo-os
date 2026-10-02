@@ -5,7 +5,7 @@
 //!
 //! [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md),
 //! accepted option B, and the acceptance of task 8 of
-//! `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *what runs the base is
+//! `docs/autonomy/the-broker-and-the-disk-plan.md`: *what runs the base is
 //! a unit with a fixed command line, its capabilities named line by line and
 //! held by a test*. This is that test, and it also holds the other half of the
 //! same sentence — **the broker still holds no capability**, and nothing in the

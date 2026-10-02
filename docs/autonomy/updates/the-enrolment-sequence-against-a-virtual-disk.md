@@ -1,7 +1,7 @@
 # The enrolment sequence, against a virtual disk — and the sentences that go with it
 
 **Date:** 2026-09-20
-**Workstream:** `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 6 —
+**Workstream:** `docs/autonomy/the-broker-and-the-disk-plan.md`, task 6 —
 *Enrolled at install, and recovered — everything a virtual disk can show*
 **Contributor:** the broker-and-the-disk lane, on the third PC (`AGAI01`) —
 built by its first worker and re-verified by its second, whose account is

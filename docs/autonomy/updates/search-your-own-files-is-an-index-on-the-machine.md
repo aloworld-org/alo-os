@@ -1,7 +1,7 @@
 # Search your own files — an index that lives on the machine
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 3 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 3 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 
@@ -225,6 +225,6 @@ anything the record does, and a test reads the shipped source to say so.
 
 ## Proposed queue and roadmap updates
 
-Task 3 of `v0-5-the-machine-measured-plan.md` is marked done in the plan.
+Task 3 of `the-machine-measured-plan.md` is marked done in the plan.
 Task 4 is ready and depends on it; task 5 depends on 1, 2 and 3, and now has
 all three.

@@ -1,6 +1,6 @@
 //! The same weights, asked in the envelope another way, graded on their own.
 //!
-//! Task 16 of `docs/autonomy/v0-5-the-models-measured-plan.md` and
+//! Task 16 of `docs/autonomy/the-models-measured-plan.md` and
 //! [ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md).
 //! An entry's envelope grade names the instructions it was earned under, the
 //! runtime that served the weights, and what held the answer. A grade earned

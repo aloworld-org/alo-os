@@ -156,7 +156,7 @@ integration test. No other lane's crate was edited.
 
 ## One finding, for whoever owns `alo-converting` next
 
-`docs/autonomy/v0-5-documents-and-paper-plan.md` task 6 carries **the Pages
+`docs/autonomy/documents-and-paper-plan.md` task 6 carries **the Pages
 account twice**, in near-identical paragraphs — the result of a rebase on
 2026-09-19 resolved by keeping both sides, which was the right call at the time
 and is now two copies of one thing. It is not corrected here because a published

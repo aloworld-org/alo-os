@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-20
 **Workstream:** v0.5 — the broker and the disk
-(`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 8)
+(`docs/autonomy/the-broker-and-the-disk-plan.md`, task 8)
 **Contributor:** this development PC's lane
 **Status:** ready for integration.
 
@@ -117,7 +117,7 @@ read fetches nothing rather than quietly going around it.
 - **`docs/decisions/0053-…md`** — *proposed* becomes *accepted*, and its
   consequences say which have happened and which the image lane still owes.
 - The plan: task 8 marked done and what the image lane inherits written out;
-  task 7's dependency on it cleared. `v0-5-the-machine-keeps-itself-plan.md`'s
+  task 7's dependency on it cleared. `the-machine-keeps-itself-plan.md`'s
   paragraph naming task 8 as blocked cleared with a dated sentence, per *A stale
   blocker is invisible work*.
 

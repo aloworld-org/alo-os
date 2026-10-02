@@ -6,7 +6,7 @@
 (a local model is held to the envelope, not the call),
 [ADR 0034](0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)
 (the instructions show every door they ask a model to choose), task 18 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`, `crates/alo-driving`,
+`docs/autonomy/the-models-measured-plan.md`, `crates/alo-driving`,
 `crates/alo-turn`
 
 ## The question in one line
@@ -84,7 +84,7 @@ when it is wired, by the turn.
    from `alo-instructing`, a turn is still shown whatever its caller wrote —
    so `Model::grade_for_the_turn` keeps reading the grade earned under
    `AsFirstWritten`, exactly as ADR 0034 decision 4 says. The wiring is written
-   as a task on `docs/autonomy/v0-5-the-local-network-plan.md`.
+   as a task on `docs/autonomy/the-local-network-plan.md`.
 4. **When that lands, the grade that decides is the one earned under
    `SHOWN_TO_A_TURN`'s digest**, and an entry never measured under it has no
    grade for the turn — not a grade assumed for it. That is a regrade of every

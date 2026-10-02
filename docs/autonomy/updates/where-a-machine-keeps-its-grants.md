@@ -174,7 +174,7 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
 
 **ROADMAP.md / QUEUE.md:** lane B task 3 is done; task 4 (*a grant made now
 reaches the daemon now*) is written and ready. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. The
+`the-executable-plan.md` matched this one, so nothing was marked there. The
 `Grants` line of `docs/features.md` now has *pick*, *it expires* and *it is
 kept* in code; *see what is granted* and *revoke it* still wait on the
 compositor lane's surface.

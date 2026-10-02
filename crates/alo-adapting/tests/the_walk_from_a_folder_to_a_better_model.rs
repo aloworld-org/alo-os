@@ -1,6 +1,6 @@
 //! **One walk, in the order a person meets it.**
 //!
-//! Task 6 of `docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`.
+//! Task 6 of `docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`.
 //! Every other test in these crates holds one sentence, or one step, or one
 //! refusal. This holds **the sequence**: what somebody actually reads, from
 //! granting a folder to running out of credit, in order, in one place.

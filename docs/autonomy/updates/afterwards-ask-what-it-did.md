@@ -1,7 +1,7 @@
 # Afterwards, ask what it did
 
 **Date:** 2026-09-10
-**Workstream:** v0.01 delivery plan, task 8 (`docs/autonomy/v0-01-delivery-plan.md`)
+**Workstream:** v0.01 delivery plan, task 8 (`docs/autonomy/the-executable-plan.md`)
 **Contributor:** Claude, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 
@@ -215,5 +215,5 @@ or tested — drawing an account is the compositor's, and the desktop worker's.
 - `crates/alo-saying/Cargo.toml` — collects this crate's words
 - `crates/alo-saying/src/collecting.rs` — the same, and the three tests that
   count them
-- `docs/autonomy/v0-01-delivery-plan.md` — task 8 marked done
+- `docs/autonomy/the-executable-plan.md` — task 8 marked done
 - `docs/autonomy/updates/afterwards-ask-what-it-did.md` — this report

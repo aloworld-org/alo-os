@@ -1,7 +1,7 @@
 # An alo machine that hosts a workspace answers for it, and says nothing more
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 20; written as 19 and renumbered when the measuring lane took 19 first)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 20; written as 19 and renumbered when the measuring lane took 19 first)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the owner
 **Status:** ready for integration
 

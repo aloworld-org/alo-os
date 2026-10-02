@@ -3,7 +3,7 @@
 //! with what was tried, never as a code.
 //!
 //! One clause of the acceptance for *A printer is found, set up, and says what
-//! is wrong with it* in `docs/autonomy/v0-5-documents-and-paper-plan.md`,
+//! is wrong with it* in `docs/autonomy/documents-and-paper-plan.md`,
 //! against a printing service on this machine's loopback reporting what real
 //! printers report.
 

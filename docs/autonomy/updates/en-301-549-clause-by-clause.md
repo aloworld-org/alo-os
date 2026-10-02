@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 — access and language
-**Task:** [task 4](../v0-5-access-and-language-plan.md) — EN 301 549, clause by
+**Task:** [task 4](../access-and-language-plan.md) — EN 301 549, clause by
 clause
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;

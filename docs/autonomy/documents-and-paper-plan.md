@@ -1,4 +1,6 @@
-# v0.5 — documents and paper: opening what a person was sent, and printing it
+# Documents and paper: opening what a person was sent, and printing it
+
+*Named `v0.5 — documents and paper: opening what a person was sent, and printing it` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** four `ROADMAP.md` v0.5 lines that are one subject —
 **Printing**, ★ *Printers, solved — found, set up, and fixed when they stop*,
@@ -44,7 +46,7 @@ printer producer API required by broker task 2. This releases only the files
 below to that task; this plan retains its ownership and unfinished work.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-broker-and-the-disk-plan.md
+plan = docs/autonomy/the-broker-and-the-disk-plan.md
 task = 2
 files =
   crates/alo-printing/src/changing.rs

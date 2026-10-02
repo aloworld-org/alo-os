@@ -1,6 +1,6 @@
 # Several displays, each with its own background and its own dock
 
-**Task 9 of `v0-5-the-shell-plan.md`. 2026-09-20. The code only — no certified
+**Task 9 of `the-shell-plan.md`. 2026-09-20. The code only — no certified
 machine, and no second panel, has seen this.**
 
 ## What was built

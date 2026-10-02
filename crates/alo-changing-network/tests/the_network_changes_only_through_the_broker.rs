@@ -2,7 +2,7 @@
 //! chooses it in Settings — through the privileged broker's real door, to the
 //! network manager's side, and every way it is stopped on the way.
 //!
-//! Task 3 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`:
+//! Task 3 of `docs/autonomy/the-broker-and-the-disk-plan.md`:
 //!
 //! - *the broker's network verbs — join a network the machine can see, forget a
 //!   network, turn the radio on or off, set the proxy `alo-proxy` holds — take

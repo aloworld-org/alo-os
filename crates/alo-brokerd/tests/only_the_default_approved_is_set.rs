@@ -3,7 +3,7 @@
 //! and on every refusal nothing is written, nothing about how the machine
 //! starts changes, and the refusal is in the record.
 //!
-//! Task 17 of `docs/autonomy/v0-5-the-installer-plan.md`, and
+//! Task 17 of `docs/autonomy/the-installer-plan.md`, and
 //! [ADR 0066](../../../docs/decisions/0066-which-system-a-machine-starts-by-default-is-changed-by-a-verb.md).
 //! Every request here crosses the broker's real decision
 //! (`alo_broker::Broker::heard`) under a genuine token, so what is tested is

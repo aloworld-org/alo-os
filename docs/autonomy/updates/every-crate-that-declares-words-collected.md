@@ -1,7 +1,7 @@
 # Every crate that declares words, collected — and the one that is not, named
 
 **Date:** 2026-09-11
-**Workstream:** v0.01 delivery plan, task 17 (`docs/autonomy/v0-01-delivery-plan.md`)
+**Workstream:** v0.01 delivery plan, task 17 (`docs/autonomy/the-executable-plan.md`)
 **Contributor:** Claude (separate checkout, `C:\dev\alo-os-claude`)
 **Status:** ready for integration
 
@@ -211,7 +211,7 @@ follow-up.
 - `crates/alo-recounting/tests/what_this_machine_did.rs` — the second
 - `docs/contracts/translations.md` — where a crate declares its words
 - `Cargo.toml`, `Cargo.lock` — the new member
-- `docs/autonomy/v0-01-delivery-plan.md` — task 17 marked done, task 18 written
+- `docs/autonomy/the-executable-plan.md` — task 17 marked done, task 18 written
 
 ## Limitations
 

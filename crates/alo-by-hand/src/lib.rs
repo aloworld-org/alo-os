@@ -17,7 +17,7 @@
 //! # Why a crate and not a rule somebody remembers
 //!
 //! Because it has been a rule somebody remembers since 2026-09-02, and the audit
-//! in `docs/autonomy/v0-01-evidence.md` found what that is worth: of forty-one
+//! in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` found what that is worth: of forty-one
 //! v0.01 promises, this is the one that is *a standing rule with nothing checking
 //! it*. Ten verbs ship today and not one of them had ever been asked the
 //! question. A verb arriving tomorrow with no by-hand answer would break nothing,

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 the machine keeps itself — task 3 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *atomic
+`docs/autonomy/the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *atomic
 updates with rollback*, and the decidable half of *recovery and rollback screen*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os`
 **Status:** ready for integration. Measured in an emulated virtual machine on the

@@ -1,6 +1,6 @@
 //! A machine that cannot run the engine says so, instead of failing ten times.
 //!
-//! Task 9 of `docs/autonomy/v0-5-documents-and-paper-plan.md`, and ADR 0063.
+//! Task 9 of `docs/autonomy/documents-and-paper-plan.md`, and ADR 0063.
 //! Two halves, and the second is the one that keeps the first honest:
 //!
 //! - **The ask refuses correctly.** Nothing there, a file that is not a

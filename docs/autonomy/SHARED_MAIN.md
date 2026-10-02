@@ -273,8 +273,8 @@ A task whose blocker has been cleared still reads *blocked* until somebody
 edits the line, and every machine that surveys the plans skips it. Nothing
 tells them otherwise: a plan is read, not computed.
 
-Found on 2026-09-19. `v0-5-hands-on-the-desktop-plan.md` task 2 read *blocked —
-on `v0-5-the-session-and-the-displays-plan.md` task 3*, and that task was
+Found on 2026-09-19. `hands-on-the-desktop-plan.md` task 2 read *blocked —
+on `the-session-and-the-displays-plan.md` task 3*, and that task was
 finished. The work had been takeable for some time and was being stepped over
 by every lane looking for something free — while task 7 of the same plan, which
 depends on it, was being offered to a machine that could not have finished it.
@@ -292,7 +292,7 @@ completed tasks on the same day this rule was written.
 **The marker is still the authority, and the two now agree.** On 2026-09-27
 every plan under this directory was read for the disagreement, and **74 tasks
 across six plans** said `ready` above their own `**Done, <date>.**` — 32 in
-`v0-01-delivery-plan.md`, a release that shipped, and 14 each in
+`the-executable-plan.md`, a release that shipped, and 14 each in
 `kernel-enforcement-plan.md` and `accounts-and-session-entry-plan.md`. Every one of those
 status words now reads `done`, copied from the marker directly beneath it and
 with no other word of any plan touched. So this rule is advice about which of
@@ -645,7 +645,7 @@ the other lane's open pull request rather than by anything in this file.
 **Which documents this is about, stated so it can be checked rather than felt.**
 A document needs announcing when **it holds a number that something else
 asserts** — another document, or a test. `docs/features.md` holds the promise
-counts the reconciler reads. `docs/autonomy/v0-01-evidence.md` states its own
+counts the reconciler reads. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` states its own
 figures and a test reads all four of them. Those behave like locks whether or not
 anybody declared one: two lanes each correctly adding one promise produce a count
 that is wrong by one, and the test that catches it names neither of them. A

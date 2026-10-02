@@ -1,6 +1,6 @@
 //! **What `alo-access` decided, in the numbers the rented tree publishes.**
 //!
-//! `docs/autonomy/v0-5-the-shell-plan.md` task 12: *the shell exposes every
+//! `docs/autonomy/the-shell-plan.md` task 12: *the shell exposes every
 //! surface's role, name and state to AT-SPI as `alo-access` decides them*. The
 //! deciding is that crate's; the numbers are at-spi2's — `AtspiRole` and
 //! `AtspiStateType`, whose values are part of a published interface and do not

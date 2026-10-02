@@ -1,7 +1,7 @@
 //! The plan's acceptance for *what the overlay shows when the agent has
 //! nothing to say yet*, one test per criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 3: *the overlay's state is a
+//! `docs/autonomy/the-executable-plan.md`, task 3: *the overlay's state is a
 //! value derived from the daemon's own answers, with a case for each of
 //! nothing granted, nothing chosen and ready; every string externalised; and
 //! the nothing chosen case says what to do rather than being empty.*

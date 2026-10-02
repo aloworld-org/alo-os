@@ -1,7 +1,7 @@
 //! Dragging something out of one window and letting it go in another.
 //!
 //! `docs/features.md` promises at v0.5: **drag and drop between applications**,
-//! and `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4 is what it has
+//! and `docs/autonomy/hands-on-the-desktop-plan.md` task 4 is what it has
 //! to mean. Two sentences of that acceptance are the whole of this crate:
 //!
 //! - **A drop carries what copy and paste carries** — text, images, files —

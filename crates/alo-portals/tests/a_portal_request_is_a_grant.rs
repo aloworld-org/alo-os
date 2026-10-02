@@ -1,6 +1,6 @@
 //! A portal request is a grant, and is refused like one.
 //!
-//! Task 1 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 1 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here:
 //!
 //! - **the portals `docs/features.md` lists for v0.5 are a closed enum**, each

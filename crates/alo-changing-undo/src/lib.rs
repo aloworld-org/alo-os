@@ -6,7 +6,7 @@
 //! `alo_letting_go` reads and writes the file a person changes it in and holds
 //! the one act that forgets it, `alo-measuring` counts what that is costing, and
 //! `alo_keeping_up::WhatWasKept::forgetting` is the sentence a person approves.
-//! Task 15 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` is the pane,
+//! Task 15 of `docs/autonomy/the-machine-keeps-itself-plan.md` is the pane,
 //! and ADR 0045 point 5 is why there is one: *what an undo may keep is visible
 //! and forgettable*, and until this a person could not find out how far back
 //! their machine kept what the agent changed, could not see what it was holding,

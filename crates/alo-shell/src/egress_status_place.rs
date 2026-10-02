@@ -24,7 +24,7 @@
 //! with the edges.
 //!
 //! **The rest of the status area — the clock, the battery, the network — is owed
-//! a location and does not have one.** That is `docs/autonomy/v0-5-evidence.md`'s
+//! a location and does not have one.** That is `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`'s
 //! entry to carry, not this file's to invent. The egress indicator is not waiting
 //! on it, because it has a corner of its own and always did.
 

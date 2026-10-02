@@ -1,7 +1,7 @@
 //! Dropping a file onto the agent's surface offers it for that question, and
 //! **no grant exists afterwards**.
 //!
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4: *dropping a file
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 4: *dropping a file
 //! onto an agent's surface offers it as context for that turn only and is not a
 //! grant — a test holds that no grant exists afterwards, because a grant is made
 //! by `alo-picking` and nothing else (ADR 0001 §3).* The plan's constraint says

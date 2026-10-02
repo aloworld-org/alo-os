@@ -1,7 +1,7 @@
 # Two machines with no IPv4 address between them find each other again when the cable comes back
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 30)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 30)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 
@@ -39,7 +39,7 @@ assumes it is still listening.
   socket that joined it, and a join there then says `EADDRINUSE`* (new).
 - `docs/contracts/local-network-wire.md`: *A cable with no IPv4 address, pulled
   and plugged in again* (new, additive; nothing on the wire changes).
-- `docs/autonomy/v0-5-the-local-network-plan.md`: task 30 marked done; task 31
+- `docs/autonomy/the-local-network-plan.md`: task 30 marked done; task 31
   written.
 
 ## The measurement

@@ -1,7 +1,7 @@
 //! The road out that stages the system's own update, held to taking the
 //! machine's one proxy.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 4: the machine's
+//! `docs/autonomy/software-and-the-web-plan.md`, task 4: the machine's
 //! proxy *reaches every road out alo OS itself uses — installing, **updates**,
 //! providers — held by a test per road.* This is that test for updates, and it
 //! is here because this is where the road is: `alo_updating::TheBase` starts the

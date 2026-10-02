@@ -1,7 +1,7 @@
 # With Secure Boot on, the staged loader starts
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 9)
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 9)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** **not finished, and no handoff was written.** The page fault is
 found, explained and gone, and a second fault found on the way is fixed; the

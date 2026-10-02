@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — software and the web
-(`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3)
+(`docs/autonomy/software-and-the-web-plan.md`, task 3)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration. The browser itself reading the shipped
 configuration on a real machine is still to do, as the rented tool is for tasks 1

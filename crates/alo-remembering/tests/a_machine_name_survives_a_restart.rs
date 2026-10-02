@@ -2,7 +2,7 @@
 //! pairing, goes when the pairing goes, and is never written into the pairing
 //! — measured on a real disk.
 //!
-//! Task 16 of `docs/autonomy/v0-5-the-local-network-plan.md`: the name is kept
+//! Task 16 of `docs/autonomy/the-local-network-plan.md`: the name is kept
 //! on this machine in the person's own file, with the trust the pairings file
 //! has, and read again at start; a revoked pairing's name goes with it.
 //!

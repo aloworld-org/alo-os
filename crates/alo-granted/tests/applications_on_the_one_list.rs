@@ -1,6 +1,6 @@
 //! One list of what has been granted to what.
 //!
-//! Task 2 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 2 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here:
 //!
 //! - **an application's grants beside an agent's, in one order, with one shape

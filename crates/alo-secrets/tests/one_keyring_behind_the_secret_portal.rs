@@ -1,6 +1,6 @@
 //! One keyring behind the Secret portal.
 //!
-//! Task 3 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 3 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here, against a real `gnome-keyring`
 //! on a bus of the test's own:
 //!

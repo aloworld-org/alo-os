@@ -1,7 +1,7 @@
 # The proxy a machine was told about, carried to the question a turn puts
 
 - Date: 2026-09-20
-- Workstream: v0.5 software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 11)
+- Workstream: v0.5 software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 11)
 - Contributor: Claude Code
 - Status: **ready for integration.** `cargo fmt --all --check`, `cargo clippy
   --all-targets` with warnings denied, `cargo doc --no-deps` with warnings
@@ -92,7 +92,7 @@ passed on the address-only version.
 | `crates/alo-asking/src/openai.rs` | `put_through`, and `.proxy(...)` said on every request |
 | `crates/alo-asking/Cargo.toml` | `alo-proxy`, named only in `hosted.rs` |
 | `docs/autonomy/a-new-machine-becomes-a-lane.md` | records this plan taking `alo-asking`'s hosted door from a finished plan |
-| `docs/autonomy/v0-5-software-and-the-web-plan.md` | task 11 done; task 12 written |
+| `docs/autonomy/software-and-the-web-plan.md` | task 11 done; task 12 written |
 
 ## Decisions taken, and why
 
@@ -102,7 +102,7 @@ needs `alo-asking` to change, and that crate turns out to be another plan's, sto
 at a decision record. It does need `alo-asking` to change — `Hosted::ask` and
 `openai::put` are both `pub(crate)`, so there is no way to configure a provider
 request from outside. And the plan that owns `alo-asking`'s hosted and served
-doors is `v0-5-the-models-measured-plan.md`, which records itself **Finished,
+doors is `the-models-measured-plan.md`, which records itself **Finished,
 2026-09-15**, with its lane stopped. `a-new-machine-becomes-a-lane.md`'s *a
 machine unblocks itself* (owner, 2026-09-18) says a blocker in a plan that has
 finished is taken, and its row edited in the same commit. That is what happened;

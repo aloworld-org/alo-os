@@ -1,7 +1,7 @@
 //! The road that installs, checks and updates applications, signing in to a
 //! proxy that asks who this machine is.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 12: *a proxy an
+//! `docs/autonomy/software-and-the-web-plan.md`, task 12: *a proxy an
 //! organisation's description says wants a name is signed in to on **every road
 //! out alo OS itself uses** — **installing and application updates**, the
 //! system's own update, a provider's list and a turn's question — through

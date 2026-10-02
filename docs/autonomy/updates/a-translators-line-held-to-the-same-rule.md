@@ -9,7 +9,7 @@
 anything we rented**, and that it is **enforced rather than remembered**.
 `crates/alo-saying/src/rented.rs` enforces it for the English: every sentence,
 note and key the workspace declares is walked against `EVERYTHING_WE_RENT` in
-CI. What it could not reach — and what `docs/autonomy/v0-01-evidence.md`
+CI. What it could not reach — and what `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
 recorded as the still-owed half — is a translation: a file a person outside
 the organisation types, arriving in the image, read when a process starts.
 *Das Flatpak konnte nicht installiert werden* would have reached a screen in
@@ -43,7 +43,7 @@ repository holds the file: when a machine loads it.
   longer true and now says what actually happens: checked at load, the line
   left out, the rest of the file shown, the refusal naming the file, the key
   and the language. The line-left-out list gained the new cause.
-- **`docs/autonomy/v0-01-evidence.md`** — the entry for *a person never learns
+- **`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`** — the entry for *a person never learns
   the name of anything we rented* no longer names the translator's line as
   owed; what remains owed is stated (a surface composing a sentence of its
   own is prevented by construction, not verified mechanically). The
@@ -158,7 +158,7 @@ Refusal paths tested beside the legitimate ones:
   here — they are another crate's platform issue and this change touches
   nothing it depends on.
 - What is still owed on the promise is written in
-  `docs/autonomy/v0-01-evidence.md`: nothing verifies mechanically that no
+  `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`: nothing verifies mechanically that no
   surface composes a sentence of its own; today that is held by construction
   in each surface crate.
 

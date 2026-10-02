@@ -1,7 +1,7 @@
 //! A caller is named by the process the bus holds, never by a number that can
 //! be given to another process while its sandbox is read.
 //!
-//! Task 7 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`.
+//! Task 7 of `docs/autonomy/applications-and-what-they-expect-plan.md`.
 //! The backend is served on a private bus the test starts, and the caller is
 //! **another process** — this test binary run again, asking the bus as an
 //! application does. Its `.flatpak-info` is a named pipe, so the backend opening

@@ -1,7 +1,7 @@
 # A turn shows a model the words the product wrote
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`,
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`,
 task 19), written by the measuring lane (its task 18) under
 [ADR 0037](../../decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md).
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository owner.

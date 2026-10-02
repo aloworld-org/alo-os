@@ -1,6 +1,6 @@
 //! **A display divided between two real clients, read back off the frame.**
 //!
-//! Task 17 of `docs/autonomy/v0-5-the-shell-plan.md`, and the hole task 16 left.
+//! Task 17 of `docs/autonomy/the-shell-plan.md`, and the hole task 16 left.
 //!
 //! # What went missing, and how
 //!

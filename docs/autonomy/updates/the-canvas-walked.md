@@ -106,4 +106,4 @@ would rest on:
   status area* and holds only the dock. Its status now reads **Open**. ADR 0076
   took the status area's location away and handed the question to this plan, which
   never answered it — **that answer is still owed**, and the entry in
-  `docs/autonomy/v0-5-evidence.md` belongs to the lane that holds that file.
+  `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` belongs to the lane that holds that file.

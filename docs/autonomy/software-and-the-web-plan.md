@@ -1,4 +1,6 @@
-# v0.5 — software and the web: installing applications, the browser, the proxy, and adapters
+# Software and the web: installing applications, the browser, the proxy, and adapters
+
+*Named `v0.5 — software and the web: installing applications, the browser, the proxy, and adapters` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** four `ROADMAP.md` v0.5 lines — the half of *Software* that is not
 portals or grants (*install sandboxed applications, update and remove them;
@@ -47,7 +49,7 @@ registration files. No other task or file is released; this plan retains its
 remaining work and the supervisor's ownership checks remain unchanged.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-broker-and-the-disk-plan.md
+plan = docs/autonomy/the-broker-and-the-disk-plan.md
 task = 2
 files =
   crates/alo-declared/Cargo.toml

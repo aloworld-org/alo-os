@@ -1,7 +1,7 @@
 # A verb crosses between two machines, and is proven at the door
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 8 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 8 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 
@@ -111,7 +111,7 @@ of the proof header.
 
 **`Cargo.toml`, `Cargo.lock`**: the new member. Nothing new resolves.
 
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 8 marked done, and
+**`docs/autonomy/the-local-network-plan.md`**: task 8 marked done, and
 task 9 written — *the machine that is asked answers on the port it
 advertises*, the daemon that turns three libraries into a machine that can
 be asked, with the asking side's door on `Turning` and the outcome of a

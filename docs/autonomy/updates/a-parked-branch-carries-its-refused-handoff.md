@@ -73,7 +73,7 @@ Source:
   handoff carries; the journal says when a park carried one; the recovery
   output names where the handoff came from; and a paragraph in the crate
   documentation.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 36 marked done, and task 37
+- `docs/autonomy/the-executable-plan.md` — task 36 marked done, and task 37
   written after it.
 
 ### The refusals

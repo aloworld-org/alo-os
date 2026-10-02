@@ -9,8 +9,8 @@ than a version number.
 **Context:** [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md)
 (engines are rented, configured, never patched),
 [ADR 0008](0008-where-inference-happens.md) (never a silent fallback: a machine
-says what it could not do rather than quietly doing something else), `docs/autonomy/v0-5-devices-and-media-plan.md` task 1,
-`docs/autonomy/v0-5-capture-and-the-room-plan.md` tasks 4, 5 and 7, which wait
+says what it could not do rather than quietly doing something else), `docs/autonomy/devices-and-media-plan.md` task 1,
+`docs/autonomy/capture-and-the-room-plan.md` tasks 4, 5 and 7, which wait
 on this, and `docs/features.md`'s *Capture: screen recording with audio*
 
 ## The question in one line

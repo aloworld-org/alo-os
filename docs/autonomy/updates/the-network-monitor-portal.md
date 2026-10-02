@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-20
 **Workstream:** v0.5 applications and what they expect — task 12 of
-`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, second half.
+`docs/autonomy/applications-and-what-they-expect-plan.md`, second half.
 The first half is `docs/autonomy/updates/how-far-this-machine-reaches.md`.
 **Contributor:** Claude, as a lane in `/root/alo-os-lane-b`
 **Status:** ready for integration. The code and its tests, run in WSL, on a

@@ -48,7 +48,7 @@ before it happens rather than after.
 
 ## The v0.01 plan
 
-`docs/autonomy/v0-01-delivery-plan.md`, twelve tasks across the six phases
+`docs/autonomy/the-executable-plan.md`, twelve tasks across the six phases
 between here and the machine, in the shape the loop reads.
 
 It is written to be honest about three things.
@@ -102,7 +102,7 @@ file the tasks are read from.
 **ROADMAP.md** — no tick. The plan is a plan.
 
 **docs/autonomy/QUEUE.md** — v0.01 has an executable plan the supervisor can
-drive: `ALO_LOOP_PLAN=docs/autonomy/v0-01-delivery-plan.md`.
+drive: `ALO_LOOP_PLAN=docs/autonomy/the-executable-plan.md`.
 
 **docs/autonomy/STATE.md** — `tools/kernel-loop` takes its plan as an input and
 drives two workstreams from one supervisor; both plans are held to parsing as

@@ -21,7 +21,7 @@ They hold nothing private and are published with this repository.
 
 ## What each one is for
 
-Task 2 of `docs/autonomy/v0-5-documents-and-paper-plan.md` reports **what a
+Task 2 of `docs/autonomy/documents-and-paper-plan.md` reports **what a
 conversion could not carry, by name**. Each loss it must name has something in
 these files that produces it, so a test asserts against a real cause rather than
 a constructed one.
@@ -42,7 +42,7 @@ answer is that the picture was not fetched.
 
 ## The four OpenDocument files, and why they were made differently
 
-Task 7 of `docs/autonomy/v0-5-documents-and-paper-plan.md` adds the three
+Task 7 of `docs/autonomy/documents-and-paper-plan.md` adds the three
 open-standard formats. Its own words say why these did not have to wait for
 anybody: **the application people actually use for these files is the one the
 image already pins**, so the real file can be saved on the machine that gates
@@ -133,7 +133,7 @@ move the bar the earlier measurements were made against.
 
 ## The three older files, and why they were made last
 
-Task 10 of `docs/autonomy/v0-5-documents-and-paper-plan.md` adds `.doc`, `.xls`
+Task 10 of `docs/autonomy/documents-and-paper-plan.md` adds `.doc`, `.xls`
 and `.ppt` — the shapes people still send, and the ones ADR 0039's *What this
 does not decide* left for a later change.
 

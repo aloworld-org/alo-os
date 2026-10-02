@@ -15,7 +15,7 @@
 //! took the status area off the Dock: a clock is not something a person opens or
 //! brings into focus. **The promise is not withdrawn** — `docs/features.md` still
 //! carries it at v0.5 — but it has no location now, and
-//! `docs/autonomy/v0-5-evidence.md` records that it is owed one before it is owed
+//! `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` records that it is owed one before it is owed
 //! an implementation. Drawing them somewhere else would be this file picking that
 //! location, which is the shell plan's to pick.
 //!

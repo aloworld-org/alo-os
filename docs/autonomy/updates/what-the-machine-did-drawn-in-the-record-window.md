@@ -1,7 +1,7 @@
 # What the machine did, drawn in the record window
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 4)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 4)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — the code. Not seen on a certified machine.
 
@@ -42,7 +42,7 @@ approval surface), `nested.rs`, `offscreen.rs` and `nested_approval.rs` (no
 record layer), `presentation.rs` (`RenderError::RecordScene`), `lib.rs`,
 `Cargo.toml` (`alo-recounting` as a dependency; `alo-record` moved up from
 dev-dependencies for `Asking`), `Cargo.lock`.
-`docs/autonomy/v0-5-the-shell-plan.md` marks task 4 done; tasks 5 and 6 already
+`docs/autonomy/the-shell-plan.md` marks task 4 done; tasks 5 and 6 already
 follow it.
 
 **User-readable change description:** *You can now see what your machine did.

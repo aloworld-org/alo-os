@@ -1,7 +1,7 @@
 //! Converting a `.docx`, `.xlsx` or `.pptx` is a decision, and the converter
 //! waits on it.
 //!
-//! Task 2 of `docs/autonomy/v0-5-documents-and-paper-plan.md` opens the three
+//! Task 2 of `docs/autonomy/documents-and-paper-plan.md` opens the three
 //! formats people are sent "through the rented converter running on this
 //! machine". Whoever writes the first line of that chooses what runs the engine,
 //! how a verb reaches it, and whether a document's linked pictures can be
@@ -48,7 +48,7 @@ const THE_DECISION: &str =
 const THE_DECISIONS: &str = "docs/decisions";
 
 /// The plan that asked for the decision.
-const THE_PLAN: &str = "docs/autonomy/v0-5-documents-and-paper-plan.md";
+const THE_PLAN: &str = "docs/autonomy/documents-and-paper-plan.md";
 
 /// The heading of the task that produced it.
 const THE_TASK: &str = "### 2. `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost";

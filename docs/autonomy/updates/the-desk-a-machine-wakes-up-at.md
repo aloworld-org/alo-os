@@ -1,7 +1,7 @@
 # The desk a machine wakes up at
 
 **Date:** 2026-09-22
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 11
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 11
 — *The desk a machine wakes up at*
 **Contributor:** this development PC (Windows host, gates run in its Ubuntu)
 **Status:** ready for integration.
@@ -118,7 +118,7 @@ takes its windows home. Every sentence is pulled out of the machine's one
 assembled vocabulary and checked for coming out whole and for naming no
 connector.
 
-### `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`
+### `docs/autonomy/the-session-and-the-displays-plan.md`
 
 Task 11 marked **Done, 2026-09-22**, and **task 12 written**, because the plan
 named none after it and a plan with no next task reads to the loop as a
@@ -176,7 +176,7 @@ one account is a question none of the tests written so far can ask. Task 12 also
 carries the debt this plan leaves — `docs/features.md`'s *Per display, so the
 dock can sit along the bottom of the laptop and down the side of the external
 screen* is still **not met**; `alo_dock::Dock` holds one edge for the machine,
-`alo-dock` belongs to `v0-5-where-a-persons-settings-are-kept-plan.md`, and
+`alo-dock` belongs to `where-a-persons-settings-are-kept-plan.md`, and
 `alo_displays::Wearing::of` is the one function that changes when that plan
 decides otherwise. It is written down rather than narrowed.
 
@@ -278,6 +278,6 @@ Not made here — `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` and
 measured on a machine.
 
 **`docs/autonomy/QUEUE.md` / `STATE.md`:** task 11 of
-`v0-5-the-session-and-the-displays-plan.md` is done, and task 12 — *Every
+`the-session-and-the-displays-plan.md` is done, and task 12 — *Every
 sentence at a desk that changed, and what this plan still owes* — is ready and
 depends on 7 and 11.

@@ -1,7 +1,7 @@
 # "I can't open this file", said properly
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — documents and paper (`docs/autonomy/v0-5-documents-and-paper-plan.md`, task 4)
+**Workstream:** v0.5 — documents and paper (`docs/autonomy/documents-and-paper-plan.md`, task 4)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-shell`, for the repository owner
 **Status:** ready for integration
 

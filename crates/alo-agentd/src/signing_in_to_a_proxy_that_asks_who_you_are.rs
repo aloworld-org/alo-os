@@ -1,7 +1,7 @@
 //! A proxy that asks who this machine is, signed in to on the road a turn's
 //! question takes.
 //!
-//! The acceptance for `docs/autonomy/v0-5-software-and-the-web-plan.md` task 12
+//! The acceptance for `docs/autonomy/software-and-the-web-plan.md` task 12
 //! on this crate's road, built on
 //! [ADR 0059](../../../docs/decisions/0059-where-a-machine-wide-proxy-password-is-kept.md).
 //! Every step is the production one: the `[proxy]` section — `sign-in-as` and

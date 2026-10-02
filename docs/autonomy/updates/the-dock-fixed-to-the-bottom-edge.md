@@ -90,7 +90,7 @@ network and the volume were laid out inside the dock's status area by
 This is what ADR 0076 directs, not a side-effect: the promise keeps, and the
 record takes away its *location* and hands *where does it go* to the shell's own
 plan. Its instruction for this change was that the entry in
-`v0-5-evidence.md` must say the promise is **owed a location before an
+`evidence-a-person-can-work-on-it-all-day.md` must say the promise is **owed a location before an
 implementation**, and it does. Drawing them somewhere else would have been this
 lane picking the location the record reserves.
 
@@ -144,7 +144,7 @@ discouraged* cost ADR 0076 refuses.
 **Nothing has been looked at.** There is no screen in any of this. The dock is
 arithmetic and the drawing is rasters compared against numbers; whether a person
 looking at a machine sees a dock along the bottom is owed to hardware, along with
-everything else in `v0-5-evidence.md` that says the same.
+everything else in `evidence-a-person-can-work-on-it-all-day.md` that says the same.
 
 The spec this record serves describes a great deal that is not built: what a
 click does, favourites and open applications, an overflow area, indicators

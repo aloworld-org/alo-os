@@ -1,7 +1,7 @@
 //! The plan's acceptance for *the egress indicator, on a screen*, one test per
 //! criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 9: *the indicator is drawn from
+//! `docs/autonomy/the-executable-plan.md`, task 9: *the indicator is drawn from
 //! `alo_egress::Indicator` and nothing else; a local answer leaves it dark; a
 //! provider answer lights it while the question is in flight; and it cannot be
 //! drawn from a value that was not a departure.*

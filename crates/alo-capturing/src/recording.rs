@@ -1,6 +1,6 @@
 //! **Recording the screen, with or without the room.**
 //!
-//! Task 4 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`, and
+//! Task 4 of `docs/autonomy/capture-and-the-room-plan.md`, and
 //! [ADR 0051](../../../docs/decisions/0051-what-this-machine-encodes-is-royalty-free-and-what-it-plays-is-a-separate-question.md)
 //! decides what comes out: **VP9 where software must encode, AV1 where hardware
 //! can, Opus, in Matroska** — royalty-free, because an image distributed across

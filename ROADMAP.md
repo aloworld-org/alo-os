@@ -334,7 +334,7 @@ compositor is not required for, which is why it runs unbroken.
         than nothing. **None clears the bar.** The closest is Qwen 2.5 7B at
         four bits in the envelope, 35 of 40 against a bar of 36; five bits did
         worse. So the catalogue gives no local model the agent, and says so in
-        one sentence a person reads. `v0-5-the-models-measured-plan.md`
+        one sentence a person reads. `the-models-measured-plan.md`
   - [ ] **On the machine.**
         **Seven of the twelve entries have still never been run against**,
         because a measurement needs those weights on a disk and every one of
@@ -1853,7 +1853,7 @@ four had been split, and two promises `docs/features.md` makes that had no box h
 at all: *Night light and display colour* and *The dock's size, and per display*. The
 first of those had finished code and nothing to tick it in.
 
-**And it is a check now rather than a reading.** `docs/autonomy/v0-5-evidence.md`
+**And it is a check now rather than a reading.** `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`
 is the other half of the definition for this release — 92 entries for 92 promises —
 and `crates/alo-reconciling/src/the_gate.rs` holds this document to it, to the
 plans, and to itself. Five of its checks are armed in the gate, each named after
@@ -1872,10 +1872,10 @@ them or beside it — *Making it yours* (`alo-appearance`) and *Run a model we
 never catalogued* (`alo-models`). Three were built between 2026-09-13 and
 2026-09-14 under ADR 0028, while v0.01 waited on a machine: *The plain way to do
 what the agent does*, *"Where is that file?"*, and *"Why is it slow?" and "what
-is filling my disk?"* — by `docs/autonomy/v0-5-the-machine-measured-plan.md`,
+is filling my disk?"* — by `docs/autonomy/the-machine-measured-plan.md`,
 with a report per task in `docs/autonomy/updates/`. *Zero inference egress over a
 working day* was built beside them by
-`docs/autonomy/v0-5-the-local-network-plan.md`. *Machines find each other* is
+`docs/autonomy/the-local-network-plan.md`. *Machines find each other* is
 most of the way and says below exactly what is not, and *The grant enforced by
 the kernel* is proved and not yet in front of a turn. **No on-the-machine box in
 this section is ticked**, and none can be until the certified machine exists.
@@ -1901,7 +1901,7 @@ sorted the same way v0.01 now is.
         locking to resuming at another desk and holds the sequence they meet
         to a table read out of its own report, and a second does the morning
         the desk changed. Tasks 1, 2, 5, 7, 8, 11, 12, 13 and 14 of
-        `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, finished
+        `docs/autonomy/the-session-and-the-displays-plan.md`, finished
         14 of 14, with a report each in `docs/autonomy/updates/`
   - [ ] **On the machine.**
         **no lid has ever closed.** Every suspend, resume and lid event in
@@ -1983,7 +1983,7 @@ sorted the same way v0.01 now is.
         layout that hid itself would have to know about windows. Corrected
         2026-09-30 by the lane that owns the crate, after reading it.*
         `crates/alo-dock` belongs to
-        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, whose
+        `docs/autonomy/where-a-persons-settings-are-kept-plan.md`, whose
         seven tasks are done, so this has no task anywhere
   - [ ] **On the machine.**
         owed to the certified machine, and to a person dragging a window over
@@ -2036,7 +2036,7 @@ sorted the same way v0.01 now is.
         decisions such a screen draws, and what a person is told on the way; the
         broker's `RollBack` carries it out and `alo-changing-updates` is what they
         read when it answers. Tasks 2 and 3 of
-        `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` —
+        `docs/autonomy/the-machine-keeps-itself-plan.md` —
         `docs/autonomy/updates/back-to-yesterdays-machine.md`,
         `docs/autonomy/updates/the-recovery-and-rollback-screen.md`
   - [ ] **On the machine.**
@@ -2052,17 +2052,17 @@ sorted the same way v0.01 now is.
         grants a person can see and revoke — (`alo-granted`), and updates
         (`alo-changing-updates`). Each holds what a person reads and what they may
         change, with its own words and a translator's note on each.
-        `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, 7 of 7,
+        `docs/autonomy/where-a-persons-settings-are-kept-plan.md`, 7 of 7,
         and ADR 0038 gives each file to the crate that declares its shape
   - [ ] **On the machine.**
         the certified machine. **The one place is drawn** —
         `alo-shell/src/settings_*.rs` and `nested_settings.rs`, task 6 of
-        `v0-5-the-shell-plan.md`, with every section reaching its own crate — and
+        `the-shell-plan.md`, with every section reaching its own crate — and
         it is rasterised on the nested compositor and measured by tests on real
         files. What is owed is a machine to open it on.
         *This box said **the one place does not exist** on 2026-09-26, which was
         **wrong**: it was drawn on 2026-09-16. The claim was made without opening
-        `v0-5-the-shell-plan.md` — a plan of seventeen tasks, sixteen done, that
+        `the-shell-plan.md` — a plan of seventeen tasks, sixteen done, that
         draws almost every surface this gate calls owed*
 - [ ] ★ **Run a model we never catalogued** — point alo OS at weights you
       already have and it runs them; the catalogue recommends and does not
@@ -2180,7 +2180,7 @@ sorted the same way v0.01 now is.
         (`org.gnome.TextEditor` 50.1), an image viewer (`org.gnome.Loupe` 50.0)
         and a terminal (`app.devsuite.Ptyxis` 50.1, a person's and never an
         agent's — ADR 0043). `crates/alo-software/shipped.toml`, task 2 of
-        `v0-5-software-and-the-web-plan.md`, held by
+        `software-and-the-web-plan.md`, held by
         `crates/alo-software/tests/what_a_fresh_machine_has.rs`, with why each was
         chosen in `docs/autonomy/updates/what-a-fresh-machine-has.md`
         *This half read **four of the applications do not exist** and **it is owed
@@ -2210,7 +2210,7 @@ sorted the same way v0.01 now is.
         caller with no agent and no grant — held by a test, because a person
         searching their own files is not asking anybody — and the same three
         are read verbs an agent asks under a grant.
-        `v0-5-the-machine-measured-plan.md` tasks 1–5;
+        `the-machine-measured-plan.md` tasks 1–5;
         `docs/autonomy/updates/the-three-measurements-are-verbs-and-not-the-only-road.md`
   - [ ] **On the machine.**
         the file manager's search box and the two windows are the desktop
@@ -2223,7 +2223,7 @@ sorted the same way v0.01 now is.
         recording with audio; and sharing the screen in a call. `alo-in-use` is
         the indicator's other half: **whatever is using the screen, the camera or
         the microphone, including ours** — law 1's instinct applied to the room
-        rather than to egress. `v0-5-capture-and-the-room-plan.md`, 7 of 7, with
+        rather than to egress. `capture-and-the-room-plan.md`, 7 of 7, with
         a report each
   - [ ] **On the machine.**
         a real camera and a real microphone, which this machine has neither of,
@@ -2234,7 +2234,7 @@ sorted the same way v0.01 now is.
         `alo-dividing` — halves and quarters, the split held while a person
         works rather than a one-off placement, and **remembered per display**, so
         returning to a pair of windows restores the arrangement instead of the
-        last position of each. `v0-5-hands-on-the-desktop-plan.md`, 7 of 7;
+        last position of each. `hands-on-the-desktop-plan.md`, 7 of 7;
         `docs/autonomy/updates/a-split-remembered-per-display.md`,
         `docs/autonomy/updates/the-division-and-the-desktops-a-session-holds.md`
   - [ ] **On the machine.**
@@ -2247,7 +2247,7 @@ sorted the same way v0.01 now is.
         away from `alo-shortcuts`; keyboard layouts, **dead keys**, the **compose
         key** and **input methods** are `alo-keyboards`.
         And **touchpad gestures are built**: task 5 of
-        `v0-5-hands-on-the-desktop-plan.md` with its refusal coverage in
+        `hands-on-the-desktop-plan.md` with its refusal coverage in
         `alo-desktops`, drawn by `alo-shell/src/desktop_swipes.rs` under its own
         plan's task 10 — scroll, zoom and swipe between workspaces. Drag and drop
         and context menus are `alo-shell`'s too, its plan's task 10 and
@@ -2274,8 +2274,8 @@ sorted the same way v0.01 now is.
         session management — log out, switch user, lock, reopen what was open —
         is `alo-leaving`; and corporate proxy support is `alo-proxy`, machine-wide
         and honoured, read from the machine's own settings, including one that
-        asks who you are. `v0-5-software-and-the-web-plan.md` 14 of 14 and
-        `v0-5-applications-and-what-they-expect-plan.md` 12 of 12, with a report
+        asks who you are. `software-and-the-web-plan.md` 14 of 14 and
+        `applications-and-what-they-expect-plan.md` 12 of 12, with a report
         each.
         And the portal backend itself: `alo_portals::serving::Backend::serve_on`
         owns `org.freedesktop.portal.Desktop` on a session bus and serves only
@@ -2298,7 +2298,7 @@ sorted the same way v0.01 now is.
         language is the *question's* and not the shell's: a person whose machine
         is in English may ask in German, and answering them in English would be
         the machine deciding which language they think in. Task 5 of
-        `docs/autonomy/v0-5-access-and-language-plan.md`, 7 of 7
+        `docs/autonomy/access-and-language-plan.md`, 7 of 7
   - [ ] **On the machine.**
         a model answering, on the certified machine, in a language it was asked
         in — owed to the machine rather than to any decision
@@ -2309,7 +2309,7 @@ sorted the same way v0.01 now is.
         reader uses**, which is the promise `docs/features.md` makes and the
         reason this is not extra work; high contrast; the magnifier as a setting
         that is kept; and keyboard-only operation walked end to end with the
-        screen off. `v0-5-access-and-language-plan.md`, 7 of 7 —
+        screen off. `access-and-language-plan.md`, 7 of 7 —
         `docs/autonomy/updates/the-tree-a-screen-reader-reads.md`,
         `docs/autonomy/updates/the-screen-reader-and-the-tree-it-reads.md`,
         `docs/autonomy/updates/the-walk-with-the-screen-off.md`
@@ -2341,7 +2341,7 @@ sorted the same way v0.01 now is.
         and a machine with no engine that **says so instead of failing**. The
         iWork exclusion is measured against a real Keynote and a real Pages file
         rather than asserted. Tasks 2, 6, 7, 8, 9 and 10 of
-        `docs/autonomy/v0-5-documents-and-paper-plan.md`, with a report each
+        `docs/autonomy/documents-and-paper-plan.md`, with a report each
   - [ ] **On the machine.**
         the certified machine, with the engine the image pins rather than the one
         a developer installed — `docs/quirks.md` records that the same conversion
@@ -2355,7 +2355,7 @@ sorted the same way v0.01 now is.
         application opens them (the person's choice, then the one `Shipped` names
         for `Role::WebBrowser`, then nothing, and never a person's own
         application), and an application's request judged in the open-with
-        portal. Task 3 of `v0-5-software-and-the-web-plan.md`, with
+        portal. Task 3 of `software-and-the-web-plan.md`, with
         `crates/alo-software/tests/the_web_browser.rs`.
         The promise says *a pinned upstream one, since our own engine is not
         scheduled*, and the pin is `crates/alo-software/shipped.toml`:
@@ -2383,7 +2383,7 @@ sorted the same way v0.01 now is.
         person reads when each answers are `alo-changing-printers`,
         `-network`, `-drives` and `-updates`. One walk carries a person from a
         new printer to a recovered disk. Tasks 1 to 8 of
-        `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, with a report each
+        `docs/autonomy/the-broker-and-the-disk-plan.md`, with a report each
   - [ ] **On the machine.**
         task 9 of that plan — *the three promises only a chip can keep* —
         is **blocked on a certified machine existing**, and the door, the units
@@ -2408,7 +2408,7 @@ sorted the same way v0.01 now is.
 - [ ] **Installer** — download, click, reboot (ADR 0023). **On the critical
       path since 2026-09-14** (ADR 0033): the certified laptop is installed
       this way and no other, so every on-the-machine box in v0.01 waits on
-      it. `docs/autonomy/v0-5-the-installer-plan.md`, six tasks: the image
+      it. `docs/autonomy/the-installer-plan.md`, six tasks: the image
       published from GitHub and signed; the boot environment that installs,
       tested in a VM; the installer program with typed consent and a tested
       bail-out; alongside Windows and back again; a GitHub Release; and the
@@ -2452,7 +2452,7 @@ sorted the same way v0.01 now is.
         one folder no walk can finish is one holding more than the bound at a
         single level, and the sentence above the index says so rather than
         *stopped after 20000 things*.
-        `v0-5-the-machine-measured-plan.md` tasks 3–11
+        `the-machine-measured-plan.md` tasks 3–11
         *This box said task 11 was **open** until 2026-09-27, thirteen days after
         it was done. Found by the check that reads a box against the plan it
         names, not by reading*
@@ -2471,7 +2471,7 @@ sorted the same way v0.01 now is.
         hard link counted once, a symlink never followed, an unreadable folder
         a node that says so, the root stopping at every mount. Nothing here
         signals, stops or deletes anything: it measures, and the person's next
-        act is theirs. `v0-5-the-machine-measured-plan.md` tasks 1, 2 and 5;
+        act is theirs. `the-machine-measured-plan.md` tasks 1, 2 and 5;
         `docs/autonomy/updates/what-is-running-is-read-from-the-kernel.md`,
         `docs/autonomy/updates/what-is-filling-the-disk-is-a-tree-of-sizes.md`
   - [ ] **On the machine.**
@@ -2483,7 +2483,7 @@ sorted the same way v0.01 now is.
         wrong said in a sentence a person can act on** rather than a status code;
         and `alo-changing-printers` for what they read when the broker's three
         printer verbs answer. Task 3 of
-        `docs/autonomy/v0-5-documents-and-paper-plan.md` and task 2 of the broker
+        `docs/autonomy/documents-and-paper-plan.md` and task 2 of the broker
         plan, with a report each — `docs/autonomy/updates/printers-found-set-up-and-said-what-is-wrong.md`,
         `docs/autonomy/updates/printers-through-the-broker.md`
   - [ ] **On the machine.**
@@ -2684,7 +2684,7 @@ sorted the same way v0.01 now is.
         `alo-agentd/src/pairing.rs` (the door, against the one lock),
         `alo-nearby/src/keeping.rs` and `alo-remembering/src/pairings.rs`,
         2,365 lines between them. Tasks 1, 2, 6, 7, 9, 10 and 12 of
-        `v0-5-the-local-network-plan.md`, finished 37 of 37, with a report each
+        `the-local-network-plan.md`, finished 37 of 37, with a report each
         — `docs/autonomy/updates/the-persons-door-pairs-and-a-pairing-outlives-a-restart.md`
         for the last.
         *This half read **Most of it, and not whole** until 2026-09-26, naming
@@ -2701,7 +2701,7 @@ sorted the same way v0.01 now is.
       and the published test says which machine it measured
   - [x] **The code.**
         `alo-asking`'s `a_day_that_never_left.rs` measures the day on one
-        machine, and task 5 of `v0-5-the-local-network-plan.md` measures it
+        machine, and task 5 of `the-local-network-plan.md` measures it
         across two with **no route off the local network** — the unreachability
         enforced in the test rather than assumed, a public address really
         unreachable where it is measured, nothing on the road addressing a
@@ -2826,7 +2826,7 @@ want them, and a developer trying it will not.
         machines is proven at the door (ADR 0031), and the daemon answers a
         paired machine's question with this machine's own model and writes
         *answered for another machine* with the origin named. Tasks 3, 4, 8
-        and 11 of `v0-5-the-local-network-plan.md`;
+        and 11 of `the-local-network-plan.md`;
         `docs/autonomy/updates/the-machine-down-the-corridor-is-still-an-egress.md`,
         `docs/autonomy/updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`
   - [ ] **On the machine.**
@@ -2901,15 +2901,15 @@ reading found is mechanically detectable**, and a person reading 92 promises is 
 rule where a crate that fails the gate is a check.
 
 So `crates/alo-reconciling` gained a second half. It already read every `[v0.01]`
-promise against `docs/autonomy/v0-01-evidence.md`; it now reads this gate against
+promise against `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`; it now reads this gate against
 `docs/features.md`, against the plans, and against itself. Its header says which
-finding specified each check, and `docs/autonomy/v0-5-evidence.md` is the second
+finding specified each check, and `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` is the second
 ledger — **92 entries for 92 promises**, one to one.
 
 **What the checks found on the day they were written, none of it by reading:**
 
 - **A box calling a finished task open.** *"Where is that file?"* said *one known
-  limit, open as task 11*. Task 11 of `v0-5-the-machine-measured-plan.md` — an
+  limit, open as task 11*. Task 11 of `the-machine-measured-plan.md` — an
   index made whole for a folder larger than one walk — was done on 2026-09-14,
   thirteen days earlier. The limit is closed and the box now says so.
 - **Two more wrong refusals, making six.** *The ordinary desktop* said **four of
@@ -2927,7 +2927,7 @@ ledger — **92 entries for 92 promises**, one to one.
   list yet.
 - **Seventy-four tasks whose status word their own body contradicted** — in six
   plans, across two releases and the supervisor's own, 32 of them in
-  `v0-01-delivery-plan.md`. `SHARED_MAIN.md` had a rule telling every reader to
+  `the-executable-plan.md`. `SHARED_MAIN.md` had a rule telling every reader to
   route around them. `docs/autonomy/updates/seventy-four-tasks-that-said-ready-above-their-own-done.md`.
 - **A conversion reporting a font nobody chose**, and **eight nested fixtures that
   had been failing rather than skipping on the machine that gates** — both found by
@@ -3015,9 +3015,9 @@ and never `org.freedesktop.portal.*`, in a crate whose `serving.rs` was never
 opened. *No gesture is read* rested on reading one file, `chords.rs`, finding
 keyboard chords, and never grepping for *swipe*. *Not assessed* was written without
 searching for the standard's own number. *Settings is not drawn* was written without
-opening `v0-5-the-shell-plan.md` at all.
+opening `the-shell-plan.md` at all.
 
-**`v0-5-the-shell-plan.md` is the instrument that was missed: seventeen tasks,
+**`the-shell-plan.md` is the instrument that was missed: seventeen tasks,
 sixteen done, and it draws almost every surface this gate calls owed** — the
 sign-in screen, the egress indicator, the sentence a person approves, the record
 window, the ordinary desktop, Settings, the status area, the lock screen, a dock on
@@ -3099,7 +3099,7 @@ because this is the most decided, most argued, most thoroughly built thing in th
 release that a person still cannot do.
 
 **And a second plan's statuses lag its work, ten tasks deep.**
-`v0-5-the-machine-keeps-itself-plan.md` shows tasks 1 to 6 among ten reading
+`the-machine-keeps-itself-plan.md` shows tasks 1 to 6 among ten reading
 **ready**, in a plan whose task 15 was finished today and whose task 14 is marked
 done. Five of those six have **published reports**:
 `what-an-update-is-and-may-never-do.md`,
@@ -3187,7 +3187,7 @@ but the promise is *a pinned upstream one*, and `image/Containerfile` installs n
 browser. Pinning one is image work, which is code rather than a machine.
 
 **And a plan's status lines lag its own work, four tasks deep.**
-`v0-5-documents-and-paper-plan.md` shows tasks 1, 3, 4 and 5 as **ready** while
+`documents-and-paper-plan.md` shows tasks 1, 3, 4 and 5 as **ready** while
 tasks 7 and 10 — which *depend on* them — are done. All four have **published
 reports** in `docs/autonomy/updates/`, and `alo-printing`, `alo-opening` and
 `alo-converting` are 50 source files between them with no `todo!` and no
@@ -3208,7 +3208,7 @@ split and is now.
 **The finding here is the opposite of the last group's.** *Machines find each
 other* read **"Most of it, and not whole"**, and named what was missing: *the
 person's door to propose, confirm and revoke, and a pairing that outlives a
-restart — task 12 of `v0-5-the-local-network-plan.md`, **open***.
+restart — task 12 of `the-local-network-plan.md`, **open***.
 
 That task was **done on 2026-09-14**. Twelve days of finished work recorded in
 the exit gate as missing, in a clause precise enough to sound authoritative —
@@ -3241,7 +3241,7 @@ report; both exist, the test carries five cases, and the tick stands.
 ### The session and the displays, reconciled, 2026-09-26
 
 The first subject group read promise by promise, against the plan that answers
-it — `v0-5-the-session-and-the-displays-plan.md`, finished 14 of 14.
+it — `the-session-and-the-displays-plan.md`, finished 14 of 14.
 
 **Ticked, code half:** *Lock screen, suspend and resume*; *Multi-monitor,
 scaling, hotplug*; and *Night light and display colour*, which had no box at all
@@ -3289,11 +3289,11 @@ last.
 **And the arithmetic that would have caught all three did not exist for v0.5 when
 this pass was made.** `crates/alo-reconciling` reads every `[v0.01]` promise out of
 `docs/features.md` and fails the gate when the ledger in
-`docs/autonomy/v0-01-evidence.md` disagrees — a promise no entry is about, an entry
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` disagrees — a promise no entry is about, an entry
 about a promise that is gone. Three found in the first group of a by-eye pass is
 the expected rate, not bad luck.
 
-*This paragraph ended **there is no `v0-5-evidence.md` and nothing reads the 92
+*This paragraph ended **there is no `evidence-a-person-can-work-on-it-all-day.md` and nothing reads the 92
 `[v0.5]` promises**. True when written; false since. The file is 92 entries for 92
 promises and `every_v0_5_promise_is_reconciled_against_evidence_that_runs` gates on
 it — as this document says in two other places, where it calls that ledger the
@@ -3529,7 +3529,7 @@ and two ticks on the wrong promises. Promises had no box at all. The gate denied
 twelve days of finished pairing work by task number, and thirteen days of a
 finished index. Seventy-four tasks across six plans read `ready` above their own
 `**Done,` marker. **The arithmetic that catches all of that now exists for this
-release too**: `docs/autonomy/v0-5-evidence.md` is 92 entries for 92 promises, and
+release too**: `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` is 92 entries for 92 promises, and
 `crates/alo-reconciling/src/the_gate.rs` holds the checks, five of them armed
 against these documents in the gate.
 

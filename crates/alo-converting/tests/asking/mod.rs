@@ -1,7 +1,7 @@
 //! Whether this machine can run the engine a conversion needs — asked by
 //! **running it**, and answered with a sentence when it cannot.
 //!
-//! Task 9 of `docs/autonomy/v0-5-documents-and-paper-plan.md`, and ADR 0063,
+//! Task 9 of `docs/autonomy/documents-and-paper-plan.md`, and ADR 0063,
 //! which amends ADR 0039's *never skipped* for the one machine where the engine
 //! cannot exist. The conversion tests in this crate need an engine that is an
 //! x86_64 build; the Mac in this fleet is aarch64, so ten of them failed on

@@ -1,7 +1,7 @@
 # A link-local cable re-laid with the same hardware address between two readings is still joined
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 32)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 32)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository's owner
 **Status:** ready for integration
 
@@ -45,7 +45,7 @@ hand-made list covered it. This task tests it on a real kernel.
   is, in a dump, the interface that went*.
 - `docs/contracts/local-network-wire.md` — one bullet added under *A cable deleted
   and laid again before the machine looks*.
-- `docs/autonomy/v0-5-the-local-network-plan.md` — task 32 marked done; task 33
+- `docs/autonomy/the-local-network-plan.md` — task 32 marked done; task 33
   written (below).
 
 **No product code changed.** The behaviour task 31 added already holds it; this

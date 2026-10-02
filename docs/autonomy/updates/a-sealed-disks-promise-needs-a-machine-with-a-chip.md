@@ -1,7 +1,7 @@
 # A sealed disk's promise needs a machine with a chip
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 6 —
+**Workstream:** `docs/autonomy/the-broker-and-the-disk-plan.md`, task 6 —
 *Enrolled at install, and recovered*
 **Contributor:** the third PC (`AGAI01`), Windows Server 2022 with WSL 2 Ubuntu
 **Status:** **ready for integration as a decision.** The task's code is

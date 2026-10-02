@@ -3,7 +3,7 @@
 **Date:** 2026-09-16
 **Workstream:** v0.5 — software and the web
 **Task:** *Every sentence, and the walk from nothing to a working application*
-(`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 7)
+(`docs/autonomy/software-and-the-web-plan.md`, task 7)
 **Contributor:** Claude Code (Opus 5), checkout `C:\dev\alo-os-2`, gates run in
 WSL Ubuntu on the same machine
 **Status:** ready for integration.

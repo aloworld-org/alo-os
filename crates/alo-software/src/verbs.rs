@@ -1,6 +1,6 @@
 //! The one verb an agent proposes an installation through.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`: *an agent may propose
+//! `docs/autonomy/software-and-the-web-plan.md`: *an agent may propose
 //! installing an application through a verb a person approves, never install
 //! one by itself.* So there is **one verb**, `install_application`, and it is a
 //! change — it waits for one approval of the sentence *install

@@ -1,4 +1,6 @@
-# v0.01 — every promise, against the evidence
+# Every promise of *it boots and the agent acts*, against the evidence
+
+*Named `v0.01 — every promise, against the evidence` until 2026-10-02. **A release code is not a subject** — `v0.01` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. **Both evidence documents had the same subject**, so the release was the only thing telling them apart; this one is named for the release's own descriptive title rather than its number. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 `docs/features.md` is the definition of what alo OS is. This is the other half
 of it: **for every `[v0.01]` line, the test or the report that shows it, and
@@ -238,7 +240,7 @@ seventh of the kind the roadmap's audit kept finding one at a time.
 
 **Read against the repository, 2026-09-11: this one needs no screen, no decision
 and no machine, and the increment is task 20 of
-`docs/autonomy/v0-01-delivery-plan.md`.** The audit that found it sorted it with
+`docs/autonomy/the-executable-plan.md`.** The audit that found it sorted it with
 *the GPU works on first boot* and *boots on one certified machine* into work
 waiting on hardware, in one pass while it was finding six things at once, and
 that sorting was never examined. It is wrong. A clipboard is a **protocol before
@@ -462,7 +464,7 @@ with nothing to hold: which stack is pinned for the certified workstation is an
 engine decision under ADR 0011's *configured, never patched*, and the certified
 workstation itself is `docs/hardware.md`'s *24 GB VRAM or more* with no model
 named in the table. The machine is task 12 of
-`docs/autonomy/v0-01-delivery-plan.md`, which is scheduled and needs hardware
+`docs/autonomy/the-executable-plan.md`, which is scheduled and needs hardware
 nobody has plugged in. **Nothing here is reachable by this lane**, and saying so
 with the reading behind it is what this entry is for.
 
@@ -753,10 +755,10 @@ machine that has run a working day. No machine has.
 ### Boots on one certified machine, firmware to sign-in
 
 **Still owed:** all of it, and it is scheduled rather than missing — task 12 of
-`docs/autonomy/v0-01-delivery-plan.md`, which needs a machine nobody has plugged
+`docs/autonomy/the-executable-plan.md`, which needs a machine nobody has plugged
 in. *To sign-in* is owed twice over: there is nothing to sign in at until
 `docs/decisions/0024-what-a-person-signs-in-at.md` is accepted and task 13 of
-`docs/autonomy/v0-01-delivery-plan.md` is built.
+`docs/autonomy/the-executable-plan.md` is built.
 
 **Read against the repository, 2026-09-11: not reachable, and it is the one of
 the four that is honestly waiting rather than unexamined.** Both halves were
@@ -947,7 +949,7 @@ declares and `crates/alo-by-hand` holds the document to them: a verb added with
 nothing said about it fails the gate in the change that adds it. The entry above
 carries what the check cannot reach, and it found one thing worth reading twice —
 **six of the ten verbs ship at v0.01 and their plain way arrives at v0.5.** Task
-14 of `docs/autonomy/v0-01-delivery-plan.md` and
+14 of `docs/autonomy/the-executable-plan.md` and
 `docs/autonomy/updates/every-verbs-by-hand-answer.md` are the work; the paragraphs
 above are left as the audit wrote them, because a finding rewritten by whoever
 closed it is a finding nobody can check.
@@ -959,7 +961,7 @@ evidence at all**, and it is the last of the six this lane could close without a
 screen, a decision or a machine. `crates/alo-telling` is the memory nothing had:
 the same unavailability told once is told once, and telling it again takes the
 source changing, the reason changing, or the person asking again themselves.
-Task 15 of `docs/autonomy/v0-01-delivery-plan.md` and
+Task 15 of `docs/autonomy/the-executable-plan.md` and
 `docs/autonomy/updates/a-machine-that-cannot-reach-a-model-says-so-once.md` are
 the work.
 
@@ -982,7 +984,7 @@ anything was built**, which is what this crate refuses an ADR for in the first
 place. The entry above says what is owed under it, including the fact the wording
 had hidden from every reading until now: the image carries no model runtime and
 no weights, so the promise is unbuilt in `image/` rather than blocked on a
-settings key. Task 16 of `docs/autonomy/v0-01-delivery-plan.md` and
+settings key. Task 16 of `docs/autonomy/the-executable-plan.md` and
 `docs/autonomy/updates/a-default-nobody-chose.md` are the work. The entry closes
 when a machine arrives with a model on it, and not before.
 
@@ -991,7 +993,7 @@ when a machine arrives with a model on it, and not before.
 **The count stays at four.** Nothing was closed here and nothing was ticked; what
 changed is that each of the four now carries the reading behind its verdict,
 under the promise it is about, so the next person inherits an argument rather
-than a sorting. Task 19 of `docs/autonomy/v0-01-delivery-plan.md` is the work and
+than a sorting. Task 19 of `docs/autonomy/the-executable-plan.md` is the work and
 `docs/autonomy/updates/the-four-promises-with-no-evidence.md` is the report.
 
 **One of the four was in the wrong pile.** *Copy, cut and paste* was sorted into
@@ -1000,7 +1002,7 @@ other things, and the sorting was carried unexamined ever since. A clipboard is 
 protocol before it is a surface — an owner, the types it offers, and a transfer
 somebody asks for — and every refusal in it is decidable with no screen, no
 machine and no decision. It is now task 20 of
-`docs/autonomy/v0-01-delivery-plan.md`, with its own acceptance. The other three
+`docs/autonomy/the-executable-plan.md`, with its own acceptance. The other three
 are genuinely waiting: *the GPU works on first boot* on a machine with a card and
 on an image that carries something for it to accelerate, *the agents point at the
 local model by default* on the owner accepting a proposed decision, and *boots on
@@ -1025,7 +1027,7 @@ pile rather than one anybody had scheduled. `crates/alo-clipboard` is the
 selection this repository never had: an owner says which forms it can give,
 somebody asks for one of them, and the broker holds the offer and the way back
 to the owner and holds nothing else. Task 20 of
-`docs/autonomy/v0-01-delivery-plan.md` and
+`docs/autonomy/the-executable-plan.md` and
 `docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md` are the
 work.
 

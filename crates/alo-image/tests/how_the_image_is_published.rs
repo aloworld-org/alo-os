@@ -36,7 +36,7 @@ const THE_DECISION: &str = concat!(
 /// The plan whose first task publishes the image.
 const THE_PLAN: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../docs/autonomy/v0-5-the-installer-plan.md"
+    "/../../docs/autonomy/the-installer-plan.md"
 );
 
 /// The recipe, read.

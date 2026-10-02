@@ -1,7 +1,7 @@
 # A turn on a machine with no model asks the paired machine its person chose
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 14)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 14)
 **Contributor:** Claude (Opus 5), in the `C:\dev\alo-os-claude` checkout
 **Status:** ready for integration
 

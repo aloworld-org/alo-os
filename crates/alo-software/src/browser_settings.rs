@@ -1,6 +1,6 @@
 //! What alo OS may set in the browser it ships, and what it never sets.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: *nothing alo OS
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: *nothing alo OS
 //! ships sets its home page, search engine or telemetry … with its telemetry
 //! **off** where the upstream allows a policy to turn it off.* Two closed lists,
 //! and between them they are the whole of the decision:

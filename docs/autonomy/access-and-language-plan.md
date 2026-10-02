@@ -1,4 +1,6 @@
-# v0.5 — access and language: everybody can use it, in the language they asked in
+# Access and language: everybody can use it, in the language they asked in
+
+*Named `v0.5 — access and language: everybody can use it, in the language they asked in` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** four `ROADMAP.md` v0.5 lines that are one subject — *Access: screen
 reader, magnifier, high contrast, keyboard-only operation of everything*;

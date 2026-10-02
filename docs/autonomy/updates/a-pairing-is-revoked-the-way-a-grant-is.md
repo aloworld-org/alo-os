@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — where a person's settings are kept
-(`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 3), implementing
+(`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 3), implementing
 ADR 0038 §8.
 **Contributor:** Claude (development worker, checkout `C:\dev\alo-os-b`).
 **Status:** ready for integration.

@@ -11,7 +11,7 @@ the owner is the only person who can accept it.
 `docs/features.md` promises at v0.01 that **the agents point at the local model by
 default — sovereignty is the default configuration, not an option to find**. ADR
 0016 settled that *a default is a choice, made by whoever set it*, and refused
-one. `docs/autonomy/v0-01-evidence.md` has carried the promise since the audit
+one. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` has carried the promise since the audit
 was written as one of six with **no evidence at all**, and as the only one of the
 six that *cannot get a line without a decision*: no worker may narrow the promise
 to fit the code, and no worker may contradict an accepted ADR to make a test
@@ -58,7 +58,7 @@ Four options, and the fourth is recommended:
 
 ### The ledger
 
-`docs/autonomy/v0-01-evidence.md`'s entry for the promise names the decision and
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`'s entry for the promise names the decision and
 says what is owed underneath it. **The count of promises with no evidence at all
 stays at four.** A proposed decision is not evidence that anything was built —
 which is precisely what `alo-reconciling` refuses an ADR for — so this entry
@@ -175,6 +175,6 @@ For the integration owner; I have not edited these files.
   decides. The evidence ledger names it, and a new check keeps the ledger from
   pointing at a decision nobody wrote.*
 - **ROADMAP.md** — no line moves. Nothing was built and nothing is ticked.
-- **QUEUE.md / STATE.md** — task 16 of `docs/autonomy/v0-01-delivery-plan.md` is
+- **QUEUE.md / STATE.md** — task 16 of `docs/autonomy/the-executable-plan.md` is
   marked done in the plan, and task 17 (*every crate that declares words,
   collected — and the one that is not, named*) is written there.

@@ -3,7 +3,7 @@
 **Date:** 2026-09-13
 **Workstream:** v0.5 — the models, measured
 **Task:** *Every entry graded, or refused with the reason*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 2)
+(`docs/autonomy/the-models-measured-plan.md`, task 2)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3** (8 cores), **8 GB unified memory**, macOS 26.5.2;
 runtime Ollama **0.34.0** (the pinned version) on `127.0.0.1`, the Linux VM

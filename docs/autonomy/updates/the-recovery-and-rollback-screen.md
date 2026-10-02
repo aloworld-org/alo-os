@@ -1,6 +1,6 @@
 # The recovery and rollback screen
 
-**Task 13 of `v0-5-the-shell-plan.md`. 2026-09-20. Built and gated on its own,
+**Task 13 of `the-shell-plan.md`. 2026-09-20. Built and gated on its own,
 and *not published*: a screen reader has nothing to say about it yet, and the
 decision that would fix that is not this plan's to make. No certified machine
 has seen it either.**
@@ -26,7 +26,7 @@ with a red workspace behind it.
 
 What it asks for is the role, the name and the state of each of this screen's
 controls, and the words for them. That is an **accessibility** decision.
-`docs/autonomy/v0-5-the-shell-plan.md` says this plan owns `crates/alo-shell`
+`docs/autonomy/the-shell-plan.md` says this plan owns `crates/alo-shell`
 and nothing else, and that *if a surface needs a decision that is not there,
 that is a finding in the report and the task stays open; it is never a decision
 made in a drawing crate.* So it was not made here. What is needed, concretely:
@@ -185,7 +185,7 @@ Three decisions, and the reasons rather than the values:
   `Since` has no words, so *what is running* and *what it replaced* have a name
   and no sentence. Naming them anyway is what lets a reader announce the line;
   the gap is written down as a finding in
-  `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` and is that crate's to
+  `docs/autonomy/the-machine-keeps-itself-plan.md` and is that crate's to
   fill.
 - **Recovery comes before sign-in** in `Surface::ALL`, which is the reading order
   and therefore the focus order. Everywhere else sign-in is first; this surface

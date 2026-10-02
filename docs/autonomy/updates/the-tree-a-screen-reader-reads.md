@@ -1,6 +1,6 @@
 # The tree a screen reader reads
 
-**What this is:** `docs/autonomy/v0-5-the-shell-plan.md` task 12, in two
+**What this is:** `docs/autonomy/the-shell-plan.md` task 12, in two
 changes. The first is the tree — *the shell exposes every surface's role, name
 and state to AT-SPI as `alo-access` decides them, and a test reads the exposed
 tree over the bus for each surface the shell draws*, and *the approval surface
@@ -91,7 +91,7 @@ one: `alo-access` names controls, not machines, and nothing else in the
 workspace has a sentence for *this machine*. A reader therefore announces the
 application as nothing. It is a word to be decided, not one to be written in a
 crate that draws, and it is recorded in
-`docs/autonomy/v0-5-access-and-language-plan.md`.
+`docs/autonomy/access-and-language-plan.md`.
 
 **Nothing starts a session yet.** The tree is served and read on a real bus by a
 test, and no shipped program brings up a session that would serve it in front of

@@ -1,7 +1,7 @@
 # Search answers without asking anything, and says what it did not read
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 4 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 4 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 
@@ -222,5 +222,5 @@ of a second and a second.
 
 ## Proposed queue and roadmap updates
 
-Task 4 of `v0-5-the-machine-measured-plan.md` is marked done in the plan.
+Task 4 of `the-machine-measured-plan.md` is marked done in the plan.
 Task 5 is ready, depends on 1, 2 and 3, and now has `Index::answer` to call.

@@ -1,7 +1,7 @@
 # Native folder selection, so a grant can be made at all
 
 **Date:** 2026-09-10
-**Workstream:** v0.01 delivery plan, task 6 (`docs/autonomy/v0-01-delivery-plan.md`)
+**Workstream:** v0.01 delivery plan, task 6 (`docs/autonomy/the-executable-plan.md`)
 **Contributor:** Claude, in `C:\dev\alo-os-claude`
 **Status:** ready for integration. Gated on Windows and on Linux (WSL); no
 machine evidence is claimed and none is owed by this task.
@@ -145,7 +145,7 @@ pass yesterday's agent with today's duration.
 - `crates/alo-agentd/src/starting.rs` — documentation only: the paragraph
   saying nothing on this machine can make a grant is now true of the socket
   rather than of the machine.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 6 marked done; task 7 was
+- `docs/autonomy/the-executable-plan.md` — task 6 marked done; task 7 was
   already written.
 
 ## Verification actually run
@@ -193,4 +193,4 @@ these four files):
   names is where a machine's grants are kept between sign-ins, which was
   already an item of its own.
 - **`docs/autonomy/STATE.md`** — reference this report, and that the plan's task
-  6 is marked done in `docs/autonomy/v0-01-delivery-plan.md` with task 7 next.
+  6 is marked done in `docs/autonomy/the-executable-plan.md` with task 7 next.

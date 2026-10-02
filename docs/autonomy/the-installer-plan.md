@@ -1,4 +1,6 @@
-# v0.5 — the installer: download, click, reboot
+# The installer: download, click, reboot
+
+*Named `v0.5 — the installer: download, click, reboot` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** `ROADMAP.md`'s *Installer* line, brought forward to the
 critical path by [ADR 0033](../decisions/0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md):
@@ -22,7 +24,7 @@ crates (the Mac's), nothing in `alo-finding`, `alo-measuring`,
 other plan, which yields to this one).
 
 **What this plan may not do:** tick anything *on the machine* — that is done
-by a person at the laptop, into `docs/autonomy/v0-01-evidence.md`, with what
+by a person at the laptop, into `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`, with what
 they saw; move any v0.01 wording; ask a person to disable Secure Boot (ADR
 0033 §4); or take a destructive step in any test on real hardware. Every test
 that repartitions runs against a virtual machine. Before writing the next
@@ -645,7 +647,7 @@ observations fill.
   on this kernel*, *the pinned model answers on this CPU* and *boots on one
   certified machine, firmware to the daemon*, the exact thing to look for and
   the command to type; the owner's observations are written into
-  `docs/autonomy/v0-01-evidence.md` by hand with the date, the machine and
+  `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` by hand with the date, the machine and
   the Secure Boot state, and the roadmap's on-the-machine boxes move only
   for what was seen; and *firmware to sign-in* stays open with one sentence:
   the sign-in screen is the desktop lane's and is not in the image yet.
@@ -661,7 +663,7 @@ does not move. **An observation nobody could have made is not a pass**, and a
 run that ticked it because nothing went wrong would be the same mistake as a
 build that checked an executable bit.
 
-Task 22 of `v0-5-the-models-measured-plan.md` is the code half of that line —
+Task 22 of `the-models-measured-plan.md` is the code half of that line —
 written so that the processor road is measured on a machine with no card, and
 the card's road waits for hardware the way the chip's half of encryption does.
 
@@ -1516,9 +1518,9 @@ can no longer reach is the last choice silently stopping being kept.
 sentences in the vocabulary, each with a translator's note.
 
 **The verb is not this plan's crate, and the change carries the records that
-say who released it.** `v0-5-the-broker-and-the-disk-plan.md` releases the
+say who released it.** `the-broker-and-the-disk-plan.md` releases the
 broker's two files and the two carriers' lines to this task, and
-`v0-5-the-machine-keeps-itself-plan.md` releases the count test — both as
+`the-machine-keeps-itself-plan.md` releases the count test — both as
 owner-release blocks in their own headers, both naming ADR 0066 as the owner
 decision they record, and neither transferring a crate. The first handover of
 this task was refused for want of them: they existed in the working tree and

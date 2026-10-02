@@ -60,7 +60,7 @@ shortened itself is one the check is silent about.
   off-by-one a second implementation would otherwise get wrong.
 - `docs/autonomy/accounts-and-session-entry-plan.md` — task 6 marked done. Task 7 was
   already written, so no new task was added. No task in
-  `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+  `the-executable-plan.md` matched this one, so nothing was marked there.
 
 ## Decisions taken (nobody was available to ask)
 

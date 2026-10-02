@@ -1,6 +1,6 @@
 //! **The one road by which an agent may see the screen, and what it costs.**
 //!
-//! Task 6 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. A screenshot is
+//! Task 6 of `docs/autonomy/capture-and-the-room-plan.md`. A screenshot is
 //! the most harvest-shaped thing this machine has: one call and a program holds
 //! everything a person was looking at — their mail open beside their bank, a
 //! colleague's name, a photograph on a second screen. So the agent reaches it by

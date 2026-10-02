@@ -13,7 +13,7 @@
 //! question. ADR 0001 §3 forbids it: a grant comes from a deliberate act, and
 //! the two acts it names are a folder chosen in a picker and the document
 //! offered at invocation. A drag of the wrist is neither, and
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` says it in one line —
+//! `docs/autonomy/hands-on-the-desktop-plan.md` says it in one line —
 //! *no drop to grant, however convenient it looks.*
 //!
 //! # So nothing is granted, because the file never becomes a path here

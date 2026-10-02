@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — software and the web
-(`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2)
+(`docs/autonomy/software-and-the-web-plan.md`, task 2)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration. Installing the list with the rented tool on a
 real machine is still to do, as it is for task 1; *What was not run* says what
@@ -253,7 +253,7 @@ The full workspace suite was not run here, as instructed; the supervisor runs it
 - **ROADMAP.md (v0.5, The ordinary desktop):** *a text editor, an image viewer, a
   terminal* — decided and held in tests (the list and ADR 0043); installing them
   on a machine is outstanding.
-- **Installer plan (`docs/autonomy/v0-5-the-installer-plan.md`), for its owner:**
+- **Installer plan (`docs/autonomy/the-installer-plan.md`), for its owner:**
   *the fresh machine's applications are read from
   `crates/alo-software/shipped.toml` (`alo_software::shipped::WHERE_IT_IS`),
   `format = 1`; an image that names another list is refused.*

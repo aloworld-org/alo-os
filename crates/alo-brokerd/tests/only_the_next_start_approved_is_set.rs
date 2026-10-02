@@ -2,7 +2,7 @@
 //! else — and on every refusal the firmware is not told, nothing about how the
 //! machine starts changes, and the refusal is in the record.
 //!
-//! Task 16 of `docs/autonomy/v0-5-the-installer-plan.md`, and
+//! Task 16 of `docs/autonomy/the-installer-plan.md`, and
 //! [ADR 0062](../../../docs/decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md),
 //! *what stays as it was*. Every request here crosses the broker's real
 //! decision (`alo_broker::Broker::heard`) under a genuine token, so what is

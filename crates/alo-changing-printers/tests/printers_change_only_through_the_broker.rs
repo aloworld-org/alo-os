@@ -2,7 +2,7 @@
 //! it in Settings — to the printing service's side of the wire, through the
 //! privileged broker's real door, and every way it is stopped on the way.
 //!
-//! Task 2 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`:
+//! Task 2 of `docs/autonomy/the-broker-and-the-disk-plan.md`:
 //!
 //! - *the broker's printer verbs — add a printer `alo-printing` found, remove
 //!   one, set the default — take `alo-printing`'s own types, and configure the

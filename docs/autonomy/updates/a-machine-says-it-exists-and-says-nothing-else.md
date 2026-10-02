@@ -1,7 +1,7 @@
 # A machine says it exists, and says nothing else
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 1 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 1 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, by hand — no worker could run
 - Status: **the first half of ADR 0003, and the half where the leak would be**
 

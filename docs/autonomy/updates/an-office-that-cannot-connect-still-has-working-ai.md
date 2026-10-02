@@ -1,7 +1,7 @@
 # An office that cannot connect still has working AI
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 5 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 5 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 
@@ -124,7 +124,7 @@ engines*: the deprecated safe `unshare`, the per-namespace counter and what it
 counts, ureq bailing on the first non-refused connect error so the count is
 exact, and a search that waits out its patience.
 
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 5 marked done, and
+**`docs/autonomy/the-local-network-plan.md`**: task 5 marked done, and
 task 6 written — see below.
 
 ## Decisions

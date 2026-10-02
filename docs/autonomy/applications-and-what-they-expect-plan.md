@@ -1,4 +1,6 @@
-# v0.5 — applications, and what they expect, before there is a dialog to show
+# Applications, and what they expect, before there is a dialog to show
+
+*Named `v0.5 — applications, and what they expect, before there is a dialog to show` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the `[v0.5]` promises under *Software, and what applications
 expect* in `docs/features.md` (ADR 0005) that are decisions rather than
@@ -574,7 +576,7 @@ and the bus tests hand the backend a reading of the test's own. **Depends on:**
 1, 5.
 
 **Added 2026-09-20**, by the lane clearing task 7 of
-`docs/autonomy/v0-5-the-shell-plan.md` — the status area's clock, battery,
+`docs/autonomy/the-shell-plan.md` — the status area's clock, battery,
 network and volume, which names the network monitor portal as one of its four
 blockers. It was the only one of the four still open: `alo-power`, `alo-sound`
 and `alo-formats` all landed on 2026-09-17 and 2026-09-18, after that task's

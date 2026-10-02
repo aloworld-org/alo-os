@@ -1,5 +1,5 @@
 //! What a person is told, before and after — the acceptance of task 5 of
-//! `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, one criterion at a
+//! `docs/autonomy/the-machine-keeps-itself-plan.md`, one criterion at a
 //! time.
 //!
 //! | Criterion | Test |

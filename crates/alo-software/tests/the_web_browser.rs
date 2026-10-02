@@ -1,7 +1,7 @@
 //! The web browser, and what it may take from the machine — held to each clause
 //! of the plan's acceptance, with each refusal beside what it refuses.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: the browser task 2
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: the browser task 2
 //! ships opens web addresses **from any application**, through the open-with
 //! portal's own decision and its own order; it is **a sandboxed application like
 //! any other**, holding nothing a person did not give it; its **downloads go to

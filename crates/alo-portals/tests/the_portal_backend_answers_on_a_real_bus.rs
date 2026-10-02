@@ -1,7 +1,7 @@
 //! The portal backend on a real bus: `OpenURI` answered from what opens what,
 //! and every portal nothing here decides not registered at all.
 //!
-//! Task 5 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`.
+//! Task 5 of `docs/autonomy/applications-and-what-they-expect-plan.md`.
 //! The backend is served on a private session bus the test starts (with no
 //! service activation, `alo-keyring-fixture`'s bus), and a `zbus` client — not a
 //! mock — asks it as an application does:

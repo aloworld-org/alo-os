@@ -1,7 +1,7 @@
 //! **There is exactly one thing in this compositor that decides where a window
 //! goes, and it is not in this compositor.**
 //!
-//! `docs/autonomy/v0-5-the-shell-plan.md` task 16: *`crate::window_tiling`'s
+//! `docs/autonomy/the-shell-plan.md` task 16: *`crate::window_tiling`'s
 //! half is gone, with a test that there is exactly one layout decider in this
 //! compositor — read from the crates rather than from a list kept beside them,
 //! so a second one added anywhere is a second one this check sees*.

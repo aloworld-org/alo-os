@@ -1,7 +1,7 @@
 # The asking machine crosses through a turn, and is told what became of it
 
 - Date: 2026-09-14
-- Workstream: v0.5 the local network, task 9 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 9 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration** — in the shape the plan names for a task
   whose daemon is not this lane's to edit: the asking side's door on
@@ -18,7 +18,7 @@ daemon still owes, and nothing in that crate.*
 
 No v0.5 plan names `alo-agentd` among the crates it owns. Its history says
 who builds it: the serving loop, the session, the listener and `Holding` were
-built by the v0.01 delivery lane (`docs/autonomy/v0-01-delivery-plan.md`,
+built by the v0.01 delivery lane (`docs/autonomy/the-executable-plan.md`,
 `accounts-and-session-entry-plan.md`), and the kernel-enforcement plan's ready tasks name
 its two kernel tests as their evidence. It is a shared, Linux-only daemon
 whose gate runs only under WSL (`docs/autonomy/LOOP.md`), and the thing this
@@ -97,7 +97,7 @@ corridor.
 
 **`Cargo.lock`**: the dev-dependency. Nothing new resolves.
 
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 9 marked done in
+**`docs/autonomy/the-local-network-plan.md`**: task 9 marked done in
 this shape, and task 10 written — *the daemon binds the port* — carrying
 every line of task 9's acceptance that is the daemon's, unchanged.
 

@@ -1,7 +1,7 @@
 # ADR 0059 — Where a machine-wide proxy password is kept
 
 **Status:** accepted, 2026-09-20. Written by task 12 of
-`docs/autonomy/v0-5-software-and-the-web-plan.md` (*A proxy that asks who you
+`docs/autonomy/software-and-the-web-plan.md` (*A proxy that asks who you
 are, signed in to on every road*), whose code is built on it — the shape
 [ADR 0042](0042-installing-an-application-is-an-errand-and-an-agent-only-proposes-it.md)
 and [ADR 0049](0049-the-network-is-changed-through-the-broker-and-its-password-never-reaches-the-agent.md)

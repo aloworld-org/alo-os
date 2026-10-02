@@ -1,7 +1,7 @@
 # Which folders are indexed is a list beside the indexes
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 6 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 6 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 

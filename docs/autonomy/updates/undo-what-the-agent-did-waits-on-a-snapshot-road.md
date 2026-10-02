@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — the machine keeps itself
-(`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`), task 4
+(`docs/autonomy/the-machine-keeps-itself-plan.md`), task 4
 **Responsible contributor:** the machine-keeps-itself worker, in `C:\dev\alo-os`
 **Status:** ready for integration **as a decision**. Task 4 itself is **not
 done** and is marked *blocked* in the plan: its code waits on the owner's
@@ -14,7 +14,7 @@ answer to ADR 0045.
 |---|---|
 | `docs/decisions/0045-what-undoing-rewinds-to.md` | New, **proposed**. The roads to undo, what each costs, a recommendation, and what holds under every road |
 | `crates/alo-keeping-up/tests/undoing_is_decided_before_it_is_built.rs` | New. Holds the ADR to existing once, standing, being named by the plan and setting out four costed roads — and holds the code to waiting while it is proposed |
-| `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | Task 4's status is *blocked — waits on the owner's answer to ADR 0045*, with what was found and what was decided |
+| `docs/autonomy/the-machine-keeps-itself-plan.md` | Task 4's status is *blocked — waits on the owner's answer to ADR 0045*, with what was found and what was decided |
 | `docs/autonomy/updates/undo-what-the-agent-did-waits-on-a-snapshot-road.md` | This report |
 
 No product code changed. No record kind, no answer about undoing and no sentence

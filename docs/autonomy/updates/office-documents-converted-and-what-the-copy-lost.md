@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 **Workstream:** v0.5 documents and paper — task 2 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md`
+`docs/autonomy/documents-and-paper-plan.md`
 **Decision it builds:** [ADR 0039](../../decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md), option A, accepted 2026-09-15
 **Responsible contributor:** Claude (kernel-loop worker), for the repository's owner
 **Status:** ready for integration

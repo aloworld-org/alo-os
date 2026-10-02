@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *The recommendation reads the grade for the way turns ask*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 15)
+(`docs/autonomy/the-models-measured-plan.md`, task 15)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** nothing was measured for this task. Every grade it reads was earned
 on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2, under Ollama

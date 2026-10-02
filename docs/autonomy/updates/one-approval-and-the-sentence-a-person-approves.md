@@ -166,5 +166,5 @@ now has executable evidence off hardware
 No box moves: the gate is a cold boot on a certified machine.
 
 **`docs/autonomy/QUEUE.md` / `STATE.md`:** task 7 of
-`v0-01-delivery-plan.md` is done and marked in the plan in this change. Task 8,
+`the-executable-plan.md` is done and marked in the plan in this change. Task 8,
 *afterwards, ask what it did*, was already written and is the next one.

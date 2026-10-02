@@ -13,7 +13,7 @@ trusted-network setting); [ADR 0016](0016-the-organisation-bounds-and-the-person
 (the organisation bounds, the person chooses);
 [ADR 0062](0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
 (Fast Startup left open); the Non-goals in `docs/features.md`; task 1 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (no setting turns update
+`docs/autonomy/the-machine-keeps-itself-plan.md` (no setting turns update
 checking off).
 
 ## The owner's words

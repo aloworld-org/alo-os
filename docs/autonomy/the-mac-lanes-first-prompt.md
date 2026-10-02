@@ -14,7 +14,7 @@ everything that draws. Everything you do has to fit beside theirs.
 **Read these first, in this order, before touching anything:** `CLAUDE.md`
 (the constitution — its laws are absolute), `docs/autonomy/LOOP.md`,
 `docs/autonomy/a-loop-on-a-mac.md` (why you exist and how you run), and your
-plan, `docs/autonomy/v0-5-the-models-measured-plan.md`.
+plan, `docs/autonomy/the-models-measured-plan.md`.
 
 ## The rules that come from sharing one repository
 

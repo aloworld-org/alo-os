@@ -1,7 +1,7 @@
 //! **Every sentence a person meets at their desk, and what none of them may
 //! say.**
 //!
-//! Task 7 of `docs/autonomy/v0-5-hands-on-the-desktop-plan.md`, its first half.
+//! Task 7 of `docs/autonomy/hands-on-the-desktop-plan.md`, its first half.
 //! Five crates put words in front of a person while they work — splitting a
 //! screen, moving between desktops, dropping a file, choosing from a menu,
 //! typing in their own language — and this holds all five to one standard at

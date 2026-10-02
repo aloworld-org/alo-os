@@ -1,7 +1,7 @@
 # What is watching or listening, right now
 
 **Date:** 2026-09-15
-**Workstream:** `docs/autonomy/v0-5-capture-and-the-room-plan.md`, task 1 — the
+**Workstream:** `docs/autonomy/capture-and-the-room-plan.md`, task 1 — the
 first task of the v0.5 capture plan, and the one that comes before anything that
 captures.
 **Contributor:** Claude Code worker, `C:\dev\alo-os`.
@@ -63,7 +63,7 @@ and three integration tests: `tests/every_sentence_here_is_collected.rs`,
 
 ### The plan
 
-`docs/autonomy/v0-5-capture-and-the-room-plan.md` — task 1 marked
+`docs/autonomy/capture-and-the-room-plan.md` — task 1 marked
 **Done, 2026-09-15** with what was built. Tasks 2 to 7 already stand after it, so
 no next task needed writing.
 

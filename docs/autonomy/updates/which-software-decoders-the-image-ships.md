@@ -95,6 +95,6 @@ whole thing.
 
 ## What this unblocked
 
-`docs/autonomy/v0-5-devices-and-media-plan.md` task 1 was blocked on two things.
+`docs/autonomy/devices-and-media-plan.md` task 1 was blocked on two things.
 One of them is gone. **It is now blocked on a machine to play a real sample file
 on, and on nothing else** — which cannot be written, only run.

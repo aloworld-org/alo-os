@@ -59,7 +59,7 @@ alo-egress = { path = "../alo-egress" }
 # provider is.
 #
 # The test is here rather than in `alo-models`' own `tests/` because that crate
-# belongs to `docs/autonomy/v0-5-the-models-measured-plan.md`, which still has an
+# belongs to `docs/autonomy/the-models-measured-plan.md`, which still has an
 # unfinished task, and a lane does not write in another plan's crate
 # (`tools/kernel-loop/src/who_owns.rs`). `alo-models` already dev-depends on this
 # crate for task 4's road test, so the two dev edges are a cycle Cargo permits

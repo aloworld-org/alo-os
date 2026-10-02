@@ -1,6 +1,6 @@
 //! **A grammar for the whole call**, in the protocol's own key order.
 //!
-//! Task 17 of `docs/autonomy/v0-5-the-models-measured-plan.md` and
+//! Task 17 of `docs/autonomy/the-models-measured-plan.md` and
 //! [ADR 0035](../../../docs/decisions/0035-the-wrapper-or-the-engine.md). The
 //! pinned runtime can hold a model to a schema, but it orders a schema's keys
 //! alphabetically, and the protocol's argument is `named` then `is` — which is

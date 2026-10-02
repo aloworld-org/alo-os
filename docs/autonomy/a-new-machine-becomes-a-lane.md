@@ -24,9 +24,9 @@ reason they do not collide.
 
 | Machine | Plan | Crates it owns |
 |---|---|---|
-| Spare PC one | `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md` | `alo-portals` (new), `alo-granted`, `alo-applications`, `alo-secrets` |
-| Spare PC two | `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | `alo-keeping-up` (new) |
-| The laptop | `docs/autonomy/v0-5-documents-and-paper-plan.md` | `alo-printing` (new), `alo-opening` (new) |
+| Spare PC one | `docs/autonomy/applications-and-what-they-expect-plan.md` | `alo-portals` (new), `alo-granted`, `alo-applications`, `alo-secrets` |
+| Spare PC two | `docs/autonomy/the-machine-keeps-itself-plan.md` | `alo-keeping-up` (new) |
+| The laptop | `docs/autonomy/documents-and-paper-plan.md` | `alo-printing` (new), `alo-opening` (new) |
 
 **Reassigned 2026-09-15.** The machine that ran documents and paper
 (`C:\dev\alo-os`, `admin.disan`) published tasks 1 and 3 and stopped with every
@@ -46,21 +46,21 @@ one place somebody checks before deciding that.*
 
 | Plan | Machine | Crates it owns |
 |---|---|---|
-| `v0-5-the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
-| `v0-5-the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
-| `v0-5-where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
-| `v0-5-applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
-| `v0-5-the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
-| `v0-5-documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
-| `v0-5-the-shell-plan.md` (tasks 7-14) | **this PC, lane A (`alo-os-claude`), from 2026-09-18** - assigned by the owner after the local-network plan finished; starts with task 8, whose lock-state dependency is done. Other tasks retain their dependencies | `alo-shell`, `tools/graphics-check` |
-| `v0-5-access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
-| `v0-5-models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
-| `v0-5-software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
-| `v0-5-the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
-| `v0-5-capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it. Its tasks 4, 5 and 7 waited on the devices plan's codec decision, which the same lane then took and wrote as ADR 0051 | `alo-capturing`, `alo-in-use` |
-| `v0-5-the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
-| `v0-5-hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-lane-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
-| `v0-5-devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
+| `the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
+| `the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
+| `where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
+| `applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
+| `the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
+| `documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
+| `the-shell-plan.md` (tasks 7-14) | **this PC, lane A (`alo-os-claude`), from 2026-09-18** - assigned by the owner after the local-network plan finished; starts with task 8, whose lock-state dependency is done. Other tasks retain their dependencies | `alo-shell`, `tools/graphics-check` |
+| `access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
+| `models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
+| `software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
+| `the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
+| `capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it. Its tasks 4, 5 and 7 waited on the devices plan's codec decision, which the same lane then took and wrote as ADR 0051 | `alo-capturing`, `alo-in-use` |
+| `the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
+| `hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-lane-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
+| `devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
 **`gate.yml` belongs to the desktop lane, assigned by the owner 2026-10-01.**
 The installer row above carries `.github/workflows/` as a whole, and that stopped
@@ -301,7 +301,7 @@ cargo build --release
 **Your plan — replace this line with your machine's row from the table:**
 
 ```
-$env:ALO_LOOP_PLAN = "docs/autonomy/v0-5-applications-and-what-they-expect-plan.md"
+$env:ALO_LOOP_PLAN = "docs/autonomy/applications-and-what-they-expect-plan.md"
 ```
 
 **Then run the loop:**
@@ -356,7 +356,7 @@ And the line that matters most on a new machine: **nothing you measure here is
 a certification.** A green suite, a timing, a boot in a virtual machine is a
 fact about the thing measured, never a fact about alo OS on certified hardware.
 Tick `- [x] The code.` and leave `- [ ] On the machine.` alone — only a person
-standing at the certified machine writes into `docs/autonomy/v0-01-evidence.md`.
+standing at the certified machine writes into `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`.
 A plan that tells you to stop and report a finding means it: an open task with
 an honest finding is worth more than a closed one with a guess.
 

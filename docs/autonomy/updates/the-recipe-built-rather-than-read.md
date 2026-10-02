@@ -280,4 +280,4 @@ The whole-workspace suite is the supervisor's, as the task instructs.
 **`docs/autonomy/QUEUE.md`** — no change proposed.
 
 **`docs/autonomy/STATE.md`** — reference this report; task 33 done, task 34
-written into `docs/autonomy/v0-01-delivery-plan.md`.
+written into `docs/autonomy/the-executable-plan.md`.

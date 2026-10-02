@@ -1,7 +1,7 @@
 //! **The clause that says which language to answer in.**
 //!
 //! ★ `docs/features.md`: *the agent answers in the language it was asked in* —
-//! task 5 of `docs/autonomy/v0-5-access-and-language-plan.md`. A person with an
+//! task 5 of `docs/autonomy/access-and-language-plan.md`. A person with an
 //! English shell may ask in German, so the language is the **question's**, read
 //! by [`crate::the_language_of`] on this machine with nothing sent anywhere.
 //!

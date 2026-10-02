@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — capture, and the room you are sitting in
 **Task:** *An agent and the screen*
-(`docs/autonomy/v0-5-capture-and-the-room-plan.md`, task 6)
+(`docs/autonomy/capture-and-the-room-plan.md`, task 6)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
 tested and linted in the Lima VM (Ubuntu 24.04 aarch64).
@@ -81,7 +81,7 @@ format are decided *with the devices plan's codec decision*, and that plan's own
 constraint says tasks that record a format it has not settled wait on it, and
 that no codec is added to the image before it is accepted.
 
-That decision is task 1 of `v0-5-devices-and-media-plan.md`, it is `ready`, and
+That decision is task 1 of `devices-and-media-plan.md`, it is `ready`, and
 **no machine holds that plan** — the row now says so. Choosing an encoder here
 would breach both constraints, and it is the same shape of thing as the speech
 engine the owner has just taken as ADR 0050: a decision, not a task.

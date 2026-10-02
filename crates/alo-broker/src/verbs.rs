@@ -5,7 +5,7 @@
 //! starts — and each takes exactly one argument of one of
 //! `crate::arguments`' two shapes. This file is the list's **shape**; none of
 //! the verbs is carried out by this crate. What carries each out is written by
-//! the task that owns it (`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`,
+//! the task that owns it (`docs/autonomy/the-broker-and-the-disk-plan.md`,
 //! tasks 2 to 4), behind [`crate::Carrying`], and it receives a [`SystemVerb`]
 //! that has already been proven to be exactly what a person approved.
 //!

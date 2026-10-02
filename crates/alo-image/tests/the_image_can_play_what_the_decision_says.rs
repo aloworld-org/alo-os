@@ -54,7 +54,7 @@
 //! be written down where somebody meets it.
 //!
 //! Making the build encode a sample with the image's own encoders and decode it
-//! back is task 1 of `docs/autonomy/v0-5-devices-and-media-plan.md`, and until
+//! back is task 1 of `docs/autonomy/devices-and-media-plan.md`, and until
 //! that lands **no release has been measured for playback at all.**
 
 #![expect(

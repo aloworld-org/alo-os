@@ -1,7 +1,7 @@
 # The install under Secure Boot pulls and verifies release 0.0.2, and does not fit a worker's window
 
 **Date:** 2026-09-18
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 15,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 15,
 *A release that carries the way to the boundary, installed under Secure Boot to the
 agent service*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-3` on the third PC (`AGAI01`),
@@ -124,7 +124,7 @@ own rule asks for.
 
 ## What changed
 
-- `docs/autonomy/v0-5-the-installer-plan.md`: task 15's status keeps **ready** — it
+- `docs/autonomy/the-installer-plan.md`: task 15's status keeps **ready** — it
   is not done — and now carries the measurement above and what a machine has to be
   for a worker to hold the run: a machine no other lane is gating on, or a
   supervisor running it outside a worker's window the way task 13's was run.

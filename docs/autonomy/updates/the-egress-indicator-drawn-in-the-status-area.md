@@ -1,7 +1,7 @@
 # The egress indicator, drawn in the status area
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 2)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 2)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — the code. Not seen on a certified machine.
 

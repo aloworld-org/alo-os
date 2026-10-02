@@ -1,7 +1,7 @@
 //! The plan's acceptance for *afterwards, ask what it did*, one test per
 //! criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 8: *a person asks and is
+//! `docs/autonomy/the-executable-plan.md`, task 8: *a person asks and is
 //! answered from the record on the disk, not from memory of the session; a turn
 //! that was refused reads back as refused; and nothing in the answer is a
 //! sentence a model wrote.*

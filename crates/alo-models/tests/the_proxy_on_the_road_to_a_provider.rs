@@ -1,6 +1,6 @@
 //! The road out to a provider, held to taking the machine's one proxy.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 4: the machine's
+//! `docs/autonomy/software-and-the-web-plan.md`, task 4: the machine's
 //! proxy *reaches every road out alo OS itself uses — installing, updates,
 //! **providers** — held by a test per road.* This is that test for providers,
 //! and it is here because this is where the road is: `alo_models::Trying` makes

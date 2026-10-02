@@ -133,7 +133,7 @@ canvas — *"Browser, three windows open, one minimised"*.
 **The status area is at the top right.** [ADR
 0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
 took the clock, battery, network and volume off the Dock and recorded them in
-`docs/autonomy/v0-5-evidence.md` as **owed a location**. The resting design shows
+`docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` as **owed a location**. The resting design shows
 them at the top right of the display — `17:42 · 86% · Private · wifi · volume ·
 brightness` — which is that location. **This note does not treat the design as the
 decision**: the evidence entry still says owed, and it is the owner's or the

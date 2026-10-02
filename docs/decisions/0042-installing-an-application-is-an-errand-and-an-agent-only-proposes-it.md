@@ -1,7 +1,7 @@
 # ADR 0042 — Installing an application is an errand, and an agent only proposes it
 
 **Status:** accepted, 2026-09-15. Written by task 1 of
-`docs/autonomy/v0-5-software-and-the-web-plan.md` (*Installing, updating and
+`docs/autonomy/software-and-the-web-plan.md` (*Installing, updating and
 removing an application*), whose code is built on it.
 **Date:** 2026-09-15
 **Context:** [ADR 0001](0001-the-capability-model.md) (a change waits for one

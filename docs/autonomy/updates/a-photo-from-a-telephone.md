@@ -15,7 +15,7 @@ test pass has exactly the provenance this task's acceptance exists to refuse.
 
 ## Why this plan was reopened at all
 
-`docs/autonomy/v0-5-documents-and-paper-plan.md` reads as finished, and has been
+`docs/autonomy/documents-and-paper-plan.md` reads as finished, and has been
 treated as finished — the owner said as much when sending this lane into
 `alo_opening::Kind` for the media kinds. It is **5 of 6**. Task 6 was ready, with
 every dependency done, and nobody was holding it.

@@ -1,5 +1,5 @@
 //! An offer a person can act on — task 7 of
-//! `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, one criterion at a
+//! `docs/autonomy/the-machine-keeps-itself-plan.md`, one criterion at a
 //! time.
 //!
 //! | Criterion | Test |

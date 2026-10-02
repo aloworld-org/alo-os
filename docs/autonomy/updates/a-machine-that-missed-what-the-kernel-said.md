@@ -1,7 +1,7 @@
 # A machine that missed what the kernel said about its networks is still found on every one
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 33)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 33)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository's owner
 **Status:** ready for integration
 
@@ -55,7 +55,7 @@ overflow visible in the service log, which before said nothing.
   says so once, and drops everything after, deletions included*.
 - `docs/contracts/local-network-wire.md` — the existing bullet *Where a machine
   cannot tell what went* is extended, additively. Nothing on the wire changed.
-- `docs/autonomy/v0-5-the-local-network-plan.md` — task 33 is marked done, and task
+- `docs/autonomy/the-local-network-plan.md` — task 33 is marked done, and task
   34 is written.
 
 **Change description, for the changelog:** When many network changes happen at once

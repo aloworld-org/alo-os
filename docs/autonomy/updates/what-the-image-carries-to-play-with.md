@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-20
 **Workstream:** v0.5 devices and media
-(`docs/autonomy/v0-5-devices-and-media-plan.md`, task 1, *Which codecs this
+(`docs/autonomy/devices-and-media-plan.md`, task 1, *Which codecs this
 machine carries, decided before anything plays*)
 **Contributor:** Claude Code lane B in `/root/alo-os-lane-b` on the **development PC**,
 for the owner

@@ -1,7 +1,7 @@
 # A paired machine is spoken of by the name its person gave it
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 16)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 16)
 **Contributor:** Claude (Opus 5), in the `C:\dev\alo-os-claude` checkout
 **Status:** ready for integration
 
@@ -51,7 +51,7 @@ the pairing it belongs to. An agent cannot name a machine.
 | `crates/alo-agentd/src/corridor.rs`, `reaching.rs`, `questioned.rs`, `serving.rs`, `testing.rs` | the through-the-door tests; `reaching`'s and `serving`'s harnesses answer naming with `network.names()`; `the_studio_answering_and_keeping` keeps what crossed |
 | `crates/alo-changing/src/door.rs` | the exhaustive match takes `MachineNamed` |
 | `docs/contracts/machine-names-file.md` (new), `daemon-protocol.md`, `pairings-file.md`, `local-network-wire.md` | the file, the requests and answers, and *no name crosses the wire*, additively |
-| `docs/autonomy/v0-5-the-local-network-plan.md` | task 16 marked done; task 17 written |
+| `docs/autonomy/the-local-network-plan.md` | task 16 marked done; task 17 written |
 
 ## Decisions, and why
 

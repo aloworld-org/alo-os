@@ -2,12 +2,12 @@
 //! with — to exactly what a person handed over, and in every other case leaves
 //! both as they were.
 //!
-//! Task 3 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *set the proxy
+//! Task 3 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *set the proxy
 //! `alo-proxy` holds*, by a closed type. The broker is told thirty-two bytes and
 //! finds the proxy for itself, in the folder it made for the person; these are
 //! the ways that can go wrong, each of them tried.
 //!
-//! Task 13 of `docs/autonomy/v0-5-software-and-the-web-plan.md` added the
+//! Task 13 of `docs/autonomy/software-and-the-web-plan.md` added the
 //! password, in the same act and under the same approval (ADR 0060 §1). The
 //! tests below that name one are that half: the credential is written **before**
 //! the proxy file, only under the one name a person's own machine keeps a proxy

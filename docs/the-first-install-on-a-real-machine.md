@@ -7,8 +7,8 @@ screens nothing can capture.
 
 It is written to be followed once, on the testing PC, and then again on the
 certified laptop without changing. Task 6 of
-[the installer plan](autonomy/v0-5-the-installer-plan.md) is what it serves, and
-[`autonomy/v0-01-evidence.md`](autonomy/v0-01-evidence.md) is where what you saw
+[the installer plan](autonomy/the-installer-plan.md) is what it serves, and
+[`autonomy/evidence-it-boots-and-the-agent-acts.md`](autonomy/evidence-it-boots-and-the-agent-acts.md) is where what you saw
 is written down afterwards.
 
 **The machine is the testing PC.** Not the certified laptop, which stays clean
@@ -335,7 +335,7 @@ The walk tests **the install and the first start**. That is all it claims.
 
 ## Writing down what you saw
 
-Into [`autonomy/v0-01-evidence.md`](autonomy/v0-01-evidence.md), by hand, with:
+Into [`autonomy/evidence-it-boots-and-the-agent-acts.md`](autonomy/evidence-it-boots-and-the-agent-acts.md), by hand, with:
 
 - the date;
 - the machine, by the name it was given in `hardware.md`;

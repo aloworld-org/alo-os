@@ -1,7 +1,7 @@
 # An offer a person can act on
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 7
+**Workstream:** `docs/autonomy/the-machine-keeps-itself-plan.md`, task 7
 **Contributor:** this development PC's worker lane
 **Status:** ready for integration
 

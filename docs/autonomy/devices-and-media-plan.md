@@ -1,4 +1,6 @@
-# v0.5 — devices and media: sound, Bluetooth, the camera, playback and the battery
+# Devices and media: sound, Bluetooth, the camera, playback and the battery
+
+*Named `v0.5 — devices and media: sound, Bluetooth, the camera, playback and the battery` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the `ROADMAP.md` v0.5 line *Devices: audio with mid-call switching,
 Bluetooth, camera, microphone, media playback, power management*, and the matching

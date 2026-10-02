@@ -3,7 +3,7 @@
 //! indicator read while it happens and after.
 //!
 //! The sixth criterion of task 6 of
-//! `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`. Everything else in
+//! `docs/autonomy/the-machine-keeps-itself-plan.md`. Everything else in
 //! this crate is measured on a machine with no network at all
 //! (`finding_out_there_is_an_update.rs`); this is the one that says the road
 //! is really there.

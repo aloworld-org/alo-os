@@ -1,4 +1,6 @@
-# v0.5 — the machine keeps itself: updates, rollback, and undoing what the agent did
+# The machine keeps itself: updates, rollback, and undoing what the agent did
+
+*Named `v0.5 — the machine keeps itself: updates, rollback, and undoing what the agent did` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** four `ROADMAP.md` v0.5 lines that are one subject — *updates
 that never interrupt*, *atomic updates with rollback*, ★ *undo what the agent
@@ -33,7 +35,7 @@ the third PC on 2026-09-19 — the **undo entry in `crates/alo-record`** and the
 sentence `crates/alo-recounting` reads it back with. ADR 0045 point 3 asks for
 a record entry an undo writes, no existing kind fits one, and the crate is
 additive: no plan's header claims `alo-record`, and the plan that was working in
-it, `v0-5-the-local-network-plan.md`, is finished at 37 of 37. Taking it is the
+it, `the-local-network-plan.md`, is finished at 37 of 37. Taking it is the
 rule of 2026-09-18, and this line is the record of the take. **It reads and never
 edits** `alo-keeping` (where what the machine did is written),
 `alo-capability` (what a verb is), `alo-egress` (an update is an
@@ -67,7 +69,7 @@ and still passes; `starting.windows-next` is a verb over the *next start*, not
 over the record.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-installer-plan.md
+plan = docs/autonomy/the-installer-plan.md
 task = 16
 files =
   crates/alo-letting-go/tests/nothing_here_is_a_verb.rs
@@ -87,7 +89,7 @@ was written down. `no_verb_on_the_brokers_list_begins_undo` is unchanged and
 still passes.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-installer-plan.md
+plan = docs/autonomy/the-installer-plan.md
 task = 17
 files =
   crates/alo-letting-go/tests/nothing_here_is_a_verb.rs
@@ -633,7 +635,7 @@ makes.
 ### 9. A staging decided from an approval that arrived from elsewhere
 
 **Status:** done. Written 2026-09-20 for
-[`v0-5-the-broker-and-the-disk-plan.md`](v0-5-the-broker-and-the-disk-plan.md)
+[`the-broker-and-the-disk-plan.md`](the-broker-and-the-disk-plan.md)
 task 8, which names it as one of its three blockers and **may not write it**:
 `alo-keeping-up` is this plan's crate and that plan never edits it. Its other two
 blockers are closed — [ADR 0053](../decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
@@ -1242,7 +1244,7 @@ different. The owner confirmed it before the work started.
    crate's answer, held by a test. The caller measures the folder. The missing
    line in *what is filling the disk* is still owed by whoever owns
    `alo-measuring`, and a person who goes looking for it there will not find it.
-   **It is task 15 of `v0-5-the-machine-measured-plan.md` from 2026-09-27**, the
+   **It is task 15 of `the-machine-measured-plan.md` from 2026-09-27**, the
    plan that owns that crate, written with the design rather than left as a
    finding: the line goes beside the tree and not in it, and its three states
    never include a zero.

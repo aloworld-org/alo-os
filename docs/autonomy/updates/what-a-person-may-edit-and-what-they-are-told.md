@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — where a person's settings are kept
-(`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 4)
+(`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 4)
 **Contributor:** Claude (worker in `C:\dev\alo-os-b`)
 **Status:** ready for integration
 

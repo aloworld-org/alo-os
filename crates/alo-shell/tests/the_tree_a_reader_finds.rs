@@ -1,6 +1,6 @@
 //! **Every surface this machine draws, read back off the accessibility bus.**
 //!
-//! `docs/autonomy/v0-5-the-shell-plan.md` task 12: *the shell exposes every
+//! `docs/autonomy/the-shell-plan.md` task 12: *the shell exposes every
 //! surface's role, name and state to AT-SPI as `alo-access` decides them, and a
 //! test reads the exposed tree over the bus for each surface the shell draws*.
 //!

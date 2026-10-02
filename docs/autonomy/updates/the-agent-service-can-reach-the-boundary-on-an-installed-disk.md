@@ -1,7 +1,7 @@
 # The agent service can reach the boundary on an installed disk
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 14,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 14,
 *The disk installed under Secure Boot runs the agent service*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os` on the third PC (`AGAI01`), for
 the owner
@@ -145,7 +145,7 @@ open.
   `THE_BPF_FILESYSTEM`, `THE_PASSAGES_MODE` and `ADJUSTED`.
 - `docs/quirks.md`: *systemd mounts the BPF filesystem so only root can pass through
   it*, with both consoles.
-- `docs/autonomy/v0-5-the-installer-plan.md`: task 14 marked done for its part, with
+- `docs/autonomy/the-installer-plan.md`: task 14 marked done for its part, with
   the quicker road to an installed machine written down; task 15 written (blocked on
   the owner's release); task 11 now depends on 15.
 

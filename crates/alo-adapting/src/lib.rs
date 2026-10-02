@@ -3,7 +3,7 @@
 //! `docs/features.md`: *LoRA/QLoRA over a granted folder or a tenant's records,
 //! as a flow rather than a toolchain; the dataset, the adapter and the resulting
 //! weights never leave the machine.* Task 1 of
-//! `docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`.
+//! `docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`.
 //!
 //! # The thing this crate exists to prevent
 //!

@@ -36,7 +36,7 @@ rather than inventing a section.
 ## Why only one moves, measured rather than assumed
 
 **`Files and printers shared between paired alo machines` is wholly unbuilt.** No
-crate does it, no test names it, `docs/autonomy/v0-5-evidence.md` has no entry for it,
+crate does it, no test names it, `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` has no entry for it,
 and `ROADMAP.md` carried it unchecked. It is remaining work in every sense the word
 has, so it moves.
 
@@ -148,7 +148,7 @@ signed, **printable** statement* — the word is about the artifact, and a searc
 
 ## What the evidence ledger does now
 
-`docs/autonomy/v0-5-evidence.md` held printing's entry while the promise read
+`docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` held printing's entry while the promise read
 `[v0.5]`. The promise is `[v1]`, so the entry is not that gate's to hold, and
 correcting the tier orphaned it: `every_v0_5_promise_is_reconciled_against_evidence_that_runs`
 failed on the next run and said why — *the ledger has an entry for `Printing…` and no
@@ -178,7 +178,7 @@ The entry's substance is carried here, so nothing is withdrawn:
 > anything.
 
 **Not a new `v1-evidence.md`, on purpose.** `alo-reconciling` reads
-`docs/features.md`, `ROADMAP.md`, `v0-01-evidence.md` and `v0-5-evidence.md`. A ledger
+`docs/features.md`, `ROADMAP.md`, `evidence-it-boots-and-the-agent-acts.md` and `evidence-a-person-can-work-on-it-all-day.md`. A ledger
 it does not read would be an evidence file nothing checks — the dead-citation fault
 rebuilt as a new file. An ADR *is* read by `alo-citing`, so the seven tests above are
 held to existing.

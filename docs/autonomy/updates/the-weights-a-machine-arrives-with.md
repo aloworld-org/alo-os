@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** the image (Claude's checkout, `C:\dev\alo-os-claude`)
-**Task:** 31 in `docs/autonomy/v0-01-delivery-plan.md`, *The weights a machine
+**Task:** 31 in `docs/autonomy/the-executable-plan.md`, *The weights a machine
 arrives with*
 **Status:** ready for integration. Not committed and not pushed; the supervisor
 gates and publishes.
@@ -122,7 +122,7 @@ in `docs/quirks.md` and in the evidence entry, in those words.
   breaks.
 - `crates/alo-image/Cargo.toml` — `alo-models`, for the catalogue. No cycle:
   nothing in `alo-models` reaches `alo-image`.
-- `docs/autonomy/v0-01-evidence.md` — the entry rewritten: what is now shown,
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — the entry rewritten: what is now shown,
   what is still owed, and the three things standing in front of *arrives ready
   to run*.
 - `docs/quirks.md` — the carry-or-fetch measurement ADR 0025 asked for.
@@ -186,4 +186,4 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
   start the model runtime, and no machine has booted it.*
 - **ROADMAP.md:** no line ticks. The image line's machine half stays empty.
 - **QUEUE.md / STATE.md:** task 31 done, task 32 (the unit that starts the model
-  runtime) written into `docs/autonomy/v0-01-delivery-plan.md` and ready.
+  runtime) written into `docs/autonomy/the-executable-plan.md` and ready.

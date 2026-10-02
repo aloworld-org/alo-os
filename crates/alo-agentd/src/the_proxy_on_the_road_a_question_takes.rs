@@ -1,7 +1,7 @@
 //! The proxy a machine was told about, carried to the question a turn puts.
 //!
 //! The acceptance for
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md` task 11, and every step of
+//! `docs/autonomy/software-and-the-web-plan.md` task 11, and every step of
 //! it is the production one: the `[proxy]` section is read by the same
 //! `crate::describing::read` a running service uses, the value it produces is
 //! the `alo_proxy::Kept` that `crate::described::Described::proxy` answers with,

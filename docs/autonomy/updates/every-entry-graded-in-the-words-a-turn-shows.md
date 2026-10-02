@@ -1,7 +1,7 @@
 # Every entry this machine can hold, graded in the words a turn shows
 
 **Date:** 2026-09-14 (the runs; written up in the small hours of the 15th, local).
-**Workstream:** the models, measured — `docs/autonomy/v0-5-the-models-measured-plan.md`, task 20.
+**Workstream:** the models, measured — `docs/autonomy/the-models-measured-plan.md`, task 20.
 **Contributor:** the Mac lane.
 **Machine:** **Apple M3, 8 GB unified memory**, macOS 26.5.2, weights on the GPU
 through Metal, **Ollama 0.34.0** (the pinned runtime) on `127.0.0.1`, the Linux
@@ -178,7 +178,7 @@ names instructions that exist).
   drive the verbs reliably — a 7B and an 8B — where one did before, and every
   entry did at least as well as it had.*
 - **`ROADMAP.md`:** nothing.
-- **Plan:** `v0-5-the-models-measured-plan.md` marks task 20 done. Task 19 stays
+- **Plan:** `the-models-measured-plan.md` marks task 20 done. Task 19 stays
   blocked on the local-network plan's task 19.
 
 ## Every answer, verbatim

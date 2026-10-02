@@ -1,7 +1,7 @@
 # ADR 0035 — The wrapper or the engine: decided by a measurement, and never by writing our own
 
 **Status:** **rejected**, 2026-09-14, by task 17 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`, on the numbers in *the
+`docs/autonomy/the-models-measured-plan.md`, on the numbers in *the
 measurement that decided it* below. The wrapper stays. Decision 1 — nobody
 writes a runtime — stands, and was never on trial here.
 **Date:** 2026-09-14

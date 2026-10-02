@@ -1,7 +1,7 @@
 //! **Every new surface, walked** — the sequence of what a person is told and
 //! shown, held against the table in the report.
 //!
-//! `docs/autonomy/v0-5-the-shell-plan.md` task 14 asks for two things about one
+//! `docs/autonomy/the-shell-plan.md` task 14 asks for two things about one
 //! walk: *a raster at each step*, and *the exact sequence of spoken and shown
 //! text, recorded in the report and held by one test*. This is the second.
 //!

@@ -3,7 +3,7 @@
 //! group and not the agent's — and what it answers through the door it opened
 //! is in the record file before the answer arrives.
 //!
-//! Task 3 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` inherits the
+//! Task 3 of `docs/autonomy/the-broker-and-the-disk-plan.md` inherits the
 //! broker's process from task 1: *its binary, its unit, the machine's record it
 //! writes to, and how its approving key reaches the turn.* This is the process's
 //! start, against paths of the test's own.

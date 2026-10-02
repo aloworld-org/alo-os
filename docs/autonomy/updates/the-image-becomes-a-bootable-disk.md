@@ -9,7 +9,7 @@ integration.
 Until this change `image/Containerfile` built a bootable container and nothing
 in this repository turned that container into a disk. So the only thing anybody
 had ever seen was a test saying the recipe was right, and every promise in
-`docs/autonomy/v0-01-evidence.md` that reads *still owed: no machine has ever*
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` that reads *still owed: no machine has ever*
 was waiting on a step nobody had written down.
 
 There is now one documented command that writes the image onto a disk file, a
@@ -131,5 +131,5 @@ Not made by me; `SHARED_MAIN.md` gives these to the integration owner.
 - **QUEUE.md:** task 25 of the v0.01 delivery plan is done; the physical
   acceptance item is unchanged and still owed.
 - **STATE.md:** reference this report.
-- **`docs/autonomy/v0-01-evidence.md`:** the *no machine has ever* entries now
+- **`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`:** the *no machine has ever* entries now
   have a path to a machine, and none of them may be ticked from it.

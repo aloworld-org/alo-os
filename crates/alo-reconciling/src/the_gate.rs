@@ -316,7 +316,7 @@ fn its_own_words(passage: &str) -> Vec<String> {
 ///
 /// *Machines find each other* read *Most of it, and not whole*, and named what
 /// was missing: the person's door to propose, confirm and revoke, and a pairing
-/// that outlives a restart — **task 12 of `v0-5-the-local-network-plan.md`,
+/// that outlives a restart — **task 12 of `the-local-network-plan.md`,
 /// open**. That task had been done for twelve days. The clause was precise
 /// enough to sound authoritative, which is what made it worse than vagueness.
 ///
@@ -401,7 +401,7 @@ fn denies_something(said: &str) -> bool {
     DENIALS.iter().any(|denial| said.contains(denial))
 }
 
-/// Every plan and task number a passage names, as `("v0-5-….md", 12)`.
+/// Every plan and task number a passage names, as `("the-local-network-plan.md", 12)`.
 fn tasks_named_in(said: &str) -> Vec<(String, u32)> {
     let mut found = Vec::new();
     for (at, _) in said.match_indices("task ") {
@@ -411,7 +411,7 @@ fn tasks_named_in(said: &str) -> Vec<(String, u32)> {
             continue;
         };
         // The plan is whichever `.md` the same passage names after it, which is
-        // how the gate writes it: "task 12 of `v0-5-the-local-network-plan.md`".
+        // how the gate writes it: "task 12 of `the-local-network-plan.md`".
         let after = rest.get(digits.len()..).unwrap_or_default();
         if let Some(plan) = a_plan_named_in(after) {
             found.push((plan, task));
@@ -421,13 +421,39 @@ fn tasks_named_in(said: &str) -> Vec<(String, u32)> {
 }
 
 /// The first plan filename a passage names, if it names one within reach.
+///
+/// # This looked for `v0-5-` until 2026-10-02, and that was a release code doing
+/// a filename's job
+///
+/// The owner asked that release codes leave this repository's filenames, and
+/// `CLAUDE.md` already required it — *names are for strangers; release codes live
+/// in `ROADMAP.md`*. The moment the plans were renamed, a search for the literal
+/// `v0-5-` matched **none** of them, so this returned [`None`] for every real plan
+/// and the denial check above silently found nothing to check.
+///
+/// **It would have compiled, and it would have passed a suite whose fixtures still
+/// used the old names.** What caught it is that the fixture was renamed too — a
+/// search keyed on a prefix is only ever as true as the prefix.
+///
+/// So the filename is found by **being a filename**: the first `.md` within reach,
+/// walked back to wherever the name starts. A path yields its basename, because
+/// that is what a plan is keyed by, and a name in backticks or bare prose yields
+/// the same answer.
 fn a_plan_named_in(after: &str) -> Option<String> {
     const HOW_FAR: usize = 160;
     let near = after.get(..after.len().min(HOW_FAR)).unwrap_or(after);
-    let at = near.find("v0-5-")?;
-    let rest = near.get(at..)?;
-    let end = rest.find(".md")? + ".md".len();
-    Some(rest.get(..end)?.to_owned())
+    let end = near.find(".md")? + ".md".len();
+    let upto = near.get(..end)?;
+    // Back to the first character a filename cannot hold. A separator stops it
+    // too, so `docs/autonomy/the-shell-plan.md` answers `the-shell-plan.md`.
+    let start = upto
+        .char_indices()
+        .rev()
+        .find(|(_, letter)| !matches!(letter, 'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '.'))
+        .map_or(0, |(at, letter)| at + letter.len_utf8());
+    let named = upto.get(start..)?;
+    // `.md` alone is not a name, and neither is the empty string.
+    (named.len() > ".md".len()).then(|| named.to_owned())
 }
 
 /// Whether a plan says a task is done.
@@ -476,7 +502,7 @@ const THE_DONE_MARKER: &str = "**Done, ";
 ///
 /// The second line says the work is free to take; the fourth says it was
 /// finished thirteen days ago and then describes the code. **74 tasks across six
-/// plans** read like that on 2026-09-27 — 32 of them in `v0-01-delivery-plan.md`,
+/// plans** read like that on 2026-09-27 — 32 of them in `the-executable-plan.md`,
 /// a release that shipped.
 ///
 /// # Why the marker and not a published report
@@ -1078,7 +1104,7 @@ the bottom of the laptop and down the side of the external screen*.
     #[test]
     fn a_denial_of_finished_work_is_found_and_a_withdrawn_one_is_not() {
         let plans = BTreeMap::from([(
-            "v0-5-a-plan.md".to_owned(),
+            "pairing-plan.md".to_owned(),
             "### 12. Pairing\n\n**Status:** done. Report: elsewhere.\n".to_owned(),
         )]);
 
@@ -1087,7 +1113,7 @@ the bottom of the laptop and down the side of the external screen*.
 
 - [ ] Machines find each other
       Most of it, and not whole: the person's door is task 12 of
-      `v0-5-a-plan.md`, open
+      `pairing-plan.md`, open
 ";
         let findings = denials_by_task_number(denying, &plans);
         assert!(
@@ -1102,7 +1128,7 @@ the bottom of the laptop and down the side of the external screen*.
 ## v0.5 — a person can work on it all day
 
 - [ ] Machines find each other
-      The person's door is task 12 of `v0-5-a-plan.md`, and it is there.
+      The person's door is task 12 of `pairing-plan.md`, and it is there.
       *This box said the door was **not whole** and task 12 **open** on 2026-09-26,
       which was wrong*
 ";

@@ -1,7 +1,7 @@
 # A self-hosted workspace on the network is found, not configured
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 17)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 17)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository owner
 **Status:** ready for integration
 

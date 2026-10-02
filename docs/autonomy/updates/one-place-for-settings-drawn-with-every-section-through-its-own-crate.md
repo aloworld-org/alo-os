@@ -1,7 +1,7 @@
 # One place for settings, drawn with every section through its own crate
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 6)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 6)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — **the code only.** A certified machine has
 not seen Settings; it is measured by unit tests on real files and laid out and
@@ -23,7 +23,7 @@ rasterised the way the other nested surfaces are.
 | `crates/alo-shell/tests/settings_source.rs` | The existing four tests kept; two new ones hold the Settings files to the plan's constraint. |
 | `crates/alo-shell/src/{lib,presentation,scene_native,scene_drawing,nested,nested_approval,nested_desktop,nested_record,offscreen}.rs` | Registration: modules and exports, `RenderError::SettingsScene`, a Settings layer in the native frame (`None` everywhere else). |
 | `crates/alo-shell/Cargo.toml` | Reads `alo-changing`, `alo-choosing`, `alo-granted`, `alo-nearby`, `alo-remembering`, `alo-setting-up`. No `serde` or `toml`. |
-| `docs/autonomy/v0-5-the-shell-plan.md` | Task 6 marked done, with the findings below. |
+| `docs/autonomy/the-shell-plan.md` | Task 6 marked done, with the findings below. |
 
 **User-readable change description:** *alo OS has a Settings window. In one
 place a person can choose what answers their questions — a model, a provider
@@ -189,7 +189,7 @@ with `-D warnings` exit 0.
    `alo_remembering::NotRemembered` has none. Settings reports it to the host
    and draws no rows.
 6. **A session with no folder** waits on
-   `v0-5-where-a-persons-settings-are-kept-plan.md` task 7 for the sentence that
+   `where-a-persons-settings-are-kept-plan.md` task 7 for the sentence that
    says changes will not be kept. Until then, Settings offers no change there.
 7. **A grant's row has no *when it ends*.** `alo-granted`'s note says the
    duration is drawn beside the row "by whoever displays it". No crate decides

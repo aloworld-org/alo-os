@@ -3,7 +3,7 @@
 //!
 //! `docs/features.md` promises at v0.5 *capture: screenshots, annotation,
 //! screen recording with audio, screen sharing*, and
-//! `docs/autonomy/v0-5-capture-and-the-room-plan.md` puts the screenshot second
+//! `docs/autonomy/capture-and-the-room-plan.md` puts the screenshot second
 //! — **after** the indicator, deliberately, so that nothing can be built that
 //! captures without the indicator already existing to show it. This crate is
 //! the screenshot, and it is built on top of `alo-in-use` rather than beside

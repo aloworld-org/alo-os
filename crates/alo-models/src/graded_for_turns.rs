@@ -1,6 +1,6 @@
 //! **Which of an entry's grades says whether it may be given the agent.**
 //!
-//! Task 15 of `docs/autonomy/v0-5-the-models-measured-plan.md` asked this of the
+//! Task 15 of `docs/autonomy/the-models-measured-plan.md` asked this of the
 //! envelope, and task 19 asks it of the words. A grade is a measurement of a way
 //! of asking, and the way that decides is the way an agent turn asks — which is
 //! now two things rather than one:

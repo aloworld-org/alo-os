@@ -1,7 +1,7 @@
 # The daemon binds the port
 
 - Date: 2026-09-14
-- Workstream: v0.5 the local network, task 10 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 10 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 
@@ -115,7 +115,7 @@ sends a question and the daemon that tells one apart, held to the URL
 **`docs/contracts/local-network-wire.md`** (new): the port, the framing, the
 six paths, the proof header and the words at the door — the surface another
 alo machine speaks. **`docs/contracts/record-file.md`**: the `paired` tag.
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 10 done, task 11
+**`docs/autonomy/the-local-network-plan.md`**: task 10 done, task 11
 written. **`Cargo.lock`**: the two path dependencies; nothing new resolves.
 
 ## Decisions

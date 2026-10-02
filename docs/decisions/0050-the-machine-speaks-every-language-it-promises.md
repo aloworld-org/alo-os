@@ -10,7 +10,7 @@ agent uses is the one a screen reader uses; EN 301 549 conformance is the same
 work, not extra work*) and its language line (*all 24 official EU languages to
 begin with … a sovereignty product that cannot speak Maltese or Irish is selling
 sovereignty to some Europeans and not others*), and
-`docs/autonomy/v0-5-access-and-language-plan.md`.
+`docs/autonomy/access-and-language-plan.md`.
 
 ## What was found
 

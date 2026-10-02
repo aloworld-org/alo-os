@@ -1,7 +1,7 @@
 # The person's door chooses a paired machine to answer their questions
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 15)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 15)
 **Contributor:** Claude (Opus 5), in the `C:\dev\alo-os-claude` checkout
 **Status:** ready for integration
 
@@ -42,7 +42,7 @@ the ones that can.
 | `crates/alo-agentd/src/testing.rs`, `corridor.rs` | the studio stub (`the_studio_answering`, `TheStudioIsAt`) moved from `corridor.rs`'s tests to `testing.rs`, shared by both files |
 | `crates/alo-choosing/tests/no_agents_door_reaches_these_settings.rs` | the guard now holds *one daemon file names the writer, and only the person's door reaches it* (see decision 1) |
 | `docs/contracts/daemon-protocol.md`, `docs/contracts/person-settings.md` | the request, the answer and the list's field, additively |
-| `docs/autonomy/v0-5-the-local-network-plan.md` | task 15 marked done; task 16 written |
+| `docs/autonomy/the-local-network-plan.md` | task 15 marked done; task 16 written |
 
 ## Decisions, and why
 

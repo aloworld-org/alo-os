@@ -8,7 +8,7 @@
 set -eu
 cd "$(dirname "$0")/../.."
 git pull --ff-only -q
-export ALO_LOOP_PLAN=docs/autonomy/v0-5-the-models-measured-plan.md
+export ALO_LOOP_PLAN=docs/autonomy/the-models-measured-plan.md
 export ALO_KERNEL_LOOP_LINUX="${ALO_KERNEL_LOOP_LINUX:-limactl shell alo}"
 export ALO_KERNEL_LOOP_WORKER="${ALO_KERNEL_LOOP_WORKER:-$(command -v claude)}"
 mkdir -p .kernel-loop

@@ -714,7 +714,7 @@ are corrected rather than deleted, because a status that was wrong in a particul
 more to the next reader than one that was merely out of date.*
 See task 5 for the measurement.
 The generalisation has landed, the decision was made and acted on, and **the region contract is
-built with no evidence** (see above, and the entry in `docs/autonomy/v0-01-evidence.md`).
+built with no evidence** (see above, and the entry in `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`).
 
 **This was the only status line here that said *no evidence* from the start**, and it was right
 about itself while seven others were wrong about themselves. What made the difference is that

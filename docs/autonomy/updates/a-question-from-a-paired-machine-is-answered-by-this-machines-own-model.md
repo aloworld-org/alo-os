@@ -1,7 +1,7 @@
 # A question from a paired machine is answered by this machine's own model, and the person's door reaches a remote turn
 
 - Date: 2026-09-14
-- Workstream: v0.5 the local network, task 11 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 11 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 

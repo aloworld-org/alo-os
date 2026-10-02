@@ -86,7 +86,7 @@ the argument for mapping it first.
 **A fresh machine must still look composed.** The shipped appearance names a
 wallpaper today. After the removal it names something that does not exist, and
 nothing in this repository says what surface a machine with no choices shows
-instead. `docs/autonomy/v0-5-evidence.md` records that under *A fresh machine
+instead. `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` records that under *A fresh machine
 already looks composed* — its only evidence is for the feature being removed,
 which is a worse position than having none, because those tests are green.
 

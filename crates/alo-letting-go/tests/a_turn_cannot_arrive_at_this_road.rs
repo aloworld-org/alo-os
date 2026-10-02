@@ -9,7 +9,7 @@
 //! turn would put the one privileged remover on this machine inside the process
 //! an agent is running in.
 //!
-//! Task 14 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` asked for
+//! Task 14 of `docs/autonomy/the-machine-keeps-itself-plan.md` asked for
 //! this by name, when the owner narrowed the road to *a person's act in
 //! Settings, and never a broker verb*. It is stronger than the verb list and
 //! weaker than a kernel boundary, and what it actually rules out is the change

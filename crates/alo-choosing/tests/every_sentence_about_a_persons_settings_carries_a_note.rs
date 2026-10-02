@@ -3,7 +3,7 @@
 //!
 //! Each crate's own tests hold its list. This holds the promise the plan for
 //! where a person's settings are kept makes across all five
-//! (`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 4): a
+//! (`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 4): a
 //! person may open one of these files in an editor, so what they are told when
 //! it did not read must reach them in their own language — and a translator
 //! handed *your appearance settings at {path} say {key}* with no word about

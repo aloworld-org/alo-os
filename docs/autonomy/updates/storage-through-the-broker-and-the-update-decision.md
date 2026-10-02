@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 the broker and the disk: task 4 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, *Updates and storage,
+`docs/autonomy/the-broker-and-the-disk-plan.md`, *Updates and storage,
 through the broker* (`ROADMAP.md`: ★ *System verbs through the privileged broker*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os-2`
 **Status:** ready for integration. **Storage is built** and tested in WSL.

@@ -1,7 +1,7 @@
 # An adapter, loaded against the contract
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 5)
+**Workstream:** v0.5 — software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 5)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration.
 
@@ -79,7 +79,7 @@ Eighteen files beside `lib.rs`, one subject each.
   person is told. Nothing existing changed.
 - `docs/contracts/agent-verbs.md`: `alo-adapters` is named among the crates
   declaring verbs, and the *Adapters* row of the verb classes says where they run.
-- `docs/autonomy/v0-5-software-and-the-web-plan.md`: task 5 marked done.
+- `docs/autonomy/software-and-the-web-plan.md`: task 5 marked done.
 
 **Not touched:** `alo-capability`, `alo-applications`, `alo-portals`, `alo-granted`,
 `alo-secrets`, `alo-egress`, `alo-access`, `alo-image`, `image/`, `alo-shell`.

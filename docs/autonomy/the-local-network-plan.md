@@ -1,4 +1,6 @@
-# v0.5 — the local network, before there is anywhere to show it
+# The local network, before there is anywhere to show it
+
+*Named `v0.5 — the local network, before there is anywhere to show it` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the five `[v0.5]` promises under *The local network — machines
 that find each other* in `docs/features.md`, and the part of *the whole of it
@@ -16,7 +18,7 @@ pairing, with `crates/alo-egress` and `crates/alo-remembering` touched where a
 paired machine is already modelled.
 
 **`alo-models` is not this plan's, from 2026-09-19.** It was named here and in
-`v0-5-the-models-measured-plan.md`, and the supervisor's ownership check found
+`the-models-measured-plan.md`, and the supervisor's ownership check found
 the two claims on the same crate — quietly true for days, and exactly the kind
 of thing that lets two lanes edit one crate at once. The models-measured plan
 keeps it: that plan is still being worked, and this one is finished, so the
@@ -823,7 +825,7 @@ unblocked. The report is
 `docs/autonomy/updates/a-turn-shows-a-model-the-words-the-product-wrote.md`.
 **Depends on:** 13.
 **Written by the measuring lane** (task 18 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`), whose crates end at the words.
+`docs/autonomy/the-models-measured-plan.md`), whose crates end at the words.
 
 Task 13 landed the ask: an agent's next request goes to the pinned runtime held
 to the protocol's envelope. What the model is *shown* is still a `&str` from

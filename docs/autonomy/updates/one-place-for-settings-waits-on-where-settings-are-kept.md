@@ -1,7 +1,7 @@
 # One place for settings waits on where a person's settings are kept
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 6)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 6)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — **the decision, not the surface.** The
 settings surface is not built. Task 6 is marked `blocked` in the plan on
@@ -14,7 +14,7 @@ shell plan may not edit.
 |---|---|
 | `docs/decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md` | The decision task 6 needs: where appearance, the dock and shortcuts are kept, who writes them, and how a pairing is revoked the way a grant is. Proposed. |
 | `crates/alo-shell/tests/settings_source.rs` | Holds, from the shipped source, that the shell keeps no settings file of its own while the decision waits — and that the check catches one that would. |
-| `docs/autonomy/v0-5-the-shell-plan.md` | Task 6 marked `blocked`, naming ADR 0038 and this report. Its acceptance is unchanged. |
+| `docs/autonomy/the-shell-plan.md` | Task 6 marked `blocked`, naming ADR 0038 and this report. Its acceptance is unchanged. |
 | `crates/alo-bounding/src/cgroup.rs` | Second worker: removing a control group waits, briefly and only on `EBUSY`, for a thread still leaving it — the teardown failure the workspace gate refused this change on. |
 | `docs/quirks.md` | The existing entry on that failure, with what refused this task and what changed. |
 

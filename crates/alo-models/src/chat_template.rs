@@ -1,7 +1,7 @@
 //! The chat template a catalogue entry's weights must be asked through, where the
 //! file the catalogue names does not carry one.
 //!
-//! Task 8 of `docs/autonomy/v0-5-the-models-measured-plan.md`, and the finding
+//! Task 8 of `docs/autonomy/the-models-measured-plan.md`, and the finding
 //! behind it in `docs/quirks.md`: the GGUF `teuken-7b-instruct` names carries no
 //! chat template, the pinned runtime warns and answers with its end-of-turn
 //! token in the text, and a grade made that way would measure the missing

@@ -6,7 +6,7 @@
 same network is not authority — discovery is open, use requires mutual
 pairing, no certificate authority, no trusted-network setting),
 [ADR 0001](0001-the-capability-model.md) §3 (grants are enumerated, revocable
-and expiring), task 6 of `docs/autonomy/v0-5-the-local-network-plan.md`,
+and expiring), task 6 of `docs/autonomy/the-local-network-plan.md`,
 `crates/alo-nearby`, `crates/alo-asking`, `crates/alo-turn`
 
 ## The question in one line

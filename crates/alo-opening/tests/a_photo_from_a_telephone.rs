@@ -1,7 +1,7 @@
 //! **A photograph from a telephone, recognised from its bytes** — against a
 //! real file, with its provenance in `tests/files/README.md`.
 //!
-//! Part of task 6 of `docs/autonomy/v0-5-documents-and-paper-plan.md`, whose
+//! Part of task 6 of `docs/autonomy/documents-and-paper-plan.md`, whose
 //! promise in `docs/features.md` is ★ *"I can't open this file." A `.pages`, a
 //! `.heic`, a `.dwg`: the system converts it where it can, and where it cannot
 //! says plainly what will open it, instead of shrugging.* The plan says a photo

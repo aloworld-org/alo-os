@@ -1,7 +1,7 @@
 # A refusal that lost a race with its own pipe
 
 **Date:** 2026-09-21
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 8
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 8
 **Contributor:** this development PC's lane, second worker on task 8, one working tree
 **Status:** ready for integration. Nothing here was measured on hardware and nothing here draws.
 
@@ -159,7 +159,7 @@ A regression test that has never been seen to fail is a description.
 
 Nothing in the first worker's change needed correcting; its crates were re-gated
 here unchanged and pass. The plan,
-`docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, already carries task 8
+`docs/autonomy/the-session-and-the-displays-plan.md`, already carries task 8
 as **Done, 2026-09-21** and already carries task 9 — *The four files this plan
 keeps, in the contract that describes them* — written because the plan named none
 after it. Both were the first worker's and both are correct; the plan is listed

@@ -1,5 +1,5 @@
 //! **The measurement, put to weights a person brought** — task 4 of
-//! `docs/autonomy/v0-5-the-models-measured-plan.md`.
+//! `docs/autonomy/the-models-measured-plan.md`.
 //!
 //! The same ten, the same bar and the same door as
 //! `against_a_model_on_this_machine.rs` — literally: both call

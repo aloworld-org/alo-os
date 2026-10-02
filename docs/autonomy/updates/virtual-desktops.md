@@ -1,7 +1,7 @@
 # Virtual desktops
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — hands on the desktop (`docs/autonomy/v0-5-hands-on-the-desktop-plan.md`, task 3)
+**Workstream:** v0.5 — hands on the desktop (`docs/autonomy/hands-on-the-desktop-plan.md`, task 3)
 **Contributors:** two Claude Code workers in `C:\dev\alo-os-b`, for the repository
 owner — the crate, and then the repair of the gate that refused it (below)
 **Status:** ready for integration

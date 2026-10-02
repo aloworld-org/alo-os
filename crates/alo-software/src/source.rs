@@ -3,7 +3,7 @@
 //!
 //! # The rented tool's configuration, read and never written
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md` is plain about it: *no
+//! `docs/autonomy/software-and-the-web-plan.md` is plain about it: *no
 //! package manager of ours. Sources are the rented tool's configuration.* So a
 //! [`Source`] is made from what that tool says a place is ([`Configured`]) and
 //! from nothing else. Nothing in this crate adds a place, edits one, or turns a

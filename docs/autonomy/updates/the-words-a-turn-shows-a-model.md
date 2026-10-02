@@ -1,7 +1,7 @@
 # The words a turn shows a model are the product's own
 
 **Date:** 2026-09-14.
-**Workstream:** the models, measured — `docs/autonomy/v0-5-the-models-measured-plan.md`, task 18.
+**Workstream:** the models, measured — `docs/autonomy/the-models-measured-plan.md`, task 18.
 **Contributor:** the Mac lane (measuring), on an Apple M3 with 8 GB unified
 memory, macOS 26.5.2; gates in the Linux VM `alo` (Lima, `vz`, aarch64, 6 CPUs,
 4 GiB).
@@ -205,8 +205,8 @@ the catalogue and their own reports.
   machine grades and the model it asks are shown the same text.*
 - **`ROADMAP.md`:** nothing. No capability is finished by this and no machine
   half is touched.
-- **Plans:** `v0-5-the-models-measured-plan.md` marks task 18 done and adds
-  tasks 19 (blocked) and 20 (ready); `v0-5-the-local-network-plan.md` gains task
+- **Plans:** `the-models-measured-plan.md` marks task 18 done and adds
+  tasks 19 (blocked) and 20 (ready); `the-local-network-plan.md` gains task
   19, *a turn shows a model the words the product wrote*, for the lane that owns
   `alo-turn` — written there because a finding in a report is not a queue, and
   task 14 set the precedent when it handed the envelope door over. (It was

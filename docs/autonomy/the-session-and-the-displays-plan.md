@@ -1,4 +1,6 @@
-# v0.5 — the session and the displays: lock, sleep, come back, and more than one screen
+# The session and the displays: lock, sleep, come back, and more than one screen
+
+*Named `v0.5 — the session and the displays: lock, sleep, come back, and more than one screen` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** five `ROADMAP.md` v0.5 lines that are one subject — *Lock screen,
 suspend and resume*; *Multi-monitor, scaling, hotplug*; *Session management: log
@@ -28,7 +30,7 @@ plan needs is drawn by the shell plan's later tasks, from the decisions made her
 **Where this plan crosses into lane A's crates:** task 2 adds
 `Turning::slept_through` to `alo-turn`, and the slept-through entry to `alo-record`
 and its contract `docs/contracts/record-file.md`. Both are additive, and both were
-published after `v0-5-the-local-network-plan.md`, the plan working in those crates,
+published after `the-local-network-plan.md`, the plan working in those crates,
 had finished. Task 2 also adds that entry's sentence to `alo-recounting`, which no
 plan owns. This plan claims none of the three; a later task that needs them again
 checks who is working in them first.
@@ -746,7 +748,7 @@ measurement.
 **What the plan still owes,** recorded because this is its last task: `docs/features.md`'s
 *per display* dock edge is **not met** — `alo_dock::Dock` holds one edge for the
 machine. `crates/alo-dock` belongs to
-`v0-5-where-a-persons-settings-are-kept-plan.md`; this plan reads it and never
+`where-a-persons-settings-are-kept-plan.md`; this plan reads it and never
 edits it, so the promise is owed rather than narrowed, and
 `alo_displays::Wearing::of` is the one function here that changes when it is paid.
 
@@ -781,7 +783,7 @@ it named is **not met**: `docs/features.md`'s *Per display, so the dock can sit
 along the bottom of the laptop and down the side of the external screen*.
 `alo_dock::Dock` holds one edge for the machine, this plan reads `alo-dock` and
 never edits it, and `alo-dock` belongs to
-`v0-5-where-a-persons-settings-are-kept-plan.md`. Task 3 said so in its status
+`where-a-persons-settings-are-kept-plan.md`. Task 3 said so in its status
 paragraph and `alo_displays::Wearing::of` is named as the one function that
 changes when that plan decides otherwise. A promise owed to another plan is
 still owed; it is not narrowed, and the place it is recorded should be

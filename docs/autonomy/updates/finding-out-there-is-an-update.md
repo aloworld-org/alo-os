@@ -1,7 +1,7 @@
 # Finding out there is an update
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 6
+**Workstream:** `docs/autonomy/the-machine-keeps-itself-plan.md`, task 6
 **Contributor:** Claude (checkout `C:\dev\alo-os-3`)
 **Status:** ready for integration
 
@@ -51,7 +51,7 @@ found one by watching would be doing something unasked on somebody's network.
 
 ### The plan
 
-- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` — task 6 marked done,
+- `docs/autonomy/the-machine-keeps-itself-plan.md` — task 6 marked done,
   and **task 7 written**, because the plan named none after it and the
   measurement below found something that needs one.
 

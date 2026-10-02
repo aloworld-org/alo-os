@@ -1,7 +1,7 @@
 # Full-disk encryption, decided before it is built
 
 **Date:** 2026-09-17
-**Workstream:** `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 5
+**Workstream:** `docs/autonomy/the-broker-and-the-disk-plan.md`, task 5
 (*Full-disk encryption, decided before it is built*)
 **Contributor:** Claude Code, in `C:\dev\alo-os-2`
 **Status:** ready for integration. The decision it produces is **proposed** and
@@ -273,6 +273,6 @@ through the broker) and ADR 0054 (the disk's key).
   `the_enrolment_waits_on_its_decision.rs` (new)
 - `Cargo.toml`, `Cargo.lock` — the new member
 - `docs/quirks.md` — two entries under *Pinned engines*
-- `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` — task 5 marked done, and
+- `docs/autonomy/the-broker-and-the-disk-plan.md` — task 5 marked done, and
   what task 6 inherits
 - this report

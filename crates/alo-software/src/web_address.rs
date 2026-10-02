@@ -1,6 +1,6 @@
 //! What a web address is, checked before anything is decided about it.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: the browser opens
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: the browser opens
 //! web addresses **from any application**. An address that arrives that way is
 //! the least trustworthy value on the machine — it is written by a web page, a
 //! message somebody was sent, or a file that came off a disk — and it ends up

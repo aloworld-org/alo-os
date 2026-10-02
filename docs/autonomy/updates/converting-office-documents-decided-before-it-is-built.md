@@ -1,7 +1,7 @@
 # Converting office documents, decided before it is built
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — documents and paper (`docs/autonomy/v0-5-documents-and-paper-plan.md`, task 2: *`.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost*)
+**Workstream:** v0.5 — documents and paper (`docs/autonomy/documents-and-paper-plan.md`, task 2: *`.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os`, for the repository owner
 **Status:** ready for integration, **as a decision**. The code for task 2 is
 **not written** and waits on ADR 0039 and the two prerequisites it names. This
@@ -93,7 +93,7 @@ authority. So, as the task instructions direct, the decision is the work.
     shipped source naming the verb, and no converter named in the image recipe.
   - A self-check confirms that everything the file reads by is still where it
     looks.
-- **`docs/autonomy/v0-5-documents-and-paper-plan.md`**: task 2's status is now
+- **`docs/autonomy/documents-and-paper-plan.md`**: task 2's status is now
   `blocked` on ADR 0039, with a paragraph saying why and what it waits on. It is
   **not** marked done. Task 4 depends on task 2 and so waits with it. Task 3
   (printing) is unaffected and is the loop's next task in this plan.

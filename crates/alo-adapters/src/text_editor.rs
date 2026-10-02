@@ -1,6 +1,6 @@
 //! The reference adapter: GNOME Text Editor, through its own interface.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 5: *one reference
+//! `docs/autonomy/software-and-the-web-plan.md`, task 5: *one reference
 //! adapter for an application task 2 ships is built end to end as the proof,
 //! with the application's own automation interface.* The text editor is on the
 //! fresh machine's list (`crates/alo-software/shipped.toml`, at release 50.1),

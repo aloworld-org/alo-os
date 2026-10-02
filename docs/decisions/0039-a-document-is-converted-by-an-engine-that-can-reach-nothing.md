@@ -2,12 +2,12 @@
 
 **Status:** accepted, 2026-09-15 — option **A**, with every decision under
 *the recommendation* as written. Written 2026-09-14 by task 2 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md`. Of the three things below that
+`docs/autonomy/documents-and-paper-plan.md`. Of the three things below that
 must happen before task 2 is built, the first is this answer; the pinned engine
 on the gate machine and the three real documents remain, and task 2 stays
 blocked on those two.
 **Date:** 2026-09-14, accepted 2026-09-15
-**Context:** `docs/autonomy/v0-5-documents-and-paper-plan.md` tasks 1, 2 and 4;
+**Context:** `docs/autonomy/documents-and-paper-plan.md` tasks 1, 2 and 4;
 [ADR 0001](0001-the-capability-model.md) (no verb runs an arbitrary command);
 [ADR 0006](0006-the-pinned-model-runtime.md) (a rented engine behind one file);
 [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md) (engines are

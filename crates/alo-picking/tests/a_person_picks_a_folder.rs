@@ -1,7 +1,7 @@
 //! The plan's acceptance for *native folder selection, so a grant can be made
 //! at all*, one test per criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 6: *a person picks a folder and
+//! `docs/autonomy/the-executable-plan.md`, task 6: *a person picks a folder and
 //! a grant exists afterwards that the daemon honours; picking nothing grants
 //! nothing; and the grant's scope is the folder picked rather than its parent.*
 //!

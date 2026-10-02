@@ -1,4 +1,6 @@
-# v0.5 — the shell: the half a person looks at
+# The shell: the half a person looks at
+
+*Named `v0.5 — the shell: the half a person looks at` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the fourteen `ROADMAP.md` lines that cannot start without a
 screen, beginning with the one v0.01 line still open — **the sign-in screen**
@@ -229,7 +231,7 @@ offers no change rather than one it would forget, waiting on the keeping
 plan's task 7 for its sentence.
 Before it was built, the status read: ready — the keeping that
 [ADR 0038](../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
-describes has landed: `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`'s
+describes has landed: `docs/autonomy/where-a-persons-settings-are-kept-plan.md`'s
 tasks 2 and 3 were published on 2026-09-15 (appearance, the dock and shortcuts
 each keep their own file; a pairing is revoked from the one list the way a grant
 is), and its task 6 walked one person's folder from sign-in to the next change.
@@ -305,10 +307,10 @@ they landed. The fourth was written that day.
 
 | Blocker | | |
 |---|---|---|
-| the battery | `alo-power` | **clear** — landed 2026-09-17, task 5 of `v0-5-devices-and-media-plan.md`. `TheBattery::on_this_machine` is `Option`, so a machine with no battery reads as **absent** rather than as a battery at zero, which is this task's own word. |
+| the battery | `alo-power` | **clear** — landed 2026-09-17, task 5 of `devices-and-media-plan.md`. `TheBattery::on_this_machine` is `Option`, so a machine with no battery reads as **absent** rather than as a battery at zero, which is this task's own word. |
 | the volume | `alo-sound` | **clear** — landed 2026-09-17, task 2 of the same plan. `Volume` and `Heard` come through `TheAudioServer`, the one road to the media server. |
-| a time written regionally | `alo-formats` | **clear** — landed 2026-09-17, task 6 of `v0-5-access-and-language-plan.md`. `Regionally::time` writes a time as the person's language and region write it, from CLDR. |
-| the network's state | the network monitor portal `alo-portals` names | **clear** — landed 2026-09-20 as task 12 of `v0-5-applications-and-what-they-expect-plan.md`, in two halves: `alo_networks::WhatIsReached` reads how far the machine reaches, and `org.freedesktop.portal.NetworkMonitor` answers from it. What a status area reads is `alo_networks::Reaching` — `HowFar::reaches_anything` is the one place *connected* is decided, so this task shows that answer rather than making a second one. |
+| a time written regionally | `alo-formats` | **clear** — landed 2026-09-17, task 6 of `access-and-language-plan.md`. `Regionally::time` writes a time as the person's language and region write it, from CLDR. |
+| the network's state | the network monitor portal `alo-portals` names | **clear** — landed 2026-09-20 as task 12 of `applications-and-what-they-expect-plan.md`, in two halves: `alo_networks::WhatIsReached` reads how far the machine reaches, and `org.freedesktop.portal.NetworkMonitor` answers from it. What a status area reads is `alo_networks::Reaching` — `HowFar::reaches_anything` is the one place *connected* is decided, so this task shows that answer rather than making a second one. |
 
 **Nothing here is on a screen.** Each of the four is a crate that measures or
 owns; drawing them is this task, and it is now free to start. **Depends on:** 5.
@@ -385,7 +387,7 @@ turns on one clock for the whole desk, because that is the only clock
 desk — the DRM path drives one output at a time. **Depends on:** 5.
 
 **Unblocked 2026-09-20**, by work that landed earlier. It read *blocked on
-`v0-5-the-session-and-the-displays-plan.md` tasks 3 and 4*, and both are
+`the-session-and-the-displays-plan.md` tasks 3 and 4*, and both are
 finished — task 3 gives a display the stable identity an arrangement is kept
 under, which is the whole of what this waited for. Nobody moved the line when
 they landed, so the task read as untakeable to every machine that surveyed the
@@ -425,10 +427,10 @@ at all. The moment it does, that half must go.
 desktop state — drawn per display *as decided and restored as remembered*,
 desktops, swipes, and the indicator on every desktop. It is **not** blocked on
 this task and does not belong to this plan's drawing: it is session lifecycle
-state, and task 13 of `v0-01-delivery-plan.md` builds the session that has it.
+state, and task 13 of `the-executable-plan.md` builds the session that has it.
 
 Was *ready — its blocker cleared on 2026-09-20.* It waited on
-`v0-5-hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5; task 2 was the last of
+`hands-on-the-desktop-plan.md` tasks 1, 2, 3 and 5; task 2 was the last of
 them and landed that day, and 1, 3 and 5 were done on 2026-09-17 and 2026-09-18.
 `alo-dividing` now proposes, commits and **remembers** a division, so there is a
 decided split for this task to draw. Cleared by the lane that finished task 2,
@@ -452,8 +454,8 @@ mark's colour rule cannot be carried by colour at all in high contrast, and the
 two indicators are on the desktop frame and not yet on Settings, a question or
 the record. Both are below. **It was ready, and its blockers cleared on 2026-09-19 —
 that line outlived them.**
-It waited on `v0-5-the-session-and-the-displays-plan.md` task 6 and
-`v0-5-capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
+It waited on `the-session-and-the-displays-plan.md` task 6 and
+`capture-and-the-room-plan.md` tasks 1 to 5. All six are done: capture 1
 to 5 landed between 2026-09-15 and 2026-09-17, and session task 6 —
 `crates/alo-notifying` — on 2026-09-19. Nothing was re-read afterwards, so a
 takeable task read as untakeable for two days and task 14 behind it with it.
@@ -483,7 +485,7 @@ Re-read 2026-09-21. **Depends on:** 5.
   so *destructive in what is saved* is not this crate's to implement. What is
   drawn here is the marks a person is making, and what is held is that the
   shell saves nothing.
-- **They can reach a real display now.** Task 39 of `v0-01-delivery-plan.md`
+- **They can reach a real display now.** Task 39 of `the-executable-plan.md`
   widened the direct seam from one scene to every layer on 2026-09-24. Before
   that, anything drawn here could only ever have been seen in a nested
   compositor.
@@ -620,7 +622,7 @@ told an update is ready and **never which build it is** — so drawing them woul
 be the drawing crate deciding, which this plan refuses. That half of the
 acceptance waits on a word in `alo-keeping-up`, exactly as task 5's clock and
 battery waited for task 7, and is written down as a finding in
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` for the plan that owns it.
+`docs/autonomy/the-machine-keeps-itself-plan.md` for the plan that owns it.
 The two lines are named in the accessibility tree and empty until then, so a
 reader announces a line with nothing in it rather than a line nobody knows is
 there. Everything that crate *does* word is drawn: the
@@ -736,7 +738,7 @@ under, because a compositor that opened `/sys` would be a compositor measuring.
 
 Nothing outside `crates/alo-shell` constructs a `DesktopFrame` at all, and the
 one task that puts a binary in this crate — task 13 of
-`v0-01-delivery-plan.md`, *A sign-in surface, and what starts it* — stops at the
+`the-executable-plan.md`, *A sign-in surface, and what starts it* — stops at the
 sign-in screen and the session opening. So the four readings sit between two
 tasks and belong to neither, and `examples/desktop_check.rs` hands over **fixed**
 ones, labelled as fixed in its source because that probe asks whether a frame
@@ -759,7 +761,7 @@ machine is telling them the truth.
   reading a person sees is the one the crate gave, held per item the way task 7
   holds the drawing.
 - **And one reading has no absent case to give**, found by task 39 of
-  `v0-01-delivery-plan.md` while standing the desktop up. `StatusItems` says
+  `the-executable-plan.md` while standing the desktop up. `StatusItems` says
   [`None`] for a machine with no battery and *nothing said* for a network
   nobody asked, and has **no such value for the volume** — so a desktop that has
   asked nothing still shows one, and `alo-desktop` shows silence, which is a
@@ -787,7 +789,7 @@ third of the three promised surfaces, the agent overlay, is on every desktop in
 indicator and the approval surface are held on two desktops in pixels. Report:
 [`updates/the-division-and-the-desktops-a-session-holds.md`](updates/the-division-and-the-desktops-a-session-holds.md).
 **Depends on:** task 13 of
-[`v0-01-delivery-plan.md`](v0-01-delivery-plan.md) — *A sign-in surface, and what
+[`the-executable-plan.md`](the-executable-plan.md) — *A sign-in surface, and what
 starts it*.
 
 Written 2026-09-21 by task 10, which drew the division and found that the state

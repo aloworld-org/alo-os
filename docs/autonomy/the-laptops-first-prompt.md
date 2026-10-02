@@ -1,7 +1,7 @@
 # The laptop's first prompt
 
 The certified laptop (`docs/hardware.md`) arrived on 2026-09-14. Until the
-installer exists (`v0-5-the-installer-plan.md`) it is a 32 GB Windows machine,
+installer exists (`the-installer-plan.md`) it is a 32 GB Windows machine,
 and that makes it the one machine this project has that can hold the four
 catalogue models the Mac could not. This prompt uses it for exactly that, with
 nothing installed on it that a customer would not also install.
@@ -23,7 +23,7 @@ measurement no other machine here can make.
 repository with three other lanes: one branch `main`, pull before you start
 and again before you push, push after every finished task, never force-push,
 no `Co-Authored-By` trailer, commit as the configured git user), and
-`docs/autonomy/v0-5-the-models-measured-plan.md`, **task 9**.
+`docs/autonomy/the-models-measured-plan.md`, **task 9**.
 
 **Your one task is that task 9** — *the four entries the measuring machine
 could not hold* — and you are the machine that can hold them: `eurollm-9b-instruct`,

@@ -1,6 +1,6 @@
 //! The accessibility fallback against real applications' windows.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 6: *a password
+//! `docs/autonomy/software-and-the-web-plan.md`, task 6: *a password
 //! field's contents are never read, held by a test against a real
 //! application's password field.* Here the whole road runs on this machine,
 //! with nothing standing in for the rented parts:

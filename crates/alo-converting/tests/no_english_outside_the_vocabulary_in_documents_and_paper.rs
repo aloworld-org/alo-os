@@ -1,7 +1,7 @@
 //! No English is written in the three crates of documents and paper outside
 //! the vocabulary `alo-strings` answers from.
 //!
-//! Task 5 of `docs/autonomy/v0-5-documents-and-paper-plan.md`. `alo-opening`,
+//! Task 5 of `docs/autonomy/documents-and-paper-plan.md`. `alo-opening`,
 //! `alo-converting` and `alo-printing` say things at the moment a person is
 //! already frustrated — a file that will not open, a copy that lost something,
 //! a printer that stopped — and `CLAUDE.md` calls hardcoded English a bug in a

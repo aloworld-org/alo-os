@@ -1,4 +1,6 @@
-# v0.5 — models a person adapts, and the one they subscribe to
+# Models a person adapts, and the one they subscribe to
+
+*Named `v0.5 — models a person adapts, and the one they subscribe to` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** two `ROADMAP.md` v0.5 lines about the model, from opposite ends —
 ★ *Guided fine-tune, with the dataset never leaving the machine* (`docs/features.md`:

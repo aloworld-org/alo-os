@@ -1,7 +1,7 @@
 //! Every road out of this machine, held to the one proxy — and held to being
 //! every road.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 4: the machine's
+//! `docs/autonomy/software-and-the-web-plan.md`, task 4: the machine's
 //! proxy *reaches **every road out alo OS itself uses** — installing, updates,
 //! providers — held by a test per road.* Each of those three roads is tested in
 //! the crate that takes it, because that is where the test can watch a real

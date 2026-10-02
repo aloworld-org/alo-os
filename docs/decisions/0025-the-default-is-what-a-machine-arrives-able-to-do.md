@@ -9,7 +9,7 @@ rewritten to match it. `docs/features.md` was reworded in the same change; what
 that cost and what it added is set out in *What accepting it changed* at the end.
 **Date:** 2026-09-11
 **Proposed by:** the v0.01 delivery workstream, as task 16 of
-`docs/autonomy/v0-01-delivery-plan.md`
+`docs/autonomy/the-executable-plan.md`
 **Context:** `docs/features.md` (*The agents point at the **local** model by
 default — sovereignty is the default configuration, not an option to find*),
 [ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md) (the
@@ -21,7 +21,7 @@ nagging), [ADR 0006](0006-the-pinned-model-runtime.md) (the pinned runtime),
 [ADR 0019](0019-a-runtime-is-found-not-configured.md) (a runtime is found, not
 configured), [ADR 0014](0014-alos-own-model-is-a-provider-like-any-other.md);
 `crates/alo-choosing`, `crates/alo-image`, `image/Containerfile`,
-`docs/autonomy/v0-01-evidence.md`
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
 
 ## The question in one line
 
@@ -212,7 +212,7 @@ single machine more sovereign.
   alternatives rather than choosing one — which `docs/features.md` already
   promises separately.
 - **`docs/features.md`** gains the reworded line, from the owner.
-- **`docs/autonomy/v0-01-evidence.md`** names this decision under the promise and
+- **`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`** names this decision under the promise and
   says what is owed until the image carries a model. It stays a promise with no
   evidence until then, and this ADR does not tick it.
 

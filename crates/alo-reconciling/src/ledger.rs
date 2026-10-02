@@ -1,6 +1,6 @@
 //! The ledger, read as entries rather than admired as a document.
 //!
-//! `docs/autonomy/v0-01-evidence.md` explains itself in prose first and then
+//! `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` explains itself in prose first and then
 //! lists the promises under one heading. Only what is under that heading is
 //! read, so the prose can name a test file as an example without that example
 //! becoming an entry — and so a heading somebody moved shows up as *nothing to
@@ -31,7 +31,7 @@ pub fn entries_in(document: &str) -> Vec<Entry> {
 /// The heading is named by the caller because the second release's ledger is
 /// ninety-two entries and has to be grouped to be readable at all. Its groups are
 /// **bold lines rather than headings**, so that every `###` under the one heading
-/// is an entry and nothing else is — see `docs/autonomy/v0-5-evidence.md`, which
+/// is an entry and nothing else is — see `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`, which
 /// says the same thing from the other side.
 #[must_use]
 pub fn entries_under(document: &str, under: &str) -> Vec<Entry> {

@@ -1,7 +1,7 @@
 # A proposal reaches the other machine, and the answer comes back
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 7 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 7 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 
@@ -112,7 +112,7 @@ workspace's clippy.
   the seven fields in `carried.rs`; the framing in `http.rs`; the dial in
   `dialling.rs`; the value in `waiting.rs`.
 
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 7 marked done, and
+**`docs/autonomy/the-local-network-plan.md`**: task 7 marked done, and
 task 8 written — *a verb crosses between two machines, and is proven at the
 door*, the verb wire the plan's constraint names as the task after this one.
 

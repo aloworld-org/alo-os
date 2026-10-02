@@ -1,7 +1,7 @@
 # What is running, and what it is using — read from the kernel, not estimated
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 1 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 1 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 
@@ -199,5 +199,5 @@ with a refusal elsewhere.
 
 ## Proposed queue and roadmap updates
 
-Task 1 of `v0-5-the-machine-measured-plan.md` is marked done in the plan. Tasks
+Task 1 of `the-machine-measured-plan.md` is marked done in the plan. Tasks
 2 and 3 are ready and depend on nothing; task 5 depends on 1, 2 and 3.

@@ -42,7 +42,7 @@
 //! **It does not start `alo-agentd`.** The daemon reads `/etc/alo/agentd.toml`
 //! before anything else it could be asked about here, so starting it would need
 //! a machine description installed on whatever machine this runs on — which is
-//! the image's job and `docs/autonomy/v0-01-delivery-plan.md`'s task 10, not a
+//! the image's job and `docs/autonomy/the-executable-plan.md`'s task 10, not a
 //! file a test may write into `/etc`. What the daemon does with the environment
 //! it is handed is `crates/alo-agentd/src/session.rs`, tested there against
 //! every string this file measures; that the unit hands it these strings at all

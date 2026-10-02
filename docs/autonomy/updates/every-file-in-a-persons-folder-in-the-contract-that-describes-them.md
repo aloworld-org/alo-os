@@ -1,7 +1,7 @@
 # Every file in a person's folder, in the contract that describes them
 
 **Date:** 2026-09-21
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 9
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 9
 — *The four files this plan keeps, in the contract that describes them*
 **Contributor:** this development PC (Windows host, gates run in its Ubuntu)
 **Status:** ready for integration.
@@ -84,7 +84,7 @@ person's edit arrives.
 
 ### The plan
 
-`docs/autonomy/v0-5-the-session-and-the-displays-plan.md`: task 9 marked
+`docs/autonomy/the-session-and-the-displays-plan.md`: task 9 marked
 **Done, 2026-09-21**, and **task 10** written, because the plan named nothing
 after task 9 and one thing this task found is not this task's to fix.
 
@@ -305,7 +305,7 @@ Not written here — `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` and
 > again.
 
 **For `docs/autonomy/QUEUE.md` / `STATE.md`:** task 9 of
-`v0-5-the-session-and-the-displays-plan.md` is done; task 10 (*An arrangement
+`the-session-and-the-displays-plan.md` is done; task 10 (*An arrangement
 with a key nobody declared*) is published in that plan and ready, depending on
 tasks 3 and 9. A sentence for whoever holds the `alo-keyboards` and
 `alo-desktops` lanes: `keyboards.toml` and `gestures.toml` are in the contract's

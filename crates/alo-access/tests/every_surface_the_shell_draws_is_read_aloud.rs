@@ -1,6 +1,6 @@
 //! **A surface the shell draws with nothing to say about it fails here.**
 //!
-//! Task 2 of `docs/autonomy/v0-5-access-and-language-plan.md` asks that the
+//! Task 2 of `docs/autonomy/access-and-language-plan.md` asks that the
 //! roles be *read from the shell's own list of surfaces rather than retyped*.
 //! There is no such list in that crate today — what it has is one frame or
 //! screen per surface, exported from its `lib.rs` — so this reads those exports

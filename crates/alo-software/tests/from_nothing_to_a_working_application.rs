@@ -2,7 +2,7 @@
 //! meets on the way — held to being exactly the table in
 //! `docs/autonomy/updates/every-sentence-and-the-walk-to-a-working-application.md`.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 7: *one walk — set a
+//! `docs/autonomy/software-and-the-web-plan.md`, task 7: *one walk — set a
 //! proxy, install an application, open a web link in the browser, ask the agent
 //! to use the reference adapter, remove the application — produces the exact
 //! sequence a person meets, recorded as a table and held by one test.*

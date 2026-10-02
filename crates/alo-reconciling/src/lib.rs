@@ -5,7 +5,7 @@
 //! the sentences a customer would read. A ledger is the other half of that
 //! document for one release: **for every line at that tier, the test or the
 //! report that shows it, and what is still owed.** There are two,
-//! `docs/autonomy/v0-01-evidence.md` and `docs/autonomy/v0-5-evidence.md`, and
+//! `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` and `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`, and
 //! [`tier::Tier::ledger`] is the only place either is named. This crate is what
 //! makes them true of the definition rather than lists somebody wrote once.
 //!

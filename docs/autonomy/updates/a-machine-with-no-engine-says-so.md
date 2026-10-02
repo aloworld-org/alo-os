@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-22
 **Workstream:** v0.5 — documents and paper
-**Task:** 9 of `docs/autonomy/v0-5-documents-and-paper-plan.md`,
+**Task:** 9 of `docs/autonomy/documents-and-paper-plan.md`,
 *A machine with no engine says so, instead of failing*
 **Contributor:** the third PC (`AGAI01`), at the owner's instruction. This plan
 belongs to the development PC; this one task was assigned across because the
@@ -251,5 +251,5 @@ separate answer, and is the one judgement in this change worth a second reader.
 - `crates/alo-converting/tests/the_walk_through_documents_and_paper.rs`
 - `docs/decisions/0063-a-machine-that-cannot-run-the-engine-says-so-rather-than-failing.md` (new)
 - `docs/decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md`
-- `docs/autonomy/v0-5-documents-and-paper-plan.md`
+- `docs/autonomy/documents-and-paper-plan.md`
 - `docs/autonomy/updates/a-machine-with-no-engine-says-so.md` (this report)

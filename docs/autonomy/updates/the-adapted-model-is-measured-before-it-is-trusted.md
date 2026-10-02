@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** *The adapted model is measured before it is trusted*
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`, task 3)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`, task 3)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** training in the **Lima VM — Ubuntu 24.04 aarch64, 6 CPUs, 3 GB, no
 graphics card**; serving and grading on the **Apple M3 host, 8 GB unified

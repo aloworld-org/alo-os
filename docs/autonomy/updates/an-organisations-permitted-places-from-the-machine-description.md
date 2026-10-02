@@ -1,7 +1,7 @@
 # An organisation's permitted places, read from the machine's description
 
 - Date: 2026-09-16
-- Workstream: v0.5 software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 8)
+- Workstream: v0.5 software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 8)
 - Contributor: Claude Code
 - Status: **ready for integration.** Every acceptance criterion has a test; what
   is not shown is named under *Limitations*.
@@ -43,7 +43,7 @@ service rather than becoming no rule.
 | `crates/alo-agentd/tests/what_a_machine_says_about_itself.rs` | the section read off a real disk, attributed by the file's real owner; its absence; its refusals |
 | `crates/alo-agentd/src/lib.rs`, `starting.rs`, `Cargo.toml`, `Cargo.lock` | registration; `alo-software` as a dependency, `alo-applications` as a dev-dependency |
 | `docs/contracts/machine-description.md` | the `[applications]` section, its refusals, and its `format` rule |
-| `docs/autonomy/v0-5-software-and-the-web-plan.md` | task 8 marked done; task 9 written |
+| `docs/autonomy/software-and-the-web-plan.md` | task 8 marked done; task 9 written |
 
 **Nothing in `alo-software` was edited.** What a permitted place may do, the order a
 place is refused in (not set up → outside the bound → not verified → nowhere to

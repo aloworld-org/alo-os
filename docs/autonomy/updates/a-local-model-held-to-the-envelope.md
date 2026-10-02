@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *Whether a turn asks a local model for the shape it must answer in*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 7)
+(`docs/autonomy/the-models-measured-plan.md`, task 7)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3**, **8 GB unified memory**, macOS 26.5.2, Ollama **0.34.0**
 (pinned) on `127.0.0.1`, the Linux VM stopped during every run. Gates in Ubuntu

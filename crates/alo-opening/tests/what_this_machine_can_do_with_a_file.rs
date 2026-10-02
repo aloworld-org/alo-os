@@ -3,7 +3,7 @@
 //!
 //! Each test here is one clause of the acceptance for *What this machine can do
 //! with a file, and what it cannot* in
-//! `docs/autonomy/v0-5-documents-and-paper-plan.md`: what a file is comes from
+//! `docs/autonomy/documents-and-paper-plan.md`: what a file is comes from
 //! its content and not its name; what the machine can do is one of three
 //! outcomes and never a *probably*; a file that is not what its name says is
 //! that finding; and every outcome carries a sentence from the vocabulary the

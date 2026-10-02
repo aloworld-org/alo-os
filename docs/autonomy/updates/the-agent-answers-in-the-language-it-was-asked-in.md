@@ -3,7 +3,7 @@
 **Date:** 2026-09-16
 **Workstream:** v0.5 — access and language
 **Task:** *The agent answers in the language it was asked in*
-(`docs/autonomy/v0-5-access-and-language-plan.md`, task 5)
+(`docs/autonomy/access-and-language-plan.md`, task 5)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3**, **8 GB unified memory**, macOS 26.5.2, Ollama
 **0.34.0** (pinned), the Linux VM stopped during the measurement. Gates in

@@ -4,7 +4,7 @@
 //! `docs/features.md` promises at v0.01: **copy, cut and paste — text, images
 //! and files, across applications.** It is the promise that had no crate, no
 //! test and no line anywhere, and it spent four readings of
-//! `docs/autonomy/v0-01-evidence.md` sorted into *work that needs a machine*
+//! `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` sorted into *work that needs a machine*
 //! beside *the GPU works on first boot*. That sorting was wrong, and this crate
 //! is why: **a clipboard is a protocol before it is a surface.**
 //!

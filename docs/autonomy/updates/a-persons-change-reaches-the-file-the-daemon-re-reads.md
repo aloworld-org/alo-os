@@ -1,7 +1,7 @@
 # A person's change to the grants reaches the file the daemon re-reads
 
 - **Date:** 2026-09-11
-- **Workstream:** v0.01 delivery plan (`docs/autonomy/v0-01-delivery-plan.md`), task 23
+- **Workstream:** v0.01 delivery plan (`docs/autonomy/the-executable-plan.md`), task 23
 - **Contributor:** Claude (build loop worker, `C:\dev\alo-os-claude`)
 - **Status:** ready for integration
 

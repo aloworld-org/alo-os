@@ -3,7 +3,7 @@
 **Date:** 2026-09-11
 **Workstream:** the build loop (`tools/kernel-loop`)
 **Contributor:** Claude, in `C:\dev\alo-os-claude`
-**Task:** 30 of `docs/autonomy/v0-01-delivery-plan.md`
+**Task:** 30 of `docs/autonomy/the-executable-plan.md`
 **Status:** ready for integration
 
 ## What was wrong

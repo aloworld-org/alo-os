@@ -1,7 +1,7 @@
 //! The accessibility fallback, held to each clause of the plan's acceptance,
 //! with every refusal beside what it refuses.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 6:
+//! `docs/autonomy/software-and-the-web-plan.md`, task 6:
 //!
 //! - **an application with no adapter is readable and operable through its
 //!   accessibility tree, through two typed verbs** —

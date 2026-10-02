@@ -268,7 +268,7 @@ mod tests {
     fn the_broker_plans_header_refuses_the_printing_change_it_says_it_never_makes() {
         let plan = std::fs::read_to_string(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../docs/autonomy/v0-5-the-broker-and-the-disk-plan.md"),
+                .join("../../docs/autonomy/the-broker-and-the-disk-plan.md"),
         )
         .unwrap();
         let refused = never_edited(&plan);

@@ -1,7 +1,7 @@
 # One proxy, machine-wide, honoured
 
 **Date:** 2026-09-15, repaired on the rebase 2026-09-16
-**Workstream:** v0.5 — software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 4)
+**Workstream:** v0.5 — software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 4)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration.
 

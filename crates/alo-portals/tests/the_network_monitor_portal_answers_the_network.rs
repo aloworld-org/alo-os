@@ -1,7 +1,7 @@
 //! The NetworkMonitor portal on a real bus: how far this machine reaches, to an
 //! application granted it — and to nobody else.
 //!
-//! Task 12 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`.
+//! Task 12 of `docs/autonomy/applications-and-what-they-expect-plan.md`.
 //! The backend is served on a private session bus the test starts (with no
 //! service activation, `alo-keyring-fixture`'s bus), and a `zbus` client — not a
 //! mock — asks it as an application does:

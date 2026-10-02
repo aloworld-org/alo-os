@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — capture, and the room you are sitting in
 **Task:** *Annotation, without opening anything else*
-(`docs/autonomy/v0-5-capture-and-the-room-plan.md`, task 3)
+(`docs/autonomy/capture-and-the-room-plan.md`, task 3)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
 tested and linted in the Lima VM (Ubuntu 24.04 aarch64), where this crate builds.
@@ -75,11 +75,11 @@ the test that walks the list now walks all three. A tool nothing offers fails it
 
 ## The lane table, corrected in this commit
 
-- **`v0-5-capture-and-the-room-plan.md` is the Mac's**, tasks 3 to 7, from
+- **`capture-and-the-room-plan.md` is the Mac's**, tasks 3 to 7, from
   2026-09-17. Tasks 1 and 2 were published and the plan then sat untouched for
   twenty-six hours with no machine holding it; this lane inherits `alo-capturing`
   and `alo-in-use` whole.
-- **`v0-5-devices-and-media-plan.md` no longer says spare PC two.** That machine
+- **`devices-and-media-plan.md` no longer says spare PC two.** That machine
   holds no plan now: the machine that keeps itself was reassigned on 2026-09-15,
   and capture and the room moved here today. The row says *nobody, as of
   2026-09-17 — whichever machine empties first.*

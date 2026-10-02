@@ -1,7 +1,7 @@
 # ADR 0063 — A machine that cannot run the engine says so, rather than failing
 
 **Status:** **accepted, 2026-09-21, by the owner**, in task 9 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md` — written, argued and committed
+`docs/autonomy/documents-and-paper-plan.md` — written, argued and committed
 by the owner in `b467e6a`, which states the decision, the shape it takes and the
 two things it may not do. This file records it where a reader of
 [ADR 0039](0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md)

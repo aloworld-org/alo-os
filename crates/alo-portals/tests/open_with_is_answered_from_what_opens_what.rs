@@ -1,6 +1,6 @@
 //! An open-with request is answered from what opens what, and nowhere else.
 //!
-//! Task 4 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`:
+//! Task 4 of `docs/autonomy/applications-and-what-they-expect-plan.md`:
 //! *an open-with portal request (task 1) is answered from this and nowhere
 //! else* — and its constraints, that nothing here launches anything and no
 //! association is set by an application on its own behalf. The rest of the

@@ -1,7 +1,7 @@
 # ADR 0053 — An update is carried out by a unit the broker starts, never by the broker
 
 **Status:** **accepted, option B, by the owner on 2026-09-19** — and built by
-task 8 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` on 2026-09-20,
+task 8 of `docs/autonomy/the-broker-and-the-disk-plan.md` on 2026-09-20,
 which is the change that moved this line. Written by task 4 of the same plan
 (*Updates and storage, through the broker*). The storage half of that task was
 built then; the update half could not be, without deciding something a worker

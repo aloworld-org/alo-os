@@ -1,7 +1,7 @@
 //! *"I can't open this file"* is recorded like any other outcome, so *what
 //! happened when I opened that* is answerable afterwards.
 //!
-//! Task 4 of `docs/autonomy/v0-5-documents-and-paper-plan.md`. Converting is the
+//! Task 4 of `docs/autonomy/documents-and-paper-plan.md`. Converting is the
 //! verb on this machine that opens a document a person was sent, under a grant,
 //! and every conversion that ran is recorded with what the person was told
 //! (ADR 0039 §6). So a document this machine cannot open is walked here through

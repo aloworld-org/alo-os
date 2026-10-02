@@ -1,7 +1,7 @@
 //! A drive is only ever mounted or ejected — never formatted, repartitioned or
 //! erased — and plugging one in grants nobody anything.
 //!
-//! Task 4 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: the storage
+//! Task 4 of `docs/autonomy/the-broker-and-the-disk-plan.md`: the storage
 //! verbs *never format, repartition or erase anything*, and *no verb here writes
 //! to a partition table*; a removable drive mounts *with no grant made to an
 //! agent by plugging it in*. The first is held here by what this crate's source

@@ -1,7 +1,7 @@
 //! A file a person brought, measured, and what their machine does with the
 //! grade.
 //!
-//! Task 4 of `docs/autonomy/v0-5-the-models-measured-plan.md`: *whether what a
+//! Task 4 of `docs/autonomy/the-models-measured-plan.md`: *whether what a
 //! person brings can be the agent*. The measurement is `alo-driving`'s, the same
 //! fixed ten through the same door; what this file holds is where the result
 //! goes and what it decides, walked through the one door a person's settings

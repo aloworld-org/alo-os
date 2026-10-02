@@ -1,7 +1,7 @@
 # The nine-billion entries, tried on this machine
 
 **Date:** 2026-09-15.
-**Workstream:** the models, measured — `docs/autonomy/v0-5-the-models-measured-plan.md`, task 9 (partly).
+**Workstream:** the models, measured — `docs/autonomy/the-models-measured-plan.md`, task 9 (partly).
 **Contributor:** the Mac lane.
 **Machine:** **Apple M3, 8 GiB unified memory**, macOS 26.5.2, **Ollama 0.34.0**
 on `127.0.0.1`, `iogpu.wired_limit_mb` at its default (`0`), the Linux VM

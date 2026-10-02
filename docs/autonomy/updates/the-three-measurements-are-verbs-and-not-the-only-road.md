@@ -1,7 +1,7 @@
 # The three measurements are asked the way everything else is asked
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 5 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 5 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 
@@ -231,7 +231,7 @@ them yet.
 
 ## Proposed queue and roadmap updates
 
-Task 5 of `v0-5-the-machine-measured-plan.md` is marked done in the plan.
+Task 5 of `the-machine-measured-plan.md` is marked done in the plan.
 Task 6 — which folders are indexed, and the index for a folder found by its
 name — is written there, ready, depending on 3 and 5. Offering the three
 verbs from `alo-turn`'s machine is one edit in lane A's crate when the lane

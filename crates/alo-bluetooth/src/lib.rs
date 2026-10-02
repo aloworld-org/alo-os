@@ -1,7 +1,7 @@
 //! **Pairing a device, what a paired device is for, and forgetting it.**
 //!
 //! `ROADMAP.md` v0.5's *Devices*, and task 3 of
-//! `docs/autonomy/v0-5-devices-and-media-plan.md`. `docs/features.md` says why
+//! `docs/autonomy/devices-and-media-plan.md`. `docs/features.md` says why
 //! it matters more than it sounds: *an operating system with a brilliant agent
 //! and no working Bluetooth is not a product.*
 //!

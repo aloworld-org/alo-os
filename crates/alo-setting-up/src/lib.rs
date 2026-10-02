@@ -7,7 +7,7 @@
 //! settled that the local one is listed first because it is what the machine
 //! can already do, and that **nothing is pre-selected**. Until this crate
 //! neither had anywhere to happen: there was no setup flow in this repository
-//! at all, and `docs/autonomy/v0-01-evidence.md` records that against three
+//! at all, and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` records that against three
 //! separate promises.
 //!
 //! This is that flow **as a value**, in the shape `alo-approving` and

@@ -6,7 +6,7 @@
 //! why it exists: an installed application becomes an agent — `@text_editor`,
 //! `@gimp` — whose verbs are **verbs**, typed, approved one sentence at a time,
 //! recorded, and reaching only what a person granted. This crate is task 5 of
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`.
+//! `docs/autonomy/software-and-the-web-plan.md`.
 //!
 //! # The road, in order
 //!

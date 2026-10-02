@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-14
 **Workstream:** v0.5 the machine keeps itself — task 1 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *updates
+`docs/autonomy/the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *updates
 that never interrupt*; `docs/features.md` v0.5 **Updates that never
 interrupt**)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os`

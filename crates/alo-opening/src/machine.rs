@@ -3,7 +3,7 @@
 //!
 //! **Handed in, never assumed.** Which viewers and converters a machine has is
 //! a fact about what is installed on it, and whoever knows that — the shell, and
-//! the conversion `docs/autonomy/v0-5-documents-and-paper-plan.md` task 2
+//! the conversion `docs/autonomy/documents-and-paper-plan.md` task 2
 //! builds — says so by building a [`ThisMachine`]. This crate does not ship a
 //! list that says a machine can open something, because a list written here
 //! would be true of no machine in particular.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-22
 **Workstream:** v0.5 — the machine keeps itself
-([`../v0-5-the-machine-keeps-itself-plan.md`](../v0-5-the-machine-keeps-itself-plan.md),
+([`../the-machine-keeps-itself-plan.md`](../the-machine-keeps-itself-plan.md),
 task 14)
 **Contributor:** this development PC's lane
 **Status:** ready for integration.

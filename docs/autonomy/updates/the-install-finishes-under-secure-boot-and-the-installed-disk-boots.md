@@ -1,7 +1,7 @@
 # The install finishes under Secure Boot, and the installed disk boots
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 13,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 13,
 *With Secure Boot on, the install onto the second disk finishes and boots to the
 agent service*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os`, for the owner
@@ -85,7 +85,7 @@ ends "No such file or directory" when the environment lacks `fstrim`*.
   `a_service_that_is_not_running_is_reported_with_why`. Added after the run below
   reported `alo-agentd` *failed* and nothing more.
 - `docs/quirks.md` — the entry above.
-- `docs/autonomy/v0-5-the-installer-plan.md` — task 13 marked done for its part,
+- `docs/autonomy/the-installer-plan.md` — task 13 marked done for its part,
   task 14 written, task 11's dependency moved to 14.
 
 **User-readable change:** the installer's boot environment now carries the one

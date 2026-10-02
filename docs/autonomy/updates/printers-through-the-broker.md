@@ -98,7 +98,7 @@ publication. The parent/supervisor retains the machine gate lock.
 **Exact unresolved supervisor blocker, found by source inspection:**
 `tools/kernel-loop/src/who_owns.rs` treats a crate as held while its owning plan
 has any unfinished task, and deliberately does not read the roster's prose.
-`v0-5-documents-and-paper-plan.md` still owns `alo-printing` and has unfinished
+`documents-and-paper-plan.md` still owns `alo-printing` and has unfinished
 task 6 (Pages/HEIC/DWG). `publishing.rs::inside_the_plan` therefore rejects
 these nine producer files before gates, even though the owner has explicitly
 authorized this contribution. The checker has no per-file/API release format.
@@ -242,7 +242,7 @@ that held tree; none of its green results covers the 2026-09-18 integration.
 
 **Date:** 2026-09-16
 **Workstream:** v0.5 the broker and the disk — task 2 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (`ROADMAP.md`: ★ *System verbs
+`docs/autonomy/the-broker-and-the-disk-plan.md` (`ROADMAP.md`: ★ *System verbs
 through the privileged broker*, and ★ *Printers, solved*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os-2`
 **Status:** ready for integration. The code and its tests, run in WSL. Nothing has

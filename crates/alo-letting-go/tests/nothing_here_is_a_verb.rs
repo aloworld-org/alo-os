@@ -33,7 +33,7 @@ use std::collections::BTreeSet;
 /// firmware's next start to the Windows already on the disk, for one start.
 /// [ADR 0062](../../../docs/decisions/0062-the-menu-a-machine-starts-at-is-alo-oss-and-windows-stands-behind-it.md)
 /// names it as the alo OS half of the two one-restart switches, and task 16 of
-/// `docs/autonomy/v0-5-the-installer-plan.md` says in as many words that the
+/// `docs/autonomy/the-installer-plan.md` says in as many words that the
 /// verb is added and gets the tests every other verb has. It takes nothing away
 /// from anybody's undo: it writes one firmware variable, reads no record, and
 /// removes nothing.
@@ -47,7 +47,7 @@ use std::collections::BTreeSet;
 /// `/boot` and therefore root's, and a person in Settings is not root. Its
 /// argument is the identity of one of the two systems the menu already offers —
 /// no path, no file, no loader — and task 17 of
-/// `docs/autonomy/v0-5-the-installer-plan.md` says in as many words that the
+/// `docs/autonomy/the-installer-plan.md` says in as many words that the
 /// member is added with the ADR beside it and this number moved in the same
 /// change. It takes nothing away from anybody's undo either: it writes one
 /// setting in one file, reads no record, and removes nothing.

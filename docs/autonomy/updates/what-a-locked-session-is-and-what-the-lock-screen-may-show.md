@@ -1,7 +1,7 @@
 # What a locked session is, and what the lock screen may show
 
 **Date:** 2026-09-16
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 1 —
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 1 —
 the first task of the v0.5 session-and-displays plan. Tasks 2, 5 and 6 depend on it.
 **Contributor:** Claude Code worker, `C:\dev\alo-os`.
 **Status:** ready for integration. The code is complete and passes its gates. Nothing

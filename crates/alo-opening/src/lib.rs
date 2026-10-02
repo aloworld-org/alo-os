@@ -67,7 +67,7 @@
 //! # What this crate deliberately does not do
 //!
 //! **It does not open, convert, print or run anything.** Converting is task 2 of
-//! `docs/autonomy/v0-5-documents-and-paper-plan.md`, and printing task 3; what
+//! `docs/autonomy/documents-and-paper-plan.md`, and printing task 3; what
 //! they are owed from here is the decision.
 //!
 //! **It does not take a path.** Which file may be read is a grant, and the

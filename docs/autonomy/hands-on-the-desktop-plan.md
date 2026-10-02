@@ -1,4 +1,6 @@
-# v0.5 — hands on the desktop: dividing the screen, and everything a hand does
+# Hands on the desktop: dividing the screen, and everything a hand does
+
+*Named `v0.5 — hands on the desktop: dividing the screen, and everything a hand does` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** two `ROADMAP.md` v0.5 lines that are one subject — ★ *Divide the
 screen: halves and quarters by drag or keyboard, splits that hold while you work
@@ -66,7 +68,7 @@ overlapping or leaving a gap.
 ### 2. A split remembered, per display
 
 **Status:** **Done, 2026-09-20.** Its blocker had been stale for two days: it
-waited on `v0-5-the-session-and-the-displays-plan.md` task 3, marked **Done,
+waited on `the-session-and-the-displays-plan.md` task 3, marked **Done,
 2026-09-18**, and task 1 was done on 2026-09-17 — so every machine surveying
 these plans read a takeable task as untakeable, and a supervisor would not
 select it.

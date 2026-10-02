@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — where a person's settings are kept
-(`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 7),
+(`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 7),
 implementing ADR 0038.
 **Contributor:** Claude (development worker, checkout `C:\dev\alo-os-b`).
 **Status:** ready for integration.
@@ -34,7 +34,7 @@ in `crates/alo-shell`.
 | `tests/every_sentence_about_a_persons_settings_carries_a_note.rs` | Every `choosing` sentence names `{path}`, except the no-folder one, which is held to naming none |
 | `tests/a_persons_choice_reaches_the_machine.rs` | The word count is 19 |
 | `docs/contracts/person-settings.md` | *A Settings surface, from sign-in to the next change* names `alo_choosing::the_persons_folder`, `PersonsFolder::path_of`, `NoFolder::said` and the sentence, and says what a session with no folder draws and writes |
-| `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md` | Task 7 marked done; task 8 written |
+| `docs/autonomy/where-a-persons-settings-are-kept-plan.md` | Task 7 marked done; task 8 written |
 
 ## Decisions, and why
 

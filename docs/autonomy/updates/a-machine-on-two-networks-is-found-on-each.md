@@ -1,7 +1,7 @@
 # A machine on two networks is found on each of them
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 22)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 22)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 

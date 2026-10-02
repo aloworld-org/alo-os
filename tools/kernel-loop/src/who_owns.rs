@@ -343,7 +343,7 @@ mod tests {
     fn the_real_broker_plan_owns_what_its_header_says() {
         let written = std::fs::read_to_string(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../docs/autonomy/v0-5-the-broker-and-the-disk-plan.md"),
+                .join("../../docs/autonomy/the-broker-and-the-disk-plan.md"),
         )
         .unwrap();
         assert_eq!(

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-19
 **Workstream:** v0.5 — the machine keeps itself
-(`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 10, *A machine that
+(`docs/autonomy/the-machine-keeps-itself-plan.md`, task 10, *A machine that
 has never looked*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-3` on this development PC,
 for the owner

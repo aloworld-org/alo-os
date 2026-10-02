@@ -1,6 +1,6 @@
 //! **One question on each road, and the two answers held to each other.**
 //!
-//! Task 22 of `docs/autonomy/v0-5-the-models-measured-plan.md`, and the
+//! Task 22 of `docs/autonomy/the-models-measured-plan.md`, and the
 //! instrument task 23 runs.
 //! [ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md) says *a
 //! GPU changes speed, not capability*, and until something puts one question to

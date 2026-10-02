@@ -1,6 +1,6 @@
 //! What opens what, changeable by a person.
 //!
-//! Task 4 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 4 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance that belongs to this crate a test here (the
 //! open-with portal's clause is `alo-portals`'
 //! `tests/open_with_is_answered_from_what_opens_what.rs`):

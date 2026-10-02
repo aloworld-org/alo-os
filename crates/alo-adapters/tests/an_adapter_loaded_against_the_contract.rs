@@ -1,7 +1,7 @@
 //! An adapter, loaded against the contract — held to each clause of the plan's
 //! acceptance, with each refusal beside what it refuses.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 5:
+//! `docs/autonomy/software-and-the-web-plan.md`, task 5:
 //!
 //! - **an adapter is loaded as declared data, and one whose verb takes a
 //!   script, a command or free text that becomes code is refused** —

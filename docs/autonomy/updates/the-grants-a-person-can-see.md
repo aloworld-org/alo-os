@@ -1,7 +1,7 @@
 # The grants a person can see, before there is anywhere to show them
 
 - **Date:** 2026-09-11
-- **Workstream:** delivery plan (`docs/autonomy/v0-01-delivery-plan.md`), task 22
+- **Workstream:** delivery plan (`docs/autonomy/the-executable-plan.md`), task 22
 - **Contributor:** Claude (autonomous worker, kernel-loop lane)
 - **Status:** ready for integration
 
@@ -42,11 +42,11 @@ decided before anybody can see them.
   updated (twenty-four → twenty-five); the checks themselves are equations
   against the workspace and needed nothing.
 - `Cargo.toml` — workspace member added.
-- `docs/autonomy/v0-01-evidence.md` — the entry for *Grants: pick a folder,
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — the entry for *Grants: pick a folder,
   see what is granted, revoke it, and it expires*: the still-owed half this
   task closes is closed, and what remains owed (drawing it, in
   `crates/alo-shell`) is named.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 22 marked done; task 23
+- `docs/autonomy/the-executable-plan.md` — task 22 marked done; task 23
   written (see *What this task found*, below).
 
 ## Decisions, and why

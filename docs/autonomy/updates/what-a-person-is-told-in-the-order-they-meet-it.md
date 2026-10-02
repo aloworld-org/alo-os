@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *What a person is told, measured against what a person can read*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 5)
+(`docs/autonomy/the-models-measured-plan.md`, task 5)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** walked in Ubuntu 24.04 aarch64 under Lima on an **Apple M3 with 8 GB
 unified memory**; the walk itself asks no model and the machine size it asks

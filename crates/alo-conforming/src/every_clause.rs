@@ -39,10 +39,10 @@ use crate::standard::THE_PLAN;
 use crate::standing::{Checked::NotAgainstTheText, Evidence, Standing, Waiting};
 
 /// The desktop plan, where the shell's own surfaces are drawn.
-const THE_DESKTOP_PLAN: &str = "docs/autonomy/v0-5-hands-on-the-desktop-plan.md";
+const THE_DESKTOP_PLAN: &str = "docs/autonomy/hands-on-the-desktop-plan.md";
 
 /// The documents plan, where converting a document lives.
-const THE_DOCUMENTS_PLAN: &str = "docs/autonomy/v0-5-documents-and-paper-plan.md";
+const THE_DOCUMENTS_PLAN: &str = "docs/autonomy/documents-and-paper-plan.md";
 
 /// A clause met by a test in this workspace.
 const fn met(crate_named: &'static str, file: &'static str, test: &'static str) -> Standing {
@@ -236,7 +236,7 @@ pub const THE_CLAUSES: [Clause; 46] = [
     Clause {
         number: "11.1.4.2",
         requirement: "Sound that starts by itself must be stoppable.",
-        standing: not_yet(2, "docs/autonomy/v0-5-devices-and-media-plan.md"),
+        standing: not_yet(2, "docs/autonomy/devices-and-media-plan.md"),
         checked: NotAgainstTheText,
     },
     Clause {

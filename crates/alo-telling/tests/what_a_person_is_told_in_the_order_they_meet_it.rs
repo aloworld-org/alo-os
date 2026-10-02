@@ -1,5 +1,5 @@
 //! **What a person is told, in the order they meet it** — task 5 of
-//! `docs/autonomy/v0-5-the-models-measured-plan.md`.
+//! `docs/autonomy/the-models-measured-plan.md`.
 //!
 //! The measurement work ends in sentences, and the sentences are the product.
 //! This walks `alo-choosing` and `alo-telling` from a fresh settings file, on a

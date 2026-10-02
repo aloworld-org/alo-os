@@ -1,7 +1,7 @@
 # The Windows installer program: check, say, consent, stage, restart
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 3 —
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 3 —
 *The installer program: check, say, consent, stage, reboot*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** **ready for integration** — the program and every decision in it, with
@@ -54,7 +54,7 @@ been run against a Windows it may change.*
   list, how disk names are made, and what is and is not measured. The
   environment's own list is now headed *What the environment does, in order*.
 - `docs/quirks.md` — two entries measured on this machine (below).
-- `docs/autonomy/v0-5-the-installer-plan.md` — task 3 marked done and split; task
+- `docs/autonomy/the-installer-plan.md` — task 3 marked done and split; task
   10 written; tasks 4 and 6 now wait on 10 as well.
 
 ## Decisions, and why
