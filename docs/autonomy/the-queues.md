@@ -100,6 +100,60 @@ because nothing needs it to.
 
 ### Ready — the logical-coordinate boundary
 
+> **What the third hop found, 2026-10-02, before touching anything.**
+>
+> Two hops are landed: `TheRoom` names the value at the boundary (`#387`) and
+> reaches the background and the picture (`#390`). The third hop is
+> `dock_raster` and the desktop raster path, and measuring it first turned up
+> something the first two did not.
+>
+> **Within one `desktop_raster::picture` call, one surface is converted by the
+> display's scale and two are not:**
+>
+> ```text
+> dock_raster::picture(dock, look, size, ..)            size unchanged
+> panel_raster::picture(.., size, ..)                   size unchanged
+> division_raster::picture(.., i32::from(display_scale), ..)   converted
+> ```
+>
+> And in the direct path, `size` is the output mode's own resolution —
+> `direct_target`'s `size()` returns `self.output.output.mode.size()`. The
+> Dock's measures come from `Measure::of(TextScale)`, so **nothing in the Dock's
+> layout sees the display's scale at all.**
+>
+> **Inferred, not measured:** on a display drawn at 200 per cent, the Dock is
+> laid out across the raw framebuffer with measures scaled only by text size,
+> and would appear at about half the size it should. Nobody has watched that on
+> a screen, because nobody has watched any of this on a screen.
+>
+> **And my own test could not have seen it.**
+> `the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
+> varies the scale and finds the band unchanged. I read that as *the band is in
+> laid-out units*. It is equally consistent with *the scale never reaches the
+> Dock at all*, which is what the lines above show. **A test that varies an
+> input a function never receives proves the function ignores it, and says
+> nothing about which space its answer is in.** That is the same shape as the
+> three name collisions this fleet hit today, in a test rather than a grep.
+>
+> **This reopens a question I closed.** `#379` removed a conversion from the
+> drag-handle floor on the reading that the Dock's band is logical. If the band
+> is in framebuffer pixels because `size` is, the floor needs converting after
+> all — and the owner's ruling that the floor is *44 × 24 logical, scaled by the
+> person's text size and nothing else* is about what the floor **is**, not about
+> what the rectangles it meets are.
+>
+> **The decision the hop is actually waiting on:** is `size`, in the direct
+> path, meant to be the framebuffer or the room? One answer makes the Dock's
+> layout the bug; the other makes `#379` the bug. Both cannot be right, and a
+> lane choosing between them is the thing that has gone wrong twice today
+> already.
+>
+> *Nothing is built on this until it is answered. The two landed hops are
+> unaffected: `TheRoom` is constructed from pixels and a scale by its only
+> constructor, and says what it is wherever it travels. What is unresolved is
+> what the **other** path's `size` was ever meant to be.*
+
+
 - **Outcome:** a reader of the shell can tell which values are logical and which
   are physical.
 - **Acceptance:** the owner's direction — *introduce an explicit
