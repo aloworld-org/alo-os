@@ -2,7 +2,8 @@
 
 use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
-    delegate_compositor, delegate_pointer_gestures, delegate_shm, delegate_xdg_shell,
+    delegate_compositor, delegate_data_device, delegate_pointer_gestures, delegate_shm,
+    delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -11,6 +12,12 @@ use smithay::{
     },
     utils::Serial,
     wayland::{
+        selection::{
+            SelectionHandler,
+            data_device::{
+                ClientDndGrabHandler, DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
+            },
+        },
         buffer::BufferHandler,
         compositor::{CompositorClientState, CompositorHandler, CompositorState, with_states},
         pointer_gestures::PointerGesturesState,
@@ -83,6 +90,11 @@ pub(crate) struct Surfaces {
     shm: ShmState,
     /// XDG shell role and configure tracking.
     xdg: XdgShellState,
+    /// **Copy and paste, and drag-and-drop between applications.**
+    ///
+    /// Held here rather than per-window because a selection is per *seat*: one
+    /// person's clipboard, whichever window they were in when they took it.
+    data_device: DataDeviceState,
     /// Live toplevel roots in front-to-back stacking order.
     windows: Vec<Window>,
     /// **Which Place the person is looking at.**
@@ -140,6 +152,11 @@ impl Surfaces {
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
+            // Copy and paste. The global alone is not enough: see
+            // `crate::keyboard`, where the selection is made to follow the
+            // keyboard, without which a client binds this and finds nothing
+            // ever holds the selection.
+            data_device: DataDeviceState::new::<Self>(display),
             // The touchpad gesture protocol. Advertised so a pinch reaches an
             // application that wants one; `crate::canvas_pinch` is what happens
             // when the pinch is over the plane instead of over a frame.
@@ -482,6 +499,43 @@ impl XdgShellHandler for Surfaces {
 }
 
 delegate_compositor!(Surfaces);
+/// **What the compositor itself does with a selection: nothing.**
+///
+/// `SelectionUserData` is `()` because this shell never *offers* a selection of
+/// its own — it carries what one client put there to whichever client asks. The
+/// moment the shell wants to paste something itself, that unit type is where
+/// the thing being pasted goes, and the compiler will say so.
+///
+/// Both methods keep their defaults. `new_selection` is a notification, and
+/// `send_selection` only fires for a selection the *compositor* set, which is
+/// the case this shell does not have yet.
+impl SelectionHandler for Surfaces {
+    type SelectionUserData = ();
+}
+
+/// A client's own drag, which this shell does not decorate or interfere with.
+///
+/// The defaults are correct rather than unfinished: `started` and `dropped` are
+/// hooks for a compositor that wants to draw something extra during a drag, and
+/// smithay already moves the drag icon with the pointer.
+impl ClientDndGrabHandler for Surfaces {}
+
+/// A drag the *compositor* started, which this shell never does.
+///
+/// Kept as an empty implementation rather than omitted because
+/// `DataDeviceHandler` requires it. If this shell ever offers a drag of its own
+/// — dragging a file out of a panel, say — these are the methods that stop
+/// being empty.
+impl ServerDndGrabHandler for Surfaces {}
+
+impl DataDeviceHandler for Surfaces {
+    fn data_device_state(&self) -> &DataDeviceState {
+        &self.data_device
+    }
+}
+
+delegate_data_device!(Surfaces);
+
 delegate_shm!(Surfaces);
 delegate_xdg_shell!(Surfaces);
 
