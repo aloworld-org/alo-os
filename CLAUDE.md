@@ -162,20 +162,38 @@ cannot demonstrate.
   `docs/autonomy/SHARED_MAIN.md`: branch checkpoint pushes may precede full
   gates; only an exact, fully gated combined tree may be squash-merged through
   a pull request into `main`. Keep legacy direct-to-main publishers paused.
-- **One task at a time; two unfinished branches at a time.** Each agent
-  actively implements **one** task. Each machine may hold **two**
-  unfinished task branches in separate worktrees — one waiting, one
-  active. **When a task is waiting on CI, review or a decision somebody
-  else owns, start another approved, independent task rather than
-  idling.** *One branch until its PR merges* reads like discipline and
-  is a stall; it was replaced on 2026-10-02 by the owner, after a lane
-  sat idle through a queue that had been empty for two and a half
-  hours. **Opening a second branch does not transfer the first:**
-  ownership of an open pull request lasts until it merges or is
-  deliberately closed, and its failed checks and review requests come
-  before new work on the second. Record dependencies explicitly; a
-  blocked task does not block the machine, and where a question can be
-  settled by authorised investigation, settle it rather than wait.
+- **One task at a time; branches bounded by the machine, not by a
+  number.** Each agent actively implements **one** task. A machine holds
+  as many unfinished branches as it can keep **gated and green**, each in
+  its own worktree — in practice two or three where a gate takes minutes,
+  one where it takes an hour. **The binding constraint is one Cargo
+  operation per machine**, so branches beyond what the machine can build
+  are paperwork rather than throughput: they queue on the same compiler.
+  **When a task is waiting on CI, review or a decision somebody else
+  owns, start another approved, independent task rather than idling.**
+  *One branch until its PR merges* reads like discipline and is a stall;
+  the fixed count that replaced it was itself replaced on 2026-10-02 by
+  the owner, once the merge queue made landing cheap.
+- **Land continuously; never batch.** A branch is enqueued the moment CI
+  passes. **Holding finished work for a combined evening merge is
+  forbidden.** It does not avoid serialising — the queue still builds
+  each candidate in turn — it concentrates every conflict into the hour
+  with the least time left to resolve them, and conflicts compound with
+  the age of a branch. Measured on 2026-10-02: a branch carrying another
+  task's status edits went `DIRTY` three times, once per task that landed
+  beneath it; and two same-day branches collided where one deleted a
+  field the other set, caught only because both were fresh enough to
+  grep. **A gate is also a statement about a tree, and a tree goes stale:**
+  a verdict from the morning describes something the queue will not
+  build. Landing fast is additionally how a lane finds its *own*
+  mistakes — the worst fault of 2026-10-02 was already in `main`, and
+  every hour of batching is an hour of building on it.
+- **Opening a second branch does not transfer the first:** ownership of
+  an open pull request lasts until it merges or is deliberately closed,
+  and its failed checks and review requests come before new work on the
+  second. Record dependencies explicitly; a blocked task does not block
+  the machine, and where a question can be settled by authorised
+  investigation, settle it rather than wait.
   `docs/autonomy/SHARED_MAIN.md` carries the limits and the order.
 - **One language: Rust.** The workspace above is TypeScript and lives
   in another repository. Here, a language that is not Rust is a bug.

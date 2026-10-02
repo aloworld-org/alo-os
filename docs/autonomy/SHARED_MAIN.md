@@ -302,36 +302,87 @@ naming it, now includes its own status line.
 
 Do not batch unrelated tasks into one branch or keep release-long development
 branches. Dependencies should land first; dependent branches integrate them
-before their own final gate. The coordinator chooses the next ready PR promptly.
+before their own final gate. **Nobody chooses the next pull request:** the merge
+queue takes them in the order they are enqueued and builds each against current
+`main`, which is what retired the coordinator this rule used to name.
 
-### One task at a time, two unfinished branches at a time
+That is batching along the other axis, and both are forbidden for the same
+reason. *Several tasks in one branch* and *several branches held for one merge*
+are the same bet — that a larger thing integrates as easily as a smaller one —
+and it loses in the same way, with every conflict arriving at once.
 
-**Each agent actively implements one task at a time. Each machine may initially
-hold two unfinished task branches, in separate worktrees: one waiting, one being
-worked on.** When a task is waiting on CI, review or a decision somebody else
+### One task at a time, and as many branches as the machine can keep green
+
+**Each agent actively implements one task at a time. A machine holds as many
+unfinished task branches as it can keep gated and green, each in its own
+worktree.** When a task is waiting on CI, review or a decision somebody else
 owns, start another approved, independent task rather than idling.
 
 ```
 active implementation   one task per agent
-unfinished branches     two per machine to begin with — one waiting, one active
+unfinished branches     as many as the machine can keep gated and green
+                        ~2-3 where a gate is minutes; 1 where it is an hour
 isolation               each task its own branch and its own worktree
-local Rust builds       one Cargo operation per machine, at current memory
+local Rust builds       one Cargo operation per machine — the real ceiling
+landing                 enqueue the moment CI passes; never batch
 completion              acceptance criteria met and the PR merged into main
 ```
 
-**Why the limit is two and not one.** *One branch until its PR merges* reads like
-discipline and is a stall: it makes an agent idle for every minute of review, CI
-or a decision it does not own. On 2026-10-02 this lane sat with nothing to do
-through a queue that had been empty for two and a half hours, and the owner's
-criticism was not about the gates — it was that the lanes stop. **A rule that
-produces idling during a legitimate wait is not caution, it is lost work.**
+**Why there is no fixed number any more.** *One branch until its PR merges* reads
+like discipline and is a stall: it makes an agent idle for every minute of review,
+CI or a decision it does not own. On 2026-10-02 this lane sat with nothing to do
+through a queue that had been empty for two and a half hours. The fixed count of
+**two** that replaced it was right for the day it was written, when landing needed
+a hand-typed status and a turn; once the merge queue became authoritative the
+count stopped describing anything real, and the owner replaced it the same day.
 
-**Why the limit is two and not unbounded.** The constraint that bites is not
-branches, it is **memory and attention**: one Cargo operation per machine until
-the memory supports more, and one task being edited per agent so that neither is
-half-finished. Worktrees give separate checkouts in separate directories, so a
-second task does not disturb the first — but they share the machine's memory, CPU
-and disk, and they do not multiply the agent.
+**The ceiling is the compiler, not the policy.** Gate times measured on
+2026-10-02: 330 s on the development PC, 909 s on the panel machine, 57–97 minutes
+on the Mac. A machine runs **one Cargo operation at a time**, so ten open branches
+cannot be gated any faster than one at a time — they queue on the same compiler.
+A number larger than what the machine can keep green is paperwork. Worktrees give
+separate checkouts in separate directories, so a second task does not disturb the
+first, but they share the machine's memory, CPU and disk, and **they do not
+multiply the agent**.
+
+**Add machines, not branches.** Where more parallelism is wanted, the thing to add
+is a machine with its own compiler, not another branch on a machine already
+building.
+
+### Landing is continuous, and batching is forbidden
+
+**A branch is enqueued the moment CI passes.** Finished work is never held back to
+be merged together later, whether at the end of a day or at any other agreed
+moment. This is a prohibition, not a preference.
+
+**It does not avoid serialising; it concentrates it.** The merge queue builds each
+candidate in turn against current `main` either way. Ten held branches still build
+ten times — all at once, in the window with the least time left to fix whatever
+breaks.
+
+**Conflicts compound with the age of a branch**, and both of the day's examples are
+in this repository. A branch carrying *other* tasks' status edits went `DIRTY`
+three times, once for each of those tasks landing beneath it — which is also why
+status edits belong with the task they describe rather than riding on a feature
+branch. And two branches opened the same afternoon collided where one deleted a
+struct field the other's test helpers set, so whichever landed second would not
+compile; it was caught before either was sent only because both were fresh enough
+for the old field name to be worth grepping. Two branches is one pair to check.
+Ten is forty-five.
+
+**A gate is a statement about a tree, and trees go stale.** A verdict taken in the
+morning describes a tree the queue will not build, which is why `GATES-ABOUT`
+prints the head and the tree it measured and why a rebase requires a new gate
+rather than inheriting the old one.
+
+**And landing fast is how a lane finds its own mistakes.** The worst fault of
+2026-10-02 — a handle floor converted against an owner's explicit ruling, with the
+one test able to detect it asserting the fault as the promise — was already in
+`main` and was found by measuring landed code. Every hour that work is held is an
+hour of building on top of something not yet examined.
+
+A daily rhythm, where one is wanted, belongs at **review** rather than at merge:
+read what landed, correct the plans, and fix what the day's code revealed.
 
 **Opening a second branch does not transfer the first.** Ownership of an open
 pull request lasts until it merges or is deliberately closed. Failed checks and
@@ -514,8 +565,10 @@ about is instructive and because a machine may still choose to gate locally:
 
 Step 2 is the stall the owner replaced: *one branch until its PR merges* and
 *wait for your turn* are the same mistake in two places, and both make an agent
-idle while something it does not own is pending. See **One task at a time, two
-unfinished branches at a time**.
+idle while something it does not own is pending. See **One task at a time, and as
+many branches as the machine can keep green**, and **Landing is continuous, and
+batching is forbidden** — *hold them and merge them together later* is the same
+mistake a third time, moved from the start of the work to the end of it.
 
 **The push moved ahead of the gate, and the reason is the rule below about
 refusing an unpublished head.** A gate that refuses unless `HEAD` equals
