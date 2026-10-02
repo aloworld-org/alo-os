@@ -156,7 +156,7 @@ Crates: `alo-put-aside`, `alo-canvas`'s region work, and
 Taken under *work a task needs is part of that task*; none changes a signature
 another lane depends on, so splitting them breaks nothing.
 
-### Not this lane's — the pointer classifier into `alo-put-aside`
+### Not landable yet — the pointer classifier, and not for the reason given twice
 
 **This entry said `Ready` under this machine and it is the panel lane's task.**
 The material is this lane's; the task is not. `handover/README.md` on
@@ -192,6 +192,80 @@ reading the rest.
 What survives unchanged: `no_figure_from_the_design_reaches_the_code` must be
 carried across **in the same change**, because a source check that stops
 applying because its source moved is the rule quietly ceasing to exist.
+
+**And the destination in the old heading was wrong — into `alo-shell`, beside
+`panel_raster.rs`, where the files already are.** The panel lane checked where
+the task said to put them before putting them there, and the crate forbids it in
+its own words. Measured rather than argued:
+
+```text
+the_region_the_panel_claims.rs   "No coordinates, and therefore no screen size",
+                                 satisfied "by the value not being reachable"
+                          :90    "Nothing else in this crate takes a position"
+panel_raster.rs:3                `alo-put-aside` "holds no geometry at all"
+alo-put-aside/Cargo.toml         no `smithay`; a paragraph on why `alo-canvas`
+                                 is the only geometry-adjacent dependency
+Point< or Rectangle< anywhere    none
+```
+
+`whose_area(at: Point<i32, Physical>, surfaces: &TheSurfaces)` takes a position
+and three rectangles. Moving it there would add `smithay` to that crate and make
+it take coordinates. **So the move as named would not be a relocation — it would
+be the deletion of an invariant, by a commit whose message says it is tidying.**
+
+The rule it would delete is the reason the geometry is where it is:
+`alo-put-aside` decides *what is in the panel*, and the one conversion from a
+design's figures to a display's pixels happens in the crate that knows the
+display. One conversion in one place, rather than two that agree today.
+
+*This entry's **ownership** was corrected earlier the same day and its
+destination was not, because that correction was asking whose task it was and
+never asked where the task went. **A record can be wrong in more than one way at
+once, and fixing one of them makes the rest look checked.***
+
+---
+
+**And `alo-shell` is not the answer either. The task cannot complete in any
+crate, because one of the three surfaces it arbitrates between does not exist
+and is promised at no tier.** Measured by the panel lane and confirmed here:
+
+```text
+whose_area(at, surfaces)   needs reserved_for_the_panel, the_docks_area,
+                           the_top_controls_area
+the panel's reserved       exists — panel_raster produces it
+the dock's area            exists — canvas_fixed_controls::bounds
+the top controls' area     top_controls|TopControls in crates/alo-shell/src: 0
+docs/features.md           "top control" 0, "top edge" 0, "return to canvas" 0
+the design                 draws them — the-regions-a-pointer-can-be-in.md:90,
+                           "the full 1440"
+```
+
+Both files also compile with **every item dead**, which is a gate failure under
+`-D warnings` before any of the above is reached.
+
+So giving the classifier a caller means either **building the top controls** —
+a promise that needs a line in `features.md` with a tier, which is the owner's
+and not a lane's — or **passing it an empty rectangle for a surface that does
+not exist**, which is the arbitration answering about nothing while looking
+complete.
+
+**The handover was parked for want of two surfaces and a geometry, not for want
+of a home.** That is what its README meant by *`Revealing` has no owner*, which
+both lanes read as a question about which crate.
+
+The files stay on `handover/dev-pc/the-pointer-classifier` at `29f28ba8`, where
+they are findable and where they remain correct.
+
+**A question for the owner, not a lane's to answer:** the design draws the top
+controls and `features.md` does not carry them at any tier. `CLAUDE.md` says
+nothing is built that is not in `features.md` with a tier. So either they are a
+promise that is missing its line, or they are not a promise — and until that is
+said, three tasks arbitrate against a surface nobody may build.
+
+*Three passes over this entry: ownership, then destination, then whether it can
+land at all. Each was thorough about the question it asked, and each left the
+one underneath it looking checked. **The hazard is not a careless reading — it
+is a careful one that answered a narrower question than the entry needed.***
 
 ### Ready — three stale statuses in the put-aside plan
 
