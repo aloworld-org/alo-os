@@ -195,9 +195,20 @@ impl crate::Server {
         }
         self.mapped_surfaces()
             .filter_map(|surface| {
+                // **Only frames on the Place being looked at.** The Place was
+                // read here and thrown away — `.and(Some(()))` — so a frame on
+                // another surface was judged against this one's controls and
+                // reported hidden by a Dock that is not over it. Nothing refuses:
+                // the rectangles are real rectangles and the arithmetic is the
+                // same arithmetic.
+                //
+                // Identical in shape to `plane::reached_by` folding every frame
+                // into one extent before task 1 gave it a Place, and found the
+                // same way: by a test that moved a frame off the Place and
+                // expected it to stop being this Place's problem.
                 let at = crate::canvas_place::the_place_of(surface)
-                    .and(Some(()))
-                    .and_then(|()| {
+                    .filter(|on| *on == self.the_place_now())
+                    .and_then(|_| {
                         let origin = crate::window_buffer_origin(surface)
                             + crate::scene::geometry_origin(surface);
                         alo_canvas::At::checked(origin.x.floor() as i32, origin.y.floor() as i32)
