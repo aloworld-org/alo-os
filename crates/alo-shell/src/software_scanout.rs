@@ -24,7 +24,19 @@
 //!
 //! **What it cannot draw is a session.** A window a client mapped arrives as a
 //! buffer to import, and importing is the half of a renderer this file does not
-//! have; every such frame is refused here by name rather than drawn empty.
+//! have; every such frame is refused here by name rather than drawn empty.//! **It can import, and until 2026-10-02 this header said it could not.** The
+//! claim was that importing is the half of a renderer this file does not have.
+//! It was wrong, and wrongly load-bearing: it is the reason a note of this
+//! lane's recorded buffer sharing as something that would have to be invented.
+//! `PixmanRenderer` implements `ImportDma` and `ImportDmaWl`, so a buffer a
+//! client offers can be taken by the same safe renderer that draws — see
+//! `importable_formats` and `validate_import` below.
+//!
+//! **What it still cannot do is draw a session.** Importing a buffer and
+//! composing a window from it are different halves, and `paint` refuses every
+//! client surface by name rather than drawing it empty. So the import above is
+//! honest about one thing only: whether this buffer could be taken. A frame
+//! made of client windows is still refused one layer down.
 
 use drm::buffer::DrmFourcc;
 use pixman::Image;
@@ -61,6 +73,30 @@ impl SoftwarePainter {
 }
 
 impl crate::direct_target::ScenePainter for SoftwarePainter {
+    /// What pixman can take from a client, asked of pixman.
+    fn importable_formats(&self) -> smithay::backend::allocator::format::FormatSet {
+        smithay::backend::renderer::ImportDma::dmabuf_formats(&self.0)
+    }
+
+    /// Try the import for real, so the client is told the truth.
+    ///
+    /// The texture is dropped on purpose: the question here is whether this
+    /// buffer can be imported at all, and the draw imports again when it wants
+    /// the pixels. Keeping it would mean a cache keyed by buffer that nothing
+    /// yet invalidates.
+    ///
+    /// # Errors
+    /// [`RenderError::Submission`] carrying pixman's own words, which is also
+    /// what a client's `failed` event means without being able to say it.
+    fn validate_import(
+        &mut self,
+        buffer: &smithay::backend::allocator::dmabuf::Dmabuf,
+    ) -> Result<(), RenderError> {
+        smithay::backend::renderer::ImportDma::import_dmabuf(&mut self.0, buffer, None)
+            .map(|_texture| ())
+            .map_err(|error| RenderError::Submission(format!("cannot import this buffer: {error}")))
+    }
+
     /// Paint this shell's own surfaces, the arrow above them, and refuse
     /// everything that would have to be imported.
     ///

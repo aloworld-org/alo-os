@@ -136,11 +136,56 @@ pub(crate) trait ScenePainter {
         layers: crate::scene_native::NativeLayers<'_>,
         camera: alo_canvas::Camera,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError>;
+
+    /// The buffer formats this painter can import, for advertising to clients.
+    ///
+    /// **Read from the renderer, never written down.** This is half of the
+    /// narrow interface the owner's ruling of 2026-10-02 asks for: the renderer
+    /// stays owned by the graphics backend and only answers two questions
+    /// through here — what it can take, and whether it took this.
+    ///
+    /// The default is empty, which is the truth for a painter with no importer
+    /// and is also what keeps the refusal below unreachable:
+    /// `crate::surfaces::Surfaces::advertise_importable_buffers` advertises
+    /// nothing for an empty set, so no client ever offers such a painter a
+    /// buffer.
+    fn importable_formats(&self) -> FormatSet {
+        FormatSet::default()
+    }
+
+    /// Import this buffer now, and say whether it worked.
+    ///
+    /// **Called before anything is drawn**, from
+    /// `crate::direct_loop::run_with_input`, so that a client is told the truth
+    /// at the moment it asks rather than having a failure appear in a frame.
+    /// The texture is dropped: this call exists to find out, and the draw
+    /// imports again when it needs the pixels.
+    ///
+    /// # Errors
+    /// Whatever the renderer said, carried as [`RenderError::Submission`]. The
+    /// reason reaches our logs and not the client: the protocol's failure event
+    /// has no field for one.
+    fn validate_import(&mut self, buffer: &Dmabuf) -> Result<(), RenderError> {
+        let _ = buffer;
+        Err(RenderError::Submission(
+            "this painter has no importer".into(),
+        ))
+    }
 }
 
 /// Borrowed GLES context; never owns session or dispatch state.
 struct GlesPainter<'a>(&'a mut GlesRenderer);
 impl ScenePainter for GlesPainter<'_> {
+    fn importable_formats(&self) -> FormatSet {
+        ImportDma::dmabuf_formats(&*self.0)
+    }
+
+    fn validate_import(&mut self, buffer: &Dmabuf) -> Result<(), RenderError> {
+        ImportDma::import_dmabuf(self.0, buffer, None)
+            .map(|_texture| ())
+            .map_err(|error| RenderError::Submission(format!("cannot import this buffer: {error}")))
+    }
+
     fn paint(
         &mut self,
         size: Size<i32, Physical>,
@@ -154,6 +199,11 @@ impl ScenePainter for GlesPainter<'_> {
             .map(crate::PreparedScanout::into_parts)
     }
 }
+
+use smithay::backend::{
+    allocator::{dmabuf::Dmabuf, format::FormatSet},
+    renderer::ImportDma,
+};
 
 /// One frozen output, one active allocation owner, and a terminal cleanup latch.
 pub(crate) struct Target<R, D: ScanoutDevice> {
@@ -353,6 +403,26 @@ pub(crate) const fn not_wired_yet(
 }
 
 impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::direct_loop::LoopTarget for Target<R, D> {
+    /// Hand each buffer to the renderer this backend owns, and tell each client
+    /// what actually happened to it.
+    ///
+    /// **This is the override that makes the promise real.** The default in
+    /// `crate::direct_loop::LoopTarget` refuses everything, because a target
+    /// without a renderer has nothing to import with. This one has the
+    /// renderer — it is the graphics backend — so it asks, and the answer a
+    /// client gets is the answer the renderer gave.
+    fn validate_handed_buffers(
+        &mut self,
+        handed: Vec<crate::buffers_clients_hand_over::HandedOver>,
+    ) {
+        for held in handed {
+            match self.painter.validate_import(&held.buffer) {
+                Ok(()) => held.worked(),
+                Err(_) => held.failed(),
+            }
+        }
+    }
+
     fn check(&self) -> Result<(), RenderError> {
         if self.halted {
             Err(RenderError::DirectHalted)

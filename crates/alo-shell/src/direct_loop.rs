@@ -133,6 +133,15 @@ pub(crate) fn run_with_input(
                 return Ok(());
             }
             server.dispatch()?;
+            // **Every buffer a client just offered, answered before anything is
+            // drawn.** The dispatch above is where `dmabuf_imported` ran, and it
+            // could decide nothing: the renderer belongs to the target, not to
+            // the server. Here both are in hand, so the client hears what the
+            // renderer actually said — the owner's ruling of 2026-10-02, which
+            // forbids both an unconditional acceptance and finding out at draw
+            // time. Between dispatch and draw in the same turn, so it costs no
+            // frame.
+            target.validate_handed_buffers(server.buffers_awaiting_import());
             if let DirectFrame::Render(time) = frame {
                 input.present(server, &mut target, time)?;
                 target.check()?;
@@ -157,6 +166,26 @@ pub(crate) fn run_with_input(
 pub(crate) trait LoopTarget: FrameTarget {
     /// Refuse continuation without waiting for the next scheduled frame.
     fn check(&self) -> Result<(), RenderError>;
+
+    /// Try every buffer a client handed over, before anything is drawn with it.
+    ///
+    /// **The default refuses, and for a target that has not overridden it that
+    /// is the truth:** it has no renderer, so it cannot import. Silence would
+    /// be worse than either answer — a client told nothing waits for an event
+    /// that never arrives, which is a hang rather than a fallback.
+    ///
+    /// In practice such a target is handed an empty list and this body does
+    /// nothing, because the global is only advertised from a renderer's own
+    /// format set — see
+    /// [`crate::surfaces::Surfaces::advertise_importable_buffers`].
+    fn validate_handed_buffers(
+        &mut self,
+        handed: Vec<crate::buffers_clients_hand_over::HandedOver>,
+    ) {
+        for held in handed {
+            held.failed();
+        }
+    }
 }
 
 impl LoopTarget for crate::DirectTarget<'_, '_> {

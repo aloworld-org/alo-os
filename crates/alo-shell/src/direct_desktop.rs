@@ -149,6 +149,21 @@ impl crate::DirectSession {
                 poll()?;
                 let (width, height) = output.output.mode.size();
                 let painter = crate::software_scanout::SoftwarePainter::new()?;
+                // **Buffer sharing is promised here and not in
+                // `Surfaces::new`, because the line above is where a renderer
+                // starts existing.** The owner ruled on 2026-10-02 that DMA-BUF
+                // is advertised after the renderer is initialised and never
+                // before: a global put up at birth promises an import this
+                // shell may have no way to perform, and a client discovers that
+                // only when its buffer comes back refused.
+                //
+                // The formats are the renderer's own, asked of it through
+                // `crate::direct_target::ScenePainter::importable_formats`. A
+                // renderer that can import nothing advertises nothing, which is
+                // why there is no condition written here.
+                server.advertise_importable_buffers(
+                    crate::direct_target::ScenePainter::importable_formats(&painter),
+                );
                 let input = crate::direct_input_loop::RoutedInput {
                     owner: crate::SeatInput::new(manager)?,
                     extent: (i32::from(width), i32::from(height)),

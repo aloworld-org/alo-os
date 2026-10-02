@@ -283,3 +283,29 @@ impl Server {
         Ok(submitted)
     }
 }
+
+impl Server {
+    /// Advertise buffer sharing, now that a renderer exists to import with.
+    ///
+    /// A pass-through, because the ordering is the whole content: the caller is
+    /// the graphics backend's setup, which has a renderer and nothing else to
+    /// do with wayland globals. See
+    /// [`crate::surfaces::Surfaces::advertise_importable_buffers`].
+    pub(crate) fn advertise_importable_buffers(
+        &mut self,
+        formats: smithay::backend::allocator::format::FormatSet,
+    ) {
+        self.surfaces.advertise_importable_buffers(formats);
+    }
+
+    /// Take every buffer a client offered and nobody has tried yet.
+    ///
+    /// Called once per turn of `crate::direct_loop::run_with_input`, between
+    /// dispatching clients and drawing. Leaving one here would leave a client
+    /// waiting for an event with no sender.
+    pub(crate) fn buffers_awaiting_import(
+        &mut self,
+    ) -> Vec<crate::buffers_clients_hand_over::HandedOver> {
+        self.surfaces.buffers_awaiting_import()
+    }
+}
