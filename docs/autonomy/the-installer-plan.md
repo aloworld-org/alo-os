@@ -1922,11 +1922,55 @@ minutes of behaviour.
 
 ### 21. What the install leaves behind can be watched, or a booted machine and a hung one are the same picture
 
-**Status:** ready. **Depends on:** nothing; it blocks the snapshot loop paying
-off, and every later walk that watches the installed system.
+**Status:** in progress — the decision is made and written; **the walk still
+passes when the machine never came up.** **Depends on:** nothing; it blocks the
+snapshot loop paying off, and every later walk that watches the installed system.
 **Found by** the first run of `the_kept_computer_is_the_same_computer_twice` on
 2026-09-27. Kept on the development PC: `/root/t10/logs/`, and the two screens
 `kept-once.ppm` and `kept-again.ppm`.
+
+*This line read `ready` until 2026-10-02, after #392 landed all three of the
+decision bullets below.* A status saying `ready` of a task two thirds built invites
+the next lane to make the same decision again — which is the opposite failure to the
+stale `blocked` lines this repository keeps finding, and the same cause.
+
+**What landed in #392**, in `crates/alo-installing/src/writing.rs`:
+
+- the arguments are decided and named — `THE_PERSONS_SCREEN = "console=tty0"` and
+  `A_WATCHED_LINE = "console=ttyS0,115200n8"`, the person's own screen always and
+  the serial line only in addition, never instead;
+- they are written as `bootc` offers them, **one `--karg` per argument**, no engine
+  patched (ADR 0011);
+- and the third bullet is answered rather than deferred: a serial console is **opt
+  in**. `TheConsole::TheirScreen` is what a shipped machine gets, and
+  `watched_on_a_serial_line()` is the only road to the other, so a walk asks for
+  observability and a person's laptop never has a port that can type at it.
+  [ADR 0082](../decisions/0082-a-shipped-machine-shows-its-start-up-on-its-own-screen.md)
+  records it.
+
+**What is left is the acceptance's other half, and it is worse than unfinished.**
+`the_kept_computer_is_the_same_computer_twice` ends with
+
+```rust
+assert_eq!(came_up_twice.first(), came_up_twice.get(1), …);
+```
+
+which asserts the two rounds **agree**, not that either came up. `[false, false]`
+satisfies it — and `[false, false]` is what this task says reality is, because the
+installed system has no console argument and `wait_for` can only time out. So the
+walk is green about a machine it cannot see, which is the shape this repository has
+spent two days cataloguing: *a check that passes in the failure case.* The
+`eprintln!` above it is where the real answer goes, which is the acceptance's own
+wording — *asserts that the machine came up rather than printing that it did not.*
+
+Two changes finish it, and neither is this lane's to make blind: the walk must call
+`watched_on_a_serial_line()` so the installed system speaks at all, and the
+assertion must require every round to have come up. **It runs on real Windows with a
+virtual machine and a download** — `the_host_has_what_this_needs()`,
+`one_machine_at_a_time()` — so turning that assertion from *consistent* to *true*
+without being able to run it would hand whoever gates next a red walk and no way to
+tell a real regression from an unobservable machine. The development PC's lane can
+do both in one change and watch it go green.
 
 The installed system's boot entry carries no console argument. Read off the
 kept install's own disk, `/boot/loader/entries/ostree-1.conf` says:
