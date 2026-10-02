@@ -21,7 +21,13 @@
 //!
 //! # Told the geometry, never asking for it
 //!
-//! The [`PanelPicture`] is handed in. This file does not lay the panel out and does not ask
+//! The panel's laid-out geometry is handed in — `PanelPicture`, named rather than linked,
+//! because this module became `pub` when `OnThePanel` had to cross a trait boundary, and a
+//! public page may not point at a `pub(crate)` type. **The third doc link to fail a gate in
+//! this lane today**, and rustdoc with warnings denied is the only check in the toolchain that
+//! mentions them.
+//!
+//! This file does not lay the panel out and does not ask
 //! a display anything — `crate::panel_raster` owns the conversion from the design's figures
 //! to a display's pixels, and doing it twice is how two answers that must agree stop
 //! agreeing. The same seam `crate::putting_a_window_aside` takes for the patch and the Place.
@@ -51,7 +57,7 @@ use crate::panel_raster::PanelPicture;
 /// region. An `Option<WindowId>` would spell that the same way as *not on the panel at all*,
 /// and a caller would then conceal the panel while the pointer was still inside it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OnThePanel {
+pub enum OnThePanel {
     /// On this window's preview.
     APreview(WindowId),
     /// Inside the panel's region, but not on a preview — the gaps, the clearance, the path.
@@ -110,6 +116,31 @@ impl ThePanelAsDrawn {
             picture,
         }
     }
+
+    /// **What was drawn at this point**, asked of the draw alone.
+    ///
+    /// The question a pointer road can answer, because it needs no `Panel`: a person pointing
+    /// at a rectangle is pointing at the window whose preview **was painted there**, and this
+    /// says which that was. Whether that window is still put aside is a different question,
+    /// and `alo_put_aside::peeking_at_a_preview::peek_at` already refuses with
+    /// `NotPutAside::ItIsNotThere` when it is not — so the rule stays in the crate that owns
+    /// it rather than being re-decided here.
+    ///
+    /// That layering is the reason this is not the same function as
+    /// [`which_preview_the_pointer_is_on`]. This one answers *what did the person see here*;
+    /// that one adds *and is the panel still the panel it was drawn from*. Two questions, and
+    /// the caller with a `Panel` is the only one that can ask the second.
+    pub fn whose_slot(&self, at: Point<i32, Physical>) -> OnThePanel {
+        if !holds(self.picture.reserved, at) {
+            return OnThePanel::Elsewhere;
+        }
+        for (slot, id) in self.picture.slots.iter().zip(self.windows.iter()) {
+            if holds(*slot, at) {
+                return OnThePanel::APreview(*id);
+            }
+        }
+        OnThePanel::TheRegionButNoPreview
+    }
 }
 
 /// Which put-aside window `at` is on, given the panel as it was laid out.
@@ -122,24 +153,20 @@ pub(crate) fn which_preview_the_pointer_is_on(
     drawn: &ThePanelAsDrawn,
     at: Point<i32, Physical>,
 ) -> OnThePanel {
-    if !holds(drawn.picture.reserved, at) {
-        return OnThePanel::Elsewhere;
-    }
-
     // **The same windows in the same order, or no window is named.** See the type's note: a
-    // count cannot tell a reordered panel from an unchanged one.
+    // count cannot tell a reordered panel from an unchanged one. Asked before the geometry
+    // because a point inside the reserved column is still inside it either way, and the
+    // question *which window* is the one that has stopped being answerable.
     let now: Vec<WindowId> = panel.previews().iter().map(Preview::window).collect();
     if now != drawn.windows {
-        return OnThePanel::TheRegionButNoPreview;
+        return match drawn.whose_slot(at) {
+            OnThePanel::Elsewhere => OnThePanel::Elsewhere,
+            OnThePanel::APreview(_) | OnThePanel::TheRegionButNoPreview => {
+                OnThePanel::TheRegionButNoPreview
+            }
+        };
     }
-
-    for (slot, id) in drawn.picture.slots.iter().zip(drawn.windows.iter()) {
-        if holds(*slot, at) {
-            return OnThePanel::APreview(*id);
-        }
-    }
-
-    OnThePanel::TheRegionButNoPreview
+    drawn.whose_slot(at)
 }
 
 /// Whether a rectangle contains a point, half-open, with no area containing nothing.

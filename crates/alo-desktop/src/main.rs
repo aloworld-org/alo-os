@@ -140,14 +140,30 @@ mod running {
         /// The windows this person has put aside, which the panel at the edge
         /// shows.
         ///
-        /// **Empty, and that is measured rather than assumed**: nothing in
-        /// this binary puts a window aside yet, because putting one aside is
-        /// an interaction and this is the drawing half. A person who has put
-        /// nothing aside has an empty panel and no rail is drawn for one, so
-        /// what is on the screen is true rather than a placeholder — and the
-        /// panel's reserved column exists either way, because the panel owns
-        /// its edge whether or not anything is in it.
+        /// **Still empty, and still measured rather than assumed** — but no longer because
+        /// this is only the drawing half. That clause was true until
+        /// [`TheDesktop::the_pointer_is_now`] arrived below: this binary now acts on a
+        /// person's pointer, so it is not merely drawing.
+        ///
+        /// What is missing is narrower and worth naming exactly: **nothing yet *puts* a
+        /// window aside.** `alo_shell::Server::put_this_window_aside` is written and has only
+        /// its integration tests, because the gesture that would call it does not exist. So a
+        /// person on this machine has a panel they can point at and nothing to point at in
+        /// it.
+        ///
+        /// A person who has put nothing aside has an empty panel and no rail is drawn for
+        /// one, so what is on the screen is true rather than a placeholder — and the panel's
+        /// reserved column exists either way, because the panel owns its edge whether or not
+        /// anything is in it.
         put_aside: alo_put_aside::Panel,
+        /// Which put-aside window the person is looking at, if any.
+        ///
+        /// **Held beside the `Panel` rather than inside it**, because a peek is not a
+        /// property of the panel's contents — `alo-put-aside` keeps `peek_at` free of
+        /// `&mut Panel` on purpose, so that looking at a window cannot alter what is put
+        /// aside. One peek for the session: at most one window is being looked at at a
+        /// time, and a second would be two answers to one person's pointer.
+        peeking: alo_dock::Peeking,
         /// The colours and the way this person reads.
         look: DesktopLook,
         /// Every word on it.
@@ -194,6 +210,8 @@ mod running {
             Ok(Self {
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
+                // Nobody is looking at anything yet, which is what a session starts as.
+                peeking: alo_dock::Peeking::at_nothing(),
                 look: DesktopLook::of(
                     &alo_appearance::Appearance::shipped(),
                     &alo_access::TurnedOn::nothing(),
@@ -222,6 +240,40 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// A pointer over a preview is a person looking at the window in it.
+        ///
+        /// **The rule is `alo-put-aside`'s and the `Panel` is this binary's**, which is the
+        /// whole of why this method is here rather than in the compositor:
+        /// `alo_put_aside::peeking_at_a_preview` decided on 2026-09-30 what a peek may change
+        /// and what letting go leaves behind, and the compositor holds no `Panel` to ask it
+        /// with. The classification arrives already made, because the crate that laid the panel
+        /// out is the one that knows which rectangle a point is in.
+        ///
+        /// **A peek at a window the panel no longer holds is refused, not invented.** The
+        /// classification names what was *drawn* at that point, so a person who pointed at a
+        /// preview that has since been brought back is pointing at a picture of something gone.
+        /// `peek_at` answers `ItIsNotThere`, the peek is left exactly as it was, and that is the
+        /// crate's own rule doing the work rather than this binary second-guessing it.
+        ///
+        /// **Leaving the panel ends a peek; the gaps between previews do not.** A pointer in
+        /// the panel's own region but on no preview is ground a person crosses on the way to
+        /// one, and ending the peek there would make a peek impossible to hold while reaching
+        /// for it.
+        fn the_pointer_is_now(
+            &mut self,
+            on: alo_shell::which_preview_the_pointer_is_on::OnThePanel,
+        ) {
+            // **The decision is `alo-shell`'s and the state is this binary's**, which is why
+            // this is two lines rather than a match. A match here would be a second copy of
+            // the rule in a binary that cannot test itself, and the next person would have two
+            // answers to one question — the fault this repository spent 2026-10-01 removing.
+            if let Ok(what) =
+                alo_shell::what_a_classification_does_to_a_peek(on, self.peeking, &self.put_aside)
+            {
+                self.peeking = what.now();
+            }
+        }
+
         /// Take the four again, if it is time to.
         ///
         /// A refusal does not clear what was there: a media server that did not

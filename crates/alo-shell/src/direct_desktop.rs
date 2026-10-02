@@ -49,6 +49,32 @@ pub trait TheDesktop {
     /// Nothing by default: a desktop of fixed values is a real one, and the
     /// display probe is exactly that.
     fn refreshed(&mut self) {}
+
+    /// Where the pointer is, as far as the put-aside panel is concerned.
+    ///
+    /// **The classification, never the coordinate.** This crate laid the panel out, so this
+    /// crate knows which rectangle a pointer is in; the crate on the other side holds the
+    /// `Panel` and calls the rule about what a peek may change.
+    /// `alo_put_aside::the_region_the_panel_claims` asks for exactly that division in its own
+    /// words: *coordinate classification belongs to the caller; the machine consumes that
+    /// classification.* So the compositor never learns what a peek looks like, and the desktop
+    /// never learns where the slots are.
+    ///
+    /// **Nothing by default**, the same as [`Self::refreshed`] and for the same reason: a
+    /// desktop with no panel is a real desktop, and a default that did something would make
+    /// every new implementor responsible for a surface it may not have.
+    ///
+    /// **What it costs, since the answer belongs on the other side.** Called **once per input
+    /// batch**, after the seat has settled, from wherever the pointer ended up — not once per
+    /// motion event. A person crossing the panel produces many events and gets one answer,
+    /// because the extra answers would all say the same thing.
+    ///
+    /// It is still called when nothing has changed, and deliberately: `refreshed`'s own note
+    /// says *this crate does not know what a reading costs and must not decide how often one is
+    /// taken*, and the same holds here. An implementor that finds reacting expensive is the one
+    /// that can compare this classification against the last and return early. The compositor
+    /// cannot, because it does not know what a repeat means to the surface.
+    fn the_pointer_is_now(&mut self, _on: crate::which_preview_the_pointer_is_on::OnThePanel) {}
 }
 
 impl crate::DirectSession {
@@ -150,12 +176,37 @@ struct Desk<'a> {
 }
 
 impl LoopInput for Desk<'_> {
+    /// Route the input, then tell the desktop where the pointer ended up.
+    ///
+    /// **The clients' routing is untouched**, which is this lane's standing promise: a client
+    /// still hears the keyboard and still gets its motion. The panel is told *as well*, not
+    /// instead — the question of whether a pointer over the panel should be withheld from the
+    /// client belongs to the reveal machine, which does not exist yet, and answering it here
+    /// would be the compositor deciding something no crate has decided.
+    ///
+    /// **After the dispatch, not during it.** One classification per input batch, from the
+    /// position the seat settled on, rather than one per motion event — a person crossing the
+    /// panel produces many events and one answer, and the extra answers would all say the same
+    /// thing. This is also the only place both the input and the desktop are in scope, which is
+    /// why it is here rather than inside `crate::pointer`.
     fn dispatch(
         &mut self,
         server: &mut Server,
         poll: &mut dyn FnMut() -> Result<(), SessionError>,
     ) -> Result<(), DirectLoopError> {
-        self.input.dispatch(server, poll)
+        self.input.dispatch(server, poll)?;
+        // **Nothing before the first draw**, because the panel has no geometry until then —
+        // see `Server::panel_as_drawn`. A pointer moving on a machine that has not painted is
+        // an ordinary moment and not something to invent an answer for.
+        // **The frame carries the `Panel`, so the classification is the identity-checked one.**
+        // The borrow is taken and dropped before the desktop is told, because `now()` borrows
+        // it immutably and `the_pointer_is_now` needs it mutably — `OnThePanel` is `Copy`, so
+        // the answer outlives the borrow that produced it.
+        let on = server.where_the_pointer_is_on_the_panel(self.desktop.now().put_aside);
+        if let Some(on) = on {
+            self.desktop.the_pointer_is_now(on);
+        }
+        Ok(())
     }
 
     /// Make this frame's pictures and submit them with the clients.

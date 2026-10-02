@@ -7,28 +7,28 @@
 //! peek at nothing is refused. **Nothing could reach it.** No line of `features.md` changes
 //! below, and nothing here decides anything that crate already decided.
 //!
-//! # What was actually missing, which the plan recorded as something else
+//! # The road exists now, and this paragraph has been rewritten twice
 //!
-//! `docs/autonomy/putting-a-window-aside.md` task 5 read *blocked on the panel not being
-//! drawn or routed at all, 2026-09-30* and added *nothing consumes this crate*. Two of those
-//! three clauses have stopped being true: `crate::panel_raster` has laid the panel's slots
-//! out since `#343`, `crate::desktop_raster` calls it every frame, `alo-desktop` holds a real
-//! `Panel` and hands it in, and `crate::putting_a_window_aside` has consumed the crate since
-//! `#350`.
+//! Task 5 read *blocked on the panel not being drawn or routed at all, 2026-09-30*. The
+//! drawing clause stopped being true in `#343`. **The routing clause stopped being true in the
+//! change that added this paragraph**, and the two earlier drafts of it are worth keeping
+//! because each was accurate when written and wrong within hours:
 //!
-//! **The third clause is still true, and it is bigger than the status said.** *Routed* was
-//! never only a hit test. Measured on `main` at `ad229c9c`:
+//! - the first said *what remained was one road*, before the six-test count was measured;
+//! - the second said this file *does not unblock task 5* and leaves it blocked on an input
+//!   road, which was true for one commit — `#367` — and stopped being true here.
 //!
-//! - `Server::put_this_window_aside` has **six callers and all six are integration tests**;
-//! - `alo-desktop`, which owns the `Panel`, has **no pointer or keyboard handling at all**;
-//! - so the panel a person sees is drawn from a `Panel::new()` that nothing can add to.
+//! What a pointer now travels: `libinput_routing` translates the event, `direct_seat` and
+//! `direct_pointer` settle the position, `Desk::dispatch` asks
+//! `Server::where_the_pointer_is_on_the_panel` for a classification, and
+//! `TheDesktop::the_pointer_is_now` hands it to the crate that holds the `Panel`. **A person
+//! moving the pointer over a preview now gets a peek**, on a running machine, for the first
+//! time.
 //!
-//! So this file does not unblock task 5. It builds the half that is this lane's — the
-//! classification and the state change, with the geometry the draw already produces — and
-//! leaves the task blocked on an input road in the crate that holds the panel. **Saying that
-//! plainly is the point**: an earlier draft of this header claimed *what remained was one
-//! road*, which was written before the six-test count was measured and would have been a
-//! fresh record outliving the truth inside the change that corrected the last one.
+//! What is still owed, so this header does not overclaim in the other direction: nothing yet
+//! *puts* a window aside by gesture — `Server::put_this_window_aside` still has only its
+//! integration tests — so a running machine has an empty panel to peek at until that road
+//! exists too. Peeking is reachable; filling the panel is not.
 //!
 //! # Two steps, and the classification is the other file's
 //!
@@ -49,7 +49,7 @@ use alo_dock::Peeking;
 use alo_put_aside::Panel;
 use alo_put_aside::panel::NotPutAside;
 use alo_put_aside::peeking_at_a_preview::{peek_at, stop_peeking};
-use smithay::utils::{Physical, Point};
+use smithay::utils::Point;
 
 use crate::which_preview_the_pointer_is_on::{
     OnThePanel, ThePanelAsDrawn, which_preview_the_pointer_is_on,
@@ -91,41 +91,35 @@ impl ThePeek {
 }
 
 impl crate::Server {
-    /// Where the pointer is now, and what that does to the peek.
+    /// Where the pointer is now, as far as the panel is concerned.
     ///
-    /// **A method on [`crate::Server`] for the same reason
-    /// [`crate::Server::put_this_window_aside`] is one**, and with the same standing: the
-    /// shell offers the road and the input layer has not called it yet. That method has six
-    /// callers and all six are integration tests, because `alo-desktop` — which holds the
-    /// `Panel` — has no pointer handling at all. This one is in the same position, which is
-    /// stated here rather than left for a reader to infer from a test count.
+    /// `None` when there is nothing to answer with: before the first draw there is no panel
+    /// geometry, and before the seat has a pointer there is no position. **Two absences with
+    /// one answer, and that is right here** — both mean *no classification exists*, and a
+    /// caller does the same thing about either, which is nothing.
     ///
-    /// **The geometry is the one the last draw produced**, read from the server rather than
-    /// taken as an argument, because a public method cannot name `PanelPicture` and because
-    /// laying the panel out a second time here is how two answers that must agree stop
-    /// agreeing. `Server::the_panel_was_drawn` is what puts it there — named rather than
-    /// linked, because it is `pub(crate)` and a public page may not point inside the crate —
-    /// and `crate::canvas_fixed_controls` is the precedent in this same struct: set at draw
-    /// time for a question asked at pointer time.
-    ///
-    /// Answers `Ok(None)` before the first draw. **Not an error and not a peek**: a pointer
-    /// moving before anything has been painted is an ordinary moment, and inventing a
-    /// geometry for it would be answering about a panel nobody has laid out.
-    ///
-    /// # Errors
-    ///
-    /// [`NotPutAside::ItIsNotThere`] when the pointer is on a slot whose window the panel no
-    /// longer holds.
-    pub fn the_pointer_is_now_over_the_panel(
-        &self,
-        panel: &Panel,
-        peeking: Peeking,
-        at: Point<i32, Physical>,
-    ) -> Result<Option<ThePeek>, NotPutAside> {
-        let Some(drawn) = self.panel_as_drawn.as_ref() else {
-            return Ok(None);
-        };
-        the_pointer_is_now(panel, drawn, peeking, at).map(Some)
+    /// Answers nothing rather than the wrong window when the panel has changed since the draw —
+    /// the identity check in `which_preview_the_pointer_is_on` is what holds that, and its own note
+    /// gives the reason.
+    pub(crate) fn where_the_pointer_is_on_the_panel(&self, panel: &Panel) -> Option<OnThePanel> {
+        let drawn = self.panel_as_drawn.as_ref()?;
+        let at = self.surfaces.pointer.as_ref()?.location;
+        // The seat keeps the pointer in logical coordinates as `f64`; the panel was laid out
+        // in this display's physical pixels. `as` truncation is what a pixel lookup wants —
+        // a pointer at 4.9 is in the pixel that starts at 4, which is the half-open rule
+        // `which_preview_the_pointer_is_on` already applies to the rectangles.
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a pointer inside a pixel belongs to that pixel, which is truncation and \
+                      not an accident of arithmetic — the same half-open rule the rectangles use"
+        )]
+        let at = Point::from((at.x as i32, at.y as i32));
+        // **The Panel-aware classification, because the frame has one.** `Desk::dispatch` asks
+        // the desktop for its frame, which carries `put_aside`, so the identity check in
+        // `which_preview_the_pointer_is_on` applies here rather than only to callers that
+        // happen to hold a `Panel` — a reordered panel names no window instead of the one that
+        // now occupies that slot.
+        Some(which_preview_the_pointer_is_on(panel, drawn, at))
     }
 
     /// Where the panel ended up, handed over by the draw that laid it out.
@@ -137,39 +131,49 @@ impl crate::Server {
     pub(crate) fn the_panel_was_drawn(&mut self, drawn: ThePanelAsDrawn) {
         self.panel_as_drawn = Some(drawn);
     }
-
-    /// Escape, or letting go: the peek ends wherever the pointer is.
-    pub fn the_person_stopped_peeking(&self, peeking: Peeking) -> ThePeek {
-        the_person_let_go(peeking)
-    }
 }
 
-/// Where the pointer is now, and what that does to the peek.
+/// What a classification does to a peek: the decision, with no geometry in it.
 ///
-/// `drawn` is the panel as the last draw laid it out, with the windows it was laid out for;
-/// the peek as it stands. Both are handed in — this file asks a display nothing, for the
-/// reason `crate::putting_a_window_aside` gives about the patch and the Place.
+/// **Its own function because it is the behaviour, and because a binary cannot test itself.**
+/// `alo-desktop` holds the `Panel` and the peek, so it is the only place that can act on a
+/// classification — and it is a binary with no room for a suite. The decision therefore lives
+/// here, where the tests are, and that crate supplies its two values and keeps the answer.
+///
+/// That is the same division the classification itself follows: this crate laid the panel out
+/// and consumes its own classification, the other crate owns the state, and
+/// `alo_put_aside::peeking_at_a_preview` owns the rule. Three jobs, one each.
 ///
 /// # Errors
 ///
-/// [`NotPutAside::ItIsNotThere`] when the pointer is on a slot whose window the panel no
-/// longer holds. **Nothing changes on a refusal**, including the peek: a refusal that also
-/// reported a new peek would hand a caller something to act on about a window that is not
-/// there.
-fn the_pointer_is_now(
-    panel: &Panel,
-    drawn: &ThePanelAsDrawn,
+/// `NotPutAside::ItIsNotThere` is **not** returned: it is turned into *nothing changed*, for
+/// the reason given at the match arm. Any other refusal `peek_at` grows later is returned, so
+/// a new case cannot be swallowed by this one's generosity — which is why the `Result` stays
+/// rather than the signature being simplified to the only outcome it has today.
+pub fn what_a_classification_does_to_a_peek(
+    on: OnThePanel,
     peeking: Peeking,
-    at: Point<i32, Physical>,
+    panel: &Panel,
 ) -> Result<ThePeek, NotPutAside> {
-    match which_preview_the_pointer_is_on(panel, drawn, at) {
+    match on {
         OnThePanel::APreview(id) => {
             if peeking.at() == Some(id) {
                 // Already looking at this one. Beginning again would be a redraw a person
                 // asked for by not moving.
                 return Ok(ThePeek::Unchanged(peeking));
             }
-            Ok(ThePeek::Began(peek_at(panel, id)?))
+            // **A refusal is *nothing changed*, not an error travelling upwards.** The
+            // classification names what was *drawn* at that point, so a person pointing at a
+            // preview whose window has since been brought back is pointing at a picture of
+            // something gone. They have not made a mistake and there is nothing to tell them;
+            // the peek stays exactly as it was. `peek_at` is still the thing that decides it,
+            // which is the point — the rule is not re-implemented here, only its refusal is
+            // given a meaning at this level.
+            match peek_at(panel, id) {
+                Ok(begun) => Ok(ThePeek::Began(begun)),
+                Err(NotPutAside::ItIsNotThere) => Ok(ThePeek::Unchanged(peeking)),
+                Err(why) => Err(why),
+            }
         }
         // **Neither begins nor ends one.** See this module's header: the gaps and the
         // clearance are ground a person crosses while reaching for a preview.
@@ -184,16 +188,180 @@ fn the_pointer_is_now(
     }
 }
 
-/// Escape, or letting go: the peek ends wherever the pointer is.
-///
-/// Its own function because it is a different cause with the same effect, and because the
-/// owner named both roads — *releasing or Escape removes it* — so a keyboard road that went
-/// through the pointer one would be the keyboard being a consolation for a gesture. That is
-/// the thing `alo-dock`'s own header refuses.
-fn the_person_let_go(peeking: Peeking) -> ThePeek {
-    if peeking.is_peeking() {
-        ThePeek::Ended(stop_peeking(peeking))
-    } else {
-        ThePeek::Unchanged(peeking)
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use super::*;
+    use alo_canvas::{Place, Zoom};
+    use alo_dock::window::WindowId;
+    use alo_dock::{AppId, HowItSits, Patch, Spot, Window};
+    use alo_put_aside::whether_it_is_private::Privacy;
+
+    /// Window ids that are not slot indices, so an off-by-one cannot pass.
+    fn a_window(number: u64) -> Window {
+        Window::of(
+            WindowId::numbered(number),
+            Some(AppId::named("Docs").expect("a named application")),
+            "A window",
+            Patch::of(Spot::at(0, 0), 800, 600).expect("a window has extent"),
+            HowItSits::OnTheCanvas,
+        )
+    }
+
+    fn a_panel_holding(ids: &[u64]) -> Panel {
+        let mut panel = Panel::new();
+        for id in ids {
+            panel
+                .put_aside(
+                    &a_window(*id),
+                    Zoom::LIFE_SIZE,
+                    Place::FIRST,
+                    Privacy::Ordinary,
+                )
+                .unwrap();
+        }
+        panel
+    }
+
+    /// **Pointing at a preview begins a peek at that window.**
+    #[test]
+    fn pointing_at_a_preview_begins_a_peek_at_that_window() {
+        let panel = a_panel_holding(&[11, 12]);
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::APreview(WindowId::numbered(12)),
+            Peeking::at_nothing(),
+            &panel,
+        )
+        .unwrap();
+
+        assert!(what.changed(), "a peek beginning is a change");
+        assert_eq!(what.now().at(), Some(WindowId::numbered(12)));
+        assert!(matches!(what, ThePeek::Began(_)));
+    }
+
+    /// **Pointing at the same preview again changes nothing.**
+    ///
+    /// A person who has not moved has not asked for anything, and reporting a change would
+    /// make the caller redraw once per input batch for as long as a hand is still.
+    #[test]
+    fn pointing_at_the_same_preview_again_changes_nothing() {
+        let panel = a_panel_holding(&[11, 12]);
+        let already = peek_at(&panel, WindowId::numbered(12)).unwrap();
+
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::APreview(WindowId::numbered(12)),
+            already,
+            &panel,
+        )
+        .unwrap();
+
+        assert!(!what.changed(), "nothing moved, so nothing changed");
+        assert_eq!(what.now().at(), Some(WindowId::numbered(12)));
+    }
+
+    /// **The gaps between previews do not end a peek.**
+    ///
+    /// The clause this file exists for: that ground is what a person crosses while reaching
+    /// for a preview, so ending the peek there would make one impossible to hold.
+    #[test]
+    fn the_panels_own_region_without_a_preview_leaves_the_peek_alone() {
+        let panel = a_panel_holding(&[11, 12]);
+        let already = peek_at(&panel, WindowId::numbered(11)).unwrap();
+
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::TheRegionButNoPreview,
+            already,
+            &panel,
+        )
+        .unwrap();
+
+        assert!(!what.changed());
+        assert_eq!(
+            what.now().at(),
+            Some(WindowId::numbered(11)),
+            "crossing a gap ended a peek that should have been held"
+        );
+    }
+
+    /// **Leaving the panel ends the peek, and the window stays put aside.**
+    #[test]
+    fn leaving_the_panel_ends_the_peek_and_the_window_stays_put_aside() {
+        let panel = a_panel_holding(&[11]);
+        let already = peek_at(&panel, WindowId::numbered(11)).unwrap();
+
+        let what =
+            what_a_classification_does_to_a_peek(OnThePanel::Elsewhere, already, &panel).unwrap();
+
+        assert!(what.changed());
+        assert!(matches!(what, ThePeek::Ended(_)));
+        assert!(!what.now().is_peeking());
+        assert_eq!(
+            panel.holding(),
+            1,
+            "the owner's sentence: letting go leaves the window minimised"
+        );
+    }
+
+    /// **Leaving the panel when nothing was being peeked at is not a change.**
+    ///
+    /// Most pointer motion on a machine is this case — the pointer is somewhere on the canvas
+    /// and no peek is open — so reporting a change here would report one constantly.
+    #[test]
+    fn leaving_the_panel_with_no_peek_open_is_not_a_change() {
+        let panel = a_panel_holding(&[11]);
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::Elsewhere,
+            Peeking::at_nothing(),
+            &panel,
+        )
+        .unwrap();
+
+        assert!(!what.changed());
+        assert!(!what.now().is_peeking());
+    }
+
+    /// **Pointing at a preview of a window the panel no longer holds changes nothing.**
+    ///
+    /// The classification names what was *drawn*, so this is a person pointing at a picture of
+    /// a window that has since been brought back. `peek_at` refuses, and that refusal means
+    /// *nothing changed* here rather than travelling upwards as an error — they have not made
+    /// a mistake and there is nothing to tell them.
+    #[test]
+    fn pointing_at_a_window_the_panel_no_longer_holds_changes_nothing() {
+        let panel = a_panel_holding(&[11]);
+
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::APreview(WindowId::numbered(99)),
+            Peeking::at_nothing(),
+            &panel,
+        )
+        .expect("a stale preview is not an error a person should see");
+
+        assert!(!what.changed());
+        assert!(!what.now().is_peeking());
+    }
+
+    /// **A peek moves straight from one preview to another.**
+    ///
+    /// A person sliding down the rail crosses previews without leaving the panel, and the peek
+    /// has to follow rather than needing the pointer to leave and come back.
+    #[test]
+    fn sliding_from_one_preview_to_another_moves_the_peek() {
+        let panel = a_panel_holding(&[11, 12, 13]);
+        let on_the_first = peek_at(&panel, WindowId::numbered(11)).unwrap();
+
+        let what = what_a_classification_does_to_a_peek(
+            OnThePanel::APreview(WindowId::numbered(13)),
+            on_the_first,
+            &panel,
+        )
+        .unwrap();
+
+        assert!(what.changed());
+        assert_eq!(what.now().at(), Some(WindowId::numbered(13)));
     }
 }
