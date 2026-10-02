@@ -443,14 +443,34 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** **model and hit test built, no evidence, and blocked on there being no input road
-to the panel on a running machine, 2026-10-01.**
+**Status:** **built and reachable on a running machine; blocked on nothing putting a window
+aside, 2026-10-02.**
 
-**The hit test is no longer missing.** `crates/alo-shell/src/which_preview_the_pointer_is_on.rs`
-answers *which put-aside window is this pointer on* against the slots the draw already lays
-out, and `crates/alo-shell/src/peeking_at_a_put_aside_window.rs` turns that into a peek
-beginning, ending or staying put. Nine tests, and the one that matters is
-`the_same_count_in_a_different_order_names_no_window`.
+**The pointer road exists.** A person moving the pointer over a preview now gets a peek, end
+to end: `libinput_routing` translates the event, `direct_seat` and `direct_pointer` settle the
+position, `Desk::dispatch` asks `Server::where_the_pointer_is_on_the_panel` for a
+classification, and `TheDesktop::the_pointer_is_now` hands it to `alo-desktop`, which holds
+the `Panel` and calls `alo_put_aside::peeking_at_a_preview::peek_at`. Three jobs, one crate
+each: the shell classifies coordinates because it laid the panel out, `alo-desktop` owns the
+state, and `alo-put-aside` owns the rule.
+
+Seventeen tests across the two shell files. The ones that matter are
+`the_same_count_in_a_different_order_names_no_window` — a reordered panel names no window
+rather than the one now in that slot — and
+`the_panels_own_region_without_a_preview_leaves_the_peek_alone`, which is the clause a person
+would feel: crossing the gap between two previews must not drop the peek.
+
+**What remains, and it is one thing rather than this task's whole surface.** Nothing *puts* a
+window aside. `Server::put_this_window_aside` is written and has only its integration tests,
+because the gesture that would call it does not exist — so the panel a person can now point at
+has nothing in it. **That is the next change, and it is this task's last clause**: peeking is
+reachable, filling the panel is not.
+
+**Two earlier versions of this status were each true when written and wrong within hours**, and
+both are kept because the pattern is the lesson rather than the dates: the first said *blocked
+on the panel not being drawn*, which `#343` retired; the second said *blocked on there being no
+input road*, which this change retired. A status is a measurement with a timestamp, not a
+standing fact.
 
 **The previous wording was stale in one clause and right in the other, and the correction is
 narrower than it first looked.** *Blocked on the panel not being drawn* stopped being true in

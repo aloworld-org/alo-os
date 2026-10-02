@@ -269,7 +269,7 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
-mod which_preview_the_pointer_is_on;
+pub mod which_preview_the_pointer_is_on;
 mod window_activation;
 mod window_close;
 mod window_command;
@@ -316,6 +316,7 @@ mod window_resize;
 mod window_size;
 mod window_switch;
 
+pub use peeking_at_a_put_aside_window::{ThePeek, what_a_classification_does_to_a_peek};
 pub use putting_a_window_aside::NotAside;
 pub use status_items::StatusItems;
 pub use window_activation::WindowActivationError;
