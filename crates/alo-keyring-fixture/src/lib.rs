@@ -255,18 +255,55 @@ impl AKeyringOfOurOwn {
         format!("unix:path={}", self.place.join("bus").display())
     }
 
-    /// Wait for the socket to appear.
+    /// Wait until the bus **accepts a connection**, not until its socket exists.
+    ///
+    /// # A path existing is not a server listening
+    ///
+    /// This waited for `at.exists()` until 2026-10-02, which answers *is there an
+    /// inode* when the question every caller asks next is *will a connect
+    /// succeed*. `dbus-daemon` creates the socket and then binds and listens, so
+    /// `exists()` is true in the window between, and the fixture handed back a bus
+    /// whose first connection raced the daemon's `listen`.
+    ///
+    /// It failed on another lane's machine as **`ECONNREFUSED`, not `ENOENT`** —
+    /// the socket was there and nothing was accepting on it — in
+    /// `alo-secrets`'s `a_real_bus_with_no_secret_service_on_it_is_unavailable`,
+    /// whose first act is to connect.
+    ///
+    /// # The lesson was already in this file, one function down
+    ///
+    /// [`Self::wait_until_it_serves`] exists because waiting for the name on the
+    /// bus was not the same as waiting for a collection to put a secret in, and
+    /// its note says *a fixture that is sometimes ready is a test suite that
+    /// sometimes fails for a reason having nothing to do with its subject.* That is
+    /// this bug one layer down, and the reading that matters is **which path never
+    /// reaches that function**: [`Self::start`] calls this one and returns early
+    /// when `serving` is false, so the bare bus — the one fixture with no stronger
+    /// wait behind it — was the only one left standing on the weak check. It is
+    /// also the one that failed.
+    ///
+    /// So readiness is the state the caller needs: a connection that was made. The
+    /// connection is dropped immediately, because the question was whether one
+    /// could be, and a caller that wants one builds its own.
     fn wait_for(&mut self, at: &std::path::Path) {
         let until = Instant::now() + Duration::from_secs(15);
+        let mut refused = None;
         while Instant::now() < until {
-            if at.exists() {
-                return;
+            match zbus::blocking::connection::Builder::address(self.address().as_str())
+                .and_then(zbus::blocking::connection::Builder::build)
+            {
+                Ok(_) => return,
+                // Kept so the panic can say what the bus was answering rather than
+                // only that it never answered. A fixture that fails silently gets
+                // diagnosed by theory, and the theory is usually wrong.
+                Err(why) => refused = Some(why),
             }
             std::thread::sleep(Duration::from_millis(50));
         }
         let said = std::fs::read_to_string(self.place.join("bus.err")).unwrap_or_default();
+        let why = refused.map_or_else(|| "it was never tried".to_owned(), |why| why.to_string());
         panic!(
-            "the fixture's bus never appeared at {}: {said}",
+            "the fixture's bus at {} never accepted a connection: {why}\nbus said: {said}",
             at.display()
         );
     }
