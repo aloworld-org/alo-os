@@ -76,6 +76,33 @@ use crate::painted::Solid;
 /// arithmetic below stops being worth trusting.
 const LARGEST_SIDE: i32 = 16_384;
 
+/// Whether the panel is on the screen at all.
+///
+/// # Not `alo_dock::Showing`, and the distinction is the reason this type exists
+///
+/// That enum means *shown* or *it has given way*, and giving way is the Dock's reason: a
+/// window needs its room. The panel's reason is different — **nobody has reached for it** —
+/// and `alo_dock::Revealing` is the machine that decides it, from the edge, the surface, the
+/// keyboard, a drag and an open menu.
+///
+/// Reusing one enum for two reasons would be the two-vocabularies fault this repository has
+/// already paid for once: the word would be right in both places and mean a different thing in
+/// each, and the first person to write a rule about *hidden* would write it about both.
+///
+/// # The answer, not the machine
+///
+/// `Revealing` is not taken here. The caller asks `Revealing::is_revealed` and passes what it
+/// answered, which is the seam this file takes for everything else — the zoom, the Place, the
+/// look. A raster that read a state machine would be a drawing deciding whether it should
+/// happen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhetherRevealed {
+    /// Somebody has reached for it, or is on it, or holds it open.
+    Revealed,
+    /// Nobody has. It keeps its column and draws no rail.
+    Concealed,
+}
+
 /// The panel for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PanelPicture {
@@ -111,6 +138,7 @@ pub(crate) fn picture(
     look: DesktopLook,
     size: (i32, i32),
     edge: WhichEdge,
+    revealed: WhetherRevealed,
 ) -> Result<PanelPicture, RenderError> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE || width <= 0 || height <= 0 {
@@ -142,7 +170,12 @@ pub(crate) fn picture(
     );
 
     let holding = i32::try_from(panel.holding()).map_err(|_| RenderError::DesktopScene)?;
-    let rail_height = if holding == 0 {
+    // **A concealed panel draws no rail and keeps its column.** The same picture an empty
+    // panel gives, and for a reason worth stating: in both states there is nothing to be *on*,
+    // and the column still asks, because the panel owns its edge whether or not it is showing.
+    // `crate::the_panel_reveals` relies on exactly this — a rail of no height contains nothing,
+    // so every point in the column is `AtTheEdge` rather than `OnTheSurface`.
+    let rail_height = if holding == 0 || revealed == WhetherRevealed::Concealed {
         0
     } else {
         holding
@@ -258,7 +291,14 @@ mod tests {
     }
 
     fn laid_out(how_many: usize, size: (i32, i32)) -> PanelPicture {
-        picture(&a_panel_holding(how_many), a_look(), size, WhichEdge::Right).unwrap()
+        picture(
+            &a_panel_holding(how_many),
+            a_look(),
+            size,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap()
     }
 
     /// **The rail's width is the design's 64, and it was derived.** `ICON`
@@ -384,7 +424,14 @@ mod tests {
     #[test]
     fn a_panel_on_the_left_is_the_same_layout_mirrored() {
         let right = laid_out(4, AS_DRAWN);
-        let left = picture(&a_panel_holding(4), a_look(), AS_DRAWN, WhichEdge::Left).unwrap();
+        let left = picture(
+            &a_panel_holding(4),
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Left,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
 
         assert_eq!(left.reserved.loc.x, 0);
         assert_eq!(left.reserved.size, right.reserved.size);
@@ -397,9 +444,36 @@ mod tests {
     #[test]
     fn a_display_too_narrow_for_the_column_is_refused() {
         let panel = a_panel_holding(4);
-        assert!(picture(&panel, a_look(), (80, 600), WhichEdge::Right).is_err());
-        assert!(picture(&panel, a_look(), (0, 600), WhichEdge::Right).is_err());
-        assert!(picture(&panel, a_look(), (1440, 0), WhichEdge::Right).is_err());
+        assert!(
+            picture(
+                &panel,
+                a_look(),
+                (80, 600),
+                WhichEdge::Right,
+                WhetherRevealed::Revealed
+            )
+            .is_err()
+        );
+        assert!(
+            picture(
+                &panel,
+                a_look(),
+                (0, 600),
+                WhichEdge::Right,
+                WhetherRevealed::Revealed
+            )
+            .is_err()
+        );
+        assert!(
+            picture(
+                &panel,
+                a_look(),
+                (1440, 0),
+                WhichEdge::Right,
+                WhetherRevealed::Revealed
+            )
+            .is_err()
+        );
     }
 
     /// **A rail longer than the display is cut at the display**, and the slots
@@ -452,5 +526,72 @@ mod tests {
                 "a figure from the design reached the code: {forbidden}"
             );
         }
+    }
+    /// **A concealed panel draws no rail and keeps its column**, which is the whole of what
+    /// the reveal machine buys a person: a panel that is not in the way until it is reached
+    /// for.
+    ///
+    /// Asserted against a panel that **does** hold windows, because a concealed panel and an
+    /// empty one give the same picture and only a full one can tell them apart. A test on an
+    /// empty panel would pass whether or not this file consulted the reveal state at all.
+    #[test]
+    fn a_concealed_panel_holding_windows_still_draws_no_rail() {
+        let panel = a_panel_holding(4);
+        let shown = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
+        let hidden = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Concealed,
+        )
+        .unwrap();
+
+        assert!(
+            shown.rail.size.h > 0,
+            "a revealed panel with four windows draws a rail"
+        );
+        assert_eq!(
+            hidden.rail.size.h, 0,
+            "a concealed panel drew its rail, so the reveal machine buys nothing"
+        );
+        assert!(
+            hidden.slots.is_empty(),
+            "a concealed panel laid out previews nobody can see"
+        );
+        assert_eq!(
+            hidden.reserved, shown.reserved,
+            "the panel gave up its column when it concealed — it owns its edge either way"
+        );
+    }
+
+    /// **And nothing is painted for a concealed panel**, not merely laid out small.
+    ///
+    /// `solids` is what reaches the screen. A panel that produced its rail as a shape and
+    /// relied on a later stage to skip it would be a concealed panel that is one forgotten
+    /// branch away from being visible.
+    #[test]
+    fn a_concealed_panel_paints_nothing_at_all() {
+        let panel = a_panel_holding(4);
+        let hidden = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Concealed,
+        )
+        .unwrap();
+
+        assert!(
+            hidden.solids.is_empty(),
+            "a concealed panel handed shapes to the painter"
+        );
     }
 }

@@ -60,6 +60,9 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                     offer: crate::desktop_testing::nothing_offered(),
                     windows: &[],
                     put_aside: crate::desktop_testing::nothing_put_aside(),
+                    // A fixture that is not about revealing draws the panel, so what it lays out is
+                    // the rail rather than an empty column.
+                    panel_is_revealed: true,
                     filling_the_screen: false,
                     display_scale: 100,
                     dock: &dock,
@@ -147,6 +150,9 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
         offer: crate::desktop_testing::nothing_offered(),
         windows: &[],
         put_aside: crate::desktop_testing::nothing_put_aside(),
+        // A fixture that is not about revealing draws the panel, so what it lays out is
+        // the rail rather than an empty column.
+        panel_is_revealed: true,
         filling_the_screen: false,
         display_scale: 100,
         dock: &dock,
@@ -190,6 +196,9 @@ fn the_record_window_sits_in_the_desktop_frame() {
         offer: crate::desktop_testing::nothing_offered(),
         windows: &[],
         put_aside: crate::desktop_testing::nothing_put_aside(),
+        // A fixture that is not about revealing draws the panel, so what it lays out is
+        // the rail rather than an empty column.
+        panel_is_revealed: true,
         filling_the_screen: false,
         display_scale: 100,
         dock: &dock,
@@ -208,4 +217,70 @@ fn the_record_window_sits_in_the_desktop_frame() {
     assert!(!pictures.record.as_ref().unwrap().entries.is_empty());
     assert!(pictures.approval.is_none());
     assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
+}
+
+/// **A frame carries the panel's reveal state through to the picture**, rather
+/// than this file deciding it.
+///
+/// Whether the panel is revealed is the compositor's state, held in
+/// `alo_dock::revealing` and supplied by whoever builds the frame. A frame that
+/// dropped it would be a desktop whose panel is always in the way, and every
+/// other fixture in this file passes `panel_is_revealed: true`, so without this
+/// test substituting `true` here passes the whole suite — it was measured doing
+/// exactly that.
+///
+/// The panel holds windows, because a concealed panel and an empty one draw the
+/// same picture.
+#[test]
+fn the_frame_carries_whether_the_panel_is_revealed() {
+    let strings = words();
+    let dock = Dock::shipped();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let mut told = EgressStatus::on_an_output();
+    assert_eq!(
+        Indicating::nowhere().show(Some(&mut told), &Indicator::default()),
+        Drew::Shown
+    );
+
+    let drawn = |revealed: bool| {
+        let mut labels = WindowControlLabels::new().unwrap();
+        frame_pictures(
+            DesktopFrame {
+                in_use: &[],
+                notifications: &[],
+                capturing: None,
+                division: crate::desktop_testing::an_undivided_display(),
+                offer: crate::desktop_testing::nothing_offered(),
+                windows: &[],
+                put_aside: crate::desktop_testing::three_windows_put_aside(),
+                panel_is_revealed: revealed,
+                filling_the_screen: false,
+                display_scale: 100,
+                dock: &dock,
+                look: noon_look(&an_appearance(), Direction::LeftToRight),
+                strings: &strings,
+                egress: &told,
+                running: &running,
+                filling: &filling,
+            },
+            None,
+            None,
+            &mut labels,
+            (1920, 1080),
+        )
+    };
+
+    let shown = drawn(true).unwrap();
+    let hidden = drawn(false).unwrap();
+
+    assert!(
+        shown.desktop.panel.rail.size.h > 0,
+        "a revealed panel holding windows draws a rail, so the fixture can tell the two apart"
+    );
+    assert_eq!(
+        hidden.desktop.panel.rail.size.h, 0,
+        "the frame drew the rail for a panel nobody has reached for, so what the frame carries \
+         never reaches the draw path"
+    );
 }

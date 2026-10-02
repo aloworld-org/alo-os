@@ -39,6 +39,9 @@ fn a_desktop_that_will_not_start<'a>(
         offer: crate::desktop_testing::nothing_offered(),
         windows: &[],
         put_aside: crate::desktop_testing::nothing_put_aside(),
+        // A fixture that is not about revealing draws the panel, so what it lays out is
+        // the rail rather than an empty column.
+        panel_is_revealed: true,
         filling_the_screen: false,
         display_scale: 100,
         dock,

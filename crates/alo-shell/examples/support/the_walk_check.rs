@@ -576,6 +576,8 @@ impl<'a> TheDesk<'a> {
             offer: self.offer,
             windows: self.windows,
             put_aside: nothing_put_aside(),
+            // This walk is not about revealing, and an empty panel draws no rail either way.
+            panel_is_revealed: true,
             filling_the_screen: false,
             display_scale: 100,
         }

@@ -323,3 +323,37 @@ pub(crate) fn nothing_put_aside() -> &'static alo_put_aside::Panel {
     static EMPTY: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
     EMPTY.get_or_init(alo_put_aside::Panel::new)
 }
+
+/// **A panel holding three windows**, for the tests that are about whether the
+/// panel is drawn rather than about what is in it.
+///
+/// A concealed panel and an empty one produce the same picture, so a test
+/// asserting that concealing hides the rail cannot use
+/// [`nothing_put_aside`] — it would pass against a draw path that never
+/// consulted the reveal state at all.
+///
+/// Shared and static for the same reason as [`nothing_put_aside`]: a caller
+/// binds the frame it builds without a borrow outliving a temporary.
+pub(crate) fn three_windows_put_aside() -> &'static alo_put_aside::Panel {
+    static HOLDING: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
+    HOLDING.get_or_init(|| {
+        let mut panel = alo_put_aside::Panel::new();
+        for which in 1..=3 {
+            panel
+                .put_aside(
+                    &alo_dock::Window::of(
+                        alo_dock::WindowId::numbered(which),
+                        Some(alo_dock::AppId::named("Docs").unwrap()),
+                        "A window",
+                        alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 800, 600).unwrap(),
+                        alo_dock::HowItSits::OnTheCanvas,
+                    ),
+                    alo_canvas::Zoom::LIFE_SIZE,
+                    alo_canvas::Place::FIRST,
+                    alo_put_aside::whether_it_is_private::Privacy::Ordinary,
+                )
+                .unwrap();
+        }
+        panel
+    })
+}
