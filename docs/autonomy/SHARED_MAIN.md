@@ -304,6 +304,66 @@ Do not batch unrelated tasks into one branch or keep release-long development
 branches. Dependencies should land first; dependent branches integrate them
 before their own final gate. The coordinator chooses the next ready PR promptly.
 
+### One task at a time, two unfinished branches at a time
+
+**Each agent actively implements one task at a time. Each machine may initially
+hold two unfinished task branches, in separate worktrees: one waiting, one being
+worked on.** When a task is waiting on CI, review or a decision somebody else
+owns, start another approved, independent task rather than idling.
+
+```
+active implementation   one task per agent
+unfinished branches     two per machine to begin with — one waiting, one active
+isolation               each task its own branch and its own worktree
+local Rust builds       one Cargo operation per machine, at current memory
+completion              acceptance criteria met and the PR merged into main
+```
+
+**Why the limit is two and not one.** *One branch until its PR merges* reads like
+discipline and is a stall: it makes an agent idle for every minute of review, CI
+or a decision it does not own. On 2026-10-02 this lane sat with nothing to do
+through a queue that had been empty for two and a half hours, and the owner's
+criticism was not about the gates — it was that the lanes stop. **A rule that
+produces idling during a legitimate wait is not caution, it is lost work.**
+
+**Why the limit is two and not unbounded.** The constraint that bites is not
+branches, it is **memory and attention**: one Cargo operation per machine until
+the memory supports more, and one task being edited per agent so that neither is
+half-finished. Worktrees give separate checkouts in separate directories, so a
+second task does not disturb the first — but they share the machine's memory, CPU
+and disk, and they do not multiply the agent.
+
+**Opening a second branch does not transfer the first.** Ownership of an open
+pull request lasts until it merges or is deliberately closed. Failed checks and
+review requests on it come **before** new work on the second — an agent with two
+branches has one job queue, not two independent ones.
+
+**Record dependencies explicitly**, and do not let one blocked task block the
+machine. A task waiting on a decision waits; the agent does not. Where the
+question can be settled by authorised investigation, investigate and settle it
+rather than waiting to be told.
+
+### The order a task is worked in
+
+```
+1  start from freshly fetched main, with a clear outcome and one owner
+2  implement, verify, open the pull request — code, tests and the documentation
+   it needs together
+3  while it waits on CI, review or a decision, start the next independent task
+   in another worktree
+4  keep watching the open PR: failed checks and review requests first
+5  merge through the protected queue, which validates the integration candidate
+   against current main and the changes queued ahead of it
+6  update the task's plan entry and remove the branch and worktree once the work
+   is accounted for on main
+```
+
+**Step 5 is why a branch is not rebased merely because `main` advanced.** The
+queue builds and checks the integration candidate; `strict` is off on purpose,
+and *Main protection* below records that. Three lanes spent a day re-implementing
+that by hand — frozen main, exclusive turns, inherited verdicts — and defeated
+most of the benefit the queue exists to provide.
+
 ## Main protection
 
 Configure GitHub to require a pull request, the `alo/nine-gates` status and
@@ -421,7 +481,27 @@ not holding the turn are idle **by construction** rather than merely unspent.
 *Short of turns, not capacity* was the laptop lane's phrase and it understates
 it: the capacity is not slow, it is unusable.
 
-**Which gives the order, and the order matters more than the rule:**
+**Superseded on 2026-10-02, and left here with its reason because the reason
+outlived it.** This section described gating *to earn a landing*, and the order
+it gave began `wait for the turn`. `main` no longer requires a hand-typed status
+— it requires `alo/gates-on-a-runner`, which CI posts on the head and on the
+queue commit — so **a local gate is diagnostic, not admission**, and there is no
+turn to wait for. The order is now:
+
+```
+1. commit
+2. push the branch
+3. open the pull request
+4. enqueue; CI gates the head and the integration candidate
+```
+
+**Run whatever local checks are useful before pushing** — formatting, clippy, the
+crates the change touches. Do **not** run the full suite to earn a landing: this
+lane paid 89 minutes for a verdict CI produced in 15, and twice killed a
+fifty-minute run because `main` had moved under it.
+
+**The order below is what the old one said**, kept because *what* it was wrong
+about is instructive and because a machine may still choose to gate locally:
 
 ```
 1. commit
@@ -431,6 +511,11 @@ it: the capacity is not slow, it is unusable.
 5. gate
 6. attest, enqueue alone, inherit
 ```
+
+Step 2 is the stall the owner replaced: *one branch until its PR merges* and
+*wait for your turn* are the same mistake in two places, and both make an agent
+idle while something it does not own is pending. See **One task at a time, two
+unfinished branches at a time**.
 
 **The push moved ahead of the gate, and the reason is the rule below about
 refusing an unpublished head.** A gate that refuses unless `HEAD` equals
