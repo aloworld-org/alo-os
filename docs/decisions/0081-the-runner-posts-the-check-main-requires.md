@@ -1,10 +1,29 @@
 # ADR 0081 — The runner posts the check `main` requires
 
-**Status:** proposed, 2026-10-01. It reopens the 2026-09-28 decision recorded in
+**Status:** **accepted, 2026-10-02**, and **live in branch protection since that
+morning**. Proposed 2026-10-01. It reopened the 2026-09-28 decision recorded in
 `.github/workflows/gate.yml` on the one new fact that decision lacked: **the five
 tests a hosted runner could not run now pass there.** Nothing here weakens a gate,
 removes one, or changes what the nine gates are.
-**Date:** 2026-10-01
+
+**Authorised by** the owner's ruling of 2026-10-01, which set the order of work in
+these words: *the order is: ownership correction → **gate configuration switch and
+queue verification** → obsolete tooling removal.* The gate configuration switch is
+this change; the queue verification is the end-to-end check that followed it.
+
+> **Why this line exists at all.** The change was made on the owner's instruction
+> and this document still read *proposed* for most of the day afterwards. The Mac
+> lane asked whether the owner had sanctioned it — while working under it, and
+> while it was the lane the change most helped. **A proposed ADR whose change is
+> live in branch protection is a worse state than either an unauthorised change or
+> an unrecorded one, because it reads as neither**, and no lane finding that
+> configuration could tell an authorised change from one somebody simply made.
+>
+> The lane that benefits from a change is the lane least able to audit it, so an
+> authorisation that lives only in a session is not recorded at all. This is the
+> citation that should have been written the hour the switch was thrown.
+
+**Date:** 2026-10-01, accepted 2026-10-02
 **Context:** `.github/workflows/gate.yml`;
 `.github/the-tests-a-hosted-runner-cannot-run.txt`, which is now empty;
 `docs/autonomy/SHARED_MAIN.md`, whose gate-inheritance and turn-taking rules exist
