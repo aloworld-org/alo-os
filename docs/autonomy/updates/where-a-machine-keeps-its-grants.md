@@ -114,7 +114,7 @@ A grant made **while the daemon is running** reaches the daemon when it next
 starts, which on alo OS is the next sign-in (the service is bound to the
 person's session). Carrying one to a running daemon needs a request on the
 person's door, which is `alo-protocol`'s surface — that is **task 4** in
-`docs/autonomy/v0-01-lane-b-plan.md`, written in this change, and this task is
+`docs/autonomy/accounts-and-session-entry-plan.md`, written in this change, and this task is
 what makes it worth building: until now there was nothing to carry.
 
 The surface that lists and revokes grants is still the compositor lane's, as the

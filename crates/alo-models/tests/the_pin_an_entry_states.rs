@@ -1,7 +1,7 @@
 //! **The file a catalogue entry pins, against the file the machine actually
 //! got** — asked of the real runtime, and asked of the failing case first.
 //!
-//! Task 16 of `docs/autonomy/v0-01-lane-b-plan.md`. Task 15 wrote two `sha256`
+//! Task 16 of `docs/autonomy/accounts-and-session-entry-plan.md`. Task 15 wrote two `sha256`
 //! figures into `data/catalogue.toml` and nothing compared either of them with
 //! anything, so the sentence rule 6 sells — *the file we graded and the file a
 //! machine fetches are the same file or the fetch fails* — was a promise about

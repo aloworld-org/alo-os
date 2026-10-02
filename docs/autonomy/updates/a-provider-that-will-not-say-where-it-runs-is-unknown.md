@@ -70,7 +70,7 @@ What was missing:
   wording for such a source names the provider and no place.
 - `docs/contracts/machine-description.md`, `docs/contracts/person-settings.md`
   — one sentence each on the `region` field, additive.
-- `docs/autonomy/v0-5-lane-b-plan.md` — task 3 marked done. Task 4 was
+- `docs/autonomy/providers-and-models-plan.md` — task 3 marked done. Task 4 was
   already written, so no next task is added.
 
 ### User-readable change description

@@ -82,7 +82,7 @@ the one convention the wire speaks:
   names the door, and why `Trying` stays public.
 - `docs/contracts/person-settings.md` — *Writing it* gained one paragraph,
   additively: the writer does not know about the test, and that is the shape.
-- `docs/autonomy/v0-5-lane-b-plan.md` — task 2 marked done. Task 3 was
+- `docs/autonomy/providers-and-models-plan.md` — task 2 marked done. Task 3 was
   already written after it.
 
 ### User-readable change description

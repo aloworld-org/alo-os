@@ -79,7 +79,7 @@ drift:
   `alo-egress`) is lane A's, on `docs/autonomy/kernel-enforcement-plan.md`,
   which already exists for it. The provider and model rules (`alo-models`,
   `alo-choosing`, `alo-asking`, `alo-secrets`, `alo-telling`) are lane B's, on
-  `docs/autonomy/v0-5-lane-b-plan.md`. Neither lane touches the other's crates.
+  `docs/autonomy/providers-and-models-plan.md`. Neither lane touches the other's crates.
 - **Numbers are checked before they are taken.** Tonight two tasks and two
   decisions were numbered the same by two lanes an hour apart. Before a worker
   or a person writes the next task or decision: pull, list, then number.

@@ -98,7 +98,7 @@ licence it is. What was missing:
   none nudging.
 - `docs/contracts/person-settings.md` — the `file` key, additive, and the two
   refusals at the write.
-- `docs/autonomy/v0-5-lane-b-plan.md` — task 4 marked done; task 5 written
+- `docs/autonomy/providers-and-models-plan.md` — task 4 marked done; task 5 written
   (below).
 
 ### User-readable change description

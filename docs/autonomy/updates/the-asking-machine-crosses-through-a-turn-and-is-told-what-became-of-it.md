@@ -19,7 +19,7 @@ daemon still owes, and nothing in that crate.*
 No v0.5 plan names `alo-agentd` among the crates it owns. Its history says
 who builds it: the serving loop, the session, the listener and `Holding` were
 built by the v0.01 delivery lane (`docs/autonomy/v0-01-delivery-plan.md`,
-`v0-01-lane-b-plan.md`), and the kernel-enforcement plan's ready tasks name
+`accounts-and-session-entry-plan.md`), and the kernel-enforcement plan's ready tasks name
 its two kernel tests as their evidence. It is a shared, Linux-only daemon
 whose gate runs only under WSL (`docs/autonomy/LOOP.md`), and the thing this
 task would have to change in it is not a file but its shape: `alo-agentd`

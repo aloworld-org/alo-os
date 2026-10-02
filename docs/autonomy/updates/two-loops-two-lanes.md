@@ -19,7 +19,7 @@ having only ever been one loop.
 
 ## Partition by file is the claiming mechanism
 
-`docs/autonomy/v0-01-lane-b-plan.md` carves the one chain out of the v0.01 plan
+`docs/autonomy/accounts-and-session-entry-plan.md` carves the one chain out of the v0.01 plan
 that is independent of the overlay work: **accounts and session entry** — the
 local account, and the daemon started into a real session. The main plan marks
 those two tasks as lane B's, in words the selector already steps over, so the

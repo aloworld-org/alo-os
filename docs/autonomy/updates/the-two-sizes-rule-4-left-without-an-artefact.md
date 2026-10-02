@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** v0.01 lane B — accounts and session entry
-(`docs/autonomy/v0-01-lane-b-plan.md`, task 13)
+(`docs/autonomy/accounts-and-session-entry-plan.md`, task 13)
 **Contributor:** Claude Code worker, `C:\dev\alo-os-b`
 **Status:** ready for integration
 
@@ -280,7 +280,7 @@ finished tasks have already died at the ninety-minute deadline waiting on it.
 - `crates/alo-models/tests/sizes_an_entry_can_point_at.rs` (new)
 - `crates/alo-driving/tests/from_a_prompt_to_what_a_machine_offers.rs`
 - `docs/quirks.md`
-- `docs/autonomy/v0-01-lane-b-plan.md`
+- `docs/autonomy/accounts-and-session-entry-plan.md`
 - `docs/autonomy/updates/the-two-sizes-rule-4-left-without-an-artefact.md` (new)
 
 ## Limitations and what is left
@@ -326,6 +326,6 @@ its own test saying so. This task's first attempt was refused by exactly that,
 and the ninety-minute worker deadline makes each such refusal expensive.
 
 **STATE.md:** references this report path. Task 13 of
-`docs/autonomy/v0-01-lane-b-plan.md` is done; task 14 (an ADR on whether this
+`docs/autonomy/accounts-and-session-entry-plan.md` is done; task 14 (an ADR on whether this
 catalogue may name a third party's requantisation) is written and ready. No task
 in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.

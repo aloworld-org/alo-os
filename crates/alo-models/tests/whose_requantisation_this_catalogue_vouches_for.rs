@@ -11,7 +11,7 @@
 //! needs to know — so that what this catalogue borrows is a *file* and never a
 //! measurement. This file is that decision as a test rather than as prose.
 //!
-//! One test per acceptance criterion in `docs/autonomy/v0-01-lane-b-plan.md`'s
+//! One test per acceptance criterion in `docs/autonomy/accounts-and-session-entry-plan.md`'s
 //! task 14:
 //!
 //! - **The decision is written down** where a citation of it lands, says what

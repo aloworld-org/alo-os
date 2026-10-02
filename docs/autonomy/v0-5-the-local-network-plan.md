@@ -5,7 +5,7 @@ that find each other* in `docs/features.md`, and the part of *the whole of it
 works with no internet at all* that is theirs.
 **Why it exists:** [ADR 0028](../decisions/0028-screenless-v0-5-work-begins-while-v0-01-waits-on-hardware.md)
 begins v0.5's screenless work while v0.01 waits on hardware, and this is the
-next partition after `v0-5-lane-b-plan.md` finished. **[ADR 0003](../decisions/0003-the-network-is-not-authority.md)
+next partition after `providers-and-models-plan.md` finished. **[ADR 0003](../decisions/0003-the-network-is-not-authority.md)
 settles the model** — discovery is open, use requires mutual deliberate
 pairing, pairings behave like grants, a remote agent acts only under a local
 grant, and there is no trusted-network setting. Nothing here re-decides any of

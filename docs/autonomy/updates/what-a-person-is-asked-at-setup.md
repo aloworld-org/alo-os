@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** v0.01 lane B — accounts and session entry
-(`docs/autonomy/v0-01-lane-b-plan.md`, task 11)
+(`docs/autonomy/accounts-and-session-entry-plan.md`, task 11)
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration. Not committed and not pushed; the supervisor
 gates and publishes.

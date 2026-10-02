@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Workstream:** v0.01 lane B — accounts and session entry
-(`docs/autonomy/v0-01-lane-b-plan.md`, task 8)
+(`docs/autonomy/accounts-and-session-entry-plan.md`, task 8)
 **Contributor:** Claude Code worker, this checkout
 
 ## What the task was
@@ -66,7 +66,7 @@ default when it is offline at setup.
   grade from memory, a model the catalogue does not offer, a dropped row, a
   verdict with no candidate under it, an empty table, an empty catalogue — is
   put in front of it and shown refused.
-- `docs/autonomy/v0-01-lane-b-plan.md` — task 8 marked **Done, 2026-09-11**
+- `docs/autonomy/accounts-and-session-entry-plan.md` — task 8 marked **Done, 2026-09-11**
   with the finding, and task 9 (*The grade the weights wait on*) written in
   the same change: measuring the three smallest unmeasured CPU-workable
   entries with `alo-driving`, grades only from runs actually made, next task

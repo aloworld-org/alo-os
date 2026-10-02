@@ -28,7 +28,7 @@
 //! in, and every refusal below is still the rule that makes it one.
 //!
 //! What this file holds, one test per acceptance criterion in
-//! `docs/autonomy/v0-01-lane-b-plan.md`'s task 13:
+//! `docs/autonomy/accounts-and-session-entry-plan.md`'s task 13:
 //!
 //! - **The carry-or-fetch table agrees**, because correcting a size moves the
 //!   measurement ADR 0025 owes, and a table left behind would say the weights

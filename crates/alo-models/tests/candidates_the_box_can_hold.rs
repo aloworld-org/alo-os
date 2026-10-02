@@ -56,7 +56,7 @@ const THE_QUIRKS: &str = "docs/quirks.md";
 const THE_CATALOGUE: &str = "crates/alo-models/data/catalogue.toml";
 
 /// The plan this task belongs to.
-const THE_PLAN: &str = "docs/autonomy/v0-01-lane-b-plan.md";
+const THE_PLAN: &str = "docs/autonomy/accounts-and-session-entry-plan.md";
 
 /// The candidates this task added, by the ids the catalogue uses.
 ///

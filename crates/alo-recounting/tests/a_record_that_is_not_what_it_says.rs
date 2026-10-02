@@ -1,7 +1,7 @@
 //! The plan's acceptance for *the account a person asks for is the one their
 //! machine kept*, one test per criterion.
 //!
-//! `docs/autonomy/v0-01-lane-b-plan.md`, task 6: *a record whose entries and
+//! `docs/autonomy/accounts-and-session-entry-plan.md`, task 6: *a record whose entries and
 //! whose beginning disagree — an entry older than the moment the head says the
 //! record starts at, or moments that run backwards — is reported as* this
 //! record is not what it says it is*, in words, alongside everything that could

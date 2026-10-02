@@ -1,4 +1,7 @@
-# v0.5, lane B — providers and models, before there is anywhere to show them
+# Providers and models
+
+*Named `v0.5, lane B — providers and models, before there is anywhere to show them` until 2026-10-02. **Lane B is a queue code** — it tells a stranger nothing about what this plan holds, which is what `CLAUDE.md`'s *names are for strangers* forbids, and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release it belongs to is in `ROADMAP.md`, which is where release codes live.*
+
 
 **Workstream:** the second lane's v0.5 partition — `crates/alo-models`,
 `crates/alo-choosing`, `crates/alo-asking`, `crates/alo-secrets`,

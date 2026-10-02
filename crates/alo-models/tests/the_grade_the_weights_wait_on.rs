@@ -63,7 +63,7 @@ const THE_FINDING: &str = "### A 7B-class entry cannot be measured on the box";
 const THE_QUIRKS: &str = "docs/quirks.md";
 
 /// The plan this task belongs to.
-const THE_PLAN: &str = "docs/autonomy/v0-01-lane-b-plan.md";
+const THE_PLAN: &str = "docs/autonomy/accounts-and-session-entry-plan.md";
 
 /// The three entries the plan named, by the ids the catalogue uses.
 const THE_THREE: [&str; 3] = [

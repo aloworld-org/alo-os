@@ -1,7 +1,7 @@
 # The pinned model runtime is on the image
 
 - **Date:** 2026-09-11
-- **Workstream:** lane B (`docs/autonomy/v0-01-lane-b-plan.md`, task 7)
+- **Workstream:** lane B (`docs/autonomy/accounts-and-session-entry-plan.md`, task 7)
 - **Contributor:** build-loop worker, this checkout
 - **Status:** ready for integration
 

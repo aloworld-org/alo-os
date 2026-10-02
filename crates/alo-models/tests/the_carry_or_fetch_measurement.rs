@@ -48,7 +48,7 @@ const THE_ENTRY: &str = "### The carry-or-fetch measurement ADR 0025 owes";
 const THE_MEASUREMENT: &str = "docs/quirks.md";
 
 /// The plan whose next task is the grade the weights wait on.
-const THE_PLAN: &str = "docs/autonomy/v0-01-lane-b-plan.md";
+const THE_PLAN: &str = "docs/autonomy/accounts-and-session-entry-plan.md";
 
 /// What the entry must say while no catalogued entry clears the bar.
 const NOTHING_CLEARS: &str = "none of them clears the bar";

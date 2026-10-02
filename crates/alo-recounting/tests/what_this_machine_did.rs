@@ -1,7 +1,7 @@
 //! The plan's acceptance for *a person can be told what their machine did*,
 //! one test per criterion.
 //!
-//! `docs/autonomy/v0-01-lane-b-plan.md`, task 5: *an account of what happened on
+//! `docs/autonomy/accounts-and-session-entry-plan.md`, task 5: *an account of what happened on
 //! this machine is read back off the real record file and answered as
 //! `alo_recounting::Told` values, oldest first and bounded, with
 //! `alo_keeping`'s* this record does not go all the way back *carried into the

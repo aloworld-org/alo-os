@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-10
 **Workstream:** v0.01 lane B — accounts and session entry
-(`docs/autonomy/v0-01-lane-b-plan.md`, task 1; the main plan's task 4)
+(`docs/autonomy/accounts-and-session-entry-plan.md`, task 1; the main plan's task 4)
 **Contributor:** the lane B build loop's worker, in this checkout
 
 ## What changed

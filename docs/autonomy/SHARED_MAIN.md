@@ -293,7 +293,7 @@ completed tasks on the same day this rule was written.
 every plan under this directory was read for the disagreement, and **74 tasks
 across six plans** said `ready` above their own `**Done, <date>.**` — 32 in
 `v0-01-delivery-plan.md`, a release that shipped, and 14 each in
-`kernel-enforcement-plan.md` and `v0-01-lane-b-plan.md`. Every one of those
+`kernel-enforcement-plan.md` and `accounts-and-session-entry-plan.md`. Every one of those
 status words now reads `done`, copied from the marker directly beneath it and
 with no other word of any plan touched. So this rule is advice about which of
 two statements to trust, and no longer a workaround for 74 of them being

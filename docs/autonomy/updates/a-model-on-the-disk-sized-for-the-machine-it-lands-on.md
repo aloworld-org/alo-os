@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-22
 **Workstream:** lane B — the image's weights half (`C:\dev\alo-os-3`, AGAI01)
-**Task:** 10 in `docs/autonomy/v0-01-lane-b-plan.md`, *A model on the disk,
+**Task:** 10 in `docs/autonomy/accounts-and-session-entry-plan.md`, *A model on the disk,
 sized for the machine it lands on*
 **Status:** ready for integration. Not committed and not pushed; the supervisor
 gates and publishes.
@@ -145,7 +145,7 @@ of the plan is that build, written from this outcome.
 - `docs/autonomy/v0-01-evidence.md` — the entry for *the local model is what the
   machine arrives ready to run* rewritten: which model, who decides it, the
   no-weights case, and the bar now cleared with the road to it unfinished.
-- `docs/autonomy/v0-01-lane-b-plan.md` — task 10 marked done; **task 17 written
+- `docs/autonomy/accounts-and-session-entry-plan.md` — task 10 marked done; **task 17 written
   in the same change**, which is the build.
 - `docs/autonomy/v0-01-delivery-plan.md` — task 31, the matching task, was
   already marked done on 2026-09-11 and now carries a dated note saying lane B's
@@ -244,5 +244,5 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
 - **ROADMAP.md:** no line ticks. The image line's machine half stays empty.
 - **QUEUE.md / STATE.md:** lane B task 10 done; task 17 (*The recipe built with
   the model it now carries*) written into
-  `docs/autonomy/v0-01-lane-b-plan.md` and ready. `v0-01-delivery-plan.md`
+  `docs/autonomy/accounts-and-session-entry-plan.md` and ready. `v0-01-delivery-plan.md`
   task 31 was already done and now records what superseded it.

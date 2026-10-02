@@ -1,11 +1,14 @@
-# v0.01, lane B — accounts and session entry
+# Accounts and session entry
+
+*Named `v0.01, lane B — accounts and session entry` until 2026-10-02. **Lane B is a queue code** — it tells a stranger nothing about what this plan holds, which is what `CLAUDE.md`'s *names are for strangers* forbids, and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release it belongs to is in `ROADMAP.md`, which is where release codes live.*
+
 
 The second loop's plan. `docs/autonomy/v0-01-delivery-plan.md` is the spine of
 v0.01; this file carves out the one chain in it that is independent of the
 overlay work, so two loops in two checkouts can build at once without ever
 choosing the same task.
 
-Point a loop at it with `ALO_LOOP_PLAN=docs/autonomy/v0-01-lane-b-plan.md`, from
+Point a loop at it with `ALO_LOOP_PLAN=docs/autonomy/accounts-and-session-entry-plan.md`, from
 a checkout of its own. **Never from a checkout another loop is in** — the lock
 forbids it, and the lock is right.
 

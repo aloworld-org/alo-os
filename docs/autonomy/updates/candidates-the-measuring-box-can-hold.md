@@ -3,7 +3,7 @@
 **Date:** 2026-09-11
 **Workstream:** v0.01 lane B — accounts and session entry
 **Task:** *Candidates the measuring box can actually hold*
-(`docs/autonomy/v0-01-lane-b-plan.md`, task 12)
+(`docs/autonomy/accounts-and-session-entry-plan.md`, task 12)
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration.
 
@@ -152,7 +152,7 @@ comparable.
   carry-or-fetch table and its surrounding sentences brought into agreement with
   a fourteen-entry catalogue; a new entry under *Pinned engines* for the
   `granite3.3:2b` pull failure.
-- `docs/autonomy/v0-01-lane-b-plan.md` — task 12 marked **Done, 2026-09-11**
+- `docs/autonomy/accounts-and-session-entry-plan.md` — task 12 marked **Done, 2026-09-11**
   with its outcome; task 13 written from it.
 
 Nothing was touched in `crates/alo-shell`, no weights went near the image, no

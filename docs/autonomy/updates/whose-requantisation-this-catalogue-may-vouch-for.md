@@ -1,7 +1,7 @@
 # Whose requantisation this catalogue may vouch for
 
 **Date:** 2026-09-11
-**Workstream:** v0.01, lane B (`docs/autonomy/v0-01-lane-b-plan.md`, task 14)
+**Workstream:** v0.01, lane B (`docs/autonomy/accounts-and-session-entry-plan.md`, task 14)
 **Contributor:** Claude Code, in `C:\dev\alo-os-b`
 **Status:** ready for integration
 
@@ -252,5 +252,5 @@ For the integration owner (`CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md
 - `crates/alo-models/tests/whose_requantisation_this_catalogue_vouches_for.rs` (new)
 - `crates/alo-models/tests/sizes_an_entry_can_point_at.rs` — the rule count it
   reads moved from five to six
-- `docs/autonomy/v0-01-lane-b-plan.md`
+- `docs/autonomy/accounts-and-session-entry-plan.md`
 - `docs/autonomy/updates/whose-requantisation-this-catalogue-may-vouch-for.md`

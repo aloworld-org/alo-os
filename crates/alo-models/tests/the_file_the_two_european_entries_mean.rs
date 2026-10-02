@@ -9,7 +9,7 @@
 //! 14.91 GB, which is the honest fallback and is not a model anybody runs.
 //!
 //! This file is the choice, as a check rather than as a claim. One test per
-//! acceptance criterion in `docs/autonomy/v0-01-lane-b-plan.md`'s task 15:
+//! acceptance criterion in `docs/autonomy/accounts-and-session-entry-plan.md`'s task 15:
 //!
 //! - **Each entry names an upload and states all three things about it**, and
 //!   the artefact and its digest are compared with what those repositories

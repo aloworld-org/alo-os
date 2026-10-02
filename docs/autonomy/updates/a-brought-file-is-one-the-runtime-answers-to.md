@@ -1,7 +1,7 @@
 # A brought file is one the runtime answers to
 
 - Date: 2026-09-13
-- Workstream: v0.5 lane B, task 5 (`docs/autonomy/v0-5-lane-b-plan.md`)
+- Workstream: v0.5 lane B, task 5 (`docs/autonomy/providers-and-models-plan.md`)
 - Contributor: Claude Code, by hand — no worker could run
 - Status: **the last word of the promise, and the first place it could have become a download**
 
