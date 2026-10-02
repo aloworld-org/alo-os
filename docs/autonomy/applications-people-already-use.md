@@ -22,6 +22,48 @@ models and none of them runs on a machine:
 
 ---
 
+## What was found on 2026-10-02, before any of it was built again
+
+**Tasks 2, 4 and 5 all read `ready`, and all three are built.** Measured before
+starting task 2, which is the only reason none of them was built twice — and
+task 1 above records the same thing happening to it on 2026-09-27, when the
+exit gate said *no portal backend service exists* and the backend was written.
+
+```text
+image/Containerfile:422   dnf install flatpak
+image/Containerfile:424   flatpak remote-add --if-not-exists --system flathub
+                          with a signing key, and alo-software refuses a place
+                          that does not check signatures before fetching (ADR 0073)
+alo-software/asked.rs     install, installed, updates, update, remove, sources, open
+                          — every verb the acceptance names
+alo-software/shipped.toml seven applications, each by role, identifier, source,
+                          version and licence:
+                            web-browser  org.mozilla.firefox     <- task 5
+                            terminal     app.devsuite.Ptyxis     <- task 4
+                            file-manager org.kde.dolphin
+                            archives     org.kde.ark
+                            text-editor  org.gnome.TextEditor
+                            image-viewer ...
+alo-shipping.service      runs the walker once at first boot
+```
+
+**So the group is not four tasks of work. It is built, and owed a machine.**
+Every one of these acceptances ends on a running machine — *installed, listed,
+updated and removed through `alo-software`'s own road*, *opens on a real
+machine* — and no machine this project owns can walk any of them.
+
+**The terminal was rented rather than written, as task 4 asks**, and it is
+`app.devsuite.Ptyxis` rather than the `foot` the task names. That is a decision
+the list records and this task does not; whichever is right, **the task naming
+one and the list carrying another is the kind of disagreement that is only
+visible when somebody reads both**, and it is recorded here rather than
+silently resolved by a lane.
+
+*Four statuses in this repository read `ready` today and were built: these
+three and task 40 of the delivery plan. In every case the work landed and the
+sentence that described its absence was left on the page. A status is a claim
+with a date, and this plan now carries dates for that reason.*
+
 ## Tasks
 
 ### 1. The portal backend, running
