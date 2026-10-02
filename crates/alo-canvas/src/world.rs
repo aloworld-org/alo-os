@@ -12,7 +12,7 @@
 //! reading — **no new arithmetic.**
 //!
 //! A Place seen in the World is a **tile**: a point and a size on a plane. That
-//! is a [`Frame`](crate::Frame), which this crate already has, and fitting a set
+//! is a [`Frame`], which this crate already has, and fitting a set
 //! of them into a viewport is [`reached_by`](crate::plane::reached_by) followed by
 //! [`Camera::showing`], which this crate already does for the frames on one
 //! Place. **The World fits its Places exactly as a Place fits its frames**, and a
@@ -21,7 +21,7 @@
 //!
 //! # Where the boundary is, and why no existing number moved
 //!
-//! [`Zoom::FURTHEST_OUT`] is *the furthest out a person may look* **within a
+//! [`Zoom::FURTHEST_OUT`](crate::Zoom::FURTHEST_OUT) is *the furthest out a person may look* **within a
 //! Place**, and `one_step_out` at that rung answers [`None`] — a step with nowhere
 //! to go. The World is what that step reaches. Nothing above it changes meaning,
 //! no constant moved, and `Show all` still fits one Place's frames.
@@ -58,7 +58,7 @@ const THE_WORLDS_OWN_SURFACE: Place = Place::FIRST;
 /// with the camera, which is the fault `one-plane-two-vocabularies` names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Showing {
-    /// Every Place at once. Reached by stepping out from [`Zoom::FURTHEST_OUT`].
+    /// Every Place at once. Reached by stepping out from [`Zoom::FURTHEST_OUT`](crate::Zoom::FURTHEST_OUT).
     TheWorld,
     /// One Place, filling the screen, with its own frames on it.
     OnePlace(Place),
