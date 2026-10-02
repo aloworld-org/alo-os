@@ -156,13 +156,42 @@ Crates: `alo-put-aside`, `alo-canvas`'s region work, and
 Taken under *work a task needs is part of that task*; none changes a signature
 another lane depends on, so splitting them breaks nothing.
 
-### Ready — the pointer classifier into `alo-put-aside`
+### Not this lane's — the pointer classifier into `alo-put-aside`
 
-`surface_areas.rs` and `panel_region.rs`, handed over on
-`handover/dev-pc/the-pointer-classifier`, with
-`no_figure_from_the_design_reaches_the_code` carried across **in the same
-change** — a source check that stops applying because the source moved is the
-rule quietly ceasing to exist. `Revealing` gets a home there.
+**This entry said `Ready` under this machine and it is the panel lane's task.**
+The material is this lane's; the task is not. `handover/README.md` on
+`handover/dev-pc/the-pointer-classifier` records the handover and, in advance,
+the error of taking it back:
+
+> Handed to the desktop lane on 2026-10-01 at its request, with the dev-PC lane
+> claiming the task back from it earlier the same day for exactly the reason it
+> should not have: *I have material for it*. **Having material is a reason to
+> hand the material over, not to hold the task.**
+
+Acting on this entry would have been that same reclaim a second time, against a
+document written to prevent it. It was caught by measuring before building
+rather than by anybody remembering.
+
+**The work is genuinely unbuilt**, which was also worth checking rather than
+assuming either way. Two of the parked file's test names appear in `main` —
+`a_panel_mirrored_to_the_left_needs_no_change_here` and
+`a_screen_that_is_not_the_frame_the_design_was_drawn_on` — and on that evidence
+alone it looked absorbed by `#373`. It is not: **ten of thirteen names are
+absent**, and the two shared ones are concepts the panel lane reused for a
+different module, which answers *which preview* rather than *whose area*. A
+strong inference from two matching names would have retired a real task.
+
+**One line of the old entry was stale in the other direction.** *`Revealing`
+gets a home there* — it has one: `crates/alo-dock/src/revealing.rs`, exported
+from that crate's `lib.rs`, and `alo-put-aside` already talks to it from
+`the_region_the_panel_claims.rs`. The handover README gives *`Revealing` has no
+owner* as the whole reason the files are out of a crate, so **the stated reason
+for parking them has expired** and whoever takes it should know that before
+reading the rest.
+
+What survives unchanged: `no_figure_from_the_design_reaches_the_code` must be
+carried across **in the same change**, because a source check that stops
+applying because its source moved is the rule quietly ceasing to exist.
 
 ### Ready — three stale statuses in the put-aside plan
 
