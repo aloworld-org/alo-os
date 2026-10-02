@@ -28,6 +28,53 @@ fn by_name<'a>(screens: &'a Screens, named: &DisplayId) -> &'a ScreenPlace {
 /// that crate's answers for that screen, and none of them is worked out here —
 /// including the room, which is the screen's own pixels at the size it is
 /// **drawn** at rather than the one it was asked for.
+/// **The room is the pixels divided by the scale, and this says so without
+/// doing the division itself.**
+///
+/// The other tests here build their expected value by calling
+/// `Scale::laid_out` at the test site. That is the same arithmetic written
+/// twice, and two copies of a wrong conversion agree with each other — which is
+/// exactly how a drag-handle floor was converted by the display scale on
+/// 2026-10-02 and landed, with its own test asserting the fault as the promise.
+///
+/// So this names the relationship instead: **a denser screen offers less room
+/// from the same glass**, and at one to one the room is the pixels. No
+/// `laid_out` call appears below.
+#[test]
+fn a_denser_screen_offers_less_room_from_the_same_glass() {
+    let glass = an_office_screen().pixels();
+
+    let at_one = TheRoom::from_pixels(Scale::a_hundred(), glass).across_and_along();
+    assert_eq!(
+        at_one,
+        (
+            i32::try_from(glass.width()).unwrap(),
+            i32::try_from(glass.height()).unwrap()
+        ),
+        "at one to one a screen's room is its pixels, and this is the only \
+         case where the two are the same number"
+    );
+
+    // Each is a scale `alo-displays` can report. The fractional ones matter
+    // most: a conversion written as a whole-number factor floors both to one,
+    // and a test at 100 against 200 alone cannot tell that apart from correct.
+    let mut smaller_than = at_one;
+    for per_cent in [125u16, 150, 200] {
+        let Ok(scale) = Scale::per_cent(per_cent) else {
+            unreachable!("{per_cent} is a scale alo-displays accepts")
+        };
+        let denser = TheRoom::from_pixels(scale, glass).across_and_along();
+        assert!(
+            denser.0 < smaller_than.0 && denser.1 < smaller_than.1,
+            "at {per_cent} per cent the room is {denser:?} and at the scale \
+             below it it was {smaller_than:?}. A denser screen draws bigger \
+             things, so the same glass has to hold less of them — a room that \
+             grew, or held still, is a division that did not happen."
+        );
+        smaller_than = denser;
+    }
+}
+
 #[test]
 fn every_screen_is_where_alo_displays_put_it_at_the_size_it_named() {
     let remembered = Changes::untouched();
@@ -45,8 +92,10 @@ fn every_screen_is_where_alo_displays_put_it_at_the_size_it_named() {
         assert_eq!(place.scale(), on.drawn_at());
         assert_eq!(place.pixels(), on.reported().pixels());
         assert_eq!(place.is_main(), on.placed().is_the_main_screen());
+        // The expected value is built by calling `laid_out` here, so this test
+        // always knew it was asking about the laid-out room. Now it says so.
         assert_eq!(
-            place.room(),
+            place.room().across_and_along(),
             (
                 i32::try_from(on.drawn_at().laid_out(on.reported().pixels().width())).unwrap(),
                 i32::try_from(on.drawn_at().laid_out(on.reported().pixels().height())).unwrap(),
@@ -59,7 +108,7 @@ fn every_screen_is_where_alo_displays_put_it_at_the_size_it_named() {
     let office = by_name(&screens, an_office_screen().named_for_the_shell());
     assert_ne!(office.scale(), Scale::a_hundred());
     assert_ne!(
-        office.room(),
+        office.room().across_and_along(),
         (
             i32::try_from(an_office_screen().pixels().width()).unwrap(),
             i32::try_from(an_office_screen().pixels().height()).unwrap()

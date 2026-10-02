@@ -47,7 +47,7 @@ pub struct ScreenPlace {
     pixels: Resolution,
     /// What a surface on it has to lay itself out in: its pixels at the size it
     /// is drawn at.
-    room: (i32, i32),
+    room: TheRoom,
     /// The size it is drawn at, which is the size it was given unless the
     /// machine cannot draw that one.
     scale: Scale,
@@ -55,6 +55,75 @@ pub struct ScreenPlace {
     is_main: bool,
     /// Its background, its dock's edge and how warm it is drawn.
     wearing: Wearing,
+}
+
+/// A screen's room: **its pixels divided by the scale it is drawn at, once.**
+///
+/// # Why this is a type and not a pair of numbers
+///
+/// `TheRoom::from_pixels` is the one place in this crate where a display's
+/// scale is divided out. Until 2026-10-02 it was a free function, `room_at`,
+/// returning a bare `(i32, i32)`. **A
+/// conversion that throws away the type of its own answer leaves every reader
+/// downstream to guess**, and they guessed `Physical` — smithay's marker for
+/// framebuffer pixels, which this is the opposite of.
+///
+/// The cost of that guess, measured rather than feared:
+///
+/// - two lanes spent an hour on 2026-09-30 diagnosing a unit mismatch that did
+///   not exist, recorded in `canvas_fixed_controls`'s module header;
+/// - a confident bug report was filed on 2026-10-02 against a pointer road that
+///   was correct, and withdrawn only because the other lane asked for a
+///   measurement instead of accepting it;
+/// - a drag-handle floor was converted by the display scale on the same day and
+///   **landed**, protecting 88 × 48 where the owner's ruling promises 44 × 24,
+///   with the one test able to detect it asserting the fault as the promise.
+///
+/// Three wrong readings of the same eight lines. The type is here so the fourth
+/// one is a compiler error instead of an afternoon.
+///
+/// # What it is not
+///
+/// **`Physical` is not renamed and nothing is replaced mechanically.** It is
+/// smithay's marker, it is correct wherever a value really is in framebuffer
+/// pixels, and the owner's direction is explicit that the usages are audited by
+/// what they represent rather than swept. This names the boundary; the audit
+/// follows it outwards, with evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheRoom {
+    /// Side to side, in laid-out units.
+    across: i32,
+    /// Top to bottom, in laid-out units.
+    along: i32,
+}
+
+impl TheRoom {
+    /// The room a screen of `pixels` offers when drawn at `scale`.
+    ///
+    /// **The only constructor**, so a `TheRoom` cannot be made from numbers that
+    /// never went through the division. A pair that was never converted is
+    /// exactly the thing this type exists to be distinguishable from.
+    fn from_pixels(scale: Scale, pixels: Resolution) -> Self {
+        let side = |pixels: u32| {
+            i32::try_from(scale.laid_out(pixels))
+                .unwrap_or(i32::MAX)
+                .max(1)
+        };
+        Self {
+            across: side(pixels.width()),
+            along: side(pixels.height()),
+        }
+    }
+
+    /// Across and along, in laid-out units.
+    ///
+    /// Named rather than a field access or a `From`, because **this is where a
+    /// caller stops being told what the numbers are** and it should be visible
+    /// at the call site that it happened.
+    #[must_use]
+    pub const fn across_and_along(self) -> (i32, i32) {
+        (self.across, self.along)
+    }
 }
 
 impl ScreenPlace {
@@ -83,8 +152,12 @@ impl ScreenPlace {
     }
 
     /// The room a surface on it lays itself out in.
+    ///
+    /// Returns [`TheRoom`] rather than a pair, so a caller cannot mistake it for
+    /// the screen's pixels — which is [`Self::pixels`], directly above, and was
+    /// the same shape of value with a different meaning.
     #[must_use]
-    pub const fn room(&self) -> (i32, i32) {
+    pub const fn room(&self) -> TheRoom {
         self.room
     }
 
@@ -243,23 +316,13 @@ fn laid_out(attached: &Attached, appearance: &Appearance, tonight: &Tonight) -> 
                 name: reported.named_for_the_shell().clone(),
                 at: on.placed().position(),
                 pixels: reported.pixels(),
-                room: room_at(drawn_at, reported.pixels()),
+                room: TheRoom::from_pixels(drawn_at, reported.pixels()),
                 scale: drawn_at,
                 is_main: on.placed().is_the_main_screen(),
                 wearing: Wearing::of(reported, appearance, tonight),
             }
         })
         .collect()
-}
-
-/// A screen's pixels at the size it is drawn at, as a compositor counts them.
-fn room_at(scale: Scale, pixels: Resolution) -> (i32, i32) {
-    let side = |pixels: u32| {
-        i32::try_from(scale.laid_out(pixels))
-            .unwrap_or(i32::MAX)
-            .max(1)
-    };
-    (side(pixels.width()), side(pixels.height()))
 }
 
 #[cfg(test)]

@@ -90,7 +90,7 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
                 .each()
                 .find(|place| place.name() == &picture.name)
                 .expect("every picture is a screen on this desk");
-            assert_eq!(picture.size, place.room());
+            assert_eq!(picture.size, place.room().across_and_along());
             assert_eq!(picture.at, place.at());
             assert_eq!(picture.dock.size, picture.size);
             assert!(!picture.dock.solids.is_empty());
