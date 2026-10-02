@@ -66,6 +66,87 @@ fn drawn_with(
     )
 }
 
+/// The same, on a display of `display_scale` hundredths.
+///
+/// A separate helper rather than a sixth argument on [`drawn_with`], because
+/// every existing caller means *one to one* and giving them all a `100` to pass
+/// would be noise in a hundred call sites to serve two tests.
+fn drawn_at(
+    dock: &Dock,
+    look: DesktopLook,
+    running: &RunningWindow,
+    filling: &FillingWindow,
+    size: (i32, i32),
+    display_scale: u16,
+) -> Result<DesktopPicture, RenderError> {
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    picture(
+        dock,
+        look,
+        crate::desktop_raster::Shown {
+            running: &running_shows(running, &strings),
+            filling: &filling_shows(filling, &strings),
+            division: crate::desktop_testing::a_display_two_windows_share(),
+            offer: crate::desktop_testing::nothing_offered(),
+            windows: &[],
+            put_aside: crate::desktop_testing::nothing_put_aside(),
+            filling_the_screen: false,
+            display_scale,
+        },
+        &mut labels.fonts,
+        size,
+    )
+}
+
+/// **A display's scale reaches the surfaces, and this is the test that was
+/// missing while it did not.**
+///
+/// `division_raster::picture` has always taken a scale and converted with it,
+/// and its only caller passed the literal `1` — so every surface was drawn as
+/// though every display were one to one, and **nothing anywhere could tell**.
+/// This asserts the seam rather than the arithmetic: `division_raster`'s own
+/// tests hold the multiplication, and this holds that the number arrives.
+///
+/// At 125, 150 and 200 by the owner's direction of 2026-10-01. The fractional
+/// two matter most: the scale was a whole-number factor until 2026-10-02 and
+/// both of them floored to 1, so a test at 1 against 2 could not have seen it.
+#[test]
+fn the_displays_scale_reaches_what_is_drawn() {
+    let appearance = an_appearance();
+    let look = noon_look(&appearance, Direction::LeftToRight);
+    let (running, filling, _folder) = both_open();
+    let size = (1920, 1080);
+
+    let at_one = drawn_at(&Dock::shipped(), look, &running, &filling, size, 100).unwrap();
+    // **Unwrapped rather than matched.** A division two windows share has
+    // shares in it; if it has none the fixture is wrong and that is the failure
+    // to report. `an_undivided_display` has none at all — which is why this test
+    // does not use it, and why comparing `Option`s here would have let an
+    // `assert_eq` pass by holding `None` against `None`.
+    let one_to_one = *at_one.division.shares.first().unwrap();
+
+    for scale in [125u16, 150, 200] {
+        let scaled = drawn_at(&Dock::shipped(), look, &running, &filling, size, scale).unwrap();
+        let share = *scaled.division.shares.first().unwrap();
+        assert_ne!(
+            share, one_to_one,
+            "a display at {scale} per cent drew the same division as one at 100, \
+             so the scale did not reach the raster at all"
+        );
+        assert_eq!(
+            share.size.w,
+            one_to_one.size.w * i32::from(scale) / 100,
+            "width at {scale}"
+        );
+        assert_eq!(
+            share.size.h,
+            one_to_one.size.h * i32::from(scale) / 100,
+            "height at {scale}"
+        );
+    }
+}
+
 /// Every colour a picture paints: its shapes and every inked pixel.
 fn every_colour(picture: &DesktopPicture) -> Vec<[u8; 3]> {
     let solids = |solids: &[Solid]| solids.iter().map(|solid| solid.colour).collect::<Vec<_>>();

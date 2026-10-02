@@ -276,6 +276,35 @@ pub(crate) fn an_undivided_display() -> &'static alo_dividing::Division {
     })
 }
 
+/// A display two windows share, for a test that needs a division with shares in
+/// it.
+///
+/// **[`an_undivided_display`] has none**, which is honest and is the trap worth
+/// naming here: a test asserting *this share grew with the display's scale*
+/// against an undivided display compares [`None`] with [`None`]. Written as
+/// `assert_eq` it would have passed, for ever, about nothing — and the fault it
+/// was written to catch was a scale that never arrived. *Found on 2026-10-02
+/// because the assertion was written the other way round and said `left: None,
+/// right: None` out loud.*
+pub(crate) fn a_display_two_windows_share() -> &'static alo_dividing::Division {
+    static TWO: std::sync::OnceLock<alo_dividing::Division> = std::sync::OnceLock::new();
+    TWO.get_or_init(|| {
+        let mut division = alo_dividing::Division::of(
+            alo_dividing::Area::of(
+                alo_dividing::area::Point::at(0, 0),
+                alo_dividing::area::Size::of(1920, 1080),
+            )
+            .unwrap(),
+        );
+        let window =
+            |id| alo_dividing::Window::any_size(alo_dividing::WindowId::from_compositor(id));
+        division
+            .divide_with_next(window(1), Some(window(2)), alo_dividing::Side::Left)
+            .unwrap();
+        division
+    })
+}
+
 /// Nothing being dragged, which is what a desktop nobody is dropping on offers.
 pub(crate) fn nothing_offered() -> &'static alo_dividing::Offer {
     static NONE: alo_dividing::Offer = alo_dividing::Offer::Nothing;
