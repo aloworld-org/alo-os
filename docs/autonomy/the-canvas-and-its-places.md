@@ -250,6 +250,42 @@ Place to key any of it by.
 - **Constraint:** extends `alo-arranging`. A second store would be a second answer
   to *where was everything*, which is the fault this repository keeps finding.
 
+### 6a. The top controls, and the fourth member of the set
+
+**Status:** ready — **the owner made them a promise on 2026-10-02** and
+`docs/features.md` carries them at `[v0.01]`. **Depends on:** nothing.
+
+Until that decision the design drew them and `features.md` listed them nowhere,
+so no lane could build them and three tasks arbitrated against a surface that
+did not exist. The parked pointer classifier is the clearest case: `whose_area`
+takes the Dock's area, the panel's reserved column **and the top controls'**, and
+could not land in any crate because one of its three inputs was unbuildable.
+
+- **Outcome:** a band along the top holding the active window's controls and the
+  way back to the canvas, which gives way to a full-screen window, is reached by
+  pointer or keyboard, **stays while it is being used**, and can be kept visible
+  by a person who would rather it never hid.
+- **It is the fourth fixed control**, and joins the set by being pushed rather
+  than by a signature changing — `canvas_fixed_controls`'s own header says so,
+  and `FixedControlsDrawn` gained its third field on 2026-10-02 exactly that
+  way. So a frame keeps 44 × 24 of its name clear of this too, and the recheck
+  and the mover cover it with no change of their own.
+- **The top-right corner is the panel's**, by the owner's ruling in
+  [the regions note](../design/the-regions-a-pointer-can-be-in.md). The top
+  controls' region stops before the panel. Two surfaces claiming one corner was
+  the fault that ruling settled, and a classifier that re-derived it would
+  reopen it.
+- **No reveal or hide timers**, for the reason the Dock's reveal already gives:
+  a timer makes reaching a surface depend on how fast somebody can move, which
+  is the one thing a person with a tremor or a trackball cannot control.
+- **Verification:** the classifier arbitrating three real surfaces, and a frame
+  whose name is under the top controls named by the recheck — the same seam test
+  the status area got, which is the only kind that can notice whether a control
+  is handed over at all.
+- **Owner:** the lane holding the parked classifier, which is the panel lane by
+  `handover/dev-pc/the-pointer-classifier`'s own README. **Not this lane's**, and
+  recorded here rather than taken.
+
 ### 6. The fixed controls, and a window that can always be got back
 
 **Status:** in progress — the recheck has a caller as of 2026-10-02; two named
