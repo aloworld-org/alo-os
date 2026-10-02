@@ -12,15 +12,15 @@ use smithay::{
     },
     utils::Serial,
     wayland::{
+        buffer::BufferHandler,
+        compositor::{CompositorClientState, CompositorHandler, CompositorState, with_states},
+        pointer_gestures::PointerGesturesState,
         selection::{
             SelectionHandler,
             data_device::{
                 ClientDndGrabHandler, DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
             },
         },
-        buffer::BufferHandler,
-        compositor::{CompositorClientState, CompositorHandler, CompositorState, with_states},
-        pointer_gestures::PointerGesturesState,
         shell::xdg::{
             PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
             XdgToplevelSurfaceData,
@@ -90,6 +90,12 @@ pub(crate) struct Surfaces {
     shm: ShmState,
     /// XDG shell role and configure tracking.
     xdg: XdgShellState,
+    /// The display this shell's globals were made on.
+    ///
+    /// Kept because `set_data_device_focus` needs one every time the keyboard
+    /// moves, and a handle is cheap to clone and impossible to obtain again
+    /// from here. It was passed to `new` and dropped until 2026-10-02.
+    pub(crate) display: DisplayHandle,
     /// **Copy and paste, and drag-and-drop between applications.**
     ///
     /// Held here rather than per-window because a selection is per *seat*: one
@@ -152,6 +158,7 @@ impl Surfaces {
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
+            display: display.clone(),
             // Copy and paste. The global alone is not enough: see
             // `crate::keyboard`, where the selection is made to follow the
             // keyboard, without which a client binds this and finds nothing

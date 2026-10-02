@@ -8,7 +8,7 @@ use smithay::{
         Seat,
         keyboard::{FilterResult, KeyboardHandle, Keycode, XkbConfig},
     },
-    reexports::wayland_server::protocol::wl_surface::WlSurface,
+    reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
     utils::{SERIAL_COUNTER, Serial},
 };
 
@@ -341,7 +341,33 @@ impl Surfaces {
         if let Some(keyboard) = self.keyboard.as_mut() {
             keyboard.forwarded.clear();
         }
+        // **The selection follows the keyboard, or the clipboard is a global
+        // nobody can use.**
+        //
+        // `wl_data_device` is per seat, and a client may only read the
+        // selection while it has the data-device focus. Advertising the manager
+        // without this would let a client bind it, be told nothing holds a
+        // selection, and have copy silently do nothing — a protocol that exists
+        // and is unreachable, which is the shape this repository has met
+        // several times: a road built and nothing calling it.
+        //
+        // Taken from the same `focus` this hands the keyboard, so the two can
+        // never disagree about which client is in front. A surface whose client
+        // has already gone yields `None`, which clears the focus — correct, and
+        // the reason this is `ok()` rather than unwrapped.
+        let seat = self.keyboard.as_ref().map(|keyboard| keyboard.seat.clone());
+        let client = focus
+            .as_ref()
+            .and_then(|surface| self.display.get_client(surface.id()).ok());
+
         handle.set_focus(self, focus, SERIAL_COUNTER.next_serial());
+
+        if let Some(seat) = seat {
+            let display = self.display.clone();
+            smithay::wayland::selection::data_device::set_data_device_focus(
+                &display, &seat, client,
+            );
+        }
         // Smithay 0.7 notifies SeatHandler on entry/replacement, but not clearing.
         // Observe the resulting focus here so backend and lifecycle loss agree.
         self.configure_activation(handle.current_focus().as_ref());
