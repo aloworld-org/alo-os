@@ -149,10 +149,44 @@ grant* structural rather than remembered.
 
 ### 5. Gestures
 
-**Status:** **Done, 2026-09-18** ? implementation complete; supervisor validation pending.
-**Depends on:** 3. Implementation and refusal coverage in `crates/alo-desktops`;
-report `docs/autonomy/updates/touchpad-gesture-intents.md`. Local validation is
-deferred to the supervisor under the worker instructions. Publication requires all nine gates and acceptance evidence to pass.
+**Status:** **recognising is done and wired; *a person can turn each off* is not, 2026-10-03.**
+Was *Done, 2026-09-18 — implementation complete; supervisor validation pending*, and the
+recognising half of that holds up. **Depends on:** 3. Implementation and refusal coverage in
+`crates/alo-desktops`; report `docs/autonomy/updates/touchpad-gesture-intents.md`.
+
+**What is wired, measured rather than assumed.** A touchpad swipe reaches a desktop switch on
+a real machine: `crates/alo-shell/src/libinput_routing.rs` calls `desktop_swipe` in
+production, which decides an `alo_desktops::gesture_events::Intent` and carries out
+`Intent::Desktop`. `forget_unfinished_gestures` is called on the same road. The closed set of
+intents and a test per intent are in `crates/alo-desktops`, and `canvas_pinch` reads the pinch
+preference.
+
+**What has no production road at either end** — found by auditing this lane's own closed
+plans, and the acceptance clause it fails is *a person can turn each off*:
+
+```text
+alo_desktops::gesture_files::keep / ::read   1 caller, and it is a test
+  (crates/alo-desktops/tests/gesture_preferences_are_kept.rs)
+gestures_are_configured                      2 callers, both in one test file
+  (crates/alo-shell/tests/zoom_and_show_all/mod.rs)
+"gesture" anywhere in crates/alo-desktop     once, and it is a comment about
+                                             putting a window aside
+```
+
+Preferences can be written to a file, and a running shell can be told. **Nothing in
+production does either.** So the preference is a type and a file format rather than a setting:
+a person has nowhere to turn a gesture off, and if they had, the running session would not
+learn. Gestures work, with defaults, unchangeably.
+
+**It is one road and it crosses two plans, which is why it is named here rather than taken.**
+The writing end needs a Settings surface, and Settings surfaces in `alo-shell` belong to the
+shell plan's tasks 7-14 rather than to this plan. The applying end is a read at session start
+handed to `gestures_are_configured`, which is this plan's crates — but a setting that can be
+applied and never changed is the half that looks finished while doing nothing, so it is worth
+landing as one change rather than two.
+
+Under this plan's sibling rule in `putting-a-window-aside.md`: it has no caller, and this
+status names what it waits on, citably.
 
 - **Acceptance:** touchpad scroll, pinch to zoom and three- or four-finger swipes
   between desktops are decided from the input library's gesture events into a
@@ -194,7 +228,15 @@ not `nl` — the report argues it.
 
 ### 7. Every sentence, and the walk through a working morning
 
-**Status:** **Done, 2026-09-20.** **This closes the plan.**
+**Status:** **Done, 2026-09-20** — **but it no longer closes the plan, 2026-10-03.**
+
+The walk is not being taken back: it ran, and what it walked it walked. What changed is one
+of the tasks underneath it. Task 5 now records that *a person can turn each off* has no
+production road at either end, so a plan reading *closed* above a clause with no caller would
+be the same fault this plan's own sibling rule exists to catch. **The plan closes when task 5
+does.**
+
+A walk is evidence about the tasks it walks, and it cannot be more finished than they are.
 `crates/alo-dividing/tests/the_walk_through_a_working_morning.rs` walks seven
 moments — two windows split, the boundary dragged, one sent to a second desktop,
 a file dragged over an application, and *Müller* typed on a layout where the
