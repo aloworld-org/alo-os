@@ -39,6 +39,7 @@
 
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
+pub mod a_place_groups_its_windows;
 pub mod a_safe_name;
 pub mod alo_at_work;
 pub mod how_far_alo_has_got;

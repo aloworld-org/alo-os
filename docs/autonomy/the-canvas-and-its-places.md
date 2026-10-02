@@ -353,7 +353,54 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
 
 ### 7. The minimized-window panel, per Place
 
-**Status:** blocked on 4 only; 1 is done — and it is the desktop lane's. *Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on 2026-09-30 — a status that outlived the thing it described, hiding available work from three lanes for two days.*
+**Status:** **two clauses paid, one blocked on task 9, one waiting on an owner decision —
+2026-10-02.** *Read `blocked on 4 only; 1 is done` until this edit, after task 4 landed the
+same day. A status that outlived the thing it described, which this plan records in its own
+margins three times. The desktop lane corrected it inside the change that pays the task,
+rather than spending a branch on the line.*
+
+**What is paid, measured rather than claimed.**
+
+- *A put-aside window names its Place* — `Panel::put_aside` takes a `Place` and every
+  `Preview` carries one. Landed with task 1.
+- *Restoring one from elsewhere travels* — task 4 above, wired into
+  `Server::set_window_minimized` on the way back, and reached in production since the
+  desktop lane's `#412`: a click on a preview calls `bring_this_window_back`, which calls
+  that function, which travels. Before `#412` the road had **no production caller at all**,
+  so this clause was true of a model and of nothing a person could do.
+- *The collapse state differs between two Places* — `alo_put_aside::TheCollapseChoice`, a
+  `BTreeMap<Place, Chosen>` where absent means expanded.
+- *A Place's group shows its windows individually* — `a_place_groups_its_windows`, with
+  nine tests, including two windows of one application on one Place staying two previews
+  and one application spanning two Places staying in both.
+
+**What is not paid, and neither reason is this task's own work.**
+
+**The collapse state *surviving a session* is blocked on task 9**, which says `Done` and is
+not. `crates/alo-arranging` is *where a person left their canvas* and **nothing persists
+it**: `Arrangement::written`/`read` have no caller outside that crate, the crate names no
+file at all, `stand_the_desktop_up` takes no arrangement and `alo-desktop` passes none, and
+the integration suite builds `Arrangement::fresh()` in memory. So a collapse choice added to
+that file would be written to a file nobody writes. Reported to the owner rather than fixed
+here: it is task 9's own clause, in another plan, marked `Done` by another lane.
+
+A settings file was the wrong instinct and is recorded as such. The collapse choice is
+**remembered state, not a setting a person chose**, so `alo-arranging` is its home — and
+ADR 0016 warns that inventing a second store is how a settings system becomes six.
+
+**The grouping has no production caller, deliberately.**
+`docs/design/the-windows-put-aside.md:304` allows grouping by Place and then says *whether
+it is the default when there are many, or always a choice, is not decided.* A draw that
+grouped would answer that question in a drawing crate on behalf of a person who has not
+been asked. So the model is built and tested and nothing calls it, and the owner's decision
+is what it waits on. See the exception in `putting-a-window-aside.md`'s testing rules, which
+this case is the reason for.
+
+**This clause changes no geometry**, so the fixed-controls recovery recheck does not fire on
+it: the panel's reserved column and rail are untouched, because grouping is an ordering over
+previews and not a layout. If the owner rules that the panel groups by default, the rail's
+height may change with headings and *then* the recheck fires — which is the right behaviour
+and is the Mac lane's road working, not a new obligation.
 
 Which Place a put-aside window belongs to; restoring across Places; the collapse
 choice remembered **per Place**, expanded on one surface and collapsed on another;
