@@ -272,6 +272,7 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+mod the_panel_reveals;
 pub mod which_preview_the_pointer_is_on;
 mod window_activation;
 mod window_close;
