@@ -97,13 +97,7 @@ impl crate::Server {
     /// edge or surface being touched*.
     pub(crate) fn what_the_pointer_is_to_the_panel(&self) -> Option<ThePointer> {
         let drawn = self.panel_as_drawn.as_ref()?;
-        let at = self.surfaces.pointer.as_ref()?.location;
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "a pointer inside a pixel belongs to that pixel, the half-open rule the \
-                      rectangles use — the same conversion the peek road makes"
-        )]
-        let at = Point::from((at.x as i32, at.y as i32));
+        let at = self.where_the_pointer_is_in_pixels()?;
         Some(what_the_pointer_is(drawn, at))
     }
 }

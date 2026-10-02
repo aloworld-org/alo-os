@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+mod a_click_brings_a_window_back;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
@@ -273,6 +274,7 @@ pub mod status_items;
 mod status_row;
 mod surfaces;
 mod the_panel_reveals;
+mod the_pointer_in_pixels;
 pub mod which_preview_the_pointer_is_on;
 mod window_activation;
 mod window_close;

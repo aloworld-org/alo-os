@@ -3,7 +3,7 @@
 use std::{io, path::Path, sync::Arc};
 
 use smithay::reexports::wayland_server::{Display, protocol::wl_surface::WlSurface};
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::{Physical, Point, Rectangle};
 
 use crate::{
     SocketError,
@@ -84,6 +84,24 @@ pub struct Server {
     /// only the latest would silently drop a window a person asked to put away, which is the
     /// one outcome this whole surface exists to prevent.
     pub(crate) asked_to_put_aside: Vec<WlSurface>,
+    /// Where the **person** clicked the panel, not yet acted on.
+    ///
+    /// The point of the press, rather than the pointer read again later. A peek asks where the
+    /// pointer *is*; a click asks where it **was when the button went down** — re-reading the
+    /// live pointer when the ask is met would act on whichever preview the pointer had moved
+    /// to, which is a different window from the one the person chose.
+    ///
+    /// Recorded here and met in `crate::direct_desktop` for the same reason as
+    /// `asked_to_put_aside`: deciding *which* preview needs the live `Panel` for the identity
+    /// check, and input has no desktop in scope.
+    pub(crate) asked_to_bring_back: Vec<Point<i32, Physical>>,
+    /// Buttons whose press the panel took, so their release is taken too.
+    ///
+    /// **A client must never see a release for a press it did not see.** The press is swallowed
+    /// where the panel claims it, so the matching release has to be swallowed as well or the
+    /// focused client receives an unpaired release and believes a button it never saw held has
+    /// gone up.
+    pub(crate) clicks_the_panel_took: std::collections::HashSet<u32>,
     /// **What a person is looking at on the canvas.**
     ///
     /// The plane moves under the viewport, so this is the whole of what a pan
@@ -130,6 +148,8 @@ impl Server {
             panel_as_drawn: None,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
+            asked_to_bring_back: Vec::new(),
+            clicks_the_panel_took: std::collections::HashSet::new(),
             camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),

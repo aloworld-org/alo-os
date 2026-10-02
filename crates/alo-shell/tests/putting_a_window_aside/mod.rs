@@ -350,3 +350,116 @@ fn a_desktop_with_no_panel_hides_nothing() {
         "a window was hidden on a desktop with no panel to bring it back from"
     );
 }
+
+/// **The same window answers the lookup while it is put aside and not once it is back.**
+///
+/// This is the lookup a click depends on: the panel holds a `WindowId` and
+/// `Server::bring_this_window_back` needs a surface. Asked twice with **one** number, so
+/// neither answer can be right by accident — a lookup that always answered `Some` and one
+/// that always answered `None` each fail exactly one of these.
+///
+/// Both failures are real and different. Never finding it makes the panel a place windows
+/// go to and never come back from. Finding one that is on the canvas would hand a click a
+/// window that never left, and the match would be a coincidence of numbering rather than
+/// a window somebody put away.
+///
+/// Driven through a real client mapping over the protocol, because the decision being
+/// tested is **which collection to search** — the hidden windows and not the mapped ones —
+/// and a surface somebody constructed is in neither.
+#[test]
+fn the_lookup_finds_a_window_while_it_is_put_aside_and_not_once_it_is_back()
+-> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (while_aside, back, once_back) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            let put = s.put_this_window_aside(
+                &mut panel,
+                &root,
+                somewhere(),
+                Zoom::LIFE_SIZE,
+                Privacy::Ordinary,
+            );
+            assert!(put.is_ok(), "the window could not be put aside");
+
+            // The number comes from the panel's own preview rather than from a second
+            // opinion about what this window is called.
+            //
+            // Carried as an `Option` rather than unwrapped: a panel holding nothing makes
+            // **both** assertions below fail with their own sentences, which says more than
+            // a panic at this line would.
+            let id = panel.previews().first().map(alo_put_aside::Preview::window);
+
+            let while_aside = id
+                .and_then(|id| s.the_put_aside_window_numbered(id))
+                .is_some_and(|found| found == root);
+
+            let back = s.bring_this_window_back(&mut panel, &root).is_ok();
+
+            let once_back = id.is_some_and(|id| s.the_put_aside_window_numbered(id).is_none());
+            (while_aside, back, once_back)
+        })
+    };
+
+    assert!(back, "the window could not be brought back");
+
+    assert!(
+        while_aside,
+        "a put-aside window could not be found by its number, so nothing could ever bring \
+         it back"
+    );
+    assert!(
+        once_back,
+        "a window on the canvas was still found among the put-aside ones, so a click would \
+         act on a window that never left"
+    );
+    Ok(())
+}
+
+/// **A click with nothing clicked brings nothing back.**
+///
+/// The empty case has a test because it is the one that runs every frame: `Desk::dispatch`
+/// asks on every pass through the loop, and a road that did anything at all when nobody
+/// had clicked would act on its own once per frame for ever.
+///
+/// The panel holds a window, which is what makes this capable of failing. Against an empty
+/// panel it would answer `0` whatever the road did.
+#[test]
+fn nothing_clicked_brings_nothing_back() -> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (brought, untouched) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            let put = s.put_this_window_aside(
+                &mut panel,
+                &root,
+                somewhere(),
+                Zoom::LIFE_SIZE,
+                Privacy::Ordinary,
+            );
+            assert!(put.is_ok(), "the window could not be put aside");
+
+            let brought = s.bring_back_what_was_clicked(Some(&mut panel));
+            let untouched = s.minimized_surfaces().any(|it| it == &root) && panel.holding() == 1;
+            (brought, untouched)
+        })
+    };
+
+    assert_eq!(
+        brought, 0,
+        "a window came back out of the panel with nobody having clicked anything"
+    );
+    assert!(
+        untouched,
+        "the panel stopped holding the window, or it returned to the canvas, without a click"
+    );
+    Ok(())
+}

@@ -64,16 +64,13 @@ visited rather than `st_dev` against the parent — the inode above shows device
 cannot answer the question. This is recorded as the remedy if it is ever needed, not as
 a change made on a hypothesis.
 
-## Related, and measured on the same machine
+## Related, and it is not the explanation
 
-`Holding::of("/")` took **2.5 hours** here and passed. `find / -xdev` alone takes
-**314 seconds**. The cause is not this quirk: `/tmp` held **718,892 entries across
-90,427 directories**, 72% of the filesystem, left by test suites across the workspace
-that create a scratch directory named after themselves and their process id and do not
-remove it. A fresh CI runner starts with an empty `/tmp`, which is why the same suite
-takes seconds there and why the local gate and the runner disagree about the cost of
-one test.
+`Holding::of("/")` took **2.5 hours** on this machine and passed. That is **not** this
+quirk: the cause was 718,892 stale entries under `/tmp` left by test suites across the
+workspace, and it has an entry of its own —
+`the-local-gate-gets-slower-every-time-it-is-run.md`, where a reader arriving at a slow
+gate will find it under a title about slow gates.
 
-That is our own test hygiene rather than a platform quirk, and it is recorded where the
-lane that found it works. It appears here only so that a reader who arrives at the slow
-walk is not left with this quirk as the explanation — **it is not the explanation.**
+It is named here only so that somebody who reaches this page first does not leave with
+the wrong cause in hand. The duplicate root is real; it is not what made the walk slow.

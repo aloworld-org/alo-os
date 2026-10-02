@@ -49,7 +49,6 @@ use alo_dock::Peeking;
 use alo_put_aside::Panel;
 use alo_put_aside::panel::NotPutAside;
 use alo_put_aside::peeking_at_a_preview::{peek_at, stop_peeking};
-use smithay::utils::Point;
 
 use crate::which_preview_the_pointer_is_on::{
     OnThePanel, ThePanelAsDrawn, which_preview_the_pointer_is_on,
@@ -103,17 +102,7 @@ impl crate::Server {
     /// gives the reason.
     pub(crate) fn where_the_pointer_is_on_the_panel(&self, panel: &Panel) -> Option<OnThePanel> {
         let drawn = self.panel_as_drawn.as_ref()?;
-        let at = self.surfaces.pointer.as_ref()?.location;
-        // The seat keeps the pointer in logical coordinates as `f64`; the panel was laid out
-        // in this display's physical pixels. `as` truncation is what a pixel lookup wants —
-        // a pointer at 4.9 is in the pixel that starts at 4, which is the half-open rule
-        // `which_preview_the_pointer_is_on` already applies to the rectangles.
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "a pointer inside a pixel belongs to that pixel, which is truncation and \
-                      not an accident of arithmetic — the same half-open rule the rectangles use"
-        )]
-        let at = Point::from((at.x as i32, at.y as i32));
+        let at = self.where_the_pointer_is_in_pixels()?;
         // **The Panel-aware classification, because the frame has one.** `Desk::dispatch` asks
         // the desktop for its frame, which carries `put_aside`, so the identity check in
         // `which_preview_the_pointer_is_on` applies here rather than only to callers that

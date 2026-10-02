@@ -44,7 +44,7 @@ Measured by reading the tree rather than recalled:
 
 ## How a task here is tested, decided once
 
-Two rules taken from lanes that paid for them, so no task has to rediscover them.
+Three rules taken from lanes that paid for them, so no task has to rediscover them.
 
 **Hold the dependency, not the outcome.** `alo-canvas`'s own warning: a dock that
 subtracted a pan to stay still *would pass a test that only checked where the dock ended
@@ -57,6 +57,31 @@ tested and **unreachable by any mouse**, because every test called the composito
 directly and none went through `pointer_button`. *A test that enters by the road a person
 uses is the only one that can tell you the road exists.* For this panel that means a
 press routed through the real input path, never `panel.peek_at(…)`.
+
+**Ask whether it has a caller, and make that part of accepting it.** Four pieces in this
+plan's territory were correct, tested and reachable by nobody: `canvas_never_lost`'s rule,
+`frames_the_controls_now_hide`, that rule's mover, and `Server::bring_this_window_back` —
+which had **no production caller at all** from 2026-09-30 until 2026-10-02, so a person
+could put a window away and never get it back while every test about putting it away
+passed.
+
+Four is not four accidents, and the common factor was named by the Mac lane: **every one
+was blocked on a value that exists only inside a layer with no fixture** — the Dock's
+bounds at draw time, the fixed controls' bounds, a pointer event inside a real seat. A test
+can always be written against the piece. The wiring is the part with nothing to write a
+test against, so the wiring is what gets deferred, and deferred is where it stays.
+
+So the question is asked explicitly rather than rediscovered: **count the production
+callers, with definitions separated from calls.** `grep -c` on the name answers before the
+listing does, and a method whose only callers are tests reads exactly like one that is
+finished.
+
+A corollary the same lanes paid for three times in one day: **a fault found at one site is
+a fault to grep for.** A guard covering the field that happened to get mutated, a report
+naming the one lookup that happened to get mutated — each time the finder stopped at the
+instance and somebody else found the family. Nothing about looking at the line that failed
+suggests looking for its siblings, which is why it belongs here as a rule and not as a
+habit.
 
 ---
 
@@ -410,10 +435,28 @@ is the `one-plane-two-vocabularies` fault repeated on purpose.
 
 ### 3. Restoring, and the camera that travels to it
 
-**Status:** **model built, no evidence, 2026-09-30.** **This said `done` and that was wrong** —
-see *What none of these tasks has* above. *The canvas travels to show it* is drawing, nothing
-draws it, and the travel decision has never been taken by a person clicking anything. Its
-drawing clause will be measured against **Minimized panel / 05 Restored in place**.
+**Status:** **a click brings a window back; blocked on walking it against the design,
+2026-10-02.**
+
+**A person can now take a window out of the panel.** `Server::bring_this_window_back` had
+**no production caller at all** until this: the road was built on 2026-09-30 and the only
+thing that had ever driven it was a test. `crate::a_click_brings_a_window_back` claims a
+press on the rail in `crate::direct_seat` — after that function validates the button and
+before it routes anything to a client — and meets the ask in `Desk::dispatch`, where the
+live `Panel` is in scope for the identity check.
+
+**The travel came free and that was checked rather than hoped for.** `set_window_minimized`
+on the way back is where the canvas plan's task 4 wired *a restore travels*, and the
+bring-back road already called it. `#386` redirected the **outbound** callers of that same
+function to the panel road, so the two obligations share one mechanism — exactly the shape
+that leaves a caller behind. Every call site was enumerated and the restore direction is
+intact.
+
+**What it waits on now:** being walked. A person's click has never been performed on a
+machine, and *the canvas travels to show it* is measured against **Minimized panel / 05
+Restored in place**, which is a Figma frame no machine this project owns can walk.
+
+*Read `model built, no evidence` until 2026-10-02, and before that `done`, which was wrong.*
 
 One click returns that window to its **saved** position and the canvas travels to show
 it. Not to wherever the viewer happens to be.
