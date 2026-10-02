@@ -622,9 +622,35 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **model built, no evidence, and blocked on the reveal machine having no caller,
-2026-10-02.** The put-aside road now exists — a person reaches the panel by `Super`+`M` and by
-the minimise control — so this is no longer blocked on *nothing putting a window aside*.
+**Status:** **the reveal machine has a caller; blocked on nothing drawing the reveal,
+2026-10-02.**
+
+**`alo_dock::Revealing` had zero callers in `alo-shell` and now has one.** A pointer in the
+panel's reserved column but off its rail is `ThePointer::AtTheEdge`; on the rail it is
+`OnTheSurface`; anywhere else it is `Elsewhere`. `crate::the_panel_reveals` makes that
+translation, `Desk::dispatch` asks it, and `alo-desktop` holds the `Revealing` and advances it —
+the same division as the peek: the machine is `alo-dock`'s, the state is the desktop's, the
+geometry is the shell's.
+
+**No figure was invented for the activation strip, and that is the design decision worth
+recording.** The design says activation strips exist — the owner's ruling of 2026-09-30 says
+*activation strips and pointer paths must follow those bounds too* — and nowhere gives one a
+width. It does not need one: the reserved column minus the rail **is** the strip, which is the
+ground `the-regions-a-pointer-can-be-in.md` already explains the region extends past the
+surface in order to provide. A concealed panel draws a rail of no height, so the whole column
+asks — which is right rather than a special case.
+
+**What it waits on now:** nothing reads `Revealing::is_revealed` when the panel is drawn, so
+the panel is still always painted. That is one line in the draw path and it is this lane's, but
+it is a drawing clause and the drawing clauses of this plan are all measured against Figma
+frames that cannot be walked on any machine this project owns.
+
+**The three-surface arbitration is not in this**, deliberately. `whose_area` on
+`handover/dev-pc/the-pointer-classifier` arbitrates between the panel, the Dock and the top
+controls, and **the top controls do not exist in `alo-shell` and are promised in
+`docs/features.md` at no tier.** So the reveal road asks the panel's own region and nothing
+else, which means one opinion about the panel's edge and none about anybody else's. When the
+top controls exist the arbiter goes in front of this and one line changes.
 
 What it waits on, measured rather than asserted: **`alo_dock::revealing` has zero callers in
 `alo-shell`.** The state machine that decides whether a surface is revealed is complete and

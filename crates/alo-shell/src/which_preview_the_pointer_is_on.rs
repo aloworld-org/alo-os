@@ -117,6 +117,23 @@ impl ThePanelAsDrawn {
         }
     }
 
+    /// The rail — what is actually drawn, and so what a pointer can be *on*.
+    ///
+    /// Lent for `crate::the_panel_reveals`, which needs the rail and the reserved column to
+    /// tell *on the surface* from *at the edge*. A rail of no height is a concealed panel and
+    /// contains nothing, which is what makes the whole column ask in that state.
+    pub(crate) const fn rail(&self) -> Rectangle<i32, Physical> {
+        self.picture.rail
+    }
+
+    /// The column the panel owns, flush to the screen edge.
+    ///
+    /// Wider and taller than the rail by the owner's ruling of 2026-09-30, which is what makes
+    /// the ground between them the strip a person crosses rather than dead space.
+    pub(crate) const fn reserved(&self) -> Rectangle<i32, Physical> {
+        self.picture.reserved
+    }
+
     /// **What was drawn at this point**, asked of the draw alone.
     ///
     /// The question a pointer road can answer, because it needs no `Panel`: a person pointing

@@ -164,6 +164,17 @@ mod running {
         /// aside. One peek for the session: at most one window is being looked at at a
         /// time, and a second would be two answers to one person's pointer.
         peeking: alo_dock::Peeking,
+        /// Whether the panel is on the screen, and why.
+        ///
+        /// **Starts covered**, which is the honest state at sign-in: nothing has been put
+        /// aside and nobody has reached for the edge. `alo_dock::Revealing::covered` is the
+        /// constructor for *a surface at rest under a full-screen window*, and a fresh session
+        /// is the same shape — the panel owns its edge and is not showing.
+        ///
+        /// Held beside the panel rather than inside it, for the reason the peek is: whether a
+        /// surface is revealed is not a property of what is put aside. A person with three
+        /// windows away and a concealed panel is an ordinary state.
+        revealing: alo_dock::revealing::Revealing,
         /// The colours and the way this person reads.
         look: DesktopLook,
         /// Every word on it.
@@ -212,6 +223,8 @@ mod running {
                 put_aside: alo_put_aside::Panel::new(),
                 // Nobody is looking at anything yet, which is what a session starts as.
                 peeking: alo_dock::Peeking::at_nothing(),
+                // Nothing put aside and nobody at the edge, so the panel is not showing.
+                revealing: alo_dock::revealing::Revealing::covered(),
                 look: DesktopLook::of(
                     &alo_appearance::Appearance::shipped(),
                     &alo_access::TurnedOn::nothing(),
@@ -240,6 +253,16 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// Keep the panel's reveal machine up to date with where the pointer is.
+        ///
+        /// **The machine is `alo-dock`'s and the state is this binary's**, the same division as
+        /// the peek. `Revealing` decides what being at the edge or on the surface means — that
+        /// any one region is enough, so leaving one cannot conceal the panel while another
+        /// still holds it — and this binary only keeps the answer.
+        fn the_panel_is_revealed(&mut self, by: alo_dock::revealing::ThePointer) {
+            self.revealing = self.revealing.the_pointer_is(by);
+        }
+
         /// A pointer over a preview is a person looking at the window in it.
         ///
         /// **The rule is `alo-put-aside`'s and the `Panel` is this binary's**, which is the

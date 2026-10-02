@@ -90,6 +90,20 @@ pub trait TheDesktop {
     fn the_panel(&mut self) -> Option<&mut alo_put_aside::Panel> {
         None
     }
+    /// What the pointer is to the put-aside panel's own edge and surface.
+    ///
+    /// **A classification, never a coordinate**, for the reason
+    /// [`Self::the_pointer_is_now`] gives: this crate laid the panel out, so it knows which
+    /// rectangle a point is in; the crate on the other side holds the state machine that
+    /// decides what being there means.
+    ///
+    /// `alo_dock::Revealing` is that machine and it had **no caller at all** until this
+    /// existed — the panel was simply always drawn. Advancing it is the desktop's, because a
+    /// `Revealing` is session state and the compositor holds none.
+    ///
+    /// **Nothing by default**, as with the two above: a desktop with no panel has no panel to
+    /// reveal.
+    fn the_panel_is_revealed(&mut self, _by: alo_dock::revealing::ThePointer) {}
 }
 
 impl crate::DirectSession {
@@ -226,6 +240,13 @@ impl LoopInput for Desk<'_> {
         // desktop in scope; this is the one place that holds both. See
         // `Server::asked_to_put_aside`.
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
+        // **And what that same position means to the panel's reveal machine.** A separate
+        // question from the peek: one asks which preview, this asks whether the edge or the
+        // surface is being touched. Both read the one stored draw, so they cannot disagree
+        // about where the pointer is.
+        if let Some(by) = server.what_the_pointer_is_to_the_panel() {
+            self.desktop.the_panel_is_revealed(by);
+        }
         Ok(())
     }
 
