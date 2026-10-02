@@ -212,6 +212,106 @@ impl crate::Server {
             .collect()
     }
 
+    /// Bring back every frame the controls now hide, and say what was done.
+    ///
+    /// # A frame moved by the machine is a person's arrangement edited without them
+    ///
+    /// So this reports what it did rather than doing it quietly, and
+    /// [`Recovery::BroughtBack`] carries **where the frame was** as well as where
+    /// it now is. That is the owner's clause: *where recovery needs a frame
+    /// moved, the move is shown and its previous position recorded.* The record
+    /// is here. **The showing is owed by whatever draws it** — this crate can
+    /// move a window and cannot tell a person anything.
+    ///
+    /// # The rule is the oracle, and nothing here computes geometry
+    ///
+    /// [`Self::enough_of_the_name_is_reachable`] already answers *could this
+    /// frame be at that point*, for any point, because it translates the name
+    /// band by the difference it is asked about. So a place to move to is
+    /// **searched for by asking it**, never worked out from the controls' edges.
+    ///
+    /// That matters beyond tidiness. A closed form would have to assume what a
+    /// control looks like — along an edge, rectangular, one at a time — and the
+    /// promise is *outside **every** fixed control*, whatever they turn out to
+    /// be. A fourth control of an awkward shape would silently break arithmetic
+    /// and cannot break a search.
+    ///
+    /// # Nearest first, up and left before down and right
+    ///
+    /// Candidates are tried in increasing distance and the first the rule
+    /// accepts wins. **Up and left first is a choice rather than an accident:**
+    /// the Dock lies along the bottom and the panel down a side, so away from
+    /// them is where the room is, and a frame pushed further into a control in
+    /// order to escape it would be a strange thing to watch happen.
+    ///
+    /// A frame no candidate rescues is [`Recovery::CouldNotBeBroughtBack`] and
+    /// is **left exactly where it is**. Moving it somewhere arbitrary because
+    /// the search ran out would be worse than leaving it: where the person put
+    /// it is at least a place they know.
+    #[must_use = "a recovery nobody shows is a frame that moved silently"]
+    pub fn bring_back_frames_the_controls_hide(&mut self) -> Vec<Recovery> {
+        // Planned while nothing is borrowed mutably, then applied. The rule
+        // needs `&self` and placing needs `&mut self`, and interleaving them
+        // would be asking the rule about a tree being changed underneath it.
+        let plans: Vec<Recovery> = self
+            .frames_the_controls_now_hide()
+            .into_iter()
+            .map(|(id, was)| {
+                self.somewhere_this_frame_can_be_reached(id, was)
+                    .map_or(Recovery::CouldNotBeBroughtBack { id, at: was }, |now| {
+                        Recovery::BroughtBack { id, was, now }
+                    })
+            })
+            .collect();
+
+        for plan in &plans {
+            if let Recovery::BroughtBack { id, now, .. } = plan {
+                let surface = self
+                    .mapped_surfaces()
+                    .find(|surface| crate::window_number::Numbers::of(surface) == *id)
+                    .cloned();
+                if let Some(surface) = surface {
+                    let _ = self.place_window(&surface, (now.x, now.y));
+                }
+            }
+        }
+        plans
+    }
+
+    /// The nearest point the rule accepts for this frame, or [`None`].
+    fn somewhere_this_frame_can_be_reached(
+        &self,
+        id: u64,
+        was: alo_canvas::At,
+    ) -> Option<alo_canvas::At> {
+        let handle = self.fixed_controls.handle()?;
+        let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
+        let surface = self
+            .mapped_surfaces()
+            .find(|surface| crate::window_number::Numbers::of(surface) == id)?
+            .clone();
+
+        // Eight units a step, out to a thousand. The step is smaller than a name
+        // band, so no reachable gap is stepped over; the bound is there because
+        // **a search that cannot fail is a hang** — controls covering everything
+        // is a real state, and the answer to it is *could not*, not a loop.
+        (1..=125).find_map(|step| {
+            let away = step * 8;
+            [(0, -away), (-away, 0), (0, away), (away, 0)]
+                .into_iter()
+                .find_map(|(dx, dy)| {
+                    let candidate = alo_canvas::At::checked(
+                        was.x.saturating_add(dx),
+                        was.y.saturating_add(dy),
+                    )?;
+                    self.enough_of_the_name_is_reachable(
+                        &surface, was, candidate, &controls, handle,
+                    )
+                    .then_some(candidate)
+                })
+        })
+    }
+
     /// Record where this draw put the fixed controls — **all of them, as a
     /// set.**
     ///
@@ -294,6 +394,33 @@ impl crate::Server {
             .collect();
         self.fixed_controls.drawn(bounds, handle);
     }
+}
+
+/// What was done about one frame the controls had hidden.
+///
+/// **Returned rather than logged**, because the owner's clause is that a move is
+/// *shown* and its previous position *recorded*. A surface cannot show what it
+/// is not told, and `was` is what makes the move undoable rather than merely
+/// visible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Recovery {
+    /// It was hidden, and there was somewhere to put it.
+    BroughtBack {
+        /// Which frame, as the compositor numbers its windows.
+        id: u64,
+        /// Where the person had left it.
+        was: alo_canvas::At,
+        /// Where it is now.
+        now: alo_canvas::At,
+    },
+    /// It was hidden and nothing the search tried was reachable, so it has
+    /// **not** been moved.
+    CouldNotBeBroughtBack {
+        /// Which frame.
+        id: u64,
+        /// Where it still is.
+        at: alo_canvas::At,
+    },
 }
 
 /// Where this draw put each fixed control.

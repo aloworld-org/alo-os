@@ -369,6 +369,79 @@ fn a_frame_the_panel_now_covers_is_named_by_the_recheck() {
     );
 }
 
+/// **A frame the controls hid is brought back, and where it was is kept.**
+///
+/// The other half of task 8's third clause: *where recovery needs a frame
+/// moved, the move is shown and its previous position recorded.* A frame moved
+/// by the machine is a person's arrangement edited without them, so `was` is
+/// what makes the move undoable rather than merely visible.
+///
+/// Four things are asserted, because a mover can fail in four ways: it can move
+/// nothing, it can move something that was fine, it can move the frame
+/// somewhere still hidden, and it can forget where the frame came from.
+#[test]
+fn a_frame_the_panel_hid_is_brought_back_and_where_it_was_is_kept() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+
+    // Under where the panel's column will be, clear of the Dock.
+    let put_at = (VIEWPORT.0 - 40, 300);
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, put_at)
+        })
+        .is_ok()
+    );
+
+    // Nothing over it yet: the mover must not touch it.
+    drawn_with_a_dock(&f);
+    let quiet = f.backend(|s| s.bring_back_frames_the_controls_hide());
+    assert!(
+        quiet.is_empty(),
+        "a frame with nothing over it was moved: {quiet:?}"
+    );
+    let still_there = origin_of(&f, &surface);
+
+    // The panel's column appears over it. The frame has not moved; the
+    // controls have.
+    drawn_with_a_dock_and_a_panel(&f);
+    let done = f.backend(|s| s.bring_back_frames_the_controls_hide());
+
+    // Two different failures, named apart: nothing was planned at all, and
+    // something was planned and declined. A decline is a real outcome of the
+    // search, so reading it as an absence would hide which half went wrong.
+    let outcome = *done
+        .first()
+        .expect("the panel covered a frame and nothing was brought back");
+    assert!(
+        matches!(outcome, alo_shell::Recovery::BroughtBack { .. }),
+        "the frame was hidden and the search declined to move it: {outcome:?}"
+    );
+    let (was, now) = match outcome {
+        alo_shell::Recovery::BroughtBack { was, now, .. } => (was, now),
+        // Refused by the assertion above. The arm is here because the match
+        // must be total, and it returns a pair that fails the next assertion
+        // too rather than one that would quietly pass.
+        alo_shell::Recovery::CouldNotBeBroughtBack { at, .. } => (at, at),
+    };
+    assert_ne!(was, now, "it was reported as moved and did not move");
+    assert_eq!(
+        (f64::from(was.x), f64::from(was.y)),
+        still_there,
+        "where it was does not match where it actually was, so the record a \
+         person would undo by is wrong"
+    );
+
+    // And the place it was moved to is one the controls do not hide — asked of
+    // the shell rather than worked out here.
+    let hidden_now = f.backend(|s| s.frames_the_controls_now_hide());
+    assert!(
+        hidden_now.is_empty(),
+        "it was moved somewhere the controls still hide: {hidden_now:?}"
+    );
+}
+
 /// **The frame keeps the last position that was allowed.**
 ///
 /// The owner's ruling of 2026-09-30: *keep the last valid position while the
