@@ -552,6 +552,18 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     Ok(())
 }
 
+/// What [`crate::Action::MoveTheWindowToTheNextPlace`] does.
+pub const MOVE_THE_WINDOW_TO_THE_NEXT_PLACE: Word = Word::saying(
+    "shortcuts.action.move-the-window-to-the-next-place",
+    "Move this window to the next Place",
+)
+.noting(
+    "Sends the window in front to the next surface the person has, taking its size and its \
+     work with it. It is a move and never a copy: the window is on the new Place and is not \
+     on the old one. This is the keyboard road for somebody who cannot drag a window out \
+     through the World, so it must not require a pointer or an aim.",
+);
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -707,15 +719,3 @@ mod tests {
         }
     }
 }
-
-/// What [`crate::Action::MoveTheWindowToTheNextPlace`] does.
-pub const MOVE_THE_WINDOW_TO_THE_NEXT_PLACE: Word = Word::saying(
-    "shortcuts.action.move-the-window-to-the-next-place",
-    "Move this window to the next Place",
-)
-.noting(
-    "Sends the window in front to the next surface the person has, taking its size and its \
-     work with it. It is a move and never a copy: the window is on the new Place and is not \
-     on the old one. This is the keyboard road for somebody who cannot drag a window out \
-     through the World, so it must not require a pointer or an aim.",
-);

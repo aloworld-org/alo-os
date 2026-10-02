@@ -85,7 +85,7 @@ fn the_chord_sends_the_window_in_front_to_the_next_place() {
     });
     assert_eq!(
         after,
-        alo_canvas::Place::FIRST.next().map(|p| p),
+        alo_canvas::Place::FIRST.next(),
         "the chord did not move the window to the next Place"
     );
 }
@@ -99,7 +99,7 @@ fn the_chord_sends_the_window_in_front_to_the_next_place() {
 #[test]
 fn the_window_is_not_left_behind_on_the_place_it_came_from() {
     let f = fixture();
-    let (_app, surface) = a_focused_frame(&f);
+    let (_app, _surface) = a_focused_frame(&f);
 
     press(&f, Action::MoveTheWindowToTheNextPlace);
 
