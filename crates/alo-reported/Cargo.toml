@@ -1,0 +1,22 @@
+[package]
+name = "alo-reported"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "What alo said it was doing, as it crosses to the surface that draws it"
+
+# **This crate declares nothing of ours, and that is its whole purpose.**
+#
+# The owner ruled on 2026-10-02 that an assistant's reports cross through the
+# trusted shell coordinator and that a small neutral contract carries them. A
+# contract is neutral only if neither end has to depend on the other end's
+# world: the reporter must not pull in the panel's model, and the surface must
+# not pull in the agent service. Anything added here that is ours breaks that in
+# one direction or the other.
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

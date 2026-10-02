@@ -1,0 +1,28 @@
+[package]
+name = "alo-admitting"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "What a report must pass before any surface may draw it"
+
+# **The bridge, and it faces both ways on purpose.**
+#
+# `alo-reported` is the neutral contract a report crosses on, and
+# `alo-put-aside` is the panel's own model. This crate is the only thing that
+# knows both, which is what the owner's ruling of 2026-10-02 asked for: the
+# drawing crate does not depend on the assistant service, and a third thing
+# bridges them.
+#
+# **It declares no agent crate and it never will.** A report arrives here as
+# data on the contract above; nothing here asks the agent service anything, and
+# nothing here can.
+[dependencies]
+alo-reported = { path = "../alo-reported" }
+alo-put-aside = { path = "../alo-put-aside" }
+alo-dock = { path = "../alo-dock" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

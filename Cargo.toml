@@ -91,6 +91,8 @@ members = [
   "crates/alo-power",
   "crates/alo-printing",
   "crates/alo-put-aside",
+  "crates/alo-admitting",
+  "crates/alo-reported",
   "crates/alo-overlay",
   "crates/alo-picking",
   "crates/alo-portals",
