@@ -22,6 +22,18 @@ pub(crate) struct Proposed {
     pub(crate) at: Point<i32, Logical>,
 }
 
+impl Move {
+    /// The frame this drag holds.
+    ///
+    /// **An accessor rather than a public field**, because the surface is the one
+    /// thing about a drag that a caller outside this module legitimately needs —
+    /// `crate::canvas_dragged_into_a_place` has to name the frame it is dropping
+    /// — and the origin and the buttons are this module's own bookkeeping.
+    pub(crate) fn root(&self) -> &WlSurface {
+        &self.root
+    }
+}
+
 /// A compositor-owned drag, detached from client pointer delivery.
 pub(crate) struct Move {
     /// Only this mapping may move.

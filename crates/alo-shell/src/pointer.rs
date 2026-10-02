@@ -173,6 +173,21 @@ impl Server {
             }
             return Ok(false);
         }
+        // **Letting go in the World drops the frame onto a tile** — task 3's
+        // pointer road. Asked before the release is handled, because the drag has
+        // to still be held for there to be a frame to drop; after
+        // `window_move_button` has cleared it there is nothing to ask about.
+        let dropped_onto = if state == ButtonState::Released
+            && self.a_drag_is_choosing_a_place()
+            && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
+        {
+            self.the_camera()
+                .plane_of((location.x as i32, location.y as i32))
+                .and_then(|point| self.drop_the_frame_into_the_place_at(point))
+        } else {
+            None
+        };
+        let _ = dropped_onto;
         if self.surfaces.window_move_button(button, state) {
             if self.surfaces.window_move.is_none()
                 && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)

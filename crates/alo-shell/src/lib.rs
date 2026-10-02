@@ -96,6 +96,7 @@ mod canvas_a_restore_travels;
 mod canvas_arrow_pan;
 mod canvas_camera;
 mod canvas_command;
+mod canvas_dragged_into_a_place;
 mod canvas_fixed_controls;
 mod canvas_never_lost;
 mod canvas_pan;

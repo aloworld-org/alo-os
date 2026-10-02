@@ -10,6 +10,7 @@ mod cursor;
 mod direct_keyboard;
 mod direct_pointer;
 mod direct_seat;
+mod dragged_into_another_place;
 mod dragging_a_frame;
 mod every_frame_answers_as_a_list;
 mod every_window_is_on_a_place;
