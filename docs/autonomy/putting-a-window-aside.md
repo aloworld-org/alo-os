@@ -622,7 +622,7 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **the reveal machine has a caller; blocked on nothing drawing the reveal,
+**Status:** **the panel conceals and reveals; blocked on walking it against the design,
 2026-10-02.**
 
 **`alo_dock::Revealing` had zero callers in `alo-shell` and now has one.** A pointer in the
@@ -640,10 +640,42 @@ ground `the-regions-a-pointer-can-be-in.md` already explains the region extends 
 surface in order to provide. A concealed panel draws a rail of no height, so the whole column
 asks — which is right rather than a special case.
 
-**What it waits on now:** nothing reads `Revealing::is_revealed` when the panel is drawn, so
-the panel is still always painted. That is one line in the draw path and it is this lane's, but
-it is a drawing clause and the drawing clauses of this plan are all measured against Figma
-frames that cannot be walked on any machine this project owns.
+**The draw path reads it now, and the panel is concealed until somebody reaches for it.**
+`panel_raster::picture` takes `WhetherRevealed`, a rail of no height and no slots is what a
+concealed panel lays out, and `alo-desktop` supplies `Revealing::is_revealed`. **The reserved
+column does not change**, which is asserted rather than described: the panel owns its edge
+whether or not it is drawn, so revealing is about the rail and never about the column. That is
+also what keeps the activation strip above from needing a width — a concealed panel's whole
+column asks.
+
+`WhetherRevealed` is this crate's own enum and deliberately not `alo_dock::Showing`. That one
+means *shown* or *it has given way*, and giving way is the Dock's reason for standing aside. The
+panel's reason is different: **nobody has reached for it.** Two reasons wearing one word is the
+two-vocabularies fault, and it costs nothing to refuse here.
+
+**What it waits on now:** being walked. The concealment is asserted against the raster — the
+rail's height, the slots, the reserved column — and the remaining clauses of this task are
+measured against Figma frames that cannot be walked on any machine this project owns. That is
+the same block the other drawing clauses of this plan carry, not a new one.
+
+**A named gap, because the Mac lane generalised this lane's mutation and this lane did not
+generalise its own guard.** The new test asserts the panel's rail and reserved column reach
+`crate::panel_raster` from the whole desktop. It says nothing about whether the Dock's
+`Showing` reaches the same draw, and the Dock is wired through `Shown` the same way and would
+fail the same way under the same substitution. Covering only the field that happened to get
+mutated repeats in miniature the fault that left the Dock the only member of the fixed-controls
+set for weeks — the Mac lane's phrasing, and their guard covers both. It is not widened here
+because a test added while a branch is gating is a test nobody has watched fail; it is taken the
+next time this lane is in that file.
+
+**And one link in the chain is unproven, named rather than left to be discovered.**
+`crates/alo-desktop/src/main.rs` supplies `panel_is_revealed: self.revealing.is_revealed()`, and
+that file holds no `#[test]` — the crate has five, in `readings_tests.rs`, about the clock and
+the status readings it owns. So the gap is the frame-building seam rather than the crate, which is
+a correction the laptop lane made to this lane's first wording and a better finding than the one
+it replaced. Everything from `DesktopFrame` inwards is covered, including the two passthroughs,
+each watched failing under a substituted constant. See the finding below: that seam is where
+three lanes' state crosses and no plan owns it.
 
 **The three-surface arbitration is not in this**, deliberately. `whose_area` on
 `handover/dev-pc/the-pointer-classifier` arbitrates between the panel, the Dock and the top
@@ -652,10 +684,10 @@ controls, and **the top controls do not exist in `alo-shell` and are promised in
 else, which means one opinion about the panel's edge and none about anybody else's. When the
 top controls exist the arbiter goes in front of this and one line changes.
 
-What it waits on, measured rather than asserted: **`alo_dock::revealing` has zero callers in
-`alo-shell`.** The state machine that decides whether a surface is revealed is complete and
-nothing consumes it, so no screen edge is watched while a window fills the screen. That is this
-task’s own clause and this lane’s to build.
+**History, kept because the measurement is why this task moved.** Until `#397`,
+`alo_dock::revealing` had **zero callers in `alo-shell`**: the state machine that decides whether
+a surface is revealed was complete and nothing consumed it, so no screen edge was watched while a
+window filled the screen. It has a caller now, and the draw path reads its answer.
 
 **Superseded, kept because the measurement is the useful part.** The shell lane wrote this
 status hours earlier, and every line of its table was true when written. The one thing that has
@@ -1013,6 +1045,72 @@ window, *it is put aside* accepted as a reason, a blank safe name accepted, and 
 machine added to the crate.
 
 ---
+
+## A finding this plan cannot act on: the desktop binary's frame is an unobserved seam
+
+**`crates/alo-desktop/src/main.rs` contains no `#[test]`, and that is the measurement — not
+the crate.** The crate has five, all in `readings_tests.rs`, all about the clock and the status
+readings it owns, all passing. Counted per file rather than guessed:
+
+```text
+crates/alo-desktop/src/main.rs            0
+crates/alo-desktop/src/readings.rs        0
+crates/alo-desktop/src/readings_tests.rs  5
+```
+
+**This lane first wrote *the crate has zero tests of any kind*, which was false**, and the
+laptop lane corrected it within the hour. The check was `grep -c '#\[test\]'` against `main.rs`
+alone and the claim was about the crate — a check whose scope was narrower than its own
+sentence, which is this fleet's most expensive recurring fault and the third time this lane has
+written it down. The command was quoted *in the finding as evidence*, naming `main.rs`, so the
+evidence contradicted the claim on its face and nobody reading carefully would have needed the
+correction.
+
+**The corrected statement is the more useful one**, which is why this is kept rather than
+quietly fixed. A crate with no tests reads as neglected and invites anybody to add any test. A
+crate that tests what it owns and has nothing at the one place every other lane's state crosses
+is a **seam**, and names what to build.
+
+**Three lanes crossed that seam on 2026-10-02, independently.**
+
+- This lane's `panel_is_revealed` reaches the draw through the `DesktopFrame` literal in
+  `main.rs`, where `self.revealing.is_revealed()` is read. Everything from `DesktopFrame` inwards
+  is covered, each passthrough watched failing under a substituted constant. That read is not.
+- The Mac's `panel_reserved` reaches the recovery recheck through the same literal. They found it
+  by taking this lane's mutation and running it against their own wiring: substituting
+  `Rectangle::default()` left **seventeen tests green**, and they closed it at the `alo-shell`
+  boundary in `#403` — the same boundary this lane closed at, because neither lane can test past
+  it.
+- The laptop lane's recovery showing will be raised from the same literal, where
+  `notifications: &[]` sits today.
+
+One field passing through an untested seam is a footnote. **Three fields, found by three lanes in
+one day, at one line of one file, is the finding** — and the next one through it will be found by
+a fourth lane or by nobody.
+
+**And the crate is in no ownership table.** `a-new-machine-becomes-a-lane.md:62` assigns
+`alo-desktops` — *plural*, a different crate — to lane B. `the-queues.md:343` records *two
+binaries now that `alo-desktop` has split off*, and no row was added for it when it split out of
+`alo-shell`. `the-shell-plan.md` says its crates are `alo-shell` and `tools/graphics-check`,
+**nothing else**. So the binary every lane's state flows through belongs to no plan.
+
+That is the half of the finding no lane had alone, and it is the explanation rather than the
+symptom. A seam with an owner has somebody for whom making it observable is work. This one has
+nobody, which is why three lanes reached it before anybody tested it.
+
+**Why no lane fixed it inside its own change.** Making one field observable means lifting the
+frame assembly out of a binary — the whole frame's problem, not that field's, and a refactor of a
+crate no plan owns, done on a branch about something else. The correct thing was to close what
+each lane could reach and say this out loud.
+
+**What this plan does with it: nothing, deliberately.** Adding the task would mean writing into
+`docs/autonomy/QUEUE.md`, which `SHARED_MAIN.md:309` reserves to the integration owner, or
+claiming a crate this plan does not own. Both are the kind of shortcut that looks like
+initiative. It is recorded here, where the lane that found it works, and who takes it is the
+owner's decision.
+
+*Found by this lane, the Mac lane and the laptop lane on 2026-10-02. Stated once rather than
+three times, and corrected once.*
 
 ## What this plan does not cover
 

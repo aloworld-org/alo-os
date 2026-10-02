@@ -109,6 +109,16 @@ pub(crate) struct Shown<'a> {
     /// Dock*. Asked of the shell by the caller, because only the caller knows
     /// which display's windows these are — the seam `windows` already takes.
     pub(crate) filling_the_screen: bool,
+    /// Whether the put-aside panel is on the screen at this moment.
+    ///
+    /// **Asked of the desktop, because `alo_dock::Revealing` is session state.** That machine
+    /// decides it from the edge, the surface, the keyboard, a drag and an open menu, and the
+    /// crate on the other side of `crate::TheDesktop` holds it — the compositor holds none.
+    ///
+    /// A desktop that never advances the machine answers `false` for ever, which draws a panel
+    /// that keeps its column and never its rail. That is the honest picture for a desktop with
+    /// no pointer rather than a panel stuck shut by a bug.
+    pub(crate) panel_is_revealed: bool,
     /// How many physical pixels this display draws for one logical one, in
     /// hundredths. 100 is one to one; 200 is a dense screen.
     ///
@@ -175,6 +185,7 @@ pub(crate) fn picture(
         windows,
         put_aside,
         filling_the_screen,
+        panel_is_revealed,
         display_scale,
     } = shown;
     let dock_picture = crate::dock_raster::picture(
@@ -251,6 +262,11 @@ pub(crate) fn picture(
         match look.reading() {
             Direction::LeftToRight => WhichEdge::Right,
             Direction::RightToLeft => WhichEdge::Left,
+        },
+        if panel_is_revealed {
+            crate::panel_raster::WhetherRevealed::Revealed
+        } else {
+            crate::panel_raster::WhetherRevealed::Concealed
         },
     )?;
 

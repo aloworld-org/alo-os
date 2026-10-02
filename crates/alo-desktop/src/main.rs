@@ -329,6 +329,10 @@ mod running {
             DesktopFrame {
                 dock: &self.dock,
                 put_aside: &self.put_aside,
+                // **The machine's own answer**, asked once a frame. `Revealing` decides this
+                // from the edge, the surface, the keyboard, a drag and an open menu; this
+                // binary holds it and the compositor draws what it says.
+                panel_is_revealed: self.revealing.is_revealed(),
                 filling_the_screen: false,
                 // **One to one, and it is owed rather than chosen.** 100 is the
                 // right answer for a display drawing one pixel per logical one,

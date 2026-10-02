@@ -119,7 +119,7 @@ mod tests {
     use super::*;
     use crate::desktop_look::DesktopLook;
     use crate::desktop_testing::{an_appearance, noon_look};
-    use crate::panel_raster::picture;
+    use crate::panel_raster::{WhetherRevealed, picture};
     use alo_canvas::{Place, Zoom};
     use alo_dock::window::{AppId, HowItSits, Window, WindowId};
     use alo_dock::{Patch, Spot};
@@ -162,7 +162,14 @@ mod tests {
 
     fn drawn(how_many: u64, size: (i32, i32)) -> ThePanelAsDrawn {
         let panel = a_panel_holding(how_many);
-        let picture = picture(&panel, a_look(), size, WhichEdge::Right).unwrap();
+        let picture = picture(
+            &panel,
+            a_look(),
+            size,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
         ThePanelAsDrawn::of(&panel, picture)
     }
 

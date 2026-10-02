@@ -58,6 +58,9 @@ fn drawn_with(
             offer: crate::desktop_testing::nothing_offered(),
             windows,
             put_aside: crate::desktop_testing::nothing_put_aside(),
+            // A fixture that is not about revealing draws the panel, so what it lays out is
+            // the rail rather than an empty column.
+            panel_is_revealed: true,
             filling_the_screen: false,
             display_scale: 100,
         },
@@ -91,6 +94,9 @@ fn drawn_at(
             offer: crate::desktop_testing::nothing_offered(),
             windows: &[],
             put_aside: crate::desktop_testing::nothing_put_aside(),
+            // A fixture that is not about revealing draws the panel, so what it lays out is
+            // the rail rather than an empty column.
+            panel_is_revealed: true,
             filling_the_screen: false,
             display_scale,
         },
@@ -447,4 +453,62 @@ fn the_dock_gives_way_to_a_window_over_it_and_only_if_asked() {
         "the work area must not depend on whether the dock is showing"
     );
     assert_eq!(covered.size, beside.size);
+}
+
+/// **The whole desktop asks the panel's reveal state, rather than the panel
+/// deciding for itself.**
+///
+/// `crate::panel_raster` has its own test that a concealed panel draws no rail,
+/// and that test would go on passing if this file handed it
+/// `WhetherRevealed::Revealed` unconditionally. Every other fixture here passes
+/// `panel_is_revealed: true`, so without this test nothing in the crate
+/// distinguishes *the flag is read* from *the flag exists*.
+///
+/// The panel holds three windows, because a concealed panel and an empty one
+/// draw the same picture.
+#[test]
+fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
+    let appearance = an_appearance();
+    let look = noon_look(&appearance, alo_strings::Direction::LeftToRight);
+    let (running, filling, _folder) = both_open();
+    let strings = words();
+
+    let drawn = |revealed: bool| {
+        let mut labels = WindowControlLabels::new().unwrap();
+        picture(
+            &Dock::shipped(),
+            look,
+            crate::desktop_raster::Shown {
+                running: &running_shows(&running, &strings),
+                filling: &filling_shows(&filling, &strings),
+                division: crate::desktop_testing::an_undivided_display(),
+                offer: crate::desktop_testing::nothing_offered(),
+                windows: &[],
+                put_aside: crate::desktop_testing::three_windows_put_aside(),
+                panel_is_revealed: revealed,
+                filling_the_screen: false,
+                display_scale: 100,
+            },
+            &mut labels.fonts,
+            (1920, 1080),
+        )
+    };
+
+    let shown = drawn(true).unwrap();
+    let hidden = drawn(false).unwrap();
+
+    assert!(
+        shown.panel.rail.size.h > 0,
+        "a revealed panel holding three windows draws a rail, so the fixture is capable of \
+         telling the two apart"
+    );
+    assert_eq!(
+        hidden.panel.rail.size.h, 0,
+        "the desktop drew the panel's rail for a panel nobody has reached for, so the reveal \
+         state never reaches crate::panel_raster"
+    );
+    assert_eq!(
+        hidden.panel.reserved, shown.panel.reserved,
+        "the desktop gave up the panel's column when it concealed"
+    );
 }

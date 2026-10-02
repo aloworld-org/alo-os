@@ -216,7 +216,7 @@ mod tests {
     use super::*;
     use crate::desktop_look::DesktopLook;
     use crate::desktop_testing::{an_appearance, noon_look};
-    use crate::panel_raster::picture;
+    use crate::panel_raster::{WhetherRevealed, picture};
     use alo_canvas::Zoom;
     use alo_dock::{AppId, HowItSits, Patch, Spot, Window};
     use alo_put_aside::the_region_the_panel_claims::WhichEdge;
@@ -279,7 +279,14 @@ mod tests {
     #[test]
     fn every_slot_answers_the_window_that_slot_belongs_to() {
         let panel = a_panel_holding(4);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
         assert_eq!(drawn.slots.len(), 4, "the fixture must draw four slots");
 
         for (which, slot) in drawn.slots.iter().enumerate() {
@@ -309,7 +316,14 @@ mod tests {
     #[test]
     fn the_clearance_beside_the_rail_is_the_panels_but_names_no_window() {
         let panel = a_panel_holding(3);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
 
         // One pixel inside the reserved column's left edge: inside the region, left of the rail.
         let beside = at(drawn.reserved.loc.x, drawn.reserved.loc.y + 400);
@@ -330,7 +344,14 @@ mod tests {
     #[test]
     fn the_middle_of_the_canvas_is_elsewhere() {
         let panel = a_panel_holding(3);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
 
         assert_eq!(
             which_preview_the_pointer_is_on(&panel, &captured(&panel, &drawn), at(600, 400)),
@@ -346,7 +367,14 @@ mod tests {
     #[test]
     fn a_pointer_on_the_seam_between_two_slots_is_on_one_of_them() {
         let panel = a_panel_holding(4);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
         let first = drawn.slots[0];
 
         let bottom_edge = at(first.loc.x + 1, first.loc.y + first.size.h);
@@ -371,7 +399,14 @@ mod tests {
     #[test]
     fn an_empty_panel_reserves_its_column_and_has_no_previews_to_point_at() {
         let panel = a_panel_holding(0);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
         assert!(drawn.slots.is_empty());
         assert_eq!(drawn.rail.size.h, 0, "an empty panel draws no rail");
 
@@ -393,14 +428,27 @@ mod tests {
         let four = a_panel_holding(4);
         let drawn_from_four = captured(
             &four,
-            &picture(&four, a_look(), AS_DRAWN, WhichEdge::Right).unwrap(),
+            &picture(
+                &four,
+                a_look(),
+                AS_DRAWN,
+                WhichEdge::Right,
+                WhetherRevealed::Revealed,
+            )
+            .unwrap(),
         );
         let now_holding_two = a_panel_holding(2);
 
         let on_the_third = middle_of(
-            picture(&four, a_look(), AS_DRAWN, WhichEdge::Right)
-                .unwrap()
-                .slots[2],
+            picture(
+                &four,
+                a_look(),
+                AS_DRAWN,
+                WhichEdge::Right,
+                WhetherRevealed::Revealed,
+            )
+            .unwrap()
+            .slots[2],
         );
         assert_eq!(
             which_preview_the_pointer_is_on(&now_holding_two, &drawn_from_four, on_the_third),
@@ -425,12 +473,25 @@ mod tests {
         let mut panel = a_panel_holding(3);
         let drawn = captured(
             &panel,
-            &picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right).unwrap(),
+            &picture(
+                &panel,
+                a_look(),
+                AS_DRAWN,
+                WhichEdge::Right,
+                WhetherRevealed::Revealed,
+            )
+            .unwrap(),
         );
         let second_slot = middle_of(
-            picture(&panel, a_look(), AS_DRAWN, WhichEdge::Right)
-                .unwrap()
-                .slots[1],
+            picture(
+                &panel,
+                a_look(),
+                AS_DRAWN,
+                WhichEdge::Right,
+                WhetherRevealed::Revealed,
+            )
+            .unwrap()
+            .slots[1],
         );
         let was_second = panel.previews()[1].window();
 
@@ -466,7 +527,14 @@ mod tests {
     #[test]
     fn a_panel_mirrored_to_the_left_needs_no_change_here() {
         let panel = a_panel_holding(3);
-        let drawn = picture(&panel, a_look(), AS_DRAWN, WhichEdge::Left).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            AS_DRAWN,
+            WhichEdge::Left,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
 
         assert_eq!(
             which_preview_the_pointer_is_on(
@@ -486,7 +554,14 @@ mod tests {
     #[test]
     fn a_screen_that_is_not_the_frame_the_design_was_drawn_on() {
         let panel = a_panel_holding(5);
-        let drawn = picture(&panel, a_look(), (1366, 768), WhichEdge::Right).unwrap();
+        let drawn = picture(
+            &panel,
+            a_look(),
+            (1366, 768),
+            WhichEdge::Right,
+            WhetherRevealed::Revealed,
+        )
+        .unwrap();
 
         assert_eq!(drawn.slots.len(), 5);
         assert_eq!(

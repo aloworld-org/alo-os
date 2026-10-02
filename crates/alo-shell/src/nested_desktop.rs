@@ -81,6 +81,17 @@ pub struct DesktopFrame<'a> {
     /// the crate that knows the display. An empty panel is the true answer on a
     /// desk where nothing has been put aside, not a placeholder.
     pub put_aside: &'a alo_put_aside::Panel,
+    /// Whether the put-aside panel is on the screen at this moment.
+    ///
+    /// **`alo_dock::Revealing::is_revealed`, asked of whoever holds the machine.** It decides
+    /// this from the edge, the surface, the keyboard, a drag and an open menu — any one of
+    /// which is enough, so leaving one cannot conceal the panel while another still holds it.
+    ///
+    /// Handed in like the rest, and for the same reason: a compositor that held the machine
+    /// would be keeping its own copy of somebody else's answer. A desktop that never advances
+    /// it answers `false` for ever, which draws a panel that keeps its column and never its
+    /// rail — the honest picture for a desktop with no pointer.
+    pub panel_is_revealed: bool,
     /// Whether a window on this display is filling the screen, so the Dock and
     /// the panel give way to it.
     ///
@@ -307,6 +318,7 @@ pub(crate) fn frame_pictures(
             offer: desktop.offer,
             windows: desktop.windows,
             put_aside: desktop.put_aside,
+            panel_is_revealed: desktop.panel_is_revealed,
             filling_the_screen: desktop.filling_the_screen,
             display_scale: desktop.display_scale,
         },

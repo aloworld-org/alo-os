@@ -140,6 +140,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 offer: &alo_dividing::Offer::Nothing,
                                 windows: &[],
                                 put_aside: nothing_put_aside(),
+                                // A fixture that is not about revealing draws the panel, so what it lays out is
+                                // the rail rather than an empty column.
+                                panel_is_revealed: true,
                                 filling_the_screen: false,
                             },
                             None,
