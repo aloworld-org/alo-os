@@ -23,20 +23,27 @@
 //! promise to anybody — a frame that could already be dragged anywhere can now
 //! be dragged everywhere except out of reach.
 //!
-//! # What is in the set tonight, and what joins it
+//! # What is in the set, and what joins it
 //!
-//! **The Dock only.** `crate::canvas_never_lost::enough_of_the_name_is_reachable`
-//! already takes the controls as a **slice** rather than three arguments, with the
-//! reason in its own header: *the promise is outside every fixed control, and a
-//! fourth control added later must join it by construction.* So this grows by
-//! pushing, not by changing a signature.
+//! **The Dock's band and the put-aside panel's reserved column.**
+//! `crate::canvas_never_lost::enough_of_the_name_is_reachable` takes the controls
+//! as a **slice** rather than one argument per control, with the reason in its own
+//! header: *the promise is outside every fixed control, and a fourth control added
+//! later must join it by construction.* So this grows by pushing, not by changing
+//! a signature — and the panel joined that way, which is the only evidence worth
+//! having that the shape was right.
 //!
-//! The **status area** is not in it yet because it has no bounds to read:
+//! *This paragraph read **the Dock only** until 2026-10-02, after the panel had
+//! joined.* A doc comment listing what a set contains is a maintained count by
+//! another name: nothing checks it, the compiler is happy, and the next reader
+//! trusts it. Named by what the draw hands over — `FixedControlsDrawn`'s fields —
+//! rather than by a list kept here, because that struct is the thing a new control
+//! cannot be added without.
+//!
+//! The **status area** is not in it because it has no bounds to read:
 //! `EgressStatusPicture` carries rows and solids and no rectangle, and where it
-//! sits is a design decision the owner has scheduled rather than settled. The
-//! **minimized-window panel** is not in it because its region belongs to another
-//! lane. Both join here when they can answer where they are, and neither is
-//! guessed at in the meantime.
+//! sits is a design decision the owner has scheduled rather than settled. It joins
+//! here when it can answer where it is, and is not guessed at in the meantime.
 //!
 //! # The units, traced rather than argued
 //!
@@ -103,6 +110,19 @@ pub(crate) struct FixedControls {
     /// of bounds and is refused the same way: with nothing drawn there is nothing
     /// to be protected from.
     handle: Option<(f64, f64)>,
+    /// Whether the controls have moved since anything last looked for the frames
+    /// they hide.
+    ///
+    /// **This is the whole of the trigger**, and it is a flag rather than a
+    /// comparison made at the asking because the two sides of the comparison do
+    /// not both exist at the asking: the draw knows what the controls were and
+    /// the recheck does not. Set where the change is seen, read where the
+    /// recovery is run, cleared there.
+    ///
+    /// `false` at the start is the honest value and not merely the cheap one:
+    /// before the first draw there are no bounds, so there is nothing a frame
+    /// could have been put out of reach *by*.
+    a_recheck_is_owed: bool,
 }
 
 impl FixedControls {
@@ -121,9 +141,43 @@ impl FixedControls {
     /// Replaced rather than merged: a control that stopped being drawn — a Dock
     /// that gave way to a window needing its room — must leave the set, or a
     /// frame would be held away from a rectangle nothing occupies.
+    ///
+    /// # A change owes a recheck and a redraw owes nothing
+    ///
+    /// The draw calls this on **every frame**, so *drawn* cannot mean *moved*.
+    /// Treating every call as a change would run the search sixty times a second
+    /// for an answer that cannot have altered, and — the part that matters more —
+    /// it would make the trigger untestable: a test could not tell a recheck
+    /// caused by the Dock moving from one caused by the clock.
+    ///
+    /// **The handle is compared with `==` on purpose, and that is an identity
+    /// test rather than a tolerance one.** Both sides are
+    /// `Server::a_usable_handle_at` applied to `crate::A_USABLE_HANDLE`, so equal
+    /// text scales give bit-identical pairs and a different scale gives a
+    /// different one. There is no arithmetic here whose last bit could drift, and
+    /// a tolerance would invent a band in which the person's text got larger and
+    /// their protection did not.
     pub(crate) fn drawn(&mut self, bounds: Vec<Rectangle<i32, Physical>>, handle: (f64, f64)) {
+        let handle = Some(handle);
+        // Owed, never un-owed: a recheck that was owed and has not run yet stays
+        // owed through a frame that changed nothing. Assigning the comparison
+        // rather than or-ing it would let one unchanged frame cancel a debt the
+        // frame before it incurred.
+        if self.bounds != bounds || self.handle != handle {
+            self.a_recheck_is_owed = true;
+        }
         self.bounds = bounds;
-        self.handle = Some(handle);
+        self.handle = handle;
+    }
+
+    /// Whether the controls have moved since the last recheck.
+    pub(crate) const fn a_recheck_is_owed(&self) -> bool {
+        self.a_recheck_is_owed
+    }
+
+    /// Note that the recheck the last change owed has been run.
+    pub(crate) fn the_recheck_was_done(&mut self) {
+        self.a_recheck_is_owed = false;
     }
 }
 
@@ -170,9 +224,15 @@ impl crate::Server {
     ///   somewhere else;
     /// - the person moves the Dock to another edge.
     ///
-    /// After any of those, a frame that was reachable is not, and **nothing
-    /// notices**. Task 8's third acceptance clause is exactly this:
-    /// *reachability is rechecked when those bounds change.*
+    /// After any of those, a frame that was reachable is not. Task 8's third
+    /// acceptance clause is exactly this: *reachability is rechecked when those
+    /// bounds change.*
+    ///
+    /// **Something notices as of 2026-10-02**, and it is not this function:
+    /// [`Self::bring_back_frames_the_moved_controls_hide`] is what the draw calls,
+    /// and it asks this one only when the bounds it was handed differ from the
+    /// bounds before them. This remains the answer to *which frames*, callable at
+    /// any time by anything, and says nothing about when it ought to be asked.
     ///
     /// # This answers, and does not move anything
     ///
@@ -295,6 +355,58 @@ impl crate::Server {
             }
         }
         plans
+    }
+
+    /// Bring frames back **if the controls have moved** since the last recheck,
+    /// and say nothing happened when they have not.
+    ///
+    /// # This is the clause's trigger, and until 2026-10-02 there was none
+    ///
+    /// [`Self::frames_the_controls_now_hide`] and
+    /// [`Self::bring_back_frames_the_controls_hide`] were both written, both
+    /// tested, and **both called only by tests.** The detector could name a lost
+    /// frame and the mover could rescue one, and on a running machine neither was
+    /// ever asked, so a frame the Dock grew over stayed under it. That is the same
+    /// shape as the rule this module's header is about — *written, tested, no
+    /// caller on any path a person can take* — one layer up, and it is why this
+    /// exists rather than leaving the draw to call the mover directly: the draw
+    /// runs every frame and the recovery must run on a change.
+    ///
+    /// # [`None`] and `Some(vec![])` are different answers and an empty [`Vec`] would conflate them
+    ///
+    /// *The controls have not moved, so nothing was looked at* and *the controls
+    /// moved and hid nothing* are both **no recoveries**, and only the second is a
+    /// measurement. Returned as one empty vector they would be indistinguishable,
+    /// including to the tests meant to prove the trigger works — a test asserting
+    /// *empty* would pass just as well against a trigger wired to nothing, which
+    /// is exactly the kind of check this repository has spent days discovering it
+    /// had written. So the type says which happened.
+    ///
+    /// # What the caller still owes
+    ///
+    /// The move is **applied** here and the person is **not told**. By the time
+    /// this returns, a hidden frame has already moved and will be drawn in its new
+    /// place on the next frame, so the move is visible; what is missing is the
+    /// sentence saying why their window jumped. That is the other half of the
+    /// owner's clause — *a recovery that moves a frame shows the move* — and it
+    /// needs a road that does not exist yet: `alo_notifying::arriving::from_alo_os`
+    /// is the mechanism and **alo OS has no production notification anywhere in
+    /// this tree**, so the first one is its own task, with its own externalized
+    /// words in every shipped language. [`Recovery::BroughtBack`] carries `was`
+    /// precisely so that road can be written without asking anything twice.
+    #[must_use = "the controls moved and frames may have been moved with them; dropping this \
+                  drops the record a person would undo by"]
+    pub fn bring_back_frames_the_moved_controls_hide(&mut self) -> Option<Vec<Recovery>> {
+        if !self.fixed_controls.a_recheck_is_owed() {
+            return None;
+        }
+        // Cleared before the recovery rather than after it. The recovery moves
+        // windows, a moved window is drawn, and a draw calls
+        // `the_fixed_controls_were_drawn` again — so clearing afterwards would
+        // race its own effect in the one case where the controls are laid out
+        // differently because of the move it just made.
+        self.fixed_controls.the_recheck_was_done();
+        Some(self.bring_back_frames_the_controls_hide())
     }
 
     /// The nearest point the rule accepts for this frame, or [`None`].

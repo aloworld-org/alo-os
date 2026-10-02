@@ -475,6 +475,153 @@ fn a_frame_the_panel_hid_is_brought_back_and_where_it_was_is_kept() {
     );
 }
 
+/// **The controls moving is what owes a recheck, and a frame redrawn owes
+/// nothing.**
+///
+/// The first half of task 6's third clause: *recovery is rechecked when the
+/// display, the scale, the Dock's bounds or the panel's state changes.* The
+/// detector and the mover above were both written, both tested, and **both called
+/// by tests alone** until 2026-10-02 — on a running machine the Dock could grow
+/// over a frame and nothing asked either of them.
+///
+/// So this drives the trigger rather than the recovery, and the three outcomes it
+/// walks through are three different answers that a plain empty list would have
+/// rendered as one:
+///
+/// - the first draw, which is a change because before it nothing was known;
+/// - **the same draw again, which must owe nothing** — the assertion that fails
+///   if a redraw counts as a move, and the reason the trigger is a flag set on a
+///   comparison rather than on every call;
+/// - the panel's column appearing, which moves a frame.
+///
+/// A test asserting *no recoveries* after an unchanged frame would pass against a
+/// trigger wired to nothing at all, which is why [`None`] and an empty [`Vec`] are
+/// different answers here and are asserted apart.
+#[test]
+fn the_controls_moving_is_what_owes_a_recheck() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+
+    // Under where the panel's column will be, clear of the Dock: a frame that is
+    // reachable now and will not be when the panel appears, without ever moving.
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, (VIEWPORT.0 - 40, 300))
+        })
+        .is_ok()
+    );
+
+    // **The first draw is a change.** Before it the shell did not know where any
+    // control was, and *unknown* becoming *the Dock is here* is exactly the event
+    // this trigger is for.
+    drawn_with_a_dock(&f);
+    let first = f
+        .backend(|s| s.bring_back_frames_the_moved_controls_hide())
+        .expect("the first draw told the shell where the Dock is, which is a change");
+    assert!(
+        first.is_empty(),
+        "a frame with nothing over it was moved by the first draw: {first:?}"
+    );
+
+    // **The same draw again, and nothing may be owed.** The draw runs every frame
+    // with the same bounds whenever nothing has moved; a trigger that fired here
+    // would run the search sixty times a second and, worse, would make every
+    // assertion below meaningless — a recheck that always fires cannot show that
+    // a change is what caused one.
+    drawn_with_a_dock(&f);
+    assert!(
+        f.backend(|s| s.bring_back_frames_the_moved_controls_hide())
+            .is_none(),
+        "an identical draw owed a recheck, so the recovery runs on every frame \
+         and nothing distinguishes the Dock moving from the clock ticking"
+    );
+
+    // **Now the panel's column appears over it.** The frame has not moved; the
+    // controls have, which is the whole of the clause.
+    drawn_with_a_dock_and_a_panel(&f);
+    let moved = f
+        .backend(|s| s.bring_back_frames_the_moved_controls_hide())
+        .expect("the panel's column appeared over a frame, which is a change");
+    let outcome = *moved
+        .first()
+        .expect("the controls moved over a frame and nothing was brought back");
+    assert!(
+        matches!(outcome, alo_shell::Recovery::BroughtBack { .. }),
+        "the controls moved over a frame and the search declined to move it: {outcome:?}"
+    );
+
+    // And the debt is settled rather than standing: asked again with no draw in
+    // between, there is nothing owed. A trigger that never cleared would move a
+    // frame once and then re-examine it forever.
+    assert!(
+        f.backend(|s| s.bring_back_frames_the_moved_controls_hide())
+            .is_none(),
+        "the recheck ran and stayed owed, so it would run again on every frame"
+    );
+}
+
+/// **A display that changes owes a recheck, which is the clause's own first
+/// trigger.**
+///
+/// The clause names four: *the display, the scale, the Dock's bounds or the
+/// panel's state.* The test above moves the panel; this one moves the **display**,
+/// by drawing the same Dock on a shorter screen — which is what `direct_desktop`
+/// hands over when a mode changes, because the band is laid out from the target's
+/// own size.
+///
+/// Worth its own test rather than a second case in the one above because the
+/// mechanism differs: the panel appears as a **new rectangle** and a display
+/// change **moves an existing one**, and a comparison that noticed only
+/// appearances would pass the test above and fail a person whose screen resized.
+#[test]
+fn a_display_that_changed_owes_a_recheck() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+
+    // Low on the screen, and clear of the Dock as the full-height display lays it
+    // out.
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, (200, VIEWPORT.1 - DOCK - 120))
+        })
+        .is_ok()
+    );
+
+    drawn_with_a_dock(&f);
+    let settled = f
+        .backend(|s| s.bring_back_frames_the_moved_controls_hide())
+        .expect("the first draw is a change");
+    assert!(
+        settled.is_empty(),
+        "a frame clear of the Dock was moved: {settled:?}"
+    );
+
+    // **The screen got shorter, so the Dock's band is somewhere else.** Nothing
+    // about the frame changed and nothing about the panel did.
+    let shorter = VIEWPORT.1 - 200;
+    f.backend(move |s| {
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(Rectangle::new(
+                    (0, shorter - DOCK).into(),
+                    (VIEWPORT.0, DOCK).into(),
+                )),
+                panel_reserved: Rectangle::default(),
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+
+    assert!(
+        f.backend(|s| s.bring_back_frames_the_moved_controls_hide())
+            .is_some(),
+        "the display changed and the Dock's band moved with it, and no recheck \
+         was owed — so a frame the new band covers stays under it"
+    );
+}
+
 /// **The frame keeps the last position that was allowed.**
 ///
 /// The owner's ruling of 2026-09-30: *keep the last valid position while the
