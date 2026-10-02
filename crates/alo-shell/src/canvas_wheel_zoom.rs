@@ -109,6 +109,16 @@ impl crate::Server {
             left += if left < 0 { 1 } else { -1 };
         }
         if zoom == was {
+            // **The wheel reaches the World too, and by the same step.** If the
+            // zoom did not move because it was already at the furthest out and
+            // the person kept scrolling out, that is the step `one_step_out`
+            // answers `None` for — and task 2's constraint is that *the gesture
+            // is the canvas's existing zoom on all three of its roads*, so a
+            // World reachable by key and not by wheel would be a second
+            // navigation model wearing one name.
+            if left > 0 {
+                return self.step_out_into_the_world();
+            }
             return false;
         }
         // A refused zoom keeps no remainder, for `canvas_pan`'s reason: the person

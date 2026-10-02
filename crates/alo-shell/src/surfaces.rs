@@ -93,6 +93,13 @@ pub(crate) struct Surfaces {
     /// `Surfaces`, so the Place it is put on has to be reachable from here, and
     /// the shell reads it back through `Server::the_place_now`.
     pub(crate) place: alo_canvas::Place,
+    /// **Which level the person is looking at**: one Place, or every Place.
+    ///
+    /// Stored rather than derived because the World and a Place are different
+    /// coordinate spaces — `alo_canvas::Showing`'s own note carries why, and that
+    /// note was wrong until the shell's half of task 2 was built. Never set by a
+    /// person: it changes only by stepping out of the last rung or into a tile.
+    pub(crate) showing: alo_canvas::Showing,
     /// Seat globals, created only when the backend enables input.
     pub(crate) seats: SeatState<Self>,
     /// Optional keyboard seat and routing state.
@@ -140,6 +147,7 @@ impl Surfaces {
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
             place: alo_canvas::Place::FIRST,
+            showing: alo_canvas::Showing::OnePlace(alo_canvas::Place::FIRST),
             seats: SeatState::new(),
             keyboard: None,
             pointer: None,
