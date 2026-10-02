@@ -148,14 +148,14 @@ fn collapsing_touches_no_window_at_all() {
 
     let before = panel.previews().to_vec();
 
-    panel.collapse();
+    panel.collapse(a_place());
     assert_eq!(
         panel.previews(),
         before.as_slice(),
         "collapsing changed a preview, and it may change only the panel"
     );
 
-    panel.expand();
+    panel.expand(a_place());
     assert_eq!(
         panel.previews(),
         before.as_slice(),
@@ -173,16 +173,16 @@ fn collapsing_touches_no_window_at_all() {
 #[test]
 fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
     let mut panel = Panel::new();
-    assert_eq!(panel.showing(), HowItShows::AnEdgeHandle);
+    assert_eq!(panel.showing(a_place()), HowItShows::AnEdgeHandle);
 
-    panel.collapse();
+    panel.collapse(a_place());
     assert_eq!(
-        panel.showing(),
+        panel.showing(a_place()),
         HowItShows::AnEdgeHandle,
         "empty beats the choice: there is nothing to draw a rail of"
     );
     assert_eq!(
-        panel.chosen(),
+        panel.chosen(a_place()),
         Chosen::Collapsed,
         "and the choice is remembered rather than overwritten by being empty"
     );
@@ -196,13 +196,13 @@ fn an_empty_panel_shows_a_handle_and_remembers_the_choice() {
         )
         .unwrap();
     assert_eq!(
-        panel.showing(),
+        panel.showing(a_place()),
         HowItShows::ARailOfIcons,
         "putting one aside gives back the rail the person had chosen"
     );
 
-    panel.expand();
-    assert_eq!(panel.showing(), HowItShows::NamedPreviews);
+    panel.expand(a_place());
+    assert_eq!(panel.showing(a_place()), HowItShows::NamedPreviews);
 }
 
 /// **A window put aside twice is refused, not duplicated.**
@@ -272,5 +272,5 @@ fn bringing_back_gives_the_patch_it_was_put_aside_at() {
         "it goes back where it was, not where we are"
     );
     assert_eq!(panel.holding(), 0);
-    assert_eq!(panel.showing(), HowItShows::AnEdgeHandle);
+    assert_eq!(panel.showing(a_place()), HowItShows::AnEdgeHandle);
 }

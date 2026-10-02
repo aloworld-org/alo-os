@@ -52,6 +52,7 @@ pub mod restoring;
 pub mod restoring_into_a_taken_place;
 pub mod showing;
 pub mod shown;
+pub mod the_collapse_choice_per_place;
 pub mod the_region_the_panel_claims;
 pub mod the_scope_alo_may_change;
 pub mod what_a_preview_is_headed_with;
