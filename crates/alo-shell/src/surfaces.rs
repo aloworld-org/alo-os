@@ -3,7 +3,7 @@
 use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
     delegate_compositor, delegate_data_device, delegate_pointer_gestures, delegate_shm,
-    delegate_xdg_shell,
+    delegate_viewporter, delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -26,6 +26,7 @@ use smithay::{
             XdgToplevelSurfaceData,
         },
         shm::{ShmHandler, ShmState},
+        viewporter::ViewporterState,
     },
 };
 
@@ -86,6 +87,20 @@ pub(crate) struct Surfaces {
     pub(crate) popup_grab: Option<crate::popup_grabs::Grab>,
     /// Core surface/subsurface protocol.
     compositor: CompositorState,
+    /// `wp_viewporter`: a surface says how big it is drawn, and which part of
+    /// its buffer to draw.
+    ///
+    /// **Held and never read, like `gestures` above.** What the field does is
+    /// keep the global alive; the protocol's effect arrives through
+    /// `on_commit_buffer_handler`, which smithay already has read the viewport
+    /// into `SurfaceView` before anything of ours looks — see this field's note
+    /// in `crates/alo-shell/tests/a_surface_says_how_big_it_is_drawn/mod.rs` for
+    /// why that makes the global sufficient here and not elsewhere.
+    #[expect(
+        dead_code,
+        reason = "holding the global alive is the whole purpose; the effect arrives through the renderer's own commit handler"
+    )]
+    viewporter: ViewporterState,
     /// CPU-backed application buffers.
     shm: ShmState,
     /// XDG shell role and configure tracking.
@@ -168,6 +183,7 @@ impl Surfaces {
             // application that wants one; `crate::canvas_pinch` is what happens
             // when the pinch is over the plane instead of over a frame.
             gestures: PointerGesturesState::new::<Self>(display),
+            viewporter: ViewporterState::new::<Self>(display),
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
             place: alo_canvas::Place::FIRST,
@@ -547,3 +563,4 @@ delegate_shm!(Surfaces);
 delegate_xdg_shell!(Surfaces);
 
 delegate_pointer_gestures!(Surfaces);
+delegate_viewporter!(Surfaces);

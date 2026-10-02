@@ -42,7 +42,10 @@ use wayland_client::{
         wl_subcompositor, wl_subsurface, wl_surface,
     },
 };
-use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
+use wayland_protocols::{
+    wp::viewporter::client::{wp_viewport, wp_viewporter},
+    xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base},
+};
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
@@ -311,6 +314,14 @@ pub struct Application {
     compositor: wl_compositor::WlCompositor,
     /// Subsurface-role factory.
     subcompositor: wl_subcompositor::WlSubcompositor,
+    /// The registry this connection already has, kept so a fixture can bind a
+    /// global the way a client does rather than opening a second connection.
+    registry: wl_registry::WlRegistry,
+    /// This surface's viewport, bound on first use and kept.
+    ///
+    /// One per surface is what the protocol allows — asking twice is a protocol
+    /// error — so it is held rather than made again.
+    viewport: Option<wp_viewport::WpViewport>,
 }
 
 impl Application {
@@ -387,6 +398,8 @@ impl Application {
         pool.destroy();
         queue.roundtrip(&mut events).unwrap();
         Self {
+            registry,
+            viewport: None,
             shell,
             connection,
             queue,
@@ -448,9 +461,106 @@ impl Application {
         self.surface.commit();
     }
 
+    /// Say how big this surface should be drawn, through `wp_viewporter`.
+    ///
+    /// **`allow` rather than `expect`, because this file has two builds.** The
+    /// examples include it by path and use none of the viewport helpers, so an
+    /// `expect(dead_code)` would be unfulfilled in the test build and refused
+    /// there. Which is the same boundary the panel lane met this morning: an
+    /// `examples/` tree compiled separately from `tests/`, and a search that
+    /// excluded it hid six call sites.
+    #[allow(
+        dead_code,
+        reason = "used by the viewporter tests, not by the examples"
+    )]
+    ///
+    /// **Binds the global the way a real client does** — off the registry this
+    /// connection already recorded — rather than reaching into the compositor,
+    /// because a protocol test that did not go over the wire would pass for a
+    /// compositor that advertises nothing.
+    pub fn set_a_viewport_destination(&mut self, width: i32, height: i32) -> bool {
+        let Some(viewport) = self.a_viewport() else {
+            return false;
+        };
+        viewport.set_destination(width, height);
+        self.surface.commit();
+        true
+    }
+
+    /// Take the destination away again, leaving the buffer's own size.
+    #[allow(
+        dead_code,
+        reason = "used by the viewporter tests, not by the examples"
+    )]
+    pub fn clear_the_viewport_destination(&mut self) -> bool {
+        let Some(viewport) = self.a_viewport() else {
+            return false;
+        };
+        // -1 by -1 is how the protocol spells *unset*, and the only way a client
+        // has of saying it.
+        viewport.set_destination(-1, -1);
+        self.surface.commit();
+        true
+    }
+
+    /// This connection's viewport for its root surface, bound once and kept.
+    #[allow(
+        dead_code,
+        reason = "used by the viewporter tests, not by the examples"
+    )]
+    fn a_viewport(&mut self) -> Option<wp_viewport::WpViewport> {
+        if let Some(viewport) = self.viewport.clone() {
+            return Some(viewport);
+        }
+        let qh = self.queue.handle();
+        // **Answers rather than panicking**, because this file is compiled into
+        // the examples as well as the tests, and both `expect_used` and `panic`
+        // are denied there. It is the better shape regardless: the harness
+        // reports what it found and the test decides whether that is a failure,
+        // so a compositor advertising no viewporter fails with the test's own
+        // sentence instead of the fixture's.
+        let &(name, _, _) = self
+            .events
+            .globals
+            .iter()
+            .find(|(_, interface, _)| interface == "wp_viewporter")?;
+        let viewporter: wp_viewporter::WpViewporter = self.registry.bind(name, 1, &qh, ());
+        let viewport = viewporter.get_viewport(&self.surface, &qh, ());
+        self.viewport = Some(viewport.clone());
+        Some(viewport)
+    }
+
     /// Assert that the server rejected this client's protocol request.
     pub fn refused(&mut self) {
         assert!(self.queue.roundtrip(&mut self.events).is_err());
         assert!(self.connection.protocol_error().is_some());
+    }
+}
+
+// **These two protocols send this client nothing**, so their dispatch is empty
+// and says so rather than being a shrug: a viewporter has no events at all, and
+// a viewport's only messages are errors, which arrive as protocol errors on the
+// connection rather than as events here.
+impl Dispatch<wp_viewporter::WpViewporter, ()> for Events {
+    fn event(
+        _: &mut Self,
+        _: &wp_viewporter::WpViewporter,
+        _: wp_viewporter::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+    }
+}
+
+impl Dispatch<wp_viewport::WpViewport, ()> for Events {
+    fn event(
+        _: &mut Self,
+        _: &wp_viewport::WpViewport,
+        _: wp_viewport::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
     }
 }
