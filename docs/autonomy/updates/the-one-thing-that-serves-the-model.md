@@ -151,7 +151,7 @@ having answered it.
 where saying it is enforcing it — systemd's IP access list is applied by the
 kernel to the service's own control group — and `crates/alo-image` checks the
 unit says it. **Nothing in this lane has booted this image or put a packet
-counter beside it.** `docs/autonomy/v0-01-evidence.md` says so under the promise,
+counter beside it.** `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` says so under the promise,
 and *arrives ready to run* stays owed.
 
 ## A fixture that stopped testing what it said
@@ -235,6 +235,6 @@ it.
 - `crates/alo-image/tests/what_the_image_owes_the_daemons.rs`
 - `docs/decisions/0027-who-may-ask-the-model-anything.md` (new)
 - `docs/quirks.md`
-- `docs/autonomy/v0-01-evidence.md`
-- `docs/autonomy/v0-01-delivery-plan.md`
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
+- `docs/autonomy/the-executable-plan.md`
 - `docs/autonomy/updates/the-one-thing-that-serves-the-model.md` (this report)

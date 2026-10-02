@@ -1,7 +1,7 @@
 # Every sentence, and the walk from lock to resume to a new desk
 
 **Date:** 2026-09-20.
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 7
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 7
 — *Lock screen, suspend and resume*; *Multi-monitor, scaling, hotplug*;
 *Session management*; *Night light and display colour*.
 **Machine:** `AGAI01`, checkout `C:\dev\alo-os-3`.
@@ -234,7 +234,7 @@ a published report is never rewritten.
 along the bottom of the laptop and down the side of the external screen.* Task 3
 recorded that it is **not met** — `alo_dock::Dock` holds one edge for the whole
 machine — and could not fix it, because `alo-dock` belonged to
-`v0-5-where-a-persons-settings-are-kept-plan.md` while that plan still had
+`where-a-persons-settings-are-kept-plan.md` while that plan still had
 unfinished tasks. Every one of its seven tasks is now marked done, so the crate
 is released. This task did not take it: a per-screen edge is a change to a kept
 file's shape and to another plan's crate, which is a task rather than a passing
@@ -253,7 +253,7 @@ names none of `sleeping.toml` (task 2), `displays.toml` (tasks 3 and 4),
 recorded this; it is now five files owed to that contract, and this change adds
 seven keys to `displays.toml`'s vocabulary without touching the file's shape.
 It is not this task's to pay — the contract belongs to
-`v0-5-where-a-persons-settings-are-kept-plan.md` — and it is repeated here so
+`where-a-persons-settings-are-kept-plan.md` — and it is repeated here so
 that the count is right when somebody does pay it.
 
 ## What changed
@@ -268,7 +268,7 @@ that the count is right when somebody does pay it.
 | `crates/alo-sleeping/tests/every_sentence_this_workstream_says.rs` (new) | The audit: every sentence of the five collected, noted, and naming nothing of the machine's — sentence, note and key |
 | `crates/alo-sleeping/tests/the_walk_from_lock_to_resume_to_a_new_desk.rs` (new) | The walk, held to the table above |
 | `crates/alo-sleeping/Cargo.toml` | Two dev-dependencies for those tests, with the reason the walk lives here |
-| `docs/autonomy/v0-5-the-session-and-the-displays-plan.md` | Task 7 marked done; the header's *reads and never edits* unchanged |
+| `docs/autonomy/the-session-and-the-displays-plan.md` | Task 7 marked done; the header's *reads and never edits* unchanged |
 
 ### A user-readable change description
 
@@ -348,12 +348,12 @@ For the integration owner; this report does not edit them.
 >   the evening to plugging in a second screen at the office the next day, is
 >   written down and held by a test.
 
-**`docs/autonomy/QUEUE.md`**: `v0-5-the-session-and-the-displays-plan.md` task 7
+**`docs/autonomy/QUEUE.md`**: `the-session-and-the-displays-plan.md` task 7
 is done. Task 8 — *Switching to another person at a locked screen* — is written
 in the plan and ready, from the finding task 5 recorded. And a new item, owned by
 nobody yet: **a dock per display**, which `docs/features.md` promises, task 3
 recorded as not met, and which is now unblocked because every task of
-`v0-5-where-a-persons-settings-are-kept-plan.md` is done; taking it means moving
+`where-a-persons-settings-are-kept-plan.md` is done; taking it means moving
 `alo-dock` between the two plans' headers in one change.
 
 **`ROADMAP.md`**: no v0.5 line ticks here. *Lock screen, suspend and resume* and

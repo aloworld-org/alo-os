@@ -1,7 +1,7 @@
 # A dock with a dozen adapters is found on every one of them at once
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 34)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 34)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository's owner
 **Status:** ready for integration
 
@@ -50,7 +50,7 @@ fail.
   additive. Nothing on the wire changed.
 - `docs/quirks.md`: new entry covering what the kernel did with a dozen networks in
   one burst, and how a port taken on one interface is refused there alone.
-- `docs/autonomy/v0-5-the-local-network-plan.md`: task 34 marked done. Task 35 is
+- `docs/autonomy/the-local-network-plan.md`: task 34 marked done. Task 35 is
   written: *A port another program let go of on one network is listened on there
   again*.
 

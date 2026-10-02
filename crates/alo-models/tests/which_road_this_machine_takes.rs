@@ -1,6 +1,6 @@
 //! **Which part of this machine runs the model, asked for rather than timed.**
 //!
-//! Task 22 of `docs/autonomy/v0-5-the-models-measured-plan.md`.
+//! Task 22 of `docs/autonomy/the-models-measured-plan.md`.
 //! [ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md) settled
 //! three weeks before this was written that *the CPU is the default; a GPU is
 //! acceleration* and that *a GPU changes speed, not capability* — and nothing

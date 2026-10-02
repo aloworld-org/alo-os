@@ -1,7 +1,7 @@
 //! The plan's acceptance for *the agent overlay: one key, from anywhere*,
 //! one test per criterion.
 //!
-//! `docs/autonomy/v0-01-delivery-plan.md`, task 2: *the chord resolves to the
+//! `docs/autonomy/the-executable-plan.md`, task 2: *the chord resolves to the
 //! action; pressing it asks for the surface exactly once; a second press
 //! while it is open does not ask twice; and with no compositor there is a
 //! refusal a person could read. No pixels are claimed and none are tested.*

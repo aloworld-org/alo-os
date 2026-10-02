@@ -1,6 +1,6 @@
 # What a fresh machine has, so it is not helpless.
 #
-# `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2. The decided list:
+# `docs/autonomy/software-and-the-web-plan.md`, task 2. The decided list:
 # one application for each thing a person needs before they have installed
 # anything, each a pinned upstream application named by the identifier its
 # source knows it by and the version it was decided at.
@@ -10,7 +10,7 @@
 # - `alo_software::Shipped::decided`, which refuses it unless every role is here
 #   exactly once, every identifier and source is one the rented tool could be
 #   handed, and the terminal is one no agent can be granted (ADR 0043);
-# - the installer plan (`docs/autonomy/v0-5-the-installer-plan.md`), which names
+# - the installer plan (`docs/autonomy/the-installer-plan.md`), which names
 #   the fresh machine's applications to the image from this file rather than
 #   copying the list into `image/`.
 #

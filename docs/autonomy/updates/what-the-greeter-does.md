@@ -42,7 +42,7 @@ reads the workspace's own member list, which is what that check is for.
 
 ### The plan
 
-`docs/autonomy/v0-01-delivery-plan.md` had **two sections numbered 27** — task
+`docs/autonomy/the-executable-plan.md` had **two sections numbered 27** — task
 26's report wrote *The sign-in surface's half of the door*, and a later change
 wrote *What the greeter does* for the same work under a different name. They
 are answered by one crate here, both are marked done, and the numbering is

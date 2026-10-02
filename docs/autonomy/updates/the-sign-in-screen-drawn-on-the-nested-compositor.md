@@ -1,7 +1,7 @@
 # The sign-in screen, drawn on the nested compositor
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 1)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 1)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — the code. Not seen on a certified machine.
 

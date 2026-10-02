@@ -55,7 +55,7 @@ Source paths:
 - `crates/alo-saying/src/collecting.rs`, `crates/alo-saying/Cargo.toml` — the
   seventeenth list. See *A defect found on the way* below.
 - `Cargo.lock` — the new edges.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 3's `**Done,**` line, per the
+- `docs/autonomy/the-executable-plan.md` — task 3's `**Done,**` line, per the
   plan's own rule that whoever finishes writes it in the same change. Task 4
   already existed, so no new task was needed.
 

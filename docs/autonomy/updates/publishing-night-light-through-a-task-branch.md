@@ -1,7 +1,7 @@
 # Publishing *Night light and display colour* through a task branch
 
 **Date:** 2026-09-18
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 4
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 4
 (*Night light and display colour*). A follow-up to
 `docs/autonomy/updates/night-light-and-display-colour.md`, which is that task's
 own report and is not edited here.

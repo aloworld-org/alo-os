@@ -2,7 +2,7 @@
 
 The certified laptop arrived on 2026-09-14 with 32 GB — the most memory this
 project has. Until the installer is ready to put alo OS on it
-(`v0-5-the-installer-plan.md`), it is the strongest builder we own and it is
+(`the-installer-plan.md`), it is the strongest builder we own and it is
 idle. This turns it into a fourth lane.
 
 **It is still the certification machine.** When the installer's tasks 1–5 land,
@@ -49,7 +49,7 @@ git clone https://github.com/aloworld-org/alo-os C:\dev\alo-os
 cd C:\dev\alo-os\tools\kernel-loop
 cargo build --release
 cd C:\dev\alo-os
-$env:ALO_LOOP_PLAN = "docs/autonomy/v0-5-applications-and-what-they-expect-plan.md"
+$env:ALO_LOOP_PLAN = "docs/autonomy/applications-and-what-they-expect-plan.md"
 $env:ALO_KERNEL_LOOP_WORKER = "$env:APPDATA\npm\claude.cmd --dangerously-skip-permissions -p"
 .\tools\kernel-loop\target\release\alo-kernel-loop.exe run
 ```
@@ -61,7 +61,7 @@ apart by the checkout's path.
 
 ## The plan it runs, and the ones it must not
 
-**Its plan is `docs/autonomy/v0-5-documents-and-paper-plan.md`** — five tasks:
+**Its plan is `docs/autonomy/documents-and-paper-plan.md`** — five tasks:
 what this machine can do with a file, `.docx`/`.xlsx`/`.pptx` opened and what
 the conversion cost, a printer found and saying what is wrong with it,
 *"I can't open this file"* said properly, and the walk through every sentence.
@@ -88,5 +88,5 @@ exactly as on the other machines.
 **This machine's own rule:** nothing measured on it is a certification.
 A grade, a timing or a boot in a virtual machine is a fact about the thing
 measured, never about alo OS on certified hardware — that is what the
-installer and `docs/autonomy/v0-01-evidence.md` are for, and only a person at
+installer and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are for, and only a person at
 the machine writes into that ledger.

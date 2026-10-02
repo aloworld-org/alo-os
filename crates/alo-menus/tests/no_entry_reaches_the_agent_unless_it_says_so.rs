@@ -1,7 +1,7 @@
 //! No menu entry sends anything to the agent without the person choosing the
 //! entry that says so.
 //!
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4, last acceptance,
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 4, last acceptance,
 //! and the one a context menu is most likely to get wrong quietly. A menu is a
 //! list of small conveniences; the day somebody adds *summarise this* beside
 //! *Rename* and wires it to the model, a right-click has become a thing that

@@ -4,7 +4,7 @@
 the person.
 **Status:** **accepted, 2026-09-21, by the owner**, with the three terms under
 *As the owner accepted it*, which are part of the decision rather than
-commentary on it. Written for task 4 of `docs/autonomy/v0-5-the-installer-plan.md`
+commentary on it. Written for task 4 of `docs/autonomy/the-installer-plan.md`
 (*Alongside Windows, switching between them easily, and back again*) before any
 of its code, because the task needs the answer and neither decision it rests on
 gives one.

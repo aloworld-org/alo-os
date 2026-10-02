@@ -2,7 +2,7 @@
 //! vocabulary a real process loads — and nothing in any of them that names a
 //! part of the machine.
 //!
-//! Task 7 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`: *every
+//! Task 7 of `docs/autonomy/the-session-and-the-displays-plan.md`: *every
 //! sentence these five crates can say — `alo-locking`, `alo-sleeping`,
 //! `alo-displays`, `alo-leaving` and `alo-notifying` — is in the vocabulary
 //! with a translator's note … no sentence names `logind`, DRM, EDID, a

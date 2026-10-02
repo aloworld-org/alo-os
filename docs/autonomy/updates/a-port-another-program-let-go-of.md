@@ -1,7 +1,7 @@
 # A port another program let go of on one network is listened on there again
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 35)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 35)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository's owner
 **Status:** ready for integration
 
@@ -57,7 +57,7 @@ listens there again.
 - `docs/quirks.md`: a new entry. A person's service with no capabilities hears every
   TCP socket in its network being destroyed, and a classic filter narrows that in
   the kernel.
-- `docs/autonomy/v0-5-the-local-network-plan.md`: task 35 marked done, and task 36
+- `docs/autonomy/the-local-network-plan.md`: task 35 marked done, and task 36
   written (the IPv6 listener refused at start is never tried again).
 
 **Change description, for the changelog:** A computer running alo OS whose network

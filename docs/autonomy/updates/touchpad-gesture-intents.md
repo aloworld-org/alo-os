@@ -132,7 +132,7 @@ crates/alo-desktops/src/libinput_gestures.rs
 crates/alo-desktops/tests/gesture_preferences_are_kept.rs
 crates/alo-desktops/tests/gestures_from_a_touchpad.rs
 crates/alo-desktops/tests/swipes_use_the_desktop_switch.rs
-docs/autonomy/v0-5-hands-on-the-desktop-plan.md
+docs/autonomy/hands-on-the-desktop-plan.md
 docs/autonomy/updates/touchpad-gesture-intents.md
 ```
 

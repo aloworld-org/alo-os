@@ -4,7 +4,7 @@
 //! about provenance: a screenshot is taken **through the rented screen-capture
 //! mechanism**. Nothing in this crate reads a display, opens a framebuffer,
 //! talks a display protocol or encodes an image — ADR 0011 is why, and
-//! `docs/autonomy/v0-5-capture-and-the-room-plan.md` says it again in the
+//! `docs/autonomy/capture-and-the-room-plan.md` says it again in the
 //! plan's own words: no screen grabber, no encoder and no media server of our
 //! own.
 //!

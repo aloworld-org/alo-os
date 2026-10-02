@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-09-17
-**Context:** task 11 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`;
+**Context:** task 11 of `docs/autonomy/applications-and-what-they-expect-plan.md`;
 `crates/alo-portals` (`answers_file`, `believed_file`, `shortening`);
 `docs/contracts/portal-answers-file.md`;
 [ADR 0001](0001-the-capability-model.md) §7,

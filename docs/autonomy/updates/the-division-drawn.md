@@ -69,7 +69,7 @@ displays plugged in and unplugged.
 for a nested compositor and once for the real one — would be two answers to
 *what is on this display now*, which is the same fault the constraint is about,
 one level up. So it is **task 16**, and it depends on task 13 of
-`v0-01-delivery-plan.md`, the session that stands the desktop up, rather than on
+`the-executable-plan.md`, the session that stands the desktop up, rather than on
 this task.
 
 Task 16's acceptance carries the removal explicitly: `window_tiling`'s half goes

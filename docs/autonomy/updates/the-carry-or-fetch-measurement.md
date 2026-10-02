@@ -76,7 +76,7 @@ default when it is offline at setup.
 
 - **The finding is recorded in `docs/quirks.md`, and the ledger is proposed
   rather than edited.** The acceptance names `docs/quirks.md` as where the
-  answer goes and it is there. `docs/autonomy/v0-01-evidence.md`'s entry *The
+  answer goes and it is there. `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`'s entry *The
   local model is what the machine arrives ready to run* still reads *whether
   the weights ride on the certified image or are fetched at setup — a decision
   inside the work*; the integration owner may want to add one sentence
@@ -137,7 +137,7 @@ or re-claimed here.
   catalogued model is measured driving the verbs reliably, so no weights go
   aboard the image yet — the finding, the update-channel reasoning and the
   answer are recorded in docs/quirks.md and held to the catalogue by a test."
-- `docs/autonomy/v0-01-evidence.md`: the sentence proposed under *Decisions*
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`: the sentence proposed under *Decisions*
   above.
 
 ## Status

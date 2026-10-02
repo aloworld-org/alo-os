@@ -138,5 +138,5 @@ conversions included, which need the engine and run it. Then the workspace.
 
 This is the documents-and-paper lane's crate and not mine. It was taken because
 `main` was red on the machine that gates, which blocks every lane on it, and the
-finding was already in hand; task 2 of `v0-5-documents-and-paper-plan.md` is
+finding was already in hand; task 2 of `documents-and-paper-plan.md` is
 where it belongs and it is named there.

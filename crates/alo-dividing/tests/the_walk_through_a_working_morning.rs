@@ -1,6 +1,6 @@
 //! **One morning at a desk, sentence by sentence.**
 //!
-//! Task 7 of `docs/autonomy/v0-5-hands-on-the-desktop-plan.md`. Tasks 1 to 6
+//! Task 7 of `docs/autonomy/hands-on-the-desktop-plan.md`. Tasks 1 to 6
 //! each end in something a person reads: a half, a desktop's name, a label
 //! beside a pointer, a letter that appears when two keys are pressed. Each
 //! crate's own tests hold its own.

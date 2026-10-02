@@ -1,7 +1,7 @@
 # Why the photograph change was refused, and what it was refused for
 
 **Date:** 2026-09-19
-**Workstream:** documents and paper (`docs/autonomy/v0-5-documents-and-paper-plan.md`)
+**Workstream:** documents and paper (`docs/autonomy/documents-and-paper-plan.md`)
 **Task:** 6. A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or
 explained — second and last attempt.
 **Contributor:** the second worker on task 6, on this development PC.
@@ -129,7 +129,7 @@ here. Three things were considered and refused:
 - **Changing or deleting the tripwire.** It is doing exactly its job. ADR 0054
   is now accepted, which obliges the encrypting workstream to build enrolment
   during install and the recovery, and to replace that test with the tests of
-  that — tasks 6 and 7 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`.
+  that — tasks 6 and 7 of `docs/autonomy/the-broker-and-the-disk-plan.md`.
   A worker on a documents task editing another workstream's tripwire to get a
   green suite would be weakening a gate to pass it, which `CLAUDE.md` forbids in
   the same words.

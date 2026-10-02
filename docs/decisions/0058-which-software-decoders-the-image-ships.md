@@ -14,7 +14,7 @@ licence, never from hope),
 rented, and what it already carries we inherit rather than choose),
 [ADR 0008](0008-where-inference-happens.md) (a machine says what it could not do
 rather than quietly doing something else), `crates/alo-playing`, and
-`docs/autonomy/v0-5-devices-and-media-plan.md` task 1, which this unblocks.
+`docs/autonomy/devices-and-media-plan.md` task 1, which this unblocks.
 
 ## The question in one line
 

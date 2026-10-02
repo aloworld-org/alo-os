@@ -1,9 +1,9 @@
 # ADR 0038 — A person's settings are kept by the crate that owns each, in the person's own folder
 
 **Status:** **accepted**, 2026-09-15, option **B**. Task 6 of
-`docs/autonomy/v0-5-the-shell-plan.md` (*one place for settings*) no longer
+`docs/autonomy/the-shell-plan.md` (*one place for settings*) no longer
 waits on this decision, only on the keeping it describes landing in the crates
-it names — which is `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`,
+it names — which is `docs/autonomy/where-a-persons-settings-are-kept-plan.md`,
 a lane of its own, since the shell plan may not edit those crates.
 **Date:** 2026-09-14, accepted 2026-09-15
 **Context:** [ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md)

@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** *alo's own service, as a provider like any other*
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`, task 5)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`, task 5)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
 tested and linted in the Lima VM (Ubuntu 24.04 aarch64).

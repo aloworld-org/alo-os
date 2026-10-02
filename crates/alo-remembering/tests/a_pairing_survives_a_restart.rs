@@ -4,7 +4,7 @@
 //!
 //! The unit tests beside `alo_nearby::keeping` and `crate::pairings` ask each
 //! crate's own questions. This file asks the plan's (task 12 of
-//! `docs/autonomy/v0-5-the-local-network-plan.md`): a pairing kept is read
+//! `docs/autonomy/the-local-network-plan.md`): a pairing kept is read
 //! again at start and still proves the other machine; a restart across the
 //! moment it ends finds nothing; a revoked one does not come back; and a file
 //! somebody else could write, or a row that has been widened, is refused

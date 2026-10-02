@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 — devices and media
-**Task:** [task 3](../v0-5-devices-and-media-plan.md) — Bluetooth: pairing,
+**Task:** [task 3](../devices-and-media-plan.md) — Bluetooth: pairing,
 audio, keyboards and mice
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;

@@ -42,7 +42,7 @@ Wired in: the root workspace gains the member and two dependencies (below);
 `crates/alo-saying` collects the new crate's words into the machine's one
 vocabulary (its list, its count test and its sum test updated). Both delivery
 plans carry the Done line for this task, per the lane B protocol — the same
-change marks the matching task in `v0-01-delivery-plan.md` so the image task
+change marks the matching task in `the-executable-plan.md` so the image task
 there is not left waiting on work that is done.
 
 **User-readable change description:** alo OS can now create a local account

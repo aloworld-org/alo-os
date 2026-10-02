@@ -1,6 +1,6 @@
 //! The same weights at another quantisation, graded on their own.
 //!
-//! Task 13 of `docs/autonomy/v0-5-the-models-measured-plan.md`. An entry names
+//! Task 13 of `docs/autonomy/the-models-measured-plan.md`. An entry names
 //! one artefact and grades it; which quantisation the image pins is chosen from
 //! this catalogue, so a grade for the model in general would be a claim about
 //! files nobody measured. Each quantisation measured beside the entry's own is

@@ -1,7 +1,7 @@
 # A machine on two networks with one private range is reachable on both
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 27)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 27)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 

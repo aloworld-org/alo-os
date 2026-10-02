@@ -184,7 +184,7 @@
 # came from has them verbatim.
 #
 # **The same evening every other entry was put to the same machine** (task 2 of
-# `docs/autonomy/v0-5-the-models-measured-plan.md`). `mistral-7b-instruct` drove
+# `docs/autonomy/the-models-measured-plan.md`). `mistral-7b-instruct` drove
 # 0 of 10 and `llama-3.1-8b-instruct` 1 of 10: both `rarely`. (Mistral's grade
 # waited a few hours on `alo-image`'s test, which used it as its example of an
 # unmeasured entry; that test now reads its example off this file.) The other four

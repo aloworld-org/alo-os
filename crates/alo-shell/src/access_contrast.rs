@@ -1,7 +1,7 @@
 //! **Which palette every surface is drawn in: the design's, or the one high
 //! contrast decides.**
 //!
-//! Task 12 of `docs/autonomy/v0-5-the-shell-plan.md`: *the magnifier and high
+//! Task 12 of `docs/autonomy/the-shell-plan.md`: *the magnifier and high
 //! contrast apply as decided*. What high contrast is, is
 //! `alo_access::HighContrast` — a second palette held to WCAG 2.2 AAA over
 //! every pair this crate draws — and nothing about it is decided here. This is

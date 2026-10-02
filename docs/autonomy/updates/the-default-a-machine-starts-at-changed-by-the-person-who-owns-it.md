@@ -1,7 +1,7 @@
 # The default a machine starts at, changed by the person who owns it
 
 **Date:** 2026-09-22
-**Workstream:** `docs/autonomy/v0-5-the-installer-plan.md`, task 17 — the road a
+**Workstream:** `docs/autonomy/the-installer-plan.md`, task 17 — the road a
 person's choice travels to reach the loader's own file, and the surface in
 Settings in front of it.
 **Contributor:** the third PC (`AGAI01`), one working tree, two workers — the
@@ -129,7 +129,7 @@ one; the refusal is quoted under *Verification* below, with what it cost.
 So this change carries two of them, each in the header of the plan that owns
 the files, each naming ADR 0066 as the owner decision it records:
 
-- `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` releases
+- `docs/autonomy/the-broker-and-the-disk-plan.md` releases
   `crates/alo-broker/src/lib.rs`, `crates/alo-broker/src/verbs.rs`,
   `crates/alo-changing-drives/src/wanted.rs` and
   `crates/alo-changing-updates/src/wanted.rs` to task 17 of this plan. It is
@@ -137,7 +137,7 @@ the files, each naming ADR 0066 as the owner decision it records:
   the prose beside it says what a closed enum costs: every carrier is obliged
   to say what it does with a new member, which here is one line apiece saying
   *not mine*.
-- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` releases
+- `docs/autonomy/the-machine-keeps-itself-plan.md` releases
   `crates/alo-letting-go/tests/nothing_here_is_a_verb.rs`, the count of the
   broker's list, and says what that count is for and why this verb does not
   reach it: ADR 0045's seventh term is about **undo**, and `starting.default`
@@ -358,12 +358,12 @@ them is in the record.
 This task was handed over once before, on 2026-09-22, and the supervisor's
 ownership check refused it without gating anything. Verbatim:
 
-> this task changes a crate that is not `docs/autonomy/v0-5-the-installer-plan.md`'s
+> this task changes a crate that is not `docs/autonomy/the-installer-plan.md`'s
 > to change right now: `alo-broker` belongs to
-> `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, which still has an
+> `docs/autonomy/the-broker-and-the-disk-plan.md`, which still has an
 > unfinished task; `alo-changing-drives` … `alo-changing-updates` … ;
 > `alo-letting-go` belongs to
-> `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, which still has an
+> `docs/autonomy/the-machine-keeps-itself-plan.md`, which still has an
 > unfinished task.
 
 **Nothing was wrong with the code, and nothing about it was changed to fix

@@ -1,7 +1,7 @@
 # What a remote agent may do is what the local person granted
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 4 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 4 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 

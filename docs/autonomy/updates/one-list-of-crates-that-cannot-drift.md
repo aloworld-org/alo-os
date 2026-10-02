@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 — software and the web
-(`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 10)
+(`docs/autonomy/software-and-the-web-plan.md`, task 10)
 **Contributor:** Claude Code, in `C:\dev\alo-os-3`; recovered by Codex in `C:\dev\alo-os`
 **Status:** ready for integration
 
@@ -250,7 +250,7 @@ belongs to the installer plan's `image/` and `alo-image`.
 - `tools/kernel-loop/src/inside_the_plan.rs`
 - `docs/contracts/agent-verbs.md`
 - `docs/quirks.md`
-- `docs/autonomy/v0-5-software-and-the-web-plan.md`
+- `docs/autonomy/software-and-the-web-plan.md`
 - `docs/autonomy/updates/one-list-of-crates-that-cannot-drift.md`
 
 ## Proposed shared-document updates

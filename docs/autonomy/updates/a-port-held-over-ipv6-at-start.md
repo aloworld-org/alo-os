@@ -1,7 +1,7 @@
 # A port another program held over IPv6 at start is listened on over IPv6 once it is let go of
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 36)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 36)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository's owner
 **Status:** ready for integration
 
@@ -47,7 +47,7 @@ when a network changes.
 - `docs/quirks.md`: a new entry covering two things. A dual-stack `[::]` listener
   refuses every IPv4 listener held to an interface (measured). This host's own
   namespace binds IPv6 sockets while IPv6 is off on every interface, with no `::1`.
-- `docs/autonomy/v0-5-the-local-network-plan.md`: task 36 marked done, and task 37
+- `docs/autonomy/the-local-network-plan.md`: task 36 marked done, and task 37
   written.
 
 **Change description, for the changelog:** Sometimes another program holds alo OS's

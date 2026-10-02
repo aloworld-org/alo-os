@@ -1,6 +1,6 @@
 //! **Everything this machine does, reached from a keyboard alone.**
 //!
-//! Task 3 of `docs/autonomy/v0-5-access-and-language-plan.md`, and clause 11.2's
+//! Task 3 of `docs/autonomy/access-and-language-plan.md`, and clause 11.2's
 //! of EN 301 549: everything operable from a keyboard, the focus never trapped,
 //! the focus order the order a reader reads in.
 //!

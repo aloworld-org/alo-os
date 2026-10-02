@@ -1,7 +1,7 @@
 //! **A machine that converts what it converts says so about a Pages
 //! document** — and about nothing it cannot inventory.
 //!
-//! Task 6 of `docs/autonomy/v0-5-documents-and-paper-plan.md` recognised a
+//! Task 6 of `docs/autonomy/documents-and-paper-plan.md` recognised a
 //! Pages document from its bytes, and ADR 0057 stands on that measurement: the
 //! format is recognised because a real file said so. Recognition and conversion
 //! were two separate promises, and for three months only the first was kept:

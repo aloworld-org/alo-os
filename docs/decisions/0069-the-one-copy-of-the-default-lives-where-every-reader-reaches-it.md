@@ -7,7 +7,7 @@ lands. This amends
 term 1, which its own last consequence reserved for a finding like this one, and
 it is not a quiet fix.
 
-Written by task 4 of `docs/autonomy/v0-5-the-installer-plan.md`, whose last owed
+Written by task 4 of `docs/autonomy/the-installer-plan.md`, whose last owed
 walk cannot pass until it is answered: the walk measures two sides agreeing about
 the default, and today both sides read nothing.
 

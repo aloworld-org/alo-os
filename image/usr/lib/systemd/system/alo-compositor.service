@@ -7,7 +7,7 @@
 # could start put them in order. `alo-compositor` is that order, and this unit
 # is what starts it. Until both existed, task 6 of the installer plan reached
 # `alo-agentd` on a console and stopped there, and every promise in
-# `docs/autonomy/v0-5-evidence.md` owed to "a screen" was owed to a screen that
+# `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` owed to "a screen" was owed to a screen that
 # did not come up.
 Description=alo OS sign-in screen: the compositor a machine boots to
 Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md

@@ -1,6 +1,6 @@
 //! What an application was answered is kept after the backend stops.
 //!
-//! Task 8 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 8 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here:
 //!
 //! - **the backend's answers are kept durably and read back in the order given,

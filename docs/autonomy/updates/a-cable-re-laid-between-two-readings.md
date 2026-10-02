@@ -1,7 +1,7 @@
 # A cable deleted and re-laid between two readings is still joined, over IPv4 as well
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 31)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 31)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 
@@ -59,7 +59,7 @@ discovery group again.
   the machine looks* (new, additive; nothing on the wire changes).
 - `docs/quirks.md`: *an IPv4 membership also outlives a deleted interface on the
   socket that joined it, while a socket held to the number keeps working* (new).
-- `docs/autonomy/v0-5-the-local-network-plan.md`: task 31 marked done, and task 32
+- `docs/autonomy/the-local-network-plan.md`: task 31 marked done, and task 32
   written.
 
 ## Decisions

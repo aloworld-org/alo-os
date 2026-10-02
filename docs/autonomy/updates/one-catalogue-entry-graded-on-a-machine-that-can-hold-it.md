@@ -3,7 +3,7 @@
 **Date:** 2026-09-13
 **Workstream:** v0.5 — the models, measured
 **Task:** *One catalogue entry, graded on a machine that can hold it*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 1)
+(`docs/autonomy/the-models-measured-plan.md`, task 1)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3** (8 cores, 4 performance and 4 efficiency), **8 GB
 unified memory**, macOS 26.5.2. Gates in Ubuntu 24.04 aarch64 under Lima 2.2.0

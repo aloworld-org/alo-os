@@ -45,7 +45,7 @@ impl FrameTarget for Target<'_> {
 
 /// **Stages 33, 31 and 32: a chord with one window, then a division between two.**
 ///
-/// Task 17 of `docs/autonomy/v0-5-the-shell-plan.md`. Driven before the rest of the
+/// Task 17 of `docs/autonomy/the-shell-plan.md`. Driven before the rest of the
 /// walk because these three need a window population they can state: the refusal
 /// needs **exactly one** mapped window and the two divisions need **exactly two**,
 /// and the only moment this probe can say that without qualification is before its

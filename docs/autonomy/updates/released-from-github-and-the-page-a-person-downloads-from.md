@@ -1,7 +1,7 @@
 # Released from GitHub, and the page a person downloads from
 
 **Date:** 2026-09-16
-**Workstream:** `docs/autonomy/v0-5-the-installer-plan.md`, task 5
+**Workstream:** `docs/autonomy/the-installer-plan.md`, task 5
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-shell`
 **Status:** ready for integration. Task 5 is marked **Done, 2026-09-16** in the
 plan. One half of one acceptance line — *signs the executable* — is answered by
@@ -71,7 +71,7 @@ also theirs.
 | `crates/alo-installer/Cargo.toml`, `Cargo.lock` | `alo-image` as a **development** dependency, in that direction only |
 | `README.md` | The *Try it* section |
 | `docs/decisions/0046-…-a-person-holds.md` | New (renumbered from 0045) |
-| `docs/autonomy/v0-5-the-installer-plan.md` | Task 5 marked **Done, 2026-09-16**, with what stays the owner's |
+| `docs/autonomy/the-installer-plan.md` | Task 5 marked **Done, 2026-09-16**, with what stays the owner's |
 
 ## Decisions I made, and why
 

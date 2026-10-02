@@ -1,7 +1,7 @@
 //! **A window this pane produced really changes what the machine lets go** —
 //! measured by letting go with it, not by reading it back.
 //!
-//! Task 15 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` asks for it
+//! Task 15 of `docs/autonomy/the-machine-keeps-itself-plan.md` asks for it
 //! in those words, and the distinction is the whole test. Writing a file and
 //! reading it back proves that a file round-trips, which is `alo-letting-go`'s
 //! own business and is already held there. What a person is promised is that

@@ -1,7 +1,7 @@
 # ADR 0060 — A person's own proxy password is set with the proxy, in one act
 
 **Status:** accepted, 2026-09-20. Written by task 13 of
-`docs/autonomy/v0-5-software-and-the-web-plan.md` (*A person's own proxy
+`docs/autonomy/software-and-the-web-plan.md` (*A person's own proxy
 password, set on the machine that is theirs*), whose code is built on it — the
 shape [ADR 0049](0049-the-network-is-changed-through-the-broker-and-its-password-never-reaches-the-agent.md)
 and [ADR 0059](0059-where-a-machine-wide-proxy-password-is-kept.md) were written
@@ -62,7 +62,7 @@ later task.* This is that record.
 
 The broker's closed list does not grow, its argument stays thirty-two bytes, and
 `crates/alo-broker` is not edited by this change — which matters twice over,
-because that crate belongs to `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`
+because that crate belongs to `docs/autonomy/the-broker-and-the-disk-plan.md`
 and because a privileged list that grows for every new thing is a privileged
 list nobody audits.
 

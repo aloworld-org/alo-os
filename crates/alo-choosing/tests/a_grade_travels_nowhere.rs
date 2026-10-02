@@ -1,6 +1,6 @@
 //! **A grade is the person's machine's, and it travels nowhere.**
 //!
-//! Task 4 of `docs/autonomy/v0-5-the-models-measured-plan.md` asks for this to
+//! Task 4 of `docs/autonomy/the-models-measured-plan.md` asks for this to
 //! be a test that reads the crate's shipped source, rather than a sentence. A
 //! measurement of a person's own weights is written into their own settings by
 //! `Choosing::measuring` and read back by `Settings::at`; this reads every file

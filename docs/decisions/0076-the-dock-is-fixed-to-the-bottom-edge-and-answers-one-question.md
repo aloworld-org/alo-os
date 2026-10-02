@@ -172,7 +172,7 @@ no deprecation period.** That is a clean break, the rule forbids it, and **this 
 the one place an override is claimed.**
 
 It rests on one fact, which is the repository's own and not an argument:
-**nothing has booted the image.** `docs/autonomy/v0-5-evidence.md` says so in
+**nothing has booted the image.** `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` says so in
 three places. The rule's own sentence is *third parties build adapters against
 ours* — there is no installed machine and no third-party adapter, so the interest
 the rule protects is not engaged.
@@ -218,14 +218,14 @@ crate is the orphan `alo-reconciling` exists to catch.
 **So it is not left floating:** the question *where does the status area go* is
 handed to the shell's own plan,
 `docs/autonomy/the-smallest-canvas-worth-showing.md`, and the entry for this
-promise in `docs/autonomy/v0-5-evidence.md` must say that it is owed a location
+promise in `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` must say that it is owed a location
 before it is owed an implementation.
 
 **Who does that**, since an instruction addressed to nobody is not an
 instruction: the change that removes the code carries the evidence entry with it,
 because a promise losing its location and its entry keeping the old one is the
 same dangling-claim fault as the tick. If the lane executing this does not hold
-`docs/autonomy/v0-5-evidence.md`, it says so in the pull request and the owner
+`docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`, it says so in the pull request and the owner
 assigns it there — **it does not land the removal with the entry stale.**
 
 ## The Dock shows no minimised windows

@@ -1,7 +1,7 @@
 # The catalogue reads the grade a turn earns, and a machine is given an agent
 
 **Date:** 2026-09-15.
-**Workstream:** the models, measured — `docs/autonomy/v0-5-the-models-measured-plan.md`, task 19, **the last task in the plan**.
+**Workstream:** the models, measured — `docs/autonomy/the-models-measured-plan.md`, task 19, **the last task in the plan**.
 **Contributor:** the Mac lane.
 **Machine:** gates in the Linux VM (Ubuntu, kernel 7.0.0-31-generic, aarch64, as
 root). **No model was loaded, fetched or measured for this task** — it is code
@@ -122,4 +122,4 @@ ignored** — and **5,237 passed, 0 failed, 31 ignored** after rebasing onto the
   is told so, and told what else it can do.*
 - **`ROADMAP.md`:** nothing.
 - **Plan:** task 19 done; with task 9 not pursued by the owner's decision,
-  **`v0-5-the-models-measured-plan.md` is finished**.
+  **`the-models-measured-plan.md` is finished**.

@@ -15,7 +15,7 @@
 //! half that was about where it goes: the arrangement below — every value
 //! arrives from the crate that owns it, and nothing here measures — is the part
 //! that will be true wherever the status area ends up. `alo-desktop` still reads
-//! it. `docs/autonomy/v0-5-evidence.md` carries the promise as **owed a location
+//! it. `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` carries the promise as **owed a location
 //! before an implementation**, which is the entry to read before building
 //! against this.
 //!
@@ -76,7 +76,7 @@ pub struct StatusItems {
 
 // ADR 0076 removed the raster that drew these, so nothing outside this crate's
 // own tests reads them. What a clock says is kept while the shell's plan decides
-// where the status area goes, and `docs/autonomy/v0-5-evidence.md` records the
+// where the status area goes, and `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` records the
 // promise as owed a location before an implementation.
 //
 // `cfg_attr(not(test), ...)` rather than a bare `expect`: the tests below *do*
@@ -86,7 +86,7 @@ pub struct StatusItems {
     not(test),
     expect(
         dead_code,
-        reason = "kept while the status area is owed a location; see v0-5-evidence.md"
+        reason = "kept while the status area is owed a location; see evidence-a-person-can-work-on-it-all-day.md"
     )
 )]
 impl StatusItems {

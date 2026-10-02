@@ -14,7 +14,7 @@ themselves, which providers they added, and which language they read. It **only
 read**. `Settings::at` opened the file under `$XDG_CONFIG_HOME/alo`, `alo-agentd`
 asked it once a turn, and nothing anywhere in this repository wrote a byte of it.
 
-`docs/autonomy/v0-01-evidence.md` had said so in as many words since task 11: *a
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` had said so in as many words since task 11: *a
 provider is added by writing the person's own settings file by hand*. So every
 choice ADR 0016 gives the person was a choice no surface could carry out — a
 settings panel's only route to *save* was to compose somebody's settings as text
@@ -52,9 +52,9 @@ Source:
   `tests/no_agents_door_reaches_these_settings.rs`.
 - `docs/contracts/person-settings.md` — a new *Writing it* section; the contract
   said this file "is written by a settings panel" and nothing said how.
-- `docs/autonomy/v0-01-evidence.md` — *add your own provider in Settings* no
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — *add your own provider in Settings* no
   longer owes *by hand*.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 24 marked done. Task 25 was
+- `docs/autonomy/the-executable-plan.md` — task 24 marked done. Task 25 was
   already written.
 
 ## Decisions, and why
@@ -249,7 +249,7 @@ Run from `C:\dev\alo-os-claude` on Windows 11 Pro, 2026-09-11.
 
 `alo-saying`, `alo-reconciling` and `alo-citing` are gated because this change
 reaches them without touching their source: four new strings enter the machine's
-one vocabulary, `docs/autonomy/v0-01-evidence.md` is the ledger `alo-reconciling`
+one vocabulary, `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is the ledger `alo-reconciling`
 holds to `docs/features.md`, and the new files and documents carry ADR citations
 `alo-citing` resolves.
 

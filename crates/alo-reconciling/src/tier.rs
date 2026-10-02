@@ -71,11 +71,11 @@ impl Tier {
     pub const fn ledger(self) -> Option<(&'static str, &'static str)> {
         match self {
             Self::V0_01 => Some((
-                "docs/autonomy/v0-01-evidence.md",
+                "docs/autonomy/evidence-it-boots-and-the-agent-acts.md",
                 "## Every v0.01 promise, one at a time",
             )),
             Self::V0_5 => Some((
-                "docs/autonomy/v0-5-evidence.md",
+                "docs/autonomy/evidence-a-person-can-work-on-it-all-day.md",
                 "## Every v0.5 promise, one at a time",
             )),
             Self::V1 | Self::V2 => None,

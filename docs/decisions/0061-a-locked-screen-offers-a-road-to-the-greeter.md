@@ -1,7 +1,7 @@
 # ADR 0061 — A locked screen offers a road to the greeter, and nothing else new
 
 **Status:** accepted, 2026-09-21. Written by task 8 of
-`docs/autonomy/v0-5-the-session-and-the-displays-plan.md` (*Switching to another
+`docs/autonomy/the-session-and-the-displays-plan.md` (*Switching to another
 person at a locked screen*), whose code is built on it. The plan asked for this
 record in so many words: *whichever way it goes, the argument is written down
 before the code is.*

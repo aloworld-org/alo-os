@@ -1,7 +1,7 @@
 # The boot environment says why an install stopped
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 9,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 9,
 *With Secure Boot on, the staged loader starts*, as it stands after its split)
 **Contributor:** Claude Code worker in `C:\dev\alo-os`, for the owner, finishing the
 code an earlier worker on this checkout left in the tree at the ninety-minute limit

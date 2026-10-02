@@ -1,7 +1,7 @@
 # The daemon's environment is the session's
 
 **Date:** 2026-09-10
-**Workstream:** v0.01 lane B — accounts and session entry (`docs/autonomy/accounts-and-session-entry-plan.md`, task 2; `docs/autonomy/v0-01-delivery-plan.md`, task 5)
+**Workstream:** v0.01 lane B — accounts and session entry (`docs/autonomy/accounts-and-session-entry-plan.md`, task 2; `docs/autonomy/the-executable-plan.md`, task 5)
 **Contributor:** Claude Code worker, checkout `C:\dev\alo-os-b`
 **Status:** ready for integration
 

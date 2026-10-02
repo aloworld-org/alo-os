@@ -3,7 +3,7 @@
 //! shows it.
 //!
 //! One clause of the acceptance for *A printer is found, set up, and says what
-//! is wrong with it* in `docs/autonomy/v0-5-documents-and-paper-plan.md`: the
+//! is wrong with it* in `docs/autonomy/documents-and-paper-plan.md`: the
 //! whole journey from a declared verb, through a grant and one approval, to the
 //! bytes the printing service received — and every way it is stopped.
 

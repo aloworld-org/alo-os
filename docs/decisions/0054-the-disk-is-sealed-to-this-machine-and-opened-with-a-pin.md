@@ -2,7 +2,7 @@
 
 **Status:** **accepted, 2026-09-19, by the owner — option C falling back to B,
 as recommended and without amendment.** Written by task 5 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Full-disk encryption,
+`docs/autonomy/the-broker-and-the-disk-plan.md` (*Full-disk encryption,
 decided before it is built*), whose whole acceptance is this decision and the
 shape it leaves behind in `crates/alo-encrypting`. Tasks 6 and 7 of that plan
 waited on it and are now the work to do;

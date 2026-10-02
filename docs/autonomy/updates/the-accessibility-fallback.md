@@ -1,7 +1,7 @@
 # The accessibility fallback, for applications without an adapter
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 6)
+**Workstream:** v0.5 — software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 6)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-2`
 **Status:** ready for integration.
 
@@ -82,7 +82,7 @@ What a person can rely on:
 - `docs/by-hand.md`: `accessible.read_window` and `accessible.activate_control`.
 - `docs/quirks.md`: three entries under *Application automation*, the section's
   first.
-- `docs/autonomy/v0-5-software-and-the-web-plan.md`: task 6 marked done. Task 7
+- `docs/autonomy/software-and-the-web-plan.md`: task 6 marked done. Task 7
   is already written there.
 
 **Not touched:** `alo-capability`, `alo-access`, `alo-portals`,

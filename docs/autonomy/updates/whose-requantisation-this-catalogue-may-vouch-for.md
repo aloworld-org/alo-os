@@ -236,9 +236,9 @@ For the integration owner (`CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md
   > file cannot carry a grade at all (ADR 0026).
 - **QUEUE.md / STATE.md:** lane B task 14 done; task 15 — *The file the two
   European entries mean* — written and ready. No task in
-  `docs/autonomy/v0-01-delivery-plan.md` matched this one, so nothing was marked
+  `docs/autonomy/the-executable-plan.md` matched this one, so nothing was marked
   there.
-- **`docs/autonomy/v0-01-evidence.md`:** no promise changes state. The catalogue
+- **`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`:** no promise changes state. The catalogue
   promises already carry their evidence; this decision narrows nothing and ticks
   nothing.
 

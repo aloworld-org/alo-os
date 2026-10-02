@@ -2,7 +2,7 @@
 //! the daemon's own words when it will not — measured, refusals beside the
 //! answers.
 //!
-//! Task 3 of `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`.
+//! Task 3 of `docs/autonomy/where-a-persons-settings-are-kept-plan.md`.
 //! Every wire test here puts a thread where `alo-agentd` stands on a real Unix
 //! socket, reads the one line [`TheDaemonsDoor`] sends, holds it to being the
 //! request the contract documents, and answers the way the daemon does. The

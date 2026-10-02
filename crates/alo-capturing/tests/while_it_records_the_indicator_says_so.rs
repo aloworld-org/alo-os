@@ -1,7 +1,7 @@
 //! **While a recording runs, the indicator shows the screen and every sound it
 //! takes.**
 //!
-//! Task 4 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. Tested directly
+//! Task 4 of `docs/autonomy/capture-and-the-room-plan.md`. Tested directly
 //! rather than assumed to follow from a shared path, for the reason task 6 gave:
 //! a capture the indicator did not show is the failure this workstream exists
 //! to prevent, and *the microphone was on and nothing said so* is the worst

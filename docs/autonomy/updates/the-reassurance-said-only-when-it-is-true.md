@@ -1,6 +1,6 @@
 # The reassurance, said only when it is true
 
-Task 13 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, done
+Task 13 of `docs/autonomy/the-session-and-the-displays-plan.md`, done
 2026-09-26 on the third PC, under
 [ADR 0068](../decisions/0068-a-published-sentence-changes-by-getting-a-new-key.md)
 as accepted.

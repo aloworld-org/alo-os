@@ -1,7 +1,7 @@
 # Notifications, and do-not-disturb
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 6
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 6
 **Contributor:** development PC worker, in `C:\dev\alo-os`
 **Status:** ready for integration. Not on hardware, and nothing here claims to
 be — nothing in this change draws, opens a device or reaches a bus.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — applications, and what they expect
-(`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`), task 2:
+(`docs/autonomy/applications-and-what-they-expect-plan.md`), task 2:
 *One list of what has been granted to what*.
 **Contributor:** Claude Code worker under the kernel-loop supervisor (Mac lane,
 gates in the `alo` Lima VM).

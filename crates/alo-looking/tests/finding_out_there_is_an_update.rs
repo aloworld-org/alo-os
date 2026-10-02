@@ -1,5 +1,5 @@
 //! Finding out there is an update — the acceptance of task 6 of
-//! `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, one criterion at a
+//! `docs/autonomy/the-machine-keeps-itself-plan.md`, one criterion at a
 //! time.
 //!
 //! | The acceptance | The test |

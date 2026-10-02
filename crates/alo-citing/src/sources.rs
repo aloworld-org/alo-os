@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn a_glob_is_not_read_as_one_file() {
         let found = cited_in(
-            "docs/autonomy/v0-5-the-shell-plan.md",
+            "docs/autonomy/the-shell-plan.md",
             "the work is in `crates/alo-shell/src/sign_in_*.rs`",
         );
         assert!(found.is_empty(), "{found:?}");

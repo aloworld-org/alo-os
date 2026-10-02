@@ -1,7 +1,7 @@
 # A pairing is made by two people, and by nothing else
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 2 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 2 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, by hand — no worker could run
 - Status: **the task the rest of the local network rests on**
 

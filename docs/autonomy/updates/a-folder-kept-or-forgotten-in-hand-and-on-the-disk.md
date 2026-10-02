@@ -1,7 +1,7 @@
 # A folder kept or forgotten in hand and on the disk in one call
 
 - Date: 2026-09-14 (second attempt the same day; see *The second attempt*)
-- Workstream: v0.5 the machine, measured, task 10 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 10 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 

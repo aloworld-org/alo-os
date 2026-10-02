@@ -1,7 +1,7 @@
 # Restarting into Windows, and the menu a machine starts at
 
 **Date:** 2026-09-22
-**Workstream:** `docs/autonomy/v0-5-the-installer-plan.md`, task 16 — the alo OS
+**Workstream:** `docs/autonomy/the-installer-plan.md`, task 16 — the alo OS
 side of *alongside Windows*, split out of task 4 as the part that needs no
 virtual machine.
 **Contributor:** the third PC (`AGAI01`), one worker, one working tree.
@@ -284,7 +284,7 @@ forward is decision 7 above — the agent-verb layer waits on a promise in
 - `crates/alo-letting-go/tests/nothing_here_is_a_verb.rs`
 - `crates/alo-saying/Cargo.toml`
 - `crates/alo-saying/src/collecting.rs`
-- `docs/autonomy/v0-5-the-installer-plan.md`
+- `docs/autonomy/the-installer-plan.md`
 - `docs/booting.md`
 - `docs/contracts/agent-verbs.md`
 - this report

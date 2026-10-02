@@ -19,7 +19,7 @@ pub enum Finding {
     /// so the release believes it is complete because nothing is asking.
     #[error(
         "docs/features.md promises `{promise}` and the ledger says nothing about it. Every v0.01 \
-         promise is reconciled in docs/autonomy/v0-01-evidence.md — name the test or the report \
+         promise is reconciled in docs/autonomy/evidence-it-boots-and-the-agent-acts.md — name the test or the report \
          that shows it, or say what is owed. A promise nothing asks about is how six of these were \
          missed one at a time"
     )]
@@ -404,7 +404,10 @@ mod tests {
         }
         .to_string();
         assert!(said.contains("Copy, cut and paste"), "{said}");
-        assert!(said.contains("docs/autonomy/v0-01-evidence.md"), "{said}");
+        assert!(
+            said.contains("docs/autonomy/evidence-it-boots-and-the-agent-acts.md"),
+            "{said}"
+        );
     }
 
     /// And the two ways a named file is not evidence stay two, so the sentence

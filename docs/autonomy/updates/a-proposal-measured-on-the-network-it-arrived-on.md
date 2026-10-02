@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 **Workstream:** the local network (v0.5), task 26 of
-`docs/autonomy/v0-5-the-local-network-plan.md`
+`docs/autonomy/the-local-network-plan.md`
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository owner
 **Status:** ready for integration.
 
@@ -41,7 +41,7 @@ refuses the request rather than guessing.
 - **`crates/alo-agentd/src/lib.rs`**: the module and its three items.
 - **`docs/quirks.md`**: a new entry for what the kernel really does with an
   unheld listener and with `getsockname` on an accepted connection.
-- **`docs/autonomy/v0-5-the-local-network-plan.md`**: task 26 marked done, and
+- **`docs/autonomy/the-local-network-plan.md`**: task 26 marked done, and
   task 27 written, which is the finding below.
 
 Nothing crosses the wire that did not before; `alo-nearby`, `alo-bounding*` and

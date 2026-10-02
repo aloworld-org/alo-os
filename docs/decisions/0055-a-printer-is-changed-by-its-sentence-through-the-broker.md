@@ -1,7 +1,7 @@
 # ADR 0055 — A printer is changed by its sentence, through the broker, by an agent's proposal or a person's hand alike
 
 **Status:** accepted, 2026-09-16. Written by task 2 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (*Printers, through the
+`docs/autonomy/the-broker-and-the-disk-plan.md` (*Printers, through the
 broker*), whose code is built on it.
 **Date:** 2026-09-16
 **Context:** [ADR 0001](0001-the-capability-model.md) §2 (privileged operations

@@ -4,7 +4,7 @@
 //! keyboard-only operation of everything*, and `docs/features.md`: *the AT-SPI
 //! tree the agent uses is the one a screen reader uses; EN 301 549 conformance
 //! is the same work, not extra work.* Task 1 of
-//! `docs/autonomy/v0-5-access-and-language-plan.md`.
+//! `docs/autonomy/access-and-language-plan.md`.
 //!
 //! # One setting changes one thing
 //!

@@ -38,7 +38,7 @@
 //! about a chip — that it releases the key when the PIN is typed, that an
 //! update's new measurements do not stop it, and that a change to what register
 //! 7 measures does — are shown on a certified machine and nowhere else, which is
-//! task 9 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`.
+//! task 9 of `docs/autonomy/the-broker-and-the-disk-plan.md`.
 //!
 //! **Neither half ticks `docs/features.md`'s v0.5 encryption line on its own.**
 //! *Enrolled at install* that has never been installed onto a machine with a

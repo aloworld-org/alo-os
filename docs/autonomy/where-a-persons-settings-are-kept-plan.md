@@ -1,4 +1,6 @@
-# v0.5 — where a person's settings are kept
+# Where a person's settings are kept
+
+*Named `v0.5 — where a person's settings are kept` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the half of `ROADMAP.md`'s *Settings, as one place* that is not
 a screen. On 2026-09-14 the shell lane's worker was sent to draw seven sections

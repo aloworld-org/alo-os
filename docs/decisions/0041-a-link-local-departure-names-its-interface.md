@@ -1,7 +1,7 @@
 # ADR 0041 — A link-local departure names its interface
 
 **Status:** accepted, 2026-09-15, as task 24 of
-`docs/autonomy/v0-5-the-local-network-plan.md`, which requires that a change to
+`docs/autonomy/the-local-network-plan.md`, which requires that a change to
 the shape of a departure be decided before it is built. The decision narrows
 what one departure permits and widens nothing; it contradicts no accepted ADR.
 **Date:** 2026-09-15

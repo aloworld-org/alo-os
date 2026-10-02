@@ -1,7 +1,7 @@
 # The boot environment that installs, tested in a virtual machine
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`,
 task 2 — *The boot environment that installs, tested in a virtual machine*)
 **Contributor:** Claude Code workers in `C:\dev\alo-os-shell`, for the owner
 (a first worker, stopped by the supervisor at 90 minutes; a second, who wrote

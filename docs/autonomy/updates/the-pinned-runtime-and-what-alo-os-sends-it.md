@@ -3,7 +3,7 @@
 **Date:** 2026-09-13
 **Workstream:** v0.5 — the models, measured
 **Task:** *Does the pinned runtime accept what alo OS sends it*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 3)
+(`docs/autonomy/the-models-measured-plan.md`, task 3)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3**, **8 GB unified memory**, macOS 26.5.2, running
 **Ollama 0.34.0** — the release `image/Containerfile` pins, its macOS build

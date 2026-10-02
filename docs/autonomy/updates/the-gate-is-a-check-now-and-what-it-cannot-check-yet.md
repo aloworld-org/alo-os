@@ -13,10 +13,10 @@ that.
 ## What was built
 
 `crates/alo-reconciling` already read every `[v0.01]` promise in
-`docs/features.md` against `docs/autonomy/v0-01-evidence.md`. It now has a second
+`docs/features.md` against `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`. It now has a second
 half, `src/the_gate.rs`, which reads this gate against the definition, against the
 plans, and against itself; and a second ledger,
-`docs/autonomy/v0-5-evidence.md` — **92 entries for 92 promises**, one to one,
+`docs/autonomy/evidence-a-person-can-work-on-it-all-day.md` — **92 entries for 92 promises**, one to one,
 every heading an exact substring of the promise it is about.
 
 Seven checks, each named after the thing that specified it:
@@ -45,7 +45,7 @@ to find a disagreement with something else, never as the answer.
 ## What they found on the day they were written
 
 - **A box calling a finished task open.** *"Where is that file?"* said *one known
-  limit, open as task 11*. Task 11 of `v0-5-the-machine-measured-plan.md` was done
+  limit, open as task 11*. Task 11 of `the-machine-measured-plan.md` was done
   on 2026-09-14 — thirteen days earlier — and the index is made whole.
 - **Two more wrong refusals, making six.** *The ordinary desktop* said **four of
   the applications do not exist** and that the choice between writing them and

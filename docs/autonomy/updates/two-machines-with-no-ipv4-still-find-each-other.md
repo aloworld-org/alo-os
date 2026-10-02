@@ -1,7 +1,7 @@
 # Two machines with no IPv4 address between them still find each other
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 23)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 23)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 

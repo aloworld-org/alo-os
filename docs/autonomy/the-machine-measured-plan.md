@@ -1,4 +1,6 @@
-# v0.5 — the machine, measured, before there is a window to show it in
+# The machine, measured, before there is a window to show it in
+
+*Named `v0.5 — the machine, measured, before there is a window to show it in` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** three `[v0.5]` promises in `docs/features.md` that are
 measurements of this machine rather than pictures of it: *search your own
@@ -19,7 +21,7 @@ symlink. (Task 2 made that walker public, additively, as `alo_files::Walking`
 with a searching and a measuring policy; task 3 borrows it the same way and
 edits nothing there.) **Nothing in `crates/alo-shell`**, nothing in `image/`, and nothing in
 `alo-nearby`, `alo-asking`, `alo-record`, `alo-capability`, `alo-turn` or
-`alo-egress`, which are lane A's on `v0-5-the-local-network-plan.md`.
+`alo-egress`, which are lane A's on `the-local-network-plan.md`.
 
 **What this plan may not do** (ADR 0028's terms): move any v0.01 box, line or
 wording; tick anything *on the machine*; edit a crate another lane owns. Before
@@ -775,7 +777,7 @@ that crate, so the lane that found the gap wrote the task instead of the code.
 It was found twice, independently: by the keeps-itself plan's task 15, whose
 report says the line *is still owed by whoever owns `alo-measuring`, and a person
 who goes looking for it there will not find it*, and again by
-`docs/autonomy/v0-5-evidence.md`, which records it against the promise.
+`docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`, which records it against the promise.
 
 The design below is what that lane worked out before stopping. It is a
 recommendation and not a specification: the crate is this plan's.

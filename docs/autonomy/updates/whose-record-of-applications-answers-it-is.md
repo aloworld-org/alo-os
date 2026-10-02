@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 — applications, and what they expect
-**Task:** [task 11](../v0-5-applications-and-what-they-expect-plan.md), the last
+**Task:** [task 11](../applications-and-what-they-expect-plan.md), the last
 one in that plan
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
@@ -104,7 +104,7 @@ All 112 tests in `alo-portals` pass; clippy clean.
 
 ## Plan hygiene: what was added to this plan after it was written
 
-Asked for explicitly, and worth the count. `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`
+Asked for explicitly, and worth the count. `docs/autonomy/applications-and-what-they-expect-plan.md`
 was published on **2026-09-13 with five tasks**. It finished with **eleven**:
 
 | Added | Tasks |

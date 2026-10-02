@@ -337,7 +337,7 @@ left in v0.01.
 - **Outcome:** a machine installed from the image reaches the sign-in screen
   rather than a console.
 - **Acceptance:** task 40 of
-  [v0-01-delivery-plan.md](v0-01-delivery-plan.md).
+  [the-executable-plan.md](the-executable-plan.md).
 - **Scope:** a build stage on the base's own distribution — the current one is
   static musl and **cannot link Wayland at all** — the five development
   packages, two binaries now that `alo-desktop` has split off, the unit with

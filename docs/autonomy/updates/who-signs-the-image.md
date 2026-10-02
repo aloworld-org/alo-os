@@ -1,7 +1,7 @@
 # Who signs the image, and the release the recipe names first
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`,
 task 1 — *The image is published from GitHub, signed, and pinned*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-b`, for the owner
 **Status:** ready for integration, **as the decision this task waits on**. The
@@ -56,7 +56,7 @@ worker may not decide, the decision is the work.
 - **`crates/alo-image/tests/how_the_image_is_published.rs`** — the recipe names
   one release; ADR 0036 is recorded, proposed, and recommends the key a person
   holds; the plan's task 1 is blocked on it and not marked done.
-- **`docs/autonomy/v0-5-the-installer-plan.md`** — task 1's status is now
+- **`docs/autonomy/the-installer-plan.md`** — task 1's status is now
   *blocked on ADR 0036 and the owner's first publish*, with what was found, what
   landed, and what the next worker does (launch nothing until both exist).
 

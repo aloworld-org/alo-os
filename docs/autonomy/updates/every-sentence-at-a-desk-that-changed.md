@@ -1,6 +1,6 @@
 # Every sentence at a desk that changed
 
-Task 12 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, done
+Task 12 of `docs/autonomy/the-session-and-the-displays-plan.md`, done
 2026-09-26 on the third PC.
 
 Task 7 walks one person from locking their machine to docking it at another desk,
@@ -113,7 +113,7 @@ can sit along the bottom of the laptop and down the side of the external screen.
 `alo_dock::Dock` holds one edge for the machine, not one per screen.
 
 - **Whose it is:** `crates/alo-dock` belongs to
-  `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`. This plan reads
+  `docs/autonomy/where-a-persons-settings-are-kept-plan.md`. This plan reads
   `alo-dock` and never edits it, so the promise is owed rather than narrowed.
 - **What changes when it is paid:** `alo_displays::Wearing::of` is the one
   function in this plan's crates that changes, named by task 3 in its own status

@@ -1,7 +1,7 @@
 # Night light and display colour
 
 **Date:** 2026-09-18
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 4
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 4
 (*Night light and display colour*). `ROADMAP.md` v0.5, `docs/features.md`
 *Devices and media*.
 **Contributor:** development PC, one worker, one working tree.
@@ -367,6 +367,6 @@ crate has no timer and will not grow one.
   `docs/contracts/person-settings.md`, the table rows, and a
   `tests/the_contract_describes_this_file.rs` in each crate. Blocking nothing,
   but the contract is currently silent about two files a person can edit.
-- `v0-5-the-session-and-the-displays-plan.md` task 4 is marked
+- `the-session-and-the-displays-plan.md` task 4 is marked
   **Done, 2026-09-18** in this change. Tasks 5, 6 and 7 remain; 7 still depends
   on all of 1–6.

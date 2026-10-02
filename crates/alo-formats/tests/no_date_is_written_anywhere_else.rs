@@ -1,6 +1,6 @@
 //! **Every date this machine shows goes through this crate.**
 //!
-//! Task 6 of `docs/autonomy/v0-5-access-and-language-plan.md`. A date written
+//! Task 6 of `docs/autonomy/access-and-language-plan.md`. A date written
 //! anywhere else is a date written the way whoever typed it writes dates, which
 //! is English and American about half the time and is never Maltese. So this
 //! reads the shipped source of every crate and fails on a date built by hand.

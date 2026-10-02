@@ -1,7 +1,7 @@
 //! *"I can't open this file"*, said properly — one test per reason, each
 //! against a real file written to a real disk.
 //!
-//! Task 4 of `docs/autonomy/v0-5-documents-and-paper-plan.md`: for a file this
+//! Task 4 of `docs/autonomy/documents-and-paper-plan.md`: for a file this
 //! machine cannot open, what a person reads names **what it is, why this machine
 //! cannot open it, and what would**. It never names a library, a media type, a
 //! return code or anything this machine rents; a damaged file is said to be

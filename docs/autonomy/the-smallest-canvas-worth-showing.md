@@ -456,7 +456,7 @@ reader is never offered one that is not there.
 **What is still owed here is not task 7's.** `ReadAloudTree` has no production
 caller — only tests build it — so this is a tree that answers correctly and that
 nothing serves yet. That, and the four EN 301 549 clauses downgraded on 2026-09-29,
-are task 8 of `docs/autonomy/v0-5-access-and-language-plan.md`.
+are task 8 of `docs/autonomy/access-and-language-plan.md`.
 
 #### The blocker as it stood (2026-09-27)
 
@@ -622,7 +622,7 @@ into this plan, which is task 11 below. The closing claim is kept rather than
 deleted, because a reader who remembers this plan as finished needs to see what
 reopened it.*
 
-Two halves, as `v0-5-the-shell-plan.md` task 14 established for the shell's own
+Two halves, as `the-shell-plan.md` task 14 established for the shell's own
 walk. The **raster** half is
 `crates/alo-shell/examples/support/the_canvas_walk_check.rs`, run as the
 `canvas-walk` sub-mode of `the_nested_fixtures` — ten steps against a real

@@ -1,6 +1,6 @@
 //! **Every grade the catalogue ships names instructions `alo-driving` has.**
 //!
-//! Task 16 of `docs/autonomy/v0-5-the-models-measured-plan.md` and
+//! Task 16 of `docs/autonomy/the-models-measured-plan.md` and
 //! [ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md).
 //! `alo-models` holds a grade's `instructions` to the shape of a SHA-256; only
 //! this crate has the text a digest is of. So this holds every digest in the

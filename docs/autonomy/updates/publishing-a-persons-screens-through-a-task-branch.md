@@ -1,7 +1,7 @@
 # Publishing *A person's screens* through a task branch
 
 **Date:** 2026-09-18
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 3
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 3
 (*A person's screens: which, where, how large, and remembered*). A follow-up to
 `docs/autonomy/updates/a-persons-screens-which-where-how-large-and-remembered.md`,
 which is that task's own report and is not edited here.

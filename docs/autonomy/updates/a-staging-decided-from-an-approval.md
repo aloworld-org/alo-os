@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-19
 **Workstream:** v0.5 — the machine keeps itself
-(`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 9)
+(`docs/autonomy/the-machine-keeps-itself-plan.md`, task 9)
 **Contributor:** this development PC's lane
 **Status:** ready for integration.
 
@@ -19,7 +19,7 @@ describes, where what crosses into the privileged unit is an **approval** — a
 this crate's in it.
 
 So the crate gains a second door onto the same instruction, and the plan that
-needs it (`v0-5-the-broker-and-the-disk-plan.md` task 8) is not allowed to write
+needs it (`the-broker-and-the-disk-plan.md` task 8) is not allowed to write
 it, because `alo-keeping-up` is this plan's crate.
 
 **What must not happen is a second way to stage.** That is the whole risk here:
@@ -66,9 +66,9 @@ by itself.
   *nothing declared is unreachable* stays a measurement; and it joins the
   refusals that must read differently from every other refusal on the road and
   must tell the person their machine is unchanged.
-- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` — task 9 marked done;
+- `docs/autonomy/the-machine-keeps-itself-plan.md` — task 9 marked done;
   task 10 written, because the plan named nothing after it.
-- `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` — task 8's status line no
+- `docs/autonomy/the-broker-and-the-disk-plan.md` — task 8's status line no
   longer names two blockers that are closed. See *A stale blocker is invisible
   work* in `SHARED_MAIN.md`: the machine that finishes a task clears the lines
   naming it. Only the blocker clause changed; the acceptance and constraint are

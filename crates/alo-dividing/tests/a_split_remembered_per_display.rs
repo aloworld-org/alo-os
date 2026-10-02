@@ -1,7 +1,7 @@
 //! **Coming back to a pair of windows gives back the division they were in** —
 //! not where each window last sat.
 //!
-//! Task 2 of `docs/autonomy/v0-5-hands-on-the-desktop-plan.md`, walked the way a
+//! Task 2 of `docs/autonomy/hands-on-the-desktop-plan.md`, walked the way a
 //! person meets it: divide two applications, close both, open them again, and
 //! find the division rather than two windows that happen to be somewhere.
 //!

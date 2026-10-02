@@ -1,7 +1,7 @@
 //! One laptop, four resumes: at another desk, at a desk nobody has arranged,
 //! at the same desk, at none — and back at the first one.
 //!
-//! Task 11 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`: *one
+//! Task 11 of `docs/autonomy/the-session-and-the-displays-plan.md`: *one
 //! test suspends at one desk and resumes at another, at the same one, and at
 //! none.*
 //!

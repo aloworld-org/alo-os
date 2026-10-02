@@ -1,6 +1,6 @@
 //! The reference adapter end to end, on a real bus.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 5: *one reference
+//! `docs/autonomy/software-and-the-web-plan.md`, task 5: *one reference
 //! adapter for an application task 2 ships is built end to end as the proof,
 //! with the application's own automation interface.* Here the whole road runs:
 //! the shipped verbs, a grant, a proposal approved once, the authority redeemed,

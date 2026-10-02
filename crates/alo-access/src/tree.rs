@@ -1,6 +1,6 @@
 //! **What a screen reader is told about every surface this machine draws.**
 //!
-//! Task 2 of `docs/autonomy/v0-5-access-and-language-plan.md`.
+//! Task 2 of `docs/autonomy/access-and-language-plan.md`.
 //! `docs/contracts/app-adapters.md` says an agent reads an application through
 //! its accessibility tree where no adapter exists; a screen reader reads the
 //! same tree. **If it is good enough for one it is good enough for the other**,
@@ -224,7 +224,7 @@ impl Surface {
                 // no sentence until that crate writes one. Naming the control
                 // anyway is what lets a reader announce the line at all, and
                 // the gap is written down as a finding in
-                // `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`.
+                // `docs/autonomy/the-machine-keeps-itself-plan.md`.
                 Control::of(Role::Label, words::WHAT_IS_RUNNING, State::ReadOnly),
                 Control::of(Role::Label, words::WHAT_IT_REPLACED, State::ReadOnly),
                 Control::of(Role::List, words::THE_CHOICES, State::CanBeUsed),

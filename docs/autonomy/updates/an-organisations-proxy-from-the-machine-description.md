@@ -1,7 +1,7 @@
 # An organisation's proxy, read from the machine's description
 
 - Date: 2026-09-18
-- Workstream: v0.5 software and the web (`docs/autonomy/v0-5-software-and-the-web-plan.md`, task 9)
+- Workstream: v0.5 software and the web (`docs/autonomy/software-and-the-web-plan.md`, task 9)
 - Contributor: Claude Code
 - Status: **blocked — the code and its tests are complete and unpublished; the
   three gates for `alo-agentd` have not been run.** The machine's one shared
@@ -65,7 +65,7 @@ proxy*.
 | `crates/alo-agentd/tests/what_a_machine_says_about_itself.rs` | the section read off a real disk, attributed by the file's real owner; its absence in every shape; its refusals |
 | `crates/alo-agentd/src/lib.rs`, `Cargo.toml`, `Cargo.lock` | registration; `alo-proxy` as a dependency of the daemon |
 | `docs/contracts/machine-description.md` | the `[proxy]` section, its refusals, and its `format` rule |
-| `docs/autonomy/v0-5-software-and-the-web-plan.md` | task 9 marked done; task 11 written |
+| `docs/autonomy/software-and-the-web-plan.md` | task 9 marked done; task 11 written |
 
 **Nothing in `alo-proxy` was edited.** Which way a road out then goes, what a
 proxy address may be, what an exception matches, where a password lives and the
@@ -332,7 +332,7 @@ files =
   crates/alo-agentd/src/refusing.rs
   crates/alo-agentd/tests/what_a_machine_says_about_itself.rs
   docs/autonomy/updates/an-organisations-proxy-from-the-machine-description.md
-  docs/autonomy/v0-5-software-and-the-web-plan.md
+  docs/autonomy/software-and-the-web-plan.md
   docs/contracts/machine-description.md
 ```
 

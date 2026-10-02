@@ -1,13 +1,13 @@
 # The four promises with no evidence, and which of them a lane can still reach
 
 **Date:** 2026-09-11
-**Workstream:** v0.01 delivery — `docs/autonomy/v0-01-delivery-plan.md`, task 19
+**Workstream:** v0.01 delivery — `docs/autonomy/the-executable-plan.md`, task 19
 **Contributor:** Claude (`C:\dev\alo-os-claude`)
 **Status:** ready for integration
 
 ## What this task was
 
-`docs/autonomy/v0-01-evidence.md` records **four v0.01 promises with no evidence
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` records **four v0.01 promises with no evidence
 at all**, and one sentence beside them says each needs a screen, a decision or a
 machine. That sentence had been carried unexamined since it was written: three of
 the four — *copy, cut and paste*, *the GPU works on first boot*, *boots on one
@@ -106,7 +106,7 @@ decision under `docs/decisions/`, or a task in a plan — and follows it to a fi
 on the disk. Three decisions are written into the shape rather than into prose:
 
 **The plan goes beside the number.** A task is cited as
-``task 20 of `docs/autonomy/v0-01-delivery-plan.md` ``, and *task 12 of the
+``task 20 of `docs/autonomy/the-executable-plan.md` ``, and *task 12 of the
 delivery plan* is not a pointer this reads. That is deliberate rather than a gap
 in the parser: this repository drives three plans, their tasks are all numbered
 from one, and a reader who cannot see which plan is meant has been handed a
@@ -142,9 +142,9 @@ reaches it; whether task 20 is there at all is arithmetic.
 - `crates/alo-reconciling/src/lib.rs` — the module, and why it exists.
 - `crates/alo-reconciling/tests/every_v0_01_promise_is_reconciled.rs` — the
   measurement against this repository, and the refusals against a fixture.
-- `docs/autonomy/v0-01-evidence.md` — the reading, under each of the four
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — the reading, under each of the four
   promises, and what the four add up to.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 19 marked done; task 20 written.
+- `docs/autonomy/the-executable-plan.md` — task 19 marked done; task 20 written.
 - `docs/autonomy/updates/the-four-promises-with-no-evidence.md` — this report.
 
 No crate declares strings here and `alo-saying` does not collect

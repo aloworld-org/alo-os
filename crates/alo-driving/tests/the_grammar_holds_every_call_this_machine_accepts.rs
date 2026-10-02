@@ -1,7 +1,7 @@
 //! **The grammar accepts every call `alo-capability` accepts, and nothing else
 //! the protocol would refuse.**
 //!
-//! Task 17 of `docs/autonomy/v0-5-the-models-measured-plan.md`. A grammar that
+//! Task 17 of `docs/autonomy/the-models-measured-plan.md`. A grammar that
 //! forbade a call the machine would have acted on would measure the grammar
 //! rather than the model, and one that allowed a call the protocol refuses would
 //! measure nothing at all. So every verb this machine declares is written out as

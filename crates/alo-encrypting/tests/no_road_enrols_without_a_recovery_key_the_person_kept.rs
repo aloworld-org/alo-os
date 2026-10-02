@@ -1,7 +1,7 @@
 //! **No road enrols encryption without also producing the recovery key and
 //! requiring the person to confirm they kept it.**
 //!
-//! Task 5 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, word for
+//! Task 5 of `docs/autonomy/the-broker-and-the-disk-plan.md`, word for
 //! word, and the reason this crate exists at all. It is held twice, because
 //! either half alone would be a green test that proves the wrong thing:
 //!

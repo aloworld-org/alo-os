@@ -2,7 +2,7 @@
 //! `crates/alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs` makes,
 //! with this crate held to the same answer.
 //!
-//! Task 15 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` asked for
+//! Task 15 of `docs/autonomy/the-machine-keeps-itself-plan.md` asked for
 //! this by name, so that *a Settings pane cannot become a way in from a turn by
 //! being linked somewhere convenient*. The worry is exact: a pane is an ordinary
 //! crate with no capability of its own, and nothing about it looks dangerous in a

@@ -1,7 +1,7 @@
 # Switching to another person at a locked screen
 
 **Date:** 2026-09-21
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 8
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 8
 **Contributor:** this development PC's lane, one working tree
 **Status:** ready for integration. Not on hardware, and nothing here claims to be.
 
@@ -271,7 +271,7 @@ All in the product workspace (`.`).
 
 ## Proposed queue and roadmap updates
 
-- Mark task 8 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`
+- Mark task 8 of `docs/autonomy/the-session-and-the-displays-plan.md`
   **Done, 2026-09-21** — done in this change, in the plan file itself.
 - Task 9 is written in the same plan and is **ready**: *The four files this plan
   keeps, in the contract that describes them.* It pays a debt three of this

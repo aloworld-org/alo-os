@@ -1,7 +1,7 @@
 # ADR 0056 — What a virtual disk shows about encryption, and what only a machine with a chip can
 
 **Status:** **accepted, 2026-09-19, by the owner — option C, without amendment.
-Built 2026-09-20** by task 6 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`
+Built 2026-09-20** by task 6 of `docs/autonomy/the-broker-and-the-disk-plan.md`
 (*Enrolled at install, and recovered*), which is what proposed it: the acceptance
 as first written asked for a software TPM in a virtual machine, and on the
 machine this was written on there was no road to one, measured below. The half
@@ -301,7 +301,7 @@ to the installer plan and the owner, and it stays open.
 
 ## Consequences if it is accepted
 
-- **`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`** carries task 6 as the
+- **`docs/autonomy/the-broker-and-the-disk-plan.md`** carries task 6 as the
   sequence and the virtual disk, and a new task for the chip on a certified
   machine. Task 7's walk gains the encryption sentences from the first of them.
 - **`crates/alo-encrypting`** gains the sequence as closed types with no free

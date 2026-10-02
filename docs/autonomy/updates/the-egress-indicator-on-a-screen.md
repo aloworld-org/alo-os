@@ -219,7 +219,7 @@ For the integration owner; not edited here, per `docs/autonomy/SHARED_MAIN.md`.
 > to show it says so in a sentence rather than failing quietly.
 
 **QUEUE.md / STATE.md** — v0.01 delivery plan task 9 is done, marked in
-`docs/autonomy/v0-01-delivery-plan.md` in this change. Task 10 (*the image
+`docs/autonomy/the-executable-plan.md` in this change. Task 10 (*the image
 carries the shell, the session and the daemon*) depends on 5 and 9; 5 is lane
 B's and is still open, so 10 is not yet startable.
 

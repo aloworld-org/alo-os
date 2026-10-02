@@ -2,7 +2,7 @@
 //!
 //! `ROADMAP.md` v0.5's *Sound: outputs and inputs, per-application volume, and
 //! switching mid-call*. Task 2 of
-//! `docs/autonomy/v0-5-devices-and-media-plan.md`.
+//! `docs/autonomy/devices-and-media-plan.md`.
 //!
 //! # What is rented, and what is ours
 //!

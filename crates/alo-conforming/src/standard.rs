@@ -43,7 +43,7 @@ pub const THE_STANDARD: &str = "EN 301 549";
 pub const THE_VERSION: &str = "V3.2.1 (2021-03)";
 
 /// Where a reader of this repository finds the shell's accessibility work.
-pub const THE_PLAN: &str = "docs/autonomy/v0-5-access-and-language-plan.md";
+pub const THE_PLAN: &str = "docs/autonomy/access-and-language-plan.md";
 
 #[cfg(test)]
 mod tests {

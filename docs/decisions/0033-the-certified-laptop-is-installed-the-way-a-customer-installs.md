@@ -9,7 +9,7 @@ delegation.
 install story: a downloaded program, a staged boot environment, `bootc
 install` from a registry), [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md)
 (the OS is a bootable container), `docs/hardware.md` (the certified laptop,
-which arrived on 2026-09-14), `docs/autonomy/v0-01-evidence.md` (the two
+which arrived on 2026-09-14), `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` (the two
 promises no VM can evidence), `ROADMAP.md` (*Installer*, v0.5, unbuilt).
 
 ## The question in one line
@@ -32,7 +32,7 @@ has chosen.
 1. **Hardware acceptance goes through the installer.** The certified laptop is
    installed by downloading the installer from GitHub and running it on the
    Windows the laptop arrived with. What that run proves is written into
-   `docs/autonomy/v0-01-evidence.md` under the two promises no VM can evidence,
+   `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` under the two promises no VM can evidence,
    and nothing about those promises is ticked by any other road. ADR 0023's
    *whatever internal boot method is expedient* is withdrawn.
 2. **Windows stays.** ADR 0023 already allows *retained alongside*; on the

@@ -1,7 +1,7 @@
 //! **The battery, power profiles, and what a person is told about both.**
 //!
 //! `ROADMAP.md` v0.5's *Devices*, and task 5 of
-//! `docs/autonomy/v0-5-devices-and-media-plan.md`.
+//! `docs/autonomy/devices-and-media-plan.md`.
 //!
 //! | | |
 //! |---|---|

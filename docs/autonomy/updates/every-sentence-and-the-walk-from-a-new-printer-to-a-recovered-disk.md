@@ -1,7 +1,7 @@
 # Every sentence, and the walk from a new printer to a recovered disk
 
 **Date:** 2026-09-20.
-**Workstream:** `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, task 7 —
+**Workstream:** `docs/autonomy/the-broker-and-the-disk-plan.md`, task 7 —
 ★ *System verbs through the privileged broker* and *Full-disk encryption*.
 **Machine:** `AGAI01`, the third PC's lane.
 **Status:** ready for integration. Code and vocabulary evidence, run on this
@@ -228,9 +228,9 @@ either sentence says changed.
 | `crates/alo-saying/Cargo.toml`, `crates/alo-saying/src/collecting.rs` | The two new crates collected into the one vocabulary |
 | `crates/alo-changing-network/src/words.rs` | Two translator's notes rewritten; no sentence changed |
 | `Cargo.toml`, `Cargo.lock` | The two new workspace members |
-| `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` | Task 7 marked done; the header names the two crates it added |
+| `docs/autonomy/the-broker-and-the-disk-plan.md` | Task 7 marked done; the header names the two crates it added |
 | `tools/kernel-loop/src/who_owns.rs` | The plan's owned-crate list is read from that header, and the test that reads it |
-| `docs/autonomy/v0-5-the-installer-plan.md` | Two lines putting `main`'s own plan gate back; see below |
+| `docs/autonomy/the-installer-plan.md` | Two lines putting `main`'s own plan gate back; see below |
 
 ### A user-readable change description
 
@@ -291,7 +291,7 @@ regardless. The crates touched and the crates that read them were run.
 My change touches `tools/kernel-loop/`, so its three gates are in scope, and
 `cargo test` there failed on **two faults already on `main`** — neither in
 anything this task wrote, both in
-`docs/autonomy/v0-5-the-installer-plan.md`:
+`docs/autonomy/the-installer-plan.md`:
 
 1. `### 7. Replace Windows — the road with no way back` had been **deleted by
    accident** in `b38926f` (#84): a paragraph about a machine with no discrete

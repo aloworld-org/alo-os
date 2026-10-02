@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** *A fine-tune run, on the small model, with the rented stack*
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`, task 2)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`, task 2)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** the training ran in the **Lima VM — Ubuntu 24.04 aarch64, 6 CPUs,
 3 GB of memory, no graphics card**, on an Apple M3 host with 8 GB unified

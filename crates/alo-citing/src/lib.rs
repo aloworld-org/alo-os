@@ -13,8 +13,8 @@
 //! authority of a decision nobody made, and it reads exactly like one that has
 //! not.
 //!
-//! Task 16 of `docs/autonomy/v0-01-delivery-plan.md` met one edge of this and
-//! fixed exactly one pointer — `docs/autonomy/v0-01-evidence.md` is held to the
+//! Task 16 of `docs/autonomy/the-executable-plan.md` met one edge of this and
+//! fixed exactly one pointer — `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is held to the
 //! decision it names, because *waits on a decision* sending a reader to an ADR
 //! nobody wrote reads exactly like an answer. This crate is the same answer for
 //! every other citation in the repository, and it is the fourth in the family

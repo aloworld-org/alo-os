@@ -1,7 +1,7 @@
 # Which part of this machine runs the model
 
 **Date:** 2026-09-22
-**Workstream:** `docs/autonomy/v0-5-the-models-measured-plan.md`, task 22 —
+**Workstream:** `docs/autonomy/the-models-measured-plan.md`, task 22 —
 *The graphics card, when there is one, and the machine when there is not*
 **Machine:** the third PC, `AGAI01`, Windows Server 2022 with WSL 2 Ubuntu
 (kernel `6.18.33.2-microsoft-standard-WSL2`), x86_64, **no discrete graphics**

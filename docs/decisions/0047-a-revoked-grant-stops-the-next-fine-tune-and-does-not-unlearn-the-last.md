@@ -15,7 +15,7 @@ revocable and expiring), [ADR 0014](0014-alos-own-model-is-a-provider-like-any-o
 (alo's own service is a provider like any other),
 [ADR 0038](0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md),
 `crates/alo-adapting`, `crates/alo-picking`, and task 1 of
-`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`
+`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`
 
 ## The question in one line
 

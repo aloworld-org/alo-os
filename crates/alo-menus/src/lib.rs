@@ -1,6 +1,6 @@
 //! The context menu: what the thing under the pointer offers, as a closed list.
 //!
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4: *a context menu is
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 4: *a context menu is
 //! a closed list of actions the thing under the pointer offers, each an action a
 //! person could reach another way (ADR 0009), and **no menu entry sends anything
 //! to the agent without the person choosing the entry that says so***.

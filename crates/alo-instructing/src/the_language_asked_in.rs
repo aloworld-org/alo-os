@@ -1,7 +1,7 @@
 //! **Which of the 24 languages a request is written in, decided on this
 //! machine.**
 //!
-//! Task 5 of `docs/autonomy/v0-5-access-and-language-plan.md`: *the agent
+//! Task 5 of `docs/autonomy/access-and-language-plan.md`: *the agent
 //! answers in the language it was asked in*, and the language is the
 //! **question's**, not the shell's — a person whose machine is in English may
 //! ask in German, and answering them in English would be the machine deciding

@@ -1,7 +1,7 @@
 //! The configuration alo OS ships with the browser, read and held to being that
 //! and nothing more.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: *a test reads the
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: *a test reads the
 //! shipped configuration and finds the upstream's own defaults, with its
 //! telemetry off where the upstream allows a policy to turn it off.* The document
 //! is data beside this crate's manifest — `crates/alo-software/browser.json`

@@ -52,7 +52,7 @@ one honest sentence at a time.
   and nothing was shared. This is the failure that really happened one floor
   down: `alo-overlay` declared nine strings that nothing collected, and every
   test inside that crate passed.
-- `docs/autonomy/v0-01-evidence.md` — the ledger entry for *and it never nags*,
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` — the ledger entry for *and it never nags*,
   and a second closure note. `crates/alo-reconciling` refuses a ledger that names
   a report which is not there, and it refused this one until this file existed.
 

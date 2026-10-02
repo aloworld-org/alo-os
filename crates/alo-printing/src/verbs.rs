@@ -14,7 +14,7 @@
 //! [`crate::set_up`] are what a settings surface draws, and no call an agent
 //! can make reaches them. An agent that could add a printer could make a place
 //! for documents to leave to that nobody chose, which is the one thing
-//! `docs/autonomy/v0-5-documents-and-paper-plan.md` says never happens. A test
+//! `docs/autonomy/documents-and-paper-plan.md` says never happens. A test
 //! at the bottom of this file holds this list to the one verb.
 //!
 //! What an agent may do instead is **propose** adding, removing or choosing a

@@ -1,7 +1,7 @@
 //! A drop carries what copy and paste carries, and a sandboxed window receives
 //! it the way a sandboxed window expects.
 //!
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4, first acceptance:
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 4, first acceptance:
 //! *a drop carries what copy and paste carries — text, images, files — through
 //! `alo-clipboard`'s payload types rather than a second set, and the target
 //! application receives it through the portal a sandboxed application expects.*

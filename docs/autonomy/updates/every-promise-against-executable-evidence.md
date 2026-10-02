@@ -1,4 +1,6 @@
-# Every v0.01 promise, against executable evidence
+# Every promise, against executable evidence
+
+*Named `every-v0-01-promise-against-evidence.md` until 2026-10-02. The release code left the filename for the reason `CLAUDE.md` gives — report filenames describe the work, and release codes live in `ROADMAP.md`. Which release's promises these are is the first sentence below; there is no counterpart report for another release, and if one is written it will need a name that says which, as the two evidence documents now do.*
 
 **Date:** 2026-09-10 · **Workstream:** v0.01 delivery plan, task 11 (phase 8's
 first half) · **Contributor:** Claude Code, `C:\dev\alo-os-claude`
@@ -7,7 +9,7 @@ first half) · **Contributor:** Claude Code, `C:\dev\alo-os-claude`
 
 Two things, and the second is what makes the first stay true.
 
-**`docs/autonomy/v0-01-evidence.md`** — the ledger. All **forty-one** `[v0.01]`
+**`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`** — the ledger. All **forty-one** `[v0.01]`
 lines in `docs/features.md`, one entry each, quoting the promise and answering
 with the test or the report that shows it and what is still owed on it.
 
@@ -199,7 +201,7 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
   first boot*, *it never nags*) have no item anywhere in the roadmap either and
   need one, and *the agents point at the local model by default* needs an owner
   decision against ADR 0016 before it can have one.
-- **QUEUE.md / STATE.md** — task 11 of `v0-01-delivery-plan.md` is done and
+- **QUEUE.md / STATE.md** — task 11 of `the-executable-plan.md` is done and
   marked in that file; task 14 (*every verb's by-hand answer, and a check that it
   has one*) was written there from these findings, because tasks 12 and 13 are
   both unstartable and a plan whose remaining tasks are all blocked reads to the

@@ -1,6 +1,6 @@
 //! **An agent reaches the screen through an approved verb, or not at all.**
 //!
-//! Task 6 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`, and the reason
+//! Task 6 of `docs/autonomy/capture-and-the-room-plan.md`, and the reason
 //! that plan exists. `docs/features.md` promises *context on invocation* and
 //! never harvesting; a screenshot is the most harvest-shaped thing a machine
 //! has, because one call hands over everything a person was looking at.

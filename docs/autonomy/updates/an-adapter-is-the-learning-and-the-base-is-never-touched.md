@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** a change of shape inside task 1, before task 2 builds on it
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written and tested on an **Apple M3 with 8 GB unified memory**,
 macOS 26.5.2; `alo-saying`'s tests in the Lima VM. No model was run.

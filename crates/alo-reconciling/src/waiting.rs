@@ -23,7 +23,7 @@
 //!
 //! # Keep the plan with the number
 //!
-//! A task is cited as ``task 20 of `docs/autonomy/v0-01-delivery-plan.md` ``, with
+//! A task is cited as ``task 20 of `docs/autonomy/the-executable-plan.md` ``, with
 //! the plan named beside the number. *Task 12 of the delivery plan* is not a
 //! pointer this reads, and that is deliberate rather than a gap in the parser:
 //! this repository drives three plans, their tasks are all numbered from one, and
@@ -169,7 +169,7 @@ fn tasks_in(flat: &str) -> Vec<Waiting> {
 
 /// One task citation, read from just after the word `task`.
 ///
-/// `20 of `docs/autonomy/v0-01-delivery-plan.md`` and nothing looser: a number
+/// `20 of `docs/autonomy/the-executable-plan.md`` and nothing looser: a number
 /// with no plan beside it is not a pointer, and neither is a plan mentioned in
 /// the same paragraph as a number.
 fn a_task_at(after: &str) -> Option<Waiting> {

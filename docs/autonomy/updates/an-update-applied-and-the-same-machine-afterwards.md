@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 the machine keeps itself — task 2 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *atomic
+`docs/autonomy/the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *atomic
 updates with rollback*, *updates that never interrupt*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os`
 **Status:** ready for integration. Tested in an emulated virtual machine; not on the certified machine. Calling it at boot and from the shell is the image and shell lanes' work (see limitations).

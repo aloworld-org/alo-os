@@ -1,7 +1,7 @@
 # A disk that can hold an undo
 
 **Date:** 2026-09-21
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 11,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 11,
 *The disk alo OS is installed onto can hold an undo*)
 **Contributor:** Claude Code lane B in `/root/alo-os-lane-b` on the **development PC**,
 for the owner

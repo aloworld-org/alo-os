@@ -1,7 +1,7 @@
 //! The audit itself, run against this repository.
 //!
 //! Everything in the crate is the method. This is the measurement: the real
-//! `docs/features.md`, the real `docs/autonomy/v0-01-evidence.md`, and the real
+//! `docs/features.md`, the real `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`, and the real
 //! files the ledger names — read off the disk this test is running on, so a test
 //! that was renamed and a report that was never written both fail here rather
 //! than in somebody's reading six months from now.
@@ -33,7 +33,7 @@ use alo_reconciling::{
 const THE_DEFINITION: &str = "docs/features.md";
 
 /// The other half of it: the evidence for every v0.01 promise, or what is owed.
-const THE_LEDGER: &str = "docs/autonomy/v0-01-evidence.md";
+const THE_LEDGER: &str = "docs/autonomy/evidence-it-boots-and-the-agent-acts.md";
 
 /// This repository, from the crate this test is in.
 fn the_repository() -> PathBuf {

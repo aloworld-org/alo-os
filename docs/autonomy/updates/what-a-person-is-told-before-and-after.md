@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-19
 **Workstream:** v0.5 the machine keeps itself — task 5 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *updates
+`docs/autonomy/the-machine-keeps-itself-plan.md` (`ROADMAP.md`: *updates
 that never interrupt*, *atomic updates with rollback*, ★ *undo what the agent
 did*, and the decidable half of *recovery and rollback screen*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os-3`
@@ -117,7 +117,7 @@ survives the machine gaining verbs.
 |---|---|
 | `crates/alo-updating/tests/what_a_person_is_told.rs` | New. Six tests: the walk against the table, the table against the vocabulary, every sentence declared-and-reachable-and-noted, every *cannot be undone* naming why, no machinery anywhere, and every refusal on the road |
 | `crates/alo-updating/Cargo.toml` | One dev-dependency, `alo-recounting`, with the reason beside it: the *after* half of this task is that crate's four clauses |
-| `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` | Task 5 marked done; task 6, *Finding out there is an update*, written |
+| `docs/autonomy/the-machine-keeps-itself-plan.md` | Task 5 marked done; task 6, *Finding out there is an update*, written |
 | `Cargo.lock` | The dev-dependency edge — **and four entries that were already missing**: `alo-keeping-up`'s dev-dependencies on `alo-capability` and `alo-declared`, and `alo-updating`'s on the same two, are in those crates' `Cargo.toml` files and were not in the lock. Cargo wrote them on the first resolve here. Nothing was chosen by this task; a lock that had fallen behind two `Cargo.toml` files was brought up to date with them |
 
 **No `src/` file changed, in any crate.** That is the shape of this task rather

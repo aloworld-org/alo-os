@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** *Every sentence, and the walk from a folder to a better model*
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`, task 6)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`, task 6)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written on an **Apple M3 with 8 GB unified memory**, macOS 26.5.2;
 tested and linted in the Lima VM (Ubuntu 24.04 aarch64), because these crates

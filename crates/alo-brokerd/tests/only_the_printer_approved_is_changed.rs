@@ -2,7 +2,7 @@
 //! the printing service reports it now — and no printer at all when that one is
 //! not there, when two answer to it, or when the verb is not a printer's.
 //!
-//! Task 2 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *the
+//! Task 2 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *the
 //! broker's printer verbs take `alo-printing`'s own types, and configure the
 //! rented print system without a free-form URI or driver name.* The carrier is
 //! handed thirty-two bytes and nothing it could act on, so what is tested here

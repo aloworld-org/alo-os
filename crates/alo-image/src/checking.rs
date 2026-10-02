@@ -651,7 +651,7 @@ fn the_model_is_served_by_a_login_of_its_own(image: &Image, wrong: &mut Vec<Wron
 /// an unfiltered process in the same container went out and was answered
 /// (`docs/quirks.md`). That is the filter refusing, watched at a boundary. It is
 /// not a boot — nothing in this repository has yet booted the image — and
-/// `docs/autonomy/v0-01-evidence.md` is where that stays owed.
+/// `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is where that stays owed.
 fn the_server_reaches_nothing_off_this_machine(image: &Image, wrong: &mut Vec<Wrong>) {
     let server = image.server().called().to_owned();
     let allowed = image.server().may_reach();

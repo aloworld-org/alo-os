@@ -1,7 +1,7 @@
 # The installer's sandbox pivots under a root of its own
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 12,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 12,
 *With Secure Boot on, the install finishes and boots*, as it stands after its split)
 **Contributor:** Claude Code worker in `C:\dev\alo-os`, for the owner
 **Status:** ready for integration — for task 12's part. The install run it also
@@ -177,7 +177,7 @@ install_items+=" /usr/lib/systemd/system/diag.target /usr/lib/systemd/system/dia
   deploys and the bootloader's probe dies in `bwrap`'s `pivot_root`* went from
   *not yet located* to located, with the run above and our response.
 - `docs/booting.md`: says the cause, the change, and that the install run is task 13.
-- `docs/autonomy/v0-5-the-installer-plan.md`:
+- `docs/autonomy/the-installer-plan.md`:
   - Task 12 is marked done for its part, with the split.
   - Task 13, *With Secure Boot on, the install onto the second disk finishes and
     boots to the agent service*, is written and scheduled for a machine that can

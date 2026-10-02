@@ -6,7 +6,7 @@ owner accepted it*, which are part of the decision rather than commentary on it.
 snapshot: the first `btrfs` install measured that removing one needs
 `CAP_SYS_ADMIN`, and nothing in this repository removed one at all.
 Written by task 4 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` (*Undo what the agent
+`docs/autonomy/the-machine-keeps-itself-plan.md` (*Undo what the agent
 did*), which cannot be built until it is answered. Nothing is built in the
 change that adds this: the record has no entry for an undo, `alo-keeping-up`
 has no answer about undoing, and
@@ -80,7 +80,7 @@ Each road runs through something a worker may not choose alone:
 
 - a snapshot needs a filesystem that has one, and the filesystem is chosen in
   `crates/alo-installing`, the installer plan's (ADR 0028). The disk plan
-  (`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`) says in its opening
+  (`docs/autonomy/the-broker-and-the-disk-plan.md`) says in its opening
   lines that *nothing has decided the disk's* shape;
 - taking the snapshot at the moment a turn begins is `crates/alo-turn`, lane
   A's, and making it needs a privilege `alo-agentd` does not hold, which is the
@@ -333,7 +333,7 @@ the disk is already full.
 ### What this amendment changes
 
 **Built, 2026-09-21**, by task 13 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` — `crates/alo-letting-go`
+`docs/autonomy/the-machine-keeps-itself-plan.md` — `crates/alo-letting-go`
 and `alo-letting-go.service`, started by `alo-letting-go.timer` and by nothing
 else. Terms 1 and 2 are obeyed by a machine rather than decided by one, measured
 on a real `btrfs` filesystem, and `crates/alo-broker/src/verbs.rs` gained
@@ -350,7 +350,7 @@ written it. `alo_broker::SystemVerb` still gained nothing, and a test now holds
 the wider sentence too — that the only road into `alo-letting-go` from where a
 turn runs is its vocabulary. All seven terms are built.
 
-- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` gains a task for the
+- `docs/autonomy/the-machine-keeps-itself-plan.md` gains a task for the
   remover. Terms 1 and 2 were **not built** until it landed, and
   `how_far_back.rs` deciding a window is not the same as a machine obeying one.
 - `crates/alo-broker/src/verbs.rs` gains nothing. `SystemVerb` is a closed
@@ -363,7 +363,7 @@ turn runs is its vocabulary. All seven terms are built.
   reads like a mount fault and is not one.
 ## Consequences if it is accepted
 
-- `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` task 4 becomes ready,
+- `docs/autonomy/the-machine-keeps-itself-plan.md` task 4 becomes ready,
   split into what this lane builds (points 1 to 5 and the undo itself) and
   what it waits on from the installer, accounts, broker and lane A.
 - `docs/contracts/record-file.md` gains the `undone` kind; `format` stays `1`.

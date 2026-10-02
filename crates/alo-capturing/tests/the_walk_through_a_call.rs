@@ -1,6 +1,6 @@
 //! **One walk: a screenshot, a call, and thirty seconds with the microphone.**
 //!
-//! Task 7 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`, and the last of
+//! Task 7 of `docs/autonomy/capture-and-the-room-plan.md`, and the last of
 //! that plan. Every other test in these two crates holds one sentence, one
 //! refusal, or one line of the indicator. This holds **the sequence** — what a
 //! person actually reads and sees, in order, through one afternoon.

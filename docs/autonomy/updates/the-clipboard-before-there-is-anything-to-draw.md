@@ -48,7 +48,7 @@ workspace's `Cargo.toml`, `crates/alo-saying`'s manifest and `collecting.rs`
 holds the machine's vocabulary to the crates' own), and one sentence in
 `crates/alo-collected/src/lib.rs` that counts the crates which declare words.
 
-**`docs/autonomy/v0-01-evidence.md`**: the entry for *Copy, cut and paste* now
+**`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`**: the entry for *Copy, cut and paste* now
 names what shows it and what is still owed, and a closing section records that
 the count of promises with no evidence at all stands at **three**. The audit's
 own paragraphs are left as it wrote them.
@@ -228,7 +228,7 @@ I do not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
 the plan.
 
 **STATE.md:** reference this report, and record that
-`docs/autonomy/v0-01-evidence.md` now stands at three v0.01 promises with no
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` now stands at three v0.01 promises with no
 evidence at all, none of which this lane can close.
 
 ## Files touched
@@ -251,6 +251,6 @@ evidence at all, none of which this lane can close.
 - `crates/alo-saying/Cargo.toml`
 - `crates/alo-saying/src/collecting.rs`
 - `crates/alo-collected/src/lib.rs`
-- `docs/autonomy/v0-01-evidence.md`
-- `docs/autonomy/v0-01-delivery-plan.md`
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
+- `docs/autonomy/the-executable-plan.md`
 - `docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md`

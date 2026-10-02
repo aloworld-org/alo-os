@@ -141,7 +141,7 @@ Files changed:
 - `crates/alo-agentd/src/refusing.rs`
 - `crates/alo-agentd/src/wire.rs`
 - `docs/contracts/local-network-wire.md`
-- `docs/autonomy/v0-5-the-local-network-plan.md`
+- `docs/autonomy/the-local-network-plan.md`
 - `docs/autonomy/updates/a-port-held-in-both-families-at-start.md`
 
 Proposed changelog: A temporary conflict on the local-network port in both address

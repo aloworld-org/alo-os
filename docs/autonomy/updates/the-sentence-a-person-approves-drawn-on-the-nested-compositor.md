@@ -1,7 +1,7 @@
 # The sentence a person approves, drawn on the nested compositor
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the shell (`docs/autonomy/v0-5-the-shell-plan.md`, task 3)
+**Workstream:** v0.5 — the shell (`docs/autonomy/the-shell-plan.md`, task 3)
 **Responsible contributor:** Claude worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration — the code. Not seen on a certified machine.
 
@@ -43,7 +43,7 @@ indicator frame does), `presentation.rs` (`RenderError::ApprovalScene`),
 `lib.rs`, `Cargo.toml` (`alo-approving`, `alo-capability` and `alo-turn` as
 dependencies — `alo-capability` moved up from dev-dependencies; `alo-context`,
 `alo-files`, `alo-keeping` and `alo-record` as dev-dependencies), `Cargo.lock`.
-`docs/autonomy/v0-5-the-shell-plan.md` marks task 3 done.
+`docs/autonomy/the-shell-plan.md` marks task 3 done.
 
 **User-readable change description:** *When an agent wants to change something
 on your machine, alo OS now asks you on the screen, in one sentence that says

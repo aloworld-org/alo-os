@@ -2245,7 +2245,7 @@ runtime logs `Ollama cloud disabled: true`, makes **neither** request, schedules
 no retry (`consecutive_failures=0` with nothing attempted), and the journal
 carries no line naming the publisher. `crates/alo-image` holds the line beside
 the two filter lines and refuses a unit that dropped it or set it to anything
-but `1`. Still not a boot; `docs/autonomy/v0-01-evidence.md` keeps *arrives
+but `1`. Still not a boot; `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` keeps *arrives
 ready to run* owed.
 **Upstream:** not reported.
 **Date:** 2026-09-11, measured under systemd 2026-09-12
@@ -5129,7 +5129,7 @@ which makes the machine match what the fixture assumes. The fixture itself shoul
 start its bus from a configuration naming no service directories, as its
 `from_a_config` path already does; that is the owner's change.
 **Then, on 2026-09-15:** made, by task 3 of
-`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`. Every bus the
+`docs/autonomy/applications-and-what-they-expect-plan.md`. Every bus the
 fixture starts is started from its own configuration, which names no
 `<servicedir>` and no `<standard_session_servicedirs/>`; `--session` is no
 longer used. `crates/alo-secrets/tests/one_keyring_behind_the_secret_portal.rs`
@@ -5162,7 +5162,7 @@ through it, Teuken answered `" ready."` with nothing stray in the text, loaded o
 a second try, and was graded — 0 of 20 freely, 1 of 20 in the envelope. Its
 answers cut paths short and misspell them (`/home/anna/Invoic`,
 `/home/anna/Invoicnes`), which is the model rather than the template. The template is the finding for
-`docs/autonomy/v0-5-the-models-measured-plan.md`'s task 3 — whether the pinned
+`docs/autonomy/the-models-measured-plan.md`'s task 3 — whether the pinned
 runtime accepts what alo OS sends — and it matters before anybody grades Teuken
 on a larger machine: without a template the grade is not of the weights. A
 `Modelfile` `TEMPLATE` for Teuken would be alo OS configuring the engine, which
@@ -5214,7 +5214,7 @@ Writing that grade into the catalogue makes this test fail with
 because the example has stopped being true, not because the check is wrong.
 **Our response:** the grade was held out of `data/catalogue.toml`, named as the
 one exception in the two tests that require every entry to be graded or to say
-why, and task 2 of `docs/autonomy/v0-5-the-models-measured-plan.md` stayed open.
+why, and task 2 of `docs/autonomy/the-models-measured-plan.md` stayed open.
 **Resolved the same evening** by `2cf6025`, which reads the example off the
 catalogue; the grade was then written and both exceptions removed.
 `alo-image` is not the measuring lane's crate. The change it needs is one line:
@@ -6033,7 +6033,7 @@ Ubuntu 24.04 guest under OVMF went cold start to SSH login in **23 s**.
 this measurement — *prove acceleration by booting a guest under `-accel kvm` and
 timing it, never by looking for the device file*. What changes is that plans
 citing *no machine in this fleet has hardware virtualisation* were citing one
-machine. Corrected in `docs/autonomy/v0-5-the-installer-plan.md` and ADR 0056.
+machine. Corrected in `docs/autonomy/the-installer-plan.md` and ADR 0056.
 **The disk half of those plans' condition is a different matter and is NOT
 cleared — see the next entry, which is the same mistake in the other
 direction.**

@@ -10,7 +10,7 @@
 //! `alo-egress` refuses a destination its policy cannot permit rather than
 //! reaching it anyway; this is the same rule one step earlier, about the road
 //! rather than about the destination. The constraint in
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md` states it in one line: *a
+//! `docs/autonomy/software-and-the-web-plan.md` states it in one line: *a
 //! policy that cannot be evaluated refuses.*
 //!
 //! # What the person is told, and what is kept for whoever fixes it

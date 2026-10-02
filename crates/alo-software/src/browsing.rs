@@ -1,7 +1,7 @@
 //! Which application opens a web address, answered from what is installed and
 //! what the person chose — never from a guess.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: *the browser from
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: *the browser from
 //! task 2 opens web addresses from any application.* `alo_applications::WhatOpensWhat`
 //! answers *which application opens this file* from the file's own bytes; a web
 //! address has no bytes and is no kind, so this is the same question asked of the

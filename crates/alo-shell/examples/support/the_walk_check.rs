@@ -2,7 +2,7 @@
 //! real nested compositor under a Wayland parent, with a raster read back off
 //! each frame that was drawn.
 //!
-//! `docs/autonomy/v0-5-the-shell-plan.md` task 14: *one walk through the nested
+//! `docs/autonomy/the-shell-plan.md` task 14: *one walk through the nested
 //! compositor — sign in, dock a second display, divide the screen, take a
 //! screenshot with a blur, receive a notification, lock, unlock by keyboard
 //! with the screen reader on — produces a raster at each step and the exact

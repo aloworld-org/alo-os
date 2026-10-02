@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — models a person adapts, and the one they subscribe to
 **Task:** *What a fine-tune is trained on, and what it may never reach*
-(`docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`, task 1)
+(`docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`, task 1)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written and tested on an **Apple M3 with 8 GB unified memory**,
 macOS 26.5.2. Gates in Ubuntu 24.04 aarch64 under Lima, kernel 7.0.0-31-generic.

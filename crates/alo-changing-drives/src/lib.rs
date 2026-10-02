@@ -6,7 +6,7 @@
 //! machine, so ADR 0001 §2 puts it behind the broker, with no free-form
 //! parameter: what crosses the door is a verb and the digest of what the disk
 //! service reported, never a device name or a place to put it. Task 4 of
-//! `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` built that road —
+//! `docs/autonomy/the-broker-and-the-disk-plan.md` built that road —
 //! `alo_brokerd::Storage`, against `alo-drives` — and this crate is what that
 //! road did not have: **a person in front of it.**
 //!

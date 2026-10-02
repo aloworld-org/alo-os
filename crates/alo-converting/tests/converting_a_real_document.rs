@@ -1,7 +1,7 @@
 //! `.docx`, `.xlsx`, `.pptx` — opened, and what the conversion cost, against the
 //! owner's real documents and the real service running the pinned engine.
 //!
-//! Task 2 of `docs/autonomy/v0-5-documents-and-paper-plan.md`, all the way
+//! Task 2 of `docs/autonomy/documents-and-paper-plan.md`, all the way
 //! through: a declared verb, a grant over the folders, an approval redeemed,
 //! the paths resolved, and then `alo-convertd` — the binary this crate builds,
 //! started the way systemd starts it, with its listening socket on standard

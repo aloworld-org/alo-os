@@ -2,7 +2,7 @@
 
 **Status:** accepted, 2026-09-28, both open questions answered by the owner.
 
-Written by the development PC's lane, which owns `image/`. `docs/autonomy/v0-5-evidence.md`
+Written by the development PC's lane, which owns `image/`. `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`
 says of five separate promises that **the installing** is still owed — the file
 manager, the archives, the text editor, the image viewer, the terminal and the
 browser — and gives one reason for all of them:
@@ -13,7 +13,7 @@ browser — and gives one reason for all of them:
 
 Measured before writing this: `crates/alo-software/shipped.toml` names seven
 applications, `image/` mentions flatpak nowhere, no task in
-`docs/autonomy/v0-5-the-installer-plan.md` covers it, and no decision record
+`docs/autonomy/the-installer-plan.md` covers it, and no decision record
 does either. The applications plan hands the file over — *"the installer plan
 reads that same file rather than a copy in `image/`"* — to a task that was never
 written.

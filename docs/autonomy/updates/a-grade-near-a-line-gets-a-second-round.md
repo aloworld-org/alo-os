@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *A grade that lands one short of a line gets a second round*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 6)
+(`docs/autonomy/the-models-measured-plan.md`, task 6)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3**, **8 GB unified memory**, macOS 26.5.2, Ollama **0.34.0**
 (pinned) on `127.0.0.1`, the Linux VM stopped during the run. Gates in Ubuntu

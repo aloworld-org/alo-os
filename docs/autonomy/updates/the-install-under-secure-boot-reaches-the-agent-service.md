@@ -1,7 +1,7 @@
 # The install under Secure Boot finishes, and the installed disk boots to the agent service
 
 **Date:** 2026-09-20
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 15,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 15,
 *A release that carries the way to the boundary, installed under Secure Boot to the
 agent service*)
 **Contributor:** Claude Code lane B in `/root/alo-os-lane-b` on the **development PC**,

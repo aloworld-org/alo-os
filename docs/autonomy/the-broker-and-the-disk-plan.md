@@ -1,4 +1,6 @@
-# v0.5 — the broker and the disk: the machine's own authority, and its encryption
+# The broker and the disk: the machine's own authority, and its encryption
+
+*Named `v0.5 — the broker and the disk: the machine's own authority, and its encryption` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** two `ROADMAP.md` v0.5 lines that are the two places alo OS holds
 authority above the signed-in person — ★ *System verbs through the privileged
@@ -71,7 +73,7 @@ every carrier being made to consider it. The files below are those lines and
 nothing else.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-installer-plan.md
+plan = docs/autonomy/the-installer-plan.md
 task = 16
 files =
   crates/alo-broker/src/verbs.rs
@@ -102,7 +104,7 @@ reason. A crate nobody claims is refused by neither ownership check, which is
 why that line needs no release in order to land.
 
 ```owner-release
-plan = docs/autonomy/v0-5-the-installer-plan.md
+plan = docs/autonomy/the-installer-plan.md
 task = 17
 files =
   crates/alo-broker/src/lib.rs

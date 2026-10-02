@@ -1,7 +1,7 @@
 //! **A document saved by Pages, recognised from its bytes** — against a real
 //! one, with its provenance in `tests/files/README.md`.
 //!
-//! Task 6 of `docs/autonomy/v0-5-documents-and-paper-plan.md`, and the second of
+//! Task 6 of `docs/autonomy/documents-and-paper-plan.md`, and the second of
 //! its three formats. `docs/features.md`: ★ *"I can't open this file." A
 //! `.pages`, a `.heic`, a `.dwg`: the system converts it where it can, and where
 //! it cannot says plainly what will open it, instead of shrugging.*

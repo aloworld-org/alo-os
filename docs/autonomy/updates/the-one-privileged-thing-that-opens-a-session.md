@@ -206,4 +206,4 @@ answered in code and in the image's files; it is **not** answered on a machine,
 and nothing here should be read as ticking a boot gate.
 
 **`docs/autonomy/QUEUE.md`** — task 26 done; task 27 (the sign-in surface's half
-of the door) is ready and written into `v0-01-delivery-plan.md`.
+of the door) is ready and written into `the-executable-plan.md`.

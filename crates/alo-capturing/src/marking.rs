@@ -1,6 +1,6 @@
 //! **What a person can mark on a screenshot, as values.**
 //!
-//! Task 3 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. Somebody takes
+//! Task 3 of `docs/autonomy/capture-and-the-room-plan.md`. Somebody takes
 //! a screenshot to send to a colleague, and before they send it they point at
 //! the thing that matters and hide the thing that does not. That is the whole
 //! of annotation, and it must happen **without opening anything else**: an

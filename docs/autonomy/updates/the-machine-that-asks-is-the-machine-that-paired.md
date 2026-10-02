@@ -1,7 +1,7 @@
 # The machine that asks is the machine that paired
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 6 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 6 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, as a development worker in `C:\dev\alo-os-claude`
 - Status: **ready for integration**
 
@@ -143,7 +143,7 @@ beside it. **`Cargo.lock`**: `alo-nearby` depends on it; nothing new resolves.
 **`docs/quirks.md`**: the ureq `send_json` entry gains the reason the body is
 now hand-serialised.
 
-**`docs/autonomy/v0-5-the-local-network-plan.md`**: task 6 marked done, and
+**`docs/autonomy/the-local-network-plan.md`**: task 6 marked done, and
 task 7 written — *a proposal reaches the other machine, and the answer comes
 back*, the pairing wire, which every test in this plan has so far done by
 handing values between two sides of one process.

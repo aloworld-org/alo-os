@@ -1,7 +1,7 @@
 # Finishing the offer after `main` moved
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 7
+**Workstream:** `docs/autonomy/the-machine-keeps-itself-plan.md`, task 7
 **Contributor:** this development PC's worker lane, second worker
 **Status:** ready for integration
 
@@ -22,7 +22,7 @@ CONFLICT (add/add): crates/alo-looking/src/looking.rs
 CONFLICT (add/add): crates/alo-looking/src/place.rs
 CONFLICT (add/add): crates/alo-looking/src/testing.rs
 CONFLICT (add/add): docs/autonomy/updates/finding-out-there-is-an-update.md
-CONFLICT (content): docs/autonomy/v0-5-the-machine-keeps-itself-plan.md
+CONFLICT (content): docs/autonomy/the-machine-keeps-itself-plan.md
 ```
 
 Every one of those files belongs to **task 6**, not task 7. Local `main` had
@@ -54,7 +54,7 @@ Then the question was asked directly — does `main` already contain all of task
 ```
 git diff --stat 9f7caf3 origin/main -- crates/alo-looking crates/alo-saying \
     docs/autonomy/updates/finding-out-there-is-an-update.md \
-    docs/autonomy/v0-5-the-machine-keeps-itself-plan.md
+    docs/autonomy/the-machine-keeps-itself-plan.md
 (nothing)
 
 git diff --stat 9f7caf3 origin/main -- Cargo.toml
@@ -160,8 +160,8 @@ where `tools/kernel-loop/src/gates.rs` already puts them; running them on the
 Windows side is not a stricter check, it is a broken one.
 
 **A stale blocker, reported rather than edited.**
-`docs/autonomy/v0-5-the-shell-plan.md` task 13 (*The recovery and rollback
-screen*) reads *blocked — on `v0-5-the-machine-keeps-itself-plan.md` task 3*,
+`docs/autonomy/the-shell-plan.md` task 13 (*The recovery and rollback
+screen*) reads *blocked — on `the-machine-keeps-itself-plan.md` task 3*,
 and that task has been done since 2026-09-15. It is takeable and every lane
 surveying for free work is stepping over it. It is left for the shell plan's
 owner rather than corrected here: it names task 3, not the task this change

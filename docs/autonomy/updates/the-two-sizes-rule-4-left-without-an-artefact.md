@@ -328,4 +328,4 @@ and the ninety-minute worker deadline makes each such refusal expensive.
 **STATE.md:** references this report path. Task 13 of
 `docs/autonomy/accounts-and-session-entry-plan.md` is done; task 14 (an ADR on whether this
 catalogue may name a third party's requantisation) is written and ready. No task
-in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+in `the-executable-plan.md` matched this one, so nothing was marked there.

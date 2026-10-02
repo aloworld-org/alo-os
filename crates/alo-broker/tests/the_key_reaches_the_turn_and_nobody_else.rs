@@ -2,7 +2,7 @@
 //! by the broker's group and nobody else, and a key in any other shape is not
 //! believed.
 //!
-//! Task 2 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` inherits *how
+//! Task 2 of `docs/autonomy/the-broker-and-the-disk-plan.md` inherits *how
 //! the broker's approving key reaches the turn that issues tokens*. The half
 //! that matters is the refusals: a key somebody else could have written, read,
 //! or planted is a key whose tokens somebody else can issue.

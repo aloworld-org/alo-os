@@ -9,7 +9,7 @@ since its ADR 0040 work landed, is on tasks that do not touch it, and keeps
 passes all nine gates on current `main`. What follows is the record as proposed.
 
 Written by task 2 of
-`docs/autonomy/v0-5-software-and-the-web-plan.md` (*What a fresh machine has, so
+`docs/autonomy/software-and-the-web-plan.md` (*What a fresh machine has, so
 it is not helpless*), which cannot be finished until it is answered. The worker
 that wrote it built the change in part 2 and marked this record accepted, moving
 `alo-capability` into its own plan's partition by its own word. The machine

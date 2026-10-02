@@ -2,7 +2,7 @@
 //! microphone off for everyone.**
 //!
 //! `ROADMAP.md` v0.5's *Devices*, and task 4 of
-//! `docs/autonomy/v0-5-devices-and-media-plan.md`.
+//! `docs/autonomy/devices-and-media-plan.md`.
 //!
 //! | | |
 //! |---|---|

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5, applications and what they expect
-(`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, task 10)
+(`docs/autonomy/applications-and-what-they-expect-plan.md`, task 10)
 **Contributor:** Claude worker on the Mac checkout, for the supervisor to gate
 and publish.
 **Status:** ready for integration.

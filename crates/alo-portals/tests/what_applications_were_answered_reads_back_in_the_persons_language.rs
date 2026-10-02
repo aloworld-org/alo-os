@@ -1,6 +1,6 @@
 //! What applications were answered reads back in the person's language.
 //!
-//! Task 10 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 10 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here:
 //!
 //! - **a `KeptAnswer` is worded through `alo-strings` in the language the

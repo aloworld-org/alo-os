@@ -49,7 +49,7 @@ cannot be found again.
 
 **What happens when it arrives:** the exact disk that booted in a VM on
 2026-09-11 (`docs/booting.md`) is written to it, and the two promises in
-`docs/autonomy/v0-01-evidence.md` that no VM can evidence — *the GPU works on
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` that no VM can evidence — *the GPU works on
 first boot* and *boots on one certified machine, firmware to sign-in* — are
 measured on it. Then its row goes in the table above.
 

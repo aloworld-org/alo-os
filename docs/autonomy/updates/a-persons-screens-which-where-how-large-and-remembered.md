@@ -1,7 +1,7 @@
 # A person's screens: which, where, how large, and remembered
 
 **Date:** 2026-09-18
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 3
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 3
 (*A person's screens: which, where, how large, and remembered*). Serves
 `ROADMAP.md` v0.5 *Multi-monitor, scaling, hotplug* and the per-display half of
 *Making it yours*.
@@ -214,7 +214,7 @@ exports with `include_str!` — read when the test binary is *built*, so the
 assertion does not depend on the tree still being there a moment later, and Cargo
 rebuilds it when those exports change — removes the race without changing
 anything the test checks. `crates/alo-access` belongs to
-`docs/autonomy/v0-5-access-and-language-plan.md`, which still has unfinished
+`docs/autonomy/access-and-language-plan.md`, which still has unfinished
 tasks (3 blocked, 7 ready), and `tools/kernel-loop`'s `who_owns.rs` refuses a
 handoff that reaches into another unfinished plan's crate — before gating
 anything. An earlier attempt at this task wrote the fix and recorded a release
@@ -339,12 +339,12 @@ yours* is partly served — the background is per screen; the dock edge is one f
 the machine until `alo-dock` decides otherwise, as the finding above says.
 
 **`docs/autonomy/QUEUE.md`**: no queue item names this; the work comes from
-`docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, whose task 3 is marked
+`docs/autonomy/the-session-and-the-displays-plan.md`, whose task 3 is marked
 **Done, 2026-09-18** in the same change as this report.
 
 **`docs/autonomy/STATE.md`**: reference this report's path.
 
-**For `docs/autonomy/v0-5-access-and-language-plan.md`'s owner, not taken here:**
+**For `docs/autonomy/access-and-language-plan.md`'s owner, not taken here:**
 `crates/alo-access/tests/every_surface_the_shell_draws_is_read_aloud.rs` reads
 `crates/alo-shell/src/lib.rs` from disk while the test runs, which refuses
 whichever lane is unlucky when two gate runs share one source tree — it refused

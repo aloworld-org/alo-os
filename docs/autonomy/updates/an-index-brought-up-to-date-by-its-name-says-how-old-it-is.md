@@ -1,7 +1,7 @@
 # An index brought up to date by its name says how old it is
 
 - Date: 2026-09-14
-- Workstream: v0.5 the machine, measured, task 7 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 7 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 

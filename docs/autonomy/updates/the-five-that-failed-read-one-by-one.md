@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *The five that failed, read one by one*
-(`docs/autonomy/v0-5-the-models-measured-plan.md`, task 12)
+(`docs/autonomy/the-models-measured-plan.md`, task 12)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** the attempts were made on an **Apple M3 with 8 GB unified memory**
 under Ollama **0.34.0** on 2026-09-14 (task 7's forty-attempt run, 00:43:48–00:45:38

@@ -1,6 +1,6 @@
 //! What undoing rewinds to is a decision, and the code waits on it.
 //!
-//! Task 4 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` asks for
+//! Task 4 of `docs/autonomy/the-machine-keeps-itself-plan.md` asks for
 //! ★ *undo what the agent did*, undone *through the mechanism that made it
 //! undoable — the base's own snapshot* — and never by an invented inverse. The
 //! machine this repository installs is formatted `ext4`, which has no snapshot
@@ -49,7 +49,7 @@ const THE_DECISION: &str = "docs/decisions/0045-what-undoing-rewinds-to.md";
 const THE_DECISIONS: &str = "docs/decisions";
 
 /// The plan that asked for the decision, relative to the repository.
-const THE_PLAN: &str = "docs/autonomy/v0-5-the-machine-keeps-itself-plan.md";
+const THE_PLAN: &str = "docs/autonomy/the-machine-keeps-itself-plan.md";
 
 /// The heading of the task in that plan that produced it.
 const THE_TASK: &str = "### 4. Undo what the agent did";

@@ -21,7 +21,7 @@
 //! [`crate::OnADisplay::close`] — refuses a promise with
 //! [`crate::Refused::APromise`]. The promise is therefore structural rather
 //! than a rule somebody has to remember, which is what
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 3 asks a test to hold.
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 3 asks a test to hold.
 //!
 //! Nothing here draws any of them. What is here is *which window is which
 //! promise*, which the shell says once, and the refusals that keep them where

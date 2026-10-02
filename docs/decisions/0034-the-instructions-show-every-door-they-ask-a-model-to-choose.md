@@ -6,7 +6,7 @@
 a model can drive the verbs, measured by us),
 [ADR 0032](0032-a-local-model-is-held-to-the-envelope-not-the-call.md) (a local
 model is held to the envelope, not the call), tasks 12 and 16 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`, `crates/alo-driving`
+`docs/autonomy/the-models-measured-plan.md`, `crates/alo-driving`
 
 ## The question in one line
 

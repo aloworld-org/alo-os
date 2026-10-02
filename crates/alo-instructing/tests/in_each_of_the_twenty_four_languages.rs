@@ -1,7 +1,7 @@
 //! **What the small model this machine holds answers, asked in each of the 24
 //! official languages.**
 //!
-//! Task 5 of `docs/autonomy/v0-5-access-and-language-plan.md`, and ★
+//! Task 5 of `docs/autonomy/access-and-language-plan.md`, and ★
 //! `docs/features.md`: *the agent answers in the language it was asked in* —
 //! *the thing a cloud assistant does badly for smaller languages*. A promise
 //! about 24 languages is worth what somebody has measured of it, so this asks

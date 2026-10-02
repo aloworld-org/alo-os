@@ -1,7 +1,7 @@
 # A picture of the screen: the screen, a window, a region — to a file or the clipboard
 
 **Date:** 2026-09-16
-**Workstream:** `docs/autonomy/v0-5-capture-and-the-room-plan.md`, task 2 — the
+**Workstream:** `docs/autonomy/capture-and-the-room-plan.md`, task 2 — the
 first thing that captures, built on top of the indicator that shows it.
 **Contributor:** Claude Code worker, `C:\dev\alo-os`.
 **Status:** ready for integration. The code is whole and gated. Two measurements
@@ -97,7 +97,7 @@ vocabulary, not a second reading of it.
 
 ### The plan
 
-`docs/autonomy/v0-5-capture-and-the-room-plan.md` — task 2 marked **Done,
+`docs/autonomy/capture-and-the-room-plan.md` — task 2 marked **Done,
 2026-09-16** with what was built and what is owed. Tasks 3 to 7 already stand
 after it, so no next task needed writing.
 

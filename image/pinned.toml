@@ -33,7 +33,7 @@
 # - `sha256-<digest>.sig` returns **404** for every release. Ten tags exist in
 #   the repository and **none** ends in `.sig`.
 #
-# So task 7 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` measured
+# So task 7 of `docs/autonomy/the-machine-keeps-itself-plan.md` measured
 # *A signature was required, but no signature exists* and that was **literally
 # true** — not a bad key, not a missing transparency log, not the wrong policy
 # type. Which end moves is
@@ -116,7 +116,7 @@
 # promise in this release, and until a second release is signed with the flag,
 # yesterday's machine is unreachable by a machine that checks. What resolves it is
 # the next signing, not a change here — and it is why task 8 of
-# `../docs/autonomy/v0-5-the-machine-keeps-itself-plan.md` needs **two** signings
+# `../docs/autonomy/the-machine-keeps-itself-plan.md` needs **two** signings
 # rather than one.
 #
 # **The digest already pinned below can be signed again with the flag**, without

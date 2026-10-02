@@ -1,7 +1,7 @@
 //! Every sentence the three crates of documents and paper can say is in the
 //! machine's one vocabulary, with a note for whoever translates it.
 //!
-//! Task 5 of `docs/autonomy/v0-5-documents-and-paper-plan.md`. `alo-opening`,
+//! Task 5 of `docs/autonomy/documents-and-paper-plan.md`. `alo-opening`,
 //! `alo-converting` and `alo-printing` each hold their own list in their own
 //! tests. What this holds is the promise across all three: every sentence a
 //! person meets when a file arrives, is converted, is printed or cannot be

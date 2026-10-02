@@ -1,7 +1,7 @@
 # ADR 0082 — A shipped machine shows its start-up on its own screen, and opens no serial console unless asked
 
 **Status:** **proposed, 2026-10-02.** Task 21 of
-`docs/autonomy/v0-5-the-installer-plan.md` asks this question directly — *say
+`docs/autonomy/the-installer-plan.md` asks this question directly — *say
 whether a serial console on a shipped machine is acceptable at all, or whether it
 is something the installer turns on only when it was asked to* — and says the
 answer *is made once and written down, not slipped into a test.* So it is written

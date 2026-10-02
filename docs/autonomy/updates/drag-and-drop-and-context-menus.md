@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 — hands on the desktop
-(`docs/autonomy/v0-5-hands-on-the-desktop-plan.md`, task 4)
+(`docs/autonomy/hands-on-the-desktop-plan.md`, task 4)
 **Contributor:** Claude Code, in `C:\dev\alo-os-b`
 **Status:** ready for integration
 

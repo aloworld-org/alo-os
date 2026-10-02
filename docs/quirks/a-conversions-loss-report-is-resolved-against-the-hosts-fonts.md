@@ -26,7 +26,7 @@ from a lane without the pin is an **absence, not a corroboration**. It was read 
 corroboration once, by two lanes, until one `ls` was run.
 
 **Our response:** recorded as task 11 of
-`../autonomy/v0-5-documents-and-paper-plan.md` rather than fixed, because where the
+`../autonomy/documents-and-paper-plan.md` rather than fixed, because where the
 engine's fonts come from is a decision. **Do not fix it by installing fonts**: the
 report is not monotone in font availability — the machine with *fewer*
 Microsoft-compatible fonts reported *less* loss — so a font install moves the red

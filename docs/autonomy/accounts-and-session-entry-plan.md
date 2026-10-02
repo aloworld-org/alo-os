@@ -3,7 +3,7 @@
 *Named `v0.01, lane B — accounts and session entry` until 2026-10-02. **Lane B is a queue code** — it tells a stranger nothing about what this plan holds, which is what `CLAUDE.md`'s *names are for strangers* forbids, and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release it belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 
-The second loop's plan. `docs/autonomy/v0-01-delivery-plan.md` is the spine of
+The second loop's plan. `docs/autonomy/the-executable-plan.md` is the spine of
 v0.01; this file carves out the one chain in it that is independent of the
 overlay work, so two loops in two checkouts can build at once without ever
 choosing the same task.
@@ -22,13 +22,13 @@ two as lane B's so the first loop steps over them.
 
 **The cost is a protocol, and it is written here so it is not folklore:** when a
 task finishes in this file, the same handoff marks the matching task done in
-`v0-01-delivery-plan.md`, in the same commit. The main plan's task 10 depends on
+`the-executable-plan.md`, in the same commit. The main plan's task 10 depends on
 session work it can only see there; a lane that finished quietly would leave the
 image task waiting on work that is already done.
 
 ## Rules
 
-Everything `v0-01-delivery-plan.md` holds itself to, unchanged: nothing ticked
+Everything `the-executable-plan.md` holds itself to, unchanged: nothing ticked
 from a fixture, no release verdicts, tasks sized to a forty-five-minute worker,
 and whoever finishes a task writes the next one in the same change.
 
@@ -70,7 +70,7 @@ wired: nothing starts the daemon into a real session with the right environment.
 - **Acceptance:** the daemon starts under the session task 1 creates, reaches
   that session's bus, and stops when the session ends — the three states already
   measured, reached from a sign-in rather than from a test harness.
-- **On finishing:** mark tasks 4 and 5 done in `v0-01-delivery-plan.md`, in the
+- **On finishing:** mark tasks 4 and 5 done in `the-executable-plan.md`, in the
   same handoff, so the image task there stops waiting on work that is done.
 
 **Done, 2026-09-10.** `crates/alo-entering` derives what a session hands a
@@ -135,7 +135,7 @@ starts and refuses everything, as before. Measured in
 `crates/alo-remembering/tests/the_grants_a_machine_keeps.rs` and in
 `crates/alo-agentd/src/starting.rs`. Report:
 `docs/autonomy/updates/where-a-machine-keeps-its-grants.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 4
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 4
 below is the next task and was written in the same change.
 
 ### 4. A grant made now reaches the daemon now
@@ -189,7 +189,7 @@ and is the one wrong-door message that leaves an entry. Measured end to end over
 a real socket in `crates/alo-agentd/src/serving.rs`, and per-decision in
 `rereading.rs`, `answering.rs` and `doing.rs`. Report:
 `docs/autonomy/updates/a-grant-made-now-reaches-the-daemon-now.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 5
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 5
 below is the next task and was written in the same change.
 
 ### 5. A person can be told what their machine did
@@ -241,7 +241,7 @@ all of it. Measured in `crates/alo-recounting/tests/what_this_machine_did.rs`
 and per-decision in `where_it_is.rs`, `account.rs` and `alo-keeping`'s
 `believing.rs`. Nothing moved in `docs/contracts/record-file.md`. Report:
 `docs/autonomy/updates/a-person-can-be-told-what-their-machine-did.md`. No task
-in `v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 6
+in `the-executable-plan.md` matched this one, so nothing was marked there. Task 6
 below is the next task and was written in the same change.
 
 ### 6. The account a person asks for is the one their machine kept
@@ -299,7 +299,7 @@ gained the reader's rule additively; not a byte of the shape moved. Measured in
 `crates/alo-recounting/tests/a_record_that_is_not_what_it_says.rs` and
 per-decision in `disagreeing.rs`. Report:
 `docs/autonomy/updates/a-record-that-is-not-what-it-says-it-is.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 7
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 7
 below is the next task and was already written.
 
 ### 7. The pinned model runtime is on the image
@@ -308,7 +308,7 @@ below is the next task and was already written.
 
 ADR 0025 was accepted on 2026-09-11 and the definition now promises that **the
 local model is what the machine arrives ready to run**. The ledger's entry for it
-(`docs/autonomy/v0-01-evidence.md`) is reachable by work for the first time, and
+(`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`) is reachable by work for the first time, and
 this task is the first half of that work: the runtime, without the weights. The
 weights are a separate task because they carry the sizing question (ADR 0007) and
 the carry-or-fetch question ADR 0025 left open inside the work; a runtime with no
@@ -351,7 +351,7 @@ name stays on the rented list and still reaches nobody. Measured in
 `crates/alo-image/src/checking.rs`, `crates/alo-models/src/ollama.rs` and
 `crates/alo-saying/src/rented.rs`. Report:
 `docs/autonomy/updates/the-pinned-model-runtime-is-on-the-image.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 8
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 8
 below is the next task and was written in the same change.
 
 ### 8. The carry-or-fetch measurement ADR 0025 owes
@@ -410,7 +410,7 @@ ADR 0025 owes*, where the ADR says the answer goes, and
 and the day an entry clears the bar the test fails and sends whoever sees it
 back to make the measurement again. Report:
 `docs/autonomy/updates/the-carry-or-fetch-measurement.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 9
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 9
 below is the next task and was written in the same change.
 
 ### 9. The grade the weights wait on
@@ -484,7 +484,7 @@ not only on a machine with room. The numbers, the three rejected ways round
 the box, and both findings are in `docs/quirks.md`; the finding is held to the
 catalogue by `crates/alo-models/tests/the_grade_the_weights_wait_on.rs`.
 Report: `docs/autonomy/updates/the-grade-the-weights-wait-on.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 12
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 12
 below is written from this outcome and was written in the same change.
 
 ### 10. A model on the disk, sized for the machine it lands on
@@ -606,10 +606,10 @@ free grade (ADR 0032 §5).
 Measured in `crates/alo-image/src/arrives_with.rs`,
 `crates/alo-image/src/checking.rs` and `crates/alo-image/src/weights.rs`.
 `docs/quirks.md` carries the size and both findings beside task 8's
-measurement, and `docs/autonomy/v0-01-evidence.md` is rewritten to say what is
+measurement, and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is rewritten to say what is
 now shown. Report:
 `docs/autonomy/updates/a-model-on-the-disk-sized-for-the-machine-it-lands-on.md`.
-The matching task in `v0-01-delivery-plan.md` is its task 31, already marked
+The matching task in `the-executable-plan.md` is its task 31, already marked
 done on 2026-09-11 and now carrying a dated note saying what superseded it.
 
 ### 11. What a person is asked at setup, before there is anywhere to ask it
@@ -675,7 +675,7 @@ per-decision in each of the crate's own files, and in `alo-choosing`'s
 `choosing.rs`, `written.rs` and `writing.rs`.
 `docs/contracts/person-settings.md` gained `[setup]` and format 3 additively.
 Report: `docs/autonomy/updates/what-a-person-is-asked-at-setup.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 12
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 12
 below was already written and is the next task.
 
 ### 12. Candidates the measuring box can actually hold
@@ -754,7 +754,7 @@ the 3.2 release. Measured in
 `crates/alo-models/tests/candidates_the_box_can_hold.rs` and in
 `crates/alo-models/src/catalogue.rs`. Report:
 `docs/autonomy/updates/candidates-the-measuring-box-can-hold.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 13
+`the-executable-plan.md` matched this one, so nothing was marked there. Task 13
 below is the next task and was written in the same change.
 
 ### 13. The two sizes rule 4 left without an artefact
@@ -832,7 +832,7 @@ verdict is untouched, because neither entry was ever a candidate. Measured in
 `crates/alo-models/tests/sizes_an_entry_can_point_at.rs` and in
 `crates/alo-models/src/catalogue.rs`. Report:
 `docs/autonomy/updates/the-two-sizes-rule-4-left-without-an-artefact.md`. No
-task in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+task in `the-executable-plan.md` matched this one, so nothing was marked there.
 Task 14 below is the next task and was written in the same change.
 
 ### 14. Whose requantisation this catalogue may vouch for
@@ -914,7 +914,7 @@ curator reads. Measured in
 `crates/alo-models/tests/whose_requantisation_this_catalogue_vouches_for.rs` and
 in `crates/alo-models/src/requantised.rs`. Report:
 `docs/autonomy/updates/whose-requantisation-this-catalogue-may-vouch-for.md`. No
-task in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+task in `the-executable-plan.md` matched this one, so nothing was marked there.
 Task 15 below is the next task and was written in the same change.
 
 ### 15. The file the two European entries mean
@@ -1002,7 +1002,7 @@ report says exactly what moved in each. Measured in
 `crates/alo-models/tests/the_file_the_two_european_entries_mean.rs` and in this
 crate's existing suites. Report:
 `docs/autonomy/updates/the-file-the-two-european-entries-mean.md`. No task in
-`v0-01-delivery-plan.md` matched this one — its task 31 is the weights-aboard
+`the-executable-plan.md` matched this one — its task 31 is the weights-aboard
 work, which is lane B's task 10 and still blocked — so nothing was marked there.
 Task 16 below is the next task and was written in the same change.
 
@@ -1081,7 +1081,7 @@ different registry, a second pinned file and a Modelfile assembled out of it —
 and **not one byte of that has been built**. The numbers it wrote down say so
 in as many words: 8.79 GiB is the 6.15 GiB measured on 2026-09-12 plus the
 difference between two blobs, which is arithmetic over a build of a different
-recipe. Task 33 and task 34 of `v0-01-delivery-plan.md` are the precedent for
+recipe. Task 33 and task 34 of `the-executable-plan.md` are the precedent for
 what a build is worth here: the first one found that the runtime carried the
 weights twice, and nothing short of running it would have.
 

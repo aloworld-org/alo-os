@@ -42,7 +42,7 @@ Source paths:
   `crates/alo-saying/Cargo.toml` — the sixteenth list, and the counts kept
   truthful.
 - `Cargo.toml`, `Cargo.lock` — the new workspace member.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 2's `**Done,**` line, per the
+- `docs/autonomy/the-executable-plan.md` — task 2's `**Done,**` line, per the
   plan's own rule that whoever finishes writes it in the same change. The next
   increment (task 3) already existed, so no new task was needed.
 

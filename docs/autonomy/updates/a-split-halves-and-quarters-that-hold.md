@@ -1,7 +1,7 @@
 # A split: halves and quarters that hold
 
 **Date:** 2026-09-17
-**Workstream:** v0.5 — hands on the desktop (`docs/autonomy/v0-5-hands-on-the-desktop-plan.md`, task 1)
+**Workstream:** v0.5 — hands on the desktop (`docs/autonomy/hands-on-the-desktop-plan.md`, task 1)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-b`, for the repository owner
 **Status:** ready for integration
 

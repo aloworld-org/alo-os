@@ -1,7 +1,7 @@
 # A cable pulled is a network this machine is no longer found on, and one plugged in is found at once
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 29)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 29)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 

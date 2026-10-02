@@ -1,7 +1,7 @@
 # An arrangement with a key nobody declared
 
 **Date:** 2026-09-21
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 10
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 10
 — *An arrangement with a key nobody declared*
 **Contributor:** this development PC (Windows host, gates run in its Ubuntu)
 **Status:** ready for integration.
@@ -123,7 +123,7 @@ could rot:
 
 Nothing in that file was loosened. It gained a test; it lost nothing.
 
-### `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`
+### `docs/autonomy/the-session-and-the-displays-plan.md`
 
 Task 10 marked **Done, 2026-09-21** with what it did and what a person notices,
 and **task 11 written**, because the plan named none after it and a plan with no
@@ -166,7 +166,7 @@ ownership rather than on merit: `docs/features.md`'s *Per display, so the dock
 can sit along the bottom of the laptop and down the side of the external screen*
 is still unmet, task 3 says so, and `alo_displays::Wearing::of` is the one
 function that changes when it is met — but `alo-dock` belongs to
-`v0-5-where-a-persons-settings-are-kept-plan.md`, and this plan's header says it
+`where-a-persons-settings-are-kept-plan.md`, and this plan's header says it
 reads that crate and never edits it. It stays where task 3 left it: a finding
 written down, waiting on its owner.
 

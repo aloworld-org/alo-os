@@ -1,6 +1,6 @@
 //! **A share is picked, every time, and nothing can answer it in advance.**
 //!
-//! Task 5 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. The thing
+//! Task 5 of `docs/autonomy/capture-and-the-room-plan.md`. The thing
 //! shared is not a capability, it is a moment: the screen at half past three,
 //! with whatever happens to be on it. A person who agreed once agreed to what
 //! was there then.

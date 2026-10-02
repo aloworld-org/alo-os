@@ -1,7 +1,7 @@
 //! **Every stage the offscreen probe walks**, in one place because two sides
 //! disagree about it otherwise.
 //!
-//! Task 17 of `docs/autonomy/v0-5-the-shell-plan.md` asks that *the probe's stage
+//! Task 17 of `docs/autonomy/the-shell-plan.md` asks that *the probe's stage
 //! count matches the stages it walks, checked by walking them rather than by a
 //! number somebody maintains.*
 //!

@@ -1,7 +1,7 @@
 //! **The magnifier: what is under the pointer, drawn larger, over the whole
 //! screen.**
 //!
-//! Task 12 of `docs/autonomy/v0-5-the-shell-plan.md`: *the magnifier and high
+//! Task 12 of `docs/autonomy/the-shell-plan.md`: *the magnifier and high
 //! contrast apply as decided*. What a magnifier is and how much larger it draws
 //! are `alo-access`' — [`alo_access::Setting::Magnifier`] and
 //! [`Magnification`], which is kept in tenths so that one and a half times is a

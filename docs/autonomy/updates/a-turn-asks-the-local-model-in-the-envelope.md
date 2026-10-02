@@ -1,7 +1,7 @@
 # A turn asks the local model in the envelope
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 13)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 13)
 **Contributor:** Claude Code, Windows checkout `C:\dev\alo-os-claude`, gates in WSL Ubuntu
 **Status:** ready for integration.
 

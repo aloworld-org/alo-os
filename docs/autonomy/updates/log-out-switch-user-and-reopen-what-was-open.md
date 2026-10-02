@@ -1,7 +1,7 @@
 # Log out, switch user — and reopen what was open
 
 **Date:** 2026-09-18
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 5
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 5
 (*Log out, switch user, lock — and reopen what was open*), for
 `docs/features.md` v0.5 **Session management: log out, switch user, lock, and
 reopen what was open** and `ROADMAP.md`'s v0.5 *Software* line of the same name.
@@ -67,7 +67,7 @@ regenerated lock in this change carries both. Worth a glance from the integratio
 owner, because it means a `--locked` build of `main` would have failed before
 this.
 
-**The plan**, `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`: task 5
+**The plan**, `docs/autonomy/the-session-and-the-displays-plan.md`: task 5
 marked done with what it decided, and the header's crate list. Tasks 6 and 7 were
 already named after it, so no new task was written.
 

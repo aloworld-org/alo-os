@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 **Workstream:** v0.5 documents and paper
-(`docs/autonomy/v0-5-documents-and-paper-plan.md`, task 5)
+(`docs/autonomy/documents-and-paper-plan.md`, task 5)
 **Contributor:** Claude (worker in `C:\dev\alo-os-shell`)
 **Status:** ready for integration
 

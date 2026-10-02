@@ -2,7 +2,7 @@
 //!
 //! `docs/features.md`: *LoRA/QLoRA over a granted folder or a tenant's records,
 //! **as a flow rather than a toolchain***. Task 4 of
-//! `docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md`.
+//! `docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md`.
 //!
 //! A toolchain asks somebody to hold a rank, a learning rate and an epoch count
 //! in their head before they may begin. A flow asks them five things they

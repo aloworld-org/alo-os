@@ -296,4 +296,4 @@ build stage, so any file changing anywhere recompiles the three binaries; a
 from costing a Rust build.
 
 **`docs/autonomy/STATE.md`** — reference this report; task 34 done in
-`docs/autonomy/v0-01-delivery-plan.md`, task 35 already written there.
+`docs/autonomy/the-executable-plan.md`, task 35 already written there.

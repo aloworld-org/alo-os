@@ -3,7 +3,7 @@
 **Date:** 2026-09-16
 **Workstream:** v0.5 — access and language
 **Task:** *The screen reader and the tree it reads*
-(`docs/autonomy/v0-5-access-and-language-plan.md`, task 2)
+(`docs/autonomy/access-and-language-plan.md`, task 2)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** written and tested on an **Apple M3 with 8 GB unified memory**,
 macOS 26.5.2; the voices were read in the Lima VM (Ubuntu 24.04 aarch64, kernel

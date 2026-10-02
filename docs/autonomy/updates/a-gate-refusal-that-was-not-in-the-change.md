@@ -93,7 +93,7 @@ So the change I made is the finding, put where it will be read:
   **No gate is weakened, retried, skipped or made conditional**, and I did not
   touch the gate list: a gate is right to refuse a tree it cannot build, whoever
   broke it.
-- **`docs/autonomy/v0-01-delivery-plan.md`** — task 26's entry, already marked
+- **`docs/autonomy/the-executable-plan.md`** — task 26's entry, already marked
   **Done, 2026-09-11** by the first worker with task 27 written after it, now
   also records that it was refused once for something that was not in it. A
   reader of the plan who finds the parked branch or the refused handoff should

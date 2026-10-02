@@ -1,7 +1,7 @@
 # What this machine can do with a file, and what it cannot
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — documents and paper (`docs/autonomy/v0-5-documents-and-paper-plan.md`, task 1)
+**Workstream:** v0.5 — documents and paper (`docs/autonomy/documents-and-paper-plan.md`, task 1)
 **Contributor:** Claude Code worker in `C:\dev\alo-os`, for the repository owner
 **Status:** ready for integration
 
@@ -90,7 +90,7 @@ vocabulary.
 `%%EOF` in the last kilobyte, and an OpenDocument's macro listings without a
 macro.
 
-**`docs/autonomy/v0-5-documents-and-paper-plan.md`** — task 1 marked done.
+**`docs/autonomy/documents-and-paper-plan.md`** — task 1 marked done.
 
 **`crates/alo-bounding/tests`** (second worker, see *Why the first handoff was
 refused*) — `the_boundary_decides_and_forgets.rs` and

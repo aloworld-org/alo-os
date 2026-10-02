@@ -1,7 +1,7 @@
 //! Recognising a `.pages`, a `.heic` and a `.dwg` waits on a decision, and
 //! this file is what holds it there.
 //!
-//! Task 6 of `docs/autonomy/v0-5-documents-and-paper-plan.md` asks for each of
+//! Task 6 of `docs/autonomy/documents-and-paper-plan.md` asks for each of
 //! the three to be recognised from its content and measured against **a real
 //! file with its provenance**. No machine this team has can make one of any of
 //! them, and the three ways out — wait for a real file, build one here, or
@@ -56,7 +56,7 @@ const THE_DECISION: &str =
 const THE_DECISIONS: &str = "docs/decisions";
 
 /// The plan that asked for the decision.
-const THE_PLAN: &str = "docs/autonomy/v0-5-documents-and-paper-plan.md";
+const THE_PLAN: &str = "docs/autonomy/documents-and-paper-plan.md";
 
 /// The heading of the task that produced it.
 const THE_TASK: &str =

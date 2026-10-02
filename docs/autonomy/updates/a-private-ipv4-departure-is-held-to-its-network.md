@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** the local network (v0.5), task 25 of
-`docs/autonomy/v0-5-the-local-network-plan.md`; edits the kernel-boundary crates
+`docs/autonomy/the-local-network-plan.md`; edits the kernel-boundary crates
 owned by the kernel-enforcement lane (ADR 0028), as task 24 did
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the repository owner
 **Status:** ready for integration

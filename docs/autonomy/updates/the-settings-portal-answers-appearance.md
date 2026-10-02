@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 applications, and what they expect
-(`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, task 6: *the
+(`docs/autonomy/applications-and-what-they-expect-plan.md`, task 6: *the
 Settings portal answers appearance, from what the person set*)
 **Contributor:** Claude (Mac lane worker, Lima VM)
 **Status:** ready for integration

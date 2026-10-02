@@ -2,7 +2,7 @@
 //! one unit that may — and on every refusal no unit is started, nothing is run,
 //! and the refusal is in the record.
 //!
-//! Task 8 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`, and
+//! Task 8 of `docs/autonomy/the-broker-and-the-disk-plan.md`, and
 //! [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
 //! accepted option B. Every request here crosses the broker's real decision
 //! (`alo_broker::Broker::heard`) under a genuine token, so what is tested is

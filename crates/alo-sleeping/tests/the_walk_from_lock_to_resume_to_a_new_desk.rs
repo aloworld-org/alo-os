@@ -2,7 +2,7 @@
 //! open on it has gone back to it* — walked through the real values, and held
 //! to the table in the report that records it.
 //!
-//! Task 7 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`: *one
+//! Task 7 of `docs/autonomy/the-session-and-the-displays-plan.md`: *one
 //! walk — lock, suspend with the lid, resume, unlock, dock to a second display,
 //! undock — produces the exact sequence a person meets, recorded in the report
 //! as a table and held by one test that fails if a sentence changes without the

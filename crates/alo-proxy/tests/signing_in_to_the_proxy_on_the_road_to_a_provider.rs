@@ -1,7 +1,7 @@
 //! The road out to a provider's list, signing in to a proxy that asks who this
 //! machine is.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 12: *a proxy an
+//! `docs/autonomy/software-and-the-web-plan.md`, task 12: *a proxy an
 //! organisation's description says wants a name is signed in to on **every road
 //! out alo OS itself uses** — installing and application updates, the system's
 //! own update, **a provider's list** and a turn's question — through
@@ -17,7 +17,7 @@
 //!
 //! # Why this road's test is in `alo-proxy` and not in `alo-models`
 //!
-//! Because `alo-models` belongs to `docs/autonomy/v0-5-the-models-measured-plan.md`,
+//! Because `alo-models` belongs to `docs/autonomy/the-models-measured-plan.md`,
 //! which still has an unfinished task, and a lane does not write in another
 //! plan's crate — `tools/kernel-loop/src/who_owns.rs` refuses it, and the reason
 //! it exists is two machines editing one crate. So the road is exercised from

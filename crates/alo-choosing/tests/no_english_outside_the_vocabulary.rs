@@ -47,7 +47,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// The five crates whose source is read: the ones the plan for where a
-/// person's settings are kept owns (`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`).
+/// person's settings are kept owns (`docs/autonomy/where-a-persons-settings-are-kept-plan.md`).
 const THE_FIVE: [&str; 5] = [
     "alo-appearance",
     "alo-dock",

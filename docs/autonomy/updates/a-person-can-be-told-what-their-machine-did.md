@@ -243,5 +243,5 @@ Not made here — `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` and
 **Queue/roadmap:** lane B's task 5 is done; task 6 (*the account a person asks
 for is the one their machine kept*) is written into
 `docs/autonomy/accounts-and-session-entry-plan.md` and is ready. Nothing in
-`docs/autonomy/v0-01-delivery-plan.md` matched this task, so nothing was marked
+`docs/autonomy/the-executable-plan.md` matched this task, so nothing was marked
 there.

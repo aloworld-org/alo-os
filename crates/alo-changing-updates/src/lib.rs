@@ -8,7 +8,7 @@
 //! [ADR 0053](../../../docs/decisions/0053-an-update-is-carried-out-by-a-unit-the-broker-starts-never-by-the-broker.md)
 //! puts the carrying out behind a unit the broker starts — so that the broker
 //! itself still holds no capability. Task 8 of
-//! `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` built that road. This
+//! `docs/autonomy/the-broker-and-the-disk-plan.md` built that road. This
 //! crate is what that road did not have: **a person in front of it.**
 //!
 //! | | |

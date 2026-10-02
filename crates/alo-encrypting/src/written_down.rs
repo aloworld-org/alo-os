@@ -8,7 +8,7 @@
 //! person having typed their recovery key back first.
 //!
 //! That is the acceptance of task 5 of
-//! `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` — *no road enrols
+//! `docs/autonomy/the-broker-and-the-disk-plan.md` — *no road enrols
 //! encryption without also producing the recovery key and requiring the person
 //! to confirm they kept it* — held by there being no other road rather than by a
 //! check somewhere on the road there is.

@@ -1,6 +1,6 @@
 # One account in one order, and a sentence that waits on a rule
 
-Tasks 13 and 14 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, both
+Tasks 13 and 14 of `docs/autonomy/the-session-and-the-displays-plan.md`, both
 2026-09-26 on the third PC. A follow-up to
 [`every-sentence-at-a-desk-that-changed.md`](every-sentence-at-a-desk-that-changed.md),
 which is **not edited**: it is published, it is still true, and the two findings it

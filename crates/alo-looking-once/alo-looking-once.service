@@ -2,7 +2,7 @@
 # The one look this machine takes on its way up.
 #
 # `alo-looking` has been able to ask whether there is a newer version of this
-# system since task 6 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`,
+# system since task 6 of `docs/autonomy/the-machine-keeps-itself-plan.md`,
 # and until this unit existed **nothing on any alo OS machine ever asked**. From
 # where the person sits, a machine that is never told an update exists cannot be
 # told apart from one that has none.

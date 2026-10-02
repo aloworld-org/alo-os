@@ -1,7 +1,7 @@
 # The snapshot nobody removed
 
 **Date:** 2026-09-21
-**Workstream:** `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 13.
+**Workstream:** `docs/autonomy/the-machine-keeps-itself-plan.md`, task 13.
 **Contributor:** this development PC's worker lane.
 **Status:** ready for integration. Focused acceptance run and recorded below;
 the workspace suite is the supervisor's.

@@ -157,5 +157,5 @@ image that boots*, and no *On the machine* claim moves here.
   it, floats its version, or stops checking its digest. A runtime with no
   weights reads as nothing found, so nothing answers until a model is on the
   disk and chosen."
-- `docs/autonomy/v0-01-evidence.md` (owner's call): the *arrives ready to run*
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` (owner's call): the *arrives ready to run*
   promise can now cite the runtime half as built, weights still owed.

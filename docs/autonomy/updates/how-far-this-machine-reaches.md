@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-20
 **Workstream:** v0.5 applications and what they expect — task 12 of
-`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, first half. The
-task exists because task 7 of `docs/autonomy/v0-5-the-shell-plan.md` — the status
+`docs/autonomy/applications-and-what-they-expect-plan.md`, first half. The
+task exists because task 7 of `docs/autonomy/the-shell-plan.md` — the status
 area's clock, battery, network and volume — named the network monitor portal as
 one of its four blockers.
 **Contributor:** Claude, as a lane in `/root/alo-os-lane-b`
@@ -70,7 +70,7 @@ the other way costs an update that waits until the machine is somewhere cheaper.
 ## Why this crate, and not the portal's
 
 `alo-networks` is where what the network manager reports already lives, made by
-task 3 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`. Reading two more
+task 3 of `docs/autonomy/the-broker-and-the-disk-plan.md`. Reading two more
 of its properties belongs beside the others, and a portal that read NetworkManager
 itself would be a second road to a rented service that ADR 0011 says is asked in
 one place. The portal plan owns the answering; this owns the reading.

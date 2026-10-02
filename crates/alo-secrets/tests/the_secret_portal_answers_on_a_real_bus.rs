@@ -1,7 +1,7 @@
 //! `org.freedesktop.portal.Secret`, served on a real bus and asked by a real
 //! client.
 //!
-//! Task 5 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 5 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! for the Secret portal: the backend `alo-portals` serves answers on a private
 //! session bus the test starts, a `zbus` client — not a mock — calls
 //! `RetrieveSecret` with a pipe as the specification says, and receives what

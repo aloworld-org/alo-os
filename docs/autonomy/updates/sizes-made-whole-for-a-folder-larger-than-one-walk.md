@@ -1,7 +1,7 @@
 # Sizes made whole for a folder larger than one walk, with one walking on
 
 - Date: 2026-09-14
-- Workstream: v0.5 the machine, measured, task 12 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 12 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 

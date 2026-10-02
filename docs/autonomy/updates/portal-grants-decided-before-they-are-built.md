@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — applications, and what they expect
-(`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`), task 1:
+(`docs/autonomy/applications-and-what-they-expect-plan.md`), task 1:
 *A portal request is a grant, and is refused like one*.
 **Contributor:** Claude Code worker under the kernel-loop supervisor (Mac lane,
 gates in the `alo` Lima VM).
@@ -20,7 +20,7 @@ judged against a grant yet.
   It holds the ADR in place, the same way
   `crates/alo-opening/tests/converting_waits_on_its_decision.rs` holds ADR
   0039.
-- **`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`**. Task 1 is
+- **`docs/autonomy/applications-and-what-they-expect-plan.md`**. Task 1 is
   now `**Status:** blocked`, with the reason and the ADR written in, so the loop
   steps over it instead of sending the next worker at the same wall.
 

@@ -3,7 +3,7 @@
 //! down — walked through the real values and held to the table in the report
 //! that records it.
 //!
-//! Task 6 of `docs/autonomy/v0-5-devices-and-media-plan.md`. The five tasks
+//! Task 6 of `docs/autonomy/devices-and-media-plan.md`. The five tasks
 //! before it each end in sentences somebody reads at a moment when something is
 //! already going on: a call, a cable, a battery. Each crate's own tests hold its
 //! sentences one at a time. What none of them can show is **the sequence** —

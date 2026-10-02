@@ -1,7 +1,7 @@
 # Suspend, resume, the lid, and what may keep a machine awake
 
 **Date:** 2026-09-17
-**Workstream:** `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`, task 2.
+**Workstream:** `docs/autonomy/the-session-and-the-displays-plan.md`, task 2.
 It covers `docs/features.md` v0.5 *Power management, battery, sleep on lid close*
 and the inhibit portal's *no sleep mid-presentation*. It depends on task 1, which
 was published on 2026-09-16.

@@ -1,7 +1,7 @@
 # What is filling the disk — a tree of sizes a person can open up
 
 - Date: 2026-09-13
-- Workstream: v0.5 the machine, measured, task 2 (`docs/autonomy/v0-5-the-machine-measured-plan.md`)
+- Workstream: v0.5 the machine, measured, task 2 (`docs/autonomy/the-machine-measured-plan.md`)
 - Contributor: Claude Code, as a development worker under the kernel-loop supervisor
 - Status: **ready for integration**
 
@@ -231,6 +231,6 @@ measuring policy. Read-only, Linux-only with a refusal elsewhere.
 
 ## Proposed queue and roadmap updates
 
-Task 2 of `v0-5-the-machine-measured-plan.md` is marked done in the plan.
+Task 2 of `the-machine-measured-plan.md` is marked done in the plan.
 Tasks 3 and 4 are ready; task 5 depends on 1, 2 and 3, and now has two of the
 three.

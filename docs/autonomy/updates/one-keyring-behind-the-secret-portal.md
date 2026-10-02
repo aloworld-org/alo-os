@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 applications, and what they expect —
-`docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, task 3
+`docs/autonomy/applications-and-what-they-expect-plan.md`, task 3
 **Contributor:** Claude (Mac lane worker), for the repository owner
 **Status:** ready for integration
 

@@ -1,7 +1,7 @@
 //! **Every grade the catalogue ships is what its counts earn, and none owes a
 //! second round.**
 //!
-//! Task 6 of `docs/autonomy/v0-5-the-models-measured-plan.md`. The catalogue
+//! Task 6 of `docs/autonomy/the-models-measured-plan.md`. The catalogue
 //! writes beside every grade how many attempts drove the verbs and how many were
 //! made. This holds those numbers to the bar that made the grade —
 //! [`alo_driving::grade_of`], the arithmetic `Measured::grade` is — so a grade

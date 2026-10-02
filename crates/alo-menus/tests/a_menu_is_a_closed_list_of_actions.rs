@@ -1,7 +1,7 @@
 //! A context menu is a closed list of actions the thing under the pointer
 //! offers, each of which a person could reach another way.
 //!
-//! `docs/autonomy/v0-5-hands-on-the-desktop-plan.md` task 4, second acceptance.
+//! `docs/autonomy/hands-on-the-desktop-plan.md` task 4, second acceptance.
 //! ADR 0009 is the rule behind *another way*: a machine has to be whole with the
 //! agent switched off, and the same argument holds for a person who never opens
 //! a context menu — from the keyboard, through a screen reader, with one hand.

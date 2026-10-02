@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 **Workstream:** v0.5 the broker and the disk — task 3 of
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` (`ROADMAP.md`: ★ *System verbs
+`docs/autonomy/the-broker-and-the-disk-plan.md` (`ROADMAP.md`: ★ *System verbs
 through the privileged broker*, and *Corporate proxy support, machine-wide*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os-2`
 **Status:** ready for integration. The code and its tests, run in WSL. Nothing has

@@ -568,7 +568,7 @@ fn the_model_service_is_pointed_at_the_weights_and_at_the_loopback_address() {
 /// publisher's port 443 and none reached the host side of the container's
 /// bridge, while an unfiltered process in the same container was answered
 /// (`docs/quirks.md`). A boot is still owed, and
-/// `docs/autonomy/v0-01-evidence.md` is where that stays.
+/// `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is where that stays.
 #[test]
 fn the_model_service_may_reach_nothing_off_this_machine() {
     let image = the_image();
@@ -616,7 +616,7 @@ fn assigned<'a>(stated: &[&'a str], variable: &str) -> Vec<&'a str> {
 
 /// **This image says what disk a machine boots from, and it is written by the
 /// base's own tool.** An image is not a disk, and every promise in
-/// `docs/autonomy/v0-01-evidence.md` that said *no machine has ever* was
+/// `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` that said *no machine has ever* was
 /// waiting on nothing more exotic than that. The tool is not pinned separately
 /// because it is already pinned: `bootc install to-disk` is run out of the base
 /// image, so `THE_BASE`'s digest is the version of the partitioner.

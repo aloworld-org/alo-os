@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-21
 **Workstream:** v0.5 — the machine keeps itself
-(`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, task 12, *What the base
+(`docs/autonomy/the-machine-keeps-itself-plan.md`, task 12, *What the base
 has already written down*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-3` on the development PC,
 for the owner
@@ -269,7 +269,7 @@ Not made here — `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` and
   update at every start instead of failing at every start. And the two virtual
   machines that measure an update are installed onto the filesystem alo OS
   actually ships.*
-- **QUEUE.md**: task 12 of `v0-5-the-machine-keeps-itself-plan.md` done; task 13
+- **QUEUE.md**: task 12 of `the-machine-keeps-itself-plan.md` done; task 13
   (*the snapshot nobody removed*) is the next one ready and depends on nothing in
   this plan.
 - **STATE.md**: reference this report.

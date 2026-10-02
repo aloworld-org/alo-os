@@ -1,7 +1,7 @@
 # ADR 0066 — Which system a machine starts by default is changed by a verb, and kept in one place both systems can reach
 
 **Status:** **accepted, 2026-09-23.** Written to unblock task 17 of
-`docs/autonomy/v0-5-the-installer-plan.md`, which found the hole and said it
+`docs/autonomy/the-installer-plan.md`, which found the hole and said it
 probably needed a decision: it does. Nothing is built in the change that adds
 this.
 **Date:** 2026-09-23

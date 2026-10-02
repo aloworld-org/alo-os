@@ -3,7 +3,7 @@
 **Status:** accepted, 2026-09-26 — with the two amendments under *As the owner
 accepted it*, which are part of the decision rather than commentary on it.
 
-Written by task 13 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`,
+Written by task 13 of `docs/autonomy/the-session-and-the-displays-plan.md`,
 which cannot be built until it is answered: it has to change a sentence a person
 reads, and nothing in this repository says whether that is allowed or how.
 

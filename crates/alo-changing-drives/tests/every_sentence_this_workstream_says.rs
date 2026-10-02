@@ -1,7 +1,7 @@
 //! Every sentence the broker's workstream can say, against the vocabulary a
 //! real process loads — and every crate in it that deliberately says nothing.
 //!
-//! Task 7 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *every
+//! Task 7 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *every
 //! sentence these crates can say is in the vocabulary with a translator's note
 //! … no sentence names LUKS, TPM, CUPS, NetworkManager, a socket or root.*
 //!

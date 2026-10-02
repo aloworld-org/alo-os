@@ -2,7 +2,7 @@
 //! open this machine* — walked through the real values, and held to the table
 //! in the report that records it.
 //!
-//! Task 7 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *one walk —
+//! Task 7 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *one walk —
 //! the agent proposes adding a printer, the person approves, the machine joins
 //! a network, a USB drive mounts and ejects, an update is applied through the
 //! broker — produces the exact sequence a person meets, recorded as a table and

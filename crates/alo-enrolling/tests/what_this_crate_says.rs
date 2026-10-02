@@ -40,7 +40,7 @@ fn everything_this_crate_says_is_something_the_machine_can_say() {
 
 /// **No sentence names anything alo OS has rather than the person.** Not LUKS,
 /// not a TPM, not the tools, not a keyslot, not a device, not *root*. This is
-/// the rule task 7 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`
+/// the rule task 7 of `docs/autonomy/the-broker-and-the-disk-plan.md`
 /// applies to every crate in this workstream, held here for this one so that a
 /// sentence written later fails beside the sentence it was written with.
 #[test]

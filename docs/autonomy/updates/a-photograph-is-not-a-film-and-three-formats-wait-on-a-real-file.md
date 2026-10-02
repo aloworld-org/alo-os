@@ -1,7 +1,7 @@
 # A photograph is not a film, and three formats wait on a real file
 
 **Date:** 2026-09-19
-**Workstream:** `docs/autonomy/v0-5-documents-and-paper-plan.md`, task 6 —
+**Workstream:** `docs/autonomy/documents-and-paper-plan.md`, task 6 —
 *A `.pages`, a `.heic` and a `.dwg` — recognised, and converted or explained*
 **Contributor:** this development PC, one worker, one working tree
 **Status:** ready for integration. The task itself is **decided rather than

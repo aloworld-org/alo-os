@@ -175,6 +175,6 @@ lane's crate was edited.
 - **`publish.sh` and `gates-touched.sh` should run the judge whenever the tree
   has a known failing binary**, not only when a gate reports something
   unrecognised. That is a lane-script change, outside this repository.
-- `v0-5-documents-and-paper-plan.md` task 6 still carries the Pages account
+- `documents-and-paper-plan.md` task 6 still carries the Pages account
   twice, from the 2026-09-19 rebase resolved by keeping both sides. Recorded in
   the previous report and still true.

@@ -34,7 +34,7 @@ not claim physical Settings acceptance. No new task was appended to the complete
 plan, as directed by the supervisor's worker instructions.
 
 Prepared operator edits to `docs/autonomy/a-new-machine-becomes-a-lane.md` and
-`docs/autonomy/v0-5-the-models-measured-plan.md` are preserved and included in the
+`docs/autonomy/the-models-measured-plan.md` are preserved and included in the
 handoff: they assign this task to lane B and release the historical choosing-crate
 claim. No model measurement is marked complete by those edits.
 

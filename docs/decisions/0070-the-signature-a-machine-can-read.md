@@ -3,7 +3,7 @@
 **Status:** proposed, 2026-09-26.
 
 Written by the Mac lane from task 8 of
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, whose first half —
+`docs/autonomy/the-machine-keeps-itself-plan.md`, whose first half —
 *the shipped image carries no `policy.json` at all* — turned out not to be
 writable without answering this. A `policy.json` **is** the statement of what a
 machine will accept, so its content is this question's answer and not a step
@@ -183,7 +183,7 @@ rollback was equally unavailable to a checking machine; after it, one release is
 
 What resolves it is **the second signed release**, at which point there are two
 verifiable images and a rollback has somewhere to go. That also corrects the
-shape of task 8 of `../autonomy/v0-5-the-machine-keeps-itself-plan.md`: its
+shape of task 8 of `../autonomy/the-machine-keeps-itself-plan.md`: its
 acceptance is *one signed release updating to another*, so it needs **two
 signings, not one**. The migration makes the policy provable now; the task still
 waits on the next release.

@@ -233,7 +233,7 @@ measuring box can hold) is next and was already written.
 
 **`docs/autonomy/STATE.md`** — reference this report.
 
-**`docs/autonomy/v0-01-evidence.md`** — the three promises the ledger carries
+**`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`** — the three promises the ledger carries
 against *there is no setup flow* now have a flow with no surface. That is a
 change in what is owed rather than a promise met, and it is the integration
 owner's to record: what exists is the decision, the refusals and the writing;

@@ -7,7 +7,7 @@ a model can drive the verbs, measured by us), [ADR 0006](0006-the-pinned-model-r
 (the model runtime is a pinned engine, configured and never patched),
 [ADR 0001](0001-the-capability-model.md) (every capability is an enumerated verb
 with validated arguments), task 7 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`, `crates/alo-models`,
+`docs/autonomy/the-models-measured-plan.md`, `crates/alo-models`,
 `crates/alo-driving`, `crates/alo-protocol`, `crates/alo-asking`, `crates/alo-turn`
 
 ## The question in one line

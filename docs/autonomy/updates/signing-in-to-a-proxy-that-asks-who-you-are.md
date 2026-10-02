@@ -1,7 +1,7 @@
 # Signing in to a proxy that asks who you are
 
 **Date:** 2026-09-20
-**Workstream:** v0.5 software and the web — `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 12
+**Workstream:** v0.5 software and the web — `docs/autonomy/software-and-the-web-plan.md`, task 12
 **Contributor:** this development PC's software-and-the-web lane
 **Status:** ready for integration
 
@@ -152,7 +152,7 @@ somebody adding a road will see it, and it is the list of unit files that need
 the line.
 
 **2. The provider road's test lives in `alo-proxy`, not in `alo-models`.**
-`alo-models` belongs to `docs/autonomy/v0-5-the-models-measured-plan.md`, whose
+`alo-models` belongs to `docs/autonomy/the-models-measured-plan.md`, whose
 task 9 is *blocked — not pursued, by the owner's decision of 2026-09-15* and so
 is not marked done; `tools/kernel-loop/src/who_owns.rs` therefore refuses a lane
 that writes in that crate, and the rule is right — two machines in one crate is

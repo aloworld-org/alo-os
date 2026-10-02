@@ -19,7 +19,7 @@
 //! `alo_proxy::Carried`.
 //!
 //! That is the whole of the constraint in
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 11: *nothing here
+//! `docs/autonomy/software-and-the-web-plan.md`, task 11: *nothing here
 //! re-decides which way a road goes — `alo-proxy` decides, and this is the
 //! crate that asks it.*
 //!

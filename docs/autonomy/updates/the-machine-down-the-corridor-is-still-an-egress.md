@@ -1,7 +1,7 @@
 # The machine down the corridor is still an egress
 
 - Date: 2026-09-13
-- Workstream: v0.5 the local network, task 3 (`docs/autonomy/v0-5-the-local-network-plan.md`)
+- Workstream: v0.5 the local network, task 3 (`docs/autonomy/the-local-network-plan.md`)
 - Contributor: Claude Code, by hand — no worker could run
 - Status: **the promise, and the exception that would have ended it**
 

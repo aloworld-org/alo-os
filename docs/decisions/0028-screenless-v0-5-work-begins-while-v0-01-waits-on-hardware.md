@@ -6,7 +6,7 @@ the owner's instruction to keep building while the certified machine is bought.
 **Proposed by:** the v0.01 delivery workstream
 **Context:** `CLAUDE.md` (*scope is gated: nothing gets built that isn't in
 `docs/features.md` with a tier, inside the current phase*), `ROADMAP.md` (the
-v0.01 exit gate), `docs/autonomy/v0-01-evidence.md`,
+v0.01 exit gate), `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`,
 [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md),
 [ADR 0015](0015-the-kernel-learns-what-a-turn-is.md),
 [ADR 0024](0024-what-a-person-signs-in-at.md), `docs/hardware.md`

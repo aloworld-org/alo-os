@@ -1,7 +1,7 @@
 //! What a fresh machine has, so it is not helpless — held to each clause of the
 //! plan's acceptance, with each refusal beside what it refuses.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2: a decided list of
+//! `docs/autonomy/software-and-the-web-plan.md`, task 2: a decided list of
 //! pinned upstream applications, installed, updated and removed the way a
 //! person does any application; any of them removable, the browser included;
 //! and **the terminal a person's and not an agent's**, held against every verb

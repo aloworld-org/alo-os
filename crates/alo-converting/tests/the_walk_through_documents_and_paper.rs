@@ -2,7 +2,7 @@
 //! opened, and here is what would* — walked through the real verbs, and held to
 //! the table in the report that records it.
 //!
-//! Task 5 of `docs/autonomy/v0-5-documents-and-paper-plan.md`. The four tasks
+//! Task 5 of `docs/autonomy/documents-and-paper-plan.md`. The four tasks
 //! before it each end in sentences a person reads at the moment they are
 //! already frustrated; each crate's own tests hold its sentences one at a time.
 //! What none of them can show is **the sequence** — whether the sentences read

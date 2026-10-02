@@ -44,7 +44,7 @@ of a list somebody wrote once. Eleven modules, one responsibility each:
 after it recording where verbs are declared, because the check reads that
 convention and a convention a check depends on is a rule.
 
-**`docs/autonomy/v0-01-evidence.md`** — the entry for this promise now names the
+**`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`** — the entry for this promise now names the
 test and this report, with what the check cannot reach written as what is owed.
 The audit's own summary paragraphs are left exactly as they were and the closure
 is recorded under them: a finding rewritten by whoever closed it is a finding
@@ -186,7 +186,7 @@ compositor; it reads two documents and a manifest.
 - v0.01's *anything an agent verb can do, a person can do by hand* has evidence:
   `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`. Five of the
   audit's six promises with no evidence at all remain.
-- Task 14 of `docs/autonomy/v0-01-delivery-plan.md` is marked done in this change,
+- Task 14 of `docs/autonomy/the-executable-plan.md` is marked done in this change,
   and task 15 — *a machine that cannot reach a model says so once* — is written
   there for the next worker.
 - `CLAUDE.md`'s **Map** lists the documents an outside contributor is sent to, and
@@ -231,6 +231,6 @@ to anybody outside this team, that is the sentence they will find.
 - `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`
 - `docs/by-hand.md`
 - `docs/contracts/agent-verbs.md`
-- `docs/autonomy/v0-01-evidence.md`
-- `docs/autonomy/v0-01-delivery-plan.md`
+- `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
+- `docs/autonomy/the-executable-plan.md`
 - `docs/autonomy/updates/every-verbs-by-hand-answer.md`

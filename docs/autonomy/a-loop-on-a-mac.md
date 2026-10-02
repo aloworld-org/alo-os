@@ -15,7 +15,7 @@ can answer the questions every report so far has ended with — *is this model
 verbs?* — and it can do so on lane B's old crates, which are pure Rust and
 currently idle.
 
-The plan a Mac lane runs is `docs/autonomy/v0-5-the-models-measured-plan.md`.
+The plan a Mac lane runs is `docs/autonomy/the-models-measured-plan.md`.
 
 ## The rule it is held to
 
@@ -81,7 +81,7 @@ purpose.
 5. **Run it**, from the checkout:
 
    ```sh
-   export ALO_LOOP_PLAN=docs/autonomy/v0-5-the-models-measured-plan.md
+   export ALO_LOOP_PLAN=docs/autonomy/the-models-measured-plan.md
    export ALO_KERNEL_LOOP_LINUX='limactl shell alo sudo'   # or: orb -m alo -u root
    export ALO_KERNEL_LOOP_WORKER="$(command -v claude)"
    ./tools/kernel-loop/target/release/alo-kernel-loop run

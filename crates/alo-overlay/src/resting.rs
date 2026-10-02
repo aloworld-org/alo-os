@@ -1,7 +1,7 @@
 //! What the overlay shows when the agent has nothing to say yet.
 //!
 //! The whole of it, in one value: the state the machine stands in, and the
-//! three readings under it. `docs/autonomy/v0-01-delivery-plan.md`, task 3 —
+//! three readings under it. `docs/autonomy/the-executable-plan.md`, task 3 —
 //! *the three things `alo-agentd` already answers — what is granted, what
 //! model would answer, and whether anything left the machine — are values this
 //! repository has and no screen has ever shown.*

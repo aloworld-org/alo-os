@@ -8,7 +8,7 @@ and what changes if this is accepted is a line in `docs/features.md`'s v0.5
 section rather than anything on a v0.01 machine.
 **Date:** 2026-09-11
 **Proposed by:** the v0.01 delivery workstream, from task 32 of
-`docs/autonomy/v0-01-delivery-plan.md`
+`docs/autonomy/the-executable-plan.md`
 **Context:** [ADR 0001](0001-the-capability-model.md) §2 and §5 (the agent is a
 login of its own, and never holds authority the person does not),
 [ADR 0005](0005-applications-are-sandboxed-and-ask.md) (applications are

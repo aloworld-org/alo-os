@@ -1,6 +1,6 @@
 //! **What was blurred is not in the saved file.**
 //!
-//! Task 3 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. A person blurs
+//! Task 3 of `docs/autonomy/capture-and-the-room-plan.md`. A person blurs
 //! a password, a home address, somebody else's name, and then sends the picture
 //! to a colleague, who opens it in a program nobody here chose. If the blur were
 //! a layer over the original, the first person to move it would read what was

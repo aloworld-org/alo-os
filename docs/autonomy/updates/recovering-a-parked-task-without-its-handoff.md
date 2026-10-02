@@ -69,7 +69,7 @@ Source:
 - `tools/kernel-loop/src/main.rs` — the reconstructed account on the terminal
   and in the journal, the two reasons a recovery can be not ready to gate said
   separately, and a paragraph in the crate documentation.
-- `docs/autonomy/v0-01-delivery-plan.md` — task 35 marked done, and task 36
+- `docs/autonomy/the-executable-plan.md` — task 35 marked done, and task 36
   written after it.
 
 ### The refusals

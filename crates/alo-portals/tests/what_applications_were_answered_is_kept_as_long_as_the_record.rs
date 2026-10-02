@@ -1,7 +1,7 @@
 //! What applications were answered is kept as long as the machine's record, and
 //! no longer.
 //!
-//! Task 9 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`,
+//! Task 9 of `docs/autonomy/applications-and-what-they-expect-plan.md`,
 //! each clause of its acceptance a test here:
 //!
 //! - **shortened under the same `[record].keeping` rule, read through

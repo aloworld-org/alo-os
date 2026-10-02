@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 **Workstream:** v0.5 — the local network
-(`docs/autonomy/v0-5-the-local-network-plan.md`, task 27)
+(`docs/autonomy/the-local-network-plan.md`, task 27)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude` — second worker on the task
 **Status:** ready for integration
 **Follow-up to:** `a-machine-reachable-on-both-networks.md`, which is this task's

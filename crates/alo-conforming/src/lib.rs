@@ -1,7 +1,7 @@
 //! **EN 301 549's clauses that apply to this shell, each held to the evidence
 //! that meets it.**
 //!
-//! Task 4 of `docs/autonomy/v0-5-access-and-language-plan.md`.
+//! Task 4 of `docs/autonomy/access-and-language-plan.md`.
 //! `docs/features.md` sets the bar for v1: *procurement asks for the report, not
 //! the intention.* This is what the report will be written from.
 //!

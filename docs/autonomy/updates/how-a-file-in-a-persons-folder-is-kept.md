@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15
 **Workstream:** v0.5 — where a person's settings are kept
-(`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 1,
+(`docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 1,
 *What keeping one of these files means*), implementing
 [ADR 0038](../../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md).
 **Contributor:** Claude Code worker, `C:\dev\alo-os-b`.

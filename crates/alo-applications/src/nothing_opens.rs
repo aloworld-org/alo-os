@@ -1,6 +1,6 @@
 //! Why nothing opens a file, as a value with a sentence.
 //!
-//! `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`, task 4:
+//! `docs/autonomy/applications-and-what-they-expect-plan.md`, task 4:
 //! *the answer for a kind nothing opens is a sentence in the vocabulary rather
 //! than a fallback to a text editor.* A text editor handed a PDF shows a person
 //! a screen of noise and teaches them that the machine does not know what their

@@ -9,7 +9,7 @@
 //!   `crates/alo-brokerd`, writes to the machine's own record file.
 //! - [`Carrying`] is what carries a verb out. `crates/alo-brokerd` carries the
 //!   network's verbs and the storage verbs (tasks 3 and 4 of
-//!   `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`); printers are task
+//!   `docs/autonomy/the-broker-and-the-disk-plan.md`); printers are task
 //!   2, and the updates wait on ADR 0053. Each adds its verbs there and nothing
 //!   else.
 

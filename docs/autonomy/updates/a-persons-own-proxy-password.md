@@ -1,7 +1,7 @@
 # A person's own proxy password, set on the machine that is theirs
 
 **Date:** 2026-09-20
-**Workstream:** v0.5 software and the web — `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 13
+**Workstream:** v0.5 software and the web — `docs/autonomy/software-and-the-web-plan.md`, task 13
 **Contributor:** this development PC's software-and-the-web lane
 **Status:** ready for integration
 
@@ -38,7 +38,7 @@ constraint says: *if carrying this to the broker needs a change to the broker's
 own door, and that door turns out to be another plan's, the task stops at a
 decision record.* The broker's door and its closed verb list are
 `crates/alo-broker`, which belongs to
-`docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` and which still has
+`docs/autonomy/the-broker-and-the-disk-plan.md` and which still has
 unfinished tasks — so a twelfth verb was not available. **Not one line of
 `crates/alo-broker` is touched by this change.**
 

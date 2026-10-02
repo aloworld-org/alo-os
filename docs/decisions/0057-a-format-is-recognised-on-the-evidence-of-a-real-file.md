@@ -2,12 +2,12 @@
 
 **Status:** accepted, 2026-09-20 — option **A**, with every decision under
 *the recommendation* as written. Written 2026-09-19 by task 6 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md`, which could not be built until
+`docs/autonomy/documents-and-paper-plan.md`, which could not be built until
 it was answered. **What answered it is that all three files now exist**, each
 with its provenance beside it; how each was obtained is below, because the
 answer to this decision is evidence rather than an opinion.
 **Date:** 2026-09-19, accepted 2026-09-20
-**Context:** `docs/autonomy/v0-5-documents-and-paper-plan.md` task 6;
+**Context:** `docs/autonomy/documents-and-paper-plan.md` task 6;
 `docs/features.md`'s ★ *"I can't open this file." A `.pages`, a `.heic`, a
 `.dwg`: the system converts it where it can, and where it cannot says plainly
 what will open it, instead of shrugging*;

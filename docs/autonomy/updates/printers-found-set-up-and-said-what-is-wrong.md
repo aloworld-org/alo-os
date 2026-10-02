@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-14
 **Workstream:** v0.5 documents and paper — task 3 of
-`docs/autonomy/v0-5-documents-and-paper-plan.md` (`ROADMAP.md`: **Printing**,
+`docs/autonomy/documents-and-paper-plan.md` (`ROADMAP.md`: **Printing**,
 ★ *Printers, solved — found, set up, and fixed when they stop*)
 **Contributor:** Claude, as a worker in `C:\dev\alo-os`
 **Status:** ready for integration — the code. Nothing here has printed on a

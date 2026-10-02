@@ -1,7 +1,7 @@
 //! **How a date, a time and a number are written, per language, from CLDR.**
 //!
 //! `ROADMAP.md` v0.5's *Language*, the half that is not `alo-strings`, and task
-//! 6 of `docs/autonomy/v0-5-access-and-language-plan.md`.
+//! 6 of `docs/autonomy/access-and-language-plan.md`.
 //!
 //! # Rented, never written down here
 //!

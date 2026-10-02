@@ -288,7 +288,7 @@ fn no_box_denies_work_a_plan_says_is_done() {
 /// **No task's status word is contradicted by its own body.**
 ///
 /// Seventy-four were, across six plans, on 2026-09-27 — thirty-two of them in
-/// `v0-01-delivery-plan.md`, a release that shipped. `SHARED_MAIN.md` had a rule
+/// `the-executable-plan.md`, a release that shipped. `SHARED_MAIN.md` had a rule
 /// telling every reader to route around them; this is the check that rule was
 /// standing in for.
 #[test]

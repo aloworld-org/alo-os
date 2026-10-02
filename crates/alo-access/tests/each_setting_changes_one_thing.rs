@@ -1,7 +1,7 @@
 //! **Each setting changes one named thing, and every one of them can be turned
 //! on before anybody has an account.**
 //!
-//! Task 1 of `docs/autonomy/v0-5-access-and-language-plan.md`. Two promises are
+//! Task 1 of `docs/autonomy/access-and-language-plan.md`. Two promises are
 //! easy to write in a document and hard to keep, so they are held here instead:
 //! that a setting turned on produces a value another crate reads — not a
 //! sentence somebody has to implement — and that a person who needs one of these

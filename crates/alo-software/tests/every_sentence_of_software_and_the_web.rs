@@ -2,7 +2,7 @@
 //! vocabulary the machine speaks from, with a translator's note, one line each,
 //! and naming none of the machinery rented to do the work.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 7: *every sentence
+//! `docs/autonomy/software-and-the-web-plan.md`, task 7: *every sentence
 //! these crates can say is in the vocabulary with a translator's note* and *no
 //! sentence names Flatpak, Flathub by its tooling, AT-SPI, D-Bus or a browser
 //! engine.* Each crate's own `words.rs` holds a list of words it forbids; those

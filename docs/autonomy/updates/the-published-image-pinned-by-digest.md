@@ -1,7 +1,7 @@
 # The published image, pinned by digest and held to the recipe
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`,
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`,
 task 1 — *The image is published from GitHub, signed, and pinned*)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration. The owner's half (build, push, sign, verify)
@@ -82,7 +82,7 @@ repository checks that everything else agrees with it.
   - the shipped workflow keeps every rule;
   - the plan marks task 1 done and names `image/pinned.toml`. This replaces the
     test that required the task *not* to be marked done.
-- **`docs/autonomy/v0-5-the-installer-plan.md`** — task 1 is now
+- **`docs/autonomy/the-installer-plan.md`** — task 1 is now
   **Done, 2026-09-15**. Task 2 comes after it, so no new task was written.
 
 **Change description for the changelog:** *The published alo OS 0.0.1 image is

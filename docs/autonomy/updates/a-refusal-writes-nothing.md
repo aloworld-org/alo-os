@@ -1,7 +1,7 @@
 # A refusal writes nothing the installer does not own
 
 **Date:** 2026-09-15
-**Workstream:** v0.5 installer (`docs/autonomy/v0-5-the-installer-plan.md`, task 8)
+**Workstream:** v0.5 installer (`docs/autonomy/the-installer-plan.md`, task 8)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-shell`, for the owner
 **Status:** ready for integration.
 
@@ -75,7 +75,7 @@ disk when its flash is SMM-only*.
     nothing to the disk (row 3 above).
 - `docs/quirks.md`: the entry above.
 - `docs/booting.md`: the refusal passes; the install still does not (task 9).
-- `docs/autonomy/v0-5-the-installer-plan.md`: task 8 marked done. Tasks 9 and 10
+- `docs/autonomy/the-installer-plan.md`: task 8 marked done. Tasks 9 and 10
   follow it.
 
 **The sentence was not touched.** Nothing of ours wrote, so no code in the

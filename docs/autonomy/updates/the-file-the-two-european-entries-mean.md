@@ -262,7 +262,7 @@ I did not edit `CHANGELOG.md`, `ROADMAP.md`, `docs/autonomy/QUEUE.md` or
 
 **QUEUE.md / STATE.md:** lane B task 15 done, task 16 (*The pin an entry states,
 and what the machine actually got*) written and ready. No task in
-`docs/autonomy/v0-01-delivery-plan.md` matched this one — its task 31 is the
+`docs/autonomy/the-executable-plan.md` matched this one — its task 31 is the
 weights-aboard work, which is lane B's task 10 and still blocked — so nothing
 was marked there.
 

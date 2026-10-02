@@ -2,7 +2,7 @@
 //! left — walked through the real values, and held to the table in the report
 //! that records it.
 //!
-//! Task 12 of `docs/autonomy/v0-5-the-session-and-the-displays-plan.md`. Task 7
+//! Task 12 of `docs/autonomy/the-session-and-the-displays-plan.md`. Task 7
 //! walks one person from locking their machine to docking it at another desk,
 //! and its steps 6 and 7 — the sleep and the wake — **say nothing**, which was
 //! right when nothing had been decided about a desk that changed while the

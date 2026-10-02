@@ -302,5 +302,5 @@ whether it works is a test on a certified machine.
 It does not answer for anything but verbs. ADR 0009's rule is wider — *no surface
 may be left out because an agent can do it instead* — and applying it to
 `docs/features.md` as a whole is what found the file search that nobody had
-promised. `crates/alo-reconciling` and `docs/autonomy/v0-01-evidence.md` are that
+promised. `crates/alo-reconciling` and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are that
 half.

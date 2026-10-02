@@ -1,6 +1,6 @@
 //! An application's request to open a web address, judged before anything opens.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 3: *the browser from
+//! `docs/autonomy/software-and-the-web-plan.md`, task 3: *the browser from
 //! task 2 opens web addresses from any application through the open-with portal.*
 //! This is that request's decision — the open-with question with a web address in
 //! place of a file — and it is here rather than in `alo-portals` for one reason:

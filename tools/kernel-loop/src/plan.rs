@@ -528,26 +528,26 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
     fn every_plan_this_repository_drives_holds_only_tasks() {
         for named in [
             THE_PLAN,
-            "docs/autonomy/v0-01-delivery-plan.md",
+            "docs/autonomy/the-executable-plan.md",
             "docs/autonomy/accounts-and-session-entry-plan.md",
             "docs/autonomy/providers-and-models-plan.md",
-            "docs/autonomy/v0-5-the-local-network-plan.md",
-            "docs/autonomy/v0-5-the-machine-measured-plan.md",
-            "docs/autonomy/v0-5-the-models-measured-plan.md",
-            "docs/autonomy/v0-5-applications-and-what-they-expect-plan.md",
-            "docs/autonomy/v0-5-the-installer-plan.md",
-            "docs/autonomy/v0-5-the-shell-plan.md",
-            "docs/autonomy/v0-5-the-machine-keeps-itself-plan.md",
-            "docs/autonomy/v0-5-documents-and-paper-plan.md",
-            "docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md",
-            "docs/autonomy/v0-5-the-session-and-the-displays-plan.md",
-            "docs/autonomy/v0-5-hands-on-the-desktop-plan.md",
-            "docs/autonomy/v0-5-capture-and-the-room-plan.md",
-            "docs/autonomy/v0-5-devices-and-media-plan.md",
-            "docs/autonomy/v0-5-access-and-language-plan.md",
-            "docs/autonomy/v0-5-software-and-the-web-plan.md",
-            "docs/autonomy/v0-5-the-broker-and-the-disk-plan.md",
-            "docs/autonomy/v0-5-models-a-person-adapts-and-subscribes-to-plan.md",
+            "docs/autonomy/the-local-network-plan.md",
+            "docs/autonomy/the-machine-measured-plan.md",
+            "docs/autonomy/the-models-measured-plan.md",
+            "docs/autonomy/applications-and-what-they-expect-plan.md",
+            "docs/autonomy/the-installer-plan.md",
+            "docs/autonomy/the-shell-plan.md",
+            "docs/autonomy/the-machine-keeps-itself-plan.md",
+            "docs/autonomy/documents-and-paper-plan.md",
+            "docs/autonomy/where-a-persons-settings-are-kept-plan.md",
+            "docs/autonomy/the-session-and-the-displays-plan.md",
+            "docs/autonomy/hands-on-the-desktop-plan.md",
+            "docs/autonomy/capture-and-the-room-plan.md",
+            "docs/autonomy/devices-and-media-plan.md",
+            "docs/autonomy/access-and-language-plan.md",
+            "docs/autonomy/software-and-the-web-plan.md",
+            "docs/autonomy/the-broker-and-the-disk-plan.md",
+            "docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md",
             "docs/autonomy/the-smallest-canvas-worth-showing.md",
             "docs/autonomy/the-canvas-and-its-places.md",
             "docs/autonomy/applications-people-already-use.md",
@@ -642,7 +642,7 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
                 // ready`, and discovering `**Done, 2026-09-07.**` sixty lines
                 // below it with the code and seven tests behind it. A twenty-line
                 // sweep then found three across the repository — this plan's task
-                // 3, `v0-01-delivery-plan.md` task 27, `accounts-and-session-entry-plan.md` task
+                // 3, `the-executable-plan.md` task 27, `accounts-and-session-entry-plan.md` task
                 // 5 — all three genuinely done, all three saying `ready`.
                 //
                 // The assertion above and this one are the two halves of one

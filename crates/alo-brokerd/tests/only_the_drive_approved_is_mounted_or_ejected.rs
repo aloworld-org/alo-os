@@ -2,7 +2,7 @@
 //! approved, as the disk service reports it now, for the signed-in person — and
 //! nothing else, ever.
 //!
-//! Task 4 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *the storage
+//! Task 4 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *the storage
 //! verbs — mount a removable drive a person plugged in, eject it — take the drive
 //! by its stable identity, never format, repartition or erase anything, and a
 //! removable drive mounts for the signed-in person only, with no grant made to an

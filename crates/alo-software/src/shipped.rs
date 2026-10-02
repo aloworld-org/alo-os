@@ -1,6 +1,6 @@
 //! What a fresh machine has, so it is not helpless: the decided list, read.
 //!
-//! `docs/autonomy/v0-5-software-and-the-web-plan.md`, task 2. The list itself is
+//! `docs/autonomy/software-and-the-web-plan.md`, task 2. The list itself is
 //! data — `crates/alo-software/shipped.toml` ([`WHERE_IT_IS`]) — because the
 //! installer plan reads it to name the fresh machine's applications to the
 //! image, and a list copied into `image/` would be a second list that could

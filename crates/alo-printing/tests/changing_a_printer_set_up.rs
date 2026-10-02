@@ -2,7 +2,7 @@
 //! machine prints on — each one request and nothing else — and every way the
 //! printing service can say no is a refusal rather than a change.
 //!
-//! What `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md` task 2 needs from
+//! What `docs/autonomy/the-broker-and-the-disk-plan.md` task 2 needs from
 //! this crate: the three changes the privileged broker carries out are
 //! `alo-printing`'s own decided operations, and the identity each printer
 //! crosses into the broker under is what the printing service reported.

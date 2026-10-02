@@ -3,7 +3,7 @@
 //! EN 301 549 clause 5.6.1 — *a control that locks or toggles must say which
 //! way it is set without being looked at* — and 11.4.1.2's *what state it is
 //! in*. `crates/alo-conforming` pointed both at task 8 of
-//! `docs/autonomy/v0-5-access-and-language-plan.md`.
+//! `docs/autonomy/access-and-language-plan.md`.
 //!
 //! # What this is for, which is narrower than it sounds
 //!

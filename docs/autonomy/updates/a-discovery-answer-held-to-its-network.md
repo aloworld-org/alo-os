@@ -1,7 +1,7 @@
 # A discovery answer leaves on the network the question arrived on
 
 **Date:** 2026-09-16
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 28)
+**Workstream:** v0.5 — the local network (`docs/autonomy/the-local-network-plan.md`, task 28)
 **Contributor:** Claude Code, in `C:\dev\alo-os-claude`
 **Status:** ready for integration
 
@@ -231,7 +231,7 @@ which run inside namespaces of their own and are unchanged by this task.
 > with nothing configured. What the machine says about itself is unchanged.
 
 Roadmap and queue: nothing to tick that is not the plan's own task 28, marked done
-in `docs/autonomy/v0-5-the-local-network-plan.md` in this change, with task 29
+in `docs/autonomy/the-local-network-plan.md` in this change, with task 29
 written after it (*A cable pulled is a network this machine is no longer found on,
 and one plugged in is found at once*) — the real-kernel measurement no test in this
 repository has yet made, and the one place a socket held to an interface that has

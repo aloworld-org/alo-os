@@ -1,4 +1,6 @@
-# v0.5 — capture, and the room you are sitting in
+# Capture, and the room you are sitting in
+
+*Named `v0.5 — capture, and the room you are sitting in` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** one `ROADMAP.md` v0.5 line, and its star — *Capture: screenshots,
 annotation, screen recording with audio, screen sharing — and an indicator

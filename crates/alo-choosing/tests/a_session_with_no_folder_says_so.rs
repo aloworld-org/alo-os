@@ -1,6 +1,6 @@
 //! A session with no folder says so in Settings, and writes nothing anywhere.
 //!
-//! `docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, task 7. A
+//! `docs/autonomy/where-a-persons-settings-are-kept-plan.md`, task 7. A
 //! login with no home directory has nowhere to keep a person's settings, and
 //! that is right — but a person who moves the dock in that session and finds it
 //! back at the next sign-in, with nothing that told them, has been forgotten

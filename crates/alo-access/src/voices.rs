@@ -1,6 +1,6 @@
 //! **Whether the rented speech engine has a voice for each of the 24, named.**
 //!
-//! Task 2 of `docs/autonomy/v0-5-access-and-language-plan.md`, whose constraint
+//! Task 2 of `docs/autonomy/access-and-language-plan.md`, whose constraint
 //! is the point of this file: *where the rented speech engine has no voice for a
 //! language, that is stated per language, not hidden.* A screen reader that
 //! cannot speak somebody's language is not an accessible machine for them, and a

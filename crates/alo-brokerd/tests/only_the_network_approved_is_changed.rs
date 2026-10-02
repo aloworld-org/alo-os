@@ -1,7 +1,7 @@
 //! The network's verbs change exactly the network a person approved, as the
 //! network manager reports it now — and nothing else, ever.
 //!
-//! Task 3 of `docs/autonomy/v0-5-the-broker-and-the-disk-plan.md`: *the broker's
+//! Task 3 of `docs/autonomy/the-broker-and-the-disk-plan.md`: *the broker's
 //! network verbs — join a network the machine can see, forget a network, turn
 //! the radio on or off — take closed types (a network by the identity the rented
 //! network manager reported, never a typed name).* Every request here crosses

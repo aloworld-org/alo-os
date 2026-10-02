@@ -413,7 +413,7 @@ Added 2026-09-30. It is the only instance here that **nobody can disprove withou
 auditing the whole repository**, and that property is the whole of why it is worse than
 the rest.
 
-`docs/autonomy/v0-01-evidence.md` said a screen to see it on was owed **"and nothing
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md` said a screen to see it on was owed **"and nothing
 else in this repository"**, while a caller that computes `TheRoom` from real windows was
 missing. Not a false claim about one thing. **A claim about everything.**
 

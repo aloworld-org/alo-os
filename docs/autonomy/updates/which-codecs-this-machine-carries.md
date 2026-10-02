@@ -3,7 +3,7 @@
 **Date:** 2026-09-17
 **Workstream:** v0.5 — devices and media
 **Task:** *Which codecs this machine carries, decided before anything plays*
-(`docs/autonomy/v0-5-devices-and-media-plan.md`, task 1)
+(`docs/autonomy/devices-and-media-plan.md`, task 1)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** the encoding was **measured in the Lima VM — Ubuntu 24.04 aarch64,
 6 CPUs, 3 GB of memory, no graphics card** — on an Apple M3 host with 8 GB. That

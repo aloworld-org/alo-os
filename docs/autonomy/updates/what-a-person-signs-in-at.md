@@ -1,7 +1,7 @@
 # What a person signs in at — the decision task 10 turned out to be
 
 **Date:** 2026-09-10
-**Workstream:** v0.01 delivery (`docs/autonomy/v0-01-delivery-plan.md`)
+**Workstream:** v0.01 delivery (`docs/autonomy/the-executable-plan.md`)
 **Task:** 10 — The image carries the shell, the session and the daemon
 **Contributor:** Claude, in `C:\dev\alo-os-claude`
 **Status:** ready for integration. **The task itself is blocked**, on the ADR

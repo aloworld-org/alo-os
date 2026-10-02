@@ -1,7 +1,7 @@
 # ADR 0040 — What an application's grant is over, and where it is kept
 
 **Status:** accepted, 2026-09-15 — option **C**, all four parts. Written by
-task 1 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`. The
+task 1 of `docs/autonomy/applications-and-what-they-expect-plan.md`. The
 additive change to `alo-capability` (parts 1–3) and the grants file's new
 format in `alo-remembering` (part 4) are **moved into that plan's partition in
 writing**: the local-network plan, which owned `alo-capability`, has no
@@ -196,7 +196,7 @@ enforces that.
 
 ## Amendment, 2026-09-15 — the Secret portal's facility
 
-Written by task 3 of `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`
+Written by task 3 of `docs/autonomy/applications-and-what-they-expect-plan.md`
 (*one keyring behind the Secret portal*), under this decision's own rule that the
 closed list in part 1 grows additively. Nothing above changes.
 

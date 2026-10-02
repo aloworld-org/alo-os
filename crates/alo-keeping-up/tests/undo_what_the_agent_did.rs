@@ -1,5 +1,5 @@
 //! ★ *Undo what the agent did* — the acceptance of task 4 of
-//! `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, one criterion at a
+//! `docs/autonomy/the-machine-keeps-itself-plan.md`, one criterion at a
 //! time, and of the points
 //! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) says
 //! hold whichever road is taken.

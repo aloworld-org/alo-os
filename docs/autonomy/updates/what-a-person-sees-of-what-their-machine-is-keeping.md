@@ -1,6 +1,6 @@
 # What a person sees of what their machine is keeping
 
-Task 15 of `docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`, done
+Task 15 of `docs/autonomy/the-machine-keeps-itself-plan.md`, done
 2026-09-25 on the third PC.
 
 ADR 0045 point 5 has two halves — *what an undo may keep is **visible** and

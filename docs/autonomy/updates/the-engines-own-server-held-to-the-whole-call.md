@@ -3,7 +3,7 @@
 **Date:** 2026-09-14
 **Workstream:** v0.5 — the models, measured
 **Task:** *The same ten exercises through the engine's own server, held to the
-whole call* (`docs/autonomy/v0-5-the-models-measured-plan.md`, task 17)
+whole call* (`docs/autonomy/the-models-measured-plan.md`, task 17)
 **Contributor:** the Mac lane — Claude Code on an Apple M3, checkout `~/dev/alo-os`
 **Machine:** **Apple M3**, **8 GB unified memory**, macOS 26.5.2. `llama.cpp`
 **0.4.0** (build 10809, commit 5266f24da) on `127.0.0.1:8081`, the Linux VM and

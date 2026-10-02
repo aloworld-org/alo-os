@@ -1,4 +1,6 @@
-# v0.5 — the models, measured, on a machine that can hold them
+# The models, measured, on a machine that can hold them
+
+*Named `v0.5 — the models, measured, on a machine that can hold them` until 2026-10-02. **A release code is not a subject** — `v0.5` says *when*, never *what*, which is what `CLAUDE.md`'s *names are for strangers* forbids and what the owner asked be cleared out of this repository. The subject was already in this line; the rename only wrote it down. The release this belongs to is in `ROADMAP.md`, which is where release codes live.*
 
 **Workstream:** the sentence `docs/features.md` promises at v0.01 and nothing
 has yet been able to make true — *★ the catalogue says whether a model can
@@ -378,7 +380,7 @@ keeps reading the free grade *until the agent turn asks that way*. Today only
   own request, so the measurement and the product ask in one way.
 - **Constraint:** `alo-turn` and `alo-agentd` are lane A's. Wiring the real
   turn through this door is written as a task on
-  `v0-5-the-local-network-plan.md` for lane A, and this task ends at the door.
+  `the-local-network-plan.md` for lane A, and this task ends at the door.
   Nothing here changes which grade the recommendation reads: that is task 15,
   after the turn asks this way.
 
@@ -504,7 +506,7 @@ the words are worth 80 of 80 against 71 of 80 on the same weights.
   an ADR decides which set a turn shows, on the measurements rather than on
   taste, and records that **no grade moves until a turn composes from the
   crate**, so `grade_for_the_turn` is untouched here; and the wiring is written
-  as a task on `v0-5-the-local-network-plan.md` for the lane that owns the turn,
+  as a task on `the-local-network-plan.md` for the lane that owns the turn,
   naming the function.
 - **Constraint:** the exercises, the bar, the scoring and every grade are
   unchanged — this moves text without editing a byte of it, which is what the

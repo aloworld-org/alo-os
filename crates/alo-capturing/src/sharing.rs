@@ -1,6 +1,6 @@
 //! **What a call application may see, and for how long.**
 //!
-//! Task 5 of `docs/autonomy/v0-5-capture-and-the-room-plan.md`. Somebody in a
+//! Task 5 of `docs/autonomy/capture-and-the-room-plan.md`. Somebody in a
 //! meeting shares their screen. The network half of the call is the
 //! application's; **what it may see, and showing that it is seeing it, is alo
 //! OS's.**
