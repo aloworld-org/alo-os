@@ -64,7 +64,12 @@ pub const fn side_for(action: Action) -> Option<Side> {
         // file refuse to compile until somebody has decided which it is.
         | Action::ZoomTheCanvasIn
         | Action::ZoomTheCanvasOut
-        | Action::ShowAllOnTheCanvas => None,
+        | Action::ShowAllOnTheCanvas
+        // Moving a window to another Place is not a division of this screen: it
+        // changes which surface the window is on, not which part of a screen it
+        // occupies. `alo-dividing`'s four Places are halves and quarters of one
+        // display, and the canvas's Place is the fifth meaning of that word.
+        | Action::MoveTheWindowToTheNextPlace => None,
     }
 }
 

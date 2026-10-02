@@ -69,6 +69,14 @@ pub enum Action {
     ZoomTheCanvasOut,
     /// Show every window on the canvas at once.
     ShowAllOnTheCanvas,
+    /// Send the window in front to the next Place.
+    ///
+    /// **The road a person who cannot drag takes**, which is why it is a
+    /// shortcut rather than only a gesture:
+    /// `docs/autonomy/the-canvas-and-its-places.md` task 3 says *neither road is
+    /// the only road*. The pointer road drags a frame out through the World; this
+    /// one needs no pointer, no World and no aim.
+    MoveTheWindowToTheNextPlace,
 }
 
 impl Action {
@@ -90,6 +98,7 @@ impl Action {
         Self::ZoomTheCanvasIn,
         Self::ZoomTheCanvasOut,
         Self::ShowAllOnTheCanvas,
+        Self::MoveTheWindowToTheNextPlace,
     ];
 
     /// The string this crate declares for it: the key a translator's file is
@@ -111,6 +120,7 @@ impl Action {
             Self::ZoomTheCanvasIn => words::ZOOM_THE_CANVAS_IN,
             Self::ZoomTheCanvasOut => words::ZOOM_THE_CANVAS_OUT,
             Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
+            Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
         }
     }
 

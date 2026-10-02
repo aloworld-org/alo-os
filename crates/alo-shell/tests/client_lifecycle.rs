@@ -15,6 +15,7 @@ mod every_frame_answers_as_a_list;
 mod every_window_is_on_a_place;
 mod input;
 mod interactive_resize;
+mod move_to_place;
 mod output_metadata;
 mod panning_the_plane;
 mod pointer;

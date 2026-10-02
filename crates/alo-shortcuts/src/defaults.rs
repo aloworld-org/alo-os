@@ -37,7 +37,7 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 14] = [
+const SHIPPED: [(Action, Chord); 15] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
@@ -62,6 +62,16 @@ const SHIPPED: [(Action, Chord); 14] = [
     (
         Action::ShowAllOnTheCanvas,
         Chord::shipped(SUPER, Key::Digit0),
+    ),
+    // **Shift beside the key that moves between Places**, so the window goes
+    // where the person would have gone. `docs/features.md` promises that the
+    // habits people arrive with still work — *the keys that cycle windows, close
+    // one and switch desktops become cycle frames, remove from canvas, and move
+    // between Places* — and every desktop a person arrives from spells *take the
+    // window with me* as Shift on the key that moves them.
+    (
+        Action::MoveTheWindowToTheNextPlace,
+        Chord::shipped(SUPER_SHIFT, Key::Period),
     ),
 ];
 
