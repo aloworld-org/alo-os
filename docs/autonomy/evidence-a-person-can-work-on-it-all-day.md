@@ -516,20 +516,6 @@ for the screen and is owed for two of the three devices the promise names. The
 media-server test skips where no session bus and no WirePlumber exist, and prints
 the skip rather than passing quietly.
 
-### Notifications, with do-not-disturb
-
-**Shown by:** `crates/alo-notifying/tests/do_not_disturb_holds_every_notification.rs`,
-`crates/alo-notifying/tests/nothing_is_shown_while_the_machine_is_locked.rs`,
-`crates/alo-notifying/tests/a_notification_cannot_answer_an_approval.rs`,
-`crates/alo-notifying/tests/the_agent_never_reads_a_notification.rs`,
-`crates/alo-notifying/tests/what_a_person_missed_is_kept_here_and_never_synced.rs`,
-`docs/autonomy/updates/notifications-and-do-not-disturb.md`
-
-**Still owed:** a notification on a screen. This is the most completely built
-promise in the group: do-not-disturb holds *every* notification, nothing shows on
-a locked machine, a notification cannot answer an approval, and the agent never
-reads one — four refusals, each tested. What is owed is the drawing.
-
 ### Status area: clock, battery, network, volume, brightness
 
 **Shown by:** nothing.
