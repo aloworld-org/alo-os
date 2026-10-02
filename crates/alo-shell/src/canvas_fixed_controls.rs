@@ -285,6 +285,23 @@ impl crate::Server {
                 // point: this is not a proposed move, it is the position the
                 // frame already holds being re-examined against controls that
                 // have moved under it.
+                // **`of` here and `given_to` in the two lookups below, and the
+                // asymmetry is the point.** `Numbers::of` gives a window a number
+                // when it has none; `given_to` asks without answering for
+                // anything. This is the one place that is *naming* a frame — the
+                // answer is an id a caller will move a window by and record a
+                // previous position against — so a frame that has never needed a
+                // number needs one now. Minting is the work, not a side effect of
+                // it.
+                //
+                // A search for a frame already named is the opposite, and both
+                // searches here used `of` until 2026-10-02: a lookup that tests
+                // every surface mints a number for each one it tests before
+                // matching, and on a search that *fails* mints one for every
+                // window on the machine. Nothing breaks — the counter never
+                // reuses, and `of` says a number it took and did not use is simply
+                // never used again — but asking where a window is would change
+                // something about every window asked past on the way.
                 (!self.enough_of_the_name_is_reachable(surface, at, at, &controls, handle))
                     .then(|| (crate::window_number::Numbers::of(surface), at))
             })
@@ -347,7 +364,7 @@ impl crate::Server {
             if let Recovery::BroughtBack { id, now, .. } = plan {
                 let surface = self
                     .mapped_surfaces()
-                    .find(|surface| crate::window_number::Numbers::of(surface) == *id)
+                    .find(|surface| crate::window_number::Numbers::given_to(surface) == Some(*id))
                     .cloned();
                 if let Some(surface) = surface {
                     let _ = self.place_window(&surface, (now.x, now.y));
@@ -419,7 +436,7 @@ impl crate::Server {
         let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
         let surface = self
             .mapped_surfaces()
-            .find(|surface| crate::window_number::Numbers::of(surface) == id)?
+            .find(|surface| crate::window_number::Numbers::given_to(surface) == Some(id))?
             .clone();
 
         // Eight units a step, out to a thousand. The step is smaller than a name
