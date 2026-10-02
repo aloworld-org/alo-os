@@ -75,4 +75,4 @@ pub use tidying::{Tidied, tidy_up};
 pub use told::{NotTold, REPLACING, THE_CHOICE, THE_REPLACING, Told};
 pub use verifying::{Verified, Verifying};
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
-pub use writing::Writing;
+pub use writing::{A_WATCHED_LINE, THE_PERSONS_SCREEN, TheConsole, Writing};
