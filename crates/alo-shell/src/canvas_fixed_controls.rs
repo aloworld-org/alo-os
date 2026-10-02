@@ -495,6 +495,14 @@ impl crate::Server {
         &mut self,
         location: smithay::utils::Point<f64, smithay::utils::Logical>,
     ) -> Result<bool, crate::InputError> {
+        // **In the World a drag writes no placement.** It is choosing a Place,
+        // not a point, and the World's coordinates are the tiles' rather than any
+        // frame's — writing one into the other would move a window by the
+        // distance between two unrelated planes. `crate::canvas_dragged_into_a_place`
+        // carries the reasoning; the drop happens on release.
+        if self.a_drag_is_choosing_a_place() {
+            return Ok(true);
+        }
         let Some(crate::window_move::Proposed { root, at: wanted }) =
             self.surfaces.where_this_drag_would_put_it(location)?
         else {
