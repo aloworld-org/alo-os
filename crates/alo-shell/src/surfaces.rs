@@ -1,9 +1,11 @@
 //! XDG surface handshake, renderer buffer ownership and lifecycle cleanup.
 
+use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode;
 use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
     delegate_compositor, delegate_data_device, delegate_pointer_gestures, delegate_shm,
-    delegate_text_input_manager, delegate_viewporter, delegate_xdg_shell,
+    delegate_text_input_manager, delegate_viewporter, delegate_xdg_decoration,
+    delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -15,6 +17,9 @@ use smithay::{
         buffer::BufferHandler,
         compositor::{CompositorClientState, CompositorHandler, CompositorState, with_states},
         pointer_gestures::PointerGesturesState,
+        shell::xdg::decoration::{XdgDecorationHandler, XdgDecorationState},
+        // The protocol's own enum, from the generated bindings.
+
         selection::{
             SelectionHandler,
             data_device::{
@@ -136,6 +141,19 @@ pub(crate) struct Surfaces {
     /// moves, and a handle is cheap to clone and impossible to obtain again
     /// from here. It was passed to `new` and dropped until 2026-10-02.
     pub(crate) display: DisplayHandle,
+    /// **Who draws a window's frame.** This shell, always — see the handler.
+    ///
+    /// Held and never read, deliberately. `XdgDecorationHandler` has no
+    /// accessor the way `DataDeviceHandler` has `data_device_state`: this
+    /// value's entire purpose is to **stay alive**, because dropping it
+    /// withdraws the global and clients stop being told who draws their frames.
+    /// An accessor added to quiet the lint would make the field look read while
+    /// leaving the thing that actually matters unsaid.
+    #[expect(
+        dead_code,
+        reason = "the global lives as long as this value; being alive is what it is for"
+    )]
+    xdg_decoration: XdgDecorationState,
     /// **Copy and paste, and drag-and-drop between applications.**
     ///
     /// Held here rather than per-window because a selection is per *seat*: one
@@ -198,6 +216,7 @@ impl Surfaces {
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
+            xdg_decoration: XdgDecorationState::new::<Self>(display),
             display: display.clone(),
             // Copy and paste. The global alone is not enough: see
             // `crate::keyboard`, where the selection is made to follow the
@@ -582,6 +601,61 @@ impl DataDeviceHandler for Surfaces {
         &self.data_device
     }
 }
+
+/// **This shell draws every window's frame, and that is not a preference.**
+///
+/// # Why the answer is the same three times
+///
+/// `crate::canvas_never_lost` promises a person can always get a frame back,
+/// and it keeps that promise by measuring the frame's **name band** — the
+/// shell-drawn strip a window is dragged by. A client drawing its own
+/// decoration would leave nothing to measure, so the promise would hold for
+/// some windows and silently not for others, decided by each application rather
+/// than by this compositor.
+///
+/// So `request_mode` **ignores the mode it is handed.** That is the protocol
+/// working as specified rather than a shortcut: `zxdg_toplevel_decoration_v1`
+/// lets a client state a preference and leaves the decision with the
+/// compositor, precisely so a compositor whose layout depends on drawing the
+/// frame can say so.
+///
+/// `unset_mode` — *I no longer have a preference* — is the same answer for the
+/// same reason, and `new_decoration` sends it before the client has asked, so a
+/// client that would have drawn its own never starts.
+impl XdgDecorationHandler for Surfaces {
+    fn new_decoration(&mut self, toplevel: ToplevelSurface) {
+        Self::the_shell_draws_this_frame(&toplevel);
+    }
+
+    fn request_mode(&mut self, toplevel: ToplevelSurface, _mode: Mode) {
+        Self::the_shell_draws_this_frame(&toplevel);
+    }
+
+    fn unset_mode(&mut self, toplevel: ToplevelSurface) {
+        Self::the_shell_draws_this_frame(&toplevel);
+    }
+}
+
+impl Surfaces {
+    /// Tell one toplevel that the shell draws its frame.
+    ///
+    /// One function rather than three copies, because three identical answers
+    /// written out three times is three places for them to stop being
+    /// identical — and the one that drifted would be a window drawing its own
+    /// frame on a canvas that measures the shell's.
+    fn the_shell_draws_this_frame(toplevel: &ToplevelSurface) {
+        toplevel.with_pending_state(|state| {
+            state.decoration_mode = Some(Mode::ServerSide);
+        });
+        // Only a mapped toplevel may be configured; an unmapped one is
+        // configured when it maps, carrying the pending state set above.
+        if toplevel.is_initial_configure_sent() {
+            toplevel.send_pending_configure();
+        }
+    }
+}
+
+delegate_xdg_decoration!(Surfaces);
 
 delegate_data_device!(Surfaces);
 
