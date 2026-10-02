@@ -85,12 +85,7 @@ impl crate::Server {
     /// the place is one task 8 would not let a person drag to — on a display
     /// narrower than the one the file was written on, a remembered place can be
     /// somewhere nothing could get it back from.
-    pub fn put_back_where_it_was(
-        &mut self,
-        frame: &WlSurface,
-        left: &mut WhereTheyLeftIt,
-        dock: Rectangle<i32, Physical>,
-    ) -> bool {
+    pub fn put_back_where_it_was(&mut self, frame: &WlSurface, left: &mut WhereTheyLeftIt) -> bool {
         let Some(app_id) = self.the_app_id_of(frame) else {
             return false;
         };
@@ -106,14 +101,44 @@ impl crate::Server {
         let Some((at, _)) = left.arrangement.where_it_was(on, &app_id) else {
             return false;
         };
-        // The same question a drag is held to. A place that would leave the name
-        // under the dock, or the arrangement wider than Show all reaches, is not
-        // one to put somebody's window back into.
+        // **The same question a drag is held to, and until 2026-10-02 it was
+        // not.** This called `as_far_as_a_frame_may_be_dragged`, which asks
+        // `the_name_would_be_under` — *is the name entirely inside this one
+        // rectangle* — against the Dock's band alone.
+        //
+        // That is the rule the owner **replaced** on 2026-09-30, for the reason
+        // the constant records: *one exposed pixel is technically reachable and
+        // practically lost*. Dragging moved to the new rule and to the whole set
+        // of fixed controls; recovery did not, so **the superseded rule still had
+        // a caller** and a remembered place was checked against a third of the
+        // controls by a test that a single visible pixel satisfies.
+        //
+        // Now it asks exactly what the drag asks: enough of the name reachable,
+        // against every control this draw laid out, with the handle floor already
+        // converted into their pixels.
         let here = crate::window_number::Numbers::given_to(frame)
             .and_then(|_| self.the_frames_on_the_plane().into_iter().next())
             .map_or(alo_canvas::At::origin(), |frame| frame.at());
-        if self.as_far_as_a_frame_may_be_dragged(frame, here, at, dock) != at {
+        if !self.show_all_would_still_reach(frame, at) {
             return false;
+        }
+        // **Nothing drawn yet is not a reason to refuse somebody their place.**
+        // A window maps before the first frame, so at session start there are no
+        // control bounds to check against — and refusing would mean no window
+        // ever got its remembered position. The drag path makes the same choice
+        // for the same reason.
+        //
+        // *What is owed is the recheck.* Task 8's third clause is that display,
+        // scale, Dock-position and panel-state changes **preserve recovery**, and
+        // that a recovery which moves a frame shows the move and records where it
+        // was. Nothing rechecks, so a place allowed unchecked here stays
+        // unchecked. That is this task's remaining half and it is named rather
+        // than implied.
+        if let Some(handle) = self.the_handle_the_controls_were_drawn_with() {
+            let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
+            if !self.enough_of_the_name_is_reachable(frame, here, at, &controls, handle) {
+                return false;
+            }
         }
         if self.place_window(frame, (at.x, at.y)).is_err() {
             return false;

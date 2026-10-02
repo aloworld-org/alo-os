@@ -43,8 +43,24 @@ fn put_back(
 ) -> (bool, WhereTheyLeftIt) {
     let frame = frame.clone();
     f.backend(move |s| {
+        // **The controls are recorded first, as a draw would.**
+        //  took the Dock as an argument until 2026-10-02
+        // and checked a remembered place against it with the rule the owner
+        // replaced. It now asks what a drag asks, of the controls the last draw
+        // laid out — so a test that wants the check to apply has to say what
+        // was drawn, exactly as the dragging tests do. Without this line the
+        // recovery is unchecked, which is the real behaviour before a first
+        // frame and would make this test pass for the wrong reason.
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(a_dock()),
+                panel_reserved: smithay::utils::Rectangle::default(),
+                display_scale: 100,
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
         let mut waiting = waiting;
-        let took = s.put_back_where_it_was(&frame, &mut waiting, a_dock());
+        let took = s.put_back_where_it_was(&frame, &mut waiting);
         (took, waiting)
     })
 }
@@ -227,6 +243,61 @@ fn a_window_with_no_name_of_its_own_is_not_remembered() {
 /// **An application that claimed its place on one Place can still claim on
 /// another.**
 ///
+/// Offer a window a remembered place at `y`, and say whether it took it.
+fn offered_a_place_at(y: i32) -> bool {
+    let f = fixture();
+    let mut left = Arrangement::fresh();
+    left.window_was(
+        alo_canvas::Place::FIRST,
+        "org.alo.Notes",
+        alo_canvas::At::checked(420, y).expect("a place on the plane"),
+        alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+    );
+    let _app = mapped_as(&f, "org.alo.Notes");
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    put_back(&f, &frame, WhereTheyLeftIt::from(left)).0
+}
+
+/// **Recovery is held to the rule that replaced the old one, and until
+/// 2026-10-02 it was not.**
+///
+/// `put_back_where_it_was` asked `as_far_as_a_frame_may_be_dragged`, which asks
+/// `the_name_would_be_under` — *is the name **entirely** inside this one
+/// rectangle* — against the Dock's band alone. **That is the rule the owner
+/// replaced on 2026-09-30**, for the reason `A_USABLE_HANDLE` records: *one
+/// exposed pixel is technically reachable and practically lost.* Dragging moved
+/// to the new rule and to the whole set of controls; recovery did not, so the
+/// superseded rule still had a caller.
+///
+/// The Dock's band here starts at 656 and a name band is 48 tall, so a frame
+/// whose top is at 690 leaves **14 pixels** of name clear. The old rule allows
+/// that — 14 pixels is not *entirely* under anything. The new rule refuses it,
+/// because 14 is less than the 24-pixel floor.
+///
+/// Asserted against a place that **is** allowed, because a test that only showed
+/// a refusal would pass for a rule that refuses everything and for a recovery
+/// that had stopped working at all.
+#[test]
+fn a_remembered_place_that_leaves_too_little_name_is_refused() {
+    let barely_clear = offered_a_place_at(690);
+    let plainly_clear = offered_a_place_at(600);
+
+    assert!(
+        plainly_clear,
+        "a remembered place well clear of the Dock was refused, so recovery is \
+         refusing more than the rule asks or has stopped working"
+    );
+    assert!(
+        !barely_clear,
+        "a remembered place leaving 14 pixels of name clear of the Dock was \
+         accepted: the old entirely-under rule allows that and the rule the \
+         owner replaced it with does not, so recovery is still asking the \
+         superseded question"
+    );
+}
+
 /// Task 5 of `the-canvas-and-its-places.md`: *position, size, camera and the
 /// panel's own state, **per Place rather than per session***. This is the one
 /// field that would have refused it quietly.

@@ -126,6 +126,24 @@ impl crate::Server {
         self.fixed_controls.bounds()
     }
 
+    /// The handle floor the last draw was measured with, or [`None`] where
+    /// nothing has been drawn.
+    ///
+    /// **Already converted into the controls' own pixels** by
+    /// [`Self::the_fixed_controls_were_drawn`], so a caller must not scale it
+    /// again — and must not reach for
+    /// [`A_USABLE_HANDLE`](crate::A_USABLE_HANDLE) instead, which is the logical
+    /// figure and would be too small by this display's scale.
+    ///
+    /// [`None`] means *nothing has been drawn*, which is a real state at
+    /// session start because a window maps before the first frame. It does not
+    /// mean *no protection wanted*, and a caller that treats it as the second
+    /// owes a recheck once a frame exists.
+    #[must_use]
+    pub fn the_handle_the_controls_were_drawn_with(&self) -> Option<(f64, f64)> {
+        self.fixed_controls.handle()
+    }
+
     /// Record where this draw put the fixed controls — **all of them, as a
     /// set.**
     ///
