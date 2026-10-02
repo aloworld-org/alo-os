@@ -2242,7 +2242,48 @@ be largely built already.
 
 ### 40. The image carries the compositor a machine boots to
 
-**Status:** ready. **Depends on:** 38.
+**Status:** **built, and owed only what a machine is needed for, 2026-10-02.**
+**Depends on:** 38.
+
+> **This said `ready` until 2026-10-02, and `ready` claims none of it exists.**
+> Measured before starting it, which is the only reason it was not built twice:
+>
+> ```text
+> image/Containerfile:358   wayland-devel libinput-devel libseat-devel
+>                           libxkbcommon-devel pixman-devel mesa-libEGL-devel
+>                           mesa-libgbm-devel systemd-devel
+> image/Containerfile:374   cargo build --package alo-shell --package alo-desktop
+> image/Containerfile:398   COPY alo-compositor /usr/bin/alo-compositor
+> image/Containerfile:399   COPY alo-desktop    /usr/bin/alo-desktop
+> image/Containerfile:523   libwayland-server libwayland-client libinput
+>                           libseat libxkbcommon
+> image/Containerfile:710   the unit is installed
+> image/Containerfile:719   the unit is enabled
+> alo-compositor.service    Environment=ALO_DISPLAY, ALO_PERSON, ALO_KEYBOARD
+>                           User=root, Group=alo-greeter
+>                           CapabilityBoundingSet= and AmbientCapabilities=
+> alo-image image.rs:59     THE_COMPOSITOR
+> alo-image image.rs:154    service(root, THE_COMPOSITOR)
+> ```
+>
+> Every clause of the acceptance is present except one: **the check that
+> whatever holds the privilege holds nothing else**, which this task said could
+> not be made *"without a unit to make it about"*. The unit exists, and the
+> check still was not made — `checking.rs` asserted it for the opener, the agent
+> and the server, and never for the screen, which is the one of the five that
+> runs as `root`.
+>
+> That is added by the change that found this. What remains is the acceptance's
+> last clause — *a machine installed from that image reaches the sign-in screen
+> instead of a console* — and **no machine this project owns can walk it.**
+>
+> **How a status outlives the thing it describes, in this case:** the task was
+> written on 2026-09-23 by task 38, which had just discovered the recipe could
+> not build a compositor at all. The recipe was then changed to do exactly what
+> this task asks, and the status was never touched. The sentence that was true
+> when written stayed on the page while the file it was about moved underneath
+> it — the same fault this plan has now corrected four times in three days, and
+> the reason every status here carries a date.
 
 Written 2026-09-23 by task 38, which built the binary and then found that the
 recipe cannot put it in an image. This is not a `COPY` line, and the task it was
