@@ -514,8 +514,37 @@ list that cannot be read is not a record of anything. GitHub deletes it on merge
 where the repository is set to; where it is not, delete it explicitly and
 confirm it is gone.
 
-**An unmerged branch is never deleted.** Parked tasks and recovery work live
-there, and that work exists nowhere else.
+**A branch whose content is on `main` is finished, whether or not it merged.**
+The repository is set to `delete_branch_on_merge`, so a branch that merges is
+removed without anybody acting — and **that is exactly why the ones left behind
+are invisible.** What accumulates is the cases the setting cannot see:
+
+```
+merged                deleted automatically — the rule works and nobody notices
+superseded            a PR closed because its content landed under another one
+a lane's own locals   no repository setting touches these at all
+```
+
+On 2026-10-02 the Mac lane had five dead branches on that second and third
+footing: `#344` and `#348` were **closed, not merged**, because they were
+superseded whole by `#351`, and three more existed only locally. *A merged branch
+is deleted* read literally covers none of them, and the lane had edited this very
+file twice that night — once **eighteen lines below this rule** — without reading
+it. **A document read only as a place to write is not a document anybody is
+following.**
+
+**So the test is the content, not the merge.** Before deleting, check that what
+the branch holds is on `main` — `git cat-file -e origin/main:<a file it added>`,
+or the diff against `origin/main` being empty of its work. Neither *the PR is
+closed* nor *the branch merged into main* is the right question: the first is
+true of abandoned work, and the second is false of superseded work that did land.
+
+**An unmerged branch whose content is not on `main` is never deleted.** Parked
+tasks and recovery work live there, and that work exists nowhere else. Two such
+branches were kept that day for exactly this reason: both were hundreds of
+commits stale and almost certainly dead, and *almost certainly* is not a
+measurement. **A branch holding real work deleted on a guess is unrecoverable; a
+stale branch kept costs a line in a list.**
 
 **A branch nobody has moved for a day is reported, not removed.** Its owner says
 whether it is alive or abandoned; silence is not consent to delete.

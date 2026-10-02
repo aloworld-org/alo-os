@@ -38,8 +38,15 @@ use smithay::{
 pub struct WhereTheyLeftIt {
     /// What was read at sign-in.
     arrangement: Arrangement,
-    /// Which applications have already claimed their place this session.
-    claimed: Vec<String>,
+    /// Which applications have claimed their place, **and on which Place**.
+    ///
+    /// **Keyed by the pair, not by the application.** A `Vec<String>` was right
+    /// when an arrangement held one map: one application had one remembered place
+    /// and claiming it once was claiming it everywhere. With a place per Place, an
+    /// application claiming on one surface must not stop it claiming on another —
+    /// which is `the-canvas-and-its-places.md` task 5's *per Place rather than per
+    /// session*, in the one field that would have silently refused it.
+    claimed: Vec<(u64, String)>,
 }
 
 impl WhereTheyLeftIt {
@@ -52,10 +59,15 @@ impl WhereTheyLeftIt {
         }
     }
 
-    /// The camera it was left looking through.
+    /// The camera this Place was left looking through, if it was left anywhere.
+    ///
+    /// **[`None`] rather than the origin**, because a Place nobody arranged was
+    /// not left at the origin — it was not left at all, and moving a person's view
+    /// to the origin as though they had chosen it is the quieter of the two
+    /// mistakes but still one.
     #[must_use]
-    pub fn camera(&self) -> alo_canvas::Camera {
-        self.arrangement.camera()
+    pub fn camera_on(&self, place: alo_canvas::Place) -> Option<alo_canvas::Camera> {
+        self.arrangement.camera_on(place)
     }
 
     /// Whether any place is still waiting to be claimed.
@@ -82,10 +94,16 @@ impl crate::Server {
         let Some(app_id) = self.the_app_id_of(frame) else {
             return false;
         };
-        if left.claimed.contains(&app_id) {
+        // The Place this window is on, which is the only Place its remembered
+        // position could be on. A window restored onto the Place the person
+        // happens to be looking at is task 4's forbidden relocation.
+        let Some(on) = self.the_place_of_the_window(frame) else {
+            return false;
+        };
+        if left.claimed.contains(&(on.number(), app_id.clone())) {
             return false;
         }
-        let Some((at, _)) = left.arrangement.where_it_was(&app_id) else {
+        let Some((at, _)) = left.arrangement.where_it_was(on, &app_id) else {
             return false;
         };
         // The same question a drag is held to. A place that would leave the name
@@ -100,7 +118,7 @@ impl crate::Server {
         if self.place_window(frame, (at.x, at.y)).is_err() {
             return false;
         }
-        left.claimed.push(app_id);
+        left.claimed.push((on.number(), app_id));
         true
     }
 
@@ -113,7 +131,8 @@ impl crate::Server {
     #[must_use]
     pub fn the_arrangement_now(&self) -> Arrangement {
         let mut arrangement = Arrangement::fresh();
-        arrangement.looking(self.the_camera());
+        let on = self.the_place_now();
+        arrangement.looking(on, self.the_camera());
         for frame in self.mapped_surfaces() {
             let (Some(app_id), Some(place)) = (
                 self.the_app_id_of(frame),
@@ -123,7 +142,7 @@ impl crate::Server {
             ) else {
                 continue;
             };
-            arrangement.window_was(app_id, place.at(), place.size());
+            arrangement.window_was(on, app_id, place.at(), place.size());
         }
         arrangement
     }

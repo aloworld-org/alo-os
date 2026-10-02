@@ -159,7 +159,26 @@ somebody's window to the Place they happened to be looking at.
 
 ### 5. Every Place is where it was left
 
-**Status:** blocked on 1.
+**Status:** **Done, 2026-10-02.** `alo-arranging`'s file is a map of Places, each
+with its own camera and windows; `FORMAT` is 2. Shown by
+`crates/alo-arranging/src/arranging_tests.rs` and
+`crates/alo-shell/tests/the_canvas_is_where_they_left_it/mod.rs`.
+**Depends on:** 1, which is done — and the `FORMAT` version landed as #360, which
+this reshape needed and which was free only while nothing wrote the file.
+
+**Two things the reshape revealed rather than caused.** `camera_on` answers
+`Option` now, and a test changed its claim rather than its fixture: *this Place
+was never left anywhere* and *this Place was left at the origin* are different
+answers, and version 1 could not tell them apart. A restore on a Place nobody had
+arranged would have moved a person's view to the origin as though they had chosen
+it.
+
+**And `WhereTheyLeftIt::claimed` was keyed by application alone** — right while an
+arrangement held one map, and with a place per Place it refuses an application on
+every surface but the first, **silently**, because `put_back_where_it_was` answers
+`false` for *already claimed* exactly as for *nothing remembered*. That is this
+task's *per Place rather than per session* in the one field that would have
+quietly denied it.
 
 Position, size, camera and the panel's own state, **per Place rather than per
 session**. `crates/alo-arranging` already writes an arrangement and reads it back
