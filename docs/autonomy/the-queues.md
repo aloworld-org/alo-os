@@ -156,7 +156,7 @@ Crates: `alo-put-aside`, `alo-canvas`'s region work, and
 Taken under *work a task needs is part of that task*; none changes a signature
 another lane depends on, so splitting them breaks nothing.
 
-### Not this lane's — the pointer classifier into `alo-put-aside`
+### Not this lane's — the pointer classifier, and **not** into `alo-put-aside`
 
 **This entry said `Ready` under this machine and it is the panel lane's task.**
 The material is this lane's; the task is not. `handover/README.md` on
@@ -192,6 +192,36 @@ reading the rest.
 What survives unchanged: `no_figure_from_the_design_reaches_the_code` must be
 carried across **in the same change**, because a source check that stops
 applying because its source moved is the rule quietly ceasing to exist.
+
+**And the destination in the old heading was wrong — into `alo-shell`, beside
+`panel_raster.rs`, where the files already are.** The panel lane checked where
+the task said to put them before putting them there, and the crate forbids it in
+its own words. Measured rather than argued:
+
+```text
+the_region_the_panel_claims.rs   "No coordinates, and therefore no screen size",
+                                 satisfied "by the value not being reachable"
+                          :90    "Nothing else in this crate takes a position"
+panel_raster.rs:3                `alo-put-aside` "holds no geometry at all"
+alo-put-aside/Cargo.toml         no `smithay`; a paragraph on why `alo-canvas`
+                                 is the only geometry-adjacent dependency
+Point< or Rectangle< anywhere    none
+```
+
+`whose_area(at: Point<i32, Physical>, surfaces: &TheSurfaces)` takes a position
+and three rectangles. Moving it there would add `smithay` to that crate and make
+it take coordinates. **So the move as named would not be a relocation — it would
+be the deletion of an invariant, by a commit whose message says it is tidying.**
+
+The rule it would delete is the reason the geometry is where it is:
+`alo-put-aside` decides *what is in the panel*, and the one conversion from a
+design's figures to a display's pixels happens in the crate that knows the
+display. One conversion in one place, rather than two that agree today.
+
+*This entry's **ownership** was corrected earlier the same day and its
+destination was not, because that correction was asking whose task it was and
+never asked where the task went. **A record can be wrong in more than one way at
+once, and fixing one of them makes the rest look checked.*** 
 
 ### Ready — three stale statuses in the put-aside plan
 
