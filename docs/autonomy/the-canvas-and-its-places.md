@@ -102,7 +102,32 @@ has two halves and has only ever had one.
 
 ### 2. The World
 
-**Status:** blocked on 1.
+**Status:** **Done, 2026-10-02** for its arithmetic; the shell's gesture is owed.
+`alo_canvas::World` in `crates/alo-canvas/src/world.rs` — Places laid out as
+tiles, the span they reach, the Place under a point, and a camera that fits them
+all. Shown by `crates/alo-canvas/src/world_tests.rs`.
+**Depends on:** 1, which is done.
+
+*Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on
+2026-09-30 — a status that outlived the thing it described, hiding available
+work from three lanes for two days. The laptop lane found it by reading `main`
+against the plan rather than the plan alone.*
+
+**What is owed, stated rather than implied by a Done mark.** The arithmetic is
+whole and the **gesture is not wired**: nothing in `alo-shell` yet answers a step
+out from `Zoom::FURTHEST_OUT` with the World, and nothing zooms into the Place
+under the pointer. That is the same shape as task 6's rule having no caller for a
+fortnight, so it is said here in the status rather than found later — the half
+that exists is the half a test can hold without a compositor.
+
+**And the design decision, because the obvious implementation is wrong twice.**
+The World is **not** a further-out view of the same plane. Lowering
+`Zoom::FURTHEST_OUT` to make room would multiply `as_far_as_show_all_reaches` by
+five — a test asserts that extent to the pixel — and it would assert that Places
+share one coordinate space, which they cannot: a Place is *endless*, and `(4200,
+0)` exists on every one of them. So the World is the level above, the tile a Place
+occupies in it represents that Place rather than being its extent, and **no
+existing number moved.**
 
 Zoom out past a Place and **every Place the person has is seen at once**; zoom
 into one and it fills the screen. `docs/decisions/0065`'s own diagram —
@@ -120,7 +145,7 @@ has a ladder to extend rather than a mode to add.
 
 ### 3. A frame moves between Places, by pointer and by keyboard
 
-**Status:** blocked on 1, 2.
+**Status:** blocked on 2 only; 1 is done. *Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on 2026-09-30 — a status that outlived the thing it described, hiding available work from three lanes for two days.*
 
 Dragged out to the World and dropped into another Place, **and the work goes with
 it** — the promise that moved two tiers, from `[v1.1]`. **And by keyboard, with
@@ -142,6 +167,10 @@ wired into `Server::set_window_minimized` on the way back only. Shown by
 real restore rather than through the rule, because a test that called the rule
 would pass just as well with nothing wired to it.
 **Depends on:** 1, which landed as #351. **Separate from task 3 on purpose.**
+
+*This status read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on
+2026-09-30 — a status that outlived the thing it described, hiding available work
+from three lanes for two days.*
 
 Restoring a minimised window **returns it to the Place it was already on**, and the
 view travels there. **Nothing is relocated by a restore.** A window put aside on
@@ -184,6 +213,10 @@ every surface but the first, **silently**, because `put_back_where_it_was` answe
 `false` for *already claimed* exactly as for *nothing remembered*. That is this
 task's *per Place rather than per session* in the one field that would have
 quietly denied it.
+
+*This status read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on
+2026-09-30 — a status that outlived the thing it described, hiding available work
+from three lanes for two days.*
 
 Position, size, camera and the panel's own state, **per Place rather than per
 session**. `crates/alo-arranging` already writes an arrangement and reads it back
@@ -285,7 +318,7 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
 
 ### 7. The minimized-window panel, per Place
 
-**Status:** blocked on 1, 4 — and it is the desktop lane's.
+**Status:** blocked on 4 only; 1 is done — and it is the desktop lane's. *Read `blocked on 1` until 2026-10-02, after task 1 landed as #351 on 2026-09-30 — a status that outlived the thing it described, hiding available work from three lanes for two days.*
 
 Which Place a put-aside window belongs to; restoring across Places; the collapse
 choice remembered **per Place**, expanded on one surface and collapsed on another;
