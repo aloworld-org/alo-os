@@ -50,6 +50,12 @@ const RECORDS_THEM: &str = "the_fixed_controls_were_drawn";
 /// What it must call once they have moved.
 const ACTS_ON_THEM: &str = "bring_back_frames_the_moved_controls_hide";
 
+/// Where the Dock's band must come from, and not from a literal.
+const THE_DOCKS_OWN_BAND: &str = "dock_band: pictures.desktop.dock";
+
+/// Where the panel's reserved column must come from, and not from a literal.
+const THE_PANELS_OWN_COLUMN: &str = "panel_reserved: pictures.desktop.panel.reserved";
+
 /// This crate's source directory.
 fn src() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src")
@@ -76,6 +82,15 @@ fn the_code_of(written: &str) -> String {
 /// How many times `name` appears in `text`.
 fn how_often(text: &str, name: &str) -> usize {
     text.matches(name).count()
+}
+
+/// One string with every run of whitespace reduced to a single space.
+///
+/// So that an assertion about *what this field is read from* survives `rustfmt`
+/// deciding to break the line differently. Without it the guard below would be a
+/// test about formatting wearing the name of a test about wiring.
+fn one_space(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<&str>>().join(" ")
 }
 
 /// **The draw acts on the controls having moved, in code rather than in a
@@ -121,4 +136,60 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
          call they are reachable from tests alone, which is the fault this whole \
          module exists because of"
     );
+}
+
+/// **The controls handed over are the ones this frame laid out, not constants.**
+///
+/// # Measured, and the measurement is why this test exists
+///
+/// Substituting `Rectangle::default()` for the panel's reserved column at the
+/// wiring site — one line in the draw — left **seventeen tests passing**: the
+/// source test above, all nine in the dragging module, and seven in
+/// `desktop_raster`. *The panel's column is compared against* and *an empty
+/// rectangle is compared against* were indistinguishable to every test in this
+/// crate.
+///
+/// The reason is the same one the panel lane found on 2026-10-02 by mutating its
+/// own `panel_is_revealed` flag in three places and watching two of the three
+/// survive the whole suite: **every fixture supplies its own rectangles.** The
+/// tests that drive the rule call `the_fixed_controls_were_drawn` directly and
+/// invent the bounds, correctly and deliberately — there is no draw in a headless
+/// fixture. So they prove the rule, the trigger and the recovery, and they are
+/// *silent by construction* about whether the draw gives the rule the real
+/// rectangles or made-up ones. A whole suite of honest fixtures adds up to a
+/// wiring nobody has watched do anything.
+///
+/// # Why reading is the only tool again
+///
+/// The same reason as above, one step further in: the values come from `pictures`,
+/// which exists only inside a draw that opens a graphics card. Nothing can observe
+/// them. What *can* be checked is that the draw reads them from the pictures it
+/// just laid out rather than from a literal, and that is a fact about the text.
+///
+/// Both controls are asserted, not only the panel. The Dock's band is wired the
+/// same way and would fail the same way, and *the promise is outside **every**
+/// fixed control* — a guard covering the control that happened to be mutated would
+/// repeat in miniature the fault that let the Dock be the only control in the set
+/// for weeks.
+#[test]
+fn the_draw_hands_over_the_controls_it_laid_out() {
+    let at = src().join(THE_DRAW);
+    let written = std::fs::read_to_string(&at)
+        .expect("direct_desktop.rs is this crate's desktop draw and must be readable");
+    let code = one_space(&the_code_of(&written));
+
+    for (which, wiring) in [
+        ("the Dock's band", THE_DOCKS_OWN_BAND),
+        ("the panel's reserved column", THE_PANELS_OWN_COLUMN),
+    ] {
+        assert!(
+            how_often(&code, wiring) > 0,
+            "{THE_DRAW} does not read {which} from the pictures it laid out — \
+             `{wiring}` is not in its code. A constant there passes every test in \
+             this crate, which is measured rather than feared: it was tried, and \
+             seventeen tests did not notice. If the picture's own path has been \
+             renamed, rename it here too; that is this test working, not failing \
+             spuriously"
+        );
+    }
 }
