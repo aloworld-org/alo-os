@@ -50,7 +50,9 @@
 pub mod camera;
 pub mod place;
 pub mod plane;
+pub mod world;
 
 pub use camera::{Camera, NotZoomed, Zoom};
 pub use place::Place;
 pub use plane::{At, Frame, Size, Span};
+pub use world::{Showing, World};
