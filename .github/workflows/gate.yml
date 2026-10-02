@@ -1,8 +1,23 @@
 # The gates that run on a hosted runner, on every change and every queue branch,
-# posting `alo/gates-on-a-runner` — which is **not** the status `main` requires.
+# posting `alo/gates-on-a-runner` — **which is the status `main` requires.**
 #
-# **`alo/nine-gates` is a required check on `main` and nothing produces it but a
-# lane.** Every status on every pull request was typed by hand with `curl`, by
+# That sentence was the opposite of itself until 2026-10-02, and the paragraphs
+# below are kept rather than rewritten because the reasoning that led here is
+# the part worth inheriting. What changed: branch protection now requires
+# `alo/gates-on-a-runner`, which this file posts on both `pull_request` and
+# `merge_group`, and **`alo/nine-gates` is required by nothing.** No status is
+# typed by a person on either the head or the queue commit, and the two steps
+# that used to ask for one are retired in the job below.
+#
+# Read what follows as the history of a problem that is solved, not as a
+# description of how landing works now. The history matters because the failure
+# it records — *a gate that is absent and says nothing* — is a shape that
+# recurs, and this file is where it was first paid for.
+#
+# **The historical account begins here, in the past tense it belongs in.**
+#
+# `alo/nine-gates` was a required check on `main` and nothing produced it but a
+# lane. Every status on every pull request was typed by hand with `curl`, by
 # whichever lane was landing, and so was the *second* one each merge-queue branch
 # needs. On 2026-09-28 that cost a pull request sitting at position 1 in the queue
 # with nobody to attest it, another gated twice because the queue rebased it under
@@ -156,195 +171,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # **A queue commit says that it is waiting, in seconds, because silence here
-      # is load-bearing and the window is sixty minutes.**
+      # **Nothing here asks a lane for a status any more.**
       #
-      # The merge queue builds its own commit and branch protection asks *that*
-      # commit for `alo/nine-gates`. Nothing produces it but a lane, and **nothing
-      # tells the lane the commit exists.** So the commit sits until
-      # `check_response_timeout_minutes` — 60 — ejects it, and a queued pull request
-      # looks exactly like a patient one. It happened three times on 2026-09-28 and
-      # 29, to two different lanes, and each time the only reason anybody noticed was
-      # that a third lane was polling for the slot it wanted.
+      # Two steps used to stand at the top of this job: one posting
+      # `alo/this-queue-commit-needs-a-lane` on the queue commit and one posting
+      # `alo/queue-entry-waiting` on the pull request, both `state=failure`, both
+      # saying *go and type `alo/nine-gates`*. They existed because the required
+      # check was produced by a person with `curl`, and **nothing told that person
+      # the queue commit existed** — so it sat until the sixty-minute timeout ejected
+      # it, and a queued pull request looked exactly like a patient one.
       #
-      # That is *a gate that is absent and says nothing*, which this file argues
-      # against twice — except worse, because the merge waits on the silence. The
-      # failure is not a wrong answer; it is a branch that vanishes an hour later and
-      # a lane that never learns why.
+      # `alo/gates-on-a-runner`, posted at the bottom of this file, is now the
+      # required check, and `alo/nine-gates` is required by nothing. So both steps
+      # had stopped being a warning and become a **false one**: a red X on every
+      # queue commit and every pull request, demanding a status no longer read.
       #
-      # # Why it is the first step and not the last
+      # That is worse than deleting nothing. The whole argument of this file is
+      # that *a gate which is absent and says nothing* costs a day — and a red
+      # that means nothing costs the same day, by teaching every lane to read past
+      # the colour. The next real failure would have arrived in a column where two
+      # of the entries were decoration.
       #
-      # **It was the last step, and that was a defect.** This job takes about
-      # nineteen minutes, so an announcement at the end consumed a third of the
-      # window before it spoke — and on 2026-09-29 a lane found one queue commit
-      # announcing itself and another silent, and the difference was only that one
-      # run had finished. Measured: `531e2126` started 11:38:28Z and completed
-      # 11:57:01Z, so its status appeared eighteen and a half minutes in, while
-      # `0fdbb8fb` had nothing on it at all because its run was still going.
-      #
-      # It sat at the end because it was grouped with `post alo/gates-on-a-runner` —
-      # both are statuses, so they went together. **That is placement by resemblance
-      # rather than by dependency**, and it is the same shape as a verdict computed
-      # from the wrong operand: one of them reports a result and cannot be known
-      # earlier, and this one announces a fact that is true at checkout and depends
-      # on nothing. So it goes first.
-      #
-      # # Why a status of its own rather than relying on the run
-      #
-      # Measured before writing this, because the obvious answer was wrong: a red
-      # check **already exists** on every queue commit. The Mac's ejected `pr-264`
-      # commit read `gate | completed / failure` for all 57 of its minutes and neither
-      # lane acted on it. A second red thing is not the fix. What was missing is that
-      # a queue commit's `gate` is *indistinguishable from a pull request head's*
-      # `gate` — same name, same colour, and neither says which sha needs what from
-      # whom. So this posts a context whose **name** is the message and appears
-      # nowhere else.
-      #
-      # # Why a failing state cannot block a landing
-      #
-      # Also measured rather than reasoned: `#258`'s queue commit `e24594e4` merged
-      # while its own `gate` check was still `in_progress`. So `ALLGREEN` does not
-      # hold a merge for every check, and a non-required red status cannot stop one.
-      # Had that not been true this step would be a way to block every landing in the
-      # repository, which is why it was checked first.
-      #
-      # It is posted on **every** `merge_group` run, because a lane must attest a
-      # queue commit whatever the gates say — `alo/gates-on-a-runner` is a narrower
-      # claim than the required check and never substitutes for it. The day this
-      # workflow can post `alo/nine-gates` honestly, this step goes with the
-      # distinction.
-      - name: say that this queue commit is waiting on a lane
-        if: github.event_name == 'merge_group'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.after || github.sha }}
-        run: |
-          # **140 characters is a silent limit.** A longer description is rejected
-          # and the POST reports nothing useful, which would be a second silent gate
-          # built inside the fix for the first. Checked here rather than trusted.
-          said="gate this sha on a lane and post alo/nine-gates; the queue ejects it 60 minutes after it was built"
-          if [ "${#said}" -gt 140 ]; then
-            echo "REFUSED: the description is ${#said} characters and the limit is 140."
-            echo "  A rejected POST would leave this queue commit as silent as it was before."
-            exit 1
-          fi
-          echo "posting on $SHA: $said (${#said} characters)"
-          gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
-            -f state=failure \
-            -f context=alo/this-queue-commit-needs-a-lane \
-            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            -f description="$said"
-
-      # **And say it on the page a person actually looks at.**
-      #
-      # The step above puts the truth on the queue commit, which is where it is
-      # true. Nobody looks there. On 2026-09-29 a pull request sat for two hours
-      # reading *mergeable, checks passing* — which was accurate about its head —
-      # while the thing blocking it was a different commit on a branch the page
-      # never shows. **A lane watching its own pull request saw nothing wrong for
-      # the entire life of the problem.** The place a person looks should say the
-      # thing that is true.
-      #
-      # # What this claims, and why it is not a lie about the head
-      #
-      # A status on the head implying *the head's tree is broken* would be false.
-      # This says something else: **this pull request's queue entry is waiting for
-      # attestation, and here is its sha.** The subject is the pull request's
-      # position in the queue, which is exactly what the page is for, and the sha
-      # makes it checkable rather than trusted.
-      #
-      # # Nothing here derives a sha, and that is deliberate
-      #
-      # The pull request *number* is read from GitHub's own branch name — the queue
-      # builds `gh-readonly-queue/main/pr-<n>-<base>`, so the number is GitHub's
-      # encoding rather than this file's guess. The head **sha** is then read from
-      # the API. A sha assembled from a branch name would be the fabricated-hash
-      # fault with a machine doing the fabricating, and unlike a person's typo it
-      # would land on a commit that exists.
-      #
-      # Every guard below **refuses rather than guesses**: a number that will not
-      # parse, an API that returns no head, or a pull request that is not open all
-      # post nothing and say why.
-      #
-      # # The deadline is in the sentence, because nothing can clear the worst case
-      #
-      # The attest script clears this when somebody attests. But it only runs when
-      # somebody does — so it cannot clear an entry that **ejected on timeout** or a
-      # pull request **abandoned**, which are precisely the cases this status exists
-      # to make visible. A stale *waiting for attestation* would then sit in the one
-      # place we are teaching people to trust: the failure being removed, arriving
-      # through the door built to remove it.
-      #
-      # Carrying the queue sha alone makes the truth *available* — a reader who
-      # thinks to check finds the branch gone. Carrying **the deadline** makes it
-      # *unavoidable*: the sentence tells a reader when to stop believing it, judged
-      # against a clock they already have. That is the same move as the format
-      # number in an attestation payload — **the artifact carries what is needed to
-      # weigh the artifact.**
-      #
-      # So the three cases are: attested, and the attest script clears it; ejected
-      # and requeued, and the next `merge_group` run replaces it with a new sha and
-      # a new deadline; ejected and abandoned, and nobody clears it — but the
-      # deadline has passed and any reader can see so without leaving the page.
-      - name: say on the pull request that its queue entry is waiting
-        if: github.event_name == 'merge_group'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          QUEUE_SHA: ${{ github.event.after || github.sha }}
-          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
-          REPO: ${{ github.repository }}
-        run: |
-          echo "queue ref: ${QUEUE_REF:-(the event carried none)}"
-
-          # The pull request number, read out of GitHub's own branch name.
-          number=$(printf '%s' "${QUEUE_REF:-}" | sed -n 's|.*/pr-\([0-9][0-9]*\)-.*|\1|p')
-          if [ -z "$number" ]; then
-            echo "Nothing posted: no pull request number in the queue ref."
-            echo "  Guessing one would put a status on somebody else's pull request."
-            exit 0
-          fi
-          echo "pull request: #$number"
-
-          # Its head sha, and its state, read from the API rather than derived.
-          read -r head state <<EOF
-          $(gh api "repos/$REPO/pulls/$number" --jq '"\(.head.sha) \(.state)"' 2>/dev/null || true)
-          EOF
-          if [ -z "${head:-}" ] || [ "${#head}" -ne 40 ]; then
-            echo "Nothing posted: the API returned no 40-character head sha for #$number."
-            exit 0
-          fi
-          if [ "${state:-}" != "open" ]; then
-            echo "Nothing posted: #$number is '$state', so nothing is waiting on it."
-            exit 0
-          fi
-          echo "head: $head"
-
-          # When the queue built this commit, so the sentence can carry its own
-          # expiry. Read from the commit rather than assumed to be now: this job
-          # starts shortly after the build, and *shortly* is not a measurement.
-          built=$(gh api "repos/$REPO/commits/$QUEUE_SHA" --jq '.commit.committer.date' 2>/dev/null || true)
-          if [ -z "$built" ]; then
-            echo "Nothing posted: the queue commit's build time could not be read, so the"
-            echo "  sentence could not carry the deadline that keeps it from going stale."
-            exit 0
-          fi
-
-          said="queue entry ${QUEUE_SHA} wants alo/nine-gates; it ejects 60 minutes after $built"
-          if [ "${#said}" -gt 140 ]; then
-            said="queue entry ${QUEUE_SHA} wants alo/nine-gates; ejects 60 min after $built"
-          fi
-          if [ "${#said}" -gt 140 ]; then
-            echo "Nothing posted: the description is ${#said} characters and the limit is 140."
-            echo "  A rejected POST would leave this page as silent as it was before."
-            exit 1
-          fi
-
-          echo "posting on $head: $said (${#said} characters)"
-          gh api -X POST "repos/$REPO/statuses/$head" \
-            -f state=failure \
-            -f context=alo/queue-entry-waiting \
-            -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" \
-            -f description="$said"
+      # What is kept from them is the sentence worth keeping: a status is a
+      # message to whoever reads it next, so its *name* has to be the message,
+      # because nothing else about it is read.
 
       # The pinned nightly the BPF gates need, beside the stable the rest use.
       # `crates/alo-bounding-kernel/rust-toolchain.toml` pins it and rustup
@@ -1184,8 +1034,9 @@ jobs:
           if [ -z "$verdict" ]; then
             echo "Nothing is posted. The decision step wrote no verdict, which means the job"
             echo "failed before it ran — a toolchain, a library, the checkout. That is this"
-            echo "file's own business and not a statement about the change, and the"
-            echo "announcement posted at the top of this job already says a lane is needed."
+            echo "file's own business and not a statement about the change. Nothing is"
+            echo "claimed either way: the required status is posted only on success, so its"
+            echo "absence is what holds the merge, and it is absent."
             exit 0
           fi
 
@@ -1203,6 +1054,6 @@ jobs:
           echo "posting on $SHA: $said (${#said} characters)"
           gh api -X POST "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=failure \
-            -f context=alo/this-queue-commit-needs-a-lane \
+            -f context=alo/a-gate-this-runner-can-run-failed \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             -f description="$said"
