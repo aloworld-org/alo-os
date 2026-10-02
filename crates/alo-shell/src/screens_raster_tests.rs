@@ -56,7 +56,10 @@ fn ground(picture: &ScreenPicture) -> [u8; 3] {
     assert_eq!(picture.background.solids.len(), 1);
     assert_eq!(solid.area.loc.x, 0);
     assert_eq!(solid.area.loc.y, 0);
-    assert_eq!((solid.area.size.w, solid.area.size.h), picture.size);
+    assert_eq!(
+        (solid.area.size.w, solid.area.size.h),
+        picture.size.across_and_along()
+    );
     solid.colour
 }
 
@@ -90,18 +93,18 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
                 .each()
                 .find(|place| place.name() == &picture.name)
                 .expect("every picture is a screen on this desk");
-            assert_eq!(picture.size, place.room().across_and_along());
+            assert_eq!(picture.size, place.room());
             assert_eq!(picture.at, place.at());
-            assert_eq!(picture.dock.size, picture.size);
+            assert_eq!(picture.dock.size, picture.size.across_and_along());
             assert!(!picture.dock.solids.is_empty());
             let band = picture.dock.band;
             assert!(
-                band.size.w < picture.size.0,
+                band.size.w < picture.size.across_and_along().0,
                 "the dock is a bar, not a band across the screen"
             );
             assert_eq!(
                 band.loc.y + band.size.h,
-                picture.size.1
+                picture.size.across_and_along().1
                     - i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap(),
                 "and floats clear of the bottom"
             );
@@ -129,8 +132,8 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
             laptop.dock.band.loc, office.dock.band.loc,
             "both bars were placed as though the screens were one"
         );
-        assert_eq!(laptop.dock.size, laptop.size);
-        assert_eq!(office.dock.size, office.size);
+        assert_eq!(laptop.dock.size, laptop.size.across_and_along());
+        assert_eq!(office.dock.size, office.size.across_and_along());
     }
 }
 
@@ -189,7 +192,8 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
     );
 
     for picture in desk(&screens, &dock, look).unwrap() {
-        let undimmed = crate::dock_raster::picture(&dock, look, picture.size, 0).unwrap();
+        let undimmed =
+            crate::dock_raster::picture(&dock, look, picture.size.across_and_along(), 0).unwrap();
         assert_eq!(picture.dock, undimmed, "{:?}", picture.name);
     }
 }

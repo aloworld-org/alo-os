@@ -115,6 +115,20 @@ impl TheRoom {
         }
     }
 
+    /// A room of exactly these laid-out units, **for tests only**.
+    ///
+    /// `from_pixels` is the only constructor a built binary has, because a pair
+    /// that never went through the division is the thing this type exists to be
+    /// distinguishable from. A test wanting *a room 64 by 64* should not have
+    /// to invent a `Resolution` and a `Scale` that divide to it.
+    ///
+    /// `#[cfg(test)]` rather than `pub(crate)`: the hole is real, and this is
+    /// the one way to open it that cannot reach a binary.
+    #[cfg(test)]
+    pub(crate) const fn of_laid_out_units(across: i32, along: i32) -> Self {
+        Self { across, along }
+    }
+
     /// Across and along, in laid-out units.
     ///
     /// Named rather than a field access or a `From`, because **this is where a
