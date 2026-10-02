@@ -603,8 +603,37 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **model built, no evidence, and blocked on there being no input road to the panel
-on a running machine, 2026-10-01.**
+**Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
+aside, 2026-10-02.**
+
+> **The previous reason — *no input road to the panel* — is stale, and it is the second reason
+> on this task to go stale while it waited.** The pointer road landed in `#373`: `libinput`
+> reaches `Desk::dispatch`, which asks `Server::where_the_pointer_is_on_the_panel`, and
+> `alo-desktop` acts on the answer in `the_pointer_is_now`. A person can point at the panel
+> today and get a peek.
+>
+> **What is actually missing is narrower and is re-runnable rather than dated:**
+>
+> ```text
+> put_this_window_aside            0 production callers   the road exists and nothing calls it
+> window_command.rs:78             Action::MinimiseWindow reaches set_window_minimized
+> window_control_input.rs:231      the window-control press does the same
+> surfaces.rs:406                  minimize_request — the XDG obligation, correct, keep
+> putting_a_window_aside.rs:136    the road itself, hiding after the panel accepts
+> putting_a_window_aside.rs:154    the road itself, revealing on bring-back
+> direct_keyboard.rs               no chord handling at all
+> ```
+>
+> Six callers of the primitive, three verdicts. **The road is built and correct; two callers
+> reach past it to the primitive underneath, and the keyboard reaches nothing.** That is not one
+> missing wire, and *blocked on nothing putting a window aside* reads as though it were.
+>
+> **The two bad callers are a fix rather than a design question**, because the road already
+> *composes* the primitive — `putting_a_window_aside.rs` calls `set_window_minimized` itself,
+> twice. So nothing is being replaced and nothing needs renaming. `surfaces.rs:406` answers
+> `xdg_toplevel.set_minimized` for a client that asked, and **must not be migrated with the
+> other two**; a lane greping the primitive's name will meet all three and should know in
+> advance that one of them is a different obligation that happens to share a mechanism.
 
 **The full-screen half is stale: full screen landed in `#352`**, and
 `crates/alo-shell/src/window_full_screen.rs` is in `main`. That clause sat blocked on something
@@ -613,9 +642,16 @@ earlier the same day — a record outliving what it described, this time hiding 
 misattributing it.
 
 **The replacement reason is measured and is not a formality.** `alo-desktop` holds the `Panel`
-and has no pointer or keyboard handling, and `Server::put_this_window_aside` has six callers all
-of which are integration tests. So the edge reveal has nothing to reveal *from* on a running
-machine, and this task's integration evidence waits on that road rather than on full screen.
+and now has pointer handling — `#373` — but no keyboard handling, and
+`Server::put_this_window_aside` has **no production caller at all**. So the edge reveal has
+nothing to reveal *from* on a running machine, and this task's integration evidence waits on
+that road being called rather than on full screen.
+
+*The clause above said `alo-desktop` has no pointer handling and that it has six callers all of
+which are integration tests. The first stopped being true in `#373`; the second counted the
+callers of `set_window_minimized` rather than of `put_this_window_aside`, which has none. Both
+are corrected rather than deleted, because a status that was wrong in a particular way is worth
+more to the next reader than one that was merely out of date.*
 See task 5 for the measurement.
 The generalisation has landed, the decision was made and acted on, and **the region contract is
 built with no evidence** (see above, and the entry in `docs/autonomy/v0-01-evidence.md`).
@@ -772,14 +808,25 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **model built, no evidence, and blocked on there being no input road to the panel on
-a running machine, 2026-10-01.**
+**Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
+aside, 2026-10-02.**
+
+> **The previous reason — *no input road to the panel* — is stale.** The pointer road landed in
+> `#373` and a person can point at the panel on a running machine. The measurement that replaces
+> it is in task 6 above and is the same for both: `Server::put_this_window_aside` has **zero**
+> production callers, two callers reach past it to `set_window_minimized`, and
+> `direct_keyboard.rs` has no chord handling, so nothing can put a window into the panel for
+> alo to be working in.
+>
+> The keyboard half is **routing rather than a decision**: `docs/design/the-shortcuts-and-the-edges.md`
+> already specifies `Super + M`, `Super + Shift + M` and `Super + P`, and
+> `docs/design/the-alo-dock.md` the menu item. Nothing here waits on the owner.
 
 **The panel is drawn**, and has been since `#343` — `panel_raster` lays it out, `desktop_raster`
 calls it every frame, `alo-desktop` hands it a real `Panel`. The old reason was stale for a day.
-What replaces it is measured in task 5 and is larger: nothing on a running machine can put a
-window into that panel, because the crate holding it has no input handling, so there is no
-minimised window for alo to be working in.
+What replaces it is measured in task 6 and is narrower than *no input handling*: the crate
+holding the panel now handles a pointer, and what is missing is that nothing calls
+`put_this_window_aside`, so there is no minimised window for alo to be working in.
 
 **The deep-teal clause was never `alo-appearance`'s and this line said it was** — that crate's
 own `lib.rs` states ADR 0010's second half is *true of screens rather than of colours* and
