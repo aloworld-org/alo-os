@@ -349,6 +349,7 @@ pub use capture_flatten::{NotFlattened, burnt_in};
 // job is to draw a frame with them on it. What is exported is what a caller must
 // hand in; every picture the tools become stays private.
 pub use canvas_command::CanvasCommandError;
+pub use canvas_fixed_controls::FixedControlsDrawn;
 pub use canvas_never_lost::{
     A_USABLE_HANDLE, enough_of_it_is_reachable, the_longest_reachable_run,
 };

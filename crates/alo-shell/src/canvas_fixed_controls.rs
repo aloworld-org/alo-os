@@ -126,22 +126,85 @@ impl crate::Server {
         self.fixed_controls.bounds()
     }
 
-    /// Record where this draw put the fixed controls.
+    /// Record where this draw put the fixed controls — **all of them, as a
+    /// set.**
     ///
-    /// Called from the draw, because the draw is the only place that knows. The
-    /// **band** is taken rather than the picture's presence: `crate::dock_room`'s
-    /// note says the band is laid out whether or not the Dock is showing, and a
-    /// Dock a person asked to give way is not covering anything — so a Dock that
-    /// is not drawn contributes nothing here.
-    pub fn the_dock_was_drawn(
+    /// Called from the draw, because the draw is the only place that knows.
+    ///
+    /// # A set, not a list to extend by hand
+    ///
+    /// The promise is *outside every fixed control*, and the owner's wording of
+    /// 2026-09-30 is explicit that **the controls are a set rather than a list**:
+    /// *a fourth fixed control added later must join it, because outside every
+    /// fixed control is the promise and outside the three we thought of is
+    /// not.*
+    ///
+    /// So this takes whatever the draw laid out, rather than one named control
+    /// per argument. **It was `the_dock_was_drawn` and took the Dock's band
+    /// alone until 2026-10-02**, which meant the rule was in force against one
+    /// of the three: a frame could keep its name clear of the Dock and sit
+    /// entirely under the put-aside panel, and nothing could tell, because the
+    /// shell had never been given the panel's bounds to check against.
+    ///
+    /// A new control joins by **being drawn** and handed over here, which is
+    /// the one place that cannot forget — a caller that adds a surface to the
+    /// picture and not to this call has a compiler error rather than a silent
+    /// hole, because the picture it passes is the thing being read.
+    ///
+    /// # What contributes, and what does not
+    ///
+    /// The Dock's **band** rather than the picture's presence:
+    /// `crate::dock_room`'s note says the band is laid out whether or not the
+    /// Dock is showing, and a Dock a person asked to give way is not covering
+    /// anything — so a Dock that is not drawn contributes nothing.
+    ///
+    /// The panel's **reserved column** rather than its rail. They are not the
+    /// same rectangle: the rail is what is drawn and the reserved column is the
+    /// full-height area the panel owns, by the owner's ruling, and it is the
+    /// reserved one a name has to stay clear of. **An empty panel has a rail of
+    /// no height, and a rectangle with no height contributes nothing** — which
+    /// is why the reserved column is taken unconditionally and the rail is not
+    /// taken at all.
+    pub fn the_fixed_controls_were_drawn(
         &mut self,
-        band: Option<Rectangle<i32, Physical>>,
+        drawn: FixedControlsDrawn,
         text: alo_appearance::TextScale,
     ) {
         let handle = Self::a_usable_handle_at(text);
-        self.fixed_controls
-            .drawn(band.into_iter().collect(), handle);
+        let bounds = [drawn.dock_band, Some(drawn.panel_reserved)]
+            .into_iter()
+            .flatten()
+            .filter(|area| area.size.w > 0 && area.size.h > 0)
+            .collect();
+        self.fixed_controls.drawn(bounds, handle);
     }
+}
+
+/// Where this draw put each fixed control.
+///
+/// A value rather than one argument per control, because they are **one thing**:
+/// what this frame put in front of the canvas. An argument list grows a fourth
+/// entry when somebody remembers; a struct grows one when the compiler says so.
+///
+/// *The status area is absent, and that is a fact about the status area rather
+/// than an omission here.* [ADR
+/// 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+/// took it off the Dock, the owner fixed its position at the top-right of the
+/// viewport on 2026-09-30, and **nothing draws it yet** —
+/// `crate::desktop_raster`'s own note says the clock, battery, network and
+/// volume have no location in the picture. A field holding a rectangle nobody
+/// lays out would be a hole with a name on it. It joins when it is drawn.
+#[derive(Debug, Clone, Copy)]
+pub struct FixedControlsDrawn {
+    /// The Dock's band, or [`None`] where the Dock gave way.
+    pub dock_band: Option<Rectangle<i32, Physical>>,
+    /// The full-height column the put-aside panel owns.
+    ///
+    /// Not the rail. An empty panel's is a rectangle of no width or no height,
+    /// which is filtered out rather than special-cased — *a panel nobody has
+    /// put a window into covers nothing* is the true answer and not a
+    /// placeholder.
+    pub panel_reserved: Rectangle<i32, Physical>,
 }
 
 impl crate::Server {
