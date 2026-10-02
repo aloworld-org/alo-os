@@ -1,11 +1,32 @@
 //! Landing a finished commit on `main` through a branch and a pull request.
 //!
 //! `main` is protected (`docs/autonomy/SHARED_MAIN.md`): nothing is pushed to it
-//! directly, and a merge needs the branch to be up to date and to carry a
-//! passing `alo/nine-gates` on that exact head. So the last step of publishing
-//! is no longer a push — it is *land this commit*: put it on a branch of its
-//! own, open a pull request, say that the gates passed on that head, merge it,
-//! and remove the branch.
+//! directly. So the last step of publishing is not a push — it is *offer this
+//! commit*: put it on a branch of its own, open a pull request, **wait for the
+//! checks `main` requires**, and put it in the merge queue. The queue merges it.
+//!
+//! # What this module stopped doing on 2026-10-02, and why both halves were one mistake
+//!
+//! It used to post its own status — `const THE_CHECK: &str = "alo/nine-gates"` — and then
+//! `PUT pulls/{n}/merge` itself. The owner moved `main` to require
+//! `alo/gates-on-a-runner`, which CI posts, and **nothing required the loop's status any
+//! more**. A loop started that day would have gated for minutes, posted a status nothing
+//! reads, and waited on a merge that could not happen: a lane that looks busy and lands
+//! nothing.
+//!
+//! Renaming the constant would have fixed that once. [`what_main_requires`] asks protection
+//! instead, so the next rename needs no change here — **the name of a required check is
+//! GitHub's state, not this program's opinion.**
+//!
+//! The direct merge was the same fault from the other end: the thing that measured and the
+//! thing that merged were one program, so the one question a direct merge cannot ask went
+//! unasked — *does this still pass combined with whatever landed while it waited*. The queue
+//! builds a candidate on current `main` and re-runs the checks against it. The loop's job now
+//! ends at *this is ready*.
+//!
+//! **The local gates did not go away and are not the verdict.** They still run before the
+//! push, because catching a failure here costs a minute and catching it on a runner costs a
+//! queue slot. What changed is which answer decides.
 //!
 //! # Why this shape, and not a second algorithm
 //!
@@ -21,9 +42,13 @@
 //!
 //! A shared claim ref was tried and removed: it was held by a machine that then
 //! stopped, and `main` was frozen for eight hours on 2026-09-18 and fifteen on
-//! 2026-09-19 with finished work nobody was permitted to merge. Protection is
-//! `strict`, so a branch behind `main` cannot merge however green it looked —
-//! which is the whole job the lock was doing, with no state that can stick.
+//! 2026-09-19 with finished work nobody was permitted to merge.
+//!
+//! **This paragraph used to say protection was `strict`, and it is not** — measured on
+//! 2026-10-02, `strict` is false, because the merge queue builds its own candidate on current
+//! `main` and so does not need the branch to be up to date first. What does the lock's old job
+//! is the queue itself: it serialises the one thing that has to be serialised, and a branch
+//! that has fallen behind is rebuilt rather than refused. There is no state that can stick.
 
 use std::path::Path;
 
@@ -32,8 +57,18 @@ use crate::repository::{MAIN, git};
 /// The repository every machine publishes to.
 const REPOSITORY: &str = "aloworld-org/alo-os";
 
-/// The check `main`'s protection requires before a merge.
-const THE_CHECK: &str = "alo/nine-gates";
+/// How long to wait for the checks `main` requires, and how often to look.
+///
+/// **Sixty minutes because that is the merge queue's own window.** A loop that gave up sooner
+/// would abandon an entry the queue was still building, and one that waited for ever would
+/// hold a worker on a run that had died.
+const LONG_ENOUGH_FOR_A_RUN: std::time::Duration = std::time::Duration::from_secs(60 * 60);
+
+/// How often to ask whether the required checks have finished.
+///
+/// A hosted run takes minutes, so a tighter poll buys nothing but requests against a rate
+/// limit the whole fleet shares.
+const BETWEEN_LOOKS: std::time::Duration = std::time::Duration::from_secs(30);
 
 /// How a branch is named, before the subject: `task/<machine>/<subject>`.
 const UNDER: &str = "task";
@@ -124,14 +159,21 @@ pub fn is_a_lost_race(answered: &str) -> bool {
     .any(|said| answered.contains(said))
 }
 
-/// Land a commit that is already gated: branch, pull request, check, merge.
+/// Offer a commit that is already gated: branch, pull request, wait for CI, queue.
 ///
-/// Returns the sha `main` carries afterwards.
+/// Returns **the head that was offered**, not the sha `main` ends up carrying. It used to
+/// return the latter because it merged the thing itself; now the queue merges, later, after
+/// building its own candidate — so the sha `main` will carry does not exist yet and inventing
+/// one would be a claim about work that has not happened.
+///
+/// That is a change callers can see, and it is the honest shape: *this is offered* is the last
+/// thing this machine knows for certain.
 ///
 /// # Errors
-/// When any step is refused. A refusal that reads as a lost race is left for
-/// [`crate::publishing::gated_and_pushed`] to integrate and try again; the
-/// commit stays in this checkout either way, and nothing is discarded.
+/// When any step is refused, when a required check fails, or when the checks have not finished
+/// inside the queue's own window. A refusal that reads as a lost race is left for
+/// [`crate::publishing::gated_and_pushed`] to integrate and try again; the commit stays in this
+/// checkout either way, and nothing is discarded.
 pub fn landed(at: &Path, subject: &str, note: &mut dyn FnMut(&str)) -> Result<String, String> {
     let machine = this_machine();
     let branch = the_branch_for(&machine, subject);
@@ -158,18 +200,16 @@ pub fn landed(at: &Path, subject: &str, note: &mut dyn FnMut(&str)) -> Result<St
     let number = the_pull_request(at, &branch, subject, &machine)?;
     note(&format!("opened pull request {number}"));
 
-    say_the_gates_passed(at, &head)?;
-    let landed = merged(at, number)?;
+    waited_for(at, &head, note)?;
+    enqueued(at, number)?;
 
-    drop(git(
-        at,
-        &["push", "origin", &format!(":refs/heads/{branch}")],
-    ));
+    // **The branch is not removed here any more.** The queue builds its candidate from this
+    // branch, so deleting it now would delete the thing about to be tested. The queue removes
+    // it on merge, which is what `delete_branch_on_merge` is for.
     note(&format!(
-        "landed as {} and removed `{branch}`",
-        short(&landed)
+        "pull request {number} is in the merge queue on `{branch}`; the queue merges it"
     ));
-    Ok(landed)
+    Ok(head)
 }
 
 /// The first seven characters of a sha, for a sentence somebody reads.
@@ -186,11 +226,16 @@ fn remote_has(at: &Path, branch: &str) -> Result<bool, String> {
 
 /// Open the pull request, or find the one already open for this branch.
 fn the_pull_request(at: &Path, branch: &str, subject: &str, machine: &str) -> Result<u64, String> {
+    // **The body claims what this machine did and nothing about what will happen.** It used to
+    // name the status the loop posted itself, which is the sentence that went stale when `main`
+    // stopped requiring it. What is said here is only ever this machine's own measurement; the
+    // verdict that governs is CI's, on this head and again on the queue's candidate.
     let body = format!(
-        "Published by the loop on {machine}, which gated this commit before landing it.\n\n\
+        "Published by the loop on {machine}, which gated this commit before pushing it.\n\n\
          The nine gates ran on the committed tree and the task's own acceptance evidence stood \
-         up; `{THE_CHECK}` on this head says so. See the task's report in \
-         `docs/autonomy/updates/` for what was built and what is still owed."
+         up **on that machine**. That is a pre-check and not the verdict: the checks `main` \
+         requires decide, on this head and again on the queue's own candidate. See the task's \
+         report in `docs/autonomy/updates/` for what was built and what is still owed."
     );
     let asked = format!(
         "{{\"title\":{},\"head\":{},\"base\":{},\"body\":{}}}",
@@ -273,40 +318,298 @@ fn text_in(answered: &str, named: &str) -> Option<String> {
     None
 }
 
-/// Whether the answer says the merge happened.
-fn says_it_merged(answered: &str) -> bool {
-    let Some(at) = answered.find("\"merged\"") else {
-        return false;
-    };
-    answered
-        .get(at + "\"merged\"".len()..)
-        .map(|rest| rest.trim_start().trim_start_matches(':').trim_start())
-        .is_some_and(|rest| rest.starts_with("true"))
-}
-
-/// Say, on this exact head, that the gates passed.
+/// What `main`'s protection requires right now, asked rather than remembered.
 ///
-/// The check is the only thing `main`'s protection asks for, and it is reported
-/// **after** the gates have run rather than before: a check posted first is a
-/// claim about work nobody has looked at.
-fn say_the_gates_passed(at: &Path, head: &str) -> Result<(), String> {
-    let asked = format!(
-        "{{\"state\":\"success\",\"context\":{},\"description\":{}}}",
-        as_json(THE_CHECK),
-        as_json("the nine gates and this task's evidence passed on this commit")
-    );
-    github(at, "POST", &format!("statuses/{head}"), Some(&asked)).map(drop)
+/// # This is the whole reason the cutover cannot go stale the way the last one did
+///
+/// Until 2026-10-02 this module held `const THE_CHECK: &str = "alo/nine-gates"` and posted it
+/// itself. The owner moved `main` to require `alo/gates-on-a-runner`, which CI posts, and
+/// **nothing requires `alo/nine-gates` any more** — so a loop started that day would have
+/// gated for minutes, posted a status nothing reads, and waited on a merge that could never
+/// happen. A lane that looks busy and lands nothing.
+///
+/// A renamed constant would have fixed that once. Asking protection fixes it every time: the
+/// next rename, or a second required check, needs no change here. **The name of a required
+/// check is GitHub's state, not this program's opinion**, and the fault being removed is
+/// exactly a program holding its own copy of somebody else's answer.
+///
+/// An empty answer is returned as such rather than as an error: a repository with no required
+/// checks is a real configuration, and the caller decides what to do about it.
+fn what_main_requires(at: &Path) -> Result<Vec<String>, String> {
+    let answered = github(at, "GET", &format!("branches/{MAIN}/protection"), None)?;
+    Ok(contexts_in(&answered))
 }
 
-/// Merge it, squashed, and answer with the sha `main` then carries.
-fn merged(at: &Path, number: u64) -> Result<String, String> {
-    let asked = "{\"merge_method\":\"squash\"}";
-    let answered = github(at, "PUT", &format!("pulls/{number}/merge"), Some(asked))?;
-    if says_it_merged(&answered) {
-        return text_in(&answered, "sha")
-            .ok_or_else(|| format!("the merge said it merged and named no sha: {answered}"));
+/// The required contexts named in a protection answer.
+///
+/// **Pure, so it can be tested against the shapes GitHub actually sends.** The I/O above it
+/// cannot be, and a parser that is only exercised through a network call is a parser nobody has
+/// seen handle an empty list, a null, or two entries.
+fn contexts_in(answered: &str) -> Vec<String> {
+    let Some(at_contexts) = answered.find("\"contexts\"") else {
+        return Vec::new();
+    };
+    let rest = answered
+        .get(at_contexts..)
+        .unwrap_or_default()
+        .trim_start_matches("\"contexts\"")
+        .trim_start()
+        .trim_start_matches(':')
+        .trim_start();
+    let Some(list) = rest.strip_prefix('[') else {
+        return Vec::new();
+    };
+    // **An unclosed list reads as none rather than as an error.** The caller refuses on an
+    // empty answer anyway, so a malformed reply and a missing one lead to the same safe place:
+    // nothing is queued. Returning an error here would make a parser decide policy.
+    let Some(end) = list.find(']') else {
+        return Vec::new();
+    };
+    list.get(..end)
+        .unwrap_or_default()
+        .split(',')
+        .filter_map(|each| {
+            let named = each.trim().trim_matches('"').trim();
+            (!named.is_empty()).then(|| named.to_owned())
+        })
+        .collect()
+}
+
+/// Whether every required check has succeeded on this head, or why not yet.
+///
+/// Three answers rather than two, because *not finished* and *failed* are different things a
+/// caller does different things about: one is worth waiting for and the other never will be.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TheChecks {
+    /// Every required check has succeeded on this commit.
+    AllPassed,
+    /// At least one has not finished. Worth another look.
+    StillRunning(String),
+    /// At least one finished and did not succeed. Waiting cannot help.
+    OneFailed(String),
+}
+
+/// Ask what the required checks say about this head.
+///
+/// **A missing context reads as still running, not as passing.** That is the distinction this
+/// whole evening turned on: an absent answer is not a negative one, and a loop that treated
+/// *no result yet* as *nothing wrong* would enqueue before CI had spoken and be refused —
+/// or worse, on a repository with no protection, merge something nobody measured.
+fn what_the_checks_say(at: &Path, head: &str, required: &[String]) -> Result<TheChecks, String> {
+    let answered = github(at, "GET", &format!("commits/{head}/status"), None)?;
+    Ok(read_the_checks(&answered, required))
+}
+
+/// What a status answer says about the required checks.
+///
+/// Pure, for the reason [`contexts_in`] is: the three outcomes are the decision, and a decision
+/// exercised only through a network call is one nobody has watched handle *not reported yet*.
+fn read_the_checks(answered: &str, required: &[String]) -> TheChecks {
+    for named in required {
+        let Some(said) = the_state_of(answered, named) else {
+            return TheChecks::StillRunning(format!(
+                "`{named}` has not reported on this commit yet"
+            ));
+        };
+        match said.as_str() {
+            "success" => {}
+            "pending" => return TheChecks::StillRunning(format!("`{named}` is {said}")),
+            _ => return TheChecks::OneFailed(format!("`{named}` is {said}")),
+        }
     }
-    Err(text_in(&answered, "message").unwrap_or(answered))
+    TheChecks::AllPassed
+}
+
+/// The state reported for one named context, if it has reported at all.
+///
+/// Reads the statuses list rather than the summary `state`, because the summary is an answer
+/// about **every** context including ones protection does not require — so a repository with
+/// an unrelated failing check would read as failed when the required ones all passed.
+fn the_state_of(answered: &str, named: &str) -> Option<String> {
+    let looking_for = format!("\"context\":\"{named}\"");
+    let mut rest = answered;
+    while let Some(at) = rest.find(&looking_for) {
+        // The state for an entry may be written before or after its context, so look in the
+        // object around it rather than only forwards.
+        let before = rest.get(..at).unwrap_or_default();
+        let after = rest.get(at..).unwrap_or_default();
+        let from_the_object = before
+            .rfind('{')
+            .map_or(after, |opened| rest.get(opened..).unwrap_or_default());
+        if let Some(state) = text_in(from_the_object, "state") {
+            return Some(state);
+        }
+        rest = after.get(looking_for.len()..).unwrap_or_default();
+    }
+    None
+}
+
+/// Put it in the merge queue, and let the queue be the thing that merges.
+///
+/// # Why this replaced a direct merge
+///
+/// This module used to `PUT pulls/{n}/merge` itself, after posting its own status. Both halves
+/// were the same mistake from different ends: the loop was deciding that something was safe to
+/// land and then landing it, so **the thing that measured and the thing that merged were the
+/// same program**. The merge queue builds an integration candidate on current `main` and
+/// re-runs the checks against it, which is the one question a direct merge cannot ask — *does
+/// this still pass combined with whatever landed while it was waiting*.
+///
+/// So the loop's job ends at *this is ready*. The queue's job is *and it still works next to
+/// everything else*. Nothing here merges anything.
+///
+/// # Errors
+///
+/// A refusal naming a required check means the loop got here before CI did, which
+/// [`waited_for`] exists to prevent and which is reported rather than retried — retrying a
+/// refusal that is about ordering would spin.
+fn enqueued(at: &Path, number: u64) -> Result<(), String> {
+    let node = the_node_of(at, number)?;
+    let asked = format!(
+        "{{\"query\":{},\"variables\":{{\"id\":{}}}}}",
+        as_json(
+            "mutation($id:ID!){enqueuePullRequest(input:{pullRequestId:$id})\
+             {mergeQueueEntry{position state}}}"
+        ),
+        as_json(&node)
+    );
+    // **The reply is read, not the exit status**, and the transient refusal is retried.
+    // `curl` exits 0 on a 200 that carries `"errors"`, so a request that *succeeded* while the
+    // enqueue was *refused* would otherwise report a landing that never happened — the fault
+    // this lane fixed in its own enqueue script on 2026-10-01, and the one the shell lane spent
+    // a night reading `exit 0` out of a pipeline whose `tail` always succeeded.
+    let mut attempt = 1;
+    loop {
+        let answered = graphql(at, &asked)?;
+        match the_queue_refused(&answered) {
+            None => return Ok(()),
+            Some(why) if is_worth_asking_again(&why) && attempt < AT_MOST_ASKS => {
+                attempt += 1;
+                std::thread::sleep(BETWEEN_LOOKS);
+            }
+            Some(why) => return Err(format!("the queue refused: {why}")),
+        }
+    }
+}
+
+/// How many times a transient refusal is worth retrying before it is a real one.
+const AT_MOST_ASKS: u32 = 5;
+
+/// Why the queue refused, or [`None`] if it took the entry.
+///
+/// **Three ways a reply can mean *not queued*, and all three are read**: an `errors` array, a
+/// null entry under no error at all, and a body with no entry in it. The middle one is the
+/// quiet one — a 200, no error, and nothing queued — and a reader that only looked for `errors`
+/// would call it a landing.
+fn the_queue_refused(answered: &str) -> Option<String> {
+    if answered.contains("\"errors\"") {
+        return Some(text_in(answered, "message").unwrap_or_else(|| answered.to_owned()));
+    }
+    if answered.contains("\"mergeQueueEntry\":null")
+        || answered.contains("\"enqueuePullRequest\":null")
+        || !answered.contains("\"mergeQueueEntry\"")
+    {
+        return Some(format!(
+            "the queue answered without an entry, so nothing is queued: {answered}"
+        ));
+    }
+    None
+}
+
+/// Whether a refusal is the one that fixes itself if you wait.
+///
+/// GitHub answers `UNPROCESSABLE: mergeability check has not yet completed` for a pull request
+/// it has not finished testing for conflicts. **That resolves in seconds and is not a
+/// refusal**; every other one will not resolve at all. A loop that retried a real refusal would
+/// spin, and one that gave up on this would lose a turn to a race it had already won.
+fn is_worth_asking_again(why: &str) -> bool {
+    why.to_ascii_lowercase()
+        .contains("mergeability check has not yet completed")
+}
+
+/// The pull request's node id, which the queue mutation needs and REST does not give.
+fn the_node_of(at: &Path, number: u64) -> Result<String, String> {
+    let answered = github(at, "GET", &format!("pulls/{number}"), None)?;
+    text_in(&answered, "node_id").ok_or_else(|| {
+        format!("pull request {number} was read and named no node_id, so it cannot be queued")
+    })
+}
+
+/// Reach GitHub's GraphQL endpoint, which is not under `/repos`.
+///
+/// Its own function rather than a parameter on [`github`], because that one builds a
+/// repository-scoped REST path and this is a different endpoint with a different shape. One
+/// function doing both would take a flag that changes what every other argument means.
+fn graphql(at: &Path, asked: &str) -> Result<String, String> {
+    let token = the_token(at)?;
+    let ran = std::process::Command::new("curl")
+        .args([
+            "--silent",
+            "--show-error",
+            "-X",
+            "POST",
+            "-H",
+            &format!("Authorization: bearer {token}"),
+            "-H",
+            "Content-Type: application/json",
+            "--data",
+            asked,
+            "https://api.github.com/graphql",
+        ])
+        .current_dir(at)
+        .output()
+        .map_err(|why| format!("curl could not be run to reach GitHub: {why}"))?;
+    if !ran.status.success() {
+        return Err(format!(
+            "curl refused reaching GitHub: {}",
+            String::from_utf8_lossy(&ran.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&ran.stdout).into_owned())
+}
+
+/// Wait until the required checks have spoken about this head, or give up saying why.
+///
+/// **Waiting is the loop's work now, and it is not the same as gating.** The loop still runs
+/// the nine gates before it pushes, because catching a failure here costs a minute and
+/// catching it on a runner costs a queue slot. What changed is which verdict *decides*: CI's.
+/// So the local gate is a pre-check and this is where the answer comes from.
+fn waited_for(at: &Path, head: &str, note: &mut dyn FnMut(&str)) -> Result<(), String> {
+    let required = what_main_requires(at)?;
+    if required.is_empty() {
+        return Err(format!(
+            "`{MAIN}` requires no checks, so nothing here can tell a measured commit from an \
+             unmeasured one. Refusing to queue rather than guessing."
+        ));
+    }
+    note(&format!(
+        "waiting for {} on this head: {}",
+        if required.len() == 1 {
+            "the check"
+        } else {
+            "the checks"
+        },
+        required.join(", ")
+    ));
+
+    let began = std::time::Instant::now();
+    loop {
+        match what_the_checks_say(at, head, &required)? {
+            TheChecks::AllPassed => return Ok(()),
+            TheChecks::OneFailed(why) => {
+                return Err(format!("a required check did not pass: {why}"));
+            }
+            TheChecks::StillRunning(why) => {
+                if began.elapsed() >= LONG_ENOUGH_FOR_A_RUN {
+                    return Err(format!(
+                        "the required checks had not finished after {} minutes: {why}",
+                        LONG_ENOUGH_FOR_A_RUN.as_secs() / 60
+                    ));
+                }
+                std::thread::sleep(BETWEEN_LOOKS);
+            }
+        }
+    }
 }
 
 /// One call to GitHub, with the credential git already holds.
@@ -459,5 +762,125 @@ mod tests {
         assert_eq!(number_in(r#"[{"number":9},{"number":11}]"#), Some(9));
         assert_eq!(number_in(r#"{"message":"Validation Failed"}"#), None);
         assert_eq!(number_in("not json at all"), None);
+    }
+    /// **What `main` requires is read from protection, not remembered.**
+    ///
+    /// The cutover of 2026-10-02 turned on this: the old code held `alo/nine-gates` as a
+    /// constant and posted it, and when the owner moved protection to
+    /// `alo/gates-on-a-runner` nothing required the loop's status any more. Parsing the live
+    /// answer is what stops the next rename being silent.
+    #[test]
+    fn the_required_checks_are_read_out_of_what_protection_answers() {
+        let answered =
+            r#"{"required_status_checks":{"strict":false,"contexts":["alo/gates-on-a-runner"]}}"#;
+        assert_eq!(
+            contexts_in(answered),
+            vec!["alo/gates-on-a-runner".to_owned()],
+            "the required check was not read out of protection"
+        );
+    }
+
+    /// **Two required checks are both read**, because a repository may grow a second one and a
+    /// reader that took only the first would queue on half an answer.
+    #[test]
+    fn every_required_check_is_read_and_not_just_the_first() {
+        let answered = r#"{"required_status_checks":{"contexts":["one","two"]}}"#;
+        assert_eq!(
+            contexts_in(answered),
+            vec!["one".to_owned(), "two".to_owned()]
+        );
+    }
+
+    /// **No required checks reads as none**, which the caller refuses on rather than treating
+    /// as permission. A repository with nothing required cannot tell a measured commit from an
+    /// unmeasured one, and queueing there would be the loop merging something nobody looked at.
+    #[test]
+    fn protection_with_no_required_checks_reads_as_none_rather_than_as_anything() {
+        assert!(contexts_in(r#"{"required_status_checks":null}"#).is_empty());
+        assert!(contexts_in("{}").is_empty());
+    }
+
+    /// **A check that has not reported is still running, never passing.**
+    ///
+    /// The distinction the whole fleet spent 2026-10-01 on: an absent answer is not a negative
+    /// one. A loop that read *no result yet* as *nothing wrong* would queue before CI had
+    /// spoken.
+    #[test]
+    fn a_check_that_has_not_reported_is_not_a_check_that_passed() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        let nothing_yet = r#"{"state":"pending","statuses":[]}"#;
+        assert!(matches!(
+            read_the_checks(nothing_yet, &required),
+            TheChecks::StillRunning(_)
+        ));
+    }
+
+    /// **The required check is read by name, not from the summary state.**
+    ///
+    /// The summary is about every context including ones protection does not require, so an
+    /// unrelated failing check would read as failed when the required one passed — and an
+    /// unrelated passing one could read as success when the required one had not run.
+    #[test]
+    fn an_unrelated_failing_check_does_not_decide_a_required_one() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        let said = r#"{"state":"failure","statuses":[
+            {"state":"failure","context":"some/other-thing"},
+            {"state":"success","context":"alo/gates-on-a-runner"}]}"#;
+        assert_eq!(read_the_checks(said, &required), TheChecks::AllPassed);
+    }
+
+    /// **A failed required check is not something to wait for.**
+    #[test]
+    fn a_failed_required_check_is_told_apart_from_one_still_running() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        let failed = r#"{"statuses":[{"state":"failure","context":"alo/gates-on-a-runner"}]}"#;
+        let running = r#"{"statuses":[{"state":"pending","context":"alo/gates-on-a-runner"}]}"#;
+        assert!(matches!(
+            read_the_checks(failed, &required),
+            TheChecks::OneFailed(_)
+        ));
+        assert!(matches!(
+            read_the_checks(running, &required),
+            TheChecks::StillRunning(_)
+        ));
+    }
+
+    /// **A 200 carrying errors is a refusal, and this is the test for the fault that was
+    /// nearly written twice.**
+    ///
+    /// `curl` exits 0 on a 200 whose body says `"errors"`, so a request that *succeeded*
+    /// while the enqueue was *refused* reads as a landing. This lane had that exact bug in its
+    /// own enqueue script on 2026-10-01, and the shell lane spent a night reading `exit 0`
+    /// from a pipeline whose `tail` always succeeded. Same shape from two directions: **the
+    /// signal was correct and the reader discarded it.**
+    #[test]
+    fn a_reply_carrying_errors_is_a_refusal_however_the_request_went() {
+        let refused = r#"{"errors":[{"message":"Pull request is in unstable status"}]}"#;
+        assert!(the_queue_refused(refused).is_some());
+
+        let no_entry = r#"{"data":{"enqueuePullRequest":null}}"#;
+        assert!(
+            the_queue_refused(no_entry).is_some(),
+            "a null entry under no error read as queued"
+        );
+
+        let queued = r#"{"data":{"enqueuePullRequest":{"mergeQueueEntry":{"position":1,"state":"QUEUED"}}}}"#;
+        assert!(the_queue_refused(queued).is_none());
+    }
+
+    /// **The transient refusal is told apart from a real one.**
+    ///
+    /// `mergeability check has not yet completed` resolves in seconds; every other refusal
+    /// will not. A loop that retried a real refusal would spin, and one that gave up on the
+    /// transient one would lose a turn to a race it had already won.
+    #[test]
+    fn a_mergeability_check_that_has_not_finished_is_not_a_real_refusal() {
+        assert!(is_worth_asking_again(
+            "UNPROCESSABLE: mergeability check has not yet completed"
+        ));
+        assert!(!is_worth_asking_again("Pull request is in unstable status"));
+        assert!(!is_worth_asking_again(
+            "Required status check \"alo/gates-on-a-runner\" is expected."
+        ));
     }
 }
