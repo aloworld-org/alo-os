@@ -49,6 +49,21 @@ pub struct Server {
     /// `crate::canvas_never_lost`'s rule had no caller until this field existed.
     /// `crate::canvas_fixed_controls` carries the reasoning and the units.
     pub(crate) fixed_controls: crate::canvas_fixed_controls::FixedControls,
+    /// **Where the put-aside panel is, as the last draw laid it out.**
+    ///
+    /// Held for exactly the reason `fixed_controls` above is, and the parallel is
+    /// the argument: the panel's slots are computed in `crate::panel_raster` and
+    /// nowhere else, so outside a frame they do not exist. A pointer arriving
+    /// between frames has nothing to be tested against, which is why
+    /// `crate::which_preview_the_pointer_is_on` had no geometry to ask about
+    /// until this field existed.
+    ///
+    /// `None` until the first draw, and that is the honest answer rather than an
+    /// empty picture: a panel nobody has laid out has no slots *and* no reserved
+    /// column, and a default would claim an edge that has not been measured on
+    /// this display. `crate::peeking_at_a_put_aside_window` answers `Ok(None)`
+    /// there instead of inventing one.
+    pub(crate) panel_as_drawn: Option<crate::which_preview_the_pointer_is_on::ThePanelAsDrawn>,
     /// **What a person is looking at on the canvas.**
     ///
     /// The plane moves under the viewport, so this is the whole of what a pan
@@ -90,6 +105,9 @@ impl Server {
             presentation: Default::default(),
             switch_order: Default::default(),
             fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),
+            // Nothing has been drawn yet, which is why this is `None` rather than an
+            // empty picture — see the field's own note.
+            panel_as_drawn: None,
             camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),

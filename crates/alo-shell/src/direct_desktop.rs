@@ -201,6 +201,16 @@ impl LoopInput for Desk<'_> {
             pictures.desktop.dock.as_ref().map(|dock| dock.band),
             self.desktop.now().look.scale(),
         );
+        // **And where the panel ended up, for the same reason and in the same place.**
+        // Its slots are laid out in `crate::panel_raster` and exist only for this
+        // frame; a pointer arriving afterwards has nothing to be tested against
+        // without this line, which is why `crate::which_preview_the_pointer_is_on`
+        // had no geometry to ask about. Cloned rather than borrowed because the
+        // pictures do not outlive the frame and the question is asked after it.
+        server.the_panel_was_drawn(crate::which_preview_the_pointer_is_on::ThePanelAsDrawn::of(
+            frame.put_aside,
+            pictures.desktop.panel.clone(),
+        ));
         server.render_frame(
             &mut Layered {
                 target,

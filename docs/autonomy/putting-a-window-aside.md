@@ -443,11 +443,35 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** **model built, no evidence, and blocked on the panel not being drawn or routed at
-all, 2026-09-30.** Not merely on a hit test: nothing consumes this crate. Its drawing clause
-will be measured against **Minimized panel / 04 Peek**. The
-peek is built and both *unchanged* clauses hold; the clause that needs the shell's own hit test
-stays here.
+**Status:** **model and hit test built, no evidence, and blocked on there being no input road
+to the panel on a running machine, 2026-10-01.**
+
+**The hit test is no longer missing.** `crates/alo-shell/src/which_preview_the_pointer_is_on.rs`
+answers *which put-aside window is this pointer on* against the slots the draw already lays
+out, and `crates/alo-shell/src/peeking_at_a_put_aside_window.rs` turns that into a peek
+beginning, ending or staying put. Nine tests, and the one that matters is
+`the_same_count_in_a_different_order_names_no_window`.
+
+**The previous wording was stale in one clause and right in the other, and the correction is
+narrower than it first looked.** *Blocked on the panel not being drawn* stopped being true in
+`#343`: `panel_raster` lays it out, `desktop_raster` calls it every frame, and `alo-desktop`
+holds a real `Panel` and hands it in. So that half sat stale for a day and hid work.
+
+But *or routed at all* is still true, and it is **bigger than a hit test**. Measured on `main`
+at `ad229c9c` rather than inferred:
+
+- `Server::put_this_window_aside` has **six callers and all six are integration tests**;
+- `alo-desktop`, which owns the `Panel`, has **no pointer or keyboard handling at all**;
+- so the panel a person sees is drawn from a `Panel::new()` that nothing can add to.
+
+**So no amount of work in `alo-put-aside` or in the shell's own files finishes this task.** What
+it waits on is an input road in the crate that holds the panel — a gesture reaching
+`put_this_window_aside`, and a pointer reaching `the_pointer_is_now_over_the_panel`. Named here
+so the next lane does not rediscover it, and **not claimed as unblocked**: another lane read the
+old status, concluded the task was available, and told the owner so. It was half available, and
+the half that was missing is the half nobody had measured.
+
+Its drawing clause will be measured against **Minimized panel / 04 Peek**.
 
 A larger readable view over the current canvas. Releasing or Escape removes it and **the
 window stays minimised**.
@@ -500,8 +524,20 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 ### 6. The full-screen edge reveal
 
-**Status:** **model built, no evidence, and blocked on there being no full screen in
-`alo-shell`, measured 2026-09-30** — upstream of the integration evidence, which is still owed.
+**Status:** **model built, no evidence, and blocked on there being no input road to the panel
+on a running machine, 2026-10-01.**
+
+**The full-screen half is stale: full screen landed in `#352`**, and
+`crates/alo-shell/src/window_full_screen.rs` is in `main`. That clause sat blocked on something
+that had shipped, which is the same fault corrected in task 5 above and in the lane table
+earlier the same day — a record outliving what it described, this time hiding work rather than
+misattributing it.
+
+**The replacement reason is measured and is not a formality.** `alo-desktop` holds the `Panel`
+and has no pointer or keyboard handling, and `Server::put_this_window_aside` has six callers all
+of which are integration tests. So the edge reveal has nothing to reveal *from* on a running
+machine, and this task's integration evidence waits on that road rather than on full screen.
+See task 5 for the measurement.
 The generalisation has landed, the decision was made and acted on, and **the region contract is
 built with no evidence** (see above, and the entry in `docs/autonomy/v0-01-evidence.md`).
 
@@ -657,7 +693,15 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **model built, no evidence, and blocked on the panel not being drawn, 2026-09-30.**
+**Status:** **model built, no evidence, and blocked on there being no input road to the panel on
+a running machine, 2026-10-01.**
+
+**The panel is drawn**, and has been since `#343` — `panel_raster` lays it out, `desktop_raster`
+calls it every frame, `alo-desktop` hands it a real `Panel`. The old reason was stale for a day.
+What replaces it is measured in task 5 and is larger: nothing on a running machine can put a
+window into that panel, because the crate holding it has no input handling, so there is no
+minimised window for alo to be working in.
+
 **The deep-teal clause was never `alo-appearance`'s and this line said it was** — that crate's
 own `lib.rs` states ADR 0010's second half is *true of screens rather than of colours* and
 *belongs where the drawing happens*, and that nothing in it can enforce it. The attribution was
