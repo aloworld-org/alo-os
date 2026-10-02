@@ -123,13 +123,13 @@ fn with_no_agent_the_panel_is_complete_and_offers_nothing_agent_shaped() {
     // Everything the panel is for, with no agent anywhere. A fresh panel is `Expanded` —
     // *what a panel does by default*, per `showing.rs` — so three previews are named ones.
     assert_eq!(panel.holding(), 3);
-    assert_eq!(panel.chosen(), Chosen::Expanded);
-    assert_eq!(panel.showing(), HowItShows::NamedPreviews);
-    panel.collapse();
-    assert_eq!(panel.showing(), HowItShows::ARailOfIcons);
-    assert_eq!(panel.chosen(), Chosen::Collapsed);
-    panel.expand();
-    assert_eq!(panel.showing(), HowItShows::NamedPreviews);
+    assert_eq!(panel.chosen(a_place()), Chosen::Expanded);
+    assert_eq!(panel.showing(a_place()), HowItShows::NamedPreviews);
+    panel.collapse(a_place());
+    assert_eq!(panel.showing(a_place()), HowItShows::ARailOfIcons);
+    assert_eq!(panel.chosen(a_place()), Chosen::Collapsed);
+    panel.expand(a_place());
+    assert_eq!(panel.showing(a_place()), HowItShows::NamedPreviews);
     let names: Vec<&str> = panel
         .previews()
         .iter()

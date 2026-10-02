@@ -22,6 +22,7 @@ use alo_dock::window::{Window, WindowId};
 
 use crate::preview::Preview;
 use crate::showing::{Chosen, HowItShows};
+use crate::the_collapse_choice_per_place::TheCollapseChoice;
 use crate::what_alo_is_doing::WhatAloIsDoing;
 use crate::whether_it_is_private::Privacy;
 
@@ -50,8 +51,13 @@ pub enum NotPutAside {
 pub struct Panel {
     /// The previews, most recently put aside first.
     previews: Vec<Preview>,
-    /// What the person chose to see.
-    chosen: Chosen,
+    /// What the person chose to see, **on each Place separately**.
+    ///
+    /// One field held one answer for every surface, which is the clause task 1 stayed open
+    /// for: a person who collapses the rail on the Place they are writing on has said nothing
+    /// about the Place where they keep their reading.
+    /// `crate::the_collapse_choice_per_place` carries why absent means expanded.
+    chosen: TheCollapseChoice,
 }
 
 impl Panel {
@@ -157,28 +163,45 @@ impl Panel {
         self.previews.len()
     }
 
-    /// What the person chose to see.
+    /// What the person chose to see **on this Place**.
+    ///
+    /// Task 1's owed clause: the choice is keyed per Place, so this needs to know which one.
+    /// A Place a person has never collapsed answers [`Chosen::Expanded`], which is what a
+    /// fresh panel answers and for the same reason.
     #[must_use]
-    pub const fn chosen(&self) -> Chosen {
-        self.chosen
+    pub fn chosen(&self, place: Place) -> Chosen {
+        self.chosen.on(place)
     }
 
-    /// Collapse the panel to a rail.
+    /// Collapse the panel to a rail **on this Place**, leaving every other Place alone.
     ///
     /// **Touches no window.** See this file's header: the rule is held by what this
-    /// method can reach, not by a check afterwards.
-    pub const fn collapse(&mut self) {
-        self.chosen = Chosen::Collapsed;
+    /// method can reach, not by a check afterwards. Taking a Place does not weaken that —
+    /// a Place is a number the canvas minted, not a position, and there is still no way
+    /// from here to a window or a camera.
+    pub fn collapse(&mut self, place: Place) {
+        self.chosen.collapse(place);
     }
 
-    /// Expand the panel to named previews.
-    pub const fn expand(&mut self) {
-        self.chosen = Chosen::Expanded;
+    /// Expand the panel to named previews **on this Place**.
+    pub fn expand(&mut self, place: Place) {
+        self.chosen.expand(place);
     }
 
-    /// What this panel shows.
+    /// What this panel shows **on this Place**.
     #[must_use]
-    pub const fn showing(&self) -> HowItShows {
-        HowItShows::of(self.previews.len(), self.chosen)
+    pub fn showing(&self, place: Place) -> HowItShows {
+        HowItShows::of(self.previews.len(), self.chosen.on(place))
+    }
+
+    /// How many Places the person has collapsed the panel on.
+    ///
+    /// Offered because *the choice persists per Place* is otherwise only observable one Place
+    /// at a time, and a test that asked each Place separately could not tell *expanding
+    /// forgets* from *expanding overwrites*. See
+    /// `the_collapse_choice_per_place::TheCollapseChoice::expand`.
+    #[must_use]
+    pub fn how_many_places_are_collapsed(&self) -> usize {
+        self.chosen.how_many_are_collapsed()
     }
 }

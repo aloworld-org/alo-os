@@ -78,6 +78,37 @@ rather than to operate.
 So the panel on a screen is **always empty** — and that lane's own `panel_raster.rs` says what
 that draws: *an empty panel has a rail of no height and no slots*.
 
+### Measured again on 2026-10-02, and one of the two halves has gone
+
+**Peeking is reachable.** A pointer now travels from `libinput_routing` through
+`direct_seat` and `direct_pointer` to `Desk::dispatch`, which asks
+`Server::where_the_pointer_is_on_the_panel` for a classification and hands it to
+`TheDesktop::the_pointer_is_now`; `alo-desktop` holds the `Panel` and calls `peek_at`.
+
+**Putting a window aside is not.** `Server::put_this_window_aside` is written and its only
+callers are its integration tests, because the gesture that would call it does not exist. So a
+person can now point at a panel that still has nothing in it, and **that one road is what every
+remaining task in this plan is waiting on.**
+
+### The order the remaining work goes in, and why
+
+Written here rather than on one machine, because this fleet has twice paid for knowledge living
+where the other lanes could not see it — a parked pointer classifier nobody knew existed, and a
+gate-provenance finding two lanes rediscovered five days late.
+
+1. **The gesture that puts a window aside.** One road, and it unblocks the evidence clause of
+   every task below. It goes first for that reason and not because it is the smallest.
+2. **`surface_areas.rs` and `panel_region.rs` into this crate**, handed over by the dev-PC lane
+   with its header corrected after 378 grid points were measured changing answer on a reordered
+   match. **The `no_figure_from_the_design_reaches_the_code` check moves with them** — a source
+   check that stops applying because the source moved is the rule quietly ceasing to exist.
+3. **The remaining shell callers**: `ask_for`, `alo_is_now`, `what_an_agent_may_do`. The last
+   returns only refusals, so its caller is wherever an agent asks about a put-aside window —
+   **check that road exists before writing it** rather than inventing one.
+
+**Task 4 stays blocked on History, which is `[v1]`** — outside this release, so it is not work
+being skipped. Its status line says so, which is what a supervisor reads.
+
 ### The gesture is not missing. It exists and it does something else.
 
 The sharper finding, from the lane that owns the shell, after being asked whether the drawing
@@ -168,11 +199,34 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **model built, one clause evidenced, and its owed clause is now buildable rather
-than blocked, 2026-10-01.** `alo_canvas::Place` landed, so *the collapse choice keyed per Place*
-is no longer waiting on anybody — it is this lane’s next change rather than a block. Kept
-separate from the Place-saving work because a task that cannot be finished and gated inside a
-worker’s forty-five minutes is a phase rather than a task.
+**Status:** **model built and its owed clause paid; blocked on no window reaching the panel,
+2026-10-02.**
+
+**The collapse choice is keyed per Place.** `crates/alo-put-aside/src/the_collapse_choice_per_place.rs`
+holds `TheCollapseChoice`, a map from `alo_canvas::Place` to `Chosen` where **absent means
+expanded** — not a default invented for a missing entry, but the same answer a fresh panel
+gives, because `Chosen` carries `#[default]` on `Expanded`. Expanding *removes* the entry
+rather than storing the default, so *never collapsed* and *expanded again* are one state rather
+than two a person cannot tell apart.
+
+`Panel::chosen`, `collapse`, `expand` and `showing` all take a Place now. Eight tests in
+`tests/the_collapse_choice_is_remembered_for_each_place.rs`, every one of them using **at
+least two Places** — a suite in which every assertion is about one Place cannot tell a
+per-Place choice from a single field, which is the same reason the travel tests use Place 7 and
+look at Place 2.
+
+**Watched failing**: `on` changed to ignore its argument and answer the first entry, which is
+exactly the old single-field behaviour. It compiled, and five of the eight failed.
+
+**This clause was owed for a day and the reason it is paid now is that the canvas lane landed
+`Place`.** It was never this crate's to define — the owner ruled on 2026-09-30 that the canvas
+owns Place identity, so a `PlaceId` invented here would have been the surface least entitled to
+define it doing so. The clause stayed in this task rather than being moved or quietly dropped,
+which is what *the status line is the state* was for.
+
+**What the canvas lane's task 7 still needs from this.** That plan carries *the minimised-window
+panel, per Place* under the constraint that the panel consumes Place identity rather than
+defining it. This is that half. Neither plan closes until a window can actually reach the panel.
 Since `#343` the empty panel is drawn by something real, so *an empty panel is its own state
 rather than a list of length zero* is evidenced. Nothing puts a window aside, so the previews and
 the rail are not — see *What none of these tasks has* above. Its
@@ -192,16 +246,21 @@ recent first, `Preview` naming one window, and `Chosen` (two cases, what the per
 picked) against `HowItShows` (three, what is drawn). Six tests in
 `crates/alo-put-aside/tests/the_panel_holds_windows_and_not_applications.rs`.
 
-**What is owed:** the collapse choice keyed **per Place**. See below.
+**What was owed and is now built:** the collapse choice keyed **per Place**, in
+`src/the_collapse_choice_per_place.rs` with eight tests. The paragraphs below are kept as the
+record of why it was blocked for a day and who it was blocked on — **read them as history, not
+as the current state**, which the status line above carries. A reader who scans the prose and
+not the status is the reader this task has already misled once.
 
 **Rule 1 is held by the dependency not existing.** `Cargo.toml` does not list
 `alo-canvas`, so nothing in the crate can take a `Camera` at all — which is stronger
 than a test of where the panel ended up, for the reason that crate's own header gives: a
 surface in the wrong layer that compensates correctly passes a test of its position.
 
-**This task is not wholly done, and the gap is named rather than closed.** It said the
-collapse choice *persists per Place*. **The choice is held and remembered; it is not yet
-keyed by Place**, because there is no canvas Place to key it by — measured across the
+**History, 2026-09-30 to 2026-10-02 — this task was not wholly done and the gap was named
+rather than closed.** It said the collapse choice *persists per Place*. **The choice was held
+and remembered but not keyed by Place**, because there was no canvas Place to key it by —
+measured across the
 whole tree, and the word is spent four times over on other things: a socket's directory
 in `alo-agentd`, an update source in `alo-looking`, a region of a screen in
 `alo-dividing`, and where an icon sits on the bar in `alo-dock`. None is the endless
