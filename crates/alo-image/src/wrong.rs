@@ -77,6 +77,24 @@ pub enum Wrong {
         /// What the unit bounds it to.
         held: Vec<String>,
     },
+    /// The screen's service holds a capability.
+    ///
+    /// **It runs as `root` and it is the only one of the five that does**, so
+    /// it is the unit where this matters most and it was the unit nothing
+    /// asked. A compositor needs a card and a seat, not a capability, and a
+    /// bounding set that is merely *unmentioned* reads the same as one that is
+    /// empty to everybody except the next person to edit the file.
+    #[error(
+        "the screen's unit {screen} holds capabilities: bounded to {bounded:?}, given {given:?}"
+    )]
+    TheScreenHoldsSomething {
+        /// The screen's unit.
+        screen: String,
+        /// What the unit bounds it to.
+        bounded: Vec<String>,
+        /// What the unit gives it.
+        given: Vec<String>,
+    },
     /// The agent's service holds a capability, or does not say it holds none.
     #[error(
         "{agent} does not say it holds nothing — ADR 0001 §2 says the agent service never runs \
