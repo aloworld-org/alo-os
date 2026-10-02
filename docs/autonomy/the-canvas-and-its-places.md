@@ -136,7 +136,12 @@ still move a window between Places.
 
 ### 4. A restore travels; it does not relocate
 
-**Status:** blocked on 1. **Separate from task 3 on purpose.**
+**Status:** **Done, 2026-10-02.** `crates/alo-shell/src/canvas_a_restore_travels.rs`,
+wired into `Server::set_window_minimized` on the way back only. Shown by
+`crates/alo-shell/tests/a_restore_travels/mod.rs` — four cases driven through the
+real restore rather than through the rule, because a test that called the rule
+would pass just as well with nothing wired to it.
+**Depends on:** 1, which landed as #351. **Separate from task 3 on purpose.**
 
 Restoring a minimised window **returns it to the Place it was already on**, and the
 view travels there. **Nothing is relocated by a restore.** A window put aside on

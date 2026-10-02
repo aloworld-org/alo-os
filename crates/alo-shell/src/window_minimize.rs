@@ -28,7 +28,19 @@ impl Server {
         surface: &WlSurface,
         minimized: bool,
     ) -> Result<bool, WindowMinimizeError> {
-        self.surfaces.set_window_minimized(surface, minimized)
+        let changed = self.surfaces.set_window_minimized(surface, minimized)?;
+        // **A restore travels** — `the-canvas-and-its-places.md` task 4. A window
+        // put aside on one Place comes back on that Place and the person is taken
+        // to it, rather than the window arriving wherever they happen to be
+        // looking. Only on the way back: putting one aside moves nobody.
+        //
+        // After the transition rather than before, so a refused restore travels
+        // nowhere, and only when it actually changed — a second restore of an
+        // already-visible window answers `false` and must not move the view.
+        if changed && !minimized {
+            self.the_view_travels_to(surface);
+        }
+        Ok(changed)
     }
 
     /// Hidden buffered roots in stacking order, available to trusted restore UI.
