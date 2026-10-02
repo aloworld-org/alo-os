@@ -326,6 +326,37 @@ after all, and `along.rs` is the deletion that has to be answered rather than a
 file nobody needs. What the Dock's settings section also asks — whether it gives
 way when a window needs the room — is its own promise at v0.5.*
 
+### The top controls
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. There is no top band in this repository: nothing lays
+one out, nothing holds the active window's controls, and no surface offers the
+way back to the canvas. The pieces it will join already exist and are the reason
+it can be added by being pushed rather than by a signature changing —
+`FixedControlsDrawn` carries `dock_band`, `panel_reserved` and `status_area`, so
+the never-lost rule, the recheck and the mover cover a fourth control with no
+change of their own.
+
+**Two halves of this promise rest on roads that do not exist, and they are
+different roads.** *It stays while it is being used* needs the covered-surface
+reveal, which is built in `alo-dock` and called by nothing. *A person who would
+rather it never hid may keep it visible* is a **setting** — a thing a person
+chose, not the state their work is in — and ADR 0038's per-crate settings file
+is where it belongs; nothing names one for this surface yet.
+
+Reached v0.01 on 2026-10-02 by the owner's decision. It had been drawn in the
+regions note and listed in `docs/features.md` nowhere, which is why it is owed
+rather than merely unbuilt: three tasks were arbitrating against a surface no
+lane was permitted to build, and the pointer classifier could not land in any
+crate because one of its three inputs was unbuildable. Where the work is: task
+6 of `docs/autonomy/the-canvas-and-its-places.md`, which is the fixed controls as
+a set; the top controls are its fourth member and are written up there as 6a.
+**Cited as 6 rather than 6a because 6a is not a pointer this repository can
+follow** — `alo-reconciling` reads a task number as digits followed by `of`, and
+finds a task by a `### <digits>.` heading under `## Tasks`, so a promise citing
+6a would point nowhere.
+
 ### Switching between windows, and between applications
 
 **Shown by:** `crates/alo-shell/tests/window_switch/mod.rs`,
