@@ -52,11 +52,23 @@ impl ScreenBackground {
     /// # Errors
     /// [`RenderError::DesktopScene`] for a screen with no pixels, or more of them
     /// than this will allocate.
+    /// # The area below is the screen's **room**, not its framebuffer
+    ///
+    /// It is built as `Rectangle<i32, Physical>` because that is the type the
+    /// renderer takes, and **the marker is not the truth about the value**: the
+    /// numbers came through `TheRoom`, which is the screen's pixels already
+    /// divided by the scale it is drawn at.
+    ///
+    /// Taking [`TheRoom`] rather than a pair is what stops the two being
+    /// swapped here. Three wrong diagnoses in three days came from reading that
+    /// `Physical` marker as a claim about the units; the parameter now carries
+    /// the claim instead, where it can be checked by a compiler.
     pub(crate) fn prepare(
         chosen: &Background,
         warming: Warming,
-        size: (i32, i32),
+        room: crate::TheRoom,
     ) -> Result<Self, RenderError> {
+        let size = room.across_and_along();
         if !a_size_worth_painting(size) {
             return Err(RenderError::DesktopScene);
         }

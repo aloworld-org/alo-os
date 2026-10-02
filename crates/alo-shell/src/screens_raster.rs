@@ -46,7 +46,7 @@ pub struct ScreenPicture {
     /// Its corner on the desk.
     pub(crate) at: Position,
     /// The room it was laid out for.
-    pub(crate) size: (i32, i32),
+    pub(crate) size: crate::TheRoom,
     /// What is behind its windows.
     pub(crate) background: ScreenBackground,
     /// Its dock, on its own edge, laid out for its own room and already warmed.
@@ -68,7 +68,7 @@ impl ScreenPicture {
 
     /// The room it was laid out for.
     #[must_use]
-    pub const fn size(&self) -> (i32, i32) {
+    pub const fn size(&self) -> crate::TheRoom {
         self.size
     }
 
@@ -105,15 +105,12 @@ pub(crate) fn picture(
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
     }
-    let background = ScreenBackground::prepare(
-        place.wearing().background(),
-        warming,
-        place.room().across_and_along(),
-    )?;
+    let background =
+        ScreenBackground::prepare(place.wearing().background(), warming, place.room())?;
     Ok(ScreenPicture {
         name: place.name().clone(),
         at: place.at(),
-        size: place.room().across_and_along(),
+        size: place.room(),
         background,
         dock: drawn,
     })

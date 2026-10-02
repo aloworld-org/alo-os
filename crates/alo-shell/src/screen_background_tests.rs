@@ -29,19 +29,28 @@ fn warm() -> Warming {
 /// person chose** — and with night light on it is that colour as a warmed
 /// screen shows it, which is `alo-displays`' arithmetic and not a second copy
 /// of it here.
+/// The size these tests ask about, as the room it stands for.
+///
+/// They were written when `prepare` took a pair, and each of them means *a
+/// screen with this much room in it* — so the helper is a rename rather than a
+/// conversion, and it is here rather than inline so the meaning is stated once.
+fn a_room((across, along): (i32, i32)) -> crate::TheRoom {
+    crate::TheRoom::of_laid_out_units(across, along)
+}
+
 #[test]
 fn a_colour_background_is_the_whole_screen_in_the_colour_that_was_chosen() {
     let chosen = Background::from(Token::Navy.colour());
     let size = (1920, 1080);
 
-    let by_day = ScreenBackground::prepare(&chosen, cold(), size).unwrap();
+    let by_day = ScreenBackground::prepare(&chosen, cold(), a_room(size)).unwrap();
     assert_eq!(by_day.solids.len(), 1);
     let solid = by_day.solids.first().unwrap();
     assert_eq!((solid.area.size.w, solid.area.size.h), size);
     assert_eq!((solid.area.loc.x, solid.area.loc.y), (0, 0));
     assert_eq!(solid.colour, as_painted(Token::Navy.colour()));
 
-    let tonight = ScreenBackground::prepare(&chosen, warm(), size).unwrap();
+    let tonight = ScreenBackground::prepare(&chosen, warm(), a_room(size)).unwrap();
     let warmed = tonight.solids.first().unwrap();
     assert_eq!(
         warmed.colour,
@@ -63,7 +72,7 @@ fn a_screen_a_background_cannot_be_fitted_to_is_refused_as_a_desktop_frame() {
         (-1, 1080),
         (crate::lock_background::LARGEST_SIDE + 1, 1080),
     ] {
-        let refused = ScreenBackground::prepare(&chosen, cold(), size);
+        let refused = ScreenBackground::prepare(&chosen, cold(), a_room(size));
         assert!(
             matches!(refused, Err(RenderError::DesktopScene)),
             "{size:?} was not refused as a desktop frame"
@@ -77,8 +86,12 @@ fn a_screen_a_background_cannot_be_fitted_to_is_refused_as_a_desktop_frame() {
 fn the_neutral_warming_changes_nothing() {
     assert!(Warmth::neutral().changes_nothing());
     for token in [Token::Navy, Token::Cream, Token::DeepTeal] {
-        let prepared =
-            ScreenBackground::prepare(&Background::from(token.colour()), cold(), (64, 64)).unwrap();
+        let prepared = ScreenBackground::prepare(
+            &Background::from(token.colour()),
+            cold(),
+            crate::TheRoom::of_laid_out_units(64, 64),
+        )
+        .unwrap();
         assert_eq!(
             prepared.solids.first().unwrap().colour,
             as_painted(token.colour())
