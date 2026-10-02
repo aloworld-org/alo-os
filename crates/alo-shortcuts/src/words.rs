@@ -456,7 +456,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 49] = [
+pub const EVERY_WORD: [Word; 50] = [
     THE_AGENT,
     LAUNCHER,
     CLOSE_WINDOW,
@@ -471,6 +471,7 @@ pub const EVERY_WORD: [Word; 49] = [
     ZOOM_THE_CANVAS_IN,
     ZOOM_THE_CANVAS_OUT,
     SHOW_ALL_ON_THE_CANVAS,
+    MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
     SUPER,
     CTRL,
     ALT,
@@ -551,6 +552,18 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     }
     Ok(())
 }
+
+/// What [`crate::Action::MoveTheWindowToTheNextPlace`] does.
+pub const MOVE_THE_WINDOW_TO_THE_NEXT_PLACE: Word = Word::saying(
+    "shortcuts.action.move-the-window-to-the-next-place",
+    "Move this window to the next Place",
+)
+.noting(
+    "Sends the window in front to the next surface the person has, taking its size and its \
+     work with it. It is a move and never a copy: the window is on the new Place and is not \
+     on the old one. This is the keyboard road for somebody who cannot drag a window out \
+     through the World, so it must not require a pointer or an aim.",
+);
 
 #[cfg(test)]
 #[expect(

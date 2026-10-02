@@ -94,6 +94,19 @@ impl Server {
                 self.show_all_on_the_canvas()
                     .ok_or(CanvasCommandError::NothingToShow)?;
             }
+            Action::MoveTheWindowToTheNextPlace => {
+                // **The keyboard road of `the-canvas-and-its-places.md` task 3.**
+                // No pointer, no World and no aim: a person who cannot drag a
+                // frame out through the World sends it with a chord instead, and
+                // the plan's own sentence is that *neither road is the only
+                // road*.
+                //
+                // Nothing to move is not a fault. Pressing it with no window in
+                // front is an ordinary thing to do, exactly as pressing *zoom in*
+                // at the end of the ladder is — the screen already shows there is
+                // nothing there.
+                self.move_the_window_in_front_to_the_next_place();
+            }
             _ => {
                 return self
                     .dispatch_window_command(shortcuts, chord)

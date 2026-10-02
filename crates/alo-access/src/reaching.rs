@@ -107,7 +107,13 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         | Action::MinimiseWindow
         | Action::MaximiseWindow
         | Action::SnapLeft
-        | Action::SnapRight => Surface::WindowControls,
+        | Action::SnapRight
+        // Sending the window in front to another Place is done *to that window*,
+        // so a keyboard reaches it where that window's own controls are — beside
+        // close, minimise and the two halves, which are the other things done to
+        // it. It is not reached on the canvas even though a Place is the canvas's,
+        // because the thing being acted on is the window.
+        | Action::MoveTheWindowToTheNextPlace => Surface::WindowControls,
         // The canvas is the surface the windows sit on, and in this compositor
         // that surface *is* the desktop — `Surface::Desktop` is documented as
         // "the desktop itself, and the windows on it". So zooming it and fitting

@@ -97,3 +97,34 @@ impl crate::Server {
         put_on(surface, place);
     }
 }
+
+impl crate::Server {
+    /// Send the window in front to the next Place, taking its work with it.
+    ///
+    /// **Task 3's keyboard road**, and the whole of what it does to the window's
+    /// geometry is nothing: a frame keeps its point and its size and changes
+    /// which surface those are on. `alo_canvas::Frame::now_on` says the same
+    /// thing in the arithmetic, and `the-canvas-and-its-places.md` task 3 says it
+    /// as *the work goes with it*.
+    ///
+    /// **A move and never a copy.** `crate::canvas_place::put_on` replaces, so
+    /// the window is on the new Place and is not on the old one; there is no
+    /// moment at which it is on both, which is the task's constraint — *a frame
+    /// belongs to exactly one Place at every moment, and a frame in flight has
+    /// the Place it started on until it has the one it ends on.*
+    ///
+    /// **The person does not travel with it.** Moving a window somewhere is not
+    /// asking to be taken there; that is `crate::canvas_a_restore_travels`'s job
+    /// and only on a restore. A version that followed the window would make
+    /// *send this away* and *go there* the same key.
+    ///
+    /// Answers which Place it went to, or [`None`] where there is no window in
+    /// front, or where the numbers have run out. Pressing it with nothing in
+    /// front is an ordinary thing to do and is not a fault.
+    pub fn move_the_window_in_front_to_the_next_place(&mut self) -> Option<Place> {
+        let front = self.surfaces.keyboard_root()?;
+        let next = the_place_of(&front)?.next()?;
+        put_on(&front, next);
+        Some(next)
+    }
+}
