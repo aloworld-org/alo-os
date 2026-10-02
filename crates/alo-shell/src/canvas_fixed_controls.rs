@@ -46,15 +46,23 @@
 //! is `Logical`. The values come from the same space. The trace:
 //!
 //! ```text
-//! alo-displays/src/scale.rs:144   laid_out(pixels) = pixels * 100 / per_cent   — it divides
-//! alo-shell/src/screens.rs:246    room: room_at(drawn_at, reported.pixels())
-//! alo-shell/src/screens.rs:256    room_at -> Scale::laid_out                   — laid out from here
-//! alo-shell/src/screens_raster.rs:100  dock_raster::picture(dock, look, place.room(), 0)
-//! alo-shell/src/dock_raster.rs:77      pub(crate) band: Rectangle<i32, Physical>
+//! alo_displays::Scale::laid_out      pixels * 100 / per_cent        — it divides
+//! alo_shell::screens::TheRoom        its only constructor calls that
+//! ScreenPlace::room()                hands out TheRoom, not a pair
+//! screens_raster                     dock_raster::picture(.., place.room(), ..)
+//! alo_shell::dock_raster::band       Rectangle<i32, Physical>
 //! ```
 //!
+//! **Named by symbol rather than by line.** This trace cited five line numbers
+//! until 2026-10-02 and every one of them was wrong by then. A line number in a
+//! document is a maintained count: nothing checks it, it drifts the moment
+//! anything above it moves, and a reader who follows it to the wrong line
+//! trusts what they find. A symbol moves with the code and can be greped.
+//!
 //! `Scale::laid_out` is used in **exactly one** production place in this crate,
-//! `screens.rs:256`, and everything downstream of it carries laid-out values. So
+//! `TheRoom`'s only constructor, and everything downstream of it carries
+//! laid-out values — which that type now says in its own name rather than
+//! leaving to this paragraph. So
 //! a 44-logical floor compared against these rectangles is already the same
 //! apparent size at every scale, which is what logical units are for and the unit
 //! WCAG specifies. **Adding the display's conversion here would divide a second

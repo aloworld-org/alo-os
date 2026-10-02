@@ -26,7 +26,7 @@
 //! sharper rather than smaller.
 //!
 //! **That conversion happens once, elsewhere, and nothing here repeats it.** It
-//! is `alo_displays::Scale::laid_out`, applied by `room_at` in
+//! is `alo_displays::Scale::laid_out`, applied by `TheRoom`'s constructor in
 //! `alo_shell::screens` at the rendering boundary. A floor in this file is a
 //! logical figure and stays one; a surface that multiplied it by the display's
 //! scale as well would reserve twice the room on a dense screen.
@@ -140,7 +140,7 @@ impl DragBand {
 /// This read *covers both the display's own conversion and the person's text
 /// size*. That was wrong, and wrong in the direction that doubles: a display's
 /// conversion is applied **once**, at the rendering boundary —
-/// `alo_displays::Scale::laid_out`, called by `room_at` in
+/// `alo_displays::Scale::laid_out`, called by `TheRoom`'s constructor in
 /// `alo_shell::screens` — so a caller who multiplied by it here would convert
 /// twice, and a reviewer reading the old sentence would have believed they were
 /// obliged to.
