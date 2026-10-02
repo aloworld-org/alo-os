@@ -209,6 +209,10 @@ impl LoopInput for Desk<'_> {
             crate::canvas_fixed_controls::FixedControlsDrawn {
                 dock_band: pictures.desktop.dock.as_ref().map(|dock| dock.band),
                 panel_reserved: pictures.desktop.panel.reserved,
+                // The scale these rectangles were laid out at, so the logical
+                // handle floor can be converted into their space once. Taken
+                // from the frame rather than guessed, like the rectangles.
+                display_scale: self.desktop.now().display_scale,
             },
             self.desktop.now().look.scale(),
         );
