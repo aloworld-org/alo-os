@@ -89,6 +89,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // rectangle of no extent is the true answer for one rather than
                 // a placeholder.
                 panel_reserved: Rectangle::default(),
+                status_area: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -102,10 +103,35 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 panel_reserved: a_panel_down_the_right(),
+                status_area: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
     });
+}
+
+/// The same, with the status area drawn where the owner placed it.
+///
+/// Top-right, as ADR 0076's gap was filled on 2026-09-30. No Dock and no panel,
+/// so a frame held back here is held back by the status area and nothing else —
+/// a bound that is one of three cannot be tested while the other two can hide
+/// its absence.
+fn drawn_with_a_status_area(f: &Fixture) {
+    f.backend(|s| {
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: None,
+                panel_reserved: Rectangle::default(),
+                status_area: Some(a_status_area_at_the_top_right()),
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+}
+
+/// Where the indicator is drawn: the far end of the Dock's edge, at the top.
+fn a_status_area_at_the_top_right() -> Rectangle<i32, Physical> {
+    Rectangle::new((VIEWPORT.0 - 400, 0).into(), (400, 240).into())
 }
 
 /// A mapped frame, and the surface it is. **Kept alive** by the returned handle.
@@ -351,6 +377,50 @@ fn a_motion_leaving_twenty_six_pixels_of_the_name_clear_is_allowed() {
 //
 // What stays here is what this file can answer: the floor in logical units,
 // against controls in the same units, driven by a real drag.
+
+/// **The status area reaches the rule, and nothing asked until 2026-10-02.**
+///
+/// Canvas task 6 names three fixed controls as a set and the rule held two. The
+/// status area could not join: `EgressStatusPicture` carried rows and words and
+/// no rectangle, so there was nothing to hand over.
+///
+/// # Why the test that already existed could not catch this
+///
+/// `the_status_area_hides_a_name_the_same_way_the_dock_does` passes a rectangle
+/// **straight to the rule** and proves the rule handles any rectangle. It
+/// cannot notice whether the status area's rectangle is ever handed over —
+/// and when the field was removed from the bounds, **all nine hundred and fifty
+/// tests stayed green.** A rule that takes a list is tested by what is in the
+/// list, never by what the caller put there.
+///
+/// So this asks at the seam: the draw says where the status area is, and a
+/// frame under it is named. Nothing else is drawn, so a frame named here is
+/// named by the status area alone.
+#[test]
+fn a_frame_under_the_status_area_is_named_by_the_recheck() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+
+    // Under where the status area will be, clear of everything else.
+    let put_at = (VIEWPORT.0 - 200, 200);
+    assert!(
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.place_window(&surface, put_at)
+        })
+        .is_ok()
+    );
+
+    drawn_with_a_status_area(&f);
+    let hidden = f.backend(|s| s.frames_the_controls_now_hide());
+
+    assert!(
+        !hidden.is_empty(),
+        "a frame sits under the status area and the recheck named nobody. The \
+         status area is one of the three controls task 6 promises, and a bound \
+         the draw never hands over is a promise the rule cannot keep."
+    );
+}
 
 /// **A control that appears over a frame puts it out of reach, and until
 /// 2026-10-02 nothing noticed.**
@@ -609,6 +679,7 @@ fn a_display_that_changed_owes_a_recheck() {
                     (VIEWPORT.0, DOCK).into(),
                 )),
                 panel_reserved: Rectangle::default(),
+                status_area: None,
             },
             alo_appearance::TextScale::ordinary(),
         );

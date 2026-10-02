@@ -280,6 +280,7 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
             colour: [200, 100, 50],
         }],
         inked: Vec::new(),
+        band: None,
     };
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
 
@@ -326,6 +327,7 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
             colour: [10, 200, 10],
         }],
         inked: Vec::new(),
+        band: None,
     };
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
 

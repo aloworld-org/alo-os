@@ -33,6 +33,7 @@ use alo_appearance::{Scheme, TextScale};
 use alo_dock::{Dock, Screen};
 use alo_indicator::Drawn;
 use alo_strings::{Direction, Strings};
+use smithay::utils::{Physical, Rectangle};
 
 use crate::egress_status_mark::mark;
 use crate::egress_status_place::{Across, Place, Stacked};
@@ -69,6 +70,14 @@ pub(crate) struct EgressStatusPicture {
     pub(crate) solids: Vec<Solid>,
     /// Words, painted after the shapes.
     pub(crate) inked: Vec<Inked>,
+    /// **Where this status area actually is**, or `None` when nothing is drawn.
+    ///
+    /// The union of every piece painted, rather than the corner and the room
+    /// `Place` holds: that pair says where rows *may* go, and a frame has to
+    /// keep clear of where they *went*. An empty picture has no band at all,
+    /// which is why this is an `Option` and not a rectangle of zero size — a
+    /// zero rectangle would be a claim about a place, and there is no place.
+    pub(crate) band: Option<Rectangle<i32, Physical>>,
 }
 
 impl EgressStatusPicture {
@@ -113,6 +122,8 @@ pub(crate) fn picture(
         rows: Vec::new(),
         solids: Vec::new(),
         inked: Vec::new(),
+        // Filled at the end, from what was drawn. Nothing is drawn yet.
+        band: None,
     };
     if drawn.lamp().is_dark() {
         return Ok(picture);
@@ -188,7 +199,36 @@ pub(crate) fn picture(
         picture.inked.extend(drawn.inked);
         picture.rows.push(drawn.row);
     }
+    // **Where it ended up, measured from the pieces rather than from the
+    // corner it grew out of.**
+    //
+    // `Place` knows where rows may go; this is where they went. A frame has to
+    // keep its name clear of what is *drawn*, so a band taken from the room
+    // available would reserve space no pixel occupies and push frames out of
+    // reach of nothing.
+    //
+    // Solids and inked words both carry their own `area`, so the union is
+    // exact. `None` when nothing was painted: a zero-sized rectangle would be a
+    // claim about a place, and an empty status area has no place.
+    picture.band = the_band_of(&picture.solids, &picture.inked);
     Ok(picture)
+}
+
+/// The smallest rectangle holding every piece drawn, or `None` if none was.
+fn the_band_of(solids: &[Solid], inked: &[Inked]) -> Option<Rectangle<i32, Physical>> {
+    let areas = solids
+        .iter()
+        .map(|solid| solid.area)
+        .chain(inked.iter().map(|words| words.area))
+        .filter(|area| area.size.w > 0 && area.size.h > 0);
+
+    areas.reduce(|held, area| {
+        let left = held.loc.x.min(area.loc.x);
+        let top = held.loc.y.min(area.loc.y);
+        let right = (held.loc.x + held.size.w).max(area.loc.x + area.size.w);
+        let bottom = (held.loc.y + held.size.h).max(area.loc.y + area.size.h);
+        Rectangle::new((left, top).into(), (right - left, bottom - top).into())
+    })
 }
 
 /// One row shaped and measured, not yet placed.

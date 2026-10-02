@@ -311,6 +311,11 @@ impl LoopInput for Desk<'_> {
             crate::canvas_fixed_controls::FixedControlsDrawn {
                 dock_band: pictures.desktop.dock.as_ref().map(|dock| dock.band),
                 panel_reserved: pictures.desktop.panel.reserved,
+                // The third of the set. `None` when the indicator drew
+                // nothing, which is the ordinary case on a machine with
+                // nothing leaving it — and *nothing drawn covers nothing* is
+                // the true answer rather than a placeholder.
+                status_area: pictures.status.band,
                 // **No scale is handed over, because these rectangles are in
                 // the room they were laid out from and the handle floor is in
                 // the same space.** Measured, not assumed: see

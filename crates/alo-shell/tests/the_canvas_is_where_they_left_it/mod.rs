@@ -55,6 +55,7 @@ fn put_back(
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock()),
                 panel_reserved: smithay::utils::Rectangle::default(),
+                status_area: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
