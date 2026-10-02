@@ -160,11 +160,36 @@ because nothing needs it to.
 > person's text size and nothing else* is about what the floor **is**, not about
 > what the rectangles it meets are.
 >
-> **The decision the hop is actually waiting on:** is `size`, in the direct
-> path, meant to be the framebuffer or the room? One answer makes the Dock's
-> layout the bug; the other makes `#379` the bug. Both cannot be right, and a
-> lane choosing between them is the thing that has gone wrong twice today
-> already.
+> **The owner question here is withdrawn, because this file had already
+> answered it.** I wrote that one answer makes the Dock's layout the bug and the
+> other makes `#379` the bug, and that both cannot be right. That is wrong.
+>
+> `canvas_fixed_controls`'s module header — which I had read twice today —
+> settles it, and settles it without needing to know which space `size` is:
+>
+> > *A compositor that renders into a framebuffer of laid-out size and scales at
+> > scanout would make that label correct for its own frame, with two notions of
+> > physical living one layer apart. **Nobody has established which this is.**
+> > What is established is narrower and sufficient: **every quantity in the
+> > comparison comes from one space, so the arithmetic is consistent and no
+> > conversion belongs in it.***
+>
+> **The floor and the band are both laid out in whatever space `size` is, scaled
+> by the person's text size.** So the conversion `#379` removed does not belong
+> whichever answer is right, and `#379` stands. The question I put to the owner
+> was a question about which space, when what the comparison needs is only that
+> both sides are in the *same* space — which was measured and recorded before I
+> asked.
+>
+> **What remains open is narrower and is not blocking anything:** whether the
+> Dock should grow with a dense display at all. Today it cannot, because
+> `alo-desktop` passes `display_scale: 100` as a documented placeholder and
+> nothing receives another value. When that binary reads the displays, this
+> becomes a live question; until then it is a note.
+>
+> *Three times today I have stated a consequence before checking what feeds it.
+> This is the third, and the thing that fed it was a paragraph in the file the
+> finding is about.*
 >
 > *Nothing is built on this until it is answered. The two landed hops are
 > unaffected: `TheRoom` is constructed from pixels and a scale by its only
