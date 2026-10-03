@@ -75,4 +75,4 @@ pub use kept::Kept;
 pub use reading::{read, read_text};
 pub use unread::Unread;
 pub use unwritten::Unwritten;
-pub use writing::{THE_FORMAT_KEY, keep, put_back_as_shipped, text_of};
+pub use writing::{THE_FORMAT_KEY, keep, kept_text, put_back_as_shipped, text_of};

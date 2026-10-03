@@ -104,6 +104,39 @@ pub trait TheDesktop {
     /// **Nothing by default**, as with the two above: a desktop with no panel has no panel to
     /// reveal.
     fn the_panel_is_revealed(&mut self, _by: alo_dock::revealing::ThePointer) {}
+
+    /// The canvas layout this person left, asked for once as the session
+    /// starts.
+    ///
+    /// **The shell asks and does not read.** `alo-desktop`'s own manifest gives
+    /// the reason: the shell shows and never measures, and shell task 15's
+    /// constraint is that no call into the machine is added from
+    /// `crates/alo-shell`. A file in a person's folder is that kind of call, so
+    /// the binary reads it and hands the answer over — the same road the
+    /// battery, the sound, the network and the locale already travel.
+    ///
+    /// **The default is a canvas nobody has arranged**, so a desktop that
+    /// remembers nothing is still a desktop: every window opens where its
+    /// application put it, which is what happens today.
+    fn the_layout_they_left(&mut self) -> alo_arranging::Arrangement {
+        alo_arranging::Arrangement::fresh()
+    }
+
+    /// The canvas layout is now this, after something a person did moved it.
+    ///
+    /// **Told rather than saved here**, for the same reason as above. The
+    /// binary decides what to do with it, which is to keep it in the person's
+    /// folder.
+    ///
+    /// **Not only at the end of a session.** The owner's ruling of 2026-10-03
+    /// asks for a save after meaningful layout changes rather than on a clean
+    /// shutdown alone, because the session a person loses is the one that did
+    /// not end cleanly. So this is called when the layout has actually changed
+    /// — not every frame, and not once at the end.
+    ///
+    /// **The default does nothing**, and that is the honest default: a desktop
+    /// that was not asked to remember anything should not be made to.
+    fn the_layout_is_now(&mut self, _arrangement: alo_arranging::Arrangement) {}
 }
 
 impl crate::DirectSession {
@@ -180,12 +213,20 @@ impl crate::DirectSession {
                     ),
                     poll,
                     &mut next,
-                    Desk {
-                        input,
-                        desktop,
-                        labels,
-                        strings,
-                        reader,
+                    {
+                        // **Asked before the desktop is moved into the loop**,
+                        // and once rather than per frame: a layout is what a
+                        // person left, not a reading that goes stale.
+                        let left = crate::WhereTheyLeftIt::from(desktop.the_layout_they_left());
+                        Desk {
+                            input,
+                            desktop,
+                            labels,
+                            strings,
+                            left,
+                            told: alo_arranging::Arrangement::fresh(),
+                            reader,
+                        }
                     },
                 ),
                 Err(error) => crate::DirectLoopResult {
@@ -210,6 +251,22 @@ struct Desk<'a> {
     labels: &'a mut WindowControlLabels,
     /// This machine's own sentences, for the names a reader is told.
     strings: &'a alo_strings::Strings,
+    /// The layout this person left, offered to frames as they arrive.
+    ///
+    /// **Asked for once, as the session starts.** A remembered place is claimed
+    /// by the first window of its application to open and is then gone, which
+    /// is the rule `alo-arranging` states: two windows of one application share
+    /// one remembered place, because `app_id` is what survives a session and a
+    /// `wl_surface` is not.
+    left: crate::WhereTheyLeftIt,
+    /// The layout last told to the desktop, so a save happens on a change.
+    ///
+    /// **Not every frame.** The owner's ruling asks for a save after meaningful
+    /// layout changes, and a frame is not a change — a person reading a page
+    /// moves nothing. So the arrangement is compared with this and the desktop
+    /// is told only when they differ, which also makes *meaningful* a thing the
+    /// code decides rather than a word in a document.
+    told: alo_arranging::Arrangement,
     /// The tree on the accessibility bus, where there is one to serve it on.
     ///
     /// `None` on a machine with no accessibility bus, which is the ordinary case
@@ -290,6 +347,21 @@ impl LoopInput for Desk<'_> {
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
+        // **Every frame that has arrived is offered the place it was left in.**
+        // Before the frame is drawn, so a window appears where the person left
+        // it rather than being moved a frame later under their eyes. A window
+        // whose application was not remembered, or whose remembered place has
+        // already been claimed, is left where it opened — `put_back_where_it_was`
+        // answers whether it moved and the answer is not needed here.
+        //
+        // The surfaces are collected first because `mapped` borrows the server
+        // that the put-back needs mutably.
+        if self.left.anything_left() {
+            let arrived: Vec<_> = server.mapped_surfaces().cloned().collect();
+            for frame in arrived {
+                let _moved = server.put_back_where_it_was(&frame, &mut self.left);
+            }
+        }
         let size = target.size();
         // **The one place holding both the windows and the frame.** The
         // desktop's own state has no server in it, so it cannot say where the
@@ -402,6 +474,28 @@ impl LoopInput for Desk<'_> {
                 &[alo_access::Surface::Desktop],
                 &alo_access::TurnedOn::nothing(),
             );
+        }
+        // **And the desktop is told when the layout has actually moved**, which
+        // is what makes a person's canvas survive a restart.
+        //
+        // The same shape as the reader above, for the same reason it gives:
+        // cheap every frame on purpose, because it compares what it last said
+        // with what is true now and speaks only when they differ. A frame being
+        // redrawn, a page being read, a pointer crossing the panel — none of
+        // those moves a window, so none of those is a save.
+        //
+        // **This is what the owner's ruling means by a save after meaningful
+        // layout changes rather than on a clean shutdown.** A session a person
+        // loses is the one that did not end cleanly, so there is nothing to hook
+        // at the end that would have helped them.
+        //
+        // The shell does not write the file. It hands the arrangement over and
+        // `alo-desktop` keeps it, because the shell shows and never measures —
+        // and a file in a person's folder is a reading like any other.
+        let now = server.the_arrangement_now();
+        if now != self.told {
+            self.told = now.clone();
+            self.desktop.the_layout_is_now(now);
         }
         Ok(())
     }

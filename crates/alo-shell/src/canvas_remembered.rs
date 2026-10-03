@@ -98,9 +98,10 @@ impl crate::Server {
         if left.claimed.contains(&(on.number(), app_id.clone())) {
             return false;
         }
-        let Some((at, _)) = left.arrangement.where_it_was(on, &app_id) else {
+        let Some(was) = left.arrangement.where_it_was(on, &app_id) else {
             return false;
         };
+        let (at, _) = was.normal();
         // **The same question a drag is held to, and until 2026-10-02 it was
         // not.** This called `as_far_as_a_frame_may_be_dragged`, which asks
         // `the_name_would_be_under` — *is the name entirely inside this one
@@ -153,6 +154,30 @@ impl crate::Server {
     /// rather than from anything kept alongside them: a second record of where a
     /// window is would be a second answer to the question `scene::trees` already
     /// has.
+    ///
+    /// # What this records is the geometry a frame has, not the geometry it
+    /// would return to
+    ///
+    /// **A measured limit, 2026-10-03, and not a thing to discover later.** The
+    /// owner's ruling asks that a window which was maximised, filling the
+    /// screen or in a share comes back **at its ordinary size**. The state
+    /// survives — [`Self::showing`] records it — but the geometry written here
+    /// is the frame's place on the plane as it is, which for a maximised window
+    /// is the maximised place.
+    ///
+    /// The shell does keep an ordinary geometry: `window_mode`'s own record
+    /// holds the initial committed normal geometry and says that later maximise
+    /// requests never replace it. **It is in output coordinates, and an
+    /// arrangement is in plane coordinates**, and converting between them needs
+    /// the camera as it was when the mode was entered — which nothing keeps.
+    ///
+    /// So the honest state of the promise is: *which state a window was in*
+    /// survives a restart, and *the size it would go back to* does not yet. The
+    /// fix is for the shell to capture a frame's plane geometry when it leaves
+    /// `Normal`, which is a change to `window_mode` rather than to this file,
+    /// and it is named in task 9 of
+    /// `docs/autonomy/the-smallest-canvas-worth-showing.md` rather than left
+    /// for whoever next reads the file and believes the field's name.
     #[must_use]
     pub fn the_arrangement_now(&self) -> Arrangement {
         let mut arrangement = Arrangement::fresh();
@@ -167,9 +192,64 @@ impl crate::Server {
             ) else {
                 continue;
             };
-            arrangement.window_was(on, app_id, place.at(), place.size());
+            arrangement.window_was(
+                on,
+                app_id,
+                alo_arranging::AWindowWas::at(
+                    (place.at(), place.size()),
+                    self.how_it_was_showing(frame),
+                ),
+            );
         }
         arrangement
+    }
+
+    /// How this window is showing, in the words the arrangement keeps.
+    ///
+    /// **Not called `showing`**, because `Server` already has one of those —
+    /// `canvas_the_world`'s, which answers whether the canvas is showing the
+    /// World or one Place. Two methods of one name on one type is the fault
+    /// this repository has found five times in a night under other names; here
+    /// the compiler caught it, because a collision on a single type is visible
+    /// to it. On two types it would have compiled and answered the wrong
+    /// question.
+    ///
+    /// **A mapping and not a decision.** The shell's own `Mode` is the answer;
+    /// this says it in the vocabulary the file owns, because `alo-arranging`
+    /// cannot name a type from the crate that reads it.
+    ///
+    /// # Two of that vocabulary's cases cannot be reached from here, and that is
+    /// correct
+    ///
+    /// `Compacted` and `PutAside` are not modes, and **the reason they are
+    /// unreachable from here is one condition in another file** — which is
+    /// worth naming, because a later reader otherwise cannot tell whether to
+    /// fill these cases or delete them.
+    ///
+    /// `Surfaces::drawn` is `mapped && !minimized && !elsewhere && alive`, and
+    /// putting a window aside minimises it. So a put-aside window is not drawn,
+    /// is not in `mapped_surfaces`, and **no frame this function is ever handed
+    /// can be in that state.** A compacted frame is a live tile the canvas
+    /// decides rather than a mode the shell requested, and nothing requests it
+    /// through `window_mode` either.
+    ///
+    /// **If that `!minimized` ever stops holding** — a put-aside window drawn
+    /// live in place is not an absurd future — then a put-aside frame would
+    /// arrive here and be recorded as `Ordinary`, which would be wrong and
+    /// silent. The answer then is to fill the case, not to widen the match.
+    ///
+    /// The file has room for both because the promise names both; what fills
+    /// that room is whoever puts a window aside or compacts one, and neither
+    /// calls this.
+    fn how_it_was_showing(&self, frame: &WlSurface) -> alo_arranging::HowItWasShowing {
+        use alo_arranging::HowItWasShowing;
+
+        match self.surfaces.requested_window_mode(frame) {
+            crate::window_mode::Mode::Normal => HowItWasShowing::Ordinary,
+            crate::window_mode::Mode::Maximized => HowItWasShowing::Maximised,
+            crate::window_mode::Mode::FillingTheScreen => HowItWasShowing::FillingTheScreen,
+            crate::window_mode::Mode::InAShare(_) => HowItWasShowing::InAShare,
+        }
     }
 
     /// The `app_id` this window gave, if it gave one.

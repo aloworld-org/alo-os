@@ -69,7 +69,12 @@ pub enum NotArranged {
 }
 
 /// One window's place, as it is written down.
+///
+/// The four numbers are its **ordinary** geometry, not the geometry it was last
+/// drawn at — see [`AWindowWas::normal`] for why that distinction is the whole
+/// point of remembering a window at all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct Written {
     /// Plane units across.
     x: i32,
@@ -79,6 +84,16 @@ struct Written {
     width: u32,
     /// How tall it was.
     height: u32,
+    /// How it was showing over that geometry.
+    ///
+    /// **Defaulted on read, and the default is the ordinary case.** A window
+    /// written by a release that knew only a place and a size was an ordinary
+    /// window, because there was no other state it could have been in — so the
+    /// absent key reads as [`HowItWasShowing::Ordinary`] rather than refusing
+    /// the file. The version above is what refuses a shape this does not know;
+    /// a missing field inside a shape it does know is a different question.
+    #[serde(default)]
+    showing: HowItWasShowing,
 }
 
 /// What version of this file this crate writes, and the only one it reads.
@@ -115,12 +130,21 @@ struct Written {
 /// a file with one — so this is a whole-file reshape rather than a key addition,
 /// which is exactly what the version existed to make affordable.
 ///
-/// **No file of version 1 has ever been written to disk.** `written` had no
-/// production caller when 1 was defined and still has none, so there is no
-/// migration path here and no need of one: a version-1 file is refused by name
-/// like any other shape this does not read. The number did its job by existing
-/// for one day and then being spent.
-pub const FORMAT: u32 = 2;
+/// **No file of version 1 or 2 has ever been written to disk.** `written` had no
+/// production caller when 1 was defined, none when 2 was, and none when 3 was —
+/// so there is no migration path here and no need of one: an older file is
+/// refused by name like any other shape this does not read. Each number did its
+/// job by existing and then being spent.
+///
+/// **3 is how a window was showing**, which the owner's ruling of 2026-10-03
+/// requires alongside its place: a window that was minimised, compacted or full
+/// screen comes back as its ordinary self in that state rather than frozen at
+/// the size it was last drawn. That is a new field inside each window rather
+/// than a reshape of the file, and it reads as the ordinary case when absent —
+/// so strictly it need not have moved the version. It moved anyway, because the
+/// first release to write one of these files should write the shape it means,
+/// and nothing is on a disk to be migrated.
+pub const FORMAT: u32 = 3;
 
 /// One Place's own arrangement, as it is written down.
 ///
@@ -189,13 +213,89 @@ pub struct Arrangement {
     places: BTreeMap<Place, OnePlace>,
 }
 
+/// How a window was showing when the session ended.
+///
+/// **This crate's own vocabulary, deliberately not the shell's.** The states a
+/// window can be in live in `alo-shell`, which is the crate that *reads* this
+/// one — so naming them from there would invert the dependency, and
+/// `alo-arranging` declares only `alo-canvas`. The shell maps its own mode into
+/// this when it saves, the same way `alo-reported` mirrors a scope rather than
+/// importing one.
+///
+/// **It carries no geometry.** The geometry a window is remembered at is its
+/// ordinary one, in [`AWindowWas::normal`], whatever state it was in — see
+/// there for why.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HowItWasShowing {
+    /// Its ordinary self, at the geometry remembered for it.
+    #[default]
+    Ordinary,
+    /// Filling the output, with the shell's own furniture still drawn over it.
+    Maximised,
+    /// Filling the screen, with the Dock and the panel giving way to it.
+    FillingTheScreen,
+    /// Sitting in a share a division gave it.
+    ///
+    /// **The share itself is not remembered here**, and that is not an
+    /// omission. A share is a rectangle a division decided, and the division is
+    /// another crate's state with its own file; a window put back into a share
+    /// this file invented would be a second layout decider. So the fact is
+    /// kept and the rectangle is asked for again.
+    InAShare,
+    /// A live tile on the canvas, shrunk but still showing its work.
+    Compacted,
+    /// A preview in the panel at the edge of the screen.
+    PutAside,
+}
+
+/// Where one window was, and how it was showing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AWindowWas {
+    /// Where it sat and how big it was **as its ordinary self**.
+    ///
+    /// **Always the ordinary geometry, never the geometry it was last drawn
+    /// at.** A window that was full screen when the session ended is one
+    /// rectangle the size of an output; remembering that would restore it as a
+    /// window the size of a screen that nothing could make smaller again,
+    /// because the size it used to be would be gone. The shell already holds
+    /// this distinction in memory — its own mode record keeps the initial
+    /// committed normal geometry and says that later maximise requests never
+    /// replace it — so this file keeps the same thing rather than a second
+    /// answer.
+    normal: (At, Size),
+    /// How it was showing over that geometry.
+    showing: HowItWasShowing,
+}
+
+impl AWindowWas {
+    /// A window at this ordinary geometry, showing this way.
+    #[must_use]
+    pub const fn at(normal: (At, Size), showing: HowItWasShowing) -> Self {
+        Self { normal, showing }
+    }
+
+    /// Where it sat and how big it was as its ordinary self.
+    #[must_use]
+    pub const fn normal(self) -> (At, Size) {
+        self.normal
+    }
+
+    /// How it was showing over that geometry.
+    #[must_use]
+    pub const fn showing(self) -> HowItWasShowing {
+        self.showing
+    }
+}
+
 /// One Place's camera and windows, in memory.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct OnePlace {
     /// Where they were looking on this Place.
     camera: Camera,
-    /// Where each application's window was on it, and how big.
-    windows: BTreeMap<String, (At, Size)>,
+    /// Where each application's window was on it, how big, and how it was
+    /// showing.
+    windows: BTreeMap<String, AWindowWas>,
 }
 
 impl OnePlace {
@@ -233,12 +333,17 @@ impl Arrangement {
     /// One place per `app_id` **per Place**: writing a second for the same pair
     /// replaces the first. One application may now be remembered once on each of
     /// several Places, which is the thing version 1 made impossible.
-    pub fn window_was(&mut self, place: Place, app_id: impl Into<String>, at: At, size: Size) {
+    ///
+    /// **Takes the whole answer at once**, which is the same reason
+    /// `alo_put_aside::AtWork::on` does: a window remembered field by field is
+    /// a window that can be written down half-described, and a restore reading
+    /// a place with no state beside it would have to guess.
+    pub fn window_was(&mut self, place: Place, app_id: impl Into<String>, was: AWindowWas) {
         self.places
             .entry(place)
             .or_insert_with(OnePlace::fresh)
             .windows
-            .insert(app_id.into(), (at, size));
+            .insert(app_id.into(), was);
     }
 
     /// Remember where the camera was on this Place.
@@ -251,7 +356,7 @@ impl Arrangement {
 
     /// Where this application's window was on this Place, if it was there at all.
     #[must_use]
-    pub fn where_it_was(&self, place: Place, app_id: &str) -> Option<(At, Size)> {
+    pub fn where_it_was(&self, place: Place, app_id: &str) -> Option<AWindowWas> {
         self.places.get(&place)?.windows.get(app_id).copied()
     }
 
@@ -291,7 +396,8 @@ impl Arrangement {
                             windows: one
                                 .windows
                                 .iter()
-                                .map(|(app_id, (at, size))| {
+                                .map(|(app_id, was)| {
+                                    let (at, size) = was.normal();
                                     (
                                         app_id.clone(),
                                         Written {
@@ -299,6 +405,7 @@ impl Arrangement {
                                             y: at.y,
                                             width: size.width(),
                                             height: size.height(),
+                                            showing: was.showing(),
                                         },
                                     )
                                 })
@@ -364,13 +471,15 @@ impl Arrangement {
                     Size::checked(where_it_was.width, where_it_was.height).ok_or_else(|| {
                         NotArranged::NotOnThePlane(format!("{key}/{app_id}: its size"))
                     })?;
-                windows.insert(app_id, (at, size));
+                windows.insert(app_id, AWindowWas::at((at, size), where_it_was.showing));
             }
             places.insert(place, OnePlace { camera, windows });
         }
         Ok(Self { places })
     }
 }
+
+pub mod keeping;
 
 #[cfg(test)]
 #[path = "arranging_tests.rs"]

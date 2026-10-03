@@ -107,7 +107,8 @@ fn the_arrangement_written_down_is_the_one_on_the_screen() {
     );
     let (at, _) = arrangement
         .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
-        .expect("the first window names itself");
+        .expect("the first window names itself")
+        .normal();
     assert_eq!(
         (at.x, at.y),
         (300, 200),
@@ -128,8 +129,13 @@ fn a_window_comes_back_where_it_was_and_the_second_does_not_take_its_place() {
     left.window_was(
         alo_canvas::Place::FIRST,
         "org.alo.Notes",
-        alo_canvas::At::checked(420, 260).expect("a place on the plane"),
-        alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+        alo_arranging::AWindowWas::at(
+            (
+                alo_canvas::At::checked(420, 260).expect("a place on the plane"),
+                alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+            ),
+            alo_arranging::HowItWasShowing::Ordinary,
+        ),
     );
     let waiting = WhereTheyLeftIt::from(left);
 
@@ -145,7 +151,8 @@ fn a_window_comes_back_where_it_was_and_the_second_does_not_take_its_place() {
     let arrangement = f.backend(|s| s.the_arrangement_now());
     let (at, _) = arrangement
         .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
-        .expect("it is open");
+        .expect("it is open")
+        .normal();
     assert_eq!(
         (at.x, at.y),
         (420, 260),
@@ -177,8 +184,13 @@ fn an_application_that_did_not_come_back_leaves_nothing_behind() {
         left.window_was(
             alo_canvas::Place::FIRST,
             app_id,
-            alo_canvas::At::checked(x, 100).expect("a place on the plane"),
-            alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+            alo_arranging::AWindowWas::at(
+                (
+                    alo_canvas::At::checked(x, 100).expect("a place on the plane"),
+                    alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+                ),
+                alo_arranging::HowItWasShowing::Ordinary,
+            ),
         );
     }
     let waiting = WhereTheyLeftIt::from(left);
@@ -250,8 +262,13 @@ fn offered_a_place_at(y: i32) -> bool {
     left.window_was(
         alo_canvas::Place::FIRST,
         "org.alo.Notes",
-        alo_canvas::At::checked(420, y).expect("a place on the plane"),
-        alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+        alo_arranging::AWindowWas::at(
+            (
+                alo_canvas::At::checked(420, y).expect("a place on the plane"),
+                alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+            ),
+            alo_arranging::HowItWasShowing::Ordinary,
+        ),
     );
     let _app = mapped_as(&f, "org.alo.Notes");
     let frame = f
@@ -322,14 +339,24 @@ fn claiming_a_place_on_one_place_does_not_claim_it_on_another() {
     left.window_was(
         alo_canvas::Place::FIRST,
         "org.alo.Notes",
-        alo_canvas::At::checked(100, 100).expect("a place on the plane"),
-        alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+        alo_arranging::AWindowWas::at(
+            (
+                alo_canvas::At::checked(100, 100).expect("a place on the plane"),
+                alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+            ),
+            alo_arranging::HowItWasShowing::Ordinary,
+        ),
     );
     left.window_was(
         elsewhere,
         "org.alo.Notes",
-        alo_canvas::At::checked(700, 500).expect("a place on the plane"),
-        alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+        alo_arranging::AWindowWas::at(
+            (
+                alo_canvas::At::checked(700, 500).expect("a place on the plane"),
+                alo_canvas::Size::checked(400, 300).expect("a size a frame may be"),
+            ),
+            alo_arranging::HowItWasShowing::Ordinary,
+        ),
     );
     let waiting = WhereTheyLeftIt::from(left);
 
@@ -358,5 +385,89 @@ fn claiming_a_place_on_one_place_does_not_claim_it_on_another() {
         took_there,
         "an application that claimed its place on one Place was refused on another, \
          which is the per-session claim the per-Place arrangement replaced"
+    );
+}
+
+/// **The whole promise, end to end: arrange, end the session, begin another,
+/// and find the windows where they were left.**
+///
+/// The owner's acceptance for task 9, as given on 2026-10-03: arrange windows,
+/// change a camera, end the session, start again, and see the layout restored
+/// **through the production path** rather than through a round trip in memory.
+///
+/// # What this crosses, and what it does not
+///
+/// The two sessions below share **nothing but the file on the disk**. The layout
+/// leaves the first through `the_arrangement_now` and `alo_arranging::keeping`,
+/// and arrives in the second through `at_sign_in` and `put_back_where_it_was` —
+/// which is every step of the road a real session takes, including the write
+/// that is only renamed over the old file once the bytes read back as the
+/// layout.
+///
+/// **It does not cross a process boundary**, and the name says *session* rather
+/// than *process* for that reason. Two fixtures in one test are two sessions in
+/// every respect that this code can observe — no state is carried between them
+/// — but a genuinely fresh process needs a machine that boots to
+/// `alo-compositor`, which is the installer plan's ground and not something a
+/// unit test can arrange. That half is named in task 9's status rather than
+/// implied by this test's name.
+#[test]
+fn a_canvas_survives_one_session_ending_and_another_beginning() {
+    let folder = std::env::temp_dir().join("alo-canvas-layout-survives-a-session");
+    let _gone = std::fs::remove_dir_all(&folder);
+    std::fs::create_dir_all(&folder).expect("a folder to keep a layout in");
+    let at = folder.join(alo_arranging::keeping::THE_FILE);
+
+    // **The first session.** A window placed, the canvas panned, and the layout
+    // kept the way the desktop binary keeps it.
+    let left_at = {
+        let f = fixture();
+        let _notes = mapped_as(&f, "org.alo.Notes");
+        let frame = f
+            .backend(|s| s.mapped_surfaces().next().cloned())
+            .expect("a frame is mapped");
+        {
+            let frame = frame.clone();
+            assert!(f.backend(move |s| s.place_window(&frame, (640, 360)).is_ok()));
+        }
+        assert!(f.backend(|s| s.pan_the_canvas(-120, 80)).is_some());
+
+        let arrangement = f.backend(|s| s.the_arrangement_now());
+        alo_arranging::keeping::keep(&at, &arrangement).expect("the layout is kept");
+        arrangement
+            .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
+            .expect("the window named itself")
+            .normal()
+            .0
+    };
+
+    // **The file is on the disk and nothing of the first session is.**
+    assert!(at.is_file(), "the first session kept no file");
+
+    // **The second session**, which has never seen the first.
+    let (remembered, why) = alo_arranging::keeping::at_sign_in(&at);
+    assert_eq!(why, None, "the layout this release wrote did not read back");
+
+    let f = fixture();
+    let _notes = mapped_as(&f, "org.alo.Notes");
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped in the second session");
+    let (moved, _left) = put_back(&f, &frame, WhereTheyLeftIt::from(remembered));
+    assert!(
+        moved,
+        "the window was not offered the place the last session left it in"
+    );
+
+    let now = f.backend(|s| s.the_arrangement_now());
+    let came_back = now
+        .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
+        .expect("the window named itself in the second session")
+        .normal()
+        .0;
+    assert_eq!(
+        (came_back.x, came_back.y),
+        (left_at.x, left_at.y),
+        "the window came back somewhere other than where the last session left it"
     );
 }

@@ -12,6 +12,9 @@ publish = false
 # a file hand-edited to put a window a million units off the plane, or to a zoom
 # no canvas has, is refused by the crate that owns those rules rather than here.
 alo-canvas = { path = "../alo-canvas" }
+# The disk discipline, rented rather than written: a sibling synced, read
+# back, asked about, and renamed, with every failure before the rename.
+alo-kept = { path = "../alo-kept" }
 serde = { workspace = true }
 toml = { workspace = true }
 thiserror.workspace = true
