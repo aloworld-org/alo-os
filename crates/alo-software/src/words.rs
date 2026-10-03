@@ -57,6 +57,28 @@ pub const INSTALLED: Word = Word::saying(
      something.",
 );
 
+/// An application a person chose to install unconfined, said as what it costs.
+///
+/// **The key does not name the machinery either.** This crate's test reads the sentence and
+/// the translator's note; a key is read by a translator too, and it is what a person sees
+/// when a translation is missing. So the key says what this application can do, the same
+/// as the sentence does, while the Rust name beside it is free to say `unsandboxed`
+/// because no person reads it.
+pub const INSTALLED_UNSANDBOXED: Word = Word::saying(
+    "software.installed-reaching-everything",
+    "{application} is installed, and you chose to let it reach your files and the network \
+     without asking you first. Anything else you install has to ask; this one does not",
+)
+.noting(
+    "Said once an application a person deliberately chose to install without the usual \
+     confinement has arrived on this machine. {application} is its identifier, like \
+     org.gnome.TextEditor, and is not translated. This sentence replaces the ordinary installed \
+     sentence rather than being added to it: that one promises the application has been given \
+     nothing, and the promise is not true here. Say what the person gave up and what is \
+     different about this one, never the name of the machinery that would otherwise have held \
+     it, and not that it is dangerous — the person chose this and these words are not a warning \
+     to dismiss.",
+);
 /// An update is ready and waits for the person.
 pub const UPDATE_OFFERED: Word = Word::saying(
     "software.update-offered",
@@ -404,8 +426,9 @@ pub const WEB_NOTHING_GRANTED: Word = Word::saying(
 pub const THE_NAMES: [Word; 3] = [VERB_PURPOSE, VERB_APPLICATION, VERB_SOURCE];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 26] = [
+pub const THE_SENTENCES: [Word; 27] = [
     INSTALLED,
+    INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
     UPDATED,
     REMOVED,
@@ -456,11 +479,12 @@ pub const THE_REFUSALS: [Word; 17] = [
 ];
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 29] = [
+pub const EVERY_WORD: [Word; 30] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
     INSTALLED,
+    INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
     UPDATED,
     REMOVED,
