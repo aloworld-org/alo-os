@@ -184,7 +184,7 @@ being skipped. Its status line says so, which is what a supervisor reads.
 
 The sharper finding, from the lane that owns the shell, after being asked whether the drawing
 was step one or a gap. `alo-shell/src/window_minimize.rs` holds `set_window_minimized`, wired to
-XDG's `minimize_request` at `surfaces.rs:380`, and its own header says what it is: **trusted
+XDG's `minimize_request` in `surfaces.rs`, and its own header says what it is: **trusted
 visibility transitions**. It **hides a buffered root** — hidden roots keep their buffers,
 placement and cycling position, receive no scene hits, and revealing neither activates nor
 raises.
@@ -640,7 +640,7 @@ would feel: crossing the gap between two previews must not drop the peek.
 **What remains, and it is no longer what this paragraph said for a day.** *Nothing puts a
 window aside — `Server::put_this_window_aside` is written and has only its integration tests,
 because the gesture that would call it does not exist* was true when written and was retired
-by `#386` the next day. `window_command.rs:89` and `window_control_input.rs:236` both call
+by `#386` the next day. `window_command.rs` and `window_control_input.rs` both call
 `the_person_asked_to_put_aside`, and this task's own status line has said so since
 2026-10-02 — so the correction was already one screen above the stale sentence.
 
@@ -806,6 +806,11 @@ window filled the screen. It has a caller now, and the draw path reads its answe
 status hours earlier, and every line of its table was true when written. The one thing that has
 changed is the first row: `put_this_window_aside` had **zero** production callers and now has
 two, which is what this task stopped being blocked on.
+
+**The line numbers inside that quoted table are left exactly as they were written**, because they
+are a measurement rather than a citation: they were correct when taken, and editing a quote to
+keep it true would destroy the thing the quote is for. Do not follow them — every one has since
+moved. `minimize_request` alone went from the quoted `surfaces.rs:406` to 589.
 
 > **Status:** **model built, no evidence; blocked on nothing calling the road that puts a window
 > aside, 2026-10-02.**
@@ -1444,8 +1449,8 @@ One field passing through an untested seam is a footnote. **Three fields, found 
 one day, at one line of one file, is the finding** — and the next one through it will be found by
 a fourth lane or by nobody.
 
-**And the crate is in no ownership table.** `a-new-machine-becomes-a-lane.md:62` assigns
-`alo-desktops` — *plural*, a different crate — to lane B. `the-queues.md:343` records *two
+**And the crate is in no ownership table.** `a-new-machine-becomes-a-lane.md`'s lane table assigns
+`alo-desktops` — *plural*, a different crate — to lane B. `the-queues.md` records *two
 binaries now that `alo-desktop` has split off*, and no row was added for it when it split out of
 `alo-shell`. `the-shell-plan.md` says its crates are `alo-shell` and `tools/graphics-check`,
 **nothing else**. So the binary every lane's state flows through belongs to no plan.
@@ -1460,7 +1465,7 @@ crate no plan owns, done on a branch about something else. The correct thing was
 each lane could reach and say this out loud.
 
 **What this plan does with it: nothing, deliberately.** Adding the task would mean writing into
-`docs/autonomy/QUEUE.md`, which `SHARED_MAIN.md:309` reserves to the integration owner, or
+`docs/autonomy/QUEUE.md`, which `SHARED_MAIN.md` reserves to the integration owner, or
 claiming a crate this plan does not own. Both are the kind of shortcut that looks like
 initiative. It is recorded here, where the lane that found it works, and who takes it is the
 owner's decision.
@@ -1479,7 +1484,7 @@ be built here:
   back a window whose Place is not the one being looked at has to travel to that Place
   rather than drop the window on this one;
 
-  **This is not `docs/features.md:426`, and the owner separated them on 2026-09-30.**
+  **This is not the *dragged out of one Place* promise, and the owner separated them on 2026-09-30.**
   That promise — *a frame can be dragged out of one Place and into another, and the work
   goes with it* — is a person **relocating** a window's home, and it stays `[v1.1]`
   along with *a Place remembers time* at `:429`. Restoring a window that was put aside
