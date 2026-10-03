@@ -77,11 +77,36 @@ listing does, and a method whose only callers are tests reads exactly like one t
 finished.
 
 **The one exception, and it is narrow: a road may have no caller when giving it one would
-decide something the owner has not.** `alo_put_aside::a_place_groups_its_windows` has no
+decide something the owner has not.** `alo_put_aside::a_place_groups_its_windows` had no
 production caller on purpose. `docs/design/the-windows-put-aside.md:304` allows grouping by
-Place *without hiding individual windows behind an app icon* and then says: **whether it is
+Place *without hiding individual windows behind an app icon* and then said: **whether it is
 the default when there are many, or always a choice, is not decided.** A draw that grouped
-would answer that, in a drawing crate, on behalf of the person who has not been asked.
+would have answered that, in a drawing crate, on behalf of the person who had not been asked.
+
+> **Decided by the owner, 2026-10-03: grouped by Place by default.** One consistent mode, not
+> a layout that switches after some number of windows.
+>
+> - **One represented Place:** its windows, with no redundant group heading.
+> - **Several represented Places:** a heading per Place with its windows underneath.
+> - **The current Place first**, then the others **in World order**.
+> - **Groups start expanded**, and new activity must not reorder rows under the pointer or
+>   move keyboard focus.
+> - **Every window stays individually reachable** — never bundled behind an application icon.
+> - **Restoring returns a window to its own Place**, and does not move it to the current one.
+> - **Group by Place / Flat list** is offered in the panel's **own options menu** and the
+>   person's choice is remembered. *The owner ruled explicitly that this does not wait for
+>   Settings* — which matters, because nothing opens Settings today (see
+>   `docs/autonomy/where-a-persons-settings-are-kept-plan.md` task 7).
+>
+> **Two things the existing function cannot do, measured on 2026-10-03.** It returns
+> `BTreeMap<Place, Vec<&Preview>>`, so its order is `Place`'s `Ord` — and `Place` is a
+> `u64`, so that is the order Places were *made* in. The ruling forbids exactly this: *do not
+> inherit ordering accidentally from `BTreeMap`*. **World order already exists and is the
+> answer:** `alo_canvas::World::each` yields every Place *in the order they are laid out*, and
+> `World`'s own header gives the ruling's reason unprompted — *where a Place sits in the World
+> is a thing a person may come to rely on, so it is data rather than a function of a
+> `BTreeMap`'s ordering*. So the signature has to change to carry World order and the current
+> Place, and the type that holds the answer can no longer be a map keyed by `Place`.
 
 So *has it got a caller* is the question, and **two answers pass**: it has one, or it has
 none and the status says which decision the caller waits on, named and citable. What does
@@ -1007,8 +1032,63 @@ interactive control that stops the agent's work, and nothing in this repository 
 Taking the drawing would mean inventing Stop inside a drawing crate, which is the same fault
 as a drawing crate deciding whether the panel groups.
 
-So this task waits on **two rulings, and they are one surface**: whether the panel groups by
-Place by default, and what Stop is. Ruled on together, the drawing and the grouping default
+**Both rulings arrived on 2026-10-03, and Stop is this.**
+
+> **Stop cancels this work, not the person's application.**
+>
+> **Where it appears.** On every working preview row: the task description and a visible
+> **■ Stop** control beside it. Progress and long titles **wrap or shorten before crowding out
+> Stop**. It works by keyboard and with assistive technology, not only on hover.
+>
+> **On press.** Act **immediately — no "are you sure?"**. Request cancellation of that task and
+> prevent further actions under that run's authority. Cancel its pending approvals and queued
+> actions. **Leave the application open and the window put aside. Keep completed changes** —
+> stopping and undoing are different acts. If an operation already under way cannot safely be
+> interrupted, **say so while cancellation completes** rather than claiming it stopped
+> instantly.
+>
+> **What the row then says**, and each line is the actual state rather than a hope:
+>
+> | Actual state | Row wording |
+> |---|---|
+> | Cancellation requested | *Stopping…* |
+> | Cancellation confirmed | *Stopped · changes kept* |
+> | Confirmation unavailable | *Stop requested · no confirmation* |
+>
+> After confirmation, progress is replaced by **Review changes** and a route to History. Undo
+> stays available for what is reversible, and **irreversible effects are named honestly**.
+>
+> Stopping **does not revoke alo's access** to that application — revoking is a separate act —
+> and **starting again takes an explicit action by the person**.
+>
+> **A task spanning several windows:** Stop targets the **task**, not an invented fragment of
+> it. Its scope is shown before activation — *Working across 3 windows* — and **every affected
+> preview updates when it stops**.
+
+**Two things this lane owes the lane that builds it.**
+
+**The three row wordings are user-facing strings and must go through `alo-strings`**, with a
+translator's note, like every other sentence this machine says. *Stopping…* and *Stopped ·
+changes kept* in English only would be a bug in a European product, and the third one —
+*Stop requested · no confirmation* — is the hardest of the three to translate, because it
+reports the absence of an answer rather than an outcome.
+
+**The scope line is a count and needs plural machinery, not a format string.** *Working across
+3 windows* has to come from `alo-strings`' plural type: several of the twenty-four languages
+have three or four plural categories, so `"Working across {n} windows"` is wrong in more
+languages than it is right in.
+
+**And one scope-gate fact the owner should see, measured 2026-10-03 and deliberately not
+resolved here.** `docs/features.md` puts **the agent working in a window at `[v1]`** — *the
+agent's presence*, a thin deep teal edge on the window the agent is working in — and **a
+person stopping it at `[v1]`** as well, inside *Give it to alo*: *the person may step in, take
+over a piece or stop it*. This task is in the current release and its Stop design is now
+ruled, so either those lines move to `[v0.01]` or this waits. **A lane cannot move a tier** —
+every tier move in this repository carries the owner's own direction, and `CLAUDE.md` binds
+building to that file. One word settles it.
+
+This task previously waited on **two rulings, and they were one surface**: whether the panel
+groups by Place by default, and what Stop is. Ruled on together, the drawing and the grouping default
 land in one change. Under this plan's two-answer caller rule, both have no caller and a
 status naming the decision, citably.
 
