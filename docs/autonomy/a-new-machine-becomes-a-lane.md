@@ -44,6 +44,21 @@ while it was landing in that crate the same afternoon. **A crate can look
 abandoned while its owner is active one directory over**, and this table is the
 one place somebody checks before deciding that.*
 
+**This paragraph stopped a lane on 2026-10-03, which is a different job from the
+one it was written for.** The third PC was about to take `alo-software` on the
+reading that `C:\dev\alo-os-2` named no live lane, read the sentence above, and
+stopped — observing that their own evidence was **weaker** than the case it
+records. The Panel lane found a checkout that did not exist; the third PC found
+one that does, on `main`, tree clean, untouched for eleven days. **Quiet for
+eleven days is not unowned.**
+
+**The observation is theirs and it generalises.** A post-mortem explains a
+mistake somebody already made; a guard prevents one. The two read differently —
+somebody meeting this as history skims it, and somebody meeting it as a guard
+stops — and until that day nothing in this file had done the second. Written
+down because a paragraph that has worked once as a guard should be read as one,
+and because the next lane in that position will have exactly as little to go on.
+
 ## The ten plans that had no row, and who assigned them
 
 **The owner assigned these rows to the Mac lane directly on 2026-10-03, in these
