@@ -566,7 +566,17 @@ where it cannot be seen.
   reaching its name band* **cannot be held by any test, because there is no
   keyboard road to move a frame at all** — ADR 0065's *every one of them has a
   keyboard form* covers zoom, pan, fit, fill and work-inside, and
-  `docs/features.md:422` attaches the same phrase to the same three at **[v1]**.
+  `docs/features.md`'s *each with a keyboard form* attaches it to the same three, on
+  the **`[v0.01]`** promise *Frames, dragged and resized like a design canvas*.
+
+  *This read `docs/features.md:422` … at `[v1]` until 2026-10-03, and was wrong twice:
+  the phrase is at 443, and the promise moved to `[v0.01]` on 2026-09-30 when the owner
+  put the full canvas experience into the current release.* **The conclusion is
+  unchanged and that is the point of recording it** — the argument is about *what the
+  phrase attaches to*, which is fit, fill and work-inside and not dragging, at whatever
+  tier. A citation can be wrong in its line and its tier while the claim it supports
+  stands, and a reader who checks the line and finds transcripts has no way to tell
+  which.
   Satisfying it means **new v0.5 capability**, which `docs/features.md` gates and
   which is the owner's to grant.
 
@@ -752,7 +762,8 @@ machine.
 **Four keyboard steps follow six pointer steps rather than six.** Dragging and
 resizing a frame have no keyboard form in v0.5 and none is promised: ADR 0065's
 *every one of them has a keyboard form* attaches to zoom, pan, fit, fill and work-
-inside, and `docs/features.md:422` attaches the same phrase to the same three at
+inside, and `docs/features.md`'s *each with a keyboard form* attaches it to the same
+three at
 **[v1]**. `docs/design/the-shortcuts-and-the-edges.md` gives `Alt + F7` and
 `Alt + F8` under *Working with windows*, not under *Moving around the canvas*, and
 no `alo_shortcuts::Action` exists for either. The table names the absence in the
