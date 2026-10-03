@@ -46,6 +46,28 @@
 //! `Ord` here would reintroduce creation order through the back door, which is the thing
 //! this change exists to remove.
 //!
+//! # Two orderings in this file are one rule, and they agree by decision rather than by luck
+//!
+//! **Most recently put aside first** is chosen twice here, independently:
+//!
+//! - inside a group, by [`AGroup::previews`] — which keeps `Panel`'s own order untouched;
+//! - between the Places the World cannot name, in [`a_place_groups_its_windows`] — where
+//!   there is no layout to read and an order had to be picked.
+//!
+//! They agree, which is right, and until this note was written they agreed **because the
+//! same person made the same call twice** rather than because one rule was stated once. That
+//! is the two-spellings fault this repository keeps finding: each spelling correct, and
+//! nobody obliged to notice when one moves.
+//!
+//! So: **they are the same rule.** The window somebody put away last is the one they are
+//! most likely to want back, and it is the only ordering they can predict. If that reasoning
+//! ever stops holding, it stops holding for both — and changing one without the other would
+//! give a person two orders in one panel, the outer groups disagreeing with the rows inside
+//! them, which is worse than either order alone.
+//!
+//! The reading lane raised this on a cold read of `#427`, having noticed the agreement was a
+//! coincidence of two decisions rather than one.
+//!
 //! # Derived, never stored
 //!
 //! The answer is built from the panel's one list on every call. `Panel::put_aside` is

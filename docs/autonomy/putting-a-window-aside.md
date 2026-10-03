@@ -1288,6 +1288,79 @@ machine added to the crate.
 
 ---
 
+## Two promises at v0.01 whose road is not there, measured 2026-10-03
+
+Both were found by counting before starting, and both are the owner's to settle rather than
+this lane's to close. The commands are here so neither has to be re-derived.
+
+### The collapse choice has somewhere to go and nothing to put in it
+
+`#428` grew `alo_arranging::Arrangement` to hold per-Place state, which unblocked *the
+collapse state survives a session* — the clause this plan had carried as blocked since
+2026-10-02. It is still not buildable, for a different reason: **nothing in production can
+collapse the rail.**
+
+```text
+Panel::collapse / Panel::expand            defined, panel.rs:182 and :187
+production callers                         none — the only hits are the methods' own bodies
+  alo-nearby's .expand(                    HKDF; a different function with the same name
+"collaps" in crates/alo-shell/src          0   (the "chosen" hits are accent colours)
+"collapse" in crates/alo-desktop           0
+```
+
+So persisting the choice would persist a state no person can set. The road that is missing is
+the **input** one, and what gesture collapses the rail is not written down anywhere this lane
+can find — see the scope question below, which is probably why.
+
+### And the collapsed rail is promised at no tier in the binding file
+
+```text
+"collaps" in docs/features.md              0
+"rail"    in docs/features.md              0
+docs/features.md:485  [v0.01] Compact, and minimised — promises the panel and
+                      *a preview in the panel at the edge of the screen*
+docs/design/the-interface-in-the-file.md:50
+                      | 7 | the minimized panel, collapsed and expanded | no panel | v1 |
+```
+
+`features.md` promises the panel at v0.01 and promises a **collapsed** rail nowhere; one
+design table puts collapsed-and-expanded at **v1**; and `the-canvas-and-its-places.md` task 7
+asks for the collapse state to differ per Place and survive a session. `#375` built the
+per-Place choice on 2026-09-30 under that acceptance.
+
+**This lane is not resolving it.** *Scope is gated* binds building to `features.md`, and three
+documents disagree about whether a collapsed rail is in this release. Either the promise
+belongs in `features.md` at v0.01, or task 7's clause and `#375` are ahead of the release and
+the persistence waits. One sentence from the owner settles it.
+
+### Stop is at v0.01 and no machine can walk it in either direction
+
+`#426` put *alo working in a window you put aside* and *Stop* at `[v0.01]`, correctly and on
+the owner's direction. A different block was behind the tier:
+
+```text
+alo_admitting::Reports constructed outside its own crate   none
+  (two mentions of alo_admitting anywhere else, both doc comments in this crate)
+panel_raster mentions of WhatAloIsDoing / at_work / alo()  0
+any Cargo.toml declaring alo-admitting, outside its own    none
+root Cargo.toml:94-95   "crates/alo-admitting", "crates/alo-reported"  ← workspace members
+```
+
+So there is no producer at the input and the raster reads nothing at the output. **And the two
+crates are not outside the dependency graph — they are inside it as workspace members with no
+dependents**, which is the more unsettling version: a member is gated, so both crates compile,
+pass clippy at `-D warnings` and run their tests on every CI pass, proving a model nothing can
+reach. Every signal says healthy.
+
+Drawing Stop would be a surface for a state no machine can produce. Wiring the producer means
+choosing where in the shell a person hands a window to alo, which is a design decision in
+shared ground — the laptop lane declined it for that reason and this lane declines the drawing
+for the mirror of it.
+
+**What this leaves:** the Stop design is recorded in full in task 7, the three row wordings
+still want `alo-strings` with a translator's note, and the scope line still wants the plural
+type rather than a format string. None of that is worth building before a report can arrive.
+
 ## A finding this plan cannot act on: the desktop binary's frame is an unobserved seam
 
 **`crates/alo-desktop/src/main.rs` contains no `#[test]`, and that is the measurement — not
