@@ -294,3 +294,48 @@ silently* has a twin here: nothing is forgotten silently either.
   in `crates/alo-shell`, nothing is written to a place the session made up (no
   `/tmp` fallback — a folder that belongs to nobody is the thing the contract
   refuses), and no new file in the person's folder.
+
+### 8. Ask for it — the appearance a person asked for in words
+
+**Status:** ready. **Depends on:** nothing.
+
+**Moved into this release on 2026-10-03** by
+`docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. The promise is
+`docs/features.md`'s *★ **Ask for it** — "make the surface warmer", "use dark
+after six" — the same propose-then-approve as any other change, because
+personalisation is exactly the low-stakes place people first learn to trust the
+agent.*
+
+**Half of it is already built, and the crate names the promise itself.**
+`crates/alo-appearance/src/time.rs` opens *a time of day, which is all a schedule
+needs to know* and explains that **use dark after six means six o'clock where
+the person is, every day** — not an instant, so no calendar and no decision about
+the night the clocks go back. `scheme.rs` carries `Following`, which answers a
+`Scheme` from a moment passed in, tested at the hour and the half hour; nothing
+there reads a clock, so a settings panel previewing a schedule and the
+compositor obeying it cannot disagree about what it says. `changes.rs` holds
+what a person changed as the difference from the running release's defaults.
+
+**So a person who can reach a settings panel can already have a schedule. What
+nothing does is the asking.** There is no road from *make the surface warmer*,
+said in words, to a proposal naming exactly what would change, to a person
+approving it, to `changes.rs`. That road is the promise; the schedule is the
+thing it would set.
+
+- **Acceptance:** a person says *use dark after six* and is shown what would
+  change — the setting, its old value and its new one — before anything moves;
+  approving it writes the same change a settings panel would have written, and
+  declining writes nothing. The same for a warmer surface. **A proposal names
+  the change in the person's own language**, not a token or a field name.
+- **Constraint:** the propose-then-approve road is `alo-asking`, which the Mac
+  owns. This task **consumes it and never edits it** — `alo-saying` already
+  depends on both `alo-appearance` and `alo-asking`, which is where the two meet.
+  If something has to be exposed from `alo-asking`, that is a request to the Mac
+  and not a change to make here.
+- **Constraint:** no new way to set appearance. Whatever a proposal applies must
+  be the road `changes.rs` already defines, or a person's settings and the
+  agent's will drift and only one of them will be written down.
+
+**What this does not include.** Making it work on a machine — the half every
+promise in this release owes — and the settings panel itself, which is this
+plan's other work. This task is the agent's road to a change, not the change.

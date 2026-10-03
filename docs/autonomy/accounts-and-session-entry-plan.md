@@ -1121,3 +1121,56 @@ never been run against this one.
   owed to a machine with room — which is an owner's decision under
   `docs/autonomy/SHARED_MAIN.md`, not something to guess around.
 
+### 18. More than one person on one machine, and whose grant is whose
+
+**Status:** ready. **Depends on:** nothing.
+
+**Moved into this release on 2026-10-03** by
+`docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. The promise is
+`docs/features.md`'s *Multi-user on one machine, with per-person grants and no
+shared agent memory*.
+
+**Three clauses, and they are in three different states.** Measured before this
+task was written, because a task that misstates what is built sends somebody to
+build it twice.
+
+**Switching is built.** `crates/alo-leaving/src/switching.rs` is *switch user:
+this session locked, and the screen handed to the sign-in*, and it carries the
+order in the code rather than in a habit — locked first, greeter second — so a
+machine never shows a greeter over an unlocked desktop.
+
+**Accounts are built, and say what they deliberately are not.**
+`crates/alo-accounts/src/account.rs` is *one local account: a name, a number,
+and the hash of a password*, the uid tying it to the Unix login the image
+declares. No identity provider and no tenant, *so there is no field for them to
+grow into quietly*.
+
+**Grants are kept for the machine, and this is the clause with work in it.**
+`crates/alo-remembering/src/keeping.rs` holds
+`pub const THE_GRANTS: &str = "/var/lib/alo/grants.toml"` — **one literal path,
+with no person in it.** The file is owner-protected: `believing.rs` refuses to
+parse a byte until the uid and mode are the ones it expects. But **one file
+whose owner is checked and one file per person are different designs**, and on a
+machine with two accounts the second person to sign in meets the first one's
+grants. That is what *per-person grants* forbids.
+
+- **Acceptance:** two accounts exist on one machine. The first grants a folder,
+  signs out; the second signs in and **sees no grant they did not make**, and
+  granting one of their own leaves the first person's untouched. Both survive a
+  restart. **A grant names whose it is**, so *see what is granted* answers for
+  the person asking rather than for the machine.
+- **Constraint:** the path is a published shape — `/var/lib/alo/grants.toml`
+  exists on machines already. Moving it is a migration, not a rename, and
+  whatever replaces it must leave a machine that had one person with that
+  person's grants rather than with none.
+- **Constraint:** `believing.rs`'s owner-and-mode check stays. It is not
+  replaced by keying on a person; it is the reason a per-person file cannot be
+  read by the wrong person even when the path is guessable.
+
+**The third clause is not measured and this task does not pretend otherwise.**
+*No shared agent memory* is a property of what `alo-agentd` keeps across a
+sign-in, and that crate has eighty-two source files carrying pairing, naming and
+network state. **Which of it outlives a session, and which of it is a person's
+rather than a machine's, is its own reading** — and the honest first step is to
+take it, not to assume the answer here. It is named so that finishing the grants
+half is not mistaken for finishing the promise.
