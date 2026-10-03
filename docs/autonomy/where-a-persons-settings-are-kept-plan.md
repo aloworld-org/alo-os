@@ -225,10 +225,49 @@ here or by a person.
 
 ### 7. A session with no folder says so in Settings
 
-**Status:** **Done, 2026-09-18** — implementation complete; publication requires
-the operator's serialized nine gates and exact acceptance checks. The typed folder result, refusal
-sentence and Settings contract are held by the folder walk and refusal tests;
-see `docs/autonomy/updates/settings-explain-when-session-changes-cannot-be-kept.md`.
+**Status:** **met in this plan's crates, and no person can read it, 2026-10-03.** Was
+*Done, 2026-09-18 — implementation complete*, and the part this plan is responsible for holds.
+The typed folder result, refusal sentence and Settings contract are held by the folder walk
+and refusal tests; see
+`docs/autonomy/updates/settings-explain-when-session-changes-cannot-be-kept.md`.
+
+**What holds, measured rather than assumed.** `alo_choosing::where_the_folder_is` is called in
+**production** at `crates/alo-shell/src/settings_places.rs:44` — `#[cfg(test)]` in that file
+begins at line 78 — and the `SettingsPlaces` it answers into is taken in production by
+`settings_window.rs`'s `opened_by_hand`. So a Settings surface genuinely cannot reach a
+keeper's path without having met the no-folder case, which is what this task asked for.
+
+**What does not hold is that the sentence can ever be read**, and the reason is one road
+further on than this plan goes:
+
+```text
+SettingsWindow::closed()          constructed in tests only
+SettingsWindow::opened_by_hand    0 production callers — every `.opened_by_hand(`
+                                  in production is RecordWindow's different
+                                  method of the same name
+nested_settings::pump_settings    no caller at all
+SettingsKey                       no caller outside its own module
+"Settings" in crates/alo-desktop  0 non-comment mentions
+```
+
+This workspace builds many binaries and most are daemons. The two that put anything on a
+screen are **`alo-desktop`**, a crate of its own, and **`alo-compositor`**, which is a
+`[[bin]]` target of `alo-shell` at `src/bin/alo-compositor.rs` rather than a crate — so it is
+named in no workspace member list and `ls crates/alo-compositor` finds nothing, which is how
+its existence gets mislaid in both directions. `cargo metadata` lists it as
+`alo-compositor (alo-shell)`. **Neither of the two creates a `SettingsWindow`**, and there is
+no third surface to look in. The window draws — `settings_raster` lays it out — and routes keys, and
+refuses correctly in every tested case, and nothing opens one. So every sentence this plan
+declared for Settings is reachable by a test and by nobody else.
+
+**Not this plan's road, and named rather than taken.** Opening a Settings window is a shell
+surface, and Settings surfaces in `alo-shell` belong to `the-shell-plan.md`'s tasks 7 to 14,
+which the charter gives to this PC's lane A. This plan's own acceptance is met; its visibility
+waits there.
+
+*Found by auditing this plan the way the panel lane audited canvas task 9 — asking of each
+`Done` whether anything reaches it. The sibling finding is task 5 of
+`hands-on-the-desktop-plan.md`, where a gesture is recognised and cannot be turned off.*
 **Depends on:** 6.
 
 Task 6's walk found the one moment on the road that has no words. A login with
