@@ -1455,3 +1455,33 @@ than changed.*
 **Shown by:** nothing.
 
 **Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it from v1 into this release on 2026-10-03 and says what the next step is: this promise has no task in any plan, because none was expected before v1, and one has to be written before anybody can start it. Its evidence has not been assessed either — nothing here is offered as showing it, and nothing here claims none exists. Where to look first: pairing is built and its plan closed at thirty-seven tasks of thirty-seven, so the machines find each other. What is unproven is the clause that matters — **an agent acting only under a grant made on the target machine, by its person.** That is an authority question rather than a networking one, and a reader should assume it is owed until somebody shows it.
+
+### ★ **A Place remembers time** — drag the
+
+**Shown by:** nothing.
+
+**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. **It was `[v1.1]`, the only canvas promise above this release**, and the lane that found it would not move it alone: it is not among the five things the owner named as completion, and it rests on the snapshots undo takes rather than on Places at all.
+
+### **Every screen is a view onto the canvas** — two displa
+
+**Shown by:** nothing.
+
+**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. Two displays are two viewports at their own zoom, which is a different thing from this release's *multi-monitor, scaling, hotplug* and will want reading beside it.
+
+### **A panel out of view costs nothing** — it is a st
+
+**Shown by:** nothing.
+
+**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. It is a cost property rather than a feature — a Place holding forty frames stays usable — so what shows it is a measurement, and nobody has taken one.
+
+### **Every canvas also answers as a list** — its panels
+
+**Shown by:** `crates/alo-shell/tests/every_frame_answers_as_a_list/mod.rs`
+
+**Still owed:** **the machine half, as every promise in this release is.** The code half is done and was done before this promise reached this tier: task 7 of `docs/autonomy/the-smallest-canvas-worth-showing.md` is **Done, 2026-09-29, all three thirds**, with six tests reached through `client_lifecycle.rs` — frames enumerable in a stable order with their names, reachable and focusable by keyboard alone, and what a reader is told not depending on where a frame sits. **This one moved as a correction rather than a widening**: it was `[v1]` and built at v0.5, which is a promise built below its own tier.
+
+### ★ **Give it to alo** — anything sele
+
+**Shown by:** nothing.
+
+**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. **This move overrides a standing decision**: its tier was kept deliberately when the Stop carve-out put *alo working in a window you put aside* at `[v0.01]` and left its neighbours alone. The owner chose on 2026-10-03 to move it anyway, and it is recorded here so the earlier reasoning is not read as still current.

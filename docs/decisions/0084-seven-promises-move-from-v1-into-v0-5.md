@@ -1,4 +1,4 @@
-# ADR 0084 — Seven promises move from v1 into v0.5
+# ADR 0084 — Twelve promises move into v0.5
 
 **Status:** **accepted, 2026-10-03**, by the owner. Asked whether v1 could fold
 into v0.5 except printing, keeping what a developer needs every day and what a
@@ -47,6 +47,48 @@ Before: 89 `[v0.5]` promises in `docs/features.md`. After: 96. The seven added
 are, as far as anybody has checked, unbuilt — so a release that was 28-waiting-on-hardware
 now also carries seven that are waiting on work. **That is the intended trade.**
 The alternative was a demonstration with nothing in it a person recognises.
+
+## And five canvas promises, decided the same day
+
+Asked afterwards whether the canvas work above this release could come with
+them, the owner said all five. They are a different argument from the seven: not
+*what a demonstration rests on* but **what the canvas is**, which the owner had
+already ruled on once — *the complete agreed canvas experience belongs in v0.01;
+do not defer parts of it to v1.1*.
+
+| Promise | Was | What kind of move this is |
+|---|---|---|
+| *A Place remembers time* | `[v1.1]` | a widening. The only canvas promise above this release, named rather than moved by the lane that found it because it is not among the five completion requirements and rests on undo's snapshots |
+| *Every screen is a view onto the canvas* | `[v1]` | a widening |
+| *A panel out of view costs nothing* | `[v1]` | a widening, and a cost property rather than a feature — what shows it is a measurement |
+| *Every canvas also answers as a list* | `[v1]` | **a correction.** Built at v0.5: task 7 of `docs/autonomy/the-smallest-canvas-worth-showing.md`, *Done, 2026-09-29, all three thirds*, six tests in `crates/alo-shell/tests/every_frame_answers_as_a_list/mod.rs`. A promise built below its own tier |
+| *Give it to alo* | `[v1]` | **overrides a standing decision** |
+
+**On Give it to alo.** Its tier was kept deliberately when the Stop carve-out put
+*alo working in a window you put aside* at `[v0.01]` and left its neighbours
+alone — that was recorded at the time as the reason not to move it. The owner
+chose on 2026-10-03 to move it anyway. Written here so the earlier reasoning is
+not read as still current by somebody who finds it.
+
+## Two things the roadmap was wrong about, found by making this change
+
+**None of the five was on `ROADMAP.md` at all.** `docs/features.md` carried them
+and the roadmap listed them nowhere, in v1 or outside it. `CLAUDE.md` makes the
+roadmap the only order work gets built in, so these were promises the scope gate
+held with no order to be built in. They are added rather than moved.
+
+**And a sentence in the canvas background was wrong when written.** It says
+*Tidy this canvas, Every screen is a view onto the canvas and A panel out of
+view costs nothing stay at `[v1]`*. `docs/features.md` has carried *Tidy this
+canvas* at `[v0.01]` throughout. Two of its three moved today and the third was
+never `[v1]`, so the paragraph is corrected rather than half-updated.
+
+## What this makes the release
+
+89 `[v0.5]` promises before today, 101 after. Of the twelve added, one is built
+and eleven are not, and none has a task in any plan. **The next step for all
+eleven is the same**: a task in a plan, which needs no hardware and is therefore
+work a machine with no laptop can do.
 
 ## What each entry owes, and why it points here
 

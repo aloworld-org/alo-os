@@ -1308,8 +1308,16 @@ above for that reason.
 
 **Three promises were deliberately not moved**, and saying which is the point of
 this paragraph rather than an aside. *Tidy this canvas*, *Every screen is a view
-onto the canvas* and *A panel out of view costs nothing* stay at `[v1]`: the owner
-named five things completion requires and none of them is these. **Moving them
+onto the canvas* and *A panel out of view costs nothing* stayed at `[v1]`: the owner
+named five things completion requires and none of them is these.
+
+**All three of those sentences are now out of date, and one was always wrong.**
+*Every screen is a view onto the canvas* and *A panel out of view costs nothing*
+moved into v0.5 on 2026-10-03 with three others, by
+`docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. And *Tidy this
+canvas* has been `[v0.01]` in `docs/features.md` since before this paragraph was
+written — it never stayed at `[v1]`, and `CLAUDE.md` makes that file the one
+with tiers. **Moving them
 would have been the lane widening its own scope under cover of an instruction**,
 which is the opposite of what was asked.
 
@@ -2911,6 +2919,28 @@ sorted the same way v0.01 now is.
 `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. Seven are a tier
 change; *Devices* is a correction, because `docs/features.md` already carried it
 at this tier and this page did not.
+
+**And five canvas promises joined them on 2026-10-03**, by the same decision.
+None of the five was on this page at all — `docs/features.md` carried them and
+this file listed them nowhere, so a promise the scope gate held had no order to
+be built in. That is why they are added here rather than moved.
+
+- [ ] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was
+      on Tuesday, from the snapshots undo already takes. **Was `[v1.1]`**, the
+      only canvas promise above this release
+- [ ] **Every screen is a view onto the canvas** — two displays are two viewports
+      at their own zoom, not two desktops
+- [ ] **A panel out of view costs nothing** — a still picture until it is
+      reached, so a Place holding forty frames stays usable
+- [ ] **Every canvas also answers as a list** — its panels in order, by keyboard
+      and to a screen reader. **Already built**: task 7 of
+      `docs/autonomy/the-smallest-canvas-worth-showing.md`, *Done, 2026-09-29,
+      all three thirds*, with six tests. It was `[v1]` and built at v0.5, so this
+      one is a correction rather than a widening
+- [ ] ★ **Give it to alo** — anything selected can be done by hand or handed
+      over, and a whole goal can be handed over. **This overrides the carve-out**
+      that kept its tier when *alo working in a window you put aside* went to
+      `[v0.01]`; the owner chose to move it anyway
 
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
