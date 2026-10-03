@@ -525,15 +525,31 @@ So, from 2026-10-03:
   once is worse than none**, because the exception is invisible to somebody
   reasoning from the pattern.
 
-**The table above contradicted this list until 2026-10-03, and the cost was
-not confusion.** Five owner cells identified a lane by a checkout path —
-`alo-os-claude`, `alo-os-lane-b`, and the `alo-os-2` the paragraph already
-names. Two of them were the cells that two machines were waiting on: the one
-giving `software-and-the-web-plan.md` to a path, and the one giving
-`the-local-network-plan.md` to a lane letter. **Both lanes held work for a
-ruling this file already carried**, because the rule was written in one place
-and contradicted in another, and a document that says two things is read at
-whichever of them the reader reaches first.
+**The table above carried a checkout path in five owner cells until
+2026-10-03, which undercut this list rather than contradicting it.** The
+paths were `alo-os-claude`, `alo-os-lane-b`, and the `alo-os-2` the paragraph
+above already names.
+
+**No cell gave a plan to a path**, and the first version of this entry said
+they did. The software-and-the-web row read *third PC, second loop*
+(`alo-os-2`) — the machine in bold, the path a parenthetical — and the crate
+table below gives `alo-software` to *the third PC* and says why, *it holds the
+unsandboxed-installation promise*. **The two tables agreed.** The
+local-network row read *this PC, lane A*: a machine, a lane letter and a path.
+So the fault is narrower than a disagreement and still worth removing: **a
+path in an owner cell carries no identity, and a qualifier that carries no
+identity reads as though it does.**
+
+**It was misread by one lane, not two.** The development PC held
+`the-local-network-plan.md` pending a ruling this file already carried, having
+read an owner cell and not the convention eighteen lines of table below it.
+`software-and-the-web-plan.md` was never held for that reason: the third PC's
+claim to it rests on its own plan's broker note rather than on this table.
+
+**The distinction is worth the words because it sets how much else to doubt.**
+*The two tables disagreed* calls for an audit of this file; *one cell was
+qualified confusingly* calls for a tidy. The first was asserted on evidence
+for only the second.
 
 **There is no lane A and no lane B.** There is one development PC, which holds
 as many checkouts as the work needs, and a plan belongs to the machine rather
