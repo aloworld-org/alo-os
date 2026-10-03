@@ -88,12 +88,75 @@ selection to act on; nothing yet names the arrangement proposal itself.
 
 ### The World, and moving between Places
 
-**Shown by:** nothing yet.
+**Shown by:** `crates/alo-canvas/src/world_tests.rs`,
+`crates/alo-shell/tests/the_world_is_a_step_out/mod.rs`,
+`crates/alo-shell/tests/dragged_into_another_place/mod.rs`,
+`crates/alo-shell/tests/move_to_place/mod.rs`
 
-**Still owed:** all of it. **There is no World** — no type, no navigation, and no
-promise in `docs/features.md` until the day this entry was written, though
-`docs/decisions/0065` has defined `World → Place → Object` since it was written.
-Blocked on Place identity existing at all. The increment is task 2 of `docs/autonomy/the-canvas-and-its-places.md`.
+Places laid out as tiles, the span they reach, the Place under a point, and a
+camera that fits them all. **Navigation is in production on both roads** — the
+step out into the World is reached by the key and by the wheel, and stepping into
+the Place under a point goes back in. Moving a frame between Places is built both
+ways too: *Move to the next Place* on a chord, and the pointer road where a person
+takes hold of a frame by its name, zooms out until the World appears, and lets go
+over a tile.
+
+**Still owed:** **the layout is derived rather than held, so where a Place sits
+is not yet something a person can rely on or change.** `World`'s own header says
+why that matters and asks for the opposite:
+
+> The order Places were made in is not the order they are laid out in, and this
+> type holds the layout rather than deriving it: where a Place sits in the World
+> is a thing a person may come to rely on, so it is data rather than a function
+> of a `BTreeMap`'s ordering.
+
+The type does hold it. **Its only production constructor computes it, and
+`canvas_the_world`'s own header states the property it then derives away** —
+*where a Place sits in the World is something a person will come to rely on*.
+`Server::the_world` collects the Places that have frames, sorts them — which is
+`Place`'s `Ord`, and `Place` is a `u64`, so that is **the order they were made
+in** — and lays them out at `nth` viewport widths across. Nothing stores a
+`World`; the server's own state has no field for one; and `World::with` is called
+by nothing but that fold. So a person cannot move a Place in the World.
+
+**And it is worse than an arbitrary order: it is an unstable one.** The Places
+come from `the_frames_on_the_plane`, which comes from the mapped surfaces — live
+windows. That is right for *drawing* a World, and the header says so
+deliberately: a Place nobody has put anything on is not drawn as an empty tile.
+For **ordering** it means a Place leaves the World the moment its last window
+closes, and **every later Place shifts one tile left**. So the order is not
+creation order; it is the creation order of whichever Places currently hold
+frames, and it changes under a person as they close things.
+
+**That has a consequence for the panel's grouping, ruled on 2026-10-03, and the
+ruling forbids it twice over.** The ruling says to put the current Place first
+and order the others **in World order**, explicitly so the order is not
+inherited accidentally from a `BTreeMap` — and separately that **new activity
+must not reorder rows under the pointer**. Built against `the_world()` as it
+stands today, World order *is* creation order, which fails the first clause by a
+longer road; and because it is computed from live windows, closing a window on
+an earlier Place reorders the panel's rows underneath the person, which fails the
+second outright. A person who learns that one Place sits to the right of another
+is wrong as soon as they close the last window on an earlier one.
+
+So the grouping should **take the ordering from a `World` handed in** rather than
+deriving one, so that whoever holds the layout owns the order and this fold's
+fault stays visible at the one place that builds a World — and say in its status,
+citably, that a person cannot arrange the World yet, so what a caller can hand in
+today is still creation order. The grouping is then correct and the **meaning** of
+its ordering is what waits.
+
+Reached v0.01 on 2026-09-30 when the owner put the full canvas experience into
+the current release. This entry read *there is no World — no type, no
+navigation* until 2026-10-03, which was true when written and had been false
+since task 2 landed on 2026-10-02. It is the kind of staleness that costs
+something: **a ledger saying a type does not exist is what a lane checks before
+building one**, so the risk was a lane declining to build on `World` or writing a
+second one beside it.
+
+Where the work is: task 2 of
+`docs/autonomy/the-canvas-and-its-places.md` holds the World itself, and the
+layout a person can arrange is the part this entry now names as owed.
 
 ### Frames, dragged and resized like a design canvas
 
