@@ -128,6 +128,7 @@ mod where_it_builds;
 mod who_owns;
 mod worker;
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
@@ -186,6 +187,23 @@ enum Asked {
         /// The checkout to bring it across from, when it is not here.
         from: Option<PathBuf>,
     },
+
+    /// Print the task a loop would take next, and do nothing else.
+    ///
+    /// **This reads and never writes**: no lock, no journal line, no worker.
+    /// [`Asked::Status`] is the precedent — but `status` answers what is
+    /// *happening*, from the lock and the journal, and this answers what
+    /// *would* happen, from the plan.
+    ///
+    /// It exists because the question was otherwise unanswerable from outside
+    /// this binary. The crate has no `src/lib.rs` and its own `[workspace]`,
+    /// so [`plan::next_executable`] cannot be called by anything else, and no
+    /// other subcommand prints a selection. Checking a claim about what the
+    /// supervisor would offer therefore meant transcribing its rule into
+    /// another language — which checks the transcription — or starting the
+    /// loop, which does work.
+    /// **A claim checkable only by a model is a claim about the model.**
+    Next,
 }
 
 impl Asked {
@@ -199,6 +217,7 @@ impl Asked {
             Some("publish") => Some(Self::Publish),
             Some("verify") => Some(Self::Verify),
             Some("gates") => Some(Self::Gates),
+            Some("next") => Some(Self::Next),
             Some("recover") => {
                 let branch = args.next()?;
                 // `--from <path>` or nothing. An unrecognised third word is
@@ -229,6 +248,8 @@ fn main() -> ExitCode {
              \x20 alo-kernel-loop verify   run every gate and the waiting handoff's evidence\n\
              \x20 alo-kernel-loop gates    run every gate, and nothing else — for a caller with \
              no handoff\n\
+             \x20 alo-kernel-loop next     print the task a loop would take, and do nothing — it\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 takes no lock, writes no journal line and starts no worker\n\
              \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n\
              \x20 alo-kernel-loop recover <branch> [--from <checkout>]\n\
              \x20\x20\x20\x20\x20\x20\x20\x20\x20 put a parked task's work back in the tree, on \
@@ -256,6 +277,7 @@ fn main() -> ExitCode {
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
         Asked::Gates => gates_only(&at),
+        Asked::Next => next_only(&at),
         Asked::Recover { branch, from } => recover(&at, &ours, &branch, from.as_deref()),
         Asked::Status => {
             // **Whether anything is running, before what last happened.** A
@@ -778,6 +800,66 @@ fn publish(at: &Path, ours: &Path) -> ExitCode {
             journal::note(ours, &format!("NOTHING PUBLISHED: {why}"));
             eprintln!("alo-kernel-loop: nothing was published. {why}");
             ExitCode::FAILURE
+        }
+    }
+}
+
+/// Print the task a loop would take next, and touch nothing.
+///
+/// The plan is the one [`plan::the_plan`] names, so `ALO_LOOP_PLAN` selects it
+/// exactly as it does for a run.
+/// **The same resolution, so the answer is about the plan a run would read**
+/// rather than about a path typed twice.
+///
+/// Nothing is given up on, because giving up is a fact about a run in progress
+/// and there is no run here. A task a live loop had set aside would still be
+/// printed, and the words say so rather than leaving a reader to assume this
+/// is what some particular loop would do right now.
+///
+/// **It answers about the last published state, not the working tree.**
+/// [`plan::every_task`] reads the plan as `HEAD` has it, for the reason given
+/// there: a loop must not read a plan it is about to publish and choose the
+/// task after. So a task written and not yet committed is invisible here, and
+/// the printed line says which plan it read so that is checkable rather than
+/// surprising.
+fn next_only(at: &Path) -> ExitCode {
+    let named = match plan::the_plan() {
+        Ok(named) => named,
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {why}");
+            return ExitCode::FAILURE;
+        }
+    };
+    // The repository, not the plan file: `every_task` resolves the plan itself
+    // and runs `git show HEAD:<plan>` from here. Handing it the file made git
+    // run with a `.md` as its working directory, which compiled and type-checked
+    // and failed the moment it was run.
+    match plan::next_executable(at, &BTreeSet::new()) {
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {named} could not be read: {why}");
+            ExitCode::FAILURE
+        }
+        Ok(None) => {
+            println!(
+                "alo-kernel-loop: {named} offers nothing. Every task in it is finished, blocked, \
+                 scheduled, or waiting on one that is."
+            );
+            ExitCode::SUCCESS
+        }
+        Ok(Some(task)) => {
+            println!(
+                "alo-kernel-loop: {named} would offer task {} — {}",
+                task.number, task.named
+            );
+            if !task.after.is_empty() {
+                let after: Vec<String> = task.after.iter().map(u32::to_string).collect();
+                println!(
+                    "  it depends on {}, and each of those is finished.",
+                    after.join(", ")
+                );
+            }
+            println!("  nothing was started, and nothing was written.");
+            ExitCode::SUCCESS
         }
     }
 }
