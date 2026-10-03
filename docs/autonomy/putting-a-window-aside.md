@@ -77,45 +77,35 @@ listing does, and a method whose only callers are tests reads exactly like one t
 finished.
 
 **The one exception, and it is narrow: a road may have no caller when giving it one would
-decide something the owner has not.** `alo_put_aside::a_place_groups_its_windows` had no
-production caller on purpose. `docs/design/the-windows-put-aside.md:304` allows grouping by
-Place *without hiding individual windows behind an app icon* and then said: **whether it is
-the default when there are many, or always a choice, is not decided.** A draw that grouped
-would have answered that, in a drawing crate, on behalf of the person who had not been asked.
+decide something the owner has not, or would need something that does not exist.**
 
-> **Decided by the owner, 2026-10-03: grouped by Place by default.** One consistent mode, not
-> a layout that switches after some number of windows.
->
-> - **One represented Place:** its windows, with no redundant group heading.
-> - **Several represented Places:** a heading per Place with its windows underneath.
-> - **The current Place first**, then the others **in World order**.
-> - **Groups start expanded**, and new activity must not reorder rows under the pointer or
->   move keyboard focus.
-> - **Every window stays individually reachable** — never bundled behind an application icon.
-> - **Restoring returns a window to its own Place**, and does not move it to the current one.
-> - **Group by Place / Flat list** is offered in the panel's **own options menu** and the
->   person's choice is remembered. *The owner ruled explicitly that this does not wait for
->   Settings* — which matters, because nothing opens Settings today (see
->   `docs/autonomy/where-a-persons-settings-are-kept-plan.md` task 7).
->
-> **Two things the existing function cannot do, measured on 2026-10-03.** It returns
-> `BTreeMap<Place, Vec<&Preview>>`, so its order is `Place`'s `Ord` — and `Place` is a
-> `u64`, so that is the order Places were *made* in. The ruling forbids exactly this: *do not
-> inherit ordering accidentally from `BTreeMap`*. **World order already exists and is the
-> answer:** `alo_canvas::World::each` yields every Place *in the order they are laid out*, and
-> `World`'s own header gives the ruling's reason unprompted — *where a Place sits in the World
-> is a thing a person may come to rely on, so it is data rather than a function of a
-> `BTreeMap`'s ordering*. So the signature has to change to carry World order and the current
-> Place, and the type that holds the answer can no longer be a map keyed by `Place`.
+`alo_put_aside::a_place_groups_its_windows` has no production caller, and the reason changed
+on 2026-10-03 — which is why both halves of the exception are written here rather than only
+the one that was true first.
+
+**Until the ruling it was the first half.** `docs/design/the-windows-put-aside.md` allowed
+grouping by Place and then said *whether it is the default when there are many, or always a
+choice, is not decided*, so a draw that grouped would have answered that in a drawing crate
+on behalf of the person who had not been asked.
+
+**The owner has now decided, so that half is spent, and the second half holds instead: a
+heading per Place needs a Place's name, and a Place has no name.**
+`crates/alo-canvas/src/place.rs` says so where the type is defined — *a Place a person
+recognises is a name and a wallpaper on top of one of these, which is **not this crate's
+business*** — and nothing else in the tree provides one. So the ruling's *a heading per Place
+with its windows underneath* cannot be drawn: there is nothing to put in the heading. The
+model is built, every ordering rule is held by a test, and the surface waits on a concept
+rather than on effort.
 
 So *has it got a caller* is the question, and **two answers pass**: it has one, or it has
-none and the status says which decision the caller waits on, named and citable. What does
-not pass is silence — a built road with no caller and a status that reads as finished,
-which is what the four above were.
+none and the status says what the caller waits on, named and citable — an open decision, or a
+thing that does not exist. What does not pass is silence: a built road with no caller and a
+status that reads as finished, which is what the four above were.
 
-The distinction is not a loophole, because the second answer costs more than the first: it
-requires finding the sentence that makes the decision open, and quoting it where the next
-lane will read it. A lane that cannot find such a sentence does not have this exception.
+The exception is not a loophole, because the second answer costs more than the first. It
+requires finding the sentence that makes the decision open, or the measurement showing the
+thing absent, and quoting it where the next lane will read it. A lane that can find neither
+does not have this exception.
 
 A corollary the same lanes paid for three times in one day: **a fault found at one site is
 a fault to grep for.** A guard covering the field that happened to get mutated, a report

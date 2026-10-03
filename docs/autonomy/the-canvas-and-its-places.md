@@ -413,8 +413,10 @@ rather than spending a branch on the line.*
 - *The collapse state differs between two Places* — `alo_put_aside::TheCollapseChoice`, a
   `BTreeMap<Place, Chosen>` where absent means expanded.
 - *A Place's group shows its windows individually* — `a_place_groups_its_windows`, with
-  nine tests, including two windows of one application on one Place staying two previews
-  and one application spanning two Places staying in both.
+  fourteen tests: two windows of one application on one Place stay two previews, one
+  application spanning two Places stays in both, and each ordering rule the owner ruled on
+  2026-10-03 is held by a test whose fixture disagrees with `Place` order. **The model only** —
+  what the drawing waits on is below.
 
 **What is not paid, and neither reason is this task's own work.**
 
@@ -430,13 +432,54 @@ A settings file was the wrong instinct and is recorded as such. The collapse cho
 **remembered state, not a setting a person chose**, so `alo-arranging` is its home — and
 ADR 0016 warns that inventing a second store is how a settings system becomes six.
 
-**The grouping has no production caller, deliberately.**
-`docs/design/the-windows-put-aside.md:304` allows grouping by Place and then says *whether
-it is the default when there are many, or always a choice, is not decided.* A draw that
-grouped would answer that question in a drawing crate on behalf of a person who has not
-been asked. So the model is built and tested and nothing calls it, and the owner's decision
-is what it waits on. See the exception in `putting-a-window-aside.md`'s testing rules, which
-this case is the reason for.
+**The grouping model is built to the ruling, 2026-10-03, and the drawing waits on a Place
+having a name.**
+
+`alo_put_aside::a_place_groups_its_windows` now answers `ThePanelInGroups`: the current Place
+first when it holds anything, then the Places the World names **in the World's layout order**,
+then the Places the World cannot name. `Headings::NotNeeded` for one represented Place and
+`Headings::OnePerGroup` for several, so the drawer is handed the rule rather than counting
+groups and copying it. Fourteen tests.
+
+**The signature changed because the ruling forbade the old one.** It returned
+`BTreeMap<Place, Vec<&Preview>>`, whose order is `Place`'s `Ord` over a `u64` — the order
+Places were *made* in. The defence written for it was *two identical panels must produce one
+layout*, which is a true property and was the wrong property: **deterministic and meaningless
+are compatible.** The order now comes from a `World` handed in, because the World **is** the
+layout, and this crate has no opinion about it.
+
+**A case the ruling could not have anticipated, measured rather than assumed.**
+`Server::the_world` is built from `the_frames_on_the_plane`, which reads the **mapped**
+surfaces — and a put-aside window is hidden, so it is not mapped. **A Place whose windows have
+all been put aside is absent from the World**, which means the World cannot order the very
+Places this panel groups. Those come last, in the panel's own most-recent-first order: the
+window somebody put away last is the one they are most likely to want back, and it is the only
+ordering they can predict. Falling back to `Place`'s `Ord` there would have reintroduced
+creation order through the back door.
+
+**What the drawing waits on, and it is a missing concept rather than undone work.** The ruling
+asks for *a heading per Place with its windows underneath*. A heading needs a Place's name, and
+**a Place has no name**: `crates/alo-canvas/src/place.rs` says where the type is defined that
+*a Place a person recognises is a name and a wallpaper on top of one of these, which is **not
+this crate's business***, and nothing else in the tree provides one. So there is nothing to put
+in the heading.
+
+That is the second half of the caller rule's exception in
+`docs/autonomy/putting-a-window-aside.md`, and it replaced the first half on the same day: the
+grouping had no caller because the default was undecided, and now it has none because a
+heading has nothing to say. Both are citable; neither is silence.
+
+**Also owed, and not this clause's:** *Group by Place / Flat list* in the panel's own options
+menu, with the choice remembered. The owner ruled it does not wait for Settings, and the panel
+has no options menu yet — and *remembered* lands on the same missing road as the collapse
+choice, which `alo-arranging` does not persist.
+
+**One ordering test was strengthened after a mutation told on it.** Replacing World order with
+`Place`'s `Ord` failed **one** test of the ordering pair rather than both: the second used two
+following Places and expected `[reading, mail]` — Places 4 and 6, which *is* ascending, so it
+passed against the sort it existed to forbid. Both now use three following Places in an order
+that is neither sorted nor reverse-sorted, and the mutation fails both.
+
 
 **This clause changes no geometry**, so the fixed-controls recovery recheck does not fire on
 it: the panel's reserved column and rail are untouched, because grouping is an ordering over
