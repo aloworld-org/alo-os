@@ -24,18 +24,50 @@
 //! what is on the disk reads back as the layout being saved**, which is a
 //! stronger promise than a write that returned success.
 //!
-//! # A file that does not read is not written over
+//! # A file that does not read is kept, not lost
 //!
 //! [`at_sign_in`] answers a fresh arrangement and **says what was wrong**
 //! rather than refusing to start: a person whose canvas file was damaged gets
 //! their windows where the applications put them, not a session that will not
-//! begin. And [`keep`] is given whatever is in memory, so the next save
-//! replaces a damaged file with a good one — the damage costs a person their
-//! remembered layout and nothing else.
+//! begin.
+//!
+//! And it **moves that file aside** to [`THE_ONE_THAT_DID_NOT_READ`] rather than
+//! leaving it for the next save to overwrite. The owner decided this on
+//! 2026-10-03, and the case that forces it is not damage but **age**: `read`
+//! refuses a file whose version is not this one, by strict equality, so the
+//! first format change after a release would otherwise discard every person's
+//! arrangement — windows back at the origin, the camera reset, nothing said, and
+//! from their side nothing went wrong. A file written by an older version of our
+//! own format **is not wrong, it is old**, and one equality cannot tell those
+//! apart. The distinction is the panel lane's, reading this crate on the day it
+//! was written.
+//!
+//! Moving it aside costs a migration nothing and keeps every option open: the
+//! bytes are still there, so a later release may read them, somebody may be told
+//! about them, or they may simply be what proves what was lost.
+//!
+//! ## Why this rather than refusing to write
+//!
+//! `alo_kept::keep` refuses to write over a file that did not read — ADR 0038's
+//! clause 3 — and for a settings file that is right: a person's hand edit with
+//! one mistake in it is theirs to mend. `alo_kept::kept_text` makes no such
+//! check, and **a canvas layout is the case where it should not.** Nobody
+//! curates this file by hand, so refusing forever would leave somebody with a
+//! canvas that could never remember anything again until they found and deleted
+//! a file they do not know exists. Aside, then written cleanly, keeps both
+//! halves: nothing destroyed, and nothing stuck.
 
 use std::path::Path;
 
 use crate::{Arrangement, NotArranged};
+
+/// What an unreadable layout is renamed to, so it is kept rather than lost.
+///
+/// **One slot, holding the most recent file that did not read.** Overwriting an
+/// older one is right rather than careless: between two failures this crate
+/// wrote at least one file that *did* read, so an earlier set-aside copy has
+/// already been superseded by a layout the person then used.
+pub const THE_ONE_THAT_DID_NOT_READ: &str = "canvas-layout.toml.unread";
 
 /// The file's name inside the person's folder.
 ///
@@ -129,6 +161,11 @@ fn these_bytes_are(arrangement: &Arrangement, back: &[u8]) -> Result<(), alo_kep
 /// file that is there and does not read answers a fresh arrangement **and** the
 /// reason, so a session starts and somebody can be told why their windows are
 /// where the applications put them.
+///
+/// **And that file is moved aside rather than left to be overwritten** — see
+/// this module's header for why age rather than damage is the case that forces
+/// it. A rename the disk refuses changes nothing about the answer: the layout is
+/// unreadable either way.
 pub fn at_sign_in(at: &Path) -> (Arrangement, Option<NotReadBack>) {
     let text = match std::fs::read_to_string(at) {
         Ok(text) => text,
@@ -139,8 +176,25 @@ pub fn at_sign_in(at: &Path) -> (Arrangement, Option<NotReadBack>) {
     };
     match Arrangement::read(&text) {
         Ok(arrangement) => (arrangement, None),
-        Err(why) => (Arrangement::fresh(), Some(NotReadBack::NotALayout(why))),
+        Err(why) => {
+            kept_aside(at);
+            (Arrangement::fresh(), Some(NotReadBack::NotALayout(why)))
+        }
     }
+}
+
+/// Move a layout that did not read beside itself, so it is kept.
+///
+/// **Best effort on purpose.** The caller's answer does not change: the layout
+/// did not read, a fresh canvas is what a person gets, and the reason is already
+/// in hand. A rename the disk refuses leaves the file where it was — no worse
+/// than before this existed, and the next save overwriting it is the behaviour
+/// this function exists to avoid rather than a new fault it introduces.
+fn kept_aside(at: &Path) {
+    let Some(folder) = at.parent() else {
+        return;
+    };
+    let _moved = std::fs::rename(at, folder.join(THE_ONE_THAT_DID_NOT_READ));
 }
 
 #[cfg(test)]

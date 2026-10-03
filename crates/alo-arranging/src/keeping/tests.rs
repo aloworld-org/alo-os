@@ -146,10 +146,19 @@ fn a_file_that_does_not_read_is_named_and_the_canvas_still_starts() {
         matches!(why, Some(NotReadBack::NotALayout(_))),
         "a damaged file was not named: {why:?}"
     );
+    // **The bytes survive, at the slot beside it.** This asserted that the file
+    // stayed where it was, which was true when written and is wrong by design
+    // since 2026-10-03: a layout that does not read is moved aside so the next
+    // save cannot overwrite it. What the assertion was reaching for is that
+    // nothing is destroyed, and that is what it says now.
+    assert!(
+        !at_file.exists(),
+        "a layout that did not read was left where the next save would overwrite it"
+    );
     assert_eq!(
-        std::fs::read_to_string(&at_file).unwrap(),
+        std::fs::read_to_string(at_file.with_file_name(THE_ONE_THAT_DID_NOT_READ)).unwrap(),
         "version = 1\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n",
-        "reading a damaged file changed it"
+        "the bytes that did not read were not kept beside the file"
     );
 }
 
@@ -220,5 +229,79 @@ fn only_the_layout_that_was_meant_passes_the_proof() {
         these_bytes_are(&meant, &[0xff, 0xfe, 0x00]),
         Err(alo_kept::Unwritten::ReadBackAsSomethingElse),
         "bytes that are not text passed as a layout"
+    );
+}
+
+/// **A layout from an older version of our own format is kept, not lost.**
+///
+/// The case the owner decided on 2026-10-03, and the one that forces this to
+/// exist. `read` refuses a version that is not this one by strict equality, so
+/// without the move the first format change after a release would discard every
+/// person's arrangement at their next save — and **a file written by an older
+/// version of our own format is not wrong, it is old.**
+///
+/// What is asserted is not the refusal, which `arranging_tests` already holds.
+/// It is that **the bytes are still on the disk afterwards**, which is the whole
+/// of what preserving means and the only thing a later migration, a support
+/// question or an explanation could ever be built on.
+#[test]
+fn a_layout_from_another_version_is_kept_beside_itself() {
+    let folder = a_folder("another-version");
+    let at = folder.join(THE_FILE);
+    let older = "version = 2\n\n[places.\"1\"]\nlooking-at = [40, 50]\nzoom = 1000\n";
+    std::fs::write(&at, older).unwrap();
+
+    let (back, why) = at_sign_in(&at);
+
+    assert_eq!(
+        back,
+        Arrangement::fresh(),
+        "an older file stopped the canvas"
+    );
+    assert!(
+        matches!(why, Some(NotReadBack::NotALayout(_))),
+        "an older version was not named: {why:?}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(folder.join(THE_ONE_THAT_DID_NOT_READ)).unwrap(),
+        older,
+        "the older layout was not kept, so the format change cost it"
+    );
+
+    // And the next save writes cleanly rather than being refused forever,
+    // which is the half `alo_kept::keep`'s own rule would have got wrong here.
+    keep(&at, &two_places()).unwrap();
+    let (now, why) = at_sign_in(&at);
+    assert_eq!(why, None);
+    assert_eq!(now, two_places());
+    assert_eq!(
+        std::fs::read_to_string(folder.join(THE_ONE_THAT_DID_NOT_READ)).unwrap(),
+        older,
+        "writing a good layout destroyed the one that had been kept"
+    );
+}
+
+/// **The slot holds the most recent file that did not read.**
+///
+/// Overwriting an older set-aside copy is the decision rather than an accident:
+/// between two failures this crate wrote at least one file that *did* read, so
+/// the earlier copy has already been superseded by a layout the person then
+/// used. Asserted because the alternative — keeping the first forever — is just
+/// as defensible and somebody will wonder which was chosen.
+#[test]
+fn the_slot_holds_the_most_recent_one_that_did_not_read() {
+    let folder = a_folder("most-recent");
+    let at = folder.join(THE_FILE);
+
+    std::fs::write(&at, "version = 1\n").unwrap();
+    let _first = at_sign_in(&at);
+    keep(&at, &two_places()).unwrap();
+    std::fs::write(&at, "version = 2\n").unwrap();
+    let _second = at_sign_in(&at);
+
+    assert_eq!(
+        std::fs::read_to_string(folder.join(THE_ONE_THAT_DID_NOT_READ)).unwrap(),
+        "version = 2\n",
+        "the slot kept the older failure rather than the most recent one"
     );
 }
