@@ -255,12 +255,134 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
 /// So the compiler enforces *a control is handed over*, and this enforces *what is
 /// handed over came from this frame*. Neither is the other, and only together do
 /// they make the header's promise true.
+///
+/// # The compiler does not merely miss C — it is what produces C
+///
+/// **The next reader's instinct is *the compiler covers this*, and they are nearly
+/// right, which is the most dangerous distance from correct.** The desktop lane
+/// supplied the argument that settles it, and it is stronger than *a case `rustc`
+/// cannot see*.
+///
+/// `FixedControlsDrawn` was constructed in **seven** places on 2026-10-02 — six test
+/// fixtures and the draw — with **no spread and no `Default::default()` at any of
+/// them**, so `E0063` does fire everywhere.
+///
+/// The **count** is a figure about a day: fixtures come and go and the ratio moves
+/// with them, so it is dated here rather than guarded, because a test that failed
+/// when somebody added a fixture would be a maintained count wearing a check's
+/// clothes.
+///
+/// **What is worth asserting is what keeps `E0063` able to fire at all**, and
+/// finding it took one more correction. This note first called *no spread in the
+/// draw* the invariant. It is not: `..Default::default()` does not compile today
+/// because `FixedControlsDrawn` does not derive `Default` — measured, `E0277: the
+/// trait bound FixedControlsDrawn: Default is not satisfied` — so that hole is held
+/// shut by the type system and the assertion for it is a belt rather than the gate.
+///
+/// **The gate is the derive.** Add `Default` to that struct and the spread becomes
+/// writable, a control added to the set arrives as an empty rectangle, there is no
+/// compile error because every field is accounted for, and this guard has nothing to
+/// read. One derive, in another file, and both halves of the promise go at once. So
+/// the test asserts the derive's absence, and the spread check sits beside it for the
+/// form nobody would reach for first.
+///
+/// So adding a control hands an author seven compile errors that ask one question —
+/// *supply a value* — and the answers are not equally available. At the draw the
+/// honest answer is the rectangle this frame laid out. **At the six fixtures there
+/// is nothing laid out**, because there is no draw in a headless fixture, so the
+/// cheapest answer is a rectangle somebody typed. Six easy wrong answers and one
+/// hard right one, in a single editing session, with nothing distinguishing them.
+///
+/// That is why this crate's suite came to be *silent by construction* about whether
+/// the draw hands the rule anything real: not six independent lapses, but **one
+/// prompt answered six times**, with the compiler supplying the prompt. It is the
+/// same shape as *the careful version of a check is written in the same idiom as the
+/// careless one*, one layer up, with `rustc` supplying the idiom.
+///
+/// The six fixtures are **right** to invent their rectangles — they are testing the
+/// rule, and the rule must hold for any rectangle. Nothing here asks them to change.
+/// What it says is that their correctness is not evidence about the seventh site, and
+/// only this guard looks there.
+///
+/// *Counted here rather than quoted: `grep -rn "FixedControlsDrawn {" | grep -v "pub
+/// struct"`. The figure was first reported as eight by counting grep's lines, which
+/// include the struct's own declaration — a declaration is not a construction, and
+/// `pub struct FixedControlsDrawn {` matches the same pattern.*
 #[test]
 fn the_draw_hands_over_the_controls_it_laid_out() {
     let at = src().join(THE_DRAW);
     let written = std::fs::read_to_string(&at)
         .expect("direct_desktop.rs is this crate's desktop draw and must be readable");
     let code = one_space(&the_code_of(&written));
+
+    // **The compiler's half of the promise, which a spread would silently end.**
+    // `E0063` is what forces a new control to be handed over at all, and it only
+    // fires where every field is named. `..Default::default()` here would let a
+    // control join the set and arrive as a default rectangle with nothing refusing
+    // — and this guard would not catch it either, because a field absent from the
+    // literal cannot be read from the pictures or from anything else.
+    // Scoped to the literal rather than the file, because a spread is written
+    // *after* the fields — `{ dock_band: …, ..Default::default() }` — so looking for
+    // `FixedControlsDrawn { ..` would miss every real one. That was this
+    // assertion's first form.
+    let opens = "FixedControlsDrawn {";
+    let at = code
+        .find(opens)
+        .unwrap_or_else(|| panic!("{THE_DRAW} does not construct a FixedControlsDrawn at all"));
+    let rest = code.get(at + opens.len()..).unwrap_or_default();
+    let literal = rest
+        .get(..rest.find('}').unwrap_or(rest.len()))
+        .unwrap_or("");
+    assert!(
+        !literal.contains(".."),
+        "{THE_DRAW} spreads into its `FixedControlsDrawn` — `{}` — so a control added \
+         to the set would arrive from somewhere else instead of being a compile \
+         error. A field absent from the literal cannot be read from the pictures \
+         either, so the set would lose both halves of its promise at once",
+        literal.trim()
+    );
+
+    // **And the gate the above rests on.** `..Default::default()` is the form
+    // somebody would actually reach for, and it does not compile today for one
+    // reason only: `FixedControlsDrawn` does not derive `Default`. Add that derive
+    // and the spread becomes writable, `E0063` stops forcing anybody to hand a new
+    // control over, and the compiler's half of the promise is gone — without one
+    // line of the draw changing. So the derive is the invariant and the check above
+    // is the belt beside it.
+    //
+    // Measured: with `..Default::default()` added to the draw as it stands, the
+    // build fails with `E0277: the trait bound FixedControlsDrawn: Default is not
+    // satisfied`. That is the compiler refusing it, not this test — the same
+    // division as mutation B, found the same way, by reading *why* the exit status
+    // was 101.
+    let holds = std::fs::read_to_string(src().join(HOLDS_THE_SET))
+        .expect("canvas_fixed_controls.rs holds the set and must be readable");
+    let declares = the_code_of(&holds);
+    const OPENS: &str = "#[derive(";
+    let derives = (|| {
+        // The `#[derive(..)]` nearest above the declaration is its own: nothing
+        // else in this file sits between a derive and the struct it decorates.
+        let declared = declares.find("pub struct FixedControlsDrawn")?;
+        let above = declares.get(..declared)?;
+        let from = declares.get(above.rfind(OPENS)? + OPENS.len()..)?;
+        from.get(..from.find(')')?)
+    })()
+    .unwrap_or_else(|| {
+        panic!(
+            "could not read the derives above FixedControlsDrawn in {HOLDS_THE_SET}. \
+             An unreadable answer is not a safe one here: the check below would pass \
+             on an empty string and say nothing about the derive it exists to refuse"
+        )
+    });
+    assert!(
+        !derives.contains("Default"),
+        "FixedControlsDrawn derives Default (`{derives}`), which makes \
+         `..Default::default()` writable in {THE_DRAW}. A control added to the set \
+         would then arrive as an empty rectangle with nothing refusing it: no \
+         compile error, because every field is accounted for, and nothing for this \
+         guard to read. The set is what a frame's name must stay clear of, and a \
+         defaulted member of it is a promise about a rectangle nobody drew"
+    );
 
     let controls = the_fields_of("FixedControlsDrawn");
     // A set read as empty would make every assertion below vacuous — the loop
