@@ -36,7 +36,9 @@
 #![cfg(target_os = "linux")]
 #![expect(
     clippy::expect_used,
-    reason = "an unexpected None or Err here is the failure this test reports"
+    clippy::panic,
+    reason = "an unexpected None or Err here is the failure this test reports, and a \
+              formatted panic is how it names which control it was reading"
 )]
 
 use std::path::{Path, PathBuf};
@@ -50,14 +52,18 @@ const RECORDS_THEM: &str = "the_fixed_controls_were_drawn";
 /// What it must call once they have moved.
 const ACTS_ON_THEM: &str = "bring_back_frames_the_moved_controls_hide";
 
-/// Where the Dock's band must come from, and not from a literal.
-const THE_DOCKS_OWN_BAND: &str = "dock_band: pictures.desktop.dock";
+/// Where the file holding the set lives, so its fields can be read.
+const HOLDS_THE_SET: &str = "canvas_fixed_controls.rs";
 
-/// Where the panel's reserved column must come from, and not from a literal.
-const THE_PANELS_OWN_COLUMN: &str = "panel_reserved: pictures.desktop.panel.reserved";
-
-/// The third of the set, which could not say where it was until 2026-10-02.
-const THE_STATUS_AREAS_OWN_BAND: &str = "status_area: pictures.status.band";
+/// The value every control must be read from.
+///
+/// Narrower than *not a literal* on purpose. `status_area: self.the_status_area()`
+/// is not a literal and is still wrong: it would hand over a rectangle the draw is
+/// storing rather than the one this frame laid out, which is the staleness the
+/// whole module exists to prevent. If a control ever stops coming straight off the
+/// pictures, this guard refuses it — correctly — and the repair is to say where it
+/// does come from, never to loosen the pattern.
+const FROM_THIS_FRAME: &str = "pictures.";
 
 /// This crate's source directory.
 fn src() -> PathBuf {
@@ -87,6 +93,40 @@ fn how_often(text: &str, name: &str) -> usize {
     text.matches(name).count()
 }
 
+/// Every `pub` field of a struct in this crate's source, in the order written.
+///
+/// **This is what makes the guard below grow with the set rather than with
+/// somebody's memory.** The list it replaced was three strings maintained by hand,
+/// which is the shape of the fault the guard exists to catch: it covered what was
+/// known when it was written, and the status area joined the set on 2026-10-02
+/// without joining the guard.
+fn the_fields_of(struct_named: &str) -> Vec<String> {
+    let at = src().join(HOLDS_THE_SET);
+    let written = std::fs::read_to_string(&at)
+        .expect("canvas_fixed_controls.rs holds the set and must be readable");
+    let code = the_code_of(&written);
+    let opens = format!("pub struct {struct_named} {{");
+    let from = code
+        .find(&opens)
+        .unwrap_or_else(|| panic!("{struct_named} is not declared in {HOLDS_THE_SET}"));
+    let body = code.get(from..).unwrap_or_default();
+    // The first line that is a lone `}` closes it. Every field here is one line
+    // and none opens a brace, so this needs no nesting count — and a field that
+    // did would show up as a missing field rather than as a silent pass, because
+    // the guard refuses a set it could not read.
+    let upto = body.find("\n}").unwrap_or(body.len());
+    body.get(..upto)
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|line| {
+            line.trim()
+                .strip_prefix("pub ")
+                .and_then(|rest| rest.split_once(':'))
+                .map(|(named, _)| named.trim().to_owned())
+        })
+        .collect()
+}
+
 /// One string with every run of whitespace reduced to a single space.
 ///
 /// So that an assertion about *what this field is read from* survives `rustfmt`
@@ -101,9 +141,11 @@ fn one_space(text: &str) -> String {
 #[test]
 fn the_draw_brings_back_frames_the_moved_controls_hide() {
     let at = src().join(THE_DRAW);
-    // `expect` rather than a formatted `panic!`: the workspace denies
-    // `clippy::panic` everywhere, tests included, and the path is a constant this
-    // file already names.
+    // `expect` rather than a formatted `panic!` because there is nothing to
+    // interpolate here — the path is a constant this file already names. The
+    // guard below does use one, which is what the file-level `expect` of
+    // `clippy::panic` is for; this comment claimed that lint forbade it outright
+    // until the guard needed it.
     let written = std::fs::read_to_string(&at)
         .expect("direct_desktop.rs is this crate's desktop draw and must be readable");
     let code = the_code_of(&written);
@@ -169,21 +211,50 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
 /// them. What *can* be checked is that the draw reads them from the pictures it
 /// just laid out rather than from a literal, and that is a fact about the text.
 ///
-/// **This list is written by hand and that is the wrong shape**, named here
-/// rather than left for the next person to discover. A field added to
-/// `FixedControlsDrawn` joins the set *by being pushed*, as that struct's own
-/// header says — and joins this guard only when somebody remembers. The Mac
-/// lane, which wrote this test, is replacing the list with the struct's own
-/// `pub` fields read from source, so that a new control is required to be wired
-/// the moment it exists. Until then the entries are added by whichever change
-/// adds a control, because **a guard that is wrong for an hour is a guard
-/// somebody reads in that hour.**
+/// # The set is read from the struct, not from a list kept here
 ///
-/// Both controls are asserted, not only the panel. The Dock's band is wired the
-/// same way and would fail the same way, and *the promise is outside **every**
-/// fixed control* — a guard covering the control that happened to be mutated would
-/// repeat in miniature the fault that let the Dock be the only control in the set
-/// for weeks.
+/// **This guard was three strings maintained by hand until 2026-10-02, and it had
+/// the fault it was written to catch.** It named the Dock's band and the panel's
+/// column; the status area joined the set the same day and would have landed
+/// unguarded, because `status_area: Rectangle::default()` satisfies a guard that
+/// never heard of `status_area`. A guard covering what was known when it was
+/// written is the fault, not a lesser version of it — and the laptop lane found it
+/// in mine within the hour, having just had its own 950 tests survive the field
+/// being removed from the rule.
+///
+/// So the controls are now **whatever `FixedControlsDrawn` declares**, read from
+/// source. `FixedControlsDrawn`'s own header says a control joins *by being
+/// pushed* and that a caller who adds a surface to the picture and not to this call
+/// has a compiler error rather than a silent hole. That is half true, and the half
+/// that is missing is this guard's whole subject: **the compiler enforces that the
+/// field is set, never that it is set from the pictures.**
+///
+/// # What the compiler already catches, and the one thing it does not
+///
+/// Measured rather than argued, and the first draft of this note claimed the wrong
+/// win. Three mutations:
+///
+/// ```text
+/// A  status_area: None                       test FAILED, naming status_area
+/// B  a fourth field added, never set         error[E0063]: missing field …
+/// C  a fourth field added AND set to None    test FAILED, naming a_fourth_control
+/// ```
+///
+/// **B is the compiler's, not this guard's.** A struct literal missing a field does
+/// not build, which is exactly what `FixedControlsDrawn`'s header promises. This
+/// note first cited B as the case a hand-written list could not reach; it is the
+/// case *nothing needs to reach*, and claiming it would have been this guard taking
+/// credit for `rustc`.
+///
+/// **C is the gap, and it is the only one.** A control added to the set and wired to
+/// a constant **compiles** — the compiler is satisfied that the field is set and has
+/// no opinion about where from — and a guard naming its controls by hand has never
+/// heard of it. That is precisely how `status_area` would have landed on 2026-10-02:
+/// the compiler was happy, three tests named two fields, and the third was free.
+///
+/// So the compiler enforces *a control is handed over*, and this enforces *what is
+/// handed over came from this frame*. Neither is the other, and only together do
+/// they make the header's promise true.
 #[test]
 fn the_draw_hands_over_the_controls_it_laid_out() {
     let at = src().join(THE_DRAW);
@@ -191,19 +262,45 @@ fn the_draw_hands_over_the_controls_it_laid_out() {
         .expect("direct_desktop.rs is this crate's desktop draw and must be readable");
     let code = one_space(&the_code_of(&written));
 
-    for (which, wiring) in [
-        ("the Dock's band", THE_DOCKS_OWN_BAND),
-        ("the panel's reserved column", THE_PANELS_OWN_COLUMN),
-        ("the status area's band", THE_STATUS_AREAS_OWN_BAND),
-    ] {
+    let controls = the_fields_of("FixedControlsDrawn");
+    // A set read as empty would make every assertion below vacuous — the loop
+    // would not run and the test would pass having checked nothing, which is the
+    // exact shape this file exists to refuse.
+    assert!(
+        controls.len() > 1,
+        "read {} field(s) from FixedControlsDrawn in {HOLDS_THE_SET}: {controls:?}. \
+         The set has never had fewer than two, so this is the reader failing rather \
+         than the set shrinking, and every check below would pass vacuously",
+        controls.len()
+    );
+
+    for control in &controls {
+        let from = format!("{control}:");
+        let at = code.find(&from).unwrap_or_else(|| {
+            panic!(
+                "{THE_DRAW} never sets `{control}`, which {HOLDS_THE_SET} declares as \
+                 part of the set a frame's name must stay clear of. A control the \
+                 draw does not hand over is a control the rule is not in force \
+                 against, which is how the Dock was the only member for weeks"
+            )
+        });
+        // From the field's name to the end of its value: the next comma at this
+        // depth. No value in this literal contains a comma, and one that did
+        // would be truncated rather than mis-read — a truncated value still has
+        // to contain `pictures.` to pass.
+        let rest = code.get(at + from.len()..).unwrap_or_default();
+        let value = rest
+            .get(..rest.find(',').unwrap_or(rest.len()))
+            .unwrap_or("");
         assert!(
-            how_often(&code, wiring) > 0,
-            "{THE_DRAW} does not read {which} from the pictures it laid out — \
-             `{wiring}` is not in its code. A constant there passes every test in \
-             this crate, which is measured rather than feared: it was tried, and \
-             seventeen tests did not notice. If the picture's own path has been \
-             renamed, rename it here too; that is this test working, not failing \
-             spuriously"
+            value.contains(FROM_THIS_FRAME),
+            "{THE_DRAW} sets `{control}` to `{}`, which is not read from the \
+             pictures this frame laid out. A constant there passes every test in \
+             this crate — measured, not feared: it was tried with \
+             `panel_reserved`, and seventeen tests did not notice. If the picture's \
+             own path moved, this failing is the guard working; say where the \
+             rectangle now comes from rather than loosening what counts",
+            value.trim()
         );
     }
 }
