@@ -39,7 +39,8 @@ browser and the terminal are rented, configured and never patched — ADR 0005, 
 0011, and `docs/features.md`: *a pinned upstream one, since our own engine is not
 scheduled*); name any of them to a person (*they install an application — not a
 Flatpak*); accept an adapter that takes model-written code (the contract's one rule);
-or install anything unsandboxed (v1, and deliberate). Before writing the next task,
+or decide an organisation’s policy mechanism because a task needed one (task 15). Before
+writing the next task,
 `git pull` and read the plan as published.
 
 **Owner-authorized broker contribution, 2026-09-18:** the third PC owns this
@@ -714,3 +715,59 @@ setting nothing reads is neither.
 - **Not this task:** a road for an application's own traffic. What an installed
   application is given is `alo_proxy::Published` and the portal
   (`alo_proxy::looked_up`), which task 4 built; this is alo OS's own errands.
+
+### 15. Unsandboxed installation, as a deliberate act
+
+**Status:** **not started, 2026-10-03.** The first task written against a promise that
+moved into this release the same day — `#439` carried it from `[v1]` to `[v0.5]`, and this
+plan's *may not do* list said *or install anything unsandboxed (v1, and deliberate)* until
+this change.
+
+**Depends on:** 1.
+
+`docs/features.md`: *Unsandboxed installation as a deliberate, clearly-marked act — never
+the default, and forbiddable by policy on a managed machine. Brought forward from v1 by
+ADR 0064: developers need their own tools from the first day.*
+
+**What exists to build on.** `crates/alo-software/src/installing.rs` is the two-step road:
+`installing` asks everything answerable without leaving the machine and hands back what the
+egress indicator needs; `install` takes the indicator's `Underway`, **asks the place again
+because a rule can change between one step and the next**, and only then reaches the rented
+tool. Its header states the guarantee this task must not weaken: *an installed application
+is reachable by nothing — not a folder, not the camera, not an agent's verb — until a person
+allows it something.*
+
+**Acceptance.**
+
+- An unsandboxed install **cannot be the default**, and that is held by a type rather than by
+  a branch: the sandboxed road stays the one a caller reaches without saying anything.
+- The person's choice is **carried, not inferred** — nothing derives *this one is unsandboxed*
+  from the source, the application or a setting read at install time.
+- **Clearly marked** is a value the surface is handed, not a sentence a drawing crate writes.
+  The words are `alo-strings`' with a translator's note; this plan may not name an engine to
+  a person, so the marking says what it costs rather than what it uses.
+- The guarantee above survives: an unsandboxed application arrives with **no grants**, and
+  the refusal path is tested as carefully as the happy one.
+- ADR 0064's three levels are **not** this task. Running code the agent wrote and installing
+  an application a person chose are different acts, and the ADR is cited by the promise for
+  *why it moved* rather than as the mechanism.
+
+**One clause is owed and has no road, measured rather than assumed.**
+
+```text
+"policy" / "managed" / "organisation" in alo-software/src/installing.rs    0
+crates reading /etc/alo                 alo-accounts only (accounts, session, place)
+alo-conforming                          the Mac's, accessibility conformance, not policy
+```
+
+*Forbiddable by policy on a managed machine* needs a machine-policy road that does not
+exist: ADR 0016 and ADR 0004 give an organisation a separate file under `/etc/alo/` and say
+no administrator acts as the person, but nothing in this crate reads one and no general
+reader exists. **That clause is a second task when there is a road**, and this one does not
+invent it — a drawing-crate equivalent would be this plan deciding an organisation's
+mechanism because it needed one.
+
+So the status says *not started* rather than *blocked*: the deliberate-and-marked half is
+buildable today, and marking the whole task blocked would hide buildable work behind a
+clause that waits on somebody else.
+
