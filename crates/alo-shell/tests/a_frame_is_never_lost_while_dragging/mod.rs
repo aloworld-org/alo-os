@@ -90,6 +90,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // a placeholder.
                 panel_reserved: Rectangle::default(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -104,6 +105,7 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
                 dock_band: Some(a_dock_along_the_bottom()),
                 panel_reserved: a_panel_down_the_right(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -123,6 +125,7 @@ fn drawn_with_a_status_area(f: &Fixture) {
                 dock_band: None,
                 panel_reserved: Rectangle::default(),
                 status_area: Some(a_status_area_at_the_top_right()),
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -680,6 +683,7 @@ fn a_display_that_changed_owes_a_recheck() {
                 )),
                 panel_reserved: Rectangle::default(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
@@ -761,6 +765,7 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
                 )),
                 panel_reserved: a_panel_down_the_right(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );

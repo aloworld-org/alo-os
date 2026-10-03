@@ -577,6 +577,7 @@ impl crate::Server {
             drawn.dock_band,
             Some(drawn.panel_reserved),
             drawn.status_area,
+            drawn.top_controls,
         ]
         .into_iter()
         .flatten()
@@ -650,6 +651,21 @@ pub struct FixedControlsDrawn {
     /// reserve space no pixel occupies, and push frames out of reach of
     /// nothing.
     pub status_area: Option<Rectangle<i32, Physical>>,
+    /// The room the top controls reserve, or [`None`] when a window fills the
+    /// screen and they give way.
+    ///
+    /// **The fourth member of the set, and it joined by being pushed** — which is
+    /// what this struct's header says a control does, and what the status area did
+    /// on 2026-10-02. Nothing in the rule, the recheck or the mover changed to admit
+    /// it, and `the_draw_hands_over_the_controls_it_laid_out` required it to be wired
+    /// from the frame that drew it before this would build.
+    ///
+    /// *Reserved rather than painted.* Canvas task 6a's contents — the active
+    /// window's controls and the way back to the canvas — are not laid out yet, and
+    /// the panel's reserved column is the precedent rather than the excuse: a region
+    /// exists because a surface owns its edge, whatever is drawn in it. What a frame
+    /// keeps its name clear of is room the canvas does not get.
+    pub top_controls: Option<Rectangle<i32, Physical>>,
 }
 
 impl crate::Server {

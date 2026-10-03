@@ -57,6 +57,12 @@ pub(crate) struct DesktopPicture {
     /// than an absent picture. The reserved column it carries exists either
     /// way, because the panel owns its edge whether or not anything is in it.
     pub(crate) panel: crate::panel_raster::PanelPicture,
+    /// The room the top controls reserve, or [`None`] when a window fills the
+    /// screen and they give way. **Reserved rather than painted** — canvas task
+    /// 6a's contents are not laid out yet, and the panel's own reserved column is
+    /// the precedent: a region exists because a surface owns its edge, whatever is
+    /// drawn in it.
+    pub(crate) top_controls: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
     /// The window of what is running.
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
@@ -270,7 +276,17 @@ pub(crate) fn picture(
         },
     )?;
 
+    // **After the panel, because the band's right edge is the panel's left one.**
+    // The owner's ruling of 2026-09-30: the top controls span the screen up to the
+    // reserved right-panel area, and the reserved width follows the panel's current
+    // width. Taking it from the column means the two cannot overlap by construction
+    // rather than by two numbers agreeing — which is the same ruling's *one pointer
+    // position cannot reveal two surfaces*.
+    let top_controls =
+        crate::top_controls_region::reserved(size, panel.reserved, filling_the_screen);
+
     Ok(DesktopPicture {
+        top_controls,
         size,
         dock: match showing {
             Showing::Shown => Some(dock_picture),
