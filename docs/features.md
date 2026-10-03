@@ -25,7 +25,7 @@ current release, and Non-goals below.
 - [v0.5] Recovery and rollback screen — reachable when the workspace is not
 - [v0.5] **Settings, as one place** — network, display, sound, printers, storage, keyboard, accounts, privacy, updates. Not a scattering of dialogues a person has to know the name of
 - [v0.5] Accessibility: the AT-SPI tree the agent uses is the one a screen reader uses; EN 301 549 conformance is the same work, not extra work
-- [v1] Multi-user on one machine, with per-person grants and no shared agent memory
+- [v0.5] Multi-user on one machine, with per-person grants and no shared agent memory
 
 **Making it yours**
 
@@ -50,7 +50,7 @@ worse than none.
 - [v0.5] Text size and scaling, which is an accessibility setting as much as a taste one
 - [v0.5] **A fresh machine already looks composed** — the plane ships with a surface of its own, so nobody meets a grey rectangle. *Wallpapers shipped in the image: **deleted rather than completed**, ADR 0075*
 - [v1] Cursor size and colour; sounds, including silencing them
-- [v1] ★ **Ask for it** — "make the surface warmer", "use dark after six" — the same propose-then-approve as any other change, because personalisation is exactly the low-stakes place people first learn to trust the agent
+- [v0.5] ★ **Ask for it** — "make the surface warmer", "use dark after six" — the same propose-then-approve as any other change, because personalisation is exactly the low-stakes place people first learn to trust the agent
 - [v1] Themes as a document, so a machine's look can be set once and applied across a fleet (ADR 0004)
 
 ## The ordinary things a desktop must do
@@ -141,7 +141,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.5] **Secret storage** — one keyring behind the Secret portal, so applications stop inventing credential storage
 - [v0.5] **Session management**: log out, switch user, lock, and reopen what was open
 - [v1] **Corporate proxy support**, machine-wide and honoured by applications. A great many company networks have no other route out
-- [v1] Portals: USB devices, global shortcuts an application registers, dynamic launchers, remote desktop
+- [v0.5] Portals: USB devices, global shortcuts an application registers, dynamic launchers, remote desktop
 - [v1.1] **Location services**, off by default, per-application, with an indicator when in use
 - [v1] Applications contribute to search — one place to look, not one per program
 - [v1] Realtime scheduling for audio work, which is what a workstation is often bought for
@@ -158,7 +158,7 @@ each portal request is a grant in the sense of ADR 0001.
 
 **Language and access**
 
-- [v1] **The shell in the user's language — all 24 official EU languages to begin with**, and any language somebody contributes after that. Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish and Swedish. Not "English plus the big five": a sovereignty product that cannot speak Maltese or Irish is selling sovereignty to some Europeans and not others, and those are exactly the member states with the least software in their own language
+- [v0.5] **The shell in the user's language — all 24 official EU languages to begin with**, and any language somebody contributes after that. Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish and Swedish. Not "English plus the big five": a sovereignty product that cannot speak Maltese or Irish is selling sovereignty to some Europeans and not others, and those are exactly the member states with the least software in their own language
 - [v0.5] Regional formats and timezones per language, and a keyboard layout offered with it — choosing Greek and then hunting for a Greek keyboard is the same bug twice
 - [v1] **Right-to-left ready**, so adding a language later is translation rather than rework, even though no official EU language needs it today
 - [v0.5] ★ **The agent answers in the language you asked in** — the shell being translated is table stakes; being able to say "wo ist die Rechnung von Northstar?" and get an answer is the thing a cloud assistant does badly for smaller languages
@@ -287,7 +287,7 @@ a machine with the agent off is never talked into turning it on.
 - [v0.5] ★ **Run a model we never catalogued.** Point alo OS at weights you already have and it runs them. **The catalogue recommends; it does not gate** — its job is stating licences and honest costs so somebody can choose well, never deciding what they may run on hardware they own. A machine where the only models are the ones we approved is a walled garden with a sovereign label on it
 - [v0.5] **The machine warns and then gets out of the way.** A model too large for the memory in this laptop is *said so plainly, once* — and then run anyway if that is what somebody asked for. The honest costs the catalogue states are for deciding with, not for refusing with
 - [v0.5] **What you bring is yours, including its licence.** We state the licence of everything we offer and gate our own catalogue on it. Weights somebody brings themselves come with their own terms and their own responsibility, and alo OS does not pretend to have checked them
-- [v1] ★ **Guided fine-tune**: LoRA/QLoRA over a granted folder or a tenant's records, as a flow rather than a toolchain
+- [v0.5] ★ **Guided fine-tune**: LoRA/QLoRA over a granted folder or a tenant's records, as a flow rather than a toolchain
 - [v0.5] ★ The dataset, the adapter and the resulting weights never leave the machine
 - [v0.5] Model runtime versioned *with* the drivers it needs, so an upgrade cannot break a working stack
 - [v1] Serving more than one person from one workstation
@@ -306,7 +306,7 @@ seconds.
 - [v0.5] ★ **"I can't open this file."** A `.pages`, a `.heic`, a `.dwg`: the system converts it where it can, and where it cannot says plainly what will open it, instead of shrugging
 - [v0.5] ★ **Undo what the agent did.** Every execution is already recorded with its origin and the image already rolls back — together they make *"undo everything the agent did this afternoon"* real. An agent you can reverse is an agent people let do more, and no other system offers it
 - [v0.5] **Updates that never interrupt.** Atomic images mean an update can be genuinely invisible and instantly reversible. On the system people are leaving, this is the single most hated behaviour there is
-- [v1] ★ **"Make this machine like my old one."** Configuration as a document, pointed at a person rather than an administrator: a replacement machine that is actually yours, not a week of rebuilding
+- [v0.5] ★ **"Make this machine like my old one."** Configuration as a document, pointed at a person rather than an administrator: a replacement machine that is actually yours, not a week of rebuilding
 - [v1] **A new colleague working on day one** — a managed machine that arrives with the right applications, policy and grants already in place
 
 ## The local network — machines that find each other (ADR 0003)
@@ -321,7 +321,7 @@ on the same WiFi confers nothing.
 - [v0.5] A self-hosted workspace on the network is **discovered, not configured** — no DNS step
 - [v2] Files and printers shared between paired alo machines, with no server in the middle
 - [v1] Enrollment by discovery: a new machine appears to the fleet and asks; an administrator admits it
-- [v1] ★ Cross-machine agent work — an agent may **ask** a paired machine, and acts only under a grant made **on that machine, by its person**
+- [v0.5] ★ Cross-machine agent work — an agent may **ask** a paired machine, and acts only under a grant made **on that machine, by its person**
 
 ## Identity, fleet and compliance — what a large organisation requires (ADR 0004)
 

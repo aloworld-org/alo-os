@@ -2906,27 +2906,12 @@ sorted the same way v0.01 now is.
   - [ ] **On the machine.**
         the day itself, on the certified machine, with a person working it
 
-**Exit gate.** A person works a full day on alo OS — mail, documents, a video
-call, printing something, driving one installed application through its agent —
-and does not need another machine. An update lands and rolls back cleanly. And
-the four questions everybody asks a computer are answerable out loud: where is
-that file, why is it slow, what is filling my disk, and undo what the agent just
-did.
 
----
+**Moved here from v1 on 2026-10-03** — see
+`docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. Seven are a tier
+change; *Devices* is a correction, because `docs/features.md` already carried it
+at this tier and this page did not.
 
-## v1 — an organisation can buy it
-
-### Moved here from v0.5 on 2026-09-26
-
-The owner cut v0.5 to what a developer preview needs. **Nothing was
-deleted** — each promise below keeps its words and its boxes, and only its
-date moved. They are here because an organisation buying the product will
-want them, and a developer trying it will not.
-
-- [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
-- [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
-      media playback, power management, night light
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
       even though no official EU language needs it yet
@@ -3000,9 +2985,45 @@ want them, and a developer trying it will not.
   - [ ] **On the machine.**
         a shell to translate, and every translation — there are still
         none, and now there is a file for the first one to arrive in
+
+- [ ] **Guided fine-tune**, with the dataset never leaving the machine
+
+- [ ] ★ **"Make this machine like my old one"** — configuration as a document, for a person
+
+- [ ] Remaining portals: USB, application-registered shortcuts, remote desktop;
+      location services off by default; applications contribute to search
+
+- [ ] Cross-machine agent work, under grants made on the target machine
+
+- [ ] Multi-user on one machine, with per-person grants
+
+- [ ] ★ Ask for appearance changes — "use dark after six" — under the same
+      propose-then-approve as anything else; themes as a document for a fleet
+
+- [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
+      media playback, power management, night light
+
+**Exit gate.** A person works a full day on alo OS — mail, documents, a video
+call, printing something, driving one installed application through its agent —
+and does not need another machine. An update lands and rolls back cleanly. And
+the four questions everybody asks a computer are answerable out loud: where is
+that file, why is it slow, what is filling my disk, and undo what the agent just
+did.
+
+---
+
+## v1 — an organisation can buy it
+
+### Moved here from v0.5 on 2026-09-26
+
+The owner cut v0.5 to what a developer preview needs. **Nothing was
+deleted** — each promise below keeps its words and its boxes, and only its
+date moved. They are here because an organisation buying the product will
+want them, and a developer trying it will not.
+
+- [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
 - [ ] **Printing**
 - [ ] **Application adapters**, and the accessibility fallback for applications without one
-- [ ] **Guided fine-tune**, with the dataset never leaving the machine
 - [ ] Full-disk encryption
 - [ ] **One GPU box serves the office** — shared local inference over a pairing.
       **Still egress, and the indicator still fires** (ADR 0003): the pairing is
@@ -3042,22 +3063,15 @@ managed machine means and what its person is told.
 - [ ] **Agent policy by role**; agent retention policy
 - [ ] **Inference accounting**
 - [ ] **Egress attestation** — signed, printable, per period
-- [ ] ★ **"Make this machine like my old one"** — configuration as a document, for a person
 - [ ] A new colleague working on day one
 - [ ] Configuration as a document; helpdesk assistance as a session a person ends
 - [ ] Certification groundwork: ISO 27001, BSI Grundschutz, ANSSI
 - [ ] **Published EN 301 549 accessibility conformance report**
-- [ ] Remaining portals: USB, application-registered shortcuts, remote desktop;
-      location services off by default; applications contribute to search
 - [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
 - [ ] Fleet policy and signed updates, for alo OS machines
-- [ ] Cross-machine agent work, under grants made on the target machine
 - [ ] Signed images verified before boot; Secure Boot with our key
 - [ ] Backup and restore
 - [ ] **Adapter SDK published**, with a conformance suite
-- [ ] Multi-user on one machine, with per-person grants
-- [ ] ★ Ask for appearance changes — "use dark after six" — under the same
-      propose-then-approve as anything else; themes as a document for a fleet
 - [ ] **Third-party security audit** of `alo-agentd` and the broker, published
 - [ ] Compatibility list, grown outward from the certified machine
 - [ ] Support and SLA definitions
