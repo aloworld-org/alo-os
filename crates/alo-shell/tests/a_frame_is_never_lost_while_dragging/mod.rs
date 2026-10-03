@@ -800,6 +800,49 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
         alo_put_aside::the_region_the_panel_claims::at_most_one_surface_claims_it(said),
         "two surfaces claimed one point: {said:?}"
     );
+
+    // **And the top controls answer for themselves now.** This field was a hardcoded
+    // `false` until the band was reserved, which meant the assertion above could not
+    // have caught the band overlapping anything — a third value that is always `false`
+    // reads as agreement with whatever the other two say. So the claim is checked where
+    // the band is, and checked to be absent where it is not.
+    let band = Rectangle::new((0, 0).into(), (VIEWPORT.0 / 2, 84).into());
+    f.backend(move |s| {
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: None,
+                panel_reserved: a_panel_down_the_right(),
+                status_area: None,
+                top_controls: Some(band),
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+    let on_the_band = f
+        .backend(|s| s.what_each_surface_said_at((20, 20).into()))
+        .expect("the controls have been drawn");
+    assert!(
+        on_the_band.the_top_controls,
+        "a point inside the top controls' band was not claimed by them, so the field \
+         is still answering without reading the band"
+    );
+    assert!(
+        !on_the_band.the_panel,
+        "a point in the top controls' band was also claimed by the panel"
+    );
+    let below_it = f
+        .backend(|s| s.what_each_surface_said_at((20, 400).into()))
+        .expect("the controls have been drawn");
+    assert!(
+        !below_it.the_top_controls,
+        "a point well below the band was claimed by the top controls, so the field \
+         answers `true` wherever it is asked"
+    );
+    assert_eq!(
+        f.backend(|s| s.at_most_one_surface_claims_any_point()),
+        Some(true),
+        "with three surfaces drawn, two of them claim a point in common"
+    );
 }
 
 /// **The frame keeps the last position that was allowed.**

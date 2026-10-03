@@ -56,9 +56,12 @@ impl crate::Server {
         let labelled = self.fixed_controls.labelled()?;
         Some(
             alo_put_aside::the_region_the_panel_claims::WhatEachSurfaceSaid {
-                // The one surface with no painter. Canvas task 6a, and `false` here
-                // is an absence rather than an answer — see this module's note.
-                the_top_controls: false,
+                // **No longer an absence.** This read `false` with a note saying so
+                // until the band was reserved: now the draw records where the top
+                // controls are, so the answer is measured like the other two. A
+                // hardcoded `false` left beside two real answers is the kind of
+                // third value that reads as agreement.
+                the_top_controls: labelled.top_controls.is_some_and(|band| holds(band, at)),
                 the_dock: labelled.dock_band.is_some_and(|band| holds(band, at)),
                 // Taken unconditionally because an empty panel's reserved column is
                 // a rectangle of no extent, which holds no point — the same reason
@@ -82,9 +85,21 @@ impl crate::Server {
         let labelled = self.fixed_controls.labelled()?;
         let dock = labelled.dock_band;
         let panel = labelled.panel_reserved;
-        // An empty rectangle intersects nothing, so a panel holding no windows and a
-        // Dock that was not drawn both drop out without a special case.
-        Some(dock.is_none_or(|band| !overlap(band, panel)))
+        let top = labelled.top_controls;
+        // Every pair, rather than the two that happened to exist when this was
+        // written. An empty rectangle intersects nothing, so a panel holding no
+        // windows, a Dock that was not drawn and a band that gave way to a
+        // full-screen window all drop out without a special case.
+        //
+        // **Three surfaces means three pairs, and naming them is what stops a fourth
+        // joining unnoticed.** The top controls were added to the set in #442 and this
+        // check compared two of them until then — which would have passed while the
+        // new band overlapped either one.
+        let pairs = [(dock, Some(panel)), (dock, top), (top, Some(panel))];
+        Some(pairs.into_iter().all(|(one, other)| match (one, other) {
+            (Some(one), Some(other)) => !overlap(one, other),
+            _ => true,
+        }))
     }
 }
 
