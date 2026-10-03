@@ -1965,3 +1965,75 @@ let-go, which the service would hear if it were running.
   by a person or an agent, no trusted-network setting, what crosses the wire
   unchanged. No interval and no polling. What reality does that the specification
   does not say goes in `docs/quirks.md`. Nothing in `alo-shell`, nothing in `image/`.
+
+### 38. An agent asking a paired machine, and the grant that has to exist there
+
+**Status:** ready. **Depends on:** nothing.
+
+The promise is `docs/features.md`'s *Cross-machine agent work — an agent may
+**ask** a paired machine, and acts only under a grant made **on that machine,
+by its person**.* **Measured before this was written, because a task that
+misstates what exists sends somebody to build it twice.**
+
+**The asking half is nearly built, and built well.** A pairing is ADR 0003's
+grant: `pairing.rs` enforces *enumerated, visible, revocable in one action,
+expiring* as properties rather than as habits; `deliberating.rs` gives
+`Pairing` no public constructor, so the only thing that returns one refuses
+until both people have said yes on their own machine; `confirming.rs` makes a
+confirmation provable rather than merely said. None of that is owed.
+
+**What a pairing permits is a list of two things.** `permitting.rs`'s
+`MayAskIts` has exactly two variants: `Models`, *put a question to the models
+this machine has*, and `Workspace`, *reach a workspace this machine serves*.
+**Both are asks for something the far machine already offers.** Neither is an
+agent doing work there, and the promise's own wording separates the two —
+*may ask* against *acts only under a grant*.
+
+**The second clause has no road at all, and this is the measurement that
+matters.** Grants are `alo-remembering`'s, which holds `THE_GRANTS`.
+`alo-agentd` depends on `alo-remembering` already. **`alo-nearby` depends on
+exactly one crate in this workspace — `alo-strings` — and nothing else.** So
+nothing in the repository joins *a pairing exists* to *a grant was made on the
+answering machine by its person*: the crate that knows about pairings cannot
+reach a grant, and the crate that can reach grants reads the ones belonging to
+its own machine.
+
+- **The first question this task answers, rather than assumes:** whether this
+  is a third `MayAskIts` variant or a separate mechanism. A variant would make
+  *an agent may act here* a thing a pairing permits once, up front, for
+  everything; the promise says a grant is made **on that machine, by its
+  person**, which reads as per-action and local rather than as a pairing
+  clause. **Those are different designs and the measurement does not settle
+  which.** Settle it in writing before building either.
+- **Constraint, and it is the one most likely to be broken by the obvious
+  implementation:** `alo-nearby` must not gain a dependency on
+  `alo-remembering` or `alo-granted`. Its header is ADR 0003's first half —
+  *being on the same network is not authority; discovery reveals presence and
+  nothing else: no files, no records, no models, no agent surface, and no
+  person.* A single dependency is how that is currently true rather than
+  merely stated. **The join belongs where both halves already are, which is
+  the agent daemon.**
+- **Constraint:** the departure stays visible on the asking machine.
+  `permitting.rs` says of `Models` that *it is still egress on the asking
+  machine and the indicator still fires — permission here is what makes the
+  departure wanted, not what makes it silent.* Agent work carries the same
+  rule, and a grant on the far machine is not permission to go quiet on this
+  one.
+- **Acceptance:** two paired machines. An agent on the first asks the second to
+  do something. **The second does nothing until its own person has granted it
+  there**, and the refusal before that is the default rather than an error
+  path. The grant is enumerated, visible and revocable in one action like any
+  other grant on that machine, and revoking it stops the next ask rather than
+  only the next pairing. The indicator fires on the asking machine. All of it
+  holds across a restart of both.
+- **Acceptance:** a person reading the far machine's grants can tell that one
+  was made for a *paired machine's agent* rather than for something local,
+  **and whose machine it was made for.** A grant that cannot say who it is for
+  is one grant for every paired machine.
+
+**What this task does not claim.** Whether `alo-agentd`'s existing pairing
+files — `a_paired_machine_over_link_local.rs`, `keeping_pairings.rs`,
+`corridor.rs`, `listing_workspaces.rs` — already carry part of the asking road
+is **not measured here**. They exist and they name pairings; whether any of
+them reaches work rather than discovery is its own reading, and the honest
+first step is to take it rather than to assume either way.
