@@ -296,13 +296,43 @@ would ever say otherwise. That is instance 5 of
 [ADR 0080](../decisions/0080-a-signal-that-cannot-be-wrong-tells-you-nothing.md), and it
 was very nearly committed here by the lane that wrote it.*
 
+*It was then committed here twice, by the same lane, in the two items below this one.* The
+owner ruled on grouping on 2026-10-03 and this lane **built that ruling the same day**, and
+`docs/features.md` had already absorbed the correction item 3 offered — and both items went
+on asking. So the paragraph above was right about the hazard, right that it had nearly
+happened, and wrong that it had not: **a note that names a fault in its own preamble is not
+thereby protected from it**, and the preamble is the last place anybody re-reads. Only item 1
+is open.
+
 1. **The deep teal.** `#0F6B72` is reserved for alo activity and selection uses a
    human-control outline instead. `docs/design/palette.toml` and
    `the-palette-foundations-states.md` hold this product's colours; whether the panel
    introduces anything new or only uses what is there is worth one sentence from whoever
    owns the palette.
-2. **Grouping by Place** is allowed *without hiding individual windows behind an app
-   icon*. Whether it is the default when there are many, or always a choice, is not
-   decided.
-3. **`docs/features.md:421`** is corrected here on the same direction of 2026-09-26 that
-   `:424` already cites. If that reading is wrong, this is the line to say so on.
+2. ~~**Grouping by Place**: whether it is the default when there are many, or always a
+   choice.~~ **Answered by the owner on 2026-10-03: grouped by Place by default, one
+   consistent mode**, the current Place first and the others in World order, and still
+   *without hiding individual windows behind an app icon* — the second half as much the
+   instruction as the first. Built in
+   `crates/alo-put-aside/src/a_place_groups_its_windows.rs`, whose header carries the
+   ruling and the reason the two halves pull against each other: grouping is how a long
+   list becomes readable, and the usual way to group windows is by the application that
+   owns them, which would make this panel a second Dock with worse information.
+3. ~~**A line of `docs/features.md`** is corrected here on the same direction of
+   2026-09-26.~~ **Answered: `docs/features.md` now carries the correction itself.** The
+   canvas promise says *this line used to add so nothing is minimised; the owner's
+   direction of 2026-09-26 withdrew that*, so there is no reading left for this note to
+   correct or for the owner to confirm.
+
+   *Both line numbers this item carried are gone, and that is the second thing it got
+   wrong.* It cited `:421` and `:424`; those lines now read *many videos already carry a
+   subtitle or caption track* and *reading along both work with no model at all*. Neither
+   has anything to do with a window put aside. **A citation by line number points at a
+   position, and positions are what other lanes change** — so the promises are named by
+   their own words here instead, which can be found with a search and cannot drift.
+
+   One caution for whoever searches for them: these documents are hard-wrapped, so a
+   phrase long enough to be distinctive usually spans a line break and a plain
+   `grep` for it returns **nothing**. Normalise the whitespace first —
+   `tr -s '[:space:]' ' '` — or the absence of a phrase that is present reads exactly
+   like a phrase that is gone.
