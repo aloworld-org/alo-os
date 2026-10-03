@@ -27,6 +27,12 @@ alo-networks = { path = "../alo-networks" }
 alo-formats = { path = "../alo-formats" }
 # What the desktop itself is made of, handed to the shell the same way.
 alo-appearance = { path = "../alo-appearance" }
+# The canvas layout a person left, and where their folder is. **The shell asks
+# this binary for the layout and tells it when the layout moved**, because the
+# shell shows and never measures — and a file in a person's folder is a reading
+# like the battery and the network above.
+alo-arranging = { path = "../alo-arranging" }
+alo-choosing = { path = "../alo-choosing" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }

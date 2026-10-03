@@ -634,6 +634,72 @@ monitor arrangement persistence.
 - **Its own change:** the owner ruled that persistence gets its own integration change and
   its own restart evidence, separately from the grouping and Stop work.
 
+**Built on 2026-10-03, and here is what a person gets.** Arrange windows, move the camera,
+end the session, begin another, and the windows are where they were left — through the
+production path, not a round trip in memory.
+
+```text
+alo-kept           a public atomic text write, so a crate with its own validated
+                   format rents the sibling-sync-readback-rename discipline
+                   rather than writing a second copy of it
+alo-arranging      each window carries its geometry AND how it was showing;
+                   a keeping module names canvas-layout.toml, and a layout
+                   reaches the disk only if the bytes read back as that layout
+alo-shell          asks the desktop for the layout once, offers every arrived
+                   frame its remembered place before the frame is drawn, and
+                   tells the desktop when the arrangement has actually changed
+alo-desktop        reads and writes the file, because the shell shows and never
+                   measures and a file is a reading like the battery
+```
+
+**Two halves are not built, and neither is hidden behind a passing test.**
+
+**One: the ordinary geometry of a window that was not ordinary.** The ruling asks that a
+window which was maximised, filling the screen or in a share comes back *at its ordinary
+size*. **The state survives** — it is recorded per window and read back. **The size it would
+return to does not.** The shell keeps an ordinary geometry, and `window_mode`'s own record
+says later maximise requests never replace it — but it is in **output** coordinates while an
+arrangement is in **plane** coordinates, and converting needs the camera as it was when the
+mode was entered, which nothing keeps. The fix is for the shell to capture a frame's plane
+geometry as it leaves `Normal`, which is a change to `window_mode` and not to the file.
+
+**Two: the process boundary.** The acceptance says *start a fresh process*. The restart
+evidence runs two sessions that share **nothing but the file on the disk** — the layout
+leaves one through `the_arrangement_now` and the keeping module, and arrives in the other
+through `at_sign_in` and the put-back — which is every step of the road except the fork. A
+genuinely fresh process needs a machine that boots to the compositor, which is the installer
+plan's ground. The test is named for a *session* rather than a *process* so that its name
+does not claim the half it does not do.
+
+**A third thing is the owner's to decide, and it is cheap today and not cheap after the
+first release.** `Arrangement::read` refuses a file whose version is not this one — strict
+equality, not a floor. Raised by the panel lane reading this change, and the distinction is
+theirs: **a file written by an older version of our own format is not wrong, it is old**, and
+this one check treats them identically. ADR 0038's *a file that is there and wrong is refused
+whole* is about wrongness.
+
+Today the cost is nothing, because no such file exists anywhere — `written` has had no
+production caller until this change. **The first release that ships one makes every later
+format bump discard a person's arrangement:** windows back at the plane's origin, the camera
+reset, nothing said, and from their side nothing went wrong.
+
+There are three answers and choosing between them is a product decision rather than a lane's:
+
+1. **Refuse**, as now — a format change costs everyone their layout, once, silently.
+2. **Read what still parses** — keep the Places and windows an older shape can still be
+   understood as, and lose the rest.
+3. **Migrate** — carry an older file forward on read, which means keeping every shape this
+   crate has ever written.
+
+Nothing here is built for 2 or 3, and the check is not changed, because the answer decides
+what a person loses. **It is cheap now and stops being cheap the day v0.01 reaches somebody
+with a `canvas-layout.toml` on their disk.**
+
+**And the interrupted-write test the owner asked for by name is here**, as is the
+changed-display half's honest position: a damaged or half-written file leaves the previous
+layout readable and names what was wrong without stopping the session, and reachability when
+a display changes is task 8's own question, which a remembered place is already offered to.
+
 *Everything below was written when this read `Done`, and is kept because it describes the
 half that is built:*
 

@@ -201,6 +201,7 @@ name = "alo-arranging"
 version = "0.0.1"
 dependencies = [
  "alo-canvas",
+ "alo-kept",
  "serde",
  "thiserror 2.0.20",
  "toml",
@@ -594,6 +595,8 @@ version = "0.1.0"
 dependencies = [
  "alo-access",
  "alo-appearance",
+ "alo-arranging",
+ "alo-choosing",
  "alo-dividing",
  "alo-dock",
  "alo-egress",

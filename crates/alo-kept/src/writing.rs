@@ -129,6 +129,50 @@ fn reads_back_as<K: Kept>(value: &K, text: &str) -> Result<(), Unwritten> {
     }
 }
 
+/// This text, written whole to `at` or not at all, for a shape that owns its
+/// own format.
+///
+/// [`keep`] is the road for a [`Kept`]: it serialises the value, checks the
+/// text reads back as the same value, and writes. **This is the same disk
+/// discipline without the serialisation** — a sibling written, synced, read
+/// back, asked about, and renamed over the real file, with every way it can
+/// fail failing before the rename.
+///
+/// # Why a crate would want this rather than [`Kept`]
+///
+/// Because a format can be one [`Kept`] cannot describe. [`Kept`] requires
+/// `DeserializeOwned`, and a crate whose rule is *nothing is read back
+/// unvalidated* cannot provide it without giving up the rule: a derived
+/// `Deserialize` rebuilds a value without asking the constructors that make it
+/// legal. `alo-arranging` is the case this was added for — every position and
+/// size it reads is rebuilt through its own checked constructors, and it has no
+/// `Deserialize` for a camera on purpose.
+///
+/// Such a crate still wants **this** part, and writing a second copy of it
+/// beside this one would be two implementations of the only step that must not
+/// be got wrong.
+///
+/// # What `holds` is for
+///
+/// It is handed the bytes **the disk gave back**, after the sync and before the
+/// rename, and its refusal is the call's refusal. That is where a caller checks
+/// its own format read back as the value it meant — the same check [`keep`]
+/// makes for a [`Kept`], written by whoever owns the format. A caller that
+/// answers `Ok` without looking has the atomicity and not the proof.
+///
+/// # Errors
+///
+/// [`Unwritten::Disk`] at the first step the disk refused, or whatever `holds`
+/// refused the bytes with. **The file at `at` is untouched in every one of
+/// them**, including a refusal from `holds`.
+pub fn kept_text(
+    at: &Path,
+    text: &str,
+    holds: impl FnOnce(&[u8]) -> Result<(), Unwritten>,
+) -> Result<(), Unwritten> {
+    crate::disk::kept(at, text, holds)
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -137,6 +181,50 @@ fn reads_back_as<K: Kept>(value: &K, text: &str) -> Result<(), Unwritten> {
 mod tests {
     use super::*;
     use crate::testing::{Edge, Example, NotATable, TakesTheFormat, WritesWhatNobodyChanged};
+
+    /// **The discipline is reachable by a crate that keeps its own format**, which
+    /// is the only thing this road adds.
+    ///
+    /// Everything about the write itself is already held by `disk::tests` —
+    /// the text being there afterwards, bytes that do not hold leaving the file
+    /// as it was, a refused write leaving no sibling, the folder being made, and
+    /// the file being its owner's alone. Repeating those here would re-assert
+    /// seven existing tests through a one-line delegation.
+    ///
+    /// **What they cannot hold is that the delegation exists.** `disk::kept` is
+    /// `pub(crate)`, so before this road a crate with a validated bespoke format
+    /// could not reach it at all and would have written a second copy of the
+    /// only step that must not be got wrong. This asserts the round trip
+    /// through the public name, and both halves of `holds` — the answer it is
+    /// given, and the refusal it can return.
+    #[test]
+    fn a_crate_with_its_own_format_can_reach_the_discipline() {
+        let folder = crate::testing::a_folder_of_our_own("kept-text-reachable");
+        let at = folder.join("canvas.toml");
+
+        let mut what_the_disk_said = Vec::new();
+        kept_text(&at, "format = 1\nplaces = []\n", |back| {
+            what_the_disk_said = back.to_vec();
+            Ok(())
+        })
+        .unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(&at).unwrap(),
+            "format = 1\nplaces = []\n"
+        );
+        assert_eq!(
+            what_the_disk_said, b"format = 1\nplaces = []\n",
+            "holds was asked about something other than the bytes written"
+        );
+        assert_eq!(
+            kept_text(&at, "format = 1\nplaces = [1]\n", |_back| Err(
+                Unwritten::ReadBackAsSomethingElse
+            )),
+            Err(Unwritten::ReadBackAsSomethingElse),
+            "a caller's own refusal did not come back as the call's refusal"
+        );
+    }
 
     /// **Only what changed is in the text**, after the format line.
     #[test]

@@ -72,6 +72,31 @@ impl Window {
     /// Three reasons it is not, and the caller never has to remember all
     /// three: it has no configured buffer, the person minimised it, or it is on
     /// a desktop that is not the current one.
+    ///
+    /// # Two pieces of correctness in other crates rest on `!minimized`, and
+    /// neither is visible from this line
+    ///
+    /// Putting a window aside minimises it. So a put-aside window is not drawn,
+    /// not in `Server::mapped_surfaces`, not among the frames on the plane, and
+    /// **its Place is absent from `Server::the_world`.** Two crates depend on
+    /// that, in opposite directions:
+    ///
+    /// - `alo_put_aside::a_place_groups_its_windows` has a branch for *the
+    ///   Places the World cannot name*, reachable **only because** of this. If
+    ///   `!minimized` is relaxed, every Place the panel holds is in the World,
+    ///   that branch is dead, and it should be **removed** rather than kept
+    ///   looking like care.
+    /// - `alo_arranging::HowItWasShowing::PutAside` cannot be produced by the
+    ///   shell's own mapping, **only because** of this. If `!minimized` is
+    ///   relaxed, a put-aside frame starts arriving at
+    ///   `crate::canvas_remembered`'s mapping and would be recorded as
+    ///   `Ordinary` — wrong, and silent. **Fill the case; do not widen the
+    ///   match.**
+    ///
+    /// Relaxing this condition is a correct thing somebody may want to do — a
+    /// put-aside window drawn live in place is not an absurd future. **It is not
+    /// a local change**, and the two notes downstream say the same thing from
+    /// their own ends, where an editor of this line would not look.
     fn drawn(&self) -> bool {
         self.mapped && !self.minimized && !self.elsewhere && self.surface.alive()
     }

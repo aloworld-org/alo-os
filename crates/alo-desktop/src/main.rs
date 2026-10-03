@@ -135,6 +135,18 @@ mod running {
 
     /// Everything on this person's desktop, as the crates that own each said it.
     struct ThisPersonsDesktop {
+        /// Where this person's canvas layout is kept, if they have a folder.
+        ///
+        /// **[`None`] is a real session and not a fault.** A login with no home
+        /// directory, or one whose `XDG_CONFIG_HOME` is relative with no
+        /// `HOME`, has nowhere to keep anything — `alo_choosing` answers that
+        /// by name. Such a session gets a canvas where the applications put
+        /// their windows, which is what happens today for everybody, and
+        /// nothing is written anywhere.
+        ///
+        /// Worked out once, because where a person's folder is does not change
+        /// under a running session.
+        layout_at: Option<std::path::PathBuf>,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -218,7 +230,21 @@ mod running {
             let mut egress = EgressStatus::on_an_output();
             alo_indicator::Indicating::nowhere()
                 .show(Some(&mut egress), &alo_egress::Indicator::default());
+            // Where the canvas layout lives, if this person has a folder to
+            // keep one in. Read from the environment rather than assumed: the
+            // same two variables `alo-choosing` is given everywhere else.
+            let layout_at = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .map(|folder| folder.join(alo_arranging::keeping::THE_FILE));
+            if layout_at.is_none() {
+                eprintln!(
+                    "alo-desktop: this session has no folder, so the canvas layout is not kept"
+                );
+            }
             Ok(Self {
+                layout_at,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nobody is looking at anything yet, which is what a session starts as.
@@ -253,6 +279,47 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// The canvas layout this person left, read from their own folder.
+        ///
+        /// **A damaged file is said out loud and does not stop the session.**
+        /// Somebody whose layout file was hand-edited wrong gets their windows
+        /// where the applications put them and a line saying why, rather than a
+        /// desktop that will not start — and the next layout change replaces
+        /// the damaged file with a good one, so the damage costs them a
+        /// remembered arrangement and nothing else.
+        fn the_layout_they_left(&mut self) -> alo_arranging::Arrangement {
+            let Some(at) = self.layout_at.as_deref() else {
+                return alo_arranging::Arrangement::fresh();
+            };
+            let (arrangement, why) = alo_arranging::keeping::at_sign_in(at);
+            if let Some(why) = why {
+                eprintln!("alo-desktop: the canvas layout did not read — {why}");
+            }
+            arrangement
+        }
+
+        /// The canvas layout moved, so it is kept.
+        ///
+        /// **Called when it changed and not every frame** — the shell compares
+        /// what it last said with what is true now, the same way it does for
+        /// the accessibility tree. So this is a write per actual rearrangement
+        /// rather than per frame, and the owner's ruling of 2026-10-03 asks for
+        /// exactly that: a save after meaningful layout changes rather than on
+        /// a clean shutdown alone, because the session a person loses is the one
+        /// that did not end cleanly.
+        ///
+        /// **A refusal is said and does not stop the desktop.** A full disk
+        /// costs a person their remembered layout; a compositor that stopped
+        /// compositing over it would cost them the machine.
+        fn the_layout_is_now(&mut self, arrangement: alo_arranging::Arrangement) {
+            let Some(at) = self.layout_at.as_deref() else {
+                return;
+            };
+            if let Err(why) = alo_arranging::keeping::keep(at, &arrangement) {
+                eprintln!("alo-desktop: the canvas layout was not kept — {why}");
+            }
+        }
+
         /// Keep the panel's reveal machine up to date with where the pointer is.
         ///
         /// **The machine is `alo-dock`'s and the state is this binary's**, the same division as

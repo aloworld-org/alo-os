@@ -6,6 +6,16 @@
 
 use super::*;
 
+/// A window at this ordinary geometry, showing ordinarily.
+///
+/// **What every call in this file meant before a window could be showing any
+/// other way.** Named rather than written out sixteen times, so that the tests
+/// which were asserting a place and a size still assert exactly that, and the
+/// ones about how a window was showing say so.
+fn ordinary(at: At, size: Size) -> AWindowWas {
+    AWindowWas::at((at, size), HowItWasShowing::Ordinary)
+}
+
 /// A place on the plane.
 fn at(x: i32, y: i32) -> At {
     At::checked(x, y).unwrap()
@@ -43,8 +53,16 @@ fn what_was_left_is_what_comes_back() {
             .zoomed_to(Zoom::of(2_500).unwrap(), (0, 0))
             .unwrap(),
     );
-    left.window_was(first(), "org.alo.Notes", at(120, -80), size(800, 600));
-    left.window_was(first(), "org.alo.Ledger", at(3_000, 2_000), size(640, 480));
+    left.window_was(
+        first(),
+        "org.alo.Notes",
+        ordinary(at(120, -80), size(800, 600)),
+    );
+    left.window_was(
+        first(),
+        "org.alo.Ledger",
+        ordinary(at(3_000, 2_000), size(640, 480)),
+    );
 
     let back = Arrangement::read(&left.written()).unwrap();
 
@@ -59,7 +77,7 @@ fn what_was_left_is_what_comes_back() {
     assert_eq!(back.camera_on(first()).unwrap().at(), at(-4_200, 1_337));
     assert_eq!(
         back.where_it_was(first(), "org.alo.Notes"),
-        Some((at(120, -80), size(800, 600)))
+        Some(ordinary(at(120, -80), size(800, 600)))
     );
 }
 
@@ -126,7 +144,7 @@ fn two_places_come_back_with_their_own_cameras_and_their_own_frames() {
             .zoomed_to(Zoom::of(2_500).unwrap(), (0, 0))
             .unwrap(),
     );
-    left.window_was(one, "org.alo.Notes", at(120, -80), size(800, 600));
+    left.window_was(one, "org.alo.Notes", ordinary(at(120, -80), size(800, 600)));
 
     left.looking(
         two,
@@ -136,7 +154,11 @@ fn two_places_come_back_with_their_own_cameras_and_their_own_frames() {
             .zoomed_to(Zoom::of(400).unwrap(), (0, 0))
             .unwrap(),
     );
-    left.window_was(two, "org.alo.Ledger", at(3_000, 2_000), size(640, 480));
+    left.window_was(
+        two,
+        "org.alo.Ledger",
+        ordinary(at(3_000, 2_000), size(640, 480)),
+    );
 
     let back = Arrangement::read(&left.written()).unwrap();
     assert_eq!(back, left);
@@ -166,15 +188,15 @@ fn one_application_has_one_place_on_each_place() {
     let (one, two) = (first(), place(2));
     let mut left = Arrangement::fresh();
 
-    left.window_was(one, "org.alo.Notes", at(0, 0), size(100, 100));
-    left.window_was(two, "org.alo.Notes", at(500, 500), size(200, 200));
+    left.window_was(one, "org.alo.Notes", ordinary(at(0, 0), size(100, 100)));
+    left.window_was(two, "org.alo.Notes", ordinary(at(500, 500), size(200, 200)));
     assert_eq!(
         left.how_many(),
         2,
         "one application on two Places is two places"
     );
 
-    left.window_was(one, "org.alo.Notes", at(7, 7), size(300, 300));
+    left.window_was(one, "org.alo.Notes", ordinary(at(7, 7), size(300, 300)));
     assert_eq!(
         left.how_many_on(one),
         1,
@@ -182,11 +204,11 @@ fn one_application_has_one_place_on_each_place() {
     );
     assert_eq!(
         left.where_it_was(one, "org.alo.Notes"),
-        Some((at(7, 7), size(300, 300)))
+        Some(ordinary(at(7, 7), size(300, 300)))
     );
     assert_eq!(
         left.where_it_was(two, "org.alo.Notes"),
-        Some((at(500, 500), size(200, 200)))
+        Some(ordinary(at(500, 500), size(200, 200)))
     );
 }
 
@@ -200,7 +222,7 @@ fn one_application_has_one_place_on_each_place() {
 fn a_place_key_that_is_not_a_number_is_refused() {
     for key in ["0", "notaplace", "-1", "1.5"] {
         let written =
-            format!("version = 2\n\n[places.\"{key}\"]\nlooking-at = [0, 0]\nzoom = 1000\n");
+            format!("version = {FORMAT}\n\n[places.\"{key}\"]\nlooking-at = [0, 0]\nzoom = 1000\n");
         assert!(
             matches!(
                 Arrangement::read(&written),
@@ -210,8 +232,8 @@ fn a_place_key_that_is_not_a_number_is_refused() {
         );
     }
     // And the smallest real one is read.
-    let good = "version = 2\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n";
-    assert_eq!(Arrangement::read(good).unwrap().each_place().count(), 1);
+    let good = format!("version = {FORMAT}\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n");
+    assert_eq!(Arrangement::read(&good).unwrap().each_place().count(), 1);
 }
 
 /// **A file hand-edited off the plane is refused, not clamped.**
@@ -223,23 +245,28 @@ fn a_place_key_that_is_not_a_number_is_refused() {
 /// with what they could read in it.
 #[test]
 fn a_place_no_canvas_has_is_refused() {
-    let off_the_plane = "version = 2\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n\n[places.\"1\".windows.\"org.alo.Notes\"]\n\
-                         x = 99999999\ny = 0\nwidth = 800\nheight = 600\n";
+    let off_the_plane = format!(
+        "version = {FORMAT}\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n\n\
+         [places.\"1\".windows.\"org.alo.Notes\"]\nx = 99999999\ny = 0\nwidth = 800\nheight = 600\n"
+    );
     assert!(matches!(
-        Arrangement::read(off_the_plane),
+        Arrangement::read(&off_the_plane),
         Err(NotArranged::NotOnThePlane(_))
     ));
 
-    let no_such_zoom = "version = 2\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 999999\n";
+    let no_such_zoom =
+        format!("version = {FORMAT}\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 999999\n");
     assert!(matches!(
-        Arrangement::read(no_such_zoom),
+        Arrangement::read(&no_such_zoom),
         Err(NotArranged::NotOnThePlane(_))
     ));
 
-    let no_width = "version = 2\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n\n[places.\"1\".windows.\"org.alo.Notes\"]\n\
-                    x = 0\ny = 0\nwidth = 0\nheight = 600\n";
+    let no_width = format!(
+        "version = {FORMAT}\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n\n\
+         [places.\"1\".windows.\"org.alo.Notes\"]\nx = 0\ny = 0\nwidth = 0\nheight = 600\n"
+    );
     assert!(matches!(
-        Arrangement::read(no_width),
+        Arrangement::read(&no_width),
         Err(NotArranged::NotOnThePlane(_))
     ));
 }
@@ -260,9 +287,10 @@ fn something_that_is_not_an_arrangement_is_refused() {
     // apart; one of them now would be refused for the wrong reason and still
     // pass.
     assert!(matches!(
-        Arrangement::read(
-            "version = 2\nwallpaper = \"none\"\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n"
-        ),
+        Arrangement::read(&format!(
+            "version = {FORMAT}\nwallpaper = \"none\"\n\n[places.\"1\"]\n\
+             looking-at = [0, 0]\nzoom = 1000\n"
+        )),
         Err(NotArranged::Unreadable(_))
     ));
 }
@@ -280,12 +308,16 @@ fn something_that_is_not_an_arrangement_is_refused() {
 #[test]
 fn one_application_has_one_remembered_place_on_a_single_place() {
     let mut left = Arrangement::fresh();
-    left.window_was(first(), "org.alo.Notes", at(0, 0), size(100, 100));
-    left.window_was(first(), "org.alo.Notes", at(500, 500), size(200, 200));
+    left.window_was(first(), "org.alo.Notes", ordinary(at(0, 0), size(100, 100)));
+    left.window_was(
+        first(),
+        "org.alo.Notes",
+        ordinary(at(500, 500), size(200, 200)),
+    );
     assert_eq!(left.how_many(), 1);
     assert_eq!(
         left.where_it_was(first(), "org.alo.Notes"),
-        Some((at(500, 500), size(200, 200))),
+        Some(ordinary(at(500, 500), size(200, 200))),
         "the second window of one application did not take the place"
     );
 }
@@ -298,7 +330,11 @@ fn one_application_has_one_remembered_place_on_a_single_place() {
 #[test]
 fn an_application_that_never_came_back_has_no_place() {
     let mut left = Arrangement::fresh();
-    left.window_was(first(), "org.alo.Notes", at(10, 10), size(100, 100));
+    left.window_was(
+        first(),
+        "org.alo.Notes",
+        ordinary(at(10, 10), size(100, 100)),
+    );
     let back = Arrangement::read(&left.written()).unwrap();
     assert_eq!(back.where_it_was(first(), "org.alo.Ledger"), None);
     assert_eq!(back.how_many(), 1);
@@ -311,7 +347,11 @@ fn an_application_that_never_came_back_has_no_place() {
 #[test]
 fn what_is_written_says_its_version_and_is_read_back() {
     let mut left = Arrangement::fresh();
-    left.window_was(first(), "org.alo.Notes", at(40, 50), size(800, 600));
+    left.window_was(
+        first(),
+        "org.alo.Notes",
+        ordinary(at(40, 50), size(800, 600)),
+    );
     let written = left.written();
 
     assert!(
@@ -378,5 +418,64 @@ fn the_version_is_refused_before_the_values_are() {
             said: FORMAT + 1,
             reads: FORMAT
         })
+    );
+}
+
+/// **A window that was full screen comes back full screen at its ordinary size.**
+///
+/// The point of remembering how a window was showing rather than only where it
+/// was. A window filling the screen is one rectangle the size of an output; if
+/// that were what the file kept, a restore would hand the person a window the
+/// size of their screen with no smaller size to go back to — the ordinary
+/// geometry would be gone, and *full screen* would have become permanent by
+/// being written down.
+///
+/// So the file keeps the ordinary geometry **and** the state, and both survive.
+#[test]
+fn a_window_that_was_full_screen_comes_back_at_its_ordinary_size() {
+    let mut left = Arrangement::fresh();
+    left.window_was(
+        first(),
+        "org.alo.Notes",
+        AWindowWas::at(
+            (at(120, -80), size(800, 600)),
+            HowItWasShowing::FillingTheScreen,
+        ),
+    );
+
+    let back = Arrangement::read(&left.written()).unwrap();
+    let was = back.where_it_was(first(), "org.alo.Notes").unwrap();
+
+    assert_eq!(
+        was.showing(),
+        HowItWasShowing::FillingTheScreen,
+        "how it was showing did not survive the file"
+    );
+    assert_eq!(
+        was.normal(),
+        (at(120, -80), size(800, 600)),
+        "the ordinary geometry was lost, so nothing could make it small again"
+    );
+}
+
+/// **A file written before windows had a state reads as ordinary windows.**
+///
+/// Not a kindness to old files — there are none, and the version refuses a shape
+/// this crate does not know. It is about the field itself: an absent `showing`
+/// is the one case where silence has a correct meaning, because a release that
+/// could not write the key could not have had a window in any other state.
+#[test]
+fn a_window_with_no_state_written_reads_as_an_ordinary_one() {
+    let written = format!(
+        "version = {}\n\n[places.1]\nlooking-at = [0, 0]\nzoom = 1000\n\n\
+         [places.1.windows.\"org.alo.Notes\"]\nx = 10\ny = 20\nwidth = 300\nheight = 400\n",
+        FORMAT
+    );
+
+    let back = Arrangement::read(&written).unwrap();
+
+    assert_eq!(
+        back.where_it_was(first(), "org.alo.Notes"),
+        Some(ordinary(at(10, 20), size(300, 400)))
     );
 }
