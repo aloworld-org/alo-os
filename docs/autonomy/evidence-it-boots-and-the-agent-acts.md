@@ -406,15 +406,51 @@ last-confirmed action and a stop with no reason are each refused by name, the wh
 arrives at once so it cannot be drawn half-built, and the panel is complete on a machine with
 no agent at all. Stop is held by there being nothing that could withhold it — no flag, no
 state in which a report exists and stopping does not. And the crossing from the agent service
-landed on 2026-10-02: a neutral contract, a coordinator that checks a report against what the
-person actually handed over, and a lost connection that becomes *status unavailable* rather
-than staying *working*.
+was built on 2026-10-02: a neutral contract, a coordinator that checks a report against what
+the person actually handed over, and a lost connection that becomes *status unavailable*
+rather than staying *working*. Built, and reachable from nothing outside the two crates
+themselves — which the owed half below states exactly, because built and in service are the
+two words this document exists to keep apart and it had no word for the state between
+them.
 
 **Still owed:** **the drawing, and everything Stop does when pressed.** No surface draws any
 of it — `Preview::alo` has one production caller, a filter, and the panel's raster reads no
 part of the report, so no variant of the report type has ever been drawn. And nothing
 cancels: there is no control, no cancellation road, no withdrawal of a run's authority, and
 none of the three row wordings exists in any language.
+
+**And no producer, which is the half this entry was missing.** No production code constructs
+`alo_admitting::Reports`, nothing outside the pair calls
+`alo_admitting::Reports::handed_over`, and no report has ever been admitted outside these
+crates' own tests. So the road has no beginning as well as no end: nothing can send a report
+in, and nothing can draw one out.
+
+Both symbols are written out in full on purpose. Bare `handed_over` appears in thirty-eight
+other files — `alo-broker` hands over an approving key, an unrelated thing with the same
+English in it — so the short form is a true claim whose obvious check returns a
+contradiction, and a reader who checks it concludes the entry is wrong rather than that
+their search was too broad.
+
+**The two crates are an island — a real edge between them and no way in.** Measured on
+2026-10-03, and stated by direction because a sweeping version of it is false twice over:
+`alo-admitting` is declared as a dependency by **nobody**; `alo-reported` is declared by
+**`alo-admitting`**, in code, so it is not unreferenced; and the only trace outside the pair
+is two doc comments in `alo-put-aside`, whose own manifest mentions neither crate. Both are
+workspace members, so both compile, both pass clippy at `-D warnings`, and both run their
+tests on every pass of these gates. Every signal a reader can reach says healthy, and what
+those signals are healthy about is a model nothing can call.
+
+So what the tests under *Shown by* demonstrate is **a model exercised by its own tests** —
+they pass, they are real, and this entry previously let that read as a crossing in service.
+They are listed as evidence and they stay listed: the fault was the word *landed*, not the
+tests. **What this needs is a caller, not a removal.**
+
+Wiring it is a design decision rather than a gap to fill on inference. A producer means
+choosing where in the shell a person hands a window to alo, which is shared ground, and a
+consumer means the panel's raster, which another lane owns. So the promise that reached
+v0.01 on the owner's decision is one **no machine can currently walk in either direction**
+— which belongs in front of the owner, beside the same shape found from the drawing side,
+rather than inside a commit of mine.
 
 Reached v0.01 on 2026-10-03 by the owner's decision, with the design ruled the same day. It
 had been listed in `docs/features.md` nowhere, and its two nearest neighbours are `[v1]` and
