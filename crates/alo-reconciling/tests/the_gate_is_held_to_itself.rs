@@ -255,15 +255,20 @@ fn a_promise_with_no_box_is_found_even_though_it_cannot_gate_yet() {
 /// **Which of those is a fault and which is a stale sentence is the owner's, not
 /// this test's.** It is recorded here so the question exists somewhere other than
 /// in a passing check's silence.
-const EVERY_DISAGREEMENT_THAT_STANDS: [&str; 5] = [
+const EVERY_DISAGREEMENT_THAT_STANDS: [&str; 4] = [
     // Most likely kept earlier than promised, these two and the next.
     "Lock screen, suspend and resume",
     "Serving more than one person from one workstation",
     // Answered in two gates at once, v0.01's and v1's — its own question, and the
     // reason five promises produce six findings.
     "Drag and drop between applications",
-    // The kind the check was written for.
-    "Camera and microphone",
+    // *Camera and microphone* stood here until 2026-10-03 and is **reconciled**,
+    // not silenced. It was the kind this check was written for — `[v0.5]` in the
+    // definition and answered in v1's gate — and
+    // `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved the
+    // Devices promise in `ROADMAP.md` to the tier `docs/features.md` already gave
+    // it. The disagreement is gone because the documents agree, which is the only
+    // reason an entry may leave this list.
     "A self-hosted workspace on the network is **discovered, not configured**",
 ];
 

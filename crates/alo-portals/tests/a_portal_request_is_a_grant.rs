@@ -104,9 +104,17 @@ const THE_PORTALS_PROMISED: &str = "- [v0.5] Portals: file chooser and documents
 const THE_SECRET_PORTAL_PROMISED: &str = "- [v0.5] **Secret storage** — one keyring behind the Secret \
                                           portal, so applications stop inventing credential storage";
 
-/// The v1 portal line, which names what this crate must not.
-const THE_LATER_PORTALS: &str = "- [v1] Portals: USB devices, global shortcuts an application \
-                                 registers, dynamic launchers, remote desktop";
+/// The portal line that names what this crate must **not** answer.
+///
+/// It read `[v1]` until 2026-10-03, when
+/// `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved it into
+/// this release. **What the test holds did not change with the tier.** These four
+/// are promised and unbuilt, so they are still absent from [`Portal::EVERY`] —
+/// a variant that answers *no* is worse than no variant, and a tier says when
+/// something is owed rather than whether it exists.
+const THE_PORTALS_NOT_ANSWERED_YET: &str = "- [v0.5] Portals: USB devices, global shortcuts an \
+                                            application registers, dynamic launchers, remote \
+                                            desktop";
 
 /// **The portals are the closed list the promise names**, in its order, each
 /// with a sentence in the machine's one vocabulary — and the v1 portals absent.
@@ -125,8 +133,11 @@ fn the_portals_are_the_closed_list_the_promise_names() {
          built from"
     );
     assert!(
-        features.lines().any(|line| line == THE_LATER_PORTALS),
-        "the v1 portal line of docs/features.md moved, so what must be absent is unknown"
+        features
+            .lines()
+            .any(|line| line == THE_PORTALS_NOT_ANSWERED_YET),
+        "the portal line naming what this crate must not answer has moved in \
+         docs/features.md, so what must be absent is unknown"
     );
 
     // Every portal is named in the promise, in the promise's order. The line
@@ -160,7 +171,7 @@ fn the_portals_are_the_closed_list_the_promise_names() {
         assert!(!said.is_a_bug(), "{portal:?} has no sentence: {said}");
     }
 
-    // The v1 portals are not variants that answer no; they are not here.
+    // The four not answered yet are not variants that answer no; they are not here.
     let listed: Vec<String> = Portal::EVERY
         .iter()
         .map(|portal| format!("{portal:?} {}", portal.promised_as()).to_lowercase())
@@ -168,7 +179,7 @@ fn the_portals_are_the_closed_list_the_promise_names() {
     for later in ["usb", "shortcut", "launcher", "remote"] {
         assert!(
             !listed.iter().any(|one| one.contains(later)),
-            "a v1 portal, `{later}`, is on the list"
+            "`{later}` is a portal this crate does not answer yet, and it is on the list"
         );
     }
 }
