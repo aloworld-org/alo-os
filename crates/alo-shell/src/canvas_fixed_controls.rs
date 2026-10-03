@@ -110,6 +110,17 @@ pub(crate) struct FixedControls {
     /// of bounds and is refused the same way: with nothing drawn there is nothing
     /// to be protected from.
     handle: Option<(f64, f64)>,
+    /// The labelled controls exactly as the draw handed them over.
+    ///
+    /// **Kept beside `bounds` rather than instead of it, because the two answer
+    /// different questions.** The rule does not care which control a rectangle
+    /// belongs to — *outside every fixed control* is the promise, and `bounds` is
+    /// that set flattened. A classifier asking *which surface claims this point*
+    /// cannot use a flat set at all: it needs the labels, and flattening is what
+    /// threw them away.
+    ///
+    /// [`None`] before the first draw, the same unknown as empty bounds.
+    labelled: Option<FixedControlsDrawn>,
     /// Whether the controls have moved since anything last looked for the frames
     /// they hide.
     ///
@@ -157,8 +168,14 @@ impl FixedControls {
     /// different one. There is no arithmetic here whose last bit could drift, and
     /// a tolerance would invent a band in which the person's text got larger and
     /// their protection did not.
-    pub(crate) fn drawn(&mut self, bounds: Vec<Rectangle<i32, Physical>>, handle: (f64, f64)) {
+    pub(crate) fn drawn(
+        &mut self,
+        bounds: Vec<Rectangle<i32, Physical>>,
+        handle: (f64, f64),
+        labelled: FixedControlsDrawn,
+    ) {
         let handle = Some(handle);
+        self.labelled = Some(labelled);
         // Owed, never un-owed: a recheck that was owed and has not run yet stays
         // owed through a frame that changed nothing. Assigning the comparison
         // rather than or-ing it would let one unchanged frame cancel a debt the
@@ -168,6 +185,11 @@ impl FixedControls {
         }
         self.bounds = bounds;
         self.handle = handle;
+    }
+
+    /// The labelled controls the last draw handed over.
+    pub(crate) const fn labelled(&self) -> Option<FixedControlsDrawn> {
+        self.labelled
     }
 
     /// Whether the controls have moved since the last recheck.
@@ -560,7 +582,7 @@ impl crate::Server {
         .flatten()
         .filter(|area| area.size.w > 0 && area.size.h > 0)
         .collect();
-        self.fixed_controls.drawn(bounds, handle);
+        self.fixed_controls.drawn(bounds, handle, drawn);
     }
 }
 

@@ -693,6 +693,110 @@ fn a_display_that_changed_owes_a_recheck() {
     );
 }
 
+/// **No point on the screen is claimed by two fixed surfaces.**
+///
+/// The first production caller of `alo_put_aside`'s `at_most_one_surface_claims_it`.
+/// The panel lane wrote that invariant and nothing outside its crate consumed it, so
+/// it held in its own tests and was never asked about a real screen — the fault this
+/// module's own header is about, one crate along.
+///
+/// Three things are asserted and the middle one is the measurement:
+///
+/// - before a draw there is **no answer**, because a pointer can arrive before any
+///   surface knows where it is, and *nobody claims it* would be a reading nobody took;
+/// - with the Dock and the panel both drawn, **no point belongs to both** — asked of
+///   the rectangles rather than of sampled points, so it answers for the whole screen
+///   rather than for the points somebody thought of;
+/// - and a point inside the Dock is claimed **by the Dock and not by the panel**,
+///   which is what stops the second assertion passing because nothing claims anything.
+///
+/// # A tension this found on its first run, measured and not resolved here
+///
+/// The first version of this test handed over the full-width band the helper above
+/// builds, and **the invariant failed** — a full-width Dock and a full-height panel
+/// column must meet at the bottom-right corner. Production does not draw that:
+/// `dock_raster` centres the bar and clamps it to the room less its margins. But the
+/// canvas plan's task 6 says the Dock **grows with its icons, expanding to the margins
+/// and the panel's reserved area before the glyph shrinks**, and the panel's reserved
+/// column is *the full height of the display, by the owner's ruling*.
+///
+/// So the two surfaces' own rulings allow a state in which a point belongs to both,
+/// and `alo_put_aside`'s invariant says that state must not exist. **Nothing checked
+/// it until this test, because the invariant had no caller outside its own crate.**
+/// Which ruling gives is a design decision rather than a test's to make, so this
+/// asserts the ordinary geometry and records the extreme rather than encoding either
+/// answer — a test asserting the overlap is expected would have to be changed the day
+/// somebody fixes it.
+#[test]
+fn no_point_is_claimed_by_two_fixed_surfaces() {
+    let f = fixture();
+
+    // Nothing drawn: no answer rather than a cheerful one.
+    assert!(
+        f.backend(|s| s.what_each_surface_said_at((10, 10).into()))
+            .is_none(),
+        "a surface answered about a point before anything had been drawn, so \
+         `nobody claims it` would be a measurement nobody took"
+    );
+    assert!(
+        f.backend(|s| s.at_most_one_surface_claims_any_point())
+            .is_none(),
+        "the invariant answered before any control had been laid out"
+    );
+
+    // **A Dock the shape production draws**, not the full-width band the other
+    // tests here use. `dock_raster` centres the bar and clamps it to the room less
+    // its margins — `((width - bar_width) / 2, …)` — so a real Dock does not reach
+    // the panel's column unless it has grown to the margins. The helper above
+    // hands over a band spanning the whole width, which is the extreme case and
+    // not the ordinary one, and asserting the invariant against it would be
+    // asserting about a screen nobody draws.
+    f.backend(|s| {
+        let bar = VIEWPORT.0 / 2;
+        s.the_fixed_controls_were_drawn(
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(Rectangle::new(
+                    ((VIEWPORT.0 - bar) / 2, VIEWPORT.1 - DOCK).into(),
+                    (bar, DOCK).into(),
+                )),
+                panel_reserved: a_panel_down_the_right(),
+                status_area: None,
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+
+    assert_eq!(
+        f.backend(|s| s.at_most_one_surface_claims_any_point()),
+        Some(true),
+        "the Dock's band and the panel's reserved column overlap, so a point on the \
+         screen is claimed by two surfaces at once — which is the invariant \
+         `alo_put_aside::the_region_the_panel_claims` states and which nothing asked \
+         of a real screen until now"
+    );
+
+    // And the claim is real rather than vacuously true. A point well inside the
+    // Dock's band must be the Dock's, and must not be the panel's.
+    // Centre of the screen horizontally, inside the centred bar.
+    let in_the_dock = (VIEWPORT.0 / 2, VIEWPORT.1 - DOCK / 2);
+    let said = f
+        .backend(move |s| s.what_each_surface_said_at(in_the_dock.into()))
+        .expect("the controls have been drawn");
+    assert!(
+        said.the_dock,
+        "a point inside the Dock's band was not claimed by the Dock, so the \
+         assertion above passes because nothing claims anything"
+    );
+    assert!(
+        !said.the_panel,
+        "a point inside the Dock's band was also claimed by the panel"
+    );
+    assert!(
+        alo_put_aside::the_region_the_panel_claims::at_most_one_surface_claims_it(said),
+        "two surfaces claimed one point: {said:?}"
+    );
+}
+
 /// **The frame keeps the last position that was allowed.**
 ///
 /// The owner's ruling of 2026-09-30: *keep the last valid position while the
