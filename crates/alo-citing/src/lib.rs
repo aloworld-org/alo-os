@@ -86,6 +86,70 @@
 //! was ever asked whether the repository's citations can be followed, which is how
 //! 46 of them came not to be.
 //!
+//! # A citation that names a line is not read as a pointer at all
+//!
+//! `sources.rs`'s `is_a_path` requires a span to end with one of `.rs`, `.toml`,
+//! `.sh`, `.bpf.c`. A citation written `crates/…/transactions.rs:41` ends with
+//! `:41`, so it fails that test and is never read as a path.
+//! **A line number makes a citation less checked, not more.**
+//! It is the one check that would catch the file being gone, and the suffix
+//! is what disqualifies it.
+//!
+//! Measured on 2026-10-03: **38 such citations across 23 documents** — the
+//! shapes counted were paths under `crates/`, `tools/`, `docs/` or `scripts/`
+//! with a source or document extension, searched in `docs/**/*.md` only, so
+//! the number is a floor rather than a total.
+//! **Exactly one names a file that no longer exists**, and it is invisible
+//! here for the reason above.
+//!
+//! # Why that one is not a bug to fix, and why no fourth direction is added
+//!
+//! That citation is inside a pasted halt record — a transcript of what a tool
+//! said at a moment, ending *preserved at halt*.
+//! **Repairing a line number inside quoted tool output forges the transcript.**
+//! So stripping the suffix to make these visible would surface one finding
+//! whose only available action is the wrong one, and
+//! **a check whose only finding must not be acted on is worse than no check**,
+//! because the next person acts on it.
+//!
+//! The reason generalises past that one line. A citation naming a line falls
+//! into one of four kinds, and only the first is a pointer a check may hold:
+//!
+//! | | |
+//! |---|---|
+//! | A live pointer, meant to be followed now | checkable |
+//! | A record — pasted compiler output, a panic, a halt log | **must not be touched** |
+//! | A dated measurement, true on its date | re-dating it is a new claim |
+//! | One whose symbol is gone, not moved | unrepairable by any line number |
+//!
+//! Six of the 38 are records. A paragraph headed *Measured 2026-09-30* is one
+//! too: the number was true then, so replacing it silently re-dates the claim
+//! to today, where it may not hold. **Nothing mechanical can tell these apart**
+//! — which is the same boundary this crate already draws when it reads a number
+//! and stops, rather than judging whether `ADR 0001 §3` is about granting a
+//! folder.
+//!
+//! # The obvious remedy does not verify itself here
+//!
+//! Citing by a quoted phrase instead of a line, and proving the phrase unique
+//! with a count, is the remedy that would need no check — the command that
+//! finds the phrase is the command that proves it unique.
+//! **In this repository's prose it does not work**, because the documents are
+//! hard wrapped and any phrase long enough to be unique spans a line break,
+//! so a plain count returns **zero for a phrase that is present**. The share of
+//! lines in the 60-to-90 character band, which is what a hard wrap looks like:
+//! 76% of `ROADMAP.md`, 57% of the lane charter, 39% of `docs/features.md`.
+//!
+//! Whitespace has to be normalised on **both** sides before matching, needle
+//! included. And the two requirements pull against each other: a phrase short
+//! enough not to wrap is short enough not to be unique.
+//! **That is a limitation of the remedy rather than a detail of using it**,
+//! and the failure value is a zero, which reads as *stale*.
+//!
+//! A bare identifier cannot wrap, so a zero on one is a true zero — which is
+//! what makes the fourth kind above decidable: a symbol that `grep` cannot find
+//! anywhere is gone, and no line number repairs it.
+//!
 //! # It says nothing to a person
 //!
 //! Nothing here reaches a screen. The reader of a [`Finding`] is whoever wrote
