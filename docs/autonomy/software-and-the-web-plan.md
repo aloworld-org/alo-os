@@ -718,10 +718,15 @@ setting nothing reads is neither.
 
 ### 15. Unsandboxed installation, as a deliberate act
 
-**Status:** **not started, 2026-10-03.** The first task written against a promise that
-moved into this release the same day — `#439` carried it from `[v1]` to `[v0.5]`, and this
-plan's *may not do* list said *or install anything unsandboxed (v1, and deliberate)* until
-this change.
+**Status:** **Done, 2026-10-03.** Written and built the same day the promise moved into
+this release — `#439` carried it from `[v1]` to `[v0.5]`, and this plan's *may not do* list
+said *or install anything unsandboxed (v1, and deliberate)* until the change that wrote it.
+
+**Done means the deliberate-and-marked half, which is what this task's acceptance asks
+for.** The promise's other clause — *forbiddable by policy on a managed machine* — is
+**task 16**, blocked on there being a machine-policy road. It was split out rather than
+left as a footnote under a ticked task: a clause nobody is holding is a clause that gets
+read as finished.
 
 **Depends on:** 1.
 
@@ -767,7 +772,52 @@ reader exists. **That clause is a second task when there is a road**, and this o
 invent it — a drawing-crate equivalent would be this plan deciding an organisation's
 mechanism because it needed one.
 
-So the status says *not started* rather than *blocked*: the deliberate-and-marked half is
-buildable today, and marking the whole task blocked would hide buildable work behind a
-clause that waits on somebody else.
+That clause is **task 16**. While this task was open its status said *not started* rather
+than *blocked*, because marking the whole task blocked would have hidden buildable work
+behind a clause waiting on somebody else — and once the buildable half was built, the same
+reasoning says the clause needs a task of its own rather than a note under a tick.
 
+### 16. An organisation can forbid installing without confinement
+
+**Status:** **blocked, 2026-10-03.** Blocked on there being a machine-policy road for this
+crate to read. Not blocked on a decision: ADR 0016 and ADR 0004 already say where an
+organisation's rules live and what an administrator may not do.
+
+**Depends on:** 15.
+
+`docs/features.md`, the clause task 15 did not build: *Unsandboxed installation as a
+deliberate, clearly-marked act — never the default, and **forbiddable by policy on a
+managed machine**.*
+
+**Why it is blocked, measured rather than assumed.**
+
+```text
+"policy" / "managed" / "organisation" in alo-software/src/installing.rs    0
+crates reading /etc/alo                 alo-accounts only (accounts, session, place)
+alo-conforming                          another lane's, accessibility conformance
+```
+
+Nothing in this crate reads a machine policy and there is no general reader to call. Task
+15 built the act and deliberately did not invent the mechanism that would forbid it —
+`Wanted::unsandboxed_by_hand`'s rustdoc says in so many words that nothing in it may be
+read as this check having happened.
+
+**What this task is not allowed to do.** Decide an organisation's policy mechanism because
+this plan needed one. If no reader exists when this task comes up, the answer is to say so
+and wait, not to write `/etc/alo/software.toml` into this crate and leave every other
+lane to discover it. The surface that needs an answer is the surface least entitled to
+give it.
+
+**Acceptance, when there is a road.**
+
+- A managed machine whose organisation forbids it **refuses** `Wanted::unsandboxed_by_hand`
+  at the first step, before anything leaves, and the refusal **names who set the rule** —
+  the shape `NotDone::OutsideTheBound` already uses with `SetBy`.
+- A personal machine is unaffected, and that is a test rather than a comment: the law is
+  that every protection is a default the person can change, and an organisation's rule
+  binds a machine an organisation manages, not every machine.
+- The refusal is told in words from `alo-strings` that say what the person cannot do and
+  **who decided**, never the name of the machinery — the rule task 15 broke once and the
+  crate's own test caught.
+- A person on a managed machine is not told about this at install time only. Whose machine
+  it is, is answerable in ten seconds, and that is where the rule belongs as well.

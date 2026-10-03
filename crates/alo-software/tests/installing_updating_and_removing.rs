@@ -6,6 +6,11 @@
 //! do**, so a refusal is shown to have reached nothing rather than only to have
 //! returned an error. What these tests cannot show is the real tool on a real
 //! machine; this task's report says so, and says what would.
+//!
+//! The last of these are about **installing without a sandbox** — a thing a person can
+//! choose and nothing else can. They are here rather than in a file of their own because an
+//! unsandboxed install *is* installing: it is the same two steps, the same place, the same
+//! refusals and the same stand-in, differing in one word a caller writes.
 
 #![expect(
     clippy::unwrap_used,
@@ -25,9 +30,9 @@ use alo_capability::{
 use alo_egress::{Destination, Errand, Indicator, OnItsOwn};
 use alo_granted::Listing;
 use alo_software::{
-    Bound, Configured, Enabled, Failed, NotAnInstallation, NotDone, SetBy, SourceName, Stopped,
-    Tool, Wanted, apply, applying, approved, install, installing, looking_for_updates, offered,
-    remove, software_verbs,
+    Bound, Configured, Enabled, Failed, NotAnInstallation, NotDone, Sandboxing, SetBy, SourceName,
+    Stopped, Tool, Wanted, apply, applying, approved, install, installing, looking_for_updates,
+    offered, remove, software_verbs,
 };
 use alo_strings::{Strings, Vocabulary};
 
@@ -850,5 +855,231 @@ fn an_agent_proposes_an_installation_and_never_installs_one_by_itself() {
         NotAnInstallation::AnotherVerb {
             verb: "open_application".to_owned()
         }
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Unsandboxed, because a person said so.
+// ---------------------------------------------------------------------------
+
+/// Install the editor unsandboxed from this place the whole way, on this indicator.
+///
+/// The same two steps and the same indicator as [`installing_the_editor_from`], differing
+/// in one word — which is what makes the pair below about the person's choice rather than
+/// about the road.
+fn installing_the_editor_unsandboxed_from(
+    tool: &AMachine,
+    enabled: &Enabled,
+    source: &str,
+    indicator: &mut Indicator,
+) -> Result<alo_software::Installed, Stopped> {
+    let wanted = Wanted::unsandboxed_by_hand(editor(), source);
+    let errand = installing(enabled, &wanted, tool)?;
+    let underway = indicator.beginning_on_its_own(errand, noon());
+    let installed = install(&underway, enabled, wanted, tool);
+    indicator.ended_on_its_own(underway);
+    installed
+}
+
+/// **Saying nothing gets the sandbox.** `by_hand` is the constructor every existing caller
+/// uses, and it means [`Sandboxing::Sandboxed`].
+///
+/// *Never the default* held as a fact about the type rather than as a check somewhere:
+/// there is no argument to omit and no flag to leave false.
+#[test]
+fn what_a_caller_gets_by_saying_nothing_is_sandboxed() {
+    let ordinary = Wanted::by_hand(editor(), "flathub");
+    assert_eq!(
+        ordinary.sandboxing(),
+        Sandboxing::Sandboxed,
+        "the constructor a caller reaches without choosing produced an unsandboxed install"
+    );
+    assert!(
+        !ordinary.sandboxing().is_worth_marking(),
+        "an ordinary install asked to be marked, so every install would be marked"
+    );
+    assert!(
+        Wanted::unsandboxed_by_hand(editor(), "flathub")
+            .sandboxing()
+            .is_worth_marking(),
+        "the install that needs marking did not ask for it"
+    );
+}
+
+/// **A person's choice reaches the installed application**, through both steps and the
+/// indicator between them.
+///
+/// The choice is made once, at the start, and nothing in the second step asks again — so
+/// this is what shows it is *carried* rather than re-derived from the source or the
+/// identifier.
+#[test]
+fn the_choice_not_to_sandbox_reaches_the_installed_application() {
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let mut indicator = Indicator::default();
+
+    let installed =
+        installing_the_editor_unsandboxed_from(&tool, &enabled, "flathub", &mut indicator).unwrap();
+
+    assert_eq!(
+        installed.sandboxing(),
+        Sandboxing::Unsandboxed,
+        "a person chose no sandbox and the installed application does not know it"
+    );
+    assert!(
+        installed.sandboxing().is_worth_marking(),
+        "an unsandboxed application did not ask to be marked"
+    );
+}
+
+/// **And the same road installs sandboxed when that is what was asked**, which is what
+/// makes the test above about the choice rather than about the road.
+///
+/// Both installs use the same two steps, the same place and the same indicator. If
+/// `install` took sandboxing from anything other than what the person said, these two
+/// would agree.
+#[test]
+fn the_same_road_installs_sandboxed_when_that_is_what_was_asked() {
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let mut indicator = Indicator::default();
+
+    let installed = installing_the_editor_from(&tool, &enabled, "flathub", &mut indicator).unwrap();
+
+    assert_eq!(
+        installed.sandboxing(),
+        Sandboxing::Sandboxed,
+        "the same road produced an unsandboxed install from an ordinary ask"
+    );
+}
+
+/// **The sentence is replaced, not added to.**
+///
+/// The ordinary sentence promises *it has been given nothing: it asks when it needs a
+/// file, the camera or anything else* — and that promise is **false** without a sandbox. A
+/// marking put beside it would leave a person holding two sentences, one of which is a
+/// lie, so `said` chooses between them.
+#[test]
+fn an_unsandboxed_install_is_told_a_different_sentence_not_an_extra_one() {
+    let strings = strings();
+
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let mut indicator = Indicator::default();
+    let ordinary = installing_the_editor_from(&tool, &enabled, "flathub", &mut indicator)
+        .unwrap()
+        .said(&strings);
+
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let mut indicator = Indicator::default();
+    let without =
+        installing_the_editor_unsandboxed_from(&tool, &enabled, "flathub", &mut indicator)
+            .unwrap()
+            .said(&strings);
+
+    assert_ne!(
+        ordinary.text(),
+        without.text(),
+        "both installs said the same sentence, so one of them is wrong"
+    );
+    assert!(
+        ordinary.text().contains("given nothing"),
+        "the ordinary sentence stopped making the promise this task must not weaken: {ordinary}"
+    );
+    assert!(
+        !without.text().contains("given nothing"),
+        "an unsandboxed install repeated the promise that it has been given nothing: {without}"
+    );
+    assert!(
+        without.text().contains("reach your files and the network"),
+        "an unsandboxed install was not marked with what it can reach: {without}"
+    );
+    assert!(
+        without.text().contains("org.gnome.TextEditor"),
+        "the marking did not name the application it is about: {without}"
+    );
+    for machinery in ["sandbox", "flatpak", "portal", "confin"] {
+        assert!(
+            !without.text().to_lowercase().contains(machinery),
+            "the marking named the machinery instead of what it costs: {without}"
+        );
+    }
+}
+
+/// **An unsandboxed install is refused everything a sandboxed one is refused**, and
+/// reaches nothing when it is.
+///
+/// *Deliberate* must not become *exempt*: a place that is not set up and an application
+/// already here are refused at the first step, before anything leaves, for this
+/// constructor exactly as for the other one.
+#[test]
+fn an_unsandboxed_install_is_refused_for_every_reason_the_ordinary_one_is() {
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+
+    assert_eq!(
+        installing(
+            &enabled,
+            &Wanted::unsandboxed_by_hand(editor(), "nowhere"),
+            &tool
+        )
+        .unwrap_err(),
+        NotDone::not_enabled("nowhere"),
+        "an unsandboxed install was allowed from a place that is not set up"
+    );
+    assert_eq!(
+        installing(
+            &enabled,
+            &Wanted::unsandboxed_by_hand(viewer(), "flathub"),
+            &tool
+        )
+        .unwrap_err(),
+        NotDone::AlreadyInstalled {
+            application: "org.gnome.Loupe".to_owned()
+        },
+        "an unsandboxed install was allowed over an application already here"
+    );
+    assert!(
+        tool.acted().is_empty(),
+        "a refused unsandboxed install still reached the tool: {:?}",
+        tool.acted()
+    );
+}
+
+/// **And an unsandboxed application arrives with no grants either**, which is the clause
+/// of this crate's guarantee that would be the most tempting to read as sandbox-shaped.
+///
+/// It is not: the sandbox and the grant list are two different mechanisms, and nothing a
+/// person gave up by choosing no sandbox was a grant. The one list is read before and
+/// after, and nothing new is on it.
+#[test]
+fn an_unsandboxed_application_arrives_with_no_grants_either() {
+    let tool = AMachine::ordinary();
+    let machine = a_machine_with_grants();
+    let before = Listing::of(machine.allowed(), noon());
+
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let mut indicator = Indicator::default();
+    let installed =
+        installing_the_editor_unsandboxed_from(&tool, &enabled, "flathub", &mut indicator).unwrap();
+    assert_eq!(installed.application(), &editor());
+
+    let after = Listing::of(machine.allowed(), noon());
+    assert_eq!(
+        before, after,
+        "installing without a sandbox changed the one list"
+    );
+    let newcomer = Applicant::named("org.gnome.TextEditor");
+    assert!(
+        after
+            .rows()
+            .iter()
+            .all(|row| row.to() != "org.gnome.TextEditor"),
+        "the unsandboxed application has a row"
+    );
+    assert!(
+        !machine.allowed().allows_anything(&newcomer, noon()),
+        "an unsandboxed application was allowed something nobody gave it"
     );
 }
