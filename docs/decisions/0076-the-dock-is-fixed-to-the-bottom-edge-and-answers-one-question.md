@@ -112,10 +112,11 @@ why it is separated out rather than folded into the quotation.
 Withdrawn, with **[v0.5]** *Per display, so the dock can sit along the bottom of
 the laptop and down the side of the external screen*.
 
-### The **[v1]** promise, in `ROADMAP.md:758` — **and its code box is ticked**
+### The **[v1]** promise, inside *The alo Dock* — **and its code box is ticked**
 
 *The dock on any edge* is **not** in `docs/features.md`; searching there finds
-nothing. It is `ROADMAP.md:758`, and at `:760` it carries `- [x] **The code.**`
+nothing. It is inside `ROADMAP.md`'s *The alo Dock* promise, which carries
+`- [x] **The code.**`
 
 **A tick is the owner's signature on the release's account of itself, and this
 record does not remove it.** What this record does is say that the tick is now a
@@ -132,7 +133,7 @@ a code box and a machine box — and never asks whether a ticked one is true.
 `counts_that_drifted` catches one numeric case and not this. `alo-dock` survives
 this change, so no test fails either. Checked, not assumed.
 
-So between a code removal and an untick, `ROADMAP.md:760` reads `- [x] **The
+So between a code removal and an untick, *The alo Dock*'s code box reads `- [x] **The
 code.**` for two orientations, four edge words and a four-edge EN 301 549
 threshold that no longer exist — **and it reads green.** That is a claim that stays
 true-looking after it stops being true, which is the fault this repository spent a
@@ -270,7 +271,8 @@ and this record is the reason.
   `set_edge_on`, `edge_on`, `displays`, `forget_display`; `Setting::Edge`.
 - The four edge words, and whatever only the vertical orientation said.
 - `docs/features.md`'s **[v0.01]** promise and its **[v0.5]** descendant;
-  `ROADMAP.md:758`'s **[v1]** promise, whose tick is the owner's to remove.
+  the **[v1]** promise inside `ROADMAP.md`'s *The alo Dock*, whose tick is the
+  owner's to remove.
 
 ## What a settings file that names an edge does
 

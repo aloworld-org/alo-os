@@ -14,16 +14,10 @@ capability is built and tested on an ordinary development machine first, and the
 physical checks are gathered into one phase at the end rather than done a piece
 at a time.
 
-| | Phase | State |
-|---|---|---|
-| 1 | Linux and graphical development gate | done |
-| 2 | Native compositor and input | **in progress** |
-| 3 | Window management, launcher, dock and shortcuts | started, inside phase 2's work |
-| 4 | Accounts and session entry | not started |
-| 5 | Model/provider selection and grants | code done; surfaces owed |
-| 6 | Agent interaction and application integration | code done; surfaces owed |
-| 7 | Desktop image integration | image builds and boots in a VM |
-| 8 | **Release coverage and physical acceptance** | **not started — needs a machine** |
+**The eight phases, their state, and what closes each one, are in**
+**[The board](#the-board--one-phase-at-a-time)** under v0.01. They are not
+repeated here: two tables of the same phases drifting apart is the fault that
+board was written to end.
 
 **Phase 8 is the only one that cannot be done here.** It needs the two certified
 machines `docs/hardware.md` names — an ordinary business laptop first, then a GPU
@@ -218,6 +212,7 @@ work. Five images have shipped inside one unfinished milestone.
 
 ## v0.01 — it boots and the agent acts
 
+
 The point is to prove one sentence on real hardware: *an action a person would
 take by hand can be proposed by an agent, approved in one click, and afterwards
 explained — and the model that proposed it ran on the customer's own machine.*
@@ -248,725 +243,66 @@ The AI stack leads the first band for the reason it always did: no kernel work,
 no image pipeline, no certified hardware, and it is useful to `alo-workplace`
 the day it lands.
 
-### Everything that needs no screen — built first, and all of it is built
+### The board — one phase at a time
 
-Twelve capabilities. Each has its code finished, tested and gated on an ordinary
-laptop, and each is still owed the half only a machine can give it. **This band
-was not chosen line by line**: it is simply everything in v0.01 that a
-compositor is not required for, which is why it runs unbroken.
+**If you read nothing else, read this.** v0.01 is made of **29 promises**, and
+the work happens in **eight phases, in order** — a phase finishes before the
+next one starts. The table says which phase the work is in now, how many
+promises close each one, and how far each has got.
 
-- [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
-      runtime (ADR 0006)
-  - [x] **The code.**
-        `alo-models` — the catalogue with its licence gate, `ModelRuntime`,
-        and the Ollama adapter, the one file allowed to name it. Since item
-        18a the *serve* in this line is real rather than a heading:
-        `ModelRuntime::answers` puts a question to a model and the adapter
-        carries it over the runtime's own chat API, so the trait manages
-        models **and** uses one. 96 tests, several of them against a real
-        socket rather than a mock
-  - [ ] **On the machine.**
-        Since 2026-09-13 it **has** been run against the real pinned runtime —
-        Ollama 0.34.0 on the Mac lane's Apple M3 — and the first request alo OS
-        sent it was refused: the `modelfile` field a brought file was handed
-        over with is gone from that version's create API, and the road is now
-        the one the runtime accepts, walked end to end with a 4.7 GB file
-        (`docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`). A Mac is not
-        the certified machine and this box stays open; but *never run against a
-        real Ollama* stopped being true, and the fixture it exposed as a guess
-        is fixed. *This line was ticked outright until the two boxes existed,
-        while its own last sentence said law 3's "on real hardware" was owed —
-        a tick and its own footnote contradicting each other, which is exactly
-        what the parent box is now not allowed to do*
+**Why nothing says *done* yet.** Every promise has two halves: **the code**,
+which can be finished on any developer's machine, and **on the machine**,
+which means a person sat at an ordinary laptop and watched it work. A promise
+is only *done* when both halves are. The second half belongs entirely to phase
+8, and phase 8 has not started, so **nothing is marked done and nothing can be**
+until then. That is the design, not a setback. The column that moves week to
+week is *code written*.
 
-- [ ] ★ **It runs on the machine you already own** — no graphics card required.
-      The catalogue carries models that work on a CPU, and says honestly which
-      ones are comfortable there and which are merely possible
-  - [x] **The code.**
-        `alo-models`' catalogue — `OnCpu` as a stated property of each model
-        rather than a footnote, `runnable_on_cpu(ram_gb)` and
-        `runnable_with_vram`, so the answer to *what can this machine
-        actually run* is asked of the machine rather than assumed. Since
-        item 23 *what runs here* and *what gets the agent* are two methods
-        rather than one: `default_for_cpu` is gone, because ADR 0007's own
-        correction is that **"default" was the wrong word**, and the
-        recommendation lives on the line below
-  - [ ] **On the machine.**
-        the setup screen that asks it on somebody's behalf, and a real
-        measurement — *comfortable* is a judgement in a table until a model
-        has run on a machine without a GPU
+| | Phase | State | Promises | Code written | Proved on a laptop |
+|---|---|---|---|---|---|
+| 1 | Getting the workshop ready | done | — | — | — |
+| 2 | Drawing windows on a screen | in progress | 1 | not counted yet (1) | 0 of 1 |
+| 3 | Making windows usable — the canvas | started, inside phase 2's work | 12 | 2 of 12, 10 not counted yet | 0 of 12 |
+| 4 | Signing in | not started | 1 | not counted yet (1) | 0 of 1 |
+| 5 | Choosing which AI answers | code written, screens owed | 7 | all 7 | 0 of 7 |
+| 6 | Asking alo to do something | code written, screens owed | 6 | 4 of 6, 2 not counted yet | 0 of 6 |
+| 7 | Packing it into something that boots | builds and boots in a VM | 2 | 1 of 2, 1 not counted yet | 0 of 2 |
+| 8 | Proving it on a real laptop | not started — needs a machine | — | — | 0 of 29 |
 
-- [ ] ★ **The catalogue says whether a model can drive the verbs**, not only
-      whether it will run — measured by us, never claimed by the publisher
-      (ADR 0007, as corrected). And a machine is only offered agent work it can
-      actually do: where nothing clears the bar, the honest answers are the ones
-      ADR 0008 already provides, offered as a choice and never substituted
-  - [x] **The code.**
-        `alo-driving`, a new crate — the fixed set of ten requests, one per
-        verb alo OS ships, each scored through `alo_protocol::FromAnAgent`
-        and `alo_capability::Verbs::call`, which is the daemon's own door and
-        the same validation a real turn does rather than a second reader
-        written for a test. A run that skipped an exercise is refused, and the
-        bar is nine attempts in ten. And `alo-models`, where the grade lives
-        and is read: `Driving` as a stated property every entry must answer —
-        `NotMeasured` is an answer and is `Region::Unknown` one file over —
-        `Catalogue::agent_for_cpu`, and `NoAgentHere`, whose only road to a
-        sentence hands back **three** lines so a machine cannot show somebody
-        the refusal without every answer they still have. Since item 25a the
-        middle one is weights they already have — the answer that needs no
-        other machine and no account, added as a line of its own because
-        ADR 0008's question is *where* and this one is *which model*, and
-        ordered outward from the machine rather than by which is better.
-        Since item 23a the method can also be **run**:
-        `alo-driving`'s `against_a_model_on_this_machine` puts the fixed set
-        to a real runtime through `alo-asking`'s local door, warms the model
-        first so the exercise that loads the weights is not graded for the
-        disk, and stops rather than scoring when a runtime fails — a model
-        blamed for a machine is the one way a grade is worse than no grade.
-        **Every entry a machine with 8 GB can hold now has a measured grade**,
-        on two machines: five small ones on the development PC (items 23a and
-        23c, `rarely` five times) and, since 2026-09-13, every 7B-class entry
-        the Mac lane's Apple M3 can load — Qwen 2.5 7B, Mistral 7B, Llama 3.1
-        8B, plus Qwen3 4B and 8B added for their tool-call training — each
-        graded both asked freely and held to the protocol's envelope
-        (ADR 0032), with machine, runtime, digest and counts beside it. The
-        four entries over 8 GB say *too large for the measuring machine* rather
-        than nothing. **None clears the bar.** The closest is Qwen 2.5 7B at
-        four bits in the envelope, 35 of 40 against a bar of 36; five bits did
-        worse. So the catalogue gives no local model the agent, and says so in
-        one sentence a person reads. `the-models-measured-plan.md`
-  - [ ] **On the machine.**
-        **Seven of the twelve entries have still never been run against**,
-        because a measurement needs those weights on a disk and every one of
-        the seven wants ten gigabytes of memory or more against the six the
-        measuring box has; they say `not-measured`, and a grade is a data
-        change rather than a release. The five that have been measured were
-        measured on a development box, which is the right machine for the
-        question they answer and the wrong one for the rest of the entry —
-        `min_ram_gb` and `on_cpu` are what a model costs on the machine it
-        runs on, and the certified one is where those are found. Plus the
-        setup screen that shows the refusal and its three alternatives
-        without choosing between them
+**Two columns look worse than the work is, and both are about this file rather than about alo OS.**
 
-- [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
-      machine, from a machine on your network, or from a provider you named, and
-      the choice is the person's. **An organisation bounds that choice and never
-      makes it** (ADR 0016): two settings, two owners, two files, and a choice
-      outside the bound refused in words rather than quietly replaced
-  - [x] **The code.**
-        `alo-models`' `InferenceSource` — this machine, a paired machine, a
-        hosted provider with its region — and `SourcePolicy`, which can hold
-        an answer in the building, on the machine, or inside a named region,
-        and refuses in the policy's own words rather than silently routing
-        elsewhere. **And `alo-asking`, which actually puts the question**: a
-        provider is asked over https, the egress is on the indicator before
-        the socket opens, the rule in force at that moment decides, and the
-        answer comes back carrying where it came from. Since item 18a **all
-        three of the ADR's places that this repository can reach are
-        reachable**: `to_this_machine` puts the same question to the model
-        alo OS ships, with no indicator, no departure and no rule to ask,
-        because nothing on that path goes anywhere. Since item 18b a third
-        door, `to_a_service_on_this_machine`, reaches an OpenAI-compatible
-        service somebody runs here themselves — vLLM, llama.cpp's server,
-        LM Studio — which is this machine and not a provider, and which
-        **cannot be pointed anywhere else**: the door with no indicator on it
-        takes a value that exists only for an address `alo-models` calls this
-        machine. Three doors that divide on law 1 rather than on what speaks
-        at the far end, and each refuses a permission another one is behind.
-        Since item 19a **a turn is what reaches those doors**: `alo-turn`
-        takes the place a person chose and the thing that answers there,
-        routes to whichever of the three it is, holds the machine's one
-        indicator while it happens, and writes what left — or what a rule
-        stopped from leaving — before the answer reaches anybody. Since item
-        22 **a provider whose account has run out says that and not
-        something else**: `alo-answering`'s `RanOut` is the one failure here
-        that is not a fault, and `alo-asking` reads the name inside a `403`
-        or a `429` against a closed list to tell it apart from a refused key
-        and from being asked to slow down — while opening no door a failure
-        for any other reason would not, because *never a silent fallback*
-        runs hardest in the direction where somebody's money is at the other
-        end. 86 tests in `alo-asking`, most of them against a stub on a real
-        socket or a stub of the runtime trait, and 57 in `alo-answering`
-        behind them
-  - [ ] **On the machine.**
-        a provider somebody pays for, answering a real question with a real
-        key, and a real model runtime answering one on this machine — neither
-        has been run against the real thing. A question to **a machine on
-        your network** is the third place and has no path in this repository
-        at all: both doors refuse a permission naming one, in words that say
-        so and offer neither of the other two instead
+*Proved on a laptop* is zero everywhere because phase 8 has not begun. It is
+not a measure of whether anything runs; it is a measure of whether anybody has
+yet sat down at a certified laptop and watched it. Nobody has.
 
-- [ ] ★ **Where the answer came from is said where the answer appears** — "on
-      this machine", "on the studio workstation", "by a provider you added" —
-      beside the answer, not buried in a setting
-  - [x] **The code.**
-        `alo-models` — every source can say itself (`shown`, `said`) in the
-        language the reader reads, so provenance is a translated sentence
-        rather than English a shell would have to reword — and `alo-asking`'s
-        `Answer`, which **cannot be made without one**: the only constructor
-        takes the source, so a shell holding an answer is holding the
-        sentence about where it came from
-  - [ ] **On the machine.**
-        the surface that shows it beside an answer, which is the overlay,
-        and therefore the compositor. **This was the one on this list most
-        easily lost** — a sentence that must appear every time, with nothing
-        forcing it to. The type now forces it as far as a type can: showing
-        an answer without its provenance is a thing somebody has to decide to
-        do rather than a thing they can forget
+*Not counted yet* means this file never wrote down how far those promises got.
+Fifteen of the twenty-nine have no halves at all, so there is no honest number
+to print — the canvas is most of them, and its code is built, tested and gated.
+**The gap is in the bookkeeping, not in the building.** Filling it in is the
+next repair to this document and it is deliberately not guessed here: a tick
+claims a half is finished, and counting files that mention a crate would prove
+only that somebody started. A wrong tick is worse than an admitted gap.
 
-- [ ] **Agents point at the local model by default**, configured rather than coded
-      — and, since the default is only a sovereignty guarantee if it does not
-      quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
-      carried on this line too, having none of its own
-  - [x] **The code.**
-        `alo-models` — where an answer may come from, and the policy that
-        keeps it in the building, on the machine, or in a region, both now
-        said in the language the person reads rather than in English — and
-        `alo-answering`, which is what happens when the place a person chose
-        cannot answer: the failure named with the place it happened, the
-        line saying nothing was sent and nothing will be, and asking
-        somewhere else as one sentence a person approves for exactly one
-        question rather than a setting anybody can leave on. Since item 18a
-        **★ never a silent fallback runs both ways in code and not only in
-        the ADR**: the local door is where *a local model that fails becomes
-        an API call* would have been written as a convenience, and what it
-        does instead is hand back the same failure, whose only way onward is
-        an offer somebody answered. Since item 19a the same is true one
-        level up, where a fallback would actually have been written: a turn
-        that meets a failure **hands it back and stops**, and the only road
-        from one to a second attempt is an offer a person took, which comes
-        in at the same door and is shown and recorded like any other
-        question. A test asks it as the thing it is — the place that failed
-        was asked once, the place that was offered was asked nothing at all.
-        Since item 21h **there is a place the pointing is configured from**:
-        `alo-choosing` holds what a person chose — which model, and which of
-        this machine's two lists it came from — in a file of their own under
-        their home directory, and `Chosen::asking` is the one place that
-        choice meets the rule an organisation set. *Configured rather than
-        coded* is true of the setting now: there is no default and no
-        `Default`, a machine nobody has configured has chosen nothing and
-        says so, and a choice the organisation's bound forbids is refused in
-        the rule's own words rather than swapped for a permitted one. Since
-        item 21k **a choice resolves into something that can answer**: the two
-        facts nothing on a machine stated are stated. `alo-models` finds the
-        runtime — **found, never configured** (ADR 0019), at an address the
-        adapter alone knows, with no key in any contract and no override for
-        an operator to point elsewhere — and `alo-choosing` holds the weights
-        somebody brought on the person's own list, so a choice from either of
-        this machine's two lists resolves into the entry it names. Settings
-        that could say *my questions are answered by weights that are not on
-        my list* are refused where they are made. 71 tests, seven of them
-        against a real file on a real disk. Since item 21n **the daemon
-        walks it**: `alo-agentd` reads the person's own settings out of its
-        own environment — it runs as them, one per login, which ADR 0019
-        records as a condition rather than an assumption — finds the runtime
-        once at the first question of each turn, and puts the question to
-        what they chose. A turn that asks nothing opens no file and probes
-        nothing, a model picked in Settings answers the next turn, and the
-        three ways it can go wrong are three sentences rather than one: pick
-        something, the runtime is not reachable, or your settings file says
-        this and here is its path
-  - [ ] **On the machine.**
-        something that points, which is `alo-agentd`. *Something that asks*
-        is no longer owed here at all: `alo-asking` puts a question to a
-        hosted provider **and** to the model on this machine, and hands back
-        a failure whose only door onward is an offer a person answered — so
-        the fallback is carried by the code that would have had to contain
-        it, in both directions. What is left of the machine half is the
-        daemon that points at the local model, and a real runtime answering
-        a real question, which needs Ollama installed. Since item 21d the
-        daemon exists and holds a turn, and a question put to it is refused
-        in words — *nothing on this machine has been chosen to answer
-        questions* — because nothing yet reads what the person chose. Since
-        item 21e a machine describes itself — two logins, two lengths of time
-        and where the record goes — and which model or provider answers is not
-        yet among the things it says. Since item 21f the process exists and runs
-        all of that, so what is left is only the setting: `alo-asking`,
-        `alo-models` and `alo-answering` are loaded into the machine's
-        vocabulary and unused. Since item 21h **the setting exists and the
-        daemon does not read it yet**: a person's choice has a file, a shape
-        and eight refusals. Since item 21k **the road from that choice to
-        something that answers is built and the daemon has not walked it
-        yet**: a runtime is found by its adapter, weights somebody brought
-        are on the person's own list, and both of the facts that were missing
-        are stated. Since item 21n **the daemon reads the setting and puts
-        the question**, so *nothing on this machine has been chosen to answer
-        questions* is now what an unconfigured machine says rather than what
-        every machine says. What is left here is what this loop cannot do: a
-        real runtime with real weights, on a certified machine, answering a
-        real question put through the socket — no test in this repository has
-        ever had Ollama at the other end
+### Phase 1 — Getting the workshop ready
 
-- [ ] **Add your own provider in Settings** — name, address, key to the keyring;
-      the region stated rather than guessed; https required off this machine
-  - Provider configuration reconciliation (2026-09-08): format 2 settings now
-    persist the person's provider list and selected model; format 1 compatibility
-    and no local fallback are tested. Contributor-reported six choosing/two daemon
-    tests and workspace/BPF gates: `docs/autonomy/updates/three-model-choices-in-the-backend.md`.
-    Credential store and native controls remain delivery phase 5 work; providers
-    requiring a key refuse, Alo has no endpoint, paired machines stay unreachable.
-    Raw parse-error Debug may retain pasted credentials despite safe UI messages;
-    follow-up remains open with Claude. ADR 0021 remains proposed; no release tick.
-  - [x] **The code.**
-        `alo-models` — the provider, the key held as a keyring handle and
-        never in the record, testing it before it is saved, and every
-        refusal about any of the three readable in the reader's own language.
-        Since item 18b **"https required off this machine" is true rather
-        than approximately true**: `address.rs` reads the host out of the
-        address and matches it whole, so `localhost.attacker.example` and
-        `127.0.0.1@attacker.example` are somewhere else — they were this
-        machine to a prefix check, which meant an unencrypted connection
-        carrying a key, and an answer that claimed never to have left
-  - [ ] **On the machine.**
-        the Settings panel to type it into
+*Linux and graphical development gate, in `docs/autonomy/DELIVERY.md`.*
 
-- [ ] **Egress indicator**, and no telemetry
-  - Kernel coverage audit reconciled 2026-09-08: publication checks now fail
-    closed through the shared kernel verify/publish path. Reproduced loopback
-    proxy, unconnected datagram and established-socket gaps remain, not fixes.
-    The production-reachable proxy gap still needs a decision; no enforcement or
-    machine checkbox moves. See `docs/autonomy/updates/publication-hardening-and-egress-coverage.md`.
-  - [x] **The code.**
-        `alo-egress` — what counts as leaving, and the line said about it
-        while it happens, now in the language the person reads rather than
-        in English; the policy still decides before a socket opens and
-        without needing a vocabulary to do it. Since item 16 the second half
-        of this line has code too: egress with **no agent behind it** is a
-        closed list of three reasons alo OS reaches the network — signing
-        somebody in, fetching a model, checking for an update — with no
-        member for measuring anything and no way to add one that is not an
-        edit to a public enum. They go on the **same** indicator as an
-        agent's egress, so *nothing has left this machine* stays one thing
-        to look at, and the promise beside the list is a sentence a person
-        reads in their own language rather than one this repository
-        publishes. Since item 16a law 1's *and afterwards in a record*
-        covers that second half as well: `alo-record` writes an errand down
-        as `Happened::LeftOnItsOwn`, made only from the `Underway` the
-        indicator showed, and it is the one entry in the record with **no
-        agent field** — because nobody granted this machine permission to
-        sign somebody in, and a name in that column would be an authority
-        the record invented. *What left this machine* and *what did it do on
-        its own* are two queries over one list, and
-        `docs/contracts/record-file.md` now says what a new kind of entry
-        means for a reader that predates it
-  - [ ] **On the machine.**
-        the indicator itself, which is a compositor surface; the daemon code
-        that actually signs somebody in, fetches a model or checks for an
-        update, none of which exists yet; and the enforcement at the network
-        boundary, without which all of this describes only the code that
-        asked. **Partial enforcement published and reconciled 2026-09-07:**
-        Claude's `socket_connect` hook checks non-loopback IPv4/IPv6 address/port
-        entries per turn, including next-connect withdrawal. Seven loaded-kernel
-        cases and Linux workspace/BPF gates are contributor-reported evidence,
-        not rerun by this desktop worker. Production wiring, UDP sendto,
-        established/inherited sockets, loopback proxies and physical acceptance
-        remain open; the enforcement requirement and machine box stay unchecked.
-        Report: `docs/autonomy/updates/network-egress-enforcement.md`.
-        **Security follow-ups reconciled 2026-09-08:** reports
-        `docs/autonomy/updates/network-boundary-decisions-proposed.md` and
-        `docs/autonomy/updates/one-kernel-two-checkouts.md` correct the relay door
-        to Answers::Service (the provider door refuses ThisMachine), and serialize
-        kernel tests across checkouts with a bounded abstract-socket lock. Five
-        process tests, four unit tests and full gates are contributor-reported,
-        not rerun here. ADR 0021 is still proposed; its revised C1 recommendation
-        is not approval or implementation. Loopback-proxy, inherited-descriptor/
-        socket and use-time gaps remain; no enforcement or machine box closes.
-        **Production-path audit reconciled 2026-09-07:**
-        `docs/autonomy/updates/end-to-end-network-enforcement.md` traces and tests
-        that file verbs enter Bounding but provider requests do not. Destination
-        enforcement therefore does not cover ordinary provider calls. Claude's
-        boundary/destination-lifetime decision was subsequently approved in
-        `docs/autonomy/updates/network-request-boundary-approval.md`, reconciled
-        2026-09-07. Claude owns the scoped ADR and implementation, with explicit
-        DNS and request-limited connections. Approval is not runtime evidence;
-        reported Linux workspace/BPF gates are not rerun here. Enforcement stays
-        unfinished, including retries, redirects, UDP, inherited sockets and proxies.
+Before anything can be built, the build and test machinery has to work. This is that.
 
-- [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
-  - [x] **The code.**
-        `alo-capability` (the verbs, the grants, the approvals, every
-        refusal of theirs said in the language the person reads, and — since
-        9g — the sentence a person approves, carried as what names it and
-        the values that fill it rather than as words in whichever language
-        the verb was declared in), `alo-files` (the six file verbs, declared
-        from the words a translator is handed) and `alo-applications` (all
-        four application verbs — open, focus, ask-to-close and arrange — the
-        list of what is installed they are checked against, and the rule
-        that an ungranted application refuses identically whether or not it
-        is here). Since 11a an argument that offers a choice offers a name a
-        model sends beside a word a person reads, so an option cannot reach
-        an approval sentence as untranslated English, and a sentence holding
-        a word nobody has translated says the line is not translated. Since
-        item 12 `alo-context` is what an agent is given when it is invoked:
-        the window in front, the selection and the open document, with only
-        the document making a grant — over that file, for that turn,
-        revocable and visible in the same list as a folder somebody picked —
-        so being told what is on a screen is finally distinct from being
-        allowed to touch it. Since item 19 there is `alo-turn`, which is the
-        four of them joined into one order that cannot be taken out of
-        sequence: an invocation makes the turn, a name and typed values are
-        made into a call **here** rather than accepted from a caller, a read
-        answers inside the turn and a change waits for one approval, the
-        grants are asked again at the moment it runs, and the machine offers
-        exactly the verbs it can carry out. Since item 21a there is
-        `alo-protocol`, which is what somebody else's code is allowed to say
-        to all of that: six requests and no seventh, none of them able to
-        carry a command, and two doors rather than one — so the side that
-        proposes a change cannot be the side that approves it. What is not on
-        the wire is as much of it as what is: no moment, no context, no turn
-        and no place a question goes, because each of those would be a caller
-        helping itself to something the machine is supposed to know. Since
-        item 21b the same crate is what the daemon may say **back**: what a
-        read found and what a change did, a change waiting with the sentence
-        it waits on rather than only its number, a model's answer with where
-        it came from beside it and no shape that carries one without the
-        other, and every refusal in the workspace as the sentence whoever
-        made it worded — each carrying whether anybody translated it, which
-        is the one thing text alone would have lost at the last boundary
-        before a person reads it. The answers divide by side as the requests
-        do, so a daemon cannot put the person's own list onto an agent's
-        connection. Since item 21c there is `alo-agentd`, which is the door
-        those two lists arrive at: a Unix socket at a path this project's
-        contract fixes, in a directory only the person and the agent's group
-        can enter, and a side chosen from what the kernel says about the
-        caller rather than from anything a caller says about itself. A
-        machine on which the person and the agent are one login gets no
-        socket at all, because on that machine both doors would be one —
-        which is what turns 21a's division from a promise the code makes
-        into one the operating system makes. It is the first crate here that
-        is Linux rather than portable. Since item 21d it also holds the turn:
-        one machine, two connections and one turn, answered as readiness in a
-        single thread with no lock anywhere near the capability model — a turn
-        is an agent's connection and ends with it, an approval arrives on the
-        person's while it is open, and a second agent is refused in words
-        rather than let into a grant another invocation made. A message that
-        is not a request is answered and the caller stays; a line this machine
-        will not read is answered and then closed; and a machine that could
-        not write down what it did stops serving rather than going on without
-        evidence. Since item 21e it reads what the machine is rather than
-        being handed it: one file, whose shape and path are a contract because
-        whoever installs or manages a machine writes it, holding the two
-        logins, the agent's name as its grants know it, the two lengths of
-        time and where the record goes and for how long. Nothing in it has a
-        default, so a key left out is a machine that does not start rather
-        than one running under a number nobody chose; a length of time longer
-        than a day is refused rather than shortened, because an approval is
-        never a session; and the file is checked before it is parsed — not a
-        link, owned by root or by the person, writable by nobody else, and all
-        of it asked of the open file rather than of the name, because the file
-        that names which login is the agent is the file somebody would rewrite
-        to become one. Since item 20 it is also the thing that removes what
-        the machine no longer keeps: a machine an organisation set a retention
-        rule on wakes once an hour to shorten its record, and a machine that
-        keeps everything — which is what one ships with — sleeps in a single
-        call until somebody says something, exactly as it did before there was
-        a timer. It happens between turns and never inside one, which is not a
-        rule anybody has to remember: while a turn is under way it holds the
-        machine, so there is nothing there to ask. And since item 21f it is a
-        **process** rather than a library nothing runs: a `main` that refuses to
-        be root at all, loads the one vocabulary the whole machine says
-        everything out of and its own three strings on top, opens the record
-        before it opens the socket, and arranges for `SIGTERM` to stop it the
-        way anything else does — one byte on a descriptor, from a handler that
-        allocates nothing. It has been started, talked to and stopped as a real
-        process with two real logins, which is what nothing above this sentence
-        could previously claim. Since item 21j the agent's door is somewhere the
-        agent could reach: running it as two real logins found that a `0750`
-        directory inside `logind`'s `0700` session directory is a locked room
-        inside a locked building, so ADR 0017 moved the socket to
-        `/run/alo/<uid>/agentd.sock` — a root the image makes and the daemon
-        refuses to invent, a per-person directory made for one session and taken
-        away with the socket when it ends, and every check `place.rs` already
-        made carried over unchanged. Since item 30 the daemon has been started
-        by a real `systemd` from the image's own unit, which is what found that
-        the per-person directory could not be the daemon's after all: `/run/alo`
-        is root's, so the thing that starts the service makes the door and the
-        service checks it. It runs there — the agent's login refused a folder
-        nobody granted, in the grants' own words; the person's door answered;
-        anybody else turned away; the refusal in the record; `SIGTERM` and the
-        summary line — on a development box under systemd, which is not a boot.
-        And since item 6b the file verbs no longer open anything **by name** on
-        Linux: a path resolved and checked against the grants is opened in one
-        call that refuses a symbolic link at every component of it, so a folder
-        on the way cannot be exchanged for a link between the check and the
-        open, and a move is one call that refuses or moves rather than a
-        question followed by an act. Neither falls back — a kernel or a
-        filesystem that cannot promise it refuses the work in its own words. The
-        walk this was first written as had to be thrown away, and what threw it
-        away was the boundary above: opening `/` and each folder under it is
-        opening things the call never named, and a bounded turn was refused its
-        own granted file. Since item 6c a move is held to the same promise: a
-        rename cannot resolve its whole path in one call, so it **holds** its
-        two folders instead — reached by a path with no link in it and then kept
-        as handles — and neither the folder a file leaves nor the one it arrives
-        in can be exchanged underneath the call. That was allowed to be built
-        because it was measured rather than assumed: an `O_PATH` handle is
-        invisible to the boundary *and confers no reading*, checked against a
-        running kernel with the programme loaded, so nothing a turn may reach
-        got wider and no ADR had to move. A granted move now runs inside a real
-        boundary in `alo-agentd`'s own test, which is the guard that caught 6b's
-        first design. Measuring also found missing rename enforcement (6d), now
-        closed by the second BPF hook checking the source and destination parent.
-        Claude's `docs/autonomy/updates/kernel-enforcement-for-file-renames.md`
-        reports six kernel tests and the approved-move regression passing; those
-        checks are retained as contributor evidence, not rerun by this iteration.
-  - [ ] **On the machine.**
-        the door being reached — the path moved in code and no connection from a
-        second login has been made since, and it cannot be until an image exists
-        with `/run/alo` in its `tmpfiles.d` (queue 28, ADR 0017,
-        `docs/quirks.md`); which model or provider answers a
-        question, which needs somewhere for a person's own choice to live
-        (queue 21h); the acting half of the application
-        verbs, which is Wayland and D-Bus and is the whole of what makes any
-        of these move a window; and the half of the context that **reads** a
-        screen, which is Wayland and AT-SPI and is where *with no invocation,
-        no context calls at all* becomes something anybody can test
+**State:** done. No promise of its own sits here.
 
-- [ ] Every execution recorded with its origin, approval and grant
-  - [x] **The code.**
-        `alo-record` — the record, including refusals, which are written
-        down in the same words the person was shown rather than in a second
-        rendering of their own; since 9g that covers what *ran* as well as
-        what did not, so the sentence in the record is the sentence somebody
-        approved — and `alo-keeping`, which puts it on a disk so it outlives
-        the session: one line per thing that happened, synced as it happens,
-        a retention rule that cannot be set to keep nothing, and a shortened
-        record that says so permanently in the first line so an absence is
-        never read as an innocence. Since 16a it also holds the one thing on
-        the machine that no execution, approval or grant is behind — what
-        alo OS did on its own — and holds it without naming anybody for it.
-        Since item 19 *recorded* is structural rather than remembered:
-        `alo-turn` cannot be made without somewhere to keep its record, every
-        door writes its entry before it answers anybody, and a turn that could
-        not write one stops doing anything at all. Since item 20 the timer is
-        there too: `alo-agentd` shortens the record between turns, once an
-        hour, and only on a machine somebody set a retention rule on — the
-        first one at start-up, because a machine switched off for six months
-        comes back with six months of a rule to catch up on. A shortening the
-        machine refuses is counted and survived rather than stopping the
-        service, because nothing is removed in one: that is a machine keeping
-        **more** than its rule, which is the opposite failure from one that
-        cannot write
-  - [ ] **On the machine.**
-        a certified machine showing a record surviving a restart and a
-        shortening. The path, the retention and the timer are all code now, and
-        since item 21f a real process really opens the record at the path its
-        description named and writes the first line into it — what is left is
-        that nothing has yet been started by systemd, and no shortening has
-        fired on a machine nobody was watching
+**Finished when:** Linux tests, clippy, rustdoc and the pinned BPF target all pass.
 
-- [ ] **The alo Dock** — a fixed band along the bottom edge, above the canvas,
-      that shows what you can open and brings what is already open into focus
-  - [x] **The code.**
-        `alo-dock` — the layout model: how thick the band is, how far it runs,
-        and when a name gives way to an icon. *Labels give way to icons where
-        the short edge demands it* is arithmetic rather than a designer's eye,
-        and the threshold is held to EN 301 549's 200% on the smallest screen
-        alo OS lays out for
-  - [ ] **On the machine.**
-        the compositor that draws it, and with it everything about the dock
-        that is a picture rather than a measurement — the icons, what a click
-        does, and the hover and screen-reader name the *gave way* sentence
-        promises is still there
+### Phase 2 — Drawing windows on a screen
 
-  **This box was *The dock on any edge* — bottom, left, right or top, the
-  person's choice, built for both orientations rather than one rotated — and
-  its code box was ticked.** [ADR
-  0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
-  withdrew that promise and fixed the Dock to the bottom edge. The tick is
-  removed and the code it claimed is removed in the same change, which is the
-  order that record requires and the owner approved: what must not happen is
-  the code going and the tick staying, because then the roadmap claims
-  something that is not there.
+*Native compositor and input, in `docs/autonomy/DELIVERY.md`.*
 
-- [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
-      is complete without it (ADR 0009)
-  - [x] **The code.**
-        `alo-capability`'s `Agent` — the fourth answer as a value, and the
-        half of ADR 0009 that would have been quietly got wrong. It is not a
-        flag beside the grants; it is what holds them, so a machine where
-        the person declined has no list at all rather than an empty one,
-        nothing can be granted on it because there is no list to grant onto,
-        and turning the agent off ends every grant on the machine — the
-        folder picked in March and the document an invocation handed over
-        five minutes ago alike — with the immediacy a single revoke has
-        always had. Turning it on again brings back an agent and not the
-        folders, which is the difference between *grants end* and *grants
-        are suspended*, and the choice is written down so changing your mind
-        is a setting rather than a reinstall. The record and the egress
-        indicator are untouched, because neither is an AI feature: a machine
-        with no agent still writes down its own errands, and `alo-record`'s
-        `Only::ByAnAgent` is how somebody asks whether anything in their
-        record has an agent's name on it at all
-  - [ ] **On the machine.**
-        everything about it that is a screen — setup's fourth choice as a
-        question with the same weight as the other three, the hotkey doing
-        nothing, the overlay not existing, and Grants, Models and providers
-        being absent from Settings rather than greyed out. All of that is
-        the compositor's and the settings panel's, and neither exists
+alo OS draws its own windows rather than borrowing another system's. This is the part that puts a window on a screen and lets a keyboard and mouse reach it. Nothing a person sees can work until it does.
 
-- [ ] Keyboard shortcuts a person can change
-  - Scheduling clarified 2026-09-08: finish underlying window operations before
-    integrating phase 3 shortcuts. Physical acceptance remains phase 8, following
-    phase 7 VM image checks. Documentation-only report
-    `docs/autonomy/updates/deferred-desktop-and-hardware-acceptance.md` reconciled;
-    no requirement is completed or moved to a later release.
-  - Configurable window command dispatch (2026-09-08): current bindings drive
-    native next/previous window and focused-root cooperative close, with conflict,
-    unbound, unsupported-action and missing-target handling. Five real-client
-    tests and configured GLES readback are recorded in
-    `docs/autonomy/updates/configurable-window-command-dispatch.md`. This is the
-    action bridge only: layout matching, consumed press/release isolation,
-    nested/direct input wiring and settings UI/persistence remain owed. Full
-    supervisor gates and physical acceptance remain; feature stays unchecked.
-  - [x] **The code.**
-        `alo-shortcuts` — the shortcuts, rebindable, nothing quietly taking
-        one away, and every row and key of the panel said in the language
-        the person reads
-  - [ ] **On the machine.**
-        a shell to press them in
+**State:** in progress. **1 promises close this phase**, 0 with their code written and 1 not yet recorded either way.
 
-### Everything that needs the compositor or the certified machine
+**Finished when:** A real application opens in a window of ours, takes keyboard and pointer input, and closes cleanly.
 
-Eight capabilities, with **the compositor protocol core now started**. The
-remaining machine work follows `docs/autonomy/DELIVERY.md`. The
-compositor is the one that matters most here, because sign-in, the overlay, the
-launcher, copy and paste and the workspace client all wait on it; the image is
-its own bring-up and waits on the certified machine.
-
-**The GPU line is in this band but is not a requirement of it.** No graphics
-card is needed anywhere in v0.01 — the whole product rests on running on the
-machine somebody already owns, and the exit gate below neither mentions a GPU
-nor may depend on one. That line is here only because *acceleration where a card
-exists* still has to be verified on hardware.
-
-They were interleaved with the band above until this ordering was corrected,
-which made a completely consistent rule look like work being taken out of turn.
-
-#### The canvas and its Places — moved into v0.01 on 2026-09-30
-
-**The owner put the full canvas experience into this release.** Not a minimal
-Place and not a deferred panel: *the canvas owns Place identity; all applications
-and windows participate in it*, and completion requires **cross-Place movement and
-restoration, per-Place persistence, World navigation, fixed controls, and window
-recovery**.
-
-`docs/features.md` moved first, because `CLAUDE.md` binds building to that file
-and not to this one. Six promises changed tier — five from `[v1]` and **one from
-`[v1.1]`**, *a frame can be dragged out of one Place and into another*, which the
-owner named as required — and **one promise was written that had never existed**:
-the World. `docs/decisions/0065` has defined `World → Place → Object` since it was
-written and no line in `features.md` ever carried the World, so a decision record
-described a level of the interface the only list of what gets built had never
-heard of.
-
-**What is already built, and it is a real head start.** The v0.5 canvas plan
-closed on 2026-09-30 with ten tasks: the plane and camera, hit testing at any
-zoom, dragging, resizing, pan on three roads, zoom and *Show all*, the canvas as a
-list for a screen reader, arrangement restored across a session, and a walk that
-draws it. **All of that is one Place.** What this band adds is the level above it.
-
-**What does not exist at all**, measured 2026-09-30 rather than assumed:
-
-- **No canvas `Place` type anywhere in this repository.** The word is already
-  spent four times — `alo-agentd` (a socket's directory), `alo-looking` (where a
-  machine asks about an update), `alo-dividing` (a half or a quarter of a screen),
-  and `alo-dock`'s `APlace` (where an icon sits on the bar) — and **none of them
-  is the endless surface**. `alo_dock::Window` carries a patch and a
-  `HowItSits` and nothing else, so a window genuinely does not know which surface
-  it is on.
-- **No World.** No type, no navigation, no promise until today.
-- **No cross-Place anything**, because there is nothing to cross between.
-
-- [ ] ★ **A Place is a thing, and the canvas owns what one is** — the fifth
-      meaning of a word already spent four times, and the only one entitled to it:
-      a Place is the endless surface, not a directory, not a screen division and
-      not a spot on the Dock. Every window and every application carries which
-      Place it is on, because a patch alone is ambiguous — `(4200, 0)` exists on
-      every surface
-- [ ] ★ **The World** — zoom out past a Place and every Place is seen at once;
-      zoom into one and it fills the screen. **The same gesture as moving across a
-      Place**, so there is no second way to navigate
-- [ ] ★ **A frame moves between Places** — dragged out to the World and dropped
-      into another, and the work goes with it, **by pointer through the World or by
-      keyboard with *Move to Place***, so neither road is the only road
-- [ ] ★ **A restore travels; it does not relocate** — restoring a minimised window
-      returns it to **the Place it was already on** and takes the view there.
-      **Nothing is relocated by a restore.** Its own box because the two were
-      conflated while this band was being written: *cross-Place restoration* and *a
-      frame dragged into another Place* read as one sentence and are two acts — one
-      changes where a window lives, the other changes where the person is looking
-- [ ] ★ **Every Place is where it was left** — position, size, camera and the
-      panel's own state, per Place rather than per session. Extends the v0.5
-      task that restores one canvas
-- [ ] ★ **The fixed controls, and a window that can always be got back** — Dock,
-      status area and the expanded minimized-window panel are a **set**, and a
-      frame keeps a usable part of its name outside every one of them. Recovery is
-      rechecked when the display, the scale, the Dock's position or the panel's
-      state changes, and a recovery that moves a frame shows the move and records
-      where it was
-- [ ] **The minimized-window panel, per Place** — which Place a put-aside window
-      belongs to, restoring across Places, the collapse choice remembered per
-      Place, and grouping by Place **without hiding individual windows behind an
-      application icon**
-
-**The plan is `docs/autonomy/the-canvas-and-its-places.md`**, written as connected
-stages rather than a list, because every one of these rests on the first.
-
-**The owner ruled on cross-Place movement on 2026-09-30, and it settled a
-conflation rather than a tier.** Asked whether *cross-Place movement* meant a frame
-changing which Place it lives on or only the view travelling to a window's Place,
-they answered **both, in v0.01** — dragging a window through the World into another
-Place **or** *Move to Place* by keyboard — **and that restoring a minimised window
-returns it to its existing Place without relocating it.** The two are separate boxes
-above for that reason.
-
-**Three promises were deliberately not moved**, and saying which is the point of
-this paragraph rather than an aside. *Tidy this canvas*, *Every screen is a view
-onto the canvas* and *A panel out of view costs nothing* stay at `[v1]`: the owner
-named five things completion requires and none of them is these. **Moving them
-would have been the lane widening its own scope under cover of an instruction**,
-which is the opposite of what was asked.
-
-**And one is left at `[v1.1]` and reported rather than decided.** *A Place remembers
-time* — drag the ribbon and the canvas is as it was on Tuesday — is the only canvas
-promise still above this release. The owner's words were *the complete agreed canvas
-experience belongs in v0.01; do not defer parts of it to v1.1*, and this lane cannot
-tell whether time travel is part of the agreed experience or a separate capability
-that happens to be about a canvas: it is not among the five completion requirements,
-and it rests on the snapshots **undo** takes rather than on Places at all. **So it is
-named here rather than moved or left silently.** If it belongs in v0.01 it is one
-line to move and the owner's to say.
-
-**And one tier is wrong in the other direction.** *Every canvas also answers as a
-list* is `[v1]` and **was built at v0.5** — task 7 of the closed canvas plan, with
-tests. It is recorded here rather than quietly re-tiered, because a promise built
-below its own tier is a different fault from one built above it and neither is
-this lane's to settle alone.
-
-- [ ] ★ **The GPU works on first boot, where there is one** — drivers and runtime
-      pinned together, no driver installation, no CUDA archaeology.
-      **Acceleration, not an entry price** (`docs/features.md`): alo OS runs on
-      the machine somebody already owns, and this line is what happens when that
-      machine turns out to have a card in it. **It does not gate v0.01.** The
-      exit gate below never mentions a GPU and must pass on a machine with none —
-      if it ever cannot, the promise this release is built on has been broken and
-      the fault is here rather than in the gate
-
-- [ ] **The colours come from a source this repository can read** — and that is
-      not CSS. **There is no CSS in alo OS and there will not be**: this
-      repository is Rust, and the shell is native (ADR 0002). The problem is
-      only that alo's palette currently *lives* in
-      `alo-workplace/web/src/ds/tokens.css`, 327 lines calling themselves "the
-      single source of visual truth", which a Rust compositor cannot read.
-      The work is to move that source into something language-neutral — TOML,
-      alongside the fifteen manifests already here — and **generate** from it:
-      Rust constants for this shell, and the custom properties the workspace's
-      web client still needs, because that client is a web application and its
-      stylesheet is a fact about it rather than about this operating system.
-      The point is to end CSS's authority over the palette, not to import it.
-      *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
-      line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
   - Client maximize/restore requests (2026-09-08): XDG requests share trusted
     transactions, pre-map intent is declined without premature configuration,
@@ -1399,9 +735,113 @@ this lane's to settle alone.
     leave, direct display/input and physical acceptance remain. No feature box
     changes; supervisor full publication gates remain owed.
 
-- [ ] **Sign-in**: alo identity, and a local account that needs no tenant
+### Phase 3 — Making windows usable — the canvas
 
-- [ ] **The agent overlay**: one key, from anywhere
+*Window management, the canvas, dock and shortcuts, in `docs/autonomy/DELIVERY.md`.*
+
+Phase 2 puts a window on the screen; this is everything a person then *does* with it — move it, resize it, put it aside, get it back. alo's canvas lives here too: instead of separate desktops, one endless surface with Places on it.
+
+**State:** started, inside phase 2's work. **12 promises close this phase**, 2 with their code written and 10 not yet recorded either way.
+
+**Finished when:** Windows open, move, resize, tile, are put aside and come back; the Dock and shortcuts work; and a Place still holds what was left in it.
+
+- [ ] **The alo Dock** — a fixed band along the bottom edge, above the canvas,
+      that shows what you can open and brings what is already open into focus
+  - [x] **The code.**
+        `alo-dock` — the layout model: how thick the band is, how far it runs,
+        and when a name gives way to an icon. *Labels give way to icons where
+        the short edge demands it* is arithmetic rather than a designer's eye,
+        and the threshold is held to EN 301 549's 200% on the smallest screen
+        alo OS lays out for
+  - [ ] **On the machine.**
+        the compositor that draws it, and with it everything about the dock
+        that is a picture rather than a measurement — the icons, what a click
+        does, and the hover and screen-reader name the *gave way* sentence
+        promises is still there
+
+  **This box was *The dock on any edge* — bottom, left, right or top, the
+  person's choice, built for both orientations rather than one rotated — and
+  its code box was ticked.** [ADR
+  0076](docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+  withdrew that promise and fixed the Dock to the bottom edge. The tick is
+  removed and the code it claimed is removed in the same change, which is the
+  order that record requires and the owner approved: what must not happen is
+  the code going and the tick staying, because then the roadmap claims
+  something that is not there.
+
+- [ ] Keyboard shortcuts a person can change
+  - Scheduling clarified 2026-09-08: finish underlying window operations before
+    integrating phase 3 shortcuts. Physical acceptance remains phase 8, following
+    phase 7 VM image checks. Documentation-only report
+    `docs/autonomy/updates/deferred-desktop-and-hardware-acceptance.md` reconciled;
+    no requirement is completed or moved to a later release.
+  - Configurable window command dispatch (2026-09-08): current bindings drive
+    native next/previous window and focused-root cooperative close, with conflict,
+    unbound, unsupported-action and missing-target handling. Five real-client
+    tests and configured GLES readback are recorded in
+    `docs/autonomy/updates/configurable-window-command-dispatch.md`. This is the
+    action bridge only: layout matching, consumed press/release isolation,
+    nested/direct input wiring and settings UI/persistence remain owed. Full
+    supervisor gates and physical acceptance remain; feature stays unchecked.
+  - [x] **The code.**
+        `alo-shortcuts` — the shortcuts, rebindable, nothing quietly taking
+        one away, and every row and key of the panel said in the language
+        the person reads
+  - [ ] **On the machine.**
+        a shell to press them in
+
+- [ ] ★ **A Place is a thing, and the canvas owns what one is** — the fifth
+      meaning of a word already spent four times, and the only one entitled to it:
+      a Place is the endless surface, not a directory, not a screen division and
+      not a spot on the Dock. Every window and every application carries which
+      Place it is on, because a patch alone is ambiguous — `(4200, 0)` exists on
+      every surface
+
+- [ ] ★ **The World** — zoom out past a Place and every Place is seen at once;
+      zoom into one and it fills the screen. **The same gesture as moving across a
+      Place**, so there is no second way to navigate
+
+- [ ] ★ **A frame moves between Places** — dragged out to the World and dropped
+      into another, and the work goes with it, **by pointer through the World or by
+      keyboard with *Move to Place***, so neither road is the only road
+
+- [ ] ★ **A restore travels; it does not relocate** — restoring a minimised window
+      returns it to **the Place it was already on** and takes the view there.
+      **Nothing is relocated by a restore.** Its own box because the two were
+      conflated while this band was being written: *cross-Place restoration* and *a
+      frame dragged into another Place* read as one sentence and are two acts — one
+      changes where a window lives, the other changes where the person is looking
+
+- [ ] ★ **Every Place is where it was left** — position, size, camera and the
+      panel's own state, per Place rather than per session. Extends the v0.5
+      task that restores one canvas
+
+- [ ] ★ **The fixed controls, and a window that can always be got back** — Dock,
+      status area and the expanded minimized-window panel are a **set**, and a
+      frame keeps a usable part of its name outside every one of them. Recovery is
+      rechecked when the display, the scale, the Dock's position or the panel's
+      state changes, and a recovery that moves a frame shows the move and records
+      where it was
+
+- [ ] **The minimized-window panel, per Place** — which Place a put-aside window
+      belongs to, restoring across Places, the collapse choice remembered per
+      Place, and grouping by Place **without hiding individual windows behind an
+      application icon**
+
+- [ ] **The colours come from a source this repository can read** — and that is
+      not CSS. **There is no CSS in alo OS and there will not be**: this
+      repository is Rust, and the shell is native (ADR 0002). The problem is
+      only that alo's palette currently *lives* in
+      `alo-workplace/web/src/ds/tokens.css`, 327 lines calling themselves "the
+      single source of visual truth", which a Rust compositor cannot read.
+      The work is to move that source into something language-neutral — TOML,
+      alongside the fifteen manifests already here — and **generate** from it:
+      Rust constants for this shell, and the custom properties the workspace's
+      web client still needs, because that client is a web application and its
+      stylesheet is a fact about it rather than about this operating system.
+      The point is to end CSS's authority over the palette, not to import it.
+      *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
+      line here and no entry in `docs/features.md`*
 
 - [ ] Launcher and window management: move, resize, snap, tile
   - Native control focus traversal (2026-09-10): trusted forward/backward and
@@ -1800,7 +1240,653 @@ this lane's to settle alone.
     `docs/autonomy/updates/stable-native-window-cycling.md`. Full independent
     supervisor gates and physical evidence remain owed; no release checkbox changes.
 
+**The owner put the full canvas experience into this release.** Not a minimal
+Place and not a deferred panel: *the canvas owns Place identity; all applications
+and windows participate in it*, and completion requires **cross-Place movement and
+restoration, per-Place persistence, World navigation, fixed controls, and window
+recovery**.
+
+`docs/features.md` moved first, because `CLAUDE.md` binds building to that file
+and not to this one. Six promises changed tier — five from `[v1]` and **one from
+`[v1.1]`**, *a frame can be dragged out of one Place and into another*, which the
+owner named as required — and **one promise was written that had never existed**:
+the World. `docs/decisions/0065` has defined `World → Place → Object` since it was
+written and no line in `features.md` ever carried the World, so a decision record
+described a level of the interface the only list of what gets built had never
+heard of.
+
+**What is already built, and it is a real head start.** The v0.5 canvas plan
+closed on 2026-09-30 with ten tasks: the plane and camera, hit testing at any
+zoom, dragging, resizing, pan on three roads, zoom and *Show all*, the canvas as a
+list for a screen reader, arrangement restored across a session, and a walk that
+draws it. **All of that is one Place.** What this band adds is the level above it.
+
+**What does not exist at all**, measured 2026-09-30 rather than assumed:
+
+- **No canvas `Place` type anywhere in this repository.** The word is already
+  spent four times — `alo-agentd` (a socket's directory), `alo-looking` (where a
+  machine asks about an update), `alo-dividing` (a half or a quarter of a screen),
+  and `alo-dock`'s `APlace` (where an icon sits on the bar) — and **none of them
+  is the endless surface**. `alo_dock::Window` carries a patch and a
+  `HowItSits` and nothing else, so a window genuinely does not know which surface
+  it is on.
+- **No World.** No type, no navigation, no promise until today.
+- **No cross-Place anything**, because there is nothing to cross between.
+
+**The plan is `docs/autonomy/the-canvas-and-its-places.md`**, written as connected
+stages rather than a list, because every one of these rests on the first.
+
+**The owner ruled on cross-Place movement on 2026-09-30, and it settled a
+conflation rather than a tier.** Asked whether *cross-Place movement* meant a frame
+changing which Place it lives on or only the view travelling to a window's Place,
+they answered **both, in v0.01** — dragging a window through the World into another
+Place **or** *Move to Place* by keyboard — **and that restoring a minimised window
+returns it to its existing Place without relocating it.** The two are separate boxes
+above for that reason.
+
+**Three promises were deliberately not moved**, and saying which is the point of
+this paragraph rather than an aside. *Tidy this canvas*, *Every screen is a view
+onto the canvas* and *A panel out of view costs nothing* stay at `[v1]`: the owner
+named five things completion requires and none of them is these. **Moving them
+would have been the lane widening its own scope under cover of an instruction**,
+which is the opposite of what was asked.
+
+**And one is left at `[v1.1]` and reported rather than decided.** *A Place remembers
+time* — drag the ribbon and the canvas is as it was on Tuesday — is the only canvas
+promise still above this release. The owner's words were *the complete agreed canvas
+experience belongs in v0.01; do not defer parts of it to v1.1*, and this lane cannot
+tell whether time travel is part of the agreed experience or a separate capability
+that happens to be about a canvas: it is not among the five completion requirements,
+and it rests on the snapshots **undo** takes rather than on Places at all. **So it is
+named here rather than moved or left silently.** If it belongs in v0.01 it is one
+line to move and the owner's to say.
+
+**And one tier is wrong in the other direction.** *Every canvas also answers as a
+list* is `[v1]` and **was built at v0.5** — task 7 of the closed canvas plan, with
+tests. It is recorded here rather than quietly re-tiered, because a promise built
+below its own tier is a different fault from one built above it and neither is
+this lane's to settle alone.
+
+### Phase 4 — Signing in
+
+*Accounts and session entry, in `docs/autonomy/DELIVERY.md`.*
+
+An account on the machine, the sign-in screen, and the session that starts when somebody signs in.
+
+**State:** not started. **1 promises close this phase**, 0 with their code written and 1 not yet recorded either way.
+
+**Finished when:** A person signs in to a local account, the session starts correctly, and signing out shuts it down.
+
+- [ ] **Sign-in**: alo identity, and a local account that needs no tenant
+
+### Phase 5 — Choosing which AI answers
+
+*Model and provider choice, and grants, in `docs/autonomy/DELIVERY.md`.*
+
+Which model answers you, whether it runs on your own machine or somewhere else, and which folders it is allowed to touch. **The code for all seven of these is written; what is missing is the screens to do it from.**
+
+**State:** code written, screens owed. **7 promises close this phase**, 7 with their code written.
+
+**Finished when:** A person picks a model or a provider, grants a folder, and takes the grant back again — all from a screen, without editing a file.
+
+- [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
+      runtime (ADR 0006)
+  - [x] **The code.**
+        `alo-models` — the catalogue with its licence gate, `ModelRuntime`,
+        and the Ollama adapter, the one file allowed to name it. Since item
+        18a the *serve* in this line is real rather than a heading:
+        `ModelRuntime::answers` puts a question to a model and the adapter
+        carries it over the runtime's own chat API, so the trait manages
+        models **and** uses one. 96 tests, several of them against a real
+        socket rather than a mock
+  - [ ] **On the machine.**
+        Since 2026-09-13 it **has** been run against the real pinned runtime —
+        Ollama 0.34.0 on the Mac lane's Apple M3 — and the first request alo OS
+        sent it was refused: the `modelfile` field a brought file was handed
+        over with is gone from that version's create API, and the road is now
+        the one the runtime accepts, walked end to end with a 4.7 GB file
+        (`docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`). A Mac is not
+        the certified machine and this box stays open; but *never run against a
+        real Ollama* stopped being true, and the fixture it exposed as a guess
+        is fixed. *This line was ticked outright until the two boxes existed,
+        while its own last sentence said law 3's "on real hardware" was owed —
+        a tick and its own footnote contradicting each other, which is exactly
+        what the parent box is now not allowed to do*
+
+- [ ] ★ **It runs on the machine you already own** — no graphics card required.
+      The catalogue carries models that work on a CPU, and says honestly which
+      ones are comfortable there and which are merely possible
+  - [x] **The code.**
+        `alo-models`' catalogue — `OnCpu` as a stated property of each model
+        rather than a footnote, `runnable_on_cpu(ram_gb)` and
+        `runnable_with_vram`, so the answer to *what can this machine
+        actually run* is asked of the machine rather than assumed. Since
+        item 23 *what runs here* and *what gets the agent* are two methods
+        rather than one: `default_for_cpu` is gone, because ADR 0007's own
+        correction is that **"default" was the wrong word**, and the
+        recommendation lives on the line below
+  - [ ] **On the machine.**
+        the setup screen that asks it on somebody's behalf, and a real
+        measurement — *comfortable* is a judgement in a table until a model
+        has run on a machine without a GPU
+
+- [ ] ★ **The catalogue says whether a model can drive the verbs**, not only
+      whether it will run — measured by us, never claimed by the publisher
+      (ADR 0007, as corrected). And a machine is only offered agent work it can
+      actually do: where nothing clears the bar, the honest answers are the ones
+      ADR 0008 already provides, offered as a choice and never substituted
+  - [x] **The code.**
+        `alo-driving`, a new crate — the fixed set of ten requests, one per
+        verb alo OS ships, each scored through `alo_protocol::FromAnAgent`
+        and `alo_capability::Verbs::call`, which is the daemon's own door and
+        the same validation a real turn does rather than a second reader
+        written for a test. A run that skipped an exercise is refused, and the
+        bar is nine attempts in ten. And `alo-models`, where the grade lives
+        and is read: `Driving` as a stated property every entry must answer —
+        `NotMeasured` is an answer and is `Region::Unknown` one file over —
+        `Catalogue::agent_for_cpu`, and `NoAgentHere`, whose only road to a
+        sentence hands back **three** lines so a machine cannot show somebody
+        the refusal without every answer they still have. Since item 25a the
+        middle one is weights they already have — the answer that needs no
+        other machine and no account, added as a line of its own because
+        ADR 0008's question is *where* and this one is *which model*, and
+        ordered outward from the machine rather than by which is better.
+        Since item 23a the method can also be **run**:
+        `alo-driving`'s `against_a_model_on_this_machine` puts the fixed set
+        to a real runtime through `alo-asking`'s local door, warms the model
+        first so the exercise that loads the weights is not graded for the
+        disk, and stops rather than scoring when a runtime fails — a model
+        blamed for a machine is the one way a grade is worse than no grade.
+        **Every entry a machine with 8 GB can hold now has a measured grade**,
+        on two machines: five small ones on the development PC (items 23a and
+        23c, `rarely` five times) and, since 2026-09-13, every 7B-class entry
+        the Mac lane's Apple M3 can load — Qwen 2.5 7B, Mistral 7B, Llama 3.1
+        8B, plus Qwen3 4B and 8B added for their tool-call training — each
+        graded both asked freely and held to the protocol's envelope
+        (ADR 0032), with machine, runtime, digest and counts beside it. The
+        four entries over 8 GB say *too large for the measuring machine* rather
+        than nothing. **None clears the bar.** The closest is Qwen 2.5 7B at
+        four bits in the envelope, 35 of 40 against a bar of 36; five bits did
+        worse. So the catalogue gives no local model the agent, and says so in
+        one sentence a person reads. `the-models-measured-plan.md`
+  - [ ] **On the machine.**
+        **Seven of the twelve entries have still never been run against**,
+        because a measurement needs those weights on a disk and every one of
+        the seven wants ten gigabytes of memory or more against the six the
+        measuring box has; they say `not-measured`, and a grade is a data
+        change rather than a release. The five that have been measured were
+        measured on a development box, which is the right machine for the
+        question they answer and the wrong one for the rest of the entry —
+        `min_ram_gb` and `on_cpu` are what a model costs on the machine it
+        runs on, and the certified one is where those are found. Plus the
+        setup screen that shows the refusal and its three alternatives
+        without choosing between them
+
+- [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
+      machine, from a machine on your network, or from a provider you named, and
+      the choice is the person's. **An organisation bounds that choice and never
+      makes it** (ADR 0016): two settings, two owners, two files, and a choice
+      outside the bound refused in words rather than quietly replaced
+  - [x] **The code.**
+        `alo-models`' `InferenceSource` — this machine, a paired machine, a
+        hosted provider with its region — and `SourcePolicy`, which can hold
+        an answer in the building, on the machine, or inside a named region,
+        and refuses in the policy's own words rather than silently routing
+        elsewhere. **And `alo-asking`, which actually puts the question**: a
+        provider is asked over https, the egress is on the indicator before
+        the socket opens, the rule in force at that moment decides, and the
+        answer comes back carrying where it came from. Since item 18a **all
+        three of the ADR's places that this repository can reach are
+        reachable**: `to_this_machine` puts the same question to the model
+        alo OS ships, with no indicator, no departure and no rule to ask,
+        because nothing on that path goes anywhere. Since item 18b a third
+        door, `to_a_service_on_this_machine`, reaches an OpenAI-compatible
+        service somebody runs here themselves — vLLM, llama.cpp's server,
+        LM Studio — which is this machine and not a provider, and which
+        **cannot be pointed anywhere else**: the door with no indicator on it
+        takes a value that exists only for an address `alo-models` calls this
+        machine. Three doors that divide on law 1 rather than on what speaks
+        at the far end, and each refuses a permission another one is behind.
+        Since item 19a **a turn is what reaches those doors**: `alo-turn`
+        takes the place a person chose and the thing that answers there,
+        routes to whichever of the three it is, holds the machine's one
+        indicator while it happens, and writes what left — or what a rule
+        stopped from leaving — before the answer reaches anybody. Since item
+        22 **a provider whose account has run out says that and not
+        something else**: `alo-answering`'s `RanOut` is the one failure here
+        that is not a fault, and `alo-asking` reads the name inside a `403`
+        or a `429` against a closed list to tell it apart from a refused key
+        and from being asked to slow down — while opening no door a failure
+        for any other reason would not, because *never a silent fallback*
+        runs hardest in the direction where somebody's money is at the other
+        end. 86 tests in `alo-asking`, most of them against a stub on a real
+        socket or a stub of the runtime trait, and 57 in `alo-answering`
+        behind them
+  - [ ] **On the machine.**
+        a provider somebody pays for, answering a real question with a real
+        key, and a real model runtime answering one on this machine — neither
+        has been run against the real thing. A question to **a machine on
+        your network** is the third place and has no path in this repository
+        at all: both doors refuse a permission naming one, in words that say
+        so and offer neither of the other two instead
+
+- [ ] **Agents point at the local model by default**, configured rather than coded
+      — and, since the default is only a sovereignty guarantee if it does not
+      quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
+      carried on this line too, having none of its own
+  - [x] **The code.**
+        `alo-models` — where an answer may come from, and the policy that
+        keeps it in the building, on the machine, or in a region, both now
+        said in the language the person reads rather than in English — and
+        `alo-answering`, which is what happens when the place a person chose
+        cannot answer: the failure named with the place it happened, the
+        line saying nothing was sent and nothing will be, and asking
+        somewhere else as one sentence a person approves for exactly one
+        question rather than a setting anybody can leave on. Since item 18a
+        **★ never a silent fallback runs both ways in code and not only in
+        the ADR**: the local door is where *a local model that fails becomes
+        an API call* would have been written as a convenience, and what it
+        does instead is hand back the same failure, whose only way onward is
+        an offer somebody answered. Since item 19a the same is true one
+        level up, where a fallback would actually have been written: a turn
+        that meets a failure **hands it back and stops**, and the only road
+        from one to a second attempt is an offer a person took, which comes
+        in at the same door and is shown and recorded like any other
+        question. A test asks it as the thing it is — the place that failed
+        was asked once, the place that was offered was asked nothing at all.
+        Since item 21h **there is a place the pointing is configured from**:
+        `alo-choosing` holds what a person chose — which model, and which of
+        this machine's two lists it came from — in a file of their own under
+        their home directory, and `Chosen::asking` is the one place that
+        choice meets the rule an organisation set. *Configured rather than
+        coded* is true of the setting now: there is no default and no
+        `Default`, a machine nobody has configured has chosen nothing and
+        says so, and a choice the organisation's bound forbids is refused in
+        the rule's own words rather than swapped for a permitted one. Since
+        item 21k **a choice resolves into something that can answer**: the two
+        facts nothing on a machine stated are stated. `alo-models` finds the
+        runtime — **found, never configured** (ADR 0019), at an address the
+        adapter alone knows, with no key in any contract and no override for
+        an operator to point elsewhere — and `alo-choosing` holds the weights
+        somebody brought on the person's own list, so a choice from either of
+        this machine's two lists resolves into the entry it names. Settings
+        that could say *my questions are answered by weights that are not on
+        my list* are refused where they are made. 71 tests, seven of them
+        against a real file on a real disk. Since item 21n **the daemon
+        walks it**: `alo-agentd` reads the person's own settings out of its
+        own environment — it runs as them, one per login, which ADR 0019
+        records as a condition rather than an assumption — finds the runtime
+        once at the first question of each turn, and puts the question to
+        what they chose. A turn that asks nothing opens no file and probes
+        nothing, a model picked in Settings answers the next turn, and the
+        three ways it can go wrong are three sentences rather than one: pick
+        something, the runtime is not reachable, or your settings file says
+        this and here is its path
+  - [ ] **On the machine.**
+        something that points, which is `alo-agentd`. *Something that asks*
+        is no longer owed here at all: `alo-asking` puts a question to a
+        hosted provider **and** to the model on this machine, and hands back
+        a failure whose only door onward is an offer a person answered — so
+        the fallback is carried by the code that would have had to contain
+        it, in both directions. What is left of the machine half is the
+        daemon that points at the local model, and a real runtime answering
+        a real question, which needs Ollama installed. Since item 21d the
+        daemon exists and holds a turn, and a question put to it is refused
+        in words — *nothing on this machine has been chosen to answer
+        questions* — because nothing yet reads what the person chose. Since
+        item 21e a machine describes itself — two logins, two lengths of time
+        and where the record goes — and which model or provider answers is not
+        yet among the things it says. Since item 21f the process exists and runs
+        all of that, so what is left is only the setting: `alo-asking`,
+        `alo-models` and `alo-answering` are loaded into the machine's
+        vocabulary and unused. Since item 21h **the setting exists and the
+        daemon does not read it yet**: a person's choice has a file, a shape
+        and eight refusals. Since item 21k **the road from that choice to
+        something that answers is built and the daemon has not walked it
+        yet**: a runtime is found by its adapter, weights somebody brought
+        are on the person's own list, and both of the facts that were missing
+        are stated. Since item 21n **the daemon reads the setting and puts
+        the question**, so *nothing on this machine has been chosen to answer
+        questions* is now what an unconfigured machine says rather than what
+        every machine says. What is left here is what this loop cannot do: a
+        real runtime with real weights, on a certified machine, answering a
+        real question put through the socket — no test in this repository has
+        ever had Ollama at the other end
+
+- [ ] **Add your own provider in Settings** — name, address, key to the keyring;
+      the region stated rather than guessed; https required off this machine
+  - Provider configuration reconciliation (2026-09-08): format 2 settings now
+    persist the person's provider list and selected model; format 1 compatibility
+    and no local fallback are tested. Contributor-reported six choosing/two daemon
+    tests and workspace/BPF gates: `docs/autonomy/updates/three-model-choices-in-the-backend.md`.
+    Credential store and native controls remain delivery phase 5 work; providers
+    requiring a key refuse, Alo has no endpoint, paired machines stay unreachable.
+    Raw parse-error Debug may retain pasted credentials despite safe UI messages;
+    follow-up remains open with Claude. ADR 0021 remains proposed; no release tick.
+  - [x] **The code.**
+        `alo-models` — the provider, the key held as a keyring handle and
+        never in the record, testing it before it is saved, and every
+        refusal about any of the three readable in the reader's own language.
+        Since item 18b **"https required off this machine" is true rather
+        than approximately true**: `address.rs` reads the host out of the
+        address and matches it whole, so `localhost.attacker.example` and
+        `127.0.0.1@attacker.example` are somewhere else — they were this
+        machine to a prefix check, which meant an unencrypted connection
+        carrying a key, and an answer that claimed never to have left
+  - [ ] **On the machine.**
+        the Settings panel to type it into
+
+- [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
+      is complete without it (ADR 0009)
+  - [x] **The code.**
+        `alo-capability`'s `Agent` — the fourth answer as a value, and the
+        half of ADR 0009 that would have been quietly got wrong. It is not a
+        flag beside the grants; it is what holds them, so a machine where
+        the person declined has no list at all rather than an empty one,
+        nothing can be granted on it because there is no list to grant onto,
+        and turning the agent off ends every grant on the machine — the
+        folder picked in March and the document an invocation handed over
+        five minutes ago alike — with the immediacy a single revoke has
+        always had. Turning it on again brings back an agent and not the
+        folders, which is the difference between *grants end* and *grants
+        are suspended*, and the choice is written down so changing your mind
+        is a setting rather than a reinstall. The record and the egress
+        indicator are untouched, because neither is an AI feature: a machine
+        with no agent still writes down its own errands, and `alo-record`'s
+        `Only::ByAnAgent` is how somebody asks whether anything in their
+        record has an agent's name on it at all
+  - [ ] **On the machine.**
+        everything about it that is a screen — setup's fourth choice as a
+        question with the same weight as the other three, the hotkey doing
+        nothing, the overlay not existing, and Grants, Models and providers
+        being absent from Settings rather than greyed out. All of that is
+        the compositor's and the settings panel's, and neither exists
+
+### Phase 6 — Asking alo to do something
+
+*Agent interaction and applications, in `docs/autonomy/DELIVERY.md`.*
+
+Press one key, ask for something, see exactly what it proposes, approve it, and afterwards ask what it did. Also the light that shows when anything leaves the machine.
+
+**State:** code written, screens owed. **6 promises close this phase**, 4 with their code written and 2 not yet recorded either way.
+
+**Finished when:** One key opens the overlay anywhere, a change is proposed and approved, it happens, and the record afterwards says what happened.
+
+- [ ] ★ **Where the answer came from is said where the answer appears** — "on
+      this machine", "on the studio workstation", "by a provider you added" —
+      beside the answer, not buried in a setting
+  - [x] **The code.**
+        `alo-models` — every source can say itself (`shown`, `said`) in the
+        language the reader reads, so provenance is a translated sentence
+        rather than English a shell would have to reword — and `alo-asking`'s
+        `Answer`, which **cannot be made without one**: the only constructor
+        takes the source, so a shell holding an answer is holding the
+        sentence about where it came from
+  - [ ] **On the machine.**
+        the surface that shows it beside an answer, which is the overlay,
+        and therefore the compositor. **This was the one on this list most
+        easily lost** — a sentence that must appear every time, with nothing
+        forcing it to. The type now forces it as far as a type can: showing
+        an answer without its provenance is a thing somebody has to decide to
+        do rather than a thing they can forget
+
+- [ ] **Egress indicator**, and no telemetry
+  - Kernel coverage audit reconciled 2026-09-08: publication checks now fail
+    closed through the shared kernel verify/publish path. Reproduced loopback
+    proxy, unconnected datagram and established-socket gaps remain, not fixes.
+    The production-reachable proxy gap still needs a decision; no enforcement or
+    machine checkbox moves. See `docs/autonomy/updates/publication-hardening-and-egress-coverage.md`.
+  - [x] **The code.**
+        `alo-egress` — what counts as leaving, and the line said about it
+        while it happens, now in the language the person reads rather than
+        in English; the policy still decides before a socket opens and
+        without needing a vocabulary to do it. Since item 16 the second half
+        of this line has code too: egress with **no agent behind it** is a
+        closed list of three reasons alo OS reaches the network — signing
+        somebody in, fetching a model, checking for an update — with no
+        member for measuring anything and no way to add one that is not an
+        edit to a public enum. They go on the **same** indicator as an
+        agent's egress, so *nothing has left this machine* stays one thing
+        to look at, and the promise beside the list is a sentence a person
+        reads in their own language rather than one this repository
+        publishes. Since item 16a law 1's *and afterwards in a record*
+        covers that second half as well: `alo-record` writes an errand down
+        as `Happened::LeftOnItsOwn`, made only from the `Underway` the
+        indicator showed, and it is the one entry in the record with **no
+        agent field** — because nobody granted this machine permission to
+        sign somebody in, and a name in that column would be an authority
+        the record invented. *What left this machine* and *what did it do on
+        its own* are two queries over one list, and
+        `docs/contracts/record-file.md` now says what a new kind of entry
+        means for a reader that predates it
+  - [ ] **On the machine.**
+        the indicator itself, which is a compositor surface; the daemon code
+        that actually signs somebody in, fetches a model or checks for an
+        update, none of which exists yet; and the enforcement at the network
+        boundary, without which all of this describes only the code that
+        asked. **Partial enforcement published and reconciled 2026-09-07:**
+        Claude's `socket_connect` hook checks non-loopback IPv4/IPv6 address/port
+        entries per turn, including next-connect withdrawal. Seven loaded-kernel
+        cases and Linux workspace/BPF gates are contributor-reported evidence,
+        not rerun by this desktop worker. Production wiring, UDP sendto,
+        established/inherited sockets, loopback proxies and physical acceptance
+        remain open; the enforcement requirement and machine box stay unchecked.
+        Report: `docs/autonomy/updates/network-egress-enforcement.md`.
+        **Security follow-ups reconciled 2026-09-08:** reports
+        `docs/autonomy/updates/network-boundary-decisions-proposed.md` and
+        `docs/autonomy/updates/one-kernel-two-checkouts.md` correct the relay door
+        to Answers::Service (the provider door refuses ThisMachine), and serialize
+        kernel tests across checkouts with a bounded abstract-socket lock. Five
+        process tests, four unit tests and full gates are contributor-reported,
+        not rerun here. ADR 0021 is still proposed; its revised C1 recommendation
+        is not approval or implementation. Loopback-proxy, inherited-descriptor/
+        socket and use-time gaps remain; no enforcement or machine box closes.
+        **Production-path audit reconciled 2026-09-07:**
+        `docs/autonomy/updates/end-to-end-network-enforcement.md` traces and tests
+        that file verbs enter Bounding but provider requests do not. Destination
+        enforcement therefore does not cover ordinary provider calls. Claude's
+        boundary/destination-lifetime decision was subsequently approved in
+        `docs/autonomy/updates/network-request-boundary-approval.md`, reconciled
+        2026-09-07. Claude owns the scoped ADR and implementation, with explicit
+        DNS and request-limited connections. Approval is not runtime evidence;
+        reported Linux workspace/BPF gates are not rerun here. Enforcement stays
+        unfinished, including retries, redirects, UDP, inherited sockets and proxies.
+
+- [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
+  - [x] **The code.**
+        `alo-capability` (the verbs, the grants, the approvals, every
+        refusal of theirs said in the language the person reads, and — since
+        9g — the sentence a person approves, carried as what names it and
+        the values that fill it rather than as words in whichever language
+        the verb was declared in), `alo-files` (the six file verbs, declared
+        from the words a translator is handed) and `alo-applications` (all
+        four application verbs — open, focus, ask-to-close and arrange — the
+        list of what is installed they are checked against, and the rule
+        that an ungranted application refuses identically whether or not it
+        is here). Since 11a an argument that offers a choice offers a name a
+        model sends beside a word a person reads, so an option cannot reach
+        an approval sentence as untranslated English, and a sentence holding
+        a word nobody has translated says the line is not translated. Since
+        item 12 `alo-context` is what an agent is given when it is invoked:
+        the window in front, the selection and the open document, with only
+        the document making a grant — over that file, for that turn,
+        revocable and visible in the same list as a folder somebody picked —
+        so being told what is on a screen is finally distinct from being
+        allowed to touch it. Since item 19 there is `alo-turn`, which is the
+        four of them joined into one order that cannot be taken out of
+        sequence: an invocation makes the turn, a name and typed values are
+        made into a call **here** rather than accepted from a caller, a read
+        answers inside the turn and a change waits for one approval, the
+        grants are asked again at the moment it runs, and the machine offers
+        exactly the verbs it can carry out. Since item 21a there is
+        `alo-protocol`, which is what somebody else's code is allowed to say
+        to all of that: six requests and no seventh, none of them able to
+        carry a command, and two doors rather than one — so the side that
+        proposes a change cannot be the side that approves it. What is not on
+        the wire is as much of it as what is: no moment, no context, no turn
+        and no place a question goes, because each of those would be a caller
+        helping itself to something the machine is supposed to know. Since
+        item 21b the same crate is what the daemon may say **back**: what a
+        read found and what a change did, a change waiting with the sentence
+        it waits on rather than only its number, a model's answer with where
+        it came from beside it and no shape that carries one without the
+        other, and every refusal in the workspace as the sentence whoever
+        made it worded — each carrying whether anybody translated it, which
+        is the one thing text alone would have lost at the last boundary
+        before a person reads it. The answers divide by side as the requests
+        do, so a daemon cannot put the person's own list onto an agent's
+        connection. Since item 21c there is `alo-agentd`, which is the door
+        those two lists arrive at: a Unix socket at a path this project's
+        contract fixes, in a directory only the person and the agent's group
+        can enter, and a side chosen from what the kernel says about the
+        caller rather than from anything a caller says about itself. A
+        machine on which the person and the agent are one login gets no
+        socket at all, because on that machine both doors would be one —
+        which is what turns 21a's division from a promise the code makes
+        into one the operating system makes. It is the first crate here that
+        is Linux rather than portable. Since item 21d it also holds the turn:
+        one machine, two connections and one turn, answered as readiness in a
+        single thread with no lock anywhere near the capability model — a turn
+        is an agent's connection and ends with it, an approval arrives on the
+        person's while it is open, and a second agent is refused in words
+        rather than let into a grant another invocation made. A message that
+        is not a request is answered and the caller stays; a line this machine
+        will not read is answered and then closed; and a machine that could
+        not write down what it did stops serving rather than going on without
+        evidence. Since item 21e it reads what the machine is rather than
+        being handed it: one file, whose shape and path are a contract because
+        whoever installs or manages a machine writes it, holding the two
+        logins, the agent's name as its grants know it, the two lengths of
+        time and where the record goes and for how long. Nothing in it has a
+        default, so a key left out is a machine that does not start rather
+        than one running under a number nobody chose; a length of time longer
+        than a day is refused rather than shortened, because an approval is
+        never a session; and the file is checked before it is parsed — not a
+        link, owned by root or by the person, writable by nobody else, and all
+        of it asked of the open file rather than of the name, because the file
+        that names which login is the agent is the file somebody would rewrite
+        to become one. Since item 20 it is also the thing that removes what
+        the machine no longer keeps: a machine an organisation set a retention
+        rule on wakes once an hour to shorten its record, and a machine that
+        keeps everything — which is what one ships with — sleeps in a single
+        call until somebody says something, exactly as it did before there was
+        a timer. It happens between turns and never inside one, which is not a
+        rule anybody has to remember: while a turn is under way it holds the
+        machine, so there is nothing there to ask. And since item 21f it is a
+        **process** rather than a library nothing runs: a `main` that refuses to
+        be root at all, loads the one vocabulary the whole machine says
+        everything out of and its own three strings on top, opens the record
+        before it opens the socket, and arranges for `SIGTERM` to stop it the
+        way anything else does — one byte on a descriptor, from a handler that
+        allocates nothing. It has been started, talked to and stopped as a real
+        process with two real logins, which is what nothing above this sentence
+        could previously claim. Since item 21j the agent's door is somewhere the
+        agent could reach: running it as two real logins found that a `0750`
+        directory inside `logind`'s `0700` session directory is a locked room
+        inside a locked building, so ADR 0017 moved the socket to
+        `/run/alo/<uid>/agentd.sock` — a root the image makes and the daemon
+        refuses to invent, a per-person directory made for one session and taken
+        away with the socket when it ends, and every check `place.rs` already
+        made carried over unchanged. Since item 30 the daemon has been started
+        by a real `systemd` from the image's own unit, which is what found that
+        the per-person directory could not be the daemon's after all: `/run/alo`
+        is root's, so the thing that starts the service makes the door and the
+        service checks it. It runs there — the agent's login refused a folder
+        nobody granted, in the grants' own words; the person's door answered;
+        anybody else turned away; the refusal in the record; `SIGTERM` and the
+        summary line — on a development box under systemd, which is not a boot.
+        And since item 6b the file verbs no longer open anything **by name** on
+        Linux: a path resolved and checked against the grants is opened in one
+        call that refuses a symbolic link at every component of it, so a folder
+        on the way cannot be exchanged for a link between the check and the
+        open, and a move is one call that refuses or moves rather than a
+        question followed by an act. Neither falls back — a kernel or a
+        filesystem that cannot promise it refuses the work in its own words. The
+        walk this was first written as had to be thrown away, and what threw it
+        away was the boundary above: opening `/` and each folder under it is
+        opening things the call never named, and a bounded turn was refused its
+        own granted file. Since item 6c a move is held to the same promise: a
+        rename cannot resolve its whole path in one call, so it **holds** its
+        two folders instead — reached by a path with no link in it and then kept
+        as handles — and neither the folder a file leaves nor the one it arrives
+        in can be exchanged underneath the call. That was allowed to be built
+        because it was measured rather than assumed: an `O_PATH` handle is
+        invisible to the boundary *and confers no reading*, checked against a
+        running kernel with the programme loaded, so nothing a turn may reach
+        got wider and no ADR had to move. A granted move now runs inside a real
+        boundary in `alo-agentd`'s own test, which is the guard that caught 6b's
+        first design. Measuring also found missing rename enforcement (6d), now
+        closed by the second BPF hook checking the source and destination parent.
+        Claude's `docs/autonomy/updates/kernel-enforcement-for-file-renames.md`
+        reports six kernel tests and the approved-move regression passing; those
+        checks are retained as contributor evidence, not rerun by this iteration.
+  - [ ] **On the machine.**
+        the door being reached — the path moved in code and no connection from a
+        second login has been made since, and it cannot be until an image exists
+        with `/run/alo` in its `tmpfiles.d` (queue 28, ADR 0017,
+        `docs/quirks.md`); which model or provider answers a
+        question, which needs somewhere for a person's own choice to live
+        (queue 21h); the acting half of the application
+        verbs, which is Wayland and D-Bus and is the whole of what makes any
+        of these move a window; and the half of the context that **reads** a
+        screen, which is Wayland and AT-SPI and is where *with no invocation,
+        no context calls at all* becomes something anybody can test
+
+- [ ] Every execution recorded with its origin, approval and grant
+  - [x] **The code.**
+        `alo-record` — the record, including refusals, which are written
+        down in the same words the person was shown rather than in a second
+        rendering of their own; since 9g that covers what *ran* as well as
+        what did not, so the sentence in the record is the sentence somebody
+        approved — and `alo-keeping`, which puts it on a disk so it outlives
+        the session: one line per thing that happened, synced as it happens,
+        a retention rule that cannot be set to keep nothing, and a shortened
+        record that says so permanently in the first line so an absence is
+        never read as an innocence. Since 16a it also holds the one thing on
+        the machine that no execution, approval or grant is behind — what
+        alo OS did on its own — and holds it without naming anybody for it.
+        Since item 19 *recorded* is structural rather than remembered:
+        `alo-turn` cannot be made without somewhere to keep its record, every
+        door writes its entry before it answers anybody, and a turn that could
+        not write one stops doing anything at all. Since item 20 the timer is
+        there too: `alo-agentd` shortens the record between turns, once an
+        hour, and only on a machine somebody set a retention rule on — the
+        first one at start-up, because a machine switched off for six months
+        comes back with six months of a rule to catch up on. A shortening the
+        machine refuses is counted and survived rather than stopping the
+        service, because nothing is removed in one: that is a machine keeping
+        **more** than its rule, which is the opposite failure from one that
+        cannot write
+  - [ ] **On the machine.**
+        a certified machine showing a record surviving a restart and a
+        shortening. The path, the retention and the timer are all code now, and
+        since item 21f a real process really opens the record at the path its
+        description named and writes the first line into it — what is left is
+        that nothing has yet been started by systemd, and no shortening has
+        fired on a machine nobody was watching
+
+- [ ] **The agent overlay**: one key, from anywhere
+
 - [ ] The workspace client runs as an application on the shell
+
+### Phase 7 — Packing it into something that boots
+
+*Desktop image, in `docs/autonomy/DELIVERY.md`.*
+
+All of the above built into a single disk image that starts up on its own.
+
+**State:** builds and boots in a VM. **2 promises close this phase**, 1 with their code written and 1 not yet recorded either way.
+
+**Finished when:** The image boots, the background service is running, and a real local model request goes through approval, execution and its record.
+
+- [ ] ★ **The GPU works on first boot, where there is one** — drivers and runtime
+      pinned together, no driver installation, no CUDA archaeology.
+      **Acceleration, not an entry price** (`docs/features.md`): alo OS runs on
+      the machine somebody already owns, and this line is what happens when that
+      machine turns out to have a card in it. **It does not gate v0.01.** The
+      exit gate below never mentions a GPU and must pass on a machine with none —
+      if it ever cannot, the promise this release is built on has been broken and
+      the fault is here rather than in the gate
 
 - [ ] **Image**: a **bootable container** (`bootc`) on a rented Fedora-derived
       base (ADR 0011), booting on the certified machine, firmware to sign-in.
@@ -1834,6 +1920,23 @@ this lane's to settle alone.
         did not. Two of `docs/hardware.md`'s five kernel checks are still
         unanswered for the same reason: they are questions about a kernel that is
         running
+
+**The GPU line is in this band but is not a requirement of it.** No graphics
+card is needed anywhere in v0.01 — the whole product rests on running on the
+machine somebody already owns, and the exit gate below neither mentions a GPU
+nor may depend on one. That line is here only because *acceleration where a card
+exists* still has to be verified on hardware.
+
+### Phase 8 — Proving it on a real laptop
+
+*Release coverage and physical acceptance, in `docs/autonomy/DELIVERY.md`.*
+
+Everything above is built and tested on development machines. This is where it is run on an ordinary laptop somebody owns. It is the only phase allowed to tick the *on the machine* half of any promise, which is why that column is zero everywhere — not because nothing runs.
+
+**State:** not started — needs a machine. No promise of its own sits here.
+
+**Finished when:** Every v0.01 promise has named evidence, and the physical checks in `docs/hardware.md` are recorded.
+
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
 key, ask an agent to do something to a file in a granted folder, approve the
@@ -2892,6 +2995,47 @@ and none of that is a different engine, a different agent or a different
 promise.
 
 ## Reconciliation log
+
+### v0.01 reads one phase at a time, 2026-10-03
+
+The owner could not tell what was being worked on, and the file was the
+reason. v0.01 grouped its promises by *does this need a screen*; the work
+happens in the eight phases of `docs/autonomy/DELIVERY.md`; and across 1,600
+lines a numbered phase was named three times. Two orderings, no map between
+them, so *what do I finish to close phase 2* had no answer here.
+
+Every promise is now under the phase that closes it, moved verbatim, with a
+board at the top. Nothing was reworded and no box changed state — checked by
+asserting each block appears exactly once in the rebuilt file and that the
+count is 29 on both sides.
+
+**Two numbers the board now admits rather than hides.** Nothing is whole and
+nothing can be: every promise owes an *on the machine* half that only phase 8
+may tick, so a reader watching the done column was watching something wired to
+stay at zero. And 15 of the 29 carry no halves at all, so for half the release
+this file cannot say whether the code is written — the canvas most of all,
+whose crates are built and gated. Both are shown as what they are.
+
+**What the two retired band headings said**, kept because the facts in them
+outlived the grouping:
+
+> Twelve capabilities. Each has its code finished, tested and gated on an ordinary
+> laptop, and each is still owed the half only a machine can give it. **This band
+> was not chosen line by line**: it is simply everything in v0.01 that a
+> compositor is not required for, which is why it runs unbroken.
+
+> Eight capabilities, with **the compositor protocol core now started**. The
+> remaining machine work follows `docs/autonomy/DELIVERY.md`. The
+> compositor is the one that matters most here, because sign-in, the overlay, the
+> launcher, copy and paste and the workspace client all wait on it; the image is
+> its own bring-up and waits on the certified machine.
+
+> They were interleaved with the band above until this ordering was corrected,
+> which made a completely consistent rule look like work being taken out of turn.
+
+The GPU sentence from the second band moved to phase 7 with the promise it
+describes, and the canvas background moved to phase 3 with the canvas.
+
 
 ### The gate is a check now, and it found six more things by being one, 2026-09-27
 
