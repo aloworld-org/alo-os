@@ -306,6 +306,31 @@ of `docs/autonomy/the-session-and-the-displays-plan.md` for the rules and
 do-not-disturb, and task 11 of `docs/autonomy/the-shell-plan.md` for drawing
 them on a frame.
 
+### The canvas is where they left it
+
+**Shown by:** nothing yet.
+
+**Still owed:** **the whole of the restart, which is the whole of the promise.** The
+in-memory half is built and used in production — `alo-shell/src/canvas_remembered.rs` holds
+an `alo_arranging::Arrangement`, puts a frame back where it was, and can produce
+`the_arrangement_now()` — so this is not an unbuilt road but an unconnected one.
+
+Nothing reaches a disk. `Arrangement::written()` and `Arrangement::read()` have **no callers
+anywhere**; `the_arrangement_now()` has four and they are all in one test file;
+`WhereTheyLeftIt` is constructed **only in tests**; and no file path for a canvas arrangement
+exists. So a person who arranges their windows and signs out finds them gone.
+
+Reached v0.01 on 2026-10-03 by the owner's decision, and the promise had been listed in
+`docs/features.md` nowhere before that — it lived only in the plan, which read `Done` while
+none of this was true. The owner ruled *do not weaken the promise* and reopened the task
+rather than restating it.
+
+**Not the same thing as monitor arrangement persistence**, which `alo-displays` does keep and
+test. The names are close enough that checking the wrong one answers yes.
+
+Where the work is: task 9 of
+`docs/autonomy/the-smallest-canvas-worth-showing.md`.
+
 ### Keyboard shortcuts, and a person can change them
 
 **Shown by:** `crates/alo-shortcuts/src/changes.rs`,

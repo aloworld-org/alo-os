@@ -583,7 +583,59 @@ where it cannot be seen.
 
 ### 9. The canvas is where they left it
 
-**Status:** **Done, 2026-09-29.** **Depends on:** 1, 3, 6.
+**Status:** **Open, reopened by the owner 2026-10-03.** **Depends on:** 1, 3, 6.
+
+> **The owner's words: *do not weaken the promise.*** The in-memory arrangement work is
+> complete; restart persistence is not. This status is corrected rather than the promise
+> reduced, and everything the task said on 2026-09-29 is kept below because it is still true
+> of the part that was built.
+
+**What was `Done` and what was not, measured by the panel lane and confirmed here on
+2026-10-03.** The arrangement is assembled in memory and used in production —
+`alo-shell/src/canvas_remembered.rs` holds an `Arrangement`, puts a frame back where it was,
+and can produce `the_arrangement_now()`. What does not happen is any of it reaching a disk:
+
+```text
+Arrangement::written() / Arrangement::read()   no callers anywhere
+the_arrangement_now()                          4 callers, all in one test file
+WhereTheyLeftIt (the production type)          constructed only in tests
+any file path for a canvas arrangement         none exists
+```
+
+So **a person's layout does not survive a restart on a real machine**, and this read `Done`
+for four days. *A caution for whoever checks this: `alo-displays` has its own `arrangement`
+— the physical layout of monitors — and that one **is** properly kept and tested in
+`alo-displays/src/keeping.rs`. Searching for "arrangement is the arrangement kept" lands
+there and answers yes about the wrong thing. Two different things, one name.*
+
+**What the implementation must do, by the owner's ruling of 2026-10-03:**
+
+- Persist **Place identity, frame identity and geometry, each window's presentation state,
+  and each Place's camera**.
+- **Preserve normal geometry** when a window is minimised, compacted or full screen — so a
+  window comes back the shape it really is, not the shape it was last seen in.
+- **Connect saving and loading to the actual production session lifecycle**, which is the
+  integration that was missing and the reason this was not done.
+- **Save after meaningful layout changes**, not only on a clean shutdown — a machine that
+  loses power is the case this promise is for.
+- **Versioned, atomic writes** in the existing private per-user state location, handling
+  missing or damaged state safely.
+- **Restore frames so they stay reachable** when displays or scaling change — task 8's own
+  question, which this task already offers a remembered place to.
+- **Restoring a layout must not silently restart agent work or restore expired permissions.**
+
+**Call it canvas layout persistence** in documentation and tests, kept clearly separate from
+monitor arrangement persistence.
+
+- **Acceptance, by the owner's ruling:** arrange windows across several Places, change their
+  cameras, end the session, **start a fresh process**, and observe those layouts restored
+  **through the production path**. Include **interrupted-write** and **changed-display**
+  tests — not only serialization round trips.
+- **Its own change:** the owner ruled that persistence gets its own integration change and
+  its own restart evidence, separately from the grouping and Stop work.
+
+*Everything below was written when this read `Done`, and is kept because it describes the
+half that is built:*
 
 `crates/alo-arranging` owns the file and **decides nothing about a canvas**: every
 value read back is rebuilt by `At::checked`, `Size::checked` and `Zoom::of`, the
