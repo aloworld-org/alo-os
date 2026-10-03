@@ -275,6 +275,26 @@ control in the whole tree, and it is a placeholder.**
 says **"a setting"**, noted as *One setting, which is on or off. Which it is
 now is read after the name.*
 
+**Re-measured 2026-10-03, and the paragraph above is left as what was true then.**
+`A_SETTING` **no longer exists anywhere in `alo-access`** — `grep -c` answers 0, so that
+citation cannot be repaired by moving a line number; the thing it points at is gone. What
+replaced it is the fix this task's own status records: `Control::for_setting` builds a
+switch carrying the setting's **own word** and `Some(setting)`, so a reader looks the value
+up by identity. `tree.rs`'s own note says it plainly — *which is the shape the tree had
+until 2026-09-30: one control named "a setting", standing for all nine.*
+
+So the measurement above is a snapshot from **before** the fix that landed the same day,
+and it is kept rather than corrected because *Measured 2026-09-30* is a record. Rewriting
+a number inside it would re-date a claim to today, and today it does not hold. The one
+live pointer in it is still true and has moved: `State::OnOrOff` becomes `CHECKABLE` at
+the line matching `State::OnOrOff => ON_THE_SCREEN`, which `grep -c` proves unique — it
+was cited as line 126 and is now 133.
+
+*Found by the laptop lane, who measured it in a plan they do not own and sent it rather
+than editing. The distinction they drew is the part worth keeping: **cite by a phrase for
+a live pointer, and add a dated line for a measurement** — because a measurement is a
+record of a moment, and replacing its numbers silently moves the moment.*
+
 So a value plumbed to that control would have a reader announce **"a setting,
 on"** — true, and useless. A person would be told the state of a switch whose
 identity they were never told. **Telling somebody which way a switch is set
