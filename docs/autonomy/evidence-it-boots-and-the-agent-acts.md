@@ -331,6 +331,35 @@ test. The names are close enough that checking the wrong one answers yes.
 Where the work is: task 9 of
 `docs/autonomy/the-smallest-canvas-worth-showing.md`.
 
+### Alo working in a window you put aside, and Stop
+
+**Shown by:** `crates/alo-put-aside/tests/the_panel_is_whole_with_no_agent_at_all.rs`,
+`crates/alo-put-aside/tests/the_types_that_carry_a_guarantee_have_one_way_in.rs`,
+`crates/alo-admitting/src/tests.rs`,
+`crates/alo-reported/src/tests.rs`
+
+The report's model and every refusal it makes are built: a task with no name, a blank
+last-confirmed action and a stop with no reason are each refused by name, the whole report
+arrives at once so it cannot be drawn half-built, and the panel is complete on a machine with
+no agent at all. Stop is held by there being nothing that could withhold it — no flag, no
+state in which a report exists and stopping does not. And the crossing from the agent service
+landed on 2026-10-02: a neutral contract, a coordinator that checks a report against what the
+person actually handed over, and a lost connection that becomes *status unavailable* rather
+than staying *working*.
+
+**Still owed:** **the drawing, and everything Stop does when pressed.** No surface draws any
+of it — `Preview::alo` has one production caller, a filter, and the panel's raster reads no
+part of the report, so no variant of the report type has ever been drawn. And nothing
+cancels: there is no control, no cancellation road, no withdrawal of a run's authority, and
+none of the three row wordings exists in any language.
+
+Reached v0.01 on 2026-10-03 by the owner's decision, with the design ruled the same day. It
+had been listed in `docs/features.md` nowhere, and its two nearest neighbours are `[v1]` and
+promise a great deal more; they keep their tier, so this promise names only the surface that
+was ruled on.
+
+Where the work is: task 7 of `docs/autonomy/putting-a-window-aside.md`.
+
 ### Keyboard shortcuts, and a person can change them
 
 **Shown by:** `crates/alo-shortcuts/src/changes.rs`,

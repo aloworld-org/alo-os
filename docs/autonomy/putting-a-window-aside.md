@@ -1065,6 +1065,19 @@ as a drawing crate deciding whether the panel groups.
 > it. Its scope is shown before activation — *Working across 3 windows* — and **every affected
 > preview updates when it stops**.
 
+**Stop does not wait on the notification road, and here is the measurement, because
+meeting that wall mid-task would look like a blocker.** Nothing in this tree tells a person
+anything: `alo_notifying::arrives` has **zero** non-test callers and `alo-desktop` passes an
+empty slice of notifications into every frame, which is why the mover at
+`direct_desktop`'s frame loop drops its result and says so in a comment. **Stop is clear of
+it anyway**, because every word the owner's ruling asks for is on **the row the person is
+already looking at** — *Stopping…*, *Stopped · changes kept*, *Stop requested · no
+confirmation*, the explanation while an uninterruptible operation finishes, and the update to
+every affected preview when a task spanning several windows stops. A person who presses Stop
+is looking at the answer. **What is still blocked on that road is a different promise** — a
+person being told their window was *moved*, by the never-lost rule, which is the one the
+mover's dropped result waits for.
+
 **Two things this lane owes the lane that builds it.**
 
 **The three row wordings are user-facing strings and must go through `alo-strings`**, with a
