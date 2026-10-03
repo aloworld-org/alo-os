@@ -303,6 +303,16 @@ alo OS draws its own windows rather than borrowing another system's. This is the
 
 **Finished when:** A real application opens in a window of ours, takes keyboard and pointer input, and closes cleanly.
 
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`the-session-and-the-displays-plan.md`](docs/autonomy/the-session-and-the-displays-plan.md) | the third PC | displays, scaling and what a session owns |
+| [`the-shell-plan.md`](docs/autonomy/the-shell-plan.md) | the development PC | the shell itself: surfaces, input, the draw |
+
+
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
   - Client maximize/restore requests (2026-09-08): XDG requests share trusted
     transactions, pre-map intent is declined without premature configuration,
@@ -744,6 +754,18 @@ Phase 2 puts a window on the screen; this is everything a person then *does* wit
 **State:** started, inside phase 2's work. **12 promises close this phase**, 2 with their code written and 10 not yet recorded either way.
 
 **Finished when:** Windows open, move, resize, tile, are put aside and come back; the Dock and shortcuts work; and a Place still holds what was left in it.
+
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`hands-on-the-desktop-plan.md`](docs/autonomy/hands-on-the-desktop-plan.md) | the development PC | pointer, keyboard and the desktop's own controls |
+| [`putting-a-window-aside.md`](docs/autonomy/putting-a-window-aside.md) | the development PC | the minimised-window panel, and getting a window back |
+| [`the-canvas-and-its-places.md`](docs/autonomy/the-canvas-and-its-places.md) | the Mac and the development PC | Places, the World, and moving between them |
+| [`the-smallest-canvas-worth-showing.md`](docs/autonomy/the-smallest-canvas-worth-showing.md) | the Mac | the least canvas worth putting on a screen |
+
 
 - [ ] **The alo Dock** — a fixed band along the bottom edge, above the canvas,
       that shows what you can open and brings what is already open into focus
@@ -1317,6 +1339,15 @@ An account on the machine, the sign-in screen, and the session that starts when 
 
 **Finished when:** A person signs in to a local account, the session starts correctly, and signing out shuts it down.
 
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`accounts-and-session-entry-plan.md`](docs/autonomy/accounts-and-session-entry-plan.md) | the development PC | the account, the sign-in surface, the session |
+
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 ### Phase 5 — Choosing which AI answers
@@ -1328,6 +1359,18 @@ Which model answers you, whether it runs on your own machine or somewhere else, 
 **State:** code written, screens owed. **7 promises close this phase**, 7 with their code written.
 
 **Finished when:** A person picks a model or a provider, grants a folder, and takes the grant back again — all from a screen, without editing a file.
+
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`models-a-person-adapts-and-subscribes-to-plan.md`](docs/autonomy/models-a-person-adapts-and-subscribes-to-plan.md) | the Mac | a person's own models and subscriptions |
+| [`providers-and-models-plan.md`](docs/autonomy/providers-and-models-plan.md) | the development PC | which model answers, and from where |
+| [`the-models-measured-plan.md`](docs/autonomy/the-models-measured-plan.md) | the Mac | what each model can actually do, measured |
+| [`where-a-persons-settings-are-kept-plan.md`](docs/autonomy/where-a-persons-settings-are-kept-plan.md) | the development PC | where a person's choices are kept |
+
 
 - [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
       runtime (ADR 0006)
@@ -1612,6 +1655,19 @@ Press one key, ask for something, see exactly what it proposes, approve it, and 
 
 **Finished when:** One key opens the overlay anywhere, a change is proposed and approved, it happens, and the record afterwards says what happened.
 
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`applications-and-what-they-expect-plan.md`](docs/autonomy/applications-and-what-they-expect-plan.md) | the Mac | what a real application expects of a desktop |
+| [`applications-people-already-use.md`](docs/autonomy/applications-people-already-use.md) | the development PC | a terminal, a browser, and the portals they need |
+| [`kernel-enforcement-plan.md`](docs/autonomy/kernel-enforcement-plan.md) | the development PC | what the kernel refuses, so a grant means something |
+| [`software-and-the-web-plan.md`](docs/autonomy/software-and-the-web-plan.md) | the third PC | installing software, and opening the web |
+| [`the-executable-plan.md`](docs/autonomy/the-executable-plan.md) | every machine, per task | the agent overlay, approvals, and the record |
+
+
 - [ ] ★ **Where the answer came from is said where the answer appears** — "on
       this machine", "on the studio workstation", "by a provider you added" —
       beside the answer, not buried in a setting
@@ -1879,6 +1935,17 @@ All of the above built into a single disk image that starts up on its own.
 
 **Finished when:** The image boots, the background service is running, and a real local model request goes through approval, execution and its record.
 
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`the-broker-and-the-disk-plan.md`](docs/autonomy/the-broker-and-the-disk-plan.md) | the third PC | the broker, and what is written to disk |
+| [`the-installer-plan.md`](docs/autonomy/the-installer-plan.md) | the third PC | the image, and installing it |
+| [`the-machine-keeps-itself-plan.md`](docs/autonomy/the-machine-keeps-itself-plan.md) | the third PC | updates, recovery, and a machine that keeps itself |
+
+
 - [ ] ★ **The GPU works on first boot, where there is one** — drivers and runtime
       pinned together, no driver installation, no CUDA archaeology.
       **Acceleration, not an entry price** (`docs/features.md`): alo OS runs on
@@ -1937,6 +2004,15 @@ Everything above is built and tested on development machines. This is where it i
 
 **Finished when:** Every v0.01 promise has named evidence, and the physical checks in `docs/hardware.md` are recorded.
 
+**The plans that close it.** A lane works from a plan, never from
+this page; these are the documents the work happens in, and each one
+carries its own tasks, their state and what each depends on.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`the-machine-measured-plan.md`](docs/autonomy/the-machine-measured-plan.md) | the development PC | the certified machine, measured |
+
+
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
 key, ask an agent to do something to a file in a granted folder, approve the
@@ -1944,6 +2020,21 @@ sentence, see it happen, and afterwards ask what it did and get an answer from
 the record — with the egress indicator having stayed dark throughout.
 
 ---
+
+### Plans that serve a later release
+
+These carry tasks and lanes like the others, and none of them closes a
+v0.01 phase. They are listed so that every plan in the repository appears
+exactly once on this page — a plan with nobody looking for it is how work
+goes missing.
+
+| Plan | Lane | What it covers |
+|---|---|---|
+| [`access-and-language-plan.md`](docs/autonomy/access-and-language-plan.md) | the Mac | accessibility and language — v0.5 |
+| [`capture-and-the-room-plan.md`](docs/autonomy/capture-and-the-room-plan.md) | the Mac | screen capture and the meeting room — v0.5 |
+| [`devices-and-media-plan.md`](docs/autonomy/devices-and-media-plan.md) | the Mac | sound, cameras and devices — v0.5 |
+| [`documents-and-paper-plan.md`](docs/autonomy/documents-and-paper-plan.md) | the development PC | documents, printing and paper — v0.5 |
+| [`the-local-network-plan.md`](docs/autonomy/the-local-network-plan.md) | the development PC | machines finding each other — v0.5 |
 
 ## v0.5 — a person can work on it all day
 
