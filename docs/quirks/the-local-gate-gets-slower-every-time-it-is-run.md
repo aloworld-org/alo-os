@@ -70,6 +70,48 @@ Two shapes were considered and one of them does not work:
   pattern whose process is gone. Then a killed run is cleaned by the next run of any
   process, which is the property the other two only appear to have.
 
+## Measured again the same night: a sweep buys hours, not a fix
+
+The entry above described the leak as an accumulation. It is a **rate**, and the number
+matters because it decides whether sweeping is maintenance or a repair.
+
+```text
+after the first sweep, 2026-10-03          1,201 entries
+when a later gate started, same night      9,634 entries
+removed by the second sweep                8,557 folders (700 live ones kept)
+```
+
+**Roughly eight thousand scratch directories in the handful of gate passes between two
+sweeps on one machine.** The `alo-measuring` walk was over its sixty-second warning again
+in the gate running at the time — the same symptom, from scratch, hours after the first
+diagnosis.
+
+So the sweep is **maintenance a lane repeats**, and the repair is still the missing cleanup
+in the crates listed above. A lane that sweeps and considers the matter closed will meet
+the two-and-a-half-hour walk again the next working day.
+
+## And 6 GB of it was not under `/tmp` at all
+
+```text
+/mnt/c/dev/<checkout>/target               6.0 GB
+```
+
+A `target/` directory beside the source, from builds that did not set
+`CARGO_TARGET_DIR`. Every gate run on this machine sets it — `nine-gates.sh` takes the
+build directory as an argument — so this is what accumulates from the **ad-hoc** builds a
+lane runs while working: a `cargo test -p …` to check one crate, a `cargo clippy` on a
+file just edited.
+
+**It grows on the filesystem nobody is watching.** The gate's own build directory is on
+ext4 and is where a lane looks when space runs short; the checkout is on the 9p mount, and
+`df` for it is a different line that a lane reading build sizes never sees. On
+2026-10-03 this machine was at 15 GB free on one and 12 GB on the other, and only the
+second was below where it should have been for a reason nobody had looked for.
+
+**Our response:** `rm -rf` it; it rebuilds. And when a run matters, pass
+`CARGO_TARGET_DIR` even for a one-crate check, so the artefacts land where the lane
+already looks.
+
 ## Why this is written where a stranger will look
 
 *The suite is slow* and *the suite is slow on a machine holding 700,000 stale temporary
