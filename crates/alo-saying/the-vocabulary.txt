@@ -1477,6 +1477,7 @@ sleeping.setting.keep-awake	Keep this machine awake
 sleeping.setting.lid-sleeps	Sleep when the lid is closed
 sleeping.setting.lid-stays-awake-with-a-display	Stay awake when the lid is closed and another display is attached
 software.installed	{application} is installed. It has been given nothing: it asks when it needs a file, the camera or anything else, and you answer
+software.installed-reaching-everything	{application} is installed, and you chose to let it reach your files and the network without asking you first. Anything else you install has to ask; this one does not
 software.refused.already-installed	{application} is already installed on this machine, so it was not installed again. Updates for it are offered in Software
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
 software.refused.not-enabled	{source} is not a place this machine installs applications from, so nothing was installed. Choose one of the places listed under Software in Settings

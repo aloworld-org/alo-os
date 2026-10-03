@@ -38,6 +38,7 @@ use crate::enabled::{Enabled, did_not_answer};
 use crate::refusing::NotDone;
 use crate::shown::{Stopped, held_to};
 use crate::tool::Tool;
+use crate::whether_it_is_sandboxed::Sandboxing;
 use crate::words;
 
 /// An application a person — or a person approving an agent's proposal — asked
@@ -49,15 +50,42 @@ pub struct Wanted {
     /// The place, as it was named. Checked against what is enabled at each
     /// step rather than once, because what is enabled can change.
     source: String,
+    /// Whether a person chose to do without the sandbox on this installation.
+    sandboxing: Sandboxing,
 }
 
 impl Wanted {
-    /// What a person asked for themselves, in Software in Settings.
+    /// What a person asked for themselves, in Software in Settings — **sandboxed**.
+    ///
+    /// This signature is unchanged and now carries
+    /// [`Sandboxing::Sandboxed`]. An unsandboxed installation cannot be expressed
+    /// here: it has a constructor of its own that a caller has to name, which is how
+    /// *never the default* is held. See `crate::whether_it_is_sandboxed`.
     #[must_use]
     pub fn by_hand(application: Application, source: &str) -> Self {
         Self {
             application,
             source: source.trim().to_owned(),
+            sandboxing: Sandboxing::Sandboxed,
+        }
+    }
+
+    /// What a person asked for themselves, **deliberately without a sandbox**.
+    ///
+    /// Named rather than defaulted, and named rather than a flag on
+    /// [`Self::by_hand`], so that the only way to reach this state is to write this
+    /// sentence. A caller who forgets gets the sandboxed install, which is the safe
+    /// outcome — the inversion `crate::whether_it_is_sandboxed` explains.
+    ///
+    /// *Forbiddable by policy on a managed machine* is **not** checked here and has no
+    /// road in this crate: see task 15's owed clause. Nothing in this constructor may be
+    /// read as that check having happened.
+    #[must_use]
+    pub fn unsandboxed_by_hand(application: Application, source: &str) -> Self {
+        Self {
+            application,
+            source: source.trim().to_owned(),
+            sandboxing: Sandboxing::Unsandboxed,
         }
     }
 
@@ -72,6 +100,12 @@ impl Wanted {
     pub fn source(&self) -> &str {
         &self.source
     }
+
+    /// Whether this installation is sandboxed.
+    #[must_use]
+    pub const fn sandboxing(&self) -> Sandboxing {
+        self.sandboxing
+    }
 }
 
 /// An application that has been installed.
@@ -79,6 +113,9 @@ impl Wanted {
 pub struct Installed {
     /// The application.
     application: Application,
+    /// How it was installed, kept so a surface is handed the fact rather than
+    /// deriving it. See `crate::whether_it_is_sandboxed`.
+    sandboxing: Sandboxing,
 }
 
 impl Installed {
@@ -88,11 +125,28 @@ impl Installed {
         &self.application
     }
 
+    /// Whether it was installed sandboxed.
+    #[must_use]
+    pub const fn sandboxing(&self) -> Sandboxing {
+        self.sandboxing
+    }
+
     /// What a person is told, in the language they read.
+    ///
+    /// **An unsandboxed installation is told a different sentence, not an extra one.**
+    /// The ordinary sentence promises *it has been given nothing: it asks when it needs a
+    /// file, the camera or anything else* — and that promise is false without a sandbox.
+    /// Appending a marking to it would leave a person holding two sentences, one of which
+    /// is a lie.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
+        let word = if self.sandboxing.is_worth_marking() {
+            words::INSTALLED_UNSANDBOXED.key()
+        } else {
+            words::INSTALLED.key()
+        };
         strings.say(
-            &words::INSTALLED.key(),
+            &word,
             &Filling::of(words::APPLICATION, self.application.identifier()),
         )
     }
@@ -135,6 +189,7 @@ pub fn install(
         .map_err(|failed| failed.about(source.name(), &wanted.application))?;
     Ok(Installed {
         application: wanted.application,
+        sandboxing: wanted.sandboxing,
     })
 }
 

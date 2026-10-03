@@ -159,6 +159,7 @@ pub mod tool;
 pub mod updating;
 pub mod verbs;
 pub mod web_address;
+pub mod whether_it_is_sandboxed;
 pub mod words;
 
 #[cfg(test)]
@@ -183,4 +184,5 @@ pub use tool::{Failed, Tool};
 pub use updating::{Offer, Updated, apply, applying, looking_for_updates, offered};
 pub use verbs::{Declaring, INSTALL_APPLICATION, NotAnInstallation, approved, software_verbs};
 pub use web_address::{NotAWebAddress, WebAddress};
+pub use whether_it_is_sandboxed::Sandboxing;
 pub use words::{Word, WordsError, declare_into, software_words};
