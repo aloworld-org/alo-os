@@ -56,6 +56,7 @@ fn put_back(
                 dock_band: Some(a_dock()),
                 panel_reserved: smithay::utils::Rectangle::default(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );

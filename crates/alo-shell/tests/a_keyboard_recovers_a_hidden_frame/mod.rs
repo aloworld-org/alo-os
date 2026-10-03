@@ -56,6 +56,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // the true answer rather than a placeholder.
                 panel_reserved: Rectangle::default(),
                 status_area: None,
+                top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
         );
