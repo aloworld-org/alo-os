@@ -557,12 +557,29 @@ where it cannot be seen.
   - **Display, scale, Dock-position and panel-state changes preserve recovery**, and
     a recovery that moves a frame shows the move and records where it was.
   - **Keyboard users can find and move a frame without reaching its name band.**
-- **What is held today:** the first, and the Dock's share of the second. The status
-  area now has a position to be tested against, and the minimized-window panel is
-  the third PC's and in progress.
-- **The third is unbuilt. The fourth is unstarted *and* unscoped, and those are
-  different things.** No reachability is rechecked when bounds change, which is
-  work this plan can take. But *keyboard users can find and move a frame without
+- **What is held today, corrected 2026-10-03:** the first, **and the second
+  entire**, **and the first half of the third**.
+
+  *This read "the first, and the Dock's share of the second" until 2026-10-03, and
+  it was behind the code by two clauses.* **The second is complete:** all three
+  fixed controls are held and compared — the Dock's band, the panel's reserved
+  column, and the status area, which joined in #414 once it could say where it is.
+  `the_draw_hands_over_the_controls_it_laid_out` reads `FixedControlsDrawn`'s own
+  fields from source, so a fourth control cannot join the set without being wired
+  from the frame that drew it (#417, #423). **And the first half of the third is
+  built:** the draw records the controls and, when they differ from the frame
+  before, brings back the frames they now hide (#403) — so *no reachability is
+  rechecked when bounds change*, which this line said, has not been true since
+  that landed.
+- **What is actually left of the third and the fourth, and neither is work this
+  plan can take.** The third's remaining half is *a recovery that moves a frame
+  **shows** the move* — the record exists, `Recovery::BroughtBack` carries where the
+  frame was, and the telling does not. It needs
+  `alo_notifying::arriving::from_alo_os`, **alo OS has no production notification
+  anywhere in this tree**, and the tier settles it: `features.md:125` puts the
+  notifications portal at `[v0.5]` and `:466` puts calm notifications at `[v1]`
+  while `ROADMAP.md` has this release at v0.01. *Scope is gated* therefore
+  **forbids** building it now rather than nobody having reached it. But *keyboard users can find and move a frame without
   reaching its name band* **cannot be held by any test, because there is no
   keyboard road to move a frame at all** — ADR 0065's *every one of them has a
   keyboard form* covers zoom, pan, fit, fill and work-inside, and
@@ -583,7 +600,25 @@ where it cannot be seen.
 
 ### 9. The canvas is where they left it
 
-**Status:** **Open, reopened by the owner 2026-10-03.** **Depends on:** 1, 3, 6.
+**Status:** **Open, reopened by the owner 2026-10-03** — and **built on 2026-10-03**
+after that reopening, with two named halves left. **Depends on:** 1, 3, 6.
+
+*The reopening stands and is not being overturned here; what is corrected is the
+measurement under it.* The block below reads `Arrangement::written() / read()` — **no
+callers anywhere**, which was true when the owner reopened the task and was made false
+hours later by #428. The road is now wired end to end in production, measured
+2026-10-03:
+
+```text
+alo-desktop/src/main.rs:294    keeping::at_sign_in(at)      not in a test module
+alo-arranging/keeping.rs:119   Arrangement::read(text)
+alo-arranging/keeping.rs:82    arrangement.written()        -> canvas-layout.toml
+```
+
+**One caveat on that chain, and it is the same seam two lanes hit independently on
+2026-10-02:** `crates/alo-desktop` has **zero `#[test]`**, so the last link is wired
+and unproven. The file is read and written by a binary nothing tests, which is why
+*built* is the right word here and *done* is not.
 
 > **The owner's words: *do not weaken the promise.*** The in-memory arrangement work is
 > complete; restart persistence is not. This status is corrected rather than the promise
@@ -662,6 +697,30 @@ says later maximise requests never replace it — but it is in **output** coordi
 arrangement is in **plane** coordinates, and converting needs the camera as it was when the
 mode was entered, which nothing keeps. The fix is for the shell to capture a frame's plane
 geometry as it leaves `Normal`, which is a change to `window_mode` and not to the file.
+
+**That prescription does not survive contact with where the code lives, measured
+2026-10-03 before starting it.** Both obvious seams are flagged as hazards by the files
+themselves, which is why this is a seam decision rather than an afternoon:
+
+- **`set_window_mode` is on `Surfaces`, not `Server`.** `the_frames_on_the_plane` is
+  `Server`'s, so the function the prescription names **cannot reach the plane**. And two
+  of its three roads in — `client_window_maximize` and `client_window_full_screen` — are
+  client-initiated Wayland requests handled inside `Surfaces`, with `Server` nowhere on
+  the stack. Only the person's own maximise road starts at `Server`, so capturing there
+  would hold ordinary geometry for one road in three and silently not for the others,
+  which is worse than holding it for none.
+- **Keeping the camera instead would build on a copy the file warns about.** `Surfaces`
+  does receive a camera each frame at `self.popups.camera`, which looks like the answer
+  — and `surfaces.rs`'s own note says *one home, not two: `Server::camera` has a second
+  copy in `self.popups.camera` that three mutators keep in step by hand.* Reading
+  mode-entry geometry off a hand-synchronised duplicate would make a person's restored
+  window size depend on whether those three mutators were in step at that moment.
+
+So what task 9's last half needs first is a decision about **where a frame's ordinary
+plane geometry lives** — on the frame, in the mode record with a camera that has one
+home, or captured by whatever owns the transition — and that is a change to the shell's
+shape rather than a field. Recorded with the two dead ends measured, so the lane that
+takes it starts after them rather than at them.
 
 **Two: the process boundary.** The acceptance says *start a fresh process*. The restart
 evidence runs two sessions that share **nothing but the file on the disk** — the layout
