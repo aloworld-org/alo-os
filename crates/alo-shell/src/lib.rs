@@ -277,6 +277,7 @@ mod surfaces;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 pub mod which_preview_the_pointer_is_on;
+mod which_surface_claims_a_point;
 mod window_activation;
 mod window_close;
 mod window_command;
