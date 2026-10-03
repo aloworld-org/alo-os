@@ -260,10 +260,19 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** deferred past the first install on real hardware, 2026-09-28, by
-the owner — **because no machine this project owns can host the walk.** Three
-pieces of the Windows side have landed and are listed below; what remains is the
-walk itself, and the walk has nowhere to run. **Depends on:** 3, 8, 9, 10.
+**Status:** **blocked on a machine that can host the walk** — deferred past the
+first install on real hardware, 2026-09-28, by the owner, **because no machine this
+project owns can host it.** Three pieces of the Windows side have landed and are
+listed below; what remains is the walk itself, and the walk has nowhere to run.
+**Depends on:** 3, 8, 9, 10.
+
+*This line opened with `deferred` until 2026-10-03, and `deferred` is not a word the
+supervisor knows.* `tools/kernel-loop`'s `NOT_YET` holds `blocked` and `scheduled`, and
+anything else falls through to selectable — so **the loop would have offered a task whose
+own status paragraph says it has nowhere to run**, to whichever machine asked next,
+including one with no virtualisation and no 90 GB to spare. The state is now the first
+thing on the line, which is where those two words are read. Nothing about the deferral
+changed: same date, same decision, same owner, same reason.
 
 It installs beside a real Windows in a virtual machine and walks the switching
 both ways, which is the largest disk of the three: one virtual disk holding a
