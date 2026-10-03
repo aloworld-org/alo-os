@@ -100,6 +100,13 @@ const THE_STATUS: &str = "**Status:**";
 /// How a finished task is marked: `**Done, <date>.**`.
 const THE_DONE_MARK: &str = "**Done,";
 
+/// The word a plan writes when it says a task is finished without the mark.
+///
+/// Most plans write `**Done, <date>.**`. One hundred and four finished tasks
+/// across nine plans write `done.` instead, and a status that says a task is
+/// finished means it whichever spelling it uses.
+const THE_DONE_WORD: &str = "done";
+
 /// Every `**Status:**` word that means *a person has to arrange something
 /// first*.
 ///
@@ -109,6 +116,39 @@ const THE_DONE_MARK: &str = "**Done,";
 /// work a supervisor can start on its own, and a loop that took one up would be
 /// arranging the thing rather than doing the task: changing sessions or
 /// lingering on a machine somebody else may be testing on.
+///
+/// # Why these are matched anywhere in the line
+///
+/// [`marked_done`] requires its word at the opening; these two are found
+/// anywhere. The difference is deliberate, and it is a fact about how plans
+/// are written rather than a quirk here.
+///
+/// `done` opens a claim: a status that says a task is finished says so first.
+/// A held word does not. A plan writes what works and *then* what holds it, so
+/// the state is the second clause:
+///
+/// ```text
+/// **Status:** **built and routed; blocked on walking it against the design.**
+/// **Status:** the first half is **Done, …**; the second is blocked on an ADR
+/// ```
+///
+/// Measured on 2026-10-03: of the seventeen statuses carrying a held word
+/// somewhere other than the opening, **eleven are held only by this breadth**,
+/// eight of them one plan's panel tasks.
+/// **Anchoring these two for symmetry would release all eleven** — the worse
+/// direction to fail in, because offering a finished task wastes a reading
+/// while hiding a held one loses it.
+///
+/// The breadth is paid for by six statuses already marked done whose evidence
+/// prose happens to contain one of these words. Those are done *and* held, and
+/// excluded from selection either way, so it costs nothing it does not buy.
+///
+/// Two words is also why a plan reaching for a third is silently selectable;
+/// one task says `deferred`. **The remedy is not a longer list**, since there
+/// is always a fourth synonym, but a test that every status line opens with a
+/// word this supervisor knows — turning an unknown word into a red gate rather
+/// than into availability. Such a test would be red across four plans until
+/// each is reworded, so it is a proposal rather than a change made here.
 const NOT_YET: [&str; 2] = ["blocked", "scheduled"];
 
 /// One task, as the plan has it.
@@ -231,16 +271,39 @@ fn read(written: &str) -> Vec<Task> {
     tasks
 }
 
-/// Whether a line of a task's section is its done mark.
+/// Whether a line of a task's section says the task is finished.
 ///
-/// The mark begins the line, or follows the `**Status:**` label — the one
-/// place besides the line's start where a plan's own instructions put it.
+/// Two spellings, and they are honoured in two different places.
+///
+/// [`THE_DONE_MARK`] begins the line, or follows the `**Status:**` label — the
+/// one place besides the line's start where a plan's own instructions put it.
 /// Nowhere else: a task's prose may quote `**Done, <date>.**` when it explains
 /// how the plan is read, and a mark found anywhere in a line would finish a
 /// task by describing the finishing.
+///
+/// [`THE_DONE_WORD`] is honoured **only** directly after the label, never at a
+/// line's start. The mark is distinctive enough to appear nowhere by accident;
+/// the bare word is ordinary English, and a paragraph of prose may well open
+/// with it. Accepting it anywhere would finish a task by describing the
+/// finishing — the same hazard, reached by the other spelling.
+///
+/// A trailing letter or digit disqualifies it, so `doneness` is not `done`.
+/// Anything else may follow: a full stop, a comma, a dash and a decision's
+/// link are all spellings in the plans today.
 fn marked_done(line: &str) -> bool {
     let status = line.strip_prefix(THE_STATUS).map_or(line, str::trim_start);
-    status.starts_with(THE_DONE_MARK)
+    if status.starts_with(THE_DONE_MARK) {
+        return true;
+    }
+    let Some(after_label) = line.strip_prefix(THE_STATUS) else {
+        return false;
+    };
+    let plain = after_label.trim_start().trim_start_matches('*');
+    plain
+        .get(..THE_DONE_WORD.len())
+        .is_some_and(|opening| opening.eq_ignore_ascii_case(THE_DONE_WORD))
+        && !plain[THE_DONE_WORD.len()..]
+            .starts_with(|next: char| next.is_alphanumeric() || next == '_')
 }
 
 /// The task numbers written in a fragment of a line.
@@ -449,6 +512,30 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
         assert!(!marked_done("**Depends on:** 1 — **Done, 2026-09-12.**"));
         assert!(marked_done("**Done, 2026-09-12.** It is."));
         assert!(marked_done("**Status:** **Done, 2026-09-12.** Report:"));
+        // The plain word, in every spelling the plans use today. Each of these
+        // was a finished task the supervisor offered as available work.
+        assert!(marked_done("**Status:** done. **Depends on:** nothing."));
+        assert!(marked_done("**Status:** done, independent."));
+        assert!(marked_done(
+            "**Status:** done — [ADR 0045](../decisions/0045.md) was"
+        ));
+        assert!(marked_done("**Status:** Done. **Depends on:** 14."));
+        assert!(marked_done("**Status:** **done**, as documentation."));
+        // Not finished, and each of these is a shape that exists in the plans.
+        assert!(!marked_done("**Status:** ready. **Depends on:** nothing."));
+        assert!(!marked_done(
+            "**Status:** blocked — on a `user`-class login."
+        ));
+        assert!(!marked_done(
+            "**Status:** **recognising is done and wired; turning each off is not.**"
+        ));
+        assert!(!marked_done("**Status:** doneness is not a status."));
+        // The bare word counts only after the label. A paragraph of prose may
+        // open with it, and prose does not finish a task.
+        assert!(!marked_done(
+            "done differently on the Mac, and recorded there."
+        ));
+        assert!(!marked_done("**Depends on:** 1 — done."));
     }
 
     /// **A scheduled task is stepped over, like a blocked one.** It waits on a
