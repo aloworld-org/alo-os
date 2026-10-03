@@ -68,9 +68,17 @@ with a date, and this plan now carries dates for that reason.*
 
 ### 1. The portal backend, running
 
-**Status:** in progress — **taken 2026-09-28**, the machine and the binary; the
-unit and the image line are the owner's and are handed over rather than written.
-**Depends on:** nothing.
+**Status:** blocked — on a machine, and on nothing else. **Depends on:** nothing.
+
+**The binary and the unit both exist, verified on `main` 2026-10-03.** This line
+read *in progress — taken 2026-09-28, the machine and the binary; the unit and
+the image line are the owner's* until then, and all three had landed:
+`crates/alo-portald/src/main.rs` calls `Backend::serve_on`, the crate is a
+workspace member, and `image/Containerfile` builds it, installs it to
+`/usr/libexec/alo-portald`, installs `alo-portald.service` and enables it. What
+is left is a machine to start it on, which is why the word on this line is now
+`blocked` — the supervisor reads that word and would otherwise hand this to a
+worker a fourth time.
 
 **Corrected 2026-09-27, before anything was built.** This task said *no portal
 backend service exists*, taken from the exit gate's refusal. Read rather than
@@ -122,7 +130,11 @@ all: not open a file, not save one, not be notified.
 
 ### 2. A runtime in the image, and where applications may come from
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — on a machine. **Depends on:** 1.
+
+**Built, found 2026-10-02**, and this line read `ready` until 2026-10-03. The
+evidence is in *What was found on 2026-10-02* above; the status is what the
+supervisor reads, and it disagreed with the finding one screen above it.
 
 The image is verifiable and immutable, so software is not installed into it.
 Flatpak is how an image-based system installs applications, and `alo-software`
@@ -141,6 +153,23 @@ the shipped image rather than in a model.
 `crates/alo-shell` is where the canvas is being built, and this touches the same
 crate. **Depends on:** nothing.
 
+**Five of the six below are now wired — measured on `main` 2026-10-03, and
+what is left of this task is one protocol and a machine.** Counted by delegate
+macro, which is what makes smithay answer a protocol rather than a mention of
+its name: `delegate_dmabuf`, `delegate_data_device`, `delegate_xdg_decoration`,
+`delegate_text_input_manager` and `delegate_viewporter` are all present in
+`crates/alo-shell/src`. **`delegate_presentation` is not, anywhere in
+`crates/`.** The list below is kept as written, with the reasons intact, because
+the reasons are why each was wanted and they outlive the wiring.
+
+**A caution for whoever finishes it.** `alo-shell` has its own `presentation`
+module and the word appears throughout it, all of it about native drawing
+targets and none of it about `wp_presentation`. Searching for the word finds the
+wrong thing; searching for the delegate finds the right one. This file has now
+had five status lines that disagreed with the code, so the habit this plan most
+needs is measuring before building.
+
+The original statement, kept because it is what the task was written against:
 alo-shell speaks five Wayland protocols: compositor, output, seat, shm and
 xdg_shell. That is enough for a fixture and not enough for Chrome, VS Code or
 anything else people actually use. Missing, and each has a reason:
@@ -236,7 +265,11 @@ only the first is done.*
 
 ### 4. A terminal, rented rather than written
 
-**Status:** ready. **Depends on:** 3.
+**Status:** blocked — on a machine. **Depends on:** 3.
+
+**Built, found 2026-10-02**, and this line read `ready` until 2026-10-03. The
+evidence is in *What was found on 2026-10-02* above; the status is what the
+supervisor reads, and it disagreed with the finding one screen above it.
 
 A terminal emulator is forty years of escape sequences, fonts, scrollback and
 selection, and it is not the product. `foot` is Wayland-native, small and has no
@@ -251,7 +284,11 @@ a command and the person sees exactly what ran, approved it, and can undo it.
 
 ### 5. A browser in the image
 
-**Status:** ready. **Depends on:** 3.
+**Status:** blocked — on a machine. **Depends on:** 3.
+
+**Built, found 2026-10-02**, and this line read `ready` until 2026-10-03. The
+evidence is in *What was found on 2026-10-02* above; the status is what the
+supervisor reads, and it disagreed with the finding one screen above it.
 
 Named in `docs/features.md` and pinned in nothing. It is also how most people
 would first judge whether this machine works.
