@@ -420,13 +420,42 @@ rather than spending a branch on the line.*
 
 **What is not paid, and neither reason is this task's own work.**
 
-**The collapse state *surviving a session* is blocked on task 9**, which says `Done` and is
-not. `crates/alo-arranging` is *where a person left their canvas* and **nothing persists
-it**: `Arrangement::written`/`read` have no caller outside that crate, the crate names no
-file at all, `stand_the_desktop_up` takes no arrangement and `alo-desktop` passes none, and
-the integration suite builds `Arrangement::fresh()` in memory. So a collapse choice added to
-that file would be written to a file nobody writes. Reported to the owner rather than fixed
-here: it is task 9's own clause, in another plan, marked `Done` by another lane.
+**The collapse state *surviving a session* now has somewhere to go and nothing to put in it.**
+
+*Read `blocked on task 9, which says Done and is not` until 2026-10-03.* That block was real
+and is gone: `#428` wired the arrangement through `alo-desktop` and grew
+`alo_arranging::Arrangement` to hold per-Place state, so the file this clause needed exists
+and is written on a running machine. The lane that built it left the collapse choice here,
+because it is `the_collapse_choice_per_place`'s business.
+
+**What replaced the block: nothing in production can collapse the rail.**
+
+```text
+Panel::collapse / Panel::expand     defined, panel.rs:182 and :187
+production callers                  none — the only hits are the methods' own bodies
+"collaps" in crates/alo-shell/src   0   (the "chosen" hits are accent colours)
+"collapse" in crates/alo-desktop    0
+```
+
+So persisting the choice would persist a state no person can set — the road that is missing is
+the **input** one, and what gesture collapses the rail is written down nowhere this lane can
+find.
+
+**And underneath that, a scope question in work already landed.** `docs/features.md` promises
+the panel and *a preview in the panel at the edge of the screen* at `[v0.01]` and promises a
+**collapsed** rail nowhere — zero occurrences of either *collaps* or *rail* in that file —
+while `docs/design/the-interface-in-the-file.md:50` puts *the minimized panel, collapsed and
+expanded* at **v1**, and this task's acceptance asks for the collapse state to differ per Place
+and survive a session. `#375` built the per-Place choice on 2026-09-30 under that acceptance.
+
+Either the promise belongs in `features.md` at v0.01, or this clause and `#375` are ahead of
+the release and the persistence waits. **One sentence from the owner settles it**, and this
+lane is not settling it: *Scope is gated* binds building to `features.md`, and three documents
+disagree about whether a collapsed rail is in this release.
+
+Both findings are recorded with their commands in `docs/autonomy/putting-a-window-aside.md`
+under *Two promises at v0.01 whose road is not there*, beside the same shape found at the other
+end of Stop.
 
 A settings file was the wrong instinct and is recorded as such. The collapse choice is
 **remembered state, not a setting a person chose**, so `alo-arranging` is its home — and
