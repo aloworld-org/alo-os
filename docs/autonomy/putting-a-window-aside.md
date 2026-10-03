@@ -270,11 +270,12 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **built, and a window now reaches the panel, 2026-10-02.** Its owed clause — the
+**Status:** **built and a window reaches the panel; blocked on walking it against the design, 2026-10-03.** Its owed clause — the
 collapse choice keyed per Place — is paid, and a person can now put a window aside, so the
 empty-panel state is no longer the only one reachable. What is **not** evidenced is the drawing:
 the three presentations are measured against **Minimized panel / 02, 07 and 12** when something
 paints them.
+**Depends on:** nothing.
 
 **The collapse choice is keyed per Place.** `crates/alo-put-aside/src/the_collapse_choice_per_place.rs`
 holds `TheCollapseChoice`, a map from `alo_canvas::Place` to `Chosen` where **absent means
@@ -383,9 +384,30 @@ state is its own thing and not a zero-length list, because *a panel holding noth
 
 ### 2. Minimising, and what is saved
 
-**Status:** **model built, no evidence; the Place clause is built, 2026-10-01.** Nothing
-draws or routes this, so the gesture is untested by the road a person uses. The transition is built and the
-zoom is saved; one clause of this task's own acceptance is not, and it stays here.
+**Status:** **built and routed; blocked on walking it against the design, 2026-10-03.**
+
+*Read `model built, no evidence; the Place clause is built` with the sentence **Nothing draws or
+routes this, so the gesture is untested by the road a person uses** until 2026-10-03. That was
+true when written on the 1st and false from the 2nd, and it sat here for a day while this lane
+edited the file four times.*
+
+**What retired it:** `#386` routed both gestures to the panel road. Measured on main rather
+than remembered:
+
+```text
+crates/alo-shell/src/window_command.rs:89         the_person_asked_to_put_aside(&root)
+crates/alo-shell/src/window_control_input.rs:236  the_person_asked_to_put_aside(&press.surface)
+```
+
+So `Super`+`M` and the window's own minimise control both reach this task's road, and task 5's
+status had said so since the 2nd — **one plan asserting both *a person can do this* and
+*nothing routes this* about one gesture, a screen apart.** The transition is built, the zoom is
+saved, and the Place clause is built.
+
+**What it waits on:** being walked. The drawing clauses of this task are measured against Figma
+frames that no machine this project owns can walk, which is the block every drawing clause in
+this plan carries.
+
 
 **What is built:** `crates/alo-put-aside/src/putting_aside.rs` — `put_aside` and
 `bring_back`, moving a window between the canvas and the panel.
@@ -468,6 +490,7 @@ is the `one-plane-two-vocabularies` fault repeated on purpose.
 
 **Status:** **a click brings a window back; blocked on walking it against the design,
 2026-10-02.**
+**Depends on:** 2.
 
 **A person can now take a window out of the panel.** `Server::bring_this_window_back` had
 **no production caller at all** until this: the road was built on 2026-09-30 and the only
@@ -528,6 +551,7 @@ nothing concludes the click was lost rather than that the window was already vis
 *The intended placement is shown* is drawing, and nothing draws it. The proposal is built and the
 original position is carried; the clause that names History cannot be finished inside this
 release and stays here.
+**Depends on:** 3.
 
 `docs/design/the-alo-dock.md` says the restored window *comes forward and nothing is
 rearranged*; the owner's specification adds that the person is **shown** the collision and
@@ -594,9 +618,10 @@ having been seen changes. Two reasons to change, so two files.
 
 ### 5. Peek
 
-**Status:** **built and reachable end to end, 2026-10-02.** A person puts a window aside with
+**Status:** **built and reachable end to end; blocked on walking it against the design, 2026-10-03.** A person puts a window aside with
 `Super`+`M` or the minimise control, and peeks at the preview by pointing at it. Both halves of
 the road exist, and the panel a person points at can now have something in it.
+**Depends on:** 1, 2.
 
 **The pointer road exists.** A person moving the pointer over a preview now gets a peek, end
 to end: `libinput_routing` translates the event, `direct_seat` and `direct_pointer` settle the
@@ -612,11 +637,24 @@ rather than the one now in that slot — and
 `the_panels_own_region_without_a_preview_leaves_the_peek_alone`, which is the clause a person
 would feel: crossing the gap between two previews must not drop the peek.
 
-**What remains, and it is one thing rather than this task's whole surface.** Nothing *puts* a
-window aside. `Server::put_this_window_aside` is written and has only its integration tests,
-because the gesture that would call it does not exist — so the panel a person can now point at
-has nothing in it. **That is the next change, and it is this task's last clause**: peeking is
-reachable, filling the panel is not.
+**What remains, and it is no longer what this paragraph said for a day.** *Nothing puts a
+window aside — `Server::put_this_window_aside` is written and has only its integration tests,
+because the gesture that would call it does not exist* was true when written and was retired
+by `#386` the next day. `window_command.rs:89` and `window_control_input.rs:236` both call
+`the_person_asked_to_put_aside`, and this task's own status line has said so since
+2026-10-02 — so the correction was already one screen above the stale sentence.
+
+**That is worth more than the correction.** The paragraph immediately below this one says *a
+status is a measurement with a timestamp, not a standing fact*, and records two earlier
+versions of this status that were true when written and wrong within hours. This task
+documented the pattern three times and then committed it a fourth, in the paragraph next to
+the documentation — and the lane that found it is the one that had edited this file four times
+without reading past the task it came for.
+
+**So what actually remains is the drawing**, which is this plan's standing block: the peek's
+clause is measured against **Minimized panel / 04 Peek**, a frame no machine this project owns
+can walk. Peeking is reachable, filling the panel is reachable, and neither has been seen.
+
 
 **Two earlier versions of this status were each true when written and wrong within hours**, and
 both are kept because the pattern is the lesson rather than the dates: the first said *blocked
@@ -698,6 +736,7 @@ the same reason task 4's overlap predicate was asked of `alo-dock` instead of wr
 
 **Status:** **the panel conceals and reveals; blocked on walking it against the design,
 2026-10-02.**
+**Depends on:** 1.
 
 **`alo_dock::Revealing` had zero callers in `alo-shell` and now has one.** A pointer in the
 panel's reserved column but off its rail is `ThePointer::AtTheEdge`; on the rail it is
@@ -974,8 +1013,9 @@ loosened to at-most-two.
 
 ### 7. Alo working in a minimised window
 
-**Status:** **the crossing is built, 2026-10-03; the sending and the drawing are not.**
+**Status:** **the crossing is built; blocked on the report having no producer and no consumer, 2026-10-03.**
 Was *blocked on nothing reporting what alo is doing* until the owner ruled on 2026-10-02.
+**Depends on:** 2.
 
 **What the ruling was, and what it is now.** The owner chose the third of the three answers
 this task recorded: a third thing bridges the agent service and the crate holding the Panel.
@@ -1218,11 +1258,12 @@ misuse the clause forbids. The rest stays in this task, with the task open.
 
 ### 8. Privacy
 
-**Status:** **model built, no evidence, 2026-09-30.** **This said `done` and that was wrong.**
+**Status:** **model built; blocked on walking it against the design, 2026-10-03.** **This said `done` and that was wrong.**
 The refusal is tested as a refusal and holds. But *a private window shows a neutral `Preview
 hidden` surface* is drawing, and nothing draws it — measured against **Minimized panel / 08
 Private preview** when something does. The acceptance clause is inside this lane; the sentence
 above it is not, and calling the task done read the acceptance and not the task.
+**Depends on:** 2.
 
 **Every acceptance clause of this one is inside this lane and all of them hold**, which is why
 it was the tempting one to close. It is still the task with the least owed to anybody else.
