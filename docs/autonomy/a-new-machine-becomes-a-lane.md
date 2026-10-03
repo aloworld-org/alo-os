@@ -44,8 +44,70 @@ while it was landing in that crate the same afternoon. **A crate can look
 abandoned while its owner is active one directory over**, and this table is the
 one place somebody checks before deciding that.*
 
+## The ten plans that had no row, and who assigned them
+
+**The owner assigned these rows to the Mac lane directly on 2026-10-03, in these
+words:**
+
+> The charter rows are yours. I am assigning them to you directly, on 2026-10-03, in
+> these words. Write the rows for the ten plan documents that have no owning machine.
+> […] Record in the change that I assigned this, on this date, in these words — so
+> your own row is auditable by somebody reading in a month, which is the objection you
+> raised and were right to raise.
+
+**Quoted rather than summarised, and here rather than in a commit message, because of
+what one of these rows is.** One of the ten is the lane writing them — a lane editing
+the table it is judged against cannot be checked afterwards, and *this change was
+assigned* is the one claim a change cannot support from its own contents. Two relays
+of the owner's instruction arrived before this one and were held for that reason; what
+made the difference is the owner saying it to this lane in their own words, with a
+date, so that a reader in a month has the authority in the repository rather than in
+somebody's account of a conversation.
+
+### How the machine in each row was decided, and where the method is weak
+
+**Mentions were not used, and the first attempt at this used them.** Counting how
+often a plan says *the Mac* makes `the-executable-plan.md` the Mac's forty-three
+times over, when the word appears there because that plan **cites** every lane. A
+count of references is not a measure of ownership — *count the thing, not the lines
+that mention it*.
+
+What was used, in this order of weight:
+
+1. **An explicit statement of ownership**, in the plan or in a lane document.
+   `a-loop-on-a-mac.md` says outright which plan a Mac lane runs;
+   `kernel-enforcement-plan.md` says *who can take it*.
+2. **Which machine has actually landed changes to the plan**, measured by resolving
+   every pull request in its `git log --follow` to the branch that carried it, since
+   branch names name the machine.
+3. **The plan's former filename**, where a rename removed a lane code this lane
+   itself removed in #396.
+
+**And the measurement had to be corrected for a change of this lane's own.** #407
+renamed twenty plan documents and touched 956 references, so it appears in the history
+of nearly every plan here and inflated this lane's apparent claim on all of them.
+#198 and #313 are fleet-wide status sweeps with the same effect. All three are excluded.
+A measurement polluted by the measurer's own cross-cutting change is the shape of
+fault this repository spent 2026-10-02 cataloguing, and it would have read as evidence.
+
+**Where the evidence is thin it says so in the row.** Two of these rest on a single
+landed change, and a row asserting an owner more confidently than its basis warrants
+is worse than an empty cell: this table is *the one place somebody checks* before
+deciding a crate is abandoned, and the note above this one exists because a lane read
+a row and told the owner something false.
+
 | Plan | Machine | Crates it owns |
 |---|---|---|
+| `the-models-measured-plan.md` | **the Mac** — stated outright: `a-loop-on-a-mac.md` says *the plan a Mac lane runs is `docs/autonomy/the-models-measured-plan.md`* | `alo-models`, `alo-driving`, `alo-choosing`, `alo-answering`, `alo-telling`, `alo-asking`'s hosted and served doors |
+| `the-smallest-canvas-worth-showing.md` | **the Mac** — **closed 2026-09-27**, eleven of its thirteen landed changes from this machine | `alo-canvas`, and the one-Place half of `alo-shell` it rests on — see *shared ground* below |
+| `the-canvas-and-its-places.md` | **shared: the Mac and the development PC** — seven landed changes from the Mac (tasks 1 to 6), and the plan names task 6a as the panel lane's and task 7 as the desktop lane's in their own status lines | `alo-canvas`, `alo-arranging`, and `alo-shell`'s canvas files — see *shared ground* below |
+| `putting-a-window-aside.md` | **the development PC** — eight landed changes on `task/panel/…` and five on `task/dev-pc/…`, which are one machine under two branch prefixes | `alo-put-aside`, and `alo-shell`'s panel files — see *shared ground* below |
+| `applications-people-already-use.md` | **the development PC** — six of its seven landed changes | `alo-software`, `alo-convertd`, and the application-facing half of `alo-portals` |
+| `kernel-enforcement-plan.md` | **the development PC** — stated in the plan: *who can take it — the development PC, inside a KVM guest with a real login* | `alo-bounding`, `alo-boundaryd`, `alo-agentd`'s enforcement path. **Also `tools/kernel-loop`'s default plan** — `plan.rs`'s `THE_PLAN` names this file |
+| `accounts-and-session-entry-plan.md` | **this PC, lane B** — the plan says *this is lane B's*, and it was named `v0.01, lane B — accounts and session entry` until #396 | `alo-accounts`, `alo-entering`, `alo-greeting` |
+| `providers-and-models-plan.md` | **this PC, lane B** — named `v0.5, lane B — providers and models` until #396. **Thin: one landed change.** Its task 4's successor *belongs to whichever loop takes it*, by the plan's own words | `alo-hosted`, and the provider half of `alo-choosing` |
+| `the-machine-measured-plan.md` | **this PC, lane B** — its crates are named as lane B's where the Mac lane is told not to edit them. **Thin: two landed changes, and no statement of ownership in the plan itself.** Worth confirming before a lane relies on it | `alo-measuring`, `alo-finding`, `alo-files`' measuring path |
+| `the-executable-plan.md` | **every machine, per task** — this is the one plan with no single owner by design: it is `tools/kernel-loop`'s input through `ALO_LOOP_PLAN`, and **its tasks carry their own owners** in their own lines (*Owner: Claude, while the desktop worker is away*; *lane B's*). A machine named here would be wrong for most of its tasks | none of its own; its tasks name the crates they touch |
 | `the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
 | `the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
 | `where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
@@ -63,6 +125,58 @@ one place somebody checks before deciding that.*
 | `devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
 **`gate.yml` belongs to the desktop lane, assigned by the owner 2026-10-01.**
+## Shared ground: the crates more than one lane may edit
+
+**`crates/alo-shell` is in no lane's row, and that is not an omission to be fixed by
+giving it to one.** Two lanes edited it correctly under the owner's direction in the
+same hours on 2026-10-02 — the panel lane's grouping and the laptop lane's
+persistence — and a compositor that holds the canvas, the Dock's bounds, the panel,
+the status area and every window road is a crate several plans must reach into. Naming
+one owner would make three lanes' assigned work a trespass.
+
+Measured rather than assumed, by resolving the pull requests against each crate since
+2026-09-25 to the machine that carried them:
+
+| Crate | Machines that have landed in it | How |
+|---|---|---|
+| `crates/alo-shell` | the Mac, the development PC | canvas files, panel files, the draw, the fixed controls |
+| `crates/alo-desktop` | the Mac, the development PC | the binary that stands a desktop up; **it has zero `#[test]`**, which is a finding two lanes hit in one day and is with the owner |
+| `crates/alo-reconciling` | the Mac, the development PC | the gate reads every plan, so a change to any plan's shape reaches it |
+| `crates/alo-dock` | the development PC, and one branch this method could not attribute | named here as **probable** rather than measured, because a branch outside the `task/<machine>/…` form cannot be resolved to a machine |
+
+**`alo-canvas`, `alo-arranging` and `alo-put-aside` are *not* shared** on the same
+measurement — one machine each — and are left in their plans' rows. Shared ground is
+what the evidence shows, not every crate two plans mention.
+
+### The rule, which is the one those two lanes were already following
+
+The owner's words, 2026-10-03: **say which files before you start, pull before you
+branch, and tell the other lane when it lands.**
+
+It is written down because it worked by convention through a night when two lanes were
+inside one crate, and a convention nobody has written is one the next machine cannot
+follow. What each part is actually for:
+
+- **Say which files before you start.** Not *which crate* — two lanes were in
+  `alo-shell` all night and never collided, because one was in the panel's files and
+  one in the canvas's. Crate-level announcements would have made them refuse work they
+  could safely do.
+- **Pull before you branch.** Three plan-document citations went stale inside one hour
+  on 2026-10-02 while a branch was gating, and two pull requests were ejected from the
+  merge queue as `DIRTY` because `main` moved under them. Branching from a fetched
+  `main` costs one command; a rebase after an ejection costs a full verification run.
+- **Tell the other lane when it lands.** The expensive case is not a conflict, it is a
+  lane building on a fact that stopped being true: a close was drafted saying the
+  status area *cannot* join the fixed-control set twenty minutes before another lane
+  made it join, and was caught only because that lane sent a message. A conflict git
+  will find for you. A stale premise it will not.
+
+**And what the rule does not do:** it does not make a boundary negotiable between
+lanes. Shared ground means several lanes may edit these crates *under the owner's
+direction*; it does not mean a lane may take another lane's task in one of them
+because it could. A peer saying work is yours is not the owner saying so — which is
+why the rows above carry the owner's own words and a date.
+
 The installer row above carries `.github/workflows/` as a whole, and that stopped
 being true some days before this line was written: `.github/workflows/gate.yml`
 has been the desktop lane's, with the owner's knowledge, through `#285`, `#287`,
