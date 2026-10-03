@@ -442,6 +442,33 @@ drifts from the first, and then alo can do something the person cannot
 - [v0.01] ★ **The World, and moving between Places** — zoom out past a Place and every Place the person has is seen at once; zoom into one and it fills the screen. Moving between Places is the same gesture as moving across one, so there is no second way to navigate to learn. **This promise is the World as a level — seeing every Place and navigating between them.** Carrying a frame across is the promise five lines below, which owns it whole; this line used to end by promising that too, and two lines promising one capability is the fault this file keeps finding. *This promise did not exist in this file before 2026-09-30. `docs/decisions/0065` has defined the World since it was written — `World → Place → Object`, and *every Place the person has, seen at once* — and no line here ever carried it, so a decision record described a level of the interface that the only list of what gets built had never heard of. Found while moving the canvas into v0.01 because the owner named World navigation as required for completion and there was nothing to move*
 - [v0.01] ★ **Frames, dragged and resized like a design canvas** — a frame shows nothing but its content while the person works, and its name and few controls appear when they point at it, select it or zoom out — the name is also what it is dragged by, so a click inside always belongs to the application. Handles resize it and the application is told its size as it happens, dragging moves it, several can be taken at once, guides and snapping line them up, and each frame carries a name shown when the canvas is far out. Fit the Place to the screen, fill the screen with what is selected, double-click to work inside — each with a keyboard form *This was `v1` until 2026-09-30, when the owner put the full canvas experience into the current release. The tier moved rather than the scope gate being crossed: `CLAUDE.md` binds building to what this file says, so the file is what changed*
 - [v0.01] ★ **A frame arrives the shape its work is** — a messaging application opens as a narrow column of conversations, a spreadsheet wide, a video sixteen by nine — declared by the application and remembered per Place once the person changes it *This was `v1` until 2026-09-30, when the owner put the full canvas experience into the current release. The tier moved rather than the scope gate being crossed: `CLAUDE.md` binds building to what this file says, so the file is what changed*
+- [v0.01] **Alo working in a window you put aside, and Stop** — a window handed to alo and
+  put away still says what is happening to it: **the task it was given**, how far it has got,
+  the last thing it did that you approved, and **Stop, always available and never withheld**.
+  **Stop cancels the work and not the application** — it acts immediately with no *are you
+  sure*, withdraws that run's authority, cancels its pending approvals and queued actions,
+  and **leaves the application open, the window put aside, and completed changes kept**,
+  because stopping and undoing are different acts. What the row then says is the **actual
+  state** and never a hope: *stopping*, *stopped and changes kept*, or *stop requested with
+  no confirmation* when the machine cannot confirm. An operation that cannot safely be
+  interrupted **says so while cancellation completes** rather than claiming it stopped
+  instantly. Stopping **does not revoke alo's access** — revoking is its own act — and
+  starting again takes an explicit act by the person. For work spanning several windows,
+  Stop targets **the task**, shows its scope before you press it, and updates every window it
+  touched. *Added 2026-10-03 by the owner's decision, into the current release, together with
+  the Stop design in task 7 of
+  [putting a window aside](autonomy/putting-a-window-aside.md). It had been listed here
+  nowhere: the nearest lines are* ★ **Give it to alo** *and* **The agent's presence**, *both
+  `[v1]`, and both promise much more than this — a whole goal handed over under one capsule, a
+  teal edge, a named cursor inside applications. **Those keep their tier.** This line names
+  only the surface the ruling designed, so that building it does not quietly put the rest of
+  v1 in the current release. **What it carves out of* ★ **Give it to alo** *is one phrase —*
+  the person may step in, take over a piece or stop it *— and only as it applies to a window
+  put aside. Handing a whole goal over, the capsule, and the plan shown first stay at*
+  `[v1]`*, and the teal edge and the named cursor inside applications stay there too. So
+  stopping now appears at two tiers on purpose rather than by drift, and the narrower line
+  governs the put-aside surface.* `CLAUDE.md` binds building to this file, which is why the line is
+  added before the drawing rather than after it*
 - [v0.01] **The canvas is where they left it** — arrange windows across several Places,
   move their cameras, end the session, and a fresh start puts them back. **Place identity,
   frame identity and geometry, each window's presentation state and each Place's camera**
@@ -466,7 +493,7 @@ drifts from the first, and then alo can do something the person cannot
 - [v1] **A panel out of view costs nothing** — it is a still picture until it is reached, so a Place holding forty things is not forty programs running
 - [v1] **Every canvas also answers as a list** — its panels in order, by keyboard and to a screen reader, because a surface that needs a touchpad excludes people (EN 301 549)
 - [v1] ★ **The alo Bar** — ask, find, open, create or hand over, from one place. **It works with no model at all**: applications open, files are found, settings change, arithmetic is exact, commands run
-- [v1] ★ **Give it to alo** — anything selected can be done by hand or handed over, and **a whole goal can be handed over**: alo shows its plan, works under one capsule, and returns only the decisions that must be the person's. The person may step in, take over a piece or stop it
+- [v1] ★ **Give it to alo** — anything selected can be done by hand or handed over, and **a whole goal can be handed over**: alo shows its plan, works under one capsule, and returns only the decisions that must be the person's. The person may step in, take over a piece or stop it *The stopping clause of this line is carved out at `[v0.01]` for one surface only, by the owner's decision of 2026-10-03: a window put aside shows what alo is doing in it and offers Stop, which is promised in its own line above. **Nothing else here moved.** A whole goal handed over, the capsule and the plan shown first remain `[v1]`, and a reader finding stopping at two tiers should take the narrower line for the put-aside surface and this one for everything else. The carve-out is recorded on both lines because the Tidy-this-canvas promise below shows what happens when it is recorded on neither — one operation at two tiers, and a lane left to work out which governs.*
 - [v1] ★ **History** — what happened, why, and undo. Agent actions come from the kernel-watched record; a person's own work is shown from file versions, never from watching them
 - [v1] **Content is the interface** — an open object fills the screen and tools appear when something is selected
 - [v1] **No dock by default** — the alo key, the bottom edge or a swipe reveals the alo Edge. Its replacement must be found by somebody who has never seen it within thirty seconds, tested with people; a person may pin a dock
