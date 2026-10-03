@@ -2048,8 +2048,9 @@ a branch already here.
 
 ### 38. The compositor a machine boots to, and the one privilege it holds
 
-**Status:** ready — **built and landed on 2026-09-23 except for the one thing a
-machine is needed for**, which is somebody seeing it on a display. Not ticked:
+**Status:** blocked — on a machine. **built and landed on 2026-09-23 except for
+the one thing a machine is needed for**, which is somebody seeing it on a
+display. Not ticked:
 see *What is landed* and *What is owed* below, which replace the acceptance this
 task was written with. **Depends on:** 13.
 
@@ -2140,9 +2141,9 @@ somebody else's work:
 
 ### 39. After sign-in, the session stands the desktop up
 
-**Status:** ready — **built and landed on 2026-09-24 except for the two things a
-machine is needed for**: somebody seeing it, and a session that can hold a
-display. Not ticked; see *What is owed* below. **Depends on:** 38.
+**Status:** blocked — on a machine. **built and landed on 2026-09-24 except for
+the two things a machine is needed for**: somebody seeing it, and a session that
+can hold a display. Not ticked; see *What is owed* below. **Depends on:** 38.
 
 Written 2026-09-22 alongside task 38. Task 38 ends where a session opens; this
 is what is on the screen afterwards, and today the answer is **nothing**.
@@ -2244,7 +2245,8 @@ be largely built already.
 
 ### 40. The image carries the compositor a machine boots to
 
-**Status:** **built, and owed only what a machine is needed for, 2026-10-02.**
+**Status:** blocked — on a machine. **Built, and owed only what a machine is
+needed for, 2026-10-02.**
 **Depends on:** 38.
 
 > **This said `ready` until 2026-10-02, and `ready` claims none of it exists.**
