@@ -66,6 +66,29 @@ somebody's account of a conversation.
 
 ### How the machine in each row was decided, and where the method is weak
 
+#### A method that cannot reach the conclusion it was used for, 2026-10-03
+
+**Resolving landed changes to a branch prefix tells you which prefix, never which
+machine.** The `putting-a-window-aside.md` row counted eight on `task/panel/…`
+and five on `task/dev-pc/…` — both counts correct — and then concluded *which
+are one machine under two branch prefixes*. They are two machines. The honest
+cell was *two prefixes, and this method cannot say whether they are one machine*.
+
+**It had the consequence this table warns about.** The development PC read that
+sentence, believed it, and told the owner twice that the third PC was idle and
+had nothing to do. It had been working the panel plan throughout.
+
+The same weakness is already recorded two sections below, where `crates/alo-dock`
+is named **probable rather than measured** because a branch outside the
+`task/<machine>/…` form cannot be resolved to a machine. Twice in one file is a
+convention failing rather than two accidents, which is why the naming section
+below exists.
+
+**What to do instead.** Where the evidence reaches only the prefix, write the
+prefix. Where a lane's own checkout would settle it, ask that lane — a machine
+knows its own branches and no amount of history reading substitutes for it.
+
+
 **Mentions were not used, and the first attempt at this used them.** Counting how
 often a plan says *the Mac* makes `the-executable-plan.md` the Mac's forty-three
 times over, when the word appears there because that plan **cites** every lane. A
@@ -101,7 +124,7 @@ a row and told the owner something false.
 | `the-models-measured-plan.md` | **the Mac** — stated outright: `a-loop-on-a-mac.md` says *the plan a Mac lane runs is `docs/autonomy/the-models-measured-plan.md`* | `alo-models`, `alo-driving`, `alo-choosing`, `alo-answering`, `alo-telling`, `alo-asking`'s hosted and served doors |
 | `the-smallest-canvas-worth-showing.md` | **the Mac** — **closed 2026-09-27**, eleven of its thirteen landed changes from this machine | `alo-canvas`, and the one-Place half of `alo-shell` it rests on — see *shared ground* below |
 | `the-canvas-and-its-places.md` | **shared: the Mac and the development PC** — seven landed changes from the Mac (tasks 1 to 6), and the plan names task 6a as the panel lane's and task 7 as the desktop lane's in their own status lines | `alo-canvas`, `alo-arranging`, and `alo-shell`'s canvas files — see *shared ground* below |
-| `putting-a-window-aside.md` | **the development PC** — eight landed changes on `task/panel/…` and five on `task/dev-pc/…`, which are one machine under two branch prefixes | `alo-put-aside`, and `alo-shell`'s panel files — see *shared ground* below |
+| `putting-a-window-aside.md` | **the third PC, with the development PC in it** — eight landed changes on `task/panel/…`, which is the third PC, and five on `task/dev-pc/…`, which is the development PC: `#406`, `#420` and `#426` are the agent-crossing work. **This cell read *one machine under two branch prefixes* until 2026-10-03** and that conclusion was wrong — see *A method that cannot reach the conclusion it was used for* below | `alo-put-aside`, and `alo-shell`'s panel files — see *shared ground* below |
 | `applications-people-already-use.md` | **the development PC** — six of its seven landed changes | `alo-software`, `alo-convertd`, and the application-facing half of `alo-portals` |
 | `kernel-enforcement-plan.md` | **the development PC** — stated in the plan: *who can take it — the development PC, inside a KVM guest with a real login* | `alo-bounding`, `alo-boundaryd`, `alo-agentd`'s enforcement path. **Also `tools/kernel-loop`'s default plan** — `plan.rs`'s `THE_PLAN` names this file |
 | `accounts-and-session-entry-plan.md` | **this PC, lane B** — the plan says *this is lane B's*, and it was named `v0.01, lane B — accounts and session entry` until #396 | `alo-accounts`, `alo-entering`, `alo-greeting` |
@@ -125,6 +148,113 @@ a row and told the owner something false.
 | `devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
 **`gate.yml` belongs to the desktop lane, assigned by the owner 2026-10-01.**
+## One machine per crate, from 2026-10-03
+
+**The owner gave the canvas to the Mac end to end** — `crates/alo-shell`,
+`crates/alo-canvas` and `crates/alo-arranging` — and with it
+`applications-people-already-use.md` task 3, the one task of another plan that
+edits the shell. The third PC keeps `putting-a-window-aside.md` and `alo-put-aside`. The
+development PC takes three v0.5 promises chosen so that it edits no crate either
+of the others owns, verified by reading dependencies rather than by intending it:
+`alo-appearance` reaches the propose-then-approve road through `alo-saying`, so
+it consumes the Mac's `alo-asking` and opens it never.
+
+### *A panel out of view costs nothing* is the Mac's, and it was assigned twice
+by one misread word
+
+It sat with the development PC because `alo-put-aside` looked like where the
+work was, then moved to the third PC on the owner's rule that we pick the ways
+which do not block each other. **Both readings rested on the word *panel*
+matching the name of a crate**, and the promise does not mean that panel.
+
+Read rather than matched, all three in `## The interface (ADR 0065)`:
+
+| | |
+|---|---|
+| `:441` `[v0.01]` | objects **and applications alike open as panels on it** |
+| `:493` `[v0.5]` | **a panel** out of view is a still picture until it is reached, so a Place holding forty things **is not forty programs running** |
+| `:494` `[v0.5]` | every canvas answers as a list — **its panels** in order |
+
+A *panel* there is a frame on a Place. **Forty things is not forty programs
+running settles it**: the put-aside surface holds previews of windows somebody
+set aside, never forty running programs. So the work is `alo-canvas` and
+`alo-shell`, which are the Mac's.
+
+**The reassignment made to remove a collision would have created one** — the
+third PC writing a task into their own plan and then needing two of the Mac's
+crates to do it. The third PC found this before writing that task.
+
+**The general fault, which this fleet has now hit three times:** a name correct
+in two vocabularies cannot be told apart by a query, only by reading the sentence
+it sits in. `alo-arranging` keeps where a person left their canvas and
+`alo-displays` keeps the monitor arrangement — both are *arrangement*. *Panel*
+is the same word twice, and the sentence says *programs*.
+
+**Why a crate needs an owner at all, when a plan already has one.** `#432` made
+it fail if a plan with tasks has no owning machine. Nothing of the kind existed
+for crates — and crates are what two machines actually collide in. Measured on
+2026-10-03, **six crates named here carried more than one machine and one carried
+none**:
+
+| Crate | Was | Is | How settled |
+|---|---|---|---|
+| `alo-shell` | the Mac, shared, the development PC | **the Mac** | the owner's decision |
+| `alo-canvas` | the Mac, shared | **the Mac** | the owner's decision |
+| `alo-portals` | the Mac, the development PC | **the third PC** | it holds the USB-portal promise |
+| `alo-software` | the development PC, the third PC | **the third PC** | it holds the unsandboxed-installation promise |
+| `alo-choosing` | the Mac, the development PC | **the Mac** — *thin* | no evidence either way |
+| `alo-hosted` | the Mac, the development PC | **the Mac** — *thin* | no evidence either way |
+| `alo-saying` | **nobody** | **nobody — it has a rule instead** | see below; an owner would make every lane's ordinary work a trespass |
+
+**The two marked *thin* are marked, not hidden.** Neither has evidence behind it,
+and a confident cell that sends somebody to the wrong lane is worse than one that
+says it does not know — which is the lesson of the row corrected above.
+
+### `alo-saying` has a rule and no owner, and the first attempt gave it one
+
+**It was assigned to the development PC and marked *thin*, and that was wrong.**
+The reason given was that this is the only lane with work reaching through it
+today — which is a reason to touch a crate, not a reason to own one, and marking
+a cell thin does not make a wrong cell right.
+
+Measured instead. Every change to it since `#247` came from work in a different
+subject: the canvas, access, measuring, another machine's windows, the Dock and
+the installer. **Twelve changes, twelve subjects, each one a side-effect of work
+somewhere else.** About fifty crates declare it, and its own header says it is
+*who loads them* and that neither of the two things it does is a decision about
+words.
+
+**So it is not a crate anybody owns. It is a crate everybody appends to**, and
+the rule is:
+
+> A crate adds its own words to `alo-saying` as part of the change that needed
+> them. That is not shared ground and needs no announcement — adding a key is
+> how a crate speaks. **Changing how loading works is different**, and whoever
+> does it says so first, because every other crate's words arrive through it.
+
+This is the argument the Mac made about `alo-shell`, and it was right until
+phase 2 finished and the claim went dormant. **`alo-saying` never goes dormant**,
+because adding words is how every crate speaks. A rule costs nothing; an owner
+costs every lane a question it should not have to ask.
+
+## What the shared-ground argument said, and why it was superseded
+
+**The section below argued that `crates/alo-shell` should have no single owner,
+and the argument was sound on the evidence it had.** Two lanes edited it
+correctly under the owner's direction in the same hours on 2026-10-02, and a
+compositor holding the canvas, the Dock's bounds, the panel, the status area and
+every window road is a crate several plans must reach into; naming one owner
+would have made three lanes' assigned work a trespass.
+
+**The owner decided otherwise on 2026-10-03**, and what changed is that phase 2's
+plans finished — `the-shell-plan.md` at 17 of 17 and
+`the-session-and-the-displays-plan.md` at 14 of 14. `alo-shell` was the only
+crate claimed by two phases, and with phase 2 complete the claim is dormant, so
+one owner costs nothing it would have cost a day earlier.
+
+**The argument is kept rather than deleted** because somebody will propose
+sharing a crate again and should find what was actually weighed, not a blank.
+
 ## Shared ground: the crates more than one lane may edit
 
 **`crates/alo-shell` is in no lane's row, and that is not an omission to be fixed by
@@ -335,6 +465,56 @@ Install **mold** (`apt install mold`) and give the gates
 crate and very nearly the whole of a rebuild that changed one line. Unset
 `RUSTFLAGS` for the two BPF gates: that target is not linked by anything of
 ours, and the flag would be handed to a linker that is not there.
+
+### What a checkout and a branch are called
+
+`CLAUDE.md` says **names are for strangers: files, commit subjects and branches
+describe the subject matter.** It does not reach checkouts, and the names in this
+file show why it should:
+
+```
+alo-os-lane-b    a lane letter
+alo-os-b         a letter
+alo-os-claude    a tool, which dates
+C:\dev\alo-os-2   a number
+alo-os-shell     the work it holds   <- the only one a stranger can read
+```
+
+**A number tells nobody anything.** But unreadability is the smaller half, and
+naming it as the whole would send the next person looking for a directory to
+rename instead of a distinction to stop relying on.
+
+**The real fault is that a path identifies a checkout and this table used it to
+identify a lane.** A machine holds as many checkouts as it needs; the third PC
+reported six beside each other on 2026-10-03, of which `C:\dev\alo-os-2` — the
+one this table gives `software-and-the-web-plan.md` and `alo-software` to — is
+**dormant rather than absent**: real, on `main`, tree clean, untouched for eleven
+days. So the cell is not wrong about a path. It is wrong about what a path can
+tell you.
+
+**There is no one-to-one between a checkout and a lane**, and no spelling of the
+directories would have created one. A machine identifies a lane; a checkout says
+only where some work happens to sit.
+
+So, from 2026-10-03:
+
+- **A lane is identified by its machine, never by a checkout path.** This is
+  the rule the rest follow from, and the reason the paragraph above exists.
+- **A machine's own checkout is `alo-os`.**
+- **A second worktree is named for the work it holds** — `alo-os-shell` is the
+  example that was already right. Never a number, a letter, or a tool.
+- **A branch prefix is always the machine**, and the rest of the branch describes
+  the subject: `task/<machine>/<what-it-does>`. `task/panel/…` breaks this by
+  putting work where the machine belongs, and that single exception is what made
+  two prefixes read as one machine. **A convention that holds everywhere except
+  once is worse than none**, because the exception is invisible to somebody
+  reasoning from the pattern.
+
+**Nothing is renamed by this entry.** A dozen scripts hardcode a checkout path
+and branches were in the merge queue when it was written; renaming three
+machines' directories at once buys a broken gate runner and no correctness. Each
+lane moves its own when it is quiet, and `task/panel/…` stops being created from
+today.
 
 ### Where the checkout lives, which is worth more than every other setting here
 
