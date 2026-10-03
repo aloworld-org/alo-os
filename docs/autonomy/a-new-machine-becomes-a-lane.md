@@ -146,20 +146,20 @@ a row and told the owner something false.
 | `providers-and-models-plan.md` | **this PC, lane B** — named `v0.5, lane B — providers and models` until #396. **Thin: one landed change.** Its task 4's successor *belongs to whichever loop takes it*, by the plan's own words | `alo-hosted`, and the provider half of `alo-choosing` |
 | `the-machine-measured-plan.md` | **this PC, lane B** — its crates are named as lane B's where the Mac lane is told not to edit them. **Thin: two landed changes, and no statement of ownership in the plan itself.** Worth confirming before a lane relies on it | `alo-measuring`, `alo-finding`, `alo-files`' measuring path |
 | `the-executable-plan.md` | **every machine, per task** — this is the one plan with no single owner by design: it is `tools/kernel-loop`'s input through `ALO_LOOP_PLAN`, and **its tasks carry their own owners** in their own lines (*Owner: Claude, while the desktop worker is away*; *lane B's*). A machine named here would be wrong for most of its tasks | none of its own; its tasks name the crates they touch |
-| `the-local-network-plan.md` | this PC, lane A (`alo-os-claude`) | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
+| `the-local-network-plan.md` | the development PC | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
 | `the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
-| `where-a-persons-settings-are-kept-plan.md` | **this PC, lane B (`alo-os-lane-b`), active from 2026-09-18** - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
+| `where-a-persons-settings-are-kept-plan.md` | **the development PC**, active from 2026-09-18 - task 7, while hands-on tasks 2 and 7 wait on display identities | `alo-appearance`, `alo-dock`, `alo-shortcuts`, `alo-choosing`, `alo-changing`, `alo-kept` |
 | `applications-and-what-they-expect-plan.md` | **the Mac** | `alo-portals`, `alo-granted`, `alo-applications`, `alo-secrets`, and ADR 0040's change to `alo-capability`/`alo-remembering` |
 | `the-machine-keeps-itself-plan.md` | third PC, behind the installer plan — undo waits on the installer's task 11 for a filesystem that can snapshot | `alo-keeping-up` |
 | `documents-and-paper-plan.md` | **this PC (`alo-os-shell` checkout), from 2026-09-16** — the owner's three documents arrived, and this plan needs no virtual machine | `alo-printing`, `alo-opening`, `alo-converting` (new) |
-| `the-shell-plan.md` (tasks 7-14) | **this PC, lane A (`alo-os-claude`), from 2026-09-18** - assigned by the owner after the local-network plan finished; starts with task 8, whose lock-state dependency is done. Other tasks retain their dependencies | `alo-shell`, `tools/graphics-check` |
+| `the-shell-plan.md` (tasks 7-14) | **the development PC**, from 2026-09-18 - assigned by the owner after the local-network plan finished; starts with task 8, whose lock-state dependency is done. Other tasks retain their dependencies | `alo-shell`, `tools/graphics-check` |
 | `access-and-language-plan.md` | **the Mac**, after applications | `alo-access`, `alo-conforming`, `alo-formats` (new), the answering-language clause of `alo-instructing` |
 | `models-a-person-adapts-and-subscribes-to-plan.md` | **the Mac**, after access and language | `alo-adapting`, `alo-hosted` (new) |
-| `software-and-the-web-plan.md` | **third PC, second loop** (`C:\dev\alo-os-2`) | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
+| `software-and-the-web-plan.md` | **the third PC** | `alo-software`, `alo-proxy`, `alo-adapters` (new) |
 | `the-broker-and-the-disk-plan.md` | third PC, second loop, after software and the web | `alo-broker`, `alo-encrypting` (new) |
 | `capture-and-the-room-plan.md` | **the Mac, from 2026-09-17**, tasks 3 to 7 — tasks 1 and 2 were published and the plan then sat untouched for twenty-six hours with no machine holding it. Its tasks 4, 5 and 7 waited on the devices plan's codec decision, which the same lane then took and wrote as ADR 0051 | `alo-capturing`, `alo-in-use` |
 | `the-session-and-the-displays-plan.md` | **third PC, first loop, from 2026-09-16** — it needs no virtual machine, and that loop waits on the installer plan's signed release and a machine with hardware virtualisation | `alo-locking`, `alo-sleeping`, `alo-displays`, `alo-notifying` (new) |
-| `hands-on-the-desktop-plan.md` | **this PC, lane B (`alo-os-lane-b`), from 2026-09-17** — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
+| `hands-on-the-desktop-plan.md` | **the development PC**, from 2026-09-17 — taken ahead of its queue because `alo-keyboards` is what the Mac's access-and-language tasks 3 and 4 wait on | `alo-dividing`, `alo-desktops`, `alo-keyboards` (new) |
 | `devices-and-media-plan.md` | **the Mac, from 2026-09-17** — taken for its task 1, the codec decision, which was blocking capture tasks 4, 5 and 7 on the same machine | `alo-sound`, `alo-bluetooth`, `alo-playing`, `alo-power`, `alo-cameras`, `alo-media-server` (all new) |
 
 **`gate.yml` belongs to the desktop lane, assigned by the owner 2026-10-01.**
@@ -524,6 +524,22 @@ So, from 2026-10-03:
   two prefixes read as one machine. **A convention that holds everywhere except
   once is worse than none**, because the exception is invisible to somebody
   reasoning from the pattern.
+
+**The table above contradicted this list until 2026-10-03, and the cost was
+not confusion.** Five owner cells identified a lane by a checkout path —
+`alo-os-claude`, `alo-os-lane-b`, and the `alo-os-2` the paragraph already
+names. Two of them were the cells that two machines were waiting on: the one
+giving `software-and-the-web-plan.md` to a path, and the one giving
+`the-local-network-plan.md` to a lane letter. **Both lanes held work for a
+ruling this file already carried**, because the rule was written in one place
+and contradicted in another, and a document that says two things is read at
+whichever of them the reader reaches first.
+
+**There is no lane A and no lane B.** There is one development PC, which holds
+as many checkouts as the work needs, and a plan belongs to the machine rather
+than to whichever directory the work last happened in. The dates and reasons
+in those cells are kept exactly as they were: *when* a machine took a plan and
+*why* is history, and only the identity was wrong.
 
 **Nothing is renamed by this entry.** A dozen scripts hardcode a checkout path
 and branches were in the merge queue when it was written; renaming three
