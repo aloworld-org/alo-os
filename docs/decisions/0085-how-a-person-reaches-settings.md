@@ -82,6 +82,63 @@ A person who works by keyboard and a person who has never been told a chord
 exists are different people, and this project's second law is that no code
 runs unless the person chose it. Choosing requires reaching.
 
+### Where it goes, from the design rather than from this record
+
+This record left the place open. The design answers it, and the answer is that
+**Settings is an application on the Dock** rather than a control standing
+beside the applications. Five nodes in the design are named Settings. In the
+overflow lists among them it sits under a heading reading *More open apps*,
+after a divider, beside Mail, Calendar, Notes and Terminal, and above *Show
+all windows*. That list appears on the `Dock 09 · Overflow` sheet and again on
+the Left, Right and Top edge specifications.
+
+**One of the five is a definition rather than a placement.**
+Reading it as a placement is the mistake this section exists so that nobody
+repeats. Node `348:23618`, `Dock edges / Button / Settings`, is one of fifteen
+44x44 buttons in an evenly spaced row inside a frame named `Dock edges ·
+Components`: Docs, Browser, Blender, Files, Mail, Calendar, Notes, Terminal,
+Settings, Music, Photos, Tasks, Search, History, More.
+**A component sheet is not a layout.**
+On its own it says a Settings button exists, and not where one goes.
+
+Its size is worth keeping. **44 by 44**, which is the owner's ruling of
+2026-09-30 that a click target stays at least 44 while a glyph may shrink.
+`places.rs` makes every place `ICON` across, which is 48, so the weakness
+recorded in that file does not stand in the way here.
+
+### Which means the mechanism really is one that already exists
+
+Because the design makes Settings an application, the Dock needs no new kind
+of item, and the earlier sentence in this record was right for a reason it did
+not give. `clicking.rs` already answers `OpenAWindowNearTheView` for an
+application with nothing open, and `AppId::named` accepts any non-blank name,
+so `"Settings"` is legal today.
+**The pointer road already exists, pointed at a window nothing opens.**
+
+### What is open is a sentence rather than a type
+
+`crates/alo-applications/src/application.rs` holds a rule, and a test holds
+the rule to the code:
+`the_words_around_an_identifier_are_translated_and_it_is_not`.
+The reason it gives is that an application's name *is packaged in and is not
+ours to translate*, and `AppId::name()` says the same of itself — *an
+application's name came off this machine rather than out of a vocabulary.*
+
+**Settings is ours.** The reason that rule gives does not reach it: nobody
+else packaged it, and a European product shipping its own control labelled in
+English has a bug rather than a convention. So the question this record hands
+over is narrow, and it belongs to the owner:
+
+- **Is an application the system itself provides an exception to that rule?**
+  Yes means that test's name stops being true of every application, and the
+  exception has to be visible in the type rather than kept as a habit. No
+  means the Dock shows one English word to every person who reads another
+  language.
+
+**Neither answer is mine to pick**, which is why it is written here rather
+than chosen. It is a smaller question than a sixteenth chord, and a different
+one, so the two can be answered apart.
+
 ## What this does not decide
 
 - **Whether `RunningWindow` and `FillingWindow` share the road.** They carry
