@@ -1,0 +1,24 @@
+<canvas id="0:1" name="00 — Cover" x="0" y="0" width="0" height="0">
+  <frame id="6:2" name="alo OS — Cover" x="0" y="0" width="1440" height="900">
+    <frame id="6:3" name="Brand bar" x="679" y="56" width="82" height="18">
+      <frame id="253:14667" name="alo / open-square mark" x="0" y="1" width="16" height="16" />
+      <text id="6:5" name="alo wordmark" x="28" y="0" width="22" height="18" />
+      <text id="253:14666" name="OS / reduced wordmark" x="62" y="3" width="13" height="12" />
+    </frame>
+    <frame id="6:6" name="Future computing statement" x="409" y="304" width="622" height="294">
+      <text id="6:7" name="YOUR COMPUTER. YOUR WAY." x="224.5" y="0" width="173" height="18" />
+      <text id="6:8" name="Make room for what matters.
+Make it yours." x="0" y="42" width="622" height="112" />
+      <text id="6:9" name="Move your work freely. Do it yourself, work with alo, or hand it over.
+You choose what happens, and you can always undo it." x="71.5" y="178" width="479" height="50" />
+      <frame id="6:10" name="Principle" x="135" y="252" width="352" height="42">
+        <frame id="253:14669" name="alo / open-square mark" x="18" y="12" width="8" height="8" />
+        <text id="6:12" name="alo acts when you ask. Your work stays yours." x="36" y="12" width="298" height="18" />
+      </frame>
+    </frame>
+    <frame id="6:13" name="Footer" x="88" y="828" width="1264" height="24">
+      <text id="6:14" name="alo OS · it’s all about u." x="0" y="0" width="124" height="16" />
+      <text id="6:15" name="September 2026" x="1172" y="0" width="92" height="16" />
+    </frame>
+  </frame>
+</canvas>
