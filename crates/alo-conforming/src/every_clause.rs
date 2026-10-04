@@ -376,10 +376,19 @@ pub const THE_CLAUSES: [Clause; 46] = [
         number: "11.2.5.3",
         requirement: "A control's name for a program must contain the words a person sees on it.",
         // This asks for a containment between two strings and the test it named
-        // never compared two. Worse, the two disagree: a window control draws
-        // `alo_shortcuts::Action::said` — *"Close the window"* — and a reader is
-        // told `alo_access::words::CLOSE_THIS_WINDOW`, *"close this window"*.
-        // The evidence points at this being unmet rather than unproven.
+        // never compared two. The two disagreed: a window control drew
+        // `alo_shortcuts::Action::said` — *"Close the window"* — and a reader
+        // was told `access.close-this-window`, *"close this window"*.
+        //
+        // **Met for the window's buttons since 2026-10-04 and still not yet
+        // for the rest.** ADR 0089 made a control that performs an action take
+        // its name from `Action::word`, so for those three there is one string
+        // rather than two that must agree and the containment is trivial in
+        // all 24 languages. The clause asks it of **every** control with a
+        // visible label, and no other surface has been read against the thing
+        // that draws it — so this stays `not_yet`, now for a measured reason
+        // rather than a general one. Moving it on the evidence of one surface
+        // would be claiming a clause on a test that covers three controls.
         standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },

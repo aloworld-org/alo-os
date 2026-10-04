@@ -224,15 +224,6 @@ pub const WHAT_CAN_BE_CHANGED: Word =
     Word::saying("access.what-can-be-changed", "what can be changed")
         .noting("The list of settings.");
 
-/// The button that closes a window.
-pub const CLOSE_THIS_WINDOW: Word = Word::saying("access.close-this-window", "close this window")
-    .noting("The button that closes a window.");
-
-/// The button that moves a window to one side of the screen.
-pub const ARRANGE_THIS_WINDOW: Word =
-    Word::saying("access.arrange-this-window", "move this window")
-        .noting("The button that moves a window to one side of the screen.");
-
 /// The screen a person reaches when the machine they were running will not do.
 pub const THE_RECOVERY_SCREEN: Word = Word::saying(
     "access.the-recovery-screen",
@@ -289,7 +280,7 @@ pub const GO_BACK_NOW: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 38] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -322,8 +313,6 @@ pub const EVERY_WORD: [Word; 40] = [
     ONE_THING_THAT_HAPPENED,
     SETTINGS,
     WHAT_CAN_BE_CHANGED,
-    CLOSE_THIS_WINDOW,
-    ARRANGE_THIS_WINDOW,
     THE_RECOVERY_SCREEN,
     WHAT_IS_RUNNING,
     WHAT_IT_REPLACED,
@@ -382,6 +371,12 @@ mod tests {
         // two disjoint lists until 2026-09-30, when the settings' words stopped
         // being outside the tree — so this is an identity now, which is the
         // stronger claim: a word declared and never said would fail it.
+        //
+        // It is still an identity after ADR 0089, and it is now one side of
+        // the tree rather than all of it: three controls are named by
+        // `alo_shortcuts::Action::word` and counted by
+        // `EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`. A word of ours
+        // that nothing says still fails here.
         assert_eq!(
             EVERY_WORD.len(),
             crate::tree::EVERY_NAME_A_READER_SAYS,

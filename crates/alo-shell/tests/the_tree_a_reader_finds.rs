@@ -326,6 +326,7 @@ fn the_password_field_crosses_the_bus_as_a_password_field() {
             name: alo_access::words::THE_PASSWORD,
             state: alo_access::State::CanBeUsed,
             setting: None,
+            does: None,
         },
     );
     let (_, facts) = read
