@@ -1,7 +1,17 @@
-# How a person reaches Settings
+# ADR 0085 — How a person reaches Settings
 
-**Status:** proposed — the chord is the owner's to accept, because a sixteenth
-action costs every application on the machine a key combination for good.
+**Status:** **accepted, 2026-10-04**, by the development PC under
+`docs/autonomy/a-new-machine-becomes-a-lane.md`'s rule for a blocker that is a
+decision: *write the ADR. You are the machine that understands why it matters;
+waiting for one with less context to decide it is worse rather than safer.*
+Its two exceptions are what needs the owner personally and what needs a lawyer,
+and neither question here is either.
+
+**This record held both questions open for most of a day, and that was the
+error it now corrects.** The same section of the charter says *stopping while
+work is available is the one outcome that is always wrong*. A sixteenth action
+does cost every application a key combination for good — that is why the cost
+is priced below rather than why somebody else should price it.
 
 ## The question
 
@@ -72,6 +82,13 @@ that is running*, written against exactly this case: *a release that added an
 action would reach them with it unbound.* With a default it reaches them
 bound, and clearing it is a thing the format already holds.
 
+**Decided: taken.** `Super+I` becomes the sixteenth action's default. The cost
+is one combination on a modifier this system already owns, against a convention
+fifteen years of muscle memory already carries — and `alo-shortcuts` is this
+lane's crate, so the action is this lane's to add. **Leaving it unclaimed would
+have been the surprising choice**, and leaving the decision unmade was the
+expensive one.
+
 ## And a pointer road as well, not instead
 
 A chord is no road for somebody who never learns one. `alo-desktop` already
@@ -135,9 +152,32 @@ over is narrow, and it belongs to the owner:
   means the Dock shows one English word to every person who reads another
   language.
 
-**Neither answer is mine to pick**, which is why it is written here rather
-than chosen. It is a smaller question than a sixteenth chord, and a different
-one, so the two can be answered apart.
+**Decided: yes.** An application **this project packages** takes its name from
+the vocabulary; an application **somebody else packages** keeps the name they
+were given. The rule's own stated reason is the discriminator rather than its
+wording: *packaged in and not ours to translate* is a fact about third-party
+software, and it says nothing about ours.
+
+Three things leave no other answer available:
+
+- `CLAUDE.md` is absolute — *user-facing strings are externalized from day one.
+  Hardcoded English is a bug, and "English plus the big five" is the same bug
+  wearing a business case.* A Dock entry reading `Settings` in every language is
+  that bug, shipped by us, in the first row a person sees.
+- The Dock's own accessibility note in the design says each icon carries **a
+  tooltip and a spoken name**. A screen reader saying an English word into a
+  German session is the same failure heard rather than seen.
+- The rule being bent was never about us. `application.rs` says the name is
+  *the machine's and the packager's, and neither is translated* — and for
+  Settings this project is the packager, so that sentence decides nothing here.
+
+**What it costs, priced rather than waved through.**
+`the_words_around_an_identifier_are_translated_and_it_is_not` stops being true
+of *every* application, so **the exception has to be visible in the type rather
+than kept as a habit**: an application carries either a packager's string or one
+of our words, and nothing may guess which. How the type says so belongs to the
+change that makes it, in `alo-applications` — the applications lane's crate by
+charter line 152. **This record decides the rule; that lane carries it.**
 
 ## What this does not decide
 
