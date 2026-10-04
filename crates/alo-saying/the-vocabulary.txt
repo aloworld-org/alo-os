@@ -152,6 +152,8 @@ appearance.picture.unnamed	name the wallpaper — it is how the image is asked f
 appearance.rotating.not-a-whole-path	give the whole path to {folder}, starting from the top of the disk — where a relative path leads depends on where the shell was started from
 appearance.rotating.too-quick	leave each picture up for at least a minute — anything quicker is a flicker
 appearance.schedule.the-same-moment	give two different times — a day that turns dark and light at {time} is a day that never changes
+appearance.scheme.dark	dark
+appearance.scheme.light	light
 appearance.text.too-large	{percent}% is larger than the shell has room for — {largest}% is as large as it goes
 appearance.text.too-small	{percent}% is smaller than this screen can be read at — {smallest}% is as small as it goes
 appearance.time.no-such-hour	{hour} is not an hour of the day — the day runs from 0 to 23
@@ -162,6 +164,13 @@ appearance.token.deep-teal	Deep teal
 appearance.token.navy	Navy
 appearance.token.porcelain	Porcelain
 appearance.token.warm-stone	Warm stone
+appearance.verb.follow-the-clock.dark-at	the hour it turns dark
+appearance.verb.follow-the-clock.light-at	the hour it turns light again
+appearance.verb.follow-the-clock.purpose	turn dark and light again at set times each day
+appearance.verb.follow-the-clock.sentence	turn dark at {dark_at} o'clock each day, and light again at {light_at} o'clock
+appearance.verb.set-the-scheme.purpose	choose light or dark, whatever the time is
+appearance.verb.set-the-scheme.scheme	which of the two to use
+appearance.verb.set-the-scheme.sentence	use the {scheme} appearance from now on, whatever the time is
 applications.called	{called} ({application})
 applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
 applications.entry.not-an-identifier	{application} is not an identifier — an identifier has no spaces and no folders in it, so this one could never arrive as an argument

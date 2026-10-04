@@ -298,7 +298,12 @@ silently* has a twin here: nothing is forgotten silently either.
 
 ### 8. Ask for it — the appearance a person asked for in words
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **the road is declared and nothing calls it yet, 2026-10-04.**
+`crates/alo-appearance/src/verbs.rs` declares two verbs — `set_the_scheme` and
+`follow_the_clock` — with their nine strings, and both end at `changes.rs`'s
+`Changes::follow`, the road a settings panel writes through. What is **not**
+paid is the half this task already excludes: nothing on a machine calls them,
+because carrying a call out is `alo-agentd`'s. **Depends on:** nothing.
 
 **Moved into this release on 2026-10-03** by
 `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. The promise is
@@ -328,11 +333,15 @@ thing it would set.
   approving it writes the same change a settings panel would have written, and
   declining writes nothing. The same for a warmer surface. **A proposal names
   the change in the person's own language**, not a token or a field name.
-- **Constraint:** the propose-then-approve road is `alo-asking`, which the Mac
-  owns. This task **consumes it and never edits it** — `alo-saying` already
-  depends on both `alo-appearance` and `alo-asking`, which is where the two meet.
-  If something has to be exposed from `alo-asking`, that is a request to the Mac
-  and not a change to make here.
+- **Constraint:** the propose-then-approve road is **`alo-capability`**, and a
+  crate reaches it by declaring its own verbs — a `pub fn declare_into(verbs:
+  &mut Verbs)` in `src/verbs.rs`, which thirteen crates already have and
+  `docs/contracts/agent-verbs.md` asks for. `alo-capability` depends on
+  `alo-strings` alone, so the edge adds no cycle, and **nothing is requested from
+  another lane**. *This constraint named `alo-asking` until 2026-10-04. That
+  crate is "putting a question to a model" — a correct name in a different
+  vocabulary — and the dependency it gave as the reason was one `alo-appearance`
+  did not declare.*
 - **Constraint:** no new way to set appearance. Whatever a proposal applies must
   be the road `changes.rs` already defines, or a person's settings and the
   agent's will drift and only one of them will be written down.

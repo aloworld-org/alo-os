@@ -457,10 +457,96 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
      translated.",
 );
 
+/// What `set_the_scheme` is for.
+pub const VERB_SET_THE_SCHEME: Word = Word::saying(
+    "appearance.verb.set-the-scheme.purpose",
+    "choose light or dark, whatever the time is",
+)
+.noting(
+    "What an assistant may ask this machine to do. A standing choice, as against following \
+     the clock — the other verb. Light and dark name how the screen looks, not a brightness \
+     setting.",
+);
+
+/// What the scheme argument is for.
+pub const VERB_SCHEME: Word = Word::saying(
+    "appearance.verb.set-the-scheme.scheme",
+    "which of the two to use",
+)
+.noting(
+    "Names the argument in a list of what the verb takes. The two options are the next two \
+     strings; only one of them is ever chosen.",
+);
+
+/// The light option, as a person reads it.
+pub const SCHEME_LIGHT: Word = Word::saying("appearance.scheme.light", "light").noting(
+    "Dark text on a light ground. One of two options somebody picks between, and it appears \
+     inside the sentence a person approves, so it reads mid-sentence rather than as a heading.",
+);
+
+/// The dark option, as a person reads it.
+pub const SCHEME_DARK: Word = Word::saying("appearance.scheme.dark", "dark").noting(
+    "Light text on a dark ground. One of two options somebody picks between, and it appears \
+     inside the sentence a person approves, so it reads mid-sentence rather than as a heading.",
+);
+
+/// The sentence a person approves to set a standing choice.
+pub const VERB_SET_THE_SCHEME_SENTENCE: Word = Word::saying(
+    "appearance.verb.set-the-scheme.sentence",
+    "use the {scheme} appearance from now on, whatever the time is",
+)
+.noting(
+    "The sentence a person approves before the machine changes how it looks. {scheme} is one \
+     of the two options, translated. Nothing changes until the person approves this sentence.",
+);
+
+/// What `follow_the_clock` is for.
+pub const VERB_FOLLOW_THE_CLOCK: Word = Word::saying(
+    "appearance.verb.follow-the-clock.purpose",
+    "turn dark and light again at set times each day",
+)
+.noting(
+    "What an assistant may ask this machine to do. Every day at the same times, not once — \
+     so no date is involved and nothing has to be decided about the night the clocks change.",
+);
+
+/// What the dark hour is.
+pub const VERB_DARK_AT: Word = Word::saying(
+    "appearance.verb.follow-the-clock.dark-at",
+    "the hour it turns dark",
+)
+.noting(
+    "Names an argument. A whole hour of a 24-hour day, 0 to 23, where 0 is midnight and 18 \
+     is six in the evening. There are no minutes: this is a time of day, not an instant.",
+);
+
+/// What the light hour is.
+pub const VERB_LIGHT_AT: Word = Word::saying(
+    "appearance.verb.follow-the-clock.light-at",
+    "the hour it turns light again",
+)
+.noting(
+    "Names an argument. A whole hour of a 24-hour day, 0 to 23. It must differ from the hour \
+     it turns dark, which is refused rather than guessed at.",
+);
+
+/// The sentence a person approves to set a schedule.
+pub const VERB_FOLLOW_THE_CLOCK_SENTENCE: Word = Word::saying(
+    "appearance.verb.follow-the-clock.sentence",
+    "turn dark at {dark_at} o'clock each day, and light again at {light_at} o'clock",
+)
+.noting(
+    "The sentence a person approves before the machine changes how it looks. {dark_at} and \
+     {light_at} are whole hours of a 24-hour day; write them the way a reader of your \
+     language reads a time, and keep both gaps. Nothing changes until this is approved.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// colours the system is built out of, the five a person can choose, the
-/// refusals, file by file, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 36] = [
+/// refusals, file by file, what is said about the person's own file, and last
+/// the two verbs an assistant may ask for — whose strings a person reads in an
+/// approval rather than in a settings panel.
+pub const EVERY_WORD: [Word; 45] = [
     NAVY,
     DEEP_TEAL,
     CREAM,
@@ -497,6 +583,15 @@ pub const EVERY_WORD: [Word; 36] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
+    VERB_SET_THE_SCHEME,
+    VERB_SCHEME,
+    SCHEME_LIGHT,
+    SCHEME_DARK,
+    VERB_SET_THE_SCHEME_SENTENCE,
+    VERB_FOLLOW_THE_CLOCK,
+    VERB_DARK_AT,
+    VERB_LIGHT_AT,
+    VERB_FOLLOW_THE_CLOCK_SENTENCE,
 ];
 
 /// Why this crate's own words could not be declared.

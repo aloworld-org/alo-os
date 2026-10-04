@@ -61,6 +61,14 @@ const THE_FIVE: [&str; 5] = [
 /// why)`.
 const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
+        "alo-appearance",
+        "verbs.rs",
+        "how a machine looks is not a file",
+        "the reason Requires::nothing_because records, which docs/contracts/agent-verbs.md \
+         asks for so the next person to read the verb list knows why it is safe; it reaches \
+         that reader and never a screen",
+    ),
+    (
         "alo-changing",
         "refusing.rs",
         "the machine refused the grant",

@@ -289,6 +289,21 @@ screen reader's *activate* sends, and a person needs no approval to press a
 button in front of them: the approval is what an agent needs, because it is the
 agent choosing to press it.
 
+### set_the_scheme
+
+**By hand:** a person opens the appearance pane of `Settings, as one place` and
+chooses `Light and dark`. The verb writes what that pane writes — the same one
+record of what a person changed, through the same call — so the setting a person
+reaches by hand and the setting an agent proposes are one value and not two.
+
+### follow_the_clock
+
+**By hand:** the same pane, and the half of the same promise that offers
+`following the time of day if a person wants`. A person sets the hour it turns
+dark and the hour it turns light again; the verb sets those same two hours by the
+same road. The agent is quicker at hearing it said out loud and reaches nothing a
+person setting two hours cannot.
+
 ## What this document does not do
 
 It does not say the plain way is **built**. Every entry above names a promise
@@ -304,3 +319,4 @@ may be left out because an agent can do it instead* — and applying it to
 `docs/features.md` as a whole is what found the file search that nobody had
 promised. `crates/alo-reconciling` and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are that
 half.
+

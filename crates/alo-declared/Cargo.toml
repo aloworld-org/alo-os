@@ -26,6 +26,7 @@ alo-by-hand = { path = "../alo-by-hand" }
 # `lib.rs` is why that is the whole shape of this crate, and why only the
 # agreement with the workspace is derived and never the list itself.
 alo-adapters = { path = "../alo-adapters" }
+alo-appearance = { path = "../alo-appearance" }
 alo-applications = { path = "../alo-applications" }
 alo-capturing = { path = "../alo-capturing" }
 alo-changing-network = { path = "../alo-changing-network" }
