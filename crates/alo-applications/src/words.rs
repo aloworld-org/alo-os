@@ -90,6 +90,22 @@ pub const NOT_AN_IDENTIFIER: Word = Word::saying(
 // How an application is shown, when a shell shows one.
 // ---------------------------------------------------------------------------
 
+/// What an application this project packages is called.
+///
+/// [ADR 0085](../../../docs/decisions/0085-how-a-person-reaches-settings.md)
+/// decided that the rule above does not reach our own: *packaged in and not
+/// ours to translate* is a fact about third-party software, and this project is
+/// the packager of Settings. A Dock entry reading `Settings` in every language
+/// is the bug `CLAUDE.md` calls hardcoded English, in the first row a person
+/// sees — and the Dock's accessibility note means a screen reader would say an
+/// English word into a German session.
+pub const SETTINGS: Word = Word::saying("applications.ours.settings", "Settings").noting(
+    "The name of the Settings application, which this project packages itself, as it is shown on \
+     the Dock and spoken by a screen reader. Unlike every other application name this is ours to \
+     translate: use the word your language's own desktops use for where a person changes how \
+     their machine behaves.",
+);
+
 /// One application, as a list of them is read.
 pub const CALLED: Word = Word::saying("applications.called", "{called} ({application})").noting(
     "{called} is the name the application gives itself, in whatever language it was packaged in, \
@@ -400,11 +416,12 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// it could not reach, what could not join the list, how one is shown, the four
 /// verbs, the arrangements one of them offers, what opens what, and what is said
 /// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 34] = [
     NOT_INSTALLED,
     NO_IDENTIFIER,
     NOT_AN_IDENTIFIER,
     CALLED,
+    SETTINGS,
     OPEN_APPLICATION,
     OPEN_APPLICATION_SENTENCE,
     OPEN_APPLICATION_APPLICATION,

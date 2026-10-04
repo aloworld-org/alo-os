@@ -181,6 +181,7 @@ applications.opens.declared	{application} opens {what}, because it says it can a
 applications.opens.declared-instead	{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no longer installed
 applications.opens.nothing	nothing on this machine opens {what} — no application installed says it can, and you have not chosen one
 applications.opens.nothing-choice-not-installed	nothing on this machine opens {what} — {chosen}, which you chose for it, is no longer installed, and no other application installed says it can
+applications.ours.settings	Settings
 applications.verb.arrange-application.argument.application	which application's window to move
 applications.verb.arrange-application.argument.where	where on the screen the window goes
 applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
