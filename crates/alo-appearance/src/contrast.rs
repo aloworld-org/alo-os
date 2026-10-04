@@ -117,7 +117,7 @@ mod tests {
     /// arithmetic every contrast checker in the world implements.
     ///
     /// **13.56:1 until 2026-10-04**, when the canvas took the design file's
-    /// `#FAF7F2` in place of `#F8F6F2` (ADR 0092). A slightly lighter ground
+    /// `#FAF7F2` in place of `#F8F6F2` (ADR 0093). A slightly lighter ground
     /// reads slightly better, and the number is re-measured rather than
     /// adjusted — the arithmetic was reproduced against the old value first and
     /// agreed to five places.
@@ -143,7 +143,7 @@ mod tests {
     /// unreadable. ADR 0067 replaced *terracotta* with deep teal.
     ///
     /// **5.78:1 until 2026-10-04**, against cream `#F8F6F2`; the canvas now
-    /// carries the design file's `#FAF7F2` (ADR 0092) and the pair measures
+    /// carries the design file's `#FAF7F2` (ADR 0093) and the pair measures
     /// 5.84:1. Terracotta against the same new ground is 2.89:1 — still under
     /// both thresholds, so nothing ADR 0067 concluded moves.
     ///

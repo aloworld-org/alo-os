@@ -135,7 +135,7 @@ impl Accent {
     /// fifth.** ADR 0067 released terracotta from being reserved and was read
     /// as making it an accent; it cannot be one, because an accent has to reach
     /// 4.5:1 on both grounds and terracotta on cream measured 2.87:1 — 2.89:1
-    /// against the canvas's value since ADR 0092, still under both. Four hues
+    /// against the canvas's value since ADR 0093, still under both. Four hues
     /// that all read is a better set than five with one that does not.
     pub const ALL: [Self; 4] = [Self::Indigo, Self::Violet, Self::Moss, Self::Rose];
 
@@ -477,7 +477,7 @@ mod tests {
     /// were `Token::Cream` and `Token::Porcelain`. They are the same two
     /// surfaces an accent is drawn on and the question has not changed; what
     /// changed is that `porcelain` could not say which of four things it meant
-    /// (ADR 0092). Both values moved with the design file, and the floor rose
+    /// (ADR 0093). Both values moved with the design file, and the floor rose
     /// rather than fell — the worst pair measured 4.75:1 before and 5.01:1
     /// after, against a threshold of 4.5.
     ///

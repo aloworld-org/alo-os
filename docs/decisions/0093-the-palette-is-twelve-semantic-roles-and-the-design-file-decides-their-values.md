@@ -1,4 +1,4 @@
-# ADR 0092 — The palette is twelve semantic roles, and the design file decides their values
+# ADR 0093 — The palette is twelve semantic roles, and the design file decides their values
 
 **Status:** accepted, 2026-10-04, by the owner's direction: *follow the colours
 in the design file*, and *use semantic roles rather than forcing twelve design

@@ -216,7 +216,7 @@ mod tests {
 
         // **Not the shipped surface**, and said rather than assumed. This was
         // `Token::Cream` and worked only while the shipped surface was
-        // `Token::Porcelain`; ADR 0092 moved the surface to the canvas, which
+        // `Token::Porcelain`; ADR 0093 moved the surface to the canvas, which
         // *is* cream, and the assertion below then compared a colour with
         // itself. The premise is asserted so it cannot quietly go false again.
         let only_there = Token::Navy;

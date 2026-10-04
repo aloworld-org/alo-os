@@ -69,7 +69,7 @@ carries white — shipping that would have shipped a pure white desktop.
 every choosable accent against it, so removing it removes the dark half of every
 contrast check.
 
-**ADR 0092** records all of it. It does **not** supersede or amend ADR 0067: deep
+**ADR 0093** records all of it. It does **not** supersede or amend ADR 0067: deep
 teal stays reserved, stays about five percent of a screen, stays never-alone, and
 stays **not the ordinary selection or button colour** — which is the one thing a
 semantic name invites a reader to assume, so the source, the brief and `role.rs`

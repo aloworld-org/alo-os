@@ -41,7 +41,7 @@ use crate::token::Token;
 /// **It was [`Token::Porcelain`] until 2026-10-04, and that was the wrong
 /// name for it.** This is the workspace canvas — the desktop a person's windows
 /// sit on — which the design file calls `bg/canvas`. Resolving `porcelain` by
-/// role rather than by resemblance is what ADR 0092 did, and the name
+/// role rather than by resemblance is what ADR 0093 did, and the name
 /// `Porcelain` now carries `bg/surface`, which is white. Shipping that here
 /// would have shipped a pure white desktop instead of the design's canvas, so
 /// this follows the role and not the name it used to share.
@@ -177,7 +177,7 @@ mod tests {
     /// **It asserted `Token::Porcelain` until 2026-10-04.** That name now
     /// carries `bg/surface`, which is white, and a fresh machine does not show
     /// a pure white desktop. [`THE_SURFACE`] followed the role rather than the
-    /// name (ADR 0092), and so does this.
+    /// name (ADR 0093), and so does this.
     #[test]
     fn a_fresh_machine_is_not_grey() {
         let shipped = Shipped::of_the_image();

@@ -9,7 +9,7 @@
 //! `porcelain`: four consumers used it and meant four different things — the
 //! workspace canvas, a light ground to measure contrast against, a card
 //! surface, and a recessed area. **A colour name cannot be wrong about its role
-//! because it never claimed one.** ADR 0092 is the decision; the owner's
+//! because it never claimed one.** ADR 0093 is the decision; the owner's
 //! direction was to *use semantic roles rather than forcing twelve design roles
 //! into six colour names*.
 //!
@@ -80,7 +80,7 @@ pub enum Role {
     /// which is far below the 3.0 a meaningful shape needs — that is what a
     /// hairline is, and it is acceptable only because a hairline is decoration.
     /// A control that needs a visible boundary uses [`Self::TextMuted`] or
-    /// darker. ADR 0092 records the measurement.
+    /// darker. ADR 0093 records the measurement.
     BorderDefault,
     /// alo — present, acting, proposing, or waiting for an approval, and
     /// nothing else.
@@ -94,7 +94,7 @@ pub enum Role {
     /// because [`Self::TextPrimary`] and this are both dark desaturated blues
     /// and a person must be able to say who is acting without naming a colour.
     /// ADR 0010, amended by ADR 0067, which reserved this value and which ADR
-    /// 0092 deliberately does not touch.
+    /// 0093 deliberately does not touch.
     AccentDefault,
     /// The quiet ground behind alo's own surfaces.
     ///

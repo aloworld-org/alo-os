@@ -225,6 +225,6 @@ charcoal = "charcoal"           # retained above, not a design variable
 # have stored it, and it is the one place the name survives; the role it carries
 # there is a surface, not the canvas. **`THE_SURFACE` therefore moved off it** —
 # a fresh machine shows `bg/canvas`, because shipping the name's new value would
-# have shipped a pure white desktop. ADR 0092 has the reasoning; the table above
+# have shipped a pure white desktop. ADR 0093 has the reasoning; the table above
 # is held to `Token::role()` by `a_palette_with_one_source.rs`, so it cannot
 # quietly stop being true.

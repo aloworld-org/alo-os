@@ -6,7 +6,7 @@
 //!
 //! # This is a name, and [`crate::role::Role`] is a role
 //!
-//! The two were one type until 2026-10-04 and ADR 0092 separated them. A
+//! The two were one type until 2026-10-04 and ADR 0093 separated them. A
 //! compositor drawing a frame is not choosing anything: it needs to know that
 //! this rectangle is a canvas and that one is a card, which is what a [`Role`]
 //! says and what a colour name cannot. `porcelain` is the proof — four
@@ -82,7 +82,7 @@ pub enum Token {
     ///
     /// **This is the name the separation was made for.** It was *the workspace
     /// canvas* and four consumers meant four things by it; each was audited and
-    /// given the role it actually had (ADR 0092). As a colour somebody picks it
+    /// given the role it actually had (ADR 0093). As a colour somebody picks it
     /// is white, and `shipped::THE_SURFACE` — which really is the canvas —
     /// moved to [`Self::Cream`] rather than following the name.
     Porcelain,
@@ -139,7 +139,7 @@ impl Token {
     pub const fn colour(self) -> Colour {
         match self.role() {
             Some(role) => role.colour(),
-            // The dark ground, which is not a design variable. ADR 0092.
+            // The dark ground, which is not a design variable. ADR 0093.
             None => Colour::of(0x1F, 0x25, 0x29),
         }
     }
@@ -239,7 +239,7 @@ mod tests {
     /// business in a background picker.
     ///
     /// Asserted so that somebody extending `Token` to cover the palette is
-    /// stopped here and reads ADR 0092 instead.
+    /// stopped here and reads ADR 0093 instead.
     #[test]
     fn the_names_do_not_cover_the_roles() {
         let reachable: Vec<&str> = Token::ALL

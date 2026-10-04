@@ -17,7 +17,7 @@
 //! charcoal        #1F2529  ->  [0x29, 0x25, 0x1f, 0]
 //! ```
 //!
-//! **Updated 2026-10-04 for ADR 0092**, when the palette began following the
+//! **Updated 2026-10-04 for ADR 0093**, when the palette began following the
 //! design file: `cream` moved `#F8F6F2` -> `#FAF7F2` and the role `porcelain`
 //! held became `bg/surface` `#FFFFFF`. Navy and charcoal did not move.
 //!

@@ -132,7 +132,7 @@
 //! ground measures 2.87:1, under what either a word or a shape needs*. 2.87:1 is
 //! **terracotta**, which is what ADR 0010 argued from — its colour could not be
 //! read at all. ADR 0067 made the agent's colour deep teal, and deep teal
-//! **clears both thresholds** at 5.84:1 on the canvas (5.78:1 until ADR 0092
+//! **clears both thresholds** at 5.84:1 on the canvas (5.78:1 until ADR 0093
 //! moved the canvas's value; terracotta is 2.89:1 against the same new ground
 //! and still misses both).
 //!

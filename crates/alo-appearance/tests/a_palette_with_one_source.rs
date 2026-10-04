@@ -18,7 +18,7 @@
 //!
 //! # And where the source itself gets its values
 //!
-//! The design file, since 2026-10-04 (ADR 0092). That raises the question this
+//! The design file, since 2026-10-04 (ADR 0093). That raises the question this
 //! file is really for: **a check that needs live Figma access is a check almost
 //! nobody can run.** Of the three machines working on this repository, one has
 //! Figma and two do not.
