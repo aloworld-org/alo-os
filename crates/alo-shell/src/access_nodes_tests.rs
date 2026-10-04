@@ -2,10 +2,13 @@
 
 #![expect(
     clippy::indexing_slicing,
+    clippy::expect_used,
     reason = "in a test, a panic on a thing the tree said was there is the failure being reported"
 )]
 
 use alo_access::{Control, Surface};
+
+use crate::window_controls::{WindowControl, WindowControlLayout};
 
 use super::*;
 use crate::approval_testing::words;
@@ -211,5 +214,64 @@ fn the_keyboards_stops_are_the_controls_that_can_be_used() {
             .filter(Control::can_be_used)
             .collect();
         assert_eq!(stops, usable, "{surface:?}");
+    }
+}
+
+/// **The buttons a reader is told about are the buttons that are drawn** —
+/// the set comparison that was missing, in the one crate that can see both
+/// lists.
+///
+/// [ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md) was
+/// written about what the two lists had drifted into: `alo-access` announced
+/// *close this window* and *move this window* while this crate drew minimise,
+/// maximise and close. Two buttons drawn and never announced, one announced
+/// and never drawn, and **nothing compared them** — each list was correct
+/// about what it contained, and no test asked whether the two contained the
+/// same things.
+///
+/// So this asks exactly that, both ways round. A containment check over the
+/// pairs they agree on would have passed while the strip was short by two,
+/// which is why the assertion is on the sets rather than on the words.
+#[test]
+fn every_button_drawn_on_a_window_is_a_button_a_reader_is_told_about() {
+    let drawn: Vec<alo_shortcuts::Action> =
+        WindowControlLayout::new((1280, 720), (0, 0), [true; 3], false)
+            .expect("a strip on an ordinary viewport")
+            .controls()
+            .iter()
+            .map(WindowControl::action)
+            .collect();
+    let announced: Vec<alo_shortcuts::Action> = Surface::WindowControls
+        .read_aloud()
+        .into_iter()
+        .filter_map(|control| control.does)
+        .collect();
+
+    assert_eq!(
+        drawn, announced,
+        "the strip draws {drawn:?} and a reader is told about {announced:?}"
+    );
+    assert_eq!(
+        announced.len(),
+        Surface::WindowControls.read_aloud().len(),
+        "a control on this surface is announced without performing anything"
+    );
+}
+
+/// **And each of those buttons is said in the words it is drawn with**, which
+/// is clause 11.2.5.3 — the programmatic name contains the visible label —
+/// held by there being one string rather than two that agree.
+#[test]
+fn a_buttons_spoken_name_is_the_label_drawn_on_it() {
+    let strings = words();
+    for control in Surface::WindowControls.read_aloud() {
+        let action = control.does.expect("a button performs something");
+        assert_eq!(
+            strings
+                .say(&control.name.key(), &alo_strings::Filling::nothing())
+                .text(),
+            action.said(&strings).text(),
+            "{action:?} is read aloud as something other than its label"
+        );
     }
 }

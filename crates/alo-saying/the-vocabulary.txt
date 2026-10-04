@@ -14,10 +14,8 @@
 
 access.an-application	an application
 access.approve-it	approve
-access.arrange-this-window	move this window
 access.ask-the-agent	ask the agent
 access.bounce-keys	ignore the same key pressed twice quickly
-access.close-this-window	close this window
 access.focus-always-visible	always show where the keyboard is
 access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine

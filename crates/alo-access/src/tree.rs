@@ -21,6 +21,8 @@
 //! words are `alo-access`'s own ([`crate::words`]) or the ones the shell's own
 //! crates already declare for what they draw.
 
+use alo_shortcuts::Action;
+
 use crate::setting::Setting;
 use crate::words::{self, Word};
 
@@ -87,6 +89,21 @@ pub struct Control {
     /// [`None`] for everything that is not a setting — a window, a list, a
     /// button. Those have no value to be told.
     pub setting: Option<Setting>,
+
+    /// Which action this control performs, where it performs one.
+    ///
+    /// **A control a person acts on is named by what it does**
+    /// ([ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md)),
+    /// so its [`name`](Self::name) is `Action::word` and the words a reader
+    /// says are the words drawn on it. Carrying the action rather than only
+    /// the word is what lets a caller ask *which* control this is without
+    /// matching on a sentence.
+    ///
+    /// [`None`] for everything that performs no action: a window, a list, a
+    /// label, and a switch, which carries a [`setting`](Self::setting)
+    /// instead. **Never both** — a control is one or the other, and
+    /// `a_control_is_named_by_one_thing` holds that.
+    pub does: Option<Action>,
 }
 
 impl Control {
@@ -97,6 +114,7 @@ impl Control {
             name,
             state,
             setting: None,
+            does: None,
         }
     }
 
@@ -113,6 +131,30 @@ impl Control {
             name: setting.word(),
             state: State::OnOrOff,
             setting: Some(setting),
+            does: None,
+        }
+    }
+
+    /// **The button for one action, named by the action itself.**
+    ///
+    /// The name comes from [`Action::word`] rather than from this crate's own
+    /// vocabulary, for the reason [`Control::for_setting`] gives one line up
+    /// and [ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md)
+    /// gives at length: a second list of names is a second thing to keep in
+    /// step, and the two lists this crate had **disagreed about which controls
+    /// exist** rather than merely about their wording.
+    ///
+    /// It also satisfies EN 301 549 clause 11.2.5.3 by construction: the words
+    /// a reader says *are* the words drawn on the control, in every language,
+    /// because there is one string rather than two that must agree.
+    #[must_use]
+    pub fn for_action(action: Action) -> Self {
+        Self {
+            role: Role::Button,
+            name: action.word(),
+            state: State::CanBeUsed,
+            setting: None,
+            does: Some(action),
         }
     }
 
@@ -305,9 +347,18 @@ impl Surface {
                 read.extend(Setting::ALL.map(Control::for_setting));
                 read
             }
+            // **The three buttons a window is drawn with, in the order they
+            // are drawn in** — `alo_shell::WindowControls` lays them out at
+            // x-offsets 0, 36 and 72, and this list is the same list in the
+            // same order. Until 2026-10-04 it was two controls of this crate's
+            // own naming, *close this window* and *move this window*: minimise
+            // and maximise were drawn and never announced, and arranging was
+            // announced and never drawn, because snapping is a chord with no
+            // button. Nothing compared the two lists (ADR 0089).
             Self::WindowControls => vec![
-                Control::of(Role::Button, words::CLOSE_THIS_WINDOW, State::CanBeUsed),
-                Control::of(Role::Button, words::ARRANGE_THIS_WINDOW, State::CanBeUsed),
+                Control::for_action(Action::MinimiseWindow),
+                Control::for_action(Action::MaximiseWindow),
+                Control::for_action(Action::CloseWindow),
             ],
         }
     }
@@ -324,44 +375,143 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
     Surface::Approval.read_aloud()
 }
 
-/// How many of this crate's words name something a reader says — which, since
-/// 2026-09-30, is **all of them**.
+/// How many of this crate's **own** words name something a reader says — which,
+/// since 2026-09-30, is all of them.
 ///
 /// *This used to count the words that were names rather than settings, and the
 /// two were disjoint: the tree named one placeholder switch called "a setting"
 /// and the nine settings' own words appeared only in `Setting::word`. Now the
 /// tree names every switch by its setting, so every word this crate declares is
 /// a name a reader says and `words.rs` holds the two lists to being one.*
-pub const EVERY_NAME_A_READER_SAYS: usize = 40;
+///
+/// **It stopped being every name the tree says on 2026-10-04.** Three controls
+/// are named by `alo_shortcuts::Action::word` instead, because a control a
+/// person acts on is named by what it does
+/// ([ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md)). The
+/// identity this constant holds is still worth having — a word declared here
+/// and never said is still a fault — but it is now one side of the tree rather
+/// than the whole of it, and
+/// [`EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`] is the other.
+pub const EVERY_NAME_A_READER_SAYS: usize = 38;
+
+/// How many names a reader says come from another crate's vocabulary.
+///
+/// The three buttons a window is drawn with (ADR 0089). Counted separately
+/// rather than folded into the number above, because the two have different
+/// failure modes: a word of ours that nothing says is a word to retire, and a
+/// name of somebody else's that nothing draws is the fault this ADR was
+/// written about.
+pub const EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS: usize = 3;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// **Every name a reader says is one of this crate's words, and the count
-    /// `words.rs` checks itself against is the truth.**
+    /// **Every name a reader says is declared by somebody, and which somebody
+    /// is a property of the control rather than of the word.**
+    ///
+    /// A control that performs an action is named by the action; everything
+    /// else is named by one of this crate's own words. Nothing is named by
+    /// both, and nothing is named by neither (ADR 0089).
     #[test]
-    fn every_name_in_the_tree_is_a_word_this_crate_declares() {
-        let mut named: Vec<String> = Surface::ALL
+    fn every_name_in_the_tree_is_a_word_somebody_declares() {
+        let every_control: Vec<Control> = Surface::ALL
             .into_iter()
-            .flat_map(|surface| surface.read_aloud())
-            .map(|control| control.name.key().to_string())
+            .flat_map(Surface::read_aloud)
             .collect();
-        named.sort();
-        named.dedup();
+
+        let mut ours: Vec<String> = Vec::new();
+        let mut theirs: Vec<String> = Vec::new();
+        for control in &every_control {
+            let key = control.name.key().to_string();
+            match control.does {
+                Some(action) => {
+                    assert_eq!(
+                        control.name.key().to_string(),
+                        action.word().key().to_string(),
+                        "{key} performs {action:?} and is named by something else"
+                    );
+                    theirs.push(key);
+                }
+                None => {
+                    assert!(
+                        crate::words::EVERY_WORD
+                            .iter()
+                            .any(|word| word.key().to_string() == key),
+                        "{key} is read aloud and nobody declares it"
+                    );
+                    ours.push(key);
+                }
+            }
+        }
+        for named in [&mut ours, &mut theirs] {
+            named.sort();
+            named.dedup();
+        }
         assert_eq!(
-            named.len(),
+            ours.len(),
             EVERY_NAME_A_READER_SAYS,
-            "the tree names {} things and the count says {EVERY_NAME_A_READER_SAYS}",
-            named.len()
+            "the tree says {} of this crate's words and the count says {EVERY_NAME_A_READER_SAYS}",
+            ours.len()
         );
-        for key in named {
+        assert_eq!(
+            theirs.len(),
+            EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS,
+            "the tree says {} of somebody else's words and the count says \
+             {EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS}",
+            theirs.len()
+        );
+    }
+
+    /// **A control is named by one thing**: the action it performs, the
+    /// setting it is, or a word of this crate's — never two of them.
+    ///
+    /// The same shape `alo_applications::Called` took the same day, for the
+    /// same reason: an exception that is visible in the type cannot be
+    /// forgotten, and nothing may guess which kind a name is.
+    #[test]
+    fn a_control_is_named_by_one_thing() {
+        for control in Surface::ALL.into_iter().flat_map(Surface::read_aloud) {
             assert!(
-                crate::words::EVERY_WORD
-                    .iter()
-                    .any(|word| word.key().to_string() == key),
-                "{key} is read aloud and not declared"
+                !(control.does.is_some() && control.setting.is_some()),
+                "{:?} both performs an action and is a setting",
+                control.name.key()
             );
+            if let Some(setting) = control.setting {
+                assert_eq!(
+                    control.name.key().to_string(),
+                    setting.word().key().to_string(),
+                    "a switch is named by its setting"
+                );
+            }
+        }
+    }
+
+    /// **The window's buttons are the three a window is drawn with, in the
+    /// order they are drawn in** — the set comparison that was missing.
+    ///
+    /// `alo-shell` draws `[minimise, maximise, close]` at x-offsets 0, 36 and
+    /// 72 and this crate cannot see that list from here, so the comparison
+    /// against the real strip lives in `alo-shell`'s own tests. What is held
+    /// here is the half this crate can hold alone: the actions, and that each
+    /// is a button a person can use.
+    #[test]
+    fn the_windows_buttons_are_the_three_that_are_drawn() {
+        let controls = Surface::WindowControls.read_aloud();
+        assert_eq!(
+            controls
+                .iter()
+                .map(|control| control.does)
+                .collect::<Vec<_>>(),
+            vec![
+                Some(Action::MinimiseWindow),
+                Some(Action::MaximiseWindow),
+                Some(Action::CloseWindow),
+            ],
+        );
+        for control in controls {
+            assert_eq!(control.role, Role::Button);
+            assert_eq!(control.state, State::CanBeUsed);
         }
     }
 
