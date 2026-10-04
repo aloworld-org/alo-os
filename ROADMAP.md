@@ -1337,6 +1337,71 @@ tests. It is recorded here rather than quietly re-tiered, because a promise buil
 below its own tier is a different fault from one built above it and neither is
 this lane's to settle alone.
 
+### Complete canvas
+
+*Every agreed canvas capability, in one milestone, by the owner's ruling of
+2026-10-04 — [ADR 0085](docs/decisions/0085-the-complete-canvas-is-one-current-milestone.md).*
+
+**Why these are here rather than carrying a milestone marker of their own.**
+`crates/alo-reconciling/src/tier.rs` hard-codes four markers and three headings,
+so a promise labelled `[Complete canvas]` is a promise **no gate counts** — a
+barrier nothing enforces, which is weaker than the tier it would replace. The
+milestone's name lives here, where a person reads it; its promises carry
+`[v0.01]`, where the reconciler reads them.
+
+**State:** six promises, **none complete**. Five moved from `[v0.5]` and one is
+new. The capabilities the ruling names that were *already* in this release are not
+repeated here — they sit in phase 2 and phase 3 with the rest of the windowing
+work, and the ruling's own ADR lists them.
+
+**Finished when:** every one of these works **through the production path** and
+meets its acceptance criteria. By the ruling's own words, *a model, unused
+function, Figma state or isolated test is progress — not completion*, which this
+repository has had to learn eight times in two days: a rule with no caller, a
+mover called only by tests, a field a constant could replace without seventeen
+tests noticing, and two crates forming an island nothing depends on.
+
+**Order and dependencies are unchanged.** The plans below carry them, and the
+ruling says work may be sequenced — only excluded-by-tier is gone.
+
+| Plan | Lane | What of this milestone it carries |
+|---|---|---|
+| [`the-canvas-and-its-places.md`](docs/autonomy/the-canvas-and-its-places.md) | the Mac, with the development PC on the panel | Places, the World, movement between Places, the fixed controls, the top controls |
+| [`the-smallest-canvas-worth-showing.md`](docs/autonomy/the-smallest-canvas-worth-showing.md) | the Mac | one Place complete, the list form, persistence, the Dock's edges |
+| [`putting-a-window-aside.md`](docs/autonomy/putting-a-window-aside.md) | the development PC | the minimised panel, and a panel out of view costing nothing |
+
+- [ ] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was
+      on Tuesday, from the snapshots undo already takes. **Was `[v1.1]`**, the
+      only canvas promise above this release
+- [ ] **Every screen is a view onto the canvas** — two displays are two viewports
+      at their own zoom, not two desktops
+- [ ] **A panel out of view costs nothing** — a still picture until it is
+      reached, so a Place holding forty frames stays usable
+- [ ] **Every canvas also answers as a list** — its panels in order, by keyboard
+      and to a screen reader. **Already built**: task 7 of
+      `docs/autonomy/the-smallest-canvas-worth-showing.md`, *Done, 2026-09-29,
+      all three thirds*, with six tests. It was `[v1]` and built at v0.5, so this
+      one is a correction rather than a widening
+- [ ] ★ **Give it to alo** — anything selected can be done by hand or handed
+      over, and a whole goal can be handed over. **This overrides the carve-out**
+      that kept its tier when *alo working in a window you put aside* went to
+      `[v0.01]`; the owner chose to move it anyway
+
+- [ ] **When the machine moves a window, the person is told** — a frame the
+      machine had to move, because a fixed control came to cover its name, says
+      what moved and **where it was**, so a person can put it back. New on
+      2026-10-04: the ruling names *recovery notices* and no promise carried them
+  - [ ] **The code.**
+        The record exists — `alo_shell::Recovery::BroughtBack` carries where the
+        frame was, and the recheck that produces it has had a caller since #403.
+        What is missing is the telling: `alo_notifying::arriving::from_alo_os` has
+        **no production caller anywhere in the tree**, so this would be alo OS's
+        first notification of its own, with its words externalised in every
+        shipped language from the first commit
+  - [ ] **On the machine.**
+        A person watches a Dock grow over a frame, sees the frame move, and reads
+        why — on a machine, not in a fixture
+
 ### Phase 4 — Signing in
 
 *Accounts and session entry, in `docs/autonomy/DELIVERY.md`.*
@@ -2920,27 +2985,12 @@ sorted the same way v0.01 now is.
 change; *Devices* is a correction, because `docs/features.md` already carried it
 at this tier and this page did not.
 
-**And five canvas promises joined them on 2026-10-03**, by the same decision.
-None of the five was on this page at all — `docs/features.md` carried them and
-this file listed them nowhere, so a promise the scope gate held had no order to
-be built in. That is why they are added here rather than moved.
-
-- [ ] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was
-      on Tuesday, from the snapshots undo already takes. **Was `[v1.1]`**, the
-      only canvas promise above this release
-- [ ] **Every screen is a view onto the canvas** — two displays are two viewports
-      at their own zoom, not two desktops
-- [ ] **A panel out of view costs nothing** — a still picture until it is
-      reached, so a Place holding forty frames stays usable
-- [ ] **Every canvas also answers as a list** — its panels in order, by keyboard
-      and to a screen reader. **Already built**: task 7 of
-      `docs/autonomy/the-smallest-canvas-worth-showing.md`, *Done, 2026-09-29,
-      all three thirds*, with six tests. It was `[v1]` and built at v0.5, so this
-      one is a correction rather than a widening
-- [ ] ★ **Give it to alo** — anything selected can be done by hand or handed
-      over, and a whole goal can be handed over. **This overrides the carve-out**
-      that kept its tier when *alo working in a window you put aside* went to
-      `[v0.01]`; the owner chose to move it anyway
+**And five canvas promises joined them on 2026-10-03**, by the same decision —
+and **left again on 2026-10-04**, when the owner ruled that the complete canvas is
+one current milestone ([ADR 0085](docs/decisions/0085-the-complete-canvas-is-one-current-milestone.md)).
+They are now in v0.01's **Complete canvas** section. The twenty-four hours they
+spent here are kept in this paragraph rather than erased, because a reader
+following #439 to this page should find where they went.
 
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready

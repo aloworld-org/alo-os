@@ -1,5 +1,20 @@
 # The canvas and its Places
 
+**This plan is part of the Complete canvas milestone**, by the owner's ruling of
+2026-10-04 — [ADR 0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).
+Every agreed canvas capability is in one current milestone, so **no task here is out
+of scope for carrying a `[v0.5]` or `[v1]` label in an older document**. Order and
+dependencies are unchanged: work may be sequenced, and nothing is excluded by a tier.
+
+**And completion means one thing, in the ruling's own words:** *a canvas capability
+is complete only when it works through the production path and meets its acceptance
+criteria. A model, unused function, Figma state or isolated test is progress — not
+completion.* This plan's territory produced that rule the hard way — a rule with no
+caller, a mover called only by tests, a field a constant could replace without
+seventeen tests noticing — so it is quoted at the top rather than left in a decision
+record.
+
+
 **What this is.** The owner put **the full canvas experience into v0.01** on
 2026-09-30, with the instruction not to reduce Places to a minimal implementation
 and not to defer the dependent panel behaviour. *The canvas owns Place identity;
@@ -258,6 +273,11 @@ not a pointer it can follow and the ledger points at the set instead. The
 lettered heading stays because this belongs beside the controls it joins rather
 than at the end of the plan.
 
+**Owner:** the **development PC** — the lane holding the parked pointer classifier, by
+`handover/dev-pc/the-pointer-classifier`'s own README. The Mac holds the band it
+reserves and the surface it is drawn into, so the two meet in `alo-shell` and say
+which files before starting.
+
 **Status:** ready — **the owner made them a promise on 2026-10-02** and
 `docs/features.md` carries them at `[v0.01]`. **Depends on:** nothing.
 
@@ -293,6 +313,8 @@ could not land in any crate because one of its three inputs was unbuildable.
   recorded here rather than taken.
 
 ### 6. The fixed controls, and a window that can always be got back
+
+**Owner:** the **Mac**.
 
 **Status:** in progress — **the set is complete and the recheck has a caller as
 of 2026-10-02**; two named pieces are waiting on something other than work.
@@ -393,7 +415,71 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
   moved a few hundred units, not sent to another Place. Reported rather than
   assumed to be covered.
 
+### 8. A Place remembers time
+
+**Status:** ready. **Owner:** **the Mac.** **Depends on:** 5, which is done — an
+arrangement has to exist before a series of them can.
+
+**Added 2026-10-04 by [ADR
+0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md)**, which
+put every agreed canvas capability into one current milestone. The promise was
+`[v1.1]` — the furthest-out canvas promise there was — and had no task in any
+plan, so no lane could have built it and nothing said so.
+
+Drag a ribbon and the canvas is as it was on Tuesday.
+
+**The word *snapshot* means two things here and taking the wrong one is the whole
+risk.** `docs/features.md` says *from the snapshots undo already takes*, and the
+snapshots undo takes are `alo-keeping-up`'s — **of the filesystem**. An
+arrangement over time is a different subject with the same word, and reaching for
+the filesystem's snapshots would be the two-vocabularies fault this plan's
+territory has produced four times in two days: `alo-arranging` and `alo-displays`
+both say *arrangement*, one the canvas a person left and one the monitors.
+
+- **Acceptance:** arrange windows on a Place, change it, and reach a named earlier
+  state through the production path — the layout that returns is the one that was
+  held, and the person is never shown a state they cannot get back from. A test
+  that round-trips a series in memory is **progress, not completion**, by the
+  ruling's own words.
+- **Constraint:** extends `alo-arranging`. A second store would be a second
+  answer to *where was everything*, which is the fault this repository keeps
+  finding.
+- **Blocker to report rather than work around:** nothing holds more than one
+  arrangement today, and whether a series is kept per Place or per session is a
+  shape question this task answers rather than inherits.
+
+### 9. Every screen is a view onto the canvas
+
+**Status:** ready. **Owner:** **the Mac.** **Depends on:** the camera having one
+home, which is the same thing `the-smallest-canvas-worth-showing.md` task 9's
+remaining half turns on — so these two are done together or the second is done
+twice.
+
+**Added 2026-10-04 by [ADR
+0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).** It was
+`[v0.5]` and had no task.
+
+Two displays are two viewports at their own zoom, not two desktops.
+
+**What exists and what does not, measured rather than assumed.** `alo-displays`
+already models more than one display and `ScreenPlace` already gives each its own
+room, so the display half is built. `alo-shell` holds **one** camera — and
+`surfaces.rs`'s own note says *one home, not two* about the single duplicate that
+already exists, which three mutators keep in step by hand. **A camera per viewport
+is a change to where that state lives**, not a field beside it, and that is why
+this task depends on the camera question rather than on the displays.
+
+- **Acceptance:** two displays, each at its own zoom, each a view onto the same
+  canvas — a frame moved on one appears moved on the other, and neither display
+  is a second desktop with its own arrangement. Shown on a machine with two
+  outputs, which is phase 8's ground for the second half.
+- **Constraint:** no second camera copy. The one that exists is already named in
+  `surfaces.rs` as a hazard; adding a third would make a restored window's size
+  depend on how many mutators happened to be in step.
+
 ### 7. The minimized-window panel, per Place
+
+**Owner:** the **development PC**.
 
 **Status:** **two clauses paid, one blocked on task 9, one waiting on an owner decision —
 2026-10-02.** *Read `blocked on 4 only; 1 is done` until this edit, after task 4 landed the
@@ -531,11 +617,9 @@ it depends on 1 and 3, not because it is optional.
 
 ## The gaps, stated because the instruction says to state them
 
-**Three promises were not moved and this lane did not move them.** *A Place
-remembers time*, *Every screen is a view onto the canvas* and *A panel out of view
-costs nothing* remain at `[v1]` and `[v1.1]`. The owner named five things
-completion requires and none of them is these. Moving them would have been this
-lane widening its own scope under cover of an instruction.
+**Three promises were not moved and this lane did not move them — and the owner moved them on 2026-10-04.** *A Place remembers time*, *Every screen is a view onto the canvas* and *A panel out of view costs nothing* were at `[v1]` and `[v1.1]`, and this lane left them there because *the owner named five things completion requires and none of them is these* — moving them would have been a lane widening its own scope under cover of an instruction.
+
+[ADR 0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md) settles it from the other direction: **every agreed canvas capability is one current milestone**, and all three are named in the ruling's own list. So they are `[v0.01]` now, with tasks 8 and 9 of this plan written for the first two and task 1 of `docs/autonomy/putting-a-window-aside.md` holding the third. **The restraint is kept on the record rather than deleted**, because it was right on the day: a lane may not move a tier, and the owner may.
 
 **This paragraph said four, and *Tidy this canvas* was the fourth.** It moved to
 `[v0.01]` later the same day, and the reason it had to is a fault of this lane's
@@ -550,12 +634,9 @@ and unsound the moment it had moved the other half. The laptop lane found it whi
 reconciling a collision in `features.md`; the argument that settles it is this
 one, not theirs.
 
-**One promise is built below its own tier.** *Every canvas also answers as a list*
-is `[v1]` and was built at v0.5, with tests. Recorded rather than quietly
-re-tiered.
+**One promise was built below its own tier, and the tier has come down to meet it.** *Every canvas also answers as a list* was `[v1]` and built at v0.5, with six tests — recorded here rather than quietly re-tiered, which was the right half of the choice. ADR 0085 moves it to `[v0.01]`, so the record now reads as a **correction** rather than a widening: the work was done, and only the label was wrong.
 
-**One acceptance condition still needs scope the owner has not granted.** Task 6's
-fourth check asks for a keyboard road to move a frame. There is none, and
+**One acceptance condition needed scope the owner had not granted, and now has it.** Task 6's fourth check asks for a keyboard road to move a frame. *Keyboard access* is named in ADR 0085's milestone, so the clause is in scope — but **the promise it would rest on still does not exist**, and that is the blocker to report rather than work around: `docs/features.md`'s *each with a keyboard form* attaches to fit, fill and work-inside and **not to dragging**, at any tier, measured 2026-10-03. A capability in a milestone whose definition promises no road is a task that cannot state its own acceptance. Previously: there is none, and
 `features.md:422`'s keyboard forms are *fit*, *fill* and *work inside* — not drag.
 
 **And the honest shape of task 1.** *The canvas owns Place identity* is written
