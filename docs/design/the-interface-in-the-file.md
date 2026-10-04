@@ -39,18 +39,41 @@ half-built: there is no module for any of them.
 Each row is a task somebody can take. **Milestone** is where it belongs, not
 where anyone wishes it were.
 
+**Re-measured on 2026-10-04, and this table understated the machine by six rows.**
+It was written on 2026-09-26 and last touched on 2026-09-27, and said *no canvas*,
+*nothing to be fixed against*, *no panel* and *no zoom* — all four of which exist
+and are reached through the production path. **Two canvas documents cite this table
+as their arbiter**, so a stale cell here is a stale premise there, which is why it
+is corrected rather than noted.
+
+**What was corrected and what was not, because the two columns have different
+authorities.** *What the shell does* is a claim about this repository and is
+measured here. *What the file shows* is a claim about the Figma file — and **this
+lane has no Figma access**: no `mcp__claude_ai_Figma__*` tool in its session, no
+token, and `WebFetch` answers 403 on a private file. So **not one cell in that
+column has been touched**, and if the design has changed since 2026-09-26 this
+document would not show it. The laptop lane can read the file; this one cannot, and
+a measurement only one lane can take is a measurement nobody can check.
+
+**And the Milestone column is superseded for every canvas row.** Six rows read
+`v1`; [ADR 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md)
+put every agreed canvas capability into one current milestone on 2026-10-04, so they
+read **Complete canvas**. The owner's own words on what that means are the reason
+this table exists: *a model, unused function, **Figma state** or isolated test is
+progress — not completion.*
+
 | # | What the file shows | What the shell does | Milestone |
 |---|---|---|---|
 | 1 | deep teal for alo, navy for text and human controls | deep teal for the agent; navy is text already, human controls unchecked | **v0.5** |
 | 2 | the four-corner open-square mark beside alo | a mark exists beside the agent; it is not that shape | **v0.5** |
 | 3 | network, volume and brightness in the status area | shipped — clock, battery, network, volume | **done** |
 | 4 | one `Canvas / Window title` component | one title component, after the file's own cleanup | **done** |
-| 5 | a movable, resizable canvas of windows | no canvas | **v1** |
-| 6 | viewport controls fixed while the canvas moves | nothing to be fixed against | **v1** |
-| 7 | the minimized panel, collapsed and expanded | no panel | **v1** |
-| 8 | selection, arrange, group, *Give to alo*, Stop | no multi-selection | **v1** |
-| 9 | full screen with edge-revealed controls | full screen without the canvas's edges | **v1** |
-| 10 | the zoom menu — *Zoom out* and *Show all* to the overview, *Zoom in* to the closer canvas | no zoom | **v1** |
+| 5 | a movable, resizable canvas of windows | **built** — `alo-canvas` holds the plane, the camera, `Place` and `World`; frames are dragged and resized through the production path | **Complete canvas** |
+| 6 | viewport controls fixed while the canvas moves | **built** — four fixed controls, and a frame keeps 44 × 24 of its name clear of every one of them; compared against each other on a real draw | **Complete canvas** |
+| 7 | the minimized panel, collapsed and expanded | **built** — it conceals until reached, reveals, groups by Place, and gives a window back on a click; 15 integration tests in `alo-put-aside` | **Complete canvas** |
+| 8 | selection, arrange, group, *Give to alo*, Stop | **still no cross-frame selection**, which is the half this row is about. *Give it to alo* and Stop are now `[v0.01]` | **Complete canvas** |
+| 9 | full screen with edge-revealed controls | **partly** — the panel's edge reveal is built and the top controls give way to a full-screen window; whether the *controls* appear on reaching the edge is task 6 of `putting-a-window-aside.md` and not this lane's to claim | **Complete canvas** |
+| 10 | the zoom menu — *Zoom out* and *Show all* to the overview, *Zoom in* to the closer canvas | **built** — `Zoom::of`, `FURTHEST_OUT`, `LIFE_SIZE` and `canvas_show_all.rs`, on three roads a person has | **Complete canvas** |
 | 11 | a dark canvas | light and dark schemes exist in `alo-appearance` | **v0.5 tokens, v1 canvas** |
 
 ## Conflicts, unresolved
