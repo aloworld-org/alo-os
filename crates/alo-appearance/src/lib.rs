@@ -97,14 +97,24 @@
 //! for the same reason: the answer is testable without a wait, and the settings
 //! panel and the compositor cannot disagree about it.
 //!
-//! **It is not a capability.** There is no connection between this crate and
-//! `alo-capability`, and that is not an omission: a person setting their own
-//! wallpaper in Settings is not an agent doing something to their machine, so
-//! there is no verb, no grant and no approval. `docs/features.md` promises at v1
-//! that an agent can be *asked* for an appearance change — *make the background
-//! this photo* — and that arrives as a verb in `alo-capability` with the same
-//! propose-then-approve as any other change, proposing one of the values this
-//! crate defines. Nothing here has to move for that to happen.
+//! **Setting it is not a capability; asking for it is.** A person setting their
+//! own wallpaper in Settings is not an agent doing something to their machine,
+//! so that road has no verb, no grant and no approval, and nothing in
+//! [`changes`] knows one exists.
+//!
+//! `docs/features.md` promises at **v0.5** — moved there from v1 by
+//! [ADR 0084](../../../docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md)
+//! on 2026-10-03 — that an agent can be *asked* for an appearance change: *use
+//! dark after six*. That road is [`verbs`], two declarations handed to
+//! `alo-capability` through `declare_into`, as thirteen other crates hand over
+//! theirs. **The connection is a declaration and nothing more**: both verbs end
+//! at [`changes::Changes::follow`], which is the road a settings panel already
+//! writes through, so a person's settings and an agent's cannot drift apart into
+//! two accounts of one machine.
+//!
+//! *This paragraph said there was no connection at all, and that it was not an
+//! omission. It was true until the verbs landed, and it moved in the same change
+//! that made it false rather than after it.*
 //!
 //! # What this crate does not answer
 //!
@@ -158,6 +168,7 @@ pub mod time;
 pub mod token;
 pub mod unkept;
 pub mod unreadable;
+pub mod verbs;
 pub mod words;
 
 #[cfg(test)]

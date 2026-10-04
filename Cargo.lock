@@ -155,6 +155,7 @@ dependencies = [
 name = "alo-appearance"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
  "alo-kept",
  "alo-strings",
  "serde",
@@ -574,6 +575,7 @@ name = "alo-declared"
 version = "0.0.1"
 dependencies = [
  "alo-adapters",
+ "alo-appearance",
  "alo-applications",
  "alo-by-hand",
  "alo-capability",
