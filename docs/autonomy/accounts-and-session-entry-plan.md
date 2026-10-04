@@ -1074,7 +1074,30 @@ is `crates/alo-models`' own — a person asking for a model in one command, whic
 
 ### 17. The recipe built with the model it now carries
 
-**Status:** ready. **Depends on:** 10.
+**Status:** blocked — attempted on this machine 2026-10-04 and it needs a
+machine with room, which is the owner's call under
+`docs/autonomy/SHARED_MAIN.md`. **Depends on:** 10.
+
+- **What the attempt proved, and it is not nothing.** The build reached
+  **stage 4 of 6, step 10 of 13** — the weights fetch — and both digests
+  checked: `/weights.gguf: OK` and `/template.gotmpl: OK`.
+  **The first of the three risks this task names is retired.** The blob at
+  `registry.ollama.ai/v2/library/qwen3/blobs/sha256:a3de86cd…` is fetchable and
+  matches its pin, and so is the template blob. Whether `ollama create` will
+  import it from a `FROM` line is step 11 and never ran.
+- **What stopped it was host disk, not the recipe.** The guest's `df -h /` said
+  **826 GiB available** — logical room in a vhdx whose maximum is 1007 GiB and
+  whose physical backing is `C:`, which had **21 GiB**. The build needed about
+  29 GiB, the vhdx grew into the last of the host disk, and the guest would not
+  restart: *Wsl/Service/CreateInstance/E_FAIL*.
+  **The governing number was the smaller one**, printed by the same script as
+  the lesser of two facts.
+- **The predicted 8.79 GiB stands as prediction**, because no image was
+  produced. Both findings are written into `docs/quirks.md`, which is where the
+  acceptance says they go whether or not they are a surprise.
+- **Still unmeasured, and both lie after step 10:** the `TEMPLATE """…"""`
+  assembly that no shell has run, and the store's *carried once* assertions
+  against this model.
 
 Task 10 changed what every machine we build arrives with — a different model, a
 different registry, a second pinned file and a Modelfile assembled out of it —
