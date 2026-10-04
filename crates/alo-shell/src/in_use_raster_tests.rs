@@ -55,6 +55,7 @@ fn drawn(uses: &[Use]) -> InUsePicture {
         &mut labels,
         (1920, 1080),
         light(),
+        None,
     )
     .unwrap()
 }
@@ -198,6 +199,7 @@ fn an_output_that_cannot_hold_the_indicator_is_refused() {
         &mut labels,
         (LARGEST_SIDE + 1, 1080),
         light(),
+        None,
     );
 
     assert!(

@@ -108,6 +108,11 @@ fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
 /// surface is laid out for. **A frame that cannot carry this indicator is
 /// refused rather than drawn without it** — a machine that could not say its
 /// camera was on may not put a desktop up instead.
+///
+/// `panel` is the column the put-aside panel reserved on this output, or [`None`]
+/// when nothing is put aside. The corner stops before it — see
+/// `crate::egress_status_place` for the owner's ruling it applies and for why it is
+/// a parameter rather than something a caller remembers to do.
 pub(crate) fn picture(
     lines: &[Line],
     strings: &Strings,
@@ -115,6 +120,7 @@ pub(crate) fn picture(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
     look: InUseLook,
+    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<InUsePicture, RenderError> {
     let mut picture = InUsePicture {
         size,
@@ -141,6 +147,7 @@ pub(crate) fn picture(
         size,
         measure.px(8),
         look.reading,
+        panel,
     );
     let palette = palette(look.scheme, look.contrast);
 

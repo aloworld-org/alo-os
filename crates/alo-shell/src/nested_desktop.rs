@@ -268,6 +268,15 @@ pub(crate) struct DesktopPictures {
 /// **The in-use indicator is laid out before what is leaving**, because it has
 /// the status area's corner and the egress rows stack beyond it
 /// (`crate::in_use_raster` says why).
+///
+/// **And the desktop is laid out before all three of them**, which is a change of
+/// 2026-10-04 and the reason the order is written down here. The put-aside panel
+/// reserves a column at the end of the edge the status corner is at, and until the
+/// desktop had been drawn nothing knew how wide that column was — so the three
+/// corner surfaces were placed against the output's own width and the indicator's
+/// band shared 104 pixels with the column on a real draw. The desktop picture does
+/// not read any of the three, so moving it first costs nothing; `crate::egress_status_place`
+/// carries the ruling this applies.
 pub(crate) fn frame_pictures(
     desktop: DesktopFrame<'_>,
     record: Option<RecordFrame<'_>>,
@@ -275,37 +284,6 @@ pub(crate) fn frame_pictures(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
 ) -> Result<DesktopPictures, RenderError> {
-    let in_use = crate::in_use_raster::picture(
-        desktop.in_use,
-        desktop.strings,
-        desktop.dock,
-        labels,
-        size,
-        desktop.look.in_use(),
-    )?;
-    let capturing = desktop
-        .capturing
-        .map(|tools| crate::capture_raster::picture(tools, size, desktop.look.capture()))
-        .transpose()?;
-    let notifications = crate::notification_raster::picture(
-        desktop.notifications,
-        desktop.strings,
-        desktop.dock,
-        labels,
-        size,
-        desktop.look.notifications(),
-    )?;
-    let status = status_picture(
-        EgressStatusFrame {
-            status: desktop.egress,
-            strings: desktop.strings,
-            dock: desktop.dock,
-            look: desktop.look.egress(),
-        },
-        labels,
-        size,
-        in_use.height,
-    )?;
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);
     let drawn = crate::desktop_raster::picture(
@@ -324,6 +302,44 @@ pub(crate) fn frame_pictures(
         },
         &mut labels.fonts,
         size,
+    )?;
+    // The one column the three corner surfaces below must stop before. Taken from
+    // the picture rather than recomputed, so there is no second answer to keep in
+    // step — the same reason `crate::top_controls_region` takes it as an argument.
+    let panel = Some(drawn.panel.reserved);
+    let in_use = crate::in_use_raster::picture(
+        desktop.in_use,
+        desktop.strings,
+        desktop.dock,
+        labels,
+        size,
+        desktop.look.in_use(),
+        panel,
+    )?;
+    let capturing = desktop
+        .capturing
+        .map(|tools| crate::capture_raster::picture(tools, size, desktop.look.capture()))
+        .transpose()?;
+    let notifications = crate::notification_raster::picture(
+        desktop.notifications,
+        desktop.strings,
+        desktop.dock,
+        labels,
+        size,
+        desktop.look.notifications(),
+        panel,
+    )?;
+    let status = status_picture(
+        EgressStatusFrame {
+            status: desktop.egress,
+            strings: desktop.strings,
+            dock: desktop.dock,
+            look: desktop.look.egress(),
+        },
+        labels,
+        size,
+        in_use.height,
+        panel,
     )?;
     let record = match record {
         Some(record) => Some(crate::record_raster::picture(

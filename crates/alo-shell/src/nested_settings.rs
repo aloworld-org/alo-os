@@ -146,7 +146,7 @@ fn frame_pictures(
     ),
     RenderError,
 > {
-    let status = status_picture(egress, labels, size, 0)?;
+    let status = status_picture(egress, labels, size, 0, None)?;
     let sections = picture(
         settings.window,
         settings.strings,

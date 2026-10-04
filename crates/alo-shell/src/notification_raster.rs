@@ -99,6 +99,10 @@ impl NotificationPicture {
 /// [`RenderError::NotificationScene`] when there is one to show and the output
 /// is too small for `alo-dock` to lay a dock out on, or larger than any output
 /// a card is laid out for.
+/// `panel` is the column the put-aside panel reserved, or [`None`] when nothing is
+/// put aside. A notification takes the end of the edge away from the status corner,
+/// which in a mirrored session is the end the column is at — see
+/// `crate::egress_status_place`.
 pub(crate) fn picture(
     showing: &[Shown],
     strings: &Strings,
@@ -106,6 +110,7 @@ pub(crate) fn picture(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
     look: NotificationLook,
+    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<NotificationPicture, RenderError> {
     let mut picture = NotificationPicture {
         size,
@@ -131,6 +136,7 @@ pub(crate) fn picture(
         size,
         measure.px(8),
         look.reading,
+        panel,
     );
     let ground = look.contrast.ground(look.scheme);
     let ink = look.contrast.ink(look.scheme);

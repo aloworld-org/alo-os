@@ -12,6 +12,7 @@ use alo_notifying::arriving::{from_alo_os, from_the_agent};
 use alo_notifying::deciding::arrives;
 use alo_notifying::quiet::Quiet;
 use alo_notifying::{Became, Missed};
+use smithay::utils::{Point, Size};
 
 /// Everything this machine can say, with nothing translated.
 fn words() -> Strings {
@@ -66,6 +67,7 @@ fn drawn(showing: &[Shown]) -> NotificationPicture {
         &mut labels,
         (1920, 1080),
         light(),
+        None,
     )
     .unwrap()
 }
@@ -172,14 +174,28 @@ fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     let dock = Dock::shipped();
     let measure = Measure::of(TextScale::ordinary());
     let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary());
-    let status = Place::of(layout, size, measure.px(8), Direction::LeftToRight);
-    let cards = Place::of_the_other_end(layout, size, measure.px(8), Direction::LeftToRight);
+    // **Asked with a panel column as well as without one.** The two ends are
+    // different numbers on an output nobody has put a window aside on, and the
+    // reserved column moves the end it is at — so a version that forgot the column
+    // on one of the two calls would put the cards back on top of the indicator, and
+    // comparing only the no-panel case would not see it.
+    let column = Rectangle::new(Point::from((1808, 0)), Size::from((112, 1080)));
+    for panel in [None, Some(column)] {
+        let status = Place::of(layout, size, measure.px(8), Direction::LeftToRight, panel);
+        let cards = Place::of_the_other_end(
+            layout,
+            size,
+            measure.px(8),
+            Direction::LeftToRight,
+            panel,
+        );
 
-    assert_ne!(
-        format!("{:?}", status.across),
-        format!("{:?}", cards.across),
-        "notifications are drawn at the same end as the status area"
-    );
+        assert_ne!(
+            format!("{:?}", status.across),
+            format!("{:?}", cards.across),
+            "notifications are drawn at the same end as the status area, panel {panel:?}"
+        );
+    }
 }
 
 /// **An output too small to lay a dock on refuses rather than drawing half a
@@ -195,6 +211,7 @@ fn an_output_that_cannot_hold_a_card_is_refused() {
         &mut labels,
         (LARGEST_SIDE + 1, 1080),
         light(),
+        None,
     );
 
     assert!(

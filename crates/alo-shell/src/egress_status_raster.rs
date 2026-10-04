@@ -108,6 +108,11 @@ pub(crate) fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
 /// is too small for `alo-dock` to lay a dock out on, or larger than any output
 /// this surface is laid out for. A frame that cannot carry the indicator is
 /// refused rather than drawn without it.
+///
+/// `panel` is the column the put-aside panel reserved on this output, or [`None`]
+/// when nothing is put aside. The corner stops before it — see
+/// `crate::egress_status_place` for the owner's ruling it applies and for why it is
+/// a parameter rather than something a caller remembers to do.
 pub(crate) fn picture(
     drawn: &Drawn,
     strings: &Strings,
@@ -116,6 +121,7 @@ pub(crate) fn picture(
     size: (i32, i32),
     look: EgressStatusLook,
     beyond: i32,
+    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<EgressStatusPicture, RenderError> {
     let mut picture = EgressStatusPicture {
         size,
@@ -143,6 +149,7 @@ pub(crate) fn picture(
         size,
         measure.px(8),
         look.reading,
+        panel,
     )
     .beyond(beyond);
     let fonts = &mut labels.fonts;
