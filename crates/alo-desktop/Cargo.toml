@@ -33,6 +33,7 @@ alo-appearance = { path = "../alo-appearance" }
 # like the battery and the network above.
 alo-arranging = { path = "../alo-arranging" }
 alo-choosing = { path = "../alo-choosing" }
+alo-shortcuts = { path = "../alo-shortcuts" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }

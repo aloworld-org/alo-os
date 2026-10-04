@@ -105,6 +105,26 @@ pub trait TheDesktop {
     /// reveal.
     fn the_panel_is_revealed(&mut self, _by: alo_dock::revealing::ThePointer) {}
 
+    /// What this person's chords mean, asked for once as the session starts.
+    ///
+    /// **The shell asks and does not read**, for the reason
+    /// [`Self::the_layout_they_left`] gives at length: a settings file in a
+    /// person's folder is a call into the machine, and shell task 15's
+    /// constraint is that none is added from `crates/alo-shell`.
+    ///
+    /// **The default is what this release ships**, which is the honest default
+    /// here and not an empty one: a desktop that was never told about a
+    /// person's changes still has every shipped chord, and a desktop that
+    /// answered `Shortcuts::over(Defaults::none())` would be a machine where
+    /// `⊞`+0 does nothing until somebody edits a file.
+    ///
+    /// Asked **once**, as the layout is: a binding a person changes in Settings
+    /// is told to the session through `Server::the_shortcuts_are`, which is the
+    /// road that exists for it, rather than by re-reading a file every frame.
+    fn the_shortcuts(&mut self) -> alo_shortcuts::Shortcuts {
+        alo_shortcuts::Shortcuts::shipped()
+    }
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -203,6 +223,19 @@ impl crate::DirectSession {
                 };
                 Ok::<_, DirectLoopError>((output, painter, input))
             })();
+            // **What this person's chords mean, told to the seat before the
+            // loop owns it.** Until this line existed no chord reached a
+            // running desktop at all: every link of the shortcut chain was
+            // production code and nothing entered it, so fifteen actions were
+            // finished, tested and unreachable — `the-shell-plan.md` task 19.
+            // See `crate::a_chord_reaches_its_action`.
+            //
+            // **Before the match rather than beside the layout below**, because
+            // the loop borrows the server for its whole run and the arm that
+            // starts it is inside that borrow. Asked once here for the same
+            // reason the layout is asked once there: what a person bound is not
+            // a reading that goes stale.
+            server.the_shortcuts_are(desktop.the_shortcuts());
             match setup {
                 Ok((output, painter, input)) => crate::direct_loop::run_with_input(
                     server,
