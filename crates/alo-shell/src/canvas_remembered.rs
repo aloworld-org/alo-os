@@ -172,12 +172,13 @@ impl crate::Server {
     /// the camera as it was when the mode was entered — which nothing keeps.
     ///
     /// So the honest state of the promise is: *which state a window was in*
-    /// survives a restart, and *the size it would go back to* does not yet. The
-    /// fix is for the shell to capture a frame's plane geometry when it leaves
-    /// `Normal`, which is a change to `window_mode` rather than to this file,
-    /// and it is named in task 9 of
-    /// `docs/autonomy/the-smallest-canvas-worth-showing.md` rather than left
-    /// for whoever next reads the file and believes the field's name.
+    /// survives a restart, and *the size it would go back to* did not. **Built
+    /// 2026-10-04**, and where that note said it would be: `window_mode` captures
+    /// a frame's plane rectangle each time it leaves `Normal`, and this file reads
+    /// it back through `where_it_was_as_its_ordinary_self`. The arithmetic is
+    /// `canvas_show_all::a_rectangle`'s, shared rather than repeated, because two
+    /// answers to where a frame is, is the fault this seam has already produced
+    /// once.
     #[must_use]
     pub fn the_arrangement_now(&self) -> Arrangement {
         let mut arrangement = Arrangement::fresh();
@@ -192,13 +193,27 @@ impl crate::Server {
             ) else {
                 continue;
             };
+            // **The ordinary rectangle, which for a frame that is not ordinary
+            // is not the one it is drawn at.** `AWindowWas`'s own field has
+            // promised *always the ordinary geometry, never the geometry it was
+            // last drawn at* since it was written, and this producer handed it
+            // `place` — the live rectangle — for every window including a
+            // maximised one. A session ending with a window full screen was
+            // remembered as a window the size of a screen, and nothing could make
+            // it smaller again because the size it used to be was gone.
+            //
+            // `where_it_was_as_its_ordinary_self` answers `None` for a frame that
+            // is ordinary now, and then `place` **is** the ordinary rectangle —
+            // which is also the case where the person may have moved it since, so
+            // the live one is the fresher answer rather than merely an equal one.
+            let ordinary = self
+                .surfaces
+                .where_it_was_as_its_ordinary_self(frame)
+                .unwrap_or((place.at(), place.size()));
             arrangement.window_was(
                 on,
                 app_id,
-                alo_arranging::AWindowWas::at(
-                    (place.at(), place.size()),
-                    self.how_it_was_showing(frame),
-                ),
+                alo_arranging::AWindowWas::at(ordinary, self.how_it_was_showing(frame)),
             );
         }
         arrangement

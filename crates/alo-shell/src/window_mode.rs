@@ -35,6 +35,9 @@ pub(crate) struct ModeWindow {
     pub(crate) role: ToplevelSurface,
     /// Initial committed normal geometry; later maximize requests never replace it.
     pub(crate) normal: ResizeGeometry,
+    /// Where it sat on the **plane** as its ordinary self, captured each time it
+    /// left `Normal` — see `crate::window_mode_plan::ModePlan`.
+    pub(crate) ordinary_on_the_plane: Option<(alo_canvas::At, alo_canvas::Size)>,
     /// Last requested mode, separate from the client's committed state.
     pub(crate) mode: Mode,
     /// Latest configure and origin; older responses cannot place this window.
@@ -102,6 +105,25 @@ impl Surfaces {
             .map_or(Mode::Normal, |window| window.mode)
     }
 
+    /// Where this frame sat on the plane as its ordinary self, if it is not
+    /// ordinary now.
+    ///
+    /// [`None`] has two meanings and they are the same answer here: the frame has
+    /// no mode record, or its record says `Normal`. Either way it **is** its
+    /// ordinary self right now, so its current rectangle is the ordinary one and
+    /// `crate::canvas_remembered` should read that rather than a remembered copy
+    /// which could only be staler.
+    pub(crate) fn where_it_was_as_its_ordinary_self(
+        &self,
+        surface: &WlSurface,
+    ) -> Option<(alo_canvas::At, alo_canvas::Size)> {
+        self.window_modes
+            .iter()
+            .find(|window| window.role.wl_surface() == surface)
+            .filter(|window| window.mode != Mode::Normal)?
+            .ordinary_on_the_plane
+    }
+
     /// Whether this mapping still owns normal-geometry memory or a restore response.
     pub(crate) fn has_window_mode(&self, surface: &WlSurface) -> bool {
         self.window_modes
@@ -122,6 +144,7 @@ impl Surfaces {
         let crate::window_mode_plan::ModePlan {
             role,
             normal,
+            ordinary_on_the_plane,
             size,
             anchor,
         } = plan;
@@ -129,6 +152,7 @@ impl Surfaces {
         let window = ModeWindow {
             role,
             normal,
+            ordinary_on_the_plane,
             mode,
             pending: Some((serial, anchor)),
         };
