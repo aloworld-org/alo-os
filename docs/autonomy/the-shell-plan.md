@@ -1009,7 +1009,38 @@ for whoever measures them.
 
 ### 19. A chord pressed on a running desktop reaches its action
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-10-04: the code only.** The entrance exists and a key
+press travels it. `crates/alo-shell/src/a_chord_reaches_its_action.rs` holds the
+road, `keyboard.rs` takes a bound chord inside the one `KeyboardHandle::input`
+call it already made, `direct_desktop.rs` tells the seat what this person's
+chords mean as the session stands up, and `alo-desktop` reads their own
+`shortcuts.toml` from the folder it already reads the canvas layout from.
+`crates/alo-shell/tests/a_chord_reaches_its_action/` presses **evdev codes**
+through `Server::keyboard_key` — the function the libinput road calls on a real
+machine — and asserts the camera moved: `⊞`+0 shows all of a canvas that was
+panned away, and it does so with a client focused.
+
+**`On the machine.` is not ticked and this lane cannot tick it.** The acceptance
+asks for a person pressing a key and *seeing* it, and that needs an output this
+lane has no machine for. What is closed is the half the task was written about —
+*a finished chain with no entrance* — and what remains is a showing, not a build.
+
+**Two things the build decided that the task did not foresee**, recorded because
+each is a rule the next reader would otherwise have to rediscover:
+
+- **A chord beats the window in front, and an arrow does not.**
+  `canvas_arrow_pan` pans only with nothing focused, because an application owns
+  its own arrows. A system chord is the opposite case by definition: `⊞`+0 is
+  bound so that somebody typing in a document can still reach their canvas, and
+  a road that worked only on an empty desktop would be the gap this task names
+  wearing different clothes. So the decision is made **before delivery**, inside
+  the `input` call, rather than after it the way the arrow pan is.
+- **The release needs no rule of its own**, and that was measured rather than
+  assumed. A client is sent a release only for a key in the keyboard's
+  `forwarded` set, and a press the shell took was never put in it. The panel's
+  clicks need `clicks_the_panel_took` for exactly this; keys do not.
+
+**Depends on:** nothing.
 
 **No chord reaches a running desktop today — not the sixteenth, and not one of
 the other fifteen.** Measured by two lanes from opposite ends while building

@@ -312,7 +312,19 @@ mod running {
             match alo_shortcuts::keeping::read(at) {
                 Ok(changes) => shipped.with(changes),
                 Err(why) => {
-                    eprintln!("alo-desktop: this person's shortcuts did not read — {why}");
+                    // **The file and what was wrong with it, in English.**
+                    // `FileNotRead::said` words this in the person's own
+                    // language for a surface they read; this is the service
+                    // log, whose audience is whoever is standing the machine
+                    // up — the same division `alo-compositor.rs` states. The
+                    // variants carry a line number or a key for exactly that
+                    // reader.
+                    eprintln!(
+                        "alo-desktop: this person's shortcuts did not read, so the shipped ones \
+                         are in force — {} ({:?})",
+                        why.at().display(),
+                        why.why()
+                    );
                     shipped
                 }
             }

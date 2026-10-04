@@ -223,6 +223,19 @@ impl crate::DirectSession {
                 };
                 Ok::<_, DirectLoopError>((output, painter, input))
             })();
+            // **What this person's chords mean, told to the seat before the
+            // loop owns it.** Until this line existed no chord reached a
+            // running desktop at all: every link of the shortcut chain was
+            // production code and nothing entered it, so fifteen actions were
+            // finished, tested and unreachable — `the-shell-plan.md` task 19.
+            // See `crate::a_chord_reaches_its_action`.
+            //
+            // **Before the match rather than beside the layout below**, because
+            // the loop borrows the server for its whole run and the arm that
+            // starts it is inside that borrow. Asked once here for the same
+            // reason the layout is asked once there: what a person bound is not
+            // a reading that goes stale.
+            server.the_shortcuts_are(desktop.the_shortcuts());
             match setup {
                 Ok((output, painter, input)) => crate::direct_loop::run_with_input(
                     server,
@@ -238,15 +251,6 @@ impl crate::DirectSession {
                         // and once rather than per frame: a layout is what a
                         // person left, not a reading that goes stale.
                         let left = crate::WhereTheyLeftIt::from(desktop.the_layout_they_left());
-                        // **And what this person's chords mean**, asked in the
-                        // same breath and for the same reason. Until this line
-                        // existed no chord reached a running desktop at all:
-                        // every link of the shortcut chain was production code
-                        // and nothing entered it, so fifteen actions were
-                        // finished, tested and unreachable —
-                        // `the-shell-plan.md` task 19. See
-                        // `crate::a_chord_reaches_its_action`.
-                        server.the_shortcuts_are(desktop.the_shortcuts());
                         Desk {
                             input,
                             desktop,
