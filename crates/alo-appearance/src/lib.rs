@@ -14,8 +14,9 @@
 //! |---|---|
 //! | [`colour`] | One colour, and the one way it is written down |
 //! | [`contrast`] | How far apart two colours are to look at, to the standard |
-//! | [`token`] | The colours alo OS is built out of, from the design brief |
-//! | [`accent`] | The five a person can choose from, and the one they cannot |
+//! | [`role`] | What a colour is for — the twelve the design file names |
+//! | [`token`] | The six colours a person can pick, by the names they are called |
+//! | [`accent`] | The four a person can choose from, and the one they cannot |
 //! | [`background`] | The surface a person works on, and what it is made of |
 //! | [`display`] | Which screen, when there is more than one |
 //! | [`time`] | A time of day, which is all a schedule needs |
@@ -124,9 +125,22 @@
 //! is drawn on. The second — that wherever the agent appears, its colour arrives
 //! with a mark and a word — is true of screens rather than of colours, and
 //! belongs where the drawing happens. Nothing in this crate can enforce it, and
-//! [`contrast`] says why it is not optional: deep teal on the reading ground
-//! measures 2.87:1, under what either a word or a shape needs — 2.89:1 against
-//! the canvas's value since ADR 0092, and under both of them still.
+//! [`contrast`] holds the measurements the rule was argued from.
+//!
+//! **The reason the mark is not optional has changed, and this paragraph used to
+//! state the old one about the wrong colour.** It said *deep teal on the reading
+//! ground measures 2.87:1, under what either a word or a shape needs*. 2.87:1 is
+//! **terracotta**, which is what ADR 0010 argued from — its colour could not be
+//! read at all. ADR 0067 made the agent's colour deep teal, and deep teal
+//! **clears both thresholds** at 5.84:1 on the canvas (5.78:1 until ADR 0092
+//! moved the canvas's value; terracotta is 2.89:1 against the same new ground
+//! and still misses both).
+//!
+//! So the mark and the word survive their original argument on the durable half:
+//! **a hue is never a signal.** Around one man in twelve cannot rely on one, and
+//! a colour that passes contrast is still a colour somebody cannot distinguish
+//! from `text/primary` — which is why `docs/design/who-is-acting.md` asks whether
+//! a person can say who is acting **without naming the colour**.
 //!
 //! # Nothing here says anything in English by itself
 //!
