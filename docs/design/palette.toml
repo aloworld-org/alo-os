@@ -12,27 +12,42 @@
 # repository types configuration in, because a person can edit it, and because
 # both a Rust crate and a web build can read it without either owning it.
 #
-# # This file is the source. Everything else is held to it.
+# # The design file decides the values; this file is where the repository reads
+# # them
 #
-# `crates/alo-appearance/src/token.rs` carries these six as Rust constants — it
-# must, since a compositor cannot parse a file at the moment it draws a frame —
-# and `a_palette_with_one_source.rs` reads this file and refuses to let the two
-# disagree. `docs/design/figma-brief.md` prints the same table for a designer to
-# read, and is held to this file by the same test.
+# **Changed on 2026-10-04 by the owner's direction: follow the colours in the
+# design file.** Until then this file named six colours of its own, and two of
+# them had drifted from the design while four had no counterpart there at all —
+# measured hex by hex. The design file is now where a value is decided, and this
+# is where everything in this repository reads it.
 #
-# The point is to end CSS's authority over the palette, **not** to import it. A
-# value here is changed here, and everything that carries a copy is a copy that
-# is checked.
+# The entries below carry **the design's own variable names**, because a role is
+# what a colour is for and a colour name is only what it looks like. `bg/surface`
+# tells a reader where it goes; `porcelain` does not, and told four different
+# consumers four different things.
+#
+# `crates/alo-appearance/src/token.rs` carries these as Rust constants — it must,
+# since a compositor cannot parse a file at the moment it draws a frame — and
+# `a_palette_with_one_source.rs` reads this file and refuses to let the copies
+# disagree. `docs/design/figma-brief.md` prints the same table for a designer.
+# `docs/design/figma-snapshot/variables.toml` records what was measured in the
+# design file and when, so that check runs **without live Figma access**: the
+# development PC and the Mac have none.
 #
 # # What is deliberately not in it
 #
-# **Anything that is not a colour.** Spacing, type scale, radii and motion are
-# not palette, and a file that grew to hold them would become the same
-# undifferentiated bucket `tokens.css` had become.
+# **Anything that is not a colour.** The design file also carries `space/2`
+# through `space/8` and `radius/sm`, `radius/md`; those are real and they are not
+# palette. A file that grew to hold them would become the same undifferentiated
+# bucket `tokens.css` had become. They are named in `variables.toml` as measured
+# and unadopted, so nobody has to rediscover them.
 #
-# **Light and dark variants of these six.** They are one palette used against two
-# grounds rather than two palettes; `crates/alo-appearance/src/scheme.rs` decides
-# which ground, and `contrast.rs` is what holds a pairing to being readable.
+# **The dark mode, which exists and is not reconciled here.** The design binds
+# the same names to different values in a dark mode — `accent/default` is
+# `#0F6B72` light and `#77C8C6` dark, measured. **This file is the light theme
+# only.** Dark-theme parity needs its own measured evidence before anything
+# claims it, and `crates/alo-appearance/src/scheme.rs` and `contrast.rs` still
+# decide ground and readability.
 #
 # **The four accents a person may choose** (ADR 0010, `accent.rs`). None of them
 # is in this list and that is the point: deep teal is the agent's and cannot be
@@ -42,46 +57,165 @@
 # Which shape this file is in. A reader that does not know this number refuses
 # the file rather than guessing at it — the same rule the record and the machine
 # description state.
-format = 1
+#
+# **2 since 2026-10-04**: the entries are semantic roles under the design's
+# variable names, where 1 was six colour names. A reader written for 1 must
+# refuse this rather than read `text/primary` as though it were `navy`.
+format = 2
 
-# Structure and text.
-[navy]
+# ---------------------------------------------------------------------------
+# Text
+# ---------------------------------------------------------------------------
+
+# Structure and body text. The same value `navy` carried, and the one the public
+# contract names — unchanged, measured identical in the design.
+["text/primary"]
 hex = "#102A43"
-role = "structure, text"
+role = "structure and body text"
+
+# Text that is still text, not metadata: a subtitle, a second line.
+["text/secondary"]
+hex = "#274C68"
+role = "secondary text"
+
+# Metadata — the role `warm-stone` held, at the design's value rather than the
+# repository's. `#7A6F62` was a warm grey; this is a cool one, and the design is
+# what decides.
+["text/muted"]
+hex = "#596B78"
+role = "metadata"
+
+# ---------------------------------------------------------------------------
+# Grounds
+# ---------------------------------------------------------------------------
+
+# The workspace canvas — the desktop a person's windows sit on, and what
+# `alo_appearance::shipped::THE_SURFACE` ships.
+["bg/canvas"]
+hex = "#FAF7F2"
+role = "the workspace canvas"
+
+# Documents, cards, panel surfaces — anything that sits *on* the canvas. **The
+# light rail's base is this** (the owner's direction of 2026-10-04); the rail's
+# glass treatment is a material specification and not a colour, and is not in
+# this file.
+["bg/surface"]
+hex = "#FFFFFF"
+role = "documents, cards, panel surfaces"
+
+# Recessed or secondary surface areas — a well, a sunken row.
+["bg/cool"]
+hex = "#EEF2F4"
+role = "recessed and secondary surfaces"
+
+# ---------------------------------------------------------------------------
+# Lines
+# ---------------------------------------------------------------------------
+
+["border/default"]
+hex = "#E7EBEF"
+role = "the ordinary dividing line"
+
+# ---------------------------------------------------------------------------
+# alo
+# ---------------------------------------------------------------------------
 
 # alo — present, acting, proposing, or waiting for an approval, and nothing
 # else. About five percent of any screen, so a person can tell at a glance
 # whether the machine is doing something on their behalf. It is never an accent
 # somebody may choose (ADR 0010, amended by ADR 0067, which moved this role from
-# terracotta to deep teal). Terracotta was released from being reserved and was
-# *not* added to the accent set: an accent has to reach 4.5:1 on both grounds and
-# terracotta on cream measures 2.87:1, so the set is four rather than five and
-# terracotta is no longer a colour this system uses.
+# terracotta to deep teal). **ADR 0067 is untouched by the 2026-10-04 change:
+# the design's `accent/default` is `#0F6B72`, the same value, measured.**
+# Terracotta was released from being reserved and was *not* added to the accent
+# set: an accent has to reach 4.5:1 on both grounds and terracotta on cream
+# measures 2.87:1, so the set is four rather than five and terracotta is no
+# longer a colour this system uses.
 #
 # It never appears alone: deep teal arrives with the four-corner mark or the
 # word, because navy and deep teal are both dark desaturated blues and a person
 # must be able to say who is acting without naming the colour
-# (`who-is-acting.md`).
-[deep-teal]
+# (`who-is-acting.md`). **It is not the ordinary selection or button colour**
+# (the owner's direction of 2026-10-04), which is what a semantic name invites a
+# reader to assume and what this note exists to refuse.
+["accent/default"]
 hex = "#0F6B72"
-role = "alo — about 5% of any screen"
+role = "alo — about 5% of any screen, never alone"
 
-# The reading ground.
-[cream]
-hex = "#F8F6F2"
-role = "reading ground"
+# The quiet ground that goes with it: the fill behind alo's own surfaces, not a
+# second accent and not a selection colour.
+["accent/soft"]
+hex = "#E8F4F2"
+role = "the ground behind alo's own surfaces"
 
-# The workspace canvas.
-[porcelain]
-hex = "#F4F1EC"
-role = "workspace canvas"
+# ---------------------------------------------------------------------------
+# Status
+# ---------------------------------------------------------------------------
+#
+# Three states a person is told about. **None of them may be the only signal** —
+# ADR 0010's reasoning about a reserved colour never standing alone is about
+# telling who is acting, and the same rule holds for telling what happened: a
+# colour and a word, or neither.
 
-# The rail.
+["status/positive"]
+hex = "#146C43"
+role = "it finished, it is allowed, it is on"
+
+["status/warning"]
+hex = "#8C5A0A"
+role = "it needs attention and nothing is broken"
+
+["status/danger"]
+hex = "#B42318"
+role = "it failed, it is refused, it would destroy something"
+
+# ---------------------------------------------------------------------------
+# Retained, and not a design variable
+# ---------------------------------------------------------------------------
+
+# The dark ground. **Deliberately kept, and deliberately not one of the names
+# above**, because it is the only value here the design file does not define.
+#
+# `crates/alo-appearance/src/accent.rs` measures every choosable accent against
+# it — *a single hex that reads on cream is illegible on charcoal* — so deleting
+# it would delete the dark half of every contrast check. The owner's direction of
+# 2026-10-04 is explicit: the light rail's base is `bg/surface`, and that **does
+# not** make white the dark-theme rail colour or justify replacing every use of
+# charcoal.
+#
+# The design's dark mode does carry candidates — `bg/subtle #183B56` and
+# `navy/950 #07131F` were measured — and **neither is adopted here**, because
+# dark-theme parity needs its own measured evidence. Until then this value stands
+# and is honest about what it is.
 [charcoal]
 hex = "#1F2529"
-role = "the rail"
+role = "the dark ground, pending dark-theme reconciliation"
 
-# Metadata.
-[warm-stone]
-hex = "#7A6F62"
-role = "metadata"
+# ---------------------------------------------------------------------------
+# What the old names became
+# ---------------------------------------------------------------------------
+#
+# Stated rather than implied, so that a reader of an older document, a public
+# contract or another repository can follow a name they already hold to the role
+# it now has. **A name is retired here only after the contract has deprecated
+# it** — `docs/contracts/person-settings.md` is the public surface and
+# `CLAUDE.md` binds it to changing additively.
+
+[was]
+navy = "text/primary"           # same value, measured identical
+"deep-teal" = "accent/default"  # same value, measured identical — ADR 0067 stands
+cream = "bg/canvas"             # was #F8F6F2, the design says #FAF7F2
+porcelain = "per consumer"      # not one role — see the note below
+charcoal = "charcoal"           # retained above, not a design variable
+"warm-stone" = "text/muted"     # was #7A6F62, the design says #596B78
+
+# **`porcelain` is not one role and was not renamed to one.** The owner's
+# direction of 2026-10-04 is to audit its consumers and assign the role each one
+# actually has, rather than map a colour to the nearest-looking value:
+#
+#   alo_appearance::shipped::THE_SURFACE  the workspace canvas -> bg/canvas
+#   accent.rs's light grounds             canvas and surface   -> bg/canvas, bg/surface
+#   a document, card or panel surface                          -> bg/surface
+#   a recessed or secondary area                               -> bg/cool
+#
+# Near hexes are exactly how a role comes to be assigned by resemblance instead
+# of by meaning, which is the fault this change exists to end.
