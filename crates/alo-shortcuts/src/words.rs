@@ -79,13 +79,19 @@ pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Setti
 pub const CLOSE_WINDOW: Word = Word::saying("shortcuts.action.close-window", "Close the window")
     .noting(
         "The window that has the keyboard is closed — one window, not the application, which may \
-         have others open. See the note on shortcuts.action.next-window.",
+         have others open. See the note on shortcuts.action.next-window. This string has two homes: a row in \
+         the list of shortcuts, and the name a screen reader speaks for the close button \
+         drawn on every window (ADR 0089), so it has to read naturally spoken on its own.",
     );
 
 /// What [`crate::Action::MinimiseWindow`] does.
 pub const MINIMISE_WINDOW: Word =
-    Word::saying("shortcuts.action.minimise-window", "Minimise the window")
-        .noting("The window is put out of the way without being closed.");
+    Word::saying("shortcuts.action.minimise-window", "Minimise the window").noting(
+        "The window is put out of the way without being closed. This string has two \
+             homes: a row in the list of shortcuts, and the name a screen reader speaks \
+             for the minimise button drawn on every window (ADR 0089), so it has to read \
+             naturally spoken on its own.",
+    );
 
 /// What [`crate::Action::MaximiseWindow`] does.
 pub const MAXIMISE_WINDOW: Word = Word::saying(
@@ -94,7 +100,10 @@ pub const MAXIMISE_WINDOW: Word = Word::saying(
 )
 .noting(
     "One shortcut does both: it makes the window fill the screen, and pressing it again puts the \
-     window back to the size it was.",
+     window back to the size it was. This string has two homes: a row in the list of \
+     shortcuts, and the name a screen reader speaks for the maximise button drawn on \
+     every window (ADR 0089). Spoken there only the first half applies, because a \
+     button does not announce what pressing it a second time would do.",
 );
 
 /// What [`crate::Action::SnapLeft`] does.
