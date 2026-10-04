@@ -1,4 +1,4 @@
-# What closes v0.0.5, and in what order
+# What closes image 0.0.5, and in what order
 
 Decided by the owner on 2026-09-25, when the count stood at 227 tasks, 208
 done, 9 open, 9 blocked and 1 declined. Nine of the eighteen left were waiting
@@ -9,7 +9,7 @@ moves two out of the release.
 ## The last two things
 
 **The certified laptop and a second signed release are the last tasks of
-v0.0.5.** Not because they are hardest, but because they close nothing else:
+image 0.0.5.** Not because they are hardest, but because they close nothing else:
 every other task can be finished around them, and each of them is the owner's
 to perform.
 
@@ -23,16 +23,16 @@ to perform.
 Everything in the section below is what the lanes finish first, so that when
 those two happen the release closes on them rather than on a queue behind them.
 
-## Moved out of v0.0.5
+## Moved out of image 0.0.5
 
-**The models measured, task 23 — the card road — moves to 0.0.6.** Task 22 is
+**The models measured, task 23 — the card road — moves to image 0.0.6.** Task 22 is
 finished: the processor road is measured, and so is every refusal on the way to
 a card that cannot be used. What 23 adds is one machine carrying a discrete
 card, to hold [ADR 0007](../../decisions/0007-the-cpu-is-the-default.md)'s
 *a GPU changes speed, not capability* as a measurement rather than a claim. The
 instrument is already written and `#[ignore]`d, waiting for that machine.
 
-v0.0.5 reaches developers on integrated graphics, and renting a graphics server
+Image 0.0.5 reaches developers on integrated graphics, and renting a graphics server
 now would buy one sentence at the cost of a server and the NVIDIA image
 decision, which stays open. **The release notes say plainly that the card road
 is unmeasured** — an unmeasured claim named in the notes is honest; the same
