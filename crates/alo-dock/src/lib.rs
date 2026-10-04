@@ -105,17 +105,36 @@
 //! so a translator is handed it and a checked translation cannot lose it
 //! quietly.
 //!
-//! # One edge, and why not a default
+//! # Four edges, with bottom the default — and this section argued the opposite
 //!
-//! This crate held four edges, two orientations and a per-display exception to
-//! the edge. A **default** would have kept every one of them in the code — as a
-//! thing the compositor draws, a settings panel offers and a test covers — for a
-//! choice ADR 0076 says nobody should make. The cost of *offered but discouraged*
-//! is paid on every screen, at every scale, forever, so the decision that removes
-//! the code is the only kind that removes the cost.
+//! **It said a second edge was a decision to undo rather than a gap to fill, and
+//! it outlived the decision it was defending by four days.** Kept rather than
+//! deleted, because a reader who finds the old argument elsewhere should find its
+//! correction here:
 //!
-//! Anybody restoring a second edge is undoing a decision rather than filling a
-//! gap, and that record is the reason.
+//! > This crate held four edges, two orientations and a per-display exception to
+//! > the edge. A **default** would have kept every one of them in the code … for a
+//! > choice ADR 0076 says nobody should make. The cost of *offered but
+//! > discouraged* is paid on every screen, at every scale, forever …
+//! >
+//! > Anybody restoring a second edge is undoing a decision rather than filling a
+//! > gap, and that record is the reason.
+//!
+//! The owner reversed the bottom-only ruling on **2026-09-30**, within the hour of
+//! the record that took it: *bottom should be the default; the person can choose
+//! bottom, left, right, or top*, and *restore the Dock's edge choice in v0.01*.
+//! So the paragraph above was arguing against a decision that had already been
+//! withdrawn, and *anybody restoring a second edge* describes the owner.
+//!
+//! **Its reasoning was not wrong, only its subject.** The cost of *offered but
+//! discouraged* is real, and it is why the restoration is being done in the order
+//! the owner set on 2026-10-04 — structure first, and **nonfunctional edge
+//! choices are not exposed as finished settings**. So [`Edge`] exists with all
+//! four, `Layout::along` lays out two of them and **refuses the other two by
+//! name**, and nothing here offers a person a choice that does not yet work. What
+//! the old paragraph got right is that a choice in the code and not on the screen
+//! is a cost; what it got wrong is that the answer to that is to delete the
+//! choice rather than to finish it.
 //!
 //! # Three things this crate is deliberately not
 //!
@@ -152,6 +171,7 @@ pub mod announcing;
 pub mod changes;
 pub mod clicking;
 pub mod dock;
+pub mod edge;
 pub mod hiding;
 pub mod holding;
 pub mod keeping;
@@ -180,10 +200,11 @@ pub use announcing::{Announced, Focused, where_it_sits};
 pub use changes::{Changes, Setting};
 pub use clicking::{WhatAClickDoes, what_a_click_does};
 pub use dock::Dock;
+pub use edge::Edge;
 pub use hiding::{Hiding, Showing, TheRoom};
 pub use holding::{Fitted, Holding, OnTheDock, Pinned, fit};
 pub use labels::Labels;
-pub use layout::Layout;
+pub use layout::{Layout, NotLaidOut};
 pub use menu::{AWindowsState, What};
 pub use offering::{Offer, WhatWouldHappen, dropped_at, near_the_view};
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};

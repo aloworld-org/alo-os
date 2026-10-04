@@ -261,10 +261,25 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
 /// A key that nothing declares is a mistake in this repository and says so,
 /// rather than showing an empty row where a setting should be.
 ///
-/// **`dock.edge.middle` is the example for a second reason now.** Nothing
-/// declares any `dock.edge.*` key since ADR 0076, so a shell still asking for one
-/// — an old panel, a stale translation file — gets a sentence saying it is a bug
-/// rather than a blank row where an edge picker used to be.
+/// **`dock.edge.middle` is the permanent example; the other two are temporary and
+/// this note is the only thing that says so.** No `dock.edge.*` key is declared
+/// today, so a shell still asking for one — an old panel, a stale translation
+/// file — gets a sentence saying it is a bug rather than a blank row where an edge
+/// picker used to be.
+///
+/// **The reason is no longer ADR 0076, and that matters to whoever edits this
+/// next.** That record's bottom-only ruling was reversed by the owner on
+/// 2026-09-30 — *bottom should be the default; the person can choose bottom,
+/// left, right, or top* — so the keys are not absent because the choice was
+/// withdrawn. They are absent because of the **order of work** the owner set on
+/// 2026-10-04: the structure comes first, and *nonfunctional edge choices are not
+/// exposed as finished settings*. A declared `dock.edge.left` with no working left
+/// dock behind it is exactly that exposure, in the one file a translator reads.
+///
+/// So `dock.edge.bottom` and `dock.labels.beside` **leave this list** when the
+/// edges they name work through the production path, and the list is not evidence
+/// that they should stay gone. `dock.edge.middle` names an edge that does not
+/// exist and stays forever.
 #[test]
 fn a_key_nobody_declared_says_it_is_a_bug() {
     let strings = in_english();
