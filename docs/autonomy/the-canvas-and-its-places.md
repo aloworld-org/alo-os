@@ -415,68 +415,6 @@ whatever the reason given* — arrived a week before it and is cited nowhere in 
   moved a few hundred units, not sent to another Place. Reported rather than
   assumed to be covered.
 
-### 8. A Place remembers time
-
-**Status:** ready. **Owner:** **the Mac.** **Depends on:** 5, which is done — an
-arrangement has to exist before a series of them can.
-
-**Added 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md)**, which
-put every agreed canvas capability into one current milestone. The promise was
-`[v1.1]` — the furthest-out canvas promise there was — and had no task in any
-plan, so no lane could have built it and nothing said so.
-
-Drag a ribbon and the canvas is as it was on Tuesday.
-
-**The word *snapshot* means two things here and taking the wrong one is the whole
-risk.** `docs/features.md` says *from the snapshots undo already takes*, and the
-snapshots undo takes are `alo-keeping-up`'s — **of the filesystem**. An
-arrangement over time is a different subject with the same word, and reaching for
-the filesystem's snapshots would be the two-vocabularies fault this plan's
-territory has produced four times in two days: `alo-arranging` and `alo-displays`
-both say *arrangement*, one the canvas a person left and one the monitors.
-
-- **Acceptance:** arrange windows on a Place, change it, and reach a named earlier
-  state through the production path — the layout that returns is the one that was
-  held, and the person is never shown a state they cannot get back from. A test
-  that round-trips a series in memory is **progress, not completion**, by the
-  ruling's own words.
-- **Constraint:** extends `alo-arranging`. A second store would be a second
-  answer to *where was everything*, which is the fault this repository keeps
-  finding.
-- **Blocker to report rather than work around:** nothing holds more than one
-  arrangement today, and whether a series is kept per Place or per session is a
-  shape question this task answers rather than inherits.
-
-### 9. Every screen is a view onto the canvas
-
-**Status:** ready. **Owner:** **the Mac.** **Depends on:** the camera having one
-home, which is the same thing `the-smallest-canvas-worth-showing.md` task 9's
-remaining half turns on — so these two are done together or the second is done
-twice.
-
-**Added 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).** It was
-`[v0.5]` and had no task.
-
-Two displays are two viewports at their own zoom, not two desktops.
-
-**What exists and what does not, measured rather than assumed.** `alo-displays`
-already models more than one display and `ScreenPlace` already gives each its own
-room, so the display half is built. `alo-shell` holds **one** camera — and
-`surfaces.rs`'s own note says *one home, not two* about the single duplicate that
-already exists, which three mutators keep in step by hand. **A camera per viewport
-is a change to where that state lives**, not a field beside it, and that is why
-this task depends on the camera question rather than on the displays.
-
-- **Acceptance:** two displays, each at its own zoom, each a view onto the same
-  canvas — a frame moved on one appears moved on the other, and neither display
-  is a second desktop with its own arrangement. Shown on a machine with two
-  outputs, which is phase 8's ground for the second half.
-- **Constraint:** no second camera copy. The one that exists is already named in
-  `surfaces.rs` as a hazard; adding a third would make a restored window's size
-  depend on how many mutators happened to be in step.
-
 ### 7. The minimized-window panel, per Place
 
 **Owner:** the **development PC**.
@@ -614,6 +552,68 @@ it depends on 1 and 3, not because it is optional.
   travels; the collapse state differs between two Places and survives a session;
   a Place's group shows its windows individually.
 - **Constraint:** the panel does not define Place identity. It consumes stage 1's.
+
+### 8. A Place remembers time
+
+**Status:** ready. **Owner:** **the Mac.** **Depends on:** 5, which is done — an
+arrangement has to exist before a series of them can.
+
+**Added 2026-10-04 by [ADR
+0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md)**, which
+put every agreed canvas capability into one current milestone. The promise was
+`[v1.1]` — the furthest-out canvas promise there was — and had no task in any
+plan, so no lane could have built it and nothing said so.
+
+Drag a ribbon and the canvas is as it was on Tuesday.
+
+**The word *snapshot* means two things here and taking the wrong one is the whole
+risk.** `docs/features.md` says *from the snapshots undo already takes*, and the
+snapshots undo takes are `alo-keeping-up`'s — **of the filesystem**. An
+arrangement over time is a different subject with the same word, and reaching for
+the filesystem's snapshots would be the two-vocabularies fault this plan's
+territory has produced four times in two days: `alo-arranging` and `alo-displays`
+both say *arrangement*, one the canvas a person left and one the monitors.
+
+- **Acceptance:** arrange windows on a Place, change it, and reach a named earlier
+  state through the production path — the layout that returns is the one that was
+  held, and the person is never shown a state they cannot get back from. A test
+  that round-trips a series in memory is **progress, not completion**, by the
+  ruling's own words.
+- **Constraint:** extends `alo-arranging`. A second store would be a second
+  answer to *where was everything*, which is the fault this repository keeps
+  finding.
+- **Blocker to report rather than work around:** nothing holds more than one
+  arrangement today, and whether a series is kept per Place or per session is a
+  shape question this task answers rather than inherits.
+
+### 9. Every screen is a view onto the canvas
+
+**Status:** ready. **Owner:** **the Mac.** **Depends on:** the camera having one
+home, which is the same thing `the-smallest-canvas-worth-showing.md` task 9's
+remaining half turns on — so these two are done together or the second is done
+twice.
+
+**Added 2026-10-04 by [ADR
+0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).** It was
+`[v0.5]` and had no task.
+
+Two displays are two viewports at their own zoom, not two desktops.
+
+**What exists and what does not, measured rather than assumed.** `alo-displays`
+already models more than one display and `ScreenPlace` already gives each its own
+room, so the display half is built. `alo-shell` holds **one** camera — and
+`surfaces.rs`'s own note says *one home, not two* about the single duplicate that
+already exists, which three mutators keep in step by hand. **A camera per viewport
+is a change to where that state lives**, not a field beside it, and that is why
+this task depends on the camera question rather than on the displays.
+
+- **Acceptance:** two displays, each at its own zoom, each a view onto the same
+  canvas — a frame moved on one appears moved on the other, and neither display
+  is a second desktop with its own arrangement. Shown on a machine with two
+  outputs, which is phase 8's ground for the second half.
+- **Constraint:** no second camera copy. The one that exists is already named in
+  `surfaces.rs` as a hazard; adding a third would make a restored window's size
+  depend on how many mutators happened to be in step.
 
 ## The gaps, stated because the instruction says to state them
 
