@@ -21777,24 +21777,26 @@
       <frame id="337:22561" name="Volume / sound on" x="1299" y="13" width="18" height="18" />
       <frame id="337:22563" name="Brightness / display" x="1342" y="13" width="18" height="18" />
     </frame>
-    <frame id="337:23664" name="Fixed icon rail" x="1352" y="96" width="64" height="294">
-      <rounded-rectangle id="337:23665" name="Surface" x="0" y="0" width="64" height="294" />
-      <text id="337:23666" name="Expand" x="25" y="13" width="20" height="32.29999923706055" />
-      <frame id="337:23667" name="Window icon 0" x="11" y="57" width="42" height="42">
-        <rounded-rectangle id="337:23668" name="Hit area" x="0" y="0" width="42" height="42" />
-        <text id="337:23669" name="Symbol" x="10" y="8" width="24" height="30.600000381469727" />
+    <frame id="337:23664" name="Fixed icon rail" x="1352" y="96" width="64" height="288">
+      <rounded-rectangle id="337:23665" name="Surface" x="0" y="0" width="64" height="288" />
+      <frame id="358:25693" name="Expand minimized windows / 48px target" x="8" y="8" width="48" height="48">
+        <text id="337:23666" name="Expand" x="14" y="7.850000381469727" width="20" height="32.29999923706055" />
       </frame>
-      <frame id="337:23670" name="Window icon 1" x="11" y="111" width="42" height="42">
-        <rounded-rectangle id="337:23671" name="Hit area" x="0" y="0" width="42" height="42" />
-        <text id="337:23672" name="Symbol" x="10" y="8" width="24" height="30.600000381469727" />
+      <frame id="337:23667" name="Window icon 0" x="8" y="64" width="48" height="48">
+        <rounded-rectangle id="337:23668" name="Hit area" x="3" y="3" width="42" height="42" />
+        <text id="337:23669" name="Symbol" x="13" y="11" width="24" height="30.600000381469727" />
       </frame>
-      <frame id="337:23673" name="Window icon 2" x="11" y="165" width="42" height="42">
-        <rounded-rectangle id="337:23674" name="Hit area" x="0" y="0" width="42" height="42" />
-        <text id="337:23675" name="Symbol" x="10" y="8" width="24" height="30.600000381469727" />
+      <frame id="337:23670" name="Window icon 1" x="8" y="120" width="48" height="48">
+        <rounded-rectangle id="337:23671" name="Hit area" x="3" y="3" width="42" height="42" />
+        <text id="337:23672" name="Symbol" x="13" y="11" width="24" height="30.600000381469727" />
       </frame>
-      <frame id="337:23676" name="Window icon 3" x="11" y="219" width="42" height="42">
-        <rounded-rectangle id="337:23677" name="Hit area" x="0" y="0" width="42" height="42" />
-        <text id="337:23678" name="Symbol" x="10" y="8" width="24" height="30.600000381469727" />
+      <frame id="337:23673" name="Window icon 2" x="8" y="176" width="48" height="48">
+        <rounded-rectangle id="337:23674" name="Hit area" x="3" y="3" width="42" height="42" />
+        <text id="337:23675" name="Symbol" x="13" y="11" width="24" height="30.600000381469727" />
+      </frame>
+      <frame id="337:23676" name="Window icon 3" x="8" y="232" width="48" height="48">
+        <rounded-rectangle id="337:23677" name="Hit area" x="3" y="3" width="42" height="42" />
+        <text id="337:23678" name="Symbol" x="13" y="11" width="24" height="30.600000381469727" />
       </frame>
     </frame>
   </frame>
@@ -23549,10 +23551,7 @@
         </frame>
       </frame>
       <frame id="348:25211" name="Shelf / Upper edge handle" x="24" y="96" width="64" height="64">
-        <instance id="348:25212" name="Expand minimized windows" x="8" y="9" width="48" height="40" />
-        <frame id="348:25213" name="Restore / Mail" x="8" y="57" width="48" height="48" />
-        <frame id="348:25217" name="Restore / Calendar" x="8" y="113" width="48" height="48" />
-        <frame id="348:25221" name="Restore / Music" x="8" y="169" width="48" height="48" />
+        <instance id="348:25212" name="Expand minimized windows" x="8" y="8" width="48" height="48" />
       </frame>
     </frame>
     <frame id="348:25228" name="Dock Left / Composer open" x="40" y="5700" width="1440" height="960">
@@ -24384,10 +24383,7 @@
         </frame>
       </frame>
       <frame id="348:26823" name="Shelf / Upper edge handle" x="1352" y="96" width="64" height="64">
-        <instance id="348:26824" name="Expand minimized windows" x="8" y="9" width="48" height="40" />
-        <frame id="348:26825" name="Restore / Mail" x="8" y="57" width="48" height="48" />
-        <frame id="348:26829" name="Restore / Calendar" x="8" y="113" width="48" height="48" />
-        <frame id="348:26833" name="Restore / Music" x="8" y="169" width="48" height="48" />
+        <instance id="348:26824" name="Expand minimized windows" x="8" y="8" width="48" height="48" />
       </frame>
     </frame>
     <frame id="348:26840" name="Dock Right / Composer open" x="1580" y="5700" width="1440" height="960">
