@@ -12,7 +12,7 @@ design change is the larger problem.*
 
 | file | root | what it is |
 |---|---|---|
-| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,246,045 bytes, 25,221 lines, 20,105 nodes |
+| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,247,251 bytes, 25,217 lines, 20,100 nodes |
 | `0-1.xml` | `0:1` | page *00 — Cover* |
 | `ROOTS.md` | — | every root id known to exist, exported or not, because the interface will not list them |
 
@@ -22,6 +22,13 @@ exported        2026-10-04
 exported by     the third PC, through the Figma MCP server on the owner's own account
 figma revision  NOT AVAILABLE — see Limitations
 ```
+
+**Those three figures were stale until 2026-10-04 and nothing noticed.** The `#489`
+refresh carried the owner's edits into `70-28.xml` — five fewer nodes, four fewer
+lines, 1,206 more bytes — and left this table describing the file as it had been.
+A description of a file that the file cannot contradict is the recurring fault in
+`docs/quirks/`, so it is now asserted: `a_palette_with_one_source.rs` reads these
+numbers back off `70-28.xml` and fails if they drift again.
 
 ## How to reproduce it
 

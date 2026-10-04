@@ -8,8 +8,26 @@ the system must never do, and leaves how it looks to the designer.
 <https://www.figma.com/design/8q0JVtnLroZYNdDkIQeJni>
 
 Four pages, the same screens on each: **Light** and **Dark** at 1440×900, then
-**Laptop 1920×1080** and **External 2560×1440**. Colours are Figma variables
-bound to the palette below, so a page is pinned to a mode rather than redrawn.
+**Laptop 1920×1080** and **External 2560×1440**.
+
+**The design file decides the colours, and this brief reports them** — the
+owner's direction of 2026-10-04. It read the other way round until then, and the
+table below had drifted from the file in two values while four of the file's
+roles had no row at all. Colours in the file are variables bound to a light and a
+dark mode, so a page is pinned to a mode rather than redrawn; the twelve roles
+and their measured values are in
+[`palette.toml`](palette.toml), with the measurement itself in
+[`figma-snapshot/variables.toml`](figma-snapshot/variables.toml).
+
+**Two Figma files exist and this brief names the older one.** The link above is
+the file this brief produced: one page, *Light*, 43 top-level frames — 41 numbered
+01 to 41, plus *A · Desktop* and *B · Window options* — and 1,598 nodes. The
+work since then is in `nDxyF5Ho9oC4RObjVzwBNJ`, page *03 — alo OS · Living
+canvas*: 196 screens and 20,100 nodes, and the file every measurement in
+`docs/design/` is taken from. **Which of the two is canonical is the owner's to
+say**, so nothing here or in `README.md` has been repointed; it is flagged rather
+than decided, because a brief silently aimed at a different file is how a
+designer draws against the wrong one.
 
 Where a screen and an ADR disagree, the ADR is the one that has been argued —
 and where a screen and this brief disagree, say so rather than picking one: it
@@ -57,12 +75,17 @@ Every answer says where it was answered: "on this machine", "on the studio
 workstation, on your network", or "by Mistral, in the EU" — shown next to the
 answer, never hidden in settings.
 
-Palette: navy #102A43 for structure and text, cream #F8F6F2 as the ground, warm
-porcelain #F4F1EC for the workspace canvas, charcoal #1F2529 for the rail, warm
-stone #7A6F62 for metadata. Deep teal #0F6B72 is the accent and appears ONLY
-where the agent is present or acting — about five percent of any screen — so a
-person can tell at a glance whether the machine is doing something on their
-behalf. Type: Inter throughout, EB Garamond for occasional editorial headings.
+Palette, by role rather than by colour name. Text is #102A43, a second line
+#274C68, metadata #596B78. The canvas behind everything is #FAF7F2; a document,
+card or panel sitting on it is #FFFFFF; a recessed or secondary area is #EEF2F4;
+an ordinary dividing line is #E7EBEF. Deep teal #0F6B72 appears ONLY where the
+agent is present or acting — about five percent of any screen — so a person can
+tell at a glance whether the machine is doing something on their behalf, and it
+is NOT the ordinary selection or button colour; #E8F4F2 is the quiet ground it
+sits on. Three states: #146C43 finished or allowed, #8C5A0A needs attention with
+nothing broken, #B42318 failed or refused. Never a colour alone — a colour and a
+word, or neither. The dark ground is #1F2529. Type: Inter throughout, EB Garamond
+for occasional editorial headings.
 
 Design light and dark as equals. Support 24 languages, so no layout may depend
 on a label fitting in English. Keyboard operation and visible focus states
@@ -161,14 +184,54 @@ no option is presented as the clever one.
 
 ### The palette, verbatim
 
-| Colour | Hex | Role |
+The design file's own variable names, and the values measured in it on
+2026-10-04. `docs/design/palette.toml` is the source this table copies; a
+disagreement between the two fails a gate rather than waiting to be noticed.
+
+| Variable | Hex | Role |
 |---|---|---|
-| Navy | `#102A43` | structure, text |
-| Deep teal | `#0F6B72` | the agent — about 5% of any screen |
-| Cream | `#F8F6F2` | reading ground |
-| Porcelain | `#F4F1EC` | workspace canvas |
-| Charcoal | `#1F2529` | the rail |
-| Warm stone | `#7A6F62` | metadata |
+| `text/primary` | `#102A43` | structure and body text |
+| `text/secondary` | `#274C68` | secondary text — a subtitle, a second line |
+| `text/muted` | `#596B78` | metadata |
+| `bg/canvas` | `#FAF7F2` | the workspace canvas |
+| `bg/surface` | `#FFFFFF` | documents, cards, panel surfaces |
+| `bg/cool` | `#EEF2F4` | recessed and secondary surfaces |
+| `border/default` | `#E7EBEF` | the ordinary dividing line |
+| `accent/default` | `#0F6B72` | alo — about 5% of any screen, never alone |
+| `accent/soft` | `#E8F4F2` | the ground behind alo's own surfaces |
+| `status/positive` | `#146C43` | it finished, it is allowed, it is on |
+| `status/warning` | `#8C5A0A` | it needs attention and nothing is broken |
+| `status/danger` | `#B42318` | it failed, it is refused, it would destroy something |
+| `charcoal` | `#1F2529` | the dark ground — retained, not a design variable |
+
+**Three of these need a sentence rather than a row.**
+
+`accent/default` is alo's and nothing else's: present, acting, proposing, or
+waiting for an approval. It is **not** the ordinary selection or button colour,
+which is exactly what a semantic name invites a reader to assume. It never
+appears alone — the four-corner mark or the word comes with it, because
+`text/primary` and `accent/default` are both dark desaturated blues and a person
+must be able to say who is acting without naming a colour. ADR 0010, amended by
+ADR 0067.
+
+The three **status** colours are under the same rule for a different reason: a
+colour and a word, or neither. None may be the only signal.
+
+`charcoal` is the one value here the design file does not define. It is kept
+because every choosable accent is measured against it — a hex that reads on cream
+is illegible on charcoal — so removing it removes the dark half of every contrast
+check. The light rail being `bg/surface` does not make white the dark-theme rail
+colour, and **this table is the light theme only**: the file binds the same names
+to different values in dark, where `accent/default` measures `#77C8C6`.
+Dark-theme parity needs its own measured evidence and does not have it yet.
+
+**What the old six became**, for anyone holding a name from before 2026-10-04:
+navy and deep teal are `text/primary` and `accent/default` at identical values;
+cream is `bg/canvas` and its value moved from `#F8F6F2`; warm stone is
+`text/muted` and moved from `#7A6F62`; charcoal is above. **Porcelain `#F4F1EC`
+was not renamed to anything**, because it was never one role — its consumers were
+audited and each given the role it actually had, which is the canvas in one place
+and a white surface in another.
 
 Type: **Inter** for everything a person operates; **EB Garamond** for the few
 editorial moments, used sparingly. Tabular figures wherever sizes, times or
