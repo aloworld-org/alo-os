@@ -1006,3 +1006,61 @@ should be opened by the same road is **not measured here**. They carry the same
 fault, and naming them is not owning them: this task closes the one surface two
 other plans are waiting on, and a second task for the other two is honest work
 for whoever measures them.
+
+### 19. A chord pressed on a running desktop reaches its action
+
+**Status:** ready. **Depends on:** nothing.
+
+**No chord reaches a running desktop today — not the sixteenth, and not one of
+the other fifteen.** Measured by two lanes from opposite ends while building
+task 18's half: the applications lane checked the endpoints and the windows,
+this lane checked the chain.
+
+**It is a finished chain with no entrance**, which is a different thing from
+unfinished code and the reason that phrasing is used here. Every link is
+production and every link works:
+
+```
+canvas_command.rs:121   -> dispatch_window_command      production
+window_command.rs:66    -> dispatch_window_shortcut     production
+                           (the file's own cfg(test) is at 112, after it)
+shortcut_dispatch.rs:43 -> the three actions it implements
+```
+
+And nothing enters it:
+
+```
+dispatch_canvas_command   callers: examples and tests only
+pump_record               callers: none at all
+scene_native.rs:65        settings: None, and nothing ever fills it
+alo-compositor.rs         no dispatch_ call anywhere in it
+```
+
+**So the missing piece is the session loop, not the dispatchers.** A key press
+arriving at a running compositor has nowhere to go: the binary stands up a
+sign-in screen and never carries a chord into the shortcut road.
+
+- **Why fifteen actions can be green and unreachable at once.** Every test and
+  example enters the chain **directly at `dispatch_canvas_command`**, handing it
+  a `Chord` and a `Shortcuts`. That is not a fault in the tests — one that drove
+  a real session loop would be a different kind of test, and the probe examples
+  exist for that. **But it means no suite can fail for this reason**, which is
+  why the gap survived fifteen actions and is written here rather than left for
+  somebody to notice.
+- **What this is not.** It is not task 18 restated. Task 18 gives a person a road
+  to Settings and is finishable without this; its chord resolves, its handler
+  runs, and both are reachable from a test exactly as the other fifteen are.
+  **This task is what makes any of them true on a machine a person is using.**
+- **What it is not, second.** It is not a complaint about the compositor being
+  197 lines. Standing up a sign-in screen first is the order
+  `alo-compositor.service`'s own comments argue for — *a daemon started at boot
+  is a daemon running before anybody has signed in* — and a session loop belongs
+  after a session exists, not before.
+- **Acceptance:** a key press on a machine that has signed in reaches
+  `dispatch_canvas_command` with the chord it made, and one of the shipped
+  defaults does what it says on a real display. **Shown by a person pressing it
+  and seeing it**, not by a test that calls the dispatcher — because a test that
+  calls the dispatcher is what fifteen of them already have.
+- **Constraint:** nothing in the chain changes. The dispatchers, their error
+  types and their exhaustive matches are finished work and this task adds an
+  entrance to them rather than rebuilding them.
