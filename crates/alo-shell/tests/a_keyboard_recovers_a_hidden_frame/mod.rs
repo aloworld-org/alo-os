@@ -55,7 +55,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // A panel nobody has put a window into covers nothing, which is
                 // the true answer rather than a placeholder.
                 panel_reserved: Rectangle::default(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),

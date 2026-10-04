@@ -402,7 +402,7 @@ impl LoopInput for Desk<'_> {
                 // nothing, which is the ordinary case on a machine with
                 // nothing leaving it — and *nothing drawn covers nothing* is
                 // the true answer rather than a placeholder.
-                status_area: pictures.status.band,
+                what_is_leaving: pictures.status.band,
                 top_controls: pictures.desktop.top_controls,
                 // **No scale is handed over, because these rectangles are in
                 // the room they were laid out from and the handle floor is in

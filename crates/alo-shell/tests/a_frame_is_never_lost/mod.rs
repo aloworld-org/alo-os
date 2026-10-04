@@ -201,6 +201,16 @@ fn the_name_band(
 ///
 /// A viewport control like the dock, so it is a rectangle in screen pixels here
 /// rather than anything this test computes from the plane.
+///
+/// **This one really is the status area, and it is the only fixture in the crate
+/// that is.** The clock, battery, network and volume, at the owner's position of
+/// 2026-09-30 — a surface **nothing draws yet**, modelled here because task 8's
+/// acceptance names it and the rule can be held to it before the pixels exist.
+/// `alo_shell::canvas_fixed_controls::FixedControlsDrawn::what_is_leaving` is the
+/// field that was called `status_area` until 2026-10-04 and never carried this: it
+/// is handed the **egress indicator's** band, at the far end of the Dock. One word
+/// over two surfaces is what put a reconciliation that did not exist into
+/// ADR 0086.
 fn a_status_area_at_the_top_right() -> Rectangle<i32, smithay::utils::Physical> {
     Rectangle::new((VIEWPORT.0 - 200, 0).into(), (200, 32).into())
 }
