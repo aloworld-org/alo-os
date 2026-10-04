@@ -1064,3 +1064,24 @@ sign-in screen and never carries a chord into the shortcut road.
 - **Constraint:** nothing in the chain changes. The dispatchers, their error
   types and their exhaustive matches are finished work and this task adds an
   entrance to them rather than rebuilding them.
+- **How much of it exists, measured on `2b0512f3` so the next reader does not
+  measure it again.** This is bounded rather than open:
+
+| what it needs | what exists |
+|---|---|
+| a loop that draws at a frame rate | `stand_the_sign_in_screen_up` runs one and `alo-compositor.rs` drives it at `A_FRAME`, sixty a second |
+| a session to run it for | `Stood::SomebodySignedIn { seat, .. }` — a real `Seat` over a real `alo_accounts::Session` since ADR 0087 |
+| libinput events | `libinput_routing.rs`, and `desktop_swipe` already reaches a desktop switch on a real machine |
+| a key press turned into a chord | `Chord::checked(held, key)` runs in production at `settings_window.rs:440` |
+| somewhere to send it | the finished chain this task is about |
+
+- **So the shape is a second loop after `SomebodySignedIn`, modelled on the
+  first**, rather than a compositor. The sign-in loop is its template: it takes
+  a machine, a vocabulary and a frame callback, and returns what became of it.
+  **Every piece a desktop loop needs is already standing up a sign-in screen.**
+- **What this lane cannot do, said rather than discovered later.** The
+  acceptance asks for *a person pressing a key and seeing it happen*, and that
+  needs a machine with a display. **Writing the loop without showing it works
+  would produce exactly what this task was written against** — more code that is
+  finished, tested and unreachable. So the work and the showing are one task,
+  and it belongs to whoever has the machine.
