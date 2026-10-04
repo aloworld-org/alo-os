@@ -270,12 +270,86 @@ its frame cannot later be evidenced against a description of the frame.
 
 ### 1. The panel's own state, and its three presentations
 
-**Status:** **built and a window reaches the panel; blocked on walking it against the design, 2026-10-03.** Its owed clause — the
-collapse choice keyed per Place — is paid, and a person can now put a window aside, so the
-empty-panel state is no longer the only one reachable. What is **not** evidenced is the drawing:
-the three presentations are measured against **Minimized panel / 02, 07 and 12** when something
-paints them.
-**Depends on:** nothing.
+**Status:** **the collapsed rail agrees with the design; the other two presentations are
+owed, 2026-10-04.** The collapse choice keyed per Place is paid, a person can put a window
+aside, and the drawing is **walked** — against the committed snapshot rather than against a
+live file. The rail was one slot short and is not any more. **Depends on:** nothing.
+
+**All three presentations are in scope**, by the owner's ruling of 2026-10-04: expanded
+previews, collapsed rail, empty handle, as part of the complete canvas.
+
+**The walk, and the slot the rail never counted.**
+
+Read from `docs/design/figma-snapshot/70-28.xml` — the committed tree, no Figma call — and
+**from the visible layers only**:
+
+```text
+337:22408  Minimized panel / 07 · Collapsed rail
+  Fixed icon rail                          (1352, 96)  64 x 288
+    Expand minimized windows / 48px target  (8, 8)     48 x 48
+    Window icon 0                           (8, 64)    48 x 48
+    Window icon 1                           (8, 120)   48 x 48
+    Window icon 2                           (8, 176)   48 x 48
+    Window icon 3                           (8, 232)   48 x 48
+```
+
+**The expansion control holds the first slot**, so a rail is one slot per window **plus
+one**. The owner's ruling gives the formula and `panel_raster` now derives it:
+
+```text
+rail height = 64 + 56 × minimized-window count
+            = (n + 1) × (ICON + GAP) + MARGIN
+
+3 -> 232    4 -> 288    5 -> 344    6 -> 400
+```
+
+**`every_rail_height_the_design_draws_falls_out_of_the_measures` asserted `3 → 176` until
+this change, and all four of its numbers were real.** What it had wrong was what they are
+heights *of*. The numbers came from the design, so of course they matched; nobody asked what
+they counted. The test is corrected rather than preserved — a test asserting the wrong
+mapping is not the specification.
+
+**Three separate measurements, not one.** The owner's ruling: glyph size, hit-target size and
+slot spacing are different numbers. In the design the slot is 48 x 48, the drawn hit area
+inside it is 42 x 42, the glyph is 24 wide, and the spacing is 56. `alo-dock`'s global `ICON`
+is **not** changed to settle a panel measurement, and 44 x 44 is a floor rather than a
+requirement that every target be exactly 44.
+
+**The control is reserved and not yet clickable**, which is deliberate: what it opens is the
+expanded presentation, and a control that opened nothing would be worse than one that is not
+there. `crate::a_click_brings_a_window_back` claims presses on the window slots and
+deliberately does not claim this one.
+
+**What is owed, with the node ids and the visible numbers.**
+
+```text
+expanded previews   337:21508   Fixed preview panel  (1172, 96) 244 x 604
+                                cards 216 x 106 at x12, y 57 / 173 / 289 / 405
+                                — equal cards, 10 px apart, a 116 pitch
+empty handle        337:23323   Fixed empty handle   (1384, 280) 32 x 92
+shared edge, left   348:24869   Shelf / Upper edge handle (24, 96) 64 x 64
+                                one centred 48 x 48 expansion control, nothing else
+shared edge, right  348:26481   the same, mirrored
+```
+
+Scrolling belongs to the preview list, with the header and controls fixed; at the viewport's
+limit the rail keeps the expansion control fixed and scrolls only the window list. **The
+empty handle is its own design and is not derived from the rail formula** — 32 x 92 is not
+`64 + 56n` for any n.
+
+**Two corrections to the first attempt at this walk, which never landed.**
+
+*It measured hidden layers.* `Minimized shelf / Collapsed` at 64 x 232 and
+`Minimized shelf / Expanded` at 200 x 600 carry `hidden="true"` in all three cited frames:
+they are legacy. The visible surfaces are `Fixed icon rail`, `Fixed preview panel` and
+`Fixed empty handle`. **The snapshot carried the flag and the first reading filtered on
+name.** A hidden parent hides its children whether or not they carry the flag, so visibility
+has to be tracked down the tree and not read off one node.
+
+*And it cited the wrong frames.* It measured three **canvas** frames — `01 · Your canvas`,
+`05 · Window put aside`, `09 · Two windows minimized` — which do draw a shelf, but are not
+the frames this task names. Landing a measurement of frames the task does not cite would have
+been right about the geometry and wrong about the reference.
 
 **The collapse choice is keyed per Place.** `crates/alo-put-aside/src/the_collapse_choice_per_place.rs`
 holds `TheCollapseChoice`, a map from `alo_canvas::Place` to `Chosen` where **absent means

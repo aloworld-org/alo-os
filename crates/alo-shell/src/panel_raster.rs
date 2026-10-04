@@ -15,10 +15,10 @@
 //! | drawn | derivation | at the design's sizes |
 //! |---|---|---|
 //! | rail 64 wide | `ICON + 2 × MARGIN` | 48 + 16 = 64 |
-//! | rail 176 tall, 3 put aside | `n × (ICON + GAP) + MARGIN` | 168 + 8 = 176 |
-//! | rail 232 tall, 4 put aside | the same | 224 + 8 = 232 |
-//! | rail 288 tall, 5 put aside | the same | 280 + 8 = 288 |
-//! | rail 344 tall, 6 put aside | the same | 336 + 8 = 344 |
+//! | rail 232 tall, 3 put aside | `(n + 1) × (ICON + GAP) + MARGIN` | 224 + 8 = 232 |
+//! | rail 288 tall, 4 put aside | the same | 280 + 8 = 288 |
+//! | rail 344 tall, 5 put aside | the same | 336 + 8 = 344 |
+//! | rail 400 tall, 6 put aside | the same | 392 + 8 = 400 |
 //! | 24 from the screen's edge | `3 × MARGIN` | 24 |
 //! | reserved column 112 wide | rail + `2 × 3 × MARGIN` | 64 + 48 = 112 |
 //!
@@ -115,7 +115,19 @@ pub(crate) struct PanelPicture {
     /// The full height of the display, by the owner's ruling. Wider than the
     /// rail, and not the same thing as it.
     pub(crate) reserved: Rectangle<i32, Physical>,
-    /// One slot per put-aside window, top to bottom, inside the rail.
+    /// Where the expansion control sits: the rail's **first** slot.
+    ///
+    /// The design draws it above every window, so a rail holding three windows
+    /// is four slots tall. `None` exactly when there is no rail.
+    ///
+    /// **Reserved, and not yet clickable.** What it opens is the expanded
+    /// presentation, which does not exist yet, and a control that opened
+    /// nothing would be worse than one that is not there.
+    /// `crate::a_click_brings_a_window_back` claims presses on [`Self::slots`]
+    /// and deliberately does not claim this one.
+    pub(crate) control: Option<Rectangle<i32, Physical>>,
+    /// One slot per put-aside window, top to bottom, inside the rail, **below
+    /// the expansion control**.
     pub(crate) slots: Vec<Rectangle<i32, Physical>>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
@@ -178,7 +190,12 @@ pub(crate) fn picture(
     let rail_height = if holding == 0 || revealed == WhetherRevealed::Concealed {
         0
     } else {
+        // **One slot per window, plus one for the expansion control**, which the
+        // design puts above them all. The owner's ruling of 2026-10-04:
+        // *rail height = 64 + 56 × minimized-window count*, where 64 is
+        // `MARGIN + ICON + GAP` — the control's slot and the rail's padding.
         holding
+            .saturating_add(1)
             .saturating_mul(icon.saturating_add(gap))
             .saturating_add(margin)
     };
@@ -200,15 +217,29 @@ pub(crate) fn picture(
 
     let mut slots = Vec::new();
     let mut solids = Vec::new();
+    let mut control = None;
     if rail_height > 0 {
         solids.push(Solid {
             area: rail,
             colour: palette.dock,
         });
+        // The expansion control holds the first slot, at the rail's own padding.
+        let its_own = Rectangle::new(
+            Point::from((rail_x.saturating_add(margin), rail_y.saturating_add(margin))),
+            Size::from((icon, icon)),
+        );
+        control = Some(its_own);
+        solids.push(Solid {
+            area: its_own,
+            colour: palette.accent,
+        });
         for which in 0..holding {
-            let top = rail_y
-                .saturating_add(margin)
-                .saturating_add(which.saturating_mul(icon.saturating_add(gap)));
+            // `which + 1`, because the control is the slot above them all.
+            let top = rail_y.saturating_add(margin).saturating_add(
+                which
+                    .saturating_add(1)
+                    .saturating_mul(icon.saturating_add(gap)),
+            );
             if top.saturating_add(icon) > rail_y.saturating_add(rail_height) {
                 break;
             }
@@ -228,6 +259,7 @@ pub(crate) fn picture(
         size,
         rail,
         reserved,
+        control,
         slots,
         solids,
     })
@@ -309,13 +341,23 @@ mod tests {
         assert_eq!(picture.rail.size.w, 64);
     }
 
-    /// **Four rail heights, one formula, each exact.** These are the heights
-    /// measured across the design file — 176, 232, 288 and 344 — and each is
-    /// `n × (ICON + GAP) + MARGIN`. Four independent agreements is why this
-    /// file derives rather than copies.
+    /// **Four rail heights, one formula, each exact** — and the formula counts
+    /// the expansion control.
+    ///
+    /// *This test asserted `3 → 176` until 2026-10-04, and each of its four
+    /// numbers was genuinely in the design file.* What it had wrong was what they
+    /// are heights **of**: the design puts an `Expand minimized windows` control
+    /// in the rail's first slot, so a 232-tall rail holds **three** windows and
+    /// the control, not four windows. The numbers were copied from the design, so
+    /// of course they matched; nobody asked what they counted.
+    ///
+    /// The owner ruled on 2026-10-04: *rail height = 64 + 56 × minimized-window
+    /// count*, which is `(n + 1) × (ICON + GAP) + MARGIN` — and the canonical
+    /// `Fixed icon rail` in the design file is 64 x 288 with a 48 x 48 control at
+    /// (8, 8) and four windows at y 64, 120, 176, 232.
     #[test]
     fn every_rail_height_the_design_draws_falls_out_of_the_measures() {
-        for (put_aside, drawn) in [(3, 176), (4, 232), (5, 288), (6, 344)] {
+        for (put_aside, drawn) in [(3, 232), (4, 288), (5, 344), (6, 400)] {
             let picture = laid_out(put_aside, AS_DRAWN);
             assert_eq!(
                 picture.rail.size.h, drawn,
@@ -377,6 +419,45 @@ mod tests {
     /// `SMALLEST_TARGET`. Asserted against the rectangles this file actually
     /// produces rather than against `ICON`, because a constant compared with
     /// itself is folded away before it can fail.
+    /// **The expansion control holds the rail's first slot**, at the coordinates
+    /// the design draws it at rather than at coordinates that merely agree.
+    ///
+    /// `Minimized panel / 07 · Collapsed rail` draws `Fixed icon rail` at
+    /// (1352, 96), 64 x 288, with `Expand minimized windows / 48px target` at
+    /// (8, 8) inside it and four windows at y 64, 120, 176 and 232. On a
+    /// 1440 x 960 display that is a control at (1360, 104) and a first window at
+    /// (1360, 160) — which is what this asserts, absolutely, because a relative
+    /// check would pass on a rail in the wrong place.
+    #[test]
+    fn the_expansion_control_holds_the_first_slot_where_the_design_draws_it() {
+        let picture = laid_out(4, AS_DRAWN);
+        let control = picture.control.expect("a rail with windows has a control");
+
+        assert_eq!((control.loc.x, control.loc.y), (1360, 104));
+        assert_eq!((control.size.w, control.size.h), (48, 48));
+
+        let first = picture.slots.first().expect("four windows give four slots");
+        assert_eq!((first.loc.x, first.loc.y), (1360, 160));
+
+        // One pitch between them, and the same pitch between the windows.
+        assert_eq!(first.loc.y - control.loc.y, 56);
+        assert_eq!(
+            (control.loc.y - picture.rail.loc.y),
+            8,
+            "the rail's own padding"
+        );
+        assert_eq!(picture.rail.size.h, 288, "64 + 56 x 4");
+    }
+
+    /// **No rail, no control** — `None` rather than a rectangle of no size.
+    ///
+    /// A zero-sized rectangle at the rail's corner would hit-test as a point and
+    /// read as a control that is there; `None` cannot be clicked by accident.
+    #[test]
+    fn a_panel_with_no_rail_has_no_expansion_control() {
+        assert!(laid_out(0, AS_DRAWN).control.is_none());
+    }
+
     #[test]
     fn there_is_one_slot_for_each_window_put_aside() {
         let picture = laid_out(4, AS_DRAWN);
