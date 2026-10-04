@@ -1,4 +1,31 @@
 //! Independent raster expectations: literal masks, fixed palette values, no painter calls.
+//!
+//! # The literals are the point, and they are **B,G,R,0**
+//!
+//! Nothing here calls a painter or reads a `Token`, so the painter is held to
+//! values somebody wrote down rather than to itself. A version of this file that
+//! said `Token::Cream.colour()` would pass for any palette, including a wrong
+//! one, and the two halves of the comparison would move together for ever.
+//!
+//! **The cost is that a palette change has to be made here by hand**, and that
+//! is the intended cost. From `docs/design/palette.toml`, light scheme:
+//!
+//! ```text
+//! bg/canvas       #FAF7F2  ->  [0xf2, 0xf7, 0xfa, 0]
+//! bg/surface      #FFFFFF  ->  [0xff, 0xff, 0xff, 0]
+//! text/primary    #102A43  ->  [0x43, 0x2a, 0x10, 0]
+//! charcoal        #1F2529  ->  [0x29, 0x25, 0x1f, 0]
+//! ```
+//!
+//! **Updated 2026-10-04 for ADR 0092**, when the palette began following the
+//! design file: `cream` moved `#F8F6F2` -> `#FAF7F2` and the role `porcelain`
+//! held became `bg/surface` `#FFFFFF`. Navy and charcoal did not move.
+//!
+//! The byte order is why that change was not found by searching. `#F8F6F2`
+//! appears here as `0xf2, 0xf6, 0xf8` — reversed, lower case, and in hex rather
+//! than decimal, so none of `F8F6F2`, `248, 246, 242` or `242, 246, 248` matches
+//! it. **A value written in a form no search for it will find is worth a
+//! sentence**, and this is that sentence.
 use alo_appearance::Scheme;
 
 /// Original twelve-pixel maximize icon.
@@ -111,13 +138,13 @@ pub fn expected_feedback(
             && (local <= border || local >= 31 - border || y <= border || y >= 31 - border);
         let (ground, ink, hover) = match scheme {
             Scheme::Light => (
-                [0xf2, 0xf6, 0xf8, 0],
+                [0xf2, 0xf7, 0xfa, 0],
                 [0x43, 0x2a, 0x10, 0],
-                [0xec, 0xf1, 0xf4, 0],
+                [0xff, 0xff, 0xff, 0],
             ),
             Scheme::Dark => (
                 [0x29, 0x25, 0x1f, 0],
-                [0xf2, 0xf6, 0xf8, 0],
+                [0xf2, 0xf7, 0xfa, 0],
                 [0x43, 0x2a, 0x10, 0],
             ),
         };
@@ -129,8 +156,8 @@ pub fn expected_feedback(
     }
     match (scheme, glyph || marked, available) {
         (Scheme::Light, true, _) | (Scheme::Dark, false, false) => [0x43, 0x2a, 0x10, 0],
-        (Scheme::Dark, true, _) | (Scheme::Light, false, true) => [0xf2, 0xf6, 0xf8, 0],
-        (Scheme::Light, false, false) => [0xec, 0xf1, 0xf4, 0],
+        (Scheme::Dark, true, _) | (Scheme::Light, false, true) => [0xf2, 0xf7, 0xfa, 0],
+        (Scheme::Light, false, false) => [0xff, 0xff, 0xff, 0],
         (Scheme::Dark, false, true) => [0x29, 0x25, 0x1f, 0],
     }
 }
