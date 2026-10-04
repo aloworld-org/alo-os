@@ -204,7 +204,7 @@ pub use edge::Edge;
 pub use hiding::{Hiding, Showing, TheRoom};
 pub use holding::{Fitted, Holding, OnTheDock, Pinned, fit};
 pub use labels::Labels;
-pub use layout::{Layout, NotLaidOut};
+pub use layout::Layout;
 pub use menu::{AWindowsState, What};
 pub use offering::{Offer, WhatWouldHappen, dropped_at, near_the_view};
 pub use on_the_canvas::{NotAPatch, Patch, Spot, TheView};

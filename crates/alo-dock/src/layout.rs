@@ -47,52 +47,6 @@ use crate::labels::Labels;
 use crate::room::Room;
 use crate::screen::Screen;
 
-/// Why a dock cannot be laid out along an edge yet.
-///
-/// **One variant, and it names a measurement rather than a mood.** The owner
-/// restored the four-edge choice on 2026-09-30 and asked for each orientation to
-/// be designed *including labels*; the side orientations' label placement is the
-/// one number this crate cannot derive. A dock down a side is as tall as the
-/// screen, so there is no shortage of room for a name — the constraint is the
-/// dock's **thickness**, which down a side is its width, and *how wide a name
-/// needs to be* is a text measurement this crate has no font to take and a design
-/// figure it has not been given.
-///
-/// `crate::measures` held exactly that figure once, as `LABEL_EMS`, and its own
-/// note records it leaving: *how much width a name needed beside an icon on a dock
-/// down the side of the screen. ADR 0076 fixed the dock along the bottom, so there
-/// is no name beside an icon and no floor to hold.*
-///
-/// **A type rather than a comment**, so that a caller which handles the two edges
-/// that work cannot quietly do nothing for the two that do not — which is how the
-/// bottom-only decision came to be enforced by code that never mentioned it.
-///
-/// # It carries no sentence, and that is two decisions rather than an omission
-///
-/// **This crate may not write English.** `alo-choosing`'s
-/// `the_five_crates_write_no_english_outside_the_vocabulary` holds `alo-dock` to
-/// putting every word a person could read in `crate::words`, and it caught the
-/// first version of this type, which had a `thiserror` message. The check is
-/// right: a sentence in an `#[error]` here is a sentence no translator is handed.
-///
-/// **And there is no sentence to declare.** Nothing shows this on a screen and
-/// nothing could, because no person can ask for a side dock yet — the owner's
-/// order of work of 2026-10-04 is that nonfunctional edge choices are not exposed
-/// as finished settings. A caller **matches** on this; it does not render it.
-/// Declaring a `Word` would put a sentence in front of twenty-four translators for
-/// a state no person can reach, which is the cost that order of work avoids.
-///
-/// When a person *can* choose an edge, what they read on a refusal is a word in
-/// `crate::words` worded for them, never this type's `Debug`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NotLaidOut {
-    /// A side dock, whose names have no measured placement.
-    TheNamesHaveNoPlacement {
-        /// Which edge was asked for.
-        edge: Edge,
-    },
-}
-
 /// A dock, laid out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Layout {
@@ -122,25 +76,45 @@ impl Layout {
 
     /// A dock along this edge of this screen, with the text at this size.
     ///
-    /// # Errors
-    /// [`NotLaidOut::TheNamesHaveNoPlacement`] for [`Edge::Left`] and
-    /// [`Edge::Right`]. The geometry of a side dock is settled — thickness out of
-    /// the width, running the height — and its **names** are not: see that type.
-    /// Refused whole rather than answered with the names given way, because *there
-    /// was no room at this text size* is what giving way means and it would be
-    /// false. A person on a side dock would read that their text size had cost
-    /// them the names, and it had not.
-    pub fn along(edge: Edge, screen: Screen, text: TextScale) -> Result<Self, NotLaidOut> {
-        if !edge.a_name_fits_under_an_icon() {
-            return Err(NotLaidOut::TheNamesHaveNoPlacement { edge });
+    /// **All four lay out since 2026-10-04**, when the owner gave the side
+    /// placement its measurement. It returned a `Result` for one day, refusing
+    /// left and right because a name beside an icon had no measured width; the
+    /// owner's specification both supplied the width **and** took the names out of
+    /// the bar, so there is no longer an edge this can fail on and no error type
+    /// to carry.
+    #[must_use]
+    pub fn along(edge: Edge, screen: Screen, text: TextScale) -> Self {
+        if edge.runs_across() {
+            // **The top edge is the bottom edge's arithmetic, and that is a
+            // measurement rather than an assumption.** Both take their thickness
+            // out of the screen's height and run the whole of its width; which end
+            // of the height they sit at is an origin, and this crate does not
+            // place the dock on a screen — `alo_shell` does. So there is one body
+            // for both.
+            return Self::running_across(screen, text);
         }
-        // **The top edge is the bottom edge's arithmetic, and that is a
-        // measurement rather than an assumption.** Both take their thickness out
-        // of the screen's height and run the whole of its width; which end of the
-        // height they sit at is an origin, and this crate does not place the dock
-        // on a screen — `alo_shell` does. So there is one body for both, and
-        // `the_top_edge_lays_out_exactly_as_the_bottom_does` holds it to that.
-        Ok(Self::running_across(screen, text))
+        Self::running_down(screen)
+    }
+
+    /// A dock down a side: thickness out of the width, running the height.
+    ///
+    /// **It takes no text size, and that is the owner's rule rather than an
+    /// oversight.** Their specification of 2026-10-04: *keep icons and click
+    /// targets unchanged; labels do not permanently widen the Dock.* A name beside
+    /// an icon opens in a tooltip over the canvas, so a side dock is as thick as
+    /// its icons whatever the text is set to — there is no threshold to cross and
+    /// so nothing for the names to give way at.
+    ///
+    /// That is the whole difference from [`Self::running_across`], where the
+    /// thickness carries a line of text and the names *do* give way when the
+    /// ceiling is reached. Two placements, two arithmetics, and the second one is
+    /// shorter because the owner took the names out of the bar.
+    fn running_down(screen: Screen) -> Self {
+        Self {
+            thickness: Room::a_dock_of_icons(),
+            length: screen.height(),
+            labels: Labels::Beside,
+        }
     }
 
     /// A dock across the screen: thickness out of the height, running the width.
@@ -190,6 +164,75 @@ impl Layout {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+    /// **A side dock is as thick as its icons, whatever the text size.**
+    ///
+    /// The owner's rule of 2026-10-04: *keep icons and click targets unchanged;
+    /// labels do not permanently widen the Dock.* A name beside an icon opens in a
+    /// tooltip over the canvas, so there is no line of text in the bar and nothing
+    /// for the thickness to depend on.
+    ///
+    /// Asserted **across the whole text range** rather than at one size, because
+    /// the fault this forbids is a side dock that quietly grows with the text the
+    /// way the bottom one does — which would pass a check at 100%.
+    #[test]
+    fn a_side_dock_does_not_thicken_with_the_text() {
+        let screen = Screen::of(1920, 1080).unwrap();
+        let icons = Room::a_dock_of_icons();
+        for percent in [100, 125, 150, 175, THE_STANDARDS_TEXT] {
+            let text = TextScale::percent(percent).unwrap();
+            for edge in [Edge::Left, Edge::Right] {
+                let laid = Layout::along(edge, screen, text);
+                assert_eq!(
+                    laid.thickness(),
+                    icons,
+                    "{edge:?} at {percent}% is not icon-thick, so the names have widened the bar"
+                );
+                assert_eq!(laid.labels(), Labels::Beside, "{edge:?} at {percent}%");
+            }
+        }
+    }
+
+    /// **A side dock runs the height, an across dock runs the width.**
+    ///
+    /// The one geometric difference between the two orientations, on a screen whose
+    /// sides differ so that a transposition cannot pass.
+    #[test]
+    fn which_side_a_dock_runs_along_follows_its_edge() {
+        let screen = Screen::of(1920, 1080).unwrap();
+        let text = TextScale::ordinary();
+        for edge in [Edge::Bottom, Edge::Top] {
+            assert_eq!(
+                Layout::along(edge, screen, text).length(),
+                screen.width(),
+                "{edge:?}"
+            );
+        }
+        for edge in [Edge::Left, Edge::Right] {
+            assert_eq!(
+                Layout::along(edge, screen, text).length(),
+                screen.height(),
+                "{edge:?}"
+            );
+        }
+    }
+
+    /// **The tooltip is the owner's two figures and nothing derived.**
+    ///
+    /// 200 logical pixels of usable text width, 12 either side, so 224 wide. Held
+    /// here because the sum is the thing a reader will want and the two parts are
+    /// what the owner gave — a single 224 constant would lose which half to change.
+    #[test]
+    fn a_name_beside_an_icon_is_two_hundred_wide_inside_two_hundred_and_twenty_four() {
+        assert_eq!(crate::measures::A_NAME_BESIDE_AN_ICON, 200);
+        assert_eq!(crate::measures::AROUND_A_NAME_BESIDE_AN_ICON, 12);
+        let tooltip = crate::measures::A_NAME_BESIDE_AN_ICON
+            + 2 * crate::measures::AROUND_A_NAME_BESIDE_AN_ICON;
+        assert_eq!(
+            tooltip, 224,
+            "the tooltip is the text width plus both paddings"
+        );
+    }
+
     use super::*;
     use crate::measures::{A_DOCK_MAY_TAKE_ONE_PART_IN, THE_STANDARDS_TEXT};
 

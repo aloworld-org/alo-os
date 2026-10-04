@@ -276,14 +276,20 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
 /// exposed as finished settings*. A declared `dock.edge.left` with no working left
 /// dock behind it is exactly that exposure, in the one file a translator reads.
 ///
-/// So `dock.edge.bottom` and `dock.labels.beside` **leave this list** when the
-/// edges they name work through the production path, and the list is not evidence
-/// that they should stay gone. `dock.edge.middle` names an edge that does not
-/// exist and stays forever.
+/// So `dock.edge.bottom` **leaves this list** when a person can choose an edge, and
+/// the list is not evidence that it should stay gone. `dock.edge.middle` names an
+/// edge that does not exist and stays forever.
+///
+/// **`dock.labels.beside` left on 2026-10-04**, exactly as the note above said it
+/// would: the owner gave the side placement its measurement — 200 logical pixels
+/// of usable text width in a tooltip — so a dock down a side lays out, its names
+/// have a placement, and the key is declared again in `crate::words`. One member
+/// of this list has now been both wrong to declare and right to declare, eighteen
+/// hours apart, which is why the note rather than the list is the thing to read.
 #[test]
 fn a_key_nobody_declared_says_it_is_a_bug() {
     let strings = in_english();
-    for named in ["dock.edge.middle", "dock.edge.bottom", "dock.labels.beside"] {
+    for named in ["dock.edge.middle", "dock.edge.bottom"] {
         let key = alo_strings::Key::named(named).unwrap();
         let said = strings.say(&key, &Filling::nothing());
         assert!(said.is_a_bug(), "{named}");

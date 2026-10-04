@@ -30,14 +30,30 @@ use crate::words::{self, Word};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Labels {
     /// Under each icon, with room for a line of text below the picture — which
-    /// is where a name goes on a dock along the bottom, and ADR 0076 fixed the
-    /// dock there.
+    /// is where a name goes on a dock that runs across the screen.
     ///
-    /// `Beside` was the other placement, for a dock down the side of the screen,
-    /// and went with it. Two placements are why this is an enum rather than a
-    /// `bool`, and one placement is not a reason to make it one: *drawn, and
-    /// where* is still the question, and the third state is still an answer to it.
+    /// Two placements are why this is an enum rather than a `bool`. It held one
+    /// between ADR 0076's bottom-only ruling and 2026-10-04, and the note here
+    /// said `Beside` *went with it* — the owner reversed that ruling on
+    /// 2026-09-30 and gave the side placement its measurement on 2026-10-04.
     Under,
+    /// Beside the icon, in a tooltip that opens toward the canvas — which is
+    /// where a name goes on a dock down either side.
+    ///
+    /// **It does not thicken the dock, and that is the owner's rule rather than
+    /// an economy.** Their words of 2026-10-04: *keep icons and click targets
+    /// unchanged; labels do not permanently widen the Dock.* So a side dock is
+    /// `Room::a_dock_of_icons` thick whatever the text size is, and the name is a
+    /// transient surface over the canvas rather than part of the bar.
+    ///
+    /// That is why this carries no measurement: the width a name gets is
+    /// `crate::measures::A_NAME_BESIDE_AN_ICON` and does not vary with how much
+    /// room the dock has, which is the whole difference from [`Self::Under`].
+    /// What the tooltip must do — appear on hover **and keyboard focus**, wrap to
+    /// two lines then ellipsize, give the whole name to assistive technology, and
+    /// stay inside the viewport on a small display — belongs to whatever draws it,
+    /// and `alo-dock` draws nothing.
+    Beside,
     /// Nowhere: at this text size, as a percentage, there was not room. The
     /// name is still announced and still shown when somebody rests on the icon.
     GaveWay(u16),
@@ -47,7 +63,7 @@ impl Labels {
     /// Whether the names are being drawn.
     #[must_use]
     pub const fn are_shown(self) -> bool {
-        matches!(self, Self::Under)
+        matches!(self, Self::Under | Self::Beside)
     }
 
     /// The string this crate declares for this state.
@@ -55,6 +71,7 @@ impl Labels {
     pub const fn word(self) -> Word {
         match self {
             Self::Under => words::NAMES_UNDER,
+            Self::Beside => words::NAMES_BESIDE,
             Self::GaveWay(_) => words::NAMES_GAVE_WAY,
         }
     }
@@ -68,7 +85,10 @@ impl Labels {
     #[must_use]
     pub fn said(self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::Under => Filling::nothing(),
+            // Neither placement fills a gap: both sentences are about **where**
+            // the names are, and the only number in this type belongs to the one
+            // state that is about a text size.
+            Self::Under | Self::Beside => Filling::nothing(),
             Self::GaveWay(percent) => Filling::of("percent", percent.to_string()),
         };
         strings.say(&self.word().key(), &filling)

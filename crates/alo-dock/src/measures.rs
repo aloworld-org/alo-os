@@ -102,3 +102,23 @@ pub const FLOATING_ABOVE_THE_EDGE: u32 = MARGIN;
 /// reaches it — and it is repeated here because it is the thing this crate's
 /// thresholds are measured against rather than a size this crate offers.
 pub const THE_STANDARDS_TEXT: u16 = 200;
+
+/// How much usable text width a name gets beside an icon on a side dock.
+///
+/// **The owner's figure, 2026-10-04, and not yet in the design file** — their own
+/// words: *this is the implementation specification; I have not yet added that
+/// measurement to Figma.* So this constant is the source, and
+/// `docs/design/the-interface-in-the-file.md` should not be read as holding it.
+///
+/// This crate had the figure once as `LABEL_EMS` and lost it with the four-edge
+/// choice; it comes back in logical pixels rather than ems because that is the
+/// unit the owner gave and the unit everything else here is in.
+pub const A_NAME_BESIDE_AN_ICON: u32 = 200;
+
+/// The padding on each side of a name shown beside an icon.
+///
+/// So the tooltip is [`A_NAME_BESIDE_AN_ICON`] + twice this = **224** logical
+/// pixels wide. Its own constant rather than a number folded into the width,
+/// because *how much room the text gets* and *how much room is around it* are two
+/// figures the owner gave separately and a reader may need to change apart.
+pub const AROUND_A_NAME_BESIDE_AN_ICON: u32 = 12;
